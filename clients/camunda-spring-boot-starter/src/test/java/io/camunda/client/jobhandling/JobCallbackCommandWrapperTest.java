@@ -115,7 +115,7 @@ public class JobCallbackCommandWrapperTest {
   }
 
   @Test
-  void notFoundCompletesWithIgnored() {
+  void shouldCompleteWithIgnoredOnNotFound() {
     final CompletableFuture<Object> sendFuture = new CompletableFuture<>();
     when(command.send()).thenReturn(asCamundaFuture(sendFuture));
     final StatusRuntimeException error = new StatusRuntimeException(Status.NOT_FOUND);
@@ -140,7 +140,7 @@ public class JobCallbackCommandWrapperTest {
   }
 
   @Test
-  void retryThenSuccessCompletesWithCompleted() {
+  void shouldCompleteWithCompletedOnRetryThenSuccess() {
     final CompletableFuture<Object> firstSend = new CompletableFuture<>();
     final CompletableFuture<Object> secondSend = new CompletableFuture<>();
     when(command.send())
@@ -184,7 +184,7 @@ public class JobCallbackCommandWrapperTest {
   }
 
   @Test
-  void retryExhaustionCompletesWithFailed() {
+  void shouldCompleteWithFailedOnRetryExhaustion() {
     final CompletableFuture<Object> firstSend = new CompletableFuture<>();
     when(command.send()).thenReturn(asCamundaFuture(firstSend));
 
@@ -212,7 +212,7 @@ public class JobCallbackCommandWrapperTest {
   }
 
   @Test
-  void jobDeadlineExceededNoRetryFailed() {
+  void shouldNotRetryAndFailWhenJobDeadlineExceeded() {
     final CompletableFuture<Object> sendFuture = new CompletableFuture<>();
     when(command.send()).thenReturn(asCamundaFuture(sendFuture));
 
@@ -237,7 +237,7 @@ public class JobCallbackCommandWrapperTest {
   }
 
   @Test
-  void metricsIncreaserCalledOnlyOnSuccess() {
+  void shouldCallMetricsIncreaserOnlyOnSuccess() {
     final CompletableFuture<Object> sendFuture = new CompletableFuture<>();
     when(command.send()).thenReturn(asCamundaFuture(sendFuture));
 
@@ -264,7 +264,7 @@ public class JobCallbackCommandWrapperTest {
   }
 
   @Test
-  void metricsIncreaserNotCalledOnFailure() {
+  void shouldNotCallMetricsIncreaserOnFailure() {
     final CompletableFuture<Object> sendFuture = new CompletableFuture<>();
     when(command.send()).thenReturn(asCamundaFuture(sendFuture));
 
@@ -291,7 +291,7 @@ public class JobCallbackCommandWrapperTest {
   }
 
   @Test
-  void doubleExecuteThrowsIllegalStateException() {
+  void shouldThrowIllegalStateExceptionOnDoubleExecute() {
     when(command.send()).thenReturn(asCamundaFuture(new CompletableFuture<>()));
 
     final JobCallbackCommandWrapper wrapper =
@@ -310,7 +310,7 @@ public class JobCallbackCommandWrapperTest {
   }
 
   @Test
-  void retryCallsIncreaserOnEventualSuccess() {
+  void shouldCallMetricsIncreaserOnEventualSuccessAfterRetry() {
     final CompletableFuture<Object> firstSend = new CompletableFuture<>();
     final CompletableFuture<Object> secondSend = new CompletableFuture<>();
     when(command.send())
