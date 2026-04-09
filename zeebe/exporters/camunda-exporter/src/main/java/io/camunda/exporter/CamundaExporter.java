@@ -318,7 +318,10 @@ public class CamundaExporter implements Exporter {
   private void scheduleDelayedFlush(final long now) {
     long nextDelayMs = flushDelayMs;
     if (lastFlushTimestamp > 0) {
-      nextDelayMs = Math.max(0, flushDelayMs - (now - lastFlushTimestamp));
+      // Cap at flushDelayMs to avoid scheduling far into the future when the clock is pinned to a
+      // time in the past, which would make `now - lastFlushTimestamp` negative and thus
+      // `flushDelayMs - (now - lastFlushTimestamp)` larger than flushDelayMs.
+      nextDelayMs = Math.min(flushDelayMs, Math.max(0, flushDelayMs - (now - lastFlushTimestamp)));
     }
 
     controller.scheduleCancellableTask(Duration.ofMillis(nextDelayMs), this::flushAndReschedule);
@@ -327,7 +330,11 @@ public class CamundaExporter implements Exporter {
   private void flushAndReschedule() {
     final var now = context.clock().millis();
     try {
-      if (now - lastFlushTimestamp >= flushDelayMs) {
+      // Flush when enough clock-time has elapsed since the last flush. When the clock is pinned or
+      // moved to a time in the past (now <= lastFlushTimestamp), bypass the time-based guard and
+      // flush regardless, because the actor-clock-based timer has already waited for flushDelayMs
+      // in wall-clock time. This restores pre-#48251 behavior when the clock is pinned.
+      if (now - lastFlushTimestamp >= flushDelayMs || now <= lastFlushTimestamp) {
         flush();
       }
     } catch (final Exception e) {

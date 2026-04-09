@@ -418,5 +418,68 @@ final class CamundaExporterTest {
         assertThat(tasks.getLast().getDelay()).isEqualTo(Duration.ofMillis(1000));
       }
     }
+
+    @Test
+    void shouldCapRescheduleDelayWhenClockIsPinnedToPast() {
+      // Regression test for https://github.com/camunda/camunda/issues/49858:
+      // When the clock is pinned to a time in the past, the rescheduled flush delay
+      // must not exceed flushDelayMs (was previously computed as a very large value).
+
+      // given
+      final var clock = new MutableClock(1000);
+      testContext.setClock(clock);
+      configuration.getBulk().setDelay(1); // 1 second
+      exporter =
+          new CamundaExporter(
+              resourceProvider, new ExporterMetadata(TestObjectMapper.objectMapper()));
+      exporter.configure(testContext);
+      exporter.open(testController); // lastFlushTimestamp = 1000ms
+
+      // pin clock to the past (simulating a clock-pin command with a past timestamp)
+      clock.advance(-600); // now = 400ms < lastFlushTimestamp = 1000ms
+
+      // when — trigger the scheduled flush callback
+      testController.runScheduledTasks(Duration.ofSeconds(2));
+
+      // then — the rescheduled delay must be capped at flushDelayMs (1 second), not higher
+      final var tasks = testController.getScheduledTasks();
+      assertThat(tasks.getLast().getDelay())
+          .as("Rescheduled delay must not exceed flushDelayMs when clock is moved to the past")
+          .isLessThanOrEqualTo(Duration.ofSeconds(1));
+    }
+
+    @Test
+    void shouldFlushWhenClockIsPinnedToPast() {
+      // Regression test for https://github.com/camunda/camunda/issues/49858:
+      // When the clock is pinned to a time in the past, pending records must still
+      // be exported by the periodic flush task.
+
+      // given — large bulk size so export() never triggers a size-based flush
+      final var clock = new MutableClock(1000);
+      testContext.setClock(clock);
+      configuration.getBulk().setSize(100);
+      configuration.getBulk().setDelay(1); // 1 second
+      exporter =
+          new CamundaExporter(
+              resourceProvider, new ExporterMetadata(TestObjectMapper.objectMapper()));
+      exporter.configure(testContext);
+      exporter.open(testController); // lastFlushTimestamp = 1000ms
+
+      // export a record; no size-based flush because bulk size = 100
+      final var record =
+          protocolFactory.generateRecord(ValueType.VARIABLE, b -> b.withPosition(1L));
+      exporter.export(record);
+
+      // pin clock to the past (simulating a clock-pin command with a past timestamp)
+      clock.advance(-600); // now = 400ms < lastFlushTimestamp = 1000ms
+
+      // when — trigger the scheduled flush callback (wall-clock time has elapsed)
+      testController.runScheduledTasks(Duration.ofSeconds(2));
+
+      // then — the record must have been flushed and position updated
+      assertThat(testController.getPosition())
+          .as("Record must be flushed even when the clock is pinned to a time in the past")
+          .isEqualTo(record.getPosition());
+    }
   }
 }
