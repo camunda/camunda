@@ -7,10 +7,8 @@
  */
 package io.camunda.tasklist.management;
 
-import io.camunda.tasklist.schema.IndexSchemaValidator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.actuate.health.Health;
 import org.springframework.boot.actuate.health.HealthIndicator;
 import org.springframework.stereotype.Component;
@@ -20,7 +18,11 @@ public class SearchEngineHealthIndicator implements HealthIndicator {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(SearchEngineHealthIndicator.class);
 
-  @Autowired private IndexSchemaValidator indexSchemaValidator;
+  private final TasklistIndicesCheck indicesCheck;
+
+  public SearchEngineHealthIndicator(final TasklistIndicesCheck indicesCheck) {
+    this.indicesCheck = indicesCheck;
+  }
 
   @Override
   public Health getHealth(final boolean includeDetails) {
@@ -30,10 +32,15 @@ public class SearchEngineHealthIndicator implements HealthIndicator {
   @Override
   public Health health() {
     LOGGER.debug("Search engine check is called");
-    if (!indexSchemaValidator.isHealthCheckEnabled() || indexSchemaValidator.schemaExists()) {
-      return Health.up().build();
-    } else {
+    try {
+      if (!indicesCheck.isHealthCheckEnabled()
+          || (indicesCheck.isHealthy() && indicesCheck.schemaExists())) {
+        return Health.up().build();
+      }
       return Health.down().build();
+    } catch (final Exception e) {
+      LOGGER.warn("Search engine health check failed: {}", e.getMessage());
+      return Health.down(e).build();
     }
   }
 }
