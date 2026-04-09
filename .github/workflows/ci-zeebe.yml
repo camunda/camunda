@@ -516,11 +516,11 @@ jobs:
       build: true
     secrets: inherit
   auto-merge:
-    # This workflow will auto merge a PR authored by backport-action.
+    # This workflow will auto merge backport PRs created by the Monorepo DevOps
+    # Automation GitHub App (via korthout/backport-action).
     # It runs only on open PRs ready for review.
     #
-    # It will merge the PR only if it is authored by backport-action and all CI checks are successful
-    # OR if it is authored by renovate[bot] and all CI checks are successful.
+    # It will approve and auto-merge the PR only if all CI checks are successful.
     #
     # The workflow is divided into multiple sequential jobs to allow giving only minimal permissions to
     # the GitHub token passed around.
@@ -531,7 +531,7 @@ jobs:
     if: |
       github.repository == 'camunda/camunda' &&
       github.event_name == 'pull_request' &&
-      (github.actor == 'backport-action')
+      github.actor == 'monorepo-devops-automation[bot]'
     permissions:
       checks: read
       pull-requests: write
