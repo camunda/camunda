@@ -31,7 +31,6 @@ import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobBatchRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobKind;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
-import io.camunda.zeebe.protocol.record.value.MessageBatchRecordValue;
 import io.camunda.zeebe.protocol.record.value.MessageCorrelationRecordValue;
 import io.camunda.zeebe.protocol.record.value.MessageRecordValue;
 import io.camunda.zeebe.protocol.record.value.MessageStartEventSubscriptionRecordValue;
@@ -503,17 +502,7 @@ public class CompactRecordLogger {
   }
 
   private String summarizeMessageBatch(final Record<?> record) {
-    final var value = (MessageBatchRecordValue) record.getValue();
-
-    final var result =
-        new StringBuilder()
-            .append("\"")
-            .append("messageKeys:")
-            .append("\" ")
-            .append(value.getMessageKeys())
-            .append("\"");
-
-    return result.toString();
+    return "message batch";
   }
 
   private String summarizeMessageStartEventSubscription(final Record<?> record) {

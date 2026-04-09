@@ -7,46 +7,68 @@
  */
 package io.camunda.zeebe.engine.processing.message;
 
-import static io.camunda.zeebe.protocol.record.intent.MessageIntent.*;
-
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
+import io.camunda.zeebe.engine.state.immutable.MessageState;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageBatchRecord;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageRecord;
-import io.camunda.zeebe.stream.api.records.ExceededBatchRecordSizeException;
+import io.camunda.zeebe.protocol.record.intent.MessageBatchIntent;
+import io.camunda.zeebe.protocol.record.intent.MessageIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import java.time.InstantSource;
+import org.agrona.collections.MutableLong;
 
 public final class MessageBatchExpireProcessor implements TypedRecordProcessor<MessageBatchRecord> {
 
-  private static final Logger LOG = LoggerFactory.getLogger(MessageBatchExpireProcessor.class);
+  /** The safety margin to ensure that we can always write an empty EXPIRE command at the end. */
+  private static final int FOLLOWUP_COMMAND_SAFETY_MARGIN = 8192;
+
   private final StateWriter stateWriter;
+  private final TypedCommandWriter commandWriter;
+  private final MessageState messageState;
+  private final int batchLimit;
+  private final InstantSource clock;
 
   private final MessageRecord emptyDeleteMessageCommand =
       new MessageRecord().setName("").setCorrelationKey("").setTimeToLive(-1L);
 
-  public MessageBatchExpireProcessor(final StateWriter stateWriter) {
+  public MessageBatchExpireProcessor(
+      final StateWriter stateWriter,
+      final TypedCommandWriter commandWriter,
+      final MessageState messageState,
+      final int batchLimit,
+      final InstantSource clock) {
     this.stateWriter = stateWriter;
+    this.commandWriter = commandWriter;
+    this.messageState = messageState;
+    this.batchLimit = batchLimit;
+    this.clock = clock;
   }
 
   @Override
   public void processRecord(final TypedRecord<MessageBatchRecord> record) {
+    final var expiredCount = new MutableLong(0);
+    final boolean hasMore =
+        messageState.visitMessagesWithDeadlineBeforeTimestamp(
+            clock.millis(),
+            null,
+            (deadline, messageKey) -> {
+              final var requiredCapacity =
+                  emptyDeleteMessageCommand.getLength() + FOLLOWUP_COMMAND_SAFETY_MARGIN;
+              if (stateWriter.canWriteEventOfLength(requiredCapacity)
+                  && expiredCount.getAndIncrement() < batchLimit) {
+                stateWriter.appendFollowUpEvent(
+                    messageKey, MessageIntent.EXPIRED, emptyDeleteMessageCommand);
+                return true;
+              } else {
+                return false;
+              }
+            });
 
-    int expiredMessagesCount = 0;
-    final int totalMessagesCount = record.getValue().getMessageKeys().size();
-    for (final long messageKey : record.getValue().getMessageKeys()) {
-      try {
-        stateWriter.appendFollowUpEvent(messageKey, EXPIRED, emptyDeleteMessageCommand);
-        expiredMessagesCount++;
-      } catch (final ExceededBatchRecordSizeException exceededBatchRecordSizeException) {
-        LOG.warn(
-            "Expected to expire messages in a batch, but exceeded the resulting batch size after expiring {} out of {} messages. "
-                + "Try using a lower Message TTL Checker's batch limit.",
-            expiredMessagesCount,
-            totalMessagesCount);
-        break;
-      }
+    if (hasMore) {
+      commandWriter.appendFollowUpCommand(
+          record.getKey(), MessageBatchIntent.EXPIRE, new MessageBatchRecord());
     }
   }
 }

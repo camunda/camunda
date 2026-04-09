@@ -14,7 +14,7 @@ import io.camunda.zeebe.broker.system.partitions.PartitionTransitionContext;
 import io.camunda.zeebe.broker.system.partitions.PartitionTransitionStep;
 import io.camunda.zeebe.engine.Engine;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
-import io.camunda.zeebe.protocol.record.intent.MessageIntent;
+import io.camunda.zeebe.protocol.record.intent.MessageBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.TimerIntent;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
@@ -144,7 +144,7 @@ public final class StreamProcessorTransitionStep implements PartitionTransitionS
             TimerIntent.TRIGGER,
             JobIntent.TIME_OUT,
             JobIntent.RECUR_AFTER_BACKOFF,
-            MessageIntent.EXPIRE);
+            MessageBatchIntent.EXPIRE);
     final var processingFilter =
         SkipPositionsFilter.of(context.getBrokerCfg().getProcessing().skipPositions());
 

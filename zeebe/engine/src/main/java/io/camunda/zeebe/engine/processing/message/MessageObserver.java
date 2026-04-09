@@ -24,7 +24,6 @@ public final class MessageObserver implements StreamProcessorLifecycleAware {
   private final SubscriptionCommandSender subscriptionCommandSender;
   private final Supplier<ScheduledTaskState> scheduledTaskStateFactory;
   private final PendingMessageSubscriptionState pendingState;
-  private final int messagesTtlCheckerBatchLimit;
   private final Duration messagesTtlCheckerInterval;
   private final boolean enableMessageTtlCheckerAsync;
   private final InstantSource clock;
@@ -34,14 +33,12 @@ public final class MessageObserver implements StreamProcessorLifecycleAware {
       final PendingMessageSubscriptionState pendingState,
       final SubscriptionCommandSender subscriptionCommandSender,
       final Duration messagesTtlCheckerInterval,
-      final int messagesTtlCheckerBatchLimit,
       final boolean enableMessageTtlCheckerAsync,
       final InstantSource clock) {
     this.subscriptionCommandSender = subscriptionCommandSender;
     this.scheduledTaskStateFactory = scheduledTaskStateFactory;
     this.pendingState = pendingState;
     this.messagesTtlCheckerInterval = messagesTtlCheckerInterval;
-    this.messagesTtlCheckerBatchLimit = messagesTtlCheckerBatchLimit;
     this.enableMessageTtlCheckerAsync = enableMessageTtlCheckerAsync;
     this.clock = clock;
   }
@@ -59,7 +56,6 @@ public final class MessageObserver implements StreamProcessorLifecycleAware {
     final var timeToLiveChecker =
         new MessageTimeToLiveChecker(
             messagesTtlCheckerInterval,
-            messagesTtlCheckerBatchLimit,
             enableMessageTtlCheckerAsync,
             scheduleService,
             messageState,
