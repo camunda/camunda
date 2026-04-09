@@ -53,16 +53,35 @@ public class JobCallbackCommandWrapper {
       final MetricsRecorder metricsRecorder,
       final CounterMetricsContext metricsContext,
       final int maxRetries) {
+    this(
+        command,
+        deadline,
+        jobCallbackCommandExceptionHandlingStrategy,
+        metricsRecorder,
+        metricsContext,
+        maxRetries,
+        findIncreaser(command));
+  }
+
+  JobCallbackCommandWrapper(
+      final JobCallbackFinalCommandStep<?> command,
+      final long deadline,
+      final JobCallbackCommandExceptionHandlingStrategy jobCallbackCommandExceptionHandlingStrategy,
+      final MetricsRecorder metricsRecorder,
+      final CounterMetricsContext metricsContext,
+      final int maxRetries,
+      final BiConsumer<MetricsRecorder, CounterMetricsContext> increaser) {
     this.command = command;
     this.deadline = deadline;
     this.jobCallbackCommandExceptionHandlingStrategy = jobCallbackCommandExceptionHandlingStrategy;
     this.maxRetries = maxRetries;
     this.metricsRecorder = metricsRecorder;
     this.metricsContext = metricsContext;
-    increaser = findIncreaser();
+    this.increaser = increaser;
   }
 
-  private BiConsumer<MetricsRecorder, CounterMetricsContext> findIncreaser() {
+  private static BiConsumer<MetricsRecorder, CounterMetricsContext> findIncreaser(
+      final JobCallbackFinalCommandStep<?> command) {
     if (command instanceof CompleteJobCommandStep1) {
       return MetricsRecorder::increaseCompleted;
     }
