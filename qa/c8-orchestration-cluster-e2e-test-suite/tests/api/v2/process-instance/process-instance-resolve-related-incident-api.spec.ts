@@ -9,14 +9,12 @@
 import {expect, test} from '@playwright/test';
 import {
   cancelProcessInstance,
-  createInstances,
   createSingleInstance,
   deploy,
 } from '../../../../utils/zeebeClient';
 import {
   assertBadRequest,
   assertForbiddenRequest,
-  assertInvalidArgument,
   assertNotFoundRequest,
   assertStatusCode,
   assertUnauthorizedRequest,
@@ -29,7 +27,6 @@ import {validateResponse} from '../../../../json-body-assertions';
 import {
   createUser,
   grantUserResourceAuthorization,
-  expectBatchState,
 } from '@requestHelpers';
 import {cleanupUsers} from 'utils/usersCleanup';
 
@@ -58,19 +55,19 @@ test.describe.parallel('Resolve related incidents API Tests', () => {
     });
 
     await test.step('Setup - Create test user with Resource Authorization and user for granting Authorization', async () => {
-    //   userWithResourcesAuthorizationToSendRequest = await createUser(request);
-    //   await grantUserResourceAuthorization(
-    //     request,
-    //     userWithResourcesAuthorizationToSendRequest,
-    //   );
+      userWithResourcesAuthorizationToSendRequest = await createUser(request);
+      await grantUserResourceAuthorization(
+        request,
+        userWithResourcesAuthorizationToSendRequest,
+      );
     });
   });
 
   test.afterAll(async ({request}) => {
     await test.step('Cleanup - Delete test users', async () => {
-    //   await cleanupUsers(request, [
-    //     userWithResourcesAuthorizationToSendRequest.username,
-    //   ]);
+      await cleanupUsers(request, [
+        userWithResourcesAuthorizationToSendRequest.username,
+      ]);
     });
 
     await test.step('Cleanup - Cancel created process instances', async () => {
@@ -78,7 +75,7 @@ test.describe.parallel('Resolve related incidents API Tests', () => {
     });
   });
 
-  test('Should resolve related incidents of a process instance', async ({request}) => {
+  test('Resolve related incidents of a process instance - Success', async ({request}) => {
     let elementInstanceKey: string = '';
     let batchOperationKey: string = '';
     let incidentKeys: string[] = [];
@@ -211,5 +208,38 @@ test.describe.parallel('Resolve related incidents API Tests', () => {
             }
           }).toPass(defaultAssertionOptions);
         });
+  });
+
+  test('Resolve related incidents with process instance key string value - Bad Request', async ({request}) => {
+    const invalidProcessInstanceKey = 'meow';
+    const resolveRes = await request.post(buildUrl(`/process-instances/${invalidProcessInstanceKey}/incident-resolution`), {
+        headers: jsonHeaders(),
+    });
+    await assertBadRequest(resolveRes, `Failed to convert 'processInstanceKey' with value: '${invalidProcessInstanceKey}'`);
+        
+  });
+
+  test('Resolve related incidents of a process instance - Unauthorized', async ({request}) => {
+    const someNotExistingProcessInstanceKey = '123456789';
+    const resolveRes = await request.post(buildUrl(`/process-instances/${someNotExistingProcessInstanceKey}/incident-resolution`), {
+        headers: {},
+    });
+    await assertUnauthorizedRequest(resolveRes);
+  });
+
+  test('Resolve related incidents of a not existing process instance - Not found', async ({request}) => {
+    const someNotExistingProcessInstanceKey = '123456789';
+    const resolveRes = await request.post(buildUrl(`/process-instances/${someNotExistingProcessInstanceKey}/incident-resolution`), {
+        headers: jsonHeaders(),
+    });
+    await assertNotFoundRequest(resolveRes, `Process Instance with key '${someNotExistingProcessInstanceKey}' not found`);
+  });
+
+  test('Resolve related incidents of a process instance without permissions - Forbidden', async ({request}) => {
+    const token = encode(`${userWithResourcesAuthorizationToSendRequest.username}:${userWithResourcesAuthorizationToSendRequest.password}`);
+    const resolveRes = await request.post(buildUrl(`/process-instances/${processInstanceKeyWithIncidentToResolve}/incident-resolution`), {
+        headers: jsonHeaders(token), // overrides default demo:demo
+    });
+    await assertForbiddenRequest(resolveRes, 'Insufficient permissions to perform operation \'UPDATE_PROCESS_INSTANCE\' on resource');
   });
 });
