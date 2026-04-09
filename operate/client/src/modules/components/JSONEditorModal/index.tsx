@@ -9,7 +9,8 @@
 import {lazy, Suspense, useEffect, useRef, useState} from 'react';
 import {observer} from 'mobx-react';
 import {beautifyJSON} from 'modules/utils/editor/beautifyJSON';
-import {Modal} from '@carbon/react';
+import {Button, Modal} from '@carbon/react';
+import {Edit} from '@carbon/react/icons';
 import {Toolbar} from './styled';
 import {CopyButton} from '../CopyButton';
 
@@ -41,6 +42,7 @@ const JSONEditorModal: React.FC<Props> = observer(
   ({value, isVisible, onClose, onApply, title, readOnly = false}) => {
     const [editedValue, setEditedValue] = useState(value);
     const [isValid, setIsValid] = useState(true);
+    const [isInEditMode, setIsInEditMode] = useState(!readOnly);
     const editorRef = useRef<EditorFirstParam | null>(null);
 
     useEffect(() => {
@@ -53,6 +55,10 @@ const JSONEditorModal: React.FC<Props> = observer(
     }, [isVisible, value]);
 
     useEffect(() => {
+      setIsInEditMode(!readOnly);
+    }, [readOnly, isVisible]);
+
+    useEffect(() => {
       if (isValid) {
         editorRef.current?.hideMarkers();
       }
@@ -61,6 +67,9 @@ const JSONEditorModal: React.FC<Props> = observer(
     if (!isVisible) {
       return null;
     }
+
+    const isReadOnly = readOnly && !isInEditMode;
+    const canSwitchToEdit = readOnly && !isInEditMode && onApply !== undefined;
 
     return (
       <Modal
@@ -79,17 +88,27 @@ const JSONEditorModal: React.FC<Props> = observer(
         size="lg"
         primaryButtonText="Apply"
         secondaryButtonText="Cancel"
-        passiveModal={readOnly}
+        passiveModal={isReadOnly}
         preventCloseOnClickOutside
       >
         <Toolbar>
+          {canSwitchToEdit && (
+            <Button
+              kind="ghost"
+              size="sm"
+              renderIcon={Edit}
+              iconDescription="Edit"
+              hasIconOnly
+              onClick={() => setIsInEditMode(true)}
+            />
+          )}
           <CopyButton value={editedValue} />
         </Toolbar>
         <Suspense>
           <JSONEditor
             value={editedValue}
             onChange={setEditedValue}
-            readOnly={readOnly}
+            readOnly={isReadOnly}
             onValidate={setIsValid}
             onMount={(editor) => {
               editorRef.current = editor;
