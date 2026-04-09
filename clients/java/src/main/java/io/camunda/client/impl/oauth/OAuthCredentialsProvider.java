@@ -50,6 +50,7 @@ import java.util.Base64;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
@@ -93,6 +94,7 @@ public final class OAuthCredentialsProvider implements CredentialsProvider {
   private final int tokenFetchMaxRetries;
   private final long tokenFetchInitialBackoffMs;
   private final double tokenFetchBackoffMultiplier;
+  private final Set<Integer> tokenFetchRetryableStatusCodes;
 
   /**
    * Latched when the token endpoint returns an HTTP response whose status code is not configured as
@@ -136,6 +138,7 @@ public final class OAuthCredentialsProvider implements CredentialsProvider {
     tokenFetchMaxRetries = builder.getTokenFetchMaxRetries();
     tokenFetchInitialBackoffMs = builder.getTokenFetchInitialBackoff().toMillis();
     tokenFetchBackoffMultiplier = builder.getTokenFetchBackoffMultiplier();
+    tokenFetchRetryableStatusCodes = builder.getTokenFetchRetryableStatusCodes();
     clientAssertionEnabled = builder.clientAssertionEnabled();
     clientAssertionKeystorePath = builder.getClientAssertionKeystorePath();
     clientAssertionKeystorePassword = builder.getClientAssertionKeystorePassword();
@@ -348,7 +351,7 @@ public final class OAuthCredentialsProvider implements CredentialsProvider {
               String.format(
                   "Failed while requesting access token with status code %d and message %s.",
                   statusCode, connection.getResponseMessage()));
-      if (isPermanentFailure(statusCode)) {
+      if (!tokenFetchRetryableStatusCodes.contains(statusCode)) {
         if (permanentFailure.compareAndSet(null, error)) {
           LOG.error(
               "OAuth credentials provider permanently disabled after non-retryable HTTP {} from "
@@ -373,15 +376,6 @@ public final class OAuthCredentialsProvider implements CredentialsProvider {
 
       return fetchedCredentials;
     }
-  }
-
-  /**
-   * Returns true if the given HTTP status code from the token endpoint indicates a permanent
-   * failure that will not recover by itself: any 4xx other than 404 (startup race) and 429 (rate
-   * limit). 5xx is treated as transient and retried.
-   */
-  private static boolean isPermanentFailure(final int statusCode) {
-    return statusCode >= 400 && statusCode < 500 && statusCode != 404 && statusCode != 429;
   }
 
   private void maybeConfigureCustomSSLContext(final HttpURLConnection connection) {

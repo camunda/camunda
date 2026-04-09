@@ -20,6 +20,7 @@ import static io.camunda.client.impl.oauth.OAuthCredentialsProviderBuilder.*;
 import java.net.URI;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.util.Set;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
 
 public class CamundaClientAuthProperties {
@@ -120,8 +121,8 @@ public class CamundaClientAuthProperties {
 
   /**
    * The maximum number of attempts (including the initial one) when fetching a token from the OAuth
-   * authorization server. Retries are only attempted on transient failures (HTTP 404, 429, 5xx, or
-   * IOException).
+   * authorization server. Retries are only attempted on IOException or HTTP status codes configured
+   * via {@code tokenFetchRetryableStatusCodes}.
    */
   private int tokenFetchMaxRetries = DEFAULT_TOKEN_FETCH_MAX_RETRIES;
 
@@ -136,6 +137,13 @@ public class CamundaClientAuthProperties {
    * Must be greater than or equal to 1.0.
    */
   private double tokenFetchBackoffMultiplier = DEFAULT_TOKEN_FETCH_BACKOFF_MULTIPLIER;
+
+  /**
+   * The set of HTTP status codes from the token endpoint that should be retried with backoff. Any
+   * non-200 status code outside this set permanently disables this credentials provider until the
+   * client is recreated.
+   */
+  private Set<Integer> tokenFetchRetryableStatusCodes = DEFAULT_TOKEN_FETCH_RETRYABLE_STATUS_CODES;
 
   @NestedConfigurationProperty
   private CamundaClientAuthClientAssertionProperties clientAssertion =
@@ -227,6 +235,14 @@ public class CamundaClientAuthProperties {
 
   public void setTokenFetchBackoffMultiplier(final double tokenFetchBackoffMultiplier) {
     this.tokenFetchBackoffMultiplier = tokenFetchBackoffMultiplier;
+  }
+
+  public Set<Integer> getTokenFetchRetryableStatusCodes() {
+    return tokenFetchRetryableStatusCodes;
+  }
+
+  public void setTokenFetchRetryableStatusCodes(final Set<Integer> tokenFetchRetryableStatusCodes) {
+    this.tokenFetchRetryableStatusCodes = tokenFetchRetryableStatusCodes;
   }
 
   public String getCredentialsCachePath() {
@@ -393,6 +409,8 @@ public class CamundaClientAuthProperties {
         + tokenFetchInitialBackoff
         + ", tokenFetchBackoffMultiplier="
         + tokenFetchBackoffMultiplier
+        + ", tokenFetchRetryableStatusCodes="
+        + tokenFetchRetryableStatusCodes
         + ", clientAssertion="
         + clientAssertion
         + '}';

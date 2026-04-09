@@ -98,6 +98,8 @@ public class CredentialsProviderConfiguration {
                 camundaClientProperties.getAuth().getTokenFetchInitialBackoff())
             .tokenFetchBackoffMultiplier(
                 camundaClientProperties.getAuth().getTokenFetchBackoffMultiplier())
+            .tokenFetchRetryableStatusCodes(
+                camundaClientProperties.getAuth().getTokenFetchRetryableStatusCodes())
             .clientAssertionKeystorePath(
                 camundaClientProperties.getAuth().getClientAssertion().getKeystorePath())
             .clientAssertionKeystorePassword(
