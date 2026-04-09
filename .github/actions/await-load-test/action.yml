@@ -12,7 +12,7 @@ inputs:
   pod-timeout:
     description: 'Timeout in seconds to wait for all pods to be ready'
     required: false
-    default: '600'
+    default: '900'
   connectivity-timeout:
     description: 'Max time in seconds to wait for gateway connectivity'
     required: false
@@ -48,27 +48,53 @@ runs:
           exit 1
         fi
 
+        # Retry wrapper for kubectl wait. Pods may be rescheduled during the wait
+        # window, causing "NotFound" errors when kubectl wait tries to watch a pod
+        # whose name changed. Retrying re-resolves the label selector.
+        wait_for_pods() {
+          local label="$1"
+          local description="$2"
+          local max_retries=3
+          local retry_delay=10
+
+          for attempt in $(seq 1 "$max_retries"); do
+            echo "Waiting for ${description} to be ready (attempt ${attempt}/${max_retries}, timeout: ${POD_TIMEOUT}s)..."
+            wait_output=$(kubectl wait --for=condition=ready pod \
+                -l "$label" \
+                --timeout="${POD_TIMEOUT}s" -n "$NAMESPACE" 2>&1) && {
+              echo "$wait_output"
+              echo "${description} are ready in $NAMESPACE"
+              return 0
+            }
+            echo "$wait_output"
+
+            # Only retry on NotFound errors (pod rescheduled); fail immediately on other errors
+            if ! echo "$wait_output" | grep -q "NotFound"; then
+              echo "::error::Not all ${description} are ready in $NAMESPACE"
+              return 1
+            fi
+
+            if [[ "$attempt" -lt "$max_retries" ]]; then
+              echo "Pod was rescheduled (NotFound). Retrying in ${retry_delay}s..."
+              sleep "$retry_delay"
+            fi
+          done
+
+          echo "::error::Not all ${description} are ready in $NAMESPACE after ${max_retries} attempts"
+          return 1
+        }
+
         # Wait for platform pods (camunda-platform helm chart)
-        echo "Waiting for Camunda platform pods to be ready (timeout: ${POD_TIMEOUT}s)..."
-        if ! kubectl wait --for=condition=ready pod \
-            -l app=camunda-platform \
-            --timeout="${POD_TIMEOUT}s" -n "$NAMESPACE"; then
-          echo "::error::Not all platform pods are ready in $NAMESPACE"
+        if ! wait_for_pods "app=camunda-platform" "Camunda platform pods"; then
           echo "status=failure" >> "$GITHUB_OUTPUT"
           exit 1
         fi
-        echo "Camunda platform pods are ready in $NAMESPACE"
 
         # Wait for load test client pods (starter + workers from load test helm chart)
-        echo "Waiting for load test client pods to be ready (timeout: ${POD_TIMEOUT}s)..."
-        if ! kubectl wait --for=condition=ready pod \
-            -l app.kubernetes.io/component=zeebe-client \
-            --timeout="${POD_TIMEOUT}s" -n "$NAMESPACE"; then
-          echo "::error::Not all load test client pods are ready in $NAMESPACE"
+        if ! wait_for_pods "app.kubernetes.io/component=zeebe-client" "load test client pods"; then
           echo "status=failure" >> "$GITHUB_OUTPUT"
           exit 1
         fi
-        echo "All load test client pods are ready in $NAMESPACE"
 
         # Port-forward to the clients service metrics endpoint
         local_port=$((METRICS_PORT + RANDOM % 1000))
