@@ -30,15 +30,10 @@ on:
         default: 1
         required: false
       reuse-tag:
-        description: 'Docker image tag, that should be reused for the load test. Allows to skip the docker image build step'
+        description: 'Reuse Tag: Pre-built image tag from the internal registry (registry.camunda.cloud). Skips the docker image build step. Cannot be used together with orchestration-tag.'
         type: string
         default: ""
         required: false
-      use-official-docker-images:
-        description: 'Use official Camunda Docker images from Docker Hub instead of building from source'
-        type: boolean
-        required: false
-        default: false
       scenario:
         description: 'Choose the variant of workload to use for the load test.'
         required: false
@@ -83,6 +78,26 @@ on:
         options:
         - elasticsearch
         default: elasticsearch
+      orchestration-tag:
+        description: 'Orchestration Tag: Docker image tag for official Camunda images from Docker Hub (docker.io/camunda/camunda). When set, official Docker Hub images are used instead of building from source. Cannot be used together with reuse-tag.'
+        type: string
+        default: ""
+        required: false
+      optimize-tag:
+        description: 'Optimize Tag: Docker image tag for Optimize from Docker Hub (docker.io/camunda/optimize). When set, overrides the optimize image regardless of build mode. If not set, custom builds use the built image from the internal registry; official images use Helm chart defaults.'
+        type: string
+        default: ""
+        required: false
+      identity-tag:
+        description: 'Identity Tag: Docker image tag for Identity from Docker Hub (docker.io/camunda/identity). If not set, defaults to the Helm chart default image.'
+        type: string
+        default: ""
+        required: false
+      connectors-tag:
+        description: 'Connectors Tag: Docker image tag for Connectors from Docker Hub (docker.io/camunda/connectors). If not set, defaults to the Helm chart default image.'
+        type: string
+        default: ""
+        required: false
   workflow_call:
     inputs:
       ref:
@@ -100,15 +115,10 @@ on:
         default: 1
         required: false
       reuse-tag:
-        description: 'Docker image tag, that should be reused for the load test. Allows to skip the docker image build step'
+        description: 'Reuse Tag: Pre-built image tag from the internal registry (registry.camunda.cloud). Skips the docker image build step. Cannot be used together with orchestration-tag.'
         type: string
         default: ""
         required: false
-      use-official-docker-images:
-        description: 'Use official Camunda Docker images from Docker Hub instead of building from source'
-        type: boolean
-        required: false
-        default: false
       scenario:
         description: 'Choose the variant of workload to use for the load test. Options: custom, latency, realistic, typical, max. If specified, this will override the load-test-load input when not set to "custom".'
         type: string
@@ -154,6 +164,26 @@ on:
         type: string
         required: false
         default: elasticsearch
+      orchestration-tag:
+        description: 'Orchestration Tag: Docker image tag for official Camunda images from Docker Hub (docker.io/camunda/camunda). When set, official Docker Hub images are used instead of building from source. Cannot be used together with reuse-tag.'
+        type: string
+        default: ""
+        required: false
+      optimize-tag:
+        description: 'Optimize Tag: Docker image tag for Optimize from Docker Hub (docker.io/camunda/optimize). When set, overrides the optimize image regardless of build mode. If not set, custom builds use the built image from the internal registry; official images use Helm chart defaults.'
+        type: string
+        default: ""
+        required: false
+      identity-tag:
+        description: 'Identity Tag: Docker image tag for Identity from Docker Hub (docker.io/camunda/identity). If not set, defaults to the Helm chart default image.'
+        type: string
+        default: ""
+        required: false
+      connectors-tag:
+        description: 'Connectors Tag: Docker image tag for Connectors from Docker Hub (docker.io/camunda/connectors). If not set, defaults to the Helm chart default image.'
+        type: string
+        default: ""
+        required: false
 
 env:
   CLUSTER: camunda-benchmark-prod  # change this to "camunda-benchmark-dev" when experimenting
@@ -197,12 +227,12 @@ jobs:
     timeout-minutes: 5
     permissions: { }
     outputs:
-      image-tag: ${{ inputs.reuse-tag != '' && inputs.reuse-tag || steps.image-tag.outputs.image-tag }}
+      image-tag: ${{ inputs.orchestration-tag != '' && inputs.orchestration-tag || (inputs.reuse-tag != '' && inputs.reuse-tag || steps.image-tag.outputs.image-tag) }}
     steps:
-      - name: Validate official images require explicit tag
-        if: ${{ inputs.use-official-docker-images == true && inputs.reuse-tag == '' }}
+      - name: Validate mutually exclusive inputs
+        if: ${{ inputs.orchestration-tag != '' && inputs.reuse-tag != '' }}
         run: |
-          echo "::error::Invalid input combination: 'use-official-docker-images' is enabled but 'reuse-tag' is empty. Official Camunda Docker images require an explicit tag (e.g., '8.9.0-rc2') to pull from Docker Hub. Either provide a 'reuse-tag' or disable 'use-official-docker-images'."
+          echo "::error::Invalid input combination: 'orchestration-tag' and 'reuse-tag' cannot both be provided. Use 'orchestration-tag' for official Docker Hub images or 'reuse-tag' for reusing pre-built images from the internal registry."
           exit 1
       - uses: actions/checkout@v6
         with:
@@ -212,10 +242,13 @@ jobs:
         run: |
           echo "image-tag=${{ inputs.name }}-$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
       - name: Validate Docker image tags exist
-        if: ${{ inputs.use-official-docker-images == true && inputs.reuse-tag != '' }}
+        if: ${{ inputs.orchestration-tag != '' || inputs.optimize-tag != '' || inputs.identity-tag != '' || inputs.connectors-tag != '' }}
         env:
-          TAG: ${{ inputs.reuse-tag }}
+          ORCHESTRATION_TAG: ${{ inputs.orchestration-tag }}
           ENABLE_OPTIMIZE: ${{ inputs.enable-optimize }}
+          OPTIMIZE_TAG: ${{ inputs.optimize-tag }}
+          IDENTITY_TAG: ${{ inputs.identity-tag }}
+          CONNECTORS_TAG: ${{ inputs.connectors-tag }}
         run: |
           validate_image() {
             local image="$1"
@@ -250,10 +283,20 @@ jobs:
             done
           }
 
-          validate_image "camunda/camunda:${TAG}" || exit 1
+          if [[ -n "${ORCHESTRATION_TAG}" ]]; then
+            validate_image "camunda/camunda:${ORCHESTRATION_TAG}" || exit 1
+          fi
 
-          if [[ "${ENABLE_OPTIMIZE}" == "true" ]]; then
-            validate_image "camunda/optimize:${TAG}" || exit 1
+          if [[ "${ENABLE_OPTIMIZE}" == "true" && -n "${OPTIMIZE_TAG}" ]]; then
+            validate_image "camunda/optimize:${OPTIMIZE_TAG}" || exit 1
+          fi
+
+          if [[ -n "${IDENTITY_TAG}" ]]; then
+            validate_image "camunda/identity:${IDENTITY_TAG}" || exit 1
+          fi
+
+          if [[ -n "${CONNECTORS_TAG}" ]]; then
+            validate_image "camunda/connectors:${CONNECTORS_TAG}" || exit 1
           fi
 
   calculate-scenario-config:
@@ -317,7 +360,7 @@ jobs:
   build-zeebe-image:
     name: Build Zeebe Docker image
     needs: calculate-image-tag
-    if: ${{ inputs.reuse-tag == '' }}
+    if: ${{ inputs.reuse-tag == '' && inputs.orchestration-tag == '' }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:
@@ -361,7 +404,7 @@ jobs:
 
   build-load-test-images:
     name: Build Starter and Worker
-    if: ${{ inputs.reuse-tag == '' || inputs.use-official-docker-images == true }}
+    if: ${{ inputs.reuse-tag == '' || inputs.orchestration-tag != '' }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
     needs: calculate-image-tag
@@ -458,10 +501,12 @@ jobs:
           load_test_config="$load_test_config ${{ needs.calculate-scenario-config.outputs.load-test-load }}"
           load_test_config="$load_test_config ${{ inputs.load-test-load }}"
 
-          # Build platform configuration matching stable/8.7 helm chart keys
+          # Resolve image registry/repository: Docker Hub when orchestration-tag is set, internal registry otherwise
+          # optimize_repo is only consumed in the custom build path where orchestration-tag is empty
           image_tag="${{ needs.calculate-image-tag.outputs.image-tag }}"
-          image_registry="${{ inputs.use-official-docker-images && 'docker.io' || 'registry.camunda.cloud' }}"
-          zeebe_repo="${{ inputs.use-official-docker-images && 'camunda/zeebe' || 'team-zeebe/zeebe' }}"
+          image_registry="${{ inputs.orchestration-tag != '' && 'docker.io' || 'registry.camunda.cloud' }}"
+          zeebe_repo="${{ inputs.orchestration-tag != '' && 'camunda/zeebe' || 'team-zeebe/zeebe' }}"
+          optimize_repo="${{ inputs.orchestration-tag != '' && 'camunda/optimize' || 'team-zeebe/optimize' }}"
 
           additional_platform_config="--set global.image.tag=${image_tag} \
             --set zeebe.image.registry=${image_registry} \
@@ -470,6 +515,33 @@ jobs:
             --set zeebeGateway.image.registry=${image_registry} \
             --set zeebeGateway.image.repository=${zeebe_repo} \
             --set zeebeGateway.image.tag=${image_tag}"
+
+          # Append optimize image config: optimize-tag wins if set, otherwise custom builds use internal registry
+          if [[ "${{ inputs.enable-optimize }}" == "true" ]]; then
+            if [[ -n "${{ inputs.optimize-tag }}" ]]; then
+              # Explicit optimize tag provided: use it directly (Docker Hub image)
+              additional_platform_config+=" \
+                --set optimize.image.tag=${{ inputs.optimize-tag }}"
+            elif [[ -z "${{ inputs.orchestration-tag }}" ]]; then
+              # Custom build without explicit optimize tag: use the built image from internal registry
+              additional_platform_config+=" \
+                --set optimize.image.registry=${image_registry} \
+                --set optimize.image.repository=${optimize_repo} \
+                --set optimize.image.tag=${image_tag}"
+            fi
+          fi
+
+          # Append identity image config if a dedicated tag is provided
+          if [[ -n "${{ inputs.identity-tag }}" ]]; then
+            additional_platform_config+=" \
+              --set identity.image.tag=${{ inputs.identity-tag }}"
+          fi
+
+          # Append connectors image config if a dedicated tag is provided
+          if [[ -n "${{ inputs.connectors-tag }}" ]]; then
+            additional_platform_config+=" \
+              --set connectors.image.tag=${{ inputs.connectors-tag }}"
+          fi
 
           # Append user-provided helm values if present
           if [[ -n "${{ inputs.platform-helm-values }}" ]]; then
