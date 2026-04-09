@@ -52,6 +52,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 import javax.net.ssl.HttpsURLConnection;
@@ -302,15 +303,16 @@ public final class OAuthCredentialsProvider implements CredentialsProvider {
       } catch (final IOException e) {
         lastException = e;
         if (attempt < tokenFetchMaxRetries) {
+          final long jitteredBackoffMs = withEqualJitter(backoffMs);
           LOG.warn(
               "Token fetch failed for clientId={} (attempt {}/{}), retrying in {}ms: {}",
               clientId,
               attempt,
               tokenFetchMaxRetries,
-              backoffMs,
+              jitteredBackoffMs,
               e.getMessage());
           try {
-            Thread.sleep(backoffMs);
+            Thread.sleep(jitteredBackoffMs);
           } catch (final InterruptedException ie) {
             Thread.currentThread().interrupt();
             throw new IOException("Interrupted while waiting to retry token fetch", ie);
@@ -441,6 +443,21 @@ public final class OAuthCredentialsProvider implements CredentialsProvider {
     } catch (final Exception e) {
       throw new RuntimeException("Failed to generate x5t thumbprint", e);
     }
+  }
+
+  /**
+   * Applies equal jitter to a backoff value: returns a random value in {@code [baseMs/2, baseMs]}.
+   * This prevents coordinated retry storms when many clients (e.g. pods restarting after a
+   * deployment) hit the OAuth endpoint at the same time, which is exactly the scenario this
+   * provider's retry logic is meant to dampen. See AWS Architecture Blog: "Exponential Backoff And
+   * Jitter".
+   */
+  private static long withEqualJitter(final long baseMs) {
+    if (baseMs <= 1) {
+      return baseMs;
+    }
+    final long half = baseMs / 2;
+    return half + ThreadLocalRandom.current().nextLong(baseMs - half + 1);
   }
 
   /**
