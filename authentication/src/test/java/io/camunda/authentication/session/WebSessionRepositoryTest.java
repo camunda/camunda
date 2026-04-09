@@ -14,6 +14,7 @@ import io.camunda.authentication.session.WebSessionMapper.SpringBasedWebSessionA
 import io.camunda.search.clients.PersistentWebSessionClient;
 import io.camunda.search.entities.PersistentWebSessionEntity;
 import io.camunda.search.exception.CamundaSearchException;
+import io.camunda.search.exception.CamundaSearchException.Reason;
 import io.camunda.search.query.SearchQueryResult;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -209,6 +210,46 @@ class WebSessionRepositoryTest {
     // when / then
     assertThatNoException().isThrownBy(() -> repository.save(webSession));
     assertThat(upsertAttempts.get()).isEqualTo(3);
+  }
+
+  @Test
+  void shouldNotRetryNonTransientCamundaSearchException() {
+    // given
+    final var upsertAttempts = new AtomicInteger(0);
+    final PersistentWebSessionClient failingClient =
+        new PersistentWebSessionClient() {
+          @Override
+          public PersistentWebSessionEntity getPersistentWebSession(final String sessionId) {
+            return null;
+          }
+
+          @Override
+          public void upsertPersistentWebSession(
+              final PersistentWebSessionEntity persistentWebSessionEntity) {
+            upsertAttempts.incrementAndGet();
+            throw new CamundaSearchException("Invalid argument", Reason.INVALID_ARGUMENT);
+          }
+
+          @Override
+          public void deletePersistentWebSession(final String sessionId) {}
+
+          @Override
+          public SearchQueryResult<PersistentWebSessionEntity> getAllPersistentWebSessions() {
+            return SearchQueryResult.of(b -> b.items(new ArrayList<>()));
+          }
+        };
+    final var repository =
+        new WebSessionRepository(
+            failingClient,
+            new WebSessionMapper(
+                new SpringBasedWebSessionAttributeConverter(new GenericConversionService())),
+            null);
+    final var webSession = repository.createSession();
+    webSession.setLastAccessedTime(Instant.now());
+
+    // when / then
+    assertThatNoException().isThrownBy(() -> repository.save(webSession));
+    assertThat(upsertAttempts.get()).isEqualTo(1);
   }
 
   @Test

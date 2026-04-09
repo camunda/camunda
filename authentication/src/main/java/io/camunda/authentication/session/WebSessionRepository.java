@@ -125,12 +125,11 @@ public class WebSessionRepository implements SessionRepository<WebSession> {
     if (webSession.isChanged()) {
       LOGGER.debug("Web Session {} changed, save in storage.", webSession);
       final var entity = webSessionMapper.toPersistentWebSession(webSession);
-      upsertWithRetry(webSession, entity);
+      upsertWithRetry(entity);
     }
   }
 
-  private void upsertWithRetry(
-      final WebSession webSession, final PersistentWebSessionEntity entity) {
+  private void upsertWithRetry(final PersistentWebSessionEntity entity) {
     try {
       Retry.decorateRunnable(
               UPSERT_RETRY, () -> persistentWebSessionClient.upsertPersistentWebSession(entity))
