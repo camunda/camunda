@@ -116,11 +116,16 @@ public class JobCallbackCommandWrapper {
         .send()
         .whenComplete(
             (response, throwable) -> {
-              if (throwable != null) {
-                handleError(throwable);
-              } else {
-                increaser.accept(metricsRecorder, metricsContext);
-                resultFuture.complete(new CommandOutcome.Completed(response, invocationCounter));
+              try {
+                if (throwable != null) {
+                  handleError(throwable);
+                } else {
+                  increaser.accept(metricsRecorder, metricsContext);
+                  resultFuture.complete(new CommandOutcome.Completed(response, invocationCounter));
+                }
+              } catch (final RuntimeException e) {
+                LOG.info("An unexpected error occurred during handling of job callback command", e);
+                resultFuture.completeExceptionally(e);
               }
             });
   }
