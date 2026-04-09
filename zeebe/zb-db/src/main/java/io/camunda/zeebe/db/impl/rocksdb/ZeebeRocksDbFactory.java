@@ -231,11 +231,13 @@ public final class ZeebeRocksDbFactory<
    * centralizes memory calculations to avoid duplication.
    */
   MemoryConfiguration calculateMemoryConfiguration() {
-    final var totalMemoryBudgetPerPartition = sharedRocksDbResources.getMemoryLimit() / partitionCount;
+    final var totalMemoryBudgetPerPartition =
+        sharedRocksDbResources.getMemoryLimit() / partitionCount;
 
     // recommended by RocksDB, but we could tweak it; keep in mind we're also caching the indexes
     // and filters into the block cache, so we don't need to account for more memory there
-    final var blockCacheMemoryPerPartition = sharedRocksDbResources.getBlockCacheSize() / partitionCount;
+    final var blockCacheMemoryPerPartition =
+        sharedRocksDbResources.getBlockCacheSize() / partitionCount;
     // flushing the memtables is done asynchronously, so there may be multiple memtables in memory,
     // although only a single one is writable. once we have too many memtables, writes will stop.
     // since prefix iteration is our bread n butter, we will build an additional filter for each

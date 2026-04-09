@@ -31,24 +31,20 @@ public class RocksDbSharedCache {
         ((OperatingSystemMXBean) ManagementFactory.getOperatingSystemMXBean()).getTotalMemorySize();
 
     RocksDbSharedCacheMetrics.registerAllocationStrategy(meterRegistry, memoryAllocationStrategy);
-
-    final SharedRocksDbResources rocksDbResources =
-        SharedRocksDbResources.allocate(rocksDbMemoryLimit);
+    final SharedRocksDbResources rocksDbResources = new SharedRocksDbResources(rocksDbMemoryLimit);
 
     LOGGER.info(
         "Allocating {} bytes ({} MB) for RocksDB memory Limit (with {} MB cache size), with memory allocation strategy: {}. "
             + "Total system memory: {} bytes ({} MB). Partitions per broker: {}",
-        rocksDbResources.memoryLimit(),
-        rocksDbResources.memoryLimit() / (1024 * 1024),
-        rocksDbResources.blockCacheSize() / (1024 * 1024),
+        rocksDbResources.getMemoryLimit(),
+        rocksDbResources.getMemoryLimit() / (1024 * 1024),
+        rocksDbResources.getBlockCacheSize() / (1024 * 1024),
         memoryAllocationStrategy,
         totalMemorySize,
         totalMemorySize / (1024 * 1024),
         partitionsPerBroker);
 
-    RocksDbSharedCacheMetrics.registerAllocationStrategy(meterRegistry, memoryAllocationStrategy);
-
-    return rocksDbResources;
+    return rocksDbResources.getBlockCacheSize();
   }
 
   public static long getMemoryLimitBytes(
