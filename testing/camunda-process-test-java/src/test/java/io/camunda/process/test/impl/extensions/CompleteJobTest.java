@@ -113,7 +113,7 @@ public class CompleteJobTest {
               camundaProcessTestRuntime,
               clientCreationCallback,
               camundaManagementClient,
-              DevAwaitBehavior.expectSuccess(),
+              DevAwaitBehavior::expectSuccess,
               jsonMapper,
               new ConditionalBehaviorEngine());
 
@@ -246,7 +246,7 @@ public class CompleteJobTest {
               camundaProcessTestRuntime,
               clientCreationCallback,
               camundaManagementClient,
-              DevAwaitBehavior.expectFailure(),
+              DevAwaitBehavior::expectFailure,
               jsonMapper,
               new ConditionalBehaviorEngine());
     }
@@ -333,7 +333,7 @@ public class CompleteJobTest {
               camundaProcessTestRuntime,
               clientCreationCallback,
               camundaManagementClient,
-              DevAwaitBehavior.expectSuccess(),
+              DevAwaitBehavior::expectSuccess,
               jsonMapper,
               new ConditionalBehaviorEngine());
 
@@ -481,7 +481,7 @@ public class CompleteJobTest {
               camundaProcessTestRuntime,
               clientCreationCallback,
               camundaManagementClient,
-              DevAwaitBehavior.expectSuccess(),
+              DevAwaitBehavior::expectSuccess,
               jsonMapper,
               new ConditionalBehaviorEngine());
 

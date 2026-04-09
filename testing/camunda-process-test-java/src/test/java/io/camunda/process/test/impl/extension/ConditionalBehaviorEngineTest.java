@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -154,6 +155,66 @@ class ConditionalBehaviorEngineTest {
             });
 
     await().untilAsserted(() -> assertThat(actionSawScope.get()).isTrue());
+  }
+
+  @Test
+  void shouldResolveThreadLocalSetByEvaluationScopeInCondition() {
+    // given - a ThreadLocal-based supplier, simulating CamundaAssert.getAwaitBehavior()
+    final ThreadLocal<String> scopeContext = new ThreadLocal<>();
+    final AtomicReference<String> conditionResolvedValue = new AtomicReference<>();
+
+    engine.start(
+        () -> {},
+        evaluation -> {
+          scopeContext.set("scoped");
+          try {
+            evaluation.run();
+          } finally {
+            scopeContext.remove();
+          }
+        },
+        Duration.ofMillis(50));
+
+    // when - the condition reads from the ThreadLocal
+    engine
+        .when(
+            () -> {
+              conditionResolvedValue.set(scopeContext.get());
+            })
+        .then(() -> {});
+
+    // then - the condition resolved the scoped value, not null
+    await().untilAsserted(() -> assertThat(conditionResolvedValue.get()).isEqualTo("scoped"));
+  }
+
+  @Test
+  void shouldResolveThreadLocalSetByEvaluationScopeInAction() {
+    // given - a ThreadLocal-based supplier, simulating CamundaAssert.getAwaitBehavior()
+    final ThreadLocal<String> scopeContext = new ThreadLocal<>();
+    final AtomicReference<String> actionResolvedValue = new AtomicReference<>();
+
+    engine.start(
+        () -> {},
+        evaluation -> {
+          scopeContext.set("scoped");
+          try {
+            evaluation.run();
+          } finally {
+            scopeContext.remove();
+          }
+        },
+        Duration.ofMillis(50));
+
+    // when - the action reads from the ThreadLocal (like awaitJob calling supplier.get())
+    engine
+        .when(() -> {})
+        .then(
+            () -> {
+              actionResolvedValue.set(scopeContext.get());
+            });
+
+    // then - the action resolved the scoped value, not null
+    await().untilAsserted(() -> assertThat(actionResolvedValue.get()).isEqualTo("scoped"));
   }
 
   // --- Core behavior ---
