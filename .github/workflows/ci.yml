@@ -1546,6 +1546,7 @@ jobs:
       - commitlint
       - database-integration-tests
       - detect-changes
+      - detect-new-flaky-tests
       - docker-checks
       - general-unit-tests
       - history-tests
