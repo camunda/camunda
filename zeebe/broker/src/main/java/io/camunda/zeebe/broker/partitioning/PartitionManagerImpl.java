@@ -7,8 +7,6 @@
  */
 package io.camunda.zeebe.broker.partitioning;
 
-import static io.camunda.zeebe.broker.partitioning.RocksDbSharedCache.allocateSharedCache;
-
 import io.atomix.cluster.MemberId;
 import io.atomix.primitive.partition.PartitionId;
 import io.atomix.primitive.partition.PartitionMetadata;
@@ -69,6 +67,7 @@ public final class PartitionManagerImpl
   public static final String DEFAULT_GROUP_NAME = "default";
   private static final Logger LOGGER = LoggerFactory.getLogger(PartitionManagerImpl.class);
 
+  private final String partitionGroup;
   private final ConcurrencyControl concurrencyControl;
   private final BrokerHealthCheckService healthCheckService;
   private final ActorSchedulingService actorSchedulingService;
@@ -86,6 +85,7 @@ public final class PartitionManagerImpl
   private final SharedRocksDbResources sharedRocksDbResources;
 
   public PartitionManagerImpl(
+      final String partitionGroup,
       final ConcurrencyControl concurrencyControl,
       final ActorSchedulingService actorSchedulingService,
       final BrokerCfg brokerCfg,
@@ -103,9 +103,11 @@ public final class PartitionManagerImpl
       final ClusterConfigurationService clusterConfigurationService,
       final MeterRegistry meterRegistry,
       final BrokerClient brokerClient,
+      final SharedRocksDbResources sharedRocksDbResources,
       final SecurityConfiguration securityConfig,
       final SearchClientsProxy searchClientsProxy,
       final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
+    this.partitionGroup = partitionGroup;
     this.brokerCfg = brokerCfg;
     this.concurrencyControl = concurrencyControl;
     this.actorSchedulingService = actorSchedulingService;
@@ -121,7 +123,7 @@ public final class PartitionManagerImpl
 
     final List<PartitionListener> listeners = new ArrayList<>(partitionListeners);
     listeners.add(topologyManager);
-    sharedRocksDbResources = allocateSharedCache(brokerCfg, meterRegistry);
+    this.sharedRocksDbResources = sharedRocksDbResources;
 
     zeebePartitionFactory =
         new ZeebePartitionFactory(
@@ -147,18 +149,27 @@ public final class PartitionManagerImpl
     managementService =
         new DefaultPartitionManagementService(
             clusterServices.getMembershipService(), clusterServices.getCommunicationService());
-    raftPartitionFactory = new RaftPartitionFactory(brokerCfg);
+    raftPartitionFactory = new RaftPartitionFactory(partitionGroup, brokerCfg);
   }
 
   public void start() {
     actorSchedulingService.submitActor(topologyManager);
     final var localMemberId = managementService.getMembershipService().getLocalMember().id();
+    // The default physical tenant's partition distribution is the only one stored in dynamic
+    // config; other physical tenants derive their distribution by rewriting the group on every
+    // PartitionId.
+    final var groupDistribution =
+        clusterConfigurationService.getPartitionDistribution().withGroupName(partitionGroup);
     final var memberPartitions =
-        clusterConfigurationService.getPartitionDistribution().partitions().stream()
+        groupDistribution.partitions().stream()
             .filter(p -> p.members().contains(localMemberId))
             .toList();
 
-    healthCheckService.registerBootstrapPartitions(memberPartitions);
+    // BrokerHealthCheckService tracks a single set of bootstrap partitions. Only the default
+    // physical tenant participates in the broker health check for now; other tenants are invisible.
+    if (DEFAULT_GROUP_NAME.equals(partitionGroup)) {
+      healthCheckService.registerBootstrapPartitions(memberPartitions);
+    }
     for (final var partitionMetadata : memberPartitions) {
       final var initialPartitionConfig =
           clusterConfigurationService
@@ -288,7 +299,8 @@ public final class PartitionManagerImpl
             result.completeExceptionally(error);
           } else {
             partitions.clear();
-            sharedRocksDbResources.close();
+            // sharedRocksDbResources are owned by SharedRocksDbResourcesStep and must not be
+            // closed here — other physical tenants on this broker may still be using them.
             topologyManager.closeAsync().onComplete(result);
           }
         });
@@ -345,7 +357,7 @@ public final class PartitionManagerImpl
 
     final var partitionMetadata =
         new PartitionMetadata(
-            PartitionId.from(DEFAULT_GROUP_NAME, partitionId),
+            PartitionId.from(partitionGroup, partitionId),
             members,
             membersWithPriority,
             targetPriority,
@@ -397,7 +409,7 @@ public final class PartitionManagerImpl
 
     final var partitionMetadata =
         new PartitionMetadata(
-            PartitionId.from(DEFAULT_GROUP_NAME, partitionId),
+            PartitionId.from(partitionGroup, partitionId),
             members,
             Map.of(localMember, targetPriority),
             targetPriority,

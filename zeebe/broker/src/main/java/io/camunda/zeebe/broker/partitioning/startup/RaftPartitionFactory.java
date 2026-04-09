@@ -30,10 +30,16 @@ import org.slf4j.Logger;
 
 public final class RaftPartitionFactory {
   private static final Logger LOG = Loggers.SYSTEM_LOGGER;
+  private final String partitionGroup;
   private final BrokerCfg brokerCfg;
 
-  public RaftPartitionFactory(final BrokerCfg brokerCfg) {
+  public RaftPartitionFactory(final String partitionGroup, final BrokerCfg brokerCfg) {
+    this.partitionGroup = partitionGroup;
     this.brokerCfg = brokerCfg;
+  }
+
+  public String partitionGroup() {
+    return partitionGroup;
   }
 
   public RaftPartition createRaftPartition(
