@@ -69,10 +69,6 @@ public final class OAuthCredentialsProvider implements CredentialsProvider {
   private static final String HEADER_AUTH_KEY = "Authorization";
   private static final String JWT_ASSERTION_TYPE =
       "urn:ietf:params:oauth:client-assertion-type:jwt-bearer";
-  static final int MAX_TOKEN_FETCH_RETRIES = 4;
-  static final long INITIAL_BACKOFF_MS = 1_000L;
-  static final double BACKOFF_MULTIPLIER = 2.0;
-  static final long MAX_BACKOFF_MS = 30_000L;
 
   private static final ObjectMapper JSON_MAPPER =
       new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
@@ -94,6 +90,18 @@ public final class OAuthCredentialsProvider implements CredentialsProvider {
   private final Duration connectionTimeout;
   private final Duration readTimeout;
   private final Duration proactiveTokenRefreshThreshold;
+  private final int tokenFetchMaxRetries;
+  private final long tokenFetchInitialBackoffMs;
+  private final double tokenFetchBackoffMultiplier;
+
+  /**
+   * Latched when the token endpoint returns an HTTP response whose status code is not configured as
+   * retryable in {@code tokenFetchRetryableStatusCodes}. Once set, every subsequent token fetch
+   * fails immediately without contacting the OIDC provider, until this client instance is
+   * recreated.
+   */
+  private final AtomicReference<IOException> permanentFailure = new AtomicReference<>();
+
   // client assertion
   private final boolean clientAssertionEnabled;
   private final Path clientAssertionKeystorePath;
@@ -125,6 +133,9 @@ public final class OAuthCredentialsProvider implements CredentialsProvider {
     connectionTimeout = builder.getConnectTimeout();
     readTimeout = builder.getReadTimeout();
     proactiveTokenRefreshThreshold = builder.getProactiveTokenRefreshThreshold();
+    tokenFetchMaxRetries = builder.getTokenFetchMaxRetries();
+    tokenFetchInitialBackoffMs = builder.getTokenFetchInitialBackoff().toMillis();
+    tokenFetchBackoffMultiplier = builder.getTokenFetchBackoffMultiplier();
     clientAssertionEnabled = builder.clientAssertionEnabled();
     clientAssertionKeystorePath = builder.getClientAssertionKeystorePath();
     clientAssertionKeystorePassword = builder.getClientAssertionKeystorePassword();
@@ -169,6 +180,12 @@ public final class OAuthCredentialsProvider implements CredentialsProvider {
   @Override
   public boolean shouldRetryRequest(final StatusCode statusCode) {
     if (!statusCode.isUnauthorized()) {
+      return false;
+    }
+    // Short-circuit if the token endpoint has already permanently failed: no point in attempting
+    // another fetch, and skipping it preserves the "single ERROR at trip time" promise by avoiding
+    // log spam from this method's IOException catch on every subsequent rejected request.
+    if (permanentFailure.get() != null) {
       return false;
     }
 
@@ -260,19 +277,33 @@ public final class OAuthCredentialsProvider implements CredentialsProvider {
   }
 
   private CamundaClientCredentials fetchCredentials() throws IOException {
-    IOException lastException = null;
-    long backoffMs = INITIAL_BACKOFF_MS;
+    final IOException latched = permanentFailure.get();
+    if (latched != null) {
+      LOG.debug(
+          "Rejecting token fetch: OAuth credentials provider is permanently disabled", latched);
+      throw new IOException(
+          "OAuth credentials provider permanently disabled due to earlier non-retryable token "
+              + "endpoint response. Restart the client after fixing the OAuth configuration.",
+          latched);
+    }
 
-    for (int attempt = 1; attempt <= MAX_TOKEN_FETCH_RETRIES; attempt++) {
+    IOException lastException = null;
+    long backoffMs = tokenFetchInitialBackoffMs;
+
+    for (int attempt = 1; attempt <= tokenFetchMaxRetries; attempt++) {
       try {
         return doFetchCredentials();
+      } catch (final PermanentOAuthFailureException e) {
+        // already latched inside doFetchCredentials; surface the underlying IOException
+        throw (IOException) e.getCause();
       } catch (final IOException e) {
         lastException = e;
-        if (attempt < MAX_TOKEN_FETCH_RETRIES) {
+        if (attempt < tokenFetchMaxRetries) {
           LOG.warn(
-              "Token fetch failed (attempt {}/{}), retrying in {}ms: {}",
+              "Token fetch failed for clientId={} (attempt {}/{}), retrying in {}ms: {}",
+              clientId,
               attempt,
-              MAX_TOKEN_FETCH_RETRIES,
+              tokenFetchMaxRetries,
               backoffMs,
               e.getMessage());
           try {
@@ -281,14 +312,16 @@ public final class OAuthCredentialsProvider implements CredentialsProvider {
             Thread.currentThread().interrupt();
             throw new IOException("Interrupted while waiting to retry token fetch", ie);
           }
-          backoffMs = Math.min((long) (backoffMs * BACKOFF_MULTIPLIER), MAX_BACKOFF_MS);
+          backoffMs = (long) (backoffMs * tokenFetchBackoffMultiplier);
         }
       }
     }
 
-    throw new IOException(
-        "Failed to fetch credentials after " + MAX_TOKEN_FETCH_RETRIES + " attempts",
-        lastException);
+    LOG.warn(
+        "Token fetch failed for clientId={} after {} attempts; surfacing last error to caller.",
+        clientId,
+        tokenFetchMaxRetries);
+    throw lastException;
   }
 
   private CamundaClientCredentials doFetchCredentials() throws IOException {
@@ -308,11 +341,26 @@ public final class OAuthCredentialsProvider implements CredentialsProvider {
       os.write(input, 0, input.length);
     }
 
-    if (connection.getResponseCode() != 200) {
-      throw new IOException(
-          String.format(
-              "Failed while requesting access token with status code %d and message %s.",
-              connection.getResponseCode(), connection.getResponseMessage()));
+    final int statusCode = connection.getResponseCode();
+    if (statusCode != 200) {
+      final IOException error =
+          new IOException(
+              String.format(
+                  "Failed while requesting access token with status code %d and message %s.",
+                  statusCode, connection.getResponseMessage()));
+      if (isPermanentFailure(statusCode)) {
+        if (permanentFailure.compareAndSet(null, error)) {
+          LOG.error(
+              "OAuth credentials provider permanently disabled after non-retryable HTTP {} from "
+                  + "token endpoint {}. This client instance will reject all future token "
+                  + "requests until restarted. Verify clientId, clientSecret, audience, and token "
+                  + "URL configuration.",
+              statusCode,
+              authorizationServerUrl);
+        }
+        throw new PermanentOAuthFailureException(error);
+      }
+      throw error;
     }
 
     try (final InputStream in = connection.getInputStream();
@@ -325,6 +373,15 @@ public final class OAuthCredentialsProvider implements CredentialsProvider {
 
       return fetchedCredentials;
     }
+  }
+
+  /**
+   * Returns true if the given HTTP status code from the token endpoint indicates a permanent
+   * failure that will not recover by itself: any 4xx other than 404 (startup race) and 429 (rate
+   * limit). 5xx is treated as transient and retried.
+   */
+  private static boolean isPermanentFailure(final int statusCode) {
+    return statusCode >= 400 && statusCode < 500 && statusCode != 404 && statusCode != 429;
   }
 
   private void maybeConfigureCustomSSLContext(final HttpURLConnection connection) {
@@ -389,6 +446,17 @@ public final class OAuthCredentialsProvider implements CredentialsProvider {
       return Base64.getUrlEncoder().withoutPadding().encodeToString(encoded);
     } catch (final Exception e) {
       throw new RuntimeException("Failed to generate x5t thumbprint", e);
+    }
+  }
+
+  /**
+   * Internal marker thrown by {@link #doFetchCredentials()} when a non-retryable HTTP response is
+   * received, so the retry loop in {@link #fetchCredentials()} can distinguish it from a retryable
+   * IOException without re-inspecting the underlying cause. Never escapes this class.
+   */
+  private static final class PermanentOAuthFailureException extends IOException {
+    PermanentOAuthFailureException(final IOException cause) {
+      super(cause);
     }
   }
 }

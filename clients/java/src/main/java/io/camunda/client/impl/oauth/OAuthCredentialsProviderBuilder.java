@@ -34,6 +34,9 @@ import static io.camunda.client.impl.CamundaClientEnvironmentVariables.OAUTH_ENV
 import static io.camunda.client.impl.CamundaClientEnvironmentVariables.OAUTH_ENV_SSL_CLIENT_TRUSTSTORE_PATH;
 import static io.camunda.client.impl.CamundaClientEnvironmentVariables.OAUTH_ENV_SSL_CLIENT_TRUSTSTORE_SECRET;
 import static io.camunda.client.impl.CamundaClientEnvironmentVariables.OAUTH_ENV_TOKEN_AUDIENCE;
+import static io.camunda.client.impl.CamundaClientEnvironmentVariables.OAUTH_ENV_TOKEN_FETCH_BACKOFF_MULTIPLIER;
+import static io.camunda.client.impl.CamundaClientEnvironmentVariables.OAUTH_ENV_TOKEN_FETCH_INITIAL_BACKOFF;
+import static io.camunda.client.impl.CamundaClientEnvironmentVariables.OAUTH_ENV_TOKEN_FETCH_MAX_RETRIES;
 import static io.camunda.client.impl.CamundaClientEnvironmentVariables.OAUTH_ENV_TOKEN_RESOURCE;
 import static io.camunda.client.impl.CamundaClientEnvironmentVariables.OAUTH_ENV_TOKEN_SCOPE;
 import static io.camunda.client.impl.CamundaClientEnvironmentVariables.OAUTH_ENV_WELL_KNOWN_CONFIGURATION_URL;
@@ -75,6 +78,9 @@ public final class OAuthCredentialsProviderBuilder {
           .toAbsolutePath()
           .toString();
   public static final String DEFAULT_AUTHZ_SERVER = "https://login.cloud.camunda.io/oauth/token/";
+  public static final int DEFAULT_TOKEN_FETCH_MAX_RETRIES = 5;
+  public static final Duration DEFAULT_TOKEN_FETCH_INITIAL_BACKOFF = Duration.ofSeconds(1);
+  public static final double DEFAULT_TOKEN_FETCH_BACKOFF_MULTIPLIER = 2.0;
   private String clientId;
   private String clientSecret;
   private String audience;
@@ -94,6 +100,9 @@ public final class OAuthCredentialsProviderBuilder {
   private Duration connectTimeout;
   private Duration readTimeout;
   private Duration proactiveTokenRefreshThreshold;
+  private Integer tokenFetchMaxRetries;
+  private Duration tokenFetchInitialBackoff;
+  private Double tokenFetchBackoffMultiplier;
   private boolean applyEnvironmentOverrides = true;
   private Path clientAssertionKeystorePath;
   private String clientAssertionKeystorePassword;
@@ -362,6 +371,82 @@ public final class OAuthCredentialsProviderBuilder {
     return proactiveTokenRefreshThreshold;
   }
 
+  /**
+   * The maximum number of attempts (including the initial one) when fetching a token from the OAuth
+   * authorization server. Retries are only attempted on transient failures (HTTP 404, 429, 5xx, or
+   * IOException). The default value is {@value #DEFAULT_TOKEN_FETCH_MAX_RETRIES}.
+   */
+  public OAuthCredentialsProviderBuilder tokenFetchMaxRetries(final int tokenFetchMaxRetries) {
+    this.tokenFetchMaxRetries = tokenFetchMaxRetries;
+    return this;
+  }
+
+  private OAuthCredentialsProviderBuilder tokenFetchMaxRetries(final String tokenFetchMaxRetries) {
+    if (tokenFetchMaxRetries != null) {
+      return tokenFetchMaxRetries(Integer.parseInt(tokenFetchMaxRetries));
+    }
+    return this;
+  }
+
+  /**
+   * @see #tokenFetchMaxRetries(int)
+   */
+  public int getTokenFetchMaxRetries() {
+    return tokenFetchMaxRetries;
+  }
+
+  /**
+   * The initial backoff duration applied between token fetch retry attempts. Subsequent delays grow
+   * geometrically by {@link #tokenFetchBackoffMultiplier(double)}. The default value is 1 second.
+   */
+  public OAuthCredentialsProviderBuilder tokenFetchInitialBackoff(
+      final Duration tokenFetchInitialBackoff) {
+    this.tokenFetchInitialBackoff = tokenFetchInitialBackoff;
+    return this;
+  }
+
+  private OAuthCredentialsProviderBuilder tokenFetchInitialBackoff(
+      final String tokenFetchInitialBackoffMs) {
+    if (tokenFetchInitialBackoffMs != null) {
+      return tokenFetchInitialBackoff(
+          Duration.ofMillis(Long.parseLong(tokenFetchInitialBackoffMs)));
+    }
+    return this;
+  }
+
+  /**
+   * @see #tokenFetchInitialBackoff(Duration)
+   */
+  public Duration getTokenFetchInitialBackoff() {
+    return tokenFetchInitialBackoff;
+  }
+
+  /**
+   * The multiplier applied to the backoff duration between successive token fetch retry attempts.
+   * Must be greater than or equal to 1.0. The default value is {@value
+   * #DEFAULT_TOKEN_FETCH_BACKOFF_MULTIPLIER}.
+   */
+  public OAuthCredentialsProviderBuilder tokenFetchBackoffMultiplier(
+      final double tokenFetchBackoffMultiplier) {
+    this.tokenFetchBackoffMultiplier = tokenFetchBackoffMultiplier;
+    return this;
+  }
+
+  private OAuthCredentialsProviderBuilder tokenFetchBackoffMultiplier(
+      final String tokenFetchBackoffMultiplier) {
+    if (tokenFetchBackoffMultiplier != null) {
+      return tokenFetchBackoffMultiplier(Double.parseDouble(tokenFetchBackoffMultiplier));
+    }
+    return this;
+  }
+
+  /**
+   * @see #tokenFetchBackoffMultiplier(double)
+   */
+  public double getTokenFetchBackoffMultiplier() {
+    return tokenFetchBackoffMultiplier;
+  }
+
   public OAuthCredentialsProviderBuilder clientAssertionKeystorePath(
       final String clientAssertionKeystorePath) {
     if (clientAssertionKeystorePath != null) {
@@ -614,6 +699,11 @@ public final class OAuthCredentialsProviderBuilder {
         LegacyZeebeClientEnvironmentVariables.OAUTH_ENV_CONNECT_TIMEOUT);
     applyEnvironmentValueIfNotNull(
         this::proactiveTokenRefreshThreshold, OAUTH_ENV_PROACTIVE_TOKEN_REFRESH_THRESHOLD);
+    applyEnvironmentValueIfNotNull(this::tokenFetchMaxRetries, OAUTH_ENV_TOKEN_FETCH_MAX_RETRIES);
+    applyEnvironmentValueIfNotNull(
+        this::tokenFetchInitialBackoff, OAUTH_ENV_TOKEN_FETCH_INITIAL_BACKOFF);
+    applyEnvironmentValueIfNotNull(
+        this::tokenFetchBackoffMultiplier, OAUTH_ENV_TOKEN_FETCH_BACKOFF_MULTIPLIER);
   }
 
   private void applyDefaults() {
@@ -630,6 +720,15 @@ public final class OAuthCredentialsProviderBuilder {
     }
     if (proactiveTokenRefreshThreshold == null) {
       proactiveTokenRefreshThreshold = DEFAULT_PROACTIVE_TOKEN_REFRESH_THRESHOLD;
+    }
+    if (tokenFetchMaxRetries == null) {
+      tokenFetchMaxRetries = DEFAULT_TOKEN_FETCH_MAX_RETRIES;
+    }
+    if (tokenFetchInitialBackoff == null) {
+      tokenFetchInitialBackoff = DEFAULT_TOKEN_FETCH_INITIAL_BACKOFF;
+    }
+    if (tokenFetchBackoffMultiplier == null) {
+      tokenFetchBackoffMultiplier = DEFAULT_TOKEN_FETCH_BACKOFF_MULTIPLIER;
     }
     if (clientAssertionKeystoreKeyPassword == null) {
       clientAssertionKeystoreKeyPassword = clientAssertionKeystorePassword;
@@ -674,6 +773,7 @@ public final class OAuthCredentialsProviderBuilder {
       validateTimeout(connectTimeout, "ConnectTimeout");
       validateTimeout(readTimeout, "ReadTimeout");
       validateProactiveTokenRefreshThreshold(proactiveTokenRefreshThreshold);
+      validateTokenFetchRetryConfig();
     } catch (final NullPointerException
         | IOException
         | KeyStoreException
@@ -697,6 +797,27 @@ public final class OAuthCredentialsProviderBuilder {
                   + "grace period (%s ms); otherwise eager refresh would never fire before the "
                   + "token is considered invalid.",
               threshold.toMillis(), CamundaClientCredentials.EXPIRY_GRACE_PERIOD.toMillis()));
+    }
+  }
+
+  private void validateTokenFetchRetryConfig() {
+    if (tokenFetchMaxRetries < 1) {
+      throw new IllegalArgumentException(
+          String.format(
+              "tokenFetchMaxRetries is %d, expected a positive number greater than or equal to 1.",
+              tokenFetchMaxRetries));
+    }
+    if (tokenFetchInitialBackoff.toMillis() < 1) {
+      throw new IllegalArgumentException(
+          String.format(
+              "tokenFetchInitialBackoff is %s, expected a duration of at least 1 millisecond.",
+              tokenFetchInitialBackoff));
+    }
+    if (tokenFetchBackoffMultiplier < 1.0) {
+      throw new IllegalArgumentException(
+          String.format(
+              "tokenFetchBackoffMultiplier is %s, expected a value greater than or equal to 1.0.",
+              tokenFetchBackoffMultiplier));
     }
   }
 
