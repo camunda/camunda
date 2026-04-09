@@ -36,6 +36,7 @@ import io.grpc.StatusRuntimeException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.function.BiConsumer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -55,7 +56,7 @@ public class JobCallbackCommandWrapperTest {
   }
 
   @Test
-  void immediateSuccessCompletesWithCompleted() {
+  void shouldCompleteOnImmediateSuccess() {
     final CompletableFuture<Object> sendFuture = new CompletableFuture<>();
     when(command.send()).thenReturn(asCamundaFuture(sendFuture));
 
@@ -81,7 +82,7 @@ public class JobCallbackCommandWrapperTest {
   }
 
   @Test
-  void immediateNonRetriableFailureCompletesWithFailed() {
+  void shouldFailOnImmediateNonRetriableFailure() {
     final CompletableFuture<Object> sendFuture = new CompletableFuture<>();
     when(command.send()).thenReturn(asCamundaFuture(sendFuture));
 
@@ -226,16 +227,16 @@ public class JobCallbackCommandWrapperTest {
 
     final JobCallbackCommandExceptionHandlingStrategy strategy =
         mock(JobCallbackCommandExceptionHandlingStrategy.class);
-
+    final BiConsumer<MetricsRecorder, CounterMetricsContext> increaser = mock(BiConsumer.class);
     final JobCallbackCommandWrapper wrapper =
         new JobCallbackCommandWrapper(
-            command, Long.MAX_VALUE, strategy, metricsRecorder, metricsContext, 3);
+            command, Long.MAX_VALUE, strategy, metricsRecorder, metricsContext, 3, increaser);
 
     final CompletableFuture<CommandOutcome> result = wrapper.executeAsync();
 
     final Object response = new Object();
     sendFuture.complete(response);
-
+    verify(increaser, times(1)).accept(metricsRecorder, metricsContext);
     assertThat(result).isDone();
     assertThat(result.join()).isInstanceOf(CommandOutcome.Completed.class);
     assertThat(((CommandOutcome.Completed) result.join()).response()).isSameAs(response);
@@ -250,15 +251,15 @@ public class JobCallbackCommandWrapperTest {
         mock(JobCallbackCommandExceptionHandlingStrategy.class);
     final RuntimeException error = new RuntimeException("fail");
     when(strategy.handleCommandError(any(), any())).thenReturn(new CommandOutcome.Failed(error, 1));
-
+    final BiConsumer<MetricsRecorder, CounterMetricsContext> increaser = mock(BiConsumer.class);
     final JobCallbackCommandWrapper wrapper =
         new JobCallbackCommandWrapper(
-            command, Long.MAX_VALUE, strategy, metricsRecorder, metricsContext, 3);
+            command, Long.MAX_VALUE, strategy, metricsRecorder, metricsContext, 3, increaser);
 
     final CompletableFuture<CommandOutcome> result = wrapper.executeAsync();
 
     sendFuture.completeExceptionally(error);
-
+    verify(increaser, never()).accept(any(), any());
     assertThat(result).isDone();
     assertThat(result.join()).isInstanceOf(CommandOutcome.Failed.class);
     assertThat(((CommandOutcome.Failed) result.join()).cause()).isSameAs(error);
@@ -280,22 +281,7 @@ public class JobCallbackCommandWrapperTest {
   }
 
   @Test
-  void doubleExecuteWithMetricsThrowsIllegalStateException() {
-    when(command.send()).thenReturn(asCamundaFuture(new CompletableFuture<>()));
-
-    final JobCallbackCommandExceptionHandlingStrategy strategy =
-        mock(JobCallbackCommandExceptionHandlingStrategy.class);
-    final JobCallbackCommandWrapper wrapper =
-        new JobCallbackCommandWrapper(
-            command, Long.MAX_VALUE, strategy, metricsRecorder, metricsContext, 3);
-
-    wrapper.executeAsync();
-
-    assertThatThrownBy(wrapper::executeAsync).isInstanceOf(IllegalStateException.class);
-  }
-
-  @Test
-  void retryWithMetricsCallsIncreaserOnEventualSuccess() {
+  void retryCallsIncreaserOnEventualSuccess() {
     final CompletableFuture<Object> firstSend = new CompletableFuture<>();
     final CompletableFuture<Object> secondSend = new CompletableFuture<>();
     when(command.send())
@@ -306,16 +292,16 @@ public class JobCallbackCommandWrapperTest {
     final BackoffSupplier backoff = BackoffSupplier.newBackoffBuilder().build();
     final JobCallbackCommandExceptionHandlingStrategy strategy =
         new JobCallbackCommandExceptionHandlingStrategy(backoff, executor);
-
+    final BiConsumer<MetricsRecorder, CounterMetricsContext> increaser = mock(BiConsumer.class);
     final JobCallbackCommandWrapper wrapper =
         new JobCallbackCommandWrapper(
-            command, Long.MAX_VALUE, strategy, metricsRecorder, metricsContext, 3);
+            command, Long.MAX_VALUE, strategy, metricsRecorder, metricsContext, 3, increaser);
 
     final CompletableFuture<CommandOutcome> result = wrapper.executeAsync();
 
     // First attempt fails
     firstSend.completeExceptionally(new StatusRuntimeException(Status.UNAVAILABLE));
-
+    verify(increaser, never()).accept(any(), any());
     // Execute retry
     final ArgumentCaptor<Runnable> runnableCaptor = ArgumentCaptor.forClass(Runnable.class);
     verify(executor).schedule(runnableCaptor.capture(), anyLong(), any(TimeUnit.class));
@@ -326,6 +312,7 @@ public class JobCallbackCommandWrapperTest {
 
     assertThat(result).isDone();
     assertThat(result.join()).isInstanceOf(CommandOutcome.Completed.class);
+    verify(increaser, times(1)).accept(metricsRecorder, metricsContext);
   }
 
   @Test
