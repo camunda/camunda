@@ -147,8 +147,12 @@ These limitations motivate a unified identity plane with consistent semantics an
 
 The target architecture is based on the following assumptions:
 
-- In full mode, each Orchestration Cluster is associated with exactly one Hub organization/workspace for policy management; policies are always authored “above” the cluster in Hub and projected downward.
-  - The new identity library can somehow access the current list of OCs in Hub; this is among others needed for admin UI in Hub.
+- In SaaS, there is one shared Hub instance that serves multiple organizations.
+  - In the first iterations, identity and policy data in Hub are separated only logically, via organization-aware persistence and queries in shared Hub storage.
+- In full mode, each Orchestration Cluster is associated with exactly one Hub organization boundary for policy management; policies are always authored “above” the cluster in Hub and projected downward.
+  - In SaaS today, Hub itself does not own the current list of OCs. Hub must read cluster metadata from the Console backend for the Admin UI and for policy targeting.
+  - Discovering newly created OCs, and keeping the Hub-side view in sync, is still an open integration question in Self-Managed.
+    - In future Self-Managed full-mode deployments, Hub should be able to read OCs directly once the Console backend is embedded in Hub and the experimental discovery mode (`CAMUNDA_CONSOLE_EXPERIMENTAL_DISCOVERY_MODE=true`) is enabled.
 - In OC-only mode, the Orchestration Cluster is the local source of truth for policy; there is no Hub and therefore no cross-cluster policy coordination.
 - All engines within a given Orchestration Cluster share the same OC-level; engines never talk to IdPs directly and are not configured as OIDC/SAML clients.
   - There will be one client per IDP (could be multiple per engine); we rely on roles and claims to decide which Engines each user can access and what they can do there.
@@ -188,6 +192,7 @@ Technically, this is implemented as a pluggable identity/security library:
 Key design principles (selected):
 
 - One identity plane for Hub and OC, with Hub as policy SoT whenever present.
+- One Hub runtime in SaaS, serving many organizations, with organization-aware policy partitioning in shared Hub storage.
 - SaaS / self-managed parity: same concepts (tenants, mapping rules, fine‑grained permissions, BYO IdP) in both deployment models.
 - Hexagonal architecture: all persistence, messaging, OC command creation, and engine‑level wiring are behind interfaces; default implementations can be swapped or replaced entirely.
 - IdP-agnostic: only relies on OIDC and SAML standards, so any compliant IdP can integrate.
@@ -211,7 +216,7 @@ Short- to midterm target: Admins configure cluster policies (including engine- a
     - Cluster-wide permissions (for example cluster admins).
     - Tenant-scoped permissions (for example `retail` vs `wholesale`).
     - Engine-scoped or engine+tenant-scoped permissions where needed.
-  4. Hub Security Gateway Framework validates and persists the changes, producing a new `PolicyVersion` for the cluster.
+  4. Hub Security Gateway Framework validates and persists the changes in the selected organization scope, producing a new `PolicyVersion` for the target cluster.
   5. The outbox dispatcher propagates the updated policy to the target OC; OC Security Gateway Framework applies it and updates the engine-scoped projections.
   6. OC Admin UI (read-only in full mode) allows cluster operators to view the effective policies per engine and tenant, including the applied policy version.
 
@@ -260,7 +265,7 @@ Outcome: The OC acts as local SoT for identity and policy. Users and workers can
 
 #### 3.1.5 Configure identity for a new organization (full mode: Hub + OC, long-term target)
 
-Long-term target: Org-level IdP setup and cluster provisioning are performed centrally via Hub. Early iterations may still rely on lower-level configuration on individual components.
+Long-term target: Org-level IdP setup and cluster provisioning are performed centrally via Hub. Early iterations may still rely on lower-level configuration on individual components and, in SaaS, on cluster metadata coming from the Console backend.
 
 - Actor: Organization administrator (Hub)
 - Goal: Connect the organization’s IdP, provision an Orchestration Cluster, and define baseline access.
@@ -270,7 +275,9 @@ Long-term target: Org-level IdP setup and cluster provisioning are performed cen
   3. Org admin creates or imports tenants (for example `default`, `retail`, `wholesale`) in the Hub Admin UI.
   4. Org admin defines mapping rules (claims → roles/tenants) and assigns baseline roles and groups for key personas (for example Cluster Admins, Developers, Support).
   5. Org admin provisions (or selects) an Orchestration Cluster and associates it with the organization/tenants.
-  6. Hub Security Gateway Framework persists this configuration, produces a new `PolicyVersion`, and starts outbox-based propagation to the relevant OC(s).
+     - In SaaS today, this selection depends on cluster metadata read from the Console backend.
+     - In future Self-Managed full mode, the same lookup should be possible directly in Hub once the embedded Console backend is enabled with `CAMUNDA_CONSOLE_EXPERIMENTAL_DISCOVERY_MODE=true`.
+  6. Hub Security Gateway Framework persists this configuration in the organization-scoped Hub partition, produces a new `PolicyVersion`, and starts outbox-based propagation to the relevant OC(s).
 
 Outcome: The organization’s IdP is connected, tenants and roles exist, and cluster-local policy is projected to the associated OCs. Cluster admins and developers can authenticate via the Enterprise IdP and start using cluster UIs and APIs, with Hub acting as the central identity and policy entry point.
 
@@ -284,7 +291,7 @@ This section describes the unified identity system at a high level, showing how 
 
 In full mode, the platform runs with both Hub (management/control plane) and Orchestration Cluster (execution plane). Both use the same identity model and the same Security Gateway Framework.
 
-Configuration flows top-down: Hub is the central source of truth for all policy. Configuration is authored once in Hub and propagated via the outbox pattern to each OC, which then propagates scoped views to individual engines. The Admin UI in each OC runs in read-only mode, showing the local projection of Hub policy.
+Configuration flows top-down: Hub is the central source of truth for all policy. Configuration is authored once in Hub and propagated via the outbox pattern to each OC, which then propagates scoped views to individual engines. The Admin UI in each OC runs in read-only mode, showing the local projection of Hub policy. In SaaS, this full-mode topology is realized by one shared Hub instance serving multiple organizations; in Self-Managed, the same topology is expected once Hub can host the Console backend with experimental cluster discovery enabled.
 
 ```mermaid
 flowchart TB
@@ -480,9 +487,15 @@ Configuration propagation chain: OC → Engine.
 
 ### 5.2 Unified policy model
 
-The unified identity architecture is built around a single policy model that is shared between Hub Identity & Policy and OC Identity. Hub is the source of truth for this model per cluster; each OC hosts a cluster-local projection of the same concepts for enforcement.
+The unified identity architecture is built around a single policy model that is shared between Hub Identity & Policy and OC Identity. Hub is the source of truth for this model per cluster; in shared-Hub deployments, Hub stores it per organization and cluster. Each OC hosts a cluster-local projection of the same concepts for enforcement.
 
 At a high level, the shared policy model consists of:
+
+- **Organization**
+  - Hub-side partitioning boundary for identity and policy data.
+  - In SaaS, one Hub instance serves multiple organizations, so all Hub policy tables and queries must be organization-aware.
+  - In early iterations, this separation is logical only: shared Hub infrastructure and databases remain in place, but all policy state is keyed and filtered by organization.
+  - Each Orchestration Cluster belongs to exactly one organization boundary for policy propagation at a given time.
 
 - **Tenant**
   - Logical partition for data and access in a cluster (for example `default`, `retail`, `wholesale`, `customer-x`).
@@ -538,7 +551,7 @@ Both Hub and OC use exactly the same policy model, but with different responsibi
 - **Hub Identity & Policy**
   - Acts as **policy source of truth** for all clusters.
   - Authoring location for tenants, roles, groups, mapping rules, and authorizations.
-  - Stores `PolicyVersion` records per cluster and drives propagation via Outbox/`OutboxEvent`. See section `5.3`.
+  - Stores organization-scoped `PolicyVersion` records per cluster and drives propagation via Outbox/`OutboxEvent`. See section `5.3`.
 
 - **OC Identity**
   - Hosts a **cluster-local projection** of the same entities.
@@ -556,22 +569,23 @@ This unified model allows:
 
 The following table summarizes which information must be known to which component:
 
-| Information type                             | Hub (full mode)                                                | OC (full mode)                                                      | OC-only mode (OC)                        | Engine                                 |
-|---------------------------------------------|-----------------------------------------------------------------|---------------------------------------------------------------------|------------------------------------------|----------------------------------------|
-| IdP client credentials (client IDs/secrets) | Yes (managed centrally or per-tenant)                          | Yes (cluster-local credentials / secrets per OC / tenant / engine)  | Yes                                      | No                                     |
-| IdP connections per tenant (OIDC/SAML)      | Yes (for Hub apps)                                             | Yes (for cluster-side authn)                                        | Yes                                      | No (trusts OC)                         |
-| Tenant                                      | Yes (SoT)                                                      | Yes (projection per cluster)                                        | Yes (SoT)                                | Indirectly via OC commands             |
-| Mapping rules (claims → roles/tenants)      | Yes (SoT)                                                      | Yes (projection per cluster)                                        | Yes                                      | No                                     |
-| Roles and groups                            | Yes (SoT)                                                      | Yes (projection per cluster)                                        | Yes                                      | No (only resulting permissions)        |
-| Authorizations (role/group → resource perms)| Yes (SoT)                                                      | Yes (projection per cluster; engine-scoped and tenant-scoped views) | Yes                                      | Indirectly (via engine-local projections) |
-| Policy versions and outbox state            | Yes (`PolicyVersion`, `OutboxEvent`, `OcSyncState`)            | Yes (`last_applied_version` per cluster)                            | Yes (local policy versions only)         | No explicit versioning; consumes OC-level updates |
-| Session data                                | Yes (Hub sessions only)                                        | Yes (cluster sessions only)                                         | Yes                                      | No                                     |
+| Information type                             | Hub (full mode)                                                | OC (full mode)                                                      | OC-only mode (OC)                | Engine                                 |
+|---------------------------------------------|-----------------------------------------------------------------|---------------------------------------------------------------------|----------------------------------|----------------------------------------|
+| IdP client credentials (client IDs/secrets) | Yes (managed centrally or per-tenant)                          | Yes (cluster-local credentials / secrets per OC / tenant / engine)  | Yes                              | No                                     |
+| IdP connections per tenant (OIDC/SAML)      | Yes (for Hub apps)                                             | Yes (for cluster-side authn)                                        | Yes                              | No (trusts OC)                         |
+| Organization / cluster ownership metadata   | Yes (organization boundary + OC lookup, currently via Console backend in SaaS) | Yes (cluster-local identity context)                                | No                               | No                                     |
+| Tenant                                      | Yes (SoT)                                                      | Yes (projection per cluster)                                        | Yes (SoT)                        | Indirectly via OC commands             |
+| Mapping rules (claims → roles/tenants)      | Yes (SoT)                                                      | Yes (projection per cluster)                                        | Yes                              | No                                     |
+| Roles and groups                            | Yes (SoT)                                                      | Yes (projection per cluster)                                        | Yes                              | No (only resulting permissions)        |
+| Authorizations (role/group → resource perms)| Yes (SoT)                                                      | Yes (projection per cluster; engine-scoped and tenant-scoped views) | Yes                              | Indirectly (via engine-local projections) |
+| Policy versions and outbox state            | Yes (`PolicyVersion`, `OutboxEvent`, `OcSyncState`), scoped by organization + cluster in shared Hub deployments | Yes (`last_applied_version` per cluster)                            | Yes (local policy versions only) | No explicit versioning; consumes OC-level updates |
+| Session data                                | Yes (Hub sessions only)                                        | Yes (cluster sessions only)                                         | Yes                              | No                                     |
 
 Engines only need to know the effective permissions resulting from the policy model; they neither talk to IdPs nor store policy versions.
 
 ### 5.3 Outbox-based policy propagation (Hub → Orchestration Clusters)
 
-The Security Gateway Framework uses an outbox pattern to propagate policy changes from Hub (policy SoT) to each Orchestration Cluster in a reliable, observable, and idempotent way.
+The Security Gateway Framework uses an outbox pattern to propagate policy changes from Hub (policy SoT) to each Orchestration Cluster in a reliable, observable, and idempotent way. In shared-Hub deployments, this propagation is scoped by organization and cluster.
 
 **Snapshot vs. incremental diff:** Sending a full snapshot on every change would be unnecessarily expensive at scale. The propagation therefore follows a two-phase approach:
 
@@ -697,13 +711,13 @@ This pattern decouples policy authoring (Hub) from policy enforcement (OCs), ens
 
 At a high level, Hub persists policy propagation in three layers:
 
-- `PolicyVersion` is the cluster-scoped commit marker (`version_number`, `base_version`).
+- `PolicyVersion` is the organization + cluster-scoped commit marker in Hub (`version_number`, `base_version`).
 - `EntityRevision` stores immutable payload snapshots per changed entity (or tombstones for deletes) and is linked to the policy version where it was introduced.
 - `PolicyVersionChange` is the ordered index that links one `PolicyVersion` to the changed entity revisions in apply order.
 
 In practice, each policy update writes a new `PolicyVersion`, writes one or more `EntityRevision` rows for changed entities, and writes matching `PolicyVersionChange` rows. Each `EntityRevision.payload` contains only the single referenced entity JSON. `EntityRevision` is tied to policy in two ways: directly via `introduced_in_policy_version`, and indirectly via `PolicyVersionChange.entity_revision_id` + `PolicyVersionChange.policy_version_id`. From these helper tables, Hub can deterministically build either a full snapshot (latest revisions up to target version) or an incremental diff (ordered changes of target version).
 
-To keep snapshots and incremental updates consistent, `PolicyVersion` should be treated as a **cluster-scoped commit** over the unified policy model.
+To keep snapshots and incremental updates consistent, `PolicyVersion` should be treated as an **organization + cluster-scoped commit in Hub** over the unified policy model (and as cluster-scoped from the receiving OC's point of view).
 
 **How payload resources are calculated**
 
@@ -735,6 +749,7 @@ Minimal conceptual schema:
 
 ```text
 OcSyncState
+  organization_id    -- organization boundary in Hub
   oc_id              -- stable identifier of the target OC
   cluster_id
   last_acked_version -- last PolicyVersion successfully delivered and ACKed
@@ -742,6 +757,8 @@ OcSyncState
 
 OutboxEvent
   id
+  organization_id
+  oc_id              -- target OC for this delivery attempt
   policy_version_id
   event_type         -- POLICY_SNAPSHOT | POLICY_DIFF
   status             -- 'PENDING' | 'DELIVERED' | 'FAILED'
@@ -750,12 +767,14 @@ OutboxEvent
 
 PolicyVersion
   id
+  organization_id
   cluster_id
   version_number
   base_version
 
 EntityRevision
   id
+  organization_id
   entity_type
   entity_id
   introduced_in_policy_version
@@ -766,6 +785,7 @@ EntityRevision
 
 PolicyVersionChange
   policy_version_id
+  organization_id
   entity_type        -- TENANT | GROUP | ROLE | MAPPING_RULE | PRINCIPAL | AUTHORIZATION
   entity_id          -- stable logical ID
   operation          -- UPSERT | DELETE
@@ -776,16 +796,18 @@ PolicyVersionChange
 
 - `OutboxEvent`
   - One row per policy delivery attempt to a specific cluster.
+  - In shared-Hub deployments, includes the organization boundary and concrete target OC to make routing and operations explicit.
   - `event_type` distinguishes `POLICY_SNAPSHOT` (initial / re-sync) from `POLICY_DIFF` (incremental).
   - Drives asynchronous delivery and retry without coupling Hub writes to OC availability.
 - `OcSyncState`
   - One row per target OC.
+  - Scoped by organization in shared-Hub deployments.
   - Tracks `last_acked_version`: the last `PolicyVersion` successfully delivered and acknowledged.
   - Read by the Outbox Dispatcher to decide snapshot vs diff per OC.
   - `null` `last_acked_version` triggers a full `POLICY_SNAPSHOT` on next dispatch.
 - `PolicyVersion`
   - One row per cluster and version of the desired policy.
-  - Represents the canonical policy commit for a cluster.
+  - Represents the canonical policy commit for a cluster within one organization boundary.
 - `PolicyVersionChange`
   - Ordered list of changed entities for one `PolicyVersion`.
   - Contains `entity_type`, `entity_id`, `operation`, and scope (`scope_type`, `scope_id`).
@@ -799,7 +821,7 @@ PolicyVersionChange
     - Keep `EntityRevision.payload` as JSON for versioned transport, idempotent apply, and snapshot/diff reconstruction.
     - Do not require fully normalized historical tables per version.
 
-The full policy data model is described in [5.2 Unified policy model](#52-unified-policy-model). The tables above are the outbox-relevant persistence model in Hub.
+The full policy data model is described in [5.2 Unified policy model](#52-unified-policy-model). The tables above are the outbox-relevant persistence model in Hub. In SaaS, they live in a shared Hub database and are separated logically by `organization_id`.
 
 Version tracking is explicitly scoped to the Hub–OC relationship:
 
@@ -811,6 +833,8 @@ Version tracking is explicitly scoped to the Hub–OC relationship:
 erDiagram
   OutboxEvent {
     UUID id PK
+    STRING organization_id
+    STRING oc_id
     UUID policy_version_id FK
     STRING event_type
     STRING status
@@ -820,12 +844,14 @@ erDiagram
 
   PolicyVersion {
     UUID id PK
+    STRING organization_id
     STRING cluster_id
     INT version_number
     INT base_version
   }
 
   OcSyncState {
+    STRING organization_id
     STRING oc_id PK
     STRING cluster_id
     INT last_acked_version
@@ -834,6 +860,7 @@ erDiagram
 
   EntityRevision {
     UUID id PK
+    STRING organization_id
     STRING entity_type
     STRING entity_id
     UUID introduced_in_policy_version FK
@@ -846,6 +873,7 @@ erDiagram
   PolicyVersionChange {
     UUID id PK
     UUID policy_version_id FK
+    STRING organization_id
     INT sequence_no
     STRING entity_type
     STRING entity_id
@@ -894,47 +922,47 @@ The following simplified rows show selected database rows for the same entities 
 
 **OcSyncState**
 
-| oc_id | cluster_id | last_acked_version | last_sync_at |
-|---|---|---:|---|
-| `oc-a` | `oc-a` | 3 | `2025-01-03T10:00:00Z` |
+| organization_id | oc_id | cluster_id | last_acked_version | last_sync_at |
+|---|---|---|---:|---|
+| `org-acme` | `oc-a` | `oc-a` | 3 | `2025-01-03T10:00:00Z` |
 
 **OutboxEvent**
 
-| id | policy_version_id | event_type | status | attempts | next_attempt_at |
-|---|---|---|---|---:|---|
-| `evt-1` | `pv-1` | `POLICY_SNAPSHOT` | `DELIVERED` | 1 | `null` |
-| `evt-2` | `pv-2` | `POLICY_DIFF` | `DELIVERED` | 1 | `null` |
-| `evt-3` | `pv-3` | `POLICY_DIFF` | `DELIVERED` | 1 | `null` |
+| id | organization_id | oc_id | policy_version_id | event_type | status | attempts | next_attempt_at |
+|---|---|---|---|---|---|---:|---|
+| `evt-1` | `org-acme` | `oc-a` | `pv-1` | `POLICY_SNAPSHOT` | `DELIVERED` | 1 | `null` |
+| `evt-2` | `org-acme` | `oc-a` | `pv-2` | `POLICY_DIFF` | `DELIVERED` | 1 | `null` |
+| `evt-3` | `org-acme` | `oc-a` | `pv-3` | `POLICY_DIFF` | `DELIVERED` | 1 | `null` |
 
 **PolicyVersion**
 
-| id | cluster_id | version_number | base_version |
-|---|---|---:|---:|
-| `pv-1` | `oc-a` | 1 | `null` |
-| `pv-2` | `oc-a` | 2 | 1 |
-| `pv-3` | `oc-a` | 3 | 2 |
+| id | organization_id | cluster_id | version_number | base_version |
+|---|---|---|---:|---:|
+| `pv-1` | `org-acme` | `oc-a` | 1 | `null` |
+| `pv-2` | `org-acme` | `oc-a` | 2 | 1 |
+| `pv-3` | `org-acme` | `oc-a` | 3 | 2 |
 
 **EntityRevision**
 
-| id | entity_type | entity_id | introduced_in_policy_version | scope_type | scope_id | is_deleted | payload |
-|---|---|---|---|---|---|---|---|
-| `rev-tenant-default-v1` | `TENANT` | `default` | `pv-1` | `ALL` |  | `false` | `{"id":"default"}` |
-| `rev-role-admin-v1` | `ROLE` | `role-cluster-admin` | `pv-1` | `ALL` |  | `false` | `{"id":"role-cluster-admin","permissions":["MANAGE_CLUSTER_SETTINGS","MANAGE_USERS"]}` |
-| `rev-authz-cluster-admin-api-v1` | `AUTHORIZATION` | `authz-cluster-admin-api` | `pv-1` | `ALL` |  | `false` | `{"id":"authz-cluster-admin-api","ownerType":"ROLE","ownerId":"role-cluster-admin","resourceType":"CLUSTER_API","resourceId":"*","permissions":["MANAGE_CLUSTER_SETTINGS","MANAGE_USERS"]}` |
-| `rev-role-support-agent-v2` | `ROLE` | `role-support-agent` | `pv-2` | `ALL` |  | `false` | `{"id":"role-support-agent","permissions":["READ_PROCESS_INSTANCE","READ_TASK","UPDATE_TASK"]}` |
-| `rev-authz-support-task-v2` | `AUTHORIZATION` | `authz-support-task` | `pv-2` | `ALL` |  | `false` | `{"id":"authz-support-task","ownerType":"ROLE","ownerId":"role-support-agent","resourceType":"USER_TASK","resourceId":"*","permissions":["READ_TASK","UPDATE_TASK"]}` |
-| `rev-authz-engine2-support-v3` | `AUTHORIZATION` | `authz-engine2-support` | `pv-3` | `ENGINE` | `engine-2` | `false` | `{"id":"authz-engine2-support","ownerType":"ROLE","ownerId":"role-support-agent","resourceType":"PROCESS_INSTANCE","resourceId":"*","permissions":["READ_PROCESS_INSTANCE"]}` |
+| id | organization_id | entity_type | entity_id | introduced_in_policy_version | scope_type | scope_id | is_deleted | payload |
+|---|---|---|---|---|---|---|---|---|
+| `rev-tenant-default-v1` | `org-acme` | `TENANT` | `default` | `pv-1` | `ALL` |  | `false` | `{"id":"default"}` |
+| `rev-role-admin-v1` | `org-acme` | `ROLE` | `role-cluster-admin` | `pv-1` | `ALL` |  | `false` | `{"id":"role-cluster-admin","permissions":["MANAGE_CLUSTER_SETTINGS","MANAGE_USERS"]}` |
+| `rev-authz-cluster-admin-api-v1` | `org-acme` | `AUTHORIZATION` | `authz-cluster-admin-api` | `pv-1` | `ALL` |  | `false` | `{"id":"authz-cluster-admin-api","ownerType":"ROLE","ownerId":"role-cluster-admin","resourceType":"CLUSTER_API","resourceId":"*","permissions":["MANAGE_CLUSTER_SETTINGS","MANAGE_USERS"]}` |
+| `rev-role-support-agent-v2` | `org-acme` | `ROLE` | `role-support-agent` | `pv-2` | `ALL` |  | `false` | `{"id":"role-support-agent","permissions":["READ_PROCESS_INSTANCE","READ_TASK","UPDATE_TASK"]}` |
+| `rev-authz-support-task-v2` | `org-acme` | `AUTHORIZATION` | `authz-support-task` | `pv-2` | `ALL` |  | `false` | `{"id":"authz-support-task","ownerType":"ROLE","ownerId":"role-support-agent","resourceType":"USER_TASK","resourceId":"*","permissions":["READ_TASK","UPDATE_TASK"]}` |
+| `rev-authz-engine2-support-v3` | `org-acme` | `AUTHORIZATION` | `authz-engine2-support` | `pv-3` | `ENGINE` | `engine-2` | `false` | `{"id":"authz-engine2-support","ownerType":"ROLE","ownerId":"role-support-agent","resourceType":"PROCESS_INSTANCE","resourceId":"*","permissions":["READ_PROCESS_INSTANCE"]}` |
 
 **PolicyVersionChange**
 
-| id | policy_version_id | sequence_no | entity_type | entity_id | operation | scope_type | scope_id | entity_revision_id |
-|---|---|---:|---|---|---|---|---|---|
-| `chg-1` | `pv-1` | 1 | `TENANT` | `default` | `UPSERT` | `ALL` |  | `rev-tenant-default-v1` |
-| `chg-2` | `pv-1` | 2 | `ROLE` | `role-cluster-admin` | `UPSERT` | `ALL` |  | `rev-role-admin-v1` |
-| `chg-3` | `pv-1` | 3 | `AUTHORIZATION` | `authz-cluster-admin-api` | `UPSERT` | `ALL` |  | `rev-authz-cluster-admin-api-v1` |
-| `chg-4` | `pv-2` | 1 | `ROLE` | `role-support-agent` | `UPSERT` | `ALL` |  | `rev-role-support-agent-v2` |
-| `chg-5` | `pv-2` | 2 | `AUTHORIZATION` | `authz-support-task` | `UPSERT` | `ALL` |  | `rev-authz-support-task-v2` |
-| `chg-6` | `pv-3` | 1 | `AUTHORIZATION` | `authz-engine2-support` | `UPSERT` | `ENGINE` | `engine-2` | `rev-authz-engine2-support-v3` |
+| id | organization_id | policy_version_id | sequence_no | entity_type | entity_id | operation | scope_type | scope_id | entity_revision_id |
+|---|---|---|---:|---|---|---|---|---|---|
+| `chg-1` | `org-acme` | `pv-1` | 1 | `TENANT` | `default` | `UPSERT` | `ALL` |  | `rev-tenant-default-v1` |
+| `chg-2` | `org-acme` | `pv-1` | 2 | `ROLE` | `role-cluster-admin` | `UPSERT` | `ALL` |  | `rev-role-admin-v1` |
+| `chg-3` | `org-acme` | `pv-1` | 3 | `AUTHORIZATION` | `authz-cluster-admin-api` | `UPSERT` | `ALL` |  | `rev-authz-cluster-admin-api-v1` |
+| `chg-4` | `org-acme` | `pv-2` | 1 | `ROLE` | `role-support-agent` | `UPSERT` | `ALL` |  | `rev-role-support-agent-v2` |
+| `chg-5` | `org-acme` | `pv-2` | 2 | `AUTHORIZATION` | `authz-support-task` | `UPSERT` | `ALL` |  | `rev-authz-support-task-v2` |
+| `chg-6` | `org-acme` | `pv-3` | 1 | `AUTHORIZATION` | `authz-engine2-support` | `UPSERT` | `ENGINE` | `engine-2` | `rev-authz-engine2-support-v3` |
 
 ### 5.3.7 Example policy versions (initial + 2 updates)
 
@@ -944,6 +972,7 @@ The following examples show one initial policy and two incremental updates for t
 
 ```json
 {
+  "organizationId": "org-acme",
   "clusterId": "oc-a",
   "policyVersion": 1,
   "kind": "POLICY_SNAPSHOT",
@@ -972,6 +1001,7 @@ Change: add support role and support task authorization.
 
 ```json
 {
+  "organizationId": "org-acme",
   "clusterId": "oc-a",
   "policyVersion": 2,
   "baseVersion": 1,
@@ -1015,6 +1045,7 @@ Change: add one engine-scoped authorization for support role on `engine-2`.
 
 ```json
 {
+  "organizationId": "org-acme",
   "clusterId": "oc-a",
   "policyVersion": 3,
   "baseVersion": 2,
@@ -1335,7 +1366,8 @@ This section illustrates selected runtime flows as concrete user journeys, focus
 2. Hub Security Gateway Framework authenticates the user against the configured IdP for the Hub organization and derives roles/tenants via mapping rules.
 3. Admin creates or updates tenants, roles, mapping rules, and authorizations for a specific Orchestration Cluster in the Admin UI.
 4. Hub Security Gateway Framework:
-  - Validates and persists the changes in the Hub DB.
+  - Resolves the organization and target cluster context (with cluster metadata currently coming from the Console backend in SaaS).
+  - Validates and persists the changes in the Hub DB under that organization scope.
   - Writes a new `PolicyVersion` and associated `EntityRevision` and `PolicyVersionChange` rows.
   - Writes one or more `OutboxEvent`s in status `PENDING` for the affected OCs.
 5. Outbox Dispatcher picks up the new events:
@@ -1505,6 +1537,7 @@ An advanced Self-Managed topology where the customer also operates Hub. Hub beco
 
 - Hub and all OC instances are deployed and operated by the customer on their own infrastructure.
 - The Enterprise IdP is integrated at both Hub (management plane auth) and OC (execution plane auth) levels.
+- Cluster discovery in Hub becomes feasible once the Console backend is hosted in Hub and the experimental discovery mode (`CAMUNDA_CONSOLE_EXPERIMENTAL_DISCOVERY_MODE=true`) is enabled.
 - Policy flows top-down: Hub → OC → Engine, same as in SaaS, but without a Camunda-operated broker.
 - Suitable for large-scale or multi-cluster Self-Managed environments requiring centralized policy governance.
 
@@ -1554,7 +1587,50 @@ flowchart TB
 
 ### 7.2 SaaS deployment
 
-?
+In SaaS, Camunda operates one shared Hub instance for many customer organizations. The unified identity library therefore has to support multi-organization policy authoring and propagation inside a single Hub runtime.
+
+- One shared Hub instance serves multiple organizations; policy and identity data in Hub must therefore be partitioned by organization.
+- In the first iterations, this partitioning is logical only: shared Hub databases and infrastructure are reused, while policy tables and queries are keyed by `organization_id`.
+- Each OC remains associated with exactly one organization boundary for policy propagation.
+- Today, Hub does not own orchestration-cluster metadata directly in SaaS. To show/select OCs and target policy rollout, Hub must query the Console backend.
+- Discovering newly created OCs, and deciding how Hub learns about them without drifting from Console, remains an open question.
+- During migration, SaaS may still keep Auth0 or another broker as an internal implementation detail; this does not change the target policy model.
+
+```mermaid
+---
+title: SaaS Deployment – Shared Hub across organizations
+---
+flowchart TB
+  subgraph Camunda["Camunda-managed infrastructure"]
+    subgraph SharedMgmt["Shared management plane"]
+      Console["Console"]
+      WebModeler["Web Modeler"]
+      AdminHub["Admin UI (read/write)"]
+      ConsoleBackend["Console backend / cluster registry"]
+
+      subgraph Hub["Shared Hub"]
+        SecGatHub["Security Gateway Framework"]
+      end
+
+      Console & WebModeler & AdminHub --> Hub
+      Hub --> ConsoleBackend
+    end
+
+    subgraph OrgA["Organization A"]
+      OCA["Orchestration Cluster A"]
+    end
+
+    subgraph OrgB["Organization B"]
+      OCB["Orchestration Cluster B"]
+    end
+
+    Hub --> OCA
+    Hub --> OCB
+  end
+
+  EnterpriseIdP[["Enterprise IdPs / brokers</br>(customer-managed or SaaS-managed during migration)"]]
+  Hub & OCA & OCB --> EnterpriseIdP
+```
 
 ---
 
@@ -1584,7 +1660,7 @@ This unified architecture builds on existing identity arc42 docs and ADRs for OC
 - If the endpoints to apply policy changes are public, Hub will not be aware of what a customer applies to OC and will run out of sync.
 - Which data should be persisted directly by security gateway (like sessions) and which should go via engine / exporter? (We will need policy metadata, but this is not of interest for the engine so will not be part of any record through the engine)
 - How can we apply a snapshot multiple times? How could we reset the projections in primary and secondary storage?
--
+- How Hub should discover newly created OCs in SaaS while the authoritative cluster list still lives in the Console backend, and how that evolves once Console is embedded in Hub for Self-Managed with `CAMUNDA_CONSOLE_EXPERIMENTAL_DISCOVERY_MODE=true`.
 
 ### 9.2 Detailed ADRs
 

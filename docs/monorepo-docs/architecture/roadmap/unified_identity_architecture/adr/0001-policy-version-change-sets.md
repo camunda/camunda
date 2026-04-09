@@ -11,12 +11,13 @@ Proposed
 ## Context
 
 - Hub propagates policy updates to 1-N existing Orchestration Clusters.
+- In SaaS, one shared Hub instance serves multiple organizations, so Hub-side policy persistence must be scoped by organization as well as cluster.
 - The primary requirement is current-state correctness, not historical reconstruction.
 - New OC joins are expected to be rare and only require the current state.
 
 ## Decision (Option 1)
 
-- Use `PolicyVersion` as a delivery-neutral cluster-scoped commit (`version_number`, `base_version`).
+- Use `PolicyVersion` as a delivery-neutral organization + cluster-scoped commit in Hub (`version_number`, `base_version`).
 - Store snapshot vs diff only on `OutboxEvent.event_type`.
 - Keep stable entity IDs.
 - Persist full-entity revisions (`EntityRevision`) for each change (including tombstones for deletes).
