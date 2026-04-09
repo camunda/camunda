@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="generator" content="Docusaurus v3.9.2">
 <title data-rh="true">ADR-0001: Link PolicyVersion with policy data via versioned change sets | Camunda Platform</title><meta data-rh="true" name="viewport" content="width=device-width,initial-scale=1"><meta data-rh="true" name="twitter:card" content="summary_large_image"><meta data-rh="true" property="og:url" content="https://camunda.github.io/camunda/pr-preview/pr-49865/architecture/roadmap/unified_identity_architecture/adr/policy-version-change-sets/"><meta data-rh="true" property="og:locale" content="en"><meta data-rh="true" name="docusaurus_locale" content="en"><meta data-rh="true" name="docsearch:language" content="en"><meta data-rh="true" name="docusaurus_version" content="current"><meta data-rh="true" name="docusaurus_tag" content="docs-default-current"><meta data-rh="true" name="docsearch:version" content="current"><meta data-rh="true" name="docsearch:docusaurus_tag" content="docs-default-current"><meta data-rh="true" property="og:title" content="ADR-0001: Link PolicyVersion with policy data via versioned change sets | Camunda Platform"><meta data-rh="true" name="description" content="Status"><meta data-rh="true" property="og:description" content="Status"><link data-rh="true" rel="icon" href="/camunda/pr-preview/pr-49865/img/black-C.png"><link data-rh="true" rel="canonical" href="https://camunda.github.io/camunda/pr-preview/pr-49865/architecture/roadmap/unified_identity_architecture/adr/policy-version-change-sets/"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/pr-preview/pr-49865/architecture/roadmap/unified_identity_architecture/adr/policy-version-change-sets/" hreflang="en"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/pr-preview/pr-49865/architecture/roadmap/unified_identity_architecture/adr/policy-version-change-sets/" hreflang="x-default"><script data-rh="true" type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"ADR-0001: Link PolicyVersion with policy data via versioned change sets","item":"https://camunda.github.io/camunda/pr-preview/pr-49865/architecture/roadmap/unified_identity_architecture/adr/policy-version-change-sets"}]}</script><link rel="stylesheet" href="/camunda/pr-preview/pr-49865/assets/css/styles.9181a4df.css">
-<script src="/camunda/pr-preview/pr-49865/assets/js/runtime~main.cd6fc797.js" defer="defer"></script>
-<script src="/camunda/pr-preview/pr-49865/assets/js/main.7518fec1.js" defer="defer"></script>
+<script src="/camunda/pr-preview/pr-49865/assets/js/runtime~main.b091e614.js" defer="defer"></script>
+<script src="/camunda/pr-preview/pr-49865/assets/js/main.03fb8a4c.js" defer="defer"></script>
 </head>
 <body class="navigation-with-keyboard">
 <svg style="display: none;"><defs>
@@ -17,12 +17,13 @@
 <h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="context">Context<a href="#context" class="hash-link" aria-label="Direct link to Context" title="Direct link to Context" translate="no">​</a></h2>
 <ul>
 <li class="">Hub propagates policy updates to 1-N existing Orchestration Clusters.</li>
+<li class="">In SaaS, one shared Hub instance serves multiple organizations, so Hub-side policy persistence must be scoped by organization as well as cluster.</li>
 <li class="">The primary requirement is current-state correctness, not historical reconstruction.</li>
 <li class="">New OC joins are expected to be rare and only require the current state.</li>
 </ul>
 <h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="decision-option-1">Decision (Option 1)<a href="#decision-option-1" class="hash-link" aria-label="Direct link to Decision (Option 1)" title="Direct link to Decision (Option 1)" translate="no">​</a></h2>
 <ul>
-<li class="">Use <code>PolicyVersion</code> as a delivery-neutral cluster-scoped commit (<code>version_number</code>, <code>base_version</code>).</li>
+<li class="">Use <code>PolicyVersion</code> as a delivery-neutral organization + cluster-scoped commit in Hub (<code>version_number</code>, <code>base_version</code>).</li>
 <li class="">Store snapshot vs diff only on <code>OutboxEvent.event_type</code>.</li>
 <li class="">Keep stable entity IDs.</li>
 <li class="">Persist full-entity revisions (<code>EntityRevision</code>) for each change (including tombstones for deletes).</li>
