@@ -213,7 +213,7 @@ public class JobHandlerInvokingBeansTest {
   }
 
   private static ScheduledExecutorService scheduledExecutorService() {
-    return CamundaClientExecutorService.createDefault().getScheduledExecutor();
+    return mock(ScheduledExecutorService.class);
   }
 
   private static MetricsRecorder metricsRecorder() {
