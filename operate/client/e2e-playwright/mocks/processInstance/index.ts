@@ -18,6 +18,8 @@ import type {
   QueryAuditLogsResponseBody,
 } from '@camunda/camunda-api-zod-schemas/8.10';
 
+const VARIABLE_BY_KEY_PATTERN = /\/v2\/variables\/[^/?]+$/;
+
 type InstanceMock = {
   xml: string;
   detail: ProcessInstance;
@@ -145,7 +147,7 @@ function mockResponses({
 
     if (
       route.request().method() === 'GET' &&
-      route.request().url().match(/\/v2\/variables\/[^/?]+$/)
+      route.request().url().match(VARIABLE_BY_KEY_PATTERN)
     ) {
       return route.fulfill({
         status: variable === undefined ? 400 : 200,
