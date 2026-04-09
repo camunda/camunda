@@ -18,6 +18,7 @@ package io.camunda.client.jobhandling;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -155,7 +156,7 @@ public class JobCallbackCommandWrapperTest {
 
     // Capture and execute the scheduled retry
     final ArgumentCaptor<Runnable> runnableCaptor = ArgumentCaptor.forClass(Runnable.class);
-    verify(executor).schedule(runnableCaptor.capture(), any(Long.class), any(TimeUnit.class));
+    verify(executor).schedule(runnableCaptor.capture(), anyLong(), any(TimeUnit.class));
     runnableCaptor.getValue().run();
 
     // Second send succeeds
@@ -193,7 +194,7 @@ public class JobCallbackCommandWrapperTest {
     assertThat(result).isDone();
     final CommandOutcome outcome = result.join();
     assertThat(outcome).isInstanceOf(CommandOutcome.Failed.class);
-    verify(executor, never()).schedule(any(Runnable.class), any(Long.class), any(TimeUnit.class));
+    verify(executor, never()).schedule(any(Runnable.class), anyLong(), any(TimeUnit.class));
   }
 
   @Test
@@ -215,7 +216,7 @@ public class JobCallbackCommandWrapperTest {
 
     assertThat(result).isDone();
     assertThat(result.join()).isInstanceOf(CommandOutcome.Failed.class);
-    verify(executor, never()).schedule(any(Runnable.class), any(Long.class), any(TimeUnit.class));
+    verify(executor, never()).schedule(any(Runnable.class), anyLong(), any(TimeUnit.class));
   }
 
   @Test
@@ -317,7 +318,7 @@ public class JobCallbackCommandWrapperTest {
 
     // Execute retry
     final ArgumentCaptor<Runnable> runnableCaptor = ArgumentCaptor.forClass(Runnable.class);
-    verify(executor).schedule(runnableCaptor.capture(), any(Long.class), any(TimeUnit.class));
+    verify(executor).schedule(runnableCaptor.capture(), anyLong(), any(TimeUnit.class));
     runnableCaptor.getValue().run();
 
     // Second attempt succeeds
