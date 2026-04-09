@@ -420,6 +420,49 @@ final class CamundaExporterTest {
     }
 
     @Test
+    void shouldFlushWhenClockIsPinnedBetweenLastFlushAndNextExpectedFlush() {
+      // Regression test for https://github.com/camunda/camunda/issues/49858:
+      // When the clock is pinned to a value between lastFlushTimestamp and
+      // lastFlushTimestamp + flushDelayMs (i.e. now > lastFlushTimestamp but
+      // now - lastFlushTimestamp < flushDelayMs), pending records must eventually
+      // be flushed by the periodic flush task.
+
+      // given — large bulk size so export() never triggers a size-based flush
+      final var clock = new MutableClock(1000);
+      testContext.setClock(clock);
+      configuration.getBulk().setSize(100);
+      configuration.getBulk().setDelay(1); // 1 second
+      exporter =
+          new CamundaExporter(
+              resourceProvider, new ExporterMetadata(TestObjectMapper.objectMapper()));
+      exporter.configure(testContext);
+      exporter.open(testController); // lastFlushTimestamp = 1000ms
+
+      // export a record; no size-based flush because bulk size = 100
+      final var record =
+          protocolFactory.generateRecord(ValueType.VARIABLE, b -> b.withPosition(1L));
+      exporter.export(record);
+
+      // advance clock slightly then pin it (200ms < flushDelayMs = 1000ms)
+      clock.advance(200); // now = 1200ms: now > lastFlushTimestamp but not by flushDelayMs
+
+      // first scheduled callback fires — guard does not trigger yet (clock not yet detected as
+      // pinned)
+      testController.runScheduledTasks(Duration.ofSeconds(2));
+      assertThat(testController.getPosition())
+          .as("Record should not have been flushed on the first call (clock not yet detected pinned)")
+          .isEqualTo(-1L);
+
+      // second callback fires with clock still pinned at 1200ms — now detected as pinned, flush
+      testController.runScheduledTasks(Duration.ofSeconds(1));
+
+      // then — the record must have been flushed and position updated
+      assertThat(testController.getPosition())
+          .as("Record must be flushed when the clock is pinned between lastFlush and nextFlush")
+          .isEqualTo(record.getPosition());
+    }
+
+    @Test
     void shouldCapRescheduleDelayWhenClockIsPinnedToPast() {
       // Regression test for https://github.com/camunda/camunda/issues/49858:
       // When the clock is pinned to a time in the past, the rescheduled flush delay

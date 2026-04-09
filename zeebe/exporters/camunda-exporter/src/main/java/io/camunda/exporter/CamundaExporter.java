@@ -91,6 +91,11 @@ public class CamundaExporter implements Exporter {
   private Context context;
   private long lastFlushTimestamp = 0L;
 
+  // Tracks the clock value at the time scheduleDelayedFlush was last called.
+  // Used in flushAndReschedule to detect when the clock is pinned and not advancing,
+  // so we can bypass the time-based flush guard and flush unconditionally.
+  private long lastScheduledFromTimestamp = 0L;
+
   private long flushDelayMs;
 
   public CamundaExporter() {
@@ -324,17 +329,24 @@ public class CamundaExporter implements Exporter {
       nextDelayMs = Math.min(flushDelayMs, Math.max(0, flushDelayMs - (now - lastFlushTimestamp)));
     }
 
+    lastScheduledFromTimestamp = now;
     controller.scheduleCancellableTask(Duration.ofMillis(nextDelayMs), this::flushAndReschedule);
   }
 
   private void flushAndReschedule() {
     final var now = context.clock().millis();
     try {
-      // Flush when enough clock-time has elapsed since the last flush. When the clock is pinned or
-      // moved to a time in the past (now <= lastFlushTimestamp), bypass the time-based guard and
-      // flush regardless, because the actor-clock-based timer has already waited for flushDelayMs
-      // in wall-clock time. This restores pre-#48251 behavior when the clock is pinned.
-      if (now - lastFlushTimestamp >= flushDelayMs || now <= lastFlushTimestamp) {
+      // Flush when enough clock-time has elapsed since the last flush.
+      // When the clock is pinned or moved (not advancing normally), bypass the guard because the
+      // actor-clock-based timer has already waited flushDelayMs in real wall-clock time:
+      //   - now <= lastFlushTimestamp: clock moved to before the last flush (e.g. pinned in past)
+      //   - now <= lastScheduledFromTimestamp: clock hasn't advanced past the point where we last
+      //     scheduled; this catches the case where the clock is pinned between lastFlushTimestamp
+      //     and lastFlushTimestamp + flushDelayMs, where neither the elapsed-time guard nor the
+      //     backward-clock guard would fire.
+      if (now - lastFlushTimestamp >= flushDelayMs
+          || now <= lastFlushTimestamp
+          || now <= lastScheduledFromTimestamp) {
         flush();
       }
     } catch (final Exception e) {
