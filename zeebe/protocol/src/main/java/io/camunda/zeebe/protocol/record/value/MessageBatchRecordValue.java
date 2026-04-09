@@ -17,20 +17,13 @@ package io.camunda.zeebe.protocol.record.value;
 
 import io.camunda.zeebe.protocol.record.ImmutableProtocol;
 import io.camunda.zeebe.protocol.record.RecordValue;
-import java.util.List;
 import org.immutables.value.Value;
 
 /**
- * Represents a message event or command.
+ * Represents a message batch event or command.
  *
  * <p>See {@link io.camunda.zeebe.protocol.record.intent.MessageBatchIntent} for intents.
  */
 @Value.Immutable
 @ImmutableProtocol(builder = ImmutableMessageBatchRecordValue.Builder.class)
-public interface MessageBatchRecordValue extends RecordValue {
-
-  /**
-   * @return list of the keys from the messages assigned to this batch
-   */
-  List<Long> getMessageKeys();
-}
+public interface MessageBatchRecordValue extends RecordValue {}

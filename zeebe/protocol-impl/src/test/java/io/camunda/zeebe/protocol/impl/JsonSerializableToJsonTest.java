@@ -989,37 +989,9 @@ final class JsonSerializableToJsonTest {
       /////////////////////////////////////////////////////////////////////////////////////////////
       {
         "MessageBatchRecord",
-        (Supplier<UnifiedRecordValue>)
-            () -> {
-              final List<Long> messageKeys = List.of(123L, 456L);
-
-              return new MessageBatchRecord()
-                  .addMessageKey(messageKeys.get(0))
-                  .addMessageKey(messageKeys.get(1));
-            },
+        (Supplier<UnifiedRecordValue>) MessageBatchRecord::new,
         """
-        {
-          "messageKeys": [
-            123,
-            456
-          ]
-        }
-        """
-      },
-      /////////////////////////////////////////////////////////////////////////////////////////////
-      ///////////////////////////////// Empty MessageBatchRecord
-      // ///////////////////////////////////////
-      /////////////////////////////////////////////////////////////////////////////////////////////
-      {
-        "Empty MessageBatchRecord",
-        (Supplier<UnifiedRecordValue>)
-            () -> {
-              return new MessageBatchRecord();
-            },
-        """
-        {
-          "messageKeys": []
-        }
+        {}
         """
       },
 
