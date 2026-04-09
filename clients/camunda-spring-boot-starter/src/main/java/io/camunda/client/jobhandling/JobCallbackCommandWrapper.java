@@ -32,7 +32,7 @@ import org.slf4j.LoggerFactory;
 
 public class JobCallbackCommandWrapper {
   private static final Logger LOG = LoggerFactory.getLogger(JobCallbackCommandWrapper.class);
-  final BiConsumer<MetricsRecorder, CounterMetricsContext> increaser;
+  private final BiConsumer<MetricsRecorder, CounterMetricsContext> increaser;
   private final JobCallbackFinalCommandStep<?> command;
   private final long deadline;
   private final JobCallbackCommandExceptionHandlingStrategy
