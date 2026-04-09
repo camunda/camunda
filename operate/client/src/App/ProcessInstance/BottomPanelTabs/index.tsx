@@ -13,6 +13,7 @@ import {TabListNav} from './TabListNav';
 import {useProcessInstancePageParams} from '../useProcessInstancePageParams';
 import {useCurrentPage} from 'modules/hooks/useCurrentPage';
 import {useProcessInstanceElementSelection} from 'modules/hooks/useProcessInstanceElementSelection';
+import {IS_AGENT_CONTEXT_DEBUG_ENABLED} from 'modules/feature-flags';
 import {useProcessInstance} from 'modules/queries/processInstance/useProcessInstance';
 import {useProcessInstanceIncidentsCount} from 'modules/queries/incidents/useProcessInstanceIncidentsCount';
 import {useElementInstanceIncidentsCount} from 'modules/queries/incidents/useElementInstanceIncidentsCount';
@@ -134,6 +135,22 @@ const BottomPanelTabs: React.FC<{isHistoryTabVisible: boolean}> = ({
       title: 'Instance History',
       visible: isHistoryTabVisible,
     },
+    ...(IS_AGENT_CONTEXT_DEBUG_ENABLED
+      ? [
+          {
+            label: 'Agent Context (Dev)',
+            to: {
+              pathname: Paths.processInstanceAgentContext({
+                processInstanceId,
+              }),
+            },
+            key: 'agent-context',
+            selected: currentPage === 'process-details-agent-context',
+            title: 'Agent Context (Dev)',
+            visible: true,
+          },
+        ]
+      : []),
   ] satisfies React.ComponentProps<typeof TabListNav>['items'];
 
   const selectedTab = tabItems.find((tab) => tab.selected);

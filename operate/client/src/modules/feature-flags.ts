@@ -6,4 +6,16 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-export {};
+/**
+ * Dev-only feature flag: enables the AI Agent Context debug panel
+ * in the process instance detail view (BottomPanelTabs).
+ *
+ * Activate via browser console:  localStorage.setItem('AGENT_CONTEXT_DEBUG', 'true')
+ * Only available when Vite is running in development mode.
+ */
+const IS_AGENT_CONTEXT_DEBUG_ENABLED =
+  import.meta.env.DEV &&
+  typeof window !== 'undefined' &&
+  window.localStorage.getItem('AGENT_CONTEXT_DEBUG') === 'true';
+
+export {IS_AGENT_CONTEXT_DEBUG_ENABLED};

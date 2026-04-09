@@ -44,6 +44,8 @@ const Paths = {
     getRelativeProcessInstancePathHandler('operations-log'),
   processInstanceHistory:
     getRelativeProcessInstancePathHandler('instance-history'),
+  processInstanceAgentContext:
+    getRelativeProcessInstancePathHandler('agent-context'),
   decisions() {
     return '/decisions';
   },
