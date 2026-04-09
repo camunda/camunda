@@ -32,6 +32,7 @@ import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageMonitor;
 import io.camunda.zeebe.broker.system.partitions.ZeebePartition;
 import io.camunda.zeebe.broker.transport.commandapi.CommandApiService;
 import io.camunda.zeebe.broker.transport.snapshotapi.SnapshotApiRequestHandler;
+import io.camunda.zeebe.db.impl.rocksdb.RocksDbResources;
 import io.camunda.zeebe.dynamic.config.changes.PartitionChangeExecutor;
 import io.camunda.zeebe.dynamic.config.changes.PartitionScalingChangeExecutor;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
@@ -137,7 +138,8 @@ public final class PartitionManagerImpl
             securityConfig,
             searchClientsProxy,
             brokerRequestAuthorizationConverter,
-            clusterConfigurationService);
+            clusterConfigurationService,
+            rocksDbResources);
     managementService =
         new DefaultPartitionManagementService(
             clusterServices.getMembershipService(), clusterServices.getCommunicationService());
