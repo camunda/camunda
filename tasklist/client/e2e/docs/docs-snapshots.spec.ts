@@ -274,6 +274,7 @@ async function mockClientConfig(page: Page) {
         "isLoginDelegated":false,
         "contextPath":"",
         "baseName":"/",
+        "clientMode":"v1",
         "organizationId":null,
         "clusterId":null,
         "stage":null,

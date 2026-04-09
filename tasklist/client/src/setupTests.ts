@@ -52,6 +52,12 @@ beforeEach(() => {
 
   vi.stubGlobal('Notification', {permission: 'denied'});
   vi.stubGlobal('ResizeObserver', ResizeObserverPolyfill);
+  vi.stubGlobal(
+    'requestAnimationFrame',
+    (callback: FrameRequestCallback) =>
+      setTimeout(callback, 0) as unknown as number,
+  );
+  vi.stubGlobal('cancelAnimationFrame', (id: number) => clearTimeout(id));
 });
 
 beforeAll(() => {
