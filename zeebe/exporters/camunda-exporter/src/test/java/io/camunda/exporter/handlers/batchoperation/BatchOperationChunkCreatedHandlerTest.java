@@ -117,7 +117,7 @@ class BatchOperationChunkCreatedHandlerTest {
   }
 
   @Test
-  void shouldUpsertWithScriptEntityOnFlush() throws PersistenceException {
+  void shouldUpdateWithScriptOnFlush() throws PersistenceException {
     // given
     final var entity = new BatchOperationEntity().setId("123:456").setEndDate(null);
     final Record<BatchOperationChunkRecordValue> record = createRecord(1L, 11L);
@@ -130,11 +130,10 @@ class BatchOperationChunkCreatedHandlerTest {
     final Map<String, Object> expectedParams = new HashMap<>();
     expectedParams.put(BatchOperationTemplate.OPERATIONS_TOTAL_COUNT, 1);
 
-    // then - the ES document ID should be just the batchKey (123), not the composite entity ID
+    // then - the ES document ID is just the batchKey extracted from the composite ID
     final var scriptCaptor = ArgumentCaptor.forClass(String.class);
     verify(mockRequest, times(1))
-        .upsertWithScript(
-            eq(indexName), eq("123"), eq(entity), scriptCaptor.capture(), eq(expectedParams));
+        .updateWithScript(eq(indexName), eq("123"), scriptCaptor.capture(), eq(expectedParams));
 
     final var script = scriptCaptor.getValue();
 
