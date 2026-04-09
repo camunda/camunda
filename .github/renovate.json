@@ -6,7 +6,7 @@
   ],
   "commitMessagePrefix": "deps:",
   "baseBranchPatterns": [
-    "/^stable\\/8\\.([6-9]|[1-9][0-9])/",
+    "/^stable\\/8\\.([7-9]|[1-9][0-9])/",
     "main"
   ],
   "dependencyDashboard": true,
