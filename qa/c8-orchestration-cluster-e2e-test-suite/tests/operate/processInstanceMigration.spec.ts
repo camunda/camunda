@@ -22,7 +22,7 @@ import {
   DeployResourceResponse,
 } from '@camunda8/sdk/dist/c8/lib/C8Dto';
 import type {TaskCard} from '@pages/TaskPanelPage';
-import {parseUserTasksFromFile} from 'utils/bpmn';
+import {parseAssignedTasksFromFile} from 'utils/bpmn';
 
 const PROCESS_INSTANCE_COUNT = 10;
 const AUTO_MIGRATION_INSTANCE_COUNT = 6;
@@ -51,13 +51,13 @@ let processes: CreateProcessInstanceResponse[][] = [];
 let parallelProcesses: CreateProcessInstanceResponse[] = [];
 
 // Task cards parsed from BPMN fixtures — single source of truth for task names and assignees.
-const sourceTaskCards: TaskCard[] = parseUserTasksFromFile(
+const sourceTaskCards: TaskCard[] = parseAssignedTasksFromFile(
   './resources/parallel_tasks_jw_v1.bpmn',
-).filter((task) => task.name && task.assignee);
+);
 
-const targetTaskCards: TaskCard[] = parseUserTasksFromFile(
+const targetTaskCards: TaskCard[] = parseAssignedTasksFromFile(
   './resources/parallel_tasks_jw_v2.bpmn',
-).filter((task) => task.name && task.assignee);
+);
 
 test.describe.serial('Process Instance Migration', () => {
   test.beforeAll(async () => {

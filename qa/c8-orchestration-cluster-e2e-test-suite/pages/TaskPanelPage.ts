@@ -16,6 +16,7 @@ export type TaskCard = {
 
 class TaskPanelPage {
   readonly availableTasks: Locator;
+  readonly taskCards: Locator;
   readonly collapseSidePanelButton: Locator;
   readonly expandSidePanelButton: Locator;
   private page: Page;
@@ -26,6 +27,7 @@ class TaskPanelPage {
   constructor(page: Page) {
     this.page = page;
     this.availableTasks = page.getByTitle('Available tasks');
+    this.taskCards = this.availableTasks.locator('article');
     this.collapseSidePanelButton = page.locator(
       'button[aria-controls="task-nav-bar"][aria-expanded="true"]',
     );
@@ -48,7 +50,7 @@ class TaskPanelPage {
     // V1: displays process name ("User registration")
     // V2: always displays process ID ("user_registration") regardless of task name
 
-    // Mapping of processes names to process IDs for V2 mode compatibility
+    // Mapping of process names to process IDs for V2 mode compatibility
     const processNameToIdMapping: Record<string, string> = {
       'User registration': 'user_registration',
       'Some user activity': 'usertask_to_be_completed', // Process ID from BPMN
@@ -143,41 +145,40 @@ class TaskPanelPage {
     return this.page.goto(`/tasklist/${taskKey}`);
   }
 
+  private getTaskCards(task: TaskCard): Locator {
+    let taskCards = this.taskCards.filter({
+      has: this.page.getByText(task.name, {exact: true}),
+    });
+
+    if (task.assignee) {
+      taskCards = taskCards.filter({
+        has: this.page.getByText(task.assignee, {exact: true}),
+      });
+    }
+
+    return taskCards;
+  }
+
   async assertTaskCardsPresent(
     tasks: TaskCard[],
     options: {expectedCount?: number} = {},
   ): Promise<void> {
     const {expectedCount} = options;
+
     for (const task of tasks) {
-      const taskName = this.availableTasks.getByText(task.name, {exact: true});
-      const assignee = task.assignee
-        ? this.availableTasks.getByText(task.assignee, {exact: true})
-        : null;
+      const taskCards = this.getTaskCards(task);
 
       if (expectedCount === undefined) {
-        await expect(taskName.first()).toBeVisible();
-        if (assignee) {
-          await expect(assignee.first()).toBeVisible();
-        }
+        await expect(taskCards.first()).toBeVisible();
       } else {
-        await expect(taskName).toHaveCount(expectedCount);
-        if (assignee) {
-          await expect(assignee).toHaveCount(expectedCount);
-        }
+        await expect(taskCards).toHaveCount(expectedCount);
       }
     }
   }
 
   async assertTaskCardsAbsent(tasks: TaskCard[]): Promise<void> {
     for (const task of tasks) {
-      await expect(
-        this.availableTasks.getByText(task.name, {exact: true}),
-      ).toHaveCount(0);
-      if (task.assignee) {
-        await expect(
-          this.availableTasks.getByText(task.assignee, {exact: true}),
-        ).toHaveCount(0);
-      }
+      await expect(this.getTaskCards(task)).toHaveCount(0);
     }
   }
 }

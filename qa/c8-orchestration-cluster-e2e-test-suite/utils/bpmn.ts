@@ -16,10 +16,6 @@ export type UserTaskDefinition = {
 };
 
 // Minimal parser tailored to the BPMN test fixtures to avoid extra dependencies.
-export function parseUserTasksFromFile(filePath: string): UserTaskDefinition[] {
-  const xml = fs.readFileSync(filePath, 'utf-8');
-  return parseUserTasksFromXml(xml);
-}
 
 export function parseUserTasksFromXml(xml: string): UserTaskDefinition[] {
   const userTaskBlocks = xml.match(
@@ -27,7 +23,9 @@ export function parseUserTasksFromXml(xml: string): UserTaskDefinition[] {
   );
 
   if (!userTaskBlocks || userTaskBlocks.length === 0) {
-    throw new Error('Expected at least one <bpmn:userTask> element in BPMN XML');
+    throw new Error(
+      'Expected at least one <bpmn:userTask> element in BPMN XML',
+    );
   }
 
   return userTaskBlocks.map((block, index) => {
@@ -67,4 +65,23 @@ function extractAttribute(
 ): string | undefined {
   const match = source.match(new RegExp(`${attribute}="([^"]+)"`));
   return match?.[1];
+}
+
+/**
+ * Parses user tasks from a BPMN file and returns only tasks that have an assignee defined.
+ * Throws if any task is missing an assignee, making fixture misconfiguration a hard error.
+ */
+export function parseAssignedTasksFromFile(
+  filePath: string,
+): Array<{name: string; assignee: string}> {
+  const xml = fs.readFileSync(filePath, 'utf-8');
+  return parseUserTasksFromXml(xml).map((task) => {
+    if (!task.assignee?.trim()) {
+      throw new Error(
+        `Expected user task "${task.id}" (${task.name}) in BPMN fixture "${filePath}" to define an assignee`,
+      );
+    }
+
+    return {name: task.name, assignee: task.assignee};
+  });
 }
