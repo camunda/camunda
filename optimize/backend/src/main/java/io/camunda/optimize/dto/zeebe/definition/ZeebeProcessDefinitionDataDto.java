@@ -9,6 +9,7 @@ package io.camunda.optimize.dto.zeebe.definition;
 
 import static io.camunda.optimize.service.util.importing.ZeebeConstants.ZEEBE_DEFAULT_TENANT_ID;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.camunda.zeebe.protocol.record.value.deployment.ProcessMetadataValue;
 import java.util.Arrays;
 import java.util.Objects;
@@ -27,6 +28,7 @@ public class ZeebeProcessDefinitionDataDto implements ProcessMetadataValue {
 
   public ZeebeProcessDefinitionDataDto() {}
 
+  @JsonIgnore
   @Override
   public String toJson() {
     throw new UnsupportedOperationException("Operation not supported");
@@ -38,6 +40,7 @@ public class ZeebeProcessDefinitionDataDto implements ProcessMetadataValue {
     return false;
   }
 
+  @JsonIgnore
   @Override
   public long getDeploymentKey() {
     throw new UnsupportedOperationException("Operation not supported");
