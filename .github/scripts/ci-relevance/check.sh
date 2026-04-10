@@ -7,7 +7,12 @@
 # here — they are handled by other path filters in the CI pipeline.
 #
 # Usage:
-#   jq -r '.[]' <<< "$CHANGED_FILES_JSON" | ./check.sh [patterns-file]
+#   ./check.sh [patterns-file]
+#
+# It reads on its standard input the filenames to check, one line per file.
+#
+# In GitHub Actions, you can pipe into the script the content of changed files with:
+#   jq -r '.[]' <<< "$CHANGED_FILES_JSON"
 #
 # Arguments:
 #   patterns-file  Path to the exclusion patterns file (default: excluded-paths.txt
