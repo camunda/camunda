@@ -150,7 +150,7 @@ public final class FormResourceTransformer implements DeploymentResourceTransfor
         .ifPresentOrElse(
             latestForm -> {
               if (latestForm.isDuplicateOf(
-                  formRecord.getChecksumBuffer(), formRecord.getResourceNameBuffer())) {
+                  formRecord.getResourceNameBuffer(), formRecord.getChecksumBuffer())) {
                 formRecord
                     .setFormKey(latestForm.getFormKey())
                     .setVersion(latestForm.getVersion())
