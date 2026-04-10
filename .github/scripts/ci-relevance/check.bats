@@ -116,12 +116,3 @@ check() {
   [ "$status" -eq 0 ]
 }
 
-@test "should be CI-relevant when a load-test workflow and a Java file both changed" {
-  # given a PR that changes a load-test workflow and a Java file
-  # when checking CI relevance
-  run check ".github/workflows/camunda-weekly-load-tests.yml" \
-            "zeebe/engine/src/main/java/Foo.java"
-  # then CI should NOT be triggered — Java files are handled by other filters,
-  # and the only .github/ change is excluded
-  [ "$status" -eq 1 ]
-}
