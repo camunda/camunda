@@ -25,7 +25,7 @@ const GlobalStyle = createGlobalStyle`
   body {
     background: var(--cds-background);
     font-size: ${bodyShort01.fontSize};
-    font-weight: ${bodyShort01.fontSize};
+    font-weight: ${bodyShort01.fontWeight};
     line-height: ${bodyShort01.lineHeight};
     letter-spacing: ${bodyShort01.letterSpacing};
     margin: 0;
