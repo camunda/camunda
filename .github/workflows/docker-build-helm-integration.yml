@@ -376,12 +376,9 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ steps.github-token.outputs.token }}
           CORRELATION_ID: ${{ github.repository }}:${{ github.run_id }}:${{ github.run_attempt }}:${{ github.sha }}
-          IMAGE_TAG: ${{ needs.build-and-push.outputs.image-tag }}
         run: |
           # Use the image tag as the generation name to match filter patterns
           # e.g., "8.10.0-SNAPSHOT-main-run12345678-a1" matches "**-main-run**-a**"
-          GEN_NAME="${IMAGE_TAG}"
-
           curl -X POST \
             -H "Accept: application/vnd.github+json" \
             -H "Authorization: Bearer $GITHUB_TOKEN" \
@@ -392,7 +389,7 @@ jobs:
                       "correlation_id": "'"$CORRELATION_ID"'",
                       "source_repo": "${{ github.repository }}",
                       "source_sha": "${{ github.sha }}",
-                      "gen_name": "'"${GEN_NAME}"'",
+                      "gen_name": "${{ needs.build-and-push.outputs.image-tag }}",
                       "c8Version": "8.10",
                       "zeebeVersion": "${{ needs.build-and-push.outputs.image-tag }}",
                       "operateVersion": "SNAPSHOT",
