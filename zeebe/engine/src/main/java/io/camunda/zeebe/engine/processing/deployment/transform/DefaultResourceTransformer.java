@@ -95,15 +95,13 @@ class DefaultResourceTransformer implements DeploymentResourceTransformer {
   }
 
   @Override
-  public final Either<Failure, Void> createMetadata(
-      final DeploymentResource deploymentResource,
-      final DeploymentRecord deployment,
-      final DeploymentResourceContext context) {
+  public final Either<Failure, DeploymentResourceContext> createMetadata(
+      final DeploymentResource deploymentResource, final DeploymentRecord deployment) {
     return parseResourceInfo(deploymentResource)
         .map(
             resourceInfo -> {
               addResourceMetadata(resourceInfo, deploymentResource, deployment);
-              return null;
+              return DeploymentResourceContext.NONE;
             });
   }
 

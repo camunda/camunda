@@ -258,4 +258,21 @@ public final class DeploymentRecord extends UnifiedRecordValue implements Deploy
         && formMetadata().stream().allMatch(FormMetadataValue::isDuplicate)
         && resourceMetadata().stream().allMatch(ResourceMetadataValue::isDuplicate);
   }
+
+  /**
+   * Returns the resource name (filename) of the DRG that contains the given decision. Decisions
+   * don't carry their own resource name — they belong to a decision requirements graph (DRG), and
+   * the DRG carries the resource name.
+   *
+   * @param decision the decision metadata to look up
+   * @return the resource name of the parent DRG, or {@code null} if not found
+   */
+  public String getResourceNameForDecision(final DecisionRecordValue decision) {
+    for (final var drg : decisionRequirementsMetadataProp) {
+      if (drg.getDecisionRequirementsKey() == decision.getDecisionRequirementsKey()) {
+        return drg.getResourceName();
+      }
+    }
+    return null;
+  }
 }

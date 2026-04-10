@@ -57,10 +57,8 @@ public final class FormResourceTransformer implements DeploymentResourceTransfor
   }
 
   @Override
-  public Either<Failure, Void> createMetadata(
-      final DeploymentResource resource,
-      final DeploymentRecord deployment,
-      final DeploymentResourceContext context) {
+  public Either<Failure, DeploymentResourceContext> createMetadata(
+      final DeploymentResource resource, final DeploymentRecord deployment) {
     return parseForm(resource)
         .flatMap(
             form ->
@@ -69,7 +67,7 @@ public final class FormResourceTransformer implements DeploymentResourceTransfor
                         valid -> {
                           final FormMetadataRecord formRecord = deployment.formMetadata().add();
                           appendMetadataToFormRecord(formRecord, form, resource, deployment);
-                          return null;
+                          return DeploymentResourceContext.NONE;
                         }));
   }
 

@@ -89,10 +89,8 @@ public final class BpmnResourceTransformer implements DeploymentResourceTransfor
   }
 
   @Override
-  public Either<Failure, Void> createMetadata(
-      final DeploymentResource resource,
-      final DeploymentRecord deployment,
-      final DeploymentResourceContext context) {
+  public Either<Failure, DeploymentResourceContext> createMetadata(
+      final DeploymentResource resource, final DeploymentRecord deployment) {
 
     return readProcessDefinition(resource)
         .flatMap(
@@ -116,8 +114,9 @@ public final class BpmnResourceTransformer implements DeploymentResourceTransfor
                         })
                     .map(
                         ok -> {
-                          createProcessMetadata(deployment, resource, definition, context);
-                          return null;
+                          final var elements = new BpmnElementsWithDeploymentBinding();
+                          createProcessMetadata(deployment, resource, definition, elements);
+                          return (DeploymentResourceContext) elements;
                         });
 
               } else {
@@ -173,7 +172,7 @@ public final class BpmnResourceTransformer implements DeploymentResourceTransfor
       final DeploymentRecord deploymentEvent,
       final DeploymentResource deploymentResource,
       final BpmnModelInstance definition,
-      final DeploymentResourceContext context) {
+      final BpmnElementsWithDeploymentBinding elements) {
     for (final Process process : getExecutableProcesses(definition)) {
       final String bpmnProcessId = process.getId();
       final String tenantId = deploymentEvent.getTenantId();
@@ -210,9 +209,7 @@ public final class BpmnResourceTransformer implements DeploymentResourceTransfor
             .setDeploymentKey(deploymentEvent.getDeploymentKey());
       }
 
-      if (context instanceof final BpmnElementsWithDeploymentBinding elements) {
-        elements.addFromProcess(process);
-      }
+      elements.addFromProcess(process);
     }
   }
 

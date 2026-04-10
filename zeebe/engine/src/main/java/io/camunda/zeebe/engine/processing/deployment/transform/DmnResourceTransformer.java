@@ -80,10 +80,8 @@ public final class DmnResourceTransformer implements DeploymentResourceTransform
   }
 
   @Override
-  public Either<Failure, Void> createMetadata(
-      final DeploymentResource resource,
-      final DeploymentRecord deployment,
-      final DeploymentResourceContext context) {
+  public Either<Failure, DeploymentResourceContext> createMetadata(
+      final DeploymentResource resource, final DeploymentRecord deployment) {
 
     final var dmnResource = new ByteArrayInputStream(resource.getResource());
     final var parsedDrg = decisionEngine.parse(dmnResource);
@@ -94,7 +92,7 @@ public final class DmnResourceTransformer implements DeploymentResourceTransform
           .map(
               valid -> {
                 appendMetadataToDeploymentEvent(resource, parsedDrg, deployment);
-                return null;
+                return DeploymentResourceContext.NONE;
               });
 
     } else {
