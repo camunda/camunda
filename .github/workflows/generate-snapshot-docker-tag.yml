@@ -1,0 +1,99 @@
+# description: Generate Docker snapshot tags based on branch and project version.
+# type: CI
+# owner: @camunda/monorepo-devops-team
+name: Generate Docker Snapshot Tag
+
+permissions:
+  contents: read
+
+on:
+  workflow_call:
+    inputs:
+      target_branch:
+        description: "Optional branch to resolve tags from (e.g. main or stable/8.9)"
+        required: false
+        default: ''
+        type: string
+    outputs:
+      version_tag:
+        description: "Generated Docker version tag"
+        value: ${{ jobs.get-snapshot-docker-version-tag.outputs.tag }}
+      snapshot_tag:
+        description: "Generated Docker SNAPSHOT tag for main branch"
+        value: ${{ jobs.get-snapshot-docker-version-tag.outputs.snapshot_tag }}
+
+env:
+  GHA_BEST_PRACTICES_LINTER: enabled
+
+jobs:
+  get-snapshot-docker-version-tag:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    permissions: {}
+    if: >-
+      github.repository == 'camunda/camunda' &&
+      (
+        inputs.target_branch == 'main' ||
+        startsWith(inputs.target_branch, 'stable/') ||
+        github.ref == 'refs/heads/main' ||
+        startsWith(github.ref, 'refs/heads/stable/') ||
+        startsWith(github.ref, 'refs/heads/gh-readonly-queue/main/') ||
+        startsWith(github.ref, 'refs/heads/gh-readonly-queue/stable/') ||
+        (
+          github.event_name == 'pull_request' &&
+          (github.base_ref == 'main' || startsWith(github.base_ref, 'stable/'))
+        )
+      )
+    outputs:
+      tag: ${{ steps.set_docker_snapshot_version_tag.outputs.tag }}
+      snapshot_tag: ${{ steps.set_docker_snapshot_version_tag.outputs.snapshot_tag }}
+    steps:
+      - name: Checkout repository
+        if: >-
+          inputs.target_branch == 'main' ||
+          github.ref == 'refs/heads/main' ||
+          startsWith(github.ref, 'refs/heads/gh-readonly-queue/main/') ||
+          (github.event_name == 'pull_request' && github.base_ref == 'main')
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        with:
+          fetch-depth: 1
+          sparse-checkout: |
+            pom.xml
+      - name: Determine Snapshot Docker Version Tag
+        id: set_docker_snapshot_version_tag
+        env:
+          REQUESTED_BRANCH: ${{ inputs.target_branch }}
+        run: |
+          if [[ -n "${REQUESTED_BRANCH}" ]]; then
+            BRANCH="${REQUESTED_BRANCH}"
+          elif [[ "${GITHUB_EVENT_NAME}" == "pull_request" ]]; then
+            BRANCH="${GITHUB_BASE_REF}"
+          elif [[ "${GITHUB_REF}" == refs/heads/gh-readonly-queue/* ]]; then
+            BRANCH="$(echo "${GITHUB_REF}" | sed -E 's|refs/heads/gh-readonly-queue/(.+)/pr-.*|\1|')"
+          elif [[ "${GITHUB_REF}" == refs/heads/* ]]; then
+            BRANCH="${GITHUB_REF#refs/heads/}"
+          else
+            echo "Unsupported context for tag resolution: event=${GITHUB_EVENT_NAME}, ref=${GITHUB_REF}"
+            echo "Consider setting the target_branch workflow input to main or stable/<minor>."
+            exit 1
+          fi
+
+          if [[ "$BRANCH" == "main" ]]; then
+            PROJECT_VERSION="$(grep -m1 '<version>' pom.xml | sed -E 's|.*<version>([^<]+)</version>.*|\1|')"
+            if [[ "$PROJECT_VERSION" =~ ^([0-9]+)\.([0-9]+)\..*$ ]]; then
+              TAG="${BASH_REMATCH[1]}.${BASH_REMATCH[2]}-SNAPSHOT"
+            else
+              echo "Unsupported project version: $PROJECT_VERSION"
+              exit 1
+            fi
+            SNAPSHOT_TAG="SNAPSHOT"
+          elif [[ "$BRANCH" == stable/* ]]; then
+            TAG="${BRANCH#stable/}-SNAPSHOT"
+            SNAPSHOT_TAG=""
+          else
+            echo "Unsupported branch: $BRANCH"
+            exit 1
+          fi
+          echo "Resolved snapshot tag context: event=${GITHUB_EVENT_NAME}, ref=${GITHUB_REF}, base_ref=${GITHUB_BASE_REF:-}, branch=${BRANCH}, tag=${TAG}, snapshot_tag=${SNAPSHOT_TAG}"
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "snapshot_tag=$SNAPSHOT_TAG" >> "$GITHUB_OUTPUT"
