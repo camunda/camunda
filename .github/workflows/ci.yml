@@ -1276,6 +1276,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          # shellcheck disable=SC2016 -- backticks are BigQuery SQL syntax, not shell expressions
           {
             echo "known_flaky_tests<<BQEOF"
             bq query --format=json --use_legacy_sql=false --quiet=true \
