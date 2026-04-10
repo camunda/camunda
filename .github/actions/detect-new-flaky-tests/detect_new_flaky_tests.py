@@ -77,6 +77,8 @@ def process_flaky_tests_data(raw_data: list) -> list:
             print(f'{PREFIX} Skipping job "{job}" - no flaky tests')
             continue
 
+        # Tests are space-separated; each is: fully.qualified.Class.method(Params)[index]
+        # Params are Java class names (no spaces), e.g. (CamundaClient, CamundaClient).
         test_names = re.findall(r"[^\s\[(]+(?:\([^)]*\))?(?:\[[^\]]*])?", flaky_tests_str)
 
         for test_name in test_names:
@@ -101,6 +103,9 @@ def process_flaky_tests_data(raw_data: list) -> list:
 # GitHub helpers
 # ---------------------------------------------------------------------------
 
+COMMENT_MARKER = "<!-- new-flaky-tests-alert -->"
+
+
 def set_output(name: str, value: str) -> None:
     output_file = os.environ.get("GITHUB_OUTPUT")
     if output_file:
@@ -108,9 +113,7 @@ def set_output(name: str, value: str) -> None:
             fh.write(f"{name}={value}\n")
 
 
-def post_comment(owner: str, repo: str, pr_number: int, body: str, token: str) -> None:
-    url = f"https://api.github.com/repos/{owner}/{repo}/issues/{pr_number}/comments"
-    data = json.dumps({"body": body}).encode()
+def _github_api(url: str, token: str, method: str = "GET", data: bytes | None = None) -> bytes:
     req = urllib.request.Request(
         url,
         data=data,
@@ -119,16 +122,45 @@ def post_comment(owner: str, repo: str, pr_number: int, body: str, token: str) -
             "Accept": "application/vnd.github+json",
             "Content-Type": "application/json",
         },
-        method="POST",
+        method=method,
     )
     try:
         with urllib.request.urlopen(req) as resp:
-            if resp.status < 200 or resp.status >= 300:
-                print(f"{PREFIX} GitHub API responded with status {resp.status}")
-                sys.exit(1)
+            return resp.read()
     except urllib.error.HTTPError as exc:
-        print(f"{PREFIX} Failed to post comment: {exc.status} {exc.reason}")
+        body = exc.read().decode(errors="replace")
+        print(f"{PREFIX} GitHub API error: {exc.status} {exc.reason} — {body}")
         sys.exit(1)
+
+
+def _find_existing_comment(owner: str, repo: str, pr_number: int, token: str) -> int | None:
+    """Find an existing comment with COMMENT_MARKER and return its id, or None."""
+    page = 1
+    while True:
+        url = f"https://api.github.com/repos/{owner}/{repo}/issues/{pr_number}/comments?per_page=100&page={page}"
+        raw = _github_api(url, token)
+        comments = json.loads(raw)
+        if not comments:
+            break
+        for c in comments:
+            if COMMENT_MARKER in (c.get("body") or ""):
+                return c["id"]
+        page += 1
+    return None
+
+
+def post_or_update_comment(owner: str, repo: str, pr_number: int, body: str, token: str) -> None:
+    """Create a new comment or update the existing one (matched by COMMENT_MARKER)."""
+    existing_id = _find_existing_comment(owner, repo, pr_number, token)
+    payload = json.dumps({"body": body}).encode()
+    if existing_id:
+        url = f"https://api.github.com/repos/{owner}/{repo}/issues/comments/{existing_id}"
+        _github_api(url, token, method="PATCH", data=payload)
+        print(f"{PREFIX} Updated existing comment (id={existing_id}).")
+    else:
+        url = f"https://api.github.com/repos/{owner}/{repo}/issues/{pr_number}/comments"
+        _github_api(url, token, method="POST", data=payload)
+        print(f"{PREFIX} Created new comment.")
 
 
 # ---------------------------------------------------------------------------
@@ -269,7 +301,7 @@ def main() -> None:
 
     # -- Build alert comment --------------------------------------------------
     lines = [
-        "<!-- new-flaky-tests-alert -->",
+        COMMENT_MARKER,
         "# ⚠️ New Flaky Tests Detected",
         "",
         f"This PR introduces **{len(new_flaky_tests)} new flaky test(s)** that are not currently flaky on `main` or `stable/*` branches.",
@@ -305,10 +337,9 @@ def main() -> None:
 
     comment_body = "\n".join(lines)
 
-    # -- Post comment ---------------------------------------------------------
+    # -- Post or update comment ------------------------------------------------
     owner, repo = github_repository.split("/", 1)
-    post_comment(owner, repo, pr_number, comment_body, github_token)
-    print(f"{PREFIX} Posted new flaky tests alert comment.")
+    post_or_update_comment(owner, repo, pr_number, comment_body, github_token)
 
     set_output("has-new-flaky-tests", "true")
     if blocking:
