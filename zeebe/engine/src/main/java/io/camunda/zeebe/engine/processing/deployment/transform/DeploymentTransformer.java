@@ -137,8 +137,7 @@ public final class DeploymentTransformer {
       }
     }
 
-    return errors.toEither(
-        "Expected to deploy new resources, but encountered the following errors:");
+    return errors.toEither();
   }
 
   /**
@@ -169,8 +168,7 @@ public final class DeploymentTransformer {
       }
     }
 
-    return errors.toEither(
-        "Expected to deploy new resources, but encountered the following errors:", contexts);
+    return errors.toEither(contexts);
   }
 
   /**
@@ -315,8 +313,7 @@ public final class DeploymentTransformer {
       }
     }
 
-    return errors.toEither(
-        "Expected to deploy new resources, but encountered the following errors:");
+    return errors.toEither();
   }
 
   /**
@@ -344,9 +341,7 @@ public final class DeploymentTransformer {
 
     if (errors.hasErrors()) {
       // Note: In practice, this should never happen as validation already passed
-      throw new IllegalStateException(
-          errors.formatMessage(
-              "Expected to deploy new resources, but encountered the following errors:"));
+      throw new IllegalStateException(errors.formatMessage());
     }
   }
 
@@ -369,6 +364,9 @@ public final class DeploymentTransformer {
   /** Collects validation errors and converts them into a {@link Failure}. */
   private static final class ErrorCollector {
 
+    private static final String DEFAULT_PREFIX =
+        "Expected to deploy new resources, but encountered the following errors:";
+
     private final StringBuilder errors = new StringBuilder();
 
     void add(final String message) {
@@ -387,6 +385,14 @@ public final class DeploymentTransformer {
       return prefix + errors;
     }
 
+    String formatMessage() {
+      return formatMessage(DEFAULT_PREFIX);
+    }
+
+    Either<Failure, Void> toEither() {
+      return toEither(DEFAULT_PREFIX);
+    }
+
     Either<Failure, Void> toEither(final String prefix) {
       if (hasErrors()) {
         return Either.left(new Failure(formatMessage(prefix)));
@@ -394,9 +400,9 @@ public final class DeploymentTransformer {
       return Either.right(null);
     }
 
-    <T> Either<Failure, T> toEither(final String prefix, final T value) {
+    <T> Either<Failure, T> toEither(final T value) {
       if (hasErrors()) {
-        return Either.left(new Failure(formatMessage(prefix)));
+        return Either.left(new Failure(formatMessage()));
       }
       return Either.right(value);
     }
