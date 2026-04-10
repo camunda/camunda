@@ -29,7 +29,7 @@ jobs:
             secret/data/products/camunda/ci/github-actions SLACK_ZEEBOT_ZEEBE_CI_WEBHOOK_URL;
       - id: slack-notify
         name: Send slack notification
-        uses: slackapi/slack-github-action@v2.1.1
+        uses: slackapi/slack-github-action@af78098f536edbc4de71162a307590698245be95 # v3.0.1
         with:
           webhook: ${{ steps.secrets.outputs.SLACK_ZEEBOT_ZEEBE_CI_WEBHOOK_URL }}
           webhook-type: incoming-webhook

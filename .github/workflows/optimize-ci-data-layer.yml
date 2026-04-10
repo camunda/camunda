@@ -49,7 +49,7 @@ jobs:
       backend-changes: ${{ steps.filter.outputs.optimize-backend-changes }}
     steps:
       - name: Checkout repository
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - name: Get list of changed directories
         id: filter
         uses: ./.github/actions/paths-filter
@@ -65,7 +65,7 @@ jobs:
     if: ${{ needs.detect-changes.outputs.backend-changes == 'true' }}
     steps:
       - name: Checkout repository
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - name: Setup Maven
         uses: ./.github/actions/setup-build
         with:
@@ -76,7 +76,7 @@ jobs:
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
       - name: Read Java/version info
         id: "pom-info"
-        uses: YunaBraska/java-info-action@main
+        uses: YunaBraska/java-info-action@575e99f42f2915cc62410c7917fef5558257042c # 3.0.1
       - name: Start Database
         uses: ./.github/actions/compose
         with:
