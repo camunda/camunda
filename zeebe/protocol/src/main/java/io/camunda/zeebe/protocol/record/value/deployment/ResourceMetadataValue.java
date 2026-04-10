@@ -18,7 +18,6 @@ package io.camunda.zeebe.protocol.record.value.deployment;
 import io.camunda.zeebe.protocol.record.ImmutableProtocol;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
-import java.util.Arrays;
 import org.immutables.value.Value;
 
 @Value.Immutable
@@ -60,21 +59,6 @@ public interface ResourceMetadataValue extends RecordValue, TenantOwned {
    *     otherwise {@code false}
    */
   boolean isDuplicate();
-
-  /**
-   * Returns {@code true} if this resource metadata represents the same content and identity as the
-   * given checksum and resource ID. A resource is a duplicate when <em>both</em> the MD5 checksum
-   * (content) and the resource ID (logical identity) are unchanged. Both parameters must be
-   * non-null.
-   *
-   * <p>Note: the {@code resourceName} (filename) is intentionally not part of this check. For
-   * structured resources (e.g. RPA), the resource ID comes from the file content, so a renamed file
-   * with the same content is still a duplicate. For generic resources, the filename <em>is</em> the
-   * resource ID, so renaming will produce a different ID and is therefore not a duplicate.
-   */
-  default boolean isDuplicateOf(final byte[] checksum, final String resourceId) {
-    return Arrays.equals(getChecksum(), checksum) && getResourceId().equals(resourceId);
-  }
 
   /**
    * @return the key of the deployment this Resource was deployed with
