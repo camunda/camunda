@@ -1423,6 +1423,28 @@ jobs:
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
 
+  shell-script-tests:
+    name: "Shell / Script Tests"
+    needs: [ detect-changes ]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions: {}
+    steps:
+      - uses: actions/checkout@v6
+      - name: Install bats
+        run: sudo apt-get install -y bats
+      - name: Run ci-relevance tests
+        run: bats .github/scripts/ci-relevance/check.bats
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+
   check-results:
     # Used by the merge queue to check all tests, including the unit test matrix.
     # New test jobs must be added to the `needs` lists!
@@ -1458,6 +1480,7 @@ jobs:
       - rdbms-integration-tests
       - renovatelint
       - setup-tests
+      - shell-script-tests
       - tasklist-ci
       - validate-pom-metadata
       - zeebe-ci
