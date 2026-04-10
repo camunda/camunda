@@ -104,11 +104,18 @@ const setupSelectionStoreWithInstances = (
   const visibleRunningIds = instances
     .filter((instance) => instance.state === 'ACTIVE' || instance.hasIncident)
     .map((instance) => instance.processInstanceKey);
+  const visibleFinishedIds = instances
+    .filter(
+      (instance) =>
+        instance.state === 'COMPLETED' || instance.state === 'TERMINATED',
+    )
+    .map((instance) => instance.processInstanceKey);
 
   processInstancesSelectionStore.setRuntime({
     totalProcessInstancesCount: instances.length,
     visibleIds,
     visibleRunningIds,
+    visibleFinishedIds,
   });
 };
 

@@ -19,6 +19,7 @@ type SelectionRuntime = {
   totalProcessInstancesCount: number;
   visibleIds: string[];
   visibleRunningIds: string[];
+  visibleFinishedIds: string[];
 };
 
 type Mode = 'INCLUDE' | 'EXCLUDE' | 'ALL';
@@ -38,6 +39,7 @@ class ProcessInstancesSelection {
     totalProcessInstancesCount: 0,
     visibleIds: [],
     visibleRunningIds: [],
+    visibleFinishedIds: [],
   };
   autorunDisposer: null | IReactionDisposer = null;
   observeDisposer: null | Lambda = null;
@@ -70,7 +72,8 @@ class ProcessInstancesSelection {
     if (
       prev.totalProcessInstancesCount === next.totalProcessInstancesCount &&
       isEqual(prev.visibleIds, next.visibleIds) &&
-      isEqual(prev.visibleRunningIds, next.visibleRunningIds)
+      isEqual(prev.visibleRunningIds, next.visibleRunningIds) &&
+      isEqual(prev.visibleFinishedIds, next.visibleFinishedIds)
     ) {
       return;
     }
@@ -186,6 +189,21 @@ class ProcessInstancesSelection {
     );
   }
 
+  get hasSelectedFinishedInstances() {
+    const {
+      selectedProcessInstanceIds,
+      isAllChecked,
+      state: {selectionMode},
+    } = this;
+    const {visibleFinishedIds} = this.runtime;
+
+    return (
+      isAllChecked ||
+      selectionMode === 'EXCLUDE' ||
+      visibleFinishedIds.some((id) => selectedProcessInstanceIds.includes(id))
+    );
+  }
+
   get checkedRunningProcessInstanceIds() {
     const {selectionMode, selectedProcessInstanceIds} = this.state;
     const {visibleRunningIds} = this.runtime;
@@ -229,6 +247,7 @@ class ProcessInstancesSelection {
       totalProcessInstancesCount: 0,
       visibleIds: [],
       visibleRunningIds: [],
+      visibleFinishedIds: [],
     };
     this.autorunDisposer?.();
     this.observeDisposer?.();
