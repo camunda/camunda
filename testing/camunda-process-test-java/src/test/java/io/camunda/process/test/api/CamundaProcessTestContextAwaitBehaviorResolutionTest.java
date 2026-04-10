@@ -61,7 +61,6 @@ class CamundaProcessTestContextAwaitBehaviorResolutionTest {
   @Mock private Consumer<AutoCloseable> clientCreationCallback;
   @Mock private CamundaManagementClient camundaManagementClient;
   @Mock private JsonMapper jsonMapper;
-  @Mock private io.camunda.zeebe.client.api.JsonMapper zeebeJsonMapper;
 
   @Mock private CamundaClientBuilderFactory camundaClientBuilderFactory;
   @Mock private CamundaClientBuilder camundaClientBuilder;
@@ -94,7 +93,6 @@ class CamundaProcessTestContextAwaitBehaviorResolutionTest {
             camundaManagementClient,
             CamundaAssert::getAwaitBehavior,
             jsonMapper,
-            zeebeJsonMapper,
             engine);
 
     engine.start(
@@ -138,7 +136,7 @@ class CamundaProcessTestContextAwaitBehaviorResolutionTest {
     await().untilAsserted(() -> assertThat(trackingBehavior.wasUsed()).isTrue());
   }
 
-  private static class TrackingAwaitBehavior implements CamundaAssertAwaitBehavior {
+  private static final class TrackingAwaitBehavior implements CamundaAssertAwaitBehavior {
 
     private final AtomicBoolean used = new AtomicBoolean(false);
 
