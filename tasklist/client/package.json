@@ -61,8 +61,8 @@
   "devDependencies": {
     "@axe-core/playwright": "4.11.1",
     "@camunda/lint-config": "file:../../client-components/packages/lint-config",
-    "@eslint/js": "9.39.4",
-    "@playwright/test": "1.58.2",
+    "@eslint/js": "10.0.1",
+    "@playwright/test": "1.59.1",
     "@tanstack/react-query-devtools": "5.91.3",
     "@testing-library/dom": "10.4.1",
     "@testing-library/jest-dom": "6.9.1",
@@ -81,7 +81,7 @@
     "@vitest/ui": "4.1.2",
     "axe-core": "4.11.2",
     "diagram-js": "15.11.0",
-    "eslint": "9.39.4",
+    "eslint": "10.1.0",
     "eslint-config-prettier": "10.1.8",
     "eslint-plugin-import": "2.32.0",
     "eslint-plugin-license-header": "0.9.0",
@@ -111,5 +111,16 @@
   "msw": {
     "workerDirectory": "public"
   },
-  "packageManager": "npm@11.12.1"
+  "packageManager": "npm@11.12.1",
+  "overrides": {
+    "@tanstack/eslint-plugin-query": {
+      "eslint": "$eslint"
+    },
+    "eslint-plugin-import": {
+      "eslint": "$eslint"
+    },
+    "eslint-plugin-react-hooks": {
+      "eslint": "$eslint"
+    }
+  }
 }
