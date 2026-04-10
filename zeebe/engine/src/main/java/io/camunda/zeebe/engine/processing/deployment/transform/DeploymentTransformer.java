@@ -25,7 +25,6 @@ import io.camunda.zeebe.util.FeatureFlags;
 import java.time.InstantSource;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.function.Function;
 import org.agrona.DirectBuffer;
@@ -210,14 +209,15 @@ public final class DeploymentTransformer {
         deployment.getProcessesMetadata(),
         metadata -> metadata.getBpmnProcessId(),
         metadata -> metadata.getResourceName(),
-        "process id",
+        "Duplicated process id in resources '%2$s' and '%3$s'",
         errors);
 
     checkForDuplicateIds(
         deployment.getDecisionRequirementsMetadata(),
         metadata -> metadata.getDecisionRequirementsId(),
         metadata -> metadata.getResourceName(),
-        "decision requirements id",
+        "Expected the decision requirements ids to be unique within a deployment"
+            + " but found a duplicated id '%s' in the resources '%s' and '%s'",
         errors);
 
     checkForDuplicateIds(
@@ -227,26 +227,27 @@ public final class DeploymentTransformer {
           final var name = deployment.getResourceNameForDecision(metadata);
           return name != null ? name : "<?>";
         },
-        "decision id",
+        "Expected the decision ids to be unique within a deployment"
+            + " but found a duplicated id '%s' in the resources '%s' and '%s'",
         errors);
 
     checkForDuplicateIds(
         deployment.getFormMetadata(),
         metadata -> metadata.getFormId(),
         metadata -> metadata.getResourceName(),
-        "form id",
+        "Expected the form ids to be unique within a deployment"
+            + " but found a duplicated id '%s' in the resources '%s' and '%s'.",
         errors);
 
     checkForDuplicateIds(
         deployment.getResourceMetadata(),
         metadata -> metadata.getResourceId(),
         metadata -> metadata.getResourceName(),
-        "resource id",
+        "Expected the resource ids to be unique within a deployment"
+            + " but found a duplicated id '%s' in the resources '%s' and '%s'.",
         errors);
 
-    return errors.toEither(
-        "Expected resource IDs to be unique within a deployment,"
-            + " but encountered the following conflicting IDs:");
+    return errors.toEither();
   }
 
   /**
@@ -256,29 +257,25 @@ public final class DeploymentTransformer {
    * @param items the metadata entries to check
    * @param idExtractor extracts the ID from a metadata entry
    * @param nameExtractor extracts the resource name from a metadata entry (for error messages)
-   * @param typeLabel the human-readable type label (e.g. "process id", "form id")
+   * @param messageFormat format string with 3 placeholders: id, first resource name, second
+   *     resource name
    * @param errors the error collector to append duplicate errors to
    */
   private <T> void checkForDuplicateIds(
       final Iterable<T> items,
       final Function<T, String> idExtractor,
       final Function<T, String> nameExtractor,
-      final String typeLabel,
+      final String messageFormat,
       final ErrorCollector errors) {
-    final var seen = new HashSet<String>();
-    final var duplicates = new HashMap<String, List<String>>();
+    final var firstOccurrence = new HashMap<String, String>();
 
     for (final T item : items) {
       final var id = idExtractor.apply(item);
-      if (!seen.add(id)) {
-        duplicates.computeIfAbsent(id, k -> new ArrayList<>()).add(nameExtractor.apply(item));
+      final var resourceName = nameExtractor.apply(item);
+      final var previousResourceName = firstOccurrence.putIfAbsent(id, resourceName);
+      if (previousResourceName != null) {
+        errors.add(messageFormat, id, previousResourceName, resourceName);
       }
-    }
-
-    for (final var entry : duplicates.entrySet()) {
-      errors.add(
-          "- Duplicated %s '%s' in resources: %s",
-          typeLabel, entry.getKey(), String.join(", ", entry.getValue()));
     }
   }
 
@@ -309,7 +306,7 @@ public final class DeploymentTransformer {
     for (final var elements : bpmnContexts) {
       final var validationError = validator.validate(elements);
       if (validationError != null) {
-        errors.add(validationError);
+        errors.add("'%s':\n%s", elements.getResourceName(), validationError);
       }
     }
 

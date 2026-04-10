@@ -298,6 +298,27 @@ public class ResourceDeploymentTest {
   }
 
   @Test
+  public void shouldNotBeDuplicateIfResourceNameDiffers() {
+    // given - two deployments with the same content and resource ID but different filenames
+    final var resource = readResource(TEST_RESOURCE_1);
+    engine.deployment().withJsonResource(resource, "test-rpa-1.rpa").deploy();
+
+    // when - same content deployed under a different filename
+    final var deploymentEvent =
+        engine.deployment().withJsonResource(resource, "renamed-test-rpa-1.rpa").deploy();
+
+    // then - not a duplicate because resourceName is part of the duplicate check
+    assertThat(deploymentEvent.getValue().getResourceMetadata())
+        .singleElement()
+        .satisfies(
+            resourceMetadata ->
+                Assertions.assertThat(resourceMetadata)
+                    .hasVersion(2)
+                    .hasResourceName("renamed-test-rpa-1.rpa")
+                    .isNotDuplicate());
+  }
+
+  @Test
   public void shouldCreateNewResourceWhenGenericResourceIsRenamed() {
     // given - first deployment under original filename (filename is the resource ID for generic
     // resources)

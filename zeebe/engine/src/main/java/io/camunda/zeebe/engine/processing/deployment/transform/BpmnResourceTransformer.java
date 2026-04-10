@@ -114,7 +114,8 @@ public final class BpmnResourceTransformer implements DeploymentResourceTransfor
                         })
                     .map(
                         ok -> {
-                          final var elements = new BpmnElementsWithDeploymentBinding();
+                          final var elements =
+                              new BpmnElementsWithDeploymentBinding(resource.getResourceName());
                           createProcessMetadata(deployment, resource, definition, elements);
                           return (DeploymentResourceContext) elements;
                         });

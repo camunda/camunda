@@ -108,8 +108,8 @@ public class PersistedResource extends UnpackedObject implements DbValue {
     resourceProp.setValue(record.getResourceProp());
   }
 
-  public boolean isDuplicateOf(final String resourceId, final DirectBuffer checksum) {
-    if (!bufferAsString(getResourceId()).equals(resourceId)) {
+  public boolean isDuplicateOf(final DirectBuffer resourceName, final DirectBuffer checksum) {
+    if (!getResourceName().equals(resourceName)) {
       return false;
     }
     return java.util.Arrays.equals(
