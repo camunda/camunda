@@ -7,6 +7,7 @@
  */
 package io.camunda.exporter.store;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
@@ -21,6 +22,7 @@ import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
 import java.io.IOException;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.slf4j.Logger;
@@ -86,25 +88,43 @@ class ElasticsearchPayloadSizeIT {
   }
 
   /**
-   * Validates that our NDJSON payload size measurement accurately predicts whether Elasticsearch
-   * will accept or reject a bulk request based on its default 100MB {@code
-   * http.max_content_length}.
+   * Validates that our NDJSON payload size measurement accurately predicts that Elasticsearch will
+   * accept bulk requests that fall under its default 100MB {@code http.max_content_length}.
    */
-  @ParameterizedTest(name = "shouldHandlePayloadOf{0}MbCorrectly")
-  @ValueSource(ints = {50, 60, 70, 80, 90, 110})
-  void shouldAcceptOrRejectBasedOnPayloadSize(final int targetMB) throws Exception {
+  @ParameterizedTest(name = "shouldAcceptPayloadOf{0}Mb")
+  @ValueSource(ints = {50, 60, 70, 80, 90})
+  void shouldAcceptPayloadUnderLimit(final int targetMB) throws Exception {
     // given
     final BulkRequest bulkRequest = buildBulkRequest(targetMB);
     final long payloadBytes =
         NdJsonSizeUtil.measureNdJsonPayloadSize(bulkRequest, esClient._jsonpMapper()).totalBytes();
 
-    // when/then
-    if (payloadBytes < ES_MAX_CONTENT_LENGTH_BYTES) {
-      esClient.bulk(bulkRequest);
-    } else {
-      assertThatThrownBy(() -> esClient.bulk(bulkRequest))
-          .hasMessageContaining("413 Request Entity Too Large");
-    }
+    // when/then — payload is under 100MB, ES should accept it
+    assertThat(payloadBytes).isLessThan(ES_MAX_CONTENT_LENGTH_BYTES);
+    esClient.bulk(bulkRequest);
+  }
+
+  /**
+   * Validates that Elasticsearch rejects a bulk request whose payload exceeds the default 100MB
+   * {@code http.max_content_length}. Depending on timing, ES may respond with a proper HTTP 413 or
+   * close the connection while the client is still writing (resulting in a "Broken pipe" or
+   * "Connection reset").
+   */
+  @Test
+  void shouldRejectPayloadOverLimit() {
+    // given
+    final int targetMB = 110;
+    final BulkRequest bulkRequest = buildBulkRequest(targetMB);
+    final long payloadBytes =
+        NdJsonSizeUtil.measureNdJsonPayloadSize(bulkRequest, esClient._jsonpMapper()).totalBytes();
+    assertThat(payloadBytes).isGreaterThanOrEqualTo(ES_MAX_CONTENT_LENGTH_BYTES);
+
+    // when/then — ES may close the connection before sending a proper 413 response
+    assertThatThrownBy(() -> esClient.bulk(bulkRequest))
+        .satisfiesAnyOf(
+            t -> assertThat(t).hasMessageContaining("413 Request Entity Too Large"),
+            t -> assertThat(t).hasMessageContaining("Broken pipe"),
+            t -> assertThat(t).hasMessageContaining("Connection reset"));
   }
 
   private BulkRequest buildBulkRequest(final int targetMB) {
