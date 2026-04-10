@@ -7,23 +7,42 @@
  */
 package io.camunda.webapps.schema.entities.resource;
 
-import io.camunda.webapps.schema.entities.BeforeVersion880;
 import io.camunda.webapps.schema.entities.ExporterEntity;
+import io.camunda.webapps.schema.entities.SinceVersion;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import java.util.Objects;
 
 public class ResourceEntity implements ExporterEntity<ResourceEntity>, TenantOwned {
 
-  @BeforeVersion880 private String id;
-  @BeforeVersion880 private long key;
-  @BeforeVersion880 private String resourceId;
-  @BeforeVersion880 private int version;
-  @BeforeVersion880 private String versionTag;
-  @BeforeVersion880 private String resourceName;
-  @BeforeVersion880 private String resource;
-  @BeforeVersion880 private String tenantId = DEFAULT_TENANT_IDENTIFIER;
-  @BeforeVersion880 private long deploymentKey;
-  @BeforeVersion880 private Boolean isDeleted;
+  @SinceVersion(value = "8.10.0", requireDefault = false)
+  private String id;
+
+  @SinceVersion(value = "8.10.0", requireDefault = false)
+  private long key;
+
+  @SinceVersion(value = "8.10.0", requireDefault = false)
+  private String resourceId;
+
+  @SinceVersion(value = "8.10.0", requireDefault = false)
+  private int version;
+
+  @SinceVersion(value = "8.10.0", requireDefault = false)
+  private String versionTag;
+
+  @SinceVersion(value = "8.10.0", requireDefault = false)
+  private String resourceName;
+
+  @SinceVersion(value = "8.10.0", requireDefault = false)
+  private String resource;
+
+  @SinceVersion(value = "8.10.0", requireDefault = false)
+  private String tenantId = DEFAULT_TENANT_IDENTIFIER;
+
+  @SinceVersion(value = "8.10.0", requireDefault = false)
+  private long deploymentKey;
+
+  @SinceVersion(value = "8.10.0", requireDefault = false)
+  private Boolean isDeleted;
 
   @Override
   public String getId() {

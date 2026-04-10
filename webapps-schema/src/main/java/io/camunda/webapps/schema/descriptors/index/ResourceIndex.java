@@ -17,7 +17,7 @@ import java.util.Optional;
 public class ResourceIndex extends AbstractIndexDescriptor implements Prio4Backup {
 
   public static final String INDEX_NAME = "resource";
-  public static final String INDEX_VERSION = "8.9.0";
+  public static final String INDEX_VERSION = "8.10.0";
 
   public static final String ID = "id";
   public static final String KEY = "key";
