@@ -12,6 +12,7 @@ import static io.camunda.search.query.SearchQueryBuilders.processDefinitionSearc
 
 import io.camunda.search.clients.DecisionRequirementSearchClient;
 import io.camunda.search.clients.ProcessDefinitionSearchClient;
+import io.camunda.search.clients.ResourceSearchClient;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.security.SecurityContextProvider;
@@ -23,6 +24,7 @@ import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.ResourceRecord;
 import io.camunda.zeebe.protocol.impl.record.value.resource.ResourceDeletionRecord;
 import io.camunda.zeebe.protocol.record.value.ResourceType;
+import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
@@ -30,6 +32,7 @@ public final class ResourceServices extends ApiServices<ResourceServices> {
 
   private final ProcessDefinitionSearchClient processDefinitionSearchClient;
   private final DecisionRequirementSearchClient decisionRequirementSearchClient;
+  private final ResourceSearchClient resourceSearchClient;
 
   public ResourceServices(
       final BrokerClient brokerClient,
@@ -37,7 +40,8 @@ public final class ResourceServices extends ApiServices<ResourceServices> {
       final ApiServicesExecutorProvider executorProvider,
       final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter,
       final ProcessDefinitionSearchClient processDefinitionSearchClient,
-      final DecisionRequirementSearchClient decisionRequirementSearchClient) {
+      final DecisionRequirementSearchClient decisionRequirementSearchClient,
+      final ResourceSearchClient resourceSearchClient) {
     super(
         brokerClient,
         securityContextProvider,
@@ -45,6 +49,7 @@ public final class ResourceServices extends ApiServices<ResourceServices> {
         brokerRequestAuthorizationConverter);
     this.processDefinitionSearchClient = processDefinitionSearchClient;
     this.decisionRequirementSearchClient = decisionRequirementSearchClient;
+    this.resourceSearchClient = resourceSearchClient;
   }
 
   public CompletableFuture<DeploymentRecord> deployResources(
@@ -118,6 +123,34 @@ public final class ResourceServices extends ApiServices<ResourceServices> {
 
   public CompletableFuture<ResourceRecord> fetchResource(
       final ResourceFetchRequest request, final CamundaAuthentication authentication) {
+    // Try to fetch from secondary storage first (if available)
+    if (resourceSearchClient != null) {
+      try {
+        final var resourceEntity =
+            resourceSearchClient
+                .withSecurityContext(securityContextProvider.provideSecurityContext(authentication))
+                .getResource(request.resourceKey());
+
+        if (resourceEntity != null) {
+          // Convert ResourceEntity to ResourceRecord
+          final var resourceRecord = new ResourceRecord();
+          resourceRecord.setResourceKey(resourceEntity.resourceKey());
+          resourceRecord.setResourceId(resourceEntity.resourceId());
+          resourceRecord.setVersion(resourceEntity.version());
+          resourceRecord.setVersionTag(resourceEntity.versionTag());
+          resourceRecord.setResourceName(resourceEntity.resourceName());
+          resourceRecord.setResource(
+              BufferUtil.wrapString(
+                  resourceEntity.resource() != null ? resourceEntity.resource() : ""));
+          resourceRecord.setTenantId(resourceEntity.tenantId());
+          return CompletableFuture.completedFuture(resourceRecord);
+        }
+      } catch (final Exception e) {
+        // Fall through to primary storage if secondary storage fails
+      }
+    }
+
+    // Fallback to primary storage (engine)
     return sendBrokerRequest(
         new BrokerFetchResourceRequest().setResourceKey(request.resourceKey()), authentication);
   }

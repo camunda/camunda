@@ -28,6 +28,7 @@ import io.camunda.search.clients.MappingRuleSearchClient;
 import io.camunda.search.clients.MessageSubscriptionSearchClient;
 import io.camunda.search.clients.ProcessDefinitionSearchClient;
 import io.camunda.search.clients.ProcessInstanceSearchClient;
+import io.camunda.search.clients.ResourceSearchClient;
 import io.camunda.search.clients.RoleSearchClient;
 import io.camunda.search.clients.SequenceFlowSearchClient;
 import io.camunda.search.clients.TenantSearchClient;
@@ -78,6 +79,7 @@ import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
 import io.camunda.zeebe.gateway.impl.job.ActivateJobsHandler;
 import io.camunda.zeebe.gateway.rest.config.GatewayRestConfiguration;
 import io.micrometer.core.instrument.MeterRegistry;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -473,14 +475,16 @@ public class CamundaServicesConfiguration {
       final ApiServicesExecutorProvider executorProvider,
       final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter,
       final ProcessDefinitionSearchClient processDefinitionSearchClient,
-      final DecisionRequirementSearchClient decisionRequirementSearchClient) {
+      final DecisionRequirementSearchClient decisionRequirementSearchClient,
+      @Autowired(required = false) final ResourceSearchClient resourceSearchClient) {
     return new ResourceServices(
         brokerClient,
         securityContextProvider,
         executorProvider,
         brokerRequestAuthorizationConverter,
         processDefinitionSearchClient,
-        decisionRequirementSearchClient);
+        decisionRequirementSearchClient,
+        resourceSearchClient);
   }
 
   @Bean

@@ -20,6 +20,7 @@ import io.camunda.webapps.schema.descriptors.index.MappingRuleIndex;
 import io.camunda.webapps.schema.descriptors.index.MetadataIndex;
 import io.camunda.webapps.schema.descriptors.index.PersistentWebSessionIndexDescriptor;
 import io.camunda.webapps.schema.descriptors.index.ProcessIndex;
+import io.camunda.webapps.schema.descriptors.index.ResourceIndex;
 import io.camunda.webapps.schema.descriptors.index.RoleIndex;
 import io.camunda.webapps.schema.descriptors.index.TenantIndex;
 import io.camunda.webapps.schema.descriptors.index.UserIndex;
@@ -74,6 +75,7 @@ public class IndexDescriptors {
                 new PersistentWebSessionIndexDescriptor(indexPrefix, isElasticsearch),
                 new PostImporterQueueTemplate(indexPrefix, isElasticsearch),
                 new ProcessIndex(indexPrefix, isElasticsearch),
+                new ResourceIndex(indexPrefix, isElasticsearch),
                 new RoleIndex(indexPrefix, isElasticsearch),
                 new MetadataIndex(indexPrefix, isElasticsearch),
                 new SequenceFlowTemplate(indexPrefix, isElasticsearch),
