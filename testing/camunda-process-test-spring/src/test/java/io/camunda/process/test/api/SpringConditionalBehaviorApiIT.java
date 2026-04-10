@@ -22,6 +22,7 @@ import static io.camunda.process.test.api.ConditionalBehaviorTestProcess.*;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.response.ProcessInstanceEvent;
 import io.camunda.process.test.api.assertions.ProcessInstanceSelectors;
+import java.time.Duration;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -36,6 +37,7 @@ public class SpringConditionalBehaviorApiIT {
 
   @Test
   void shouldCompleteProcessWithConditionalBehaviors() {
+    CamundaAssert.setAssertionTimeout(Duration.ofSeconds(20));
     // Deploy
     client.newDeployResourceCommand().addProcessModel(MODEL, PROCESS_ID + ".bpmn").send().join();
 

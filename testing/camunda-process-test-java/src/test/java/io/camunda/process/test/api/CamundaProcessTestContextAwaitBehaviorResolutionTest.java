@@ -138,7 +138,7 @@ class CamundaProcessTestContextAwaitBehaviorResolutionTest {
     await().untilAsserted(() -> assertThat(trackingBehavior.wasUsed()).isTrue());
   }
 
-  private static class TrackingAwaitBehavior implements CamundaAssertAwaitBehavior {
+  private static final class TrackingAwaitBehavior implements CamundaAssertAwaitBehavior {
 
     private final AtomicBoolean used = new AtomicBoolean(false);
 
