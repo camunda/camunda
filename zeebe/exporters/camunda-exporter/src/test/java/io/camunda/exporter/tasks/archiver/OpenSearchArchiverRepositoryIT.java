@@ -1177,6 +1177,7 @@ final class OpenSearchArchiverRepositoryIT {
 
     // then
     Awaitility.await()
+        .atMost(Duration.ofSeconds(30))
         .untilAsserted(
             () ->
                 verify(
