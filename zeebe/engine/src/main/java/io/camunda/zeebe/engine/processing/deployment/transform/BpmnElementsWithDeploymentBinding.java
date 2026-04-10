@@ -30,10 +30,6 @@ public class BpmnElementsWithDeploymentBinding implements DeploymentResourceCont
   private final List<ZeebeLinkedResource> linkedResources = new ArrayList<>();
   private final String resourceName;
 
-  public BpmnElementsWithDeploymentBinding() {
-    this.resourceName = null;
-  }
-
   public BpmnElementsWithDeploymentBinding(final String resourceName) {
     this.resourceName = resourceName;
   }

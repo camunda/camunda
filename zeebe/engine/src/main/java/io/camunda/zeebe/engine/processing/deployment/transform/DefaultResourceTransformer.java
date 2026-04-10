@@ -32,10 +32,14 @@ import org.agrona.DirectBuffer;
  * <h2>Duplicate detection</h2>
  *
  * <p>A resource deployment is considered a <em>duplicate</em> when both the checksum (MD5 of the
- * raw bytes) and the resource name match the previously deployed version. Only if either value
+ * raw bytes) and the resource ID match the previously deployed version. Only if either value
  * differs will a new version be created.
  *
  * <h2>Filename (resourceName) vs. resource ID</h2>
+ *
+ * <p>The {@code resourceName} field always reflects the filename used in the deployment command,
+ * even for duplicates. This lets callers see which filename was used in each deployment. However,
+ * {@code resourceName} is <em>not</em> part of the identity check:
  *
  * <ul>
  *   <li><b>Generic resources</b> (no known extension, e.g. {@code .txt}): the filename <em>is</em>
@@ -66,6 +70,12 @@ class DefaultResourceTransformer implements DeploymentResourceTransformer {
     this.resourceState = resourceState;
   }
 
+  /**
+   * The default transformer accepts any resource that was not handled by other transformers.
+   *
+   * @param resource the raw deployment resource
+   * @return always returns {@code true} as this is the fallback transformer
+   */
   @Override
   public boolean canTransform(final DeploymentResource resource) {
     return true;
@@ -85,28 +95,19 @@ class DefaultResourceTransformer implements DeploymentResourceTransformer {
   }
 
   @Override
-  public Either<Failure, Void> createMetadata(
-      final DeploymentResource deploymentResource,
-      final DeploymentRecord deployment,
-      final DeploymentResourceContext context) {
+  public final Either<Failure, DeploymentResourceContext> createMetadata(
+      final DeploymentResource deploymentResource, final DeploymentRecord deployment) {
     return parseResourceInfo(deploymentResource)
-        .flatMap(
-            resourceInfo ->
-                checkForDuplicateResourceId(
-                        resourceInfo.id(), deploymentResource, deployment)
-                    .map(
-                        ok -> {
-                          addResourceMetadata(resourceInfo, deploymentResource, deployment);
-                          return null;
-                        }));
+        .map(
+            resourceInfo -> {
+              addResourceMetadata(resourceInfo, deploymentResource, deployment);
+              return DeploymentResourceContext.NONE;
+            });
   }
 
   @Override
-  public void writeRecords(
+  public final void writeRecords(
       final DeploymentResource resource, final DeploymentRecord deployment) {
-    if (deployment.hasDuplicatesOnly()) {
-      return;
-    }
     final var checksum = checksumGenerator.checksum(resource.getResourceBuffer());
     deployment.resourceMetadata().stream()
         .filter(metadata -> checksum.equals(metadata.getChecksumBuffer()))
@@ -114,6 +115,8 @@ class DefaultResourceTransformer implements DeploymentResourceTransformer {
         .ifPresent(
             metadata -> {
               if (metadata.isDuplicate()) {
+                // create new version as the deployment contains at least one other non-duplicate
+                // resource and all resources in a deployment should be versioned together
                 metadata
                     .setResourceKey(keyGenerator.nextKey())
                     .setVersion(
@@ -173,25 +176,6 @@ class DefaultResourceTransformer implements DeploymentResourceTransformer {
                     .setResourceKey(keyGenerator.nextKey())
                     .setVersion(INITIAL_VERSION)
                     .setDeploymentKey(deploymentRecord.getDeploymentKey()));
-  }
-
-  private Either<Failure, ?> checkForDuplicateResourceId(
-      final String resourceId,
-      final DeploymentResource resource,
-      final DeploymentRecord record) {
-    return record.getResourceMetadata().stream()
-        .filter(metadata -> metadata.getResourceId().equals(resourceId))
-        .findFirst()
-        .map(
-            dupeResource -> {
-              final var failureMessage =
-                  String.format(
-                      "Expected the resource ids to be unique within a deployment"
-                          + " but found a duplicated id '%s' in the resources '%s' and '%s'.",
-                      resourceId, dupeResource.getResourceName(), resource.getResourceName());
-              return Either.left(new Failure(failureMessage));
-            })
-        .orElse(Either.right(null));
   }
 
   /**
