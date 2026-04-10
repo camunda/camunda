@@ -45,8 +45,8 @@ public final class FlowNodeInstanceFilterTest extends AbstractTransformerTest {
     assertThat(flowNodeInstanceFilter.processDefinitionIds()).isEmpty();
     assertThat(flowNodeInstanceFilter.stateOperations()).isEmpty();
     assertThat(flowNodeInstanceFilter.types()).isEmpty();
-    assertThat(flowNodeInstanceFilter.flowNodeIds()).isEmpty();
-    assertThat(flowNodeInstanceFilter.flowNodeNames()).isEmpty();
+    assertThat(flowNodeInstanceFilter.flowNodeIdOperations()).isEmpty();
+    assertThat(flowNodeInstanceFilter.flowNodeNameOperations()).isEmpty();
     assertThat(flowNodeInstanceFilter.treePaths()).isEmpty();
     assertThat(flowNodeInstanceFilter.hasIncident()).isNull();
     assertThat(flowNodeInstanceFilter.incidentKeys()).isEmpty();
