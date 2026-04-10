@@ -163,6 +163,34 @@ def post_or_update_comment(owner: str, repo: str, pr_number: int, body: str, tok
         print(f"{PREFIX} Created new comment.")
 
 
+def _resolve_comment(owner: str, repo: str, comment_id: int, token: str) -> None:
+    """Update an existing warning comment to show it's resolved, keeping the old body as strikethrough."""
+    # Fetch the current comment body
+    url = f"https://api.github.com/repos/{owner}/{repo}/issues/comments/{comment_id}"
+    raw = _github_api(url, token)
+    current_body = json.loads(raw).get("body", "")
+    # Strip the marker line — we'll re-add it at the top
+    old_body = current_body.replace(COMMENT_MARKER, "").strip()
+    # Wrap each line in strikethrough
+    struck = "\n".join(f"~~{line}~~" if line.strip() else "" for line in old_body.splitlines())
+    resolved_body = "\n".join([
+        COMMENT_MARKER,
+        "# ✅ Resolved — No New Flaky Tests",
+        "",
+        "A previous CI run flagged new flaky tests, but the latest run found none.",
+        "",
+        "<details>",
+        "<summary>Previous warning (resolved)</summary>",
+        "",
+        struck,
+        "",
+        "</details>",
+    ])
+    payload = json.dumps({"body": resolved_body}).encode()
+    _github_api(url, token, method="PATCH", data=payload)
+    print(f"{PREFIX} Updated comment (id={comment_id}) to resolved.")
+
+
 # ---------------------------------------------------------------------------
 # Test comparison
 # ---------------------------------------------------------------------------
@@ -290,6 +318,11 @@ def main() -> None:
     if not new_flaky_tests:
         print(f"{PREFIX} ✅ All flaky tests in this PR are already known. No new flaky tests.")
         set_output("has-new-flaky-tests", "false")
+        # If a previous run left a warning comment, update it to "resolved".
+        owner, repo = github_repository.split("/", 1)
+        existing_id = _find_existing_comment(owner, repo, pr_number, github_token)
+        if existing_id:
+            _resolve_comment(owner, repo, existing_id, github_token)
         return
 
     print(f"\n{PREFIX} ❌ Found {len(new_flaky_tests)} NEW flaky test(s)!")
