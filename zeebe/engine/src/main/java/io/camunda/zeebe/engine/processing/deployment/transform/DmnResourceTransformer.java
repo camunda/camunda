@@ -9,11 +9,16 @@ package io.camunda.zeebe.engine.processing.deployment.transform;
 
 import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 
+import com.google.common.base.Strings;
 import io.camunda.zeebe.dmn.DecisionEngine;
 import io.camunda.zeebe.dmn.DecisionEngineFactory;
 import io.camunda.zeebe.dmn.ParsedDecision;
+import io.camunda.zeebe.dmn.ParsedDecisionInput;
+import io.camunda.zeebe.dmn.ParsedDecisionOutput;
 import io.camunda.zeebe.dmn.ParsedDecisionRequirementsGraph;
+import io.camunda.zeebe.dmn.ParsedDecisionRule;
 import io.camunda.zeebe.dmn.impl.ParsedDmnScalaDrg;
+import io.camunda.zeebe.engine.processing.common.DecisionBehavior;
 import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.ChecksumGenerator;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
@@ -28,6 +33,7 @@ import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentResource;
 import io.camunda.zeebe.protocol.record.intent.DecisionIntent;
 import io.camunda.zeebe.protocol.record.intent.DecisionRequirementsIntent;
+import io.camunda.zeebe.protocol.record.value.deployment.DecisionRequirementsMetadataValue;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.buffer.BufferUtil;
@@ -35,6 +41,8 @@ import java.io.ByteArrayInputStream;
 import java.util.Collection;
 import java.util.Optional;
 import java.util.function.LongSupplier;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.agrona.DirectBuffer;
 import org.camunda.bpm.model.dmn.instance.ExtensionElements;
 
@@ -52,19 +60,20 @@ public final class DmnResourceTransformer implements DeploymentResourceTransform
   private final StateWriter stateWriter;
   private final ChecksumGenerator checksumGenerator;
   private final DecisionState decisionState;
-  private final ValidationConfig validationConfig;
+
+  private final ValidationConfig config;
 
   public DmnResourceTransformer(
       final KeyGenerator keyGenerator,
       final StateWriter stateWriter,
       final ChecksumGenerator checksumGenerator,
       final DecisionState decisionState,
-      final ValidationConfig validationConfig) {
+      final ValidationConfig config) {
     this.keyGenerator = keyGenerator;
     this.stateWriter = stateWriter;
     this.checksumGenerator = checksumGenerator;
     this.decisionState = decisionState;
-    this.validationConfig = validationConfig;
+    this.config = config;
   }
 
   @Override
@@ -82,9 +91,9 @@ public final class DmnResourceTransformer implements DeploymentResourceTransform
     final var parsedDrg = decisionEngine.parse(dmnResource);
 
     if (parsedDrg.isValid()) {
-      return checkDrdIdNameLength(resource, parsedDrg)
-          .flatMap(valid -> checkDecisionIdLength(resource, parsedDrg))
-          .flatMap(valid -> checkDecisionNameLength(resource, parsedDrg))
+      return checkForDuplicateIds(resource, parsedDrg, deployment)
+          .flatMap(valid -> checkDrdIdNameLength(resource, parsedDrg))
+          .flatMap(valid -> checkDecisions(resource, parsedDrg))
           .map(
               valid -> {
                 appendMetadataToDeploymentEvent(resource, parsedDrg, deployment);
@@ -100,6 +109,9 @@ public final class DmnResourceTransformer implements DeploymentResourceTransform
 
   @Override
   public void writeRecords(final DeploymentResource resource, final DeploymentRecord deployment) {
+    if (deployment.hasDuplicatesOnly()) {
+      return;
+    }
     final var checksum = checksumGenerator.checksum(resource.getResourceBuffer());
     deployment.decisionRequirementsMetadata().stream()
         .filter(drg -> checksum.equals(drg.getChecksumBuffer()))
@@ -165,66 +177,210 @@ public final class DmnResourceTransformer implements DeploymentResourceTransform
             });
   }
 
+  private Either<Failure, ?> checkForDuplicateIds(
+      final DeploymentResource resource,
+      final ParsedDecisionRequirementsGraph parsedDrg,
+      final DeploymentRecord deploymentEvent) {
+
+    return checkDuplicatedDrgIds(resource, parsedDrg, deploymentEvent)
+        .flatMap(noDuplicates -> checkDuplicatedDecisionIds(resource, parsedDrg, deploymentEvent));
+  }
+
+  private Either<Failure, ?> checkDuplicatedDrgIds(
+      final DeploymentResource resource,
+      final ParsedDecisionRequirementsGraph parsedDrg,
+      final DeploymentRecord deploymentEvent) {
+
+    final var decisionRequirementsId = parsedDrg.getId();
+
+    return deploymentEvent.getDecisionRequirementsMetadata().stream()
+        .filter(drg -> drg.getDecisionRequirementsId().equals(decisionRequirementsId))
+        .findFirst()
+        .map(
+            duplicatedDrg -> {
+              final var failureMessage =
+                  String.format(
+                      "Expected the decision requirements ids to be unique within a deployment"
+                          + " but found a duplicated id '%s' in the resources '%s' and '%s'.",
+                      decisionRequirementsId,
+                      duplicatedDrg.getResourceName(),
+                      resource.getResourceName());
+              return Either.left(new Failure(failureMessage));
+            })
+        .orElse(NO_VALIDATION_ERROR);
+  }
+
+  private Either<Failure, ?> checkDuplicatedDecisionIds(
+      final DeploymentResource resource,
+      final ParsedDecisionRequirementsGraph parsedDrg,
+      final DeploymentRecord deploymentEvent) {
+
+    final var decisionIds =
+        parsedDrg.getDecisions().stream().map(ParsedDecision::getId).collect(Collectors.toList());
+
+    return deploymentEvent.getDecisionsMetadata().stream()
+        .filter(decision -> decisionIds.contains(decision.getDecisionId()))
+        .findFirst()
+        .map(
+            duplicatedDecision -> {
+              final var failureMessage =
+                  String.format(
+                      "Expected the decision ids to be unique within a deployment"
+                          + " but found a duplicated id '%s' in the resources '%s' and '%s'.",
+                      duplicatedDecision.getDecisionId(),
+                      findResourceName(
+                          deploymentEvent, duplicatedDecision.getDecisionRequirementsKey()),
+                      resource.getResourceName());
+              return Either.left(new Failure(failureMessage));
+            })
+        .orElse(NO_VALIDATION_ERROR);
+  }
+
   private Either<Failure, ?> checkDrdIdNameLength(
       final DeploymentResource resource, final ParsedDecisionRequirementsGraph parsedDrg) {
     final var decisionRequirementsId = parsedDrg.getId();
     final var decisionRequirementsName = parsedDrg.getName();
 
-    if (decisionRequirementsId != null
-        && decisionRequirementsId.length() > validationConfig.maxIdFieldLength()) {
-      final var failureMessage =
-          String.format(
-              "The ID of a DRG must not be longer than the configured max-id-length of %s characters, but was '%s' in resource '%s'",
-              validationConfig.maxIdFieldLength(),
-              decisionRequirementsId,
-              resource.getResourceName());
-      return Either.left(new Failure(failureMessage));
-    } else if (decisionRequirementsName != null
-        && decisionRequirementsName.length() > validationConfig.maxNameFieldLength()) {
-      final var failureMessage =
-          String.format(
-              "The name of a DRG must not be longer than the configured max-name-length of %s characters, but was '%s' in DRG '%s'",
-              validationConfig.maxNameFieldLength(),
-              decisionRequirementsName,
-              resource.getResourceName());
-      return Either.left(new Failure(failureMessage));
+    return checkFieldLength(
+            Stream.of(decisionRequirementsId),
+            config.maxIdFieldLength(),
+            "The ID of a DRG must not be longer than the configured max-id-length of %s characters, but was '%s' in resource '%s'",
+            resource)
+        .flatMap(
+            valid ->
+                checkFieldLength(
+                    Stream.of(decisionRequirementsName),
+                    config.maxNameFieldLength(),
+                    "The name of a DRG must not be longer than the configured max-name-length of %s characters, but was '%s' in DRG '%s'",
+                    resource));
+  }
+
+  private Either<Failure, ?> checkDecision(
+      final DeploymentResource resource, final ParsedDecision decision) {
+    return checkFieldLength(
+            decision.getId(),
+            config.maxIdFieldLength(),
+            "The ID of a decision must not be longer than the configured max-id-length of %s characters, but was '%s' in resource '%s'",
+            resource)
+        .flatMap(
+            valid ->
+                checkFieldLength(
+                    decision.getName(),
+                    config.maxNameFieldLength(),
+                    "The name of a decision must not be longer than the configured max-name-length of %s characters, but was '%s' in resource '%s'",
+                    resource))
+        .flatMap(valid -> checkDecisionTable(resource, decision));
+  }
+
+  private Either<Failure, ?> checkDecisionTable(
+      final DeploymentResource resource, final ParsedDecision decision) {
+    if (decision.getDecisionTable() == null) {
+      return NO_VALIDATION_ERROR;
+    }
+
+    return checkFieldLength(
+            decision.getDecisionTable().getInputs().stream().map(ParsedDecisionInput::getId),
+            config.maxIdFieldLength(),
+            "The ID of a decision input must not be longer than the configured max-id-length of %s characters, but was '%s' in resource '%s'",
+            resource)
+        .flatMap(
+            valid ->
+                checkFieldLength(
+                    decision.getDecisionTable().getInputs().stream()
+                        .map(ParsedDecisionInput::getName),
+                    config.maxNameFieldLength(),
+                    "The name of a decision input must not be longer than the configured max-name-length of %s characters, but was '%s' in resource '%s'",
+                    resource))
+        .flatMap(
+            valid ->
+                checkFieldLength(
+                    decision.getDecisionTable().getOutputs().stream()
+                        .map(ParsedDecisionOutput::getId),
+                    config.maxIdFieldLength(),
+                    "The ID of a decision output must not be longer than the configured max-id-length of %s characters, but was '%s' in resource '%s'",
+                    resource))
+        .flatMap(
+            valid ->
+                checkFieldLength(
+                    decision.getDecisionTable().getOutputs().stream()
+                        .map(ParsedDecisionOutput::getName),
+                    config.maxNameFieldLength(),
+                    "The name of a decision output must not be longer than the configured max-name-length of %s characters, but was '%s' in resource '%s'",
+                    resource))
+        .flatMap(
+            valid ->
+                checkFieldLength(
+                    decision.getDecisionTable().getRules().stream()
+                        .map(ParsedDecisionRule::getId)
+                        .filter(id -> !Strings.isNullOrEmpty(id)),
+                    config.maxIdFieldLength(),
+                    "The ID of a decision rule must not be longer than the configured max-id-length of %s characters, but was '%s' in resource '%s'",
+                    resource))
+        .flatMap(valid -> checkBlankRuleIds(resource, decision));
+  }
+
+  private Either<Failure, ?> checkBlankRuleIds(
+      final DeploymentResource resource, final ParsedDecision decision) {
+    final var hasBlankRuleIds =
+        decision.getDecisionTable().getRules().stream()
+            .anyMatch(rule -> Strings.isNullOrEmpty(rule.getId()));
+    if (hasBlankRuleIds) {
+      final var synthesizedRuleId = DecisionBehavior.synthesizeRuleId(decision.getId(), 9999, 9999);
+      final var maxLengthDecisionId =
+          config.maxIdFieldLength() - synthesizedRuleId.length() + decision.getId().length();
+      return checkFieldLength(
+          decision.getId(),
+          maxLengthDecisionId,
+          "A blank ruleId requires a decisionId having a max-id-length of %s characters, but was '%s' in resource '%s'. Either shorten the decisionId or set a ruleId explicitly",
+          resource);
     } else {
       return NO_VALIDATION_ERROR;
     }
   }
 
-  private Either<Failure, ?> checkDecisionIdLength(
+  private Either<Failure, ?> checkDecisions(
       final DeploymentResource resource, final ParsedDecisionRequirementsGraph parsedDrg) {
-    return parsedDrg.getDecisions().stream()
-        .map(ParsedDecision::getId)
-        .filter(id -> id != null && id.length() > validationConfig.maxIdFieldLength())
+    for (final var decision : parsedDrg.getDecisions()) {
+      final var validation = checkDecision(resource, decision);
+      if (validation.isLeft()) {
+        return validation;
+      }
+    }
+
+    return NO_VALIDATION_ERROR;
+  }
+
+  private static Either<Failure, ?> checkFieldLength(
+      final String value,
+      final int maxLength,
+      final String message,
+      final DeploymentResource resource) {
+    return checkFieldLength(Stream.of(value), maxLength, message, resource);
+  }
+
+  private static Either<Failure, ?> checkFieldLength(
+      final Stream<String> values,
+      final int maxLength,
+      final String message,
+      final DeploymentResource resource) {
+    return values
+        .filter(id -> id != null && id.length() > maxLength)
         .findFirst()
         .map(
             id ->
                 Either.left(
-                    new Failure(
-                        String.format(
-                            "The ID of a decision must not be longer than the configured max-id-length of %s characters, but was '%s' in resource '%s'",
-                            validationConfig.maxIdFieldLength(), id, resource.getResourceName()))))
+                    new Failure(String.format(message, maxLength, id, resource.getResourceName()))))
         .orElse(NO_VALIDATION_ERROR);
   }
 
-  private Either<Failure, ?> checkDecisionNameLength(
-      final DeploymentResource resource, final ParsedDecisionRequirementsGraph parsedDrg) {
-    return parsedDrg.getDecisions().stream()
-        .map(ParsedDecision::getName)
-        .filter(name -> name != null && name.length() > validationConfig.maxNameFieldLength())
+  private String findResourceName(
+      final DeploymentRecord deploymentEvent, final long decisionRequirementsKey) {
+
+    return deploymentEvent.getDecisionRequirementsMetadata().stream()
+        .filter(drg -> drg.getDecisionRequirementsKey() == decisionRequirementsKey)
+        .map(DecisionRequirementsMetadataValue::getResourceName)
         .findFirst()
-        .map(
-            name ->
-                Either.left(
-                    new Failure(
-                        String.format(
-                            "The name of a decision must not be longer than the configured max-name-length of %s characters, but was '%s' in resource '%s'",
-                            validationConfig.maxNameFieldLength(),
-                            name,
-                            resource.getResourceName()))))
-        .orElse(NO_VALIDATION_ERROR);
+        .orElse("<?>");
   }
 
   private void appendMetadataToDeploymentEvent(
