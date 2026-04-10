@@ -445,7 +445,7 @@ public class TaskStoreOpenSearch implements TaskStore {
   private List<TaskSearchView> mapTasksFromEntity(final SearchResponse<TaskEntity> response) {
     return response.hits().hits().stream()
         .map(sh -> TaskSearchView.createFrom(sh.source(), sh.sort().toArray(new String[0])))
-        .toList();
+        .collect(Collectors.toCollection(ArrayList::new));
   }
 
   private List<String> getTasksContainsVarNameAndValue(
