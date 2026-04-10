@@ -10,11 +10,11 @@ on:
   workflow_dispatch:
     inputs:
       client_version:
-        description: 'Client version to test (e.g., 8.8.0 or 8.9.0-SNAPSHOT). Leave empty to test all versions.'
+        description: 'Client version to test (e.g., 8.8.0 or 8.9-SNAPSHOT). Leave empty to test all versions.'
         required: false
         type: string
       server_version:
-        description: 'Server version to test (e.g., 8.8.0 or 8.9.0-SNAPSHOT). Leave empty to test all versions.'
+        description: 'Server version to test (e.g., 8.8.0 or 8.9-SNAPSHOT). Leave empty to test all versions.'
         required: false
         type: string
       skip_cache:
@@ -138,7 +138,7 @@ jobs:
             IFS='.' read -r STABLE_MAJOR STABLE_MINOR <<< "$STABLE_VERSION"
             NEXT_MINOR=$((STABLE_MINOR + 1))
             if echo "$FILTERED_TAGS" | grep -q "^${STABLE_MAJOR}\\.${NEXT_MINOR}\\."; then
-              NEXT_SNAPSHOT="${STABLE_MAJOR}.${NEXT_MINOR}.0-SNAPSHOT"
+              NEXT_SNAPSHOT="${STABLE_MAJOR}.${NEXT_MINOR}-SNAPSHOT"
             else
               NEXT_SNAPSHOT="SNAPSHOT"
             fi
@@ -243,6 +243,10 @@ jobs:
         run: |
           CLIENT_VERSION="${{ inputs.client_version }}"
           SERVER_VERSION="${{ inputs.server_version }}"
+
+          # Normalize x.y.0-SNAPSHOT to x.y-SNAPSHOT (Docker tag format)
+          CLIENT_VERSION="${CLIENT_VERSION/%.0-SNAPSHOT/-SNAPSHOT}"
+          SERVER_VERSION="${SERVER_VERSION/%.0-SNAPSHOT/-SNAPSHOT}"
 
           if [[ -n "$CLIENT_VERSION" ]] && [[ -n "$SERVER_VERSION" ]]; then
             echo "Manual trigger: Testing specific versions - Client: $CLIENT_VERSION, Server: $SERVER_VERSION"
