@@ -135,7 +135,7 @@ jobs:
         with:
           pattern: zeebe-version-compatibility-*
       - name: Merge reports
-        run : |
+        run: |
           cat zeebe-version-compatibility-*/** | sort | uniq > ${{ github.workspace }}/zeebe-version-compatibility
           if [ ! -s ${{ github.workspace }}/zeebe-version-compatibility ]; then
             exit 1
@@ -154,7 +154,7 @@ jobs:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - name: Import Secrets
         id: secrets
-        uses: hashicorp/vault-action@79632e33d6953d190b940ffa440bf97821cabd80
+        uses: hashicorp/vault-action@4c06c5ccf5c0761b6029f56cfb1dcf5565918a3b # v3.4.0
         with:
           url: ${{ secrets.VAULT_ADDR }}
           method: approle
