@@ -59,7 +59,7 @@
     <quartz.version>2.3.2</quartz.version>
     <kotlin-stdlib.version>2.1.0</kotlin-stdlib.version>
     <jakarta.rs-api.version>4.0.0</jakarta.rs-api.version>
-    <netty.version>4.1.130.Final</netty.version>
+    <netty.version>4.1.132.Final</netty.version>
     <log4j2.version>2.25.3</log4j2.version>
     <lombok.version>1.18.34</lombok.version>
     <logback.version>1.5.25</logback.version>
