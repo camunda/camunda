@@ -171,8 +171,22 @@ def _resolve_comment(owner: str, repo: str, comment_id: int, token: str) -> None
     current_body = json.loads(raw).get("body", "")
     # Strip the marker line — we'll re-add it at the top
     old_body = current_body.replace(COMMENT_MARKER, "").strip()
-    # Wrap each line in strikethrough
-    struck = "\n".join(f"~~{line}~~" if line.strip() else "" for line in old_body.splitlines())
+    # Wrap each line in strikethrough, preserving markdown structural syntax
+    # (headings and list markers must stay outside ~~ or they break rendering)
+    struck_lines = []
+    for line in old_body.splitlines():
+        stripped = line.strip()
+        if not stripped:
+            struck_lines.append("")
+        elif stripped.startswith("#"):
+            text = stripped.lstrip("#").strip()
+            struck_lines.append(f"~~{text}~~")
+        elif stripped.startswith("- "):
+            indent = line[: len(line) - len(line.lstrip())]
+            struck_lines.append(f"{indent}- ~~{stripped[2:]}~~")
+        else:
+            struck_lines.append(f"~~{stripped}~~")
+    struck = "\n".join(struck_lines)
     resolved_body = "\n".join([
         COMMENT_MARKER,
         "# ✅ Resolved — No New Flaky Tests",
