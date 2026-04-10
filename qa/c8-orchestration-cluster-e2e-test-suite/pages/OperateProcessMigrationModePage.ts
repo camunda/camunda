@@ -106,4 +106,24 @@ export class OperateProcessMigrationModePage {
       await expect(this.page.getByLabel(label)).toHaveValue(targetValue);
     }
   }
+
+  async verifySummaryNotification({
+    instanceCount,
+    sourceBpmnProcessId,
+    sourceVersion,
+    targetBpmnProcessId,
+    targetVersion,
+  }: {
+    instanceCount: number;
+    sourceBpmnProcessId: string;
+    sourceVersion: string;
+    targetBpmnProcessId: string;
+    targetVersion: string;
+  }): Promise<void> {
+    const instanceWord =
+      instanceCount === 1 ? 'process instance' : 'process instances';
+    await expect(this.summaryNotification).toContainText(
+      `You are about to migrate ${instanceCount} ${instanceWord} from the process definition: ${sourceBpmnProcessId} - version ${sourceVersion} to the process definition: ${targetBpmnProcessId} - version ${targetVersion}`,
+    );
+  }
 }
