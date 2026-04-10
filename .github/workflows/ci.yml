@@ -1431,7 +1431,7 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       - name: Install bats
-        run: npm install -g bats
+        run: sudo apt-get install -y bats
       - name: Run ci-relevance tests
         run: bats .github/scripts/ci-relevance/check.bats
 
