@@ -159,7 +159,7 @@ class DefaultResourceTransformer implements DeploymentResourceTransformer {
         .findLatestResourceById(resourceId, tenantId)
         .ifPresentOrElse(
             latestResource -> {
-              if (latestResource.isDuplicateOf(checksum, resourceId)) {
+              if (latestResource.isDuplicateOf(resourceId, checksum)) {
                 metadata
                     .setResourceKey(latestResource.getResourceKey())
                     .setVersion(latestResource.getVersion())
