@@ -45,7 +45,7 @@ public final class ClusterCfg {
   private ConfigManagerCfg configManager = ConfigManagerCfg.defaultConfig();
   private DataSize socketSendBuffer = null;
   private DataSize socketReceiveBuffer = null;
-  private boolean sendOnLegacySubject = true;
+  private boolean sendOnLegacySubject = false;
   private String defaultEngineName = "default";
 
   public String getMemberId() {

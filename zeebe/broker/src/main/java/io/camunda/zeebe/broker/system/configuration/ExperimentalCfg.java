@@ -23,7 +23,7 @@ public class ExperimentalCfg implements ConfigurationEntry {
   public static final DataSize DEFAULT_MAX_APPEND_BATCH_SIZE = DataSize.ofKilobytes(32);
   public static final boolean DEFAULT_DISABLE_EXPLICIT_RAFT_FLUSH = false;
   public static final boolean DEFAULT_VERSION_CHECK_ENABLED = true;
-  private static final boolean DEFAULT_SEND_ON_LEGACY_SUBJECT = true;
+  private static final boolean DEFAULT_SEND_ON_LEGACY_SUBJECT = false;
   private static final boolean DEFAULT_RECEIVE_ON_LEGACY_SUBJECT = true;
   private static final String DEFAULT_ENGINE_NAME = "default";
 

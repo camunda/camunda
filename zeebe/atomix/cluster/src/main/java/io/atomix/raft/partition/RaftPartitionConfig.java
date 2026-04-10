@@ -31,8 +31,9 @@ public class RaftPartitionConfig {
   private static final Duration DEFAULT_MAX_QUORUM_RESPONSE_TIMEOUT = Duration.ofSeconds(0);
   private static final int DEFAULT_SNAPSHOT_REPLICATION_THRESHOLD = 100;
   private static final String DEFAULT_ENGINE_NAME = "default";
+  private static final String DEFAULT_LEGACY_GROUP_NAME = "raft-partition";
   private static final boolean DEFAULT_RECEIVE_ON_LEGACY_SUBJECT = true;
-  private static final boolean DEFAULT_SEND_ON_LEGACY_SUBJECT = true;
+  private static final boolean DEFAULT_SEND_ON_LEGACY_SUBJECT = false;
 
   private Duration electionTimeout = DEFAULT_ELECTION_TIMEOUT;
   private Duration heartbeatInterval = DEFAULT_HEARTBEAT_INTERVAL;
@@ -49,6 +50,7 @@ public class RaftPartitionConfig {
   private Duration configurationChangeTimeout;
   private int snapshotChunkSize;
   private String engineName = DEFAULT_ENGINE_NAME;
+  private String legacyGroupName = DEFAULT_LEGACY_GROUP_NAME;
   private boolean receiveOnLegacySubject = DEFAULT_RECEIVE_ON_LEGACY_SUBJECT;
   private boolean sendOnLegacySubject = DEFAULT_SEND_ON_LEGACY_SUBJECT;
 
@@ -221,6 +223,14 @@ public class RaftPartitionConfig {
 
   public void setEngineName(final String engineName) {
     this.engineName = engineName;
+  }
+
+  public String getLegacyGroupName() {
+    return legacyGroupName;
+  }
+
+  public void setLegacyGroupName(final String legacyGroupName) {
+    this.legacyGroupName = legacyGroupName;
   }
 
   public boolean isReceiveOnLegacySubject() {

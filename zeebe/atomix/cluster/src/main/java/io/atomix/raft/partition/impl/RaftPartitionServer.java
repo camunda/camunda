@@ -341,7 +341,13 @@ public class RaftPartitionServer implements HealthMonitorable {
   }
 
   private RaftMessageContext createLegacySubjects() {
-    return new RaftMessageContext(partition.name());
+    // The legacy subject uses the old group name (defaults to "raft-partition") so that new brokers
+    // can still receive messages from old brokers that have not been upgraded yet. This is
+    // decoupled from partition.name() because the GROUP_NAME constant was changed to "default" as
+    // part of #50538.
+    final var legacyPrefix =
+        PARTITION_NAME_FORMAT.formatted(config.getLegacyGroupName(), partition.id().id());
+    return new RaftMessageContext(legacyPrefix);
   }
 
   private RaftMessageContext createEngineSubjects() {

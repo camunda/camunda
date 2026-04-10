@@ -86,6 +86,7 @@ public class RaftServerSenderSubjectsTest {
     final var raftStorageConfig = new RaftStorageConfig();
 
     raftPartitionConfig.setSendOnLegacySubject(sendOnLegacySubject);
+    raftPartitionConfig.setLegacyGroupName(PARTITION_GROUP);
     raftPartitionConfig.setStorageConfig(raftStorageConfig);
 
     return raftPartitionConfig;
