@@ -56,6 +56,7 @@ export type UiConfig = {
   validLicense: boolean;
   commercial: boolean;
   expiresAt: string | null;
+  businessValueMockEnabled: boolean;
 };
 
 let globalConfig: UiConfig;
@@ -127,6 +128,9 @@ export const getNotificationsUrl = createAccessorFunction<string>('notifications
 export const isUserSearchAvailable = createAccessorFunction<boolean>('userSearchAvailable');
 export const getOptimizeDatabase =
   createAccessorFunction<UiConfig['optimizeDatabase']>('optimizeDatabase');
+export const isBusinessValueMockEnabled = createAccessorFunction<boolean>(
+  'businessValueMockEnabled'
+);
 export const getUserTaskAssigneeAnalyticsEnabled = createAccessorFunction<boolean>(
   'userTaskAssigneeAnalyticsEnabled'
 );
