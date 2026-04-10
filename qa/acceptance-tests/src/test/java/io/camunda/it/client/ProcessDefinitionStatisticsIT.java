@@ -169,27 +169,32 @@ public class ProcessDefinitionStatisticsIT {
     waitForProcessInstances(
         camundaClient, f -> f.processDefinitionKey(processDefinitionKey).hasIncident(true), 2);
 
-    // when
-    final var actual =
-        camundaClient
-            .newProcessDefinitionElementStatisticsRequest(processDefinitionKey)
-            .filter(
-                f ->
-                    f.orFilters(
-                        List.of(
-                            f1 -> f1.elementId(b -> b.like("*Event")),
-                            f2 ->
-                                f2.processInstanceKey(pi1.getProcessInstanceKey())
-                                    .hasElementInstanceIncident(true))))
-            .send()
-            .join();
-
-    // then
-    assertThat(actual).hasSize(2);
-    assertThat(actual)
-        .containsExactlyInAnyOrder(
-            new ProcessElementStatisticsImpl("StartEvent", 0L, 0L, 0L, 2L),
-            new ProcessElementStatisticsImpl("ScriptTask", 0L, 0L, 1L, 0L));
+    // The process instance may report hasIncident=true before the flow node instance record
+    // is updated with the incident, so we poll the element statistics endpoint.
+    Awaitility.await("should return element statistics with incident")
+        .atMost(TIMEOUT_DATA_AVAILABILITY)
+        .ignoreExceptions()
+        .untilAsserted(
+            () ->
+                // when
+                assertThat(
+                        camundaClient
+                            .newProcessDefinitionElementStatisticsRequest(processDefinitionKey)
+                            .filter(
+                                f ->
+                                    f.orFilters(
+                                        List.of(
+                                            f1 -> f1.elementId(b -> b.like("*Event")),
+                                            f2 ->
+                                                f2.processInstanceKey(pi1.getProcessInstanceKey())
+                                                    .hasElementInstanceIncident(true))))
+                            .send()
+                            .join())
+                    // then
+                    .hasSize(2)
+                    .containsExactlyInAnyOrder(
+                        new ProcessElementStatisticsImpl("StartEvent", 0L, 0L, 0L, 2L),
+                        new ProcessElementStatisticsImpl("ScriptTask", 0L, 0L, 1L, 0L)));
   }
 
   @Test
@@ -233,25 +238,30 @@ public class ProcessDefinitionStatisticsIT {
     waitForProcessInstances(
         camundaClient, f -> f.processDefinitionKey(processDefinitionKey).hasIncident(true), 2);
 
-    // when
-    final var actual =
-        camundaClient
-            .newProcessDefinitionElementStatisticsRequest(processDefinitionKey)
-            .filter(
-                f ->
-                    f.orFilters(
-                        List.of(
-                            f1 -> f1.elementId(b -> b.neq("start")),
-                            f2 -> f2.errorMessage(INCIDENT_ERROR_MESSAGE_V1))))
-            .send()
-            .join();
-
-    // then
-    assertThat(actual).hasSize(2);
-    assertThat(actual)
-        .containsExactlyInAnyOrder(
-            new ProcessElementStatisticsImpl("start", 0L, 0L, 0L, 2L),
-            new ProcessElementStatisticsImpl("taskAIncident", 0L, 0L, 2L, 0L));
+    // The process instance may report hasIncident=true before the flow node instance record
+    // is updated with the incident, so we poll the element statistics endpoint.
+    Awaitility.await("should return element statistics with incident")
+        .atMost(TIMEOUT_DATA_AVAILABILITY)
+        .ignoreExceptions()
+        .untilAsserted(
+            () ->
+                // when
+                assertThat(
+                        camundaClient
+                            .newProcessDefinitionElementStatisticsRequest(processDefinitionKey)
+                            .filter(
+                                f ->
+                                    f.orFilters(
+                                        List.of(
+                                            f1 -> f1.elementId(b -> b.neq("start")),
+                                            f2 -> f2.errorMessage(INCIDENT_ERROR_MESSAGE_V1))))
+                            .send()
+                            .join())
+                    // then
+                    .hasSize(2)
+                    .containsExactlyInAnyOrder(
+                        new ProcessElementStatisticsImpl("start", 0L, 0L, 0L, 2L),
+                        new ProcessElementStatisticsImpl("taskAIncident", 0L, 0L, 2L, 0L)));
   }
 
   @Test
@@ -267,26 +277,33 @@ public class ProcessDefinitionStatisticsIT {
     waitForProcessInstances(
         camundaClient, f -> f.hasIncident(true).variables(getScopedVariables(testScopeId)), 2);
 
-    // when
-    final var actual =
-        camundaClient
-            .newProcessDefinitionElementStatisticsRequest(processDefinitionKey)
-            .filter(
-                f ->
-                    f.orFilters(
-                            List.of(
-                                f1 -> f1.elementId(b -> b.eq("start")),
-                                f2 -> f2.incidentErrorHashCode(INCIDENT_ERROR_HASH_CODE_V1)))
-                        .variables(getScopedVariables(testScopeId)))
-            .send()
-            .join();
-
-    // then
-    assertThat(actual).hasSize(2);
-    assertThat(actual)
-        .containsExactlyInAnyOrder(
-            new ProcessElementStatisticsImpl("start", 0L, 0L, 0L, 2L),
-            new ProcessElementStatisticsImpl("taskAIncident", 0L, 0L, 2L, 0L));
+    // The process instance may report hasIncident=true before the flow node instance record
+    // is updated with the incident, so we poll the element statistics endpoint.
+    Awaitility.await("should return element statistics with incident")
+        .atMost(TIMEOUT_DATA_AVAILABILITY)
+        .ignoreExceptions()
+        .untilAsserted(
+            () ->
+                // when
+                assertThat(
+                        camundaClient
+                            .newProcessDefinitionElementStatisticsRequest(processDefinitionKey)
+                            .filter(
+                                f ->
+                                    f.orFilters(
+                                            List.of(
+                                                f1 -> f1.elementId(b -> b.eq("start")),
+                                                f2 ->
+                                                    f2.incidentErrorHashCode(
+                                                        INCIDENT_ERROR_HASH_CODE_V1)))
+                                        .variables(getScopedVariables(testScopeId)))
+                            .send()
+                            .join())
+                    // then
+                    .hasSize(2)
+                    .containsExactlyInAnyOrder(
+                        new ProcessElementStatisticsImpl("start", 0L, 0L, 0L, 2L),
+                        new ProcessElementStatisticsImpl("taskAIncident", 0L, 0L, 2L, 0L)));
   }
 
   @Test
@@ -715,20 +732,25 @@ public class ProcessDefinitionStatisticsIT {
     waitForProcessInstances(
         camundaClient, f -> f.processDefinitionKey(processDefinitionKey).hasIncident(true), 3);
 
-    // when
-    final var actual =
-        camundaClient
-            .newProcessDefinitionElementStatisticsRequest(processDefinitionKey)
-            .filter(f -> f.hasIncident(true))
-            .send()
-            .join();
-
-    // then
-    assertThat(actual).hasSize(2);
-    assertThat(actual)
-        .containsExactlyInAnyOrder(
-            new ProcessElementStatisticsImpl("StartEvent", 0L, 0L, 0L, 3L),
-            new ProcessElementStatisticsImpl("ScriptTask", 0L, 0L, 3L, 0L));
+    // The process instance may report hasIncident=true before the flow node instance record
+    // is updated with the incident, so we poll the element statistics endpoint.
+    Awaitility.await("should return element statistics with incident")
+        .atMost(TIMEOUT_DATA_AVAILABILITY)
+        .ignoreExceptions()
+        .untilAsserted(
+            () ->
+                // when
+                assertThat(
+                        camundaClient
+                            .newProcessDefinitionElementStatisticsRequest(processDefinitionKey)
+                            .filter(f -> f.hasIncident(true))
+                            .send()
+                            .join())
+                    // then
+                    .hasSize(2)
+                    .containsExactlyInAnyOrder(
+                        new ProcessElementStatisticsImpl("StartEvent", 0L, 0L, 0L, 3L),
+                        new ProcessElementStatisticsImpl("ScriptTask", 0L, 0L, 3L, 0L)));
   }
 
   @Test
@@ -882,18 +904,24 @@ public class ProcessDefinitionStatisticsIT {
     waitForProcessInstances(
         camundaClient, f -> f.processDefinitionKey(processDefinitionKey).hasIncident(true), 1);
 
-    // when
-    final var actual =
-        camundaClient
-            .newProcessDefinitionElementStatisticsRequest(processDefinitionKey)
-            .filter(f -> f.hasElementInstanceIncident(true))
-            .send()
-            .join();
-
-    // then
-    assertThat(actual).hasSize(1);
-    assertThat(actual)
-        .containsExactly(new ProcessElementStatisticsImpl("ScriptTask", 0L, 0L, 1L, 0L));
+    // The process instance may report hasIncident=true before the flow node instance record
+    // is updated with the incident, so we poll the element statistics endpoint.
+    Awaitility.await("should return element statistics with incident")
+        .atMost(TIMEOUT_DATA_AVAILABILITY)
+        .ignoreExceptions()
+        .untilAsserted(
+            () ->
+                // when
+                assertThat(
+                        camundaClient
+                            .newProcessDefinitionElementStatisticsRequest(processDefinitionKey)
+                            .filter(f -> f.hasElementInstanceIncident(true))
+                            .send()
+                            .join())
+                    // then
+                    .hasSize(1)
+                    .containsExactly(
+                        new ProcessElementStatisticsImpl("ScriptTask", 0L, 0L, 1L, 0L)));
   }
 
   @Test
