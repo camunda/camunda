@@ -31,7 +31,6 @@ const useDeleteProcessInstancesBatchOperation = (
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationKey: ['createProcessInstanceDeletionBatchOperation'],
     mutationFn: async (payload) => {
       const {response, error} = await createDeletionBatchOperation(payload);
       if (response !== null) {
