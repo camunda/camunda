@@ -47,14 +47,14 @@ export type GetGroupParams = {
 
 export const getGroupDetails: ApiDefinition<Group, GetGroupParams> = ({
   groupId,
-}) => apiGet(`${GROUPS_ENDPOINT}/${groupId}`);
+}) => apiGet(`${GROUPS_ENDPOINT}/${encodeURIComponent(groupId)}`);
 
 export const createGroup: ApiDefinition<undefined, Group> = (params) =>
   apiPost(GROUPS_ENDPOINT, params);
 
 export const updateGroup: ApiDefinition<undefined, Group> = (group) => {
   const { groupId, name, description } = group;
-  return apiPut(`${GROUPS_ENDPOINT}/${groupId}`, {
+  return apiPut(`${GROUPS_ENDPOINT}/${encodeURIComponent(groupId)}`, {
     name,
     description,
   });
@@ -64,7 +64,7 @@ type DeleteGroupParams = GetGroupParams;
 
 export const deleteGroup: ApiDefinition<undefined, DeleteGroupParams> = ({
   groupId,
-}) => apiDelete(`${GROUPS_ENDPOINT}/${groupId}`);
+}) => apiDelete(`${GROUPS_ENDPOINT}/${encodeURIComponent(groupId)}`);
 
 // ----------------- Roles within a Group -----------------
 
@@ -75,14 +75,19 @@ export const searchRolesByGroupId: ApiDefinition<
   SearchResponse<Role>,
   GetGroupRolesParams
 > = ({ groupId, ...body }) =>
-  apiPost(`${GROUPS_ENDPOINT}/${groupId}/roles/search`, body);
+  apiPost(
+    `${GROUPS_ENDPOINT}/${encodeURIComponent(groupId)}/roles/search`,
+    body,
+  );
 
 type AssignGroupRoleParams = GetGroupRolesParams & { roleId: string };
 export const assignGroupRole: ApiDefinition<
   undefined,
   AssignGroupRoleParams
 > = ({ groupId, roleId }) => {
-  return apiPut(`${ROLES_ENDPOINT}/${roleId}/groups/${groupId}`);
+  return apiPut(
+    `${ROLES_ENDPOINT}/${encodeURIComponent(roleId)}/groups/${encodeURIComponent(groupId)}`,
+  );
 };
 
 type UnassignGroupRoleParams = AssignGroupRoleParams;
@@ -90,7 +95,9 @@ export const unassignGroupRole: ApiDefinition<
   undefined,
   UnassignGroupRoleParams
 > = ({ groupId, roleId }) =>
-  apiDelete(`${ROLES_ENDPOINT}/${roleId}/groups/${groupId}`);
+  apiDelete(
+    `${ROLES_ENDPOINT}/${encodeURIComponent(roleId)}/groups/${encodeURIComponent(groupId)}`,
+  );
 
 // ----------------- Mapping rules within a Group -----------------
 
@@ -102,7 +109,10 @@ export const getMappingRulesByGroupId: ApiDefinition<
   GetGroupMappingRulesParams
 > = (params) => {
   const { groupId, ...body } = params;
-  return apiPost(`${GROUPS_ENDPOINT}/${groupId}/mapping-rules/search`, body);
+  return apiPost(
+    `${GROUPS_ENDPOINT}/${encodeURIComponent(groupId)}/mapping-rules/search`,
+    body,
+  );
 };
 
 type AssignGroupMappingRuleParams = GetGroupMappingRulesParams & {
@@ -112,7 +122,9 @@ export const assignGroupMappingRule: ApiDefinition<
   undefined,
   AssignGroupMappingRuleParams
 > = ({ groupId, mappingRuleId }) => {
-  return apiPut(`${GROUPS_ENDPOINT}/${groupId}/mapping-rules/${mappingRuleId}`);
+  return apiPut(
+    `${GROUPS_ENDPOINT}/${encodeURIComponent(groupId)}/mapping-rules/${encodeURIComponent(mappingRuleId)}`,
+  );
 };
 
 type UnassignGroupMappingRuleParams = AssignGroupMappingRuleParams;
@@ -120,7 +132,9 @@ export const unassignGroupMappingRule: ApiDefinition<
   undefined,
   UnassignGroupMappingRuleParams
 > = ({ groupId, mappingRuleId }) =>
-  apiDelete(`${GROUPS_ENDPOINT}/${groupId}/mapping-rules/${mappingRuleId}`);
+  apiDelete(
+    `${GROUPS_ENDPOINT}/${encodeURIComponent(groupId)}/mapping-rules/${encodeURIComponent(mappingRuleId)}`,
+  );
 
 type GetGroupClientsParams = {
   groupId: string;
@@ -135,7 +149,10 @@ export const getClientsByGroupId: ApiDefinition<
   GetGroupClientsParams
 > = (args) => {
   const { groupId, ...body } = args;
-  return apiPost(`${GROUPS_ENDPOINT}/${groupId}/clients/search`, body);
+  return apiPost(
+    `${GROUPS_ENDPOINT}/${encodeURIComponent(groupId)}/clients/search`,
+    body,
+  );
 };
 
 type AssignGroupClientParams = GetGroupClientsParams & Client;
@@ -143,7 +160,9 @@ export const assignGroupClient: ApiDefinition<
   undefined,
   AssignGroupClientParams
 > = ({ groupId, clientId }) => {
-  return apiPut(`${GROUPS_ENDPOINT}/${groupId}/clients/${clientId}`);
+  return apiPut(
+    `${GROUPS_ENDPOINT}/${encodeURIComponent(groupId)}/clients/${encodeURIComponent(clientId)}`,
+  );
 };
 
 type UnassignGroupClientParams = AssignGroupClientParams;
@@ -151,4 +170,6 @@ export const unassignGroupClient: ApiDefinition<
   undefined,
   UnassignGroupClientParams
 > = ({ groupId, clientId }) =>
-  apiDelete(`${GROUPS_ENDPOINT}/${groupId}/clients/${clientId}`);
+  apiDelete(
+    `${GROUPS_ENDPOINT}/${encodeURIComponent(groupId)}/clients/${encodeURIComponent(clientId)}`,
+  );

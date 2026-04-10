@@ -58,7 +58,7 @@ export const updateUser: ApiDefinition<undefined, UpdateUserParams> = (
   user,
 ) => {
   const { name, email, username, password } = user;
-  return apiPut(`${USERS_ENDPOINT}/${username}`, {
+  return apiPut(`${USERS_ENDPOINT}/${encodeURIComponent(username)}`, {
     name,
     email,
     password: password ?? "",
@@ -71,4 +71,4 @@ type DeleteUserParams = {
 
 export const deleteUser: ApiDefinition<undefined, DeleteUserParams> = ({
   username,
-}) => apiDelete(`${USERS_ENDPOINT}/${username}`);
+}) => apiDelete(`${USERS_ENDPOINT}/${encodeURIComponent(username)}`);

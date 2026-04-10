@@ -36,7 +36,7 @@ type GetRoleParams = {
 };
 export const getRoleDetails: ApiDefinition<Role, GetRoleParams> = ({
   roleId,
-}) => apiGet(`${ROLES_ENDPOINT}/${roleId}`);
+}) => apiGet(`${ROLES_ENDPOINT}/${encodeURIComponent(roleId)}`);
 
 export const createRole: ApiDefinition<undefined, Role> = (role) =>
   apiPost(ROLES_ENDPOINT, role);
@@ -47,7 +47,7 @@ export type DeleteRoleParams = {
 };
 export const deleteRole: ApiDefinition<undefined, { roleId: string }> = ({
   roleId,
-}) => apiDelete(`${ROLES_ENDPOINT}/${roleId}`);
+}) => apiDelete(`${ROLES_ENDPOINT}/${encodeURIComponent(roleId)}`);
 
 // ----------------- Mapping rules within a Role -----------------
 
@@ -59,7 +59,10 @@ export const getMappingRulesByRoleId: ApiDefinition<
   GetRoleMappingRulesParams
 > = (params) => {
   const { roleId, ...body } = params;
-  return apiPost(`${ROLES_ENDPOINT}/${roleId}/mapping-rules/search`, body);
+  return apiPost(
+    `${ROLES_ENDPOINT}/${encodeURIComponent(roleId)}/mapping-rules/search`,
+    body,
+  );
 };
 
 type AssignRoleMappingParams = GetRoleMappingRulesParams & {
@@ -69,7 +72,9 @@ export const assignRoleMappingRule: ApiDefinition<
   undefined,
   AssignRoleMappingParams
 > = ({ roleId, mappingRuleId }) => {
-  return apiPut(`${ROLES_ENDPOINT}/${roleId}/mapping-rules/${mappingRuleId}`);
+  return apiPut(
+    `${ROLES_ENDPOINT}/${encodeURIComponent(roleId)}/mapping-rules/${encodeURIComponent(mappingRuleId)}`,
+  );
 };
 
 type UnassignRoleMappingParams = AssignRoleMappingParams;
@@ -77,7 +82,9 @@ export const unassignRoleMappingRule: ApiDefinition<
   undefined,
   UnassignRoleMappingParams
 > = ({ roleId, mappingRuleId }) =>
-  apiDelete(`${ROLES_ENDPOINT}/${roleId}/mapping-rules/${mappingRuleId}`);
+  apiDelete(
+    `${ROLES_ENDPOINT}/${encodeURIComponent(roleId)}/mapping-rules/${encodeURIComponent(mappingRuleId)}`,
+  );
 
 // ----------------- Groups within a Role -----------------
 
@@ -89,14 +96,19 @@ export const getGroupsByRoleId: ApiDefinition<
   SearchResponse<Group>,
   GetRoleGroupsParams
 > = ({ roleId, ...body }) =>
-  apiPost(`${ROLES_ENDPOINT}/${roleId}/groups/search`, body);
+  apiPost(
+    `${ROLES_ENDPOINT}/${encodeURIComponent(roleId)}/groups/search`,
+    body,
+  );
 
 type AssignRoleGroupParams = GetRoleGroupsParams & Pick<Group, "groupId">;
 export const assignRoleGroup: ApiDefinition<
   undefined,
   AssignRoleGroupParams
 > = ({ roleId, groupId }) => {
-  return apiPut(`${ROLES_ENDPOINT}/${roleId}/groups/${groupId}`);
+  return apiPut(
+    `${ROLES_ENDPOINT}/${encodeURIComponent(roleId)}/groups/${encodeURIComponent(groupId)}`,
+  );
 };
 
 type UnassignRoleGroupParams = AssignRoleGroupParams;
@@ -104,7 +116,9 @@ export const unassignRoleGroup: ApiDefinition<
   undefined,
   UnassignRoleGroupParams
 > = ({ roleId, groupId }) =>
-  apiDelete(`${ROLES_ENDPOINT}/${roleId}/groups/${groupId}`);
+  apiDelete(
+    `${ROLES_ENDPOINT}/${encodeURIComponent(roleId)}/groups/${encodeURIComponent(groupId)}`,
+  );
 
 // ----------------- Clients within a Role -----------------
 
@@ -121,7 +135,10 @@ export const getClientsByRoleId: ApiDefinition<
   GetRoleClientsParams
 > = (args) => {
   const { roleId, ...body } = args;
-  return apiPost(`${ROLES_ENDPOINT}/${roleId}/clients/search`, body);
+  return apiPost(
+    `${ROLES_ENDPOINT}/${encodeURIComponent(roleId)}/clients/search`,
+    body,
+  );
 };
 
 type AssignRoleClientParams = GetRoleClientsParams & Client;
@@ -129,7 +146,9 @@ export const assignRoleClient: ApiDefinition<
   undefined,
   AssignRoleClientParams
 > = ({ roleId, clientId }) => {
-  return apiPut(`${ROLES_ENDPOINT}/${roleId}/clients/${clientId}`);
+  return apiPut(
+    `${ROLES_ENDPOINT}/${encodeURIComponent(roleId)}/clients/${encodeURIComponent(clientId)}`,
+  );
 };
 
 type UnassignRoleClientParams = AssignRoleClientParams;
@@ -137,4 +156,6 @@ export const unassignRoleClient: ApiDefinition<
   undefined,
   UnassignRoleClientParams
 > = ({ roleId, clientId }) =>
-  apiDelete(`${ROLES_ENDPOINT}/${roleId}/clients/${clientId}`);
+  apiDelete(
+    `${ROLES_ENDPOINT}/${encodeURIComponent(roleId)}/clients/${encodeURIComponent(clientId)}`,
+  );
