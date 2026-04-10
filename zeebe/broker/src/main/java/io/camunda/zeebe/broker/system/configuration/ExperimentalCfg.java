@@ -9,6 +9,8 @@ package io.camunda.zeebe.broker.system.configuration;
 
 import io.camunda.zeebe.broker.system.configuration.RaftCfg.FlushConfig;
 import io.camunda.zeebe.broker.system.configuration.engine.EngineCfg;
+import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Optional;
 import org.springframework.util.unit.DataSize;
 
@@ -26,6 +28,7 @@ public class ExperimentalCfg implements ConfigurationEntry {
   private static final boolean DEFAULT_SEND_ON_LEGACY_SUBJECT = true;
   private static final boolean DEFAULT_RECEIVE_ON_LEGACY_SUBJECT = true;
   private static final String DEFAULT_ENGINE_NAME = "default";
+  private static final String DEFAULT_PHYSICAL_TENANT_ID = "default";
 
   private boolean continuousBackups = false;
 
@@ -41,6 +44,19 @@ public class ExperimentalCfg implements ConfigurationEntry {
   private boolean sendOnLegacySubject = DEFAULT_SEND_ON_LEGACY_SUBJECT;
   private boolean receiveOnLegacySubject = DEFAULT_RECEIVE_ON_LEGACY_SUBJECT;
   private String defaultEngineName = DEFAULT_ENGINE_NAME;
+
+  /**
+   * Physical tenants to run on this broker. Each entry becomes its own Raft partition group with an
+   * independent set of partitions and on-disk data directory. The {@link
+   * #DEFAULT_PHYSICAL_TENANT_ID default} physical tenant is always present — it is implicitly added
+   * if missing from the configured list, so users can leave this empty for a single-tenant broker
+   * or list only the additional physical tenants.
+   *
+   * <p>This is early-stage physical-tenants scaffolding (#50509). Most subsystems (admin service,
+   * gateway routing, restore, exporters) target the default physical tenant only for now.
+   */
+  private List<String> physicalTenantIds = List.of(DEFAULT_PHYSICAL_TENANT_ID);
+
   private RocksdbCfg rocksdb = new RocksdbCfg();
   private ExperimentalRaftCfg raft = new ExperimentalRaftCfg();
   private PartitioningCfg partitioning = new PartitioningCfg();
@@ -70,6 +86,27 @@ public class ExperimentalCfg implements ConfigurationEntry {
     rocksdb.init(globalConfig, brokerBase);
     raft.init(globalConfig, brokerBase);
     engine.init(globalConfig, brokerBase);
+    normalizeAndValidatePhysicalTenantIds();
+  }
+
+  private void normalizeAndValidatePhysicalTenantIds() {
+    final var normalized = new LinkedHashSet<String>();
+    normalized.add(DEFAULT_PHYSICAL_TENANT_ID);
+    if (physicalTenantIds != null) {
+      for (final String id : physicalTenantIds) {
+        if (id == null || id.isBlank()) {
+          throw new IllegalArgumentException(
+              "Physical tenant IDs must not be blank (configured list: " + physicalTenantIds + ")");
+        }
+        final var trimmed = id.trim();
+        if (trimmed.contains("/") || trimmed.contains("\\")) {
+          throw new IllegalArgumentException(
+              "Physical tenant IDs must not contain path separators: '" + trimmed + "'");
+        }
+        normalized.add(trimmed);
+      }
+    }
+    physicalTenantIds = List.copyOf(normalized);
   }
 
   public int getMaxAppendsPerFollower() {
@@ -191,6 +228,19 @@ public class ExperimentalCfg implements ConfigurationEntry {
     this.defaultEngineName = defaultEngineName;
   }
 
+  /**
+   * Returns the list of physical tenant IDs this broker should run. The {@link
+   * #DEFAULT_PHYSICAL_TENANT_ID default} physical tenant is always present at the head of the list,
+   * regardless of whether the user configured it explicitly. The list is deduplicated.
+   */
+  public List<String> getPhysicalTenantIds() {
+    return physicalTenantIds;
+  }
+
+  public void setPhysicalTenantIds(final List<String> physicalTenantIds) {
+    this.physicalTenantIds = physicalTenantIds;
+  }
+
   @Override
   public String toString() {
     return "ExperimentalCfg{"
@@ -218,6 +268,8 @@ public class ExperimentalCfg implements ConfigurationEntry {
         + receiveOnLegacySubject
         + ", defaultEngineName="
         + defaultEngineName
+        + ", physicalTenantIds="
+        + physicalTenantIds
         + '}';
   }
 }
