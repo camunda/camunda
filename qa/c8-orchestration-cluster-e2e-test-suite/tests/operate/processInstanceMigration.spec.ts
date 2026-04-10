@@ -57,31 +57,6 @@ const targetTaskCards: TaskCard[] = parseAssignedTasksFromFile(
 
 test.describe.serial('Process Instance Migration', () => {
   test.beforeAll(async () => {
-    const parallelV1Deploy: DeployResourceResponse = await deploy([
-      './resources/parallel_tasks_jw_v1.bpmn',
-      './resources/job-worker-id-form.form',
-    ]);
-    const parallelProcessV1: ProcessDeployment = {
-      bpmnProcessId: parallelV1Deploy.processes[0].processDefinitionId,
-      version: parallelV1Deploy.processes[0].processDefinitionVersion,
-    };
-
-    parallelProcesses = await createInstances(
-      parallelProcessV1.bpmnProcessId,
-      parallelProcessV1.version,
-      PARALLEL_INSTANCE_COUNT,
-    );
-
-    // Redeploying with the same bpmnProcessId — Zeebe auto-increments the version to V2.
-    const parallelV2Deploy: DeployResourceResponse = await deploy([
-      './resources/parallel_tasks_jw_v2.bpmn',
-    ]);
-    const parallelProcessV2: ProcessDeployment = {
-      bpmnProcessId: parallelV2Deploy.processes[0].processDefinitionId,
-      version: parallelV2Deploy.processes[0].processDefinitionVersion,
-    };
-
-    testParallelProcesses = {parallelProcessV1, parallelProcessV2};
 
     await deploy(['./resources/orderProcessMigration_v_1.bpmn']);
     const processV1: ProcessDeployment = {
@@ -137,9 +112,6 @@ test.describe.serial('Process Instance Migration', () => {
   });
 
   test.afterAll(async () => {
-    for (const process of parallelProcesses) {
-      await cancelProcessInstance(process.processInstanceKey as string);
-    }
     for (const process of processes) {
       for (const instance of process) {
         await cancelProcessInstance(instance.processInstanceKey as string);
