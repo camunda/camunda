@@ -124,8 +124,7 @@ public class WebSessionRepository implements SessionRepository<WebSession> {
     final var redactedId = redactSessionId(webSession.getId());
     try {
       Retry.decorateRunnable(
-              UPSERT_RETRY,
-              () -> persistentWebSessionClient.upsertPersistentWebSession(entity))
+              UPSERT_RETRY, () -> persistentWebSessionClient.upsertPersistentWebSession(entity))
           .run();
     } catch (final CamundaSearchException e) {
       LOGGER.warn(
