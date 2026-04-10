@@ -63,15 +63,15 @@ jobs:
           - pod: camunda-2
             event: alloc
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - name: Set up Teleport
-        uses: teleport-actions/setup@v1
+        uses: teleport-actions/setup@b638ff596557cc3959eb6b5287d5e58e0c8ac6a6 # v1.1.1
         with:
           proxy: camunda.teleport.sh:443
           version: auto
 
       - name: Authenticate to Cluster using Teleport
-        uses: teleport-actions/auth-k8s@v2
+        uses: teleport-actions/auth-k8s@0f46164469ae4fcd4d359d40e06bab17d4be17c9 # v2.0.6
         with:
           proxy: camunda.teleport.sh:443
           token: ${{ env.TELEPORT_JOIN_TOKEN }}
@@ -83,7 +83,7 @@ jobs:
       - name: Execute profiling
         run: >
           ./zeebe/benchmarks/docs/scripts/executeProfiling.sh ${{ matrix.pod }} ${{ matrix.event }} "${{ inputs.profiler_options }}"
-      - uses: actions/upload-artifact@v7
+      - uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
         with:
           name: flamegraph-${{ matrix.event }}-${{ matrix.pod }}
           path: ${{ matrix.pod }}*
@@ -114,15 +114,15 @@ jobs:
       contents: 'read'
       id-token: 'write'
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - name: Set up Teleport
-        uses: teleport-actions/setup@v1
+        uses: teleport-actions/setup@b638ff596557cc3959eb6b5287d5e58e0c8ac6a6 # v1.1.1
         with:
           proxy: camunda.teleport.sh:443
           version: auto
 
       - name: Authenticate to Cluster using Teleport
-        uses: teleport-actions/auth-k8s@v2
+        uses: teleport-actions/auth-k8s@0f46164469ae4fcd4d359d40e06bab17d4be17c9 # v2.0.6
         with:
           proxy: camunda.teleport.sh:443
           token: ${{ env.TELEPORT_JOIN_TOKEN }}
@@ -133,7 +133,7 @@ jobs:
       - name: Execute profiling
         run: >
           ./zeebe/benchmarks/docs/scripts/executeProfiling.sh ${{ inputs.pod }} cpu "${{ inputs.profiler_options }}"
-      - uses: actions/upload-artifact@v7
+      - uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
         with:
           name: flamegraph-cpu-${{ inputs.pod }}
           path: ${{ inputs.pod }}*
