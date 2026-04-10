@@ -241,25 +241,15 @@ public final class DeploymentRecord extends UnifiedRecordValue implements Deploy
   }
 
   public boolean hasResources() {
-    return resourceMetadata().iterator().hasNext();
+    return getResources().stream()
+        .map(io.camunda.zeebe.protocol.record.value.deployment.DeploymentResource::getResourceName)
+        .anyMatch(x -> x.endsWith(".rpa"));
   }
 
   /**
    * Returns {@code true} if every resource in this deployment is a duplicate of an already-deployed
    * version (i.e. its content and filename have not changed since the last deployment), {@code
    * false} if at least one resource is new or changed.
-   *
-   * <p><b>Versioning invariant:</b> all resources in a deployment are always versioned together. If
-   * at least one resource is new (not a duplicate), every resource in the deployment — including
-   * the ones that would individually be duplicates — receives a new version number and a new {@code
-   * CREATED} event. This guarantees that the deployment acts as a consistent, immutable snapshot
-   * that can be referenced as a whole by deployment-binding references.
-   *
-   * <p>When this method returns {@code true} the {@link
-   * io.camunda.zeebe.engine.processing.deployment.transform.DeploymentResourceTransformer#writeRecords}
-   * step can be skipped entirely, because there is nothing new to persist.
-   *
-   * @see io.camunda.zeebe.protocol.record.value.deployment.ProcessMetadataValue#isDuplicate()
    */
   public boolean hasDuplicatesOnly() {
     return processesMetadata().stream().allMatch(ProcessMetadata::isDuplicate)
@@ -267,18 +257,5 @@ public final class DeploymentRecord extends UnifiedRecordValue implements Deploy
             .allMatch(DecisionRequirementsMetadataValue::isDuplicate)
         && formMetadata().stream().allMatch(FormMetadataValue::isDuplicate)
         && resourceMetadata().stream().allMatch(ResourceMetadataValue::isDuplicate);
-  }
-
-  /**
-   * Finds a resource metadata entry by its resource ID.
-   *
-   * @param resourceId the resource ID to search for
-   * @return the metadata record if found, {@code null} otherwise
-   */
-  public ResourceMetadataRecord findResourceMetadataByResourceId(final String resourceId) {
-    return resourceMetadata().stream()
-        .filter(metadata -> metadata.getResourceId().equals(resourceId))
-        .findFirst()
-        .orElse(null);
   }
 }
