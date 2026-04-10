@@ -207,6 +207,10 @@ updated to show it's resolved — the original warning is kept in a collapsed
 >
 > The comment is identified by a hidden HTML marker (`<!-- new-flaky-tests-alert -->`)
 > so it is always updated in-place rather than creating duplicates.
+>
+> If the comment is already resolved and another passing run occurs, it is left
+> unchanged (no double-strikethrough). If new flaky tests appear in a later run,
+> the comment is fully replaced with a fresh warning.
 
 ## CI Job Configuration
 

@@ -169,24 +169,30 @@ def _resolve_comment(owner: str, repo: str, comment_id: int, token: str) -> None
     url = f"https://api.github.com/repos/{owner}/{repo}/issues/comments/{comment_id}"
     raw = _github_api(url, token)
     current_body = json.loads(raw).get("body", "")
+
+    # If the comment is already resolved, don't re-wrap it in strikethrough
+    if "✅ Resolved — No New Flaky Tests" in current_body:
+        print(f"{PREFIX} Comment (id={comment_id}) is already resolved — skipping update.")
+        return
+
     # Strip the marker line — we'll re-add it at the top
-    old_body = current_body.replace(COMMENT_MARKER, "").strip()
+    previous_warning_body = current_body.replace(COMMENT_MARKER, "").strip()
     # Wrap each line in strikethrough, preserving markdown structural syntax
     # (headings and list markers must stay outside ~~ or they break rendering)
-    struck_lines = []
-    for line in old_body.splitlines():
+    strikethrough_lines = []
+    for line in previous_warning_body.splitlines():
         stripped = line.strip()
         if not stripped:
-            struck_lines.append("")
+            strikethrough_lines.append("")
         elif stripped.startswith("#"):
             text = stripped.lstrip("#").strip()
-            struck_lines.append(f"~~{text}~~")
+            strikethrough_lines.append(f"~~{text}~~")
         elif stripped.startswith("- "):
             indent = line[: len(line) - len(line.lstrip())]
-            struck_lines.append(f"{indent}- ~~{stripped[2:]}~~")
+            strikethrough_lines.append(f"{indent}- ~~{stripped[2:]}~~")
         else:
-            struck_lines.append(f"~~{stripped}~~")
-    struck = "\n".join(struck_lines)
+            strikethrough_lines.append(f"~~{stripped}~~")
+    strikethrough_body = "\n".join(strikethrough_lines)
     resolved_body = "\n".join([
         COMMENT_MARKER,
         "# ✅ Resolved — No New Flaky Tests",
@@ -196,7 +202,7 @@ def _resolve_comment(owner: str, repo: str, comment_id: int, token: str) -> None
         "<details>",
         "<summary>Previous warning (resolved)</summary>",
         "",
-        struck,
+        strikethrough_body,
         "",
         "</details>",
     ])
@@ -253,24 +259,24 @@ def main() -> None:
         return
 
     try:
-        pr_flaky_entries = json.loads(pr_flaky_json)
+        raw_pr_flaky_entries = json.loads(pr_flaky_json)
     except json.JSONDecodeError as exc:
         print(f"{PREFIX} Failed to parse PR flaky tests data: {exc}")
         set_output("has-new-flaky-tests", "false")
         return
 
-    if not isinstance(pr_flaky_entries, list) or len(pr_flaky_entries) == 0:
+    if not isinstance(raw_pr_flaky_entries, list) or len(raw_pr_flaky_entries) == 0:
         print(f"{PREFIX} No PR flaky tests found.")
         set_output("has-new-flaky-tests", "false")
         return
 
-    print(f"{PREFIX} Raw PR flaky test entries ({len(pr_flaky_entries)} jobs):")
-    for i, entry in enumerate(pr_flaky_entries):
+    print(f"{PREFIX} Raw PR flaky test entries ({len(raw_pr_flaky_entries)} jobs):")
+    for i, entry in enumerate(raw_pr_flaky_entries):
         job = entry.get('job', '<unknown>')
         tests = entry.get('flaky_tests', '')
         print(f"{PREFIX}   [{i+1}] job='{job}' flaky_tests='{tests}'")
 
-    pr_flaky_tests = process_flaky_tests_data(pr_flaky_entries)
+    pr_flaky_tests = process_flaky_tests_data(raw_pr_flaky_entries)
     if not pr_flaky_tests:
         print(f"{PREFIX} No processed flaky tests from PR.")
         set_output("has-new-flaky-tests", "false")
