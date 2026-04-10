@@ -412,6 +412,20 @@ class TaskDetailsPage {
   getHistoryTableAssignCellCount(): Promise<number> {
     return this.historyTableAssignCell.count();
   }
+
+  async unassignReassignToMeAndComplete(): Promise<void> {
+    // Unassign from the current assignee
+    await this.clickUnassignButton();
+
+    // Assign to the logged-in user and verify assignment
+    await this.clickAssignToMeButton();
+
+    // Complete the task, wait for the banner to appear, then disappear
+    await expect(this.completeTaskButton).toBeEnabled({timeout: 15000});
+    await this.clickCompleteTaskButton();
+    await expect(this.taskCompletedBanner).toBeVisible();
+    await expect(this.taskCompletedBanner).toBeHidden({timeout: 15000});
+  }
 }
 
 export {TaskDetailsPage};

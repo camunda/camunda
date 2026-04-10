@@ -22,7 +22,9 @@ class TasklistHeader {
     this.languageSelector = page.getByRole('combobox', {name: 'Language'});
     this.processesTab = page.getByRole('link', {name: 'Processes'});
     this.logoutButton = page.getByRole('button', {name: 'Log out'});
-    this.tasksTab = page.getByRole('link', {name: 'Tasks'});
+    this.tasksTab = page
+      .getByRole('navigation')
+      .getByRole('link', {name: 'Tasks', exact: true});
   }
 
   async logout() {
