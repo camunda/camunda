@@ -178,6 +178,9 @@ public final class DeploymentCreateProcessor
   public ProcessingError tryHandleError(
       final TypedRecord<DeploymentRecord> command, final Throwable error) {
     // Make sure the cache does not contain any leftovers from this run (by hard resetting)
+
+    // TODO: this needs to be re-thought based on the new transformer architecture and the generic
+    // resources
     if (command.getValue().hasBpmnResources()) {
       processState.clearCache();
     }

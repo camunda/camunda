@@ -12,7 +12,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.zeebe.engine.processing.deployment.transform.DeploymentResourceContext;
 import io.camunda.zeebe.engine.processing.deployment.transform.ValidationConfig;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
+import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.List;
+import org.agrona.DirectBuffer;
 import org.junit.jupiter.api.Test;
 
 class DeploymentValidatorTest {
@@ -20,8 +22,14 @@ class DeploymentValidatorTest {
   private static final int MAX_ID_LENGTH = 256;
   private static final int MAX_NAME_LENGTH = 256;
 
+  private static final DirectBuffer DUMMY_CHECKSUM = BufferUtil.wrapString("checksum");
+
   private final DeploymentValidator validator =
-      new DeploymentValidator(new ValidationConfig(MAX_ID_LENGTH, MAX_NAME_LENGTH));
+      new DeploymentValidator(
+          ValidationConfig.builder()
+              .withMaxIdFieldLength(MAX_ID_LENGTH)
+              .withMaxNameFieldLength(MAX_NAME_LENGTH)
+              .build());
 
   // --- validateResources ---
 
@@ -110,12 +118,18 @@ class DeploymentValidatorTest {
         .processesMetadata()
         .add()
         .setBpmnProcessId("process1")
-        .setResourceName("file1.bpmn");
+        .setResourceName("file1.bpmn")
+        .setChecksum(DUMMY_CHECKSUM)
+        .setVersion(1)
+        .setKey(1);
     deployment
         .processesMetadata()
         .add()
         .setBpmnProcessId("process1")
-        .setResourceName("file2.bpmn");
+        .setResourceName("file2.bpmn")
+        .setChecksum(DUMMY_CHECKSUM)
+        .setVersion(1)
+        .setKey(2);
 
     // when
     final var result =
@@ -137,12 +151,18 @@ class DeploymentValidatorTest {
         .processesMetadata()
         .add()
         .setBpmnProcessId("process1")
-        .setResourceName("file1.bpmn");
+        .setResourceName("file1.bpmn")
+        .setChecksum(DUMMY_CHECKSUM)
+        .setVersion(1)
+        .setKey(1);
     deployment
         .processesMetadata()
         .add()
         .setBpmnProcessId("process2")
-        .setResourceName("file2.bpmn");
+        .setResourceName("file2.bpmn")
+        .setChecksum(DUMMY_CHECKSUM)
+        .setVersion(1)
+        .setKey(2);
 
     // when
     final var result =
@@ -158,8 +178,22 @@ class DeploymentValidatorTest {
   void shouldRejectDuplicateFormIds() {
     // given
     final var deployment = new DeploymentRecord();
-    deployment.formMetadata().add().setFormId("form1").setResourceName("form1.form");
-    deployment.formMetadata().add().setFormId("form1").setResourceName("form1-copy.form");
+    deployment
+        .formMetadata()
+        .add()
+        .setFormId("form1")
+        .setResourceName("form1.form")
+        .setVersion(1)
+        .setFormKey(1)
+        .setChecksum(DUMMY_CHECKSUM);
+    deployment
+        .formMetadata()
+        .add()
+        .setFormId("form1")
+        .setResourceName("form1-copy.form")
+        .setVersion(1)
+        .setFormKey(2)
+        .setChecksum(DUMMY_CHECKSUM);
 
     // when
     final var result =
@@ -183,12 +217,18 @@ class DeploymentValidatorTest {
         .resourceMetadata()
         .add()
         .setResourceId("my-script.txt")
-        .setResourceName("my-script.txt");
+        .setResourceName("my-script.txt")
+        .setVersion(1)
+        .setResourceKey(1)
+        .setChecksum(DUMMY_CHECKSUM);
     deployment
         .resourceMetadata()
         .add()
         .setResourceId("my-script.txt")
-        .setResourceName("my-script.txt");
+        .setResourceName("my-script.txt")
+        .setVersion(1)
+        .setResourceKey(2)
+        .setChecksum(DUMMY_CHECKSUM);
 
     // when
     final var result =
@@ -209,12 +249,18 @@ class DeploymentValidatorTest {
         .resourceMetadata()
         .add()
         .setResourceId("script1.txt")
-        .setResourceName("script1.txt");
+        .setResourceName("script1.txt")
+        .setVersion(1)
+        .setResourceKey(1)
+        .setChecksum(DUMMY_CHECKSUM);
     deployment
         .resourceMetadata()
         .add()
         .setResourceId("script2.txt")
-        .setResourceName("script2.txt");
+        .setResourceName("script2.txt")
+        .setVersion(1)
+        .setResourceKey(2)
+        .setChecksum(DUMMY_CHECKSUM);
 
     // when
     final var result =
@@ -234,12 +280,18 @@ class DeploymentValidatorTest {
         .decisionRequirementsMetadata()
         .add()
         .setDecisionRequirementsId("drg1")
-        .setResourceName("decisions1.dmn");
+        .setResourceName("decisions1.dmn")
+        .setDecisionRequirementsVersion(1)
+        .setDecisionRequirementsKey(1)
+        .setChecksum(DUMMY_CHECKSUM);
     deployment
         .decisionRequirementsMetadata()
         .add()
         .setDecisionRequirementsId("drg1")
-        .setResourceName("decisions2.dmn");
+        .setResourceName("decisions2.dmn")
+        .setDecisionRequirementsVersion(1)
+        .setDecisionRequirementsKey(2)
+        .setChecksum(DUMMY_CHECKSUM);
 
     // when
     final var result =
@@ -266,7 +318,8 @@ class DeploymentValidatorTest {
     // then
     assertThat(result.isLeft()).isTrue();
     // Empty deployment error doesn't use the prefix (it's a standalone message)
-    assertThat(result.getLeft().getMessage()).startsWith("Expected to deploy at least one resource");
+    assertThat(result.getLeft().getMessage())
+        .startsWith("Expected to deploy at least one resource");
   }
 
   @Test
