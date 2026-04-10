@@ -119,4 +119,12 @@ public final class PersistedForm extends UnpackedObject implements DbValue {
     deploymentKeyProp.setValue(record.getDeploymentKey());
     versionTagProp.setValue(record.getVersionTag());
   }
+
+  public boolean isDuplicateOf(final DirectBuffer resourceName, final DirectBuffer checksum) {
+    if (!bufferAsString(getResourceName()).equals(bufferAsString(resourceName))) {
+      return false;
+    }
+    return java.util.Arrays.equals(
+        BufferUtil.bufferAsArray(getChecksum()), BufferUtil.bufferAsArray(checksum));
+  }
 }

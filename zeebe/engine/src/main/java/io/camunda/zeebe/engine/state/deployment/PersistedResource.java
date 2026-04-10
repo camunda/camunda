@@ -107,4 +107,12 @@ public class PersistedResource extends UnpackedObject implements DbValue {
     versionTagProp.setValue(record.getVersionTag());
     resourceProp.setValue(record.getResourceProp());
   }
+
+  public boolean isDuplicateOf(final DirectBuffer resourceName, final DirectBuffer checksum) {
+    if (!getResourceName().equals(resourceName)) {
+      return false;
+    }
+    return java.util.Arrays.equals(
+        BufferUtil.bufferAsArray(getChecksum()), BufferUtil.bufferAsArray(checksum));
+  }
 }

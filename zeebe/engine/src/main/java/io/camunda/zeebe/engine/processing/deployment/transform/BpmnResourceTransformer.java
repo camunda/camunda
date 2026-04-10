@@ -43,6 +43,7 @@ public final class BpmnResourceTransformer implements DeploymentResourceTransfor
 
   private final BpmnTransformer bpmnTransformer;
 
+
   private final KeyGenerator keyGenerator;
   private final StateWriter stateWriter;
   private final ChecksumGenerator checksumGenerator;
@@ -71,6 +72,21 @@ public final class BpmnResourceTransformer implements DeploymentResourceTransfor
     validator =
         BpmnFactory.createValidator(clock, expressionProcessor, config, expressionLanguageMetrics);
     this.enableStraightThroughProcessingLoopDetector = enableStraightThroughProcessingLoopDetector;
+  }
+
+  @Override
+  public boolean canTransform(final DeploymentResource resource) {
+    final var resourceName = resource.getResourceName();
+    // .bpmn files must always be handled by this transformer (even if invalid)
+    if (resourceName.endsWith(".bpmn")) {
+      return true;
+    }
+    // .xml files: try to parse as BPMN and only handle if it's valid BPMN.
+    // This is necessary to distinguish BPMN .xml files from generic .xml files.
+    if (resourceName.endsWith(".xml")) {
+      return readProcessDefinition(resource).isRight();
+    }
+    return false;
   }
 
   @Override

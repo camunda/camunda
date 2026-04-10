@@ -47,6 +47,11 @@ public class RpaTransformer implements DeploymentResourceTransformer {
   }
 
   @Override
+  public boolean canTransform(final DeploymentResource resource) {
+    return resource.getResourceName().endsWith(".rpa");
+  }
+
+  @Override
   public Either<Failure, Void> createMetadata(
       final DeploymentResource deploymentResource,
       final DeploymentRecord deployment,

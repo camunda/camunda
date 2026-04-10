@@ -144,21 +144,22 @@ public class DeploymentRejectionTest {
   }
 
   @Test
-  public void shouldRejectDeploymentIfNotParsable() {
-    // when
-    final Record<DeploymentRecordValue> rejectedDeployment =
-        ENGINE
-            .deployment()
-            .withXmlResource("not a process".getBytes(UTF_8))
-            .expectRejection()
-            .deploy();
+  public void shouldDeployNonBpmnXmlAsGenericResource() {
+    // when - deploy invalid BPMN/XML content with .xml extension
+    final Record<DeploymentRecordValue> deployment =
+        ENGINE.deployment().withXmlResource("not a process".getBytes(UTF_8)).deploy();
 
-    // then
-    Assertions.assertThat(rejectedDeployment)
-        .hasKey(ExecuteCommandResponseDecoder.keyNullValue())
-        .hasRecordType(RecordType.COMMAND_REJECTION)
-        .hasIntent(DeploymentIntent.CREATE)
-        .hasRejectionType(RejectionType.INVALID_ARGUMENT);
+    // then - it should be accepted as a generic resource, not rejected
+    Assertions.assertThat(deployment)
+        .hasRecordType(RecordType.EVENT)
+        .hasIntent(DeploymentIntent.CREATED);
+
+    assertThat(deployment.getValue().getResourceMetadata())
+        .hasSize(1)
+        .first()
+        .satisfies(
+            metadata ->
+                Assertions.assertThat(metadata).hasResourceName("process.xml").hasVersion(1));
   }
 
   @Test
