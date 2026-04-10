@@ -542,9 +542,14 @@ public class GlobalUserTaskListenersTest {
     // Cancel the process (with the task)
     camundaClient.newCancelInstanceCommand(processInstanceKey).send();
 
-    // then: the task is correctly canceled
+    // then: the "creating" job and the task are correctly canceled
     RecordingExporter.userTaskRecords(UserTaskIntent.CANCELED)
         .withProcessInstanceKey(processInstanceKey)
+        .await();
+    RecordingExporter.jobRecords(JobIntent.CANCELED)
+        .withProcessInstanceKey(processInstanceKey)
+        .withJobListenerEventType(JobListenerEventType.CREATING)
+        .withType("global")
         .await();
   }
 
