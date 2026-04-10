@@ -69,7 +69,7 @@ final class OpensearchAuditLogArchiverRepositoryIT {
   private String auditLogIndex;
   private String auditLogCleanupIndex;
   private TestExporterResourceProvider resourceProvider;
-  private final OpenSearchClient testClient = createOpenSearchClient();
+  private final OpenSearchClient testClient = new OpenSearchClient(transport);
   private final Clock clock = Clock.fixed(Instant.parse("2026-02-19T10:00:00Z"), ZoneOffset.UTC);
   private String indexPrefix;
   private String zeebeIndex;
@@ -435,6 +435,17 @@ final class OpensearchAuditLogArchiverRepositoryIT {
   }
 
   private OpenSearchTransport createTransport() {
+    final var awsUrl = System.getProperty(TEST_INTEGRATION_OPENSEARCH_AWS_URL, "");
+    if (!awsUrl.isEmpty()) {
+      final URI uri = URI.create(awsUrl);
+      final SdkHttpClient httpClient = ApacheHttpClient.builder().build();
+      final var region = new DefaultAwsRegionProviderChain().getRegion();
+      return new AwsSdk2Transport(
+          httpClient,
+          uri.getHost(),
+          region,
+          AwsSdk2TransportOptions.builder().setMapper(new JacksonJsonpMapper(MAPPER)).build());
+    }
     try {
       return ApacheHttpClient5TransportBuilder.builder(HttpHost.create(SEARCH_DB.osUrl()))
           .setHttpClientConfigCallback(
@@ -499,26 +510,6 @@ final class OpensearchAuditLogArchiverRepositoryIT {
       testClient.index(b -> b.index(index).document(document).id(id));
     } catch (final IOException e) {
       throw new UncheckedIOException(e);
-    }
-  }
-
-  private OpenSearchClient createOpenSearchClient() {
-    final var isAWSRun = System.getProperty(TEST_INTEGRATION_OPENSEARCH_AWS_URL, "");
-    if (isAWSRun.isEmpty()) {
-      return new OpenSearchClient(transport);
-    } else {
-      final URI uri = URI.create(isAWSRun);
-      final SdkHttpClient httpClient = ApacheHttpClient.builder().build();
-      final var region = new DefaultAwsRegionProviderChain().getRegion();
-      return new OpenSearchClient(
-          new AwsSdk2Transport(
-              httpClient,
-              uri.getHost(),
-              region,
-              AwsSdk2TransportOptions.builder()
-                  .setMapper(
-                      new org.opensearch.client.json.jackson.JacksonJsonpMapper(new ObjectMapper()))
-                  .build()));
     }
   }
 

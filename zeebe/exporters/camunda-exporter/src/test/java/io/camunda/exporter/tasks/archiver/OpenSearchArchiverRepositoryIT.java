@@ -1100,6 +1100,10 @@ final class OpenSearchArchiverRepositoryIT {
    * the background {@link ApplyRolloverPeriodJob} re-applies the policy to all historical indices.
    */
   @Test
+  @DisabledIfSystemProperty(
+      named = TEST_INTEGRATION_OPENSEARCH_AWS_URL,
+      matches = "^(?=\\s*\\S).*$",
+      disabledReason = "Excluding from AWS OS IT CI - policy modification not allowed")
   void shouldUpdateMinIndexAgeOnManagedIndicesWhenApplyRolloverPeriodJobRuns() throws Exception {
     // given
     changeIndexStateManagementJobInterval(1);
@@ -1173,6 +1177,7 @@ final class OpenSearchArchiverRepositoryIT {
 
     // then
     Awaitility.await()
+        .atMost(Duration.ofSeconds(30))
         .untilAsserted(
             () ->
                 verify(
