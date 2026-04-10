@@ -119,4 +119,19 @@ public final class PersistedForm extends UnpackedObject implements DbValue {
     deploymentKeyProp.setValue(record.getDeploymentKey());
     versionTagProp.setValue(record.getVersionTag());
   }
+
+  /**
+   * Returns {@code true} if this persisted form represents the same content as the given checksum
+   * and resource name. A form is a duplicate when <em>both</em> the checksum (content) and the
+   * resource name are unchanged. Both parameters must be non-null.
+   *
+   * @param checksum the checksum to compare against
+   * @param resourceName the resource name to compare against
+   * @return {@code true} if this form is a duplicate of the given checksum and resource name
+   */
+  public boolean isDuplicateOf(final DirectBuffer checksum, final DirectBuffer resourceName) {
+    return java.util.Arrays.equals(
+            BufferUtil.bufferAsArray(getChecksum()), BufferUtil.bufferAsArray(checksum))
+        && BufferUtil.bufferAsString(getResourceName()).equals(bufferAsString(resourceName));
+  }
 }

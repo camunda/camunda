@@ -21,7 +21,6 @@ import io.camunda.zeebe.protocol.impl.record.value.deployment.FormRecord;
 import io.camunda.zeebe.protocol.record.intent.FormIntent;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.Either;
-import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.io.IOException;
 import java.util.Optional;
 import java.util.function.LongSupplier;
@@ -152,9 +151,8 @@ public final class FormResourceTransformer implements DeploymentResourceTransfor
         .findLatestFormById(formRecord.getFormId(), tenantId)
         .ifPresentOrElse(
             latestForm -> {
-              if (formRecord.isDuplicateOf(
-                  BufferUtil.bufferAsArray(latestForm.getChecksum()),
-                  BufferUtil.bufferAsString(latestForm.getResourceName()))) {
+              if (latestForm.isDuplicateOf(
+                  formRecord.getChecksumBuffer(), formRecord.getResourceNameBuffer())) {
                 formRecord
                     .setFormKey(latestForm.getFormKey())
                     .setVersion(latestForm.getVersion())
