@@ -38,14 +38,14 @@ export const CustomTabListVertical = styled(TabListVertical)`
   // Tab selectors container
   &.cds--tabs--vertical {
     top: ${spacing08};
-    background: var(--cds-layer-01);
+    background: var(--cds-layer);
     border: none;
     box-shadow: none;
     padding-right: ${spacing06};
 
     // Tab selector
     .cds--tabs__nav-item {
-      background: var(--cds-layer-01);
+      background: var(--cds-layer);
       margin-right: ${spacing06};
       height: ${sizeSmall};
       border: none;
@@ -62,7 +62,7 @@ export const CustomTabListVertical = styled(TabListVertical)`
 
     // Tab selector when selected
     .cds--tabs__nav-item--selected {
-      background: var(--cds-layer-selected-01);
+      background: var(--cds-layer-selected);
     }
   }
 `;

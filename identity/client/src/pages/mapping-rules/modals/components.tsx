@@ -11,7 +11,7 @@ import { spacing06 } from "@carbon/elements";
 import { Stack } from "@carbon/react";
 
 export const MappingRuleContainer = styled.div`
-  border-top: 1px solid var(--cds-border-subtle-01);
+  border-top: 1px solid var(--cds-border-subtle);
   padding-top: ${spacing06};
 `;
 

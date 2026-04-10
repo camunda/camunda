@@ -13,7 +13,7 @@ const Divider = styled.hr<{ $highContrast?: boolean; $noMargin?: boolean }>`
   width: 100%;
   border-top: 1px solid
     ${({ $highContrast }) =>
-      $highContrast ? "var(--cds-border-strong-01)" : "var(--cds-layer-01)"};
+      $highContrast ? "var(--cds-border-strong)" : "var(--cds-layer)"};
   border-left: none;
   border-right: none;
   margin: ${({ $noMargin }) => ($noMargin ? 0 : `${spacing05} 0 0 0`)};
