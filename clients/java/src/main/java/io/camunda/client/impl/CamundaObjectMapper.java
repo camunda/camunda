@@ -45,6 +45,15 @@ public final class CamundaObjectMapper implements JsonMapper {
     this.objectMapper
         .configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false)
         .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+    final com.fasterxml.jackson.databind.module.SimpleModule module =
+        new com.fasterxml.jackson.databind.module.SimpleModule("camunda-client");
+    module.addSerializer(
+        io.camunda.client.protocol.rest.StringFilterProperty.class,
+        new io.camunda.client.impl.http.StringFilterPropertySerializer());
+    module.addDeserializer(
+        io.camunda.client.protocol.rest.StringFilterProperty.class,
+        new io.camunda.client.impl.http.StringFilterPropertyDeserializer());
+    this.objectMapper.registerModule(module);
   }
 
   @Override
