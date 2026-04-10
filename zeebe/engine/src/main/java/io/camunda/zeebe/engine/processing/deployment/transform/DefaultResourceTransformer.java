@@ -20,7 +20,6 @@ import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.Optional;
-import java.util.function.LongSupplier;
 import org.agrona.DirectBuffer;
 
 /**
@@ -55,7 +54,6 @@ import org.agrona.DirectBuffer;
 class DefaultResourceTransformer implements DeploymentResourceTransformer {
 
   private static final int INITIAL_VERSION = 1;
-  private static final Either<Failure, Void> SUCCESS = Either.right(null);
 
   protected final KeyGenerator keyGenerator;
   protected final StateWriter stateWriter;
@@ -147,24 +145,23 @@ class DefaultResourceTransformer implements DeploymentResourceTransformer {
       final DeploymentResource deploymentResource,
       final DeploymentRecord deploymentRecord) {
     final ResourceMetadataRecord metadata = deploymentRecord.resourceMetadata().add();
-    final LongSupplier newResourceKey = keyGenerator::nextKey;
     final DirectBuffer checksum =
         checksumGenerator.checksum(deploymentResource.getResourceBuffer());
-    final String id = resourceInfo.id();
+    final String resourceId = resourceInfo.id();
     final String tenantId = deploymentRecord.getTenantId();
 
-    metadata.setResourceId(id);
+    metadata.setResourceId(resourceId);
     metadata.setChecksum(checksum);
     metadata.setResourceName(deploymentResource.getResourceName());
     metadata.setTenantId(tenantId);
     resourceInfo.versionTag().ifPresent(metadata::setVersionTag);
 
     resourceState
-        .findLatestResourceById(id, tenantId)
+        .findLatestResourceById(resourceId, tenantId)
         .ifPresentOrElse(
             latestResource -> {
               if (latestResource.isDuplicateOf(
-                  BufferUtil.bufferAsArray(checksum), id)) {
+                  BufferUtil.bufferAsArray(checksum), resourceId)) {
                 metadata
                     .setResourceKey(latestResource.getResourceKey())
                     .setVersion(latestResource.getVersion())
@@ -172,14 +169,14 @@ class DefaultResourceTransformer implements DeploymentResourceTransformer {
                     .setDuplicate(true);
               } else {
                 metadata
-                    .setResourceKey(newResourceKey.getAsLong())
-                    .setVersion(resourceState.getNextResourceVersion(id, tenantId))
+                    .setResourceKey(keyGenerator.nextKey())
+                    .setVersion(resourceState.getNextResourceVersion(resourceId, tenantId))
                     .setDeploymentKey(deploymentRecord.getDeploymentKey());
               }
             },
             () ->
                 metadata
-                    .setResourceKey(newResourceKey.getAsLong())
+                    .setResourceKey(keyGenerator.nextKey())
                     .setVersion(INITIAL_VERSION)
                     .setDeploymentKey(deploymentRecord.getDeploymentKey()));
   }
