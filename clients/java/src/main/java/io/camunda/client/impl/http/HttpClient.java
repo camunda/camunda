@@ -33,12 +33,12 @@ import org.apache.hc.client5.http.async.methods.SimpleRequestProducer;
 import org.apache.hc.client5.http.config.RequestConfig;
 import org.apache.hc.client5.http.entity.mime.MultipartEntityBuilder;
 import org.apache.hc.client5.http.impl.async.CloseableHttpAsyncClient;
-import org.apache.hc.client5.http.impl.nio.PoolingAsyncClientConnectionManager;
 import org.apache.hc.core5.http.ContentType;
 import org.apache.hc.core5.http.HttpEntity;
 import org.apache.hc.core5.http.Method;
 import org.apache.hc.core5.http.nio.AsyncEntityConsumer;
 import org.apache.hc.core5.io.CloseMode;
+import org.apache.hc.core5.io.ModalCloseable;
 import org.apache.hc.core5.net.URIBuilder;
 import org.apache.hc.core5.util.TimeValue;
 import org.slf4j.Logger;
@@ -55,7 +55,7 @@ public final class HttpClient implements AutoCloseable {
   private static final int MAX_RETRY_ATTEMPTS = 2;
 
   private final CloseableHttpAsyncClient client;
-  private final PoolingAsyncClientConnectionManager connectionManager;
+  private final ModalCloseable connectionManager;
   private final ObjectMapper jsonMapper;
   private final URI address;
   private final RequestConfig defaultRequestConfig;
@@ -65,7 +65,7 @@ public final class HttpClient implements AutoCloseable {
 
   public HttpClient(
       final CloseableHttpAsyncClient client,
-      final PoolingAsyncClientConnectionManager connectionManager,
+      final ModalCloseable connectionManager,
       final ObjectMapper jsonMapper,
       final URI address,
       final RequestConfig defaultRequestConfig,
