@@ -78,7 +78,14 @@ jobs:
                   "type": "section",
                   "text": {
                     "type": "mrkdwn",
-                    "text": "${{ steps.delete-namespaces.outputs.namespaces }}"
+                    "text": "${{ steps.delete-namespaces.outputs.STATS }}"
+                  }
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "${{ steps.delete-namespaces.outputs.NAMESPACES }}"
                   }
                 }
               ]
@@ -146,7 +153,14 @@ jobs:
                   "type": "section",
                   "text": {
                     "type": "mrkdwn",
-                    "text": "${{ steps.delete-namespaces.outputs.namespaces }}"
+                    "text": "${{ steps.delete-namespaces.outputs.STATS }}"
+                  }
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "${{ steps.delete-namespaces.outputs.NAMESPACES }}"
                   }
                 }
               ]
