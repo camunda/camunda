@@ -150,6 +150,9 @@ sanitize_k8s_label() {
   echo "$value"
 }
 
+# Label to easily find related namespaces
+kubectl label namespace "$namespace" "camunda.io/purpose=load-test" --overwrite
+
 # Label namespace with author (based on git author)
 raw_git_author=$(git config user.name || echo "unknown")
 git_author=$(sanitize_k8s_label "$raw_git_author")
