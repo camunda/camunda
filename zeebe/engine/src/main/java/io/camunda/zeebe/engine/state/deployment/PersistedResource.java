@@ -118,8 +118,9 @@ public class PersistedResource extends UnpackedObject implements DbValue {
    * @param resourceId the resource ID to compare against
    * @return {@code true} if this resource is a duplicate of the given checksum and resource ID
    */
-  public boolean isDuplicateOf(final byte[] checksum, final String resourceId) {
-    return java.util.Arrays.equals(BufferUtil.bufferAsArray(getChecksum()), checksum)
+  public boolean isDuplicateOf(final DirectBuffer checksum, final String resourceId) {
+    return java.util.Arrays.equals(
+            BufferUtil.bufferAsArray(getChecksum()), BufferUtil.bufferAsArray(checksum))
         && bufferAsString(getResourceId()).equals(resourceId);
   }
 }
