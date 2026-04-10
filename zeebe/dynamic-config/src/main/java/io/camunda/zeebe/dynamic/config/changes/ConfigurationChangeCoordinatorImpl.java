@@ -156,6 +156,10 @@ public class ConfigurationChangeCoordinatorImpl implements ConfigurationChangeCo
           // Validation was successful. If it's not a dry-run, apply the changes.
           final ActorFuture<ClusterConfiguration> applyFuture = executor.createFuture();
           if (dryRun) {
+            LOG.debug(
+                "Dry run for configuration change request validated "
+                    + "successfully. The resulting cluster configuration would be: {}",
+                simulatedFinalTopology);
             applyFuture.complete(currentClusterConfiguration.startConfigurationChange(operations));
           } else {
             applyTopologyChange(

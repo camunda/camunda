@@ -33,6 +33,7 @@ import io.camunda.zeebe.management.cluster.MessageCorrelationHashMod;
 import io.camunda.zeebe.management.cluster.RequestHandlingActivePartitions;
 import io.camunda.zeebe.management.cluster.RequestHandlingAllPartitions;
 import io.camunda.zeebe.management.cluster.RoutingState;
+import jakarta.servlet.http.HttpServletRequest;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
@@ -45,7 +46,9 @@ import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -55,6 +58,9 @@ import org.springframework.web.bind.annotation.RequestParam;
 @Component
 @RestControllerEndpoint(id = "cluster")
 public class ClusterEndpoint {
+  private static final Set<String> ALLOWED_QUERY_PARAMETERS =
+      Set.of("dryRun", "force", "replicationFactor");
+
   private final ClusterConfigurationManagementRequestSender requestSender;
 
   @Autowired
@@ -75,6 +81,26 @@ public class ClusterEndpoint {
     final var errorResponse = new Error();
     errorResponse.setMessage(message);
     return ResponseEntity.status(400).body(errorResponse);
+  }
+
+  @ModelAttribute
+  public void validateRequestParameters(final HttpServletRequest request) {
+    final var unknownParameters =
+        request.getParameterMap().keySet().stream()
+            .filter(parameter -> !ALLOWED_QUERY_PARAMETERS.contains(parameter))
+            .sorted()
+            .toList();
+
+    if (!unknownParameters.isEmpty()) {
+      throw new UnknownRequestParameterException(
+          "Unsupported query parameter(s): " + String.join(", ", unknownParameters));
+    }
+  }
+
+  @ExceptionHandler(UnknownRequestParameterException.class)
+  public ResponseEntity<Error> handleUnknownRequestParameter(
+      final UnknownRequestParameterException error) {
+    return invalidRequest(error.getMessage());
   }
 
   @PostMapping(path = "/{resource}/{id}")
@@ -428,6 +454,12 @@ public class ClusterEndpoint {
   }
 
   public record PartitionAddRequest(int priority) {}
+
+  private static final class UnknownRequestParameterException extends RuntimeException {
+    private UnknownRequestParameterException(final String message) {
+      super(message);
+    }
+  }
 
   public enum Resource {
     brokers,
