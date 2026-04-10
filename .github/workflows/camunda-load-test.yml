@@ -98,6 +98,16 @@ on:
         type: string
         default: ""
         required: false
+      operate-tag:
+        description: 'Operate Tag: Docker image tag for Operate from Docker Hub (docker.io/camunda/operate). When set, overrides the operate image regardless of build mode. If not set, custom builds use the built image from the internal registry; official images use Helm chart defaults.'
+        type: string
+        default: ""
+        required: false
+      tasklist-tag:
+        description: 'Tasklist Tag: Docker image tag for Tasklist from Docker Hub (docker.io/camunda/tasklist). When set, overrides the tasklist image regardless of build mode. If not set, custom builds use the built image from the internal registry; official images use Helm chart defaults.'
+        type: string
+        default: ""
+        required: false
       connectors-tag:
         description: 'Connectors Tag: Docker image tag for Connectors from Docker Hub (docker.io/camunda/connectors). If not set, defaults to the Helm chart default image.'
         type: string
@@ -189,6 +199,16 @@ on:
         type: string
         default: ""
         required: false
+      operate-tag:
+        description: 'Operate Tag: Docker image tag for Operate from Docker Hub (docker.io/camunda/operate). When set, overrides the operate image regardless of build mode. If not set, custom builds use the built image from the internal registry; official images use Helm chart defaults.'
+        type: string
+        default: ""
+        required: false
+      tasklist-tag:
+        description: 'Tasklist Tag: Docker image tag for Tasklist from Docker Hub (docker.io/camunda/tasklist). When set, overrides the tasklist image regardless of build mode. If not set, custom builds use the built image from the internal registry; official images use Helm chart defaults.'
+        type: string
+        default: ""
+        required: false
       connectors-tag:
         description: 'Connectors Tag: Docker image tag for Connectors from Docker Hub (docker.io/camunda/connectors). If not set, defaults to the Helm chart default image.'
         type: string
@@ -252,11 +272,15 @@ jobs:
         run: |
           echo "image-tag=${{ inputs.name }}-$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
       - name: Validate Docker image tags exist
-        if: ${{ inputs.orchestration-tag != '' || inputs.optimize-tag != '' || inputs.identity-tag != '' || inputs.connectors-tag != '' }}
+        if: ${{ inputs.orchestration-tag != '' || inputs.optimize-tag != '' || inputs.operate-tag != '' || inputs.tasklist-tag != '' || inputs.identity-tag != '' || inputs.connectors-tag != '' }}
         env:
           ORCHESTRATION_TAG: ${{ inputs.orchestration-tag }}
           ENABLE_OPTIMIZE: ${{ inputs.enable-optimize }}
           OPTIMIZE_TAG: ${{ inputs.optimize-tag }}
+          ENABLE_OPERATE: ${{ inputs.enable-operate }}
+          OPERATE_TAG: ${{ inputs.operate-tag }}
+          ENABLE_TASKLIST: ${{ inputs.enable-tasklist }}
+          TASKLIST_TAG: ${{ inputs.tasklist-tag }}
           IDENTITY_TAG: ${{ inputs.identity-tag }}
           CONNECTORS_TAG: ${{ inputs.connectors-tag }}
         run: |
@@ -294,11 +318,19 @@ jobs:
           }
 
           if [[ -n "${ORCHESTRATION_TAG}" ]]; then
-            validate_image "camunda/camunda:${ORCHESTRATION_TAG}" || exit 1
+            validate_image "camunda/zeebe:${ORCHESTRATION_TAG}" || exit 1
           fi
 
           if [[ "${ENABLE_OPTIMIZE}" == "true" && -n "${OPTIMIZE_TAG}" ]]; then
             validate_image "camunda/optimize:${OPTIMIZE_TAG}" || exit 1
+          fi
+
+          if [[ "${ENABLE_OPERATE}" == "true" && -n "${OPERATE_TAG}" ]]; then
+            validate_image "camunda/operate:${OPERATE_TAG}" || exit 1
+          fi
+
+          if [[ "${ENABLE_TASKLIST}" == "true" && -n "${TASKLIST_TAG}" ]]; then
+            validate_image "camunda/tasklist:${TASKLIST_TAG}" || exit 1
           fi
 
           if [[ -n "${IDENTITY_TAG}" ]]; then
@@ -485,7 +517,7 @@ jobs:
   build-optimize-image:
     name: Build Optimize Docker image
     needs: calculate-image-tag
-    if: ${{ inputs.enable-optimize && inputs.reuse-tag == '' && inputs.use-official-docker-images == false }}
+    if: ${{ inputs.enable-optimize && inputs.reuse-tag == '' && inputs.orchestration-tag == '' }}
     runs-on: ubuntu-latest
     timeout-minutes: 45
     permissions:
@@ -616,11 +648,12 @@ jobs:
           load_test_config="$load_test_config ${{ inputs.load-test-load }}"
 
           # Resolve image registry/repository: Docker Hub when orchestration-tag is set, internal registry otherwise
-          # optimize_repo is only consumed in the custom build path where orchestration-tag is empty
           image_tag="${{ needs.calculate-image-tag.outputs.image-tag }}"
           image_registry="${{ inputs.orchestration-tag != '' && 'docker.io' || 'registry.camunda.cloud' }}"
           zeebe_repo="${{ inputs.orchestration-tag != '' && 'camunda/zeebe' || 'team-zeebe/zeebe' }}"
           optimize_repo="${{ inputs.orchestration-tag != '' && 'camunda/optimize' || 'team-zeebe/optimize' }}"
+          operate_repo="${{ inputs.orchestration-tag != '' && 'camunda/operate' || 'team-zeebe/operate' }}"
+          tasklist_repo="${{ inputs.orchestration-tag != '' && 'camunda/tasklist' || 'team-zeebe/tasklist' }}"
 
           additional_platform_config="--set global.image.tag=${image_tag} \
             --set zeebe.image.registry=${image_registry} \
@@ -645,6 +678,36 @@ jobs:
             fi
           fi
 
+          # Inject Operate image configuration when enabled
+          if [[ "${{ inputs.enable-operate }}" == "true" ]]; then
+            if [[ -n "${{ inputs.operate-tag }}" ]]; then
+              # Explicit operate tag: use it directly (Docker Hub image)
+              additional_platform_config+=" \
+                --set operate.image.tag=${{ inputs.operate-tag }}"
+            elif [[ -z "${{ inputs.orchestration-tag }}" ]]; then
+              # Custom build or reuse-tag: use internal registry image
+              additional_platform_config+=" \
+                --set operate.image.registry=${image_registry} \
+                --set operate.image.repository=${operate_repo} \
+                --set operate.image.tag=${image_tag}"
+            fi
+          fi
+
+          # Inject Tasklist image configuration when enabled
+          if [[ "${{ inputs.enable-tasklist }}" == "true" ]]; then
+            if [[ -n "${{ inputs.tasklist-tag }}" ]]; then
+              # Explicit tasklist tag: use it directly (Docker Hub image)
+              additional_platform_config+=" \
+                --set tasklist.image.tag=${{ inputs.tasklist-tag }}"
+            elif [[ -z "${{ inputs.orchestration-tag }}" ]]; then
+              # Custom build or reuse-tag: use internal registry image
+              additional_platform_config+=" \
+                --set tasklist.image.registry=${image_registry} \
+                --set tasklist.image.repository=${tasklist_repo} \
+                --set tasklist.image.tag=${image_tag}"
+            fi
+          fi
+
           # Append identity image config if a dedicated tag is provided
           if [[ -n "${{ inputs.identity-tag }}" ]]; then
             additional_platform_config+=" \
@@ -665,36 +728,6 @@ jobs:
           # Append scenario-specific platform configuration if present (e.g. max scenario disables consistency checks)
           if [[ -n "${{ needs.calculate-scenario-config.outputs.platform-additional-config }}" ]]; then
             additional_platform_config+=" ${{ needs.calculate-scenario-config.outputs.platform-additional-config }}"
-          fi
-
-          # Inject Optimize image configuration when enabled
-          if [[ "${{ inputs.enable-optimize }}" == "true" ]]; then
-            optimize_registry="${{ inputs.use-official-docker-images && 'docker.io' || 'registry.camunda.cloud' }}"
-            optimize_repo="${{ inputs.use-official-docker-images && 'camunda/optimize' || 'team-zeebe/optimize' }}"
-            additional_platform_config+=" \
-              --set optimize.image.registry=${optimize_registry} \
-              --set optimize.image.repository=${optimize_repo} \
-              --set optimize.image.tag=${image_tag}"
-          fi
-
-          # Inject Operate image configuration when enabled
-          if [[ "${{ inputs.enable-operate }}" == "true" ]]; then
-            operate_registry="${{ inputs.use-official-docker-images && 'docker.io' || 'registry.camunda.cloud' }}"
-            operate_repo="${{ inputs.use-official-docker-images && 'camunda/operate' || 'team-zeebe/operate' }}"
-            additional_platform_config+=" \
-              --set operate.image.registry=${operate_registry} \
-              --set operate.image.repository=${operate_repo} \
-              --set operate.image.tag=${image_tag}"
-          fi
-
-          # Inject Tasklist image configuration when enabled
-          if [[ "${{ inputs.enable-tasklist }}" == "true" ]]; then
-            tasklist_registry="${{ inputs.use-official-docker-images && 'docker.io' || 'registry.camunda.cloud' }}"
-            tasklist_repo="${{ inputs.use-official-docker-images && 'camunda/tasklist' || 'team-zeebe/tasklist' }}"
-            additional_platform_config+=" \
-              --set tasklist.image.registry=${tasklist_registry} \
-              --set tasklist.image.repository=${tasklist_repo} \
-              --set tasklist.image.tag=${image_tag}"
           fi
 
           make ${{ inputs.stable-vms && 'install-stable' || 'install' }} \

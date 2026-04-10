@@ -115,7 +115,7 @@ function hashmod_zone() {
     echo "$zone"
 }
 
-enable_single_zone="${5:-true}"
+enable_single_zone="${7:-true}"
 enable_single_zone=$(echo "$enable_single_zone" | tr '[:upper:]' '[:lower:]')
 single_zone_annotation_name="topology.kubernetes.io/zone"
 availability_zone="~"

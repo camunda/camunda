@@ -4,6 +4,9 @@ global:
   extraEnvVars:
     - name: CONFIG_FORCE_app_tls
       value: "false"
+  nodeSelector:
+    component: benchmark-n2-standard-4
+    topology.kubernetes.io/zone: __AVAILABILITY_ZONE__
 
 # OAuth configuration for load tests to connect to the Zeebe gateway via Identity/Keycloak.
 # In 8.7, all components are deployed separately (unlike 8.8's unified orchestration cluster).
