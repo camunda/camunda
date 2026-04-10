@@ -43,7 +43,7 @@ runs:
   steps:
     - name: Import Secrets
       id: secrets
-      uses: hashicorp/vault-action@v3.0.0
+      uses: hashicorp/vault-action@4c06c5ccf5c0761b6029f56cfb1dcf5565918a3b # v3.4.0
       if: |
         inputs.secret_vault_address != ''
         && inputs.secret_vault_roleId != ''

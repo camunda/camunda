@@ -55,7 +55,7 @@ jobs:
     permissions:
       pull-requests: read
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       # Detect changes against the base branch
       - name: Detect changes
         uses: ./.github/actions/paths-filter
@@ -73,7 +73,7 @@ jobs:
       # renovate: datasource=github-tags depName=open-policy-agent/conftest
       CONFTEST_VERSION: '0.56.0'
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - uses: camunda/infra-global-github-actions/actionlint@main
         with:
           version: ${{ env.ACTIONLINT_VERSION }}
@@ -104,11 +104,11 @@ jobs:
         id: depth
         run: |
           echo "depth=$(expr ${{ github.event.pull_request.commits }} + 1)" >> $GITHUB_OUTPUT
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           ref: ${{ github.event.pull_request.head.sha }}
           fetch-depth: ${{ steps.depth.outputs.depth }}
-      - uses: wagoid/commitlint-github-action@v6
+      - uses: wagoid/commitlint-github-action@b948419dd99f3fd78a6548d48f94e3df7f6bf3ed # v6.2.1
         with:
           commitDepth: ${{ github.event.pull_request.commits }}
           helpURL: https://github.com/camunda/camunda/blob/main/CONTRIBUTING.md#commit-message-guidelines
@@ -132,7 +132,7 @@ jobs:
     timeout-minutes: 5
     permissions: {}  # GITHUB_TOKEN unused in this job
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - uses: ./.github/actions/setup-build
         with:
           maven-cache-key-modifier: maven-spotless-linter
@@ -158,7 +158,7 @@ jobs:
     timeout-minutes: 5
     permissions: { }  # GITHUB_TOKEN unused in this job
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - name: Check for missing junit-vintage-engine
         run: .ci/scripts/ci/check-junit-vintage-engine.sh .
       - name: Observe build status
@@ -179,7 +179,7 @@ jobs:
     timeout-minutes: 10
     permissions: { }  # GITHUB_TOKEN unused in this job
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           fetch-depth: 0
       - uses: ./.github/actions/setup-build
@@ -212,7 +212,7 @@ jobs:
     permissions: {}  # GITHUB_TOKEN unused in this job
     runs-on: gcp-perf-core-8-default
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - uses: ./.github/actions/setup-build
         with:
           maven-cache-key-modifier: java-checks
@@ -238,7 +238,7 @@ jobs:
     timeout-minutes: 15
     permissions: {}  # GITHUB_TOKEN unused in this job
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - uses: ./.github/actions/build-frontend
         id: build-operate-fe
         with:
@@ -268,7 +268,7 @@ jobs:
     timeout-minutes: 30
     permissions: {}  # GITHUB_TOKEN unused in this job
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - uses: ./.github/actions/setup-build
         with:
           vault-address: ${{ secrets.VAULT_ADDR }}
@@ -367,7 +367,7 @@ jobs:
         ports:
           - 5000:5000
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - uses: ./.github/actions/setup-build
         with:
           maven-cache-key-modifier: it-${{ matrix.group }}
@@ -453,7 +453,7 @@ jobs:
     outputs:
       flakyTests: ${{ steps.analyze-test-run.outputs.flakyTests }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - name: Log Test Details
         run: echo "This is a ${{ env.TEST_TYPE}} test for ${{ env.TEST_PRODUCT}} owned by ${{ env.TEST_OWNER}}"
       - uses: ./.github/actions/setup-build
@@ -524,8 +524,8 @@ jobs:
       LOCAL_DOCKER_IMAGE: localhost:5000/camunda/camunda
       TEST_ELASTICSEARCH_IMAGE: docker.elastic.co/elasticsearch/elasticsearch:8.14.1
     steps:
-      - uses: actions/checkout@v4
-      - uses: hadolint/hadolint-action@v3.1.0
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: hadolint/hadolint-action@2332a7b74a6de0dda2e2221d575162eba76ba5e5 # v3.3.0
         with:
           config: ./.hadolint.yaml
           dockerfile: ./camunda.Dockerfile
@@ -535,7 +535,7 @@ jobs:
           verbose: true
       - name: Upload Hadolint Results
         if: always()
-        uses: github/codeql-action/upload-sarif@v3
+        uses: github/codeql-action/upload-sarif@c10b8064de6f491fea524254123dbe5e09572f13 # v4.35.1
         with:
           sarif_file: ./hadolint.sarif
       - uses: ./.github/actions/setup-build
@@ -606,8 +606,8 @@ jobs:
       run:
         working-directory: identity/client
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
         with:
           node-version: "20"
       - uses: camunda/infra-global-github-actions/setup-yarn-cache@main
@@ -712,7 +712,7 @@ jobs:
       BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha || github.event.before }}
     if: needs.detect-changes.outputs.protobuf-changes == 'true'
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - id: pr-body
         name: Fetch latest PR body
         if: github.event_name == 'pull_request'
@@ -726,7 +726,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         # by the default the action will compare against the base branch, or if on push, against the
         # previous commit
-      - uses: bufbuild/buf-action@v1
+      - uses: bufbuild/buf-action@fd21066df7214747548607aaa45548ba2b9bc1ff # v1.4.0
         if: |
           !(contains(steps.pr-body.outputs.result, 'BREAKING CHANGE:') ||
             contains(github.event.merge_group.head_commit.message, 'BREAKING CHANGE:') ||
@@ -764,7 +764,7 @@ jobs:
             name: "3.5.x"
             profile: "spring-boot-3.5"
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - uses: ./.github/actions/setup-build
         with:
           vault-address: ${{ secrets.VAULT_ADDR }}
@@ -863,7 +863,7 @@ jobs:
       - validate-pom-metadata
       - zeebe-ci
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - name: Check for aborted jobs
         continue-on-error: true
         uses: ./.github/actions/observe-aborted-jobs
@@ -901,7 +901,7 @@ jobs:
       group: ${{ needs.utils-get-concurrency-group-for-maven-snapshot.outputs.concurrency_group_name }}
       cancel-in-progress: false
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - uses: ./.github/actions/setup-build
         with:
           maven-cache-key-modifier: snapshots
@@ -965,7 +965,7 @@ jobs:
       group: ${{ needs.utils-get-concurrency-group-for-docker-snapshot.outputs.concurrency_group_name }}
       cancel-in-progress: false
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - uses: ./.github/actions/setup-build
         with:
           dockerhub: true

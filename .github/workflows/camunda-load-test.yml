@@ -254,7 +254,7 @@ jobs:
         run: |
           echo "::error::Invalid input combination: 'orchestration-tag' and 'reuse-tag' cannot both be provided. Use 'orchestration-tag' for official Docker Hub images or 'reuse-tag' for reusing pre-built images from the internal registry."
           exit 1
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           ref: ${{ inputs.ref }}
       - name: Get image tag
@@ -339,7 +339,7 @@ jobs:
       load-test-load: ${{ steps.config.outputs.load-test-load }}
       platform-additional-config: ${{ steps.config.outputs.platform-additional-config }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           ref: ${{ inputs.ref }}
       - name: Calculate configuration based on scenario
@@ -398,7 +398,7 @@ jobs:
       contents: 'read'
       id-token: 'write'
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           ref: ${{ inputs.ref }}
       - uses: ./.github/actions/setup-build
@@ -478,7 +478,7 @@ jobs:
       contents: 'read'
       id-token: 'write'
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           ref: ${{ inputs.ref }}
       - uses: ./.github/actions/setup-build
@@ -594,18 +594,18 @@ jobs:
       contents: 'read'
       id-token: 'write'
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           ref: ${{ inputs.ref }}
       # Authenticate with Teleport
       - name: Set up Teleport
-        uses: teleport-actions/setup@v1
+        uses: teleport-actions/setup@b638ff596557cc3959eb6b5287d5e58e0c8ac6a6 # v1.1.1
         with:
             proxy: camunda.teleport.sh:443
             version: auto
 
       - name: Authenticate to Cluster using Teleport
-        uses: teleport-actions/auth-k8s@v2
+        uses: teleport-actions/auth-k8s@0f46164469ae4fcd4d359d40e06bab17d4be17c9 # v2.0.6
         with:
             proxy: camunda.teleport.sh:443
             token: ${{ env.TELEPORT_JOIN_TOKEN }}

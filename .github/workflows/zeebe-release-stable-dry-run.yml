@@ -68,7 +68,7 @@ jobs:
     steps:
       - id: slack-notify-failure
         name: Send failure slack notification
-        uses: slackapi/slack-github-action@v1.27.1
+        uses: slackapi/slack-github-action@af78098f536edbc4de71162a307590698245be95 # v3.0.1
         if: ${{ always() && (needs.dry-run-release-82.result != 'success' || needs.dry-run-release-83.result != 'success' || needs.dry-run-release-84.result != 'success' || needs.dry-run-release-85.result != 'success') }}
         with:
           # For posting a rich message using Block Kit
@@ -93,7 +93,7 @@ jobs:
             }
       - id: slack-notify-success
         name: Send success slack notification
-        uses: slackapi/slack-github-action@v1.27.1
+        uses: slackapi/slack-github-action@af78098f536edbc4de71162a307590698245be95 # v3.0.1
         if: ${{ always() && needs.dry-run-release-82.result == 'success' && needs.dry-run-release-83.result == 'success' && needs.dry-run-release-84.result == 'success' && needs.dry-run-release-85.result == 'success' }}
         with:
           # For posting a rich message using Block Kit
