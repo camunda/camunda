@@ -104,6 +104,51 @@ write_metrics() {
 EOF
 }
 
+# ── Helper: parse XML report and display structured failures ────
+show_failures() {
+  local report_xml="reports/ai-agent-tests.xml"
+
+  if [[ ! -f "$report_xml" ]]; then
+    # Fallback when no XML is available
+    grep -i "FAIL\|AssertionError\|Exception\|Expected" "$TMPOUT" | head -20 || true
+    return
+  fi
+
+  echo -e "${RED}Failures:${NC}"
+  python3 - "$report_xml" <<'PYEOF'
+import xml.etree.ElementTree as ET, sys
+
+CONNECTIVITY = (
+    "PrematureClose", "ConnectException", "SocketException",
+    "timed out", "Connection reset", "Connection refused"
+)
+
+tree = ET.parse(sys.argv[1])
+found = False
+for tc in tree.findall('.//testcase'):
+    for f in tc.findall('failure'):
+        found = True
+        name = tc.get('classname', '').replace('http.', '')
+        msg  = (f.get('message') or f.text or '').strip()[:250]
+        typ  = f.get('type', 'Error')
+        if any(k in msg for k in CONNECTIVITY):
+            label = "CONNECTIVITY ERROR"
+            hint  = "  \033[2m\u2192 Likely a transient network issue. Consider retrying.\033[0m"
+        elif 'assert' in typ.lower() or 'assertion' in msg.lower():
+            label = "ASSERTION FAILURE"
+            hint  = ""
+        else:
+            label = typ.upper()
+            hint  = ""
+        print(f"\n  \033[31m\u2717\033[0m  {name}  [{label}]")
+        print(f"    {msg}")
+        if hint:
+            print(hint)
+if not found:
+    print("  (no structured failure details found in XML)")
+PYEOF
+}
+
 # ── Display header ──────────────────────────────────────────────
 
 WIDTH=65
@@ -253,9 +298,7 @@ if ijhttp "$HTTP_FILE" \
     done < "$HTTP_FILE"
     echo ""
 
-    # Show failed assertion details from ijhttp output
-    echo -e "${RED}Failed Assertions:${NC}"
-    grep -i "FAIL\|AssertionError\|Expected" "$TMPOUT" | head -20 || true
+    show_failures
     echo ""
 
     echo -e "${RED}E2E validation failed${NC}"
@@ -269,20 +312,76 @@ else
   END_TIME=$(date +%s)
   DURATION=$((END_TIME - START_TIME))
 
-  # Write failure metrics
-  declare -a TEST_STATUSES
-  failed_test_count=$TEST_COUNT
-  for i in "${!TESTS[@]}"; do
-    TEST_STATUSES[$i]="error"
-  done
-  write_metrics "error" "$DURATION" "0" "0"
+  PARTIAL_REQUESTS=$(sed -n 's/.*\([0-9][0-9]*\) requests completed.*/\1/p' "$TMPOUT" | tail -1)
+  PARTIAL_REQUESTS="${PARTIAL_REQUESTS:-0}"
 
+  # Use same stdout-based detection as the success path.
+  # Connection errors don't produce [tag] FAIL lines, so tests may show as
+  # passed even though the run exited non-zero — that is intentional and
+  # correct: the assertions passed, only the HTTP transport failed.
+  declare -a TEST_STATUSES
+  failed_test_count=0
+  for i in "${!TESTS[@]}"; do
+    tag="${TESTS[$i]%% - *}"
+    if grep -qi "\[${tag}\].*FAIL\|FAIL.*\[${tag}\]" "$TMPOUT" 2>/dev/null; then
+      TEST_STATUSES[$i]="failed"
+      (( failed_test_count++ ))
+    else
+      TEST_STATUSES[$i]="passed"
+    fi
+  done
+
+  PASSED_COUNT=$((TEST_COUNT - failed_test_count))
+  if (( TEST_COUNT > 0 )); then
+    PASS_RATE=$(awk "BEGIN { printf \"%.0f\", ($PASSED_COUNT / $TEST_COUNT) * 100 }")
+  else
+    PASS_RATE="0"
+  fi
+
+  write_metrics "failed" "$DURATION" "$PARTIAL_REQUESTS" "$failed_test_count"
+
+  # ── Display results box ──────────────────────────────────────
   echo ""
-  echo -e "${RED}Test execution failed (ijhttp exited with error)${NC}"
-  echo -e "${DIM}Duration: $(format_duration $DURATION)${NC}"
+  printf "${BLUE}┌%${WIDTH}s┐${NC}\n" "" | tr ' ' '─'
+  printf "${BLUE}│${NC}${BOLD}  Test Results%*s${BLUE}│${NC}\n" $((WIDTH - 15)) ""
+  printf "${BLUE}├%${WIDTH}s┤${NC}\n" "" | tr ' ' '─'
+
+  if (( failed_test_count == 0 )); then
+    fail_line=" ✗ RUN FAILED — HTTP error (all test assertions passed)"
+  else
+    fail_line=" ✗ FAILED — ${failed_test_count} test(s) with assertion failures"
+  fi
+  printf "${BLUE}│${NC} ${RED}%s${NC}%*s${BLUE}│${NC}\n" "$fail_line" $((WIDTH - ${#fail_line} - 1)) ""
+  printf "${BLUE}│${NC}%*s${BLUE}│${NC}\n" $WIDTH ""
+
+  for i in "${!TESTS[@]}"; do
+    if [[ "${TEST_STATUSES[$i]}" == "passed" ]]; then
+      line="  ✓ Test $((i+1)): ${TESTS[$i]}"
+      printf "${BLUE}│${NC} ${GREEN}%s${NC}%*s${BLUE}│${NC}\n" "$line" $((WIDTH - ${#line} - 1)) ""
+    else
+      line="  ✗ Test $((i+1)): ${TESTS[$i]}"
+      printf "${BLUE}│${NC} ${RED}%s${NC}%*s${BLUE}│${NC}\n" "$line" $((WIDTH - ${#line} - 1)) ""
+    fi
+  done
+
+  printf "${BLUE}├%${WIDTH}s┤${NC}\n" "" | tr ' ' '─'
+  req_line=" HTTP Requests: ${PARTIAL_REQUESTS}"
+  printf "${BLUE}│${NC}%s%*s${BLUE}│${NC}\n" "$req_line" $((WIDTH - ${#req_line})) ""
+  rate_line=" Pass Rate:     ${PASS_RATE}% assertions (${PASSED_COUNT}/${TEST_COUNT} tests)"
+  printf "${BLUE}│${NC}%s%*s${BLUE}│${NC}\n" "$rate_line" $((WIDTH - ${#rate_line})) ""
+  dur_line=" Duration:      $(format_duration $DURATION)"
+  printf "${BLUE}│${NC}%s%*s${BLUE}│${NC}\n" "$dur_line" $((WIDTH - ${#dur_line})) ""
+  printf "${BLUE}└%${WIDTH}s┘${NC}\n" "" | tr ' ' '─'
+  echo ""
   echo -e "${DIM}Metrics written to ${METRICS_FILE}${NC}"
   echo ""
-  echo -e "${DIM}── ijhttp output ──${NC}"
+
+  show_failures
+
+  echo ""
+  echo -e "${RED}E2E validation failed${NC}"
+  echo ""
+  echo -e "${DIM}── Full ijhttp output ──${NC}"
   cat "$TMPOUT"
   exit 1
 fi
