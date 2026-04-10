@@ -10,8 +10,8 @@ import {useEffect, useRef, useState} from 'react';
 import {SplitDirection} from '@devbookhq/splitter';
 import {ResizablePanel} from 'modules/components/ResizablePanel';
 import {DiagramContainer} from './styled';
-import {SourceDiagram} from './v2/SourceDiagram';
-import {TargetDiagram} from './v2/TargetDiagram';
+import {SourceDiagram} from './SourceDiagram';
+import {TargetDiagram} from './TargetDiagram';
 
 const Diagrams: React.FC = () => {
   const containerRef = useRef<HTMLDivElement | null>(null);

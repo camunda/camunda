@@ -13,7 +13,7 @@ import {
   type QueryProcessInstancesRequestBody,
 } from '@camunda/camunda-api-zod-schemas/8.10';
 import {formatToISO} from 'modules/utils/date/formatDate';
-import {parseIds, parseSortParamsV2, updateFiltersSearchString} from '../index';
+import {parseIds, parseSortParamsV2, updateFiltersSearchString} from './index';
 
 /**
  * ProcessInstancesFilter represents the URL search params.

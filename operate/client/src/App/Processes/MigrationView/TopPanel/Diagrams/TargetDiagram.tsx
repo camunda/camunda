@@ -7,11 +7,11 @@
  */
 
 import {processInstanceMigrationStore} from 'modules/stores/processInstanceMigration';
-import {Header} from '../Header';
-import {DiagramWrapper} from '../styled';
+import {Header} from './Header';
+import {DiagramWrapper} from './styled';
 import {observer} from 'mobx-react';
-import {TargetProcessField} from '../TargetProcessField';
-import {TargetVersionField} from '../TargetVersionField';
+import {TargetProcessField} from './TargetProcessField';
+import {TargetVersionField} from './TargetVersionField';
 import {DiagramShell} from 'modules/components/DiagramShell';
 import {Diagram} from 'modules/components/Diagram';
 import {diagramOverlaysStore} from 'modules/stores/diagramOverlays';

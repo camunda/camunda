@@ -9,7 +9,7 @@
 import {
   parseProcessInstancesSearchFilter,
   parseProcessInstancesSearchSort,
-} from 'modules/utils/filter/v2/processInstancesSearch';
+} from 'modules/utils/filter/processInstancesSearch';
 import {useMemo} from 'react';
 import {useSearchParams} from 'react-router-dom';
 import {getValidVariableValues} from 'modules/utils/filter/getValidVariableValues';

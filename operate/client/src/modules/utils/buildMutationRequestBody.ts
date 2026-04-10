@@ -10,7 +10,7 @@ import type {
   CreateCancellationBatchOperationRequestBody,
   CreateIncidentResolutionBatchOperationRequestBody,
 } from '@camunda/camunda-api-zod-schemas/8.10';
-import {parseProcessInstancesSearchFilter} from 'modules/utils/filter/v2/processInstancesSearch';
+import {parseProcessInstancesSearchFilter} from 'modules/utils/filter/processInstancesSearch';
 import {buildProcessInstanceKeyCriterion} from 'modules/mutations/processes/buildProcessInstanceKeyCriterion';
 import {getValidVariableValues} from 'modules/utils/filter/getValidVariableValues';
 import type {Variable} from 'modules/stores/variableFilter';

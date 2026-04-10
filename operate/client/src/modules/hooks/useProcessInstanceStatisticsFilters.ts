@@ -11,7 +11,7 @@ import {
   type GetProcessDefinitionStatisticsRequestBody,
   type QueryProcessInstancesRequestBody,
 } from '@camunda/camunda-api-zod-schemas/8.10';
-import {parseProcessInstancesSearchFilter} from 'modules/utils/filter/v2/processInstancesSearch';
+import {parseProcessInstancesSearchFilter} from 'modules/utils/filter/processInstancesSearch';
 
 type ProcessInstancesSearchFilter = NonNullable<
   QueryProcessInstancesRequestBody['filter']
