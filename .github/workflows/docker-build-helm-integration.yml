@@ -378,7 +378,7 @@ jobs:
           CORRELATION_ID: ${{ github.repository }}:${{ github.run_id }}:${{ github.run_attempt }}:${{ github.sha }}
         run: |
           # Use the image tag as the generation name to match filter patterns
-          # e.g., "8.10.0-SNAPSHOT-main-run12345678-a1" matches "**-main-run*-a*"
+          # e.g., "8.10.0-SNAPSHOT-main-run12345678-a1" matches "**-main-run**-a**"
           curl -X POST \
             -H "Accept: application/vnd.github+json" \
             -H "Authorization: Bearer $GITHUB_TOKEN" \
