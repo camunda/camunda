@@ -50,13 +50,13 @@ interface DeploymentResourceTransformer {
    * metadata (if necessary) and eventually write the actual event record(s) (e.g. "process
    * created").
    *
-   * <p><b>Versioning invariant:</b> implementations must check {@link
-   * DeploymentRecord#hasDuplicatesOnly()} first and return immediately when it is {@code true},
-   * because no event records need to be written for an all-duplicate deployment. When the
-   * deployment does contain at least one non-duplicate resource, every resource that was
-   * individually marked as a duplicate in {@link #createMetadata} must have its {@code duplicate}
-   * flag cleared and must receive a fresh key and a new version number before the record is written
-   * — see {@link
+   * <p><b>Versioning invariant:</b> when the deployment contains at least one non-duplicate
+   * resource, every resource that was individually marked as a duplicate in {@link #createMetadata}
+   * must have its {@code duplicate} flag cleared and must receive a fresh key and a new version
+   * number before the record is written. This ensures all resources in a deployment are versioned
+   * together. Note that the caller (DeploymentTransformer) will skip calling this method entirely
+   * for all-duplicate deployments by checking {@link DeploymentRecord#hasDuplicatesOnly()} — see
+   * {@link
    * io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord#hasDuplicatesOnly()}.
    *
    * @param resource the resource to transform
