@@ -227,23 +227,13 @@ You can run the Camunda distribution via IntelliJ for development purposes.
 1. Run a **full build** of the project via Maven as [described above](#build). Make sure to use
    `install` as we need to depend on 2 locally built artifacts.
 2. Open the project in IntelliJ.
-3. Currently, there is an issue with the `com.auth0.mvc-auth-commons` library being transformed to
-   a Jakarta-compatible version during the Maven build process, but this change not being picked up
-   by IntelliJ.
-   - To address this, open the _Project Structure_ dialog and add the following 2 libraries to the
-     classpath of your JDK (`<version>` being the current snapshot version, e.g. `8.8.0`):
-     - `$HOME/.m2/repository/io/camunda/operate-mvc-auth-commons/<version>-SNAPSHOT/operate-mvc-auth-commons-<version>-SNAPSHOT.jar`
-     - `$HOME/.m2/repository/io/camunda/tasklist-mvc-auth-commons/<version>-SNAPSHOT/tasklist-mvc-auth-commons-<version>-SNAPSHOT.jar`
-
-     ![intellij-module-settings.png](docs/assets/intellij-module-settings.png)
-
-4. Start an Elasticsearch instance as [described above](#run). Alternatively, you can start it via Docker from
+3. Start an Elasticsearch instance as [described above](#run). Alternatively, you can start it via Docker from
    the `operate` directory:
 
    ```sh
    docker compose -f operate/docker-compose.yml up -d elasticsearch
    ```
-5. Use the provided `StandaloneCamunda DEV` run configuration to start the distribution or create
+4. Use the provided `StandaloneCamunda DEV` run configuration to start the distribution or create
    and start a new Spring Boot run configuration with the following settings:
    - **Module**: `camunda-zeebe`
    - **Main class**: `io.camunda.application.StandaloneCamunda`
@@ -260,7 +250,7 @@ You can run the Camunda distribution via IntelliJ for development purposes.
      CAMUNDA_SECURITY_INITIALIZATION_USERS_0_PASSWORD=demo
      CAMUNDA_SECURITY_INITIALIZATION_DEFAULTROLES_ADMIN_USERS_0_=demo
      ```
-6. The webapps should be available on the following URLs with the credentials specified above (`demo`/`demo`):
+5. The webapps should be available on the following URLs with the credentials specified above (`demo`/`demo`):
    - [Tasklist](http://localhost:8080/tasklist)
    - [Operate](http://localhost:8080/operate)
    - [Admin](http://localhost:8080/admin)
