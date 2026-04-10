@@ -1,12 +1,10 @@
----
+# owner: @camunda/monorepo-devops-team
 name: Detect New Flaky Tests
 
 description: >
   Compares flaky tests from the current PR run against known flaky tests from BigQuery.
   Posts a PR comment if new (previously unknown) flaky tests are detected.
   Can optionally fail the job to block the PR.
-
-# owner: @camunda/monorepo-devops-team
 
 inputs:
   pr-flaky-tests-data:
