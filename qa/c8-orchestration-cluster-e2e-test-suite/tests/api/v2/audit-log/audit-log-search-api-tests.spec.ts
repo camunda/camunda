@@ -378,7 +378,6 @@ test.describe.parallel('Search Audit Logs API Tests', () => {
       const values = body.items.map(
         (item: Record<string, unknown>) => item.actorId,
       ) as string[];
-      console.log('Extracted actorIds:', values);
       const sorted = [...values].sort();
       expect(values).toEqual(sorted);
     }).toPass(defaultAssertionOptions);
