@@ -79,6 +79,25 @@
           "code": "java.method.removed",
           "old": "method SELF io.camunda.client.api.search.request.TypedPageableRequest<SELF extends io.camunda.client.api.search.request.TypedPageableRequest<SELF>>::page(io.camunda.client.api.search.request.SearchRequestPage)",
           "justification": "The page() method signature changed to accept typed pagination models (via SearchPagination<P>) instead of the legacy SearchRequestPage. The method is now available through TypedSearchRequest with type-safe pagination model parameters (AnyPage, OffsetPage, CursorForwardPage, etc.)."
+        },
+
+        {
+          "ignore": true,
+          "code": "java.class.removed",
+          "old": "class io.camunda.client.LegacyZeebeClientProperties",
+          "justification": "Removal of V1 APIs in 8.10+; compatibility impact accepted for this release."
+        },
+        {
+          "ignore": true,
+          "code": "java.field.removed",
+          "old": "field io.camunda.client.api.worker.metrics.MicrometerJobWorkerMetricsBuilder.Names.ZEEBE_JOB_ACTIVATED",
+          "justification": "Removal of V1 APIs in 8.10+; compatibility impact accepted for this release."
+        },
+        {
+          "ignore": true,
+          "code": "java.field.removed",
+          "old": "field io.camunda.client.api.worker.metrics.MicrometerJobWorkerMetricsBuilder.Names.ZEEBE_JOB_HANDLED",
+          "justification": "Removal of V1 APIs in 8.10+; compatibility impact accepted for this release."
         }
       ]
     }

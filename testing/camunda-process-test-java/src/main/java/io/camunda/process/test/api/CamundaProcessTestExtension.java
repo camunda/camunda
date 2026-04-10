@@ -42,7 +42,6 @@ import io.camunda.process.test.impl.testCases.CamundaTestCaseRunner;
 import io.camunda.process.test.impl.testresult.CamundaProcessTestResultCollector;
 import io.camunda.process.test.impl.testresult.CamundaProcessTestResultPrinter;
 import io.camunda.process.test.impl.testresult.ProcessTestResult;
-import io.camunda.zeebe.client.ZeebeClient;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.net.URI;
@@ -124,7 +123,6 @@ public class CamundaProcessTestExtension
   private SemanticSimilarityConfig semanticSimilarityConfig;
 
   private JsonMapper jsonMapper;
-  private io.camunda.zeebe.client.api.JsonMapper zeebeJsonMapper;
 
   private CamundaManagementClient camundaManagementClient;
 
@@ -181,7 +179,6 @@ public class CamundaProcessTestExtension
             camundaManagementClient,
             CamundaAssert.getAwaitBehavior(),
             jsonMapper,
-            zeebeJsonMapper,
             conditionalBehaviorEngine);
 
     // create process coverage
@@ -199,7 +196,7 @@ public class CamundaProcessTestExtension
     store.put(STORE_KEY_CONTEXT, camundaProcessTestContext);
 
     // initializations
-    initializeJsonMapper(jsonMapper, zeebeJsonMapper);
+    initializeJsonMapper(jsonMapper);
     initializeJudgeConfig();
     initializeAssertions(runtimeBuilder);
     initializeSemanticSimilarityConfig();
@@ -218,13 +215,9 @@ public class CamundaProcessTestExtension
     }
   }
 
-  private void initializeJsonMapper(
-      final JsonMapper jsonMapper, final io.camunda.zeebe.client.api.JsonMapper zeebeJsonMapper) {
-
+  private void initializeJsonMapper(final JsonMapper jsonMapper) {
     if (jsonMapper != null) {
       CamundaAssert.setJsonMapper(jsonMapper);
-    } else if (zeebeJsonMapper != null) {
-      CamundaAssert.setJsonMapper(zeebeJsonMapper);
     }
   }
 
@@ -316,7 +309,6 @@ public class CamundaProcessTestExtension
     // inject fields
     try {
       injectField(context, CamundaClient.class, camundaProcessTestContext::createClient);
-      injectField(context, ZeebeClient.class, camundaProcessTestContext::createZeebeClient);
       injectField(context, CamundaProcessTestContext.class, () -> camundaProcessTestContext);
       injectField(
           context,
@@ -758,20 +750,6 @@ public class CamundaProcessTestExtension
    */
   public CamundaProcessTestExtension withJsonMapper(final JsonMapper jsonMapper) {
     this.jsonMapper = jsonMapper;
-    return this;
-  }
-
-  /**
-   * Configure the JSON mapper for the client and the assertions.
-   *
-   * @param jsonMapper the JSON mapper to use
-   * @return the extension builder
-   * @deprecated for removal, use {@link #withJsonMapper(JsonMapper)} instead.
-   */
-  @Deprecated
-  public CamundaProcessTestExtension withJsonMapper(
-      final io.camunda.zeebe.client.api.JsonMapper jsonMapper) {
-    zeebeJsonMapper = jsonMapper;
     return this;
   }
 

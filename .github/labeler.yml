@@ -12,10 +12,6 @@ component/c8-api:
       - any-glob-to-any-file:
           - 'zeebe/gateway-protocol/src/main/proto/v2/**'
           - 'zeebe/gateway-rest/**'
-deprecated-client:
-  - changed-files:
-      - any-glob-to-any-file:
-          - 'clients/java-deprecated/**'
 component/c8run:
   - changed-files:
       - any-glob-to-any-file:

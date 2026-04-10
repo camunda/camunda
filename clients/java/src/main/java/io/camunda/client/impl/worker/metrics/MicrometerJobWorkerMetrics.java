@@ -23,33 +23,22 @@ public final class MicrometerJobWorkerMetrics implements JobWorkerMetrics {
 
   private final Counter jobActivatedCounter;
   private final Counter jobHandledCounter;
-  private final Counter zeebeJobActivatedCounter;
-  private final Counter zeebeJobHandledCounter;
 
   public MicrometerJobWorkerMetrics(
-      final Counter jobActivatedCounter,
-      final Counter jobHandledCounter,
-      final Counter zeebeJobActivatedCounter,
-      final Counter zeebeJobHandledCounter) {
+      final Counter jobActivatedCounter, final Counter jobHandledCounter) {
     this.jobActivatedCounter =
         Objects.requireNonNull(jobActivatedCounter, "must specify a job activated counter");
     this.jobHandledCounter =
         Objects.requireNonNull(jobHandledCounter, "must specify a job handled counter");
-    this.zeebeJobActivatedCounter =
-        Objects.requireNonNull(zeebeJobActivatedCounter, "must specify a job activated counter");
-    this.zeebeJobHandledCounter =
-        Objects.requireNonNull(zeebeJobHandledCounter, "must specify a job handled counter");
   }
 
   @Override
   public void jobActivated(final int count) {
     jobActivatedCounter.increment(count);
-    zeebeJobActivatedCounter.increment(count);
   }
 
   @Override
   public void jobHandled(final int count) {
     jobHandledCounter.increment(count);
-    zeebeJobHandledCounter.increment(count);
   }
 }

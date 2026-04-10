@@ -20,7 +20,6 @@ import static io.camunda.process.test.api.assertions.ProcessInstanceSelectors.by
 import static io.camunda.process.test.utils.ProcessInstanceBuilder.newActiveChildProcessInstance;
 import static io.camunda.process.test.utils.ProcessInstanceBuilder.newActiveProcessInstance;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -143,23 +142,6 @@ public class ProcessInstanceAssertTest {
     @Test
     void shouldUseProcessInstanceEvent() {
       // given
-      when(processInstanceEvent.getProcessInstanceKey()).thenReturn(ACTIVE_PROCESS_INSTANCE_KEY);
-
-      // when
-      CamundaAssert.assertThatProcessInstance(processInstanceEvent).isActive();
-
-      // then
-      verify(camundaDataSource).findProcessInstances(processInstanceFilterCapture.capture());
-
-      processInstanceFilterCapture.getValue().accept(processInstanceFilter);
-      verify(processInstanceFilter).processInstanceKey(ACTIVE_PROCESS_INSTANCE_KEY);
-    }
-
-    @Test
-    void shouldUseDeprecatedProcessInstanceEvent() {
-      // given
-      final io.camunda.zeebe.client.api.response.ProcessInstanceEvent processInstanceEvent =
-          mock(io.camunda.zeebe.client.api.response.ProcessInstanceEvent.class);
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(ACTIVE_PROCESS_INSTANCE_KEY);
 
       // when

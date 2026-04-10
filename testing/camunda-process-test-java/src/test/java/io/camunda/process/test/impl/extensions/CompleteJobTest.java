@@ -71,7 +71,6 @@ public class CompleteJobTest {
   @Mock private Consumer<AutoCloseable> clientCreationCallback;
   @Mock private CamundaManagementClient camundaManagementClient;
   @Mock private JsonMapper jsonMapper;
-  @Mock private io.camunda.zeebe.client.api.JsonMapper zeebeJsonMapper;
 
   @Mock private CamundaClientBuilderFactory camundaClientBuilderFactory;
   @Mock private CamundaClientBuilder camundaClientBuilder;
@@ -116,7 +115,6 @@ public class CompleteJobTest {
               camundaManagementClient,
               DevAwaitBehavior.expectSuccess(),
               jsonMapper,
-              zeebeJsonMapper,
               new ConditionalBehaviorEngine());
 
       when(camundaClient
@@ -250,7 +248,6 @@ public class CompleteJobTest {
               camundaManagementClient,
               DevAwaitBehavior.expectFailure(),
               jsonMapper,
-              zeebeJsonMapper,
               new ConditionalBehaviorEngine());
     }
 
@@ -338,7 +335,6 @@ public class CompleteJobTest {
               camundaManagementClient,
               DevAwaitBehavior.expectSuccess(),
               jsonMapper,
-              zeebeJsonMapper,
               new ConditionalBehaviorEngine());
 
       when(camundaClient
@@ -487,7 +483,6 @@ public class CompleteJobTest {
               camundaManagementClient,
               DevAwaitBehavior.expectSuccess(),
               jsonMapper,
-              zeebeJsonMapper,
               new ConditionalBehaviorEngine());
 
       when(camundaClient

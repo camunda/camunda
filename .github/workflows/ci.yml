@@ -187,7 +187,7 @@ jobs:
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
-          
+
   validate-pom-metadata:
     if: needs.detect-changes.outputs.validate-pom-metadata == 'true'
     name: "Lint / Flattened POM Metadata"
@@ -435,7 +435,7 @@ jobs:
           DISTRIBUTED="':zeebe-atomix-cluster',':zeebe-atomix-utils',':zeebe-broker',':zeebe-broker-client',':zeebe-cluster-config',':dynamic-node-id-provider',':zeebe-journal',':zeebe-logstreams',':zeebe-restore',':zeebe-scheduler',':zeebe-snapshots',':zeebe-stream-platform',':zeebe-transport'"
 
           # Zeebe modules owned by @camunda/camundaex
-          CLIENT="':zeebe-client-java',':camunda-client-java'"
+          CLIENT="':camunda-client-java'"
 
           # General UT configuration
           GENERAL_UT_EXTRA_SKIP="camunda-exporter rdbms-exporter"

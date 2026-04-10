@@ -35,38 +35,15 @@ import io.camunda.client.bean.ParameterInfo;
 
 public class DefaultParameterResolverStrategy implements ParameterResolverStrategy {
   protected final JsonMapper jsonMapper;
-  private final io.camunda.zeebe.client.api.worker.JobClient jobClient;
-
-  public DefaultParameterResolverStrategy(
-      final JsonMapper jsonMapper, final io.camunda.zeebe.client.api.worker.JobClient jobClient) {
-    this.jsonMapper = jsonMapper;
-    this.jobClient = jobClient;
-  }
 
   public DefaultParameterResolverStrategy(final JsonMapper jsonMapper) {
-    this(jsonMapper, null);
+    this.jsonMapper = jsonMapper;
   }
 
   @Override
   public ParameterResolver createResolver(final ParameterResolverStrategyContext context) {
     final ParameterInfo parameterInfo = context.parameterInfo();
     final Class<?> parameterType = parameterInfo.getParameter().getType();
-    // legacy
-    if (io.camunda.zeebe.client.api.worker.JobClient.class.isAssignableFrom(parameterType)) {
-      if (jobClient != null) {
-        return new CompatJobClientParameterResolver(jobClient);
-      } else {
-        throw new IllegalStateException(
-            "Legacy JobClient is required for parameter "
-                + parameterInfo
-                + " of method "
-                + parameterInfo.getMethodInfo());
-      }
-    }
-    if (io.camunda.zeebe.client.api.response.ActivatedJob.class.isAssignableFrom(parameterType)) {
-      return new CompatActivatedJobParameterResolver();
-    }
-    // end legacy
     if (JobClient.class.isAssignableFrom(parameterType)) {
       return new JobClientParameterResolver();
     } else if (ActivatedJob.class.isAssignableFrom(parameterType)) {
