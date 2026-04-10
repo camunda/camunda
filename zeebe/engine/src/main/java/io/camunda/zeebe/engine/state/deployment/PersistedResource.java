@@ -107,4 +107,19 @@ public class PersistedResource extends UnpackedObject implements DbValue {
     versionTagProp.setValue(record.getVersionTag());
     resourceProp.setValue(record.getResourceProp());
   }
+
+  /**
+   * Returns {@code true} if this persisted resource represents the same content and identity as the
+   * given checksum and resource ID. A resource is a duplicate when <em>both</em> the MD5 checksum
+   * (content) and the resource ID (logical identity) are unchanged. Both parameters must be
+   * non-null.
+   *
+   * @param checksum the checksum to compare against
+   * @param resourceId the resource ID to compare against
+   * @return {@code true} if this resource is a duplicate of the given checksum and resource ID
+   */
+  public boolean isDuplicateOf(final byte[] checksum, final String resourceId) {
+    return java.util.Arrays.equals(BufferUtil.bufferAsArray(getChecksum()), checksum)
+        && bufferAsString(getResourceId()).equals(resourceId);
+  }
 }

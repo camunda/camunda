@@ -28,8 +28,8 @@ import org.agrona.DirectBuffer;
  *
  * <p>Handles the common logic for versioning and writing resource records. By default, the resource
  * name (filename) is used as the resource ID. Subclasses can override {@link
- * #parseResourceId(DeploymentResource)} to resolve the resource ID (and optional version tag) from
- * the raw resource content.
+ * #parseResourceInfo(DeploymentResource)} to resolve the resource ID (and optional version tag)
+ * from the raw resource content.
  *
  * <h2>Duplicate detection</h2>
  *
@@ -105,7 +105,7 @@ class DefaultResourceTransformer implements DeploymentResourceTransformer {
     return parseResourceInfo(deploymentResource)
         .map(
             resourceInfo -> {
-              appendMetadataToResourceRecord(resourceInfo, deploymentResource, deployment);
+              addResourceMetadata(resourceInfo, deploymentResource, deployment);
               return null;
             });
   }
@@ -135,54 +135,50 @@ class DefaultResourceTransformer implements DeploymentResourceTransformer {
   }
 
   private void writeResourceRecord(
-      final ResourceMetadataRecord resourceMetadataRecord, final DeploymentResource resource) {
+      final ResourceMetadataRecord metadata, final DeploymentResource resource) {
     stateWriter.appendFollowUpEvent(
-        resourceMetadataRecord.getResourceKey(),
+        metadata.getResourceKey(),
         ResourceIntent.CREATED,
-        new ResourceRecord().wrap(resourceMetadataRecord, resource.getResource()));
+        new ResourceRecord().wrap(metadata, resource.getResource()));
   }
 
-  private void appendMetadataToResourceRecord(
+  private void addResourceMetadata(
       final ResourceInfo resourceInfo,
       final DeploymentResource deploymentResource,
       final DeploymentRecord deploymentRecord) {
-    final ResourceMetadataRecord resourceMetadataRecord = deploymentRecord.resourceMetadata().add();
+    final ResourceMetadataRecord metadata = deploymentRecord.resourceMetadata().add();
     final LongSupplier newResourceKey = keyGenerator::nextKey;
     final DirectBuffer checksum =
         checksumGenerator.checksum(deploymentResource.getResourceBuffer());
     final String id = resourceInfo.id();
     final String tenantId = deploymentRecord.getTenantId();
 
-    resourceMetadataRecord.setResourceId(id);
-    resourceMetadataRecord.setChecksum(checksum);
-    resourceMetadataRecord.setResourceName(deploymentResource.getResourceName());
-    resourceMetadataRecord.setTenantId(tenantId);
-    resourceInfo.versionTag().ifPresent(resourceMetadataRecord::setVersionTag);
+    metadata.setResourceId(id);
+    metadata.setChecksum(checksum);
+    metadata.setResourceName(deploymentResource.getResourceName());
+    metadata.setTenantId(tenantId);
+    resourceInfo.versionTag().ifPresent(metadata::setVersionTag);
 
     resourceState
         .findLatestResourceById(id, tenantId)
         .ifPresentOrElse(
             latestResource -> {
-              final var resourceRecord =
-                  new ResourceRecord()
-                      .wrap(resourceMetadataRecord, deploymentResource.getResource());
-              if (resourceRecord.isDuplicateOf(
-                  BufferUtil.bufferAsArray(latestResource.getChecksum()),
-                  BufferUtil.bufferAsString(latestResource.getResourceId()))) {
-                resourceMetadataRecord
+              if (latestResource.isDuplicateOf(
+                  BufferUtil.bufferAsArray(checksum), id)) {
+                metadata
                     .setResourceKey(latestResource.getResourceKey())
                     .setVersion(latestResource.getVersion())
                     .setDeploymentKey(latestResource.getDeploymentKey())
                     .setDuplicate(true);
               } else {
-                resourceMetadataRecord
+                metadata
                     .setResourceKey(newResourceKey.getAsLong())
                     .setVersion(resourceState.getNextResourceVersion(id, tenantId))
                     .setDeploymentKey(deploymentRecord.getDeploymentKey());
               }
             },
             () ->
-                resourceMetadataRecord
+                metadata
                     .setResourceKey(newResourceKey.getAsLong())
                     .setVersion(INITIAL_VERSION)
                     .setDeploymentKey(deploymentRecord.getDeploymentKey()));
