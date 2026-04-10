@@ -24,8 +24,8 @@ import io.camunda.client.CredentialsProvider;
 import java.net.URI;
 import org.apache.hc.client5.http.config.RequestConfig;
 import org.apache.hc.client5.http.impl.async.CloseableHttpAsyncClient;
-import org.apache.hc.client5.http.impl.nio.PoolingAsyncClientConnectionManager;
 import org.apache.hc.core5.io.CloseMode;
+import org.apache.hc.core5.io.ModalCloseable;
 import org.apache.hc.core5.util.TimeValue;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -34,13 +34,13 @@ import org.mockito.InOrder;
 class HttpClientTest {
 
   private CloseableHttpAsyncClient mockApacheClient;
-  private PoolingAsyncClientConnectionManager mockConnectionManager;
+  private ModalCloseable mockConnectionManager;
   private HttpClient httpClient;
 
   @BeforeEach
   void setUp() {
     mockApacheClient = mock(CloseableHttpAsyncClient.class);
-    mockConnectionManager = mock(PoolingAsyncClientConnectionManager.class);
+    mockConnectionManager = mock(ModalCloseable.class);
 
     httpClient =
         new HttpClient(
