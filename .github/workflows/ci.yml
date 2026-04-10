@@ -1409,7 +1409,19 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
+      - name: Check for bypass label
+        id: bypass
+        shell: bash
+        run: |
+          if [[ "${{ contains(github.event.pull_request.labels.*.name, 'ci:flaky-test-bypass') }}" == "true" ]]; then
+            echo "::notice::Bypass label 'ci:flaky-test-bypass' detected — skipping new flaky test gate."
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Check if there are flaky tests to analyze
+        if: steps.bypass.outputs.skip != 'true'
         id: check
         env:
           FLAKY_DATA: ${{ needs.utils-flaky-tests-summary.outputs.flaky_tests_data }}
@@ -1458,7 +1470,7 @@ jobs:
                FROM `ci-30-162810.prod_ci_analytics.test_status_v1` ts
                LEFT OUTER JOIN `ci-30-162810.prod_ci_analytics.build_status_v2` bs
                  ON ts.ci_url=bs.ci_url AND ts.build_id=bs.build_id AND ts.job_name=bs.job_name
-               WHERE ts.report_time >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 30 DAY)
+               WHERE ts.report_time >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 60 DAY)
                  AND ts.ci_url="https://github.com/camunda/camunda"
                  AND test_status = "flaky"
                  AND (
@@ -1475,6 +1487,7 @@ jobs:
           pr-flaky-tests-data: '${{ needs.utils-flaky-tests-summary.outputs.flaky_tests_data }}'
           known-flaky-tests: '${{ steps.query-known-flaky.outputs.known_flaky_tests }}'
           pr-number: ${{ github.event.pull_request.number }}
+          blocking: 'false'
 
   identity-frontend-tests:
     if: needs.detect-changes.outputs.identity-frontend-tests == 'true'

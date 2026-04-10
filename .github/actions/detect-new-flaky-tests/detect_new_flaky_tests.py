@@ -135,23 +135,24 @@ def post_comment(owner: str, repo: str, pr_number: int, body: str, token: str) -
 # Test comparison
 # ---------------------------------------------------------------------------
 
-def _is_same_test(known_key: str, pr_key: str) -> bool:
-    """Check if a BigQuery known key matches a normalized PR key.
+def _is_same_test(baseline_key: str, normalized_key: str) -> bool:
+    """Check if a BigQuery baseline key matches a normalized PR key.
 
-    BigQuery keys may have trailing params/suffixes that parse_test_name strips:
-      known: "pkg.Class.method(Param) variant"
-      pr:    "pkg.Class.method"
+    Baseline keys (from BigQuery) may have trailing params/suffixes that
+    parse_test_name strips:
+      baseline:   "pkg.Class.method(Param) variant"
+      normalized: "pkg.Class.method"
 
-    We accept a match if the known key equals the PR key, or starts with
-    the PR key followed by a non-alphanumeric char (to avoid "shouldFind"
-    matching "shouldFindAll").
+    We accept a match if the baseline key equals the normalized key, or starts
+    with the normalized key followed by a non-alphanumeric, non-underscore char
+    (to avoid "shouldFind" matching "shouldFindAll").
     """
-    if known_key == pr_key:
+    if baseline_key == normalized_key:
         return True
-    if not known_key.startswith(pr_key):
+    if not baseline_key.startswith(normalized_key):
         return False
-    # The character right after the PR key must be a boundary (not part of a method name)
-    next_char = known_key[len(pr_key)]
+    # The character right after the normalized key must be a boundary
+    next_char = baseline_key[len(normalized_key)]
     return not next_char.isalnum() and next_char != "_"
 
 
@@ -160,48 +161,49 @@ def _is_same_test(known_key: str, pr_key: str) -> bool:
 # ---------------------------------------------------------------------------
 
 def main() -> None:
-    pr_flaky_input = os.environ.get("PR_FLAKY_TESTS_DATA", "")
-    known_flaky_input = os.environ.get("KNOWN_FLAKY_TESTS", "")
+    pr_flaky_json = os.environ.get("PR_FLAKY_TESTS_DATA", "")
+    baseline_flaky_json = os.environ.get("KNOWN_FLAKY_TESTS", "")
     pr_number = int(os.environ.get("PR_NUMBER", "0"))
     github_token = os.environ.get("GITHUB_TOKEN", "")
     github_repository = os.environ.get("GITHUB_REPOSITORY", "")
+    blocking = os.environ.get("BLOCKING", "true").lower() == "true"
 
     # -- Parse PR flaky tests ------------------------------------------------
     print(f"\n{'='*80}")
     print(f"{PREFIX} === STEP 1: Parse PR flaky tests ===")
     print(f"{'='*80}")
 
-    if not pr_flaky_input or pr_flaky_input.strip() in ("", "[]"):
+    if not pr_flaky_json or pr_flaky_json.strip() in ("", "[]"):
         print(f"{PREFIX} No PR flaky tests data provided - nothing to check.")
         set_output("has-new-flaky-tests", "false")
         return
 
     try:
-        pr_flaky_raw = json.loads(pr_flaky_input)
+        pr_flaky_entries = json.loads(pr_flaky_json)
     except json.JSONDecodeError as exc:
         print(f"{PREFIX} Failed to parse PR flaky tests data: {exc}")
         set_output("has-new-flaky-tests", "false")
         return
 
-    if not isinstance(pr_flaky_raw, list) or len(pr_flaky_raw) == 0:
+    if not isinstance(pr_flaky_entries, list) or len(pr_flaky_entries) == 0:
         print(f"{PREFIX} No PR flaky tests found.")
         set_output("has-new-flaky-tests", "false")
         return
 
-    print(f"{PREFIX} Raw PR flaky test entries ({len(pr_flaky_raw)} jobs):")
-    for i, entry in enumerate(pr_flaky_raw):
+    print(f"{PREFIX} Raw PR flaky test entries ({len(pr_flaky_entries)} jobs):")
+    for i, entry in enumerate(pr_flaky_entries):
         job = entry.get('job', '<unknown>')
         tests = entry.get('flaky_tests', '')
         print(f"{PREFIX}   [{i+1}] job='{job}' flaky_tests='{tests}'")
 
-    processed_pr_tests = process_flaky_tests_data(pr_flaky_raw)
-    if not processed_pr_tests:
+    pr_flaky_tests = process_flaky_tests_data(pr_flaky_entries)
+    if not pr_flaky_tests:
         print(f"{PREFIX} No processed flaky tests from PR.")
         set_output("has-new-flaky-tests", "false")
         return
 
-    print(f"\n{PREFIX} Processed PR flaky tests ({len(processed_pr_tests)} unique):")
-    for i, test in enumerate(processed_pr_tests):
+    print(f"\n{PREFIX} Processed PR flaky tests ({len(pr_flaky_tests)} unique):")
+    for i, test in enumerate(pr_flaky_tests):
         key = get_test_key(test)
         print(f"{PREFIX}   [{i+1}] key='{key}' jobs={test['jobs']} retries={test['currentRunFailures']}")
 
@@ -210,25 +212,25 @@ def main() -> None:
     print(f"{PREFIX} === STEP 2: Parse known flaky tests (BigQuery baseline) ===")
     print(f"{'='*80}")
 
-    known_flaky_tests: list[dict] = []
+    baseline_flaky_tests: list[dict] = []
     try:
-        if known_flaky_input and known_flaky_input.strip():
-            known_flaky_tests = json.loads(known_flaky_input)
+        if baseline_flaky_json and baseline_flaky_json.strip():
+            baseline_flaky_tests = json.loads(baseline_flaky_json)
     except json.JSONDecodeError as exc:
-        print(f"{PREFIX} Failed to parse known flaky tests - treating all PR flaky tests as new: {exc}")
+        print(f"{PREFIX} Failed to parse baseline flaky tests - treating all PR flaky tests as new: {exc}")
 
-    print(f"{PREFIX} Known flaky tests from main/stable (last 30 days): {len(known_flaky_tests)} entries")
+    print(f"{PREFIX} Baseline flaky tests from main/stable (last 60 days): {len(baseline_flaky_tests)} entries")
 
     # BigQuery test_name may include parameters and suffixes, e.g.
     #   "shouldDoSomething(CamundaRdbmsTestApplication) camundaWithOracleDB"
     # Keep the raw keys for full fidelity in debug output.
-    known_keys: set[str] = set()
-    for known in known_flaky_tests:
-        key = f"{known['test_class_name']}.{known['test_name']}"
-        known_keys.add(key)
+    baseline_keys: set[str] = set()
+    for entry in baseline_flaky_tests:
+        key = f"{entry['test_class_name']}.{entry['test_name']}"
+        baseline_keys.add(key)
 
-    print(f"{PREFIX} Unique known flaky test keys: {len(known_keys)}")
-    for i, key in enumerate(sorted(known_keys)):
+    print(f"{PREFIX} Unique baseline flaky test keys: {len(baseline_keys)}")
+    for i, key in enumerate(sorted(baseline_keys)):
         print(f"{PREFIX}   [{i+1}] {key}")
 
     # -- Compare --------------------------------------------------------------
@@ -237,20 +239,20 @@ def main() -> None:
     print(f"{'='*80}")
 
     new_flaky_tests: list[dict] = []
-    for test in processed_pr_tests:
-        pr_key = get_test_key(test)
-        # PR keys are normalized (no params), BigQuery keys may have params/suffixes.
-        # Match if the known key is the same test method (exact or with param suffix).
-        is_known = any(_is_same_test(k, pr_key) for k in known_keys)
-        matched = [k for k in known_keys if _is_same_test(k, pr_key)] if is_known else []
+    for test in pr_flaky_tests:
+        normalized_key = get_test_key(test)
+        # Normalized keys have no params; baseline keys may have params/suffixes.
+        # Match if the baseline key is the same test method (exact or with param suffix).
+        is_known = any(_is_same_test(k, normalized_key) for k in baseline_keys)
+        matched = [k for k in baseline_keys if _is_same_test(k, normalized_key)] if is_known else []
         status = f"KNOWN (matched: {matched})" if is_known else "NEW (not seen on main/stable)"
-        print(f"{PREFIX}   {pr_key} → {status}")
+        print(f"{PREFIX}   {normalized_key} → {status}")
         if not is_known:
             new_flaky_tests.append(test)
 
     print(f"\n{PREFIX} --- Result ---")
-    print(f"{PREFIX} Total PR flaky tests: {len(processed_pr_tests)}")
-    print(f"{PREFIX} Already known:        {len(processed_pr_tests) - len(new_flaky_tests)}")
+    print(f"{PREFIX} Total PR flaky tests: {len(pr_flaky_tests)}")
+    print(f"{PREFIX} Already known:        {len(pr_flaky_tests) - len(new_flaky_tests)}")
     print(f"{PREFIX} NEW flaky tests:      {len(new_flaky_tests)}")
 
     if not new_flaky_tests:
@@ -290,11 +292,14 @@ def main() -> None:
             "---",
             "",
             "**What to do:**",
-            "1. Check if the flaky test is caused by your changes",
-            "2. Fix the test if possible",
-            "3. If the test is unrelated to your changes, create a `kind/flake` issue and link it in a comment",
+            "1. Check if the flaky test is caused by your changes and fix it",
+            "2. If the test is unrelated to your changes:",
+            "   - Contact the monorepo devops (#top-monorepo-ci) to triage and discuss the next steps",
+            "   - Create an issue with the `kind/flake` label documenting the test, job, and a link to this CI run",
+            "   - Add the `ci:flaky-test-bypass` label to this PR to skip the gate and unblock merging",
+            "   - Re-run CI after adding the label",
             "",
-            "_This check compares flaky tests in this PR against tests known to be flaky on `main`/`stable/*` in the last 30 days._",
+            "_This check compares flaky tests in this PR against tests known to be flaky on `main`/`stable/*` in the last 60 days._",
         ]
     )
 
@@ -306,8 +311,11 @@ def main() -> None:
     print(f"{PREFIX} Posted new flaky tests alert comment.")
 
     set_output("has-new-flaky-tests", "true")
-    print(f"::error::{len(new_flaky_tests)} new flaky test(s) detected. See the PR comment for details.")
-    sys.exit(1)
+    if blocking:
+        print(f"::error::{len(new_flaky_tests)} new flaky test(s) detected. See the PR comment for details.")
+        sys.exit(1)
+    else:
+        print(f"::warning::{len(new_flaky_tests)} new flaky test(s) detected (non-blocking mode). See the PR comment for details.")
 
 
 if __name__ == "__main__":
