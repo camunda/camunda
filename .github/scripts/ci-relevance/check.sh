@@ -35,7 +35,10 @@ while IFS= read -r file; do
   done < "$PATTERNS_FILE"
 
   if [[ "$excluded" == false ]]; then
-    exit 0  # Found a CI-relevant .github/ file
+    # Early exit: one non-excluded .github/ file is enough to trigger CI.
+    # This also handles mixed PRs correctly — if a load-test workflow and
+    # ci.yml both change, ci.yml reaches here first and wins.
+    exit 0
   fi
 done
 
