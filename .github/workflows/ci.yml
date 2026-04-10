@@ -1213,6 +1213,7 @@ jobs:
     name: detect new flaky tests
     if: always() && github.event_name == 'pull_request' && !github.event.pull_request.head.repo.fork
     needs:
+      - detect-changes
       - utils-flaky-tests-summary
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -1303,6 +1304,15 @@ jobs:
           known-flaky-tests: '${{ steps.query-known-flaky.outputs.known_flaky_tests }}'
           pr-number: ${{ github.event.pull_request.number }}
           blocking: 'false'
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
 
   identity-frontend-tests:
     if: needs.detect-changes.outputs.identity-frontend-tests == 'true'
