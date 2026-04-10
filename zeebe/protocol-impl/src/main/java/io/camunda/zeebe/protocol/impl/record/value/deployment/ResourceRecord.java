@@ -33,6 +33,8 @@ public class ResourceRecord extends UnifiedRecordValue implements Resource {
   private final StringProperty versionTagProp = new StringProperty("versionTag", "");
   private final BinaryProperty resourceProp = new BinaryProperty("resource", new UnsafeBuffer());
 
+  private ResourceMetadataRecord metadata;
+
   public ResourceRecord() {
     super(9);
     declareProperty(resourceIdProp)
@@ -47,6 +49,7 @@ public class ResourceRecord extends UnifiedRecordValue implements Resource {
   }
 
   public ResourceRecord wrap(final ResourceMetadataRecord metadata, final byte[] resource) {
+    this.metadata = metadata;
     resourceIdProp.setValue(metadata.getResourceId());
     versionProp.setValue(metadata.getVersion());
     checksumProp.setValue(metadata.getChecksumBuffer());
@@ -106,7 +109,11 @@ public class ResourceRecord extends UnifiedRecordValue implements Resource {
 
   @Override
   public boolean isDuplicate() {
-    return false;
+    return metadata != null && metadata.isDuplicate();
+  }
+
+  public boolean isDuplicateOf(final byte[] checksum, final String resourceId) {
+    return metadata != null && metadata.isDuplicateOf(checksum, resourceId);
   }
 
   @Override

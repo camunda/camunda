@@ -42,6 +42,9 @@ public final class DeploymentTransformer {
 
   private final BpmnResourceTransformer bpmnResourceTransformer;
 
+  // Track BPMN resources for deployment binding validation (step 4)
+  private final List<BpmnResource> bpmnResources = new ArrayList<>();
+
   public DeploymentTransformer(
       final StateWriter stateWriter,
       final ProcessingState processingState,
@@ -105,8 +108,9 @@ public final class DeploymentTransformer {
         // Step 2: Iterate over all resources and build metadata
         .flatMap(ok -> buildMetadataForAllResources(deploymentEvent))
         // Step 3: Check for conflicting resource IDs within the single deployment
-        .flatMap(ok -> checkForDuplicateIds(deploymentEvent))
+        .flatMap(ok -> checkForConflictingIds(deploymentEvent))
         // Step 4: Check if all deployment bindings are satisfied
+        .flatMap(ok -> validateAllDeploymentBindings(deploymentEvent))
         // Step 5: Write the actual resources/deployment to state
         .map(
             ok -> {
@@ -133,8 +137,7 @@ public final class DeploymentTransformer {
 
   /**
    * Step 2: Iterates over all resources and builds metadata for each. This step validates each
-   * resource and adds its metadata to the deployment record. It also checks for conflicting
-   * resource IDs within the deployment (Step 3 is done here implicitly).
+   * resource and adds its metadata to the deployment record.
    *
    * @param deploymentEvent the deployment record
    * @return Either.right(null) if successful, or Either.left with error details
@@ -144,8 +147,8 @@ public final class DeploymentTransformer {
     final StringBuilder errors = new StringBuilder();
     boolean success = true;
 
-    // Track BPMN resources separately for deployment binding validation (step 4)
-    final List<BpmnResource> bpmnResources = new ArrayList<>();
+    // Clear BPMN resources from previous transform
+    bpmnResources.clear();
 
     final Iterator<DeploymentResource> resourceIterator = deploymentEvent.resources().iterator();
     while (resourceIterator.hasNext()) {
@@ -169,14 +172,13 @@ public final class DeploymentTransformer {
       return Either.left(new Failure(rejectionReason));
     }
 
-    // Step 4: Validate deployment bindings for BPMN resources
-    return validateDeploymentBindings(deploymentEvent, bpmnResources);
+    return Either.right(null);
   }
 
   /**
-   * Step 3: Validates that there are no duplicate resource IDs within the deployment.
+   * Step 3: Validates that there are no conflicting resource IDs within the deployment.
    *
-   * <p>Checks all metadata collections for duplicate IDs:
+   * <p>Checks all metadata collections for conflicting IDs:
    *
    * <ul>
    *   <li>BPMN process IDs (bpmnProcessId)
@@ -187,9 +189,9 @@ public final class DeploymentTransformer {
    * </ul>
    *
    * @param deployment the deployment record containing all metadata
-   * @return Either.right(null) if no duplicates found, or Either.left with error details
+   * @return Either.right(null) if no conflicts found, or Either.left with error details
    */
-  private Either<Failure, Void> checkForDuplicateIds(final DeploymentRecord deployment) {
+  private Either<Failure, Void> checkForConflictingIds(final DeploymentRecord deployment) {
     final StringBuilder errors = new StringBuilder();
     boolean success = true;
 
@@ -307,7 +309,7 @@ public final class DeploymentTransformer {
       rejectionType = RejectionType.INVALID_ARGUMENT;
       rejectionReason =
           String.format(
-              "Expected resource IDs to be unique within a deployment, but encountered the following duplicates:%s",
+              "Expected resource IDs to be unique within a deployment, but encountered the following conflicting IDs:%s",
               errors);
       return Either.left(new Failure(rejectionReason));
     }
@@ -316,16 +318,15 @@ public final class DeploymentTransformer {
   }
 
   /**
-   * Step 4: Validates deployment bindings for BPMN resources. Ensures that all referenced resources
-   * (via zeebe:calledElement, zeebe:calledDecision, zeebe:formDefinition, zeebe:linkedResource) are
-   * present in the deployment.
+   * Step 4: Validates deployment bindings for all BPMN resources in the deployment. Ensures that
+   * all referenced resources (via zeebe:calledElement, zeebe:calledDecision, zeebe:formDefinition,
+   * zeebe:linkedResource) are present in the deployment.
    *
    * @param deploymentEvent the deployment record
-   * @param bpmnResources the list of BPMN resources in the deployment
    * @return Either.right(null) if validation succeeds, or Either.left with validation errors
    */
-  private Either<Failure, Void> validateDeploymentBindings(
-      final DeploymentRecord deploymentEvent, final List<BpmnResource> bpmnResources) {
+  private Either<Failure, Void> validateAllDeploymentBindings(
+      final DeploymentRecord deploymentEvent) {
     if (bpmnResources.isEmpty()) {
       return Either.right(null);
     }

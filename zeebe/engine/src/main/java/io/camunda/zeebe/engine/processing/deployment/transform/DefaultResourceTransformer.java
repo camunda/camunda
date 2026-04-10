@@ -105,10 +105,7 @@ class DefaultResourceTransformer implements DeploymentResourceTransformer {
     return parseResourceInfo(deploymentResource)
         .map(
             resourceInfo -> {
-              final ResourceMetadataRecord resourceMetadataRecord =
-                  deployment.resourceMetadata().add();
-              appendMetadataToResourceRecord(
-                  resourceMetadataRecord, resourceInfo, deploymentResource, deployment);
+              appendMetadataToResourceRecord(resourceInfo, deploymentResource, deployment);
               return null;
             });
   }
@@ -146,10 +143,10 @@ class DefaultResourceTransformer implements DeploymentResourceTransformer {
   }
 
   private void appendMetadataToResourceRecord(
-      final ResourceMetadataRecord resourceMetadataRecord,
       final ResourceInfo resourceInfo,
       final DeploymentResource deploymentResource,
       final DeploymentRecord deploymentRecord) {
+    final ResourceMetadataRecord resourceMetadataRecord = deploymentRecord.resourceMetadata().add();
     final LongSupplier newResourceKey = keyGenerator::nextKey;
     final DirectBuffer checksum =
         checksumGenerator.checksum(deploymentResource.getResourceBuffer());
@@ -166,7 +163,10 @@ class DefaultResourceTransformer implements DeploymentResourceTransformer {
         .findLatestResourceById(id, tenantId)
         .ifPresentOrElse(
             latestResource -> {
-              if (resourceMetadataRecord.isDuplicateOf(
+              final var resourceRecord =
+                  new ResourceRecord()
+                      .wrap(resourceMetadataRecord, deploymentResource.getResource());
+              if (resourceRecord.isDuplicateOf(
                   BufferUtil.bufferAsArray(latestResource.getChecksum()),
                   BufferUtil.bufferAsString(latestResource.getResourceId()))) {
                 resourceMetadataRecord
