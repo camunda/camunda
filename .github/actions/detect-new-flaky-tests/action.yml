@@ -3,7 +3,8 @@ name: Detect New Flaky Tests
 
 description: >
   Compares flaky tests from the current PR run against known flaky tests from BigQuery.
-  Posts a new PR comment and fails if new (previously unknown) flaky tests are detected.
+  Posts a PR comment if new (previously unknown) flaky tests are detected.
+  Can optionally fail the job to block the PR.
 
 # owner: @camunda/monorepo-devops-team
 
@@ -17,6 +18,10 @@ inputs:
   pr-number:
     description: 'Pull request number'
     required: true
+  blocking:
+    description: 'If true, fail the job when new flaky tests are found. If false, only post a comment.'
+    required: false
+    default: 'true'
 
 outputs:
   has-new-flaky-tests:
@@ -33,5 +38,6 @@ runs:
         PR_FLAKY_TESTS_DATA: ${{ inputs.pr-flaky-tests-data }}
         KNOWN_FLAKY_TESTS: ${{ inputs.known-flaky-tests }}
         PR_NUMBER: ${{ inputs.pr-number }}
+        BLOCKING: ${{ inputs.blocking }}
         GITHUB_TOKEN: ${{ github.token }}
       run: python3 ${{ github.action_path }}/detect_new_flaky_tests.py
