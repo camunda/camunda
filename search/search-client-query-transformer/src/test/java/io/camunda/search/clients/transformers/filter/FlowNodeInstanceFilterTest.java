@@ -202,8 +202,7 @@ public final class FlowNodeInstanceFilterTest extends AbstractTransformerTest {
   public void shouldQueryByFlowNodeNameWithLikeOperation() {
     // given
     final var filter =
-        FilterBuilders.flowNodeInstance(
-            f -> f.flowNodeNameOperations(Operation.like("*Payment*")));
+        FilterBuilders.flowNodeInstance(f -> f.flowNodeNameOperations(Operation.like("*Payment*")));
 
     // when
     final var searchRequest = transformQuery(filter);
