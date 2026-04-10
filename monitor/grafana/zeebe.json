@@ -9104,9 +9104,9 @@
                 "uid": "$DS_PROMETHEUS"
               },
               "editorMode": "code",
-              "expr": "histogram_quantile(0.50, sum(rate(zeebe_process_instance_execution_time_seconds_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\", partition=~\"$partition\"}[$__rate_interval])) by (le))",
+              "expr": "histogram_quantile(0.50, sum(rate(zeebe_process_instance_execution_time_seconds_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\", partition=~\"$partition\"}[$__rate_interval])) by (partition, le))",
               "instant": false,
-              "legendFormat": "quantile-50th",
+              "legendFormat": "Partition: {{partition}} quantile-50th",
               "range": true,
               "refId": "C"
             },
@@ -9116,9 +9116,9 @@
                 "uid": "$DS_PROMETHEUS"
               },
               "editorMode": "code",
-              "expr": "histogram_quantile(0.90, sum(rate(zeebe_process_instance_execution_time_seconds_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\", partition=~\"$partition\"}[$__rate_interval])) by (le))",
+              "expr": "histogram_quantile(0.90, sum(rate(zeebe_process_instance_execution_time_seconds_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\", partition=~\"$partition\"}[$__rate_interval])) by (partition, le))",
               "instant": false,
-              "legendFormat": "quantile-90th",
+              "legendFormat": "Partition: {{partition}} quantile-90th",
               "range": true,
               "refId": "D"
             },
@@ -9128,9 +9128,9 @@
                 "uid": "${DS_PROMETHEUS}"
               },
               "editorMode": "code",
-              "expr": "histogram_quantile(0.99, sum(rate(zeebe_process_instance_execution_time_seconds_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\", partition=~\"$partition\"}[$__rate_interval])) by (le))",
+              "expr": "histogram_quantile(0.99, sum(rate(zeebe_process_instance_execution_time_seconds_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\", partition=~\"$partition\"}[$__rate_interval])) by (partition, le))",
               "instant": false,
-              "legendFormat": "quantile-99th",
+              "legendFormat": "Partition: {{partition}} quantile-99th",
               "range": true,
               "refId": "E"
             }
