@@ -200,6 +200,10 @@ The `detect-new-flaky-tests` job is defined in `.github/workflows/ci.yml`:
   from all test jobs)
 - **Part of:** `check-results` aggregation (failures block merge)
 
+> **Note:** This gate can only detect flaky tests from CI jobs that are wired
+> into the `collect-flaky-tests` action. If a new test job is added to CI but
+> not connected to `collect-flaky-tests`, its flaky tests won't be checked.
+
 ### Secrets used
 
 |      Secret       |                        Source                        |      Purpose       |
