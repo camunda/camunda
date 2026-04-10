@@ -36,7 +36,6 @@ import io.camunda.client.api.worker.JobClient;
 import io.camunda.client.api.worker.JobExceptionHandler.JobExceptionHandlerContext;
 import io.camunda.client.exception.BpmnError;
 import io.camunda.client.exception.JobError;
-import io.camunda.client.metrics.DefaultNoopMetricsRecorder;
 import io.camunda.client.metrics.MetricsRecorder;
 import io.camunda.client.spring.test.util.JobWorkerPermutationsGenerator.JobResponse;
 import java.time.Duration;
@@ -54,10 +53,8 @@ public class BeanJobExceptionHandlerTest {
 
   @Test
   void shouldHandleAnyException() {
-    final MetricsRecorder metricsRecorder = new DefaultNoopMetricsRecorder();
     final BeanJobExceptionHandler handler =
-        new BeanJobExceptionHandler(
-            Duration.ZERO, 0, metricsRecorder, jobCallbackCommandWrapperFactory());
+        new BeanJobExceptionHandler(Duration.ZERO, 0, jobCallbackCommandWrapperFactory());
     final JobClient jobClient = mock(JobClient.class);
     final FailJobCommandStep1 failJobCommandStep1 = mock(FailJobCommandStep1.class);
     final FailJobCommandStep2 failJobCommandStep2 = mock(FailJobCommandStep2.class);
@@ -81,10 +78,8 @@ public class BeanJobExceptionHandlerTest {
 
   @Test
   void shouldHandleJobError() {
-    final MetricsRecorder metricsRecorder = new DefaultNoopMetricsRecorder();
     final BeanJobExceptionHandler handler =
-        new BeanJobExceptionHandler(
-            Duration.ZERO, 0, metricsRecorder, jobCallbackCommandWrapperFactory());
+        new BeanJobExceptionHandler(Duration.ZERO, 0, jobCallbackCommandWrapperFactory());
     final JobClient jobClient = mock(JobClient.class);
     final FailJobCommandStep1 failJobCommandStep1 = mock(FailJobCommandStep1.class);
     final FailJobCommandStep2 failJobCommandStep2 = mock(FailJobCommandStep2.class);
@@ -109,10 +104,8 @@ public class BeanJobExceptionHandlerTest {
 
   @Test
   void shouldHandleBpmnError() {
-    final MetricsRecorder metricsRecorder = new DefaultNoopMetricsRecorder();
     final BeanJobExceptionHandler handler =
-        new BeanJobExceptionHandler(
-            Duration.ZERO, 0, metricsRecorder, jobCallbackCommandWrapperFactory());
+        new BeanJobExceptionHandler(Duration.ZERO, 0, jobCallbackCommandWrapperFactory());
     final JobClient jobClient = mock(JobClient.class);
     final ThrowErrorCommandStep1 throwErrorCommandStep1 = mock(ThrowErrorCommandStep1.class);
     final ThrowErrorCommandStep2 throwErrorCommandStep2 = mock(ThrowErrorCommandStep2.class);

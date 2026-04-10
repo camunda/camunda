@@ -89,10 +89,8 @@ public class CamundaClientAllAutoConfiguration {
   @Bean
   @ConditionalOnMissingBean
   public JobExceptionHandlerSupplier jobExceptionHandlingSupplier(
-      final MetricsRecorder metricsRecorder,
       final JobCallbackCommandWrapperFactory jobCallbackCommandWrapperFactory) {
-    return new DefaultJobExceptionHandlerSupplier(
-        metricsRecorder, jobCallbackCommandWrapperFactory);
+    return new DefaultJobExceptionHandlerSupplier(jobCallbackCommandWrapperFactory);
   }
 
   @Bean

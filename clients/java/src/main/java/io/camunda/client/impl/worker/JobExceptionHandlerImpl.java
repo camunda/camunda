@@ -18,6 +18,7 @@ package io.camunda.client.impl.worker;
 import static java.util.Objects.requireNonNull;
 
 import io.camunda.client.api.command.FailJobCommandStep1.FailJobCommandStep2;
+import io.camunda.client.api.command.FinalCommandStep;
 import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.client.api.worker.JobClient;
 import io.camunda.client.api.worker.JobExceptionHandler;
@@ -26,6 +27,7 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.time.Duration;
 import java.util.Objects;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import org.slf4j.Logger;
 
@@ -43,18 +45,22 @@ public class JobExceptionHandlerImpl implements JobExceptionHandler {
       DEFAULT_RETRY_BACKOFF_PROVIDER = ctx -> Duration.ZERO;
   public static final Function<JobExceptionHandlerContext, Object> DEFAULT_VARIABLES_PROVIDER =
       ctx -> null;
+  public static final Consumer<FailJobCommandStep2> DEFAULT_FAIL_COMMAND_EXECUTOR =
+      FinalCommandStep::send;
 
   private static final Logger LOG = Loggers.JOB_WORKER_LOGGER;
   private final Function<JobExceptionHandlerContext, String> errorMessageProvider;
   private final Function<JobExceptionHandlerContext, Integer> retriesProvider;
   private final Function<JobExceptionHandlerContext, Duration> retryBackoffProvider;
   private final Function<JobExceptionHandlerContext, Object> variablesProvider;
+  private final Consumer<FailJobCommandStep2> failCommandExecutor;
 
   public JobExceptionHandlerImpl(
       final Function<JobExceptionHandlerContext, String> errorMessageProvider,
       final Function<JobExceptionHandlerContext, Integer> retriesProvider,
       final Function<JobExceptionHandlerContext, Duration> retryBackoffProvider,
-      final Function<JobExceptionHandlerContext, Object> variablesProvider) {
+      final Function<JobExceptionHandlerContext, Object> variablesProvider,
+      final Consumer<FailJobCommandStep2> failCommandExecutor) {
     this.errorMessageProvider =
         requireNonNull(errorMessageProvider, "errorMessageProvider must not be null");
     this.retriesProvider = requireNonNull(retriesProvider, "retriesProvider must not be null");
@@ -62,6 +68,8 @@ public class JobExceptionHandlerImpl implements JobExceptionHandler {
         requireNonNull(retryBackoffProvider, "retryBackoffProvider must not be null");
     this.variablesProvider =
         requireNonNull(variablesProvider, "variablesProvider must not be null");
+    this.failCommandExecutor =
+        requireNonNull(failCommandExecutor, "failCommandExecutor must not be null");
   }
 
   public JobExceptionHandlerImpl() {
@@ -69,7 +77,8 @@ public class JobExceptionHandlerImpl implements JobExceptionHandler {
         DEFAULT_ERROR_MESSAGE_PROVIDER,
         DEFAULT_RETRIES_PROVIDER,
         DEFAULT_RETRY_BACKOFF_PROVIDER,
-        DEFAULT_VARIABLES_PROVIDER);
+        DEFAULT_VARIABLES_PROVIDER,
+        DEFAULT_FAIL_COMMAND_EXECUTOR);
   }
 
   public JobExceptionHandlerImpl(final Duration retryBackoff) {
@@ -77,7 +86,8 @@ public class JobExceptionHandlerImpl implements JobExceptionHandler {
         DEFAULT_ERROR_MESSAGE_PROVIDER,
         DEFAULT_RETRIES_PROVIDER,
         ctx -> retryBackoff,
-        DEFAULT_VARIABLES_PROVIDER);
+        DEFAULT_VARIABLES_PROVIDER,
+        DEFAULT_FAIL_COMMAND_EXECUTOR);
   }
 
   @Override
@@ -118,7 +128,7 @@ public class JobExceptionHandlerImpl implements JobExceptionHandler {
     if (variables != null) {
       failJobCommandStep2.variables(variables);
     }
-    failJobCommandStep2.send();
+    failCommandExecutor.accept(failJobCommandStep2);
   }
 
   private <T> T applyProvider(

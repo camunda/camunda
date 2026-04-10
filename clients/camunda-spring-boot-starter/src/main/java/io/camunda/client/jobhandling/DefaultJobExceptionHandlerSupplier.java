@@ -16,17 +16,12 @@
 package io.camunda.client.jobhandling;
 
 import io.camunda.client.api.worker.JobExceptionHandler;
-import io.camunda.client.metrics.MetricsRecorder;
 
 public class DefaultJobExceptionHandlerSupplier implements JobExceptionHandlerSupplier {
-  private final MetricsRecorder metricsRecorder;
   private final JobCallbackCommandWrapperFactory jobCallbackCommandWrapperFactory;
 
   public DefaultJobExceptionHandlerSupplier(
-      final MetricsRecorder metricsRecorder,
       final JobCallbackCommandWrapperFactory jobCallbackCommandWrapperFactory) {
-    this.metricsRecorder = metricsRecorder;
-
     this.jobCallbackCommandWrapperFactory = jobCallbackCommandWrapperFactory;
   }
 
@@ -34,9 +29,6 @@ public class DefaultJobExceptionHandlerSupplier implements JobExceptionHandlerSu
   public JobExceptionHandler getJobExceptionHandler(
       final JobExceptionHandlerSupplierContext context) {
     return new BeanJobExceptionHandler(
-        context.retryBackoff(),
-        context.maxRetries(),
-        metricsRecorder,
-        jobCallbackCommandWrapperFactory);
+        context.retryBackoff(), context.maxRetries(), jobCallbackCommandWrapperFactory);
   }
 }

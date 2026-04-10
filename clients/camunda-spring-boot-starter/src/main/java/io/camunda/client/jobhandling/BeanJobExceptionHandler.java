@@ -26,7 +26,6 @@ import io.camunda.client.exception.BpmnError;
 import io.camunda.client.exception.JobError;
 import io.camunda.client.impl.worker.JobExceptionHandlerImpl;
 import io.camunda.client.metrics.JobHandlerMetrics;
-import io.camunda.client.metrics.MetricsRecorder;
 import io.camunda.client.metrics.MetricsRecorder.CounterMetricsContext;
 import java.time.Duration;
 import org.slf4j.Logger;
@@ -34,7 +33,6 @@ import org.slf4j.LoggerFactory;
 
 public class BeanJobExceptionHandler extends JobExceptionHandlerImpl {
   private static final Logger LOG = LoggerFactory.getLogger(BeanJobExceptionHandler.class);
-  private final MetricsRecorder metricsRecorder;
   private final int maxRetries;
   private final Duration retryBackoff;
   private final JobCallbackCommandWrapperFactory callbackCommandWrapperFactory;
@@ -42,14 +40,16 @@ public class BeanJobExceptionHandler extends JobExceptionHandlerImpl {
   public BeanJobExceptionHandler(
       final Duration retryBackoff,
       final int maxRetries,
-      final MetricsRecorder metricsRecorder,
       final JobCallbackCommandWrapperFactory callbackCommandWrapperFactory) {
     super(
         DEFAULT_ERROR_MESSAGE_PROVIDER,
         DEFAULT_RETRIES_PROVIDER,
         ctx -> retryBackoff,
-        DEFAULT_VARIABLES_PROVIDER);
-    this.metricsRecorder = metricsRecorder;
+        DEFAULT_VARIABLES_PROVIDER,
+        failJobCommandStep2 ->
+            callbackCommandWrapperFactory
+                .create(failJobCommandStep2, 0, null, maxRetries)
+                .executeAsync());
     this.maxRetries = maxRetries;
     this.retryBackoff = retryBackoff;
     this.callbackCommandWrapperFactory = callbackCommandWrapperFactory;
@@ -89,7 +89,6 @@ public class BeanJobExceptionHandler extends JobExceptionHandlerImpl {
               metricsContext);
       command.executeAsync();
     } else {
-      metricsRecorder.increaseFailed(metricsContext);
       super.handleJobException(context);
     }
   }
