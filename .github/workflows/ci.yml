@@ -810,6 +810,18 @@ jobs:
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
 
+  shell-script-tests:
+    name: "Shell / Script Tests"
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions: {}
+    steps:
+      - uses: actions/checkout@v6
+      - name: Install bats
+        run: npm install -g bats
+      - name: Run ci-relevance tests
+        run: bats .github/scripts/ci-relevance/check.bats
+
   check-results:
     # Used by the merge queue to check all tests, including the unit test matrix.
     # New test jobs must be added to the `needs` lists!
@@ -837,6 +849,7 @@ jobs:
       - spring-boot-compatibility-tests
       - tasklist-docker-tests
       - tasklist-frontend-tests
+      - shell-script-tests
       - validate-pom-metadata
       - zeebe-ci
     steps:
