@@ -33,6 +33,7 @@ import org.apache.hc.client5.http.async.methods.SimpleRequestProducer;
 import org.apache.hc.client5.http.config.RequestConfig;
 import org.apache.hc.client5.http.entity.mime.MultipartEntityBuilder;
 import org.apache.hc.client5.http.impl.async.CloseableHttpAsyncClient;
+import org.apache.hc.client5.http.impl.nio.PoolingAsyncClientConnectionManager;
 import org.apache.hc.core5.http.ContentType;
 import org.apache.hc.core5.http.HttpEntity;
 import org.apache.hc.core5.http.Method;
@@ -54,6 +55,7 @@ public final class HttpClient implements AutoCloseable {
   private static final int MAX_RETRY_ATTEMPTS = 2;
 
   private final CloseableHttpAsyncClient client;
+  private final PoolingAsyncClientConnectionManager connectionManager;
   private final ObjectMapper jsonMapper;
   private final URI address;
   private final RequestConfig defaultRequestConfig;
@@ -63,6 +65,7 @@ public final class HttpClient implements AutoCloseable {
 
   public HttpClient(
       final CloseableHttpAsyncClient client,
+      final PoolingAsyncClientConnectionManager connectionManager,
       final ObjectMapper jsonMapper,
       final URI address,
       final RequestConfig defaultRequestConfig,
@@ -70,6 +73,7 @@ public final class HttpClient implements AutoCloseable {
       final TimeValue shutdownTimeout,
       final CredentialsProvider credentialsProvider) {
     this.client = client;
+    this.connectionManager = connectionManager;
     this.jsonMapper = jsonMapper;
     this.address = address;
     this.defaultRequestConfig = defaultRequestConfig;
@@ -84,6 +88,11 @@ public final class HttpClient implements AutoCloseable {
 
   @Override
   public void close() throws Exception {
+    // Force-close the connection pool immediately to terminate all connections — both active
+    // in-flight requests and idle keep-alive connections. Without this, close(GRACEFUL) waits
+    // for idle connections to drain, causing several seconds of unnecessary delay and a
+    // ClosedSelectorException race in the NIO reactor shutdown sequence.
+    connectionManager.close(CloseMode.IMMEDIATE);
     client.close(CloseMode.GRACEFUL);
     try {
       client.awaitShutdown(shutdownTimeout);
