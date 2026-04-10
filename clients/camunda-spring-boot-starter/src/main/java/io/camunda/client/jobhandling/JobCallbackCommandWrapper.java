@@ -166,11 +166,11 @@ public class JobCallbackCommandWrapper {
     }
   }
 
-  void increaseBackoff() {
+  private void increaseBackoff() {
     currentRetryDelay.getAndUpdate(backoffSupplier::supplyRetryDelay);
   }
 
-  void scheduleExecution() {
+  private void scheduleExecution() {
     scheduledExecutorService.schedule(action, currentRetryDelay.get(), TimeUnit.MILLISECONDS);
   }
 
@@ -257,13 +257,17 @@ public class JobCallbackCommandWrapper {
         return new CommandOutcome.Failed(exception, getAttempts());
       }
 
-      increaseBackoff();
-      LOG.warn("Retrying {} after {} '{}' with backoff", command, codeType, code);
-      scheduleExecution();
+      scheduleRetry(codeType, code);
       return null; // retry scheduled
     }
     LOG.error(
         "Failed to execute {} due to non-retriable {} '{}'", command, codeType, code, exception);
     return new CommandOutcome.Failed(exception, getAttempts());
+  }
+
+  private <T> void scheduleRetry(final String codeType, final T code) {
+    currentRetryDelay.getAndUpdate(backoffSupplier::supplyRetryDelay);
+    LOG.warn("Retrying {} after {} '{}' with backoff", command, codeType, code);
+    scheduledExecutorService.schedule(action, currentRetryDelay.get(), TimeUnit.MILLISECONDS);
   }
 }
