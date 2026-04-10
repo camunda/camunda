@@ -26,6 +26,7 @@ import java.time.InstantSource;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Objects;
 import java.util.function.Function;
 import org.agrona.DirectBuffer;
 import org.slf4j.Logger;
@@ -223,10 +224,7 @@ public final class DeploymentTransformer {
     checkForDuplicateIds(
         deployment.getDecisionsMetadata(),
         metadata -> metadata.getDecisionId(),
-        metadata -> {
-          final var name = deployment.getResourceNameForDecision(metadata);
-          return name != null ? name : "<?>";
-        },
+        metadata -> deployment.getResourceNameForDecision(metadata),
         "Expected the decision ids to be unique within a deployment"
             + " but found a duplicated id '%s' in the resources '%s' and '%s'",
         errors);
@@ -271,7 +269,7 @@ public final class DeploymentTransformer {
 
     for (final T item : items) {
       final var id = idExtractor.apply(item);
-      final var resourceName = nameExtractor.apply(item);
+      final var resourceName = Objects.requireNonNullElse(nameExtractor.apply(item), "<?>");
       final var previousResourceName = firstOccurrence.putIfAbsent(id, resourceName);
       if (previousResourceName != null) {
         errors.add(messageFormat, id, previousResourceName, resourceName);
