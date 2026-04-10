@@ -24,7 +24,7 @@ import {
 } from '../../../../utils/http';
 import {defaultAssertionOptions} from '../../../../utils/constants';
 import {validateResponse} from '../../../../json-body-assertions';
-import {createUser, grantUserResourceAuthorization} from '@requestHelpers';
+import {createUser, expectProcessInstanceCanBeFound, grantUserResourceAuthorization} from '@requestHelpers';
 import {cleanupUsers} from 'utils/usersCleanup';
 
 test.describe.parallel('Delete Single Process Instance API Tests', () => {
@@ -57,6 +57,12 @@ test.describe.parallel('Delete Single Process Instance API Tests', () => {
       );
       activeProcessInstanceKeyToDelete =
         createdIncidentInstance.processInstanceKey;
+
+      await expectProcessInstanceCanBeFound(request, processInstanceKeyToDelete);
+      await expectProcessInstanceCanBeFound(
+        request,
+        activeProcessInstanceKeyToDelete,
+      );
     });
 
     await test.step('Setup - Create test user with Resource Authorization and user for granting Authorization', async () => {
