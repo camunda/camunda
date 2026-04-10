@@ -54,8 +54,12 @@ export {
 } from './authorization-requestHelpers';
 export {assertRoleInResponse} from './role-requestHelpers';
 export {assertClientsInResponse} from './clients-requestHelpers';
-export {setupProcessInstanceForTests} from './job-requestHelpers';
-export {activateJobToObtainAValidJobKey} from './job-requestHelpers';
+export {
+  setupProcessInstanceForTests,
+  activateJobToObtainAValidJobKey,
+  getLast24HoursRange,
+  type StatisticsJobItem
+} from './job-requestHelpers';
 export {
   createGlobalClusterVariable,
   createTenantClusterVariable,
