@@ -322,12 +322,15 @@ public class RaftPartitionServer implements HealthMonitorable {
     final var legacySubjects = createLegacySubjects();
     final var engineSubjects = createEngineSubjects();
 
-    final var sendingSubject = config.isSendOnLegacySubject() ? legacySubjects : engineSubjects;
+    final var sendingSubject =
+        config.isSendOnLegacySubject() && legacySubjects != null ? legacySubjects : engineSubjects;
 
-    final var receivingSubjects =
-        config.isReceiveOnLegacySubject()
-            ? List.of(legacySubjects, engineSubjects)
-            : List.of(engineSubjects);
+    final List<RaftMessageContext> receivingSubjects;
+    if (config.isReceiveOnLegacySubject() && legacySubjects != null) {
+      receivingSubjects = List.of(legacySubjects, engineSubjects);
+    } else {
+      receivingSubjects = List.of(engineSubjects);
+    }
 
     return new RaftServerCommunicator(
         sendingSubject,
@@ -341,12 +344,16 @@ public class RaftPartitionServer implements HealthMonitorable {
   }
 
   private RaftMessageContext createLegacySubjects() {
-    // The legacy subject uses the old group name (defaults to "raft-partition") so that new brokers
-    // can still receive messages from old brokers that have not been upgraded yet. This is
-    // decoupled from partition.name() because the GROUP_NAME constant was changed to "default" as
-    // part of #50538.
-    final var legacyPrefix =
-        PARTITION_NAME_FORMAT.formatted(config.getLegacyGroupName(), partition.id().id());
+    final var legacyGroupName = config.getLegacyGroupName();
+    if (legacyGroupName == null) {
+      return null;
+    }
+    // The legacy subject uses the old group name (set to "raft-partition" for the default engine)
+    // so that new brokers can still receive messages from old brokers that have not been upgraded
+    // yet. This is decoupled from partition.name() because the GROUP_NAME constant was changed to
+    // "default" as part of #50538. Only the default engine sets this — non-default engines have no
+    // legacy subjects to listen on.
+    final var legacyPrefix = PARTITION_NAME_FORMAT.formatted(legacyGroupName, partition.id().id());
     return new RaftMessageContext(legacyPrefix);
   }
 
