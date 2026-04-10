@@ -115,15 +115,15 @@ public final class RaftPartitionFactory {
     partitionConfig.setPreferSnapshotReplicationThreshold(
         brokerCfg.getExperimental().getRaft().getPreferSnapshotReplicationThreshold());
 
-    final var engineName = brokerCfg.getExperimental().getDefaultEngineName();
-    partitionConfig.setEngineName(engineName);
+    final var tenantName = brokerCfg.getExperimental().getDefaultTenantName();
+    partitionConfig.setTenantName(tenantName);
     partitionConfig.setSendOnLegacySubject(brokerCfg.getExperimental().isSendOnLegacySubject());
     partitionConfig.setReceiveOnLegacySubject(
         brokerCfg.getExperimental().isReceiveOnLegacySubject());
     // Only the default partition group needs legacy subject support for backward compatibility with
     // brokers that still use the old "raft-partition" group name. Non-default partition groups have
     // no legacy subjects to listen on.
-    if (GROUP_NAME.equals(engineName)) {
+    if (GROUP_NAME.equals(tenantName)) {
       partitionConfig.setLegacyGroupName(LEGACY_GROUP_NAME);
     }
 

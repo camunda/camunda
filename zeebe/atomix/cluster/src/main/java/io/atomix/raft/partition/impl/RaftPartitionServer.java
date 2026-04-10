@@ -320,16 +320,16 @@ public class RaftPartitionServer implements HealthMonitorable {
 
   private RaftServerCommunicator createServerProtocol() {
     final var legacySubjects = createLegacySubjects();
-    final var engineSubjects = createEngineSubjects();
+    final var tenantSubjects = createTenantSubjects();
 
     final var sendingSubject =
-        config.isSendOnLegacySubject() && legacySubjects != null ? legacySubjects : engineSubjects;
+        config.isSendOnLegacySubject() && legacySubjects != null ? legacySubjects : tenantSubjects;
 
     final List<RaftMessageContext> receivingSubjects;
     if (config.isReceiveOnLegacySubject() && legacySubjects != null) {
-      receivingSubjects = List.of(legacySubjects, engineSubjects);
+      receivingSubjects = List.of(legacySubjects, tenantSubjects);
     } else {
-      receivingSubjects = List.of(engineSubjects);
+      receivingSubjects = List.of(tenantSubjects);
     }
 
     return new RaftServerCommunicator(
@@ -357,9 +357,9 @@ public class RaftPartitionServer implements HealthMonitorable {
     return new RaftMessageContext(legacyPrefix);
   }
 
-  private RaftMessageContext createEngineSubjects() {
-    final var enginePrefix = getPartitionNameWithEnginePrefix();
-    return new RaftMessageContext(enginePrefix);
+  private RaftMessageContext createTenantSubjects() {
+    final var tenantPrefix = getPartitionNameWithTenantPrefix();
+    return new RaftMessageContext(tenantPrefix);
   }
 
   public CompletableFuture<Void> stepDown() {
@@ -378,10 +378,10 @@ public class RaftPartitionServer implements HealthMonitorable {
     return server.getContext().getTailSegments(index);
   }
 
-  private String getPartitionNameWithEnginePrefix() {
-    final var engineName = config.getEngineName();
+  private String getPartitionNameWithTenantPrefix() {
+    final var tenantName = config.getTenantName();
     final var partitionId = partition.id().id();
-    return PARTITION_NAME_FORMAT.formatted(engineName, partitionId);
+    return PARTITION_NAME_FORMAT.formatted(tenantName, partitionId);
   }
 
   @VisibleForTesting

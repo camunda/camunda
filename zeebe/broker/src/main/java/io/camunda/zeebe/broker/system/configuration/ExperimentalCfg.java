@@ -25,7 +25,7 @@ public class ExperimentalCfg implements ConfigurationEntry {
   public static final boolean DEFAULT_VERSION_CHECK_ENABLED = true;
   private static final boolean DEFAULT_SEND_ON_LEGACY_SUBJECT = false;
   private static final boolean DEFAULT_RECEIVE_ON_LEGACY_SUBJECT = true;
-  private static final String DEFAULT_ENGINE_NAME = "default";
+  private static final String DEFAULT_TENANT_NAME = "default";
 
   private boolean continuousBackups = false;
 
@@ -40,7 +40,7 @@ public class ExperimentalCfg implements ConfigurationEntry {
   private boolean disableExplicitRaftFlush = DEFAULT_DISABLE_EXPLICIT_RAFT_FLUSH;
   private boolean sendOnLegacySubject = DEFAULT_SEND_ON_LEGACY_SUBJECT;
   private boolean receiveOnLegacySubject = DEFAULT_RECEIVE_ON_LEGACY_SUBJECT;
-  private String defaultEngineName = DEFAULT_ENGINE_NAME;
+  private String defaultTenantName = DEFAULT_TENANT_NAME;
   private RocksdbCfg rocksdb = new RocksdbCfg();
   private ExperimentalRaftCfg raft = new ExperimentalRaftCfg();
   private PartitioningCfg partitioning = new PartitioningCfg();
@@ -183,12 +183,12 @@ public class ExperimentalCfg implements ConfigurationEntry {
     this.receiveOnLegacySubject = receiveOnLegacySubject;
   }
 
-  public String getDefaultEngineName() {
-    return defaultEngineName;
+  public String getDefaultTenantName() {
+    return defaultTenantName;
   }
 
-  public void setDefaultEngineName(final String defaultEngineName) {
-    this.defaultEngineName = defaultEngineName;
+  public void setDefaultTenantName(final String defaultTenantName) {
+    this.defaultTenantName = defaultTenantName;
   }
 
   @Override
@@ -216,8 +216,8 @@ public class ExperimentalCfg implements ConfigurationEntry {
         + sendOnLegacySubject
         + ", receiveOnLegacySubject="
         + receiveOnLegacySubject
-        + ", defaultEngineName="
-        + defaultEngineName
+        + ", defaultTenantName="
+        + defaultTenantName
         + '}';
   }
 }

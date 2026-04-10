@@ -46,7 +46,7 @@ public final class ClusterCfg {
   private DataSize socketSendBuffer = null;
   private DataSize socketReceiveBuffer = null;
   private boolean sendOnLegacySubject = false;
-  private String defaultEngineName = "default";
+  private String defaultTenantName = "default";
 
   public String getMemberId() {
     return memberId;
@@ -189,12 +189,12 @@ public final class ClusterCfg {
     return this;
   }
 
-  public String getDefaultEngineName() {
-    return defaultEngineName;
+  public String getDefaultTenantName() {
+    return defaultTenantName;
   }
 
-  public ClusterCfg setDefaultEngineName(final String defaultEngineName) {
-    this.defaultEngineName = defaultEngineName;
+  public ClusterCfg setDefaultTenantName(final String defaultTenantName) {
+    this.defaultTenantName = defaultTenantName;
     return this;
   }
 
@@ -213,7 +213,7 @@ public final class ClusterCfg {
         configManager,
         socketSendBuffer,
         socketReceiveBuffer,
-        defaultEngineName,
+        defaultTenantName,
         sendOnLegacySubject);
   }
 
@@ -238,7 +238,7 @@ public final class ClusterCfg {
         && Objects.equals(configManager, that.configManager)
         && Objects.equals(socketSendBuffer, that.socketSendBuffer)
         && Objects.equals(socketReceiveBuffer, that.socketReceiveBuffer)
-        && Objects.equals(defaultEngineName, that.defaultEngineName)
+        && Objects.equals(defaultTenantName, that.defaultTenantName)
         && Objects.equals(sendOnLegacySubject, that.sendOnLegacySubject);
   }
 
@@ -274,8 +274,8 @@ public final class ClusterCfg {
         + socketReceiveBuffer
         + ", sendOnLegacySubject="
         + sendOnLegacySubject
-        + ", engineName="
-        + defaultEngineName
+        + ", tenantName="
+        + defaultTenantName
         + '}';
   }
 }

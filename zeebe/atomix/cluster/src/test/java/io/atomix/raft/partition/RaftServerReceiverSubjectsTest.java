@@ -70,7 +70,7 @@ public class RaftServerReceiverSubjectsTest {
   void shouldRegisterSubjects(final RaftPartitionConfig config, @TempDir final Path tempDir) {
     // given
     final var legacyReceiverSubjectsDisabled = config.isReceiveOnLegacySubject();
-    final var engineName = config.getEngineName();
+    final var engineName = config.getTenantName();
 
     // when
     createRaftPartitionServer(config, tempDir);
@@ -86,7 +86,7 @@ public class RaftServerReceiverSubjectsTest {
     // given
     final var server = createRaftPartitionServer(config, tempDir);
     final var receiveOnLegacySubject = config.isReceiveOnLegacySubject();
-    final var engineName = config.getEngineName();
+    final var engineName = config.getTenantName();
 
     // when
     server.stop().join();
@@ -197,7 +197,7 @@ public class RaftServerReceiverSubjectsTest {
     final var raftPartitionConfig = new RaftPartitionConfig();
     final var raftStorageConfig = new RaftStorageConfig();
     raftPartitionConfig.setLegacyGroupName(PARTITION_GROUP);
-    raftPartitionConfig.setEngineName("foo");
+    raftPartitionConfig.setTenantName("foo");
     raftPartitionConfig.setStorageConfig(raftStorageConfig);
     return raftPartitionConfig;
   }
@@ -206,7 +206,7 @@ public class RaftServerReceiverSubjectsTest {
     final var raftPartitionConfig = new RaftPartitionConfig();
     final var raftStorageConfig = new RaftStorageConfig();
     raftPartitionConfig.setLegacyGroupName(PARTITION_GROUP);
-    raftPartitionConfig.setEngineName("foo");
+    raftPartitionConfig.setTenantName("foo");
     raftPartitionConfig.setReceiveOnLegacySubject(false);
     raftPartitionConfig.setStorageConfig(raftStorageConfig);
     return raftPartitionConfig;

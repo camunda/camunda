@@ -49,7 +49,7 @@ public final class BrokerClientConfiguration {
     final TopicSupplier sendingTopicSupplier =
         config.sendOnLegacySubject()
             ? TopicSupplier.withLegacyTopicName()
-            : TopicSupplier.withPrefix(config.engineName());
+            : TopicSupplier.withPrefix(config.tenantName());
 
     final var brokerClient =
         new BrokerClientImpl(
@@ -65,5 +65,5 @@ public final class BrokerClientConfiguration {
   }
 
   public record BrokerClientCfg(
-      Duration requestTimeout, boolean sendOnLegacySubject, String engineName) {}
+      Duration requestTimeout, boolean sendOnLegacySubject, String tenantName) {}
 }
