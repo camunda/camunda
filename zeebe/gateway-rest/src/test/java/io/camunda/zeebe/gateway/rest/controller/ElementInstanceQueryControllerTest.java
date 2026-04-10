@@ -521,6 +521,14 @@ public class ElementInstanceQueryControllerTest extends RestControllerTest {
                     String.valueOf(ElementInstanceStateEnum.ACTIVE)),
                 Operation.like("act"))),
         true);
+    stringOperationTestCases(
+        streamBuilder,
+        "elementId",
+        ops -> new FlowNodeInstanceFilter.Builder().flowNodeIdOperations(ops).build());
+    stringOperationTestCases(
+        streamBuilder,
+        "elementName",
+        ops -> new FlowNodeInstanceFilter.Builder().flowNodeNameOperations(ops).build());
     dateTimeOperationTestCases(
         streamBuilder,
         "startDate",

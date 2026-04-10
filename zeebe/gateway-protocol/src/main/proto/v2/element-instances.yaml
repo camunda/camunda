@@ -298,12 +298,13 @@ components:
         elementId:
           description: The element ID for this element instance.
           allOf:
-            - $ref: "identifiers.yaml#/components/schemas/ElementId"
+            - $ref: 'filters.yaml#/components/schemas/StringFilterProperty'
         elementName:
-          type: string
           description: >
             The element name. This only works for data created with 8.8 and onwards.
             Instances from prior versions don't contain this data and cannot be found.
+          allOf:
+            - $ref: 'filters.yaml#/components/schemas/StringFilterProperty'
         hasIncident:
           type: boolean
           description: Shows whether this element instance has an incident related to.
