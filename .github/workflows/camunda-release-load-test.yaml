@@ -111,6 +111,7 @@ jobs:
       orchestration-tag: ${{ inputs.tag }}
       ttl: 60
       scenario: 'realistic'
+      stable-vms: true
       optimize-tag: ${{ inputs.optimize-tag }}
       identity-tag: ${{ inputs.identity-tag }}
       connectors-tag: ${{ inputs.connectors-tag }}
