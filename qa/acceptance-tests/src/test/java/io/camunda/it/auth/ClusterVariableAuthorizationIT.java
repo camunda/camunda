@@ -9,6 +9,8 @@ package io.camunda.it.auth;
 
 import static io.camunda.client.api.search.enums.PermissionType.*;
 import static io.camunda.client.api.search.enums.ResourceType.CLUSTER_VARIABLE;
+import static io.camunda.client.api.search.enums.ResourceType.TENANT;
+import static io.camunda.it.util.TestHelper.createTenant;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatExceptionOfType;
 
@@ -52,6 +54,7 @@ class ClusterVariableAuthorizationIT {
           ADMIN,
           "password",
           List.of(
+              new Permissions(TENANT, CREATE, List.of("*")),
               new Permissions(CLUSTER_VARIABLE, CREATE, List.of("*")),
               new Permissions(CLUSTER_VARIABLE, READ, List.of("*")),
               new Permissions(CLUSTER_VARIABLE, UPDATE, List.of("*")),
@@ -89,6 +92,9 @@ class ClusterVariableAuthorizationIT {
 
   @BeforeAll
   static void setUp(@Authenticated(ADMIN) final CamundaClient adminClient) {
+    // Create the test tenant
+    createTenant(adminClient, TEST_TENANT_ID, "Test Tenant");
+
     // Create globally scoped cluster variables
     adminClient
         .newGloballyScopedClusterVariableCreateRequest()
