@@ -9,12 +9,15 @@ package io.camunda.zeebe.engine.processing.deployment.transform;
 
 import io.camunda.zeebe.model.bpmn.instance.BusinessRuleTask;
 import io.camunda.zeebe.model.bpmn.instance.CallActivity;
+import io.camunda.zeebe.model.bpmn.instance.FlowElement;
 import io.camunda.zeebe.model.bpmn.instance.Process;
 import io.camunda.zeebe.model.bpmn.instance.UserTask;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeBindingType;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeCalledDecision;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeCalledElement;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeFormDefinition;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeLinkedResource;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeLinkedResources;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -24,6 +27,20 @@ public class BpmnElementsWithDeploymentBinding implements DeploymentResourceCont
   private final List<ZeebeCalledElement> calledElements = new ArrayList<>();
   private final List<ZeebeCalledDecision> calledDecisions = new ArrayList<>();
   private final List<ZeebeFormDefinition> formDefinitions = new ArrayList<>();
+  private final List<ZeebeLinkedResource> linkedResources = new ArrayList<>();
+  private final String resourceName;
+
+  public BpmnElementsWithDeploymentBinding() {
+    this.resourceName = null;
+  }
+
+  public BpmnElementsWithDeploymentBinding(final String resourceName) {
+    this.resourceName = resourceName;
+  }
+
+  public String getResourceName() {
+    return resourceName;
+  }
 
   public void addFromProcess(final Process process) {
     process
@@ -36,6 +53,7 @@ public class BpmnElementsWithDeploymentBinding implements DeploymentResourceCont
                 case final UserTask task -> handleUserTask(task);
                 default -> {}
               }
+              handleLinkedResources(element);
             });
   }
 
@@ -49,6 +67,10 @@ public class BpmnElementsWithDeploymentBinding implements DeploymentResourceCont
 
   public List<ZeebeFormDefinition> getFormDefinitions() {
     return formDefinitions;
+  }
+
+  public List<ZeebeLinkedResource> getLinkedResources() {
+    return linkedResources;
   }
 
   private void handleCallActivity(final CallActivity callActivity) {
@@ -76,6 +98,16 @@ public class BpmnElementsWithDeploymentBinding implements DeploymentResourceCont
                 formDefinition.getBindingType() == ZeebeBindingType.deployment
                     && isNotExpression(formDefinition.getFormId()))
         .ifPresent(formDefinitions::add);
+  }
+
+  private void handleLinkedResources(final FlowElement element) {
+    Optional.ofNullable(element.getSingleExtensionElement(ZeebeLinkedResources.class))
+        .ifPresent(
+            resources ->
+                resources.getLinkedResources().stream()
+                    .filter(r -> r.getBindingType() == ZeebeBindingType.deployment)
+                    .filter(r -> isNotExpression(r.getResourceId()))
+                    .forEach(linkedResources::add));
   }
 
   private boolean isNotExpression(final String s) {

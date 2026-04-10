@@ -710,4 +710,86 @@ public class DeploymentRejectionTest {
         .hasValueType(ValueType.DEPLOYMENT)
         .hasIntent(DeploymentIntent.CREATED);
   }
+
+  @Test
+  public void
+      shouldRejectDeploymentIfLinkedResourceNotIncludedForServiceTaskWithBindingTypeDeployment() {
+    // given
+    final var process =
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .serviceTask(
+                "serviceTask",
+                builder ->
+                    builder
+                        .zeebeLinkedResources(
+                            l ->
+                                l.resourceId("test-rpa-resource")
+                                    .resourceType("RPA")
+                                    .bindingType(ZeebeBindingType.deployment))
+                        .zeebeJobType("type"))
+            .endEvent()
+            .done();
+
+    // when
+    final var rejectedDeployment =
+        ENGINE.deployment().withXmlResource("process.bpmn", process).expectRejection().deploy();
+
+    // then
+    Assertions.assertThat(rejectedDeployment)
+        .hasKey(ExecuteCommandResponseDecoder.keyNullValue())
+        .hasRecordType(RecordType.COMMAND_REJECTION)
+        .hasIntent(DeploymentIntent.CREATE)
+        .hasRejectionType(RejectionType.INVALID_ARGUMENT);
+    assertThat(rejectedDeployment.getRejectionReason())
+        .isEqualTo(
+            """
+            Expected to deploy new resources, but encountered the following errors:
+            'process.bpmn':
+            - Element: serviceTask > extensionElements > linkedResources > linkedResource
+                - ERROR: Expected to find resource with id 'test-rpa-resource' in current deployment, but not found.
+            """);
+  }
+
+  @Test
+  public void
+      shouldDeploySuccessfullyIfLinkedResourceIncludedForServiceTaskWithBindingTypeDeployment() {
+    // given
+    final var rpaResource =
+        """
+        {
+          "id": "test-rpa-resource",
+          "resourceType": "RPA"
+        }
+        """;
+    final var process =
+        Bpmn.createExecutableProcess("process-linked-resource-success")
+            .startEvent()
+            .serviceTask(
+                "serviceTask",
+                builder ->
+                    builder
+                        .zeebeLinkedResources(
+                            l ->
+                                l.resourceId("test-rpa-resource")
+                                    .resourceType("RPA")
+                                    .bindingType(ZeebeBindingType.deployment))
+                        .zeebeJobType("type"))
+            .endEvent()
+            .done();
+
+    // when
+    final var deployment =
+        ENGINE
+            .deployment()
+            .withXmlResource("process.bpmn", process)
+            .withJsonResource(rpaResource.getBytes(UTF_8), "resource.rpa")
+            .deploy();
+
+    // then
+    Assertions.assertThat(deployment)
+        .hasRecordType(RecordType.EVENT)
+        .hasValueType(ValueType.DEPLOYMENT)
+        .hasIntent(DeploymentIntent.CREATED);
+  }
 }
