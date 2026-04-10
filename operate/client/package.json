@@ -116,5 +116,8 @@
   "msw": {
     "workerDirectory": "public"
   },
-  "packageManager": "npm@11.12.1"
+  "packageManager": "npm@11.12.1",
+  "overrides": {
+    "playwright-core": "$@playwright/test"
+  }
 }
