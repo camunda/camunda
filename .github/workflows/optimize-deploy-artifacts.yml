@@ -24,7 +24,7 @@ jobs:
       DOCKER_IMAGE_DOCKER_HUB: camunda/optimize
       DOCKER_HUB_SNAPSHOT_TAG: ${{ needs.utils-get-snapshot-docker-tag.outputs.version_tag }}
     steps:
-    - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+    - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
     - name: Install common tooling (buildx)  # required on self-hosted runners
       uses: camunda/infra-global-github-actions/common-tooling@main
       with:
@@ -38,7 +38,7 @@ jobs:
       uses: ./.github/actions/git-environment
     - name: "Read Java / Version Info"
       id: "pom-info"
-      uses: YunaBraska/java-info-action@main
+      uses: YunaBraska/java-info-action@575e99f42f2915cc62410c7917fef5558257042c # 3.0.1
       with:
         work-dir: ./optimize
     - name: Expose common variables as Env
