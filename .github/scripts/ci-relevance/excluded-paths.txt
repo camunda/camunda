@@ -1,0 +1,20 @@
+# CI-excluded path patterns (bash glob syntax)
+#
+# Files matching these patterns do not trigger the full CI pipeline when changed in isolation.
+# If any non-excluded .github/ file is also changed in the same PR, CI will still run.
+#
+# Syntax: bash glob patterns (e.g. .github/workflows/*my-pattern*)
+# Add a new section below when your team has workflows or actions that should not trigger CI.
+
+# ── Load test workflows ──────────────────────────────────────────────────────
+.github/workflows/*load-test*
+.github/workflows/*load_test*
+
+# ── Benchmark workflows ──────────────────────────────────────────────────────
+.github/workflows/*benchmark*
+
+# ── Testbench workflows ──────────────────────────────────────────────────────
+.github/workflows/*testbench*
+
+# ── Load test actions ────────────────────────────────────────────────────────
+.github/actions/await-load-test/**

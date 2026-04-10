@@ -31,7 +31,7 @@ outputs:
       ${{
         github.event_name == 'push' ||
         github.event_name == 'schedule' ||
-        steps.filter-common.outputs.github-actions-change == 'true' ||
+        steps.ci-github-actions.outputs.ci-relevant == 'true' ||
         steps.filter-common.outputs.java-code-change == 'true' ||
         steps.filter-common.outputs.maven-change == 'true' ||
         steps.filter-common.outputs.markdown-change == 'true'
@@ -42,7 +42,7 @@ outputs:
       ${{
         github.event_name == 'push' ||
         github.event_name == 'schedule' ||
-        steps.filter-common.outputs.github-actions-change == 'true' ||
+        steps.ci-github-actions.outputs.ci-relevant == 'true' ||
         steps.filter-common.outputs.maven-change == 'true' ||
         steps.filter-common.outputs.validate-pom-metadata-extra-change == 'true'
       }}
@@ -52,7 +52,7 @@ outputs:
       ${{
         github.event_name == 'push' ||
         github.event_name == 'schedule' ||
-        steps.filter-common.outputs.github-actions-change == 'true' ||
+        steps.ci-github-actions.outputs.ci-relevant == 'true' ||
         steps.filter-common.outputs.java-code-change == 'true' ||
         steps.filter-common.outputs.maven-change == 'true'
       }}
@@ -62,7 +62,7 @@ outputs:
       ${{
         github.event_name == 'push' ||
         github.event_name == 'schedule' ||
-        steps.filter-common.outputs.github-actions-change == 'true' ||
+        steps.ci-github-actions.outputs.ci-relevant == 'true' ||
         steps.filter-identity.outputs.identity-frontend-change == 'true'
       }}
   operate-backend-changes:
@@ -71,7 +71,7 @@ outputs:
       ${{
         github.event_name == 'push' ||
         github.event_name == 'schedule' ||
-        steps.filter-common.outputs.github-actions-change == 'true' ||
+        steps.ci-github-actions.outputs.ci-relevant == 'true' ||
         steps.filter-operate.outputs.operate-backend-change == 'true' ||
         steps.filter-common.outputs.webapps-change == 'true' ||
         steps.filter-common.outputs.maven-change == 'true' ||
@@ -83,7 +83,7 @@ outputs:
       ${{
         github.event_name == 'push' ||
         github.event_name == 'schedule' ||
-        steps.filter-common.outputs.github-actions-change == 'true' ||
+        steps.ci-github-actions.outputs.ci-relevant == 'true' ||
         steps.filter-operate.outputs.operate-frontend-change == 'true'
       }}
   tasklist-frontend-changes:
@@ -92,7 +92,7 @@ outputs:
       ${{
         github.event_name == 'push' ||
         github.event_name == 'schedule' ||
-        steps.filter-common.outputs.github-actions-change == 'true' ||
+        steps.ci-github-actions.outputs.ci-relevant == 'true' ||
         steps.filter-tasklist.outputs.tasklist-frontend-change == 'true'
       }}
   tasklist-backend-changes:
@@ -101,7 +101,7 @@ outputs:
       ${{
         github.event_name == 'push' ||
         github.event_name == 'schedule' ||
-        steps.filter-common.outputs.github-actions-change == 'true' ||
+        steps.ci-github-actions.outputs.ci-relevant == 'true' ||
         steps.filter-tasklist.outputs.tasklist-backend-change == 'true' ||
         steps.filter-common.outputs.webapps-change == 'true' ||
         steps.filter-common.outputs.maven-change == 'true' ||
@@ -113,7 +113,7 @@ outputs:
       ${{
         github.event_name == 'push' ||
         github.event_name == 'schedule' ||
-        steps.filter-common.outputs.github-actions-change == 'true' ||
+        steps.ci-github-actions.outputs.ci-relevant == 'true' ||
         steps.filter-optimize.outputs.optimize-frontend-change == 'true'
       }}
   optimize-backend-changes:
@@ -122,7 +122,7 @@ outputs:
       ${{
         github.event_name == 'push' ||
         github.event_name == 'schedule' ||
-        steps.filter-common.outputs.github-actions-change == 'true' ||
+        steps.ci-github-actions.outputs.ci-relevant == 'true' ||
         steps.filter-optimize.outputs.optimize-backend-change == 'true' ||
         steps.filter-common.outputs.webapps-change == 'true' ||
         steps.filter-common.outputs.maven-change == 'true'
@@ -133,7 +133,7 @@ outputs:
       ${{
         github.event_name == 'push' ||
         github.event_name == 'schedule' ||
-        steps.filter-common.outputs.github-actions-change == 'true' ||
+        steps.ci-github-actions.outputs.ci-relevant == 'true' ||
         steps.filter-common.outputs.java-code-change == 'true' ||
         steps.filter-common.outputs.maven-change == 'true' ||
         steps.filter-common.outputs.dockerfile-change == 'true' ||
@@ -145,7 +145,7 @@ outputs:
       ${{
         github.event_name == 'push' ||
         github.event_name == 'schedule' ||
-        steps.filter-common.outputs.github-actions-change == 'true' ||
+        steps.ci-github-actions.outputs.ci-relevant == 'true' ||
         steps.filter-common.outputs.frontend-change == 'true' ||
         steps.filter-identity.outputs.frontend-identity == 'true'
       }}
@@ -155,7 +155,7 @@ outputs:
       ${{
         github.event_name == 'push' ||
         github.event_name == 'schedule' ||
-        steps.filter-common.outputs.github-actions-change == 'true' ||
+        steps.ci-github-actions.outputs.ci-relevant == 'true' ||
         steps.filter-common.outputs.webapps-change == 'true' ||
         steps.filter-common.outputs.maven-change == 'true' ||
         steps.filter-zeebe.outputs.zeebe-change == 'true'
@@ -173,7 +173,7 @@ outputs:
       ${{
         github.event_name == 'push' ||
         github.event_name == 'schedule' ||
-        steps.filter-common.outputs.github-actions-change == 'true' ||
+        steps.ci-github-actions.outputs.ci-relevant == 'true' ||
         steps.filter-common.outputs.openapi-change == 'true'
       }}
   stable-branch-changes:
@@ -189,7 +189,7 @@ outputs:
       ${{
         github.event_name == 'push' ||
         github.event_name == 'schedule' ||
-        steps.filter-common.outputs.github-actions-change == 'true' ||
+        steps.ci-github-actions.outputs.ci-relevant == 'true' ||
         steps.filter-common.outputs.java-code-change == 'true' ||
         steps.filter-common.outputs.maven-change == 'true' ||
         steps.filter-common.outputs.rdbms-change == 'true'
@@ -200,7 +200,7 @@ outputs:
       ${{
         github.event_name == 'push' ||
         github.event_name == 'schedule' ||
-        steps.filter-common.outputs.github-actions-change == 'true' ||
+        steps.ci-github-actions.outputs.ci-relevant == 'true' ||
         steps.filter-common.outputs.renovate-config-change == 'true'
       }}
   client-components-changes:
@@ -209,7 +209,7 @@ outputs:
       ${{
         github.event_name == 'push' ||
         github.event_name == 'schedule' ||
-        steps.filter-common.outputs.github-actions-change == 'true' ||
+        steps.ci-github-actions.outputs.ci-relevant == 'true' ||
         steps.filter-client-components.outputs.client-components-change == 'true'
       }}
   docs-changes:
@@ -232,16 +232,6 @@ runs:
         actionlint-related-change:
           - '.github/actions/**'
           - '.github/workflows/**'
-          - '.github/actionlint*'
-          - '.github/conftest-*.rego'
-
-        github-actions-change:
-          - '.github/actions/**'
-          - '.github/workflows/**'
-          - '!.github/workflows/*load-test*'
-          - '!.github/workflows/*load_test*'
-          - '!.github/workflows/*benchmark*'
-          - '!.github/workflows/*testbench*'
           - '.github/actionlint*'
           - '.github/conftest-*.rego'
 
@@ -304,7 +294,41 @@ runs:
         - 'search/search-domain/**'
         - 'zeebe/exporters/rdbms-exporter/**'
 
-  - uses: dorny/paths-filter@v3
+  - uses: dorny/paths-filter@v4
+    id: filter-github-actions
+    with:
+      base: ${{ github.event.merge_group.base_ref || '' }}
+      ref: ${{ github.event.merge_group.head_ref || github.ref }}
+      list-files: json
+      filters: |
+        github-actions-change:
+          - '.github/actions/**'
+          - '.github/workflows/**'
+          - '.github/actionlint*'
+          - '.github/conftest-*.rego'
+
+  # dorny/paths-filter negation patterns are broken (dorny/paths-filter#200,
+  # micromatch/picomatch#154): each pattern is an independent OR'd matcher, so
+  # !pattern matches everything NOT matching it instead of excluding.
+  # Work around by piping the actual file list through check.sh, which applies
+  # glob exclusions from .github/scripts/ci-relevance/excluded-paths.txt.
+  - id: ci-github-actions
+    shell: bash
+    env:
+      CHANGED_FILES: ${{ steps.filter-github-actions.outputs.github-actions-change_files }}
+    run: |
+      if [[ "${{ steps.filter-github-actions.outputs.github-actions-change }}" != "true" ]]; then
+        echo "ci-relevant=false" >> "$GITHUB_OUTPUT"
+        exit 0
+      fi
+      if jq -r '.[]' <<< "$CHANGED_FILES" | \
+          .github/scripts/ci-relevance/check.sh; then
+        echo "ci-relevant=true" >> "$GITHUB_OUTPUT"
+      else
+        echo "ci-relevant=false" >> "$GITHUB_OUTPUT"
+      fi
+
+  - uses: dorny/paths-filter@v4
     id: filter-identity
     with:
       base: ${{ github.event.merge_group.base_ref || '' }}
