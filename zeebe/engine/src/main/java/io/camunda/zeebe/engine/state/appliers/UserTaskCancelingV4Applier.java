@@ -10,6 +10,7 @@ package io.camunda.zeebe.engine.state.appliers;
 import io.camunda.zeebe.engine.state.TypedEventApplier;
 import io.camunda.zeebe.engine.state.globallistener.MutableGlobalListenersState;
 import io.camunda.zeebe.engine.state.immutable.UserTaskState.LifecycleState;
+import io.camunda.zeebe.engine.state.instance.UserTaskIntermediateStateValue;
 import io.camunda.zeebe.engine.state.mutable.MutableElementInstanceState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.state.mutable.MutableUserTaskState;
@@ -35,6 +36,17 @@ public final class UserTaskCancelingV4Applier
   @Override
   public void applyState(final long key, final UserTaskRecord value) {
     userTaskState.updateUserTaskLifecycleState(key, LifecycleState.CANCELING);
+
+    // It is possible that the user task is canceled while another lifecycle event was still being
+    // processed (i.e. in between an -ing and -ed event).
+    // This can cause a global listener configuration to already be pinned by the user task. The old
+    // pin should be removed (unless it is pinning the same configuration which would be pinned by
+    // this event).
+    final UserTaskIntermediateStateValue intermediateState =
+        userTaskState.getIntermediateState(value.getUserTaskKey());
+    if (intermediateState != null) {
+      unpinGlobalListenersConfig(intermediateState.getRecord());
+    }
 
     // Clean up data that may have been persisted by a previous transition
     variableState.removeVariableDocumentState(value.getElementInstanceKey());
@@ -78,5 +90,21 @@ public final class UserTaskCancelingV4Applier
     // Update user task record to reference the pinned config
     // Note: this value is then stored in the intermediate state
     userTaskRecord.setListenersConfigKey(currentConfigKey);
+  }
+
+  public void unpinGlobalListenersConfig(final UserTaskRecord userTaskRecord) {
+    final long pinnedConfigKey = userTaskRecord.getListenersConfigKey();
+    // Only unpin if there is a pinned config
+    if (pinnedConfigKey < 0) {
+      return;
+    }
+
+    // Remove pinned entry
+    globalListenersState.unpinConfiguration(pinnedConfigKey, userTaskRecord.getUserTaskKey());
+
+    // If no other user task references this config, remove the versioned config
+    if (!globalListenersState.isConfigurationVersionPinned(pinnedConfigKey)) {
+      globalListenersState.deleteConfigurationVersion(pinnedConfigKey);
+    }
   }
 }
