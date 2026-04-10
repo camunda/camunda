@@ -1463,10 +1463,11 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          # shellcheck disable=SC2016 -- backticks are BigQuery SQL syntax, not shell expressions
+          # Backticks in the SQL below are BigQuery identifier quoting, not shell substitution.
+          # shellcheck disable=SC2016
           {
             echo "known_flaky_tests<<BQEOF"
-            bq query --format=json --use_legacy_sql=false --quiet=true \
+            bq query --format=json --use_legacy_sql=false --quiet=true --max_rows=100000 \
               'SELECT DISTINCT test_class_name, test_name
                FROM `ci-30-162810.prod_ci_analytics.test_status_v1` ts
                LEFT OUTER JOIN `ci-30-162810.prod_ci_analytics.build_status_v2` bs

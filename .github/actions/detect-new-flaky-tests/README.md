@@ -166,7 +166,7 @@ and exits successfully without querying BigQuery or comparing tests.
 
 ## PR Comment
 
-When new flaky tests are found, the action posts a comment like:
+When new flaky tests are found, the action posts (or updates) a PR comment:
 
 > ## ⚠️ New Flaky Tests Detected
 >
@@ -188,6 +188,25 @@ When new flaky tests are found, the action posts a comment like:
 > - Create an issue with the `kind/flake` label documenting the test, job, and a link to this CI run
 > - Add the `ci:flaky-test-bypass` label to this PR to skip the gate and unblock merging
 > - Re-run CI after adding the label
+
+If a subsequent CI run finds **no new flaky tests**, the existing comment is
+updated to show it's resolved — the original warning is kept in a collapsed
+`<details>` block with ~~strikethrough~~ formatting:
+
+> ## ✅ Resolved — No New Flaky Tests
+>
+> A previous CI run flagged new flaky tests, but the latest run found none.
+>
+> <details>
+> <summary>Previous warning (resolved)</summary>
+>
+> ~~⚠️ New Flaky Tests Detected~~
+> ~~This PR introduces **1 new flaky test(s)**...~~
+>
+> </details>
+>
+> The comment is identified by a hidden HTML marker (`<!-- new-flaky-tests-alert -->`)
+> so it is always updated in-place rather than creating duplicates.
 
 ## CI Job Configuration
 
