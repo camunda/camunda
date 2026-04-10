@@ -91,8 +91,8 @@ the last 60 days. The GCP service account key is fetched from Vault.
 The raw `flaky_tests` string from each job is split into individual test names.
 Each test name is parsed into its components:
 
-| Raw test name from Maven | Parsed |
-|---|---|
+|                                                        Raw test name from Maven                                                        |                                                              Parsed                                                               |
+|----------------------------------------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------|
 | `io.camunda.it.rdbms.db.processinstance.ProcessInstanceIT.shouldSelectRootExpiredRootProcessInstances(CamundaRdbmsTestApplication)[5]` | package=`io.camunda.it.rdbms.db.processinstance`, class=`ProcessInstanceIT`, method=`shouldSelectRootExpiredRootProcessInstances` |
 
 The `(CamundaRdbmsTestApplication)` (parameter info) and `[5]` (index) are
@@ -120,10 +120,10 @@ These raw keys preserve parameter info and database variant suffixes.
 For each PR flaky test, we check if any baseline key refers to the same test
 method. The challenge is that the two sides have **different formats**:
 
-| Side | Key format | Example |
-|---|---|---|
-| **PR** (normalized) | `pkg.Class.method` | `...ProcessInstanceIT.shouldSelectRoot` |
-| **Baseline** (raw) | `pkg.Class.method(Param) variant` | `...ProcessInstanceIT.shouldSelectRoot(CamundaRdbmsTestApplication) camundaWithOracleDB` |
+|        Side         |            Key format             |                                         Example                                          |
+|---------------------|-----------------------------------|------------------------------------------------------------------------------------------|
+| **PR** (normalized) | `pkg.Class.method`                | `...ProcessInstanceIT.shouldSelectRoot`                                                  |
+| **Baseline** (raw)  | `pkg.Class.method(Param) variant` | `...ProcessInstanceIT.shouldSelectRoot(CamundaRdbmsTestApplication) camundaWithOracleDB` |
 
 The matching function `_is_same_test(baseline_key, normalized_key)` works as
 follows:
@@ -137,19 +137,19 @@ follows:
 
 ### Boundary matching examples
 
-| Normalized key | Baseline key | Next char | Match? | Why |
-|---|---|---|---|---|
-| `...shouldSelectRoot` | `...shouldSelectRoot` | *(end)* | ✅ | Exact match |
-| `...shouldSelectRoot` | `...shouldSelectRoot(Param) variant` | `(` | ✅ | `(` is a boundary |
-| `...shouldSelectRoot` | `...shouldSelectRoot[5]` | `[` | ✅ | `[` is a boundary |
-| `...shouldFind` | `...shouldFindAllItems(Param)` | `A` | ❌ | `A` is alphanumeric → different method |
-| `...shouldFind` | `...shouldFind_v2(Param)` | `_` | ❌ | `_` is identifier char → different method |
+|    Normalized key     |             Baseline key             | Next char | Match? |                    Why                    |
+|-----------------------|--------------------------------------|-----------|--------|-------------------------------------------|
+| `...shouldSelectRoot` | `...shouldSelectRoot`                | *(end)*   | ✅      | Exact match                               |
+| `...shouldSelectRoot` | `...shouldSelectRoot(Param) variant` | `(`       | ✅      | `(` is a boundary                         |
+| `...shouldSelectRoot` | `...shouldSelectRoot[5]`             | `[`       | ✅      | `[` is a boundary                         |
+| `...shouldFind`       | `...shouldFindAllItems(Param)`       | `A`       | ❌      | `A` is alphanumeric → different method    |
+| `...shouldFind`       | `...shouldFind_v2(Param)`            | `_`       | ❌      | `_` is identifier char → different method |
 
 ### Decision
 
-| Scenario | Result |
-|---|---|
-| All PR flaky tests match a baseline key | ✅ **Pass** — sets `has-new-flaky-tests=false` |
+|                Scenario                 |                                       Result                                        |
+|-----------------------------------------|-------------------------------------------------------------------------------------|
+| All PR flaky tests match a baseline key | ✅ **Pass** — sets `has-new-flaky-tests=false`                                       |
 | At least one PR flaky test has no match | ❌ **Fail** — posts a PR comment, sets `has-new-flaky-tests=true`, exits with code 1 |
 
 ## Bypass Label
@@ -180,13 +180,14 @@ When new flaky tests are found, the action posts a comment like:
 >   - Retries in this run: 1
 >
 > ---
+>
 > **What to do:**
 > 1. Check if the flaky test is caused by your changes and fix it
 > 2. If the test is unrelated to your changes:
->    - Contact the monorepo devops (#top-monorepo-ci) to triage and discuss the next steps
->    - Create an issue with the `kind/flake` label documenting the test, job, and a link to this CI run
->    - Add the `ci:flaky-test-bypass` label to this PR to skip the gate and unblock merging
->    - Re-run CI after adding the label
+> - Contact the monorepo devops (#top-monorepo-ci) to triage and discuss the next steps
+> - Create an issue with the `kind/flake` label documenting the test, job, and a link to this CI run
+> - Add the `ci:flaky-test-bypass` label to this PR to skip the gate and unblock merging
+> - Re-run CI after adding the label
 
 ## CI Job Configuration
 
@@ -201,12 +202,12 @@ The `detect-new-flaky-tests` job is defined in `.github/workflows/ci.yml`:
 
 ### Secrets used
 
-| Secret | Source | Purpose |
-|---|---|---|
-| `VAULT_ADDR` | Repository secret | Vault server URL |
-| `VAULT_ROLE_ID` | Repository secret | Vault AppRole auth |
-| `VAULT_SECRET_ID` | Repository secret | Vault AppRole auth |
-| GCP SA key | Vault (`secret/data/products/zeebe/ci/ci-analytics`) | BigQuery access |
+|      Secret       |                        Source                        |      Purpose       |
+|-------------------|------------------------------------------------------|--------------------|
+| `VAULT_ADDR`      | Repository secret                                    | Vault server URL   |
+| `VAULT_ROLE_ID`   | Repository secret                                    | Vault AppRole auth |
+| `VAULT_SECRET_ID` | Repository secret                                    | Vault AppRole auth |
+| GCP SA key        | Vault (`secret/data/products/zeebe/ci/ci-analytics`) | BigQuery access    |
 
 ## Running Locally
 
@@ -333,3 +334,4 @@ access while maintaining security.
 ├── detect_new_flaky_tests.py   # Detection logic (Python, stdlib only)
 └── README.md                   # This file
 ```
+
