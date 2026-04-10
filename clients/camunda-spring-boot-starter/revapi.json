@@ -736,6 +736,18 @@
           "code": "java.method.removed",
           "old": "method io.camunda.process.test.api.CamundaProcessTestExtension io.camunda.process.test.api.CamundaProcessTestExtension::withJsonMapper(io.camunda.zeebe.client.api.JsonMapper)",
           "justification": "Removal of V1 APIs in 8.10+; compatibility impact accepted for this release."
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method void io.camunda.client.jobhandling.parameter.DefaultParameterResolverStrategy::<init>(io.camunda.client.api.JsonMapper, io.camunda.zeebe.client.api.worker.JobClient)",
+          "justification": "Removal of V1 APIs in 8.10+; compatibility impact accepted for this release."
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method io.camunda.client.jobhandling.parameter.ParameterResolverStrategy io.camunda.client.spring.configuration.CamundaClientAllAutoConfiguration::parameterResolverStrategy(io.camunda.client.api.JsonMapper, io.camunda.zeebe.client.ZeebeClient)",
+          "justification": "Removal of V1 APIs in 8.10+; compatibility impact accepted for this release."
         }
       ]
     }
