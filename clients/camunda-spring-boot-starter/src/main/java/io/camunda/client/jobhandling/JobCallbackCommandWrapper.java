@@ -120,10 +120,6 @@ public class JobCallbackCommandWrapper {
   }
 
   public CompletableFuture<CommandOutcome> executeAsync() {
-    return execute();
-  }
-
-  private CompletableFuture<CommandOutcome> execute() {
     if (!started.compareAndSet(false, true)) {
       throw new IllegalStateException("JobCallbackCommandWrapper has already been executed");
     }
