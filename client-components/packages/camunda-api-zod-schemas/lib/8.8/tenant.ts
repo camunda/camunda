@@ -110,17 +110,17 @@ const createTenant: Endpoint = {
 
 const getTenant: Endpoint<Pick<Tenant, 'tenantId'>> = {
 	method: 'GET',
-	getUrl: ({tenantId}) => `/${API_VERSION}/tenants/${tenantId}`,
+	getUrl: ({tenantId}) => `/${API_VERSION}/tenants/${encodeURIComponent(tenantId)}`,
 };
 
 const updateTenant: Endpoint<Pick<Tenant, 'tenantId'>> = {
 	method: 'PUT',
-	getUrl: ({tenantId}) => `/${API_VERSION}/tenants/${tenantId}`,
+	getUrl: ({tenantId}) => `/${API_VERSION}/tenants/${encodeURIComponent(tenantId)}`,
 };
 
 const deleteTenant: Endpoint<Pick<Tenant, 'tenantId'>> = {
 	method: 'DELETE',
-	getUrl: ({tenantId}) => `/${API_VERSION}/tenants/${tenantId}`,
+	getUrl: ({tenantId}) => `/${API_VERSION}/tenants/${encodeURIComponent(tenantId)}`,
 };
 
 const queryTenants: Endpoint = {
@@ -130,77 +130,87 @@ const queryTenants: Endpoint = {
 
 const assignUserToTenant: Endpoint<Pick<Tenant, 'tenantId'> & {username: string}> = {
 	method: 'PUT',
-	getUrl: ({tenantId, username}) => `/${API_VERSION}/tenants/${tenantId}/users/${username}`,
+	getUrl: ({tenantId, username}) =>
+		`/${API_VERSION}/tenants/${encodeURIComponent(tenantId)}/users/${encodeURIComponent(username)}`,
 };
 
 const unassignUserFromTenant: Endpoint<Pick<Tenant, 'tenantId'> & {username: string}> = {
 	method: 'DELETE',
-	getUrl: ({tenantId, username}) => `/${API_VERSION}/tenants/${tenantId}/users/${username}`,
+	getUrl: ({tenantId, username}) =>
+		`/${API_VERSION}/tenants/${encodeURIComponent(tenantId)}/users/${encodeURIComponent(username)}`,
 };
 
 const queryUsersByTenant: Endpoint<Pick<Tenant, 'tenantId'>> = {
 	method: 'POST',
-	getUrl: ({tenantId}) => `/${API_VERSION}/tenants/${tenantId}/users/search`,
+	getUrl: ({tenantId}) => `/${API_VERSION}/tenants/${encodeURIComponent(tenantId)}/users/search`,
 };
 
 const queryClientsByTenant: Endpoint<Pick<Tenant, 'tenantId'>> = {
 	method: 'POST',
-	getUrl: ({tenantId}) => `/${API_VERSION}/tenants/${tenantId}/clients/search`,
+	getUrl: ({tenantId}) => `/${API_VERSION}/tenants/${encodeURIComponent(tenantId)}/clients/search`,
 };
 
 const queryGroupsByTenant: Endpoint<Pick<Tenant, 'tenantId'>> = {
 	method: 'POST',
-	getUrl: ({tenantId}) => `/${API_VERSION}/tenants/${tenantId}/groups/search`,
+	getUrl: ({tenantId}) => `/${API_VERSION}/tenants/${encodeURIComponent(tenantId)}/groups/search`,
 };
 
 const queryRolesByTenant: Endpoint<Pick<Tenant, 'tenantId'>> = {
 	method: 'POST',
-	getUrl: ({tenantId}) => `/${API_VERSION}/tenants/${tenantId}/roles/search`,
+	getUrl: ({tenantId}) => `/${API_VERSION}/tenants/${encodeURIComponent(tenantId)}/roles/search`,
 };
 
 const assignClientToTenant: Endpoint<Pick<Tenant, 'tenantId'> & {clientId: string}> = {
 	method: 'PUT',
-	getUrl: ({tenantId, clientId}) => `/${API_VERSION}/tenants/${tenantId}/clients/${clientId}`,
+	getUrl: ({tenantId, clientId}) =>
+		`/${API_VERSION}/tenants/${encodeURIComponent(tenantId)}/clients/${encodeURIComponent(clientId)}`,
 };
 
 const unassignClientFromTenant: Endpoint<Pick<Tenant, 'tenantId'> & {clientId: string}> = {
 	method: 'DELETE',
-	getUrl: ({tenantId, clientId}) => `/${API_VERSION}/tenants/${tenantId}/clients/${clientId}`,
+	getUrl: ({tenantId, clientId}) =>
+		`/${API_VERSION}/tenants/${encodeURIComponent(tenantId)}/clients/${encodeURIComponent(clientId)}`,
 };
 
 const assignMappingRuleToTenant: Endpoint<Pick<Tenant, 'tenantId'> & Pick<MappingRule, 'mappingId'>> = {
 	method: 'PUT',
-	getUrl: ({tenantId, mappingId}) => `/${API_VERSION}/tenants/${tenantId}/mappings/${mappingId}`,
+	getUrl: ({tenantId, mappingId}) =>
+		`/${API_VERSION}/tenants/${encodeURIComponent(tenantId)}/mappings/${encodeURIComponent(mappingId)}`,
 };
 
 const unassignMappingRuleFromTenant: Endpoint<Pick<Tenant, 'tenantId'> & Pick<MappingRule, 'mappingId'>> = {
 	method: 'DELETE',
-	getUrl: ({tenantId, mappingId}) => `/${API_VERSION}/tenants/${tenantId}/mappings/${mappingId}`,
+	getUrl: ({tenantId, mappingId}) =>
+		`/${API_VERSION}/tenants/${encodeURIComponent(tenantId)}/mappings/${encodeURIComponent(mappingId)}`,
 };
 
 const queryMappingRulesByTenant: Endpoint<Pick<Tenant, 'tenantId'>> = {
 	method: 'POST',
-	getUrl: ({tenantId}) => `/${API_VERSION}/tenants/${tenantId}/mappings/search`,
+	getUrl: ({tenantId}) => `/${API_VERSION}/tenants/${encodeURIComponent(tenantId)}/mappings/search`,
 };
 
 const assignGroupToTenant: Endpoint<Pick<Tenant, 'tenantId'> & Pick<Group, 'groupId'>> = {
 	method: 'PUT',
-	getUrl: ({tenantId, groupId}) => `/${API_VERSION}/tenants/${tenantId}/groups/${groupId}`,
+	getUrl: ({tenantId, groupId}) =>
+		`/${API_VERSION}/tenants/${encodeURIComponent(tenantId)}/groups/${encodeURIComponent(groupId)}`,
 };
 
 const unassignGroupFromTenant: Endpoint<Pick<Tenant, 'tenantId'> & Pick<Group, 'groupId'>> = {
 	method: 'DELETE',
-	getUrl: ({tenantId, groupId}) => `/${API_VERSION}/tenants/${tenantId}/groups/${groupId}`,
+	getUrl: ({tenantId, groupId}) =>
+		`/${API_VERSION}/tenants/${encodeURIComponent(tenantId)}/groups/${encodeURIComponent(groupId)}`,
 };
 
 const assignRoleToTenant: Endpoint<Pick<Tenant, 'tenantId'> & Pick<Role, 'roleId'>> = {
 	method: 'PUT',
-	getUrl: ({tenantId, roleId}) => `/${API_VERSION}/tenants/${tenantId}/roles/${roleId}`,
+	getUrl: ({tenantId, roleId}) =>
+		`/${API_VERSION}/tenants/${encodeURIComponent(tenantId)}/roles/${encodeURIComponent(roleId)}`,
 };
 
 const unassignRoleFromTenant: Endpoint<Pick<Tenant, 'tenantId'> & Pick<Role, 'roleId'>> = {
 	method: 'DELETE',
-	getUrl: ({tenantId, roleId}) => `/${API_VERSION}/tenants/${tenantId}/roles/${roleId}`,
+	getUrl: ({tenantId, roleId}) =>
+		`/${API_VERSION}/tenants/${encodeURIComponent(tenantId)}/roles/${encodeURIComponent(roleId)}`,
 };
 
 export {

@@ -27,54 +27,72 @@ export const searchMembersByGroup: ApiDefinition<
   QueryUsersByGroupResponseBody,
   QueryUsersByGroupRequestBody & Pick<Group, "groupId">
 > = ({ groupId, ...body }) =>
-  apiPost(`${GROUPS_ENDPOINT}/${groupId}/users/search`, body);
+  apiPost(
+    `${GROUPS_ENDPOINT}/${encodeURIComponent(groupId)}/users/search`,
+    body,
+  );
 
 export const getMembersByTenantId: ApiDefinition<
   QueryUsersByTenantResponseBody,
   QueryUsersByTenantRequestBody & Pick<Tenant, "tenantId">
 > = ({ tenantId, ...body }) =>
-  apiPost(`${TENANTS_ENDPOINT}/${tenantId}/users/search`, body);
+  apiPost(
+    `${TENANTS_ENDPOINT}/${encodeURIComponent(tenantId)}/users/search`,
+    body,
+  );
 
 export const getMembersByRole: ApiDefinition<
   QueryUsersByRoleResponseBody,
   QueryUsersByRoleRequestBody & Pick<Role, "roleId">
 > = ({ roleId, ...body }) =>
-  apiPost(`${ROLES_ENDPOINT}/${roleId}/users/search`, body);
+  apiPost(`${ROLES_ENDPOINT}/${encodeURIComponent(roleId)}/users/search`, body);
 
 export const assignGroupMember: ApiDefinition<
   undefined,
   Pick<Group, "groupId"> & Pick<User, "username">
 > = ({ groupId, username }) =>
-  apiPut(`${GROUPS_ENDPOINT}/${groupId}/users/${username}`);
+  apiPut(
+    `${GROUPS_ENDPOINT}/${encodeURIComponent(groupId)}/users/${encodeURIComponent(username)}`,
+  );
 
 export const unassignGroupMember: ApiDefinition<
   undefined,
   Pick<Group, "groupId"> & Pick<User, "username">
 > = ({ groupId, username }) =>
-  apiDelete(`${GROUPS_ENDPOINT}/${groupId}/users/${username}`);
+  apiDelete(
+    `${GROUPS_ENDPOINT}/${encodeURIComponent(groupId)}/users/${encodeURIComponent(username)}`,
+  );
 
 export const assignTenantMember: ApiDefinition<
   undefined,
   Pick<Tenant, "tenantId"> & Pick<User, "username">
 > = ({ tenantId, username }) => {
-  return apiPut(`${TENANTS_ENDPOINT}/${tenantId}/users/${username}`);
+  return apiPut(
+    `${TENANTS_ENDPOINT}/${encodeURIComponent(tenantId)}/users/${encodeURIComponent(username)}`,
+  );
 };
 
 export const unassignTenantMember: ApiDefinition<
   undefined,
   Pick<Tenant, "tenantId"> & Pick<User, "username">
 > = ({ tenantId, username }) =>
-  apiDelete(`${TENANTS_ENDPOINT}/${tenantId}/users/${username}`);
+  apiDelete(
+    `${TENANTS_ENDPOINT}/${encodeURIComponent(tenantId)}/users/${encodeURIComponent(username)}`,
+  );
 
 export const assignRoleMember: ApiDefinition<
   undefined,
   Pick<Role, "roleId"> & Pick<User, "username">
 > = ({ roleId, username }) => {
-  return apiPut(`${ROLES_ENDPOINT}/${roleId}/users/${username}`);
+  return apiPut(
+    `${ROLES_ENDPOINT}/${encodeURIComponent(roleId)}/users/${encodeURIComponent(username)}`,
+  );
 };
 
 export const unassignRoleMember: ApiDefinition<
   undefined,
   Pick<Role, "roleId"> & Pick<User, "username">
 > = ({ roleId, username }) =>
-  apiDelete(`${ROLES_ENDPOINT}/${roleId}/users/${username}`);
+  apiDelete(
+    `${ROLES_ENDPOINT}/${encodeURIComponent(roleId)}/users/${encodeURIComponent(username)}`,
+  );
