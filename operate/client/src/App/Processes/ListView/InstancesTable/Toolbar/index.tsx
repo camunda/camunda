@@ -17,9 +17,11 @@ import {batchModificationStore} from 'modules/stores/batchModification';
 import {observer} from 'mobx-react';
 import {useCancelProcessInstancesBatchOperation} from 'modules/mutations/processes/useCancelProcessInstancesBatchOperation';
 import {useResolveProcessInstancesIncidentsBatchOperation} from 'modules/mutations/processes/useResolveProcessInstancesIncidentsBatchOperation';
+import {useDeleteProcessInstancesBatchOperation} from 'modules/mutations/processes/useDeleteProcessInstancesBatchOperation';
 import {tracking} from 'modules/tracking';
 import {handleOperationError} from 'modules/utils/notifications';
 import {useBatchOperationMutationRequestBody} from 'modules/hooks/useBatchOperationMutationRequestBody';
+import {useDeleteBatchOperationMutationRequestBody} from 'modules/hooks/useDeleteBatchOperationMutationRequestBody';
 import {useBatchOperationSuccessNotification} from 'modules/hooks/useBatchOperationSuccessNotification';
 import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelection';
 import {IS_DELETE_BATCH_OPERATION_ENABLED} from 'modules/feature-flags';
@@ -29,16 +31,23 @@ type Props = {
 };
 
 const ACTION_NAMES: Readonly<
-  Record<'RESOLVE_INCIDENT' | 'CANCEL_PROCESS_INSTANCE', string>
+  Record<
+    'RESOLVE_INCIDENT' | 'CANCEL_PROCESS_INSTANCE' | 'DELETE_PROCESS_INSTANCE',
+    string
+  >
 > = {
   RESOLVE_INCIDENT: 'retry',
   CANCEL_PROCESS_INSTANCE: 'cancel',
+  DELETE_PROCESS_INSTANCE: 'delete',
 };
 
 const Toolbar: React.FC<Props> = observer(({selectedInstancesCount}) => {
   const displaySuccessNotification = useBatchOperationSuccessNotification();
   const [modalMode, setModalMode] = useState<
-    'RESOLVE_INCIDENT' | 'CANCEL_PROCESS_INSTANCE' | null
+    | 'RESOLVE_INCIDENT'
+    | 'CANCEL_PROCESS_INSTANCE'
+    | 'DELETE_PROCESS_INSTANCE'
+    | null
   >(null);
   const closeModal = () => {
     setModalMode(null);
@@ -46,6 +55,9 @@ const Toolbar: React.FC<Props> = observer(({selectedInstancesCount}) => {
 
   const batchOperationMutationRequestBody =
     useBatchOperationMutationRequestBody();
+
+  const deleteBatchOperationMutationRequestBody =
+    useDeleteBatchOperationMutationRequestBody();
 
   const cancelMutation = useCancelProcessInstancesBatchOperation({
     onSuccess: ({batchOperationKey, batchOperationType}) => {
@@ -75,6 +87,20 @@ const Toolbar: React.FC<Props> = observer(({selectedInstancesCount}) => {
     },
   });
 
+  const deleteMutation = useDeleteProcessInstancesBatchOperation({
+    onSuccess: ({batchOperationKey, batchOperationType}) => {
+      displaySuccessNotification(batchOperationType, batchOperationKey);
+      tracking.track({
+        eventName: 'batch-operation',
+        operationType: 'DELETE_PROCESS_INSTANCE',
+      });
+      processInstancesSelectionStore.reset();
+    },
+    onError: (error) => {
+      handleOperationError(error.response?.status);
+    },
+  });
+
   const handleApplyClick = () => {
     if (modalMode === null) {
       return;
@@ -82,7 +108,9 @@ const Toolbar: React.FC<Props> = observer(({selectedInstancesCount}) => {
 
     if (modalMode === 'CANCEL_PROCESS_INSTANCE') {
       cancelMutation.mutate(batchOperationMutationRequestBody);
-    } else {
+    } else if (modalMode === 'DELETE_PROCESS_INSTANCE') {
+      deleteMutation.mutate(deleteBatchOperationMutationRequestBody);
+    } else if (modalMode === 'RESOLVE_INCIDENT') {
       resolveMutation.mutate(batchOperationMutationRequestBody);
     }
 
@@ -115,7 +143,11 @@ const Toolbar: React.FC<Props> = observer(({selectedInstancesCount}) => {
       );
     }
 
-    if (selectedInstancesCount > runningInstancesCount) {
+    if (modalMode === 'DELETE_PROCESS_INSTANCE') {
+      messages.push(
+        'This action will permanently delete the selected process instances and their history. This cannot be undone.',
+      );
+    } else if (selectedInstancesCount > runningInstancesCount) {
       messages.push('Finished instances in your selection will be ignored.');
     }
 
@@ -153,6 +185,7 @@ const Toolbar: React.FC<Props> = observer(({selectedInstancesCount}) => {
           {IS_DELETE_BATCH_OPERATION_ENABLED && (
             <TableBatchAction
               renderIcon={TrashCan}
+              onClick={() => setModalMode('DELETE_PROCESS_INSTANCE')}
               disabled={
                 batchModificationStore.state.isEnabled ||
                 !processInstancesSelectionStore.hasSelectedFinishedInstances
@@ -207,11 +240,15 @@ const Toolbar: React.FC<Props> = observer(({selectedInstancesCount}) => {
           </TableBatchAction>
         </TableBatchActions>
       </TableToolbar>
+
       <Modal
         open={modalMode !== null}
         preventCloseOnClickOutside
         modalHeading="Apply Operation"
-        primaryButtonText="Apply"
+        primaryButtonText={
+          modalMode === 'DELETE_PROCESS_INSTANCE' ? 'Delete' : 'Apply'
+        }
+        danger={modalMode === 'DELETE_PROCESS_INSTANCE'}
         secondaryButtonText="Cancel"
         onRequestSubmit={handleApplyClick}
         onRequestClose={closeModal}
@@ -219,7 +256,10 @@ const Toolbar: React.FC<Props> = observer(({selectedInstancesCount}) => {
         size="md"
       >
         <p>{getBodyText()}</p>
-        <p>Click "Apply" to proceed.</p>
+        <p>
+          Click "{modalMode === 'DELETE_PROCESS_INSTANCE' ? 'Delete' : 'Apply'}"
+          to proceed.
+        </p>
       </Modal>
     </>
   );
