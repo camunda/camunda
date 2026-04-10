@@ -141,7 +141,7 @@ test.describe.parallel('Delete Single Process Instance API Tests', () => {
   });
 
   test('Delete Single Process Instance - Forbidden', async ({request}) => {
-    const someInstanceKey = '999999999999999';
+    const someInstanceKey = activeProcessInstanceKeyToDelete;
     const token = encode(
       `${userWithResourcesAuthorizationToSendRequest.username}:${userWithResourcesAuthorizationToSendRequest.password}`,
     );
