@@ -19,7 +19,6 @@ import io.camunda.client.api.command.CompleteJobCommandStep1;
 import io.camunda.client.api.command.JobCallbackFinalCommandStep;
 import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.client.api.response.CompleteJobResponse;
-import io.camunda.client.api.worker.BackoffSupplier;
 import io.camunda.client.api.worker.JobClient;
 import io.camunda.client.api.worker.JobHandler;
 import io.camunda.client.impl.Loggers;
@@ -32,7 +31,6 @@ import io.camunda.client.metrics.JobHandlerMetrics;
 import io.camunda.client.metrics.MetricsRecorder;
 import io.camunda.client.metrics.MetricsRecorder.CounterMetricsContext;
 import java.util.List;
-import java.util.concurrent.ScheduledExecutorService;
 import org.slf4j.Logger;
 
 /** Zeebe JobHandler that invokes a bean */
@@ -46,8 +44,7 @@ public class JobHandlerInvokingBeans implements JobHandler {
   private final MetricsRecorder metricsRecorder;
   private final List<ParameterResolver> parameterResolvers;
   private final ResultProcessor resultProcessor;
-  private final BackoffSupplier backoffSupplier;
-  private final ScheduledExecutorService scheduledExecutorService;
+  private final JobCallbackCommandWrapperFactory jobCallbackCommandWrapperFactory;
 
   public JobHandlerInvokingBeans(
       final String jobWorkerName,
@@ -57,8 +54,7 @@ public class JobHandlerInvokingBeans implements JobHandler {
       final MetricsRecorder metricsRecorder,
       final List<ParameterResolver> parameterResolvers,
       final ResultProcessor resultProcessor,
-      final BackoffSupplier backoffSupplier,
-      final ScheduledExecutorService scheduledExecutorService) {
+      final JobCallbackCommandWrapperFactory jobCallbackCommandWrapperFactory) {
     this.jobWorkerName = jobWorkerName;
     this.method = method;
     this.autoComplete = autoComplete;
@@ -66,8 +62,7 @@ public class JobHandlerInvokingBeans implements JobHandler {
     this.metricsRecorder = metricsRecorder;
     this.parameterResolvers = parameterResolvers;
     this.resultProcessor = resultProcessor;
-    this.backoffSupplier = backoffSupplier;
-    this.scheduledExecutorService = scheduledExecutorService;
+    this.jobCallbackCommandWrapperFactory = jobCallbackCommandWrapperFactory;
   }
 
   @Override
@@ -100,14 +95,7 @@ public class JobHandlerInvokingBeans implements JobHandler {
       final JobCallbackFinalCommandStep<?> command,
       final long deadline,
       final CounterMetricsContext metricsContext) {
-    return new JobCallbackCommandWrapper(
-        command,
-        deadline,
-        metricsRecorder,
-        metricsContext,
-        maxRetries,
-        backoffSupplier,
-        scheduledExecutorService);
+    return jobCallbackCommandWrapperFactory.create(command, deadline, metricsContext, maxRetries);
   }
 
   private List<Object> createParameters(final JobClient jobClient, final ActivatedJob job) {

@@ -21,7 +21,6 @@ import io.camunda.client.api.command.ThrowErrorCommandStep1.ThrowErrorCommandSte
 import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.client.api.response.FailJobResponse;
 import io.camunda.client.api.response.ThrowErrorResponse;
-import io.camunda.client.api.worker.BackoffSupplier;
 import io.camunda.client.api.worker.JobClient;
 import io.camunda.client.exception.BpmnError;
 import io.camunda.client.exception.JobError;
@@ -30,7 +29,6 @@ import io.camunda.client.metrics.JobHandlerMetrics;
 import io.camunda.client.metrics.MetricsRecorder;
 import io.camunda.client.metrics.MetricsRecorder.CounterMetricsContext;
 import java.time.Duration;
-import java.util.concurrent.ScheduledExecutorService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -39,15 +37,13 @@ public class BeanJobExceptionHandler extends JobExceptionHandlerImpl {
   private final MetricsRecorder metricsRecorder;
   private final int maxRetries;
   private final Duration retryBackoff;
-  private final BackoffSupplier backoffSupplier;
-  private final ScheduledExecutorService scheduledExecutorService;
+  private final JobCallbackCommandWrapperFactory callbackCommandWrapperFactory;
 
   public BeanJobExceptionHandler(
       final Duration retryBackoff,
       final int maxRetries,
       final MetricsRecorder metricsRecorder,
-      final BackoffSupplier backoffSupplier,
-      final ScheduledExecutorService scheduledExecutorService) {
+      final JobCallbackCommandWrapperFactory callbackCommandWrapperFactory) {
     super(
         DEFAULT_ERROR_MESSAGE_PROVIDER,
         DEFAULT_RETRIES_PROVIDER,
@@ -56,8 +52,7 @@ public class BeanJobExceptionHandler extends JobExceptionHandlerImpl {
     this.metricsRecorder = metricsRecorder;
     this.maxRetries = maxRetries;
     this.retryBackoff = retryBackoff;
-    this.backoffSupplier = backoffSupplier;
-    this.scheduledExecutorService = scheduledExecutorService;
+    this.callbackCommandWrapperFactory = callbackCommandWrapperFactory;
   }
 
   private JobCallbackCommandWrapper createCommandWrapper(
@@ -65,14 +60,7 @@ public class BeanJobExceptionHandler extends JobExceptionHandlerImpl {
       final long deadline,
       final int maxRetries,
       final CounterMetricsContext metricsContext) {
-    return new JobCallbackCommandWrapper(
-        command,
-        deadline,
-        metricsRecorder,
-        metricsContext,
-        maxRetries,
-        backoffSupplier,
-        scheduledExecutorService);
+    return callbackCommandWrapperFactory.create(command, deadline, metricsContext, maxRetries);
   }
 
   @Override

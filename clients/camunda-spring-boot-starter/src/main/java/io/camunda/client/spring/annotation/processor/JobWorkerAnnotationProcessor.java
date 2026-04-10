@@ -21,10 +21,10 @@ import static org.springframework.util.ReflectionUtils.doWithMethods;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.annotation.JobWorker;
-import io.camunda.client.api.worker.BackoffSupplier;
 import io.camunda.client.bean.BeanInfo;
 import io.camunda.client.bean.MethodInfo;
 import io.camunda.client.jobhandling.BeanJobHandlerFactory;
+import io.camunda.client.jobhandling.JobCallbackCommandWrapperFactory;
 import io.camunda.client.jobhandling.JobWorkerManager;
 import io.camunda.client.jobhandling.ManagedJobWorker;
 import io.camunda.client.jobhandling.parameter.ParameterResolverStrategy;
@@ -32,7 +32,6 @@ import io.camunda.client.jobhandling.result.ResultProcessorStrategy;
 import io.camunda.client.metrics.MetricsRecorder;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.ScheduledExecutorService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.util.ReflectionUtils;
@@ -52,8 +51,7 @@ public class JobWorkerAnnotationProcessor extends AbstractCamundaAnnotationProce
   private final MetricsRecorder metricsRecorder;
   private final ParameterResolverStrategy parameterResolverStrategy;
   private final ResultProcessorStrategy resultProcessorStrategy;
-  private final BackoffSupplier backoffSupplier;
-  private final ScheduledExecutorService scheduledExecutorService;
+  private final JobCallbackCommandWrapperFactory jobCallbackCommandWrapperFactory;
   private final List<ManagedJobWorker> managedJobWorkers = new ArrayList<>();
 
   public JobWorkerAnnotationProcessor(
@@ -61,14 +59,12 @@ public class JobWorkerAnnotationProcessor extends AbstractCamundaAnnotationProce
       final MetricsRecorder metricsRecorder,
       final ParameterResolverStrategy parameterResolverStrategy,
       final ResultProcessorStrategy resultProcessorStrategy,
-      final BackoffSupplier backoffSupplier,
-      final ScheduledExecutorService scheduledExecutorService) {
+      final JobCallbackCommandWrapperFactory jobCallbackCommandWrapperFactory) {
     this.jobWorkerManager = jobWorkerManager;
     this.metricsRecorder = metricsRecorder;
     this.parameterResolverStrategy = parameterResolverStrategy;
     this.resultProcessorStrategy = resultProcessorStrategy;
-    this.backoffSupplier = backoffSupplier;
-    this.scheduledExecutorService = scheduledExecutorService;
+    this.jobCallbackCommandWrapperFactory = jobCallbackCommandWrapperFactory;
   }
 
   @Override
@@ -94,8 +90,7 @@ public class JobWorkerAnnotationProcessor extends AbstractCamundaAnnotationProce
                               parameterResolverStrategy,
                               resultProcessorStrategy,
                               metricsRecorder,
-                              backoffSupplier,
-                              scheduledExecutorService)))
+                              jobCallbackCommandWrapperFactory)))
               .ifPresent(newManagedJobWorkers::add);
         },
         ReflectionUtils.USER_DECLARED_METHODS);

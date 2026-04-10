@@ -15,23 +15,19 @@
  */
 package io.camunda.client.jobhandling;
 
-import io.camunda.client.api.worker.BackoffSupplier;
 import io.camunda.client.api.worker.JobExceptionHandler;
 import io.camunda.client.metrics.MetricsRecorder;
-import java.util.concurrent.ScheduledExecutorService;
 
 public class DefaultJobExceptionHandlerSupplier implements JobExceptionHandlerSupplier {
   private final MetricsRecorder metricsRecorder;
-  private final BackoffSupplier backoffSupplier;
-  private final ScheduledExecutorService scheduledExecutorService;
+  private final JobCallbackCommandWrapperFactory jobCallbackCommandWrapperFactory;
 
   public DefaultJobExceptionHandlerSupplier(
       final MetricsRecorder metricsRecorder,
-      final BackoffSupplier backoffSupplier,
-      final ScheduledExecutorService scheduledExecutorService) {
+      final JobCallbackCommandWrapperFactory jobCallbackCommandWrapperFactory) {
     this.metricsRecorder = metricsRecorder;
-    this.backoffSupplier = backoffSupplier;
-    this.scheduledExecutorService = scheduledExecutorService;
+
+    this.jobCallbackCommandWrapperFactory = jobCallbackCommandWrapperFactory;
   }
 
   @Override
@@ -41,7 +37,6 @@ public class DefaultJobExceptionHandlerSupplier implements JobExceptionHandlerSu
         context.retryBackoff(),
         context.maxRetries(),
         metricsRecorder,
-        backoffSupplier,
-        scheduledExecutorService);
+        jobCallbackCommandWrapperFactory);
   }
 }

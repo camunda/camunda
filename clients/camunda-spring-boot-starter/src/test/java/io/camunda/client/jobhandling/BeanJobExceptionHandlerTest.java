@@ -45,16 +45,19 @@ import java.util.concurrent.ScheduledExecutorService;
 import org.junit.jupiter.api.Test;
 
 public class BeanJobExceptionHandlerTest {
+  private static JobCallbackCommandWrapperFactory jobCallbackCommandWrapperFactory() {
+    return new JobCallbackCommandWrapperFactory(
+        mock(BackoffSupplier.class),
+        mock(ScheduledExecutorService.class),
+        mock(MetricsRecorder.class));
+  }
+
   @Test
   void shouldHandleAnyException() {
     final MetricsRecorder metricsRecorder = new DefaultNoopMetricsRecorder();
     final BeanJobExceptionHandler handler =
         new BeanJobExceptionHandler(
-            Duration.ZERO,
-            0,
-            metricsRecorder,
-            mock(BackoffSupplier.class),
-            mock(ScheduledExecutorService.class));
+            Duration.ZERO, 0, metricsRecorder, jobCallbackCommandWrapperFactory());
     final JobClient jobClient = mock(JobClient.class);
     final FailJobCommandStep1 failJobCommandStep1 = mock(FailJobCommandStep1.class);
     final FailJobCommandStep2 failJobCommandStep2 = mock(FailJobCommandStep2.class);
@@ -81,11 +84,7 @@ public class BeanJobExceptionHandlerTest {
     final MetricsRecorder metricsRecorder = new DefaultNoopMetricsRecorder();
     final BeanJobExceptionHandler handler =
         new BeanJobExceptionHandler(
-            Duration.ZERO,
-            0,
-            metricsRecorder,
-            mock(BackoffSupplier.class),
-            mock(ScheduledExecutorService.class));
+            Duration.ZERO, 0, metricsRecorder, jobCallbackCommandWrapperFactory());
     final JobClient jobClient = mock(JobClient.class);
     final FailJobCommandStep1 failJobCommandStep1 = mock(FailJobCommandStep1.class);
     final FailJobCommandStep2 failJobCommandStep2 = mock(FailJobCommandStep2.class);
@@ -113,11 +112,7 @@ public class BeanJobExceptionHandlerTest {
     final MetricsRecorder metricsRecorder = new DefaultNoopMetricsRecorder();
     final BeanJobExceptionHandler handler =
         new BeanJobExceptionHandler(
-            Duration.ZERO,
-            0,
-            metricsRecorder,
-            mock(BackoffSupplier.class),
-            mock(ScheduledExecutorService.class));
+            Duration.ZERO, 0, metricsRecorder, jobCallbackCommandWrapperFactory());
     final JobClient jobClient = mock(JobClient.class);
     final ThrowErrorCommandStep1 throwErrorCommandStep1 = mock(ThrowErrorCommandStep1.class);
     final ThrowErrorCommandStep2 throwErrorCommandStep2 = mock(ThrowErrorCommandStep2.class);

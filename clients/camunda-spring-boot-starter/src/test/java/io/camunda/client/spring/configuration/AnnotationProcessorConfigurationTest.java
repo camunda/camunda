@@ -18,9 +18,8 @@ package io.camunda.client.spring.configuration;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.CamundaClient;
-import io.camunda.client.api.worker.BackoffSupplier;
 import io.camunda.client.bean.BeanInfo;
-import io.camunda.client.jobhandling.CamundaClientExecutorService;
+import io.camunda.client.jobhandling.JobCallbackCommandWrapperFactory;
 import io.camunda.client.jobhandling.JobWorkerManager;
 import io.camunda.client.jobhandling.parameter.ParameterResolverStrategy;
 import io.camunda.client.jobhandling.result.ResultProcessorStrategy;
@@ -46,8 +45,7 @@ public class AnnotationProcessorConfigurationTest {
   // required to auto-wire with the job worker annotation processor configuration
   @MockitoBean JobWorkerManager jobWorkerManager;
   @MockitoBean CamundaClient camundaClient;
-  @MockitoBean BackoffSupplier backoffSupplier;
-  @MockitoBean CamundaClientExecutorService camundaClientExecutorService;
+  @MockitoBean JobCallbackCommandWrapperFactory jobCallbackCommandWrapperFactory;
   @MockitoBean MetricsRecorder metricsRecorder;
   @MockitoBean ParameterResolverStrategy parameterResolverStrategy;
   @MockitoBean ResultProcessorStrategy resultProcessorStrategy;

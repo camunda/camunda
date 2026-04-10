@@ -76,8 +76,7 @@ public class JobHandlerInvokingBeansTest {
                 parameterResolverStrategy(),
                 resultProcessorStrategy(),
                 metricsRecorder(),
-                backoffSupplier(),
-                scheduledExecutorService())
+                jobCallbackCommandWrapperFactory())
             .getJobHandler(new JobHandlerFactoryContext(jobWorkerValue, mock(CamundaClient.class)));
     final JobClient jobClient = mock(JobClient.class);
     final CompleteJobCommandStep1 completeJobCommandStep1 = mock(CompleteJobCommandStep1.class);
@@ -107,8 +106,7 @@ public class JobHandlerInvokingBeansTest {
                 parameterResolverStrategy(),
                 resultProcessorStrategy(),
                 metricsRecorder(),
-                backoffSupplier(),
-                scheduledExecutorService())
+                jobCallbackCommandWrapperFactory())
             .getJobHandler(new JobHandlerFactoryContext(jobWorkerValue, mock(CamundaClient.class)));
     final JobClient jobClient = mock(JobClient.class);
     final ActivatedJob job = mock(ActivatedJob.class);
@@ -130,8 +128,7 @@ public class JobHandlerInvokingBeansTest {
                 parameterResolverStrategy(),
                 resultProcessorStrategy(),
                 metricsRecorder(),
-                backoffSupplier(),
-                scheduledExecutorService())
+                jobCallbackCommandWrapperFactory())
             .getJobHandler(new JobHandlerFactoryContext(jobWorkerValue, mock(CamundaClient.class)));
 
     final JobClient jobClient = mock(JobClient.class);
@@ -154,8 +151,7 @@ public class JobHandlerInvokingBeansTest {
                 parameterResolverStrategy(),
                 resultProcessorStrategy(),
                 metricsRecorder(),
-                backoffSupplier(),
-                scheduledExecutorService())
+                jobCallbackCommandWrapperFactory())
             .getJobHandler(new JobHandlerFactoryContext(jobWorkerValue, mock(CamundaClient.class)));
 
     final JobClient jobClient = mock(JobClient.class);
@@ -214,6 +210,11 @@ public class JobHandlerInvokingBeansTest {
 
   private static ScheduledExecutorService scheduledExecutorService() {
     return mock(ScheduledExecutorService.class);
+  }
+
+  private static JobCallbackCommandWrapperFactory jobCallbackCommandWrapperFactory() {
+    return new JobCallbackCommandWrapperFactory(
+        backoffSupplier(), scheduledExecutorService(), metricsRecorder());
   }
 
   private static MetricsRecorder metricsRecorder() {
