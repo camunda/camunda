@@ -1,0 +1,44 @@
+{
+  "executionPlatform": "Camunda Cloud",
+  "executionPlatformVersion": "8.8.0",
+  "exporter": {
+    "name": "Camunda Web Modeler",
+    "version": "5159060"
+  },
+  "schemaVersion": 19,
+  "id": "jw-1",
+  "components": [
+    {
+      "text": "# Camunda Form",
+      "type": "text",
+      "layout": {
+        "row": "Row_0zyslyh",
+        "columns": null
+      },
+      "id": "Field_1emp0qu"
+    },
+    {
+      "label": "Text field",
+      "type": "textfield",
+      "layout": {
+        "row": "Row_1lz0r8m",
+        "columns": null
+      },
+      "id": "Field_1dg6fm9",
+      "key": "textfield_6bfdi",
+      "defaultValue": "Insert anything"
+    },
+    {
+      "label": "Text area",
+      "type": "textarea",
+      "layout": {
+        "row": "Row_1jqthqh",
+        "columns": null
+      },
+      "id": "Field_0z6lnhc",
+      "key": "textarea_71e1gb"
+    }
+  ],
+  "type": "default"
+}
+
