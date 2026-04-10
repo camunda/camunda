@@ -15,6 +15,9 @@ import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.command.DeployResourceCommandStep1.DeployResourceCommandStep2;
 import io.camunda.client.api.response.Process;
 import io.camunda.client.api.response.ProcessInstanceEvent;
+import io.camunda.client.api.search.enums.OwnerType;
+import io.camunda.client.api.search.enums.PermissionType;
+import io.camunda.client.api.search.enums.ResourceType;
 import io.camunda.client.api.search.response.ProcessInstance;
 import io.camunda.client.api.search.response.SearchResponse;
 import io.camunda.client.api.search.sort.ProcessInstanceSort;
@@ -81,6 +84,30 @@ public class Starter extends App {
 
     // init - check for topology and deploy process
     printTopology(client);
+
+    final String zeebeClientId = System.getenv("ZEEBE_CLIENT_ID");
+    if (!zeebeClientId.isBlank()) {
+      client
+          .newCreateAuthorizationCommand()
+          .ownerId(zeebeClientId)
+          .ownerType(OwnerType.CLIENT)
+          .resourceId("*")
+          .resourceType(ResourceType.RESOURCE)
+          .permissionTypes(PermissionType.CREATE)
+          .send()
+          .join();
+
+      client
+          .newCreateAuthorizationCommand()
+          .ownerId(zeebeClientId)
+          .ownerType(OwnerType.CLIENT)
+          .resourceId("*")
+          .resourceType(ResourceType.PROCESS_DEFINITION)
+          .permissionTypes(
+              PermissionType.CREATE_PROCESS_INSTANCE, PermissionType.UPDATE_PROCESS_INSTANCE)
+          .send()
+          .join();
+    }
 
     if (config.isMonitorDataAvailability()) {
       setupDataAvailabilityMeter(client);
