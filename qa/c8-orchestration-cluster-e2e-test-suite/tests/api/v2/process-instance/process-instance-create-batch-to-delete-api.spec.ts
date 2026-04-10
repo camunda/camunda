@@ -244,6 +244,202 @@ test.describe.parallel('Delete Batch Process Instance API Tests', () => {
     });
   });
 
+  test('Delete Batch Active Single Process Instance - No instance should be deleted', async ({
+    request,
+  }) => {
+    const processInstanceKeyToDelete = activeProcessInstanceKeysToDelete[0];
+    let batchOperationKey = '';
+    await test.step('Verify Process Instance Key to Delete has state ACTIVE', async () => {
+      await expect(async () => {
+        const response = await request.get(
+          buildUrl(`/process-instances/${processInstanceKeyToDelete}`),
+          {
+            headers: jsonHeaders(),
+          },
+        );
+        await assertStatusCode(response, 200);
+        await validateResponse(
+          {
+            path: '/process-instances/{processInstanceKey}',
+            method: 'GET',
+            status: '200',
+          },
+          response,
+        );
+        const responseBody = await response.json();
+        expect(responseBody.state).toBe('ACTIVE');
+      }).toPass(defaultAssertionOptions);
+    });
+
+    await test.step('Delete the process instance as batch', async () => {
+      const res = await request.post(buildUrl('/process-instances/deletion'), {
+        headers: jsonHeaders(),
+        data: {
+          filter: {
+            processInstanceKey: processInstanceKeyToDelete,
+          },
+        },
+      });
+      await assertStatusCode(res, 200);
+      await validateResponse(
+        {
+          path: '/process-instances/deletion',
+          method: 'POST',
+          status: '200',
+        },
+        res,
+      );
+      const json = await res.json();
+      batchOperationKey = json.batchOperationKey;
+      expect(json.batchOperationType).toBe('DELETE_PROCESS_INSTANCE');
+    });
+
+    await test.step('Verify the batch operation is completed', async () => {
+      await expect(async () => {
+        const statusRes = await request.get(
+          buildUrl(`/batch-operations/${batchOperationKey}`),
+          {
+            headers: jsonHeaders(),
+          },
+        );
+        await assertStatusCode(statusRes, 200);
+        await validateResponse(
+          {
+            path: '/batch-operations/{batchOperationKey}',
+            method: 'GET',
+            status: '200',
+          },
+          statusRes,
+        );
+        const body = await statusRes.json();
+        expect(body.state).toBe('COMPLETED');
+        expect(body.operationsCompletedCount).toBe(0);
+      }).toPass({
+        intervals: [5_000, 10_000, 15_000, 25_000, 35_000],
+        timeout: 120_000,
+      });
+    });
+
+    await test.step('Verify process instance is still active', async () => {
+      await expect(async () => {
+        const response = await request.get(
+          buildUrl(`/process-instances/${processInstanceKeyToDelete}`),
+          {
+            headers: jsonHeaders(),
+          },
+        );
+        await assertStatusCode(response, 200);
+        await validateResponse({
+          path: '/process-instances/{processInstanceKey}',
+          method: 'GET',
+          status: '200',
+        }, response);
+        const responseBody = await response.json();
+        expect(responseBody.state).toBe('ACTIVE');
+      }).toPass(defaultAssertionOptions);
+    });
+  });
+
+  test('Delete Batch Active Multiple Process Instances - No instance should be deleted', async ({
+    request,
+  }) => {
+    const processInstancesToDelete = activeProcessInstanceKeysToDelete.slice(1);
+    let batchOperationKey = '';
+    await test.step('Verify Process Instance Key to Delete has state ACTIVE', async () => {
+      for (const processInstanceKey of processInstancesToDelete) {
+        await expect(async () => {
+          const response = await request.get(
+            buildUrl(`/process-instances/${processInstanceKey}`),
+            {
+              headers: jsonHeaders(),
+            },
+          );
+          await assertStatusCode(response, 200);
+          await validateResponse(
+            {
+              path: '/process-instances/{processInstanceKey}',
+              method: 'GET',
+              status: '200',
+            },
+            response,
+          );
+          const responseBody = await response.json();
+          expect(responseBody.state).toBe('ACTIVE');
+        }).toPass(defaultAssertionOptions);
+      }
+    });
+
+    await test.step('Delete the process instance as batch', async () => {
+      const res = await request.post(buildUrl('/process-instances/deletion'), {
+        headers: jsonHeaders(),
+        data: {
+          filter: {
+            processInstanceKey: {$in: processInstancesToDelete},
+          },
+        },
+      });
+      await assertStatusCode(res, 200);
+      await validateResponse(
+        {
+          path: '/process-instances/deletion',
+          method: 'POST',
+          status: '200',
+        },
+        res,
+      );
+      const json = await res.json();
+      batchOperationKey = json.batchOperationKey;
+      expect(json.batchOperationType).toBe('DELETE_PROCESS_INSTANCE');
+    });
+
+    await test.step('Verify the batch operation is completed', async () => {
+      await expect(async () => {
+        const statusRes = await request.get(
+          buildUrl(`/batch-operations/${batchOperationKey}`),
+          {
+            headers: jsonHeaders(),
+          },
+        );
+        await assertStatusCode(statusRes, 200);
+        await validateResponse(
+          {
+            path: '/batch-operations/{batchOperationKey}',
+            method: 'GET',
+            status: '200',
+          },
+          statusRes,
+        );
+        const body = await statusRes.json();
+        expect(body.state).toBe('COMPLETED');
+        expect(body.operationsCompletedCount).toBe(0);
+      }).toPass({
+        intervals: [5_000, 10_000, 15_000, 25_000, 35_000],
+        timeout: 120_000,
+      });
+    });
+
+    await test.step('Verify process instances are still active', async () => {
+      for (const processInstanceKey of processInstancesToDelete) {
+        await expect(async () => {
+          const response = await request.get(
+            buildUrl(`/process-instances/${processInstanceKey}`),
+            {
+              headers: jsonHeaders(),
+            },
+          );
+          await assertStatusCode(response, 200);
+          await validateResponse({
+            path: '/process-instances/{processInstanceKey}',
+            method: 'GET',
+            status: '200',
+          }, response);
+          const responseBody = await response.json();
+          expect(responseBody.state).toBe('ACTIVE');
+      }).toPass(defaultAssertionOptions);
+      }
+    });
+  });
+
   test('Delete Batch Process Instance, single Process Instance - Unauthorized', async ({
     request,
   }) => {
