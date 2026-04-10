@@ -27,12 +27,14 @@ function getStoredTheme(): ThemeOption {
   return "system";
 }
 
+const INITIAL_THEME = getStoredTheme();
+
 function isThemeOption(theme: unknown): theme is ThemeOption {
   return ["system", "dark", "light"].includes(theme as string);
 }
 
 class Theme {
-  selectedTheme: ThemeOption = getStoredTheme();
+  selectedTheme: ThemeOption = INITIAL_THEME;
   #systemDefault: "dark" | "light" = window.matchMedia(
     "(prefers-color-scheme: dark)",
   ).matches
@@ -44,13 +46,8 @@ class Theme {
       selectedTheme: observable,
       changeTheme: action,
       actualTheme: computed,
+      reset: action,
     });
-
-    window
-      .matchMedia("(prefers-color-scheme: dark)")
-      .addEventListener("change", (event) => {
-        this.#updateSystemDefault(event.matches ? "dark" : "light");
-      });
   }
 
   changeTheme = (theme: ThemeOption) => {
@@ -58,15 +55,15 @@ class Theme {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(theme));
   };
 
-  get actualTheme(): "dark" | "light" {
+  get actualTheme() {
     return this.selectedTheme === "system"
       ? this.#systemDefault
       : this.selectedTheme;
   }
 
-  #updateSystemDefault = action((value: "dark" | "light") => {
-    this.#systemDefault = value;
-  });
+  reset = () => {
+    this.selectedTheme = INITIAL_THEME;
+  };
 }
 
 const themeStore = new Theme();
