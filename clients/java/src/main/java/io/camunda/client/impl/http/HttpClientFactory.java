@@ -86,20 +86,43 @@ public class HttpClientFactory {
         config.getCredentialsProvider() != null
             ? config.getCredentialsProvider()
             : new NoopCredentialsProvider();
-    final HttpAsyncClientBuilder clientBuilder =
-        defaultClientBuilder(credentialsProvider).setDefaultRequestConfig(defaultRequestConfig);
-
-    final CloseableHttpAsyncClient client = clientBuilder.build();
+    final PoolingAsyncClientConnectionManager connectionManager = createConnectionManager();
+    final CloseableHttpAsyncClient client =
+        defaultClientBuilder(credentialsProvider, connectionManager)
+            .setDefaultRequestConfig(defaultRequestConfig)
+            .build();
     final URI gatewayAddress = buildGatewayAddress();
 
     return new HttpClient(
         client,
+        connectionManager,
         JSON_MAPPER,
         gatewayAddress,
         defaultRequestConfig,
         config.getMaxMessageSize(),
         TimeValue.ofSeconds(15),
         credentialsProvider);
+  }
+
+  private PoolingAsyncClientConnectionManager createConnectionManager() {
+    final HttpClientHostnameVerifier hostnameVerifier =
+        new HostnameVerifier(config.getOverrideAuthority());
+    final TlsStrategy tlsStrategy =
+        ClientTlsStrategyBuilder.create()
+            .setSslContext(createSslContext())
+            .setHostnameVerifier(hostnameVerifier)
+            .build();
+    final PoolingAsyncClientConnectionManagerBuilder connectionManagerBuilder =
+        PoolingAsyncClientConnectionManagerBuilder.create()
+            .setTlsStrategy(tlsStrategy)
+            .setPoolConcurrencyPolicy(PoolConcurrencyPolicy.LAX)
+            .setMaxConnPerRoute(config.getMaxHttpConnections());
+
+    if (config.useClientSideLoadBalancing()) {
+      connectionManagerBuilder.setDnsResolver(new RandomizedDnsResolver());
+    }
+
+    return connectionManagerBuilder.build();
   }
 
   private URI buildGatewayAddress() {
@@ -121,7 +144,8 @@ public class HttpClientFactory {
   }
 
   private HttpAsyncClientBuilder defaultClientBuilder(
-      final CredentialsProvider credentialsProvider) {
+      final CredentialsProvider credentialsProvider,
+      final PoolingAsyncClientConnectionManager connectionManager) {
     final Header acceptHeader =
         new BasicHeader(
             HttpHeaders.ACCEPT,
@@ -129,25 +153,6 @@ public class HttpClientFactory {
                 ", ",
                 ContentType.APPLICATION_JSON.getMimeType(),
                 ContentType.APPLICATION_PROBLEM_JSON.getMimeType()));
-
-    final HttpClientHostnameVerifier hostnameVerifier =
-        new HostnameVerifier(config.getOverrideAuthority());
-    final TlsStrategy tlsStrategy =
-        ClientTlsStrategyBuilder.create()
-            .setSslContext(createSslContext())
-            .setHostnameVerifier(hostnameVerifier)
-            .build();
-    final PoolingAsyncClientConnectionManagerBuilder connectionManagerBuilder =
-        PoolingAsyncClientConnectionManagerBuilder.create()
-            .setTlsStrategy(tlsStrategy)
-            .setPoolConcurrencyPolicy(PoolConcurrencyPolicy.LAX)
-            .setMaxConnPerRoute(config.getMaxHttpConnections());
-
-    if (config.useClientSideLoadBalancing()) {
-      connectionManagerBuilder.setDnsResolver(new RandomizedDnsResolver());
-    }
-
-    final PoolingAsyncClientConnectionManager connectionManager = connectionManagerBuilder.build();
 
     final HttpAsyncClientBuilder builder =
         HttpAsyncClients.custom()
@@ -184,9 +189,11 @@ public class HttpClientFactory {
         .setResponseTimeout(Timeout.of(config.getDefaultRequestTimeout()))
         // TODO: determine if the existing (gRPC) property makes sense for the HTTP client
         .setConnectionKeepAlive(TimeValue.of(config.getKeepAlive()))
-        // hard cancellation may cause other requests to fail as it will kill the connection; can be
-        // enabled when using HTTP/2
-        .setHardCancellationEnabled(false);
+        // Hard cancellation closes the underlying socket immediately (SO_LINGER=0, TCP RST) when a
+        // future is cancelled. This is required for HttpClient.close() to actually abort pending
+        // long-poll requests: without it, cancel() only marks the Java future as cancelled but
+        // leaves the socket open, so close(GRACEFUL) still waits for it to drain.
+        .setHardCancellationEnabled(true);
   }
 
   private SSLContext createSslContext() {
