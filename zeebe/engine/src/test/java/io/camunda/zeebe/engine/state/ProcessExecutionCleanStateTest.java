@@ -61,7 +61,8 @@ public final class ProcessExecutionCleanStateTest {
           ZbColumnFamilies.JOB_METRICS_META,
           ZbColumnFamilies.JOB_METRICS_STRING_ENCODING,
           ZbColumnFamilies.JOB_METRICS,
-          ZbColumnFamilies.GLOBAL_LISTENER_CURRENT_CONFIG);
+          ZbColumnFamilies.GLOBAL_LISTENER_CURRENT_CONFIG,
+          ZbColumnFamilies.ACTIVE_PROCESS_INSTANCE_COUNT);
 
   @Rule public EngineRule engineRule = EngineRule.singlePartition();
 
@@ -868,6 +869,36 @@ public final class ProcessExecutionCleanStateTest {
         .withElementType(BpmnElementType.PROCESS)
         .await();
 
+    assertThatStateIsEmpty();
+  }
+
+  @Test
+  public void testProcessWithRuntimeTerminateInstruction() {
+    // given
+    engineRule
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .manualTask("task")
+                .endEvent()
+                .done())
+        .deploy();
+
+    // when
+    final var processInstanceKey =
+        engineRule
+            .processInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withRuntimeTerminateInstruction("task")
+            .create();
+
+    RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_TERMINATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .withElementType(BpmnElementType.PROCESS)
+        .await();
+
+    // then
     assertThatStateIsEmpty();
   }
 

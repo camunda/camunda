@@ -7,7 +7,6 @@
  */
 package io.camunda.application.commons.mcp;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.gateway.mcp.ConditionalOnMcpGatewayEnabled;
 import io.camunda.gateway.mcp.config.CamundaMcpToolScannerAutoConfiguration;
 import io.camunda.gateway.mcp.config.CamundaMcpToolSpecificationsAutoConfiguration;
@@ -26,6 +25,7 @@ import org.springframework.http.server.observation.ServerRequestObservationConve
 import org.springframework.lang.NonNull;
 import org.springframework.web.filter.OncePerRequestFilter;
 import org.springframework.web.util.ContentCachingRequestWrapper;
+import tools.jackson.databind.json.JsonMapper;
 
 /**
  * Configuration for the MCP gateway implemented in the {@code gateway-mcp} module.
@@ -52,9 +52,9 @@ public class McpGatewayConfiguration {
    */
   @Bean
   public ServerRequestObservationConvention mcpRequestObservationConvention(
-      final ObservationProperties observationProperties, final ObjectMapper objectMapper) {
+      final ObservationProperties observationProperties, final JsonMapper jsonMapper) {
     return new McpServerRequestObservationConvention(
-        observationProperties.getHttp().getServer().getRequests().getName(), objectMapper);
+        observationProperties.getHttp().getServer().getRequests().getName(), jsonMapper);
   }
 
   /**

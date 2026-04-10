@@ -7,7 +7,7 @@
  */
 
 import {render, screen} from 'modules/testing-library';
-import type {AuditLog} from '@camunda/camunda-api-zod-schemas/8.9/audit-log';
+import type {AuditLog} from '@camunda/camunda-api-zod-schemas/8.10/audit-log';
 import {DetailsModal} from './index';
 import {MemoryRouter, Route, Routes} from 'react-router-dom';
 
@@ -19,7 +19,6 @@ const baseAuditLog: AuditLog = {
   result: 'SUCCESS',
   actorId: 'demo',
   timestamp: '2024-01-01T10:00:00.000Z',
-  annotation: 'Updated variable',
   actorType: 'USER',
   category: 'USER_TASKS',
   batchOperationKey: null,

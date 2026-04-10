@@ -157,7 +157,7 @@ public class GroupTest {
   }
 
   @Test
-  public void shouldNotRejectIfUserIsNotPresent() {
+  public void shouldRejectIfUserIsNotPresent() {
     // given
     final var groupId = Strings.newRandomValidIdentityId();
     final var name = UUID.randomUUID().toString();
@@ -171,11 +171,15 @@ public class GroupTest {
             .addEntity(groupId)
             .withEntityId(notPresentEntityId)
             .withEntityType(EntityType.USER)
-            .add()
-            .getValue();
+            .expectRejection()
+            .add();
 
     // then
-    assertThat(updatedGroup).hasEntityId(notPresentEntityId);
+    assertThat(updatedGroup)
+        .hasRejectionType(RejectionType.NOT_FOUND)
+        .hasRejectionReason(
+            "Expected to add an entity with ID '%s' and type '%s' to group with ID '%s', but the entity does not exist."
+                .formatted(notPresentEntityId, EntityType.USER, groupId));
   }
 
   @Test

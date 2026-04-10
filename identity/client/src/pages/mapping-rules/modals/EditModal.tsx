@@ -21,7 +21,7 @@ import {
   MappingRuleContainer,
 } from "./components";
 import { useNotifications } from "src/components/notifications";
-import type { MappingRule } from "@camunda/camunda-api-zod-schemas/8.9";
+import type { MappingRule } from "@camunda/camunda-api-zod-schemas/8.10";
 
 const EditModal: FC<UseEntityModalProps<MappingRule>> = ({
   open,

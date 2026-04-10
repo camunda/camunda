@@ -15,7 +15,7 @@ import {HttpResponse, http} from 'msw';
 import {nodeMockServer} from 'common/testing/nodeMockServer';
 import * as userMocks from 'common/mocks/current-user';
 import {getStateLocally, storeStateLocally} from 'common/local-storage';
-import {endpoints} from '@camunda/camunda-api-zod-schemas/8.9';
+import {endpoints} from '@camunda/camunda-api-zod-schemas/8.10';
 import {
   getProcessDefinitionMock,
   getQueryProcessDefinitionsResponseMock,
@@ -188,6 +188,75 @@ describe('<CollapsiblePanel />', () => {
     expect(screen.getByRole('link', {name: 'Custom-1'})).toHaveAttribute(
       'href',
       '/?filter=custom-1&state=COMPLETED&processDefinitionKey=process-1',
+    );
+  });
+
+  it('should include tenantId in custom filter link when tenant is set', async () => {
+    const {user} = render(<CollapsiblePanel />, {
+      wrapper: createWrapper(),
+    });
+
+    storeStateLocally('customFilters', {
+      custom: {
+        status: 'all',
+        assignee: 'all',
+        tenant: '<default>',
+      },
+    });
+
+    await user.click(
+      screen.getByRole('button', {name: 'Expand to show filters'}),
+    );
+
+    expect(screen.getByRole('link', {name: 'Custom'})).toHaveAttribute(
+      'href',
+      '/?tenantId=%3Cdefault%3E&filter=custom',
+    );
+  });
+
+  it('should not include tenantId in custom filter link when tenant is empty string', async () => {
+    const {user} = render(<CollapsiblePanel />, {
+      wrapper: createWrapper(),
+    });
+
+    storeStateLocally('customFilters', {
+      custom: {
+        status: 'all',
+        assignee: 'all',
+        tenant: '',
+      },
+    });
+
+    await user.click(
+      screen.getByRole('button', {name: 'Expand to show filters'}),
+    );
+
+    expect(screen.getByRole('link', {name: 'Custom'})).toHaveAttribute(
+      'href',
+      '/?filter=custom',
+    );
+  });
+
+  it('should clean up tenantId when switching from custom filter with tenant to built-in filter', async () => {
+    const {user} = render(<CollapsiblePanel />, {
+      wrapper: createWrapper(['/?filter=custom&tenantId=%3Cdefault%3E']),
+    });
+
+    storeStateLocally('customFilters', {
+      custom: {
+        status: 'all',
+        assignee: 'all',
+        tenant: '<default>',
+      },
+    });
+
+    await user.click(
+      screen.getByRole('button', {name: 'Expand to show filters'}),
+    );
+
+    expect(screen.getByRole('link', {name: 'All open tasks'})).toHaveAttribute(
+      'href',
+      '/?filter=all-open',
     );
   });
 

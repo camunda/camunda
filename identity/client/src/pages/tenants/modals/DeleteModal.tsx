@@ -15,7 +15,7 @@ import {
 } from "src/components/modal";
 import { deleteTenant } from "src/utility/api/tenants";
 import { useNotifications } from "src/components/notifications";
-import type { Tenant } from "@camunda/camunda-api-zod-schemas/8.9";
+import type { Tenant } from "@camunda/camunda-api-zod-schemas/8.10";
 
 const DeleteTenantModal: FC<UseEntityModalProps<Tenant>> = ({
   open,

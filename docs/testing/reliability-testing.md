@@ -79,7 +79,7 @@ The setup for all of our load tests is equal for better comparability, and consi
 1. The official [Camunda Platform Helm Chart](https://github.com/camunda/camunda-platform-helm), taking care of the general set up of our Camunda 8 Platform.
 2. A custom Helm chart ([camunda-load-tests](https://github.com/camunda/camunda-load-tests-helm)) to set up our load test applications.
 
-We always ran load tests with a three-node cluster, configured with three partitions and a replication factor of three. Depending on the version of Camunda/Zeebe, we might only deploy Zeebe Brokers and the Zeebe (standalone) gateway (with two replicas) only (pre 8.8) or (with 8.8+) the single Camunda application (with an embedded gateway).
+By default, the full Camunda Platform is deployed, including Orchestation Cluster (OC), Optimize (with history cleanup), Connectors (with OIDC authentication), and Identity with Keycloak as identity provider. This ensures load tests validate the system in a production-like configuration. Optimize can be disabled via the `enable-optimize` workflow input or the `newLoadTest.sh` script parameter. We always ran load tests with a three-node OC cluster, configured with three partitions and a replication factor of three. Depending on the version of Camunda/Zeebe, we might only deploy Zeebe Brokers and the Zeebe (standalone) gateway (with two replicas) only (pre 8.8).
 
 An Elasticsearch cluster with three nodes is deployed as well, which is used to validate the performance of the exporters. Exporting and archiving throughput must be able to sustain the load of the cluster.
 
@@ -187,23 +187,53 @@ We have different scenarios targeting different use cases and versions.
 
 #### Release load tests
 
-For every [supported/maintained](https://confluence.camunda.com/pages/viewpage.action?pageId=245400921&spaceKey=HAN&title=Standard%2Band%2BExtended%2BSupport%2BPeriods) version, we run a continuous load test with artificial load. They are created or updated [as part of the release process](https://github.com/camunda/zeebe-engineering-processes/blob/main/src/main/resources/release/setup_benchmark.bpmn). Triggering our ad-hoc [Camunda load test GitHub workflow](https://github.com/camunda/camunda/actions/workflows/camunda-load-test.yml).
+For every [supported/maintained](https://confluence.camunda.com/pages/viewpage.action?pageId=245400921&spaceKey=HAN&title=Standard%2Band%2BExtended%2BSupport%2BPeriods) version, we run a continuous load test with a realistic workload. They are created or updated [as part of the release process](https://github.com/camunda/zeebe-engineering-processes/blob/main/src/main/resources/release/setup_benchmark.bpmn), which triggers the [Camunda release load test workflow](https://github.com/camunda/camunda/blob/main/.github/workflows/camunda-release-load-test.yaml).
 
 **Goal:** Validating the reliability of our releases and detecting earlier issues, especially with alpha versions and updates.
 
 **Validation:** The tailored [Zeebe Medic Dashboard](https://dashboard.benchmark.camunda.cloud/d/zeebe-medic-benchmark/zeebe-medic-benchmarks?orgId=1&refresh=1m), can be used to observe and validate the performance of the different load tests
 
-As of today (16 Jun 2025), we have load tests running:
+##### Architecture
 
-* For all the last minor versions, they are run until the version goes out of support (and are updated on every patch)
-  * release-8-4-x
-  * release-8-5-x
-  * release-8-6-x
-  * Release-8-7-x
-* For the current alpha
-  * release-8-8-0-alpha5
-* One rolling release test, which is always updated
-  * Release-rolling
+The release load test workflow acts as an abstraction layer between the release process and the underlying load test infrastructure, with a simple public API accepting `name` and `tag` as required inputs, plus optional per-component image tag overrides (`optimize-tag`, `identity-tag`, `connectors-tag`).
+
+```mermaid
+graph TD
+    subgraph "Callers"
+        BPMN["Release Process<br/>(BPMN)"]
+        SCHEDULE["Scheduled Smoke Tests<br/>(daily 04:00 UTC)"]
+    end
+
+    subgraph "Abstraction Layer — camunda-release-load-test.yaml"
+        direction TB
+        API["Public API<br/>inputs: name, tag<br/>optional: optimize-tag, identity-tag, connectors-tag"]
+        SANITIZE["Sanitize inputs"]
+        API --> SANITIZE
+    end
+
+    subgraph "Implementation — camunda-load-test.yml"
+        LOAD["Create load test cluster<br/>• orchestration-tag: &lt;tag&gt;<br/>• scenario: realistic<br/>• ttl: 60 days"]
+    end
+
+    BPMN -->|"workflow_dispatch<br/>name + tag"| API
+    SCHEDULE -->|"workflow_call @stable/8.x<br/>name + tag"| API
+    SANITIZE --> LOAD
+
+    subgraph "Verification — camunda-verify-and-cleanup-load-test.yml"
+        VERIFY["await-load-test action<br/>• pod readiness<br/>• gateway connectivity"]
+        CLEANUP["Delete namespace"]
+        VERIFY --> CLEANUP
+    end
+
+    SCHEDULE -->|"after load test"| VERIFY
+```
+
+This decoupling provides several benefits:
+
+* **Clear API**: The release process only needs to provide a test name and tag (with optional per-component image tags) — implementation details (official images, realistic scenario, TTL) are encapsulated in the release load test workflow
+* **Independent evolution**: Changes to load test infrastructure (helm values, Makefiles, scripts) don't require changes to the release process BPMN
+* **Per-branch workflows**: Each stable branch has its own copy of the release load test workflow (via backports), ensuring the correct infrastructure files are used for each version
+* **Daily smoke tests**: The [scheduled release load test workflow](https://github.com/camunda/camunda/blob/main/.github/workflows/camunda-scheduled-release-load-tests.yml) validates daily that release load tests can be created for all active stable branches
 
 ##### Setup and integration
 
@@ -213,7 +243,7 @@ There exists a separate process (called a sub-process) to set up the load test, 
 
 ![setup-benchmark](assets/setup_benchmark.png)
 
-The used REST-Connector initiates a call against the GitHub API (`https://api.github.com/repos/camunda/camunda/actions/workflows/camunda-load-test.yml/dispatches`) to trigger the [Camunda load test GitHub workflow](https://github.com/camunda/camunda/blob/main/.github/workflows/camunda-load-test.yml) on a specific git reference (_The reference can be a branch or tag name._).
+The used REST-Connector initiates a call against the GitHub API (`https://api.github.com/repos/camunda/camunda/actions/workflows/camunda-release-load-test.yaml/dispatches`) to trigger the [Camunda release load test workflow](https://github.com/camunda/camunda/blob/main/.github/workflows/camunda-release-load-test.yaml) on a specific git reference (_The reference can be a branch or tag name._).
 
 > [!Important]
 >
@@ -227,26 +257,43 @@ An example payload looks like this:
     "ref": workflow_ref_name,
     "inputs": {
       "name": benchmark_name,
-      "ref": zeebe_ref_name,
-      "stable-vms": stable_vms
+      "tag": release_tag,
+      "optimize-tag": "optional, Docker Hub tag for Optimize",
+      "identity-tag": "optional, Docker Hub tag for Identity",
+      "connectors-tag": "optional, Docker Hub tag for Connectors"
     }
 }
 ```
 
 When we look at an example release process instance from the past, we can find the following example values:
 
-|      Variable       |  Example Value  |              Description               |
-|---------------------|-----------------|----------------------------------------|
-| `workflow_ref_name` | `8.7.17`        | The tag to trigger the workflow on     |
-| `zeebe_ref_name`    | `8.7.17`        | The tag to build the Docker image from |
-| `benchmark_name`    | `release-8-7-x` | The name of the load test              |
-| `stable_vms`        | `true`          | Whether to use stable VM types or not  |
+|      Variable       |  Example Value  |             Description             |
+|---------------------|-----------------|-------------------------------------|
+| `workflow_ref_name` | `stable/8.7`    | The stable branch to trigger on     |
+| `release_tag`       | `8.7.17`        | The release tag to use for the test |
+| `benchmark_name`    | `release-8-7-x` | The name of the load test           |
 
-In our post-release process, we map our `release_version` variable to the `workflow_ref_name` as input to update our existing load test.
+##### Scheduled smoke tests
+
+The [scheduled release load test workflow](https://github.com/camunda/camunda/blob/main/.github/workflows/camunda-scheduled-release-load-tests.yml) runs daily at 04:00 UTC to validate that release load tests can be created for all active stable branches (8.6, 8.7, 8.8, 8.9) and main. Each branch's load test is created by calling the release load test workflow on that branch (`@stable/8.x`), ensuring the correct infrastructure files are used.
+
+After deployment, each load test is verified by the [verify-and-cleanup workflow](https://github.com/camunda/camunda/blob/main/.github/workflows/camunda-verify-and-cleanup-load-test.yml), which:
+
+1. Waits for all pods to be ready
+2. Checks gateway connectivity via the Topology gRPC metric
+3. Deletes the namespace (regardless of verification outcome)
+
+Results are posted to the `#reliability-testing-alerts` Slack channel.
+
+> [!Note]
+>
+> The scheduled workflow uses hardcoded release tags per stable branch. Patch releases do not require updates — only new minor versions (e.g., 8.10) or deprecated branches need the workflow to be updated.
 
 #### Weekly load tests
 
-In addition to our release tests, we ran weekly load tests for all [endurance test variants](#endurance-test-variants) based on the state of the **main** branch (from the [Camunda mono repository](https://github.com/camunda/camunda)) with our [Camunda load test GitHub workflow](https://github.com/camunda/camunda/actions/workflows/camunda-load-test.yml). The load tests are automatically created every Monday and run for 4 weeks. They are automatically cleaned up by our [TTL checker](https://github.com/camunda/camunda/blob/main/.github/workflows/camunda-load-test-clean-up.yml). This means we have four variants per week times four weeks running at the same time (makes 16 weekly load tests running concurrently).
+In addition to our release tests, we ran weekly load tests based on the state of the **main** branch (from the [Camunda mono repository](https://github.com/camunda/camunda)) with our [Camunda load test GitHub workflow](https://github.com/camunda/camunda/actions/workflows/camunda-load-test.yml). The load tests are automatically created every Monday and run for 4 weeks. They are automatically cleaned up by our [TTL checker](https://github.com/camunda/camunda/blob/main/.github/workflows/camunda-load-test-clean-up.yml). This means we have three variants per week times four weeks running at the same time (makes 12 weekly load tests running concurrently).
+
+The weekly tests cover two [realistic load](#realistic-load) variants (one with Elasticsearch secondary storage and one with PostgreSQL secondary storage) plus the [latency test](#latency-load-test).
 
 **Goal:** Validating the reliability of our current main, and detecting earlier issues, allowing us to detect newly introduced instabilities and potential memory leaks or performance degradation.
 
@@ -257,16 +304,12 @@ As an example, we have the following tests running:
 * medic-y-2025-cw-22-a60d64da-test-latency
 * medic-y-2025-cw-22-a60d64da-test-realistic
 * medic-y-2025-cw-22-a60d64da-test-rdbms-realistic
-* medic-y-2025-cw-22-a60d64da-test-typical
-* medic-y-2025-cw-23-a799b041-test-typical
 * medic-y-2025-cw-23-a799b041-test-latency
 * medic-y-2025-cw-23-a799b041-test-realistic
 * medic-y-2025-cw-23-a799b041-test-rdbms-realistic
-* medic-y-2025-cw-24-0c3f2664-test-typical
 * medic-y-2025-cw-24-0c3f2664-test-latency
 * medic-y-2025-cw-24-0c3f2664-test-realistic
 * medic-y-2025-cw-24-0c3f2664-test-rdbms-realistic
-* medic-y-2025-cw-25-59a095c4-test-typical
 * medic-y-2025-cw-25-59a095c4-test-latency
 * medic-y-2025-cw-25-59a095c4-test-realistic
 * medic-y-2025-cw-25-59a095c4-test-rdbms-realistic
@@ -342,96 +385,15 @@ After submitting the form you can observe the progress of the load test creation
 ##### Creating manually
 
 As a last resort, if more customization is needed, it is also possible to manually deploy a benchmark.
-
-###### Requirements (local)
-
-To set up a load test from your local machine you need to have several tools installed.
-
-Follow these guide's to install each of them:
-
-* tsh (Teleport CLI) https://goteleport.com/docs/installation/
-* Kubectl https://kubernetes.io/de/docs/tasks/tools/install-kubectl/
-* Helm 3.*  https://helm.sh/docs/intro/install/
-* docker https://docs.docker.com/install/
-* kubens/kubectx https://github.com/ahmetb/kubectx
-* OPTIONAL go https://golang.org/doc/install
-
-For detailed instructions on accessing the benchmark cluster, see the [benchmark cluster access guide](https://github.com/camunda/infra-core/blob/stage/docs/kubernetes-cluster/benchmark-cluster-access.md).
-
-Some of the necessary steps you need to do are:
-
-```sh
-## Authenticate to the benchmark cluster via Teleport
-tsh login --proxy=camunda.teleport.sh:443
-tsh kube login camunda-benchmark-prod
-
-## Log in to the Harbor container registry
-## Zeebe team members have push access by default.
-## If you don't have access, request it in the #ask-infra Slack channel.
-docker login registry.camunda.cloud
-
-## install helm
-curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3
-chmod 700 get_helm.sh
-./get_helm.sh
-
-## add zeebe as helm repo
-helm version
-helm repo add zeebe https://helm.camunda.io
-helm repo add stable https://charts.helm.sh/stable
-helm repo update
-
-## install kubens
-curl -LO https://raw.githubusercontent.com/ahmetb/kubectx/master/kubens
-install kubens /usr/local/bin/
-```
-
-###### Best Practices Windows
-
-Running the load tests with Windows is possible, with the help of the [Windows Subsystem for Linux](https://docs.microsoft.com/en-us/windows/wsl/install-win10).
-The setup changes slightly compared to the Linux setup.
-
-These are the components to install on Windows:
-* Docker
-
-These are the components to install within the WSL:
-* tsh (Teleport CLI) https://goteleport.com/docs/installation/
-* Kubectl https://kubernetes.io/de/docs/tasks/tools/install-kubectl/
-* Helm 3.*  https://helm.sh/docs/intro/install/
-* kubens/kubectx https://github.com/ahmetb/kubectx
-
-When following the instructions above, execute all commands that deal with Docker in a Windows shell, and execute all other commands in the WSL shell.
-
-###### Installing manually
-
-The [camunda-load-tests](https://github.com/camunda/camunda-load-tests-helm) Helm chart repository contains a [detailed](https://github.com/camunda/camunda-load-tests-helm/blob/main/charts/camunda-load-tests/README.md) guide regarding this.
-
-```shell
-# Add the load test chart to the local repository
-helm repo add camunda-load-tests https://camunda.github.io/camunda-load-tests-helm/
-# Install a new Helm Chart release to the current namespace
-helm install this-is-a-load-test camunda-load-tests/camunda-load-tests
-```
-
-To apply configuration changes, either edit the existing [values](https://github.com/camunda/camunda-load-tests-helm/blob/main/charts/camunda-load-tests/values.yaml) file in the repository (and apply them via `-f`) or set configurations via the `--set` flag. For more information, see also the [related Helm documentation](https://helm.sh/docs/chart_template_guide/values_files/).
+For further details on this topic, follow the [README](../../load-tests/setup/README.md) in our `load-tests/setup` directory.
 
 ##### SaaS Test
 
-One use case to create load tests manually is to run load tests against an SaaS cluster.
+One use case for manually creating load tests is running them against an SaaS cluster.
 
 As a precondition for such tests, you need to create a cluster in SaaS (the stage doesn’t matter, may it be **DEV**, **INT,** or **PROD**). Additionally, we need client credentials deployed with the SaaS load tests, such that the starters and workers can connect to the right cluster.
 
-Replace `PREFIX` with your initials or any other identifiable prefix, to make sure we can identify who created the load test, in case we need to reach out.
-
-```shell
-# Source the downloaded credentials first, before run the following install command
-helm install PREFIX-saas-load-test camunda-load-tests/camunda-load-tests \
-  --set saas.enabled=true \
-  --set saas.credentials.clientId="$ZEEBE_CLIENT_ID" \
-  --set saas.credentials.clientSecret="$ZEEBE_CLIENT_SECRET" \
-  --set saas.credentials.zeebeAddress="$ZEEBE_ADDRESS" \
-  --set saas.credentials.authServer="$ZEEBE_AUTHORIZATION_SERVER_URL"
-```
+For further details on this topic, follow the [README](../../load-tests/setup/README.md#load-testing-camunda-saas) in our `load-tests/setup` directory.
 
 ## Chaos engineering
 

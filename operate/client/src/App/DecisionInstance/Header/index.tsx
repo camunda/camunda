@@ -21,10 +21,6 @@ import {getClientConfig} from 'modules/utils/getClientConfig';
 const getHeaderColumns = (isMultiTenancyEnabled: boolean = false) => {
   return [
     {
-      name: 'Decision Name',
-      skeletonWidth: '136px',
-    },
-    {
       name: 'Decision Instance Key',
       skeletonWidth: '137px',
     },
@@ -83,12 +79,10 @@ const Header: React.FC<HeaderProps> = ({
     return (
       <InstanceHeader
         state={decisionInstance.state}
+        instanceName={decisionInstance.decisionDefinitionName}
+        incidentsCount={decisionInstance.state === 'FAILED' ? 1 : 0}
         headerColumns={headerColumns.map(({name}) => name)}
         bodyColumns={[
-          {
-            title: decisionInstance.decisionDefinitionName,
-            content: decisionInstance.decisionDefinitionName,
-          },
           {
             title: decisionInstance.decisionEvaluationInstanceKey,
             content: decisionInstance.decisionEvaluationInstanceKey,
@@ -98,14 +92,14 @@ const Header: React.FC<HeaderProps> = ({
             content: (
               <Link
                 to={Locations.decisions({
-                  version:
+                  decisionDefinitionVersion:
                     decisionInstance.decisionDefinitionVersion.toString(),
-                  name: decisionInstance.decisionDefinitionId,
+                  decisionDefinitionId: decisionInstance.decisionDefinitionId,
                   evaluated: true,
                   failed: true,
                   ...(isMultiTenancyEnabled
                     ? {
-                        tenant: tenantId,
+                        tenantId,
                       }
                     : {}),
                 })}
@@ -122,16 +116,13 @@ const Header: React.FC<HeaderProps> = ({
               </Link>
             ),
           },
-          ...(isMultiTenancyEnabled
-            ? [
-                {
-                  title: tenantName,
-                  content: tenantName,
-                },
-              ]
-            : []),
           {
-            title: formatDate(decisionInstance.evaluationDate) ?? '--',
+            hidden: !isMultiTenancyEnabled,
+            title: tenantName,
+            content: tenantName,
+          },
+          {
+            title: formatDate(decisionInstance.evaluationDate),
             content: formatDate(decisionInstance.evaluationDate),
           },
           {

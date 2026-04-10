@@ -10,7 +10,7 @@ import {useMemo} from 'react';
 import {TabView} from 'modules/components/TabView';
 import {InputsAndOutputs} from './InputsAndOutputs';
 import {Result} from './Result';
-import type {DecisionInstance} from '@camunda/camunda-api-zod-schemas/8.9';
+import type {DecisionInstance} from '@camunda/camunda-api-zod-schemas/8.10';
 
 type VariablesPanelProps = {
   decisionEvaluationInstanceKey: DecisionInstance['decisionEvaluationInstanceKey'];

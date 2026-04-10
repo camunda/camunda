@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import type {ProcessDefinition} from '@camunda/camunda-api-zod-schemas/8.9';
+import type {ProcessDefinition} from '@camunda/camunda-api-zod-schemas/8.10';
 import {createContext, useContext} from 'react';
 
 const SelectedProcessDefinitionContext = createContext<

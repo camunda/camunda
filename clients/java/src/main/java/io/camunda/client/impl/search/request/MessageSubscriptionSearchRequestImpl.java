@@ -15,16 +15,16 @@
  */
 package io.camunda.client.impl.search.request;
 
+import static io.camunda.client.api.search.request.SearchRequestBuilders.anyPage;
 import static io.camunda.client.api.search.request.SearchRequestBuilders.messageSubscriptionFilter;
 import static io.camunda.client.api.search.request.SearchRequestBuilders.messageSubscriptionSort;
-import static io.camunda.client.api.search.request.SearchRequestBuilders.searchRequestPage;
 
 import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.search.filter.MessageSubscriptionFilter;
+import io.camunda.client.api.search.page.AnyPage;
 import io.camunda.client.api.search.request.FinalSearchRequestStep;
 import io.camunda.client.api.search.request.MessageSubscriptionSearchRequest;
-import io.camunda.client.api.search.request.SearchRequestPage;
 import io.camunda.client.api.search.response.MessageSubscription;
 import io.camunda.client.api.search.response.SearchResponse;
 import io.camunda.client.api.search.sort.MessageSubscriptionSort;
@@ -86,14 +86,14 @@ public class MessageSubscriptionSearchRequestImpl
   }
 
   @Override
-  public MessageSubscriptionSearchRequest page(final SearchRequestPage value) {
+  public MessageSubscriptionSearchRequest page(final AnyPage value) {
     request.setPage(provideSearchRequestProperty(value));
     return this;
   }
 
   @Override
-  public MessageSubscriptionSearchRequest page(final Consumer<SearchRequestPage> fn) {
-    return page(searchRequestPage(fn));
+  public MessageSubscriptionSearchRequest page(final Consumer<AnyPage> fn) {
+    return page(anyPage(fn));
   }
 
   @Override

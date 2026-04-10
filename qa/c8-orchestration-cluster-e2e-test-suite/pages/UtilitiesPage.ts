@@ -31,11 +31,14 @@ export async function navigateToApp(
   }
 }
 
-export async function hideModificationHelperModal(page: Page): Promise<void> {
+export async function hideHelperModals(page: Page): Promise<void> {
   await page.addInitScript(() => {
     window.localStorage.setItem(
       'sharedState',
-      JSON.stringify({hideModificationHelperModal: true}),
+      JSON.stringify({
+        hideModificationHelperModal: true,
+        hideProcessInstanceHelperModal: true,
+      }),
     );
   });
 }
@@ -45,10 +48,10 @@ export async function gotoProcessesPage(
   options?: {
     searchParams?: {
       active?: string;
-      ids?: string;
-      process?: string;
-      version?: string;
-      flowNodeId?: string;
+      processInstanceKey?: string;
+      processDefinitionId?: string;
+      processDefinitionVersion?: string;
+      elementId?: string;
     };
   },
 ): Promise<void> {

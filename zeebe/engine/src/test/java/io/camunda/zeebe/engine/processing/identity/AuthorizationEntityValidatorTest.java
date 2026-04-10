@@ -8,8 +8,6 @@
 package io.camunda.zeebe.engine.processing.identity;
 
 import static io.camunda.zeebe.engine.processing.identity.AuthorizationEntityValidator.GROUP_DOES_NOT_EXIST_ERROR_MESSAGE;
-import static io.camunda.zeebe.engine.processing.identity.AuthorizationEntityValidator.IS_CAMUNDA_GROUPS_ENABLED;
-import static io.camunda.zeebe.engine.processing.identity.AuthorizationEntityValidator.IS_CAMUNDA_USERS_ENABLED;
 import static io.camunda.zeebe.engine.processing.identity.AuthorizationEntityValidator.MAPPING_RULE_DOES_NOT_EXIST_ERROR_MESSAGE;
 import static io.camunda.zeebe.engine.processing.identity.AuthorizationEntityValidator.ROLE_DOES_NOT_EXIST_ERROR_MESSAGE;
 import static io.camunda.zeebe.engine.processing.identity.AuthorizationEntityValidator.USER_DOES_NOT_EXIST_ERROR_MESSAGE;
@@ -18,6 +16,8 @@ import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import io.camunda.security.configuration.AuthenticationConfiguration;
+import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.state.authorization.PersistedMappingRule;
 import io.camunda.zeebe.engine.state.authorization.PersistedRole;
@@ -35,7 +35,6 @@ import io.camunda.zeebe.protocol.record.value.AuthorizationResourceMatcher;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.util.Either;
-import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
@@ -57,6 +56,8 @@ class AuthorizationEntityValidatorTest {
 
   @Mock private TypedRecord<AuthorizationRecord> command;
 
+  @Mock private AuthenticationConfiguration authConfig;
+
   private AuthorizationEntityValidator checker;
 
   @BeforeEach
@@ -66,7 +67,9 @@ class AuthorizationEntityValidatorTest {
     when(processingState.getGroupState()).thenReturn(groupState);
     when(processingState.getRoleState()).thenReturn(roleState);
 
-    checker = new AuthorizationEntityValidator(processingState);
+    final SecurityConfiguration securityConfig = new SecurityConfiguration();
+    securityConfig.setAuthentication(authConfig);
+    checker = new AuthorizationEntityValidator(processingState, securityConfig);
     lenient().when(userState.getUser("user1")).thenReturn(Optional.of(mock(PersistedUser.class)));
     lenient().when(roleState.getRole("role1")).thenReturn(Optional.of(mock(PersistedRole.class)));
     lenient().when(groupState.get("group1")).thenReturn(Optional.of(mock(PersistedGroup.class)));
@@ -91,13 +94,9 @@ class AuthorizationEntityValidatorTest {
         createAuthorizationRecord(ownerType, ownerId, resourceType, resourceId);
 
     when(command.getValue()).thenReturn(record);
-    when(command.getAuthorizations())
-        .thenReturn(
-            Map.of(
-                IS_CAMUNDA_USERS_ENABLED,
-                localUserEnabled,
-                IS_CAMUNDA_GROUPS_ENABLED,
-                localGroupEnabled));
+
+    when(authConfig.isCamundaGroupsEnabled()).thenReturn(localGroupEnabled);
+    when(authConfig.isCamundaUsersEnabled()).thenReturn(localUserEnabled);
     // when
     final Either<Rejection, AuthorizationRecord> result = checker.ownerAndResourceExists(command);
 
@@ -136,13 +135,9 @@ class AuthorizationEntityValidatorTest {
         createAuthorizationRecord(ownerType, ownerId, resourceType, resourceId);
 
     when(command.getValue()).thenReturn(record);
-    when(command.getAuthorizations())
-        .thenReturn(
-            Map.of(
-                IS_CAMUNDA_USERS_ENABLED,
-                localUserEnabled,
-                IS_CAMUNDA_GROUPS_ENABLED,
-                localGroupEnabled));
+
+    when(authConfig.isCamundaGroupsEnabled()).thenReturn(localGroupEnabled);
+    when(authConfig.isCamundaUsersEnabled()).thenReturn(localUserEnabled);
 
     // when
     final Either<Rejection, AuthorizationRecord> result = checker.ownerAndResourceExists(command);

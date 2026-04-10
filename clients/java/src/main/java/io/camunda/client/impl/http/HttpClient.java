@@ -455,10 +455,6 @@ public final class HttpClient implements AutoCloseable {
       return null;
     }
 
-    if (!applyCredentials(requestBuilder, result)) {
-      return null;
-    }
-
     return requestBuilder.build();
   }
 
@@ -511,19 +507,6 @@ public final class HttpClient implements AutoCloseable {
     final ContentType contentType = ContentType.parse(entity.getContentType());
     requestBuilder.setBody(entityBytes, contentType);
     return true;
-  }
-
-  private <RespT> boolean applyCredentials(
-      final SimpleRequestBuilder requestBuilder, final HttpCamundaFuture<RespT> result) {
-
-    try {
-      credentialsProvider.applyCredentials(requestBuilder::addHeader);
-      return true;
-    } catch (final IOException e) {
-      result.completeExceptionally(
-          new ClientException("Failed to apply credentials to request", e));
-      return false;
-    }
   }
 
   private URI buildRequestURI(final String path) {

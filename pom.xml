@@ -39,12 +39,10 @@
     <module>gateways/gateway-mcp</module>
     <module>spring-utils</module>
     <module>clients/java</module>
-    <module>clients/java-deprecated</module>
     <module>clients/camunda-spring-boot-starter</module>
     <module>clients/camunda-spring-boot-3-starter</module>
     <module>clients/camunda-spring-boot-4-starter</module>
     <module>clients/camunda-spring-boot-starter-virtual-threads</module>
-    <module>clients/spring-boot-starter-camunda-sdk-deprecated</module>
     <module>testing</module>
     <module>document</module>
     <module>security</module>
@@ -89,6 +87,7 @@
               <exclude>.github/instructions/**/*.md</exclude>
               <exclude>.github/skills/**/*.md</exclude>
               <exclude>.github/agents/**/*.md</exclude>
+              <exclude>docs/monorepo-docs/**/*.md</exclude>
             </excludes>
             <flexmark/>
           </markdown>

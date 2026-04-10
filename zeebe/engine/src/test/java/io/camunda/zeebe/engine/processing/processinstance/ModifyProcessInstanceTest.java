@@ -32,6 +32,8 @@ import io.camunda.zeebe.test.util.BrokerClassRuleHelper;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.time.Duration;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
@@ -2187,7 +2189,7 @@ public class ModifyProcessInstanceTest {
                         mi.parallel()
                             .zeebeInputCollectionExpression("=for i in 1..5 return i")
                             .multiInstanceDone())
-                .userTask("B", u -> u.zeebeAssignee("foo"))
+                .userTask("B")
                 .zeebeUserTask()
                 .endEvent()
                 .done())
@@ -2203,7 +2205,7 @@ public class ModifyProcessInstanceTest {
         .modify();
     ENGINE.processInstance().withInstanceKey(processInstanceKey).cancel();
 
-    // then only the multi-instance parent creates a new token at the target
+    // then the multi-instance body is terminated and a single token is created at B
     assertThat(
             RecordingExporter.processInstanceRecords()
                 .withIntents(
@@ -2271,7 +2273,7 @@ public class ModifyProcessInstanceTest {
         .modify();
     ENGINE.processInstance().withInstanceKey(processInstanceKey).cancel();
 
-    // then only the multi-instance parent creates a new token at the target
+    // then the multi-instance sub-process is terminated and each MI child creates a token at B
     assertThat(
             RecordingExporter.processInstanceRecords()
                 .withIntents(
@@ -2334,6 +2336,14 @@ public class ModifyProcessInstanceTest {
                 "subProcess",
                 ProcessInstanceIntent.ELEMENT_TERMINATED),
             tuple(BpmnElementType.USER_TASK, "B", ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(BpmnElementType.USER_TASK, "B", ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(BpmnElementType.USER_TASK, "B", ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(BpmnElementType.USER_TASK, "B", ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(BpmnElementType.USER_TASK, "B", ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(BpmnElementType.USER_TASK, "B", ProcessInstanceIntent.ELEMENT_TERMINATED),
+            tuple(BpmnElementType.USER_TASK, "B", ProcessInstanceIntent.ELEMENT_TERMINATED),
+            tuple(BpmnElementType.USER_TASK, "B", ProcessInstanceIntent.ELEMENT_TERMINATED),
+            tuple(BpmnElementType.USER_TASK, "B", ProcessInstanceIntent.ELEMENT_TERMINATED),
             tuple(BpmnElementType.USER_TASK, "B", ProcessInstanceIntent.ELEMENT_TERMINATED));
   }
 
@@ -2382,8 +2392,8 @@ public class ModifyProcessInstanceTest {
         .modify();
     ENGINE.processInstance().withInstanceKey(processInstanceKey).cancel();
 
-    // then the multi-instance body and parent sub-process are terminated and a single "C" is
-    // activated at the process level
+    // then the multi-instance body and parent sub-process are terminated and each MI child
+    // creates a token at C
     assertThat(
             RecordingExporter.processInstanceRecords()
                 .withIntents(
@@ -2464,6 +2474,14 @@ public class ModifyProcessInstanceTest {
                 "parentSubProcess",
                 ProcessInstanceIntent.ELEMENT_TERMINATED),
             tuple(BpmnElementType.USER_TASK, "C", ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(BpmnElementType.USER_TASK, "C", ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(BpmnElementType.USER_TASK, "C", ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(BpmnElementType.USER_TASK, "C", ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(BpmnElementType.USER_TASK, "C", ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(BpmnElementType.USER_TASK, "C", ProcessInstanceIntent.ELEMENT_TERMINATED),
+            tuple(BpmnElementType.USER_TASK, "C", ProcessInstanceIntent.ELEMENT_TERMINATED),
+            tuple(BpmnElementType.USER_TASK, "C", ProcessInstanceIntent.ELEMENT_TERMINATED),
+            tuple(BpmnElementType.USER_TASK, "C", ProcessInstanceIntent.ELEMENT_TERMINATED),
             tuple(BpmnElementType.USER_TASK, "C", ProcessInstanceIntent.ELEMENT_TERMINATED));
   }
 
@@ -2505,7 +2523,7 @@ public class ModifyProcessInstanceTest {
         .modify();
     ENGINE.processInstance().withInstanceKey(processInstanceKey).cancel();
 
-    // then both multi-instance parents create a new token at the target
+    // then both multi-instance bodies are terminated and each creates a new token at B
     assertThat(
             RecordingExporter.processInstanceRecords()
                 .withIntents(
@@ -2599,7 +2617,7 @@ public class ModifyProcessInstanceTest {
         .modify();
     ENGINE.processInstance().withInstanceKey(processInstanceKey).cancel();
 
-    // then - both C and D should each be activated exactly once
+    // then - C and D are each activated for every MI child instance (3 times each)
     assertThat(
             RecordingExporter.processInstanceRecords()
                 .withIntents(
@@ -2627,10 +2645,18 @@ public class ModifyProcessInstanceTest {
             tuple(BpmnElementType.USER_TASK, "A", ProcessInstanceIntent.ELEMENT_TERMINATED),
             tuple(BpmnElementType.USER_TASK, "B", ProcessInstanceIntent.ELEMENT_TERMINATED),
             tuple(BpmnElementType.USER_TASK, "A", ProcessInstanceIntent.ELEMENT_TERMINATED),
-            // C and D are each activated exactly once despite 3 matching MI instances
+            // C and D are each activated 3 times (once per MI child instance)
+            tuple(BpmnElementType.USER_TASK, "D", ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(BpmnElementType.USER_TASK, "C", ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(BpmnElementType.USER_TASK, "D", ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(BpmnElementType.USER_TASK, "C", ProcessInstanceIntent.ELEMENT_ACTIVATED),
             tuple(BpmnElementType.USER_TASK, "D", ProcessInstanceIntent.ELEMENT_ACTIVATED),
             tuple(BpmnElementType.USER_TASK, "C", ProcessInstanceIntent.ELEMENT_ACTIVATED),
             // C and D are terminated by the cancel
+            tuple(BpmnElementType.USER_TASK, "D", ProcessInstanceIntent.ELEMENT_TERMINATED),
+            tuple(BpmnElementType.USER_TASK, "C", ProcessInstanceIntent.ELEMENT_TERMINATED),
+            tuple(BpmnElementType.USER_TASK, "D", ProcessInstanceIntent.ELEMENT_TERMINATED),
+            tuple(BpmnElementType.USER_TASK, "C", ProcessInstanceIntent.ELEMENT_TERMINATED),
             tuple(BpmnElementType.USER_TASK, "D", ProcessInstanceIntent.ELEMENT_TERMINATED),
             tuple(BpmnElementType.USER_TASK, "C", ProcessInstanceIntent.ELEMENT_TERMINATED));
   }
@@ -2671,7 +2697,7 @@ public class ModifyProcessInstanceTest {
     final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
 
     // when - issue a single modification with two move instructions: A and B are different
-    // elements both inside the same MI body, moved to different target elements
+    // elements both inside the same MI body, moved to the same target element
     ENGINE
         .processInstance()
         .withInstanceKey(processInstanceKey)
@@ -2681,7 +2707,7 @@ public class ModifyProcessInstanceTest {
         .modify();
     ENGINE.processInstance().withInstanceKey(processInstanceKey).cancel();
 
-    // then - C should be activated twice (once for A and once for B), D should not be activated
+    // then - C is activated for every MI child instance of both A and B (6 times total)
     assertThat(
             RecordingExporter.processInstanceRecords()
                 .withIntents(
@@ -2709,10 +2735,18 @@ public class ModifyProcessInstanceTest {
             tuple(BpmnElementType.USER_TASK, "A", ProcessInstanceIntent.ELEMENT_TERMINATED),
             tuple(BpmnElementType.USER_TASK, "B", ProcessInstanceIntent.ELEMENT_TERMINATED),
             tuple(BpmnElementType.USER_TASK, "A", ProcessInstanceIntent.ELEMENT_TERMINATED),
-            // C is activated twice despite 3 matching MI instances and two move instructions
+            // C is activated 6 times (3 per move instruction × 2 instructions for A→C and B→C)
             tuple(BpmnElementType.USER_TASK, "C", ProcessInstanceIntent.ELEMENT_ACTIVATED),
             tuple(BpmnElementType.USER_TASK, "C", ProcessInstanceIntent.ELEMENT_ACTIVATED),
-            // All C's are terminated by the cancel
+            tuple(BpmnElementType.USER_TASK, "C", ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(BpmnElementType.USER_TASK, "C", ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(BpmnElementType.USER_TASK, "C", ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(BpmnElementType.USER_TASK, "C", ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            // all C's are terminated by the cancel
+            tuple(BpmnElementType.USER_TASK, "C", ProcessInstanceIntent.ELEMENT_TERMINATED),
+            tuple(BpmnElementType.USER_TASK, "C", ProcessInstanceIntent.ELEMENT_TERMINATED),
+            tuple(BpmnElementType.USER_TASK, "C", ProcessInstanceIntent.ELEMENT_TERMINATED),
+            tuple(BpmnElementType.USER_TASK, "C", ProcessInstanceIntent.ELEMENT_TERMINATED),
             tuple(BpmnElementType.USER_TASK, "C", ProcessInstanceIntent.ELEMENT_TERMINATED),
             tuple(BpmnElementType.USER_TASK, "C", ProcessInstanceIntent.ELEMENT_TERMINATED));
   }
@@ -2753,7 +2787,8 @@ public class ModifyProcessInstanceTest {
     final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
 
     // when - issue a single modification with two move instructions: A and B are different
-    // elements both inside the same MI body, moved to different target elements
+    // elements both inside the same MI body, moved to different target elements within the same
+    // scope
     ENGINE
         .processInstance()
         .withInstanceKey(processInstanceKey)
@@ -2763,7 +2798,7 @@ public class ModifyProcessInstanceTest {
         .modify();
     ENGINE.processInstance().withInstanceKey(processInstanceKey).cancel();
 
-    // then - C should be activated twice (once for A and once for B), D should not be activated
+    // then - C and D are each activated for every MI child instance (3 times each)
     assertThat(
             RecordingExporter.processInstanceRecords()
                 .withIntents(
@@ -2791,7 +2826,7 @@ public class ModifyProcessInstanceTest {
             tuple(BpmnElementType.USER_TASK, "A", ProcessInstanceIntent.ELEMENT_TERMINATED),
             tuple(BpmnElementType.USER_TASK, "B", ProcessInstanceIntent.ELEMENT_TERMINATED),
             tuple(BpmnElementType.USER_TASK, "A", ProcessInstanceIntent.ELEMENT_TERMINATED),
-            // C and D are each activated 3 times, matching sibling MI instances
+            // C and D are each activated 3 times, once per MI child instance
             tuple(BpmnElementType.USER_TASK, "D", ProcessInstanceIntent.ELEMENT_ACTIVATED),
             tuple(BpmnElementType.USER_TASK, "C", ProcessInstanceIntent.ELEMENT_ACTIVATED),
             tuple(BpmnElementType.USER_TASK, "D", ProcessInstanceIntent.ELEMENT_ACTIVATED),
@@ -3394,16 +3429,28 @@ public class ModifyProcessInstanceTest {
 
   private void assertThatElementIsTerminated(
       final long processInstanceKey, final String elementId) {
+    assertThatElementIsTerminated(processInstanceKey, elementId, 1);
+  }
+
+  private void assertThatElementIsTerminated(
+      final long processInstanceKey, final String elementId, final int count) {
+    final var expectedIntents = new ArrayList<ProcessInstanceIntent>();
+    expectedIntents.addAll(Collections.nCopies(count, ProcessInstanceIntent.ELEMENT_TERMINATING));
+    expectedIntents.addAll(Collections.nCopies(count, ProcessInstanceIntent.ELEMENT_TERMINATED));
+
     assertThat(
             RecordingExporter.processInstanceRecords()
                 .onlyEvents()
                 .withProcessInstanceKey(processInstanceKey)
                 .withElementId(elementId)
-                .limit(elementId, ProcessInstanceIntent.ELEMENT_TERMINATED)
+                .limitByCount(
+                    r ->
+                        r.getValue().getElementId().equals(elementId)
+                            && r.getIntent().equals(ProcessInstanceIntent.ELEMENT_TERMINATED),
+                    count)
                 .toList())
         .extracting(Record::getIntent)
-        .containsSequence(
-            ProcessInstanceIntent.ELEMENT_TERMINATING, ProcessInstanceIntent.ELEMENT_TERMINATED);
+        .containsSequence(expectedIntents);
   }
 
   @Test
@@ -3544,6 +3591,143 @@ public class ModifyProcessInstanceTest {
                 .exists())
         .describedAs("Expect the conditional event subscription to have been created")
         .isTrue();
+  }
+
+  @Test
+  public void shouldTerminateElementsInsideAdHocSubProcess() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .adHocSubProcess(
+                    "AHSP",
+                    ahsp -> {
+                      ahsp.userTask("A").zeebeUserTask();
+                      ahsp.userTask("B").zeebeUserTask();
+                      ahsp.zeebeActiveElementsCollectionExpression("=[\"A\", \"B\"]");
+                    })
+                .userTask("C")
+                .endEvent()
+                .done())
+        .deploy();
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // when
+    ENGINE
+        .processInstance()
+        .withInstanceKey(processInstanceKey)
+        .modification()
+        .moveElements("AHSP", "C")
+        .modify();
+
+    // then
+    assertThatElementIsTerminated(processInstanceKey, "AHSP");
+    assertThatElementIsTerminated(processInstanceKey, "AHSP#innerInstance", 2);
+    assertThatElementIsTerminated(processInstanceKey, "A");
+    assertThatElementIsTerminated(processInstanceKey, "B");
+    verifyThatRootElementIsActivated(processInstanceKey, "C", BpmnElementType.USER_TASK);
+  }
+
+  @Test
+  public void shouldPreserveCallHierarchyWhenModifyingChildProcessInstance() {
+    // given — deploy a 3-level hierarchy: root → intermediate → leaf
+    final var leafProcess =
+        Bpmn.createExecutableProcess("leaf").startEvent().userTask("leafTask").endEvent().done();
+    final var intermediateProcess =
+        Bpmn.createExecutableProcess("intermediate")
+            .startEvent()
+            .userTask("userTask")
+            .callActivity("callLeaf", c -> c.zeebeProcessId("leaf"))
+            .endEvent()
+            .done();
+    final var rootProcess =
+        Bpmn.createExecutableProcess("root")
+            .startEvent()
+            .callActivity("callIntermediate", c -> c.zeebeProcessId("intermediate"))
+            .endEvent()
+            .done();
+
+    final var deployment =
+        ENGINE
+            .deployment()
+            .withXmlResource("leaf.bpmn", leafProcess)
+            .withXmlResource("intermediate.bpmn", intermediateProcess)
+            .withXmlResource("root.bpmn", rootProcess)
+            .deploy();
+
+    final long rootProcessDefinitionKey =
+        deployment.getValue().getProcessesMetadata().stream()
+            .filter(p -> "root".equals(p.getBpmnProcessId()))
+            .findFirst()
+            .orElseThrow()
+            .getProcessDefinitionKey();
+
+    final var rootInstanceKey = ENGINE.processInstance().ofBpmnProcessId("root").create();
+
+    // wait for intermediate process instance to be created and user task to be active
+    final var intermediateInstance =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withParentProcessInstanceKey(rootInstanceKey)
+            .withBpmnProcessId("intermediate")
+            .withElementType(BpmnElementType.PROCESS)
+            .getFirst();
+    final var intermediateInstanceKey = intermediateInstance.getKey();
+
+    RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+        .withProcessInstanceKey(intermediateInstanceKey)
+        .withElementId("userTask")
+        .withElementType(BpmnElementType.USER_TASK)
+        .await();
+
+    final var userTaskElement =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(intermediateInstanceKey)
+            .withElementId("userTask")
+            .getFirst();
+
+    // when — modify intermediate: terminate user task + activate call activity
+    ENGINE
+        .processInstance()
+        .withInstanceKey(intermediateInstanceKey)
+        .modification()
+        .terminateElement(userTaskElement.getKey())
+        .activateElement("callLeaf")
+        .modify();
+
+    // then — wait for the leaf process instance to be created
+    final var leafInstance =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withParentProcessInstanceKey(intermediateInstanceKey)
+            .withBpmnProcessId("leaf")
+            .withElementType(BpmnElementType.PROCESS)
+            .getFirst();
+    final var leafInstanceKey = leafInstance.getKey();
+
+    // verify the leaf's tree path contains the full 3-level hierarchy
+    final var leafUserTask =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATING)
+            .withProcessInstanceKey(leafInstanceKey)
+            .withElementId("leafTask")
+            .withElementType(BpmnElementType.USER_TASK)
+            .getFirst();
+
+    final var leafTreePath = leafUserTask.getValue();
+
+    Assertions.assertThat(leafTreePath.getProcessDefinitionPath())
+        .describedAs("Expect the process definition path to contain all 3 levels including root")
+        .hasSize(3)
+        .first()
+        .isEqualTo(rootProcessDefinitionKey);
+
+    Assertions.assertThat(leafTreePath.getElementInstancePath())
+        .describedAs("Expect the element instance path to contain all 3 levels")
+        .hasSize(3);
+
+    Assertions.assertThat(leafTreePath.getCallingElementPath())
+        .describedAs("Expect the calling element path to contain 2 entries (one per call activity)")
+        .hasSize(2);
   }
 
   private void verifyThatElementTreePathIsUpdated(

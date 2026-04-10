@@ -16,10 +16,14 @@
 package io.camunda.client.api.search.request;
 
 import io.camunda.client.api.search.filter.MessageSubscriptionFilter;
+import io.camunda.client.api.search.page.AnyPage;
 import io.camunda.client.api.search.response.MessageSubscription;
 import io.camunda.client.api.search.sort.MessageSubscriptionSort;
 
 public interface MessageSubscriptionSearchRequest
     extends TypedSearchRequest<
-            MessageSubscriptionFilter, MessageSubscriptionSort, MessageSubscriptionSearchRequest>,
+            MessageSubscriptionFilter,
+            MessageSubscriptionSort,
+            AnyPage,
+            MessageSubscriptionSearchRequest>,
         FinalSearchRequestStep<MessageSubscription> {}

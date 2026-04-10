@@ -22,6 +22,7 @@ import {
   cancelBatchOperation,
   createCompletedBatchOperation,
 } from '@requestHelpers';
+import {validateResponse} from 'json-body-assertions';
 
 /* eslint-disable playwright/expect-expect */
 
@@ -60,6 +61,14 @@ test.describe.parallel('Cancel Batch Operation Tests', () => {
           },
         );
         await assertStatusCode(statusRes, 200);
+        await validateResponse(
+          {
+            path: '/batch-operations/{batchOperationKey}',
+            method: 'GET',
+            status: '200',
+          },
+          statusRes,
+        );
         const body = await statusRes.json();
         expect(body.state).toBe('CANCELED');
       }).toPass(defaultAssertionOptions);
@@ -81,8 +90,6 @@ test.describe.parallel('Cancel Batch Operation Tests', () => {
 
     await test.step('Send second cancel request and assert failure', async () => {
       const secondRes = await cancelBatchOperation(request, key);
-      const status = secondRes.status();
-      expect(status).toBe(404);
 
       await assertNotFoundRequest(
         secondRes,
@@ -107,6 +114,7 @@ test.describe.parallel('Cancel Batch Operation Tests', () => {
     request,
   }) => {
     const unknownKey = '2251799813999999';
+
     await test.step('Cancel unknown batch operation', async () => {
       const res = await cancelBatchOperation(request, unknownKey);
       await assertNotFoundRequest(

@@ -43,7 +43,7 @@ function createWrapper() {
 describe('MigrationDetails', () => {
   it('should render migration details', async () => {
     const queryString =
-      '?active=true&incidents=true&process=demoProcess&version=3';
+      '?active=true&incidents=true&processDefinitionId=demoProcess&processDefinitionVersion=3';
 
     vi.stubGlobal('location', {
       ...window.location,

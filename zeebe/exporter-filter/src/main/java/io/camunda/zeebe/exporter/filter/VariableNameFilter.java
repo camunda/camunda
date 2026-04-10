@@ -10,11 +10,13 @@ package io.camunda.zeebe.exporter.filter;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
 import io.camunda.zeebe.util.SemanticVersion;
-import java.util.Collections;
 import java.util.List;
-import java.util.Objects;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public final class VariableNameFilter implements ExporterRecordFilter, RecordVersionFilter {
+
+  private static final Logger LOG = LoggerFactory.getLogger(VariableNameFilter.class);
 
   private static final SemanticVersion MIN_SEMANTIC_VERSION =
       new SemanticVersion(8, 9, 0, null, null);
@@ -32,22 +34,14 @@ public final class VariableNameFilter implements ExporterRecordFilter, RecordVer
       return true;
     }
 
-    return nameFilter.accept(variableRecordValue.getName());
-  }
-
-  public static List<NameFilterRule> parseRules(
-      final List<String> rawList, final NameFilterRule.Type type) {
-
-    if (rawList == null || rawList.isEmpty()) {
-      return Collections.emptyList();
+    final boolean accepted = nameFilter.accept(variableRecordValue.getName());
+    if (!accepted && LOG.isDebugEnabled()) {
+      LOG.debug(
+          "VariableNameFilter rejected record {}: variable name '{}' did not match name rules",
+          record.getKey(),
+          variableRecordValue.getName());
     }
-
-    return rawList.stream()
-        .filter(Objects::nonNull)
-        .map(String::trim)
-        .filter(s -> !s.isEmpty())
-        .map(pattern -> new NameFilterRule(type, pattern))
-        .toList();
+    return accepted;
   }
 
   @Override

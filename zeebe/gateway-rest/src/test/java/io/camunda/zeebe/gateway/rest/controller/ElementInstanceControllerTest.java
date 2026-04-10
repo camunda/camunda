@@ -14,10 +14,12 @@ import static org.mockito.Mockito.when;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.ElementInstanceServices;
 import io.camunda.service.ElementInstanceServices.SetVariablesRequest;
+import io.camunda.service.exception.ErrorMapper;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.protocol.impl.record.value.variable.VariableDocumentRecord;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeoutException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -26,6 +28,7 @@ import org.mockito.Captor;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.json.JsonCompareMode;
@@ -187,5 +190,42 @@ public class ElementInstanceControllerTest extends RestControllerTest {
         .contentType(MediaType.APPLICATION_PROBLEM_JSON)
         .expectBody()
         .json(expectedBody, JsonCompareMode.STRICT);
+  }
+
+  @Test
+  void shouldReturnGatewayTimeoutWhenSetVariablesTimesOut() {
+    // given
+    when(elementInstanceServices.setVariables(any(SetVariablesRequest.class), any()))
+        .thenReturn(
+            CompletableFuture.failedFuture(
+                ErrorMapper.mapError(new TimeoutException("Task listener blocked set variables"))));
+
+    final var request =
+        """
+            {
+              "variables": {
+                "key": "value"
+              }
+            }""";
+
+    // when / then
+    webClient
+        .put()
+        .uri(ELEMENTS_BASE_URL + "/123/variables")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isEqualTo(HttpStatus.GATEWAY_TIMEOUT)
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .jsonPath("$.title")
+        .isEqualTo("DEADLINE_EXCEEDED")
+        .jsonPath("$.detail")
+        .isEqualTo("Expected to handle request, but request timed out between gateway and broker")
+        .jsonPath("$.status")
+        .isEqualTo(504);
   }
 }

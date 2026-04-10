@@ -1,0 +1,23 @@
+{
+  "latitude": 52.5,
+  "longitude": 13.4,
+  "generationtime_ms": 0.048160552978515625,
+  "utc_offset_seconds": 7200,
+  "timezone": "Europe/Berlin",
+  "timezone_abbreviation": "GMT+2",
+  "elevation": 37.0,
+  "current_units": {
+    "time": "iso8601",
+    "interval": "seconds",
+    "temperature_2m": "°C",
+    "rain": "mm",
+    "weather_code": "wmo code"
+  },
+  "current": {
+    "time": "2026-04-08T10:00",
+    "interval": 900,
+    "temperature_2m": 6.2,
+    "rain": 0.00,
+    "weather_code": 0
+  }
+}

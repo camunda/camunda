@@ -81,7 +81,7 @@ class InitializationContextTest {
     final var originalContext = new InitializationContext(operation, "cursor1", 50, 10, false);
 
     // when
-    final var nextPageContext = originalContext.withNextPage("cursor2", 5, true);
+    final var nextPageContext = originalContext.withNextPage("cursor2", 5);
 
     // then
     assertThat(nextPageContext.operation()).isEqualTo(operation);
@@ -115,7 +115,7 @@ class InitializationContextTest {
     final var originalContext = new InitializationContext(operation, "cursor1", 50, 10, false);
 
     // when
-    final var nextPageContext = originalContext.withNextPage("cursor2", 5, true);
+    final var nextPageContext = originalContext.withNextPage("cursor2", 5);
     final var halvedContext = originalContext.withHalvedPageSize();
 
     // then - original context should remain unchanged

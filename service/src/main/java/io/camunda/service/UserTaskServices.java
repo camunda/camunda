@@ -19,6 +19,7 @@ import io.camunda.search.entities.AuditLogEntity;
 import io.camunda.search.entities.FormEntity;
 import io.camunda.search.entities.UserTaskEntity;
 import io.camunda.search.entities.VariableEntity;
+import io.camunda.search.page.SearchQueryPage;
 import io.camunda.search.query.AuditLogQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.UserTaskQuery;
@@ -41,8 +42,11 @@ import io.camunda.zeebe.gateway.impl.broker.request.BrokerUserTaskUpdateRequest;
 import io.camunda.zeebe.gateway.validation.VariableNameLengthValidator;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -278,6 +282,104 @@ public final class UserTaskServices
         () ->
             variableServices.search(
                 variableQueryWithTreePathFilter, CamundaAuthentication.anonymous()));
+  }
+
+  public SearchQueryResult<VariableEntity> searchUserTaskEffectiveVariables(
+      final long userTaskKey,
+      final VariableQuery variableQuery,
+      final CamundaAuthentication authentication) {
+
+    final var userTask = getByKey(userTaskKey, authentication);
+
+    final String treePath = fetchFlowNodeTreePath(userTask.elementInstanceKey());
+
+    final List<Long> treePathList =
+        treePath != null
+            ? Arrays.stream(treePath.split("/")).map(Long::valueOf).toList()
+            : Collections.emptyList();
+
+    // Early exit: if there is no tree path or it only contains the user task itself,
+    // there is no hierarchy and no deduplication is needed. Delegate to the standard
+    // searchUserTaskVariables, but strip cursors since this endpoint does not support
+    // cursor-based pagination (in the general case, we perform in-memory deduplication).
+    if (treePathList.size() <= 1) {
+      final var result = searchUserTaskVariables(userTaskKey, variableQuery, authentication);
+      return new SearchQueryResult<>(
+          result.total(), result.hasMoreTotalItems(), result.items(), null, null);
+    }
+
+    final var unlimitedQuery =
+        variableSearchQuery(
+            q ->
+                q.filter(f -> f.copyFrom(variableQuery.filter()).scopeKeys(treePathList))
+                    .sort(variableQuery.sort())
+                    .unlimited());
+
+    final var allVariables =
+        executeSearchRequest(
+            () -> variableServices.search(unlimitedQuery, CamundaAuthentication.anonymous()));
+
+    // Deduplicate variables by name, keeping the one from the innermost scope.
+    // Since this is a sorted result set by the user's criteria, we iterate through
+    // it in order and use a LinkedHashMap to preserve that order while deduplicating.
+    final List<VariableEntity> dedupedVariables =
+        deduplicateVariablesByScope(allVariables.items(), treePathList);
+
+    // Apply offset-based pagination to the deduplicated and sorted result.
+    // Cursor-based pagination (after/before) is not supported for this endpoint because
+    // deduplication and sorting are performed in-memory after fetching from the search backend.
+    final var page = variableQuery.page();
+    final int size = page.size() != null ? page.size() : SearchQueryPage.DEFAULT_SIZE;
+    final int total = dedupedVariables.size();
+    final int from = page.from() != null ? page.from() : 0;
+    final int end = Math.min(from + size, total);
+    final List<VariableEntity> pageItems =
+        from < total ? new ArrayList<>(dedupedVariables.subList(from, end)) : List.of();
+
+    return new SearchQueryResult<>(total, false, pageItems, null, null);
+  }
+
+  /**
+   * Deduplicates variables by name, keeping the variable from the innermost scope (closest to the
+   * user task). The variables list is already sorted according to the user's criteria. We iterate
+   * through them in order, and for each variable name, we keep the one from the closest scope. If a
+   * variable from a closer scope is encountered later, we replace the previous one and move it to
+   * the end of the LinkedHashMap, preserving the relative order while ensuring innermost scope
+   * wins.
+   */
+  private List<VariableEntity> deduplicateVariablesByScope(
+      final List<VariableEntity> variables, final List<Long> treePathList) {
+
+    // Create a map from scope key to its depth (distance from root).
+    // Higher depth = closer to innermost (user task).
+    final Map<Long, Integer> scopeDepth = new HashMap<>();
+    for (int i = 0; i < treePathList.size(); i++) {
+      scopeDepth.put(treePathList.get(i), i);
+    }
+
+    // Iterate through sorted variables and deduplicate by name,
+    // keeping the one from the closest scope (highest depth).
+    final var dedupedMap = new LinkedHashMap<String, VariableEntity>();
+
+    for (final VariableEntity variable : variables) {
+      final var currentDepth = scopeDepth.get(variable.scopeKey());
+      final var existing = dedupedMap.get(variable.name());
+
+      if (existing == null) {
+        // First time seeing this variable name, add it
+        dedupedMap.put(variable.name(), variable);
+      } else {
+        final var existingDepth = scopeDepth.get(existing.scopeKey());
+        if (currentDepth > existingDepth) {
+          // This variable is from a closer scope, replace the existing one and put it to the end of
+          // the LinkedHashMap.
+          dedupedMap.putLast(variable.name(), variable);
+        }
+        // else: existing variable is from a closer or equal scope, keep it
+      }
+    }
+
+    return new ArrayList<>(dedupedMap.values());
   }
 
   public SearchQueryResult<AuditLogEntity> searchUserTaskAuditLogs(

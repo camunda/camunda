@@ -7,6 +7,8 @@
  */
 package io.camunda.webapps.schema.descriptors;
 
+import java.util.Map;
+
 /**
  * Marker interface for descriptors that are dependant on decision instances. Used to identify
  * related documents that need to be archived together with decision instances.
@@ -17,9 +19,19 @@ package io.camunda.webapps.schema.descriptors;
  */
 public interface DecisionInstanceDependant extends IndexTemplateDescriptor {
 
-  String DECISION_INSTANCE_KEY = "decisionDefinitionKey";
+  String DECISION_INSTANCE_KEY = "decisionInstanceKey";
 
   default String getDecisionDependantField() {
     return DECISION_INSTANCE_KEY;
+  }
+
+  /**
+   * Returns additional filter criteria when archiving dependant documents. This is useful when only
+   * a subset of documents for a given decision instance key should be archived.
+   *
+   * @return a map of field names to values that must match for a document to be archived
+   */
+  default Map<String, String> getDecisionDependantFilters() {
+    return Map.of();
   }
 }

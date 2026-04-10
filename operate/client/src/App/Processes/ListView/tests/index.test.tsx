@@ -32,7 +32,7 @@ import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinit
 import {mockMe} from 'modules/mocks/api/v2/me';
 import {mockSearchProcessDefinitions} from 'modules/mocks/api/v2/processDefinitions/searchProcessDefinitions';
 import {mockFetchProcessInstancesStatistics} from 'modules/mocks/api/v2/processInstances/fetchProcessInstancesStatistics';
-import type {QueryProcessInstancesResponseBody} from '@camunda/camunda-api-zod-schemas/8.9';
+import type {QueryProcessInstancesResponseBody} from '@camunda/camunda-api-zod-schemas/8.10';
 
 vi.mock('modules/stores/notifications', () => ({
   notificationsStore: {
@@ -55,7 +55,7 @@ function getWrapper(initialPath: string = Paths.processes()) {
           </Routes>
           <Link to={`${Paths.processes()}?active=true`}>go to active</Link>
           <Link
-            to={`${Paths.processes()}?process=eventBasedGatewayProcess&version=1`}
+            to={`${Paths.processes()}?processDefinitionId=eventBasedGatewayProcess&processDefinitionVersion=1`}
           >
             go to event based
           </Link>
@@ -329,7 +329,7 @@ describe('Instances', () => {
     mockQueryBatchOperations().withSuccess(searchResult([]));
 
     const queryString =
-      '?active=true&incidents=true&process=non-existing-process&version=all';
+      '?active=true&incidents=true&processDefinitionId=non-existing-process&processDefinitionVersion=all';
     render(<ListView />, {
       wrapper: getWrapper(`${Paths.processes()}${queryString}`),
     });
@@ -371,7 +371,8 @@ describe('Instances', () => {
   });
 
   it('should show Operation State column when Operation Id filter is set', async () => {
-    const queryString = '?operationId=f4be6304-a0e0-4976-b81b-7a07fb4e96e5';
+    const queryString =
+      '?batchOperationId=f4be6304-a0e0-4976-b81b-7a07fb4e96e5';
 
     vi.stubGlobal('location', {
       ...window.location,
@@ -397,7 +398,8 @@ describe('Instances', () => {
   });
 
   it('should show correct error message when error row is expanded', async () => {
-    const queryString = '?operationId=f4be6304-a0e0-4976-b81b-7a07fb4e96e5';
+    const queryString =
+      '?batchOperationId=f4be6304-a0e0-4976-b81b-7a07fb4e96e5';
 
     vi.stubGlobal('location', {
       ...window.location,
@@ -445,7 +447,8 @@ describe('Instances', () => {
   });
 
   it('should display correct operation from process instance with multiple operations', async () => {
-    const queryString = '?operationId=f4be6304-a0e0-4976-b81b-7a07fb4e96e5';
+    const queryString =
+      '?batchOperationId=f4be6304-a0e0-4976-b81b-7a07fb4e96e5';
 
     vi.stubGlobal('location', {
       ...window.location,

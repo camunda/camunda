@@ -90,7 +90,7 @@ public final class InFlightEntry {
   }
 
   public void cleanup() {
-    closeRequestListener(Listener::onIgnore);
+    closeRequestListener(Listener::onDropped);
     // Discard timers without recording — displaced entries don't represent actual
     // write/commit latency. Timer.Sample is a pure value object (two longs), so
     // dropping it without stop() does not leak resources.

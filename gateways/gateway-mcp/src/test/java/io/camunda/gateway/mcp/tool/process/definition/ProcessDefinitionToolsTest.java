@@ -15,8 +15,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.gateway.mcp.tool.ToolsTest;
+import io.camunda.gateway.mcp.OperationalToolsTest;
 import io.camunda.gateway.protocol.model.ProcessDefinitionResult;
 import io.camunda.gateway.protocol.model.ProcessDefinitionSearchQueryResult;
 import io.camunda.search.entities.ProcessDefinitionEntity;
@@ -49,10 +48,11 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import tools.jackson.databind.json.JsonMapper;
 
 @ExtendWith(MockitoExtension.class)
 @ContextConfiguration(classes = {ProcessDefinitionTools.class})
-class ProcessDefinitionToolsTest extends ToolsTest {
+class ProcessDefinitionToolsTest extends OperationalToolsTest {
 
   static final ProcessDefinitionEntity PROCESS_DEFINITION_ENTITY =
       new ProcessDefinitionEntity(
@@ -76,7 +76,7 @@ class ProcessDefinitionToolsTest extends ToolsTest {
 
   @MockitoBean private ProcessDefinitionServices processDefinitionServices;
 
-  @Autowired private ObjectMapper objectMapper;
+  @Autowired private JsonMapper objectMapper;
   @Captor private ArgumentCaptor<ProcessDefinitionQuery> queryCaptor;
 
   private void assertExampleProcessDefinitionResult(

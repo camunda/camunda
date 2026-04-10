@@ -10,15 +10,18 @@ package io.camunda.it.auth;
 import static io.camunda.client.api.search.enums.PermissionType.CANCEL_PROCESS_INSTANCE;
 import static io.camunda.client.api.search.enums.PermissionType.CREATE;
 import static io.camunda.client.api.search.enums.PermissionType.CREATE_BATCH_OPERATION_CANCEL_PROCESS_INSTANCE;
+import static io.camunda.client.api.search.enums.PermissionType.CREATE_BATCH_OPERATION_RESOLVE_INCIDENT;
 import static io.camunda.client.api.search.enums.PermissionType.CREATE_PROCESS_INSTANCE;
 import static io.camunda.client.api.search.enums.PermissionType.READ;
 import static io.camunda.client.api.search.enums.PermissionType.READ_PROCESS_DEFINITION;
 import static io.camunda.client.api.search.enums.PermissionType.READ_PROCESS_INSTANCE;
+import static io.camunda.client.api.search.enums.PermissionType.UPDATE_PROCESS_INSTANCE;
 import static io.camunda.client.api.search.enums.ResourceType.BATCH;
 import static io.camunda.client.api.search.enums.ResourceType.PROCESS_DEFINITION;
 import static io.camunda.client.api.search.enums.ResourceType.RESOURCE;
 import static io.camunda.it.util.TestHelper.getScopedVariables;
 import static io.camunda.it.util.TestHelper.startScopedProcessInstance;
+import static io.camunda.it.util.TestHelper.waitForJobs;
 import static io.camunda.it.util.TestHelper.waitForScopedProcessInstancesToStart;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatExceptionOfType;
@@ -28,6 +31,7 @@ import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.response.CreateBatchOperationResponse;
 import io.camunda.client.api.search.enums.BatchOperationItemState;
 import io.camunda.client.api.search.enums.BatchOperationState;
+import io.camunda.client.api.search.enums.IncidentState;
 import io.camunda.client.api.search.response.BatchOperationItems.BatchOperationItem;
 import io.camunda.qa.util.auth.Authenticated;
 import io.camunda.qa.util.auth.Permissions;
@@ -38,6 +42,7 @@ import io.camunda.qa.util.multidb.MultiDbTestApplication;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import java.time.Duration;
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.function.Consumer;
 import org.assertj.core.api.ThrowableAssert.ThrowingCallable;
@@ -75,7 +80,9 @@ class BatchOperationAuthorizationIT {
               new Permissions(PROCESS_DEFINITION, READ_PROCESS_DEFINITION, List.of("*")),
               new Permissions(PROCESS_DEFINITION, READ_PROCESS_INSTANCE, List.of("*")),
               new Permissions(PROCESS_DEFINITION, CREATE_PROCESS_INSTANCE, List.of("*")),
+              new Permissions(PROCESS_DEFINITION, UPDATE_PROCESS_INSTANCE, List.of("*")),
               new Permissions(BATCH, CREATE_BATCH_OPERATION_CANCEL_PROCESS_INSTANCE, List.of("*")),
+              new Permissions(BATCH, CREATE_BATCH_OPERATION_RESOLVE_INCIDENT, List.of("*")),
               new Permissions(BATCH, READ, List.of("*"))));
 
   @UserDefinition
@@ -384,6 +391,79 @@ class BatchOperationAuthorizationIT {
             });
   }
 
+  @Test
+  void shouldResolveIncidentWithJobViaBatchOperationAdmin(
+      @Authenticated(ADMIN) final CamundaClient camundaClient) {
+    // given - create a process instance that will result in an incident
+    final var processInstanceKey =
+        camundaClient
+            .newCreateInstanceCommand()
+            .bpmnProcessId(SERVICE_TASKS_V_1)
+            .latestVersion()
+            .send()
+            .join()
+            .getProcessInstanceKey();
+
+    waitForJobs(camundaClient, List.of(processInstanceKey));
+
+    // activate the job specifically for our process instance to avoid picking up jobs from
+    // concurrent tests that share the same job type
+    final var job =
+        Awaitility.await("should activate job for process instance")
+            .atMost(Duration.ofSeconds(30))
+            .until(
+                () ->
+                    camundaClient
+                        .newActivateJobsCommand()
+                        .jobType("taskA")
+                        .maxJobsToActivate(100)
+                        .send()
+                        .join()
+                        .getJobs()
+                        .stream()
+                        .filter(j -> j.getProcessInstanceKey() == processInstanceKey)
+                        .findFirst()
+                        .orElse(null),
+                Objects::nonNull);
+
+    camundaClient
+        .newFailCommand(job.getKey())
+        .retries(0)
+        .errorMessage("force incident")
+        .send()
+        .join();
+
+    // wait for incident to be created
+    waitForIncident(camundaClient, processInstanceKey, false);
+
+    // when - create batch operation to resolve the incident
+    final var batchOperationCreatedResponse =
+        camundaClient
+            .newCreateBatchOperationCommand()
+            .resolveIncident()
+            .filter(f -> f.processInstanceKey(processInstanceKey))
+            .send()
+            .join();
+
+    // then - batch operation should complete
+    waitForIncident(camundaClient, processInstanceKey, true);
+    assertThat(batchOperationCreatedResponse).isNotNull();
+    final var batchOperationKey = batchOperationCreatedResponse.getBatchOperationKey();
+    waitForBatchOperation(camundaClient, batchOperationKey, 1, BatchOperationState.COMPLETED);
+
+    // and the incident should be resolved
+    waitForBatchOperationItems(
+        camundaClient,
+        batchOperationKey,
+        (items) -> {
+          assertThat(items).hasSize(1);
+          final var item = items.getFirst();
+          assertThat(item.getStatus())
+              .describedAs(String.format("Found operation result %s", item.getErrorMessage()))
+              .isEqualTo(BatchOperationItemState.COMPLETED);
+        });
+  }
+
   private static void deployResource(final CamundaClient camundaClient, final String resourceName) {
     camundaClient.newDeployResourceCommand().addResourceFromClasspath(resourceName).send().join();
   }
@@ -466,5 +546,26 @@ class BatchOperationAuthorizationIT {
         .filter(b -> b.variables(getScopedVariables(scopeId)))
         .send()
         .join();
+  }
+
+  private void waitForIncident(
+      final CamundaClient camundaClient,
+      final long processInstanceKey,
+      final boolean shouldBeInactive) {
+    Awaitility.await("should wait for incident to be created")
+        .atMost(Duration.ofSeconds(30))
+        .pollInterval(Duration.ofMillis(100))
+        .ignoreExceptions()
+        .until(
+            () -> {
+              final var result =
+                  camundaClient
+                      .newIncidentSearchRequest()
+                      .filter(
+                          f -> f.processInstanceKey(processInstanceKey).state(IncidentState.ACTIVE))
+                      .send()
+                      .join();
+              return result.items().isEmpty() == shouldBeInactive;
+            });
   }
 }

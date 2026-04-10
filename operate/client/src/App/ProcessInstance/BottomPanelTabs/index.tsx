@@ -6,27 +6,74 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {Outlet} from 'react-router-dom';
+import {Navigate, Outlet, useLocation} from 'react-router-dom';
 import {Paths} from 'modules/Routes';
-import {Container} from './styled';
+import {Container, TabContent} from './styled';
 import {TabListNav} from './TabListNav';
 import {useProcessInstancePageParams} from '../useProcessInstancePageParams';
 import {useCurrentPage} from 'modules/hooks/useCurrentPage';
 import {useProcessInstanceElementSelection} from 'modules/hooks/useProcessInstanceElementSelection';
 import {useProcessInstance} from 'modules/queries/processInstance/useProcessInstance';
 import {useProcessInstanceIncidentsCount} from 'modules/queries/incidents/useProcessInstanceIncidentsCount';
+import {useElementInstanceIncidentsCount} from 'modules/queries/incidents/useElementInstanceIncidentsCount';
 
-const BottomPanelTabs: React.FC = () => {
+function useSelectionAwareIncidentsCount(
+  processInstanceKey: string,
+  hasIncident: boolean,
+) {
+  const {resolvedElementInstance, isFetchingElement, selectedElementId} =
+    useProcessInstanceElementSelection();
+  const resolvedElementInstanceKey =
+    resolvedElementInstance?.elementInstanceKey;
+
+  const isElementInstanceSelected =
+    resolvedElementInstanceKey !== undefined &&
+    resolvedElementInstanceKey !== processInstanceKey;
+
+  const {data: processIncidentsCount} = useProcessInstanceIncidentsCount(
+    processInstanceKey ?? '',
+    {
+      enabled: hasIncident && !isElementInstanceSelected && !isFetchingElement,
+      filter: {elementId: selectedElementId ?? undefined},
+    },
+  );
+  const {data: elementIncidentsCount} = useElementInstanceIncidentsCount(
+    resolvedElementInstanceKey ?? '',
+    {
+      enabled: hasIncident && isElementInstanceSelected,
+    },
+  );
+
+  return isElementInstanceSelected
+    ? elementIncidentsCount
+    : processIncidentsCount;
+}
+
+const BottomPanelTabs: React.FC<{isHistoryTabVisible: boolean}> = ({
+  isHistoryTabVisible,
+}) => {
   const {hasSelection} = useProcessInstanceElementSelection();
   const {data: processInstance} = useProcessInstance();
   const {processInstanceId} = useProcessInstancePageParams();
   const {currentPage} = useCurrentPage();
+  const location = useLocation();
   const hasIncident = processInstance?.hasIncident === true;
-  const incidentsCount = useProcessInstanceIncidentsCount(
+  const incidentsCount = useSelectionAwareIncidentsCount(
     processInstanceId ?? '',
-    {enabled: hasIncident},
+    hasIncident,
   );
+
   const tabItems = [
+    {
+      label: 'Incidents',
+      to: {pathname: Paths.processInstanceIncidents({processInstanceId})},
+      key: 'incidents',
+      selected: currentPage === 'process-details-incidents',
+      title: 'Incidents',
+      visible:
+        hasIncident && (incidentsCount === undefined || incidentsCount > 0),
+      tagText: incidentsCount ?? 0,
+    },
     {
       label: 'Details',
       to: {pathname: Paths.processInstanceDetails({processInstanceId})},
@@ -37,20 +84,11 @@ const BottomPanelTabs: React.FC = () => {
     },
     {
       label: 'Variables',
-      to: {pathname: Paths.processInstance(processInstanceId)},
+      to: {pathname: Paths.processInstanceVariables({processInstanceId})},
       key: 'variables',
-      selected: currentPage === 'process-details',
+      selected: currentPage === 'process-details-variables',
       title: 'Variables',
       visible: true,
-    },
-    {
-      label: 'Incidents',
-      to: {pathname: Paths.processInstanceIncidents({processInstanceId})},
-      key: 'incidents',
-      selected: currentPage === 'process-details-incidents',
-      title: 'Incidents',
-      visible: hasIncident,
-      count: incidentsCount,
     },
     {
       label: 'Input Mappings',
@@ -86,12 +124,35 @@ const BottomPanelTabs: React.FC = () => {
       title: 'Operations Log',
       visible: true,
     },
+    {
+      label: 'Instance History',
+      to: {
+        pathname: Paths.processInstanceHistory({processInstanceId}),
+      },
+      key: 'instance-history',
+      selected: currentPage === 'process-details-instance-history',
+      title: 'Instance History',
+      visible: isHistoryTabVisible,
+    },
   ] satisfies React.ComponentProps<typeof TabListNav>['items'];
+
+  const selectedTab = tabItems.find((tab) => tab.selected);
 
   return (
     <Container>
       <TabListNav label="Process Instance Bottom Panel Tabs" items={tabItems} />
-      <Outlet />
+      <TabContent>
+        <Outlet />
+      </TabContent>
+      {selectedTab?.visible === false && (
+        <Navigate
+          to={{
+            ...location,
+            pathname: Paths.processInstanceVariables({processInstanceId}),
+          }}
+          replace
+        />
+      )}
     </Container>
   );
 };

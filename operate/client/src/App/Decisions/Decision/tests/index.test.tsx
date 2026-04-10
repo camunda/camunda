@@ -35,7 +35,9 @@ describe('<Decision />', () => {
     mockFetchDecisionDefinitionXML().withSuccess(mockDmnXml);
 
     const {user} = render(<Decision />, {
-      wrapper: createWrapper('/decisions?name=invoiceClassification&version=1'),
+      wrapper: createWrapper(
+        '/decisions?decisionDefinitionId=invoiceClassification&decisionDefinitionVersion=1',
+      ),
     });
 
     expect(
@@ -80,7 +82,7 @@ describe('<Decision />', () => {
 
     render(<Decision />, {
       wrapper: createWrapper(
-        '/decisions?name=invoiceClassification&version=all',
+        '/decisions?decisionDefinitionId=invoiceClassification&decisionDefinitionVersion=all',
       ),
     });
 
@@ -113,7 +115,9 @@ describe('<Decision />', () => {
     });
 
     render(<Decision />, {
-      wrapper: createWrapper('/decisions?name=calc-key-figures&version=1'),
+      wrapper: createWrapper(
+        '/decisions?decisionDefinitionId=calc-key-figures&decisionDefinitionVersion=1',
+      ),
     });
 
     expect(

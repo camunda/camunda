@@ -28,18 +28,12 @@ import {
   Button,
   CodeSnippet,
   Column,
-  Dropdown,
   Heading,
-  MultiSelect,
   Stack,
   TextInput,
 } from "@carbon/react";
-import {
-  type AuditLogEntityType,
-  auditLogResultSchema,
-} from "@camunda/camunda-api-zod-schemas/8.9";
 import useDebounce from "react-debounced";
-import { useForm } from "react-hook-form";
+import { useForm, FieldPath, FieldPathValue } from "react-hook-form";
 import { CellProperty } from "src/pages/operations-log/CellProperty";
 import { User } from "@carbon/react/icons";
 import { DateRangeField } from "src/components/form/DateRangeField";
@@ -51,7 +45,8 @@ import {
   auditLogSearchParamsSync,
 } from "src/pages/operations-log/filters";
 import { useSearchParamsFilters } from "src/utility/filters/useSearchParamsFilters";
-import { useUpdateEffect } from "src/utility/hooks/useUpdateEffect.ts";
+import { useUpdateEffect } from "src/utility/hooks/useUpdateEffect";
+import { Select } from "src/components/form/Select";
 
 type AuditLogSort = { field: string; order: "asc" | "desc" };
 
@@ -117,15 +112,10 @@ const List: FC = () => {
       category: {
         $eq: "ADMIN",
       },
-      result: filters.result !== "all" ? filters.result : undefined,
-      operationType:
-        filters.operationType && filters.operationType.length > 0
-          ? { $in: filters.operationType }
-          : undefined,
-      entityType: filters.entityType ? { $eq: filters.entityType } : undefined,
-      relatedEntityType: filters.relatedEntityType
-        ? { $eq: filters.relatedEntityType }
-        : undefined,
+      result: filters.result,
+      operationType: filters.operationType,
+      entityType: filters.entityType,
+      relatedEntityType: filters.relatedEntityType,
       relatedEntityKey: debouncedRelatedEntityKey
         ? debouncedRelatedEntityKey
         : undefined,
@@ -151,49 +141,41 @@ const List: FC = () => {
     [setPaginationSort],
   );
 
+  const onSelectValueChange = <K extends FieldPath<AuditLogFilters>>(
+    field: K,
+    value: FieldPathValue<AuditLogFilters, K> | undefined,
+  ) => {
+    setValue(field, value as FieldPathValue<AuditLogFilters, K>);
+  };
+
   return (
     <Page>
       <PageHeader
         title={t("operationsLog")}
         linkText={t("operationsLog").toLowerCase()}
-        docsLinkPath="/docs/components/concepts/audit-log/"
+        docsLinkPath="/components/admin/audit-operations/"
       />
       <Grid condensed fullWidth>
         <ColumnRightPadding sm={4} md={3} lg={4} xlg={3}>
           <StickySection level={4}>
             <Stack gap={5}>
               <Heading>{t("filter")}</Heading>
-              <MultiSelect
+              <Select
                 id="operationType"
                 items={[...ALLOWED_OPERATION_TYPES]}
                 titleText={t("operationType")}
-                label={t("multiSelectLabel")}
-                selectedItems={filters.operationType}
-                itemToString={(selectedItem) =>
-                  spaceAndCapitalize(selectedItem)
-                }
-                onChange={({ selectedItems }) => {
-                  if (selectedItems !== null) {
-                    setValue("operationType", selectedItems);
-                  }
+                selectedItem={filters.operationType}
+                onChange={({ selectedItem }) => {
+                  onSelectValueChange("operationType", selectedItem);
                 }}
-                size="sm"
               />
-              <Dropdown
+              <Select
                 id="entityType"
                 items={[...ALLOWED_ENTITY_TYPES]}
                 titleText={t("entityType")}
-                label={t("selectLabel")}
-                selectedItem={filters.entityType ? filters.entityType : ""}
-                itemToString={(selectedItem) =>
-                  selectedItem ? spaceAndCapitalize(selectedItem) : ""
-                }
-                onChange={({
-                  selectedItem,
-                }: {
-                  selectedItem: AuditLogEntityType;
-                }) => {
-                  setValue("entityType", selectedItem);
+                selectedItem={filters.entityType}
+                onChange={({ selectedItem }) => {
+                  onSelectValueChange("entityType", selectedItem);
 
                   if (selectedItem !== "AUTHORIZATION") {
                     setValue("relatedEntityType", undefined);
@@ -201,27 +183,16 @@ const List: FC = () => {
                     setDebouncedRelatedEntityKey("");
                   }
                 }}
-                size="sm"
               />
               {filters.entityType === "AUTHORIZATION" && (
                 <>
-                  <Dropdown
+                  <Select
                     id="relatedEntityType"
                     items={[...ALLOWED_ENTITY_TYPES]}
                     titleText={t("ownerType")}
-                    label={t("selectLabel")}
-                    selectedItem={
-                      filters.relatedEntityType ? filters.relatedEntityType : ""
-                    }
-                    itemToString={(selectedItem) =>
-                      selectedItem ? spaceAndCapitalize(selectedItem) : ""
-                    }
-                    onChange={({
-                      selectedItem,
-                    }: {
-                      selectedItem: AuditLogEntityType;
-                    }) => {
-                      setValue("relatedEntityType", selectedItem);
+                    selectedItem={filters.relatedEntityType}
+                    onChange={({ selectedItem }) => {
+                      onSelectValueChange("relatedEntityType", selectedItem);
                     }}
                   />
                   <TextInput
@@ -238,29 +209,14 @@ const List: FC = () => {
                   />
                 </>
               )}
-              <Dropdown
-                label={t("selectLabel")}
-                aria-label={t("selectLabel")}
+              <Select
                 titleText={t("status")}
                 id="result-field"
                 onChange={({ selectedItem }) => {
-                  setValue(
-                    "result",
-                    !selectedItem || selectedItem === "all"
-                      ? "all"
-                      : auditLogResultSchema.parse(selectedItem),
-                  );
+                  onSelectValueChange("result", selectedItem);
                 }}
                 items={[...ALLOWED_RESULT_TYPES]}
-                itemToString={(item) =>
-                  item === "all"
-                    ? t("selectAll")
-                    : item
-                      ? spaceAndCapitalize(item)
-                      : ""
-                }
                 selectedItem={filters.result}
-                size="sm"
               />
               <TextInput
                 id="actorId"
@@ -294,9 +250,9 @@ const List: FC = () => {
                   kind="ghost"
                   size="sm"
                   disabled={
-                    filters.operationType.length === 0 &&
+                    !filters.operationType &&
                     !filters.entityType &&
-                    filters.result === "all" &&
+                    !filters.result &&
                     !filters.actor &&
                     !filters.timestampFrom &&
                     !filters.timestampTo
@@ -304,11 +260,11 @@ const List: FC = () => {
                   type="reset"
                   onClick={() => {
                     reset({
-                      operationType: [],
+                      operationType: undefined,
                       entityType: undefined,
                       relatedEntityType: undefined,
                       relatedEntityKey: "",
-                      result: "all",
+                      result: undefined,
                       actor: "",
                       timestampFrom: "",
                       timestampTo: "",

@@ -9,7 +9,7 @@
 import {useQuery} from '@tanstack/react-query';
 import {queryKeys} from '../queryKeys';
 import {searchDecisionInstances} from 'modules/api/v2/decisionInstances/searchDecisionInstances';
-import type {DecisionInstance} from '@camunda/camunda-api-zod-schemas/8.9';
+import type {DecisionInstance} from '@camunda/camunda-api-zod-schemas/8.10';
 
 type DrdData = {
   [decisionDefinitionId: DecisionInstance['decisionDefinitionId']]: {

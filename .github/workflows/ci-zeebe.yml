@@ -516,11 +516,11 @@ jobs:
       build: true
     secrets: inherit
   auto-merge:
-    # This workflow will auto merge a PR authored by backport-action.
+    # This workflow will auto merge backport PRs created by the Monorepo DevOps
+    # Automation GitHub App (via korthout/backport-action).
     # It runs only on open PRs ready for review.
     #
-    # It will merge the PR only if it is authored by backport-action and all CI checks are successful
-    # OR if it is authored by renovate[bot] and all CI checks are successful.
+    # It will approve and auto-merge the PR only if all CI checks are successful.
     #
     # The workflow is divided into multiple sequential jobs to allow giving only minimal permissions to
     # the GitHub token passed around.
@@ -531,16 +531,28 @@ jobs:
     if: |
       github.repository == 'camunda/camunda' &&
       github.event_name == 'pull_request' &&
-      (github.actor == 'backport-action')
+      github.actor == 'monorepo-devops-automation[bot]'
     permissions:
       checks: read
       pull-requests: write
-    env:
-      GITHUB_TOKEN: ${{ secrets.AUTOMERGE_TOKEN }}
     steps:
+      - name: Generate GitHub token
+        id: github-token
+        uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@fc4fa13813cbc1835129967f10a12f24aa7a393c # main
+        with:
+          github-app-id-vault-key: MONOREPO_RELEASE_APP_ID
+          github-app-id-vault-path: secret/data/products/camunda/ci/camunda
+          github-app-private-key-vault-key: MONOREPO_RELEASE_APP_PRIVATE_KEY
+          github-app-private-key-vault-path: secret/data/products/camunda/ci/camunda
+          vault-auth-method: approle
+          vault-auth-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-auth-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+          vault-url: ${{ secrets.VAULT_ADDR }}
       - uses: actions/checkout@v6
       - id: approve-and-merge-backport-renovate
         name: Approve and merge backport PR
+        env:
+          GITHUB_TOKEN: ${{ steps.github-token.outputs.token }}
         run: |
           gh pr review ${{ github.event.pull_request.number }} --approve
           # Call the API directly to work around https://github.com/cli/cli/issues/8352

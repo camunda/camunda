@@ -20,24 +20,28 @@ import io.camunda.client.CamundaClientBuilder;
 import io.camunda.client.api.JsonMapper;
 import io.camunda.process.test.api.judge.JudgeConfig;
 import io.camunda.process.test.api.runtime.CamundaProcessTestContainerProvider;
+import io.camunda.process.test.api.similarity.SemanticSimilarityConfig;
 import io.camunda.process.test.api.testCases.TestCaseRunner;
 import io.camunda.process.test.impl.assertions.CamundaDataSource;
+import io.camunda.process.test.impl.assertions.util.InstantProbeAwaitBehavior;
 import io.camunda.process.test.impl.client.CamundaManagementClient;
 import io.camunda.process.test.impl.containers.CamundaContainer.MultiTenancyConfiguration;
 import io.camunda.process.test.impl.coverage.ProcessCoverage;
 import io.camunda.process.test.impl.coverage.ProcessCoverageBuilder;
 import io.camunda.process.test.impl.deployment.TestDeploymentService;
 import io.camunda.process.test.impl.extension.CamundaProcessTestContextImpl;
+import io.camunda.process.test.impl.extension.ConditionalBehaviorEngine;
 import io.camunda.process.test.impl.judge.ChatModelAdapterResolver;
 import io.camunda.process.test.impl.runtime.CamundaProcessTestContainerRuntime;
 import io.camunda.process.test.impl.runtime.CamundaProcessTestRuntime;
 import io.camunda.process.test.impl.runtime.CamundaProcessTestRuntimeBuilder;
 import io.camunda.process.test.impl.runtime.CamundaProcessTestRuntimeDefaults;
+import io.camunda.process.test.impl.runtime.properties.SemanticSimilarityProperties;
+import io.camunda.process.test.impl.similarity.EmbeddingModelAdapterResolver;
 import io.camunda.process.test.impl.testCases.CamundaTestCaseRunner;
 import io.camunda.process.test.impl.testresult.CamundaProcessTestResultCollector;
 import io.camunda.process.test.impl.testresult.CamundaProcessTestResultPrinter;
 import io.camunda.process.test.impl.testresult.ProcessTestResult;
-import io.camunda.zeebe.client.ZeebeClient;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.net.URI;
@@ -102,6 +106,7 @@ public class CamundaProcessTestExtension
   public static final String STORE_KEY_CONTEXT = "camunda-process-test-context";
 
   private static final Logger LOG = LoggerFactory.getLogger(CamundaProcessTestExtension.class);
+  private static final CamundaAssertAwaitBehavior INSTANT_PROBE = new InstantProbeAwaitBehavior();
 
   private final List<AutoCloseable> createdClients = new ArrayList<>();
   private final TestDeploymentService testDeploymentService = new TestDeploymentService();
@@ -115,12 +120,15 @@ public class CamundaProcessTestExtension
   private CamundaProcessTestResultCollector processTestResultCollector;
 
   private JudgeConfig judgeConfig;
+  private SemanticSimilarityConfig semanticSimilarityConfig;
 
   private JsonMapper jsonMapper;
-  private io.camunda.zeebe.client.api.JsonMapper zeebeJsonMapper;
 
   private CamundaManagementClient camundaManagementClient;
+
   private CamundaProcessTestContext camundaProcessTestContext;
+  private final ConditionalBehaviorEngine conditionalBehaviorEngine =
+      new ConditionalBehaviorEngine();
 
   CamundaProcessTestExtension(
       final CamundaProcessTestRuntimeBuilder containerRuntimeBuilder,
@@ -171,7 +179,7 @@ public class CamundaProcessTestExtension
             camundaManagementClient,
             CamundaAssert.getAwaitBehavior(),
             jsonMapper,
-            zeebeJsonMapper);
+            conditionalBehaviorEngine);
 
     // create process coverage
     processCoverage =
@@ -187,11 +195,11 @@ public class CamundaProcessTestExtension
     store.put(STORE_KEY_RUNTIME, runtime);
     store.put(STORE_KEY_CONTEXT, camundaProcessTestContext);
 
-    // initialize json mapper
-    initializeJsonMapper(jsonMapper, zeebeJsonMapper);
-
-    // initialize judge config
+    // initializations
+    initializeJsonMapper(jsonMapper);
     initializeJudgeConfig();
+    initializeAssertions(runtimeBuilder);
+    initializeSemanticSimilarityConfig();
   }
 
   private CamundaManagementClient createManagementClient(
@@ -207,13 +215,9 @@ public class CamundaProcessTestExtension
     }
   }
 
-  private void initializeJsonMapper(
-      final JsonMapper jsonMapper, final io.camunda.zeebe.client.api.JsonMapper zeebeJsonMapper) {
-
+  private void initializeJsonMapper(final JsonMapper jsonMapper) {
     if (jsonMapper != null) {
       CamundaAssert.setJsonMapper(jsonMapper);
-    } else if (zeebeJsonMapper != null) {
-      CamundaAssert.setJsonMapper(zeebeJsonMapper);
     }
   }
 
@@ -240,6 +244,37 @@ public class CamundaProcessTestExtension
                     CamundaProcessTestRuntimeDefaults.JUDGE_PROPERTIES.getThreshold(),
                     CamundaProcessTestRuntimeDefaults.JUDGE_PROPERTIES.getCustomPrompt()))
         .ifPresent(CamundaAssert::setJudgeConfig);
+  }
+
+  private void initializeAssertions(final CamundaProcessTestRuntimeBuilder runtimeBuilder) {
+    runtimeBuilder.getAssertionTimeout().ifPresent(CamundaAssert::setAssertionTimeout);
+    runtimeBuilder.getAssertionInterval().ifPresent(CamundaAssert::setAssertionInterval);
+  }
+
+  private void initializeSemanticSimilarityConfig() {
+    if (semanticSimilarityConfig != null) {
+      CamundaAssert.setSemanticSimilarityConfig(semanticSimilarityConfig);
+      return;
+    }
+    if (CamundaAssert.getSemanticSimilarityConfig() != null) {
+      return;
+    }
+    final SemanticSimilarityProperties semanticSimilarityProperties =
+        CamundaProcessTestRuntimeDefaults.SEMANTIC_SIMILARITY_PROPERTIES;
+    if (!semanticSimilarityProperties.hasProviderConfigured()) {
+      return;
+    }
+    EmbeddingModelAdapterResolver.resolve(semanticSimilarityProperties.toProviderConfig())
+        .map(
+            adapter -> {
+              SemanticSimilarityConfig config =
+                  SemanticSimilarityConfig.of(adapter, semanticSimilarityProperties.getThreshold());
+              if (!semanticSimilarityProperties.isDefaultPreprocessorsEnabled()) {
+                config = config.withoutPreprocessors();
+              }
+              return config;
+            })
+        .ifPresent(CamundaAssert::setSemanticSimilarityConfig);
   }
 
   private boolean hasProcessTestExtension(final ExtensionContext context) {
@@ -274,7 +309,6 @@ public class CamundaProcessTestExtension
     // inject fields
     try {
       injectField(context, CamundaClient.class, camundaProcessTestContext::createClient);
-      injectField(context, ZeebeClient.class, camundaProcessTestContext::createZeebeClient);
       injectField(context, CamundaProcessTestContext.class, () -> camundaProcessTestContext);
       injectField(
           context,
@@ -299,6 +333,12 @@ public class CamundaProcessTestExtension
         context.getRequiredTestMethod(),
         context.getRequiredTestClass(),
         camundaProcessTestContext.createClient());
+
+    // set up conditional behavior engine for this test
+    conditionalBehaviorEngine.start(
+        () -> CamundaAssert.initialize(dataSource),
+        evaluation -> CamundaAssert.withAwaitBehaviorOverride(INSTANT_PROBE, evaluation),
+        CamundaAssert.getAwaitBehavior().getAssertionInterval());
   }
 
   private <T> void injectField(
@@ -338,6 +378,9 @@ public class CamundaProcessTestExtension
       // Skip if the runtime is not created.
       return;
     }
+
+    // stop conditional behavior engine before cleanup
+    conditionalBehaviorEngine.stop();
 
     try {
       processCoverage.collectTestRunCoverage(getCoverageTestName(context));
@@ -426,6 +469,7 @@ public class CamundaProcessTestExtension
     }
 
     CamundaAssert.setJudgeConfig(null);
+    CamundaAssert.setSemanticSimilarityConfig(null);
 
     runtime.close();
   }
@@ -687,13 +731,14 @@ public class CamundaProcessTestExtension
   }
 
   /**
-   * Configure the JSON mapper for the client and the assertions.
+   * Configure the semantic similarity for semantic similarity assertions.
    *
-   * @param jsonMapper the JSON mapper to use
+   * @param semanticSimilarityConfig the semantic similarity configuration
    * @return the extension builder
    */
-  public CamundaProcessTestExtension withJsonMapper(final JsonMapper jsonMapper) {
-    this.jsonMapper = jsonMapper;
+  public CamundaProcessTestExtension withSemanticSimilarityConfig(
+      final SemanticSimilarityConfig semanticSimilarityConfig) {
+    this.semanticSimilarityConfig = semanticSimilarityConfig;
     return this;
   }
 
@@ -702,12 +747,9 @@ public class CamundaProcessTestExtension
    *
    * @param jsonMapper the JSON mapper to use
    * @return the extension builder
-   * @deprecated for removal, use {@link #withJsonMapper(JsonMapper)} instead.
    */
-  @Deprecated
-  public CamundaProcessTestExtension withJsonMapper(
-      final io.camunda.zeebe.client.api.JsonMapper jsonMapper) {
-    zeebeJsonMapper = jsonMapper;
+  public CamundaProcessTestExtension withJsonMapper(final JsonMapper jsonMapper) {
+    this.jsonMapper = jsonMapper;
     return this;
   }
 
@@ -745,5 +787,6 @@ public class CamundaProcessTestExtension
         LOG.debug("Failed to close client, continue.", e);
       }
     }
+    createdClients.clear();
   }
 }

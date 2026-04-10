@@ -11,6 +11,7 @@ import {observer} from 'mobx-react';
 import {processInstanceMigrationStore} from 'modules/stores/processInstanceMigration';
 import {Container} from './styled';
 import {ModalStateManager} from 'modules/components/ModalStateManager';
+import {AsyncActionTrigger} from 'modules/components/AsyncActionTrigger';
 import {useNavigate, useSearchParams} from 'react-router-dom';
 import {Locations} from 'modules/Routes';
 import {tracking} from 'modules/tracking';
@@ -25,7 +26,11 @@ const Footer: React.FC = observer(() => {
   const [searchParams] = useSearchParams();
   const displaySuccessNotification = useBatchOperationSuccessNotification();
   const navigate = useNavigate();
-  const {mutate: migrateProcess} = useMigrateProcessInstancesBatchOperation({
+  const {
+    mutate: migrateProcess,
+    reset: resetMigrate,
+    status: migrateStatus,
+  } = useMigrateProcessInstancesBatchOperation({
     onSuccess: ({batchOperationKey, batchOperationType}) => {
       displaySuccessNotification(batchOperationType, batchOperationKey);
       tracking.track({
@@ -37,6 +42,7 @@ const Footer: React.FC = observer(() => {
       return handleOperationError(error.response?.status);
     },
   });
+  const isMigratePending = migrateStatus === 'pending';
 
   return (
     <Container orientation="horizontal" gap={5}>
@@ -45,6 +51,7 @@ const Footer: React.FC = observer(() => {
           <Button
             kind="secondary"
             size="sm"
+            disabled={isMigratePending}
             onClick={() => {
               setOpen(true);
             }}
@@ -98,6 +105,7 @@ const Footer: React.FC = observer(() => {
           <Button
             kind="secondary"
             size="sm"
+            disabled={isMigratePending}
             onClick={() =>
               processInstanceMigrationStore.setCurrentStep('elementMapping')
             }
@@ -107,15 +115,21 @@ const Footer: React.FC = observer(() => {
 
           <ModalStateManager
             renderLauncher={({setOpen}) => (
-              <Button
-                aria-label="Confirm"
-                size="sm"
-                onClick={() => {
-                  setOpen(true);
-                }}
+              <AsyncActionTrigger
+                status={migrateStatus}
+                pendingLabel="Migrating..."
+                onReset={resetMigrate}
               >
-                Confirm
-              </Button>
+                <Button
+                  aria-label="Confirm"
+                  size="sm"
+                  onClick={() => {
+                    setOpen(true);
+                  }}
+                >
+                  Confirm
+                </Button>
+              </AsyncActionTrigger>
             )}
           >
             {({open, setOpen}) => (
@@ -162,34 +176,41 @@ const Footer: React.FC = observer(() => {
                       sourceProcessDefinition?.processDefinitionKey,
                   });
 
-                  migrateProcess({
-                    ...requestBody,
-                    migrationPlan: {
-                      targetProcessDefinitionKey:
-                        targetProcessDefinition.processDefinitionKey,
-                      mappingInstructions: Object.entries(elementMapping).map(
-                        ([sourceElementId, targetElementId]) => ({
-                          sourceElementId,
-                          targetElementId,
-                        }),
-                      ),
-                    },
-                  });
-
-                  processInstanceMigrationStore.disable();
-                  processInstancesSelectionStore.reset();
-
                   tracking.track({
                     eventName: 'process-instance-migration-confirmed',
                   });
 
-                  navigate(
-                    Locations.processes({
-                      active: true,
-                      incidents: true,
-                      process: targetProcessDefinition.processDefinitionId,
-                      version: targetProcessDefinition.version.toString(),
-                    }),
+                  setOpen(false);
+                  migrateProcess(
+                    {
+                      ...requestBody,
+                      migrationPlan: {
+                        targetProcessDefinitionKey:
+                          targetProcessDefinition.processDefinitionKey,
+                        mappingInstructions: Object.entries(elementMapping).map(
+                          ([sourceElementId, targetElementId]) => ({
+                            sourceElementId,
+                            targetElementId,
+                          }),
+                        ),
+                      },
+                    },
+                    {
+                      onSuccess: () => {
+                        processInstanceMigrationStore.disable();
+                        processInstancesSelectionStore.reset();
+                        navigate(
+                          Locations.processes({
+                            active: true,
+                            incidents: true,
+                            processDefinitionId:
+                              targetProcessDefinition.processDefinitionId,
+                            processDefinitionVersion:
+                              targetProcessDefinition.version.toString(),
+                          }),
+                        );
+                      },
+                    },
                   );
                 }}
               />

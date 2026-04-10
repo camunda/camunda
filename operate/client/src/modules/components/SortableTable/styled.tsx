@@ -47,7 +47,7 @@ const TableExpandRow = styled(BaseTableExpandRow)<TableExpandRowProps>`
     border-block-start: none !important;
   }
 
-  &:not(.errorRow):not(.successRow) {
+  &:not(.errorRow):not(.successRow):not(.expandableRow) {
     // hide expand button when batchOperationId filter is NOT set
     .cds--table-expand {
       display: none;
@@ -79,16 +79,24 @@ const TableExpandRow = styled(BaseTableExpandRow)<TableExpandRowProps>`
   }}
 `;
 
-const TableExpandedRow = styled(BaseTableExpandedRow)`
-  box-shadow: inset 3px 0 0 var(--cds-support-error) !important;
+type TableExpandedRowProps = {
+  $variant?: 'error' | 'default';
+};
 
+const TableExpandedRow = styled(BaseTableExpandedRow)<TableExpandedRowProps>`
   td {
     border-block-start: none !important;
   }
 
-  &:hover td {
-    box-shadow: inset 3px 0 0 var(--cds-support-error) !important;
-  }
+  ${({$variant = 'error'}) =>
+    $variant === 'error' &&
+    css`
+      box-shadow: inset 3px 0 0 var(--cds-support-error) !important;
+
+      &:hover td {
+        box-shadow: inset 3px 0 0 var(--cds-support-error) !important;
+      }
+    `}
 `;
 
 type TableContainerProps = {

@@ -7,7 +7,6 @@
  */
 package io.camunda.application.commons.mcp;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.micrometer.common.KeyValue;
 import io.micrometer.common.KeyValues;
 import jakarta.servlet.http.HttpServletRequest;
@@ -17,6 +16,7 @@ import org.springframework.http.server.observation.DefaultServerRequestObservati
 import org.springframework.http.server.observation.ServerRequestObservationContext;
 import org.springframework.lang.NonNull;
 import org.springframework.web.util.ContentCachingRequestWrapper;
+import tools.jackson.databind.json.JsonMapper;
 
 /**
  * Extends the default server request observation convention to add MCP-specific data to the URI tag
@@ -33,11 +33,11 @@ public class McpServerRequestObservationConvention
 
   private static final String KEY_URI = "uri";
 
-  private final ObjectMapper objectMapper;
+  private final JsonMapper jsonMapper;
 
-  public McpServerRequestObservationConvention(final String name, final ObjectMapper objectMapper) {
+  public McpServerRequestObservationConvention(final String name, final JsonMapper jsonMapper) {
     super(name);
-    this.objectMapper = objectMapper;
+    this.jsonMapper = jsonMapper;
   }
 
   /** Extends the default low cardinality key values to include MCP-specific URI information. */
@@ -45,12 +45,12 @@ public class McpServerRequestObservationConvention
   public @NonNull KeyValues getLowCardinalityKeyValues(
       final @NonNull ServerRequestObservationContext context) {
     final var lowCardinalityKeyValues = super.getLowCardinalityKeyValues(context);
-    final var newLowCardinalityKeyValues = getMcpRequestLowCardinalityValues(context, objectMapper);
+    final var newLowCardinalityKeyValues = getMcpRequestLowCardinalityValues(context, jsonMapper);
     return lowCardinalityKeyValues.and(newLowCardinalityKeyValues);
   }
 
   protected static KeyValues getMcpRequestLowCardinalityValues(
-      final ServerRequestObservationContext context, final ObjectMapper objectMapper) {
+      final ServerRequestObservationContext context, final JsonMapper jsonMapper) {
     final HttpServletRequest carrier = context.getCarrier();
     if (carrier == null || !isMcpRequest(carrier)) {
       // don't adjust the URI tag value
@@ -69,7 +69,7 @@ public class McpServerRequestObservationConvention
 
       // fetch MCP metadata to enrich the URI tag as much as possible
       final McpRequestMetadata mcpMetadata =
-          objectMapper.readValue(requestBody, McpRequestMetadata.class);
+          jsonMapper.readValue(requestBody, McpRequestMetadata.class);
       if (mcpMetadata == null) {
         // there is no metadata we could use
         return baseMcpUriValue;

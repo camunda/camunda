@@ -14,12 +14,14 @@ import org.agrona.DirectBuffer;
 public interface MutableMultiInstanceState extends MultiInstanceState {
 
   /**
-   * Inserts the evaluated input collection for a multi-instance body into the state.
+   * Inserts or updates the evaluated input collection for a multi-instance body in the state. If an
+   * entry already exists for the given key (e.g. due to incident resolution re-activating the
+   * multi-instance body), the existing entry is overwritten with the new value.
    *
    * @param multiInstanceKey The key of the multi-instance element instance.
    * @param inputCollection The evaluated input collection as a list of buffers.
    */
-  void insertInputCollection(long multiInstanceKey, List<DirectBuffer> inputCollection);
+  void upsertInputCollection(long multiInstanceKey, List<DirectBuffer> inputCollection);
 
   /**
    * Deletes the input collection for a multi-instance body from the state.

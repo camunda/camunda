@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import type {QueryProcessDefinitionsRequestBody} from '@camunda/camunda-api-zod-schemas/8.9';
+import type {QueryProcessDefinitionsRequestBody} from '@camunda/camunda-api-zod-schemas/8.10';
 import {
   parseProcessInstancesFilter,
   type ProcessInstancesFilter,
@@ -25,8 +25,8 @@ function parseProcessDefinitionsSearchFilter(
   const filter = parseProcessInstancesFilter(search);
 
   return {
-    processDefinitionId: filter.process,
-    tenantId: filter.tenant === 'all' ? undefined : filter.tenant,
+    processDefinitionId: filter.processDefinitionId,
+    tenantId: filter.tenantId === 'all' ? undefined : filter.tenantId,
     version: mapProcessDefinitionVersion(filter),
   };
 }
@@ -34,8 +34,11 @@ function parseProcessDefinitionsSearchFilter(
 function mapProcessDefinitionVersion(
   filter: ProcessInstancesFilter,
 ): ProcessDefinitionsSearchFilter['version'] {
-  if (filter.version && filter.version !== 'all') {
-    const version = parseInt(filter.version, 10);
+  if (
+    filter.processDefinitionVersion &&
+    filter.processDefinitionVersion !== 'all'
+  ) {
+    const version = parseInt(filter.processDefinitionVersion, 10);
     if (!isNaN(version)) {
       return version;
     }

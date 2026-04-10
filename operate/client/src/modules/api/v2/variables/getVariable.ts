@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {endpoints, type Variable} from '@camunda/camunda-api-zod-schemas/8.9';
+import {endpoints, type Variable} from '@camunda/camunda-api-zod-schemas/8.10';
 import {requestWithThrow} from 'modules/request';
 
 const getVariable = async (variableKey: string) => {

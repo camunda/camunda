@@ -25,7 +25,7 @@ import type {
   Job,
   ProcessInstance,
   DecisionInstance,
-} from '@camunda/camunda-api-zod-schemas/8.9';
+} from '@camunda/camunda-api-zod-schemas/8.10';
 
 const PROCESS_INSTANCE_ID = '111222333';
 const PROCESS_DEFINITION_KEY = '444555666';
@@ -197,16 +197,6 @@ describe('<DetailsTab />', () => {
     mockSearchDecisionInstances().withSuccess(searchResult([]));
   });
 
-  it('should show empty message when no element is selected', () => {
-    render(<DetailsTab />, {
-      wrapper: getWrapper(),
-    });
-
-    expect(
-      screen.getByText('There is no element selected.'),
-    ).toBeInTheDocument();
-  });
-
   it('should show multi-instance message when multiple instances exist', async () => {
     mockSearchElementInstances().withSuccess(
       searchResult([mockElementInstance, mockElementInstance], 2),
@@ -328,7 +318,7 @@ describe('<DetailsTab />', () => {
     expect(link).toHaveTextContent('View all (2)');
     expect(link).toHaveAttribute(
       'href',
-      `/processes?parentInstanceId=${PROCESS_INSTANCE_ID}&active=true&incidents=true&completed=true&canceled=true`,
+      `/processes?parentProcessInstanceKey=${PROCESS_INSTANCE_ID}&active=true&incidents=true&completed=true&canceled=true`,
     );
   });
 

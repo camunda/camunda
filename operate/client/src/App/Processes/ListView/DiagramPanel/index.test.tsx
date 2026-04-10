@@ -94,7 +94,10 @@ describe('DiagramPanel', () => {
   });
 
   it('should render header', async () => {
-    const queryParams = {process: 'bigVarProcess', version: '1'};
+    const queryParams = {
+      processDefinitionId: 'bigVarProcess',
+      processDefinitionVersion: '1',
+    };
 
     const {user} = render(<DiagramPanel />, {
       wrapper: getWrapper(queryParams),
@@ -117,7 +120,10 @@ describe('DiagramPanel', () => {
   });
 
   it('should show the loading indicator, when diagram is loading', async () => {
-    const queryParams = {process: 'bigVarProcess', version: '1'};
+    const queryParams = {
+      processDefinitionId: 'bigVarProcess',
+      processDefinitionVersion: '1',
+    };
     mockFetchProcessInstancesStatistics().withDelay(mockProcessStatistics);
 
     render(<DiagramPanel />, {
@@ -148,7 +154,10 @@ describe('DiagramPanel', () => {
   });
 
   it('should show a message when no process version is selected', async () => {
-    const queryParams = {process: 'bigVarProcess', version: 'all'};
+    const queryParams = {
+      processDefinitionId: 'bigVarProcess',
+      processDefinitionVersion: 'all',
+    };
 
     render(<DiagramPanel />, {
       wrapper: getWrapper(queryParams),
@@ -167,7 +176,10 @@ describe('DiagramPanel', () => {
   });
 
   it('should display bpmnProcessId as process name in the message when no process version is selected', async () => {
-    const queryParams = {process: 'eventBasedGatewayProcess', version: 'all'};
+    const queryParams = {
+      processDefinitionId: 'eventBasedGatewayProcess',
+      processDefinitionVersion: 'all',
+    };
     mockSearchProcessDefinitions().withSuccess(
       searchResult([
         createProcessDefinition({
@@ -190,7 +202,10 @@ describe('DiagramPanel', () => {
   });
 
   it('should show an error message', async () => {
-    const queryParams = {process: 'bigVarProcess', version: '1'};
+    const queryParams = {
+      processDefinitionId: 'bigVarProcess',
+      processDefinitionVersion: '1',
+    };
 
     mockFetchProcessInstancesStatistics().withSuccess(mockProcessStatistics);
     mockFetchProcessDefinitionXml().withServerError();
@@ -210,7 +225,10 @@ describe('DiagramPanel', () => {
   });
 
   it('should render statistics', async () => {
-    const queryParams = {process: 'bigVarProcess', version: '1'};
+    const queryParams = {
+      processDefinitionId: 'bigVarProcess',
+      processDefinitionVersion: '1',
+    };
     mockFetchProcessInstancesStatistics().withSuccess(mockProcessStatistics);
     mockFetchProcessDefinitionXml().withSuccess('');
 
@@ -223,7 +241,10 @@ describe('DiagramPanel', () => {
   });
 
   it('should not fetch batch modification data outside batch modification mode', async () => {
-    const queryParams = {process: 'bigVarProcess', version: '1'};
+    const queryParams = {
+      processDefinitionId: 'bigVarProcess',
+      processDefinitionVersion: '1',
+    };
 
     const mockProcessInstancesStatisticsResolver = vi.fn();
     mockFetchProcessInstancesStatistics().withSuccess(mockProcessStatistics, {
@@ -283,7 +304,10 @@ describe('DiagramPanel', () => {
   });
 
   it('should still render diagram when useProcessInstancesOverlayData fails', async () => {
-    const queryParams = {process: 'bigVarProcess', version: '1'};
+    const queryParams = {
+      processDefinitionId: 'bigVarProcess',
+      processDefinitionVersion: '1',
+    };
 
     mockFetchProcessInstancesStatistics().withServerError();
     mockFetchProcessDefinitionXml().withSuccess('');
@@ -297,7 +321,10 @@ describe('DiagramPanel', () => {
   });
 
   it('should still render diagram when useBatchModificationOverlayData fails', async () => {
-    const queryParams = {process: 'bigVarProcess', version: '1'};
+    const queryParams = {
+      processDefinitionId: 'bigVarProcess',
+      processDefinitionVersion: '1',
+    };
 
     mockFetchProcessDefinitionXml().withSuccess('');
     mockFetchProcessInstancesStatistics().withServerError();
@@ -312,8 +339,8 @@ describe('DiagramPanel', () => {
 
   it('should display statistics when active and incidents are selected in the filter', async () => {
     const queryParams = {
-      process: 'bigVarProcess',
-      version: '1',
+      processDefinitionId: 'bigVarProcess',
+      processDefinitionVersion: '1',
       active: 'true',
       incidents: 'true',
     };
@@ -338,8 +365,8 @@ describe('DiagramPanel', () => {
 
   it('should display statistics when completed and canceled are selected in the filter', async () => {
     const queryParams = {
-      process: 'bigVarProcess',
-      version: '1',
+      processDefinitionId: 'bigVarProcess',
+      processDefinitionVersion: '1',
       completed: 'true',
       canceled: 'true',
     };
@@ -366,8 +393,8 @@ describe('DiagramPanel', () => {
 
   it('should display statistics when all states are selected', async () => {
     const queryParams = {
-      process: 'bigVarProcess',
-      version: '1',
+      processDefinitionId: 'bigVarProcess',
+      processDefinitionVersion: '1',
       active: 'true',
       incidents: 'true',
       completed: 'true',

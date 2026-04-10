@@ -7,6 +7,7 @@
  */
 package io.camunda.exporter.tasks.archiver;
 
+import io.camunda.exporter.config.ExporterConfiguration.HistoryConfiguration;
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
 import io.camunda.exporter.tasks.archiver.ArchiveBatch.AuditLogCleanupBatch;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
@@ -21,12 +22,14 @@ public class AuditLogArchiverJob extends ArchiverJob<AuditLogCleanupBatch> {
 
   private final AuditLogArchiverRepository repository;
   private final AuditLogTemplate auditLogTemplate;
+  private final HistoryConfiguration historyConfig;
 
   public AuditLogArchiverJob(
       final AuditLogArchiverRepository repository,
       final ArchiverRepository archiverRepository,
       final AuditLogTemplate auditLogTemplate,
       final CamundaExporterMetrics exporterMetrics,
+      final HistoryConfiguration historyConfig,
       final Logger logger,
       final Executor executor) {
     super(
@@ -38,6 +41,7 @@ public class AuditLogArchiverJob extends ArchiverJob<AuditLogCleanupBatch> {
         exporterMetrics::recordAuditLogsArchived);
     this.repository = repository;
     this.auditLogTemplate = auditLogTemplate;
+    this.historyConfig = historyConfig;
   }
 
   @Override
@@ -58,8 +62,23 @@ public class AuditLogArchiverJob extends ArchiverJob<AuditLogCleanupBatch> {
   @Override
   protected CompletableFuture<Integer> archive(
       final IndexTemplateDescriptor templateDescriptor, final AuditLogCleanupBatch batch) {
+    if (batch.auditLogIds().isEmpty()) {
+      return deleteAuditLogCleanupMetadata(batch);
+    }
     return super.archive(templateDescriptor, batch)
-        .thenComposeAsync(r -> deleteAuditLogCleanupMetadata(batch));
+        .thenComposeAsync(
+            ignored -> {
+              final int archivedCount = batch.auditLogIds().size();
+
+              // Only delete cleanup metadata if the batch auditLogIds is lower than the batch size,
+              // which means there is no more to archive
+              if (archivedCount < historyConfig.getRolloverBatchSize()) {
+                return deleteAuditLogCleanupMetadata(batch)
+                    .thenApply(deletedCleanup -> deletedCleanup + archivedCount);
+              }
+              return CompletableFuture.completedFuture(archivedCount);
+            },
+            getExecutor());
   }
 
   @Override
@@ -74,6 +93,9 @@ public class AuditLogArchiverJob extends ArchiverJob<AuditLogCleanupBatch> {
 
   private CompletableFuture<Integer> deleteAuditLogCleanupMetadata(
       final AuditLogCleanupBatch batch) {
+    if (batch.auditLogCleanupIds().isEmpty()) {
+      return CompletableFuture.completedFuture(0);
+    }
     return repository.deleteAuditLogCleanupMetadata(batch);
   }
 }

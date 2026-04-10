@@ -10,7 +10,7 @@ import {createContext, useContext, useEffect, useMemo, useRef} from 'react';
 import type {
   ElementInstance,
   ProcessInstance,
-} from '@camunda/camunda-api-zod-schemas/8.9';
+} from '@camunda/camunda-api-zod-schemas/8.10';
 import {observer} from 'mobx-react-lite';
 import {elementInstancesTreeStore} from './elementInstancesTreeStore';
 import type {BusinessObjects, ElementType} from 'bpmn-js/lib/NavigatedViewer';
@@ -20,6 +20,8 @@ import {
   NodeContainer,
   TreeNode,
 } from './styled';
+import {ErrorMessage} from '../styled';
+import {getForbiddenPermissionsError} from 'modules/constants/permissions';
 import {Bar} from './Bar';
 import {InfiniteScroller} from 'modules/components/InfiniteScroller';
 import {useSearchElementInstancesByScope} from 'modules/queries/elementInstances/useSearchElementInstancesByScope';
@@ -29,16 +31,22 @@ import {
   getVisibleChildPlaceholders,
   hasChildPlaceholders,
 } from 'modules/utils/instanceHistoryModification';
-import {instanceHistoryModificationStore} from 'modules/stores/instanceHistoryModification';
+import {
+  instanceHistoryModificationStore,
+  type ElementInstancePlaceholder,
+} from 'modules/stores/instanceHistoryModification';
 import {modificationsStore} from 'modules/stores/modifications';
 import {VirtualBar} from './Bar/VirtualBar';
 import {useBatchOperationItems} from 'modules/queries/batch-operations/useBatchOperationItems';
 import {tracking} from 'modules/tracking';
-import type {ElementInstancePlaceholder} from 'modules/types/operate';
 import {TreeView} from '@carbon/react';
 import {useProcessInstanceElementSelection} from 'modules/hooks/useProcessInstanceElementSelection';
 
 const TREE_NODE_HEIGHT = 32;
+const INSTANCE_HISTORY_FORBIDDEN = getForbiddenPermissionsError(
+  'Instance History',
+  'this instance history',
+);
 const FOLDABLE_ELEMENT_TYPES: ElementInstance['type'][] = [
   'PROCESS',
   'MULTI_INSTANCE_BODY',
@@ -64,13 +72,13 @@ function convertToVirtualElementInstance(params: {
 
   return elementInstancePlaceholders.map((elementInstancePlaceholder) => {
     const businessObject =
-      businessObjects[elementInstancePlaceholder.flowNodeId];
+      businessObjects[elementInstancePlaceholder.elementId];
     return {
       isVirtual: true,
-      elementId: elementInstancePlaceholder.flowNodeId,
+      elementId: elementInstancePlaceholder.elementId,
       elementName: businessObject?.name,
       type: businessObject?.$type,
-      elementInstanceKey: elementInstancePlaceholder.id,
+      elementInstanceKey: elementInstancePlaceholder.elementInstanceKey,
     };
   });
 }
@@ -809,19 +817,33 @@ const ElementInstancesTree: React.FC<ElementInstancesTreeProps> = observer(
       processInstance.state === 'ACTIVE' &&
       !modificationsStore.isModificationModeEnabled;
 
-    elementInstancesTreeStore.setRootNode(processInstance.processInstanceKey, {
-      enablePolling,
-    });
+    useEffect(() => {
+      elementInstancesTreeStore.setRootNode(
+        processInstance.processInstanceKey,
+        {
+          enablePolling,
+        },
+      );
+    }, [processInstance.processInstanceKey, enablePolling]);
 
     useEffect(() => {
       return elementInstancesTreeStore.reset;
     }, []);
 
-    if (
-      elementInstancesTreeStore.state.nodes.get(
-        processInstance.processInstanceKey,
-      )?.status === 'error'
-    ) {
+    const rootNodeData = elementInstancesTreeStore.state.nodes.get(
+      processInstance.processInstanceKey,
+    );
+
+    if (rootNodeData?.status === 'error-permissions') {
+      return (
+        <ErrorMessage
+          message={INSTANCE_HISTORY_FORBIDDEN.message}
+          additionalInfo={INSTANCE_HISTORY_FORBIDDEN.additionalInfo}
+        />
+      );
+    }
+
+    if (rootNodeData?.status === 'error') {
       return errorMessage;
     }
 

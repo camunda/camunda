@@ -12,6 +12,15 @@ const Container = styled.section`
   height: 100%;
   display: flex;
   flex-direction: column;
+
+  [role='table'] {
+    table-layout: fixed;
+  }
+
+  td {
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
 `;
 
 const EmptyMessageContainer = styled.div`

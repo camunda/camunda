@@ -7,8 +7,15 @@
  */
 
 import {makeAutoObservable} from 'mobx';
-import type {ElementInstancePlaceholder} from 'modules/types/operate';
+import type {ElementInstance} from '@camunda/camunda-api-zod-schemas/8.10';
 import type {ElementModification} from './modifications';
+
+type ElementInstancePlaceholder = Pick<
+  ElementInstance,
+  'elementId' | 'elementInstanceKey'
+> & {
+  isPlaceholder: true;
+};
 
 type ModificationPlaceholder = {
   elementInstancePlaceholder: ElementInstancePlaceholder;
@@ -32,12 +39,14 @@ class InstanceHistoryModification {
     makeAutoObservable(this);
   }
 
-  addExpandedElementInstanceIds = (id: ElementInstancePlaceholder['id']) => {
+  addExpandedElementInstanceIds = (
+    id: ElementInstancePlaceholder['elementInstanceKey'],
+  ) => {
     this.state.expandedElementInstanceIds.push(id);
   };
 
   removeFromExpandedElementInstanceIds = (
-    id: ElementInstancePlaceholder['id'],
+    id: ElementInstancePlaceholder['elementInstanceKey'],
   ) => {
     this.state.expandedElementInstanceIds =
       this.state.expandedElementInstanceIds.filter(
@@ -53,4 +62,4 @@ class InstanceHistoryModification {
 export const instanceHistoryModificationStore =
   new InstanceHistoryModification();
 
-export type {ModificationPlaceholder};
+export type {ElementInstancePlaceholder, ModificationPlaceholder};

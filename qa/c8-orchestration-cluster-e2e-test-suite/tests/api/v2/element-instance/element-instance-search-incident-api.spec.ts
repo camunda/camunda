@@ -40,9 +40,7 @@ test.describe('Element Instance Incident Search API', () => {
 
   test.beforeAll(async ({request}) => {
     await test.step('Deploy processes and create instance', async () => {
-      const deployment1 = await deploy([
-        './resources/calledErrorProcess.bpmn',
-      ]);
+      const deployment1 = await deploy(['./resources/calledErrorProcess.bpmn']);
       state['processDefinitionKeyCalled'] =
         deployment1.processes[0].processDefinitionKey;
       await deploy(['./resources/callErrorProcess.bpmn']);
@@ -313,7 +311,11 @@ test.describe('Element Instance Incident Search API', () => {
           },
         },
       );
-      await assertBadRequest(res, 'For input string: \"notANumber\"');
+      await assertBadRequest(
+        res,
+        "The provided processInstanceKey 'notANumber' is not a valid key",
+        'INVALID_ARGUMENT',
+      );
     }).toPass(defaultAssertionOptions);
   });
 
@@ -393,6 +395,7 @@ test.describe('Element Instance Incident Search API', () => {
       email: string;
       password: string;
     };
+
     await test.step('Setup - Create user for authorization tests', async () => {
       userWithResourcesAuthorizationToSendRequest = await createUser(request);
       await grantUserResourceAuthorization(
@@ -448,7 +451,11 @@ test.describe('Element Instance Incident Search API', () => {
           },
         },
       );
-      await assertBadRequest(res, 'Sort field must not be null.');
+      await assertBadRequest(
+        res,
+        'Sort field must not be null.',
+        'INVALID_ARGUMENT',
+      );
     }).toPass(defaultAssertionOptions);
   });
 });

@@ -260,6 +260,16 @@ public final class DecisionEvaluationRecord extends UnifiedRecordValue
     return this;
   }
 
+  @Override
+  public long getRootProcessInstanceKey() {
+    return rootProcessInstanceKeyProp.getValue();
+  }
+
+  public DecisionEvaluationRecord setRootProcessInstanceKey(final long rootProcessInstanceKey) {
+    rootProcessInstanceKeyProp.setValue(rootProcessInstanceKey);
+    return this;
+  }
+
   public DecisionEvaluationRecord setEvaluationFailureMessage(
       final String evaluationFailureMessage) {
     evaluationFailureMessageProp.setValue(evaluationFailureMessage);
@@ -333,16 +343,6 @@ public final class DecisionEvaluationRecord extends UnifiedRecordValue
 
   public DecisionEvaluationRecord setTenantId(final String tenantId) {
     tenantIdProp.setValue(tenantId);
-    return this;
-  }
-
-  @Override
-  public long getRootProcessInstanceKey() {
-    return rootProcessInstanceKeyProp.getValue();
-  }
-
-  public DecisionEvaluationRecord setRootProcessInstanceKey(final long rootProcessInstanceKey) {
-    rootProcessInstanceKeyProp.setValue(rootProcessInstanceKey);
     return this;
   }
 }

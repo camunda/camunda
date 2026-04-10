@@ -24,7 +24,6 @@ import io.camunda.security.auth.Authorization;
 import io.camunda.security.reader.AuthorizationCheck;
 import io.camunda.security.reader.ResourceAccessChecks;
 import io.camunda.security.reader.TenantCheck;
-import io.camunda.webapps.schema.descriptors.index.ProcessIndex;
 import io.camunda.webapps.schema.descriptors.template.JobTemplate;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
@@ -294,12 +293,14 @@ public final class ProcessDefinitionStatisticsFilterTransformerTest
                       query ->
                           assertThat(query.queryOption())
                               .isInstanceOfSatisfying(
-                                  SearchTermsQuery.class,
-                                  (termsQuery) -> {
-                                    assertThat(termsQuery.field())
-                                        .isEqualTo(ProcessIndex.BPMN_PROCESS_ID);
+                                  SearchHasParentQuery.class,
+                                  (parentQuery) -> {
+                                    assertThat(parentQuery.parentType())
+                                        .isEqualTo("processInstance");
+                                    final SearchTermsQuery searchTermsQuery =
+                                        (SearchTermsQuery) parentQuery.query().queryOption();
                                     assertThat(
-                                            termsQuery.values().stream()
+                                            searchTermsQuery.values().stream()
                                                 .map(TypedValue::stringValue)
                                                 .toList())
                                         .containsExactlyInAnyOrder("1", "2");

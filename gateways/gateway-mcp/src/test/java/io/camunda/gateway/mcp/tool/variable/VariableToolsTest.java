@@ -15,8 +15,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.gateway.mcp.tool.ToolsTest;
+import io.camunda.gateway.mcp.OperationalToolsTest;
 import io.camunda.gateway.protocol.model.VariableResult;
 import io.camunda.gateway.protocol.model.VariableSearchQueryResult;
 import io.camunda.gateway.protocol.model.VariableSearchResult;
@@ -50,10 +49,11 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import tools.jackson.databind.json.JsonMapper;
 
 @ExtendWith(MockitoExtension.class)
 @ContextConfiguration(classes = {VariableTools.class})
-class VariableToolsTest extends ToolsTest {
+class VariableToolsTest extends OperationalToolsTest {
 
   static final String TRUNCATED_VALUE = "\\\"Lorem ipsum";
   static final String FULL_VALUE = "\\\"Lorem ipsum dolor sit amet\\\"";
@@ -81,7 +81,7 @@ class VariableToolsTest extends ToolsTest {
 
   @MockitoBean private VariableServices variableServices;
 
-  @Autowired private ObjectMapper objectMapper;
+  @Autowired private JsonMapper objectMapper;
 
   @Captor private ArgumentCaptor<VariableQuery> queryCaptor;
 
@@ -361,6 +361,52 @@ class VariableToolsTest extends ToolsTest {
       assertThat(problemDetail.getDetail()).isEqualTo("Expected failure");
       assertThat(problemDetail.getStatus()).isEqualTo(HttpStatus.NOT_FOUND.value());
       assertThat(problemDetail.getTitle()).isEqualTo("NOT_FOUND");
+
+      assertTextContentFallback(result);
+    }
+
+    @Test
+    void shouldRejectNonNumericProcessInstanceKey() {
+      // when
+      final CallToolResult result =
+          mcpClient.callTool(
+              CallToolRequest.builder()
+                  .name("searchVariables")
+                  .arguments(Map.of("filter", Map.of("processInstanceKey", "abc")))
+                  .build());
+
+      // then
+      assertThat(result.isError()).isTrue();
+
+      final var problemDetail =
+          objectMapper.convertValue(result.structuredContent(), ProblemDetail.class);
+      assertThat(problemDetail.getStatus()).isEqualTo(HttpStatus.BAD_REQUEST.value());
+      assertThat(problemDetail.getTitle()).isEqualTo("INVALID_ARGUMENT");
+      assertThat(problemDetail.getDetail())
+          .startsWith("The provided processInstanceKey 'abc' is not a valid key.");
+
+      assertTextContentFallback(result);
+    }
+
+    @Test
+    void shouldRejectNonNumericVariableKey() {
+      // when
+      final CallToolResult result =
+          mcpClient.callTool(
+              CallToolRequest.builder()
+                  .name("searchVariables")
+                  .arguments(Map.of("filter", Map.of("variableKey", "abc")))
+                  .build());
+
+      // then
+      assertThat(result.isError()).isTrue();
+
+      final var problemDetail =
+          objectMapper.convertValue(result.structuredContent(), ProblemDetail.class);
+      assertThat(problemDetail.getStatus()).isEqualTo(HttpStatus.BAD_REQUEST.value());
+      assertThat(problemDetail.getTitle()).isEqualTo("INVALID_ARGUMENT");
+      assertThat(problemDetail.getDetail())
+          .startsWith("The provided variableKey 'abc' is not a valid key.");
 
       assertTextContentFallback(result);
     }

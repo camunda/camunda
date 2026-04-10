@@ -228,7 +228,7 @@ describe('useBatchOperationMutationRequestBody', () => {
   it('should handle complex search params with tenant filter', () => {
     const {result} = renderHook(() => useBatchOperationMutationRequestBody(), {
       wrapper: getWrapper({
-        tenant: '<default>',
+        tenantId: '<default>',
         active: 'true',
       }),
     });
@@ -263,7 +263,7 @@ describe('useBatchOperationMutationRequestBody', () => {
   it('should handle parent instance ID filter', () => {
     const {result} = renderHook(() => useBatchOperationMutationRequestBody(), {
       wrapper: getWrapper({
-        parentInstanceId: '12345',
+        parentProcessInstanceKey: '12345',
         active: 'true',
       }),
     });
@@ -280,8 +280,8 @@ describe('useBatchOperationMutationRequestBody', () => {
   it('should handle process definition with version filter', () => {
     const {result} = renderHook(() => useBatchOperationMutationRequestBody(), {
       wrapper: getWrapper({
-        process: 'order-process',
-        version: '2',
+        processDefinitionId: 'order-process',
+        processDefinitionVersion: '2',
         active: 'true',
       }),
     });
@@ -299,8 +299,8 @@ describe('useBatchOperationMutationRequestBody', () => {
   it('should ignore all version filter', () => {
     const {result} = renderHook(() => useBatchOperationMutationRequestBody(), {
       wrapper: getWrapper({
-        process: 'order-process',
-        version: 'all',
+        processDefinitionId: 'order-process',
+        processDefinitionVersion: 'all',
         active: 'true',
       }),
     });
@@ -317,7 +317,7 @@ describe('useBatchOperationMutationRequestBody', () => {
   it('should handle elementId filter', () => {
     const {result} = renderHook(() => useBatchOperationMutationRequestBody(), {
       wrapper: getWrapper({
-        flowNodeId: 'task-1',
+        elementId: 'task-1',
         active: 'true',
       }),
     });
@@ -335,7 +335,7 @@ describe('useBatchOperationMutationRequestBody', () => {
   it('should handle operationId filter', () => {
     const {result} = renderHook(() => useBatchOperationMutationRequestBody(), {
       wrapper: getWrapper({
-        operationId: 'op-123',
+        batchOperationId: 'op-123',
         active: 'true',
       }),
     });

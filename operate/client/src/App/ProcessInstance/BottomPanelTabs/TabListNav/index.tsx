@@ -21,7 +21,7 @@ type Props = {
     selected: boolean;
     to: Partial<Path>;
     visible?: boolean;
-    count?: number;
+    tagText?: string | number;
   }>;
 };
 
@@ -32,7 +32,7 @@ const TabListNav: React.FC<Props> = ({className, label, items}) => {
   return (
     <Nav className={cn(className, 'cds--tabs')}>
       <div className="cds--tab--list" aria-label={label}>
-        {items.map(({key, title, label, selected, to, visible, count}) => {
+        {items.map(({key, title, label, selected, to, visible, tagText}) => {
           const isHidden = visible === false;
           return (
             <Button
@@ -56,9 +56,9 @@ const TabListNav: React.FC<Props> = ({className, label, items}) => {
             >
               <div className="cds--tabs__nav-item-label-wrapper">
                 <span className="cds--tabs__nav-item-label">{title}</span>
-                {count !== undefined && count > 0 && (
-                  <Tag size="sm" type="high-contrast">
-                    {count}
+                {tagText !== undefined && (
+                  <Tag size="sm" type="red">
+                    {tagText}
                   </Tag>
                 )}
               </div>

@@ -8,19 +8,17 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"os/exec"
 	"os/signal"
 	"path/filepath"
 	"runtime"
-	"strconv"
 	"strings"
 	"sync"
 	"syscall"
 
-	"github.com/camunda/camunda/c8run/internal/health"
 	"github.com/camunda/camunda/c8run/internal/processmanagement"
 	"github.com/camunda/camunda/c8run/internal/shutdown"
 	"github.com/camunda/camunda/c8run/internal/start"
+	"github.com/camunda/camunda/c8run/internal/startupurl"
 	"github.com/camunda/camunda/c8run/internal/types"
 	"github.com/camunda/camunda/c8run/internal/unix"
 	"github.com/camunda/camunda/c8run/internal/windows"
@@ -63,56 +61,6 @@ func validatePort(port int) error {
 	return nil
 }
 
-func runDockerCommand(composeExtractedFolder string, args ...string) error {
-	err := os.Chdir(composeExtractedFolder)
-	if err != nil {
-		return fmt.Errorf("failed to chdir to %s: %w", composeExtractedFolder, err)
-	}
-
-	_, err = exec.LookPath("docker")
-	if err != nil {
-		return err
-	}
-
-	composeCmd := exec.Command("docker", append([]string{"compose"}, args...)...)
-	composeCmd.Stdout = os.Stdout
-	composeCmd.Stderr = os.Stderr
-	composeCmd.Env = dockerCommandEnv(os.Environ())
-
-	err = composeCmd.Run()
-	if err != nil {
-		return err
-	}
-
-	err = os.Chdir("..")
-	if err != nil {
-		return fmt.Errorf("failed to chdir back: %w", err)
-	}
-
-	return nil
-}
-
-func dockerCommandEnv(baseEnv []string) []string {
-	dockerVersion := strings.TrimSpace(os.Getenv("CAMUNDA_DOCKER_VERSION"))
-	if dockerVersion == "" {
-		return baseEnv
-	}
-
-	env := append([]string(nil), baseEnv...)
-	return overrideEnvVar(env, "CAMUNDA_VERSION", dockerVersion)
-}
-
-func overrideEnvVar(env []string, key, value string) []string {
-	prefix := key + "="
-	for i := range env {
-		if strings.HasPrefix(env[i], prefix) {
-			env[i] = prefix + value
-			return env
-		}
-	}
-	return append(env, prefix+value)
-}
-
 var helpTemplate = `Usage:
   %[1]s [command] [options]
 
@@ -128,14 +76,11 @@ Options:
   --keystorePassword <pw>  Password for the provided keystore
   --port <number>           Set the main Camunda port (default: 8080)
   --log-level <level>       Set log level (e.g., info, debug)
-  --docker                  Start using Docker Compose
 
 Examples:
   %[1]s start
-  %[1]s start --docker
   %[1]s start --config ./my-config.yaml
   %[1]s stop
-  %[1]s stop --docker
 
 Docs & Support:
   https://docs.camunda.io/docs/guides/getting-started-java-spring/
@@ -180,34 +125,7 @@ func getBaseCommand() (string, error) {
 	return "", nil
 }
 
-func handleDockerCommand(settings types.C8RunSettings, baseCommand string, composeExtractedFolder string) error {
-	if !settings.Docker {
-		return nil
-	}
-
-	var err error
-	switch baseCommand {
-	case "start":
-		err = runDockerCommand(composeExtractedFolder, "up", "-d")
-		if err != nil {
-			return err
-		}
-		err = health.PrintStatus(settings)
-	case "stop":
-		err = runDockerCommand(composeExtractedFolder, "down")
-	default:
-		err = fmt.Errorf("command invalid, only start and stop supported")
-	}
-
-	if err != nil {
-		return err
-	}
-
-	os.Exit(0)
-	return nil // This line will never be reached, but it's required to satisfy the function signature
-}
-
-const docsStartupURL = "https://docs.camunda.io/docs/next/self-managed/quickstart/developer-quickstart/c8run/#work-with-camunda-8-run"
+const docsStartupURL = startupurl.DocsURL
 
 func getBaseCommandSettings(baseCommand string) (types.C8RunSettings, bool, error) {
 	var (
@@ -258,61 +176,18 @@ func createStartFlagSet(settings *types.C8RunSettings) *flag.FlagSet {
 	startFlagSet.StringVar(&settings.Keystore, "keystore", "", "Provide a JKS filepath to enable TLS")
 	startFlagSet.StringVar(&settings.KeystorePassword, "keystorePassword", "", "Provide a password to unlock your JKS keystore")
 	startFlagSet.StringVar(&settings.LogLevel, "log-level", "", "Adjust the log level of Camunda")
-	startFlagSet.BoolVar(&settings.DisableElasticsearch, "disable-elasticsearch", true, "Skip managing Elasticsearch (default). Set to false (and configure the application) to run with Elasticsearch instead of H2.")
-	startFlagSet.BoolVar(&settings.Docker, "docker", false, "Run Camunda from docker-compose.")
 	startFlagSet.StringVar(&settings.Username, "username", "demo", "Change the first users username (default: demo)")
 	startFlagSet.StringVar(&settings.Password, "password", "demo", "Change the first users password (default: demo)")
 	startFlagSet.StringVar(&settings.StartupUrl, "startup-url", "", "The URL to open after startup.")
 	return startFlagSet
 }
 
-func createOperateUrl(settings *types.C8RunSettings) string {
-	return fmt.Sprintf("%s://localhost:%s/operate", settings.GetProtocol(), strconv.Itoa(settings.Port))
-}
-
 func createDefaultStartupUrl(settings *types.C8RunSettings, camundaVersion string) string {
-	if shouldUseDocsStartup(camundaVersion) {
-		return docsStartupURL
-	}
-	return createOperateUrl(settings)
-}
-
-func shouldUseDocsStartup(camundaVersion string) bool {
-	major, minor, ok := parseMajorMinor(camundaVersion)
-	if !ok {
-		return false
-	}
-	if major > 8 {
-		return true
-	}
-	return major == 8 && minor >= 9
-}
-
-func parseMajorMinor(version string) (int, int, bool) {
-	version = strings.TrimSpace(version)
-	if version == "" {
-		return 0, 0, false
-	}
-	base := strings.SplitN(version, "-", 2)[0]
-	parts := strings.Split(base, ".")
-	if len(parts) < 2 {
-		return 0, 0, false
-	}
-	major, err := strconv.Atoi(parts[0])
-	if err != nil {
-		return 0, 0, false
-	}
-	minor, err := strconv.Atoi(parts[1])
-	if err != nil {
-		return 0, 0, false
-	}
-	return major, minor, true
+	return startupurl.Default(*settings, camundaVersion)
 }
 
 func createStopFlagSet(settings *types.C8RunSettings) *flag.FlagSet {
 	stopFlagSet := flag.NewFlagSet("stop", flag.ExitOnError)
-	stopFlagSet.BoolVar(&settings.DisableElasticsearch, "disable-elasticsearch", false, "Do not stop Elasticsearch")
-	stopFlagSet.BoolVar(&settings.Docker, "docker", false, "Stop docker-compose distribution of camunda.")
 	return stopFlagSet
 }
 
@@ -322,12 +197,9 @@ func initialize(baseCommand string, baseDir string) *types.State {
 		fmt.Println(err.Error())
 	}
 
-	elasticsearchVersion := os.Getenv("ELASTICSEARCH_VERSION")
 	camundaVersion := os.Getenv("CAMUNDA_VERSION")
 	connectorsVersion := os.Getenv("CONNECTORS_VERSION")
-	composeExtractedFolder := os.Getenv("COMPOSE_EXTRACTED_FOLDER")
 
-	elasticsearchPidPath := filepath.Join(baseDir, "elasticsearch.process")
 	connectorsPidPath := filepath.Join(baseDir, "connectors.process")
 	camundaPidPath := filepath.Join(baseDir, "camunda.process")
 
@@ -338,6 +210,7 @@ func initialize(baseCommand string, baseDir string) *types.State {
 	}
 
 	applySecondaryStorageDefaults(baseDir, &settings)
+	settings.StartupMarkerPath = startupurl.MarkerPath(baseDir)
 
 	if strings.EqualFold(settings.SecondaryStorageType, "rdbms") && settings.ResolvedConfigPath != "" {
 		var vendor string
@@ -363,27 +236,7 @@ func initialize(baseCommand string, baseDir string) *types.State {
 		}
 	}
 
-	if baseCommand == "start" && settings.Docker && settings.ResolvedConfigPath != "" {
-		dockerConfigFile, err := prepareDockerComposeConfig(baseDir, composeExtractedFolder, settings.ResolvedConfigPath)
-		if err != nil {
-			fmt.Println(err.Error())
-			os.Exit(1)
-		}
-		if dockerConfigFile != "" {
-			if err := os.Setenv("ORCHESTRATION_CONFIG_FILE", dockerConfigFile); err != nil {
-				fmt.Println("failed to set ORCHESTRATION_CONFIG_FILE: " + err.Error())
-				os.Exit(1)
-			}
-		}
-	}
-
 	err = validateKeystore(settings, baseDir)
-	if err != nil {
-		fmt.Println(err.Error())
-		os.Exit(1)
-	}
-
-	err = handleDockerCommand(settings, baseCommand, composeExtractedFolder)
 	if err != nil {
 		fmt.Println(err.Error())
 		os.Exit(1)
@@ -397,10 +250,6 @@ func initialize(baseCommand string, baseDir string) *types.State {
 		Connectors: types.Process{
 			Version: connectorsVersion,
 			PidPath: connectorsPidPath,
-		},
-		Elasticsearch: types.Process{
-			Version: elasticsearchVersion,
-			PidPath: elasticsearchPidPath,
 		},
 	}
 
@@ -433,19 +282,7 @@ func applySecondaryStorageDefaults(baseDir string, settings *types.C8RunSettings
 
 	settings.SecondaryStorageType = strings.TrimSpace(secondaryType)
 	if settings.SecondaryStorageType == "" {
-		// Nothing configured, keep whatever defaults were provided via CLI/env
-		return
-	}
-
-	// Any non-elasticsearch backend means we keep Elasticsearch disabled (default true)
-	if !strings.EqualFold(settings.SecondaryStorageType, "elasticsearch") {
-		settings.DisableElasticsearch = true
-		event := log.Info().
-			Str("secondaryStorage.type", settings.SecondaryStorageType)
-		if configSource != "" {
-			event = event.Str("config", configSource)
-		}
-		event.Msg("Secondary storage type is not Elasticsearch; Elasticsearch processes will be skipped")
+		// Nothing configured, keep the distribution defaults.
 		return
 	}
 
@@ -454,53 +291,7 @@ func applySecondaryStorageDefaults(baseDir string, settings *types.C8RunSettings
 	if configSource != "" {
 		event = event.Str("config", configSource)
 	}
-	event.Msg("Secondary storage type is Elasticsearch; keeping default behavior")
-}
-
-func prepareDockerComposeConfig(baseDir, composeFolder, resolvedConfigPath string) (string, error) {
-	if strings.TrimSpace(composeFolder) == "" {
-		return "", fmt.Errorf("COMPOSE_EXTRACTED_FOLDER is not set; unable to prepare docker-compose configuration")
-	}
-	if resolvedConfigPath == "" {
-		return "", nil
-	}
-
-	configDir := filepath.Join(baseDir, composeFolder, "configuration")
-	if err := os.MkdirAll(configDir, 0o755); err != nil {
-		return "", fmt.Errorf("failed to ensure docker-compose configuration directory: %w", err)
-	}
-
-	fileName := filepath.Base(resolvedConfigPath)
-	destPath := filepath.Join(configDir, fileName)
-
-	sameFile, err := filesAreSame(resolvedConfigPath, destPath)
-	if err != nil && !errors.Is(err, os.ErrNotExist) {
-		return "", err
-	}
-
-	if !sameFile {
-		if err := copyFileEnsureDir(resolvedConfigPath, destPath); err != nil {
-			return "", fmt.Errorf("failed to copy configuration for docker-compose: %w", err)
-		}
-		log.Info().
-			Str("source", resolvedConfigPath).
-			Str("destination", destPath).
-			Msg("Copied configuration for docker-compose")
-	}
-
-	return fileName, nil
-}
-
-func filesAreSame(a, b string) (bool, error) {
-	aInfo, err := os.Stat(a)
-	if err != nil {
-		return false, err
-	}
-	bInfo, err := os.Stat(b)
-	if err != nil {
-		return false, err
-	}
-	return os.SameFile(aInfo, bInfo), nil
+	event.Msg("Resolved secondary storage type from configuration")
 }
 
 func resolveConfigPaths(baseDir string, userConfig string) []string {
@@ -709,13 +500,6 @@ func copyFile(src, dst string) error {
 		return err
 	}
 	return nil
-}
-
-func copyFileEnsureDir(src, dst string) error {
-	if err := os.MkdirAll(filepath.Dir(dst), 0o755); err != nil {
-		return err
-	}
-	return copyFile(src, dst)
 }
 
 func main() {

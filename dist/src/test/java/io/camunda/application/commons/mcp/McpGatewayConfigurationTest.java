@@ -10,7 +10,6 @@ package io.camunda.application.commons.mcp;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.application.commons.service.CamundaServicesConfiguration;
 import io.camunda.application.initializers.McpGatewayInitializer;
 import io.camunda.gateway.mcp.tool.cluster.ClusterTools;
@@ -26,6 +25,7 @@ import org.springframework.boot.micrometer.observation.autoconfigure.Observation
 import org.springframework.boot.test.context.runner.WebApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.core.annotation.AnnotatedElementUtils;
+import tools.jackson.databind.json.JsonMapper;
 
 class McpGatewayConfigurationTest {
 
@@ -49,8 +49,11 @@ class McpGatewayConfigurationTest {
         .map(Method::getReturnType)
         .forEach(mockBeans::add);
 
-    // add mocks needed for McpGatewayConfiguration
-    mockBeans.add(ObjectMapper.class);
+    // mock JsonMapper used in MCP observation convention
+    mockBeans.add(JsonMapper.class);
+
+    // mock qualified JsonMapper dependency used in MCP transports
+    runner = runner.withBean("mcpServerJsonMapper", JsonMapper.class, () -> mock(JsonMapper.class));
 
     for (final Class<?> mockedBean : mockBeans) {
       runner = addMockedBean(runner, mockedBean);

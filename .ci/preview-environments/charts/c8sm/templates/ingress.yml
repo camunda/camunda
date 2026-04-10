@@ -64,9 +64,9 @@ spec:
         pathType: Prefix
       - backend:
           service:
-            name: {{ template "webModeler.webapp.fullname" $camundaPlatform }}
+            name: {{ template "webModeler.restapi.fullname" $camundaPlatform }}
             port:
-              number: {{ .Values.camundaPlatform.webModeler.webapp.service.port }}
+              number: {{ .Values.camundaPlatform.webModeler.restapi.service.port }}
         path: {{ .Values.camundaPlatform.webModeler.contextPath }}
         pathType: Prefix
       - backend:

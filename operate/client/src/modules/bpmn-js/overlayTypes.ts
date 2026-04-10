@@ -7,7 +7,9 @@
  */
 
 import type {OverlayPosition} from 'bpmn-js/lib/NavigatedViewer';
-import type {ElementState} from 'modules/types/operate';
+import type {ProcessDefinitionStatistic} from '@camunda/camunda-api-zod-schemas/8.10';
+
+type ElementState = keyof Omit<ProcessDefinitionStatistic, 'elementId'>;
 
 type OverlayData = {
   payload?: unknown;
@@ -49,4 +51,4 @@ const isModificationBadgePayload = (
 };
 
 export {isStatisticsPayload, isModificationBadgePayload};
-export type {OverlayData};
+export type {ElementState, OverlayData};

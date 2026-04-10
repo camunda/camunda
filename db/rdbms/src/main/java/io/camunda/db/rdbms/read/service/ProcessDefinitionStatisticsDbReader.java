@@ -8,11 +8,14 @@
 package io.camunda.db.rdbms.read.service;
 
 import io.camunda.db.rdbms.read.RdbmsReaderConfig;
+import io.camunda.db.rdbms.read.domain.ProcessDefinitionStatisticsDbQuery;
 import io.camunda.db.rdbms.sql.ProcessDefinitionMapper;
 import io.camunda.search.clients.reader.ProcessDefinitionStatisticsReader;
 import io.camunda.search.entities.ProcessFlowNodeStatisticsEntity;
 import io.camunda.search.query.ProcessDefinitionFlowNodeStatisticsQuery;
 import io.camunda.security.reader.ResourceAccessChecks;
+import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
+import java.util.Collections;
 import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,7 +39,22 @@ public class ProcessDefinitionStatisticsDbReader
   public List<ProcessFlowNodeStatisticsEntity> aggregate(
       final ProcessDefinitionFlowNodeStatisticsQuery query,
       final ResourceAccessChecks resourceAccessChecks) {
+
+    if (shouldReturnEmptyResult(resourceAccessChecks)) {
+      return Collections.emptyList();
+    }
+
+    final var authorizedResourceIds =
+        resourceAccessChecks
+            .getAuthorizedResourceIdsByType()
+            .getOrDefault(AuthorizationResourceType.PROCESS_DEFINITION.name(), List.of());
+
     LOG.trace("[RDBMS DB] Query process definition flow node statistics with filter {}", query);
-    return processDefinitionMapper.flowNodeStatistics(query.filter());
+    return processDefinitionMapper.flowNodeStatistics(
+        ProcessDefinitionStatisticsDbQuery.of(
+            b ->
+                b.filter(query.filter())
+                    .authorizedResourceIds(authorizedResourceIds)
+                    .authorizedTenantIds(resourceAccessChecks.getAuthorizedTenantIds())));
   }
 }

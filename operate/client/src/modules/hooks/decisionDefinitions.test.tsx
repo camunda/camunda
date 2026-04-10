@@ -23,7 +23,10 @@ import {
   useDecisionDefinitionSelection,
 } from './decisionDefinitions';
 
-const getWrapper = (searchParams?: {name?: string; version?: string}) => {
+const getWrapper = (searchParams?: {
+  decisionDefinitionId?: string;
+  decisionDefinitionVersion?: string;
+}) => {
   let initialPath = Paths.decisions();
   if (searchParams) {
     const params = new URLSearchParams(searchParams);
@@ -150,7 +153,10 @@ describe('useDecisionDefinitionSelection', () => {
     );
 
     const {result} = renderHook(() => useDecisionDefinitionSelection(), {
-      wrapper: getWrapper({name: 'testDecision', version: 'all'}),
+      wrapper: getWrapper({
+        decisionDefinitionId: 'testDecision',
+        decisionDefinitionVersion: 'all',
+      }),
     });
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
@@ -173,7 +179,10 @@ describe('useDecisionDefinitionSelection', () => {
     mockSearchDecisionDefinitions().withSuccess(searchResult([definition]));
 
     const {result} = renderHook(() => useDecisionDefinitionSelection(), {
-      wrapper: getWrapper({name: 'testDecision', version: '2'}),
+      wrapper: getWrapper({
+        decisionDefinitionId: 'testDecision',
+        decisionDefinitionVersion: '2',
+      }),
     });
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
@@ -187,7 +196,7 @@ describe('useDecisionDefinitionSelection', () => {
     mockSearchDecisionDefinitions().withSuccess(searchResult([]));
 
     const {result} = renderHook(() => useDecisionDefinitionSelection(), {
-      wrapper: getWrapper({name: 'unknown'}),
+      wrapper: getWrapper({decisionDefinitionId: 'unknown'}),
     });
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));

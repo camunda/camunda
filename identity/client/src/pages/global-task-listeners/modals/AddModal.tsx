@@ -18,12 +18,15 @@ import {
   LISTENER_EVENT_TYPES,
 } from "src/utility/api/global-task-listeners";
 import { useNotifications } from "src/components/notifications";
-import { LISTENER_TYPE_PATTERN } from "src/pages/global-task-listeners";
+import {
+  getEventTypeLabel,
+  getEventTypeLabels,
+  LISTENER_TYPE_PATTERN,
+} from "src/pages/global-task-listeners/utility";
 import type {
   CreateGlobalTaskListenerRequestBody,
-  GlobalTaskListener,
   GlobalTaskListenerEventType,
-} from "@camunda/camunda-api-zod-schemas/8.9";
+} from "@camunda/camunda-api-zod-schemas/8.10";
 
 const AddModal: FC<UseModalProps> = ({ open, onClose, onSuccess }) => {
   const { t } = useTranslate("globalTaskListeners");
@@ -89,20 +92,6 @@ const AddModal: FC<UseModalProps> = ({ open, onClose, onSuccess }) => {
     }
 
     setValue("eventTypes", selectedItems);
-  };
-
-  const getEventTypeLabel = (
-    eventType: GlobalTaskListener["eventTypes"][number],
-  ): string => {
-    const labels: Record<GlobalTaskListener["eventTypes"][number], string> = {
-      all: t("eventTypeAll"),
-      creating: t("eventTypeCreating"),
-      updating: t("eventTypeUpdating"),
-      assigning: t("eventTypeAssigning"),
-      completing: t("eventTypeCompleting"),
-      canceling: t("eventTypeCanceling"),
-    };
-    return labels[eventType];
   };
 
   const onSubmit = async (data: CreateGlobalTaskListenerRequestBody) => {
@@ -198,9 +187,7 @@ const AddModal: FC<UseModalProps> = ({ open, onClose, onSuccess }) => {
             titleText={t("eventType")}
             label={
               field.value.length > 0
-                ? field.value.includes("all")
-                  ? t("eventTypeAll")
-                  : field.value.map(getEventTypeLabel).join(", ")
+                ? getEventTypeLabels(field.value, t)
                 : t("selectEventTypes")
             }
             items={[...LISTENER_EVENT_TYPES]}
@@ -213,7 +200,7 @@ const AddModal: FC<UseModalProps> = ({ open, onClose, onSuccess }) => {
               handleEventTypeChange(selectedItems);
             }}
             itemToString={(item: GlobalTaskListenerEventType) =>
-              getEventTypeLabel(item)
+              getEventTypeLabel(item, t)
             }
             invalid={!!fieldState.error}
             invalidText={fieldState.error?.message}

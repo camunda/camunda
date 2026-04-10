@@ -7,7 +7,12 @@
  */
 
 import {render, screen} from 'modules/testing-library';
-import {createMemoryRouter, RouterProvider} from 'react-router-dom';
+import {
+  createMemoryRouter,
+  Navigate,
+  RouterProvider,
+  useLocation,
+} from 'react-router-dom';
 import {QueryClientProvider} from '@tanstack/react-query';
 import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 import {Paths} from 'modules/Routes';
@@ -16,9 +21,18 @@ import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fe
 import {createProcessInstance, searchResult} from 'modules/testUtils';
 import {mockSearchElementInstances} from 'modules/mocks/api/v2/elementInstances/searchElementInstances';
 import {mockSearchIncidentsByProcessInstance} from 'modules/mocks/api/v2/incidents/searchIncidentsByProcessInstance';
+import {mockSearchIncidentsByElementInstance} from 'modules/mocks/api/v2/incidents/searchIncidentsByElementInstance';
+import {mockFetchElementInstance} from 'modules/mocks/api/v2/elementInstances/fetchElementInstance';
 import {LocationLog} from 'modules/utils/LocationLog';
 
 const PROCESS_INSTANCE_ID = '123';
+
+const RedirectToVariables: React.FC = () => {
+  const location = useLocation();
+  return (
+    <Navigate to={{pathname: 'variables', search: location.search}} replace />
+  );
+};
 
 function getWrapper(initialPath?: string) {
   const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
@@ -28,7 +42,11 @@ function getWrapper(initialPath?: string) {
           path: Paths.processInstance(undefined, true),
           element: children,
           children: [
-            {index: true, element: <LocationLog />},
+            {index: true, element: <RedirectToVariables />},
+            {
+              path: Paths.processInstanceVariables({isRelative: true}),
+              element: <LocationLog />,
+            },
             {
               path: Paths.processInstanceDetails({isRelative: true}),
               element: <LocationLog />,
@@ -53,12 +71,19 @@ function getWrapper(initialPath?: string) {
               path: Paths.processInstanceOperationsLog({isRelative: true}),
               element: <LocationLog />,
             },
+            {
+              path: Paths.processInstanceHistory({isRelative: true}),
+              element: <LocationLog />,
+            },
           ],
         },
       ],
       {
         initialEntries: [
-          initialPath ?? Paths.processInstance(PROCESS_INSTANCE_ID),
+          initialPath ??
+            Paths.processInstanceVariables({
+              processInstanceId: PROCESS_INSTANCE_ID,
+            }),
         ],
       },
     );
@@ -84,7 +109,7 @@ describe('<BottomPanelTabs />', () => {
       }),
     );
 
-    render(<BottomPanelTabs />, {wrapper: getWrapper()});
+    render(<BottomPanelTabs isHistoryTabVisible />, {wrapper: getWrapper()});
 
     expect(screen.getByRole('link', {name: /^Variables$/i})).toBeVisible();
     expect(screen.getByRole('link', {name: /^Listeners$/i})).toBeVisible();
@@ -99,7 +124,7 @@ describe('<BottomPanelTabs />', () => {
       }),
     );
 
-    render(<BottomPanelTabs />, {wrapper: getWrapper()});
+    render(<BottomPanelTabs isHistoryTabVisible />, {wrapper: getWrapper()});
 
     expect(screen.getByRole('link', {name: /^Variables$/i})).toBeVisible();
     expect(
@@ -123,7 +148,9 @@ describe('<BottomPanelTabs />', () => {
       }),
     );
 
-    render(<BottomPanelTabs />, {wrapper: getWrapper(SELECTED_PATH)});
+    render(<BottomPanelTabs isHistoryTabVisible />, {
+      wrapper: getWrapper(SELECTED_PATH),
+    });
 
     expect(screen.getByRole('link', {name: /^Variables$/i})).toBeVisible();
     expect(screen.getByRole('link', {name: /^Details$/i})).toBeVisible();
@@ -141,7 +168,46 @@ describe('<BottomPanelTabs />', () => {
       }),
     );
 
-    render(<BottomPanelTabs />, {wrapper: getWrapper()});
+    render(<BottomPanelTabs isHistoryTabVisible />, {wrapper: getWrapper()});
+
+    expect(screen.getByRole('link', {name: /^Variables$/i})).toBeVisible();
+    expect(
+      screen.queryByRole('link', {name: /^Incidents$/i}),
+    ).not.toBeInTheDocument();
+  });
+
+  it('should not show Incidents tab when selected element instance has no incidents', async () => {
+    const elementInstanceKey = '456';
+    mockFetchProcessInstance().withSuccess(
+      createProcessInstance({
+        processInstanceKey: PROCESS_INSTANCE_ID,
+        hasIncident: true,
+      }),
+    );
+    mockFetchElementInstance(':key').withSuccess({
+      elementInstanceKey,
+      processInstanceKey: PROCESS_INSTANCE_ID,
+      processDefinitionKey: '2223894723423800',
+      processDefinitionId: 'someKey',
+      startDate: '2024-01-01T00:00:00.000Z',
+      endDate: null,
+      state: 'ACTIVE',
+      incidentKey: null,
+      elementId: 'someElement',
+      elementName: null,
+      type: 'SERVICE_TASK',
+      tenantId: '<default>',
+      hasIncident: false,
+      rootProcessInstanceKey: null,
+    });
+    mockSearchIncidentsByElementInstance(':key').withSuccess(
+      searchResult([], 0),
+    );
+
+    const path = `${Paths.processInstance(PROCESS_INSTANCE_ID)}?elementId=someElement&elementInstanceKey=${elementInstanceKey}`;
+    render(<BottomPanelTabs isHistoryTabVisible />, {
+      wrapper: getWrapper(path),
+    });
 
     expect(screen.getByRole('link', {name: /^Variables$/i})).toBeVisible();
     expect(
@@ -160,7 +226,7 @@ describe('<BottomPanelTabs />', () => {
       }),
     );
 
-    render(<BottomPanelTabs />, {wrapper: getWrapper()});
+    render(<BottomPanelTabs isHistoryTabVisible />, {wrapper: getWrapper()});
 
     expect(
       await screen.findByRole('link', {name: /^Incidents$/i}),
@@ -180,21 +246,24 @@ describe('<BottomPanelTabs />', () => {
       }),
     );
 
-    render(<BottomPanelTabs />, {wrapper: getWrapper(SELECTED_PATH)});
+    render(<BottomPanelTabs isHistoryTabVisible />, {
+      wrapper: getWrapper(SELECTED_PATH),
+    });
 
     expect(
       await screen.findByRole('link', {name: /^Incidents$/i}),
     ).toBeVisible();
 
     const tabs = screen.getAllByRole('link');
-    expect(tabs).toHaveLength(7);
-    expect(tabs[0]).toHaveAccessibleName('Details');
-    expect(tabs[1]).toHaveAccessibleName('Variables');
-    expect(tabs[2]).toHaveAccessibleName('Incidents');
+    expect(tabs).toHaveLength(8);
+    expect(tabs[0]).toHaveAccessibleName('Incidents');
+    expect(tabs[1]).toHaveAccessibleName('Details');
+    expect(tabs[2]).toHaveAccessibleName('Variables');
     expect(tabs[3]).toHaveAccessibleName('Input Mappings');
     expect(tabs[4]).toHaveAccessibleName('Output Mappings');
     expect(tabs[5]).toHaveAccessibleName('Listeners');
     expect(tabs[6]).toHaveAccessibleName('Operations Log');
+    expect(tabs[7]).toHaveAccessibleName('Instance History');
   });
 
   it('should navigate to the correct route when clicking always visible tabs', async () => {
@@ -205,10 +274,14 @@ describe('<BottomPanelTabs />', () => {
       }),
     );
 
-    const {user} = render(<BottomPanelTabs />, {wrapper: getWrapper()});
+    const {user} = render(<BottomPanelTabs isHistoryTabVisible />, {
+      wrapper: getWrapper(),
+    });
 
     expect(screen.getByTestId('pathname')).toHaveTextContent(
-      Paths.processInstance(PROCESS_INSTANCE_ID),
+      Paths.processInstanceVariables({
+        processInstanceId: PROCESS_INSTANCE_ID,
+      }),
     );
 
     await user.click(screen.getByRole('link', {name: /^Listeners$/i}));
@@ -230,7 +303,9 @@ describe('<BottomPanelTabs />', () => {
     await user.click(screen.getByRole('link', {name: /^Variables$/i}));
 
     expect(screen.getByTestId('pathname')).toHaveTextContent(
-      Paths.processInstance(PROCESS_INSTANCE_ID),
+      Paths.processInstanceVariables({
+        processInstanceId: PROCESS_INSTANCE_ID,
+      }),
     );
   });
 
@@ -244,7 +319,7 @@ describe('<BottomPanelTabs />', () => {
       }),
     );
 
-    const {user} = render(<BottomPanelTabs />, {
+    const {user} = render(<BottomPanelTabs isHistoryTabVisible />, {
       wrapper: getWrapper(SELECTED_PATH),
     });
 
@@ -284,7 +359,9 @@ describe('<BottomPanelTabs />', () => {
       }),
     );
 
-    const {user} = render(<BottomPanelTabs />, {wrapper: getWrapper()});
+    const {user} = render(<BottomPanelTabs isHistoryTabVisible />, {
+      wrapper: getWrapper(),
+    });
 
     const incidentsTab = await screen.findByRole('link', {
       name: /^Incidents$/i,
@@ -299,6 +376,49 @@ describe('<BottomPanelTabs />', () => {
     );
   });
 
+  it('should navigate to the Instance History route when clicking the Instance History tab', async () => {
+    mockFetchProcessInstance().withSuccess(
+      createProcessInstance({
+        processInstanceKey: PROCESS_INSTANCE_ID,
+        hasIncident: false,
+      }),
+    );
+
+    const {user} = render(<BottomPanelTabs isHistoryTabVisible />, {
+      wrapper: getWrapper(),
+    });
+
+    const instanceHistoryTab = screen.getByRole('link', {
+      name: /^Instance History$/i,
+    });
+
+    await user.click(instanceHistoryTab);
+
+    expect(screen.getByTestId('pathname')).toHaveTextContent(
+      Paths.processInstanceHistory({
+        processInstanceId: PROCESS_INSTANCE_ID,
+      }),
+    );
+  });
+
+  it('should not show Instance History tab (large screen)', async () => {
+    mockFetchProcessInstance().withSuccess(
+      createProcessInstance({
+        processInstanceKey: PROCESS_INSTANCE_ID,
+        hasIncident: false,
+      }),
+    );
+
+    render(<BottomPanelTabs isHistoryTabVisible={false} />, {
+      wrapper: getWrapper(),
+    });
+
+    expect(screen.getByRole('link', {name: /^Variables$/i})).toBeVisible();
+    expect(
+      screen.queryByRole('link', {name: /^Instance History$/i}),
+    ).not.toBeInTheDocument();
+  });
+
   it('should preserve search params when navigating between tabs', async () => {
     mockSearchElementInstances().withSuccess(searchResult([]));
 
@@ -309,7 +429,7 @@ describe('<BottomPanelTabs />', () => {
       }),
     );
 
-    const {user} = render(<BottomPanelTabs />, {
+    const {user} = render(<BottomPanelTabs isHistoryTabVisible />, {
       wrapper: getWrapper(SELECTED_PATH),
     });
 
@@ -331,7 +451,9 @@ describe('<BottomPanelTabs />', () => {
     await user.click(screen.getByRole('link', {name: /^Variables$/i}));
 
     expect(screen.getByTestId('pathname')).toHaveTextContent(
-      Paths.processInstance(PROCESS_INSTANCE_ID),
+      Paths.processInstanceVariables({
+        processInstanceId: PROCESS_INSTANCE_ID,
+      }),
     );
     expect(screen.getByTestId('search')).toHaveTextContent(
       '?elementId=someElement',
@@ -346,7 +468,9 @@ describe('<BottomPanelTabs />', () => {
       }),
     );
 
-    const {user} = render(<BottomPanelTabs />, {wrapper: getWrapper()});
+    const {user} = render(<BottomPanelTabs isHistoryTabVisible />, {
+      wrapper: getWrapper(),
+    });
 
     expect(screen.getByRole('link', {name: /^Variables$/i})).toHaveAttribute(
       'aria-current',
@@ -378,12 +502,240 @@ describe('<BottomPanelTabs />', () => {
       }),
     );
 
-    render(<BottomPanelTabs />, {wrapper: getWrapper()});
+    render(<BottomPanelTabs isHistoryTabVisible />, {wrapper: getWrapper()});
 
     const incidentsTab = await screen.findByRole('link', {
       name: /^Incidents$/i,
     });
     expect(incidentsTab).toBeVisible();
     expect(await screen.findByText('5')).toBeVisible();
+  });
+
+  it('should display an incident count filtered to a selected element instance', async () => {
+    const elementInstanceKey = '456';
+    mockFetchProcessInstance().withSuccess(
+      createProcessInstance({
+        processInstanceKey: PROCESS_INSTANCE_ID,
+        hasIncident: true,
+      }),
+    );
+    mockFetchElementInstance(':key').withSuccess({
+      elementInstanceKey,
+      processInstanceKey: PROCESS_INSTANCE_ID,
+      processDefinitionKey: '2223894723423800',
+      processDefinitionId: 'someKey',
+      startDate: '2024-01-01T00:00:00.000Z',
+      endDate: null,
+      state: 'ACTIVE',
+      incidentKey: null,
+      elementId: 'someElement',
+      elementName: null,
+      type: 'SERVICE_TASK',
+      tenantId: '<default>',
+      hasIncident: true,
+      rootProcessInstanceKey: null,
+    });
+    mockSearchIncidentsByElementInstance(':key').withSuccess(
+      searchResult([], 2),
+    );
+
+    const path = `${Paths.processInstance(PROCESS_INSTANCE_ID)}?elementId=someElement&elementInstanceKey=${elementInstanceKey}`;
+    render(<BottomPanelTabs isHistoryTabVisible />, {
+      wrapper: getWrapper(path),
+    });
+
+    expect(
+      await screen.findByRole('link', {name: /^Incidents$/i}),
+    ).toBeVisible();
+    expect(await screen.findByText('2')).toBeVisible();
+  });
+
+  it('should display an incident count filtered to selected element when no single instance is selected', async () => {
+    mockFetchProcessInstance().withSuccess(
+      createProcessInstance({
+        processInstanceKey: PROCESS_INSTANCE_ID,
+        hasIncident: true,
+      }),
+    );
+    mockSearchElementInstances().withSuccess(
+      searchResult(
+        [
+          {
+            elementInstanceKey: '1001',
+            processInstanceKey: PROCESS_INSTANCE_ID,
+            processDefinitionKey: '2223894723423800',
+            processDefinitionId: 'someKey',
+            startDate: '2024-01-01T00:00:00.000Z',
+            endDate: null,
+            state: 'ACTIVE',
+            incidentKey: null,
+            elementId: 'multiElement',
+            elementName: null,
+            type: 'SERVICE_TASK',
+            tenantId: '<default>',
+            hasIncident: true,
+            rootProcessInstanceKey: null,
+          },
+          {
+            elementInstanceKey: '1002',
+            processInstanceKey: PROCESS_INSTANCE_ID,
+            processDefinitionKey: '2223894723423800',
+            processDefinitionId: 'someKey',
+            startDate: '2024-01-01T00:00:00.000Z',
+            endDate: null,
+            state: 'ACTIVE',
+            incidentKey: null,
+            elementId: 'multiElement',
+            elementName: null,
+            type: 'SERVICE_TASK',
+            tenantId: '<default>',
+            hasIncident: true,
+            rootProcessInstanceKey: null,
+          },
+        ],
+        2,
+      ),
+    );
+    mockSearchIncidentsByProcessInstance(':key').withSuccess(
+      searchResult([], 3),
+    );
+
+    const selectedPath = `${Paths.processInstance(PROCESS_INSTANCE_ID)}?elementId=multiElement`;
+    render(<BottomPanelTabs isHistoryTabVisible />, {
+      wrapper: getWrapper(selectedPath),
+    });
+
+    expect(
+      await screen.findByRole('link', {name: /^Incidents$/i}),
+    ).toBeVisible();
+    expect(await screen.findByText('3')).toBeVisible();
+  });
+
+  it('should redirect incidents tab when process instance has no incidents', async () => {
+    mockFetchProcessInstance().withSuccess(
+      createProcessInstance({
+        processInstanceKey: PROCESS_INSTANCE_ID,
+        hasIncident: false,
+      }),
+    );
+
+    const path = Paths.processInstanceIncidents({
+      processInstanceId: PROCESS_INSTANCE_ID,
+    });
+    render(<BottomPanelTabs isHistoryTabVisible />, {
+      wrapper: getWrapper(path),
+    });
+
+    expect(await screen.findByTestId('pathname')).toHaveTextContent(
+      Paths.processInstanceVariables({
+        processInstanceId: PROCESS_INSTANCE_ID,
+      }),
+    );
+  });
+
+  it('should redirect incidents tab when selected element has no incidents', async () => {
+    const elementInstanceKey = '456';
+    mockFetchProcessInstance().withSuccess(
+      createProcessInstance({
+        processInstanceKey: PROCESS_INSTANCE_ID,
+        hasIncident: true,
+      }),
+    );
+    mockFetchElementInstance(':key').withSuccess({
+      elementInstanceKey,
+      processInstanceKey: PROCESS_INSTANCE_ID,
+      processDefinitionKey: '2223894723423800',
+      processDefinitionId: 'someKey',
+      startDate: '2024-01-01T00:00:00.000Z',
+      endDate: null,
+      state: 'ACTIVE',
+      incidentKey: null,
+      elementId: 'someElement',
+      elementName: null,
+      type: 'SERVICE_TASK',
+      tenantId: '<default>',
+      hasIncident: false,
+      rootProcessInstanceKey: null,
+    });
+    mockSearchIncidentsByElementInstance(':key').withSuccess(
+      searchResult([], 0),
+    );
+
+    const path = `${Paths.processInstanceIncidents({processInstanceId: PROCESS_INSTANCE_ID})}?elementId=someElement&elementInstanceKey=${elementInstanceKey}`;
+    render(<BottomPanelTabs isHistoryTabVisible />, {
+      wrapper: getWrapper(path),
+    });
+
+    expect(await screen.findByTestId('pathname')).toHaveTextContent(
+      Paths.processInstanceVariables({
+        processInstanceId: PROCESS_INSTANCE_ID,
+      }),
+    );
+  });
+
+  it('should redirect input mappings tab when no element is selected', async () => {
+    mockFetchProcessInstance().withSuccess(
+      createProcessInstance({
+        processInstanceKey: PROCESS_INSTANCE_ID,
+        hasIncident: false,
+      }),
+    );
+
+    const inputMappingsPath = Paths.processInstanceInputMappings({
+      processInstanceId: PROCESS_INSTANCE_ID,
+    });
+    render(<BottomPanelTabs isHistoryTabVisible />, {
+      wrapper: getWrapper(inputMappingsPath),
+    });
+
+    expect(await screen.findByTestId('pathname')).toHaveTextContent(
+      Paths.processInstanceVariables({
+        processInstanceId: PROCESS_INSTANCE_ID,
+      }),
+    );
+  });
+
+  it('should redirect output mappings tab when no element is selected', async () => {
+    mockFetchProcessInstance().withSuccess(
+      createProcessInstance({
+        processInstanceKey: PROCESS_INSTANCE_ID,
+        hasIncident: false,
+      }),
+    );
+
+    const outputMappingsPath = Paths.processInstanceOutputMappings({
+      processInstanceId: PROCESS_INSTANCE_ID,
+    });
+    render(<BottomPanelTabs isHistoryTabVisible />, {
+      wrapper: getWrapper(outputMappingsPath),
+    });
+
+    expect(await screen.findByTestId('pathname')).toHaveTextContent(
+      Paths.processInstanceVariables({
+        processInstanceId: PROCESS_INSTANCE_ID,
+      }),
+    );
+  });
+
+  it('should redirect details tab when no element is selected', async () => {
+    mockFetchProcessInstance().withSuccess(
+      createProcessInstance({
+        processInstanceKey: PROCESS_INSTANCE_ID,
+        hasIncident: false,
+      }),
+    );
+
+    const path = Paths.processInstanceDetails({
+      processInstanceId: PROCESS_INSTANCE_ID,
+    });
+    render(<BottomPanelTabs isHistoryTabVisible />, {
+      wrapper: getWrapper(path),
+    });
+
+    expect(await screen.findByTestId('pathname')).toHaveTextContent(
+      Paths.processInstanceVariables({
+        processInstanceId: PROCESS_INSTANCE_ID,
+      }),
+    );
   });
 });

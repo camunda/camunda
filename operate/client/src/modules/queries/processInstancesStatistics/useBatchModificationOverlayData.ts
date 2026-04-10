@@ -14,18 +14,18 @@ import {useQuery} from '@tanstack/react-query';
 import type {
   GetProcessDefinitionStatisticsRequestBody,
   GetProcessDefinitionStatisticsResponseBody,
-} from '@camunda/camunda-api-zod-schemas/8.9';
+} from '@camunda/camunda-api-zod-schemas/8.10';
 
 function batchModificationOverlayParser(params: {
-  sourceFlowNodeId?: string;
-  targetFlowNodeId?: string;
+  sourceElementId?: string;
+  targetElementId?: string;
 }): (data: GetProcessDefinitionStatisticsResponseBody) => OverlayData[] {
   return (data: GetProcessDefinitionStatisticsResponseBody): OverlayData[] => {
-    const {sourceFlowNodeId, targetFlowNodeId} = params;
+    const {sourceElementId, targetElementId} = params;
     if (
       data.items.length === 0 ||
-      targetFlowNodeId === undefined ||
-      sourceFlowNodeId === undefined
+      targetElementId === undefined ||
+      sourceElementId === undefined
     ) {
       return [];
     }
@@ -33,18 +33,18 @@ function batchModificationOverlayParser(params: {
     return [
       {
         payload: {
-          cancelledTokenCount: getInstancesCount(data.items, sourceFlowNodeId),
+          cancelledTokenCount: getInstancesCount(data.items, sourceElementId),
         },
         type: 'batchModificationsBadge',
-        elementId: sourceFlowNodeId,
+        elementId: sourceElementId,
         position: MODIFICATIONS,
       },
       {
         payload: {
-          newTokenCount: getInstancesCount(data.items, sourceFlowNodeId),
+          newTokenCount: getInstancesCount(data.items, sourceElementId),
         },
         type: 'batchModificationsBadge',
-        elementId: targetFlowNodeId,
+        elementId: targetElementId,
         position: MODIFICATIONS,
       },
     ];
@@ -53,7 +53,7 @@ function batchModificationOverlayParser(params: {
 
 function useBatchModificationOverlayData(
   payload: GetProcessDefinitionStatisticsRequestBody,
-  params: {sourceFlowNodeId?: string; targetFlowNodeId?: string},
+  params: {sourceElementId?: string; targetElementId?: string},
   processDefinitionKey?: string,
   enabled: boolean = true,
 ) {

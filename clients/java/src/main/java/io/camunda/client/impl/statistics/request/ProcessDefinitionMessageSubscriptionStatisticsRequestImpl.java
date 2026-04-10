@@ -15,14 +15,14 @@
  */
 package io.camunda.client.impl.statistics.request;
 
+import static io.camunda.client.api.search.request.SearchRequestBuilders.cursorForwardPage;
 import static io.camunda.client.api.search.request.SearchRequestBuilders.messageSubscriptionFilter;
-import static io.camunda.client.api.search.request.SearchRequestBuilders.searchRequestPage;
 
 import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.command.FinalCommandStep;
 import io.camunda.client.api.search.filter.MessageSubscriptionFilter;
-import io.camunda.client.api.search.request.SearchRequestPage;
+import io.camunda.client.api.search.page.CursorForwardPage;
 import io.camunda.client.api.statistics.request.ProcessDefinitionMessageSubscriptionStatisticsRequest;
 import io.camunda.client.api.statistics.response.ProcessDefinitionMessageSubscriptionStatistics;
 import io.camunda.client.impl.http.HttpCamundaFuture;
@@ -95,7 +95,7 @@ public class ProcessDefinitionMessageSubscriptionStatisticsRequestImpl
   }
 
   @Override
-  public ProcessDefinitionMessageSubscriptionStatisticsRequest page(final SearchRequestPage value) {
+  public ProcessDefinitionMessageSubscriptionStatisticsRequest page(final CursorForwardPage value) {
     final SearchQueryPageRequest page = provideSearchRequestProperty(value);
     request.setPage(new CursorForwardPagination().limit(page.getLimit()).after(page.getAfter()));
     return this;
@@ -103,7 +103,7 @@ public class ProcessDefinitionMessageSubscriptionStatisticsRequestImpl
 
   @Override
   public ProcessDefinitionMessageSubscriptionStatisticsRequest page(
-      final Consumer<SearchRequestPage> fn) {
-    return page(searchRequestPage(fn));
+      final Consumer<CursorForwardPage> fn) {
+    return page(cursorForwardPage(fn));
   }
 }

@@ -13,7 +13,9 @@ import io.camunda.zeebe.engine.state.batchoperation.PersistedBatchOperation;
 import io.camunda.zeebe.engine.state.immutable.IncidentState;
 import io.camunda.zeebe.protocol.impl.record.value.incident.IncidentRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
+import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
+import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.stream.api.FollowUpCommandMetadata;
 import org.slf4j.Logger;
@@ -49,8 +51,8 @@ public class ResolveIncidentBatchOperationExecutor implements BatchOperationExec
     if (incidentState.isJobIncident(incident)) {
       LOGGER.trace("Increasing retries for job with key '{}'", incident.getJobKey());
       final var jobRecord = new JobRecord().setRetries(1);
-      commandWriter.appendFollowUpCommand(
-          incident.getJobKey(), JobIntent.UPDATE_RETRIES, jobRecord);
+      sendCommandWithMetadata(
+          incident.getJobKey(), JobIntent.UPDATE_RETRIES, jobRecord, batchOperation);
     }
 
     LOGGER.trace("Resolving incident with key '{}'", incidentKey);
@@ -59,13 +61,21 @@ public class ResolveIncidentBatchOperationExecutor implements BatchOperationExec
 
   private void resolveIncident(
       final long incidentKey, final PersistedBatchOperation batchOperation) {
-    final var command = new IncidentRecord();
+    sendCommandWithMetadata(
+        incidentKey, IncidentIntent.RESOLVE, new IncidentRecord(), batchOperation);
+  }
+
+  private void sendCommandWithMetadata(
+      final long key,
+      final Intent intent,
+      final RecordValue recordValue,
+      final PersistedBatchOperation batchOperation) {
     final var authentication = batchOperation.getAuthentication();
     final var claims = brokerRequestAuthorizationConverter.convert(authentication);
     commandWriter.appendFollowUpCommand(
-        incidentKey,
-        IncidentIntent.RESOLVE,
-        command,
+        key,
+        intent,
+        recordValue,
         FollowUpCommandMetadata.of(
             b -> b.batchOperationReference(batchOperation.getKey()).claims(claims)));
   }

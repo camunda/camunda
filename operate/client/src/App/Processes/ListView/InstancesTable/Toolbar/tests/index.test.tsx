@@ -41,7 +41,7 @@ vi.mock('modules/stores/notifications', () => ({
 const Wrapper = ({
   children,
   initialEntries = [
-    '/processes?flowNodeId=test-activity&incidents=false&ids=1,2',
+    '/processes?elementId=test-activity&incidents=false&processInstanceKey=1,2',
   ],
 }: Props) => {
   return (

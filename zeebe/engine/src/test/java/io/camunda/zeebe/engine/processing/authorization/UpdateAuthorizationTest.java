@@ -22,6 +22,7 @@ import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.List;
 import java.util.Set;
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestWatcher;
@@ -30,6 +31,12 @@ public class UpdateAuthorizationTest {
 
   @Rule public final EngineRule engine = EngineRule.singlePartition();
   @Rule public final TestWatcher recordingExporterTestWatcher = new RecordingExporterTestWatcher();
+
+  @Before
+  public void setup() {
+    engine.user().newUser("ownerId").create();
+    engine.group().newGroup("ownerId").create();
+  }
 
   @Test
   public void shouldUpdateAuthorization() {
@@ -144,6 +151,7 @@ public class UpdateAuthorizationTest {
   @Test
   public void shouldRejectUpdateWhenMappingDoesNotExist() {
     // given
+    engine.user().newUser("existing-owner-id").create();
     final var authorizationKey =
         engine
             .authorization()

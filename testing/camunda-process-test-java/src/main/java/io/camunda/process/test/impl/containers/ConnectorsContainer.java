@@ -17,6 +17,7 @@ package io.camunda.process.test.impl.containers;
 
 import static io.camunda.process.test.impl.runtime.ContainerRuntimeEnvs.CONNECTORS_ENV_CAMUNDA_CLIENT_GRPC_ADDRESS;
 import static io.camunda.process.test.impl.runtime.ContainerRuntimeEnvs.CONNECTORS_ENV_CAMUNDA_CLIENT_REST_ADDRESS;
+import static io.camunda.process.test.impl.runtime.ContainerRuntimeEnvs.CONNECTORS_ENV_SECRET_PREFIX;
 
 import io.camunda.process.test.impl.runtime.ContainerRuntimeEnvs;
 import io.camunda.process.test.impl.runtime.ContainerRuntimePorts;
@@ -33,6 +34,9 @@ import org.testcontainers.utility.DockerImageName;
 public class ConnectorsContainer extends GenericContainer<ConnectorsContainer> {
 
   private static final Duration DEFAULT_STARTUP_TIMEOUT = Duration.ofMinutes(1);
+
+  private static final String DEFAULT_CONNECTOR_POLLING_INTERVAL_IN_MILLIS = "500";
+
   private static final String CONNECTORS_READY_ENDPOINT = "/actuator/health/readiness";
 
   private static final String LOG_APPENDER_STACKDRIVER = "stackdriver";
@@ -47,7 +51,11 @@ public class ConnectorsContainer extends GenericContainer<ConnectorsContainer> {
         .waitingFor(newDefaultWaitStrategy())
         .withEnv("management.endpoints.web.exposure.include", "health")
         .withEnv("management.endpoint.health.probes.enabled", "true")
+        .withEnv(
+            ContainerRuntimeEnvs.CONNECTORS_ENV_POLLING_INTERVAL,
+            DEFAULT_CONNECTOR_POLLING_INTERVAL_IN_MILLIS)
         .withEnv(ContainerRuntimeEnvs.CONNECTORS_ENV_LOG_APPENDER, LOG_APPENDER_STACKDRIVER)
+        .withEnv(CONNECTORS_ENV_SECRET_PREFIX, "")
         .addExposedPorts(ContainerRuntimePorts.CONNECTORS_REST_API);
   }
 
@@ -77,13 +85,6 @@ public class ConnectorsContainer extends GenericContainer<ConnectorsContainer> {
         .withEnv(
             ContainerRuntimeEnvs.CONNECTORS_ENV_CAMUNDA_CLIENT_WORKER_DEFAULTS_TENANTIDS,
             MultiTenancyConfiguration.CAMUNDA_CLIENT_WORKER_DEFAULTS_TENANTIDS)
-        /*
-         * Basic Auth has a very limited request throughput, requiring tests with multitenancy to have an increased
-         * polling interval so as to not cause timeout exceptions.
-         */
-        .withEnv(
-            ContainerRuntimeEnvs.CONNECTORS_ENV_POLLING_INTERVAL,
-            MultiTenancyConfiguration.POLLING_INTERVAL)
         .waitingFor(newBasicAuthWaitStrategy());
 
     return this;
@@ -138,6 +139,5 @@ public class ConnectorsContainer extends GenericContainer<ConnectorsContainer> {
         CamundaContainer.MultiTenancyConfiguration.MULTITENANCY_USER_PASSWORD;
     private static final String CAMUNDA_CLIENT_TENANTID = "<default>";
     private static final String CAMUNDA_CLIENT_WORKER_DEFAULTS_TENANTIDS = "<default>";
-    private static final String POLLING_INTERVAL = "1000";
   }
 }

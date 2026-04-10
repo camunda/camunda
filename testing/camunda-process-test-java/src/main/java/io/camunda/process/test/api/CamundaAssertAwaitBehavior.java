@@ -79,11 +79,11 @@ public interface CamundaAssertAwaitBehavior {
   }
 
   /**
-   * Set the timeout of the assertion.
+   * Returns the configured interval between assertion attempts.
    *
-   * @param assertionTimeout the assertion's timeout
+   * @return the assertion interval
    */
-  void setAssertionTimeout(final Duration assertionTimeout);
+  Duration getAssertionInterval();
 
   /**
    * Set the interval between the assertion attempts.
@@ -91,4 +91,26 @@ public interface CamundaAssertAwaitBehavior {
    * @param assertionInterval the assertion's interval
    */
   void setAssertionInterval(final Duration assertionInterval);
+
+  /**
+   * Returns the configured timeout of the assertion.
+   *
+   * @return the assertion timeout
+   */
+  Duration getAssertionTimeout();
+
+  /**
+   * Set the timeout of the assertion.
+   *
+   * @param assertionTimeout the assertion's timeout
+   */
+  void setAssertionTimeout(final Duration assertionTimeout);
+
+  /**
+   * Creates a new assertion behavior with the given timeout.
+   *
+   * @param assertionTimeout the assertion's timeout
+   * @return a new assertion behavior
+   */
+  CamundaAssertAwaitBehavior withAssertionTimeout(Duration assertionTimeout);
 }

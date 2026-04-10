@@ -1,6 +1,6 @@
 namespace ?= __NAMESPACE__
 secondary_storage ?= __STORAGE_TYPE__
-helm_chart ?= camunda-platform-8.9
+helm_chart ?= camunda-platform-8.10
 enable_optimize ?= __ENABLE_OPTIMIZE__
 curl_image ?= curlimages/curl:7.87.0
 camunda_management_url ?= http://camunda:9600
@@ -27,9 +27,12 @@ else ifeq ($(secondary_storage),none)
 platform_values += -f camunda-platform-no-secondary-storage.yaml
 endif
 
-# Add Optimize values if enabled
-ifeq ($(enable_optimize),true)
-platform_values += -f camunda-platform-values-optimize.yaml
+# Disable Optimize if not enabled
+ifneq ($(enable_optimize),true)
+platform_values += --set optimize.enabled=false
+ifeq ($(secondary_storage),postgresql)
+platform_values += --set elasticsearch.enabled=false
+endif
 endif
 
 # Platform values with stable configuration
@@ -113,8 +116,9 @@ install-load-test:
 	helm upgrade $(namespace)-test camunda-load-tests/camunda-load-tests \
 		--install \
 		--namespace $(namespace) \
-		--reuse-values \
+		--reset-then-reuse-values \
 		--render-subchart-notes \
+		-f load-test-values.yaml \
 		$(additional_load_test_configuration)
 
 # Setup leader balancing cronjob
@@ -134,14 +138,14 @@ setup-leader-balancer:
 # Generates templates from the Camunda Platform helm chart
 .PHONY: template
 template:
-	helm template $(namespace) camunda/$(helm_chart) \
+	helm template $(namespace) camunda-platform-helm/charts/$(helm_chart) \
 		$(platform_values) \
 		-f values-preemptible.yaml \
 		--output-dir .
 
 .PHONY: template-stable
 template-stable:
-	helm template $(namespace) camunda/$(helm_chart) \
+	helm template $(namespace) camunda-platform-helm/charts/$(helm_chart) \
 		$(platform_values_stable) \
 		--output-dir .
 

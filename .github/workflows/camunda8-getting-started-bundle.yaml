@@ -177,32 +177,6 @@ jobs:
           fi
           rm -rf c8run_temp "${c8run_asset}"
 
-      - name: Remove Elasticsearch from bundle (Unix)
-        if: matrix.platform.platform_id != 'windows-x86_64'
-        run: |
-          cd bundle
-          c8run_folder="c8run-${C8RUN_VERSION}"
-          
-          # Parse major.minor version components for comparison (e.g., "8.9.0" -> major=8, minor=9)
-          if [[ "${C8RUN_VERSION}" =~ ^([0-9]+)\.([0-9]+) ]]; then
-            version_major="${BASH_REMATCH[1]}"
-            version_minor="${BASH_REMATCH[2]}"
-            
-            # Only remove Elasticsearch for versions >= 8.9.0:
-            # (major > 8) OR (major == 8 AND minor >= 9)
-            if [ "${version_major}" -gt 8 ] || { [ "${version_major}" -eq 8 ] && [ "${version_minor}" -ge 9 ]; }; then
-              echo "Version ${C8RUN_VERSION} is >= 8.9.0, removing Elasticsearch..."
-              # Remove all elasticsearch-* directories from the c8run folder
-              rm -rf "${c8run_folder}"/elasticsearch-*
-              echo "Elasticsearch removed successfully"
-            else
-              echo "Version ${C8RUN_VERSION} is < 8.9.0, keeping Elasticsearch"
-            fi
-          else
-            echo "Warning: Unable to parse C8RUN_VERSION='${C8RUN_VERSION}' (expected MAJOR.MINOR[.PATCH])."
-            echo "Keeping Elasticsearch by default."
-          fi
-
       - name: Extract c8run archive (Windows)
         if: matrix.platform.platform_id == 'windows-x86_64'
         shell: pwsh
@@ -227,34 +201,6 @@ jobs:
           }
           Remove-Item -Recurse -Force "c8run_temp"
           Remove-Item -Force $c8runAsset
-
-      - name: Remove Elasticsearch from bundle (Windows)
-        if: matrix.platform.platform_id == 'windows-x86_64'
-        shell: pwsh
-        run: |
-          cd bundle
-          $c8runFolder = "c8run-${env:C8RUN_VERSION}"
-          
-          # Parse major.minor version components for comparison (e.g., "8.9.0" -> major=8, minor=9)
-          $version = $env:C8RUN_VERSION
-          if ($version -match '^(\d+)\.(\d+)') {
-            $major = [int]$matches[1]
-            $minor = [int]$matches[2]
-            
-            # Only remove Elasticsearch for versions >= 8.9.0:
-            # (major > 8) OR (major == 8 AND minor >= 9)
-            if ($major -gt 8 -or ($major -eq 8 -and $minor -ge 9)) {
-              Write-Host "Version ${version} is >= 8.9.0, removing Elasticsearch..."
-              # Remove all elasticsearch-* directories from the c8run folder
-              Get-ChildItem -Path $c8runFolder -Directory -Filter "elasticsearch-*" | Remove-Item -Recurse -Force
-              Write-Host "Elasticsearch removed successfully"
-            } else {
-              Write-Host "Version ${version} is < 8.9.0, keeping Elasticsearch"
-            }
-          } else {
-            Write-Host "Warning: Unable to parse C8RUN_VERSION='${version}' (expected MAJOR.MINOR[.PATCH])."
-            Write-Host "Keeping Elasticsearch by default."
-          }
 
       - name: Download Camunda Modeler
         env:
@@ -825,9 +771,21 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
+      - name: Import Secrets
+        id: secrets
+        uses: hashicorp/vault-action@79632e33d6953d190b940ffa440bf97821cabd80
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          exportEnv: false
+          secrets: |
+            secret/data/products/camunda/ci/github-actions SLACK_DEVELOPER_PORTAL_WEBHOOK;
+
       - name: Send Slack notification
         env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_DEVELOPER_PORTAL_WEBHOOK }}
+          SLACK_WEBHOOK_URL: ${{ steps.secrets.outputs.SLACK_DEVELOPER_PORTAL_WEBHOOK }}
         run: |
           RELEASE_BASE_URL="https://github.com/camunda/camunda/releases/download/${C8RUN_VERSION}"
           
@@ -895,6 +853,17 @@ jobs:
     if: ${{ !inputs.dry_run && needs.upload-to-release.result == 'success' }}
     permissions: {}
     steps:
+      - name: Import Secrets
+        id: secrets
+        uses: hashicorp/vault-action@79632e33d6953d190b940ffa440bf97821cabd80
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          exportEnv: false
+          secrets: |
+            secret/data/products/camunda/ci/github-actions SLACK_CAMUNDA_EX_RELEASE_WEBHOOK;
       - name: Send release announcement to Slack
         env:
           C8RUN_VERSION: ${{ needs.resolve-versions.outputs.c8run_version }}
@@ -916,7 +885,7 @@ jobs:
           
           PAYLOAD=$(jq -n --argjson blocks "$BLOCKS" '{blocks: $blocks}')
           
-          curl -X POST "${{ secrets.SLACK_CAMUNDA_EX_RELEASE_WEBHOOK }}" \
+          curl -X POST "${{ steps.secrets.outputs.SLACK_CAMUNDA_EX_RELEASE_WEBHOOK }}" \
             -H "Content-Type: application/json" \
             -d "$PAYLOAD"
 
@@ -938,7 +907,20 @@ jobs:
     if: always() && (needs.build-bundle.result == 'failure' || needs.test-bundle.result == 'failure' || needs.upload-to-release.result == 'failure')
     permissions: {}
     steps:
+      - uses: actions/checkout@v6
+      - name: Import Secrets
+        id: secrets
+        uses: hashicorp/vault-action@79632e33d6953d190b940ffa440bf97821cabd80
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          exportEnv: false
+          secrets: |
+            secret/data/products/camunda/ci/github-actions SLACK_CAMUNDA_EX_CI_WEBHOOK;
       - name: Send failure notification to Slack
+        if: steps.secrets.outputs.SLACK_CAMUNDA_EX_CI_WEBHOOK != ''
         run: |
           WORKFLOW_URL="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
           BLOCKS=$(cat <<EOF
@@ -956,7 +938,7 @@ jobs:
           
           PAYLOAD=$(jq -n --argjson blocks "$BLOCKS" '{blocks: $blocks}')
           
-          curl -X POST "${{ secrets.SLACK_CAMUNDA_EX_CI_WEBHOOK }}" \
+          curl -X POST "${{ steps.secrets.outputs.SLACK_CAMUNDA_EX_CI_WEBHOOK }}" \
             -H "Content-Type: application/json" \
             -d "$PAYLOAD"
 

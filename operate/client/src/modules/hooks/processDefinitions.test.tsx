@@ -25,7 +25,10 @@ import {
   useProcessDefinitionNames,
 } from './processDefinitions';
 
-const getWrapper = (searchParams?: {process?: string; version?: string}) => {
+const getWrapper = (searchParams?: {
+  processDefinitionId?: string;
+  processDefinitionVersion?: string;
+}) => {
   let initialPath = Paths.processes();
   if (searchParams) {
     const params = new URLSearchParams(searchParams);
@@ -175,7 +178,10 @@ describe('useProcessDefinitionSelection', () => {
     );
 
     const {result} = renderHook(() => useProcessDefinitionSelection(), {
-      wrapper: getWrapper({process: 'testProcess', version: 'all'}),
+      wrapper: getWrapper({
+        processDefinitionId: 'testProcess',
+        processDefinitionVersion: 'all',
+      }),
     });
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
@@ -198,7 +204,10 @@ describe('useProcessDefinitionSelection', () => {
     mockSearchProcessDefinitions().withSuccess(searchResult([definition]));
 
     const {result} = renderHook(() => useProcessDefinitionSelection(), {
-      wrapper: getWrapper({process: 'testProcess', version: '2'}),
+      wrapper: getWrapper({
+        processDefinitionId: 'testProcess',
+        processDefinitionVersion: '2',
+      }),
     });
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
@@ -212,7 +221,7 @@ describe('useProcessDefinitionSelection', () => {
     mockSearchProcessDefinitions().withSuccess(searchResult([]));
 
     const {result} = renderHook(() => useProcessDefinitionSelection(), {
-      wrapper: getWrapper({process: 'unknown'}),
+      wrapper: getWrapper({processDefinitionId: 'unknown'}),
     });
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
@@ -240,7 +249,10 @@ describe('useSelectedProcessDefinition', () => {
     mockSearchProcessDefinitions().withSuccess(searchResult([definition]));
 
     const {result} = renderHook(() => useSelectedProcessDefinition(), {
-      wrapper: getWrapper({process: 'testProcess', version: '1'}),
+      wrapper: getWrapper({
+        processDefinitionId: 'testProcess',
+        processDefinitionVersion: '1',
+      }),
     });
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
@@ -249,7 +261,7 @@ describe('useSelectedProcessDefinition', () => {
 
   it('should disable the query when no processDefinitionId is filtered', () => {
     const {result} = renderHook(() => useSelectedProcessDefinition(), {
-      wrapper: getWrapper({version: '1'}),
+      wrapper: getWrapper({processDefinitionVersion: '1'}),
     });
 
     expect(result.current.isEnabled).toBeFalsy();
@@ -258,7 +270,7 @@ describe('useSelectedProcessDefinition', () => {
 
   it('should disable the query when no version is filtered', () => {
     const {result} = renderHook(() => useSelectedProcessDefinition(), {
-      wrapper: getWrapper({process: 'testProcess'}),
+      wrapper: getWrapper({processDefinitionId: 'testProcess'}),
     });
 
     expect(result.current.isEnabled).toBeFalsy();

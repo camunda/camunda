@@ -42,7 +42,7 @@ import {
 
 const DiagramPanel: React.FC = observer(() => {
   const [searchParams, setSearchParams] = useSearchParams();
-  const {flowNodeId} = parseProcessInstancesFilter(searchParams);
+  const {elementId} = parseProcessInstancesFilter(searchParams);
 
   const {
     data: definitionSelection = {kind: 'no-match'},
@@ -66,8 +66,8 @@ const DiagramPanel: React.FC = observer(() => {
       definitionSelection.kind === 'no-match'
     ) {
       setSearchParams((p) => {
-        p.delete('process');
-        p.delete('version');
+        p.delete('processDefinitionId');
+        p.delete('processDefinitionVersion');
         return p;
       });
       notificationsStore.displayNotification({
@@ -94,7 +94,7 @@ const DiagramPanel: React.FC = observer(() => {
   } = useListViewXml({
     processDefinitionKey: selectedDefinitionKey,
   });
-  const selectableIds = processDefinitionXML?.selectableFlowNodes.map(
+  const selectableIds = processDefinitionXML?.selectableElements.map(
     (element) => element.id,
   );
 
@@ -118,8 +118,8 @@ const DiagramPanel: React.FC = observer(() => {
       },
     },
     {
-      sourceFlowNodeId: flowNodeId,
-      targetFlowNodeId: selectedTargetElementId ?? undefined,
+      sourceElementId: elementId,
+      targetElementId: selectedTargetElementId ?? undefined,
     },
     selectedDefinitionKey,
     batchModificationStore.state.isEnabled,
@@ -154,12 +154,12 @@ const DiagramPanel: React.FC = observer(() => {
 
   const getSelectedElementIds = () => {
     if (!batchModificationStore.state.isEnabled) {
-      return flowNodeId ? [flowNodeId] : undefined;
+      return elementId ? [elementId] : undefined;
     }
 
     const ids: string[] = [];
-    if (flowNodeId) {
-      ids.push(flowNodeId);
+    if (elementId) {
+      ids.push(elementId);
     }
     if (selectedTargetElementId) {
       ids.push(selectedTargetElementId);
@@ -173,7 +173,7 @@ const DiagramPanel: React.FC = observer(() => {
     }
 
     return selectableIds?.filter((selectedElementId) => {
-      if (selectedElementId === flowNodeId) {
+      if (selectedElementId === elementId) {
         return false;
       }
       if (selectedElementId === undefined) {
@@ -210,14 +210,14 @@ const DiagramPanel: React.FC = observer(() => {
 
     if (selectedElementId === null || selectedElementId === undefined) {
       setSearchParams((p) => {
-        p.delete('flowNodeId');
+        p.delete('elementId');
         return p;
       });
       return;
     }
 
     setSearchParams((p) => {
-      p.set('flowNodeId', selectedElementId);
+      p.set('elementId', selectedElementId);
       return p;
     });
   };
@@ -281,7 +281,7 @@ const DiagramPanel: React.FC = observer(() => {
       </DiagramShell>
       {batchModificationStore.state.isEnabled && (
         <BatchModificationNotification
-          sourceElementId={flowNodeId}
+          sourceElementId={elementId}
           targetElementId={selectedTargetElementId || undefined}
           onUndoClick={() => batchModificationStore.selectTargetElement(null)}
         />

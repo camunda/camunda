@@ -661,6 +661,18 @@ export function GROUPS_EXPECTED_BODY(groupId: string) {
   };
 }
 
+export function ROLES_EXPECTED_BODY(roleId: string) {
+  return {
+    roleId: roleId,
+  };
+}
+
+export function MAPPING_RULES_EXPECTED_BODY(mappingRuleId: string) {
+  return {
+    mappingRuleId: mappingRuleId,
+  };
+}
+
 export function CREATE_COMPONENT_AUTHORIZATION(
   ownerType: 'ROLE' | 'USER' | 'GROUP',
   ownerId: string,

@@ -131,20 +131,20 @@
       <idArg column="PROCESS_DEFINITION_KEY" javaType="java.lang.Long"/>
       <arg column="NAME" javaType="java.lang.String"/>
       <arg column="PROCESS_DEFINITION_ID" javaType="java.lang.String"
-        typeHandler="io.camunda.db.rdbms.typehandler.NullToEmptyStringTypeHandler"/>
+        typeHandler="io.camunda.db.rdbms.sql.typehandler.NullToEmptyStringTypeHandler"/>
       <arg column="BPMN_XML" javaType="java.lang.String"/>
       <arg column="RESOURCE_NAME" javaType="java.lang.String"
-        typeHandler="io.camunda.db.rdbms.typehandler.NullToEmptyStringTypeHandler"/>
+        typeHandler="io.camunda.db.rdbms.sql.typehandler.NullToEmptyStringTypeHandler"/>
       <arg column="VERSION" javaType="java.lang.Integer"/>
       <arg column="VERSION_TAG" javaType="java.lang.String"/>
       <arg column="TENANT_ID" javaType="java.lang.String"
-        typeHandler="io.camunda.db.rdbms.typehandler.NullToEmptyStringTypeHandler"/>
+        typeHandler="io.camunda.db.rdbms.sql.typehandler.NullToEmptyStringTypeHandler"/>
       <arg column="FORM_ID" javaType="java.lang.String"/>
     </constructor>
   </resultMap>
 
   <select id="flowNodeStatistics"
-    parameterType="io.camunda.search.filter.ProcessDefinitionStatisticsFilter"
+    parameterType="io.camunda.db.rdbms.read.domain.ProcessDefinitionStatisticsDbQuery"
     resultMap="io.camunda.db.rdbms.sql.Commons.flowNodeStatisticsResultMap">
     SELECT
       res.FLOW_NODE_ID,
@@ -175,13 +175,13 @@
       JOIN ${prefix}PROCESS_INSTANCE pi ON (pd.PROCESS_DEFINITION_KEY = pi.PROCESS_DEFINITION_KEY)
       JOIN ${prefix}FLOW_NODE_INSTANCE fni ON (pi.PROCESS_INSTANCE_KEY = fni.PROCESS_INSTANCE_KEY)
     <where>
-      pd.PROCESS_DEFINITION_KEY = #{processDefinitionKey}
+      pd.PROCESS_DEFINITION_KEY = #{filter.processDefinitionKey}
       <trim prefix="AND" prefixOverrides="AND">
-        <bind name="filter" value="_parameter" />
+        <bind name="filter" value="_parameter.filter" />
         <include refid="io.camunda.db.rdbms.sql.ProcessDefinitionMapper.statisticsSearchFilter"/>
-        <if test="orFilters != null and !orFilters.isEmpty()">
+        <if test="filter.orFilters != null and !filter.orFilters.isEmpty()">
           AND (
-          <foreach collection="orFilters" item="filter" separator=" OR ">
+          <foreach collection="filter.orFilters" item="filter" separator=" OR ">
             <trim prefix="(" suffix=")">
               <include refid="io.camunda.db.rdbms.sql.ProcessDefinitionMapper.statisticsSearchFilter"/>
             </trim>
@@ -315,6 +315,20 @@
           WHERE i.PROCESS_INSTANCE_KEY = pi.PROCESS_INSTANCE_KEY
           AND i.ERROR_MESSAGE_HASH <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition" />
         )
+        </foreach>
+      </if>
+
+      <!-- authorization filters -->
+      <if test="authorizedResourceIds != null and !authorizedResourceIds.isEmpty()">
+        AND pi.PROCESS_DEFINITION_ID IN
+        <foreach collection="authorizedResourceIds" item="resourceId" open="(" separator="," close=")">
+          #{resourceId}
+        </foreach>
+      </if>
+      <if test="authorizedTenantIds != null and !authorizedTenantIds.isEmpty()">
+        AND pi.TENANT_ID IN
+        <foreach collection="authorizedTenantIds" item="tenantId" open="(" separator="," close=")">
+          #{tenantId}
         </foreach>
       </if>
     </trim>

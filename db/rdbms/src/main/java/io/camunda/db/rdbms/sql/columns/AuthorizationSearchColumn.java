@@ -10,6 +10,7 @@ package io.camunda.db.rdbms.sql.columns;
 import io.camunda.search.entities.AuthorizationEntity;
 
 public enum AuthorizationSearchColumn implements SearchColumn<AuthorizationEntity> {
+  AUTHORIZATION_KEY("authorizationKey"),
   OWNER_ID("ownerId"),
   OWNER_TYPE("ownerType"),
   RESOURCE_TYPE("resourceType"),

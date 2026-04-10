@@ -520,13 +520,6 @@
     <dependency>
       <groupId>io.micrometer</groupId>
       <artifactId>micrometer-core</artifactId>
-      <exclusions>
-        <exclusion>
-          <groupId>org.hdrhistogram</groupId>
-          <!-- Conflicts with histogram in elasticsearch exporter dependency -->
-          <artifactId>HdrHistogram</artifactId>
-        </exclusion>
-      </exclusions>
     </dependency>
 
     <dependency>
@@ -543,6 +536,17 @@
           <artifactId>spring-boot-starter-logging</artifactId>
         </exclusion>
       </exclusions>
+    </dependency>
+
+    <!-- Used by TomcatEncodedSlashConfig for encoded slash passthrough (#45215) -->
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-tomcat</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-web-server</artifactId>
     </dependency>
 
     <dependency>
@@ -657,6 +661,11 @@
 
     <dependency>
       <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-databind</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>tools.jackson.core</groupId>
       <artifactId>jackson-databind</artifactId>
     </dependency>
 
@@ -1074,7 +1083,7 @@
       <plugin>
         <groupId>org.openapitools</groupId>
         <artifactId>openapi-generator-maven-plugin</artifactId>
-        <version>7.18.0</version>
+        <version>7.21.0</version>
         <executions>
           <execution>
             <id>backups</id>
@@ -1084,6 +1093,10 @@
             <configuration>
               <inputSpec>${project.basedir}/src/main/resources/api/backup-management-api.yaml</inputSpec>
               <modelPackage>io.camunda.management.backups</modelPackage>
+              <minimalUpdate>true</minimalUpdate>
+              <configOptions>
+                <hideGenerationTimestamp>true</hideGenerationTimestamp>
+              </configOptions>
             </configuration>
           </execution>
           <execution>
@@ -1094,6 +1107,10 @@
             <configuration>
               <inputSpec>${project.basedir}/src/main/resources/api/cluster/cluster-api.yaml</inputSpec>
               <modelPackage>io.camunda.zeebe.management.cluster</modelPackage>
+              <minimalUpdate>true</minimalUpdate>
+              <configOptions>
+                <hideGenerationTimestamp>true</hideGenerationTimestamp>
+              </configOptions>
             </configuration>
           </execution>
           <execution>
@@ -1104,6 +1121,10 @@
             <configuration>
               <inputSpec>${project.basedir}/src/main/resources/api/cluster/exporter-api.yaml</inputSpec>
               <modelPackage>io.camunda.zeebe.management.cluster</modelPackage>
+              <minimalUpdate>true</minimalUpdate>
+              <configOptions>
+                <hideGenerationTimestamp>true</hideGenerationTimestamp>
+              </configOptions>
             </configuration>
           </execution>
         </executions>
@@ -1112,7 +1133,7 @@
       <plugin>
         <groupId>io.github.git-commit-id</groupId>
         <artifactId>git-commit-id-maven-plugin</artifactId>
-        <version>9.0.2</version>
+        <version>9.1.0</version>
         <configuration>
           <dotGitDirectory>${maven.multiModuleProjectDirectory}/.git</dotGitDirectory>
           <generateGitPropertiesFile>true</generateGitPropertiesFile>

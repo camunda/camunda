@@ -163,6 +163,44 @@ public class ClusterVariableSearchIT {
             largeVarName, largeVarValue));
   }
 
+  // ============ GET TESTS ============
+
+  @Test
+  void shouldGetGloballyScopedClusterVariableByName() {
+    // when
+    final var result =
+        camundaClient
+            .newGloballyScopedClusterVariableGetRequest()
+            .withName(globalVarName1)
+            .send()
+            .join();
+
+    // then - assert all fields
+    assertThat(result.getName()).isEqualTo(globalVarName1);
+    assertThat(result.getValue()).isEqualTo(VALUE_RESULT.formatted(globalVarValue1));
+    assertThat(result.getTenantId()).isNull();
+    assertThat(result.getScope()).isEqualTo(ClusterVariableScope.GLOBAL);
+    assertThat(result.isTruncated()).isFalse();
+  }
+
+  @Test
+  void shouldGetTenantScopedClusterVariableByName() {
+    // when
+    final var result =
+        camundaClient
+            .newTenantScopedClusterVariableGetRequest(tenantId)
+            .withName(tenantVarName1)
+            .send()
+            .join();
+
+    // then - assert all fields
+    assertThat(result.getName()).isEqualTo(tenantVarName1);
+    assertThat(result.getValue()).isEqualTo(VALUE_RESULT.formatted(tenantVarValue1));
+    assertThat(result.getTenantId()).isEqualTo(tenantId);
+    assertThat(result.getScope()).isEqualTo(ClusterVariableScope.TENANT);
+    assertThat(result.isTruncated()).isFalse();
+  }
+
   // ============ SEARCH TESTS ============
 
   @Test

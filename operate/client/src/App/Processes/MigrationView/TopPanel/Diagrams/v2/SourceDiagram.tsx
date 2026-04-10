@@ -17,7 +17,7 @@ import {StateOverlay} from 'modules/components/StateOverlay';
 import {useProcessInstancesOverlayData} from 'modules/queries/processInstancesStatistics/useOverlayData';
 import {getMigrationProcessInstancesFilter} from 'modules/queries/processInstancesStatistics/filters';
 import {useMigrationSourceXml} from 'modules/queries/processDefinitions/useMigrationSourceXml';
-import type {ElementState} from 'modules/types/operate';
+import type {ElementState} from 'modules/bpmn-js/overlayTypes';
 import {getProcessDefinitionName} from 'modules/hooks/processDefinitions';
 
 const SourceDiagram: React.FC = observer(() => {
@@ -80,7 +80,7 @@ const SourceDiagram: React.FC = observer(() => {
             xml={migrationSourceData.xml}
             processDefinitionKey={sourceProcessDefinition?.processDefinitionKey}
             selectableElements={[
-              ...migrationSourceData.selectableFlowNodes,
+              ...migrationSourceData.selectableElements,
               ...migrationSourceData.selectableSequenceFlows,
             ].map((element) => element.id)}
             selectedElementIds={selectedSourceElementIds}

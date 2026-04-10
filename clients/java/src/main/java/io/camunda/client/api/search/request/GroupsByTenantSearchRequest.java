@@ -16,9 +16,11 @@
 package io.camunda.client.api.search.request;
 
 import io.camunda.client.api.search.filter.TenantGroupFilter;
+import io.camunda.client.api.search.page.AnyPage;
 import io.camunda.client.api.search.response.TenantGroup;
 import io.camunda.client.api.search.sort.TenantGroupSort;
 
 public interface GroupsByTenantSearchRequest
-    extends TypedSearchRequest<TenantGroupFilter, TenantGroupSort, GroupsByTenantSearchRequest>,
+    extends TypedSearchRequest<
+            TenantGroupFilter, TenantGroupSort, AnyPage, GroupsByTenantSearchRequest>,
         FinalSearchRequestStep<TenantGroup> {}

@@ -287,6 +287,26 @@ class DecisionEvaluationAuditLogTransformerTest {
     assertThat(entity.getEntityDescription()).isEqualTo(RejectionType.INVALID_STATE.name());
   }
 
+  @Test
+  void shouldNotSupportDecisionEvaluationRecordWithProcessInstanceKey() {
+    // given
+    final DecisionEvaluationRecordValue recordValue =
+        ImmutableDecisionEvaluationRecordValue.builder()
+            .from(factory.generateObject(DecisionEvaluationRecordValue.class))
+            .withDecisionId("decision-1")
+            .withDecisionKey(456L)
+            .withProcessInstanceKey(123L)
+            .build();
+
+    final Record<DecisionEvaluationRecordValue> record =
+        factory.generateRecord(
+            ValueType.DECISION_EVALUATION,
+            r -> r.withIntent(DecisionEvaluationIntent.EVALUATED).withValue(recordValue));
+
+    // when / then
+    assertThat(transformer.supports(record)).isFalse();
+  }
+
   @ParameterizedTest
   @EnumSource(
       value = DecisionEvaluationIntent.class,

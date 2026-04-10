@@ -18,6 +18,7 @@ import io.camunda.exporter.errorhandling.Error;
 import io.camunda.exporter.exceptions.PersistenceException;
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
 import io.camunda.exporter.utils.ElasticsearchScriptBuilder;
+import io.camunda.exporter.utils.NdJsonSizeUtil;
 import io.camunda.webapps.schema.entities.ExporterEntity;
 import java.io.IOException;
 import java.util.LinkedHashMap;
@@ -262,6 +263,11 @@ public class ElasticsearchBatchRequest implements BatchRequest {
         metrics.recordBulkOperations(bulkRequest.operations().size());
       }
     } catch (final IOException | ElasticsearchException ex) {
+      if (isRequestEntityTooLarge(ex)) {
+        LOGGER.error("The entities in the payload to ES are too large, cannot write batch", ex);
+      } else if (LOGGER.isTraceEnabled()) {
+        logBulkFailureTrace(bulkRequest, ex);
+      }
       throw new PersistenceException(
           "Error when processing bulk request against Elasticsearch: " + ex.getMessage(), ex);
     }
@@ -319,6 +325,31 @@ public class ElasticsearchBatchRequest implements BatchRequest {
             throw new PersistenceException(message);
           }
         });
+  }
+
+  private static boolean isRequestEntityTooLarge(final Exception ex) {
+    final String message = ex.getMessage();
+    return message != null && message.contains("413");
+  }
+
+  private void logBulkFailureTrace(final BulkRequest bulkRequest, final Exception ex) {
+    try {
+      final var payloadSize =
+          NdJsonSizeUtil.measureNdJsonPayloadSize(bulkRequest, esClient._jsonpMapper());
+      LOGGER.trace(
+          "Elasticsearch bulk request FAILED: operations={} serializedPayloadBytes={} error={}",
+          bulkRequest.operations().size(),
+          payloadSize.totalBytes(),
+          ex.getMessage());
+      LOGGER.trace("Breakdown of operations in bulk request: {}", payloadSize.operationSizes());
+    } catch (final Exception measureEx) {
+      LOGGER.trace(
+          "Elasticsearch bulk request FAILED and payload measurement also failed: "
+              + "operations={} error={} measurementError={}",
+          bulkRequest.operations().size(),
+          ex.getMessage(),
+          measureEx.getMessage());
+    }
   }
 
   private record ErrorValues(List<String> indexes, List<String> ids) {}

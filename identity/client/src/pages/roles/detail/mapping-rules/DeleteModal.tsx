@@ -15,7 +15,7 @@ import {
 } from "src/components/modal";
 import { useNotifications } from "src/components/notifications";
 import { unassignRoleMappingRule } from "src/utility/api/roles";
-import type { MappingRule } from "@camunda/camunda-api-zod-schemas/8.9";
+import type { MappingRule } from "@camunda/camunda-api-zod-schemas/8.10";
 
 type RemoveRoleMappingRuleModalProps = UseEntityModalCustomProps<
   MappingRule,

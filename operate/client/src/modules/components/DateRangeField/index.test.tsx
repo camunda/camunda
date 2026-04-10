@@ -80,8 +80,8 @@ describe('Date Range Field', () => {
   it('should set default values', async () => {
     const {user} = render(<MockDateRangeField />, {
       wrapper: getWrapper({
-        startDateAfter: '2021-02-03T12:34:56',
-        startDateBefore: '2021-02-06T01:02:03',
+        startDateFrom: '2021-02-03T12:34:56',
+        startDateTo: '2021-02-06T01:02:03',
       }),
     });
 

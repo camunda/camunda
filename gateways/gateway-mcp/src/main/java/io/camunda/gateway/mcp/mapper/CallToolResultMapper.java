@@ -7,14 +7,14 @@
  */
 package io.camunda.gateway.mcp.mapper;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import io.camunda.gateway.mapping.http.GatewayErrorMapper;
-import io.camunda.gateway.mcp.config.McpObjectMapperUtilities;
 import io.camunda.zeebe.util.Either;
 import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
+import org.springframework.ai.util.json.JsonParser;
 import org.springframework.http.ProblemDetail;
+import tools.jackson.core.JacksonException;
 
 public class CallToolResultMapper {
 
@@ -80,8 +80,8 @@ public class CallToolResultMapper {
 
   private static String structuredContentAsJson(final Object object) {
     try {
-      return McpObjectMapperUtilities.getObjectMapper().writeValueAsString(object);
-    } catch (final JsonProcessingException ex) {
+      return JsonParser.getJsonMapper().writeValueAsString(object);
+    } catch (final JacksonException ex) {
       throw new RuntimeException("Failed to convert structuredContent to JSON representation", ex);
     }
   }

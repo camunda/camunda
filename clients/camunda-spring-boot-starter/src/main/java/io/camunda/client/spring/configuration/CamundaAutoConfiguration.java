@@ -19,7 +19,6 @@ import io.camunda.client.CamundaClient;
 import io.camunda.client.spring.configuration.condition.ConditionalOnCamundaClientEnabled;
 import io.camunda.client.spring.event.CamundaLifecycleEventProducer;
 import io.camunda.client.spring.testsupport.CamundaSpringProcessTestContext;
-import io.camunda.zeebe.spring.client.configuration.ZeebeClientProdAutoConfiguration;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -36,8 +35,7 @@ import org.springframework.context.annotation.Bean;
   MetricsDefaultConfiguration.class,
   JsonMapperConfiguration.class,
   Jackson3JsonMapperConfiguration.class,
-  DefaultJsonMapperConfiguration.class,
-  ZeebeClientProdAutoConfiguration.class
+  DefaultJsonMapperConfiguration.class
 })
 public class CamundaAutoConfiguration {
 

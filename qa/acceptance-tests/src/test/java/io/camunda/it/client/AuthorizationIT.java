@@ -255,6 +255,36 @@ public class AuthorizationIT {
   }
 
   @Test
+  void shouldReturnNonEmptyPermissionTypesListForAuthorization() {
+    // given - create an authorization
+    final var authorization =
+        camundaClient
+            .newCreateAuthorizationCommand()
+            .ownerId(USER_ID_1)
+            .ownerType(OwnerType.USER)
+            .resourceId("test-resource")
+            .resourceType(ResourceType.AUTHORIZATION)
+            .permissionTypes(CREATE)
+            .send()
+            .join();
+
+    // when
+    Awaitility.await()
+        .ignoreExceptionsInstanceOf(ProblemException.class)
+        .untilAsserted(
+            () -> {
+              final var result =
+                  camundaClient
+                      .newAuthorizationGetRequest(authorization.getAuthorizationKey())
+                      .send()
+                      .join();
+
+              // then
+              assertThat(result.getPermissionTypes()).containsExactly(CREATE);
+            });
+  }
+
+  @Test
   void searchShouldReturnAuthorizationsFilteredByOwnerId() {
     // when
     final var ownerId = USER_ID_3;
@@ -542,6 +572,169 @@ public class AuthorizationIT {
               assertThat(authorizationsSearchResponse.items())
                   .map(Authorization::getResourcePropertyName)
                   .containsExactly("prop-tango", "prop-oscar", "prop-lima");
+            });
+  }
+
+  @Test
+  void searchShouldUsAuthorizationKeyAsDiscriminatorForTiedRecordsAndYieldCursors() {
+    // given — two authorizations that are identical on the explicit sort field (ownerType)
+    final var resourceIdPrefix = Strings.newRandomValidIdentityId();
+    camundaClient
+        .newCreateAuthorizationCommand()
+        .ownerId(USER_ID_1)
+        .ownerType(OwnerType.USER)
+        .resourceId(resourceIdPrefix + "-a")
+        .resourceType(ResourceType.RESOURCE)
+        .permissionTypes(CREATE)
+        .send()
+        .join();
+
+    camundaClient
+        .newCreateAuthorizationCommand()
+        .ownerId(USER_ID_1)
+        .ownerType(OwnerType.USER)
+        .resourceId(resourceIdPrefix + "-b")
+        .resourceType(ResourceType.RESOURCE)
+        .permissionTypes(CREATE)
+        .send()
+        .join();
+
+    // when / then — sort by ownerType (tied), paginate with limit 1
+    // the authorization key should break the tie and cursors should work
+    Awaitility.await()
+        .ignoreExceptionsInstanceOf(ProblemException.class)
+        .untilAsserted(
+            () -> {
+              final var firstPage =
+                  camundaClient
+                      .newAuthorizationSearchRequest()
+                      .filter(
+                          f ->
+                              f.ownerId(USER_ID_1)
+                                  .resourceIds(resourceIdPrefix + "-a", resourceIdPrefix + "-b"))
+                      .sort(s -> s.ownerType().asc())
+                      .page(p -> p.limit(1))
+                      .send()
+                      .join();
+              assertThat(firstPage.items()).hasSize(1);
+              assertThat(firstPage.page().endCursor()).isNotNull();
+
+              final var secondPage =
+                  camundaClient
+                      .newAuthorizationSearchRequest()
+                      .filter(
+                          f ->
+                              f.ownerId(USER_ID_1)
+                                  .resourceIds(resourceIdPrefix + "-a", resourceIdPrefix + "-b"))
+                      .sort(s -> s.ownerType().asc())
+                      .page(p -> p.limit(1).after(firstPage.page().endCursor()))
+                      .send()
+                      .join();
+              assertThat(secondPage.items()).hasSize(1);
+              assertThat(secondPage.items().getFirst().getAuthorizationKey())
+                  .isNotEqualTo(firstPage.items().getFirst().getAuthorizationKey());
+            });
+  }
+
+  @Test
+  void searchShouldReturnCursorsWithDefaultSort() {
+    // given
+    final var resourceIdPrefix = Strings.newRandomValidIdentityId();
+    camundaClient
+        .newCreateAuthorizationCommand()
+        .ownerId(USER_ID_1)
+        .ownerType(OwnerType.USER)
+        .resourceId(resourceIdPrefix + "-1")
+        .resourceType(ResourceType.RESOURCE)
+        .permissionTypes(CREATE)
+        .send()
+        .join();
+
+    camundaClient
+        .newCreateAuthorizationCommand()
+        .ownerId(USER_ID_1)
+        .ownerType(OwnerType.USER)
+        .resourceId(resourceIdPrefix + "-2")
+        .resourceType(ResourceType.RESOURCE)
+        .permissionTypes(CREATE)
+        .send()
+        .join();
+
+    // when / then — a search with no explicit sort should still return cursors
+    Awaitility.await()
+        .ignoreExceptionsInstanceOf(ProblemException.class)
+        .untilAsserted(
+            () -> {
+              final var result =
+                  camundaClient
+                      .newAuthorizationSearchRequest()
+                      .filter(
+                          f ->
+                              f.ownerId(USER_ID_1)
+                                  .resourceIds(resourceIdPrefix + "-1", resourceIdPrefix + "-2"))
+                      .send()
+                      .join();
+              assertThat(result.items()).hasSize(2);
+              assertThat(result.page().startCursor()).isNotNull();
+              assertThat(result.page().endCursor()).isNotNull();
+            });
+  }
+
+  @Test
+  void searchShouldSupportCursorBasedPagination() {
+    // given
+    final var resourceIdPrefix = Strings.newRandomValidIdentityId();
+    camundaClient
+        .newCreateAuthorizationCommand()
+        .ownerId(USER_ID_1)
+        .ownerType(OwnerType.USER)
+        .resourceId(resourceIdPrefix + "-a")
+        .resourceType(ResourceType.RESOURCE)
+        .permissionTypes(CREATE)
+        .send()
+        .join();
+
+    camundaClient
+        .newCreateAuthorizationCommand()
+        .ownerId(USER_ID_1)
+        .ownerType(OwnerType.USER)
+        .resourceId(resourceIdPrefix + "-b")
+        .resourceType(ResourceType.RESOURCE)
+        .permissionTypes(CREATE)
+        .send()
+        .join();
+
+    // when / then — paginate with limit 1 and use cursors to navigate
+    Awaitility.await()
+        .ignoreExceptionsInstanceOf(ProblemException.class)
+        .untilAsserted(
+            () -> {
+              final var firstPage =
+                  camundaClient
+                      .newAuthorizationSearchRequest()
+                      .filter(
+                          f ->
+                              f.ownerId(USER_ID_1)
+                                  .resourceIds(resourceIdPrefix + "-a", resourceIdPrefix + "-b"))
+                      .page(p -> p.limit(1))
+                      .send()
+                      .join();
+              assertThat(firstPage.items()).hasSize(1);
+              assertThat(firstPage.page().endCursor()).isNotNull();
+
+              final var secondPage =
+                  camundaClient
+                      .newAuthorizationSearchRequest()
+                      .filter(
+                          f ->
+                              f.ownerId(USER_ID_1)
+                                  .resourceIds(resourceIdPrefix + "-a", resourceIdPrefix + "-b"))
+                      .page(p -> p.limit(1).after(firstPage.page().endCursor()))
+                      .send()
+                      .join();
+              assertThat(secondPage.items()).hasSize(1);
+              assertThat(secondPage.items().getFirst().getAuthorizationKey())
+                  .isNotEqualTo(firstPage.items().getFirst().getAuthorizationKey());
             });
   }
 

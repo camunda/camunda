@@ -40,6 +40,8 @@ Not in scope of this process are [SNAPSHOT releases](./ci.md#available-snapshot-
   * no code freeze and no release candidate build
   * source branch is `stable/${minor_version}`
 
+See [this self-updating release timeline page](pathname:///release-timeline/).
+
 ### Release Dependencies
 
 _Caveat: While Optimize is part of the C8 monorepo, it has its own release process separate from the C8 monorepo release process (covers only Operate/Tasklist/Zeebe)._
@@ -247,7 +249,7 @@ Changes to the release process are done in these steps:
 
 ## Issue Tracking
 
-All problems, bugs and feature requests regarding the C8 release process are tracked using[GitHub Issues](https://github.com/camunda/camunda/issues).
+All problems, bugs and feature requests regarding the C8 release process are tracked using [GitHub Issues](https://github.com/camunda/camunda/issues).
 
 For visibility and prioritization there is the (internal) [Monorepo Release project board](https://github.com/orgs/camunda/projects/115/views/4) that tracks high-level issues.
 
@@ -265,6 +267,10 @@ Some tasks during the release process are also taking care of other DRIs. The re
 
 The release manager is currently selected manually for each release.
 
+The acting subject for release-process tasks and checklist items is the Monorepo Release Manager currently on shift when the step becomes due. For minor releases that span multiple monthly rotations, responsibility is handed over as part of the regular shift change together with the current checklist state and any open follow-up items.
+
+The checklist itself is maintained collectively. Every MRM is expected to update it when a gap, obsolete step, or missing safeguard is discovered during their shift so the next handover starts from the latest known process.
+
 _Caveat: Some places still refer to this as “Zeebe release manager” although with 8.6+ the release manager is responsible for multiple components including Zeebe and C8 webapps._
 
 ### Others
@@ -281,61 +287,104 @@ We want the release process for all supported versions 8.6+ to be as similar as 
 
 For CI-related changes, refer to our [CI & Automation documentation](./ci.md) and the [backporting guidelines](./ci.md#backporting-guidelines).
 
+import PersistentTaskListEnabler from '@site/src/components/PersistentTaskListEnabler';
+
 ## Minor Release Considerations
 
-Minor releases happen less often than other release types, so not all steps are automated (yet) in the `camunda/camunda` monorepo:
+Use the following checklist as the operational source of truth for every minor release.
 
-1. Bump the `pom.xml` versions to `8.(x+1).0-SNAPHOT` on `main`, after the last `release-8.x.0-alphaN` branch is created
-   * This may reveal implicit assumptions or actual bugs in upgrade tests that check for clean upgrade behavior of the software between different minor versions!
-   * This can be done with the following command `./mvnw release:update-versions -DdevelopmentVersion=8.(x+1).0-SNAPSHOT`
-2. Create the `stable/8.x` release branch from latest `release-8.x.0-alphaN`, to enforce code freeze
-   * Ensure all expected SNAPSHOT artifacts are produced correctly.
+Ownership model:
 
-:::note
-For 8.9.0 we evaluate the following approach (to be decided if kept for future minor versions)
+- The checklist is owned collectively by the MRMs and evolves through updates from each shift.
+- The acting subject for each checklist item is the MRM on shift when that item becomes relevant, not necessarily the MRM who started preparing the minor.
+- Open checklist items and context should be explicitly handed over at monthly MRM rotation.
 
-- **Branch Strategy**: To allow continuous bug fix integration during the alpha release process, consider creating `stable/<minor>` branch from `main` early (at the latest alpha code freeze day), then creating the alpha release branch from `stable/<minor>` instead of directly from `main`
-  - ⚠️ **Important**: Any bug fixes merged to `main` after the last alpha release branch (`release-<version>-alpha<N>`) has been created must be backported to `stable/<minor>` to be included in the minor release
-    - Critical bug fixes merged after that point should be backported to both `stable/<minor>` and the active alpha release branch and may trigger a new Release Candidate
-  - **Bug Fix Handling After Last Alpha Release (Minor Version Feature Freeze)**:
-    :::
+### Minor Release Readiness Checklist
 
-3. [Configure `unified-ci-merges-stable-branches` branch protection ruleset](https://github.com/camunda/infra-core/blob/stage/terraform/github/prod/rulesets-camunda-camunda.tf) to include new `stable/8.x` branch
+<PersistentTaskListEnabler
+  storageKey="minor-release-readiness-checklist"
+  version="3"
+  startHeadingId="minor-release-readiness-checklist"
+  endHeadingId="minor-release-references"
+/>
 
-* This may need temporary admin permissions for the initial manual push of the new branch.
+#### 0. Dates, ownership, and high-level alignment
 
-4. Bump configured versions in upgrade tests of the previous minor version to `8.x`
+- [ ] Confirm official minor release, feature freeze, and code freeze dates from the [C8 Release Train](https://confluence.camunda.com/spaces/HAN/pages/201853752/C8+Release+Train). See [Feature Freeze vs Code Freeze](#feature-freeze-vs-code-freeze-minor-releases) for definitions and timing.
+- [ ] Confirm the Monorepo Release Manager (MRM) is available for feature freeze week, code freeze / branch creation, and the final RC window.
+- [ ] Check for major holidays during RC and final release weeks, then adjust expectations with release stakeholders.
 
-* TODO: add references to known upgrade tests if possible
+#### 1. Around feature freeze / last alpha (branch strategy)
 
-Also, we have to do similar steps for the [ZPT repository](https://github.com/camunda/zeebe-process-test) in coordination with stakeholders from Camunda Ex team:
+- [ ] Send feature freeze communication before the last alpha using the [feature-freeze template](#feature-freeze-vs-code-freeze-minor-releases) and explicitly state that only bug fixes and stabilization are expected after freeze.
+- [ ] Create `stable/<minor>` from `main` before the last alpha according to the early-stable strategy (i.e. create the `stable/<minor>` branch before the last alpha and branch all subsequent alpha/RC/final release branches from `stable/<minor>` instead of `main`).
+- [ ] [DEPRECATED for +8.10] Mirror the same strategy in [zeebe-process-test](https://github.com/camunda/zeebe-process-test): create `stable/<minor>` from `main` and align release-branch handling.
+- [ ] Create `backport stable/<minor>` label in monorepo.
+- [ ] [DEPRECATED for +8.10] Create `backport stable/<minor>` label in ZPT.
+- [ ] Announce stable branch creation and backport procedure (label + `/backport`) in the relevant engineering channels.
 
-1. Creating `stable/8.x` release branch from `main`, to enforce code freeze
-2. Bumping `pom.xml` versions to `8.(x+1).0-SNAPHOT` on `main`
+#### 2. Versioning and branch plumbing (after last alpha branch exists)
 
-#### Additional Minor Release Learnings (8.8+)
+- [ ] On monorepo `main`, bump all `pom.xml` versions to `8.(x+1).0-SNAPSHOT` using:
+  - `./mvnw release:update-versions -DdevelopmentVersion=8.(x+1).0-SNAPSHOT`
+- [ ] [DEPRECATED for +8.10] On ZPT `main`, bump versions to the next minor snapshot line.
+- [ ] Update upgrade and migration test configuration so the previous minor upgrades to the new minor line.
+- [ ] Confirm artifact expectations:
+  - `stable/<minor>` produces `<minor>.0-SNAPSHOT`
+  - `main` produces `<next-minor>.0-SNAPSHOT` (or generic `SNAPSHOT` where expected)
 
-In addition to the standard steps above, recent minor releases have surfaced several process improvements and considerations worth incorporating into future release cycles:
+#### 3. CI, protections, and release workflow wiring
 
-- **Feature Freeze Communication**
-  - The freeze notice should clearly describe not just alpha branch behavior, but expectations for the entire minor release phase (including post-alpha, backports to `stable/<minor>`, etc.).
-  - Current notice is too narrow; see [engineering-processes#712](https://github.com/camunda/zeebe-engineering-processes/pull/712) and [Slack discussion](https://camunda.slack.com/archives/CHY2S7KDJ/p1758632876658599?thread_ts=1757683374.580399&cid=CHY2S7KDJ).
-  - **Action:** Iterate a more generic, minor-release–aware template for next minor releases.
-- **Benchmark Namespace Naming**
-  - Namespace for benchmarks during RCs may become `8-8-0` (when performing RC) instead of the expected `8-8-x`.
-  - Current handling is accepted; document and monitor naming in future minors for reproducibility.
-- **Merge-Back Conflicts**
-  - Merge conflicts can occur when merging the release branch back into `stable/<minor>`, especially due to timing of backports versus release branch changes.
-  - Reference: [Slack thread](https://camunda.slack.com/archives/C06UWQNCU7M/p1760046632109499?thread_ts=1760012606.937389&cid=C06UWQNCU7M)
-  - **Action:** Evaluate sources and refine merge sequencing guidelines.
-- **Heavy Merge-Back CI Load**
-  - Merge-back PRs currently run almost the full test matrix, resulting in long CI runtimes (see [example run](https://github.com/camunda/camunda/actions/runs/18385775955/job/52383810975)).
-  - **Action:** The task https://github.com/camunda/camunda/issues/39659 was created to fix the existing issue and optimize merge-back test scope or introduce selective module test strategies.
-- **Change of source branch**
-  - For 8.8 minor release the source branch `stable/8.8` based on `release-8.8.0-alpha8`
-  - Currently  an automated script decides the source branch for the release type, in case of change in future release process, the code needs to be adjusted [here](https://github.com/camunda/zeebe-engineering-processes/blob/main/src/main/resources/release/decide_dev_version_and_is_latest_for_release.bpmn#L39)
-- **Optimize Previous Version Management (8.9+)**
-  - Starting with 8.9, Optimize is included in the monorepo release process (`includeOptimize=true`).
+- [ ] Add `stable/<minor>` to `unified-ci-merges-stable-branches` protection/ruleset configuration in infra-core.
+- [ ] Verify release BPMN configuration uses `stable/<minor>` as source branch for minor SHAs and merge-back behavior before running the minor.
+- [ ] Verify code freeze date and monorepo release start date are filled correctly when starting a minor release BPMN instance.
+- [ ] Verify CI / SLO dashboards include `stable/<minor>` and surface regressions for that branch.
+- [ ] Ensure a scheduled release dry-run exists for `stable/<minor>` and is green before starting the minor.
+
+#### 4. Optimize, Docker images, and artifacts
+
+- [ ] Verify Optimize is included for the current minor in monorepo release (`includeOptimize=true`, 8.9+ strategy).
+- [ ] Verify stable branches build and publish Optimize Docker images for `<minor>-SNAPSHOT` and release tags.
+
+#### 5. Backports, RCs, and merge-backs
+
+- [ ] Enforce bug-fix backport rule after last alpha branch cut: fixes merged to `main` must be backported to `stable/<minor>` to ship in that minor.
+- [ ] For critical fixes after branch cut, backport to both `stable/<minor>` and active alpha/minor release branch; trigger a new RC if needed.
+- [ ] Track minor backports via labels/board to avoid missing required fixes.
+- [ ] Simulate release-branch merge-back to `stable/<minor>` early to detect predictable conflicts.
+
+#### 6. Documentation and communication hygiene
+
+- [ ] Keep this file current for minor branch strategy, bug-fix backport rules, and feature freeze vs code freeze definitions.
+
+#### 7. Watch-outs and sanity checks
+
+- [ ] Verify no outdated temporary branch overrides or conditions remain from previous minors before starting a new minor BPMN instance.
+- [ ] Verify preview/smoke-test workflows target `stable/<minor>` with existing `<minor>-SNAPSHOT` images.
+
+### Minor Release References
+
+- [Release process documentation](./release.md)
+- [C8 Release Train](https://confluence.camunda.com/spaces/HAN/pages/201853752/C8+Release+Train)
+- [Minor Release Feature Freeze](https://confluence.camunda.com/spaces/HAN/pages/307894801/Minor+Release+Feature+Freeze)
+- [Issue #46249](https://github.com/camunda/camunda/issues/46249)
+- [Issue #40009](https://github.com/camunda/camunda/issues/40009)
+- [Issue #37374](https://github.com/camunda/camunda/issues/37374)
+- [Issue #38074](https://github.com/camunda/camunda/issues/38074)
+
+### Possible Issues When Cutting The Stable Branch
+
+#### Zeebe update tests failing
+
+- Symptom: `IllegalStateException: Snapshot is not compatible with current version: SkippedMinorVersion[from=8.8.0, to=8.10.0]`
+- Context: recurring issue around the stable-branch cut and version-line switch. See Christian's note: "Hi folks, every 6 months the same question..."
+- Known workaround: disable the affected tests with an explicit follow-up and re-enable them after the final minor release is published.
+
+#### CPT integration tests failing
+
+- Symptom: `Can't get Docker image: RemoteDockerImage(imageName=camunda/camunda:8.9-SNAPSHOT)`
+- Context: this happened due to wrong test naming during the stable-branch transition. See Remco's note: `@monorepo-ci-medic Backports to stable/8.9...`
+- Known workaround: there is no generic workaround beyond fixing the incorrect test name or image reference.
 
 ### Feature Freeze vs Code Freeze (Minor Releases)
 
@@ -351,32 +400,32 @@ For C8 monorepo minor releases, we enforce two distinct stages to ensure quality
 - **Purpose**: Lock in the feature scope for the upcoming minor release
 - **Timing**: Occurs with the **last alpha** before the minor release (e.g., for `8.9.0`, this would be `8.9.0-alpha5`), on the day of the code freeze of the last alpha
 - **What Changes**:
-- ✅ All cross-component features targeted for the minor must be fully implemented, documented, and working end-to-end
-- ❌ No new features, scope extensions, or risky changes after this point
-- ✅ Bug fixes, stabilization work, and E2E testing continue
+  - ✅ All cross-component features targeted for the minor must be fully implemented, documented, and working end-to-end
+  - ❌ No new features, scope extensions, or risky changes after this point
+  - ✅ Bug fixes, stabilization work, and E2E testing continue
 - **Notification Process**: Send calendar invite to engineering teams (Core Features, Orchestration, QA, DevOps/Release, and other relevant teams) with:
-- **Subject**: `Camunda repo (Zeebe/Operate/Tasklist/Identity/Optimize) Release Minor <version> - Feature Freeze`
-- **Body**:
+  - **Subject**: `Camunda repo (Zeebe/Operate/Tasklist/Identity/Optimize) Release Minor <version> - Feature Freeze`
+  - **Body**:
 
-```
-Hey all,
+    ```
+    Hey all,
 
-        This appointment marks the feature freeze for the camunda/camunda repository: <minor_version> (minor).
-        <last_alpha_version> is the last alpha before the minor and defines the scope of what will ship in <minor_version>. Any new features or scope changes must be merged before this point to make it into the minor.
+    This appointment marks the feature freeze for the camunda/camunda repository: <minor_version> (minor).
+    <last_alpha_version> is the last alpha before the minor and defines the scope of what will ship in <minor_version>. Any new features or scope changes must be merged before this point to make it into the minor.
 
-        After this date, we focus on bug fixing, stabilization, and end-to-end testing for <minor_version>. New features should target future alphas/minors instead.
+    After this date, we focus on bug fixing, stabilization, and end-to-end testing for <minor_version>. New features should target future alphas/minors instead.
 
-        Overall release manager is <release_manager_name>
+    Overall release manager is <release_manager_name>
 
-        Have a nice week!
-        ```
+    Have a nice week!
+    ```
 
 **🚫 Code Freeze (Minor Releases)**
 - **Purpose**: Minimize code changes to ensure release stability
 - **Timing**: Three weeks before the press release (e.g., release branch creation and thus code freeze for `8.9.0` is on March 24th since press release is on April 14th)
 - **What Changes**:
-- ✅ Only **critical** changes allowed (release blockers, severe regressions, security issues)
-- ❌ Non-critical changes deferred to future alphas or patch releases
+  - ✅ Only **critical** changes allowed (release blockers, severe regressions, security issues)
+  - ❌ Non-critical changes deferred to future alphas or patch releases
 - **Coordination**: Scheduled via dedicated calendar invite managed by respective teams
 
 **📅 Important References**
@@ -487,10 +536,10 @@ Note: Hotfixes are **not part of the official release process** and **should not
 Release process roughly looks like this:
 - release branch is created (forked from `main` or `stable/x.y`)
 - on the release branch, as a part of the release process, maven-release-plugin creates 2 commits sequentially:
-- commit 1 ([example](https://github.com/camunda/camunda/commit/472b0d32a15e25c6f494169b10ca4f799b55766c)): bumping pom.xml files to the version we want to release (e.g. `8.8.0-SNAPSHOT` -> `8.8.0-alpha6`)
-- A git tag for the release (e.g. `8.8.0-alpha6`) is created from this commit
-- The release is built from this commit.
-- commit 2 ([example](https://github.com/camunda/camunda/commit/d8cd12a8fd73c3bf5237c33a9c5fb1ed0c4f9bab)): bumping pom.xml files for the next development version (e.g. `8.8.0-alpha6` -> `8.8.0-SNAPSHOT`)
+  - commit 1 ([example](https://github.com/camunda/camunda/commit/472b0d32a15e25c6f494169b10ca4f799b55766c)): bumping pom.xml files to the version we want to release (e.g. `8.8.0-SNAPSHOT` -> `8.8.0-alpha6`)
+    - A git tag for the release (e.g. `8.8.0-alpha6`) is created from this commit
+    - The release is built from this commit.
+  - commit 2 ([example](https://github.com/camunda/camunda/commit/d8cd12a8fd73c3bf5237c33a9c5fb1ed0c4f9bab)): bumping pom.xml files for the next development version (e.g. `8.8.0-alpha6` -> `8.8.0-SNAPSHOT`)
 
 If one needs to retry the failed release (assuming no need to clear the released artifacts), need to do:
 - delete these two commits from the git history

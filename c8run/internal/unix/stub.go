@@ -19,10 +19,6 @@ func (w *UnixC8Run) VersionCmd(ctx context.Context, javaBinaryPath string) *exec
 	panic("Platform was not built for unix")
 }
 
-func (w *UnixC8Run) ElasticsearchCmd(ctx context.Context, elasticsearchVersion string, parentDir string) *exec.Cmd {
-	panic("Platform was not built for unix")
-}
-
 func (w *UnixC8Run) ConnectorsCmd(ctx context.Context, javaBinary string, parentDir string, connectorsVersion string, camundaPort int) *exec.Cmd {
 	panic("Platform was not built for unix")
 }

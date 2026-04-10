@@ -15,6 +15,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.db.rdbms.LiquibaseSchemaManager;
 import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.db.rdbms.config.VendorDatabaseProperties;
+import io.camunda.db.rdbms.sql.ExporterPositionMapper;
 import io.camunda.exporter.rdbms.RdbmsExporterWrapper;
 import io.camunda.search.entities.AuditLogEntity.AuditLogEntityType;
 import io.camunda.search.entities.AuditLogEntity.AuditLogOperationCategory;
@@ -105,6 +106,7 @@ import io.camunda.zeebe.protocol.record.value.deployment.Form;
 import io.camunda.zeebe.protocol.record.value.deployment.Process;
 import io.camunda.zeebe.test.util.Strings;
 import io.micrometer.core.instrument.MeterRegistry;
+import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
@@ -144,6 +146,7 @@ class RdbmsExporterIT {
           });
   @Autowired private LiquibaseSchemaManager liquibaseSchemaManager;
   @Autowired private RdbmsService rdbmsService;
+  @Autowired private ExporterPositionMapper exporterPositionMapper;
   private RdbmsExporterWrapper exporter;
 
   @BeforeEach
@@ -1438,6 +1441,49 @@ class RdbmsExporterIT {
     assertThat(auditLog.operationType()).isEqualTo(AuditLogOperationType.CREATE);
     assertThat(auditLog.result()).isEqualTo(AuditLogOperationResult.SUCCESS);
     assertThat(auditLog.category()).isEqualTo(AuditLogOperationCategory.DEPLOYED_RESOURCES);
+  }
+
+  @Test
+  public void shouldUpdatePositionForIgnoredRecordsWithIntervalFlush() {
+    // given - create a separate exporter with interval-based flush (queueSize > 0, not per-record)
+    // Use partitionId=2 to avoid interfering with other tests that use partitionId=1
+    final var intervalController = new ExporterTestController();
+    final var intervalExporter =
+        new RdbmsExporterWrapper(rdbmsService, liquibaseSchemaManager, vendorDatabaseProperties);
+    intervalExporter.configure(
+        new ExporterContext(
+            null,
+            new ExporterConfiguration("interval-flush-test", Map.of("queueSize", 100)),
+            2,
+            Mockito.mock(MeterRegistry.class, Mockito.RETURNS_DEEP_STUBS),
+            null));
+    intervalExporter.open(intervalController);
+
+    // a record with ValueType.TIMER has no registered handler: the exporter updates lastPosition
+    // for it but does not enqueue any data write operations (the record is skipped for data export)
+    final var skippedRecord =
+        ImmutableRecord.<RecordValue>builder()
+            .from(RecordFixtures.FACTORY.generateRecord(ValueType.TIMER))
+            .withPosition(42L)
+            .withPartitionId(2)
+            .withTimestamp(System.currentTimeMillis())
+            .build();
+
+    // when - export the record (no handler → no data queued, but lastPosition is still updated)
+    intervalExporter.export(skippedRecord);
+
+    // then - trigger the scheduled interval flush (flushInterval defaults to 500ms)
+    intervalController.runScheduledTasks(Duration.ofSeconds(1));
+
+    // then - broker position is updated even though no data handler processed the record
+    assertThat(intervalController.getPosition()).isEqualTo(42L);
+
+    // then - RDBMS position is updated: the pre-flush listener adds the position update
+    // to the queue before the empty-queue check, so it is persisted even though the queue
+    // contained no data writes
+    final var rdbmsPosition = exporterPositionMapper.findOne(2);
+    assertThat(rdbmsPosition).isNotNull();
+    assertThat(rdbmsPosition.lastExportedPosition()).isEqualTo(42L);
   }
 
   private static void verifyRootProcessInstanceKey(

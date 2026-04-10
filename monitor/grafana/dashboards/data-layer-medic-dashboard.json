@@ -1,35 +1,4 @@
 {
-  "__inputs": [
-    {
-      "name": "DS_PROMETHEUS",
-      "label": "Prometheus",
-      "description": "",
-      "type": "datasource",
-      "pluginId": "prometheus",
-      "pluginName": "Prometheus"
-    }
-  ],
-  "__elements": {},
-  "__requires": [
-    {
-      "type": "grafana",
-      "id": "grafana",
-      "name": "Grafana",
-      "version": "12.0.2"
-    },
-    {
-      "type": "datasource",
-      "id": "prometheus",
-      "name": "Prometheus",
-      "version": "1.0.0"
-    },
-    {
-      "type": "panel",
-      "id": "stat",
-      "name": "Stat",
-      "version": ""
-    }
-  ],
   "annotations": {
     "list": [
       {
@@ -85,7 +54,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green"
+                "color": "green",
+                "value": 0
               },
               {
                 "color": "red",
@@ -121,7 +91,7 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "12.0.2",
+      "pluginVersion": "12.4.1",
       "targets": [
         {
           "adhocFilters": [],
@@ -130,7 +100,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
-          "expr": "histogram_quantile(0.99,sum by (le, namespace) (rate(starter_data_availability_latency_seconds_bucket{namespace=~\"medic.*typical\"}[$__rate_interval])))",
+          "expr": "histogram_quantile(0.99,sum by (le, namespace) (rate(starter_data_availability_latency_seconds_bucket{namespace=~\"$prefix.*typical\"}[$__rate_interval])))",
           "fromExploreMetrics": true,
           "interval": "",
           "legendFormat": "{{namespace}}",
@@ -156,7 +126,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green"
+                "color": "green",
+                "value": 0
               },
               {
                 "color": "red",
@@ -192,7 +163,7 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "12.0.2",
+      "pluginVersion": "12.4.1",
       "targets": [
         {
           "adhocFilters": [],
@@ -201,7 +172,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
-          "expr": "histogram_quantile(0.9,sum by (le, namespace) (rate(starter_data_availability_latency_seconds_bucket{namespace=~\"medic.*typical\"}[$__rate_interval])))",
+          "expr": "histogram_quantile(0.9,sum by (le, namespace) (rate(starter_data_availability_latency_seconds_bucket{namespace=~\"$prefix.*typical\"}[$__rate_interval])))",
           "fromExploreMetrics": true,
           "interval": "",
           "legendFormat": "{{namespace}}",
@@ -227,7 +198,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green"
+                "color": "green",
+                "value": 0
               },
               {
                 "color": "red",
@@ -263,7 +235,7 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "12.0.2",
+      "pluginVersion": "12.4.1",
       "targets": [
         {
           "adhocFilters": [],
@@ -272,7 +244,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
-          "expr": "histogram_quantile(0.5,sum by (le, namespace) (rate(starter_data_availability_latency_seconds_bucket{namespace=~\"medic.*typical\"}[$__rate_interval])))",
+          "expr": "histogram_quantile(0.5,sum by (le, namespace) (rate(starter_data_availability_latency_seconds_bucket{namespace=~\"$prefix.*typical\"}[$__rate_interval])))",
           "fromExploreMetrics": true,
           "interval": "",
           "legendFormat": "{{namespace}}",
@@ -298,7 +270,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green"
+                "color": "green",
+                "value": 0
               }
             ]
           }
@@ -329,18 +302,18 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "12.0.2",
+      "pluginVersion": "12.4.1",
       "targets": [
         {
-          "editorMode": "code",
-          "expr": "sum(rate(zeebe_camunda_exporter_archiver_process_instances_total{namespace=~\"medic.*typical\", state=\"archived\"}[$__rate_interval])) by (namespace)",
-          "legendFormat": "__auto",
-          "range": true,
-          "refId": "A",
           "datasource": {
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
-          }
+          },
+          "editorMode": "code",
+          "expr": "sum(rate(zeebe_camunda_exporter_archiver_process_instances_total{namespace=~\"$prefix.*typical\", state=\"archived\"}[$__rate_interval])) by (namespace)",
+          "legendFormat": "__auto",
+          "range": true,
+          "refId": "A"
         }
       ],
       "title": "Archiving rate",
@@ -361,7 +334,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green"
+                "color": "green",
+                "value": 0
               }
             ]
           }
@@ -392,18 +366,18 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "12.0.2",
+      "pluginVersion": "12.4.1",
       "targets": [
         {
-          "editorMode": "code",
-          "expr": "sum(rate(zeebe_element_instance_events_total{namespace=~\"medic.*typical\", action=\"completed\", type=\"PROCESS\"}[$__rate_interval])) by (namespace)",
-          "legendFormat": "__auto",
-          "range": true,
-          "refId": "A",
           "datasource": {
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
-          }
+          },
+          "editorMode": "code",
+          "expr": "sum(rate(zeebe_element_instance_events_total{namespace=~\"$prefix.*typical\", action=\"completed\", type=\"PROCESS\"}[$__rate_interval])) by (namespace)",
+          "legendFormat": "__auto",
+          "range": true,
+          "refId": "A"
         }
       ],
       "title": "PI Completion rate",
@@ -419,7 +393,7 @@
       },
       "id": 280,
       "panels": [],
-      "title": "Mixed Load Tests",
+      "title": "Realistic Load Tests",
       "type": "row"
     },
     {
@@ -437,7 +411,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green"
+                "color": "green",
+                "value": 0
               },
               {
                 "color": "red",
@@ -473,7 +448,7 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "12.0.2",
+      "pluginVersion": "12.4.1",
       "targets": [
         {
           "adhocFilters": [],
@@ -482,7 +457,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
-          "expr": "histogram_quantile(0.99,sum by (le, namespace) (rate(starter_data_availability_latency_seconds_bucket{namespace=~\"medic.*mixed\"}[$__rate_interval])))",
+          "expr": "histogram_quantile(0.99,sum by (le, namespace) (rate(starter_data_availability_latency_seconds_bucket{namespace=~\"$prefix.*realistic\"}[$__rate_interval])))",
           "fromExploreMetrics": true,
           "interval": "",
           "legendFormat": "{{namespace}}",
@@ -508,7 +483,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green"
+                "color": "green",
+                "value": 0
               },
               {
                 "color": "red",
@@ -544,7 +520,7 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "12.0.2",
+      "pluginVersion": "12.4.1",
       "targets": [
         {
           "adhocFilters": [],
@@ -553,7 +529,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
-          "expr": "histogram_quantile(0.9,sum by (le, namespace) (rate(starter_data_availability_latency_seconds_bucket{namespace=~\"medic.*mixed\"}[$__rate_interval])))",
+          "expr": "histogram_quantile(0.9,sum by (le, namespace) (rate(starter_data_availability_latency_seconds_bucket{namespace=~\"$prefix.*realistic\"}[$__rate_interval])))",
           "fromExploreMetrics": true,
           "interval": "",
           "legendFormat": "{{namespace}}",
@@ -579,7 +555,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green"
+                "color": "green",
+                "value": 0
               },
               {
                 "color": "red",
@@ -615,7 +592,7 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "12.0.2",
+      "pluginVersion": "12.4.1",
       "targets": [
         {
           "adhocFilters": [],
@@ -624,7 +601,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
-          "expr": "histogram_quantile(0.5,sum by (le, namespace) (rate(starter_data_availability_latency_seconds_bucket{namespace=~\"medic.*mixed\"}[$__rate_interval])))",
+          "expr": "histogram_quantile(0.5,sum by (le, namespace) (rate(starter_data_availability_latency_seconds_bucket{namespace=~\"$prefix.*realistic\"}[$__rate_interval])))",
           "fromExploreMetrics": true,
           "interval": "",
           "legendFormat": "{{namespace}}",
@@ -650,7 +627,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "red"
+                "color": "red",
+                "value": 0
               },
               {
                 "color": "#EAB839",
@@ -689,18 +667,18 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "12.0.2",
+      "pluginVersion": "12.4.1",
       "targets": [
         {
-          "editorMode": "code",
-          "expr": "sum(rate(zeebe_camunda_exporter_archiver_process_instances_total{namespace=~\"medic.*mixed\", state=\"archived\"}[$__rate_interval])) by (namespace)",
-          "legendFormat": "__auto",
-          "range": true,
-          "refId": "A",
           "datasource": {
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
-          }
+          },
+          "editorMode": "code",
+          "expr": "sum(rate(zeebe_camunda_exporter_archiver_process_instances_total{namespace=~\"$prefix.*realistic\", state=\"archived\"}[$__rate_interval])) by (namespace)",
+          "legendFormat": "__auto",
+          "range": true,
+          "refId": "A"
         }
       ],
       "title": "Archiving rate",
@@ -721,7 +699,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green"
+                "color": "green",
+                "value": 0
               }
             ]
           }
@@ -752,18 +731,18 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "12.0.2",
+      "pluginVersion": "12.4.1",
       "targets": [
         {
-          "editorMode": "code",
-          "expr": "sum(rate(zeebe_element_instance_events_total{namespace=~\"medic.*mixed\", action=\"completed\", type=\"PROCESS\"}[$__rate_interval])) by (namespace)",
-          "legendFormat": "__auto",
-          "range": true,
-          "refId": "A",
           "datasource": {
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
-          }
+          },
+          "editorMode": "code",
+          "expr": "sum(rate(zeebe_element_instance_events_total{namespace=~\"$prefix.*realistic\", action=\"completed\", type=\"PROCESS\"}[$__rate_interval])) by (namespace)",
+          "legendFormat": "__auto",
+          "range": true,
+          "refId": "A"
         }
       ],
       "title": "PI Completion rate",
@@ -797,7 +776,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green"
+                "color": "green",
+                "value": 0
               },
               {
                 "color": "red",
@@ -833,7 +813,7 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "12.0.2",
+      "pluginVersion": "12.4.1",
       "targets": [
         {
           "adhocFilters": [],
@@ -842,7 +822,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
-          "expr": "histogram_quantile(0.99,sum by (le, namespace) (rate(starter_data_availability_latency_seconds_bucket{namespace=~\"medic-daily.*\"}[$__rate_interval])))",
+          "expr": "histogram_quantile(0.99,sum by (le, namespace) (rate(starter_data_availability_latency_seconds_bucket{namespace=~\"$prefix-daily.*\"}[$__rate_interval])))",
           "fromExploreMetrics": true,
           "interval": "",
           "legendFormat": "{{namespace}}",
@@ -868,7 +848,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green"
+                "color": "green",
+                "value": 0
               },
               {
                 "color": "red",
@@ -904,7 +885,7 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "12.0.2",
+      "pluginVersion": "12.4.1",
       "targets": [
         {
           "adhocFilters": [],
@@ -913,7 +894,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
-          "expr": "histogram_quantile(0.9,sum by (le, namespace) (rate(starter_data_availability_latency_seconds_bucket{namespace=~\"medic-daily.*\"}[$__rate_interval])))",
+          "expr": "histogram_quantile(0.9,sum by (le, namespace) (rate(starter_data_availability_latency_seconds_bucket{namespace=~\"$prefix-daily.*\"}[$__rate_interval])))",
           "fromExploreMetrics": true,
           "interval": "",
           "legendFormat": "{{namespace}}",
@@ -939,7 +920,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green"
+                "color": "green",
+                "value": 0
               },
               {
                 "color": "red",
@@ -975,7 +957,7 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "12.0.2",
+      "pluginVersion": "12.4.1",
       "targets": [
         {
           "adhocFilters": [],
@@ -984,7 +966,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
-          "expr": "histogram_quantile(0.5,sum by (le, namespace) (rate(starter_data_availability_latency_seconds_bucket{namespace=~\"medic-daily.*\"}[$__rate_interval])))",
+          "expr": "histogram_quantile(0.5,sum by (le, namespace) (rate(starter_data_availability_latency_seconds_bucket{namespace=~\"$prefix-daily.*\"}[$__rate_interval])))",
           "fromExploreMetrics": true,
           "interval": "",
           "legendFormat": "{{namespace}}",
@@ -1010,7 +992,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "red"
+                "color": "red",
+                "value": 0
               },
               {
                 "color": "#EAB839",
@@ -1049,18 +1032,18 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "12.0.2",
+      "pluginVersion": "12.4.1",
       "targets": [
         {
-          "editorMode": "code",
-          "expr": "sum(rate(zeebe_camunda_exporter_archiver_process_instances_total{namespace=~\"medic-daily.*\", state=\"archived\"}[$__rate_interval])) by (namespace)",
-          "legendFormat": "__auto",
-          "range": true,
-          "refId": "A",
           "datasource": {
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
-          }
+          },
+          "editorMode": "code",
+          "expr": "sum(rate(zeebe_camunda_exporter_archiver_process_instances_total{namespace=~\"$prefix-daily.*\", state=\"archived\"}[$__rate_interval])) by (namespace)",
+          "legendFormat": "__auto",
+          "range": true,
+          "refId": "A"
         }
       ],
       "title": "Archiving rate",
@@ -1081,7 +1064,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green"
+                "color": "green",
+                "value": 0
               }
             ]
           }
@@ -1112,18 +1096,18 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "12.0.2",
+      "pluginVersion": "12.4.1",
       "targets": [
         {
-          "editorMode": "code",
-          "expr": "sum(rate(zeebe_element_instance_events_total{namespace=~\"medic-daily.*\", action=\"completed\", type=\"PROCESS\"}[$__rate_interval])) by (namespace)",
-          "legendFormat": "__auto",
-          "range": true,
-          "refId": "A",
           "datasource": {
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
-          }
+          },
+          "editorMode": "code",
+          "expr": "sum(rate(zeebe_element_instance_events_total{namespace=~\"$prefix-daily.*\", action=\"completed\", type=\"PROCESS\"}[$__rate_interval])) by (namespace)",
+          "legendFormat": "__auto",
+          "range": true,
+          "refId": "A"
         }
       ],
       "title": "PI Completion rate",
@@ -1157,7 +1141,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green"
+                "color": "green",
+                "value": 0
               },
               {
                 "color": "red",
@@ -1193,7 +1178,7 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "12.0.2",
+      "pluginVersion": "12.4.1",
       "targets": [
         {
           "adhocFilters": [],
@@ -1202,7 +1187,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
-          "expr": "histogram_quantile(0.99,sum by (le, namespace) (rate(starter_data_availability_latency_seconds_bucket{namespace=~\"medic.*-latency\"}[$__rate_interval])))",
+          "expr": "histogram_quantile(0.99,sum by (le, namespace) (rate(starter_data_availability_latency_seconds_bucket{namespace=~\"$prefix.*-latency\"}[$__rate_interval])))",
           "fromExploreMetrics": true,
           "interval": "",
           "legendFormat": "{{namespace}}",
@@ -1228,7 +1213,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green"
+                "color": "green",
+                "value": 0
               },
               {
                 "color": "red",
@@ -1264,7 +1250,7 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "12.0.2",
+      "pluginVersion": "12.4.1",
       "targets": [
         {
           "adhocFilters": [],
@@ -1273,7 +1259,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
-          "expr": "histogram_quantile(0.9,sum by (le, namespace) (rate(starter_data_availability_latency_seconds_bucket{namespace=~\"medic.*-latency\"}[$__rate_interval])))",
+          "expr": "histogram_quantile(0.9,sum by (le, namespace) (rate(starter_data_availability_latency_seconds_bucket{namespace=~\"$prefix.*-latency\"}[$__rate_interval])))",
           "fromExploreMetrics": true,
           "interval": "",
           "legendFormat": "{{namespace}}",
@@ -1299,7 +1285,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green"
+                "color": "green",
+                "value": 0
               },
               {
                 "color": "red",
@@ -1335,7 +1322,7 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "12.0.2",
+      "pluginVersion": "12.4.1",
       "targets": [
         {
           "adhocFilters": [],
@@ -1344,7 +1331,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
-          "expr": "histogram_quantile(0.5,sum by (le, namespace) (rate(starter_data_availability_latency_seconds_bucket{namespace=~\"medic.*-latency\"}[$__rate_interval])))",
+          "expr": "histogram_quantile(0.5,sum by (le, namespace) (rate(starter_data_availability_latency_seconds_bucket{namespace=~\"$prefix.*-latency\"}[$__rate_interval])))",
           "fromExploreMetrics": true,
           "interval": "",
           "legendFormat": "{{namespace}}",
@@ -1370,7 +1357,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "red"
+                "color": "red",
+                "value": 0
               },
               {
                 "color": "green",
@@ -1405,18 +1393,18 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "12.0.2",
+      "pluginVersion": "12.4.1",
       "targets": [
         {
-          "editorMode": "code",
-          "expr": "sum(rate(zeebe_camunda_exporter_archiver_process_instances_total{namespace=~\"medic.*-latency\", state=\"archived\"}[$__rate_interval])) by (namespace)",
-          "legendFormat": "__auto",
-          "range": true,
-          "refId": "A",
           "datasource": {
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
-          }
+          },
+          "editorMode": "code",
+          "expr": "sum(rate(zeebe_camunda_exporter_archiver_process_instances_total{namespace=~\"$prefix.*-latency\", state=\"archived\"}[$__rate_interval])) by (namespace)",
+          "legendFormat": "__auto",
+          "range": true,
+          "refId": "A"
         }
       ],
       "title": "Archiving rate",
@@ -1437,7 +1425,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green"
+                "color": "green",
+                "value": 0
               }
             ]
           }
@@ -1468,106 +1457,22 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "12.0.2",
+      "pluginVersion": "12.4.1",
       "targets": [
         {
-          "editorMode": "code",
-          "expr": "sum(rate(zeebe_element_instance_events_total{namespace=~\"medic.*-latency\", action=\"completed\", type=\"PROCESS\"}[$__rate_interval])) by (namespace)",
-          "legendFormat": "__auto",
-          "range": true,
-          "refId": "A",
           "datasource": {
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
-          }
+          },
+          "editorMode": "code",
+          "expr": "sum(rate(zeebe_element_instance_events_total{namespace=~\"$prefix.*-latency\", action=\"completed\", type=\"PROCESS\"}[$__rate_interval])) by (namespace)",
+          "legendFormat": "__auto",
+          "range": true,
+          "refId": "A"
         }
       ],
       "title": "PI Completion rate",
       "type": "stat"
-    },
-    {
-      "collapsed": true,
-      "gridPos": {
-        "h": 1,
-        "w": 24,
-        "x": 0,
-        "y": 80
-      },
-      "id": 284,
-      "panels": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
-          },
-          "description": "Shows how much disk is used at max by a broker per namespace",
-          "fieldConfig": {
-            "defaults": {
-              "color": {
-                "mode": "thresholds"
-              },
-              "links": [],
-              "mappings": [],
-              "thresholds": {
-                "mode": "absolute",
-                "steps": [
-                  {
-                    "color": "green"
-                  },
-                  {
-                    "color": "red",
-                    "value": 80
-                  }
-                ]
-              },
-              "unit": "percentunit"
-            },
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 9,
-            "w": 24,
-            "x": 0,
-            "y": 157
-          },
-          "id": 39,
-          "options": {
-            "colorMode": "value",
-            "graphMode": "area",
-            "justifyMode": "auto",
-            "orientation": "auto",
-            "percentChangeColorMode": "standard",
-            "reduceOptions": {
-              "calcs": [
-                "lastNotNull"
-              ],
-              "fields": "",
-              "values": false
-            },
-            "showPercentChange": false,
-            "textMode": "auto",
-            "wideLayout": true
-          },
-          "pluginVersion": "12.0.2",
-          "targets": [
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
-              },
-              "editorMode": "code",
-              "expr": "max(kubelet_volume_stats_used_bytes{namespace=~\"medic.*\", persistentvolumeclaim=~\".*elastic.*\"} / kubelet_volume_stats_capacity_bytes{namespace=~\"medic.*\", persistentvolumeclaim=~\".*elastic.*\"}) by (namespace)",
-              "legendFormat": "{{persistentvolumeclaim}}",
-              "range": true,
-              "refId": "B"
-            }
-          ],
-          "title": "Namespace max disk usage",
-          "type": "stat"
-        }
-      ],
-      "title": "Medic Load Tests Health",
-      "type": "row"
     },
     {
       "collapsed": false,
@@ -1575,7 +1480,91 @@
         "h": 1,
         "w": 24,
         "x": 0,
+        "y": 80
+      },
+      "id": 284,
+      "panels": [],
+      "title": "Medic Load Tests Health",
+      "type": "row"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "description": "Shows how much disk is used at max by a broker per namespace",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "links": [],
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "percentunit"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 9,
+        "w": 24,
+        "x": 0,
         "y": 81
+      },
+      "id": 39,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "12.4.1",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "editorMode": "code",
+          "expr": "max(kubelet_volume_stats_used_bytes{namespace=~\"$prefix.*\", persistentvolumeclaim=~\".*elastic.*\"} / kubelet_volume_stats_capacity_bytes{namespace=~\"$prefix.*\", persistentvolumeclaim=~\".*elastic.*\"}) by (namespace)",
+          "legendFormat": "{{persistentvolumeclaim}}",
+          "range": true,
+          "refId": "B"
+        }
+      ],
+      "title": "Namespace max disk usage",
+      "type": "stat"
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 90
       },
       "id": 290,
       "panels": [],
@@ -1597,7 +1586,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green"
+                "color": "green",
+                "value": 0
               },
               {
                 "color": "red",
@@ -1613,7 +1603,7 @@
         "h": 11,
         "w": 8,
         "x": 0,
-        "y": 82
+        "y": 91
       },
       "id": 332,
       "options": {
@@ -1633,7 +1623,7 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "12.0.2",
+      "pluginVersion": "12.4.1",
       "targets": [
         {
           "adhocFilters": [],
@@ -1642,7 +1632,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
-          "expr": "histogram_quantile(0.99,sum by (le, namespace) (rate(starter_data_availability_latency_seconds_bucket{namespace=~\"release-8.*\"}[$__rate_interval])))",
+          "expr": "histogram_quantile(0.99,sum by (le, namespace) (rate(starter_data_availability_latency_seconds_bucket{namespace=~\"c8-release-8.*\"}[$__rate_interval])))",
           "fromExploreMetrics": true,
           "interval": "",
           "legendFormat": "{{namespace}}",
@@ -1668,7 +1658,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green"
+                "color": "green",
+                "value": 0
               },
               {
                 "color": "red",
@@ -1684,7 +1675,7 @@
         "h": 11,
         "w": 8,
         "x": 8,
-        "y": 82
+        "y": 91
       },
       "id": 323,
       "options": {
@@ -1704,7 +1695,7 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "12.0.2",
+      "pluginVersion": "12.4.1",
       "targets": [
         {
           "adhocFilters": [],
@@ -1713,7 +1704,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
-          "expr": "histogram_quantile(0.9,sum by (le, namespace) (rate(starter_data_availability_latency_seconds_bucket{namespace=~\"release-8.*\"}[$__rate_interval])))",
+          "expr": "histogram_quantile(0.9,sum by (le, namespace) (rate(starter_data_availability_latency_seconds_bucket{namespace=~\"c8-release-8.*\"}[$__rate_interval])))",
           "fromExploreMetrics": true,
           "interval": "",
           "legendFormat": "{{namespace}}",
@@ -1739,7 +1730,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green"
+                "color": "green",
+                "value": 0
               },
               {
                 "color": "red",
@@ -1755,7 +1747,7 @@
         "h": 11,
         "w": 8,
         "x": 16,
-        "y": 82
+        "y": 91
       },
       "id": 335,
       "options": {
@@ -1775,7 +1767,7 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "12.0.2",
+      "pluginVersion": "12.4.1",
       "targets": [
         {
           "adhocFilters": [],
@@ -1784,7 +1776,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
-          "expr": "histogram_quantile(0.5,sum by (le, namespace) (rate(starter_data_availability_latency_seconds_bucket{namespace=~\"release-8.*\"}[$__rate_interval])))",
+          "expr": "histogram_quantile(0.5,sum by (le, namespace) (rate(starter_data_availability_latency_seconds_bucket{namespace=~\"c8-release-8.*\"}[$__rate_interval])))",
           "fromExploreMetrics": true,
           "interval": "",
           "legendFormat": "{{namespace}}",
@@ -1810,7 +1802,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "red"
+                "color": "red",
+                "value": 0
               },
               {
                 "color": "green",
@@ -1825,7 +1818,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 93
+        "y": 102
       },
       "id": 334,
       "options": {
@@ -1845,18 +1838,18 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "12.0.2",
+      "pluginVersion": "12.4.1",
       "targets": [
         {
-          "editorMode": "code",
-          "expr": "sum(rate(zeebe_camunda_exporter_archiver_process_instances_total{namespace=~\"release-8.*\", state=\"archived\"}[$__rate_interval])) by (namespace)",
-          "legendFormat": "__auto",
-          "range": true,
-          "refId": "A",
           "datasource": {
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
-          }
+          },
+          "editorMode": "code",
+          "expr": "sum(rate(zeebe_camunda_exporter_archiver_process_instances_total{namespace=~\"c8-release-8.*\", state=\"archived\"}[$__rate_interval])) by (namespace)",
+          "legendFormat": "__auto",
+          "range": true,
+          "refId": "A"
         }
       ],
       "title": "Archiving rate",
@@ -1877,7 +1870,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green"
+                "color": "green",
+                "value": 0
               }
             ]
           }
@@ -1888,7 +1882,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 93
+        "y": 102
       },
       "id": 336,
       "options": {
@@ -1908,31 +1902,35 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "12.0.2",
+      "pluginVersion": "12.4.1",
       "targets": [
         {
-          "editorMode": "code",
-          "expr": "sum(rate(zeebe_element_instance_events_total{namespace=~\"release-8.*\", action=\"completed\", type=\"PROCESS\"}[$__rate_interval])) by (namespace)",
-          "legendFormat": "__auto",
-          "range": true,
-          "refId": "A",
           "datasource": {
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
-          }
+          },
+          "editorMode": "code",
+          "expr": "sum(rate(zeebe_element_instance_events_total{namespace=~\"c8-release-8.*\", action=\"completed\", type=\"PROCESS\"}[$__rate_interval])) by (namespace)",
+          "legendFormat": "__auto",
+          "range": true,
+          "refId": "A"
         }
       ],
       "title": "PI Completion rate",
       "type": "stat"
     }
   ],
+  "preload": false,
   "refresh": "1m",
-  "schemaVersion": 41,
+  "schemaVersion": 42,
   "tags": [],
   "templating": {
     "list": [
       {
-        "current": {},
+        "current": {
+          "text": "Prometheus",
+          "value": "prometheus"
+        },
         "includeAll": false,
         "label": "datasource",
         "name": "DS_PROMETHEUS",
@@ -1941,6 +1939,19 @@
         "refresh": 1,
         "regex": "",
         "type": "datasource"
+      },
+      {
+        "current": {
+          "text": "c8-medic",
+          "value": "c8-medic"
+        },
+        "description": "Prefix of the namespaces to look at",
+        "hide": 2,
+        "label": "Namespace prefix",
+        "name": "prefix",
+        "query": "c8-medic",
+        "skipUrlSync": true,
+        "type": "constant"
       }
     ]
   },
@@ -1961,10 +1972,9 @@
       "1d"
     ]
   },
-  "timezone": "",
+  "timezone": "browser",
   "title": "Data Layer Medic Load Tests",
   "uid": "chhnwwv",
-  "version": 0,
-  "weekStart": "",
-  "id": null
+  "version": 2,
+  "weekStart": ""
 }

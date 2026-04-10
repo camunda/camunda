@@ -51,9 +51,6 @@
       "result": {
         "type": "keyword"
       },
-      "annotation": {
-        "type": "text"
-      },
       "category": {
         "type": "keyword"
       },

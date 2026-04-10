@@ -54,15 +54,15 @@ jobs:
           workload_identity_provider: 'projects/618877442292/locations/global/workloadIdentityPools/github/providers/camunda'
           service_account: 'github-actions-zeebe-io@camunda-saas-registry.iam.gserviceaccount.com'
       - name: Setup BuildKit
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@v4
       - name: Login to SaaS image registry
-        uses: docker/login-action@v3
+        uses: docker/login-action@v4
         with:
           registry: europe-docker.pkg.dev
           username: oauth2accesstoken
           password: ${{ steps.auth-saas.outputs.access_token }}
       - name: Login to Zeebe image registry
-        uses: docker/login-action@v3
+        uses: docker/login-action@v4
         with:
           registry: gcr.io
           username: oauth2accesstoken
@@ -109,12 +109,13 @@ jobs:
         with:
           maven-extra-args: -PskipFrontendBuild
       - uses: ./.github/actions/build-platform-docker
-        id: build-zeebe-docker
+        id: build-camunda-docker
         with:
-          repository: europe-docker.pkg.dev/camunda-saas-registry/zeebe-io/zeebe
+          repository: europe-docker.pkg.dev/camunda-saas-registry/zeebe-io/camunda
           version: ${{ steps.image-tag.outputs.image-tag }}
           push: true
           distball: ${{ steps.build-zeebe.outputs.distball }}
+          dockerfile: 'camunda.Dockerfile'
       - name: Build and Push Starter Image
         run: ./mvnw -pl load-tests/load-tester jib:build -P starter -D image="gcr.io/zeebe-io/starter:${{ steps.image-tag.outputs.image-tag }}"
       - name: Build and Push Worker Image
@@ -164,6 +165,6 @@ jobs:
               \"variables\": $variables
             }"
         env:
-          IMAGE: zeebe-io/zeebe:${{ steps.image-tag.outputs.image-tag }}
+          IMAGE: zeebe-io/camunda:${{ steps.image-tag.outputs.image-tag }}
           access_token: ${{ env.access_token }}
 

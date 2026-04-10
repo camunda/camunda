@@ -8,7 +8,11 @@ paths:
         - User task
       operationId: completeUserTask
       summary: Complete user task
-      description: Completes a user task with the given key.
+      description: >
+        Completes a user task with the given key. Completion waits for blocking task listeners on
+        this lifecycle transition. If listener processing is delayed beyond the request timeout,
+        this endpoint can return 504. Other gateway timeout causes are also possible. Retry with
+        backoff and inspect listener worker availability and logs when this repeats.
       parameters:
         - name: userTaskKey
           in: path
@@ -45,6 +49,8 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
+        "504":
+          $ref: 'common-responses.yaml#/components/responses/GatewayTimeoutTaskListenerBlocking'
 
   /user-tasks/{userTaskKey}/assignment:
     post:
@@ -53,7 +59,12 @@ paths:
         - User task
       operationId: assignUserTask
       summary: Assign user task
-      description: Assigns a user task with the given key to the given assignee.
+      description: >
+        Assigns a user task with the given key to the given assignee. Assignment waits for
+        blocking task listeners on this lifecycle transition. If listener processing is delayed
+        beyond the request timeout, this endpoint can return 504. Other gateway timeout causes are
+        also possible. Retry with backoff and inspect listener worker availability and logs when
+        this repeats.
       parameters:
         - name: userTaskKey
           in: path
@@ -90,6 +101,8 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
+        "504":
+          $ref: 'common-responses.yaml#/components/responses/GatewayTimeoutTaskListenerBlocking'
 
   /user-tasks/{userTaskKey}:
     get:
@@ -134,7 +147,11 @@ paths:
         - User task
       operationId: updateUserTask
       summary: Update user task
-      description: Update a user task with the given key.
+      description: >
+        Update a user task with the given key. Updates wait for blocking task listeners on this
+        lifecycle transition. If listener processing is delayed beyond the request timeout, this
+        endpoint can return 504. Other gateway timeout causes are also possible. Retry with
+        backoff and inspect listener worker availability and logs when this repeats.
       parameters:
         - name: userTaskKey
           in: path
@@ -171,6 +188,8 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
+        "504":
+          $ref: 'common-responses.yaml#/components/responses/GatewayTimeoutTaskListenerBlocking'
 
   /user-tasks/{userTaskKey}/form:
     get:
@@ -220,7 +239,12 @@ paths:
         - User task
       operationId: unassignUserTask
       summary: Unassign user task
-      description: Removes the assignee of a task with the given key.
+      description: >
+        Removes the assignee of a task with the given key. Unassignment waits for blocking task
+        listeners on this lifecycle transition. If listener processing is delayed beyond the
+        request timeout, this endpoint can return 504. Other gateway timeout causes are also
+        possible. Retry with backoff and inspect listener worker availability and logs when this
+        repeats.
       parameters:
         - name: userTaskKey
           in: path
@@ -251,6 +275,8 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
+        "504":
+          $ref: 'common-responses.yaml#/components/responses/GatewayTimeoutTaskListenerBlocking'
 
   /user-tasks/search:
     post:
@@ -290,9 +316,13 @@ paths:
       operationId: searchUserTaskVariables
       summary: Search user task variables
       description: |
-        Search for user task variables based on given criteria. This endpoint returns all variables
-        visible from the user task's scope, including variables from parent scopes in the scope
-        hierarchy. By default, long variable values in the response are truncated.
+        Search for user task variables based on given criteria. This endpoint returns all variable
+        documents visible from the user task's scope, including variables from parent scopes in the
+        scope hierarchy. If the same variable name exists at multiple scope levels, each scope's
+        variable is returned as a separate result. Use the
+        `/user-tasks/{userTaskKey}/effective-variables/search` endpoint to get deduplicated variables
+        where the innermost scope takes precedence. By default, long variable values in the response
+        are truncated.
       parameters:
         - name: userTaskKey
           in: path
@@ -315,6 +345,51 @@ paths:
       responses:
         "200":
           description: The user task variable search result.
+          content:
+            application/json:
+              schema:
+                $ref: 'variables.yaml#/components/schemas/VariableSearchQueryResult'
+        "400":
+          $ref: 'common-responses.yaml#/components/responses/InvalidData'
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+
+  /user-tasks/{userTaskKey}/effective-variables/search:
+    post:
+      x-eventually-consistent: true
+      tags:
+        - User task
+      operationId: searchUserTaskEffectiveVariables
+      summary: Search user task effective variables
+      description: |
+        Search for the effective variables of a user task. This endpoint returns deduplicated
+        variables where each variable name appears at most once. When the same variable name exists
+        at multiple scope levels in the scope hierarchy, the value from the innermost scope (closest
+        to the user task) takes precedence. This is useful for retrieving the actual runtime state
+        of variables as seen by the user task. By default, long variable values in the response are
+        truncated.
+      parameters:
+        - name: userTaskKey
+          in: path
+          required: true
+          description: The key of the user task.
+          schema:
+            $ref: 'keys.yaml#/components/schemas/UserTaskKey'
+        - name: truncateValues
+          in: query
+          required: false
+          description: When true (default), long variable values in the response are truncated. When false, full variable values are returned.
+          schema:
+            type: boolean
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserTaskEffectiveVariableSearchQueryRequest'
+      responses:
+        "200":
+          description: The user task effective variable search result.
           content:
             application/json:
               schema:
@@ -761,6 +836,26 @@ components:
       additionalProperties: false
       type: object
       properties:
+        sort:
+          description: Sort field criteria.
+          type: array
+          items:
+             $ref: '#/components/schemas/UserTaskVariableSearchQuerySortRequest'
+        filter:
+          allOf:
+            - $ref: '#/components/schemas/UserTaskVariableFilter'
+          description: The user task variable search filters.
+
+    UserTaskEffectiveVariableSearchQueryRequest:
+      description: >
+        User task effective variable search query request. Uses offset-based pagination only.
+      additionalProperties: false
+      type: object
+      properties:
+        page:
+          description: Pagination parameters.
+          allOf:
+            - $ref: 'search-models.yaml#/components/schemas/OffsetPagination'
         sort:
           description: Sort field criteria.
           type: array

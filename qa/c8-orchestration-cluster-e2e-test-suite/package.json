@@ -12,22 +12,21 @@
   "devDependencies": {
     "@inquirer/prompts": "^8.0.0",
     "@playwright/test": "^1.51.0",
-    "@types/axios": "^0.14.4",
     "@types/node": "^24.0.0",
-    "@typescript-eslint/eslint-plugin": "8.57.0",
-    "@typescript-eslint/parser": "8.57.0",
+    "@typescript-eslint/eslint-plugin": "8.57.2",
+    "@typescript-eslint/parser": "8.57.2",
     "assert-json-body": "^1.6.2",
     "eslint": "9.39.4",
     "eslint-config-prettier": "^10.0.2",
     "eslint-plugin-license-header": "0.9.0",
-    "eslint-plugin-playwright": "2.10.0",
+    "eslint-plugin-playwright": "2.10.1",
     "eslint-plugin-prettier": "5.5.5",
     "husky": "^9.1.7",
     "lint-staged": "^16.0.0",
-    "playwright-slack-report": "^1.1.89",
+    "playwright-slack-report": "1.1.109",
     "prettier": "3.8.1",
     "typescript": "5.9.3",
-    "valibot": "1.2.0",
+    "valibot": "1.3.1",
     "zeebe-node": "^8.3.2"
   },
   "lint-staged": {
@@ -38,8 +37,8 @@
   "dependencies": {
     "@axe-core/playwright": "^4.10.1",
     "@camunda8/sdk": "^8.7.29",
-    "axios": "^1.8.1",
     "dotenv": "^17.0.0",
     "mailslurp-client": "^17.0.0"
-  }
+  },
+  "packageManager": "npm@11.12.1"
 }

@@ -68,25 +68,25 @@ describe('Filters', () => {
 
     await waitFor(() =>
       expect(screen.getByTestId('search')).toHaveTextContent(
-        /^\?process=bigVarProcess&version=1$/,
+        /^\?processDefinitionId=bigVarProcess&processDefinitionVersion=1$/,
       ),
     );
   });
 
   it.skip('should load values from the URL', async () => {
     const MOCK_PARAMS = {
-      process: 'bigVarProcess',
-      version: '1',
-      ids: '2251799813685467',
-      parentInstanceId: '1954699813693756',
+      processDefinitionId: 'bigVarProcess',
+      processDefinitionVersion: '1',
+      processInstanceKey: '2251799813685467',
+      parentProcessInstanceKey: '1954699813693756',
       errorMessage: 'a random error',
-      flowNodeId: 'ServiceTask_0kt6c5i',
-      operationId: '2f5b1beb-cbeb-41c8-a2f0-4c0bcf76c4ee',
+      elementId: 'ServiceTask_0kt6c5i',
+      batchOperationId: '2f5b1beb-cbeb-41c8-a2f0-4c0bcf76c4ee',
       active: 'true',
       incidents: 'true',
       completed: 'true',
       canceled: 'true',
-      retriesLeft: 'true',
+      hasRetriesLeft: 'true',
     } as const;
 
     render(<Filters />, {
@@ -113,10 +113,12 @@ describe('Filters', () => {
 
     expect(screen.getByLabelText('Element')).toHaveValue('Service Task 1');
 
-    expect(screen.getByDisplayValue(MOCK_PARAMS.ids)).toBeInTheDocument();
+    expect(
+      screen.getByDisplayValue(MOCK_PARAMS.processInstanceKey),
+    ).toBeInTheDocument();
 
     expect(
-      screen.getByDisplayValue(MOCK_PARAMS.parentInstanceId),
+      screen.getByDisplayValue(MOCK_PARAMS.parentProcessInstanceKey),
     ).toBeInTheDocument();
 
     expect(
@@ -124,7 +126,7 @@ describe('Filters', () => {
     ).toBeInTheDocument();
 
     expect(
-      screen.getByDisplayValue(MOCK_PARAMS.operationId),
+      screen.getByDisplayValue(MOCK_PARAMS.batchOperationId),
     ).toBeInTheDocument();
     expect(screen.getByRole('checkbox', {name: 'Active'})).toBeChecked();
     expect(screen.getByRole('checkbox', {name: 'Incidents'})).toBeChecked();
@@ -139,10 +141,10 @@ describe('Filters', () => {
 
   it('should load values from the URL - date ranges', async () => {
     const MOCK_PARAMS = {
-      startDateAfter: '2021-02-21 09:00:00',
-      startDateBefore: '2021-02-22 10:00:00',
-      endDateAfter: '2021-02-23 11:00:00',
-      endDateBefore: '2021-02-24 12:00:00',
+      startDateFrom: '2021-02-21 09:00:00',
+      startDateTo: '2021-02-22 10:00:00',
+      endDateFrom: '2021-02-23 11:00:00',
+      endDateTo: '2021-02-24 12:00:00',
     } as const;
 
     const initialPath = `/?${new URLSearchParams(
@@ -162,17 +164,17 @@ describe('Filters', () => {
     );
 
     expect(
-      screen.getByDisplayValue(MOCK_PARAMS.endDateAfter),
+      screen.getByDisplayValue(MOCK_PARAMS.endDateFrom),
     ).toBeInTheDocument();
+    expect(screen.getByDisplayValue(MOCK_PARAMS.endDateTo)).toBeInTheDocument();
     expect(
-      screen.getByDisplayValue(MOCK_PARAMS.endDateBefore),
+      screen.getByDisplayValue(MOCK_PARAMS.endDateFrom),
     ).toBeInTheDocument();
+    expect(screen.getByDisplayValue(MOCK_PARAMS.endDateTo)).toBeInTheDocument();
     expect(
-      screen.getByDisplayValue(MOCK_PARAMS.endDateAfter),
+      screen.getByDisplayValue(MOCK_PARAMS.endDateFrom),
     ).toBeInTheDocument();
-    expect(
-      screen.getByDisplayValue(MOCK_PARAMS.endDateBefore),
-    ).toBeInTheDocument();
+    expect(screen.getByDisplayValue(MOCK_PARAMS.endDateTo)).toBeInTheDocument();
     expect(
       screen.getByDisplayValue('2021-02-21 09:00:00 - 2021-02-22 10:00:00'),
     ).toBeInTheDocument();
@@ -192,18 +194,18 @@ describe('Filters', () => {
       ]),
     );
     const MOCK_VALUES = {
-      process: 'demoProcess',
-      version: '3',
-      ids: '2251799813685462',
-      parentInstanceId: '1954699813693756',
+      processDefinitionId: 'demoProcess',
+      processDefinitionVersion: '3',
+      processInstanceKey: '2251799813685462',
+      parentProcessInstanceKey: '1954699813693756',
       errorMessage: 'an error',
-      flowNodeId: 'ServiceTask_0kt6c5i',
-      operationId: '90fdfe82-090b-4d84-af31-5db612514191',
+      elementId: 'ServiceTask_0kt6c5i',
+      batchOperationId: '90fdfe82-090b-4d84-af31-5db612514191',
       active: 'true',
       incidents: 'true',
       completed: 'true',
       canceled: 'true',
-      retriesLeft: 'true',
+      hasRetriesLeft: 'true',
     } as const;
     const {user} = render(<Filters />, {
       wrapper: getWrapper(),
@@ -248,14 +250,14 @@ describe('Filters', () => {
     await user.click(screen.getByText('Process Instance Key(s)'));
     await user.type(
       screen.getByLabelText(/^process instance key\(s\)$/i),
-      MOCK_VALUES.ids,
+      MOCK_VALUES.processInstanceKey,
     );
 
     await user.click(screen.getByRole('button', {name: 'More Filters'}));
     await user.click(screen.getByText('Parent Process Instance Key'));
     await user.type(
       screen.getByLabelText(/^Parent Process Instance Key$/i),
-      MOCK_VALUES.parentInstanceId,
+      MOCK_VALUES.parentProcessInstanceKey,
     );
 
     await user.click(screen.getByRole('button', {name: 'More Filters'}));
@@ -275,7 +277,7 @@ describe('Filters', () => {
     await user.type(
       screen.getByLabelText(/^operation id$/i),
 
-      MOCK_VALUES.operationId,
+      MOCK_VALUES.batchOperationId,
     );
 
     await user.click(screen.getByRole('button', {name: 'More Filters'}));
@@ -349,10 +351,10 @@ describe('Filters', () => {
     await user.click(screen.getByText('Apply'));
 
     const MOCK_VALUES = {
-      startDateAfter: startDate.fromDate,
-      startDateBefore: startDate.toDate,
-      endDateAfter: endDate.fromDate,
-      endDateBefore: endDate.toDate,
+      startDateFrom: startDate.fromDate,
+      startDateTo: startDate.toDate,
+      endDateFrom: endDate.fromDate,
+      endDateTo: endDate.toDate,
     } as const;
 
     await waitFor(() =>
@@ -559,8 +561,8 @@ describe('Filters', () => {
       wrapper: getWrapper(
         `/?${new URLSearchParams(
           Object.entries({
-            process: 'bigVarProcess',
-            version: '1',
+            processDefinitionId: 'bigVarProcess',
+            processDefinitionVersion: '1',
           }),
         ).toString()}`,
       ),

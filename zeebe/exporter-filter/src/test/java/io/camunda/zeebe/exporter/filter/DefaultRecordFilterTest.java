@@ -70,8 +70,6 @@ final class DefaultRecordFilterTest {
     assertThat(filter.acceptValue(ValueType.JOB))
         .as("Required-only value types should not be accepted as normal indexed types")
         .isFalse();
-
-    assertThat(configuration.shouldIndexRequiredValueType(ValueType.JOB)).isTrue();
   }
 
   @Test
@@ -89,216 +87,6 @@ final class DefaultRecordFilterTest {
   }
 
   @Test
-  void shouldApplyVariableNameInclusionRulesFromTestConfiguration() {
-    // given
-    final var configuration =
-        new TestConfiguration()
-            .withIndexedRecordType(RecordType.EVENT)
-            .withIndexedValueType(ValueType.VARIABLE);
-
-    configuration.filterIndexConfig().withVariableNameInclusionExact(List.of("included"));
-
-    final var filter = new DefaultRecordFilter(configuration);
-
-    final var included = variableRecord("included");
-    final var other = variableRecord("other");
-
-    // when / then
-    assertThat(filter.acceptRecord(included)).isTrue();
-    assertThat(filter.acceptRecord(other)).isFalse();
-  }
-
-  @Test
-  void shouldApplyVariableNameExclusionRulesFromTestConfiguration() {
-    // given
-    final var configuration =
-        new TestConfiguration()
-            .withIndexedRecordType(RecordType.EVENT)
-            .withIndexedValueType(ValueType.VARIABLE);
-
-    // No inclusion rules -> all variable names are included by default,
-    // but we explicitly exclude the exact name "excluded".
-    configuration.filterIndexConfig().withVariableNameExclusionExact(List.of("excluded"));
-
-    final var filter = new DefaultRecordFilter(configuration);
-
-    final var excluded = variableRecord("excluded");
-    final var other = variableRecord("other");
-
-    // when / then
-    assertThat(filter.acceptRecord(excluded))
-        .as("name 'excluded' should be rejected by exclusion rules")
-        .isFalse();
-    assertThat(filter.acceptRecord(other))
-        .as("name 'other' is not excluded and should be accepted")
-        .isTrue();
-  }
-
-  @Test
-  void shouldApplyVariableNameInclusionStartWithRulesFromTestConfiguration() {
-    // given
-    final var configuration =
-        new TestConfiguration()
-            .withIndexedRecordType(RecordType.EVENT)
-            .withIndexedValueType(ValueType.VARIABLE);
-
-    configuration.filterIndexConfig().withVariableNameInclusionStartWith(List.of("incl"));
-
-    final var filter = new DefaultRecordFilter(configuration);
-
-    final var included = variableRecord("includeMe");
-    final var other = variableRecord("other");
-
-    // when / then
-    assertThat(filter.acceptRecord(included)).isTrue();
-    assertThat(filter.acceptRecord(other)).isFalse();
-  }
-
-  @Test
-  void shouldApplyVariableNameInclusionEndWithRulesFromTestConfiguration() {
-    // given
-    final var configuration =
-        new TestConfiguration()
-            .withIndexedRecordType(RecordType.EVENT)
-            .withIndexedValueType(ValueType.VARIABLE);
-
-    configuration.filterIndexConfig().withVariableNameInclusionEndWith(List.of("_suffix"));
-
-    final var filter = new DefaultRecordFilter(configuration);
-
-    final var included = variableRecord("name_suffix");
-    final var other = variableRecord("name_other");
-
-    // when / then
-    assertThat(filter.acceptRecord(included)).isTrue();
-    assertThat(filter.acceptRecord(other)).isFalse();
-  }
-
-  @Test
-  void shouldApplyVariableNameExclusionStartWithRulesFromTestConfiguration() {
-    // given
-    final var configuration =
-        new TestConfiguration()
-            .withIndexedRecordType(RecordType.EVENT)
-            .withIndexedValueType(ValueType.VARIABLE);
-
-    // No inclusion rules -> all variable names are included by default,
-    // but we explicitly exclude names starting with "secret_".
-    configuration.filterIndexConfig().withVariableNameExclusionStartWith(List.of("secret_"));
-
-    final var filter = new DefaultRecordFilter(configuration);
-
-    final var excluded = variableRecord("secret_token");
-    final var other = variableRecord("public_value");
-
-    // when / then
-    assertThat(filter.acceptRecord(excluded))
-        .as("names starting with 'secret_' should be rejected by exclusion rules")
-        .isFalse();
-    assertThat(filter.acceptRecord(other))
-        .as("name 'public_value' does not start with 'secret_' and should be accepted")
-        .isTrue();
-  }
-
-  @Test
-  void shouldApplyVariableNameExclusionEndWithRulesFromTestConfiguration() {
-    // given
-    final var configuration =
-        new TestConfiguration()
-            .withIndexedRecordType(RecordType.EVENT)
-            .withIndexedValueType(ValueType.VARIABLE);
-
-    // No inclusion rules -> all variable names are included by default,
-    // but we explicitly exclude names ending with "_tmp".
-    configuration.filterIndexConfig().withVariableNameExclusionEndWith(List.of("_tmp"));
-
-    final var excluded = variableRecord("value_tmp");
-    final var other = variableRecord("value");
-
-    final var filter = new DefaultRecordFilter(configuration);
-
-    // when / then
-    assertThat(filter.acceptRecord(excluded))
-        .as("names ending with '_tmp' should be rejected by exclusion rules")
-        .isFalse();
-    assertThat(filter.acceptRecord(other))
-        .as("name 'value' does not end with '_tmp' and should be accepted")
-        .isTrue();
-  }
-
-  @Test
-  void shouldApplyVariableValueTypeInclusionFromTestConfiguration() {
-    // given
-    final var configuration =
-        new TestConfiguration()
-            .withIndexedRecordType(RecordType.EVENT)
-            .withIndexedValueType(ValueType.VARIABLE);
-
-    // Only STRING variables should be included
-    configuration.filterIndexConfig().withVariableValueTypeInclusion(List.of("STRING"));
-
-    final var filter = new DefaultRecordFilter(configuration);
-
-    // JSON string -> STRING
-    final var stringVar = variableRecord("v_string", "\"foo\"");
-    // JSON number -> DOUBLE
-    final var numberVar = variableRecord("v_number", "42");
-
-    // when / then
-    assertThat(filter.acceptRecord(stringVar))
-        .as("STRING variable should be accepted by inclusion type filter")
-        .isTrue();
-    assertThat(filter.acceptRecord(numberVar))
-        .as("non-STRING variable should be rejected by inclusion type filter")
-        .isFalse();
-  }
-
-  @Test
-  void shouldApplyVariableValueTypeExclusionFromTestConfiguration() {
-    // given
-    final var configuration =
-        new TestConfiguration()
-            .withIndexedRecordType(RecordType.EVENT)
-            .withIndexedValueType(ValueType.VARIABLE);
-
-    // Exclude DOUBLE variables
-    configuration.filterIndexConfig().withVariableValueTypeExclusion(List.of("NUMBER"));
-
-    final var filter = new DefaultRecordFilter(configuration);
-
-    // JSON string -> STRING
-    final var stringVar = variableRecord("v_string", "\"foo\"");
-    // JSON number -> DOUBLE
-    final var numberVar = variableRecord("v_number", "42");
-
-    // when / then
-    assertThat(filter.acceptRecord(numberVar))
-        .as("DOUBLE variable should be rejected by exclusion type filter")
-        .isFalse();
-    assertThat(filter.acceptRecord(stringVar))
-        .as("non-DOUBLE variable should be accepted by exclusion type filter")
-        .isTrue();
-  }
-
-  @Test
-  void shouldNotApplyVariableNameFilterWhenNoNameRulesConfigured() {
-    // given
-    final var configuration =
-        new TestConfiguration()
-            .withIndexedRecordType(RecordType.EVENT)
-            .withIndexedValueType(ValueType.VARIABLE);
-
-    final var filter = new DefaultRecordFilter(configuration);
-
-    final var record1 = variableRecord("anyName");
-
-    // when / then
-    assertThat(filter.acceptRecord(record1))
-        .as("Without name inclusion/exclusion rules, all variable names should be accepted")
-        .isTrue();
-  }
-
-  @Test
   void shouldApplyOptimizeModeFilterWhenOptimizeModeEnabled() {
     // given
     final var configuration =
@@ -307,8 +95,6 @@ final class DefaultRecordFilterTest {
             // We pick JOB because OptimizeModeFilter never accepts JOB records
             .withIndexedValueType(ValueType.JOB);
 
-    // Enable Optimize mode on the index config so that createRecordFilters()
-    // adds an OptimizeModeFilter to the chain.
     configuration.filterIndexConfig().withOptimizeModeEnabled(true);
 
     final var filter = new DefaultRecordFilter(configuration);
@@ -326,26 +112,207 @@ final class DefaultRecordFilterTest {
   }
 
   @Test
-  void shouldNotApplyVariableValueTypeFilterWhenNoTypeRulesConfigured() {
+  void shouldWireVariableNameFilterWhenNameRulesConfigured() {
+    // given: an exact inclusion rule — any other name must be rejected
+    final var configuration =
+        new TestConfiguration()
+            .withIndexedRecordType(RecordType.EVENT)
+            .withIndexedValueType(ValueType.VARIABLE);
+
+    configuration.filterIndexConfig().withVariableNameInclusionExact(List.of("allowed"));
+
+    final var filter = new DefaultRecordFilter(configuration);
+
+    // when / then
+    assertThat(filter.acceptRecord(variableRecord("allowed")))
+        .as("Variable matching the inclusion rule should be accepted")
+        .isTrue();
+    assertThat(filter.acceptRecord(variableRecord("other")))
+        .as(
+            "Variable not matching the inclusion rule should be rejected, proving the filter is wired")
+        .isFalse();
+  }
+
+  @Test
+  void shouldWireVariableNameFilterHandlingInclusionExclusionConflict() {
+    // given: the same name is both included and excluded — exclusion takes precedence in NameFilter
+    final var configuration =
+        new TestConfiguration()
+            .withIndexedRecordType(RecordType.EVENT)
+            .withIndexedValueType(ValueType.VARIABLE);
+
+    configuration
+        .filterIndexConfig()
+        .withVariableNameInclusionExact(List.of("conflicted"))
+        .withVariableNameExclusionExact(List.of("conflicted"));
+
+    final var filter = new DefaultRecordFilter(configuration);
+
+    // when / then
+    assertThat(filter.acceptRecord(variableRecord("conflicted")))
+        .as("When a name matches both inclusion and exclusion rules, exclusion wins")
+        .isFalse();
+  }
+
+  @Test
+  void shouldWireVariableTypeFilterWhenTypeRulesConfigured() {
+    // given: only NUMBER variables are included
+    final var configuration =
+        new TestConfiguration()
+            .withIndexedRecordType(RecordType.EVENT)
+            .withIndexedValueType(ValueType.VARIABLE);
+
+    configuration.filterIndexConfig().withVariableValueTypeInclusion(List.of("NUMBER"));
+
+    final var filter = new DefaultRecordFilter(configuration);
+
+    // when / then
+    assertThat(filter.acceptRecord(variableRecord("v", "42")))
+        .as("NUMBER variable should be accepted by the inclusion type filter")
+        .isTrue();
+    assertThat(filter.acceptRecord(variableRecord("v", "\"text\"")))
+        .as("STRING variable should be rejected, proving the type filter is wired")
+        .isFalse();
+  }
+
+  @Test
+  void shouldWireExportLocalVariablesFilterWhenFlagDisabled() {
     // given
     final var configuration =
         new TestConfiguration()
             .withIndexedRecordType(RecordType.EVENT)
             .withIndexedValueType(ValueType.VARIABLE);
 
+    configuration.filterIndexConfig().withExportLocalVariablesEnabled(false);
+
     final var filter = new DefaultRecordFilter(configuration);
 
-    final var stringVar = variableRecord("v_string", "\"foo\"");
+    // local variable (scopeKey != processInstanceKey) must be rejected
+    assertThat(filter.acceptRecord(scopedVariableRecord("v", null, 100L, 200L)))
+        .as("Local variables should be rejected when exportLocalVariables is disabled")
+        .isFalse();
 
-    // when / then
-    assertThat(filter.acceptRecord(stringVar))
-        .as("Without type inclusion/exclusion rules, STRING variables should be accepted")
+    // root variable (scopeKey == processInstanceKey) must pass
+    assertThat(filter.acceptRecord(scopedVariableRecord("v", null, 100L, 100L)))
+        .as("Root variables should still be accepted when exportLocalVariables is disabled")
         .isTrue();
   }
 
   @Test
-  void shouldApplyBpmnProcessIdInclusionFromTestConfiguration() {
+  void shouldWireVariableNameScopeFilterWhenLocalNameRulesPresent() {
     // given
+    final var configuration =
+        new TestConfiguration()
+            .withIndexedRecordType(RecordType.EVENT)
+            .withIndexedValueType(ValueType.VARIABLE);
+
+    configuration.filterIndexConfig().withLocalVariableNameInclusionExact(List.of("localOnly"));
+
+    final var filter = new DefaultRecordFilter(configuration);
+
+    // local variable matching inclusion rule → accepted
+    assertThat(filter.acceptRecord(scopedVariableRecord("localOnly", null, 100L, 200L)))
+        .as("Local variable matching local inclusion rule should be accepted")
+        .isTrue();
+
+    // local variable not matching inclusion rule → rejected
+    assertThat(filter.acceptRecord(scopedVariableRecord("other", null, 100L, 200L)))
+        .as("Local variable not matching local inclusion rule should be rejected")
+        .isFalse();
+
+    // root variable with no root rules → always accepted
+    assertThat(filter.acceptRecord(scopedVariableRecord("other", null, 100L, 100L)))
+        .as("Root variable should pass when only local rules are configured")
+        .isTrue();
+  }
+
+  @Test
+  void shouldWireVariableNameScopeFilterWhenRootNameRulesPresent() {
+    // given
+    final var configuration =
+        new TestConfiguration()
+            .withIndexedRecordType(RecordType.EVENT)
+            .withIndexedValueType(ValueType.VARIABLE);
+
+    configuration.filterIndexConfig().withRootVariableNameExclusionExact(List.of("secret"));
+
+    final var filter = new DefaultRecordFilter(configuration);
+
+    // root variable matching exclusion rule → rejected
+    assertThat(filter.acceptRecord(scopedVariableRecord("secret", null, 100L, 100L)))
+        .as("Root variable matching root exclusion rule should be rejected")
+        .isFalse();
+
+    // root variable not matching exclusion rule → accepted
+    assertThat(filter.acceptRecord(scopedVariableRecord("public", null, 100L, 100L)))
+        .as("Root variable not matching root exclusion rule should be accepted")
+        .isTrue();
+
+    // local variable with no local rules → always accepted
+    assertThat(filter.acceptRecord(scopedVariableRecord("secret", null, 100L, 200L)))
+        .as("Local variable should pass when only root rules are configured")
+        .isTrue();
+  }
+
+  @Test
+  void shouldWireVariableTypeScopeFilterWhenLocalTypeRulesPresent() {
+    // given
+    final var configuration =
+        new TestConfiguration()
+            .withIndexedRecordType(RecordType.EVENT)
+            .withIndexedValueType(ValueType.VARIABLE);
+
+    configuration.filterIndexConfig().withLocalVariableValueTypeInclusion(List.of("NUMBER"));
+
+    final var filter = new DefaultRecordFilter(configuration);
+
+    // local number variable → accepted by local inclusion
+    assertThat(filter.acceptRecord(scopedVariableRecord("v", "42", 100L, 200L)))
+        .as("Local NUMBER variable should be accepted by local type inclusion")
+        .isTrue();
+
+    // local string variable → rejected by local inclusion
+    assertThat(filter.acceptRecord(scopedVariableRecord("v", "\"text\"", 100L, 200L)))
+        .as("Local STRING variable should be rejected by local type inclusion of NUMBER")
+        .isFalse();
+
+    // root variable with no root rules → always accepted regardless of type
+    assertThat(filter.acceptRecord(scopedVariableRecord("v", "\"text\"", 100L, 100L)))
+        .as("Root variable should pass when only local type rules are configured")
+        .isTrue();
+  }
+
+  @Test
+  void shouldWireVariableTypeScopeFilterWhenRootTypeRulesPresent() {
+    // given
+    final var configuration =
+        new TestConfiguration()
+            .withIndexedRecordType(RecordType.EVENT)
+            .withIndexedValueType(ValueType.VARIABLE);
+
+    configuration.filterIndexConfig().withRootVariableValueTypeExclusion(List.of("BOOLEAN"));
+
+    final var filter = new DefaultRecordFilter(configuration);
+
+    // root boolean variable → rejected by root exclusion
+    assertThat(filter.acceptRecord(scopedVariableRecord("v", "true", 100L, 100L)))
+        .as("Root BOOLEAN variable should be rejected by root type exclusion")
+        .isFalse();
+
+    // root string variable → accepted
+    assertThat(filter.acceptRecord(scopedVariableRecord("v", "\"text\"", 100L, 100L)))
+        .as("Root STRING variable should be accepted when only BOOLEAN is excluded")
+        .isTrue();
+
+    // local variable with no local rules → always accepted
+    assertThat(filter.acceptRecord(scopedVariableRecord("v", "true", 100L, 200L)))
+        .as("Local variable should pass when only root type rules are configured")
+        .isTrue();
+  }
+
+  @Test
+  void shouldWireBpmnProcessFilterWhenProcessIdRulesConfigured() {
+    // given: only "order-process" is included
     final var configuration =
         new TestConfiguration()
             .withIndexedRecordType(RecordType.EVENT)
@@ -355,46 +322,79 @@ final class DefaultRecordFilterTest {
 
     final var filter = new DefaultRecordFilter(configuration);
 
-    final var included = processInstanceRecord("order-process");
-    final var other = processInstanceRecord("payment-process");
-
     // when / then
-    assertThat(filter.acceptRecord(included))
-        .as("Records for included BPMN process id should be accepted")
+    assertThat(filter.acceptRecord(processInstanceRecord("order-process")))
+        .as("Record for the included BPMN process id should be accepted")
         .isTrue();
-    assertThat(filter.acceptRecord(other))
-        .as("Records for non-included BPMN process id should be rejected")
+    assertThat(filter.acceptRecord(processInstanceRecord("other-process")))
+        .as(
+            "Record for a non-included BPMN process id should be rejected, proving the filter is wired")
         .isFalse();
   }
 
   @Test
-  void shouldApplyBpmnProcessIdExclusionFromTestConfiguration() {
-    // given
+  void shouldSkipVersionedFilterForRecordsFromOlderBroker() {
+    // given: a scope name filter (requires broker >= 8.10.0) that would reject "other"
     final var configuration =
         new TestConfiguration()
             .withIndexedRecordType(RecordType.EVENT)
-            .withIndexedValueType(ValueType.PROCESS_INSTANCE);
+            .withIndexedValueType(ValueType.VARIABLE);
 
-    configuration.filterIndexConfig().withBpmnProcessIdExclusion(List.of("deprecated-process"));
+    configuration.filterIndexConfig().withLocalVariableNameInclusionExact(List.of("onlyThis"));
 
     final var filter = new DefaultRecordFilter(configuration);
 
-    final var excluded = processInstanceRecord("deprecated-process");
-    final var other = processInstanceRecord("active-process");
+    // when: record comes from a broker older than the filter's minimum version
+    final var oldBrokerRecord = scopedVariableRecord("other", null, 100L, 200L, "8.9.0");
 
-    // when / then
-    assertThat(filter.acceptRecord(excluded))
-        .as("Records for excluded BPMN process id should be rejected")
-        .isFalse();
-    assertThat(filter.acceptRecord(other))
-        .as("Records for other BPMN process ids should be accepted")
+    // then: the scope filter is skipped, so the record passes
+    assertThat(filter.acceptRecord(oldBrokerRecord))
+        .as("Scope filter should be skipped for records from brokers older than 8.10.0")
         .isTrue();
+  }
+
+  @Test
+  void shouldApplyScopeAndGlobalFiltersIndependently() {
+    // given: global name inclusion for "allowed", local type inclusion for NUMBER
+    final var configuration =
+        new TestConfiguration()
+            .withIndexedRecordType(RecordType.EVENT)
+            .withIndexedValueType(ValueType.VARIABLE);
+
+    configuration
+        .filterIndexConfig()
+        .withVariableNameInclusionExact(List.of("allowed"))
+        .withLocalVariableValueTypeInclusion(List.of("NUMBER"));
+
+    final var filter = new DefaultRecordFilter(configuration);
+
+    // root variable named "allowed" → passes global name filter, no local type rule applies
+    assertThat(filter.acceptRecord(scopedVariableRecord("allowed", "\"text\"", 100L, 100L)))
+        .as("Root variable 'allowed' should pass global name filter")
+        .isTrue();
+
+    // root variable named "other" → rejected by global name filter
+    assertThat(filter.acceptRecord(scopedVariableRecord("other", "\"text\"", 100L, 100L)))
+        .as("Root variable 'other' should be rejected by global name filter")
+        .isFalse();
+
+    // local variable named "allowed" with NUMBER value → passes both filters
+    assertThat(filter.acceptRecord(scopedVariableRecord("allowed", "42", 100L, 200L)))
+        .as("Local variable 'allowed' with NUMBER type should pass both filters")
+        .isTrue();
+
+    // local variable named "allowed" with STRING value → rejected by local type filter
+    assertThat(filter.acceptRecord(scopedVariableRecord("allowed", "\"text\"", 100L, 200L)))
+        .as("Local variable 'allowed' with STRING type should be rejected by local type filter")
+        .isFalse();
   }
 
   // ---------------------------------------------------------------------------
   // helpers
   // ---------------------------------------------------------------------------
+
   private static Record<VariableRecordValue> variableRecord(final String name) {
+    // rawValue is null here; only safe when no type filter is configured in the test
     return variableRecord(name, null);
   }
 
@@ -411,6 +411,37 @@ final class DefaultRecordFilterTest {
     when(record.getValue()).thenReturn(value);
     when(value.getName()).thenReturn(name);
     when(value.getValue()).thenReturn(rawValue);
+
+    return record;
+  }
+
+  private static Record<VariableRecordValue> scopedVariableRecord(
+      final String name,
+      final String rawValue,
+      final long processInstanceKey,
+      final long scopeKey) {
+    return scopedVariableRecord(name, rawValue, processInstanceKey, scopeKey, "8.10.0");
+  }
+
+  @SuppressWarnings("unchecked")
+  private static Record<VariableRecordValue> scopedVariableRecord(
+      final String name,
+      final String rawValue,
+      final long processInstanceKey,
+      final long scopeKey,
+      final String brokerVersion) {
+
+    final Record<VariableRecordValue> record = (Record<VariableRecordValue>) mock(Record.class);
+    final var value = mock(VariableRecordValue.class);
+
+    when(record.getRecordType()).thenReturn(RecordType.EVENT);
+    when(record.getValueType()).thenReturn(ValueType.VARIABLE);
+    when(record.getBrokerVersion()).thenReturn(brokerVersion);
+    when(record.getValue()).thenReturn(value);
+    when(value.getName()).thenReturn(name);
+    when(value.getValue()).thenReturn(rawValue);
+    when(value.getProcessInstanceKey()).thenReturn(processInstanceKey);
+    when(value.getScopeKey()).thenReturn(scopeKey);
 
     return record;
   }

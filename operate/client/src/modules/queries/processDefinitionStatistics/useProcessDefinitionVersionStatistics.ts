@@ -8,7 +8,7 @@
 
 import {useQuery} from '@tanstack/react-query';
 import {fetchProcessDefinitionVersionStatistics} from 'modules/api/v2/processDefinitions/fetchProcessDefinitionVersionStatistics';
-import type {GetProcessDefinitionInstanceVersionStatisticsRequestBody} from '@camunda/camunda-api-zod-schemas/8.9';
+import type {GetProcessDefinitionInstanceVersionStatisticsRequestBody} from '@camunda/camunda-api-zod-schemas/8.10';
 import {queryKeys} from '../queryKeys';
 
 type UseProcessDefinitionVersionStatisticsOptions = {

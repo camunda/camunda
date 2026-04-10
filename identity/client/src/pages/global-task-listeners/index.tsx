@@ -15,5 +15,3 @@ const GlobalTaskListeners: FC = () => (
 );
 
 export default GlobalTaskListeners;
-
-export const LISTENER_TYPE_PATTERN = /^[a-zA-Z0-9._-]+$/;

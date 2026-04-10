@@ -18,13 +18,13 @@ type ExtendedParsedXmlData = ParsedXmlData & {
 function listViewXmlXmlParser({
   xml,
   diagramModel,
-  selectableFlowNodes,
+  selectableElements,
 }: ParsedXmlData) {
   return {
     xml,
     diagramModel,
-    selectableFlowNodes: selectableFlowNodes,
-    flowNodeFilterOptions: selectableFlowNodes
+    selectableElements: selectableElements,
+    flowNodeFilterOptions: selectableElements
       .map(({id, name}) => ({
         id,
         label: name ?? id,

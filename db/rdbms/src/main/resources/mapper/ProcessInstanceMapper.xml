@@ -365,7 +365,7 @@
       <idArg column="PROCESS_INSTANCE_KEY" javaType="java.lang.Long"/>
       <arg column="ROOT_PROCESS_INSTANCE_KEY" javaType="java.lang.Long"/>
       <arg column="PROCESS_DEFINITION_ID" javaType="java.lang.String"
-        typeHandler="io.camunda.db.rdbms.typehandler.NullToEmptyStringTypeHandler"/>
+        typeHandler="io.camunda.db.rdbms.sql.typehandler.NullToEmptyStringTypeHandler"/>
       <arg column="PROCESS_DEFINITION_NAME" javaType="java.lang.String"/>
       <arg column="PROCESS_DEFINITION_VERSION" javaType="java.lang.Integer"/>
       <arg column="PROCESS_DEFINITION_VERSION_TAG" javaType="java.lang.String"/>
@@ -377,7 +377,7 @@
       <arg column="STATE" javaType="io.camunda.search.entities.ProcessInstanceEntity$ProcessInstanceState"/>
       <arg column="HAS_INCIDENT" javaType="java.lang.Boolean"/>
       <arg column="TENANT_ID" javaType="java.lang.String"
-        typeHandler="io.camunda.db.rdbms.typehandler.NullToEmptyStringTypeHandler"/>
+        typeHandler="io.camunda.db.rdbms.sql.typehandler.NullToEmptyStringTypeHandler"/>
       <arg column="TREE_PATH" javaType="java.lang.String"/>
       <arg column="BUSINESS_ID" javaType="java.lang.String"/>
     </constructor>
@@ -387,7 +387,7 @@
   </resultMap>
 
   <select id="flowNodeStatistics"
-    parameterType="java.lang.Long"
+    parameterType="io.camunda.db.rdbms.read.domain.ProcessInstanceStatisticsDbQuery"
     resultMap="io.camunda.db.rdbms.sql.Commons.flowNodeStatisticsResultMap">
     SELECT
       fni.FLOW_NODE_ID,
@@ -405,8 +405,21 @@
         AS COUNT_INCIDENTS
     FROM ${prefix}PROCESS_INSTANCE pi
       JOIN ${prefix}FLOW_NODE_INSTANCE fni ON (pi.PROCESS_INSTANCE_KEY = fni.PROCESS_INSTANCE_KEY)
-    WHERE pi.PROCESS_INSTANCE_KEY = #{processInstanceKey}
+    WHERE pi.PROCESS_INSTANCE_KEY = #{filter.processInstanceKey}
       AND fni.TYPE != 'MULTI_INSTANCE_BODY'
+    <!-- authorization filters -->
+    <if test="authorizedResourceIds != null and !authorizedResourceIds.isEmpty()">
+      AND pi.PROCESS_DEFINITION_ID IN
+      <foreach collection="authorizedResourceIds" item="resourceId" open="(" separator="," close=")">
+        #{resourceId}
+      </foreach>
+    </if>
+    <if test="authorizedTenantIds != null and !authorizedTenantIds.isEmpty()">
+      AND pi.TENANT_ID IN
+      <foreach collection="authorizedTenantIds" item="tenantId" open="(" separator="," close=")">
+        #{tenantId}
+      </foreach>
+    </if>
     GROUP BY fni.FLOW_NODE_ID
   </select>
 

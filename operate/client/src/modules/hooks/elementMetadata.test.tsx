@@ -23,8 +23,10 @@ import {
 } from 'modules/testUtils';
 import {ProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
 import {Paths} from 'modules/Routes';
-import {type GetProcessInstanceStatisticsResponseBody} from '@camunda/camunda-api-zod-schemas/8.9';
-import {mockElementInstance} from 'App/ProcessInstance/TopPanel/MetadataPopover/Details/mocks';
+import type {
+  ElementInstance,
+  GetProcessInstanceStatisticsResponseBody,
+} from '@camunda/camunda-api-zod-schemas/8.10';
 
 const PROCESS_INSTANCE_ID = '123';
 
@@ -69,6 +71,23 @@ const singleInstanceStatistics: GetProcessInstanceStatisticsResponseBody = {
       incidents: 0,
     },
   ],
+};
+
+const mockElementInstance: ElementInstance = {
+  elementInstanceKey: '123456789',
+  elementId: 'Task_1',
+  elementName: 'Service Task',
+  type: 'SERVICE_TASK',
+  state: 'COMPLETED',
+  startDate: '2023-01-15T10:00:00.000Z',
+  endDate: '2023-01-15T10:05:00.000Z',
+  processDefinitionId: 'process-def-1',
+  processInstanceKey: '111222333',
+  processDefinitionKey: '444555666',
+  hasIncident: false,
+  tenantId: '<default>',
+  rootProcessInstanceKey: null,
+  incidentKey: null,
 };
 
 describe('useHasMultipleInstances', () => {

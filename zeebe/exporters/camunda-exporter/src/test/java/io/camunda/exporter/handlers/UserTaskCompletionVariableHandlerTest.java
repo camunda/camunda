@@ -169,7 +169,7 @@ public class UserTaskCompletionVariableHandlerTest {
     assertThat(variableEntity.getProcessInstanceKey())
         .isEqualTo(taskRecord.getValue().getProcessInstanceKey());
     assertThat(variableEntity.getIsPreview()).isFalse();
-    assertThat(variableEntity.getFullValue()).isEqualTo("\"val1\"");
+    assertThat(variableEntity.getFullValue()).isNull();
     assertThat(variableEntity.getRootProcessInstanceKey())
         .isPositive()
         .isEqualTo(taskRecord.getValue().getRootProcessInstanceKey());
@@ -192,6 +192,24 @@ public class UserTaskCompletionVariableHandlerTest {
     // then
     final var variableEntity = batch.variables().getFirst();
     assertThat(variableEntity.getRootProcessInstanceKey()).isNull();
+  }
+
+  @Test
+  void shouldSerializeVariableValuesAsCompactJson() {
+    // given
+    final long scopeKey = 456;
+    final var nestedValue = new java.util.LinkedHashMap<String, Object>();
+    nestedValue.put("key1", "value1");
+    nestedValue.put("key2", List.of(1, 2, 3));
+    final var taskRecord = generateRecordWithVariables(scopeKey, Map.of("var1", nestedValue));
+
+    // when
+    final var batch = new SnapshotTaskVariableBatch(String.valueOf(scopeKey), new ArrayList<>());
+    underTest.updateEntity(taskRecord, batch);
+
+    // then
+    final var variableEntity = batch.variables().getFirst();
+    assertThat(variableEntity.getValue()).isEqualTo("{\"key1\":\"value1\",\"key2\":[1,2,3]}");
   }
 
   @Test

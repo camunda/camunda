@@ -20,7 +20,7 @@ import {getClientConfig} from 'modules/utils/getClientConfig';
 const ProcessVersionField: React.FC = observer(() => {
   const isMultiTenancyEnabled = getClientConfig().multiTenancyEnabled;
   const form = useForm();
-  const processValue = useField('process').input.value;
+  const processValue = useField('processDefinitionId').input.value;
   const {definitionId, tenantId} = splitDefinitionIdentifier(processValue);
 
   const {data: versions = []} = useProcessDefinitionVersions(
@@ -32,7 +32,7 @@ const ProcessVersionField: React.FC = observer(() => {
     batchModificationStore.state.isEnabled || versions.length === 0;
 
   return (
-    <Field name="version">
+    <Field name="processDefinitionVersion">
       {({input}) => {
         return (
           <Dropdown
@@ -42,7 +42,7 @@ const ProcessVersionField: React.FC = observer(() => {
             id="processVersion"
             onChange={({selectedItem}) => {
               input.onChange(selectedItem);
-              form.change('flowNodeId', undefined);
+              form.change('elementId', undefined);
             }}
             disabled={isDisabled}
             items={versions}

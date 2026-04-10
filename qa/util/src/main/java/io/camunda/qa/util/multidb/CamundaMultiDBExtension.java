@@ -282,8 +282,13 @@ public class CamundaMultiDBExtension
       return DatabaseType.valueOf(property.toUpperCase());
     }
 
-    return AnnotationSupport.findAnnotation(context.getRequiredTestClass(), MultiDbTest.class)
-        .map(MultiDbTest::value)
+    final Class<?> testClass = context.getRequiredTestClass();
+    return AnnotationSupport.findAnnotation(testClass, HistoryMultiDbTest.class)
+        .map(HistoryMultiDbTest::value)
+        .or(
+            () ->
+                AnnotationSupport.findAnnotation(testClass, MultiDbTest.class)
+                    .map(MultiDbTest::value))
         .orElse(DatabaseType.LOCAL);
   }
 

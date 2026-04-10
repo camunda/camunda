@@ -395,7 +395,12 @@ public class PassiveRole extends InactiveRole {
   public CompletableFuture<AppendResponse> onAppend(final InternalAppendRequest request) {
     raft.checkThread();
     logRequest(request);
-    updateTermAndLeader(request.term(), request.leader());
+    final boolean leaderChanged = updateTermAndLeader(request.term(), request.leader());
+    if (leaderChanged) {
+      // A new leader was elected; the previous leader will no longer complete any in-progress
+      // snapshot replication, so we must abort it to avoid waiting forever.
+      abortPendingSnapshots();
+    }
     return handleAppend(request);
   }
 
@@ -547,7 +552,7 @@ public class PassiveRole extends InactiveRole {
     nextPendingSnapshotChunkId = nextChunkId;
   }
 
-  private void abortPendingSnapshots() {
+  protected void abortPendingSnapshots() {
     if (pendingSnapshot != null) {
       setNextExpected(null);
       previouslyReceivedSnapshotChunkId = null;
@@ -587,9 +592,13 @@ public class PassiveRole extends InactiveRole {
     // Append the entries to the log.
     appendEntries(request, future);
 
-    // If a snapshot replication was ongoing, reset it. Otherwise, SnapshotReplicationListeners will
-    // wait forever for the snapshot to be received.
-    abortPendingSnapshots();
+    // If the request contains entries, abort any in-progress snapshot replication. The follower
+    // is now receiving log entries and must not continue waiting for snapshot chunks. We skip this
+    // for empty appends (heartbeats) because the leader may send heartbeats concurrently with
+    // snapshot chunks when there have been prior communication failures.
+    if (!request.entries().isEmpty()) {
+      abortPendingSnapshots();
+    }
     return future;
   }
 

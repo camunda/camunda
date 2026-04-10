@@ -9,6 +9,8 @@
 /* eslint-disable react-refresh/only-export-components */
 
 import {authenticationStore} from 'modules/stores/authentication';
+import {processInstanceMigrationStore} from 'modules/stores/processInstanceMigration';
+import {modificationsStore} from 'modules/stores/modifications';
 import {createProcessInstance} from 'modules/testUtils';
 import {useEffect} from 'react';
 import {Paths} from 'modules/Routes';
@@ -20,14 +22,12 @@ import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 
 const mockInstance = createProcessInstance();
 
-const mockInstanceWithParentInstance = createProcessInstance({
-  parentProcessInstanceKey: '8724390842390124',
-});
-
 const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
   useEffect(() => {
     return () => {
       authenticationStore.reset();
+      processInstanceMigrationStore.reset();
+      modificationsStore.reset();
     };
   }, []);
 
@@ -46,4 +46,4 @@ const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
   );
 };
 
-export {mockInstance, mockInstanceWithParentInstance, Wrapper};
+export {mockInstance, Wrapper};

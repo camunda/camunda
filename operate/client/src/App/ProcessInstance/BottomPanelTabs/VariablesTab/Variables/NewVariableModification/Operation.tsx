@@ -12,7 +12,6 @@ import {createNewVariableFieldName} from '../createVariableFieldName';
 import {modificationsStore} from 'modules/stores/modifications';
 import {Button} from '@carbon/react';
 import {TrashCan} from '@carbon/react/icons';
-import {Operations} from '../Operations';
 import {useNewScopeKeyForElement} from 'modules/hooks/modifications';
 import {useVariableScopeKey} from 'modules/hooks/variables';
 import {useProcessInstanceElementSelection} from 'modules/hooks/useProcessInstanceElementSelection';
@@ -30,25 +29,23 @@ const Operation: React.FC<Props> = ({variableName, onRemove}) => {
   const newScopeKeyForElement = useNewScopeKeyForElement(selectedElementId);
   const scopeKey = useVariableScopeKey(newScopeKeyForElement);
   return (
-    <Operations>
-      <Button
-        kind="ghost"
-        size="sm"
-        hasIconOnly
-        renderIcon={TrashCan}
-        iconDescription="Delete Variable"
-        tooltipPosition="left"
-        onClick={() => {
-          onRemove();
-          modificationsStore.removeVariableModification(
-            scopeKey!,
-            currentId,
-            'ADD_VARIABLE',
-            'variables',
-          );
-        }}
-      />
-    </Operations>
+    <Button
+      kind="ghost"
+      size="sm"
+      hasIconOnly
+      renderIcon={TrashCan}
+      iconDescription="Delete"
+      tooltipPosition="top"
+      onClick={() => {
+        onRemove();
+        modificationsStore.removeVariableModification(
+          scopeKey!,
+          currentId,
+          'ADD_VARIABLE',
+          'variables',
+        );
+      }}
+    />
   );
 };
 

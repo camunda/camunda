@@ -64,15 +64,15 @@ const Filters: React.FC = observer(() => {
     filterValues.variableName = variable.name;
     filterValues.variableValues = variable.values;
   }
-  if (filterValues.process && filterValues.tenant !== 'all') {
-    filterValues.process = getDefinitionIdentifier(
-      filterValues.process,
-      filterValues.tenant,
+  if (filterValues.processDefinitionId && filterValues.tenantId !== 'all') {
+    filterValues.processDefinitionId = getDefinitionIdentifier(
+      filterValues.processDefinitionId,
+      filterValues.tenantId,
     );
   }
-  if (filterValues.tenant === 'all') {
-    delete filterValues.process;
-    delete filterValues.version;
+  if (filterValues.tenantId === 'all') {
+    delete filterValues.processDefinitionId;
+    delete filterValues.processDefinitionVersion;
   }
 
   return (
@@ -93,7 +93,9 @@ const Filters: React.FC = observer(() => {
         navigate({
           search: updateProcessInstancesFilterSearchString(searchParams, {
             ...values,
-            process: splitDefinitionIdentifier(values.process).definitionId,
+            processDefinitionId: splitDefinitionIdentifier(
+              values.processDefinitionId,
+            ).definitionId,
           }),
         });
       }}
@@ -122,15 +124,15 @@ const Filters: React.FC = observer(() => {
             <Container>
               <AutoSubmit
                 fieldsToSkipTimeout={[
-                  'tenant',
-                  'process',
-                  'version',
-                  'flowNodeId',
+                  'tenantId',
+                  'processDefinitionId',
+                  'processDefinitionVersion',
+                  'elementId',
                   'active',
                   'incidents',
                   'completed',
                   'canceled',
-                  'retriesLeft',
+                  'hasRetriesLeft',
                 ]}
               />
               <Stack gap={5}>
@@ -139,8 +141,8 @@ const Filters: React.FC = observer(() => {
                     <Title>Tenant</Title>
                     <TenantField
                       onChange={() => {
-                        form.change('process', undefined);
-                        form.change('version', undefined);
+                        form.change('processDefinitionId', undefined);
+                        form.change('processDefinitionVersion', undefined);
                       }}
                     />
                   </div>

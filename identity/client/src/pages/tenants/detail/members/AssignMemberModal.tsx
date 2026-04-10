@@ -15,7 +15,7 @@ import FormModal from "src/components/modal/FormModal";
 import TextField from "src/components/form/TextField";
 import { Caption } from "src/pages/authorizations/modals/components.tsx";
 import { DocumentationLink } from "src/components/documentation";
-import type { Tenant, User } from "@camunda/camunda-api-zod-schemas/8.9";
+import type { Tenant, User } from "@camunda/camunda-api-zod-schemas/8.10";
 
 const AssignMemberModal: FC<
   UseEntityModalCustomProps<
@@ -70,7 +70,7 @@ const AssignMemberModal: FC<
             <Translate i18nKey="usernameDescription">
               Check the documentation for{" "}
               <DocumentationLink
-                path="/docs/components/identity/tenant/#assign-users-to-a-tenant"
+                path="/components/admin/tenant/#assign-users-to-a-tenant"
                 withIcon
               >
                 how to reference users

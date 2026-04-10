@@ -107,7 +107,8 @@ describe('MigrationView', () => {
 
       const {user} = render(<Processes />, {
         wrapper: createWrapper({
-          initialPath: '/processes?process=demoProcess&version=1',
+          initialPath:
+            '/processes?processDefinitionId=demoProcess&processDefinitionVersion=1',
         }),
       });
 
@@ -179,7 +180,8 @@ describe('MigrationView', () => {
 
       const {user} = render(<Processes />, {
         wrapper: createWrapper({
-          initialPath: '/processes?process=demoProcess&version=1',
+          initialPath:
+            '/processes?processDefinitionId=demoProcess&processDefinitionVersion=1',
         }),
       });
 

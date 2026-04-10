@@ -11,7 +11,7 @@ import {
   queryProcessInstancesRequestBodySchema,
   type ProcessInstanceState,
   type QueryProcessInstancesRequestBody,
-} from '@camunda/camunda-api-zod-schemas/8.9';
+} from '@camunda/camunda-api-zod-schemas/8.10';
 import {formatToISO} from 'modules/utils/date/formatDate';
 import {parseIds, parseSortParamsV2, updateFiltersSearchString} from '../index';
 
@@ -21,25 +21,25 @@ import {parseIds, parseSortParamsV2, updateFiltersSearchString} from '../index';
  */
 const ProcessInstancesFilterSchema = z
   .object({
-    process: z.string().optional(),
-    version: z.string().optional(),
-    tenant: z.string().optional(),
-    ids: z.string().optional(),
-    parentInstanceId: z.string().optional(),
+    processDefinitionId: z.string().optional(),
+    processDefinitionVersion: z.string().optional(),
+    tenantId: z.string().optional(),
+    processInstanceKey: z.string().optional(),
+    parentProcessInstanceKey: z.string().optional(),
     active: z.coerce.boolean().optional(),
     incidents: z.coerce.boolean().optional(),
     completed: z.coerce.boolean().optional(),
     canceled: z.coerce.boolean().optional(),
-    flowNodeId: z.string().optional(),
-    operationId: z.string().optional(),
+    elementId: z.string().optional(),
+    batchOperationId: z.string().optional(),
     errorMessage: z.string().optional(),
-    retriesLeft: z.coerce.boolean().optional(),
+    hasRetriesLeft: z.coerce.boolean().optional(),
     hasElementInstanceIncident: z.coerce.boolean().optional(),
     incidentErrorHashCode: z.coerce.number().optional(),
-    startDateAfter: z.string().optional(),
-    startDateBefore: z.string().optional(),
-    endDateAfter: z.string().optional(),
-    endDateBefore: z.string().optional(),
+    startDateFrom: z.string().optional(),
+    startDateTo: z.string().optional(),
+    endDateFrom: z.string().optional(),
+    endDateTo: z.string().optional(),
     variableName: z.string().optional(),
     variableValues: z.string().optional(),
   })
@@ -64,36 +64,41 @@ const parseProcessInstancesSearchFilter = (
   const hasStateFilters =
     filter.active || filter.completed || filter.canceled || filter.incidents;
 
-  if (!hasStateFilters && !filter.operationId) {
+  if (!hasStateFilters && !filter.batchOperationId) {
     return undefined;
   }
 
   const apiFilter: ProcessInstancesSearchFilter = {};
 
-  if (filter.process) {
-    apiFilter.processDefinitionId = {$eq: filter.process};
+  if (filter.processDefinitionId) {
+    apiFilter.processDefinitionId = {$eq: filter.processDefinitionId};
   }
 
-  if (filter.version && filter.version !== 'all') {
-    const versionNumber = parseInt(filter.version, 10);
+  if (
+    filter.processDefinitionVersion &&
+    filter.processDefinitionVersion !== 'all'
+  ) {
+    const versionNumber = parseInt(filter.processDefinitionVersion, 10);
     if (!isNaN(versionNumber)) {
       apiFilter.processDefinitionVersion = versionNumber;
     }
   }
 
-  if (filter.tenant && filter.tenant !== 'all') {
-    apiFilter.tenantId = {$eq: filter.tenant};
+  if (filter.tenantId && filter.tenantId !== 'all') {
+    apiFilter.tenantId = {$eq: filter.tenantId};
   }
 
-  if (filter.ids) {
-    const keys = parseIds(filter.ids);
+  if (filter.processInstanceKey) {
+    const keys = parseIds(filter.processInstanceKey);
     if (keys.length > 0) {
       apiFilter.processInstanceKey = {$in: keys};
     }
   }
 
-  if (filter.parentInstanceId) {
-    apiFilter.parentProcessInstanceKey = {$eq: filter.parentInstanceId};
+  if (filter.parentProcessInstanceKey) {
+    apiFilter.parentProcessInstanceKey = {
+      $eq: filter.parentProcessInstanceKey,
+    };
   }
 
   const states: ProcessInstanceState[] = [];
@@ -118,20 +123,20 @@ const parseProcessInstancesSearchFilter = (
     apiFilter.hasIncident = false;
   }
 
-  if (filter.flowNodeId) {
-    apiFilter.elementId = {$eq: filter.flowNodeId};
+  if (filter.elementId) {
+    apiFilter.elementId = {$eq: filter.elementId};
     apiFilter.elementInstanceState = {$eq: 'ACTIVE'};
   }
 
-  if (filter.operationId) {
-    apiFilter.batchOperationId = {$eq: filter.operationId};
+  if (filter.batchOperationId) {
+    apiFilter.batchOperationId = {$eq: filter.batchOperationId};
   }
 
   if (filter.errorMessage) {
     apiFilter.errorMessage = {$in: [filter.errorMessage]};
   }
 
-  if (filter.retriesLeft) {
+  if (filter.hasRetriesLeft) {
     apiFilter.hasRetriesLeft = true;
   }
 
@@ -143,17 +148,21 @@ const parseProcessInstancesSearchFilter = (
     apiFilter.incidentErrorHashCode = filter.incidentErrorHashCode;
   }
 
-  if (filter.startDateAfter || filter.startDateBefore) {
+  if (filter.startDateFrom || filter.startDateTo) {
     apiFilter.startDate = {
-      ...(filter.startDateAfter && {$gt: formatToISO(filter.startDateAfter)}),
-      ...(filter.startDateBefore && {$lt: formatToISO(filter.startDateBefore)}),
+      ...(filter.startDateFrom && {
+        $gt: formatToISO(filter.startDateFrom),
+      }),
+      ...(filter.startDateTo && {
+        $lt: formatToISO(filter.startDateTo),
+      }),
     };
   }
 
-  if (filter.endDateAfter || filter.endDateBefore) {
+  if (filter.endDateFrom || filter.endDateTo) {
     apiFilter.endDate = {
-      ...(filter.endDateAfter && {$gt: formatToISO(filter.endDateAfter)}),
-      ...(filter.endDateBefore && {$lt: formatToISO(filter.endDateBefore)}),
+      ...(filter.endDateFrom && {$gt: formatToISO(filter.endDateFrom)}),
+      ...(filter.endDateTo && {$lt: formatToISO(filter.endDateTo)}),
     };
   }
 
@@ -188,7 +197,7 @@ const BOOLEAN_PROCESS_INSTANCE_FILTER_FIELDS = Object.values(
       incidents: true,
       completed: true,
       canceled: true,
-      retriesLeft: true,
+      hasRetriesLeft: true,
       hasElementInstanceIncident: true,
     })
     .keyof().enum,

@@ -12,6 +12,7 @@ import {expect} from '@playwright/test';
 import {JSONDoc} from '@camunda8/sdk/dist/zeebe/types';
 import {cancelProcessInstance, createInstances, deploy} from '../zeebeClient';
 import {defaultAssertionOptions} from '../constants';
+import {validateResponse} from 'json-body-assertions';
 
 export async function activateJobToObtainAValidJobKey(
   request: APIRequestContext,
@@ -26,6 +27,14 @@ export async function activateJobToObtainAValidJobKey(
     },
   });
   await assertStatusCode(activateRes, 200);
+  await validateResponse(
+    {
+      path: '/jobs/activation',
+      method: 'POST',
+      status: '200',
+    },
+    activateRes,
+  );
   const activateJson = await activateRes.json();
   expect(activateJson.jobs.length).toBe(1);
   return activateJson.jobs[0].jobKey;
@@ -46,6 +55,14 @@ export async function searchJobKey(
       },
     });
     await assertStatusCode(searchRes, 200);
+    await validateResponse(
+      {
+        path: '/jobs/search',
+        method: 'POST',
+        status: '200',
+      },
+      searchRes,
+    );
     const searchJson = await searchRes.json();
     expect(searchJson.items.length).toBeGreaterThan(0);
     result.jobKey = searchJson.items[0].jobKey;

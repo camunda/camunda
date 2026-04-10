@@ -15,7 +15,7 @@ import {
 } from "src/components/modal";
 import { useNotifications } from "src/components/notifications";
 import { unassignTenantGroup } from "src/utility/api/tenants";
-import type { Group } from "@camunda/camunda-api-zod-schemas/8.9";
+import type { Group } from "@camunda/camunda-api-zod-schemas/8.10";
 
 type RemoveTenantGroupModalProps = UseEntityModalCustomProps<
   Group,

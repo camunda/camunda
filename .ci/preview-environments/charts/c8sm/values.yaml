@@ -39,6 +39,8 @@ global:
       # CI access via a Teleport TCP tunnel).
       internalAuthBypass:
         enabled: false
+    secrets:
+      name: camunda-credentials
 
   # Camunda 8 Self-Managed global configurations
   elasticsearch:
@@ -77,9 +79,6 @@ global:
         redirectUrl: https://{{ include "ingress.domain" . }}/modeler
     keycloak:
       contextPath: /auth
-
-  secrets:
-    name: camunda-credentials
 
   zeebeClusterName: zeebe-cluster
 
@@ -260,6 +259,12 @@ camunda-platform:
     fullURL: https://{{ include "ingress.domain" . }}{{ .Values.identity.contextPath }}
     # image:
     #     repository: camunda/identity
+    firstUser:
+      enabled: true
+      username: demo
+      secret:
+        existingSecret: camunda-credentials
+        existingSecretKey: identity-firstuser-password
     resources:
       limits:
         cpu: "1"
@@ -384,22 +389,6 @@ camunda-platform:
         requests:
           cpu: 500m
           memory: 1Gi
-      nodeSelector:
-        cloud.google.com/gke-nodepool: previews
-      tolerations:
-      - key: "previews"
-        operator: "Exists"
-        effect: "NoSchedule"
-    webapp:
-      # image:
-      #   repository: camunda/web-modeler-webapp
-      resources:
-        limits:
-          cpu: 500m
-          memory: 1Gi
-        requests:
-          cpu: 100m
-          memory: 256Mi
       nodeSelector:
         cloud.google.com/gke-nodepool: previews
       tolerations:

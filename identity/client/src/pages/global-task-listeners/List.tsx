@@ -19,6 +19,7 @@ import AddModal from "src/pages/global-task-listeners/modals/AddModal";
 import EditModal from "src/pages/global-task-listeners/modals/EditModal";
 import DeleteModal from "src/pages/global-task-listeners/modals/DeleteModal";
 import PageEmptyState from "src/components/layout/PageEmptyState";
+import { getEventTypeLabels } from "src/pages/global-task-listeners/utility";
 
 const List: FC = () => {
   const { t } = useTranslate("globalTaskListeners");
@@ -50,7 +51,7 @@ const List: FC = () => {
     <PageHeader
       title={t("globalTaskListeners")}
       linkText={t("globalTaskListeners").toLowerCase()}
-      docsLinkPath="/docs/components/concepts/global-user-task-listeners/"
+      docsLinkPath="/components/concepts/global-user-task-listeners/"
       shouldShowDocumentationLink={!shouldShowEmptyState}
     />
   );
@@ -61,7 +62,7 @@ const List: FC = () => {
         {pageHeader}
         <PageEmptyState
           resourceTypeTranslationKey={"globalTaskListener"}
-          docsLinkPath="/docs/components/concepts/global-user-task-listeners/"
+          docsLinkPath="/components/concepts/global-user-task-listeners/"
           handleClick={addGlobalTaskListener}
         />
         {addGlobalTaskListenerModal}
@@ -71,12 +72,11 @@ const List: FC = () => {
 
   const transformedData = globalTaskListeners?.items.map((listener) => ({
     ...listener,
-    executionOrderDisplay: listener.afterNonGlobal
+    afterNonGlobal: listener.afterNonGlobal
       ? t("executionOrderAfter")
       : t("executionOrderBefore"),
-    eventTypesDisplay: listener.eventTypes.includes("all")
-      ? t("eventTypeAll")
-      : listener.eventTypes.join(", "),
+    eventTypes: getEventTypeLabels(listener.eventTypes, t),
+    originalListener: listener,
   }));
 
   return (
@@ -93,7 +93,7 @@ const List: FC = () => {
           { header: t("listenerType"), key: "type", isSortable: true },
           {
             header: t("eventType"),
-            key: "eventTypesDisplay",
+            key: "eventTypes",
             isSortable: false,
           },
           { header: t("retries"), key: "retries", isSortable: false },
@@ -111,13 +111,15 @@ const List: FC = () => {
           {
             label: t("editGlobalTaskListener"),
             icon: Edit,
-            onClick: (entity) => editGlobalTaskListener(entity),
+            onClick: (entity) =>
+              editGlobalTaskListener(entity.originalListener),
           },
           {
             label: t("delete"),
             icon: TrashCan,
             isDangerous: true,
-            onClick: (entity) => deleteGlobalTaskListener(entity),
+            onClick: (entity) =>
+              deleteGlobalTaskListener(entity.originalListener),
           },
         ]}
         searchPlaceholder={t("searchById")}

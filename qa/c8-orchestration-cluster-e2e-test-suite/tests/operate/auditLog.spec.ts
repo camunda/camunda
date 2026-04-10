@@ -48,26 +48,19 @@ test.describe('Audit Log (Operations Log)', () => {
   });
 
   test('Operations Log page is accessible and shows table headers', async ({
-    page,
     operateOperationsLogPage,
   }) => {
     await operateOperationsLogPage.gotoOperationsLogPage();
 
-    await expect(
-      page.getByRole('heading', {name: /operations log/i}),
-    ).toBeVisible();
+    await expect(operateOperationsLogPage.operationsLogHeading).toBeVisible();
 
     await expect(
-      page.getByRole('columnheader', {name: 'Operation type'}),
+      operateOperationsLogPage.operationTypeColumnHeader,
     ).toBeVisible();
-    await expect(
-      page.getByRole('columnheader', {name: 'Entity type'}),
-    ).toBeVisible();
-    await expect(
-      page.getByRole('columnheader', {name: 'Entity key'}),
-    ).toBeVisible();
-    await expect(page.getByRole('columnheader', {name: 'Actor'})).toBeVisible();
-    await expect(page.getByRole('columnheader', {name: 'Date'})).toBeVisible();
+    await expect(operateOperationsLogPage.entityTypeColumnHeader).toBeVisible();
+    await expect(operateOperationsLogPage.entityKeyColumnHeader).toBeVisible();
+    await expect(operateOperationsLogPage.actorColumnHeader).toBeVisible();
+    await expect(operateOperationsLogPage.dateColumnHeader).toBeVisible();
   });
 
   test('Audit log entries are visible after instance creation', async ({
@@ -76,16 +69,13 @@ test.describe('Audit Log (Operations Log)', () => {
     await operateOperationsLogPage.gotoOperationsLogPage();
 
     await expect
-      .poll(
-        async () =>
-          operateOperationsLogPage.operationsLogTable.getByRole('row').count(),
-        {timeout: 60000},
-      )
+      .poll(async () => operateOperationsLogPage.getRowCount(), {
+        timeout: 60000,
+      })
       .toBeGreaterThan(1);
   });
 
   test('Audit log entries can be filtered by process instance key', async ({
-    page,
     operateOperationsLogPage,
   }) => {
     const {processInstanceKey} = process.instance;
@@ -94,26 +84,20 @@ test.describe('Audit Log (Operations Log)', () => {
       searchParams: {processInstanceKey},
     });
 
-    await expect(
-      page.getByRole('heading', {name: /operations log/i}),
-    ).toBeVisible();
+    await expect(operateOperationsLogPage.operationsLogHeading).toBeVisible();
 
     await expect(operateOperationsLogPage.processInstanceKeyFilter).toHaveValue(
       processInstanceKey,
     );
 
     await expect
-      .poll(
-        async () =>
-          operateOperationsLogPage.operationsLogTable.getByRole('row').count(),
-        {timeout: 60000},
-      )
+      .poll(async () => operateOperationsLogPage.getRowCount(), {
+        timeout: 60000,
+      })
       .toBeGreaterThan(1);
 
     await expect(
-      operateOperationsLogPage.operationsLogTable
-        .getByRole('cell', {name: /process instance/i})
-        .first(),
+      operateOperationsLogPage.processInstanceCells.first(),
     ).toBeVisible();
   });
 

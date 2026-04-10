@@ -20,7 +20,6 @@ export class OperateDiagramPage {
   readonly monacoScrollableElement: Locator;
   readonly showIncidentButton: Locator;
   readonly showMetadataButton: Locator;
-  readonly viewRootCauseDecisionLink: Locator;
   readonly popoverLink: (name: string | RegExp) => Locator;
 
   constructor(page: Page) {
@@ -46,9 +45,6 @@ export class OperateDiagramPage {
     });
     this.showMetadataButton = this.popover.getByRole('button', {
       name: 'show more metadata',
-    });
-    this.viewRootCauseDecisionLink = this.page.getByRole('link', {
-      name: /View root cause decision/i,
     });
   }
 
@@ -155,7 +151,7 @@ export class OperateDiagramPage {
   }
 
   async verifyFlowNodeMetadata(
-    flowNodeId: string,
+    elementId: string,
     options: {
       expectedText?: string | string[];
       hiddenText?: string | string[];
@@ -163,9 +159,9 @@ export class OperateDiagramPage {
     } = {},
   ) {
     if (options.isSubProcess) {
-      await this.clickSubProcess(flowNodeId);
+      await this.clickSubProcess(elementId);
     } else {
-      await this.clickFlowNode(flowNodeId);
+      await this.clickFlowNode(elementId);
     }
     await this.clickShowMetaData();
 
@@ -202,9 +198,9 @@ export class OperateDiagramPage {
 
     // Deselect the flow node by clicking it again
     if (options.isSubProcess) {
-      await this.clickSubProcess(flowNodeId);
+      await this.clickSubProcess(elementId);
     } else {
-      await this.clickFlowNode(flowNodeId);
+      await this.clickFlowNode(elementId);
     }
   }
 
@@ -220,15 +216,6 @@ export class OperateDiagramPage {
 
   async closeMetadataModal(): Promise<void> {
     await this.metadataModalCloseButton.click();
-  }
-
-  async clickViewRootCauseDecisionLink(): Promise<void> {
-    await this.viewRootCauseDecisionLink.scrollIntoViewIfNeeded();
-    await this.viewRootCauseDecisionLink.waitFor({
-      state: 'visible',
-      timeout: 30000,
-    });
-    await this.viewRootCauseDecisionLink.click();
   }
 
   async clickPopoverLink(name: string | RegExp): Promise<void> {
@@ -252,7 +239,7 @@ export class OperateDiagramPage {
 
   async verifyStateOverlay(
     flowNodeName: string,
-    state: 'active' | 'canceled' | 'completedEndEvents',
+    state: 'active' | 'incidents' | 'canceled' | 'completedEndEvents',
     tokenAmount?: number,
   ): Promise<void> {
     const stateOverlayFlowNode =

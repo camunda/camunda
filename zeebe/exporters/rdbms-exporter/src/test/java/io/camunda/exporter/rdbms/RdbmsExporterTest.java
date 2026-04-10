@@ -180,7 +180,7 @@ class RdbmsExporterTest {
   }
 
   @Test
-  void shouldNotUpdatePositionOnFlushWhenNoRecordsHandled() {
+  void shouldUpdatePositionOnFlushEvenWhenNoRecordsHandled() {
     // given
     createExporter(b -> b);
 
@@ -189,8 +189,8 @@ class RdbmsExporterTest {
     exporter.export(mockRecord(ValueType.JOB, 2));
     executionQueue.flush();
 
-    // then
-    verify(positionService, never()).update(any());
+    // then - position should be updated even for ignored records
+    verify(positionService).update(Mockito.argThat(p -> p.lastExportedPosition() == 2));
   }
 
   @Test

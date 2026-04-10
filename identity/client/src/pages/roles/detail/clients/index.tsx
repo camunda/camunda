@@ -17,7 +17,7 @@ import { useEntityModal } from "src/components/modal";
 import DeleteModal from "src/pages/roles/detail/clients/DeleteModal";
 import AssignClientsModal from "src/pages/roles/detail/clients/AssignClientsModal";
 import TabEmptyState from "src/components/layout/TabEmptyState";
-import type { Role } from "@camunda/camunda-api-zod-schemas/8.9";
+import type { Role } from "@camunda/camunda-api-zod-schemas/8.10";
 
 type ClientsProps = {
   roleId: Role["roleId"];
@@ -68,7 +68,7 @@ const Clients: FC<ClientsProps> = ({ roleId }) => {
           childResourceTypeTranslationKey={"client"}
           parentResourceTypeTranslationKey={"role"}
           handleClick={openAssignModal}
-          docsLinkPath="/docs/components/identity/client/"
+          docsLinkPath="/components/admin/client/"
         />
         {assignClientModal}
       </>

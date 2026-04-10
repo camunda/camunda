@@ -35,19 +35,19 @@ const PanelHeader = forwardRef<HTMLElement, Props>(
   ) => {
     return (
       <Header className={className} ref={ref} $size={size}>
-        {title !== undefined && (
-          <Title>
-            {title}
-            {count > 0 && (
-              <>
-                &nbsp;&nbsp;&nbsp;-&nbsp;&nbsp;&nbsp;
-                {hasMoreTotalItems
-                  ? `${count}+ results`
-                  : pluralSuffix(count, 'result')}
-              </>
-            )}
-          </Title>
-        )}
+        <Title>
+          {title}
+          {count > 0 && (
+            <>
+              {title === undefined ? null : (
+                <>&nbsp;&nbsp;&nbsp;-&nbsp;&nbsp;&nbsp;</>
+              )}
+              {hasMoreTotalItems
+                ? `${count}+ results`
+                : pluralSuffix(count, 'result')}
+            </>
+          )}
+        </Title>
         {children}
       </Header>
     );

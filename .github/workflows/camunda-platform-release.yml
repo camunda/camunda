@@ -174,7 +174,8 @@ jobs:
           #
           # -DpreparationGoals
           #   Goals to run as part of the preparation step, after transformation but before committing. Space delimited.
-          #   Default is 'clean verify'; We want to skip all the checks and packaging (as it will be done again later) so we set it to empty
+          #   Default is 'clean verify'. We only run spotless to keep release-prepare generated POM changes
+          #   in a consistent format before the release commit is created.
           #
           # -Darguments
           #   Additional arguments to pass to the Maven executions, separated by spaces.
@@ -199,7 +200,7 @@ jobs:
             -DremoteTagging="${PUSH_CHANGES}" \
             -DcompletionGoals="spotless:apply" \
             -P-autoFormat \
-            -DpreparationGoals="" \
+            -DpreparationGoals="spotless:apply" \
             ${PROFILE_FLAGS} \
             -Darguments="${ARGUMENTS_PROFILE}"
 
@@ -208,6 +209,13 @@ jobs:
         env:
           SKIP_CENTRAL_RELEASE: ${{ inputs.dryRun }}
           SKIP_CAMUNDA_RELEASE: ${{ inputs.dryRun || inputs.releaseProcessDryRun }}
+          # Sonatype central-publishing-maven-plugin defaults to a 30-minute wait window.
+          # Use a longer wait to avoid polling timeouts on slower deployments.
+          # waitMaxTime (Default: 1800)
+          # User property: waitMaxTime
+          # Assign the amount of seconds that the plugin will wait for a deployment
+          # state. Can not be less than Constants.WAIT_MAX_TIME_DEFAULT_VALUE.
+          CENTRAL_WAIT_MAX_TIME: "3600"
         run: |
           # Perform a maven release
           # https://maven.apache.org/maven-release/maven-release-plugin/perform-mojo.html
@@ -216,6 +224,8 @@ jobs:
           # -DskipQaBuild=true -P-autoFormat
           #   In order to disable QA/IT and the auto formatting during the release.
           #   It is unnecessary to release integration tests, and we don't want to run the auto-formatting unnecessarily.
+
+          
 
           # Conditionally set profile flags based on includeOptimize input
           if [[ "${{ inputs.includeOptimize }}" == "true" ]]; then
@@ -234,7 +244,7 @@ jobs:
             -DskipQaBuild=true \
             -P-autoFormat \
             ${PROFILE_FLAGS} \
-            -Darguments="-P-autoFormat -DskipQaBuild=true -DskipChecks=true -DskipTests=true -Dskip.fe.build=false -Dspotless.apply.skip=false -Dskip.central.release=${SKIP_CENTRAL_RELEASE} -Dskip.camunda.release=${SKIP_CAMUNDA_RELEASE} ${ARGUMENTS_PROFILE} -Dgpg.passphrase=\"${{ steps.secrets.outputs.MAVEN_CENTRAL_GPG_SIGNING_KEY_PASSPHRASE }}\""
+            -Darguments="-P-autoFormat -DskipQaBuild=true -DskipChecks=true -DskipTests=true -Dskip.fe.build=false -Dspotless.apply.skip=false -Dskip.central.release=${SKIP_CENTRAL_RELEASE} -Dskip.camunda.release=${SKIP_CAMUNDA_RELEASE} -DwaitMaxTime=${CENTRAL_WAIT_MAX_TIME} ${ARGUMENTS_PROFILE} -Dgpg.passphrase=\"${{ steps.secrets.outputs.MAVEN_CENTRAL_GPG_SIGNING_KEY_PASSPHRASE }}\""
 
           # switch to the directory to which maven checks out the release tag
           # see https://maven.apache.org/maven-release/maven-release-plugin/perform-mojo.html#workingDirectory
@@ -243,6 +253,12 @@ jobs:
           export TAG_REVISION
           echo "tagRevision=${TAG_REVISION}" >> "$GITHUB_OUTPUT"
           popd
+
+      - name: Validate flattened POM metadata
+        if: ${{ inputs.dryRun }}
+        uses: ./.github/actions/validate-pom-metadata
+        with:
+          search-root: target/checkout
 
       - name: Debug Optimize Versions
         if: ${{ inputs.includeOptimize && inputs.dryRun }}
@@ -370,12 +386,12 @@ jobs:
             secret/data/products/zeebe/ci/zeebe REGISTRY_HUB_DOCKER_COM_PSW;
             secret/data/products/camunda/ci/github-actions REGISTRY_MINIMUS_PSW | minimus-token
       - name: Login to DockerHub
-        uses: docker/login-action@v3
+        uses: docker/login-action@v4
         with:
           username: ${{ steps.secrets.outputs.REGISTRY_HUB_DOCKER_COM_USR }}
           password: ${{ steps.secrets.outputs.REGISTRY_HUB_DOCKER_COM_PSW }}
       - name: Logs on to Minimus
-        uses: docker/login-action@v3
+        uses: docker/login-action@v4
         with:
           registry: reg.mini.dev
           username: minimus
@@ -408,7 +424,7 @@ jobs:
       - name: Sync Zeebe Docker Image to DockerHub
         if: ${{ !inputs.dryRun && !inputs.releaseProcessDryRun }}
         # see https://docs.docker.com/build/ci/github-actions/examples/#copy-images-between-registries
-        uses: nick-fields/retry@v3
+        uses: nick-fields/retry@v4
         with:
           max_attempts: 3
           retry_on: error
@@ -421,7 +437,7 @@ jobs:
       - name: Sync Zeebe Latest Docker Image to DockerHub
         if: ${{ !inputs.dryRun && !inputs.releaseProcessDryRun && inputs.isLatest }}
         # see https://docs.docker.com/build/ci/github-actions/examples/#copy-images-between-registries
-        uses: nick-fields/retry@v3
+        uses: nick-fields/retry@v4
         with:
           max_attempts: 3
           retry_on: error
@@ -475,12 +491,12 @@ jobs:
             secret/data/products/operate/ci/github-actions REGISTRY_HUB_DOCKER_COM_PSW;
             secret/data/products/camunda/ci/github-actions REGISTRY_MINIMUS_PSW | minimus-token
       - name: Login to DockerHub
-        uses: docker/login-action@v3
+        uses: docker/login-action@v4
         with:
           username: ${{ steps.secrets.outputs.REGISTRY_HUB_DOCKER_COM_USR }}
           password: ${{ steps.secrets.outputs.REGISTRY_HUB_DOCKER_COM_PSW }}
       - name: Login to Minimus
-        uses: docker/login-action@v3
+        uses: docker/login-action@v4
         with:
           registry: reg.mini.dev
           username: minimus
@@ -516,7 +532,7 @@ jobs:
       - name: Sync Operate Docker Image to DockerHub
         if: ${{ !inputs.dryRun && !inputs.releaseProcessDryRun }}
         # see https://docs.docker.com/build/ci/github-actions/examples/#copy-images-between-registries
-        uses: nick-fields/retry@v3
+        uses: nick-fields/retry@v4
         with:
           max_attempts: 3
           retry_on: error
@@ -529,7 +545,7 @@ jobs:
       - name: Sync Latest Operate Docker Image to DockerHub
         if: ${{ !inputs.dryRun && !inputs.releaseProcessDryRun && inputs.isLatest }}
         # see https://docs.docker.com/build/ci/github-actions/examples/#copy-images-between-registries
-        uses: nick-fields/retry@v3
+        uses: nick-fields/retry@v4
         with:
           max_attempts: 3
           retry_on: error
@@ -583,12 +599,12 @@ jobs:
             secret/data/products/tasklist/ci/tasklist REGISTRY_HUB_DOCKER_COM_PSW;
             secret/data/products/camunda/ci/github-actions REGISTRY_MINIMUS_PSW | minimus-token
       - name: Login to DockerHub
-        uses: docker/login-action@v3
+        uses: docker/login-action@v4
         with:
           username: ${{ steps.secrets.outputs.REGISTRY_HUB_DOCKER_COM_USR }}
           password: ${{ steps.secrets.outputs.REGISTRY_HUB_DOCKER_COM_PSW }}
       - name: Login to Minimus
-        uses: docker/login-action@v3
+        uses: docker/login-action@v4
         with:
           registry: reg.mini.dev
           username: minimus
@@ -624,7 +640,7 @@ jobs:
       - name: Sync Tasklist Docker Image to DockerHub
         if: ${{ !inputs.dryRun && !inputs.releaseProcessDryRun }}
         # see https://docs.docker.com/build/ci/github-actions/examples/#copy-images-between-registries
-        uses: nick-fields/retry@v3
+        uses: nick-fields/retry@v4
         with:
           max_attempts: 3
           retry_on: error
@@ -637,7 +653,7 @@ jobs:
       - name: Sync Latest Tasklist Docker Image to DockerHub
         if: ${{ !inputs.dryRun && !inputs.releaseProcessDryRun && inputs.isLatest }}
         # see https://docs.docker.com/build/ci/github-actions/examples/#copy-images-between-registries
-        uses: nick-fields/retry@v3
+        uses: nick-fields/retry@v4
         with:
           max_attempts: 3
           retry_on: error
@@ -695,12 +711,12 @@ jobs:
             secret/data/products/optimize/ci/camunda-optimize REGISTRY_HUB_DOCKER_COM_PSW;
             secret/data/products/camunda/ci/github-actions REGISTRY_MINIMUS_PSW | minimus-token
       - name: Login to DockerHub
-        uses: docker/login-action@v3
+        uses: docker/login-action@v4
         with:
           username: ${{ steps.secrets.outputs.REGISTRY_HUB_DOCKER_COM_USR }}
           password: ${{ steps.secrets.outputs.REGISTRY_HUB_DOCKER_COM_PSW }}
       - name: Login to Minimus
-        uses: docker/login-action@v3
+        uses: docker/login-action@v4
         with:
           registry: reg.mini.dev
           username: minimus
@@ -713,7 +729,7 @@ jobs:
           workload_identity_provider: "projects/271764561088/locations/global/workloadIdentityPools/github/providers/camunda"
           service_account: "github-actions-camunda@team-infosec.iam.gserviceaccount.com"
       - name: Login to infosec registry
-        uses: docker/login-action@v3
+        uses: docker/login-action@v4
         with:
           registry: europe-west1-docker.pkg.dev
           username: oauth2accesstoken
@@ -749,7 +765,7 @@ jobs:
       - name: Sync Optimize Docker Image to DockerHub
         if: ${{ !inputs.dryRun && !inputs.releaseProcessDryRun }}
         # see https://docs.docker.com/build/ci/github-actions/examples/#copy-images-between-registries
-        uses: nick-fields/retry@v3
+        uses: nick-fields/retry@v4
         with:
           max_attempts: 3
           retry_on: error
@@ -762,7 +778,7 @@ jobs:
       - name: Sync Latest Optimize Docker Image to DockerHub
         if: ${{ !inputs.dryRun && !inputs.releaseProcessDryRun && inputs.isLatest }}
         # see https://docs.docker.com/build/ci/github-actions/examples/#copy-images-between-registries
-        uses: nick-fields/retry@v3
+        uses: nick-fields/retry@v4
         with:
           max_attempts: 3
           retry_on: error
@@ -775,7 +791,7 @@ jobs:
       - name: Sync Optimize Docker Image to Internal Registry
         if: ${{ !inputs.dryRun && !inputs.releaseProcessDryRun }}
         # see https://docs.docker.com/build/ci/github-actions/examples/#copy-images-between-registries
-        uses: nick-fields/retry@v3
+        uses: nick-fields/retry@v4
         with:
           max_attempts: 3
           retry_on: error
@@ -829,12 +845,12 @@ jobs:
             secret/data/products/camunda/ci/github-actions REGISTRY_HUB_DOCKER_COM_PSW;
             secret/data/products/camunda/ci/github-actions REGISTRY_MINIMUS_PSW | minimus-token
       - name: Login to DockerHub
-        uses: docker/login-action@v3
+        uses: docker/login-action@v4
         with:
           username: ${{ steps.secrets.outputs.REGISTRY_HUB_DOCKER_COM_USR }}
           password: ${{ steps.secrets.outputs.REGISTRY_HUB_DOCKER_COM_PSW }}
       - name: Logs on to Minimus
-        uses: docker/login-action@v3
+        uses: docker/login-action@v4
         with:
           registry: reg.mini.dev
           username: minimus
@@ -870,7 +886,7 @@ jobs:
       - name: Sync Camunda Docker Image to DockerHub
         if: ${{ !inputs.dryRun && !inputs.releaseProcessDryRun }}
         # see https://docs.docker.com/build/ci/github-actions/examples/#copy-images-between-registries
-        uses: nick-fields/retry@v3
+        uses: nick-fields/retry@v4
         with:
           max_attempts: 3
           retry_on: error
@@ -883,7 +899,7 @@ jobs:
       - name: Sync Latest Camunda Docker Image to DockerHub
         if: ${{ !inputs.dryRun && !inputs.releaseProcessDryRun && inputs.isLatest }}
         # see https://docs.docker.com/build/ci/github-actions/examples/#copy-images-between-registries
-        uses: nick-fields/retry@v3
+        uses: nick-fields/retry@v4
         with:
           max_attempts: 3
           retry_on: error
@@ -941,6 +957,8 @@ jobs:
     needs: [release, zeebe-docker, operate-docker, tasklist-docker, optimize-docker, camunda-docker]
     name: Github Release
     runs-on: ubuntu-latest
+    outputs:
+      releaseBodyUpdateOutcome: ${{ steps.update-github-release-body.outcome }}
     # Minor releases take more time since a lot of issues are included in the changelog
     timeout-minutes: 30
     if: ${{ always() && !cancelled() && 
@@ -1005,15 +1023,8 @@ jobs:
           --label="version:$ZCL_TARGET_REV" \
           --org camunda --repo camunda)
 
-          # With multiline strings the output needs to be set differently.
-          #
-          # https://docs.github.com/en/actions/using-workflows/workflow-commands-for-github-actions#example-of-a-multiline-string
-          #
-          {
-            echo 'CHANGELOG<<EOF'
-            echo "$changelog"
-            echo 'EOF'
-          } >> "$GITHUB_OUTPUT"
+          # Persist full changelog to a file and pass it via bodyFile to avoid ARG_MAX/env limits.
+          printf '%s\n' "$changelog" > changelog.md
 
           # To show the changelog also as step summary
           echo "$changelog" >> "$GITHUB_STEP_SUMMARY"
@@ -1022,6 +1033,10 @@ jobs:
         with:
           name: release-artifacts-${{ inputs.releaseVersion }}
           path: release-artifacts
+      - name: Add Full Changelog to Release Artifacts
+        if: ${{ !inputs.dryRun }}
+        run: |
+          cp changelog.md "release-artifacts/CHANGELOG-${RELEASE_VERSION}.md"
       - name: Create Artifact Checksums
         id: checksum
         working-directory: ./release-artifacts
@@ -1046,7 +1061,7 @@ jobs:
           shopt -u nocasematch # reset it
           echo "result=${PRE_RELEASE}" >> "$GITHUB_OUTPUT"
       - name: Create Github release
-        uses: ncipollo/release-action@v1
+        uses: ncipollo/release-action@e8998be2b17923c3291d578fe182ba04c16fc023
         if: ${{ !inputs.dryRun }}
         with:
           name: ${{ env.RELEASE_TAG }}
@@ -1054,10 +1069,33 @@ jobs:
           artifactErrorsFailBuild: true
           draft: ${{ inputs.releaseProcessDryRun }}
           makeLatest: ${{ inputs.isLatest }}
-          body: ${{ steps.gen-changelog.outputs.changelog }}
+          body: Release ${{ env.RELEASE_TAG }} - changelog will be added shortly. Full changelog is available as CHANGELOG-${{ env.RELEASE_VERSION }}.md in the release assets.
           token: ${{ secrets.GITHUB_TOKEN }}
           prerelease: ${{ steps.pre-release.outputs.result }}
           tag: ${{ env.RELEASE_TAG }}
+      - name: Update Github release body from changelog file
+        id: update-github-release-body
+        uses: ncipollo/release-action@e8998be2b17923c3291d578fe182ba04c16fc023
+        if: ${{ !inputs.dryRun }}
+        continue-on-error: true
+        with:
+          allowUpdates: true
+          bodyFile: changelog.md
+          omitBodyDuringUpdate: false
+          omitNameDuringUpdate: true
+          omitDraftDuringUpdate: true
+          omitPrereleaseDuringUpdate: true
+          token: ${{ secrets.GITHUB_TOKEN }}
+          tag: ${{ env.RELEASE_TAG }}
+      - name: Warn if Github release body update failed
+        if: ${{ !inputs.dryRun && steps.update-github-release-body.outcome == 'failure' }}
+        run: |
+          {
+            echo "## Github release body update failed"
+            echo
+            echo "Release assets were published successfully."
+            echo "The inline release body was not updated; use release asset CHANGELOG-${RELEASE_VERSION}.md as the source changelog."
+          } >> "$GITHUB_STEP_SUMMARY"
       - name: Observe build status
         if: always()
         continue-on-error: true
@@ -1101,9 +1139,9 @@ jobs:
             secret/data/products/camunda/ci/camunda FOSSA_API_KEY;
       - name: Get FOSSA context
         id: fossa-context
-        uses: camunda/infra-global-github-actions/fossa/info@f5807d2242ed5d143402f3ff092901ce920b01d0
+        uses: camunda/infra-global-github-actions/fossa/info@fc4fa13813cbc1835129967f10a12f24aa7a393c
       - name: Wait for FOSSA scan completion
-        uses: camunda/infra-global-github-actions/fossa/wait-for-scan@f5807d2242ed5d143402f3ff092901ce920b01d0
+        uses: camunda/infra-global-github-actions/fossa/wait-for-scan@fc4fa13813cbc1835129967f10a12f24aa7a393c
         with:
           api-key: ${{ steps.secrets.outputs.FOSSA_API_KEY }}
           branch: ${{ steps.fossa-context.outputs.head-ref }}
@@ -1111,7 +1149,7 @@ jobs:
           revision-id: ${{ steps.fossa-context.outputs.head-revision }}
           dry-run: ${{ inputs.dryRun || inputs.releaseProcessDryRun }}
       - name: Create FOSSA releases and generate reports
-        uses: camunda/infra-global-github-actions/fossa/release@f5807d2242ed5d143402f3ff092901ce920b01d0
+        uses: camunda/infra-global-github-actions/fossa/release@fc4fa13813cbc1835129967f10a12f24aa7a393c
         with:
           api-key: ${{ steps.secrets.outputs.FOSSA_API_KEY }}
           branch: ${{ steps.fossa-context.outputs.head-ref }}
@@ -1144,8 +1182,8 @@ jobs:
     name: Send Slack notification on success
     runs-on: ubuntu-latest
     needs: [release, github, zeebe-docker, operate-docker, tasklist-docker, optimize-docker, camunda-docker, snyk, fossa-release]
-    # if it's a dry run => no slack notification (remove noise in slack due to manual testing)
-    # else => send slack notification as an actual release succeeded
+    # Report release result to C8 always (including dry-runs)
+    # Slack notifications are skipped for dry-runs to reduce noise
     if: ${{ always() && (
       needs.release.result == 'success' &&
       needs.github.result == 'success' &&
@@ -1156,7 +1194,7 @@ jobs:
       needs.camunda-docker.result == 'success' &&
       (needs.snyk.result == 'success' || needs.snyk.result == 'skipped') &&
       (needs.fossa-release.result == 'success' || needs.fossa-release.result == 'skipped')
-      ) && !inputs.dryRun && !inputs.releaseProcessDryRun }}
+      ) }}
     timeout-minutes: 5
     permissions: {}  # GITHUB_TOKEN unused in this job
     steps:
@@ -1171,9 +1209,23 @@ jobs:
           exportEnv: false # we rely on step outputs, no need for environment variables
           secrets: |
             secret/data/products/camunda/ci/github-actions SLACK_TOPMONOREPORELEASE_WEBHOOK_URL;
-
+            secret/data/products/camunda/ci/monorepo-release CLIENT_CONFIG | clientConfig
+      - name: Report release success to C8
+        continue-on-error: true
+        uses: camunda-community-hub/camunda-platform-8-github-action@0fe490e4cf6f0cf59a5c86a127c4354b4b1fc3b7 # 8.3.0
+        with:
+          clientConfig: ${{ steps.secrets.outputs.clientConfig }}
+          operation: publishMessage
+          messageName: Release result in Camunda
+          correlationKey: ${{ inputs.releaseVersion }}
+          variables: |
+            {
+              "is_camunda_release_successful": "true",
+              "camunda_workflow_run_url": "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+            }      
       - name: Send success Slack notification
-        uses: slackapi/slack-github-action@91efab103c0de0a537f72a35f6b8cda0ee76bf0a # v2.1.1
+        if: ${{ !inputs.dryRun && !inputs.releaseProcessDryRun && needs.github.outputs.releaseBodyUpdateOutcome != 'failure' }}
+        uses: slackapi/slack-github-action@af78098f536edbc4de71162a307590698245be95 # v3.0.1
         with:
           webhook: ${{ steps.secrets.outputs.SLACK_TOPMONOREPORELEASE_WEBHOOK_URL }}
           webhook-type: incoming-webhook
@@ -1191,12 +1243,39 @@ jobs:
               ]
             }
 
+      - name: Send success Slack notification with manual follow-up
+        if: ${{ !inputs.dryRun && !inputs.releaseProcessDryRun && needs.github.outputs.releaseBodyUpdateOutcome == 'failure' }}
+        uses: slackapi/slack-github-action@af78098f536edbc4de71162a307590698245be95 # v3.0.1
+        with:
+          webhook: ${{ steps.secrets.outputs.SLACK_TOPMONOREPORELEASE_WEBHOOK_URL }}
+          webhook-type: incoming-webhook
+          # For posting a rich message using Block Kit
+          payload: |
+            {
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": ":success: *Release job for ${{ inputs.releaseVersion }}* succeeded! (excluding Maven Central publishing - this is done separately)\n"
+                  }
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": ":warning: GitHub release body update failed due to size/API constraints. This is non-blocking; release artifacts were published. Please update release notes manually using `CHANGELOG-${{ inputs.releaseVersion }}.md` from release assets."
+                  }
+                }
+              ]
+            }
+
   notify-if-failed:
     name: Send Slack notification on failure
     runs-on: ubuntu-latest
     needs: [release, github, zeebe-docker, operate-docker, tasklist-docker, optimize-docker, camunda-docker, snyk, fossa-release]
-    # if it's a dry run => no slack notification (remove noise in slack due to manual testing)
-    # else => send slack notification as an actual release failed
+    # Report release result to C8 always (including dry-runs)
+    # Slack notifications are skipped for dry-runs to reduce noise
     if: ${{ always() && (
         needs.release.result == 'failure' ||
         needs.github.result == 'failure' ||
@@ -1207,7 +1286,7 @@ jobs:
         needs.camunda-docker.result == 'failure' ||
         needs.snyk.result == 'failure' ||
         needs.fossa-release.result == 'failure'
-        ) && !inputs.dryRun && !inputs.releaseProcessDryRun }}
+        ) }}
     timeout-minutes: 5
     permissions: {}  # GITHUB_TOKEN unused in this job
     steps:
@@ -1222,9 +1301,24 @@ jobs:
           exportEnv: false # we rely on step outputs, no need for environment variables
           secrets: |
             secret/data/products/camunda/ci/github-actions SLACK_TOPMONOREPORELEASE_WEBHOOK_URL;
+            secret/data/products/camunda/ci/monorepo-release CLIENT_CONFIG | clientConfig
 
+      - name: Report release failure to C8
+        continue-on-error: true
+        uses: camunda-community-hub/camunda-platform-8-github-action@0fe490e4cf6f0cf59a5c86a127c4354b4b1fc3b7 # 8.3.0
+        with:
+          clientConfig: ${{ steps.secrets.outputs.clientConfig }}
+          operation: publishMessage
+          messageName: Release result in Camunda
+          correlationKey: ${{ inputs.releaseVersion }}
+          variables: |
+            {
+              "is_camunda_release_successful": "false",
+              "camunda_workflow_run_url": "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+            }            
       - name: Send failure Slack notification
-        uses: slackapi/slack-github-action@91efab103c0de0a537f72a35f6b8cda0ee76bf0a # v2.1.1
+        if: ${{ !inputs.dryRun && !inputs.releaseProcessDryRun }}
+        uses: slackapi/slack-github-action@af78098f536edbc4de71162a307590698245be95 # v3.0.1
         with:
           webhook: ${{ steps.secrets.outputs.SLACK_TOPMONOREPORELEASE_WEBHOOK_URL }}
           webhook-type: incoming-webhook

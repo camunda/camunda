@@ -24,7 +24,7 @@ const TenantField: React.FC<Props> = observer(({onChange}) => {
   const items = ['all', ...(tenants?.map(({tenantId}) => tenantId) ?? [])];
 
   return (
-    <Field name="tenant">
+    <Field name="tenantId">
       {({input}) => {
         return (
           <Dropdown
@@ -32,7 +32,7 @@ const TenantField: React.FC<Props> = observer(({onChange}) => {
             aria-label="Select a tenant"
             titleText="Tenant"
             hideLabel
-            id="tenant"
+            id="tenantId"
             onChange={({selectedItem}) => {
               input.onChange(selectedItem);
               onChange?.(selectedItem);

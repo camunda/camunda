@@ -85,6 +85,14 @@ public class RdbmsHistory {
   /** The default time to live for usage metrics. Specified in Java Duration format. */
   private Duration usageMetricsTTL = RdbmsWriterConfig.HistoryConfig.DEFAULT_USAGE_METRICS_TTL;
 
+  /**
+   * Max average percentage usage of the exporter for history cleanup. E.g. with the default value
+   * of {@code 0.25} (25%), the cleanup will use at most 25% of the total exporter time on average.
+   * A value of {@code 0.5} means the cleanup may use up to 50% of the exporter time.
+   */
+  private double maxHistoryCleanupUsage =
+      RdbmsWriterConfig.HistoryConfig.DEFAULT_MAX_HISTORY_CLEANUP_USAGE;
+
   public Integer getHistoryCleanupBatchSize() {
     return historyCleanupBatchSize;
   }
@@ -195,5 +203,13 @@ public class RdbmsHistory {
   public void setHistoryCleanupProcessInstanceBatchSize(
       final Integer historyCleanupProcessInstanceBatchSize) {
     this.historyCleanupProcessInstanceBatchSize = historyCleanupProcessInstanceBatchSize;
+  }
+
+  public double getMaxHistoryCleanupUsage() {
+    return maxHistoryCleanupUsage;
+  }
+
+  public void setMaxHistoryCleanupUsage(final double maxHistoryCleanupUsage) {
+    this.maxHistoryCleanupUsage = maxHistoryCleanupUsage;
   }
 }

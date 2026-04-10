@@ -116,13 +116,13 @@ public class DeleteDecisionInstanceHistoryAuthorizationIT {
       @Authenticated(UNAUTHORIZED_USER) final CamundaClient camundaClient,
       @Authenticated final CamundaClient adminClient) {
     // given
-    final var decisionInstanceKey =
+    final var decisionEvaluationKey =
         evaluateDecision(adminClient, decisionKey, "{}").getDecisionEvaluationKey();
-    waitForDecisionInstanceCount(adminClient, f -> f.decisionInstanceKey(decisionInstanceKey), 1);
+    waitForDecisionInstanceCount(adminClient, f -> f.decisionInstanceKey(decisionEvaluationKey), 1);
 
     // when
     final ThrowingCallable executeDelete =
-        () -> camundaClient.newDeleteDecisionInstanceCommand(decisionInstanceKey).send().join();
+        () -> camundaClient.newDeleteDecisionInstanceCommand(decisionEvaluationKey).send().join();
 
     // then
     final var problemException =

@@ -16,12 +16,13 @@
 package io.camunda.process.test.api.assertions;
 
 import io.camunda.process.test.api.judge.JudgeConfig;
+import io.camunda.process.test.api.similarity.SemanticSimilarityConfig;
 import java.util.Map;
 import java.util.function.UnaryOperator;
 import org.assertj.core.api.ThrowingConsumer;
 
 /** The assertion object to verify a process instance. */
-public interface ProcessInstanceAssert {
+public interface ProcessInstanceAssert extends WithAssertionConfiguration<ProcessInstanceAssert> {
 
   /**
    * Verifies that the process instance is active. The verification fails if the process instance is
@@ -352,6 +353,19 @@ public interface ProcessInstanceAssert {
   ProcessInstanceAssert hasVariable(String variableName, Object variableValue);
 
   /**
+   * Verifies that the process instance has the variable matching the selector with the given value.
+   * The verification fails if no variable matches or has a different value.
+   *
+   * <p>The assertion waits until a matching variable exists and has the given value.
+   *
+   * @param variableSelector the selector to identify the variable
+   * @param variableValue the variable value
+   * @return the assertion object
+   * @see VariableSelectors
+   */
+  ProcessInstanceAssert hasVariable(VariableSelector variableSelector, Object variableValue);
+
+  /**
    * Verifies that the given BPMN element has the local variable with the specified value. Local
    * variables are scoped to the element and do not appear in the parent scope. The verification
    * fails if the variable doesn't exist or has a different value.
@@ -383,6 +397,23 @@ public interface ProcessInstanceAssert {
       ElementSelector selector, String variableName, Object variableValue);
 
   /**
+   * Verifies that the given BPMN element has the local variable matching the variable selector with
+   * the specified value. Local variables are scoped to the element and do not appear in the parent
+   * scope. The verification fails if no variable matches or has a different value.
+   *
+   * <p>The assertion waits until a matching variable exists and has the given value.
+   *
+   * @param elementSelector the selector for the BPMN element
+   * @param variableSelector the selector to identify the variable
+   * @param variableValue the variable value
+   * @return the assertion object
+   * @see ElementSelectors
+   * @see VariableSelectors
+   */
+  ProcessInstanceAssert hasLocalVariable(
+      ElementSelector elementSelector, VariableSelector variableSelector, Object variableValue);
+
+  /**
    * Verifies that the process instance has a variable with a value that satisfies the given
    * requirements expressed as a {@link ThrowingConsumer}. It can be used to verify a complex object
    * partially with multiple grouped assertions. The verification fails if the variable doesn't
@@ -398,6 +429,26 @@ public interface ProcessInstanceAssert {
    */
   <T> ProcessInstanceAssert hasVariableSatisfies(
       String variableName, final Class<T> variableValueType, final ThrowingConsumer<T> requirement);
+
+  /**
+   * Verifies that the process instance has a variable matching the selector with a value that
+   * satisfies the given requirements expressed as a {@link ThrowingConsumer}. The verification
+   * fails if no variable matches or the value doesn't satisfy the requirements.
+   *
+   * <p>The assertion waits until a matching variable exists and the value satisfies the
+   * requirements.
+   *
+   * @param variableSelector the selector to identify the variable
+   * @param variableValueType the variable value's deserialization type, can be a JsonNode or Map
+   *     for a generic variable
+   * @param requirement the requirement that the variable must satisfy
+   * @return the assertion object
+   * @see VariableSelectors
+   */
+  <T> ProcessInstanceAssert hasVariableSatisfies(
+      VariableSelector variableSelector,
+      Class<T> variableValueType,
+      ThrowingConsumer<T> requirement);
 
   /**
    * Verifies that the process instance has a local variable with a value that satisfies the given
@@ -428,7 +479,8 @@ public interface ProcessInstanceAssert {
    *
    * <p>The assertion waits until the variable exists and the value satisfies the requirements.
    *
-   * @param selector the {@see ElementSelector} for the BPMN element the variable is associated with
+   * @param selector the {@link ElementSelector} for the BPMN element the variable is associated
+   *     with
    * @param variableName the variable name
    * @param variableValueType the variable value's deserialization type, can be a JsonNode or Map
    *     for a generic variable
@@ -438,6 +490,29 @@ public interface ProcessInstanceAssert {
   <T> ProcessInstanceAssert hasLocalVariableSatisfies(
       ElementSelector selector,
       String variableName,
+      Class<T> variableValueType,
+      ThrowingConsumer<T> requirement);
+
+  /**
+   * Verifies that the process instance has a local variable matching the variable selector with a
+   * value that satisfies the given requirements expressed as a {@link ThrowingConsumer}. The
+   * verification fails if no variable matches or the value doesn't satisfy the requirements.
+   *
+   * <p>The assertion waits until a matching variable exists and the value satisfies the
+   * requirements.
+   *
+   * @param elementSelector the {@link ElementSelector} for the BPMN element the variable is
+   *     associated with
+   * @param variableSelector the selector to identify the variable
+   * @param variableValueType the variable value's deserialization type, can be a JsonNode or Map
+   *     for a generic variable
+   * @param requirement the requirement that the variable must satisfy
+   * @return the assertion object
+   * @see VariableSelectors
+   */
+  <T> ProcessInstanceAssert hasLocalVariableSatisfies(
+      ElementSelector elementSelector,
+      VariableSelector variableSelector,
       Class<T> variableValueType,
       ThrowingConsumer<T> requirement);
 
@@ -596,6 +671,20 @@ public interface ProcessInstanceAssert {
   ProcessInstanceAssert hasVariableSatisfiesJudge(String variableName, String expectation);
 
   /**
+   * Verifies that a process variable matching the selector satisfies a natural language expectation
+   * using an LLM judge. Uses the threshold from the configured {@link JudgeConfig}.
+   *
+   * <p>The assertion waits until a matching variable exists, then runs the judge evaluation once.
+   *
+   * @param variableSelector the selector to identify the variable
+   * @param expectation the natural language expectation
+   * @return the assertion object
+   * @see VariableSelectors
+   */
+  ProcessInstanceAssert hasVariableSatisfiesJudge(
+      VariableSelector variableSelector, String expectation);
+
+  /**
    * Verifies that a local variable's value satisfies a natural language expectation using an LLM
    * judge. Uses the threshold from the configured {@link JudgeConfig}.
    *
@@ -623,4 +712,116 @@ public interface ProcessInstanceAssert {
    */
   ProcessInstanceAssert hasLocalVariableSatisfiesJudge(
       ElementSelector selector, String variableName, String expectation);
+
+  /**
+   * Verifies that a local variable matching the variable selector satisfies a natural language
+   * expectation using an LLM judge. Uses the threshold from the configured {@link JudgeConfig}.
+   *
+   * <p>The assertion waits until a matching variable exists, then runs the judge evaluation once.
+   *
+   * @param elementSelector the selector for the BPMN element
+   * @param variableSelector the selector to identify the variable
+   * @param expectation the natural language expectation
+   * @return the assertion object
+   * @see ElementSelectors
+   * @see VariableSelectors
+   */
+  ProcessInstanceAssert hasLocalVariableSatisfiesJudge(
+      ElementSelector elementSelector, VariableSelector variableSelector, String expectation);
+
+  /**
+   * Modifies the {@link SemanticSimilarityConfig} for subsequent similarity assertions in this
+   * chain using a modifier function. The global default set via {@link
+   * io.camunda.process.test.api.CamundaAssert#setSemanticSimilarityConfig(SemanticSimilarityConfig)}
+   * is not affected. Each new {@code assertThat(pi)} call starts fresh from the global default.
+   *
+   * <p>Example usage:
+   *
+   * <pre>
+   *   assertThat(pi)
+   *       .withSemanticSimilarityConfig(c -> c.withThreshold(0.9))
+   *       .hasVariableSimilarTo("result", "expected text");
+   * </pre>
+   *
+   * @param modifier a function to apply to the current similarity config; must not be null and must
+   *     not return null
+   * @return the assertion object
+   */
+  ProcessInstanceAssert withSemanticSimilarityConfig(
+      UnaryOperator<SemanticSimilarityConfig> modifier);
+
+  /**
+   * Verifies that a process variable's value is semantically similar to an expected value using
+   * text embeddings. Uses the default threshold from the configured {@link
+   * SemanticSimilarityConfig} .
+   *
+   * <p>The assertion waits until the variable exists, then evaluates semantic similarity once.
+   *
+   * @param variableName the variable name
+   * @param expectedValue the expected value to compare against
+   * @return the assertion object
+   */
+  ProcessInstanceAssert hasVariableSimilarTo(String variableName, String expectedValue);
+
+  /**
+   * Verifies that a process variable matching the selector is semantically similar to an expected
+   * value using text embeddings. Uses the threshold from the configured {@link
+   * SemanticSimilarityConfig}.
+   *
+   * <p>The assertion waits until a matching variable exists, then evaluates semantic similarity
+   * once.
+   *
+   * @param variableSelector the selector to identify the variable
+   * @param expectedValue the expected value to compare against
+   * @return the assertion object
+   * @see VariableSelectors
+   */
+  ProcessInstanceAssert hasVariableSimilarTo(
+      VariableSelector variableSelector, String expectedValue);
+
+  /**
+   * Verifies that a local variable's value is semantically similar to an expected value using text
+   * embeddings. Uses the default threshold from the configured {@link SemanticSimilarityConfig}.
+   *
+   * <p>The assertion waits until the variable exists, then evaluates semantic similarity once.
+   *
+   * @param elementId the BPMN element ID
+   * @param variableName the variable name
+   * @param expectedValue the expected value to compare against
+   * @return the assertion object
+   */
+  ProcessInstanceAssert hasLocalVariableSimilarTo(
+      String elementId, String variableName, String expectedValue);
+
+  /**
+   * Verifies that a local variable's value is semantically similar to an expected value using text
+   * embeddings. Uses the default threshold from the configured {@link SemanticSimilarityConfig}.
+   *
+   * <p>The assertion waits until the variable exists, then evaluates semantic similarity once.
+   *
+   * @param selector the selector for the BPMN element
+   * @param variableName the variable name
+   * @param expectedValue the expected value to compare against
+   * @return the assertion object
+   * @see ElementSelectors
+   */
+  ProcessInstanceAssert hasLocalVariableSimilarTo(
+      ElementSelector selector, String variableName, String expectedValue);
+
+  /**
+   * Verifies that a local variable matching the selector is semantically similar to an expected
+   * value using text embeddings. Uses the threshold from the configured {@link
+   * SemanticSimilarityConfig}.
+   *
+   * <p>The assertion waits until a matching variable exists, then evaluates semantic similarity
+   * once.
+   *
+   * @param elementSelector the selector for the BPMN element
+   * @param variableSelector the selector to identify the variable
+   * @param expectedValue the expected value to compare against
+   * @return the assertion object
+   * @see VariableSelectors
+   */
+  ProcessInstanceAssert hasLocalVariableSimilarTo(
+      ElementSelector elementSelector, VariableSelector variableSelector, String expectedValue);
 }

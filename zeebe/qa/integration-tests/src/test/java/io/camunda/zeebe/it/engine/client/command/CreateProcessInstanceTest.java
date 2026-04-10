@@ -8,11 +8,14 @@
 package io.camunda.zeebe.it.engine.client.command;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.groups.Tuple.tuple;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.client.api.command.ClientStatusException;
 import io.camunda.client.api.command.CreateProcessInstanceCommandStep1;
+import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.response.ProcessInstanceEvent;
 import io.camunda.zeebe.it.util.ZeebeResourcesHelper;
 import io.camunda.zeebe.model.bpmn.Bpmn;
@@ -25,11 +28,14 @@ import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
+import io.grpc.Status.Code;
 import java.time.Duration;
 import java.util.Map;
 import java.util.Set;
+import org.apache.http.HttpStatus;
 import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -39,7 +45,11 @@ public final class CreateProcessInstanceTest {
 
   @TestZeebe
   private static final TestStandaloneBroker ZEEBE =
-      new TestStandaloneBroker().withRecordingExporter(true).withUnauthenticatedAccess();
+      new TestStandaloneBroker()
+          .withRecordingExporter(true)
+          .withUnauthenticatedAccess()
+          .withUnifiedConfig(
+              c -> c.getProcessInstanceCreation().setBusinessIdUniquenessEnabled(true));
 
   @AutoClose CamundaClient client;
   ZeebeResourcesHelper resourcesHelper;
@@ -129,7 +139,16 @@ public final class CreateProcessInstanceTest {
             .withInstanceKey(event.getProcessInstanceKey())
             .getFirst();
 
-    assertThat(createdEvent.getValue().getVariables()).containsExactlyEntriesOf(variables);
+    assertThat(createdEvent.getValue().getVariables()).isEmpty();
+
+    final var variableRecord =
+        RecordingExporter.variableRecords()
+            .withProcessInstanceKey(event.getProcessInstanceKey())
+            .withName("foo")
+            .getFirst();
+
+    assertThat(variableRecord.getValue().getName()).isEqualTo("foo");
+    assertThat(variableRecord.getValue().getValue()).isEqualTo("123");
   }
 
   @ParameterizedTest
@@ -175,6 +194,87 @@ public final class CreateProcessInstanceTest {
 
     // then
     assertThat(processInstance.getBusinessId()).isEqualTo("bizniz");
+  }
+
+  @Test
+  public void shouldRejectCreateWithDuplicateBusinessIdOverRest(final TestInfo testInfo) {
+    // given
+    final var useRest = true;
+    final var testName = testInfo.getTestMethod().orElseThrow().getName();
+    final var processId = "proces_" + testName;
+    final var businessId = "business_" + testName;
+    resourcesHelper.deployProcess(
+        Bpmn.createExecutableProcess(processId)
+            .startEvent()
+            .serviceTask("task", t -> t.zeebeJobType("job_" + testName))
+            .done(),
+        useRest);
+
+    getCommand(client, useRest)
+        .bpmnProcessId(processId)
+        .latestVersion()
+        .businessId(businessId)
+        .send()
+        .join();
+
+    // when / then
+    assertThatExceptionOfType(ProblemException.class)
+        .isThrownBy(
+            () ->
+                getCommand(client, useRest)
+                    .bpmnProcessId(processId)
+                    .latestVersion()
+                    .businessId(businessId)
+                    .send()
+                    .join())
+        .satisfies(
+            ex -> {
+              assertThat(ex.details().getStatus()).isEqualTo(HttpStatus.SC_CONFLICT);
+              assertThat(ex.details().getTitle()).isEqualTo("ALREADY_EXISTS");
+              assertThat(ex.details().getDetail())
+                  .contains("business id '" + businessId + "'")
+                  .contains("process definition '" + processId + "'");
+            });
+  }
+
+  @Test
+  public void shouldRejectCreateWithDuplicateBusinessIdOverGrpc(final TestInfo testInfo) {
+    // given
+    final var useRest = false;
+    final var testName = testInfo.getTestMethod().orElseThrow().getName();
+    final var processId = "proces_" + testName;
+    final var businessId = "business_" + testName;
+    resourcesHelper.deployProcess(
+        Bpmn.createExecutableProcess(processId)
+            .startEvent()
+            .serviceTask("task", t -> t.zeebeJobType("job_" + testName))
+            .done(),
+        useRest);
+
+    getCommand(client, useRest)
+        .bpmnProcessId(processId)
+        .latestVersion()
+        .businessId(businessId)
+        .send()
+        .join();
+
+    // when / then
+    assertThatExceptionOfType(ClientStatusException.class)
+        .isThrownBy(
+            () ->
+                getCommand(client, useRest)
+                    .bpmnProcessId(processId)
+                    .latestVersion()
+                    .businessId(businessId)
+                    .send()
+                    .join())
+        .satisfies(
+            ex -> {
+              assertThat(ex.getStatusCode()).isEqualTo(Code.ALREADY_EXISTS);
+              assertThat(ex.getMessage())
+                  .contains("business id '" + businessId + "'")
+                  .contains("process definition '" + processId + "'");
+            });
   }
 
   @ParameterizedTest
@@ -246,7 +346,15 @@ public final class CreateProcessInstanceTest {
             .withInstanceKey(event.getProcessInstanceKey())
             .getFirst();
 
-    assertThat(createdEvent.getValue().getVariables()).containsExactlyEntriesOf(Map.of(key, value));
+    assertThat(createdEvent.getValue().getVariables()).isEmpty();
+
+    final var variableRecord =
+        RecordingExporter.variableRecords()
+            .withScopeKey(event.getProcessInstanceKey())
+            .withName(key)
+            .getFirst();
+
+    assertThat(variableRecord.getValue().getName()).isEqualTo(key);
   }
 
   @ParameterizedTest

@@ -54,8 +54,8 @@ describe('useBatchModificationOverlayData', () => {
         useBatchModificationOverlayData(
           {},
           {
-            sourceFlowNodeId: 'messageCatchEvent',
-            targetFlowNodeId: 'targetNode',
+            sourceElementId: 'messageCatchEvent',
+            targetElementId: 'targetNode',
           },
           'process1',
         ),
@@ -76,7 +76,7 @@ describe('useBatchModificationOverlayData', () => {
       () =>
         useBatchModificationOverlayData(
           {},
-          {sourceFlowNodeId: 'sourceNode', targetFlowNodeId: 'targetNode'},
+          {sourceElementId: 'sourceNode', targetElementId: 'targetNode'},
           'process1',
         ),
       {
@@ -98,7 +98,7 @@ describe('useBatchModificationOverlayData', () => {
       () =>
         useBatchModificationOverlayData(
           {},
-          {sourceFlowNodeId: 'sourceNode', targetFlowNodeId: 'targetNode'},
+          {sourceElementId: 'sourceNode', targetElementId: 'targetNode'},
           'process1',
         ),
       {
@@ -122,7 +122,7 @@ describe('useBatchModificationOverlayData', () => {
       () =>
         useBatchModificationOverlayData(
           {},
-          {sourceFlowNodeId: 'sourceNode', targetFlowNodeId: 'targetNode'},
+          {sourceElementId: 'sourceNode', targetElementId: 'targetNode'},
           'process1',
         ),
       {
@@ -144,7 +144,7 @@ describe('useBatchModificationOverlayData', () => {
       () =>
         useBatchModificationOverlayData(
           {},
-          {sourceFlowNodeId: 'sourceNode', targetFlowNodeId: 'targetNode'},
+          {sourceElementId: 'sourceNode', targetElementId: 'targetNode'},
           'process1',
         ),
       {

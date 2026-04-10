@@ -55,6 +55,29 @@ test.describe('process instance page', () => {
     await expect(page).toHaveScreenshot();
   });
 
+  test('helper modal', async ({page}) => {
+    await page.route(
+      URL_API_PATTERN,
+      mockResponses({
+        processInstanceDetail: runningInstance.detail,
+        callHierarchy: runningInstance.callHierarchy,
+        elementInstances: runningInstance.elementInstances,
+        statistics: runningInstance.statistics,
+        sequenceFlows: runningInstance.sequenceFlows,
+        variables: runningInstance.variables,
+        xml: runningInstance.xml,
+      }),
+    );
+
+    await page.goto(
+      `/operate/processes/${runningInstance.detail.processInstanceKey}`,
+    );
+
+    await expect(page.getByText("Here's what moved in Operate")).toBeVisible();
+
+    await expect(page).toHaveScreenshot();
+  });
+
   test('running instance', async ({page, processInstancePage}) => {
     await page.route(
       URL_API_PATTERN,
@@ -129,9 +152,10 @@ test.describe('process instance page', () => {
 
     await page
       .getByRole('button', {
-        name: /edit variable/i,
+        name: /edit/i,
       })
       .click();
+    await processInstancePage.variablesEditor.waitForEditorToLoad();
 
     await expect(page).toHaveScreenshot();
   });
@@ -159,11 +183,42 @@ test.describe('process instance page', () => {
     await page.waitForTimeout(500);
     await expect(page.getByTestId(/^state-overlay/)).toHaveText('1');
 
-    await page
-      .getByRole('button', {
-        name: /view 1 incident in instance/i,
-      })
-      .click();
+    await page.getByRole('link', {name: 'Incidents'}).click();
+
+    await expect(page).toHaveScreenshot();
+  });
+
+  test('instance with incident expanded row', async ({
+    page,
+    processInstancePage,
+  }) => {
+    await page.route(
+      URL_API_PATTERN,
+      mockResponses({
+        processInstanceDetail: instanceWithIncident.detail,
+        callHierarchy: instanceWithIncident.callHierarchy,
+        elementInstances: instanceWithIncident.elementInstances,
+        statistics: instanceWithIncident.statistics,
+        sequenceFlows: instanceWithIncident.sequenceFlows,
+        variables: instanceWithIncident.variables,
+        xml: instanceWithIncident.xml,
+        incidents: instanceWithIncident.incidents,
+      }),
+    );
+
+    await processInstancePage.gotoProcessInstancePage({
+      key: instanceWithIncident.detail.processInstanceKey,
+    });
+
+    await processInstancePage.resetZoomButton.click();
+    await page.waitForTimeout(500);
+    await expect(page.getByTestId(/^state-overlay/)).toHaveText('1');
+
+    await page.getByRole('link', {name: 'Incidents'}).click();
+
+    await page.getByRole('button', {name: /expand current row/i}).click();
+    await expect(page.getByText('Job ID')).toBeVisible();
+    await expect(page.getByText('Error message')).toBeVisible();
 
     await expect(page).toHaveScreenshot();
   });

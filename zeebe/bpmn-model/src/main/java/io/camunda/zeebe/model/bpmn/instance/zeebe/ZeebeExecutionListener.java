@@ -32,4 +32,8 @@ public interface ZeebeExecutionListener extends BpmnModelElementInstance {
   String getRetries();
 
   void setRetries(String retries);
+
+  ZeebeTaskHeaders getTaskHeaders();
+
+  void setTaskHeaders(ZeebeTaskHeaders taskHeaders);
 }

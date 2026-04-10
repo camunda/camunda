@@ -33,7 +33,7 @@ const localStorageKey = 'hideMoveModificationHelperModal';
 
 const MoveAction: React.FC = observer(() => {
   const location = useLocation();
-  const {flowNodeId: elementId} = getProcessInstanceFilters(location.search);
+  const {elementId} = getProcessInstanceFilters(location.search);
 
   const {hasSelectedRunningInstances} = processInstancesSelectionStore;
 

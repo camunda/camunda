@@ -1152,7 +1152,14 @@ public final class SearchQueryResponseMapper {
   private static Map<String, String> toCamundaUserResultC8Links(
       final Map<AppName, String> c8Links) {
     return c8Links.entrySet().stream()
-        .collect(toMap(e -> e.getKey().getValue(), Map.Entry::getValue, (v1, v2) -> v1));
+        .collect(
+            toMap(
+                e -> {
+                  final AppName appName = e.getKey();
+                  return appName == AppName.IDENTITY ? "admin" : appName.getValue();
+                },
+                Map.Entry::getValue,
+                (v1, v2) -> v1));
   }
 
   private static List<DecisionInstanceResult> toDecisionInstances(
@@ -1457,7 +1464,6 @@ public final class SearchQueryResponseMapper {
                 .map(Enum::name)
                 .map(AuditLogResultEnum::fromValue)
                 .orElse(null))
-        .annotation(auditLog.annotation())
         .category(
             ofNullable(auditLog.category())
                 .map(Enum::name)

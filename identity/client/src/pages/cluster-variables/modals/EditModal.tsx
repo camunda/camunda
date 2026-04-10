@@ -15,7 +15,7 @@ import JSONEditor from "src/components/form/JSONEditor.tsx";
 import { useApiCall } from "src/utility/api";
 import { updateClusterVariable } from "src/utility/api/cluster-variables";
 import { useNotifications } from "src/components/notifications";
-import type { ClusterVariable } from "@camunda/camunda-api-zod-schemas/8.9";
+import type { ClusterVariable } from "@camunda/camunda-api-zod-schemas/8.10";
 
 type FormData = {
   value: string;

@@ -12,11 +12,10 @@ import {notificationsStore} from 'modules/stores/notifications';
 import {tracking} from 'modules/tracking';
 import {Locations} from 'modules/Routes';
 import {queryKeys} from 'modules/queries/queryKeys';
-import type {OperationEntityType} from 'modules/types/operate';
-import {IS_NEW_PROCESS_INSTANCE_PAGE} from 'modules/feature-flags';
+import type {BatchOperationType} from '@camunda/camunda-api-zod-schemas/8.10';
 
 type HandleOperationSuccessOptions = {
-  operationType: OperationEntityType;
+  operationType: BatchOperationType;
   source: 'instances-list' | 'instance-header';
   onInvalidateQueries?: () => void;
 };
@@ -63,7 +62,6 @@ function useHandleOperationSuccess() {
     }
 
     if (
-      IS_NEW_PROCESS_INSTANCE_PAGE &&
       operationType === 'CANCEL_PROCESS_INSTANCE' &&
       source === 'instance-header'
     ) {
@@ -74,11 +72,7 @@ function useHandleOperationSuccess() {
       });
     }
 
-    if (
-      IS_NEW_PROCESS_INSTANCE_PAGE &&
-      operationType === 'RESOLVE_INCIDENT' &&
-      source === 'instance-header'
-    ) {
+    if (operationType === 'RESOLVE_INCIDENT' && source === 'instance-header') {
       notificationsStore.displayNotification({
         kind: 'info',
         title: 'Incidents are scheduled for retry',

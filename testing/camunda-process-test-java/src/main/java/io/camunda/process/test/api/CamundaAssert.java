@@ -29,15 +29,19 @@ import io.camunda.process.test.api.assertions.ProcessInstanceAssert;
 import io.camunda.process.test.api.assertions.ProcessInstanceSelector;
 import io.camunda.process.test.api.assertions.UserTaskAssert;
 import io.camunda.process.test.api.assertions.UserTaskSelector;
+import io.camunda.process.test.api.assertions.ValueAssert;
 import io.camunda.process.test.api.judge.JudgeConfig;
+import io.camunda.process.test.api.similarity.SemanticSimilarityConfig;
 import io.camunda.process.test.impl.assertions.CamundaDataSource;
 import io.camunda.process.test.impl.assertions.DecisionInstanceAssertj;
 import io.camunda.process.test.impl.assertions.ProcessInstanceAssertj;
 import io.camunda.process.test.impl.assertions.UserTaskAssertj;
+import io.camunda.process.test.impl.assertions.ValueAssertj;
 import io.camunda.process.test.impl.assertions.util.AwaitilityBehavior;
 import io.camunda.process.test.impl.assertions.util.CamundaAssertJsonMapper;
 import java.time.Duration;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 /**
  * The entry point for all assertions.
@@ -49,7 +53,7 @@ import java.util.function.Function;
  *   void shouldWork() {
  *     // given
  *     final ProcessInstanceEvent processInstance =
- *         zeebeClient
+ *         camundaClient
  *             .newCreateInstanceCommand()
  *             .bpmnProcessId("process")
  *             .latestVersion()
@@ -85,6 +89,8 @@ public class CamundaAssert {
   public static final JsonMapper DEFAULT_JSON_MAPPER = new CamundaObjectMapper();
 
   private static final ThreadLocal<CamundaDataSource> DATA_SOURCE = new ThreadLocal<>();
+  private static final ThreadLocal<CamundaAssertAwaitBehavior> AWAIT_BEHAVIOR_OVERRIDE =
+      new ThreadLocal<>();
 
   private static Function<String, ElementSelector> elementSelector = DEFAULT_ELEMENT_SELECTOR;
 
@@ -94,6 +100,8 @@ public class CamundaAssert {
       new CamundaAssertJsonMapper(DEFAULT_JSON_MAPPER);
 
   private static JudgeConfig judgeConfig;
+
+  private static SemanticSimilarityConfig semanticSimilarityConfig;
 
   static {
     setAssertionTimeout(DEFAULT_ASSERTION_TIMEOUT);
@@ -133,7 +141,8 @@ public class CamundaAssert {
   }
 
   static CamundaAssertAwaitBehavior getAwaitBehavior() {
-    return awaitBehavior;
+    final CamundaAssertAwaitBehavior override = AWAIT_BEHAVIOR_OVERRIDE.get();
+    return override != null ? override : awaitBehavior;
   }
 
   /**
@@ -147,13 +156,41 @@ public class CamundaAssert {
   }
 
   /**
-   * Configures the JSON mapper for the assertions.
+   * Executes the given invocation with a thread-local override for the await behavior. Assertions
+   * created on this thread during the invocation will use the override instead of the global await
+   * behavior. The override is automatically cleared when the invocation completes.
    *
-   * @param jsonMapper the JSON mapper to use
-   * @see #DEFAULT_JSON_MAPPER
+   * @param override the behavior to use on this thread
+   * @param invocation the invocation to execute with the overridden behavior
+   * @param <T> the return type of the invocation
+   * @return the result of the invocation
    */
-  public static void setJsonMapper(final JsonMapper jsonMapper) {
-    CamundaAssert.jsonMapper = new CamundaAssertJsonMapper(jsonMapper);
+  static <T> T withAwaitBehaviorOverride(
+      final CamundaAssertAwaitBehavior override, final Supplier<T> invocation) {
+    AWAIT_BEHAVIOR_OVERRIDE.set(override);
+    try {
+      return invocation.get();
+    } finally {
+      AWAIT_BEHAVIOR_OVERRIDE.remove();
+    }
+  }
+
+  /**
+   * Executes the given runnable with a thread-local override for the await behavior. Assertions
+   * evaluated on this thread during the invocation will use the override instead of the global
+   * await behavior. The override is automatically cleared when the invocation completes.
+   *
+   * @param override the behavior to use on this thread
+   * @param invocation the runnable to execute with the overridden behavior
+   */
+  static void withAwaitBehaviorOverride(
+      final CamundaAssertAwaitBehavior override, final Runnable invocation) {
+    AWAIT_BEHAVIOR_OVERRIDE.set(override);
+    try {
+      invocation.run();
+    } finally {
+      AWAIT_BEHAVIOR_OVERRIDE.remove();
+    }
   }
 
   /**
@@ -161,10 +198,8 @@ public class CamundaAssert {
    *
    * @param jsonMapper the JSON mapper to use
    * @see #DEFAULT_JSON_MAPPER
-   * @deprecated for removal, use {@link #setJsonMapper(JsonMapper)} instead
    */
-  @Deprecated
-  public static void setJsonMapper(final io.camunda.zeebe.client.api.JsonMapper jsonMapper) {
+  public static void setJsonMapper(final JsonMapper jsonMapper) {
     CamundaAssert.jsonMapper = new CamundaAssertJsonMapper(jsonMapper);
   }
 
@@ -182,6 +217,22 @@ public class CamundaAssert {
     CamundaAssert.judgeConfig = judgeConfig;
   }
 
+  static SemanticSimilarityConfig getSemanticSimilarityConfig() {
+    return semanticSimilarityConfig;
+  }
+
+  /**
+   * Configures the embedding model for semantic similarity assertions.
+   *
+   * @param semanticSimilarityConfig the similarity configuration, or null to disable similarity
+   *     assertions
+   * @see SemanticSimilarityConfig
+   */
+  public static void setSemanticSimilarityConfig(
+      final SemanticSimilarityConfig semanticSimilarityConfig) {
+    CamundaAssert.semanticSimilarityConfig = semanticSimilarityConfig;
+  }
+
   // ======== Assertions ========
 
   /**
@@ -196,15 +247,6 @@ public class CamundaAssert {
   }
 
   /**
-   * @deprecated, for removal, use {@link #assertThatProcessInstance(ProcessInstanceEvent)} instead
-   */
-  @Deprecated
-  public static ProcessInstanceAssert assertThatProcessInstance(
-      final io.camunda.zeebe.client.api.response.ProcessInstanceEvent processInstanceEvent) {
-    return createProcessInstanceAssertj(processInstanceEvent.getProcessInstanceKey());
-  }
-
-  /**
    * To verify a process instance.
    *
    * @param processInstanceEvent the event of the process instance to verify
@@ -215,15 +257,6 @@ public class CamundaAssert {
   }
 
   /**
-   * @deprecated, for removal, use {@link #assertThatProcessInstance(ProcessInstanceEvent)} instead
-   */
-  @Deprecated
-  public static ProcessInstanceAssert assertThat(
-      final io.camunda.zeebe.client.api.response.ProcessInstanceEvent processInstanceEvent) {
-    return assertThatProcessInstance(processInstanceEvent);
-  }
-
-  /**
    * To verify a process instance.
    *
    * @param processInstanceResult the result of the process instance to verify
@@ -235,15 +268,6 @@ public class CamundaAssert {
   }
 
   /**
-   * @deprecated, for removal, use {@link #assertThatProcessInstance(ProcessInstanceResult)} instead
-   */
-  @Deprecated
-  public static ProcessInstanceAssert assertThatProcessInstance(
-      final io.camunda.zeebe.client.api.response.ProcessInstanceResult processInstanceResult) {
-    return createProcessInstanceAssertj(processInstanceResult.getProcessInstanceKey());
-  }
-
-  /**
    * To verify a process instance.
    *
    * @param processInstanceResult the result of the process instance to verify
@@ -251,15 +275,6 @@ public class CamundaAssert {
    */
   public static ProcessInstanceAssert assertThat(
       final ProcessInstanceResult processInstanceResult) {
-    return assertThatProcessInstance(processInstanceResult);
-  }
-
-  /**
-   * @deprecated, for removal, use {@link #assertThat(ProcessInstanceEvent)} instead
-   */
-  @Deprecated
-  public static ProcessInstanceAssert assertThat(
-      final io.camunda.zeebe.client.api.response.ProcessInstanceResult processInstanceResult) {
     return assertThatProcessInstance(processInstanceResult);
   }
 
@@ -274,11 +289,12 @@ public class CamundaAssert {
       final ProcessInstanceSelector processInstanceSelector) {
     return new ProcessInstanceAssertj(
         getDataSource(),
-        awaitBehavior,
+        getAwaitBehavior(),
         jsonMapper,
         processInstanceSelector,
         elementSelector,
-        judgeConfig);
+        judgeConfig,
+        semanticSimilarityConfig);
   }
 
   /**
@@ -297,11 +313,12 @@ public class CamundaAssert {
       final long processInstanceKey) {
     return new ProcessInstanceAssertj(
         getDataSource(),
-        awaitBehavior,
+        getAwaitBehavior(),
         jsonMapper,
         processInstanceKey,
         elementSelector,
-        judgeConfig);
+        judgeConfig,
+        semanticSimilarityConfig);
   }
 
   /**
@@ -312,7 +329,7 @@ public class CamundaAssert {
    * @see io.camunda.process.test.api.assertions.UserTaskSelectors
    */
   public static UserTaskAssert assertThatUserTask(final UserTaskSelector userTaskSelector) {
-    return new UserTaskAssertj(getDataSource(), awaitBehavior, userTaskSelector);
+    return new UserTaskAssertj(getDataSource(), getAwaitBehavior(), userTaskSelector);
   }
 
   /**
@@ -335,7 +352,7 @@ public class CamundaAssert {
    */
   public static DecisionInstanceAssert assertThatDecision(final DecisionSelector decisionSelector) {
     return new DecisionInstanceAssertj(
-        getDataSource(), awaitBehavior, jsonMapper, decisionSelector);
+        getDataSource(), getAwaitBehavior(), jsonMapper, decisionSelector);
   }
 
   /**
@@ -358,7 +375,7 @@ public class CamundaAssert {
   public static DecisionInstanceAssertj assertThatDecision(
       final EvaluateDecisionResponse response) {
     return new DecisionInstanceAssertj(
-        getDataSource(), awaitBehavior, jsonMapper, DecisionSelectors.byResponse(response));
+        getDataSource(), getAwaitBehavior(), jsonMapper, DecisionSelectors.byResponse(response));
   }
 
   /**
@@ -369,6 +386,16 @@ public class CamundaAssert {
    */
   public static DecisionInstanceAssertj assertThat(final EvaluateDecisionResponse response) {
     return assertThatDecision(response);
+  }
+
+  /**
+   * To verify a raw string value.
+   *
+   * @param actual the string value to assert on
+   * @return the assertion object
+   */
+  public static ValueAssert assertThatValue(final String actual) {
+    return new ValueAssertj(actual, judgeConfig);
   }
 
   // ======== Internal ========

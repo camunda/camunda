@@ -32,6 +32,8 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 abstract class AuthenticatedMcpServerTest extends McpServerAuthenticationTest {
 
@@ -71,11 +73,12 @@ abstract class AuthenticatedMcpServerTest extends McpServerAuthenticationTest {
   protected abstract McpSyncHttpClientRequestCustomizer
       createRestrictedMcpClientRequestCustomizer();
 
-  @Test
-  void failsOnUnauthenticatedRequest() {
+  @ParameterizedTest
+  @MethodSource("mcpServersToTest")
+  void failsOnUnauthenticatedRequest(final String mcpServer) {
     assertThatThrownBy(
             () -> {
-              try (final var client = createMcpClient(testInstance(), null)) {
+              try (final var client = createMcpClient(mcpServer, testInstance(), null)) {
                 client.listTools();
               }
             })
@@ -85,14 +88,17 @@ abstract class AuthenticatedMcpServerTest extends McpServerAuthenticationTest {
 
   @Test
   void searchProcessDefinitionsReturnsAllProcessDefinitionsForUnrestrictedClient() {
-    assertThat(searchProcessDefinitionIds(mcpClient))
-        .containsExactlyInAnyOrderElementsOf(EXPECTED_UNRESTRICTED_PROCESS_DEFINITION_IDS);
+    try (final McpSyncClient mcpClient =
+        createMcpClient("cluster", testInstance(), createMcpClientRequestCustomizer())) {
+      assertThat(searchProcessDefinitionIds(mcpClient))
+          .containsExactlyInAnyOrderElementsOf(EXPECTED_UNRESTRICTED_PROCESS_DEFINITION_IDS);
+    }
   }
 
   @Test
   void searchProcessDefinitionsReturnsLimitedProcessDefinitionsForRestrictedClient() {
     try (final var restrictedClient =
-        createMcpClient(testInstance(), createRestrictedMcpClientRequestCustomizer())) {
+        createMcpClient("cluster", testInstance(), createRestrictedMcpClientRequestCustomizer())) {
       assertThat(searchProcessDefinitionIds(restrictedClient))
           .containsExactlyInAnyOrderElementsOf(EXPECTED_RESTRICTED_PROCESS_DEFINITION_IDS);
     }

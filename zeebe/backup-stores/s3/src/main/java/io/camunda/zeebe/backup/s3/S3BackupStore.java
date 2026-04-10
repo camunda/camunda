@@ -25,6 +25,7 @@ import io.camunda.zeebe.backup.common.BackupImpl;
 import io.camunda.zeebe.backup.s3.S3BackupStoreException.BackupDeletionIncomplete;
 import io.camunda.zeebe.backup.s3.S3BackupStoreException.BackupInInvalidStateException;
 import io.camunda.zeebe.backup.s3.S3BackupStoreException.BackupReadException;
+import io.camunda.zeebe.backup.s3.S3BackupStoreException.ConfigurationException;
 import io.camunda.zeebe.backup.s3.S3BackupStoreException.ManifestParseException;
 import io.camunda.zeebe.backup.s3.manifest.FileSet;
 import io.camunda.zeebe.backup.s3.manifest.Manifest;
@@ -57,6 +58,7 @@ import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.LegacyMd5Plugin;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
 import software.amazon.awssdk.services.s3.model.GetObjectResponse;
+import software.amazon.awssdk.services.s3.model.HeadBucketRequest;
 import software.amazon.awssdk.services.s3.model.NoSuchKeyException;
 import software.amazon.awssdk.services.s3.model.ObjectIdentifier;
 import software.amazon.awssdk.services.s3.model.S3Object;
@@ -346,6 +348,19 @@ public final class S3BackupStore implements BackupStore {
   public CompletableFuture<Void> closeAsync() {
     client.close();
     return CompletableFuture.completedFuture(null);
+  }
+
+  @Override
+  public CompletableFuture<Void> verifyConnection() {
+    return client
+        .headBucket(HeadBucketRequest.builder().bucket(config.bucketName()).build())
+        .whenCompleteAsync(
+            (ignore, err) -> {
+              if (err != null) {
+                throw new ConfigurationException("Failed to connect to S3", err);
+              }
+            })
+        .thenApply(ignore -> null);
   }
 
   private String backupMetadataKey(final int partitionId) {

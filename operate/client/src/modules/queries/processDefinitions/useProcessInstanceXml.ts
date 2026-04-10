@@ -20,7 +20,7 @@ type ExtendedParsedXmlData = ParsedXmlData & {
 function processInstanceXmlParser({
   xml,
   diagramModel,
-  selectableFlowNodes,
+  selectableElements,
 }: ParsedXmlData) {
   const businessObjects = businessObjectsParser({
     diagramModel,
@@ -29,7 +29,7 @@ function processInstanceXmlParser({
   return {
     xml,
     diagramModel,
-    selectableFlowNodes,
+    selectableElements,
     businessObjects,
   };
 }

@@ -135,8 +135,8 @@ paths:
     $ref: 'decision-instances.yaml#/paths/~1decision-instances~1search'
   /decision-instances/{decisionEvaluationInstanceKey}:
     $ref: 'decision-instances.yaml#/paths/~1decision-instances~1{decisionEvaluationInstanceKey}'
-  /decision-instances/{decisionInstanceKey}/deletion:
-    $ref: 'decision-instances.yaml#/paths/~1decision-instances~1{decisionInstanceKey}~1deletion'
+  /decision-instances/{decisionEvaluationKey}/deletion:
+    $ref: 'decision-instances.yaml#/paths/~1decision-instances~1{decisionEvaluationKey}~1deletion'
   /decision-instances/deletion:
     $ref: 'decision-instances.yaml#/paths/~1decision-instances~1deletion'
 
@@ -423,6 +423,8 @@ paths:
     $ref: 'user-tasks.yaml#/paths/~1user-tasks~1{userTaskKey}~1audit-logs~1search'
   /user-tasks/{userTaskKey}/completion:
     $ref: 'user-tasks.yaml#/paths/~1user-tasks~1{userTaskKey}~1completion'
+  /user-tasks/{userTaskKey}/effective-variables/search:
+    $ref: 'user-tasks.yaml#/paths/~1user-tasks~1{userTaskKey}~1effective-variables~1search'
   /user-tasks/{userTaskKey}/form:
     $ref: 'user-tasks.yaml#/paths/~1user-tasks~1{userTaskKey}~1form'
   /user-tasks/{userTaskKey}/variables/search:

@@ -11,7 +11,7 @@ import {mockSearchElementInstances} from 'modules/mocks/api/v2/elementInstances/
 import type {
   ElementInstance,
   QueryElementInstancesResponseBody,
-} from '@camunda/camunda-api-zod-schemas/8.9';
+} from '@camunda/camunda-api-zod-schemas/8.10';
 import {waitFor} from '@testing-library/react';
 
 const mockProcessInstanceKey = '2251799813685625';
@@ -246,6 +246,36 @@ describe('elementInstancesTreeStore', () => {
       },
       status: 'error',
     });
+  });
+
+  it('should set status to error-permissions when expansion fails with forbidden', async () => {
+    mockSearchElementInstances().withServerError(403);
+
+    await elementInstancesTreeStore.expandNode(mockChildScopeKey1);
+
+    const nodeData =
+      elementInstancesTreeStore.state.nodes.get(mockChildScopeKey1);
+
+    expect(nodeData?.status).toBe('error-permissions');
+  });
+
+  it('should clear error-permissions status after successful fetch', async () => {
+    mockSearchElementInstances().withServerError(403);
+    await elementInstancesTreeStore.expandNode(mockChildScopeKey1);
+
+    expect(
+      elementInstancesTreeStore.state.nodes.get(mockChildScopeKey1)?.status,
+    ).toBe('error-permissions');
+
+    elementInstancesTreeStore.collapseNode(mockChildScopeKey1);
+
+    mockSearchElementInstances().withSuccess(mockChildResponse);
+    await elementInstancesTreeStore.expandNode(mockChildScopeKey1);
+
+    const nodeData =
+      elementInstancesTreeStore.state.nodes.get(mockChildScopeKey1);
+
+    expect(nodeData?.status).toBe('loaded');
   });
 
   it('should collapse node and remove from expandedNodes set', async () => {
@@ -1003,6 +1033,64 @@ describe('elementInstancesTreeStore', () => {
     expect(updatedNodeData?.pageMetadata.totalItems).toBe(151);
     expect(updatedNodeData?.items).toHaveLength(101);
     expect(updatedNodeData?.items[100].elementId).toBe('new_task');
+
+    vi.useRealTimers();
+  });
+
+  it('should stop polling when poll encounters a 403 forbidden error', async () => {
+    vi.useFakeTimers({shouldAdvanceTime: true});
+
+    mockSearchElementInstances().withSuccess(mockFirstPageResponse);
+
+    await elementInstancesTreeStore.setRootNode(mockProcessInstanceKey, {
+      enablePolling: true,
+    });
+
+    expect(elementInstancesTreeStore.intervalId).not.toBe(null);
+
+    mockSearchElementInstances().withServerError(403);
+
+    vi.advanceTimersByTime(5000);
+
+    await waitFor(() => {
+      expect(elementInstancesTreeStore.isPollRequestRunning).toBe(false);
+    });
+
+    expect(elementInstancesTreeStore.intervalId).toBe(null);
+
+    const nodeData = elementInstancesTreeStore.state.nodes.get(
+      mockProcessInstanceKey,
+    );
+    expect(nodeData?.status).toBe('error-permissions');
+
+    vi.useRealTimers();
+  });
+
+  it('should continue polling when poll encounters a non-403 error', async () => {
+    vi.useFakeTimers({shouldAdvanceTime: true});
+
+    mockSearchElementInstances().withSuccess(mockFirstPageResponse);
+
+    await elementInstancesTreeStore.setRootNode(mockProcessInstanceKey, {
+      enablePolling: true,
+    });
+
+    expect(elementInstancesTreeStore.intervalId).not.toBe(null);
+
+    mockSearchElementInstances().withServerError(500);
+
+    vi.advanceTimersByTime(5000);
+
+    await waitFor(() => {
+      expect(elementInstancesTreeStore.isPollRequestRunning).toBe(false);
+    });
+
+    expect(elementInstancesTreeStore.intervalId).not.toBe(null);
+
+    const nodeData = elementInstancesTreeStore.state.nodes.get(
+      mockProcessInstanceKey,
+    );
+    expect(nodeData?.status).toBe('error');
 
     vi.useRealTimers();
   });

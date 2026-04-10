@@ -64,9 +64,9 @@ describe('Filters', () => {
     );
 
     const MOCK_PARAMS = {
-      process: 'bigVarProcess',
-      version: '1',
-      tenant: '<tenant-A>',
+      processDefinitionId: 'bigVarProcess',
+      processDefinitionVersion: '1',
+      tenantId: '<tenant-A>',
     } as const;
 
     render(<Filters />, {
@@ -99,20 +99,20 @@ describe('Filters', () => {
 
   it('should hide multi tenancy filter if its not enabled in client config', async () => {
     const MOCK_PARAMS = {
-      process: 'bigVarProcess',
-      version: '1',
-      ids: '2251799813685467',
-      parentInstanceId: '1954699813693756',
+      processDefinitionId: 'bigVarProcess',
+      processDefinitionVersion: '1',
+      processInstanceKey: '2251799813685467',
+      parentProcessInstanceKey: '1954699813693756',
       errorMessage: 'a random error',
-      flowNodeId: 'ServiceTask_0kt6c5i',
+      elementId: 'ServiceTask_0kt6c5i',
       variableName: 'foo',
       variableValue: 'bar',
-      operationId: '2f5b1beb-cbeb-41c8-a2f0-4c0bcf76c4ee',
+      batchOperationId: '2f5b1beb-cbeb-41c8-a2f0-4c0bcf76c4ee',
       active: 'true',
       incidents: 'true',
       completed: 'true',
       canceled: 'true',
-      tenant: '<tenant-A>',
+      tenantId: '<tenant-A>',
     } as const;
 
     render(<Filters />, {
@@ -140,9 +140,9 @@ describe('Filters', () => {
     mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
 
     const MOCK_VALUES = {
-      process: 'bigVarProcess',
-      version: '2',
-      tenant: '<tenant-A>',
+      processDefinitionId: 'bigVarProcess',
+      processDefinitionVersion: '2',
+      tenantId: '<tenant-A>',
     } as const;
     const {user} = render(<Filters />, {
       wrapper: getWrapper(),
@@ -168,7 +168,7 @@ describe('Filters', () => {
         ),
       ).toEqual(
         expect.objectContaining({
-          tenant: 'all',
+          tenantId: 'all',
         }),
       ),
     );

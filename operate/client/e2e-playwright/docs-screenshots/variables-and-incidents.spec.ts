@@ -93,8 +93,8 @@ test.describe('variables and incidents', () => {
       searchParams: {
         active: 'true',
         incidents: 'true',
-        process: 'order-process',
-        version: '1',
+        processDefinitionId: 'order-process',
+        processDefinitionVersion: '1',
       },
     });
 
@@ -126,17 +126,7 @@ test.describe('variables and incidents', () => {
       key: '2251799813725328',
     });
 
-    await expect(
-      page.getByRole('button', {
-        name: /view 1 incident in instance/i,
-      }),
-    ).toBeVisible();
-
-    await page
-      .getByRole('button', {
-        name: /view 1 incident in instance/i,
-      })
-      .click();
+    await page.getByRole('link', {name: 'Incidents'}).click();
 
     await expect(
       page.getByRole('combobox', {
@@ -148,8 +138,11 @@ test.describe('variables and incidents', () => {
       path: 'e2e-playwright/docs-screenshots/variables-and-incidents/operate-view-instance-incident.png',
     });
 
-    const editVariableButton = await page.getByRole('button', {
-      name: 'Edit variable orderValue',
+    await page.getByRole('link', {name: 'Variables'}).click();
+
+    const row = page.getByRole('row', {name: /orderValue/});
+    const editVariableButton = row.getByRole('button', {
+      name: 'Edit',
     });
 
     await commonPage.addUpArrow(editVariableButton);
@@ -162,14 +155,16 @@ test.describe('variables and incidents', () => {
 
     await editVariableButton.click();
 
-    const editableField = page.getByRole('textbox', {
-      name: /value/i,
-    });
-    await editableField.clear();
-    await editableField.fill('99');
+    await processInstancePage.variablesEditor
+      .getEditor('orderValue')
+      .click();
+    await processInstancePage.variablesEditor.waitForEditorToLoad();
+
+    await processInstancePage.variablesEditor.clear();
+    await processInstancePage.variablesEditor.fill('99');
 
     const saveVariableButton = await page.getByRole('button', {
-      name: 'Save variable',
+      name: 'Save',
     });
 
     await expect(saveVariableButton).toBeEnabled();
@@ -200,17 +195,7 @@ test.describe('variables and incidents', () => {
       key: '2251799813725328',
     });
 
-    await expect(
-      page.getByRole('button', {
-        name: /view 1 incident in instance/i,
-      }),
-    ).toBeVisible();
-
-    await page
-      .getByRole('button', {
-        name: /view 1 incident in instance/i,
-      })
-      .click();
+    await page.getByRole('link', {name: 'Incidents'}).click();
 
     await expect(
       page.getByRole('combobox', {

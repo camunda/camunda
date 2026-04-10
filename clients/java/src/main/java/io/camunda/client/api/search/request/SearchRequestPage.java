@@ -15,6 +15,17 @@
  */
 package io.camunda.client.api.search.request;
 
+/**
+ * @deprecated Replaced by {@link io.camunda.client.api.search.page.AnyPage} and the other typed
+ *     pagination models in the {@link io.camunda.client.api.search.page} package. This interface is
+ *     <b>not</b> source-compatible with the new pagination types — it cannot be passed to {@code
+ *     .page(...)} on typed search requests because it does not extend {@link
+ *     io.camunda.client.api.search.page.SearchPagination}. Use {@link
+ *     io.camunda.client.api.search.request.SearchRequestBuilders#anyPage(java.util.function.Consumer)}
+ *     (or {@code offsetPage}, {@code cursorForwardPage}, etc.) as a direct replacement. This
+ *     interface will be removed in a future release.
+ */
+@Deprecated
 public interface SearchRequestPage {
 
   /** Start the page from. */

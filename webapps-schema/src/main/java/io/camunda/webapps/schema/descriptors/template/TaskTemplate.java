@@ -52,7 +52,13 @@ public class TaskTemplate extends AbstractTemplateDescriptor
   /* Variable Fields */
   public static final String VARIABLE_NAME = "name";
   public static final String VARIABLE_VALUE = "value";
-  public static final String VARIABLE_FULL_VALUE = "fullValue";
+
+  /**
+   * @deprecated fullValue is no longer written by the exporter. Kept in the index mapping for
+   *     backward compatibility with existing documents.
+   */
+  @Deprecated public static final String VARIABLE_FULL_VALUE = "fullValue";
+
   public static final String IS_TRUNCATED = "isTruncated";
   public static final String VARIABLE_SCOPE_KEY = "scopeKey";
 

@@ -7,20 +7,21 @@ set -exo pipefail
 
 usage() {
   cat <<'EOF'
-Usage: newLoadTest.sh <namespace> [secondaryStorage] [ttl_days] [enable_optimize]
+Usage: newLoadTest.sh <namespace> [secondaryStorage] [ttl_days] [enable_optimize] [enable_single_zone]
 
 Arguments:
   namespace          Base namespace name. Will be prefixed with "c8-" if missing.
   secondaryStorage   Optional. One of: elasticsearch, opensearch, postgresql, none. Default: elasticsearch.
   ttl_days           Optional. Positive integer for namespace TTL in days. Default: 1.
-  enable_optimize    Optional. true|false to enable Optimize. Default: false.
+  enable_optimize    Optional. true|false to enable Optimize. Default: true.
+  enable_single_zone Optional. true|false to deploy the cluster on a single zone. Default: true
 
 Options:
   -h, --help         Show this help message.
 
 Examples:
   ./newLoadTest.sh demo
-  ./newLoadTest.sh perf opensearch 3 true
+  ./newLoadTest.sh perf opensearch 3 false
 EOF
 }
 
@@ -39,7 +40,7 @@ fi
 ### First parameter is used as namespace name
 ### For a new namespace a new folder will be created
 
-helm_chart="camunda-platform-8.9"
+helm_chart="camunda-platform-8.10"
 namespace="$1"
 
 # Add c8- prefix if not present
@@ -65,7 +66,7 @@ if ! [[ $ttl_days =~ $numberRegex ]] ; then
 fi
 
 # Validate enable_optimize value
-enable_optimize="${4:-false}"
+enable_optimize="${4:-true}"
 enable_optimize=$(echo "$enable_optimize" | tr '[:upper:]' '[:lower:]')
 if [[ "$enable_optimize" != "true" && "$enable_optimize" != "false" ]]; then
   echo "Error: Invalid enable_optimize value '$enable_optimize'"
@@ -73,11 +74,61 @@ if [[ "$enable_optimize" != "true" && "$enable_optimize" != "false" ]]; then
   exit 1
 fi
 
+# Pick a "random" zone, selected from the input value.
+function hashmod_zone() {
+    local input="${1?"Specify an initial value to compute the zone from"}"
+
+    # We can get the list of zones with already created nodes with:
+    # kubectl get nodes -o jsonpath='{range .items[*]}{.metadata.labels.topology\.kubernetes\.io\/zone}{"\n"}{end}' | sort | uniq -c
+    zones=(
+        europe-west1-b
+        europe-west1-c
+        europe-west1-d
+    )
+    nb_zones=${#zones[@]}
+
+    # bc only accept hexadecimal with capitalized letters
+    checksum="$(echo "$input" | md5sum | cut -c 1-32 | tr "a-z" "A-Z")"
+    hashmod="$(echo "ibase=16; $checksum % $nb_zones" | bc)"
+
+    zone="${zones[$hashmod]}"
+    echo "$zone"
+}
+
+enable_single_zone="${5:-true}"
+enable_single_zone=$(echo "$enable_single_zone" | tr '[:upper:]' '[:lower:]')
+single_zone_annotation_name="topology.kubernetes.io/zone"
+availability_zone="~"
+
 # Create namespace if it doesn't exist
 if ! kubectl get namespace $namespace >/dev/null 2>&1; then
-  kubectl create namespace $namespace
+  kubectl create namespace "$namespace"
+  if [[ "$enable_single_zone" == "true" ]]; then
+    availability_zone="$(hashmod_zone "$namespace")"
+    kubectl annotate namespace "$namespace" "${single_zone_annotation_name}=${availability_zone}"
+    echo "Will configure pods to deploy into the $availability_zone AZ only."
+  else
+    availability_zone="~"
+    echo "Will NOT configure pods to deploy into a single zone."
+  fi
 else
   echo "Namespace '$namespace' already exists"
+  existing_zone="$(kubectl get ns "$namespace" -o json | jq --raw-output ".metadata.annotations[\"$single_zone_annotation_name\"]")"
+
+  if [[ "$existing_zone" == "null" ]]
+  then
+    # Existing namespace, but not labelled. Don't change scheduling there.
+    # This is for backward compatibility reasons and prevent already running
+    # tests, scheduled over multiple zones, from being forcefully rescheduled
+    # on a new single zone.
+    # Once all the namespaces have the annotation, this backward compatibility
+    # step can be removed.
+    availability_zone="~"
+    echo "Namespace ${namespace} is NOT configured to run on a single availability zone ; scheduling will not be changed."
+  else
+    availability_zone="$existing_zone"
+    echo "Namespace ${namespace} has previously been configured to run on the single availability zone: $availability_zone"
+  fi
 fi
 
 # Sanitize a string to be a valid Kubernetes label value
@@ -124,15 +175,14 @@ cp -rv default/ $namespace
 # Copy all *.yaml files to the new folder
 cp -v ../*.yaml $namespace/
 
-# Copy secrets creation script to the new folder
-cp -v ./createCredsLoadTest.sh $namespace/
-
 cd $namespace
 
 # Update Makefile to use the namespace and secondary storage
 sed_inplace "s/__NAMESPACE__/$namespace/" Makefile
+sed_inplace "s/__NAMESPACE__/$namespace/" load-test-values.yaml
 sed_inplace "s/__STORAGE_TYPE__/$secondaryStorage/" Makefile
 sed_inplace "s/__ENABLE_OPTIMIZE__/$enable_optimize/" Makefile
+sed_inplace "s/__AVAILABILITY_ZONE__/$availability_zone/" *.yaml
 
 # Add/update helm repositories
 helm repo add camunda https://helm.camunda.io/ --force-update

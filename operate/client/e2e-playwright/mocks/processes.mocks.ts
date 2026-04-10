@@ -16,7 +16,7 @@ import {
   type QueryProcessDefinitionsRequestBody,
   type QueryProcessDefinitionsResponseBody,
   type QueryProcessInstancesResponseBody,
-} from '@camunda/camunda-api-zod-schemas/8.9';
+} from '@camunda/camunda-api-zod-schemas/8.10';
 
 function mockResponses({
   batchOperations,
@@ -207,6 +207,16 @@ function mockResponses({
         body: JSON.stringify(processXml),
         headers: {
           'content-type': 'application/json',
+        },
+      });
+    }
+
+    if (route.request().url().includes('/v2/process-instances/migration')) {
+      return route.fulfill({
+        status: 200,
+        json: {
+          batchOperationKey: '1234567890',
+          batchOperationType: 'MIGRATE_PROCESS_INSTANCE',
         },
       });
     }

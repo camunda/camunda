@@ -11,7 +11,7 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'Docker image version tag (defaults to pr-<sha> or Maven version)'
+        description: 'Docker image version tag (defaults to ...-pr<PR_NUMBER>-run<run_id>-a<attempt> for PRs, ...-dispatch-run<run_id>-a<attempt> for manual dispatch, or ...-main-run<run_id>-a<attempt> for push to main)'
         type: string
         required: false
       helmRepositoryBranchName:
@@ -44,6 +44,7 @@ on:
       - "tasklist/**"
       - "identity/**"
       - "optimize/**"
+      - "parent/pom.xml"
 
 # Limit workflow to 1 concurrent run per ref (branch) and trigger event (push/schedule/etc): new commit -> old runs are canceled to save costs
 # Exception for main + stable/* branches: complete builds for every commit needed for confidence
@@ -205,10 +206,12 @@ jobs:
           elif [[ "${{ github.event_name }}" == "pull_request" ]]; then
             # For PRs: <maven-version>-pr<PR_NUMBER>-run<run_id>-a<run_attempt>
             echo "tag=${MAVEN_VERSION}-pr${{ github.event.pull_request.number }}-run${{ github.run_id }}-a${{ github.run_attempt }}" >> "$GITHUB_OUTPUT"
+          elif [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            # For manual dispatch: <maven-version>-dispatch-run<run_id>-a<run_attempt> (e.g., 8.10.0-SNAPSHOT-dispatch-run12345678-a1)
+            echo "tag=${MAVEN_VERSION}-dispatch-run${{ github.run_id }}-a${{ github.run_attempt }}" >> "$GITHUB_OUTPUT"
           else
-            # For manual dispatch: <maven-version>-<short-sha> (e.g., 8.9.0-SNAPSHOT-abc1234)
-            SHA_SHORT="${GITHUB_SHA::7}"
-            echo "tag=${MAVEN_VERSION}-${SHA_SHORT}" >> "$GITHUB_OUTPUT"
+            # For push to main: <maven-version>-main-run<run_id>-a<run_attempt> (e.g., 8.10.0-SNAPSHOT-main-run12345678-a1)
+            echo "tag=${MAVEN_VERSION}-main-run${{ github.run_id }}-a${{ github.run_attempt }}" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Download Operate frontend artifact

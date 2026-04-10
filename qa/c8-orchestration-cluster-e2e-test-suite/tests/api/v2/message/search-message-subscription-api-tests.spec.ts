@@ -10,14 +10,14 @@ import {test, expect} from '@playwright/test';
 import {
   buildUrl,
   jsonHeaders,
-  assertRequiredFields,
   assertEqualsForKeys,
-  paginatedResponseFields,
+  assertStatusCode,
+  assertUnauthorizedRequest,
 } from '../../../../utils/http';
+import {validateResponse} from '../../../../json-body-assertions';
 import {
   expectedMessageSubscription1,
   expectedMessageSubscription2,
-  messageSubscriptionRequiredFields,
 } from '../../../../utils/beans/requestBeans';
 import {createInstances, deploy} from '../../../../utils/zeebeClient';
 
@@ -40,9 +40,16 @@ test.describe('Search Message Subscription API Tests', () => {
         },
       },
     });
-    expect(res.status()).toBe(200);
+    await assertStatusCode(res, 200);
+    await validateResponse(
+      {
+        path: '/message-subscriptions/search',
+        method: 'POST',
+        status: '200',
+      },
+      res,
+    );
     const json = await res.json();
-    assertRequiredFields(json, paginatedResponseFields);
     expect(json.page.totalItems).toBe(0);
     expect(json.items.length).toBe(0);
   });
@@ -52,7 +59,7 @@ test.describe('Search Message Subscription API Tests', () => {
       headers: {},
       data: {filter: {name: state.name}},
     });
-    expect(res.status()).toBe(401);
+    await assertUnauthorizedRequest(res);
   });
 
   test('Search Message Flow', async ({request}) => {
@@ -66,9 +73,16 @@ test.describe('Search Message Subscription API Tests', () => {
           },
         );
 
-        expect(res.status()).toBe(200);
+        await assertStatusCode(res, 200);
+        await validateResponse(
+          {
+            path: '/message-subscriptions/search',
+            method: 'POST',
+            status: '200',
+          },
+          res,
+        );
         const json = await res.json();
-        assertRequiredFields(json, paginatedResponseFields);
         expect(json.page.totalItems).toBeGreaterThan(1);
         const matchingItem1 = json.items.find(
           (it: {processDefinitionId: string}) =>
@@ -78,8 +92,6 @@ test.describe('Search Message Subscription API Tests', () => {
           (it: {processDefinitionId: string}) =>
             it.processDefinitionId === 'messageCatchEvent2',
         );
-        assertRequiredFields(matchingItem1, messageSubscriptionRequiredFields);
-        assertRequiredFields(matchingItem2, messageSubscriptionRequiredFields);
         assertEqualsForKeys(matchingItem1, expectedMessageSubscription1, [
           'correlationKey',
           'tenantId',
@@ -115,12 +127,18 @@ test.describe('Search Message Subscription API Tests', () => {
         },
       );
 
-      expect(res.status()).toBe(200);
+      await assertStatusCode(res, 200);
+      await validateResponse(
+        {
+          path: '/message-subscriptions/search',
+          method: 'POST',
+          status: '200',
+        },
+        res,
+      );
       const json = await res.json();
-      assertRequiredFields(json, paginatedResponseFields);
       expect(json.page.totalItems).toBeGreaterThanOrEqual(1);
       json.items.forEach((it: object) => {
-        assertRequiredFields(it, messageSubscriptionRequiredFields);
         assertEqualsForKeys(it, expectedMessageSubscription1, [
           'correlationKey',
           'tenantId',
@@ -142,12 +160,18 @@ test.describe('Search Message Subscription API Tests', () => {
           },
         },
       );
-      expect(res.status()).toBe(200);
+      await assertStatusCode(res, 200);
+      await validateResponse(
+        {
+          path: '/message-subscriptions/search',
+          method: 'POST',
+          status: '200',
+        },
+        res,
+      );
       const json = await res.json();
-      assertRequiredFields(json, paginatedResponseFields);
       expect(json.page.totalItems).toBeGreaterThanOrEqual(1);
       json.items.forEach((it: object) => {
-        assertRequiredFields(it, messageSubscriptionRequiredFields);
         assertEqualsForKeys(it, expectedMessageSubscription1, [
           'correlationKey',
           'tenantId',
@@ -169,7 +193,15 @@ test.describe('Search Message Subscription API Tests', () => {
           },
         },
       );
-      expect(res.status()).toBe(200);
+      await assertStatusCode(res, 200);
+      await validateResponse(
+        {
+          path: '/message-subscriptions/search',
+          method: 'POST',
+          status: '200',
+        },
+        res,
+      );
       const json = await res.json();
       const matchingItem1 = json.items.find(
         (it: {processDefinitionId: string}) =>
@@ -179,8 +211,6 @@ test.describe('Search Message Subscription API Tests', () => {
         (it: {processDefinitionId: string}) =>
           it.processDefinitionId === 'messageCatchEvent2',
       );
-      assertRequiredFields(matchingItem1, messageSubscriptionRequiredFields);
-      assertRequiredFields(matchingItem2, messageSubscriptionRequiredFields);
       assertEqualsForKeys(matchingItem1, expectedMessageSubscription1, [
         'correlationKey',
         'tenantId',
@@ -207,7 +237,15 @@ test.describe('Search Message Subscription API Tests', () => {
           },
         },
       );
-      expect(res.status()).toBe(200);
+      await assertStatusCode(res, 200);
+      await validateResponse(
+        {
+          path: '/message-subscriptions/search',
+          method: 'POST',
+          status: '200',
+        },
+        res,
+      );
       const json = await res.json();
       expect(json.page.totalItems).toBeGreaterThan(1);
       const matchingItem1 = json.items.find(
@@ -218,8 +256,6 @@ test.describe('Search Message Subscription API Tests', () => {
         (it: {processDefinitionId: string}) =>
           it.processDefinitionId === 'messageCatchEvent2',
       );
-      assertRequiredFields(matchingItem1, messageSubscriptionRequiredFields);
-      assertRequiredFields(matchingItem2, messageSubscriptionRequiredFields);
       assertEqualsForKeys(matchingItem1, expectedMessageSubscription1, [
         'correlationKey',
         'tenantId',
@@ -246,12 +282,18 @@ test.describe('Search Message Subscription API Tests', () => {
           },
         },
       );
-      expect(res.status()).toBe(200);
+      await assertStatusCode(res, 200);
+      await validateResponse(
+        {
+          path: '/message-subscriptions/search',
+          method: 'POST',
+          status: '200',
+        },
+        res,
+      );
       const json = await res.json();
-      assertRequiredFields(json, paginatedResponseFields);
       expect(json.page.totalItems).toBeGreaterThanOrEqual(1);
       json.items.forEach((it: object) => {
-        assertRequiredFields(it, messageSubscriptionRequiredFields);
         assertEqualsForKeys(it, expectedMessageSubscription2, [
           'correlationKey',
           'tenantId',
@@ -273,12 +315,18 @@ test.describe('Search Message Subscription API Tests', () => {
           },
         },
       );
-      expect(res.status()).toBe(200);
+      await assertStatusCode(res, 200);
+      await validateResponse(
+        {
+          path: '/message-subscriptions/search',
+          method: 'POST',
+          status: '200',
+        },
+        res,
+      );
       const json = await res.json();
-      assertRequiredFields(json, paginatedResponseFields);
       expect(json.page.totalItems).toBeGreaterThanOrEqual(1);
       json.items.forEach((it: object) => {
-        assertRequiredFields(it, messageSubscriptionRequiredFields);
         assertEqualsForKeys(it, expectedMessageSubscription2, [
           'correlationKey',
           'tenantId',
@@ -300,12 +348,18 @@ test.describe('Search Message Subscription API Tests', () => {
           },
         },
       );
-      expect(res.status()).toBe(200);
+      await assertStatusCode(res, 200);
+      await validateResponse(
+        {
+          path: '/message-subscriptions/search',
+          method: 'POST',
+          status: '200',
+        },
+        res,
+      );
       const json = await res.json();
-      assertRequiredFields(json, paginatedResponseFields);
       expect(json.page.totalItems).toBeGreaterThanOrEqual(1);
       json.items.forEach((it: object) => {
-        assertRequiredFields(it, messageSubscriptionRequiredFields);
         assertEqualsForKeys(it, expectedMessageSubscription1, [
           'correlationKey',
           'tenantId',
@@ -327,12 +381,18 @@ test.describe('Search Message Subscription API Tests', () => {
           },
         },
       );
-      expect(res.status()).toBe(200);
+      await assertStatusCode(res, 200);
+      await validateResponse(
+        {
+          path: '/message-subscriptions/search',
+          method: 'POST',
+          status: '200',
+        },
+        res,
+      );
       const json = await res.json();
-      assertRequiredFields(json, paginatedResponseFields);
       expect(json.page.totalItems).toBeGreaterThanOrEqual(1);
       json.items.forEach((it: object) => {
-        assertRequiredFields(it, messageSubscriptionRequiredFields);
         assertEqualsForKeys(it, expectedMessageSubscription1, [
           'correlationKey',
           'tenantId',
@@ -354,12 +414,18 @@ test.describe('Search Message Subscription API Tests', () => {
           },
         },
       );
-      expect(res.status()).toBe(200);
+      await assertStatusCode(res, 200);
+      await validateResponse(
+        {
+          path: '/message-subscriptions/search',
+          method: 'POST',
+          status: '200',
+        },
+        res,
+      );
       const json = await res.json();
-      assertRequiredFields(json, paginatedResponseFields);
       expect(json.page.totalItems).toBeGreaterThanOrEqual(1);
       json.items.forEach((it: object) => {
-        assertRequiredFields(it, messageSubscriptionRequiredFields);
         assertEqualsForKeys(it, expectedMessageSubscription2, [
           'correlationKey',
           'tenantId',
@@ -384,12 +450,18 @@ test.describe('Search Message Subscription API Tests', () => {
           },
         },
       );
-      expect(res.status()).toBe(200);
+      await assertStatusCode(res, 200);
+      await validateResponse(
+        {
+          path: '/message-subscriptions/search',
+          method: 'POST',
+          status: '200',
+        },
+        res,
+      );
       const json = await res.json();
-      assertRequiredFields(json, paginatedResponseFields);
       expect(json.page.totalItems).toBeGreaterThanOrEqual(1);
       json.items.forEach((it: object) => {
-        assertRequiredFields(it, messageSubscriptionRequiredFields);
         assertEqualsForKeys(it, expectedMessageSubscription2, [
           'correlationKey',
           'tenantId',

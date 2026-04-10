@@ -16,11 +16,13 @@
 package io.camunda.client.api.fetch;
 
 import io.camunda.client.api.search.filter.AuthorizationFilter;
+import io.camunda.client.api.search.page.AnyPage;
 import io.camunda.client.api.search.request.FinalSearchRequestStep;
 import io.camunda.client.api.search.request.TypedSearchRequest;
 import io.camunda.client.api.search.response.Authorization;
 import io.camunda.client.api.search.sort.AuthorizationSort;
 
 public interface AuthorizationsSearchRequest
-    extends TypedSearchRequest<AuthorizationFilter, AuthorizationSort, AuthorizationsSearchRequest>,
+    extends TypedSearchRequest<
+            AuthorizationFilter, AuthorizationSort, AnyPage, AuthorizationsSearchRequest>,
         FinalSearchRequestStep<Authorization> {}

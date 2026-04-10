@@ -67,7 +67,9 @@ const ListenersTab: React.FC = () => {
         processInstanceKey: processInstanceId,
         elementId: selectedElementId ?? undefined,
         elementInstanceKey: resolvedElementInstanceKey ?? undefined,
-        kind: listenerTypeFilter,
+        kind: listenerTypeFilter ?? {
+          $in: ['EXECUTION_LISTENER', 'TASK_LISTENER'],
+        },
       },
     },
     select: (data) => data.pages?.flatMap((page) => page.items),

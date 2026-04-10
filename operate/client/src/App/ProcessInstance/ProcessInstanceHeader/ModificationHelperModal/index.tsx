@@ -25,19 +25,19 @@ import {HelperModal} from 'modules/components/HelperModal';
 const localStorageKey = 'hideModificationHelperModal';
 
 type Props = {
-  isVisible: boolean;
+  open: boolean;
   onClose: () => void;
   onSubmit: () => void;
 };
 
 const ModificationHelperModal: React.FC<Props> = observer(
-  ({isVisible, onClose, onSubmit}) => {
+  ({open, onClose, onSubmit}) => {
     return (
       <HelperModal
         title="Process Instance Modification Mode"
         localStorageKey={localStorageKey}
         onClose={onClose}
-        open={isVisible}
+        open={open}
         onSubmit={onSubmit}
       >
         <Container>

@@ -17,8 +17,8 @@ import {
 } from '@carbon/react/icons';
 import {observer} from 'mobx-react';
 import {currentTheme} from 'modules/stores/currentTheme';
-import type {ElementState} from 'modules/types/operate';
-import type {DecisionInstanceState} from '@camunda/camunda-api-zod-schemas/8.9';
+import type {ElementState} from 'modules/bpmn-js/overlayTypes';
+import type {DecisionInstanceState} from '@camunda/camunda-api-zod-schemas/8.10';
 
 type Props = {
   state: (ElementState | 'completedEndEvents') | DecisionInstanceState;

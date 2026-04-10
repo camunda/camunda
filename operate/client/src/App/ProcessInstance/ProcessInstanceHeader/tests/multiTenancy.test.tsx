@@ -91,11 +91,11 @@ describe('InstanceHeader', () => {
     ).toHaveAttribute(
       'href',
       `${Paths.processes()}?${new URLSearchParams({
-        version: '1',
-        process: 'someKey',
+        processDefinitionVersion: '1',
+        processDefinitionId: 'someKey',
         active: 'true',
         incidents: 'true',
-        tenant: '<default>',
+        tenantId: '<default>',
       })}`,
     );
   });

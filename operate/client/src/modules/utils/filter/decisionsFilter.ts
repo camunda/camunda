@@ -11,7 +11,7 @@ import {
   type DecisionInstanceState,
   type QueryDecisionDefinitionsRequestBody,
   type QueryDecisionInstancesRequestBody,
-} from '@camunda/camunda-api-zod-schemas/8.9';
+} from '@camunda/camunda-api-zod-schemas/8.10';
 import z from 'zod';
 import {formatToISO} from '../date/formatDate';
 import {parseIds, parseSortParamsV2, updateFiltersSearchString} from '.';
@@ -28,15 +28,15 @@ type DecisionsFilterField = keyof DecisionsFilter;
 type DecisionsFilter = z.infer<typeof DecisionsFilterSchema>;
 const DecisionsFilterSchema = z
   .object({
-    name: z.string().optional(),
-    version: z.string().optional(),
+    decisionDefinitionId: z.string().optional(),
+    decisionDefinitionVersion: z.string().optional(),
     evaluated: z.coerce.boolean().optional(),
     failed: z.coerce.boolean().optional(),
-    decisionInstanceIds: z.string().optional(),
-    processInstanceId: z.string().optional(),
-    evaluationDateBefore: z.string().transform(formatToISO).optional(),
-    evaluationDateAfter: z.string().transform(formatToISO).optional(),
-    tenant: z.string().optional(),
+    decisionEvaluationInstanceKey: z.string().optional(),
+    processInstanceKey: z.string().optional(),
+    evaluationDateTo: z.string().transform(formatToISO).optional(),
+    evaluationDateFrom: z.string().transform(formatToISO).optional(),
+    tenantId: z.string().optional(),
   })
   .catch({});
 
@@ -61,10 +61,10 @@ function parseDecisionInstancesSearchFilter(
     decisionEvaluationInstanceKey:
       mapDecisionEvaluationInstanceKeyFilter(filter),
     state: mapStateFilter(filter),
-    decisionDefinitionId: filter.name,
+    decisionDefinitionId: filter.decisionDefinitionId,
     decisionDefinitionVersion: mapDecisionDefinitionVersionFilter(filter),
-    processInstanceKey: filter.processInstanceId,
-    tenantId: filter.tenant === 'all' ? undefined : filter.tenant,
+    processInstanceKey: filter.processInstanceKey,
+    tenantId: filter.tenantId === 'all' ? undefined : filter.tenantId,
     evaluationDate: mapEvaluationDateFilter(filter),
   };
 }
@@ -78,17 +78,17 @@ function parseDecisionDefinitionsSearchFilter(
   const filter = parseDecisionsFilter(search);
 
   return {
-    decisionDefinitionId: filter.name,
+    decisionDefinitionId: filter.decisionDefinitionId,
     version: mapDecisionDefinitionVersionFilter(filter),
-    tenantId: filter.tenant === 'all' ? undefined : filter.tenant,
+    tenantId: filter.tenantId === 'all' ? undefined : filter.tenantId,
   };
 }
 
 function mapDecisionEvaluationInstanceKeyFilter(
   filter: DecisionsFilter,
 ): DecisionInstancesSearchFilter['decisionEvaluationInstanceKey'] {
-  const keys = filter.decisionInstanceIds
-    ? parseIds(filter.decisionInstanceIds)
+  const keys = filter.decisionEvaluationInstanceKey
+    ? parseIds(filter.decisionEvaluationInstanceKey)
     : [];
 
   if (keys.length > 0) {
@@ -99,8 +99,11 @@ function mapDecisionEvaluationInstanceKeyFilter(
 function mapDecisionDefinitionVersionFilter(
   filter: DecisionsFilter,
 ): DecisionInstancesSearchFilter['decisionDefinitionVersion'] {
-  if (filter.version && filter.version !== 'all') {
-    const version = parseInt(filter.version, 10);
+  if (
+    filter.decisionDefinitionVersion &&
+    filter.decisionDefinitionVersion !== 'all'
+  ) {
+    const version = parseInt(filter.decisionDefinitionVersion, 10);
     if (!isNaN(version)) {
       return version;
     }
@@ -125,10 +128,10 @@ function mapStateFilter(
 function mapEvaluationDateFilter(
   filter: DecisionsFilter,
 ): DecisionInstancesSearchFilter['evaluationDate'] {
-  if (filter.evaluationDateBefore || filter.evaluationDateAfter) {
+  if (filter.evaluationDateTo || filter.evaluationDateFrom) {
     return {
-      $gt: filter.evaluationDateAfter,
-      $lt: filter.evaluationDateBefore,
+      $gt: filter.evaluationDateFrom,
+      $lt: filter.evaluationDateTo,
     };
   }
 }

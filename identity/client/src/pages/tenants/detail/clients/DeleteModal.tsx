@@ -18,7 +18,7 @@ import { unassignTenantClient } from "src/utility/api/tenants";
 import type {
   Tenant,
   TenantClient,
-} from "@camunda/camunda-api-zod-schemas/8.9";
+} from "@camunda/camunda-api-zod-schemas/8.10";
 
 type RemoveTenantClientModalProps = UseEntityModalCustomProps<
   TenantClient,

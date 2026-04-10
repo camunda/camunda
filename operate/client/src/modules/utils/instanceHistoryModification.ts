@@ -10,7 +10,6 @@ import type {
   BusinessObject,
   BusinessObjects,
 } from 'bpmn-js/lib/NavigatedViewer';
-import {isMultiInstance} from 'modules/bpmn-js/utils/isMultiInstance';
 import {
   instanceHistoryModificationStore,
   type ModificationPlaceholder,
@@ -63,13 +62,8 @@ const generateParentPlaceholders = (
     ),
     {
       elementInstancePlaceholder: {
-        flowNodeId: element.id,
-        id: scopeId,
-        type: 'SUB_PROCESS',
-        startDate: '',
-        endDate: null,
-        sortValues: [],
-        treePath: '',
+        elementId: element.id,
+        elementInstanceKey: scopeId,
         isPlaceholder: true,
       },
       operation: modificationPayload.operation,
@@ -137,13 +131,8 @@ const createModificationPlaceholders = ({
 
   return getScopeIds(modificationPayload).map((scopeId) => ({
     elementInstancePlaceholder: {
-      flowNodeId: element.id,
-      id: scopeId,
-      type: isMultiInstance(element) ? 'MULTI_INSTANCE_BODY' : element.$type,
-      startDate: '',
-      endDate: null,
-      sortValues: [],
-      treePath: '',
+      elementId: element.id,
+      elementInstanceKey: scopeId,
       isPlaceholder: true,
     },
     operation: modificationPayload.operation,

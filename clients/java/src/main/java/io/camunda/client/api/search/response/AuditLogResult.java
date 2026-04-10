@@ -48,8 +48,6 @@ public interface AuditLogResult {
 
   AuditLogResultEnum getResult();
 
-  String getAnnotation();
-
   AuditLogCategoryEnum getCategory();
 
   String getProcessDefinitionId();

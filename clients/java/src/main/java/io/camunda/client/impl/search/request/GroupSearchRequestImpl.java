@@ -15,16 +15,16 @@
  */
 package io.camunda.client.impl.search.request;
 
+import static io.camunda.client.api.search.request.SearchRequestBuilders.anyPage;
 import static io.camunda.client.api.search.request.SearchRequestBuilders.groupFilter;
 import static io.camunda.client.api.search.request.SearchRequestBuilders.groupSort;
-import static io.camunda.client.api.search.request.SearchRequestBuilders.searchRequestPage;
 
 import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.search.filter.GroupFilter;
+import io.camunda.client.api.search.page.AnyPage;
 import io.camunda.client.api.search.request.FinalSearchRequestStep;
 import io.camunda.client.api.search.request.GroupsSearchRequest;
-import io.camunda.client.api.search.request.SearchRequestPage;
 import io.camunda.client.api.search.response.Group;
 import io.camunda.client.api.search.response.SearchResponse;
 import io.camunda.client.api.search.sort.GroupSort;
@@ -102,13 +102,13 @@ public class GroupSearchRequestImpl
   }
 
   @Override
-  public GroupsSearchRequest page(final SearchRequestPage value) {
+  public GroupsSearchRequest page(final AnyPage value) {
     request.setPage(provideSearchRequestProperty(value));
     return this;
   }
 
   @Override
-  public GroupsSearchRequest page(final Consumer<SearchRequestPage> fn) {
-    return page(searchRequestPage(fn));
+  public GroupsSearchRequest page(final Consumer<AnyPage> fn) {
+    return page(anyPage(fn));
   }
 }

@@ -30,8 +30,10 @@ import java.io.FileNotFoundException;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.UUID;
+import java.util.concurrent.ExecutionException;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -129,6 +131,36 @@ public class AzureBackupStoreIT implements BackupStoreTestKit {
                 Expected to restore from completed backup with id \
                 'BackupId{node=1, partition=2, checkpoint=3}', \
                 but was in state 'IN_PROGRESS'""");
+  }
+
+  @Test
+  void shouldSuccessfullyVerifyConnectionWithValidConnectionString() {
+    // given
+    final AzureBackupConfig azureBackupConfig =
+        new AzureBackupConfig.Builder()
+            .withConnectionString(AZURITE_CONTAINER.getConnectString())
+            .withContainerName(AZURITE_CONTAINER.getContainerName())
+            .build();
+    final var store = new AzureBackupStore(azureBackupConfig);
+
+    // when - then
+    Assertions.assertThat(store.verifyConnection()).succeedsWithin(Duration.ofSeconds(10));
+  }
+
+  @Test
+  void shouldFailVerifyConnectionWhenContainerDoesNotExist() {
+    // given
+    final AzureBackupConfig azureBackupConfig =
+        new AzureBackupConfig.Builder()
+            .withConnectionString(AZURITE_CONTAINER.getConnectString())
+            .withContainerName(UUID.randomUUID().toString())
+            .build();
+    final var store = new AzureBackupStore(azureBackupConfig);
+
+    // when - then
+    Assertions.assertThat(store.verifyConnection())
+        .failsWithin(Duration.ofSeconds(10))
+        .withThrowableOfType(ExecutionException.class);
   }
 
   void uploadInProgressManifest(final Backup backup) {

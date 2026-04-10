@@ -29,8 +29,8 @@ import io.camunda.client.CamundaClientCloudBuilderStep1.CamundaClientCloudBuilde
 import io.camunda.client.CamundaClientCloudBuilderStep1.CamundaClientCloudBuilderStep2.CamundaClientCloudBuilderStep3;
 import io.camunda.client.CamundaClientCloudBuilderStep1.CamundaClientCloudBuilderStep2.CamundaClientCloudBuilderStep3.CamundaClientCloudBuilderStep4;
 import io.camunda.client.CamundaClientCloudBuilderStep1.CamundaClientCloudBuilderStep2.CamundaClientCloudBuilderStep3.CamundaClientCloudBuilderStep4.CamundaClientCloudBuilderStep5;
+import io.camunda.client.ClientProperties;
 import io.camunda.client.CredentialsProvider;
-import io.camunda.client.LegacyZeebeClientProperties;
 import io.camunda.client.api.ExperimentalApi;
 import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.command.enums.TenantFilter;
@@ -101,31 +101,22 @@ public class CamundaClientCloudBuilderImpl
   @Override
   public CamundaClientBuilder withProperties(final Properties properties) {
     BuilderUtils.applyPropertyValueIfNotNull(
-        properties,
-        this::withClusterId,
-        CLOUD_CLUSTER_ID,
-        LegacyZeebeClientProperties.CLOUD_CLUSTER_ID);
+        properties, this::withClusterId, CLOUD_CLUSTER_ID, ClientProperties.CLOUD_CLUSTER_ID);
 
     BuilderUtils.applyPropertyValueIfNotNull(
-        properties,
-        this::withClientId,
-        CLOUD_CLIENT_ID,
-        LegacyZeebeClientProperties.CLOUD_CLIENT_ID);
+        properties, this::withClientId, CLOUD_CLIENT_ID, ClientProperties.CLOUD_CLIENT_ID);
 
     BuilderUtils.applyPropertyValueIfNotNull(
-        properties,
-        this::withClientId,
-        CLOUD_CLIENT_SECRET,
-        LegacyZeebeClientProperties.CLOUD_CLIENT_SECRET);
+        properties, this::withClientId, CLOUD_CLIENT_SECRET, ClientProperties.CLOUD_CLIENT_SECRET);
 
     BuilderUtils.applyPropertyValueIfNotNull(
-        properties, this::withRegion, CLOUD_REGION, LegacyZeebeClientProperties.CLOUD_REGION);
+        properties, this::withRegion, CLOUD_REGION, ClientProperties.CLOUD_REGION);
 
     BuilderUtils.applyPropertyValueIfNotNull(
         properties,
         value -> defaultJobWorkerStreamEnabled(Boolean.parseBoolean(value)),
         STREAM_ENABLED,
-        LegacyZeebeClientProperties.STREAM_ENABLED);
+        ClientProperties.STREAM_ENABLED);
 
     innerBuilder.withProperties(properties);
 

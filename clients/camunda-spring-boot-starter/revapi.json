@@ -558,6 +558,185 @@
           "code": "java.method.removed",
           "old": "method io.camunda.client.spring.annotation.processor.DeploymentAnnotationProcessor io.camunda.client.spring.configuration.AnnotationProcessorConfiguration::deploymentPostProcessor(org.springframework.context.ApplicationEventPublisher)",
           "justification": "Internal refactor; compatibility impact accepted for this release."
+        },
+
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method boolean io.camunda.client.annotation.AnnotationUtil::isDeploymentLegacy(io.camunda.client.bean.BeanInfo)",
+          "justification": "Removal of V1 APIs in 8.10+; compatibility impact accepted for this release."
+        },
+        {
+          "ignore": true,
+          "code": "java.class.removed",
+          "old": "class io.camunda.client.jobhandling.parameter.CompatActivatedJobParameterResolver",
+          "justification": "Removal of V1 APIs in 8.10+; compatibility impact accepted for this release."
+        },
+        {
+          "ignore": true,
+          "code": "java.class.removed",
+          "old": "class io.camunda.client.jobhandling.parameter.CompatJobClientParameterResolver",
+          "justification": "Removal of V1 APIs in 8.10+; compatibility impact accepted for this release."
+        },
+        {
+          "ignore": true,
+          "code": "java.class.removed",
+          "old": "class io.camunda.client.spring.annotation.customizer.JobWorkerValueCustomizerCompat",
+          "justification": "Removal of V1 APIs in 8.10+; compatibility impact accepted for this release."
+        },
+        {
+          "ignore": true,
+          "code": "java.class.removed",
+          "old": "class io.camunda.client.spring.annotation.customizer.LegacyJobWorkerValueCustomizerBeanDefinitionRegistryPostProcessor",
+          "justification": "Removal of V1 APIs in 8.10+; compatibility impact accepted for this release."
+        },
+        {
+          "ignore": true,
+          "code": "java.class.removed",
+          "old": "class io.camunda.client.spring.configuration.CamundaBeanPostProcessorConfiguration",
+          "justification": "Removal of V1 APIs in 8.10+; compatibility impact accepted for this release."
+        },
+        {
+          "ignore": true,
+          "code": "java.class.removed",
+          "old": "@interface io.camunda.zeebe.spring.client.annotation.CustomHeaders",
+          "justification": "Removal of V1 APIs in 8.10+; compatibility impact accepted for this release."
+        },
+        {
+          "ignore": true,
+          "code": "java.class.removed",
+          "old": "@interface io.camunda.zeebe.spring.client.annotation.Deployment",
+          "justification": "Removal of V1 APIs in 8.10+; compatibility impact accepted for this release."
+        },
+        {
+          "ignore": true,
+          "code": "java.class.removed",
+          "old": "@interface io.camunda.zeebe.spring.client.annotation.VariablesAsType",
+          "justification": "Removal of V1 APIs in 8.10+; compatibility impact accepted for this release."
+        },
+        {
+          "ignore": true,
+          "code": "java.class.removed",
+          "old": "class io.camunda.zeebe.spring.client.configuration.ZeebeClientConfigurationImpl",
+          "justification": "Removal of V1 APIs in 8.10+; compatibility impact accepted for this release."
+        },
+        {
+          "ignore": true,
+          "code": "java.class.removed",
+          "old": "class io.camunda.zeebe.spring.client.configuration.ZeebeClientProdAutoConfiguration",
+          "justification": "Removal of V1 APIs in 8.10+; compatibility impact accepted for this release."
+        },
+        {
+          "ignore": true,
+          "code": "java.class.removed",
+          "old": "class io.camunda.zeebe.spring.client.event.ZeebeClientClosingEvent",
+          "justification": "Removal of V1 APIs in 8.10+; compatibility impact accepted for this release."
+
+        },
+        {
+          "ignore": true,
+          "code": "java.class.removed",
+          "old": "class io.camunda.zeebe.spring.client.event.ZeebeClientCreatedEvent",
+          "justification": "Removal of V1 APIs in 8.10+; compatibility impact accepted for this release."
+        },
+        {
+          "ignore": true,
+          "code": "java.class.removed",
+          "old": "class io.camunda.zeebe.spring.client.event.ZeebeLifecycleEventProducer",
+          "justification": "Removal of V1 APIs in 8.10+; compatibility impact accepted for this release."
+        },
+        {
+          "ignore": true,
+          "code": "java.class.removed",
+          "old": "@interface io.camunda.zeebe.spring.client.annotation.JobWorker",
+          "justification": "Removal of V1 APIs in 8.10+; compatibility impact accepted for this release."
+        },
+        {
+          "ignore": true,
+          "code": "java.class.removed",
+          "old": "@interface io.camunda.zeebe.spring.client.annotation.Variable",
+          "justification": "Removal of V1 APIs in 8.10+; compatibility impact accepted for this release."
+        },
+        {
+          "ignore": true,
+          "code": "java.class.removed",
+          "old": "interface io.camunda.zeebe.spring.client.annotation.customizer.ZeebeWorkerValueCustomizer",
+          "justification": "Removal of V1 APIs in 8.10+; compatibility impact accepted for this release."
+        },
+        {
+          "ignore": true,
+          "code": "java.class.removed",
+          "old": "class io.camunda.zeebe.spring.client.annotation.value.ZeebeWorkerValue",
+          "justification": "Removal of V1 APIs in 8.10+; compatibility impact accepted for this release."
+        },
+        {
+          "ignore": true,
+          "code": "java.class.removed",
+          "old": "class io.camunda.zeebe.spring.common.exception.ZeebeBpmnError",
+          "justification": "Removal of V1 APIs in 8.10+; compatibility impact accepted for this release."
+        },
+        {
+          "ignore": true,
+          "code": "java.class.noLongerImplementsInterface",
+          "old": "class io.camunda.client.jobhandling.parameter.CompatActivatedJobParameterResolver.ActivatedJobProxy",
+          "new": "class io.camunda.client.jobhandling.parameter.CompatActivatedJobParameterResolver.ActivatedJobProxy",
+          "justification": "Removal of V1 APIs in 8.10+; compatibility impact accepted for this release."
+        },
+        {
+          "ignore": true,
+          "code": "java.class.noLongerImplementsInterface",
+          "old": "class io.camunda.zeebe.spring.client.configuration.ZeebeClientConfigurationImpl",
+          "new": "class io.camunda.zeebe.spring.client.configuration.ZeebeClientConfigurationImpl",
+          "justification": "Removal of V1 APIs in 8.10+; compatibility impact accepted for this release."
+        },
+
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method io.camunda.process.test.api.assertions.ProcessInstanceAssert io.camunda.process.test.api.CamundaAssert::assertThat(io.camunda.zeebe.client.api.response.ProcessInstanceEvent)",
+          "justification": "Removal of V1 APIs in 8.10+; compatibility impact accepted for this release."
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method io.camunda.process.test.api.assertions.ProcessInstanceAssert io.camunda.process.test.api.CamundaAssert::assertThat(io.camunda.zeebe.client.api.response.ProcessInstanceResult)",
+          "justification": "Removal of V1 APIs in 8.10+; compatibility impact accepted for this release."
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method io.camunda.process.test.api.assertions.ProcessInstanceAssert io.camunda.process.test.api.CamundaAssert::assertThatProcessInstance(io.camunda.zeebe.client.api.response.ProcessInstanceEvent)",
+          "justification": "Removal of V1 APIs in 8.10+; compatibility impact accepted for this release."
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method io.camunda.process.test.api.assertions.ProcessInstanceAssert io.camunda.process.test.api.CamundaAssert::assertThatProcessInstance(io.camunda.zeebe.client.api.response.ProcessInstanceResult)",
+          "justification": "Removal of V1 APIs in 8.10+; compatibility impact accepted for this release."
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method void io.camunda.process.test.api.CamundaAssert::setJsonMapper(io.camunda.zeebe.client.api.JsonMapper)",
+          "justification": "Removal of V1 APIs in 8.10+; compatibility impact accepted for this release."
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method io.camunda.zeebe.client.ZeebeClient io.camunda.process.test.api.CamundaProcessTestContext::createZeebeClient()",
+          "justification": "Removal of V1 APIs in 8.10+; compatibility impact accepted for this release."
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method io.camunda.zeebe.client.ZeebeClient io.camunda.process.test.api.CamundaProcessTestContext::createZeebeClient(java.util.function.Consumer<io.camunda.zeebe.client.ZeebeClientBuilder>)",
+          "justification": "Removal of V1 APIs in 8.10+; compatibility impact accepted for this release."
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method io.camunda.process.test.api.CamundaProcessTestExtension io.camunda.process.test.api.CamundaProcessTestExtension::withJsonMapper(io.camunda.zeebe.client.api.JsonMapper)",
+          "justification": "Removal of V1 APIs in 8.10+; compatibility impact accepted for this release."
         }
       ]
     }

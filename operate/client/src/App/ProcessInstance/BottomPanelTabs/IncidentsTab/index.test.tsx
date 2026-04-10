@@ -47,11 +47,11 @@ function getWrapper(searchParams?: Record<string, string>) {
     <QueryClientProvider client={getMockQueryClient()}>
       <MemoryRouter
         initialEntries={[
-          `${Paths.processInstance(PROCESS_INSTANCE_ID)}?${params.toString()}`,
+          `${Paths.processInstanceIncidents({processInstanceId: PROCESS_INSTANCE_ID})}?${params.toString()}`,
         ]}
       >
         <Routes>
-          <Route path={Paths.processInstance()} element={children} />
+          <Route path={Paths.processInstanceIncidents()} element={children} />
         </Routes>
       </MemoryRouter>
     </QueryClientProvider>
@@ -84,11 +84,9 @@ describe('IncidentsTab', () => {
     );
 
     const table = within(screen.getByRole('table'));
-    expect(table.getByText(/^Incident Type/)).toBeInTheDocument();
+    expect(table.getByText(/^Type/)).toBeInTheDocument();
     expect(table.getByText(/^Failing Element/)).toBeInTheDocument();
-    expect(table.getByText(/^Job Id/)).toBeInTheDocument();
-    expect(table.getByText(/^Creation Date/)).toBeInTheDocument();
-    expect(table.getByText(/^Error Message/)).toBeInTheDocument();
+    expect(table.getByText(/^Created/)).toBeInTheDocument();
     expect(table.getByText(/^Operations/)).toBeInTheDocument();
   });
 
@@ -123,7 +121,6 @@ describe('IncidentsTab', () => {
       screen.queryByTestId('data-table-skeleton'),
     );
 
-    expect(screen.getByText(/Incidents/)).toBeInTheDocument();
     expect(screen.getByText(/2 results/)).toBeInTheDocument();
   });
 

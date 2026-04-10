@@ -6,15 +6,13 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useEffect, useMemo, useState} from 'react';
+import {useEffect, useMemo} from 'react';
 import {observer} from 'mobx-react';
 import {useProcessInstancePageParams} from '../useProcessInstancePageParams';
 import {diagramOverlaysStore} from 'modules/stores/diagramOverlays';
-import {IncidentsBanner} from './IncidentsBanner';
 import {tracking} from 'modules/tracking';
 import {modificationsStore} from 'modules/stores/modifications';
 import {Container, DiagramPanel} from './styled';
-import {IncidentsWrapper} from '../IncidentsWrapper';
 import {
   CANCELED_BADGE,
   MODIFICATIONS,
@@ -28,7 +26,6 @@ import {DiagramShell} from 'modules/components/DiagramShell';
 import {computed} from 'mobx';
 import {type OverlayPosition} from 'bpmn-js/lib/NavigatedViewer';
 import {Diagram} from 'modules/components/Diagram';
-import {MetadataPopover} from './MetadataPopover';
 import {ModificationBadgeOverlay} from './ModificationBadgeOverlay';
 import {ModificationInfoBanner} from './ModificationInfoBanner';
 import {ModificationDropdown} from './ModificationDropdown';
@@ -55,16 +52,12 @@ import {isCompensationAssociation} from 'modules/bpmn-js/utils/isCompensationAss
 import {useProcessSequenceFlows} from 'modules/queries/sequenceFlows/useProcessSequenceFlows';
 import {useProcessInstance} from 'modules/queries/processInstance/useProcessInstance';
 import {getSubprocessOverlayFromIncidentElements} from 'modules/utils/elements';
-import type {ElementState} from 'modules/types/operate';
+import type {ElementState} from 'modules/bpmn-js/overlayTypes';
 import {HTTP_STATUS_FORBIDDEN} from 'modules/constants/statusCode';
 import {isRequestError} from 'modules/request';
-import {useProcessInstanceIncidentsCount} from 'modules/queries/incidents/useProcessInstanceIncidentsCount';
-import {incidentsPanelStore} from 'modules/stores/incidentsPanel';
-import {isInstanceRunning} from 'modules/utils/instance';
 import {useProcessInstanceElementSelection} from 'modules/hooks/useProcessInstanceElementSelection';
 import {useDrillDownNavigation} from 'modules/hooks/useDrilldownNavigation';
 import {getAncestorScopeType} from 'modules/utils/processInstanceDetailsDiagram';
-import {IS_NEW_PROCESS_INSTANCE_PAGE} from 'modules/feature-flags';
 
 const OVERLAY_TYPE_STATE = 'elementState';
 const OVERLAY_TYPE_MODIFICATIONS_BADGE = 'modificationsBadge';
@@ -96,7 +89,6 @@ const TopPanel: React.FC = observer(() => {
     sourceElementIdForMoveOperation,
     sourceElementInstanceKeyForMoveOperation,
   } = modificationsStore.state;
-  const [isInTransition, setIsInTransition] = useState(false);
   const {data: statistics} = useElementStatistics();
   const {data: selectableElements} = useSelectableElements();
   const {data: executedElements} = useExecutedElements();
@@ -240,14 +232,6 @@ const TopPanel: React.FC = observer(() => {
 
   const modifiableElements = useModifiableElements();
 
-  const incidentsCount = useProcessInstanceIncidentsCount(processInstanceId, {
-    enabled:
-      processInstance &&
-      isInstanceRunning(processInstance) &&
-      !!processInstance.hasIncident,
-  });
-  const isIncidentBarOpen = incidentsPanelStore.state.isPanelVisible;
-
   const {isModificationModeEnabled} = modificationsStore;
 
   const {handleDrillDown, pendingDrillDownElementId} =
@@ -257,7 +241,6 @@ const TopPanel: React.FC = observer(() => {
     [elementId: string, className: string][]
   >(() => {
     if (
-      !IS_NEW_PROCESS_INSTANCE_PAGE ||
       isModificationModeEnabled ||
       !businessObjects ||
       !totalRunningInstancesByElement
@@ -317,25 +300,6 @@ const TopPanel: React.FC = observer(() => {
 
   return (
     <Container>
-      {incidentsCount > 0 && !IS_NEW_PROCESS_INSTANCE_PAGE && (
-        <IncidentsBanner
-          processInstanceKey={processInstanceId}
-          incidentsCount={incidentsCount}
-          onClick={() => {
-            if (isInTransition) {
-              return;
-            }
-
-            tracking.track({
-              eventName: isIncidentBarOpen
-                ? 'incidents-panel-closed'
-                : 'incidents-panel-opened',
-            });
-            incidentsPanelStore.setPanelOpen(!isIncidentBarOpen);
-          }}
-          isOpen={isIncidentBarOpen}
-        />
-      )}
       {modificationsStore.state.status === 'moving-token' &&
         businessObjects && (
           <ModificationInfoBanner
@@ -415,12 +379,7 @@ const TopPanel: React.FC = observer(() => {
                     : elementStateOverlays
                 }
                 selectedElementOverlay={
-                  isModificationModeEnabled ? (
-                    <ModificationDropdown />
-                  ) : (
-                    !isIncidentBarOpen &&
-                    !IS_NEW_PROCESS_INSTANCE_PAGE && <MetadataPopover />
-                  )
+                  isModificationModeEnabled && <ModificationDropdown />
                 }
                 highlightedSequenceFlows={highlightedSequenceFlows}
                 highlightedElementIds={highlightedSequenceFlowIds}
@@ -481,12 +440,6 @@ const TopPanel: React.FC = observer(() => {
               </Diagram>
             )}
         </DiagramShell>
-        {processInstance?.hasIncident && !IS_NEW_PROCESS_INSTANCE_PAGE && (
-          <IncidentsWrapper
-            setIsInTransition={setIsInTransition}
-            processInstance={processInstance}
-          />
-        )}
       </DiagramPanel>
     </Container>
   );

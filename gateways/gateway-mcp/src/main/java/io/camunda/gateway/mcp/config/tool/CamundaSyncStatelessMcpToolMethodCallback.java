@@ -17,13 +17,12 @@ import java.util.Map;
 import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import org.springaicommunity.mcp.annotation.McpMeta;
-import org.springaicommunity.mcp.annotation.McpProgressToken;
-import org.springaicommunity.mcp.context.McpAsyncRequestContext;
-import org.springaicommunity.mcp.context.McpSyncRequestContext;
-import org.springaicommunity.mcp.method.tool.AbstractSyncMcpToolMethodCallback;
-import org.springaicommunity.mcp.method.tool.ReturnMode;
-import org.springaicommunity.mcp.method.tool.SyncStatelessMcpToolMethodCallback;
+import org.springframework.ai.mcp.annotation.McpMeta;
+import org.springframework.ai.mcp.annotation.McpProgressToken;
+import org.springframework.ai.mcp.annotation.context.McpAsyncRequestContext;
+import org.springframework.ai.mcp.annotation.context.McpSyncRequestContext;
+import org.springframework.ai.mcp.annotation.method.tool.AbstractSyncMcpToolMethodCallback;
+import org.springframework.ai.mcp.annotation.method.tool.ReturnMode;
 
 /**
  * Camunda-specific callback for synchronous stateless MCP tool methods.
@@ -32,7 +31,8 @@ import org.springaicommunity.mcp.method.tool.SyncStatelessMcpToolMethodCallback;
  * allows method parameters annotated with {@code @McpToolParamsUnwrapped} to be deserialized from
  * the entire tool input arguments map.
  *
- * <p>Original Spring AI implementation: {@link SyncStatelessMcpToolMethodCallback}
+ * <p>Original Spring AI implementation: {@link
+ * org.springframework.ai.mcp.annotation.method.tool.SyncStatelessMcpToolMethodCallback}
  */
 public class CamundaSyncStatelessMcpToolMethodCallback
     extends AbstractSyncMcpToolMethodCallback<McpTransportContext, McpSyncRequestContext>
@@ -71,21 +71,38 @@ public class CamundaSyncStatelessMcpToolMethodCallback
       final Object result = callMethod(methodArguments);
 
       return processResult(result);
-    } catch (final ConstraintViolationException cve) {
-      return createSyncErrorResult(
-          new IllegalArgumentException(normalizeConstraintViolationMessage(cve)));
     } catch (final Exception e) {
-      if (e.getCause() instanceof final ConstraintViolationException cve) {
-        return createSyncErrorResult(
-            new IllegalArgumentException(normalizeConstraintViolationMessage(cve)));
-      }
-
       if (toolCallExceptionClass.isInstance(e)) {
+        // check if this exception or its cause is a ConstraintViolationException
+        final ConstraintViolationException cve = findConstraintViolationException(e);
+        if (cve != null) {
+          return createConstraintViolationSyncErrorResult(cve);
+        }
+
         return createSyncErrorResult(e);
       }
 
       throw e;
     }
+  }
+
+  private ConstraintViolationException findConstraintViolationException(final Throwable e) {
+    Throwable current = e;
+    while (current != null) {
+      if (current instanceof ConstraintViolationException cve) {
+        return cve;
+      }
+      current = current.getCause() != current ? current.getCause() : null;
+    }
+    return null;
+  }
+
+  private CallToolResult createConstraintViolationSyncErrorResult(
+      final ConstraintViolationException cve) {
+    return CallToolResult.builder()
+        .isError(true)
+        .addTextContent(normalizeConstraintViolationMessage(cve))
+        .build();
   }
 
   @Override
@@ -138,6 +155,12 @@ public class CamundaSyncStatelessMcpToolMethodCallback
       final McpTransportContext exchange, final CallToolRequest request) {
     throw new UnsupportedOperationException(
         "Stateless tool methods do not support McpSyncRequestContext parameter.");
+  }
+
+  @Override
+  protected McpTransportContext resolveTransportContext(final McpTransportContext exchange) {
+    throw new UnsupportedOperationException(
+        "Stateless tool methods do not support McpTransportContext parameter.");
   }
 
   private String normalizeConstraintViolationMessage(

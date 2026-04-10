@@ -8,6 +8,7 @@
 package io.camunda.zeebe.gateway.api.util;
 
 import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.zeebe.gateway.RequestMapper;
 import io.camunda.zeebe.gateway.api.util.StubbedGateway.StubbedJobStreamer;
 import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc.GatewayBlockingStub;
@@ -50,6 +51,8 @@ public final class StubbedGatewayRule extends ExternalResource {
   @Override
   protected void after() {
     gateway.stop();
+    // Reset static state set by EndpointManager to avoid polluting other tests in the same JVM
+    RequestMapper.setMultiTenancyEnabled(false);
   }
 
   public StubbedGateway getGateway() {

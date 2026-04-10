@@ -15,7 +15,7 @@ import {Paths} from 'modules/Routes';
 import {
   type CallHierarchy,
   type ProcessInstance,
-} from '@camunda/camunda-api-zod-schemas/8.9';
+} from '@camunda/camunda-api-zod-schemas/8.10';
 
 type Props = {
   callHierarchy: CallHierarchy[];

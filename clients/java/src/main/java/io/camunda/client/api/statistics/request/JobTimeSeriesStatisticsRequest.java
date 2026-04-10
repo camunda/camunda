@@ -16,6 +16,7 @@
 package io.camunda.client.api.statistics.request;
 
 import io.camunda.client.api.command.FinalCommandStep;
+import io.camunda.client.api.search.page.CursorForwardPage;
 import io.camunda.client.api.search.request.TypedPageableRequest;
 import io.camunda.client.api.statistics.response.JobTimeSeriesStatistics;
 import java.time.Duration;
@@ -26,7 +27,7 @@ import java.time.Duration;
  */
 public interface JobTimeSeriesStatisticsRequest
     extends FinalCommandStep<JobTimeSeriesStatistics>,
-        TypedPageableRequest<JobTimeSeriesStatisticsRequest> {
+        TypedPageableRequest<CursorForwardPage, JobTimeSeriesStatisticsRequest> {
 
   /**
    * Sets the time bucket resolution. If not set the server will auto-compute a sensible default.

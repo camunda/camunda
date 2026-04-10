@@ -15,7 +15,7 @@ import {
   UseEntityModalProps,
 } from "src/components/modal";
 import { useNotifications } from "src/components/notifications";
-import type { MappingRule } from "@camunda/camunda-api-zod-schemas/8.9";
+import type { MappingRule } from "@camunda/camunda-api-zod-schemas/8.10";
 
 const DeleteMappingRulesModal: FC<UseEntityModalProps<MappingRule>> = ({
   open,

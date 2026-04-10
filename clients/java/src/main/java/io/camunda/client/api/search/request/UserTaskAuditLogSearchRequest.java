@@ -16,10 +16,12 @@
 package io.camunda.client.api.search.request;
 
 import io.camunda.client.api.search.filter.UserTaskAuditLogFilter;
+import io.camunda.client.api.search.page.AnyPage;
 import io.camunda.client.api.search.response.AuditLogResult;
 import io.camunda.client.api.search.sort.AuditLogSort;
 
 public interface UserTaskAuditLogSearchRequest
-    extends TypedSearchRequest<UserTaskAuditLogFilter, AuditLogSort, UserTaskAuditLogSearchRequest>,
-        TypedPageableRequest<UserTaskAuditLogSearchRequest>,
+    extends TypedSearchRequest<
+            UserTaskAuditLogFilter, AuditLogSort, AnyPage, UserTaskAuditLogSearchRequest>,
+        TypedPageableRequest<AnyPage, UserTaskAuditLogSearchRequest>,
         FinalSearchRequestStep<AuditLogResult> {}

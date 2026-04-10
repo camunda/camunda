@@ -1,9 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:bioc="http://bpmn.io/schema/bpmn/biocolor/1.0" xmlns:color="http://www.omg.org/spec/BPMN/non-normative/color/1.0" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:modeler="http://camunda.org/schema/modeler/1.0" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.9.0" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.2.0" camunda:diagramRelationId="92825398-1885-44d8-a1c3-cc21ad636f74">
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:bioc="http://bpmn.io/schema/bpmn/biocolor/1.0" xmlns:color="http://www.omg.org/spec/BPMN/non-normative/color/1.0" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:modeler="http://camunda.org/schema/modeler/1.0" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.42.0" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.2.0" camunda:diagramRelationId="92825398-1885-44d8-a1c3-cc21ad636f74">
   <bpmn:process id="DemoThing" name="DemoThing" isExecutable="true">
     <bpmn:task id="undefinedTaskId" name="Get into the TARDIS">
       <bpmn:incoming>Flow_05fqeum</bpmn:incoming>
-      <bpmn:incoming>Flow_16lau1o</bpmn:incoming>
       <bpmn:outgoing>Flow_1rt4mvs</bpmn:outgoing>
       <bpmn:property id="Property_0itlo47" name="__targetRef_placeholder" />
       <bpmn:dataInputAssociation id="DataInputAssociation_1knqsoa">
@@ -21,7 +20,7 @@
       <bpmn:incoming>Flow_1jldlsm</bpmn:incoming>
       <bpmn:linkEventDefinition id="LinkEventDefinition_1rq3iqt" name="Go back in time" />
     </bpmn:intermediateThrowEvent>
-    <bpmn:sequenceFlow id="Flow_16lau1o" sourceRef="linkIntermediateCatchEventId" targetRef="undefinedTaskId" />
+    <bpmn:sequenceFlow id="Flow_16lau1o" sourceRef="linkIntermediateCatchEventId" targetRef="Event_090swsj" />
     <bpmn:intermediateCatchEvent id="linkIntermediateCatchEventId" name="Back in Time">
       <bpmn:extensionElements>
         <zeebe:ioMapping>
@@ -117,6 +116,7 @@
     <bpmn:sequenceFlow id="Flow_0h1cc3n" sourceRef="escalationNonInterruptingBoundaryEventId" targetRef="escalationEndEventId" />
     <bpmn:endEvent id="Event_090swsj">
       <bpmn:incoming>Flow_17hha09</bpmn:incoming>
+      <bpmn:incoming>Flow_16lau1o</bpmn:incoming>
     </bpmn:endEvent>
     <bpmn:sequenceFlow id="Flow_17hha09" sourceRef="Gateway_0xv5rrk" targetRef="Event_090swsj" />
     <bpmn:endEvent id="Event_05bv3al" name="Adventure successful">
@@ -142,6 +142,10 @@
       <bpmn:outgoing>Flow_05fqeum</bpmn:outgoing>
     </bpmn:startEvent>
     <bpmn:group id="Group_1vshba0" categoryValueRef="CategoryValue_14jnir5" />
+    <bpmn:textAnnotation id="TextAnnotation_0mxw5tj">
+      <bpmn:text>Avoid StraightThroughProcessingLoop</bpmn:text>
+    </bpmn:textAnnotation>
+    <bpmn:association id="Association_1naqpzr" associationDirection="None" sourceRef="linkIntermediateCatchEventId" targetRef="TextAnnotation_0mxw5tj" />
   </bpmn:process>
   <bpmn:category id="Category_1tehhct">
     <bpmn:categoryValue id="CategoryValue_14jnir5" value="Timey Wimey Stuff" />
@@ -171,13 +175,7 @@
       <bpmndi:BPMNShape id="Event_0r0a1rz_di" bpmnElement="linkIntermediateCatchEventId" bioc:stroke="#205022" bioc:fill="#c8e6c9" color:background-color="#c8e6c9" color:border-color="#205022">
         <dc:Bounds x="572" y="432" width="36" height="36" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="561" y="475" width="61" height="14" />
-        </bpmndi:BPMNLabel>
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Event_1hafbnl_di" bpmnElement="startEventId" bioc:stroke="#205022" bioc:fill="#c8e6c9" color:background-color="#c8e6c9" color:border-color="#205022">
-        <dc:Bounds x="492" y="292" width="36" height="36" />
-        <bpmndi:BPMNLabel>
-          <dc:Bounds x="468" y="335" width="84" height="14" />
+          <dc:Bounds x="558" y="481" width="63" height="14" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Activity_1crglq0_di" bpmnElement="Activity_1crglq0" isExpanded="true">
@@ -327,6 +325,16 @@
       <bpmndi:BPMNShape id="Gateway_1uzx9cr_di" bpmnElement="Gateway_0xv5rrk">
         <dc:Bounds x="815" y="285" width="50" height="50" />
       </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_1hafbnl_di" bpmnElement="startEventId" bioc:stroke="#205022" bioc:fill="#c8e6c9" color:background-color="#c8e6c9" color:border-color="#205022">
+        <dc:Bounds x="492" y="292" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="468" y="335" width="84" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Association_1naqpzr_di" bpmnElement="Association_1naqpzr">
+        <di:waypoint x="573" y="445" />
+        <di:waypoint x="496" y="420" />
+      </bpmndi:BPMNEdge>
       <bpmndi:BPMNShape id="Group_1vshba0_di" bpmnElement="Group_1vshba0">
         <dc:Bounds x="840" y="80" width="458" height="205" />
         <bpmndi:BPMNLabel>
@@ -371,8 +379,8 @@
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Flow_16lau1o_di" bpmnElement="Flow_16lau1o">
         <di:waypoint x="608" y="450" />
-        <di:waypoint x="710" y="450" />
-        <di:waypoint x="710" y="350" />
+        <di:waypoint x="960" y="450" />
+        <di:waypoint x="960" y="328" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Flow_14fhjp1_di" bpmnElement="Flow_14fhjp1">
         <di:waypoint x="840" y="335" />
@@ -399,6 +407,10 @@
         <di:waypoint x="865" y="310" />
         <di:waypoint x="942" y="310" />
       </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="TextAnnotation_0mxw5tj_di" bpmnElement="TextAnnotation_0mxw5tj">
+        <dc:Bounds x="350" y="390" width="230" height="30" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
     </bpmndi:BPMNPlane>
   </bpmndi:BPMNDiagram>
 </bpmn:definitions>

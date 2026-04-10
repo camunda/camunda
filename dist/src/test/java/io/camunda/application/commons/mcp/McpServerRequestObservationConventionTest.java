@@ -11,7 +11,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.micrometer.common.KeyValue;
 import io.micrometer.common.KeyValues;
 import java.util.stream.Stream;
@@ -22,10 +21,11 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.server.observation.ServerRequestObservationContext;
 import org.springframework.web.util.ContentCachingRequestWrapper;
+import tools.jackson.databind.json.JsonMapper;
 
 class McpServerRequestObservationConventionTest {
 
-  static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+  static final JsonMapper JSON_MAPPER = new JsonMapper();
 
   @Test
   void tracksNonMcpInObservationTags() {
@@ -40,7 +40,7 @@ class McpServerRequestObservationConventionTest {
     // when
     final KeyValues keyValues =
         McpServerRequestObservationConvention.getMcpRequestLowCardinalityValues(
-            observationContext, OBJECT_MAPPER);
+            observationContext, JSON_MAPPER);
     // then
     assertThat(keyValues).isEmpty();
   }
@@ -61,7 +61,7 @@ class McpServerRequestObservationConventionTest {
     // when
     final KeyValues keyValues =
         McpServerRequestObservationConvention.getMcpRequestLowCardinalityValues(
-            observationContext, OBJECT_MAPPER);
+            observationContext, JSON_MAPPER);
     // then
     assertThat(keyValues).containsExactly(KeyValue.of("uri", expectedUriTag));
   }

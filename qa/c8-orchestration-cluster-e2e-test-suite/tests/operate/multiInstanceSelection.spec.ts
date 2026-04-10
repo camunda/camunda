@@ -127,21 +127,21 @@ test.describe('Multi Instance Flow Node Selection', () => {
     });
 
     await test.step('Verify incidents banner shows 25 incidents', async () => {
-      await expect(operateProcessInstancePage.incidentsBanner).toBeVisible();
-      await expect(operateProcessInstancePage.incidentsBanner).toContainText(
-        '25 Incidents occurred',
+      await expect(operateProcessInstancePage.incidentsTab).toBeVisible();
+      await expect(operateProcessInstancePage.incidentsTab).toContainText(
+        /Incidents\s*25/i,
       );
     });
 
     await test.step('Click incidents banner to open incidents table', async () => {
       await operateProcessInstancePage.navigateToRootScope();
-      await operateProcessInstancePage.incidentsBanner.click();
+      await operateProcessInstancePage.incidentsTab.click();
       await expect(
         operateProcessInstancePage.incidentsViewHeader,
       ).toBeVisible();
       await expect(
         operateProcessInstancePage.incidentsViewHeader,
-      ).toContainText(/Incidents\s+-\s+25 results/i);
+      ).toContainText(/25 results/i);
     });
 
     await test.step('Verify incident table shows 25 "No retries left" errors', async () => {
@@ -151,10 +151,7 @@ test.describe('Multi Instance Flow Node Selection', () => {
     });
   });
 
-  test('select single task', async ({
-    operateProcessInstancePage,
-    operateDiagramPage,
-  }) => {
+  test('select single task', async ({operateProcessInstancePage}) => {
     await test.step('Select a single Task B instance', async () => {
       await operateProcessInstancePage.expandTreeItemInHistory(
         /^task b \(multi instance\)$/i,
@@ -165,15 +162,7 @@ test.describe('Multi Instance Flow Node Selection', () => {
         .click();
     });
 
-    await test.step('Verify metadata popover shows flow node instance details', async () => {
-      await expect(
-        operateDiagramPage.getPopoverText(/element instance key/i),
-      ).toBeVisible();
-    });
-
-    await test.step('Open incident table and verify one incident is selected', async () => {
-      await operateDiagramPage.clickShowIncident();
-
+    await test.step('Verify incident table shows one filtered incident', async () => {
       await expect(
         operateProcessInstancePage.getIncidentRow(/Job: No retries left/i),
       ).toHaveCount(1);
@@ -185,7 +174,7 @@ test.describe('Multi Instance Flow Node Selection', () => {
 
       await expect(
         operateProcessInstancePage.incidentsViewHeader,
-      ).toContainText(/Incidents\s+-\s+Filtered by "Task B"\s+-\s+1 result/i);
+      ).toContainText(/1 result/i);
     });
   });
 });

@@ -1,5 +1,46 @@
 # Changelog
 
+## v0.0.55
+
+### 🚀 Enhancements
+
+- Copy 8.9 defs into 8.10 ([#49454](https://github.com/camunda/camunda/issues/49454))
+
+### ❤️ Contributors
+
+- Vinicius Goulart ([@vsgoulart](https://github.com/vsgoulart))
+
+## v0.0.54
+
+### 🚀 Enhancements
+
+- Updated audit-log schema to support `processDefinitionId` filtering. ([#49391](https://github.com/camunda/camunda/issues/49391))
+
+### ❤️ Contributors
+
+- Daniel Kelemen ([@danielkelemen](https://github.com/danielkelemen))
+
+## v0.0.53
+
+### 🚀 Enhancements
+
+- Switch `queryVariablesByUserTask` endpoint to `/user-tasks/{key}/effective-variables/search` API ([#46967](https://github.com/camunda/camunda/issues/46967))
+
+### ❤️ Contributors
+
+- Eddie Tsedeke ([@tsedekey](https://github.com/tsedekey))
+- Christoph Fricke ([@christoph-fricke](https://github.com/christoph-fricke))
+
+## v0.0.52
+
+### 🩹 Fixes
+
+- Remove `annotation` field from Audit Log schema ([#47668](https://github.com/camunda/camunda/issues/47668))
+
+### ❤️ Contributors
+
+- Luca Arienti ([@arienzIT](https://github.com/arienzIT))
+
 ## v0.0.51
 
 ### 🩹 Fixes

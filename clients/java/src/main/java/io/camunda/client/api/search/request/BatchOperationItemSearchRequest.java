@@ -16,10 +16,14 @@
 package io.camunda.client.api.search.request;
 
 import io.camunda.client.api.search.filter.BatchOperationItemFilter;
+import io.camunda.client.api.search.page.AnyPage;
 import io.camunda.client.api.search.response.BatchOperationItems.BatchOperationItem;
 import io.camunda.client.api.search.sort.BatchOperationItemSort;
 
 public interface BatchOperationItemSearchRequest
     extends TypedSearchRequest<
-            BatchOperationItemFilter, BatchOperationItemSort, BatchOperationItemSearchRequest>,
+            BatchOperationItemFilter,
+            BatchOperationItemSort,
+            AnyPage,
+            BatchOperationItemSearchRequest>,
         FinalSearchRequestStep<BatchOperationItem> {}

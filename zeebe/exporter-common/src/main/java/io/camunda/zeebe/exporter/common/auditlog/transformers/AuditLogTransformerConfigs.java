@@ -177,7 +177,7 @@ public class AuditLogTransformerConfigs {
   private static final Map<EntityType, AuditLogEntityType> ENTITY_TYPE_AUDIT_LOG_ENTITY_TYPE_MAP =
       Map.ofEntries(
           Map.entry(EntityType.USER, AuditLogEntityType.USER),
-          Map.entry(EntityType.CLIENT, AuditLogEntityType.USER),
+          Map.entry(EntityType.CLIENT, AuditLogEntityType.CLIENT),
           Map.entry(EntityType.GROUP, AuditLogEntityType.GROUP),
           Map.entry(EntityType.ROLE, AuditLogEntityType.ROLE),
           Map.entry(EntityType.MAPPING_RULE, AuditLogEntityType.MAPPING_RULE));

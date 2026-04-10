@@ -12,6 +12,7 @@ import com.azure.identity.DefaultAzureCredentialBuilder;
 import com.azure.storage.blob.BlobContainerClient;
 import com.azure.storage.blob.BlobServiceClient;
 import com.azure.storage.blob.BlobServiceClientBuilder;
+import com.azure.storage.blob.models.ListBlobsOptions;
 import com.azure.storage.common.StorageSharedKeyCredential;
 import io.camunda.zeebe.backup.api.Backup;
 import io.camunda.zeebe.backup.api.BackupIdentifier;
@@ -19,6 +20,7 @@ import io.camunda.zeebe.backup.api.BackupIdentifierWildcard;
 import io.camunda.zeebe.backup.api.BackupStatus;
 import io.camunda.zeebe.backup.api.BackupStatusCode;
 import io.camunda.zeebe.backup.api.BackupStore;
+import io.camunda.zeebe.backup.azure.AzureBackupStoreException.ConfigurationException;
 import io.camunda.zeebe.backup.azure.AzureBackupStoreException.ContainerDoesNotExist;
 import io.camunda.zeebe.backup.common.BackupImpl;
 import io.camunda.zeebe.backup.common.BackupStatusImpl;
@@ -34,6 +36,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.locks.ReentrantLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -60,6 +63,7 @@ public final class AzureBackupStore implements BackupStore {
   private final FileSetManager fileSetManager;
   private final ManifestManager manifestManager;
   private final BlobContainerClient blobContainerClient;
+  private final AzureBackupConfig config;
   private volatile boolean containerCreated;
 
   AzureBackupStore(final AzureBackupConfig config) {
@@ -67,6 +71,7 @@ public final class AzureBackupStore implements BackupStore {
   }
 
   AzureBackupStore(final AzureBackupConfig config, final BlobServiceClient client) {
+    this.config = config;
     executor = Executors.newVirtualThreadPerTaskExecutor();
     blobContainerClient = getContainerClient(client, config);
     final boolean createContainer = isCreateContainer(config);
@@ -319,6 +324,33 @@ public final class AzureBackupStore implements BackupStore {
             throw new RuntimeException(e);
           }
         });
+  }
+
+  @Override
+  public CompletableFuture<Void> verifyConnection() {
+    return CompletableFuture.runAsync(
+            () -> {
+              try {
+                blobContainerClient
+                    .listBlobs(new ListBlobsOptions().setMaxResultsPerPage(1), null)
+                    .stream()
+                    .findFirst();
+              } catch (final Exception e) {
+                throw new ConfigurationException(
+                    "Failed to connect to Azure Blob Storage with the provided configuration", e);
+              }
+            },
+            executor)
+        .orTimeout(10, TimeUnit.SECONDS)
+        .exceptionally(
+            error -> {
+              if (error instanceof TimeoutException) {
+                throw new ConfigurationException(
+                    "Failed to connect to Azure Blob Storage: connection timed out after 10 seconds");
+              }
+              throw new ConfigurationException(
+                  "Failed to connect to Azure Blob Storage with the provided configuration", error);
+            });
   }
 
   private String backupMetadataPath(final int partitionId) {

@@ -63,12 +63,7 @@ public class AuthorizationDbReader extends AbstractEntityReader<AuthorizationEnt
   @Override
   public SearchQueryResult<AuthorizationEntity> search(
       final AuthorizationQuery query, final ResourceAccessChecks resourceAccessChecks) {
-    final var dbSort =
-        convertSort(
-            query.sort(),
-            AuthorizationSearchColumn.OWNER_ID,
-            AuthorizationSearchColumn.OWNER_TYPE,
-            AuthorizationSearchColumn.RESOURCE_TYPE);
+    final var dbSort = convertSort(query.sort(), AuthorizationSearchColumn.AUTHORIZATION_KEY);
 
     if (shouldReturnEmptyResult(resourceAccessChecks)) {
       return buildSearchQueryResult(0, List.of(), dbSort);
@@ -88,14 +83,11 @@ public class AuthorizationDbReader extends AbstractEntityReader<AuthorizationEnt
                     .page(dbPage));
 
     LOG.trace("[RDBMS DB] Search for authorizations with filter {}", dbQuery);
-    final var totalHits = authorizationMapper.count(dbQuery);
-
-    if (shouldReturnEmptyPage(dbPage, totalHits)) {
-      return buildSearchQueryResult(totalHits, List.of(), dbSort);
-    }
-
-    final var hits = authorizationMapper.search(dbQuery).stream().map(this::map).toList();
-    return buildSearchQueryResult(totalHits, hits, dbSort);
+    return executePagedQuery(
+        () -> authorizationMapper.count(dbQuery),
+        () -> authorizationMapper.search(dbQuery).stream().map(this::map).toList(),
+        dbPage,
+        dbSort);
   }
 
   public SearchQueryResult<AuthorizationEntity> search(final AuthorizationQuery query) {

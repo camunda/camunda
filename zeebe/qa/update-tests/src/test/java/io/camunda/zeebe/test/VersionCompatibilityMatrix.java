@@ -173,6 +173,22 @@ final class VersionCompatibilityMatrix {
             .max()
             .orElse(-1); // -1 is a sentinel: no previous released minor found
 
+    // Rolling updates are only supported between consecutive minor versions (N -> N+1). If the
+    // highest released minor is more than 1 behind the current version (e.g. 8.8 when current is
+    // 8.10, because 8.9 was never released), skip cross-minor tests entirely — they would test
+    // an unsupported upgrade path and produce false failures.
+    if (previousMinor >= 0 && current.minor() - previousMinor > 1) {
+      LOG.info(
+          "Skipping cross-minor snapshot tests: highest released minor 8.{} is more than 1 minor"
+              + " behind current version {}. Only intra-minor upgrades will be tested.",
+          previousMinor,
+          current);
+      return allPreviousVersions.stream()
+          .filter(version -> version.minor() == current.minor())
+          .filter(version -> isCompatible(version, current))
+          .map(version -> Arguments.of(version.toString(), "CURRENT"));
+    }
+
     // Build upgrade paths to CURRENT by:
     // 1. keeping all patch releases from the previous minor (e.g. 8.8.0, 8.8.1, 8.8.2 when
     //    previousMinor == 8), so each of those becomes a starting point for an upgrade to CURRENT.
@@ -194,12 +210,17 @@ final class VersionCompatibilityMatrix {
             .map(VersionInfo::version)
             .filter(version -> version.compareTo(current) < 0)
             .filter(version -> current.minor() - version.minor() == 1)
-            .filter(next -> isCompatible(current, next))
+            .filter(version -> isCompatible(version, current))
             .collect(StreamUtil.minMax(Comparator.comparing(SemanticVersion::patch)));
 
-    return Stream.of(
-        Arguments.of(minAndMaxPatch.min().toString(), "CURRENT"),
-        Arguments.of(minAndMaxPatch.max().toString(), "CURRENT"));
+    // If there are no compatible versions, returns an empty stream skipping the test
+    return Optional.ofNullable(minAndMaxPatch.min())
+        .map(
+            ignored ->
+                Stream.of(
+                    Arguments.of(minAndMaxPatch.min().toString(), "CURRENT"),
+                    Arguments.of(minAndMaxPatch.max().toString(), "CURRENT")))
+        .orElse(Stream.empty());
   }
 
   public Stream<Arguments> full() {

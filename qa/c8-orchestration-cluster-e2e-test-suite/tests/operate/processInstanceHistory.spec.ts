@@ -16,22 +16,16 @@ import {
 import {captureScreenshot, captureFailureVideo} from '@setup';
 import {navigateToApp} from '@pages/UtilitiesPage';
 import {waitForAssertion} from 'utils/waitForAssertion';
-import {defaultAssertionOptions} from 'utils/constants';
 
 type ProcessInstance = {processInstanceKey: number};
 
 let incidentProcessInstance: ProcessInstance;
 let embeddedSubprocessInstance: ProcessInstance;
 
-const startEventStartGlobal = 'StartGlobal';
 const activityNode = 'Node';
 const activityFirstSubprocess = 'FirstSubprocess';
-const eventStartFirstSubProcess = 'StartFirstSubProcess';
 const activityCollectMoney = 'CollectMoney';
-const activityFetchItems = 'FetchItems';
 const eventEndFirstSubProcess = 'EndFirstSubProcess';
-const eventOrderCancelled = 'OrderCanceled';
-const eventOrderCancelledEnd = 'OrderCancelledEnd';
 const activitySecondSubprocess = 'SecondSubprocess';
 const eventStartSecondSubProcess = 'StartSecondSubProcess';
 const activitySendItems = 'SendItems';
@@ -154,9 +148,7 @@ test.describe('Process Instance History', () => {
       await expect(operateProcessInstancePage.instanceHistory).toBeVisible();
       await waitForAssertion({
         assertion: async () => {
-          await expect(
-            operateProcessInstancePage.incidentsBanner,
-          ).toBeVisible();
+          await expect(operateProcessInstancePage.incidentsTab).toBeVisible();
         },
         onFailure: async () => {
           await page.reload();
@@ -177,6 +169,7 @@ test.describe('Process Instance History', () => {
     });
 
     await test.step('Add variable to the process', async () => {
+      await operateProcessInstancePage.clickVariablesTab();
       await operateProcessInstancePage.clickAddVariableButton();
       await operateProcessInstancePage.fillNewVariable('goUp', '6');
       await operateProcessInstancePage.clickSaveVariableButton();
@@ -184,18 +177,16 @@ test.describe('Process Instance History', () => {
     });
 
     await test.step('Retry incident', async () => {
-      await operateProcessInstancePage.clickIncidentsBanner();
-      const errorMessage = "Expected result of the expression 'goUp < 0'";
-      await operateProcessInstancePage.retryIncidentByErrorMessage(
-        errorMessage,
-      );
+      await operateProcessInstancePage.clickIncidentsTab();
+      const errorType = 'Extract value error.';
+      await operateProcessInstancePage.retryIncidentByErrorType(errorType);
     });
 
     await test.step('Verify incident is resolved in Instance History', async () => {
       await page.waitForTimeout(12000);
       await waitForAssertion({
         assertion: async () => {
-          await expect(operateProcessInstancePage.incidentsBanner).toBeHidden();
+          await expect(operateProcessInstancePage.incidentsTab).toBeHidden();
         },
         onFailure: async () => {
           await page.reload();
@@ -258,6 +249,7 @@ test.describe('Process Instance History', () => {
 
     const mainProcessName = 'EmbeddedSubprocess';
     let expandingElementsInMainProcess;
+
     await test.step('Verify Main process has no nested element', async () => {
       expandingElementsInMainProcess =
         await operateProcessInstancePage.checkIfPresentExpandeingElementsInMainProcess(

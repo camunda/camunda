@@ -71,10 +71,10 @@ describe('<Header />', () => {
 
     expect(await screen.findByTestId('EVALUATED-icon')).toBeInTheDocument();
     expect(
-      screen.getByRole('button', {name: /open decision requirements diagram/i}),
+      screen.getByText(invoiceClassification.decisionDefinitionName),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole('columnheader', {name: /^decision name$/i}),
+      screen.getByRole('button', {name: /open decision requirements diagram/i}),
     ).toBeInTheDocument();
     expect(
       screen.getByRole('columnheader', {name: /decision instance key/i}),
@@ -87,11 +87,6 @@ describe('<Header />', () => {
     ).toBeInTheDocument();
     expect(
       screen.getByRole('columnheader', {name: /process instance key/i}),
-    ).toBeInTheDocument();
-    expect(
-      await screen.findByRole('cell', {
-        name: invoiceClassification.decisionDefinitionName,
-      }),
     ).toBeInTheDocument();
     expect(
       await screen.findByRole('cell', {
@@ -115,5 +110,27 @@ describe('<Header />', () => {
         description: `View process instance ${invoiceClassification.processInstanceKey}`,
       }),
     ).toBeInTheDocument();
+  });
+
+  it('should display a failed evaluation state', async () => {
+    const failedInstance = {
+      ...invoiceClassification,
+      state: 'FAILED',
+    } satisfies typeof invoiceClassification;
+    mockFetchDecisionInstance().withSuccess(failedInstance);
+
+    render(
+      <Header
+        decisionEvaluationInstanceKey={MOCK_DECISION_INSTANCE_ID}
+        onChangeDrdPanelState={() => void 0}
+      />,
+      {wrapper: Wrapper},
+    );
+
+    expect(await screen.findByTestId('FAILED-icon')).toBeInTheDocument();
+    expect(
+      screen.getByText(invoiceClassification.decisionDefinitionName),
+    ).toBeInTheDocument();
+    expect(screen.getByText('1 incident')).toBeInTheDocument();
   });
 });

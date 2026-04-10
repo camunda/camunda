@@ -76,6 +76,11 @@ final class OpensearchIncidentUpdateRepositoryIT extends IncidentUpdateRepositor
     try {
       return ApacheHttpClient5TransportBuilder.builder(
               HttpHost.create(CONTAINER.getHttpHostAddress()))
+          .setHttpClientConfigCallback(
+              httpClientBuilder -> {
+                httpClientBuilder.disableContentCompression();
+                return httpClientBuilder;
+              })
           .setMapper(new JacksonJsonpMapper())
           .build();
     } catch (final Exception e) {

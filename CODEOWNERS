@@ -25,6 +25,7 @@
 /.github/actions/renew-github-token/*                    @camunda/monorepo-devops-team
 /.github/workflows/add-to-projects.yml                   @camunda/monorepo-devops-team
 /.github/workflows/backport.yml                          @camunda/monorepo-devops-team
+/.github/workflows/stale-backport-tracker.yml            @camunda/monorepo-devops-team
 /.github/workflows/camunda-helm-integration.yml          @camunda/monorepo-devops-team
 /.github/workflows/camunda-platform-release*             @camunda/monorepo-devops-team
 /.github/workflows/chatops*                              @camunda/monorepo-devops-team
@@ -138,6 +139,9 @@
 #################
 ## Agentic AI  ##
 #################
+
+# AI Assistant Instructions
+/CLAUDE.md  @camunda/orchestration-cluster
 
 # MCP gateway
 /gateways/gateway-mcp @camunda/connectors-agentic-ai

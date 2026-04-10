@@ -113,6 +113,17 @@ public interface MutableElementInstanceState extends ElementInstanceState {
       List<ProcessInstanceCreationRuntimeInstructionValue> runtimeInstructions);
 
   /**
+   * Removes all runtime instructions associated with the given process instance key.
+   *
+   * <p>This should be called when the process instance is removed from state to prevent stale
+   * runtime instructions from being evaluated after the instance no longer exists.
+   *
+   * @param processInstanceKey the key of the process instance whose runtime instructions should be
+   *     removed
+   */
+  void removeRuntimeInstructions(long processInstanceKey);
+
+  /**
    * Inserts a mapping from business id to process instance key. This is used to enforce uniqueness
    * of business id per process definition (scoped by tenant, across versions).
    *

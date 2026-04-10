@@ -92,8 +92,8 @@ test.describe('decisions page', () => {
       searchParams: {
         evaluated: 'true',
         failed: 'true',
-        name: 'invoiceClassification',
-        version: '2',
+        decisionDefinitionId: 'invoiceClassification',
+        decisionDefinitionVersion: '2',
       },
     });
 
@@ -118,8 +118,8 @@ test.describe('decisions page', () => {
       searchParams: {
         evaluated: 'true',
         failed: 'true',
-        name: 'invoiceClassification',
-        version: '2',
+        decisionDefinitionId: 'invoiceClassification',
+        decisionDefinitionVersion: '2',
       },
     });
 
@@ -153,8 +153,8 @@ test.describe('decisions page', () => {
       searchParams: {
         evaluated: 'true',
         failed: 'true',
-        name: 'invoiceClassification',
-        version: '2',
+        decisionDefinitionId: 'invoiceClassification',
+        decisionDefinitionVersion: '2',
       },
     });
 
@@ -185,8 +185,8 @@ test.describe('decisions page', () => {
       searchParams: {
         evaluated: 'true',
         failed: 'true',
-        name: 'invoiceClassification',
-        version: '2',
+        decisionDefinitionId: 'invoiceClassification',
+        decisionDefinitionVersion: '2',
       },
     });
 

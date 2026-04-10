@@ -22,9 +22,33 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-func Clean(camundaVersion string, elasticsearchVersion string) {
-	if err := os.RemoveAll("elasticsearch-" + elasticsearchVersion); err != nil {
-		log.Error().Err(err).Msg("failed to remove elasticsearch")
+func Clean(camundaVersion string) {
+	// Older C8Run builds extracted Elasticsearch locally. Remove any leftovers so they cannot be
+	// picked up by later packaging runs after Elasticsearch was removed from the distribution.
+	legacyElasticsearchArtifacts, err := filepath.Glob("elasticsearch-*")
+	if err != nil {
+		log.Error().Err(err).Msg("failed to list legacy elasticsearch artifacts")
+	} else {
+		for _, artifact := range legacyElasticsearchArtifacts {
+			if err := os.RemoveAll(artifact); err != nil {
+				log.Error().Err(err).Str("path", artifact).Msg("failed to remove legacy elasticsearch artifact")
+			}
+		}
+	}
+	for _, path := range []string{"elasticsearch.process", "elasticsearch.process.lock"} {
+		if err := os.Remove(path); err != nil && !errors.Is(err, os.ErrNotExist) {
+			log.Error().Err(err).Str("path", path).Msg("failed to remove legacy elasticsearch process file")
+		}
+	}
+	legacyComposeArtifacts, err := filepath.Glob("docker-compose-*")
+	if err != nil {
+		log.Error().Err(err).Msg("failed to list legacy docker compose artifacts")
+	} else {
+		for _, artifact := range legacyComposeArtifacts {
+			if err := os.RemoveAll(artifact); err != nil {
+				log.Error().Err(err).Str("path", artifact).Msg("failed to remove legacy docker compose artifact")
+			}
+		}
 	}
 	if err := os.RemoveAll("camunda-zeebe-" + camundaVersion); err != nil {
 		log.Error().Err(err).Msg("failed to remove camunda")
@@ -122,12 +146,11 @@ func getJavaArtifactsToken() (string, error) {
 	return "Basic " + token, nil
 }
 
-func getFilesToArchive(osType, elasticsearchVersion, connectorsFilePath, camundaVersion, composeExtractionPath string) []string {
+func getFilesToArchive(osType, connectorsFilePath, camundaVersion string) []string {
 	commonFiles := []string{
 		filepath.Join("c8run", "README.md"),
 		filepath.Join("c8run", "connectors-application.properties"),
 		filepath.Join("c8run", connectorsFilePath),
-		filepath.Join("c8run", "elasticsearch-"+elasticsearchVersion),
 		filepath.Join("c8run", "custom_connectors"),
 		filepath.Join("c8run", "endpoints.txt"),
 		filepath.Join("c8run", "JavaVersion.class"),
@@ -135,7 +158,6 @@ func getFilesToArchive(osType, elasticsearchVersion, connectorsFilePath, camunda
 		filepath.Join("c8run", "log"),
 		filepath.Join("c8run", "camunda-zeebe-"+camundaVersion),
 		filepath.Join("c8run", ".env"),
-		filepath.Join("c8run", composeExtractionPath),
 		filepath.Join("c8run", "configuration", "application.yaml"),
 	}
 
@@ -204,28 +226,19 @@ func BuildJavaScripts() error {
 	return nil
 }
 
-func New(camundaVersion, elasticsearchVersion, connectorsVersion, composeTag string) error {
+func New(camundaVersion, connectorsVersion string) error {
 	osType, architecture, pkgName, finalOutputExtension, extractFunc, err := setOsSpecificValues()
 	if err != nil {
 		fmt.Printf("%+v", err)
 		os.Exit(1)
 	}
 
-	elasticsearchUrl := "https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-" + elasticsearchVersion + "-" + osType + "-" + architecture + pkgName
-	elasticsearchFilePath := "elasticsearch-" + elasticsearchVersion + pkgName
 	camundaFilePath := "camunda-zeebe-" + camundaVersion + pkgName
 	camundaUrl := "https://repository.nexus.camunda.cloud/content/groups/internal/io/camunda/camunda-zeebe/" + camundaVersion + "/camunda-zeebe-" + camundaVersion + pkgName
 	connectorsFilePath := "connector-runtime-bundle-" + connectorsVersion + "-with-dependencies.jar"
 	connectorsUrl := "https://repository.nexus.camunda.cloud/content/groups/internal/io/camunda/connector/connector-runtime-bundle/" + connectorsVersion + "/" + connectorsFilePath
 	sqlZipFilePath := "camunda-db-rdbms-schema-" + camundaVersion + ".zip"
 	sqlZipUrl := "https://repository.nexus.camunda.cloud/content/groups/internal/io/camunda/camunda-db-rdbms-schema/" + camundaVersion + "/" + "camunda-db-rdbms-schema-" + camundaVersion + ".zip"
-
-	composeUrl := "https://github.com/camunda/camunda-distributions/releases/download/docker-compose-" + composeTag + "/docker-compose-" + composeTag + ".zip"
-	composeFilePath := "docker-compose-" + composeTag + ".zip"
-	// just a file to check to see if it was already extracted
-	composeExtractionPath := "docker-compose-" + composeTag
-
-	authToken := os.Getenv("GH_TOKEN")
 
 	// build JavaVersion and JavaHome
 	err = BuildJavaScripts()
@@ -239,12 +252,7 @@ func New(camundaVersion, elasticsearchVersion, connectorsVersion, composeTag str
 		os.Exit(1)
 	}
 
-	Clean(camundaVersion, elasticsearchVersion)
-
-	err = downloadAndExtract(elasticsearchFilePath, elasticsearchUrl, "elasticsearch-"+elasticsearchVersion, ".", "", extractFunc)
-	if err != nil {
-		return fmt.Errorf("Package "+osType+": failed to fetch elasticsearch: %w\n%s", err, debug.Stack())
-	}
+	Clean(camundaVersion)
 
 	err = downloadAndExtract(camundaFilePath, camundaUrl, "camunda-zeebe-"+camundaVersion, ".", javaArtifactsToken, extractFunc)
 	if err != nil {
@@ -254,11 +262,6 @@ func New(camundaVersion, elasticsearchVersion, connectorsVersion, composeTag str
 	err = downloadAndExtract(connectorsFilePath, connectorsUrl, connectorsFilePath, ".", javaArtifactsToken, func(_, _ string) error { return nil })
 	if err != nil {
 		return fmt.Errorf("Package "+osType+": failed to fetch connectors: %w\n%s", err, debug.Stack())
-	}
-
-	err = downloadAndExtract(composeFilePath, composeUrl, composeExtractionPath, composeExtractionPath, authToken, archive.UnzipSource)
-	if err != nil {
-		return fmt.Errorf("Package "+osType+": failed to fetch compose release %w\n%s", err, debug.Stack())
 	}
 
 	err = downloadAndExtract(sqlZipFilePath, sqlZipUrl, "camunda-db-rdbms-schema-"+camundaVersion, "rdbms-schema", javaArtifactsToken, archive.UnzipSource)
@@ -275,7 +278,7 @@ func New(camundaVersion, elasticsearchVersion, connectorsVersion, composeTag str
 	sourceRoot := "c8run"
 	archiveRoot := "c8run-" + camundaVersion
 
-	filesToArchive := getFilesToArchive(osType, elasticsearchVersion, connectorsFilePath, camundaVersion, composeExtractionPath)
+	filesToArchive := getFilesToArchive(osType, connectorsFilePath, camundaVersion)
 	outputFileName := "camunda8-run-" + camundaVersion + "-" + osType + "-" + architecture + finalOutputExtension
 	outputPath := filepath.Join(sourceRoot, outputFileName)
 

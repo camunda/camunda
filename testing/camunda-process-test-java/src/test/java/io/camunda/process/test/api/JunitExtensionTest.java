@@ -25,7 +25,9 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.CamundaClientConfiguration;
+import io.camunda.process.test.api.judge.JudgeConfig;
 import io.camunda.process.test.api.runtime.CamundaProcessTestContainerProvider;
+import io.camunda.process.test.api.similarity.SemanticSimilarityConfig;
 import io.camunda.process.test.api.testCases.TestCaseRunner;
 import io.camunda.process.test.impl.client.CamundaManagementClient;
 import io.camunda.process.test.impl.coverage.ProcessCoverage;
@@ -34,17 +36,19 @@ import io.camunda.process.test.impl.runtime.CamundaProcessTestContainerRuntime;
 import io.camunda.process.test.impl.runtime.CamundaProcessTestRuntimeBuilder;
 import io.camunda.process.test.impl.testresult.CamundaProcessTestResultCollector;
 import io.camunda.process.test.impl.testresult.ProcessTestResult;
-import io.camunda.zeebe.client.ZeebeClient;
-import io.camunda.zeebe.client.ZeebeClientConfiguration;
+import io.camunda.process.test.utils.FakeChatModelAdapterProvider;
 import java.lang.reflect.Field;
 import java.net.URI;
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Consumer;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.ExtensionContext;
@@ -81,7 +85,6 @@ public class JunitExtensionTest {
 
   // to be injected
   private CamundaClient client;
-  private ZeebeClient zeebeClient;
   private CamundaProcessTestContext camundaProcessTestContext;
   private TestCaseRunner testCaseRunner;
 
@@ -105,7 +108,7 @@ public class JunitExtensionTest {
   }
 
   @Test
-  void shouldInjectCamundaClientAndZeebeClient() throws Exception {
+  void shouldInjectCamundaClient() throws Exception {
     // given
     final CamundaProcessTestExtension extension =
         new CamundaProcessTestExtension(camundaRuntimeBuilder, processCoverageBuilder, NOOP);
@@ -116,14 +119,10 @@ public class JunitExtensionTest {
 
     // then
     assertThat(client).isNotNull();
-    assertThat(zeebeClient).isNotNull();
 
     final CamundaClientConfiguration configuration = client.getConfiguration();
     assertThat(configuration.getGrpcAddress()).isEqualTo(GRPC_API_ADDRESS);
     assertThat(configuration.getRestAddress()).isEqualTo(REST_API_ADDRESS);
-    final ZeebeClientConfiguration zeebeClientConfiguration = zeebeClient.getConfiguration();
-    assertThat(zeebeClientConfiguration.getGrpcAddress()).isEqualTo(GRPC_API_ADDRESS);
-    assertThat(zeebeClientConfiguration.getRestAddress()).isEqualTo(REST_API_ADDRESS);
   }
 
   @Test
@@ -182,25 +181,6 @@ public class JunitExtensionTest {
   }
 
   @Test
-  void shouldCreateZeebeClientFromContext() throws Exception {
-    // given
-    final CamundaProcessTestExtension extension =
-        new CamundaProcessTestExtension(camundaRuntimeBuilder, processCoverageBuilder, NOOP);
-
-    // when
-    extension.beforeAll(extensionContext);
-    extension.beforeEach(extensionContext);
-
-    // then
-    final ZeebeClient newZeebeClient = camundaProcessTestContext.createZeebeClient();
-    assertThat(newZeebeClient).isNotNull();
-
-    final ZeebeClientConfiguration configuration = newZeebeClient.getConfiguration();
-    assertThat(configuration.getGrpcAddress()).isEqualTo(GRPC_API_ADDRESS);
-    assertThat(configuration.getRestAddress()).isEqualTo(REST_API_ADDRESS);
-  }
-
-  @Test
   void shouldCreateCustomCamundaClientFromContext() throws Exception {
     // given
     final CamundaProcessTestExtension extension =
@@ -216,28 +196,6 @@ public class JunitExtensionTest {
     assertThat(newCamundaClient).isNotNull();
 
     final CamundaClientConfiguration configuration = newCamundaClient.getConfiguration();
-    assertThat(configuration.getGrpcAddress()).isEqualTo(GRPC_API_ADDRESS);
-    assertThat(configuration.getRestAddress()).isEqualTo(REST_API_ADDRESS);
-    assertThat(configuration.getDefaultJobWorkerName()).isEqualTo("test");
-  }
-
-  @Test
-  void shouldCreateCustomZeebeClientFromContext() throws Exception {
-    // given
-    final CamundaProcessTestExtension extension =
-        new CamundaProcessTestExtension(camundaRuntimeBuilder, processCoverageBuilder, NOOP);
-
-    // when
-    extension.beforeAll(extensionContext);
-    extension.beforeEach(extensionContext);
-
-    // then
-    final ZeebeClient newZeebeClient =
-        camundaProcessTestContext.createZeebeClient(
-            builder -> builder.defaultJobWorkerName("test"));
-    assertThat(newZeebeClient).isNotNull();
-
-    final ZeebeClientConfiguration configuration = newZeebeClient.getConfiguration();
     assertThat(configuration.getGrpcAddress()).isEqualTo(GRPC_API_ADDRESS);
     assertThat(configuration.getRestAddress()).isEqualTo(REST_API_ADDRESS);
     assertThat(configuration.getDefaultJobWorkerName()).isEqualTo("test");
@@ -374,78 +332,6 @@ public class JunitExtensionTest {
   }
 
   @Test
-  void shouldPrintResultIfTestFailed() throws Exception {
-    // given
-    final StringBuilder outputBuilder = new StringBuilder();
-    final CamundaProcessTestExtension extension =
-        new CamundaProcessTestExtension(
-            camundaRuntimeBuilder, processCoverageBuilder, outputBuilder::append);
-
-    when(camundaProcessTestResultCollector.collect()).thenReturn(new ProcessTestResult());
-
-    // when
-    extension.beforeAll(extensionContext);
-    extension.beforeEach(extensionContext);
-
-    when(extensionContext.getExecutionException())
-        .thenReturn(Optional.of(new AssertionError("test failure (expected)")));
-
-    // CamundaManagementClient will attempt to call purgeCluster() and we need to prevent
-    // it from trying to execute real code (the HTTP call will fail).
-    setManagementClientDummy(extension);
-    setTestResultCollectorMock(extension);
-    extension.afterEach(extensionContext);
-
-    // then
-    assertThat(outputBuilder.toString()).startsWith("Process test results");
-    verify(camundaProcessTestResultCollector).collect();
-  }
-
-  @Test
-  void shouldNotPrintResultIfTestSuccessful() throws Exception {
-    // given
-    final StringBuilder outputBuilder = new StringBuilder();
-    final CamundaProcessTestExtension extension =
-        new CamundaProcessTestExtension(
-            camundaRuntimeBuilder, processCoverageBuilder, outputBuilder::append);
-
-    // when
-    extension.beforeAll(extensionContext);
-    extension.beforeEach(extensionContext);
-
-    when(extensionContext.getExecutionException()).thenReturn(Optional.empty());
-
-    // CamundaManagementClient will attempt to call purgeCluster() and we need to prevent
-    // it from trying to execute real code (the HTTP call will fail).
-    setManagementClientDummy(extension);
-    setTestResultCollectorMock(extension);
-    extension.afterEach(extensionContext);
-
-    // then
-    assertThat(outputBuilder.toString()).isEmpty();
-    verify(camundaProcessTestResultCollector, never()).collect();
-  }
-
-  @Test
-  void shouldPurgeTheClusterInBetweenTests() throws Exception {
-    // given
-    final CamundaProcessTestExtension extension =
-        new CamundaProcessTestExtension(camundaRuntimeBuilder, processCoverageBuilder, NOOP);
-
-    // when
-    extension.beforeAll(extensionContext);
-    extension.beforeEach(extensionContext);
-
-    // CamundaManagementClient will attempt to call purgeCluster() and we need to prevent
-    // it from trying to execute real code (the HTTP call will fail).
-    setManagementClientDummy(extension);
-    extension.afterEach(extensionContext);
-
-    // then
-    verify(camundaManagementClient).purgeCluster();
-  }
-
-  @Test
   void shouldAddCustomContainerProviders() throws Exception {
     // given
     final CamundaProcessTestExtension extension =
@@ -462,28 +348,303 @@ public class JunitExtensionTest {
     verify(camundaRuntimeBuilder).withContainerProvidersServiceLoaderEnabled(true);
   }
 
-  private void setManagementClientDummy(final CamundaProcessTestExtension extension) {
-    try {
-      final Field cmcField = extension.getClass().getDeclaredField("camundaManagementClient");
-      cmcField.setAccessible(true);
-      cmcField.set(extension, camundaManagementClient);
-    } catch (final Throwable t) {
-      ExceptionUtils.throwAsUncheckedException(t);
-    }
-  }
-
-  private void setTestResultCollectorMock(final CamundaProcessTestExtension extension) {
-    try {
-      final Field cmcField = extension.getClass().getDeclaredField("processTestResultCollector");
-      cmcField.setAccessible(true);
-      cmcField.set(extension, camundaProcessTestResultCollector);
-    } catch (final Throwable t) {
-      ExceptionUtils.throwAsUncheckedException(t);
-    }
-  }
-
   @CamundaProcessTest
   private static final class MainProcessTest {
     static class NestedProcessTest {}
+  }
+
+  @Nested
+  class AfterEachTests {
+
+    @Test
+    void shouldPrintResultIfTestFailed() throws Exception {
+      // given
+      final StringBuilder outputBuilder = new StringBuilder();
+      final CamundaProcessTestExtension extension =
+          new CamundaProcessTestExtension(
+              camundaRuntimeBuilder, processCoverageBuilder, outputBuilder::append);
+
+      when(camundaProcessTestResultCollector.collect()).thenReturn(new ProcessTestResult());
+
+      // when
+      extension.beforeAll(extensionContext);
+      extension.beforeEach(extensionContext);
+
+      setManagementClientDummy(extension);
+      setTestResultCollectorMock(extension);
+
+      when(extensionContext.getExecutionException())
+          .thenReturn(Optional.of(new AssertionError("test failure (expected)")));
+
+      extension.afterEach(extensionContext);
+
+      // then
+      assertThat(outputBuilder.toString()).startsWith("Process test results");
+      verify(camundaProcessTestResultCollector).collect();
+    }
+
+    @Test
+    void shouldNotPrintResultIfTestSuccessful() throws Exception {
+      // given
+      final StringBuilder outputBuilder = new StringBuilder();
+      final CamundaProcessTestExtension extension =
+          new CamundaProcessTestExtension(
+              camundaRuntimeBuilder, processCoverageBuilder, outputBuilder::append);
+
+      // when
+      extension.beforeAll(extensionContext);
+      extension.beforeEach(extensionContext);
+
+      setManagementClientDummy(extension);
+      setTestResultCollectorMock(extension);
+
+      when(extensionContext.getExecutionException()).thenReturn(Optional.empty());
+
+      extension.afterEach(extensionContext);
+
+      // then
+      assertThat(outputBuilder.toString()).isEmpty();
+      verify(camundaProcessTestResultCollector, never()).collect();
+    }
+
+    @Test
+    void shouldPurgeCluster() throws Exception {
+      // given
+      final CamundaProcessTestExtension extension =
+          new CamundaProcessTestExtension(camundaRuntimeBuilder, processCoverageBuilder, NOOP);
+
+      // when
+      extension.beforeAll(extensionContext);
+      extension.beforeEach(extensionContext);
+
+      setManagementClientDummy(extension);
+
+      extension.afterEach(extensionContext);
+
+      // then
+      verify(camundaManagementClient).purgeCluster();
+    }
+
+    @Test
+    void shouldResetClock() throws Exception {
+      // given
+      final CamundaProcessTestExtension extension =
+          new CamundaProcessTestExtension(camundaRuntimeBuilder, processCoverageBuilder, NOOP);
+
+      // when
+      extension.beforeAll(extensionContext);
+      extension.beforeEach(extensionContext);
+
+      setManagementClientDummy(extension);
+
+      extension.afterEach(extensionContext);
+
+      // then
+      verify(camundaManagementClient).resetTime();
+    }
+
+    private void setManagementClientDummy(final CamundaProcessTestExtension extension) {
+      try {
+        final Field cmcField = extension.getClass().getDeclaredField("camundaManagementClient");
+        cmcField.setAccessible(true);
+        cmcField.set(extension, camundaManagementClient);
+      } catch (final Throwable t) {
+        ExceptionUtils.throwAsUncheckedException(t);
+      }
+    }
+
+    private void setTestResultCollectorMock(final CamundaProcessTestExtension extension) {
+      try {
+        final Field cmcField = extension.getClass().getDeclaredField("processTestResultCollector");
+        cmcField.setAccessible(true);
+        cmcField.set(extension, camundaProcessTestResultCollector);
+      } catch (final Throwable t) {
+        ExceptionUtils.throwAsUncheckedException(t);
+      }
+    }
+  }
+
+  @Nested
+  class AssertionConfigurationTest {
+
+    @AfterEach
+    void resetAssertion() {
+      CamundaAssert.setAssertionTimeout(CamundaAssert.DEFAULT_ASSERTION_TIMEOUT);
+      CamundaAssert.setAssertionInterval(CamundaAssert.DEFAULT_ASSERTION_INTERVAL);
+    }
+
+    @Test
+    void shouldSetAssertionTimeoutFromConfig() throws Exception {
+      // given
+      final Duration assertionTimeout = Duration.ofMinutes(5);
+      final Duration assertionInterval = Duration.ofMillis(123);
+
+      when(camundaRuntimeBuilder.getAssertionTimeout()).thenReturn(Optional.of(assertionTimeout));
+      when(camundaRuntimeBuilder.getAssertionInterval()).thenReturn(Optional.of(assertionInterval));
+
+      final CamundaProcessTestExtension extension =
+          new CamundaProcessTestExtension(camundaRuntimeBuilder, processCoverageBuilder, NOOP);
+
+      // when
+      extension.beforeAll(extensionContext);
+      extension.beforeEach(extensionContext);
+
+      // then
+      final CamundaAssertAwaitBehavior awaitBehavior = CamundaAssert.getAwaitBehavior();
+      assertThat(awaitBehavior.getAssertionTimeout()).isEqualTo(assertionTimeout);
+      assertThat(awaitBehavior.getAssertionInterval()).isEqualTo(assertionInterval);
+    }
+
+    @Test
+    void shouldNotOverrideAssertionTimeoutIfNotSetInConfig() throws Exception {
+      // given
+      final Duration assertionTimeout = Duration.ofMinutes(1);
+      final Duration assertionInterval = Duration.ofMillis(50);
+
+      CamundaAssert.setAssertionTimeout(assertionTimeout);
+      CamundaAssert.setAssertionInterval(assertionInterval);
+
+      final CamundaProcessTestExtension extension =
+          new CamundaProcessTestExtension(camundaRuntimeBuilder, processCoverageBuilder, NOOP);
+
+      // when
+      extension.beforeAll(extensionContext);
+      extension.beforeEach(extensionContext);
+
+      // then
+      final CamundaAssertAwaitBehavior awaitBehavior = CamundaAssert.getAwaitBehavior();
+      assertThat(awaitBehavior.getAssertionTimeout()).isEqualTo(assertionTimeout);
+      assertThat(awaitBehavior.getAssertionInterval()).isEqualTo(assertionInterval);
+    }
+  }
+
+  @Nested
+  class JudgeConfigurationTest {
+
+    private @Mock JudgeConfig judgeConfig;
+
+    @AfterEach
+    void clearConfig() {
+      CamundaAssert.setJudgeConfig(null);
+    }
+
+    @Test
+    void shouldBootstrapJudgeConfigFromServiceLoader() throws Exception {
+      // given: the FakeChatModelAdapterProvider is registered in the file
+      // `META-INF/services/io.camunda.process.test.api.judge.ChatModelAdapterProvider`
+
+      final CamundaProcessTestExtension extension =
+          new CamundaProcessTestExtension(camundaRuntimeBuilder, processCoverageBuilder, NOOP);
+
+      // when
+      extension.beforeAll(extensionContext);
+      extension.beforeEach(extensionContext);
+
+      // then
+      assertThat(CamundaAssert.getJudgeConfig())
+          .as("JudgeConfig should be bootstrapped from Java ServiceLoader")
+          .isNotNull()
+          .satisfies(
+              judgeConfig ->
+                  assertThat(judgeConfig.getChatModel().generate("anything"))
+                      .isEqualTo(FakeChatModelAdapterProvider.FAKE_REASONING))
+          .satisfies(judgeConfig -> assertThat(judgeConfig.getThreshold()).isEqualTo(0.8));
+    }
+
+    @Test
+    void shouldSetJudgeConfigOnExtension() throws Exception {
+      // given
+      final CamundaProcessTestExtension extension =
+          new CamundaProcessTestExtension(camundaRuntimeBuilder, processCoverageBuilder, NOOP)
+              .withJudgeConfig(judgeConfig);
+
+      // when
+      extension.beforeAll(extensionContext);
+      extension.beforeEach(extensionContext);
+
+      // then
+      assertThat(CamundaAssert.getJudgeConfig()).isEqualTo(judgeConfig);
+    }
+
+    @Test
+    void shouldSetJudgeConfigOnAssertion() throws Exception {
+      // given
+      CamundaAssert.setJudgeConfig(judgeConfig);
+
+      final CamundaProcessTestExtension extension =
+          new CamundaProcessTestExtension(camundaRuntimeBuilder, processCoverageBuilder, NOOP);
+
+      // when
+      extension.beforeAll(extensionContext);
+      extension.beforeEach(extensionContext);
+
+      // then
+      assertThat(CamundaAssert.getJudgeConfig()).isEqualTo(judgeConfig);
+    }
+  }
+
+  @Nested
+  class SemanticSimilarityConfigurationTest {
+
+    private @Mock SemanticSimilarityConfig semanticSimilarityConfig;
+
+    @AfterEach
+    void clearConfig() {
+      CamundaAssert.setSemanticSimilarityConfig(null);
+    }
+
+    @Test
+    void shouldBootstrapSemanticSimilarityConfigFromServiceLoader() throws Exception {
+      // given: the FakeEmbeddingModelAdapterProvider is registered in the file
+      // `META-INF/services/io.camunda.process.test.api.similarity.EmbeddingModelAdapterProvider`
+
+      final CamundaProcessTestExtension extension =
+          new CamundaProcessTestExtension(camundaRuntimeBuilder, processCoverageBuilder, NOOP);
+
+      // when
+      extension.beforeAll(extensionContext);
+      extension.beforeEach(extensionContext);
+
+      // then
+      assertThat(CamundaAssert.getSemanticSimilarityConfig())
+          .as("SemanticSimilarityConfig should be auto-bootstrapped via SPI")
+          .isNotNull()
+          .satisfies(
+              config ->
+                  assertThat(config.getEmbeddingModel().embed("any text"))
+                      .isEqualTo(new float[] {1.0f, 0.0f}))
+          .satisfies(config -> assertThat(config.getThreshold()).isEqualTo(0.9));
+    }
+
+    @Test
+    void shouldSetSemanticSimilarityConfigOnExtension() throws Exception {
+      // given
+      final CamundaProcessTestExtension extension =
+          new CamundaProcessTestExtension(camundaRuntimeBuilder, processCoverageBuilder, NOOP)
+              .withSemanticSimilarityConfig(semanticSimilarityConfig);
+
+      // when
+      extension.beforeAll(extensionContext);
+      extension.beforeEach(extensionContext);
+
+      // then
+      assertThat(CamundaAssert.getSemanticSimilarityConfig()).isEqualTo(semanticSimilarityConfig);
+    }
+
+    @Test
+    void shouldSetSemanticSimilarityConfigOnAssertion() throws Exception {
+      // given
+      CamundaAssert.setSemanticSimilarityConfig(semanticSimilarityConfig);
+
+      final CamundaProcessTestExtension extension =
+          new CamundaProcessTestExtension(camundaRuntimeBuilder, processCoverageBuilder, NOOP);
+
+      // when
+      extension.beforeAll(extensionContext);
+      extension.beforeEach(extensionContext);
+
+      // then
+      assertThat(CamundaAssert.getSemanticSimilarityConfig()).isEqualTo(semanticSimilarityConfig);
+    }
   }
 }

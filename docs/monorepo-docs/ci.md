@@ -461,7 +461,7 @@ For `camunda/camunda` GHA workflows we use a GitHub feature to [technically limi
 * Allow actions in any [Camunda GitHub Enterprise organization](https://github.com/enterprises/camunda/organizations) like `camunda`, `bpmn-io`, etc.
 * Allow specific actions from 3rd parties that we need (full list see below).
 
-If you need to use a 3rd party action not on the list, [create an issue](#issue-tracking) explaining the motivation and tag the Monorepo CI DRI for further discussion.
+If you need to use a 3rd party action not on the list, ask the Monorepo DevOps team via Slack and explain the motivation.
 
 <details>
 <summary>List of allowed 3rd party actions and reusable workflows</summary>
@@ -476,6 +476,7 @@ browser-actions/setup-firefox@*,
 bufbuild/buf-action@*,
 cloudposse/github-action-matrix-outputs-read@*,
 cloudposse/github-action-matrix-outputs-write@*,
+clowdhaus/argo-cd-action@*,
 codex-/return-dispatch@*,
 dcarbone/install-jq-action@*,
 deadsnakes/action@*,
@@ -493,6 +494,7 @@ google-github-actions/auth@*,
 google-github-actions/get-gke-credentials@*,
 google-github-actions/setup-gcloud@*,
 hadolint/hadolint-action@*,
+hashicorp/setup-terraform@*,
 hashicorp/vault-action@*,
 hoverkraft-tech/compose-action@*,
 jamesives/github-pages-deploy-action@*,
@@ -523,6 +525,7 @@ snyk/actions/setup@*,
 stCarolas/setup-maven@*,
 stefanzweifel/git-auto-commit-action@*,
 teleport-actions/auth-k8s@*,
+teleport-actions/auth@*,
 teleport-actions/setup@*,
 test-summary/action@*,
 tibdex/github-app-token@*,
@@ -665,15 +668,15 @@ Available commands:
 
 ## Flaky tests
 
-Tests can be viewed as "flaky" when they are not consistenly passing although neither the source code, nor the test code, nor the environment has been meaningfully changed.
-
-We should aim to have all tests consistently passing, avoid introducing new flaky tests and implement our [observability tooling](#ci-health-metrics) to detect and improve existing flaky tests. This allows for better developer experience and smoother processes like [automated dependency updates](#renovate).
+Tests are called "flaky" when they are not consistenly passing, while the circumstances (source code, test code, execution environment) remain the same. Flaky tests are caused by some inherent unreliability in the system. This needs to be avoided by improving the source code or test code, to improve developer experience and allow smooth [automated dependency updates](#renovate).
 
 GitHub Action workflows with Maven testing Java code should use the [flaky-test-extractor-maven-plugin](#flaky-test-extractor-maven-plugin) and report the resulting [detailed flaky test statistics](https://github.com/camunda/camunda/issues/26930) to our [CI health](#ci-health-metrics) database.
 
+Please use the [CI stress testing functionality](#stress-testing) to avoid introducing new flaky tests.
+
 Related resources:
 
-* [the Flaky tests dashboard (internal)](https://dashboard.int.camunda.com/d/ae2j69npxh3b4f/flaky-tests-camunda-camunda-monorepo)
+* [Flaky tests dashboard (internal)](https://dashboard.int.camunda.com/d/ae2j69npxh3b4f/flaky-tests-camunda-camunda-monorepo)
 
 ### flaky-test-extractor-maven-plugin
 
@@ -685,6 +688,22 @@ Some Maven modules in the monorepo [rerun failing Java tests multiple times](htt
 * if a test fails on all retries, it is classified as "failed"
   * this will cause the whole build to fail
   * see [the FAQ](#faq) on how to deal with such cases
+
+To reduce friction, we rerun failing tests up to 4 times on Pull Requests and up to 7 times in the merge queue and on `main` and `stable/*` branches.
+
+### Stress Testing
+
+There are a few jobs in the [Unified CI](#unified-ci) which frequently contain flaky tests. You need to run a CI stress test on your PR to avoid introducing new flaky tests, if you modify Java source or test code used by these CI jobs:
+
+* Zeebe Engine QA
+* Zeebe Cluster QA
+* RDBMS ITs
+
+To run a CI stress test, put the `ci:stress-test` label on any Pull Request and push e.g. a new code change or re-run the [Unified CI](#unified-ci) `ci.yml` workflow manually.
+
+This will lead to 10 concurrent instances of each of the above CI jobs being started. During a CI stress test, failed tests are not retried so ensure that flakiness is visible as failures.
+
+The results are visible via the usual Pull Request comment featuring the "CI failure summary": as soon as there is any failed CI job like `RDBMS ITs (x)` showing up, the stress test found an unreliability that must be fixed before merging.
 
 ## License Checks
 

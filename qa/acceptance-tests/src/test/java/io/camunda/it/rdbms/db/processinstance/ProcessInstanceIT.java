@@ -32,6 +32,7 @@ import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
+import java.util.Set;
 import org.assertj.core.data.TemporalUnitWithinOffset;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.TestTemplate;
@@ -109,6 +110,29 @@ public class ProcessInstanceIT {
 
     assertThat(resolvedInstance).isNotNull();
     assertThat(resolvedInstance.hasIncident()).isFalse();
+  }
+
+  @TestTemplate
+  public void shouldSaveTagsAndCompleteInSameFlush(
+      final CamundaRdbmsTestApplication testApplication) {
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
+    final ProcessInstanceDbReader processInstanceReader = rdbmsService.getProcessInstanceReader();
+
+    final ProcessInstanceDbModel instance =
+        ProcessInstanceFixtures.createRandomized(b -> b.tags(Set.of("foo", "bar")));
+    rdbmsWriters.getProcessInstanceWriter().create(instance);
+    rdbmsWriters
+        .getProcessInstanceWriter()
+        .finish(instance.processInstanceKey(), ProcessInstanceState.COMPLETED, NOW);
+    rdbmsWriters.flush();
+
+    final var readInstance =
+        processInstanceReader.findOne(instance.processInstanceKey()).orElse(null);
+
+    assertThat(readInstance).isNotNull();
+    assertThat(readInstance.state()).isEqualTo(ProcessInstanceState.COMPLETED);
+    assertThat(readInstance.tags()).containsExactlyInAnyOrder("foo", "bar");
   }
 
   @TestTemplate

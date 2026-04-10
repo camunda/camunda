@@ -19,7 +19,8 @@ import io.modelcontextprotocol.client.McpSyncClient;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 public class McpServerConfigurationIT {
 
@@ -31,10 +32,11 @@ public class McpServerConfigurationIT {
     static final TestCamundaApplication TEST_INSTANCE =
         new TestCamundaApplication().withProperty("camunda.mcp.enabled", true);
 
-    @Test
-    public void mcpInitializeRequestReturnsInitializationResponse() {
+    @ParameterizedTest
+    @MethodSource("io.camunda.it.mcp.McpServerTest#mcpServersToTest")
+    public void mcpInitializeRequestReturnsInitializationResponse(final String mcpServer) {
       try (final McpSyncClient mcpClient =
-          createMcpClient(TEST_INSTANCE, DEFAULT_REQUEST_CUSTOMIZER)) {
+          createMcpClient(mcpServer, TEST_INSTANCE, DEFAULT_REQUEST_CUSTOMIZER)) {
 
         final var initializeResult = mcpClient.initialize();
         assertThat(initializeResult).isNotNull();
@@ -66,10 +68,11 @@ public class McpServerConfigurationIT {
       TEST_INSTANCE.stop();
     }
 
-    @Test
-    public void mcpInitializeRequestReturnsInitializationResponse() {
+    @ParameterizedTest
+    @MethodSource("io.camunda.it.mcp.McpServerTest#mcpServersToTest")
+    public void mcpInitializeRequestReturnsInitializationResponse(final String mcpServer) {
       try (final McpSyncClient mcpClient =
-          createMcpClient(TEST_INSTANCE, DEFAULT_REQUEST_CUSTOMIZER)) {
+          createMcpClient(mcpServer, TEST_INSTANCE, DEFAULT_REQUEST_CUSTOMIZER)) {
 
         final var initializeResult = mcpClient.initialize();
         assertThat(initializeResult).isNotNull();
@@ -84,10 +87,11 @@ public class McpServerConfigurationIT {
     @MultiDbTestApplication
     static final TestCamundaApplication TEST_INSTANCE = new TestCamundaApplication();
 
-    @Test
-    public void mcpInitializeRequestReturnsNotFoundResponse() {
+    @ParameterizedTest
+    @MethodSource("io.camunda.it.mcp.McpServerTest#mcpServersToTest")
+    public void mcpInitializeRequestReturnsNotFoundResponse(final String mcpServer) {
       try (final McpSyncClient mcpClient =
-          createMcpClient(TEST_INSTANCE, DEFAULT_REQUEST_CUSTOMIZER)) {
+          createMcpClient(mcpServer, TEST_INSTANCE, DEFAULT_REQUEST_CUSTOMIZER)) {
 
         final Throwable throwable = catchThrowable(mcpClient::initialize);
         assertThat(throwable.getCause())

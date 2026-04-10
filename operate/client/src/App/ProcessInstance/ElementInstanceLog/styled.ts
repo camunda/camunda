@@ -30,7 +30,7 @@ const Container = styled.div`
 `;
 
 const PanelHeader = styled(BasePanelHeader)`
-  justify-content: flex-start;
+  justify-content: space-between;
 `;
 
 const ErrorMessage = styled(BaseErrorMessage)`

@@ -77,10 +77,6 @@ public class AuditLogEntity extends AbstractExporterEntity<AuditLogEntity> {
   @SinceVersion(value = "8.9.0", requireDefault = false)
   private AuditLogTenantScope tenantScope;
 
-  // the explanation on why the operation was performed
-  @SinceVersion(value = "8.9.0", requireDefault = false)
-  private String annotation;
-
   // searchable fields dependent on the entity type
   @SinceVersion(value = "8.9.0", requireDefault = false)
   private String processDefinitionId;
@@ -259,15 +255,6 @@ public class AuditLogEntity extends AbstractExporterEntity<AuditLogEntity> {
 
   public AuditLogEntity setResult(final AuditLogOperationResult result) {
     this.result = result;
-    return this;
-  }
-
-  public String getAnnotation() {
-    return annotation;
-  }
-
-  public AuditLogEntity setAnnotation(final String annotation) {
-    this.annotation = annotation;
     return this;
   }
 

@@ -32,7 +32,6 @@ public class AuditLogEntityTransformer
         value.getTenantId(),
         mapTenantScope(value.getTenantScope()),
         mapOperationResult(value.getResult()),
-        value.getAnnotation(),
         mapOperationCategory(value.getCategory()),
         value.getProcessDefinitionId(),
         value.getProcessDefinitionKey(),

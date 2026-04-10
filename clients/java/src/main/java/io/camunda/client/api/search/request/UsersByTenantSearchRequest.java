@@ -16,9 +16,11 @@
 package io.camunda.client.api.search.request;
 
 import io.camunda.client.api.search.filter.TenantUserFilter;
+import io.camunda.client.api.search.page.AnyPage;
 import io.camunda.client.api.search.response.TenantUser;
 import io.camunda.client.api.search.sort.TenantUserSort;
 
 public interface UsersByTenantSearchRequest
-    extends TypedSearchRequest<TenantUserFilter, TenantUserSort, UsersByTenantSearchRequest>,
+    extends TypedSearchRequest<
+            TenantUserFilter, TenantUserSort, AnyPage, UsersByTenantSearchRequest>,
         FinalSearchRequestStep<TenantUser> {}

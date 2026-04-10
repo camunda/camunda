@@ -42,6 +42,18 @@ public class MappingRulesSearchIT {
   }
 
   @Test
+  void shouldGetMappingRuleById() {
+    // when
+    final var mappingRule = camundaClient.newMappingRuleGetRequest(MAPPING_RULE_ID_1).send().join();
+
+    // then - assert all fields
+    assertThat(mappingRule.getMappingRuleId()).isEqualTo(MAPPING_RULE_ID_1);
+    assertThat(mappingRule.getClaimName()).isEqualTo(CLAIM_NAME_1);
+    assertThat(mappingRule.getClaimValue()).isEqualTo(CLAIM_VALUE_1);
+    assertThat(mappingRule.getName()).isEqualTo("test-" + MAPPING_RULE_ID_1);
+  }
+
+  @Test
   void searchShouldReturnAllMappingRules() {
     // when
     final var mappingRuleSearchResponse =

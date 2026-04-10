@@ -38,7 +38,7 @@ describe('<MoveAction /> - tracking', () => {
 
     const {user} = render(<MoveAction />, {
       wrapper: createWrapper({
-        initialPath: `/processes?process=${PROCESS_ID}&version=1&flowNodeId=Task`,
+        initialPath: `/processes?processDefinitionId=${PROCESS_ID}&processDefinitionVersion=1&elementId=Task`,
         withTestButtons: true,
       }),
     });

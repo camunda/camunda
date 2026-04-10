@@ -24,9 +24,9 @@ import io.camunda.process.test.api.assertions.IncidentSelector;
 import io.camunda.process.test.api.assertions.JobSelector;
 import io.camunda.process.test.api.assertions.ProcessInstanceSelector;
 import io.camunda.process.test.api.assertions.UserTaskSelector;
+import io.camunda.process.test.api.behavior.BehaviorCondition;
+import io.camunda.process.test.api.behavior.ConditionalBehaviorBuilder;
 import io.camunda.process.test.api.mock.JobWorkerMockBuilder;
-import io.camunda.zeebe.client.ZeebeClient;
-import io.camunda.zeebe.client.ZeebeClientBuilder;
 import java.net.URI;
 import java.time.Duration;
 import java.time.Instant;
@@ -52,26 +52,6 @@ public interface CamundaProcessTestContext {
    * @return a new Camunda client
    */
   CamundaClient createClient(final Consumer<CamundaClientBuilder> modifier);
-
-  /**
-   * Creates a new preconfigured Zeebe client that is managed by the runtime.
-   *
-   * @return a new Zeebe client
-   * @deprecated used to keep compatibility with the Zeebe client injection
-   */
-  @Deprecated
-  ZeebeClient createZeebeClient();
-
-  /**
-   * Creates a new preconfigured Zeebe client that is managed by the runtime. The given modifier can
-   * customize the client.
-   *
-   * @param modifier to customize the Zeebe client
-   * @return a new Zeebe client
-   * @deprecated used to keep compatibility with the Zeebe client injection
-   */
-  @Deprecated
-  ZeebeClient createZeebeClient(final Consumer<ZeebeClientBuilder> modifier);
 
   /**
    * @return the URI of Camunda's gRPC API address
@@ -389,4 +369,23 @@ public interface CamundaProcessTestContext {
    */
   void completeJobOfUserTaskListener(
       final JobSelector jobSelector, final Consumer<CompleteUserTaskJobResultStep1> jobResult);
+
+  /**
+   * Defines a conditional behavior with the given condition. The condition is a {@link
+   * BehaviorCondition} that throws an {@link AssertionError} when not satisfied (e.g., a CPT
+   * assertion). The conditional behavior evaluates the condition periodically in the background and
+   * fires the associated action when the condition passes.
+   *
+   * <p>Example usage:
+   *
+   * <pre>
+   * processTestContext
+   *     .when(() -&gt; assertThatUserTask(byTaskName("taskA")).isCreated())
+   *     .then(() -&gt; processTestContext.completeUserTask(byTaskName("taskA")));
+   * </pre>
+   *
+   * @param condition the condition to evaluate
+   * @return the builder for defining the action
+   */
+  ConditionalBehaviorBuilder when(BehaviorCondition condition);
 }

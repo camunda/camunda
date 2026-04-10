@@ -1,4 +1,6 @@
-# description: Deploys new load test daily.
+# description: Runs a daily max-load stress test against main.
+#              Naming pattern: medic-daily-YYYY-MM-DD-<sha>
+# calls: camunda-load-test.yml (scenario: max)
 # type: CI
 # owner: @camunda/reliability-testing
 name: Daily Camunda Platform Load Tests
@@ -72,19 +74,43 @@ jobs:
       scenario: max
       build-frontend: true
 
+  setup-max-grpc-load-test:
+    name: Setup max gRPC load test
+    needs:
+      - benchmark-data
+    uses: ./.github/workflows/camunda-load-test.yml
+    secrets: inherit
+    with:
+      name: ${{ needs.benchmark-data.outputs.benchmark }}-grpc
+      ttl: 1
+      scenario: max
+      build-frontend: true
+      load-test-load: --set global.preferRest.enabled=false
+
   notify:
     name: Notify on failure
     runs-on: ubuntu-latest
-    needs: [ setup-max-load-test ]
+    needs: [ setup-max-load-test, setup-max-grpc-load-test ]
     if: failure()
     timeout-minutes: 5
     permissions: { }
     steps:
       - uses: actions/checkout@v6
-      - id: slack-notify
-        uses: slackapi/slack-github-action@v2.1.1
+      - name: Import Slack webhook from Vault
+        id: slack-secrets
+        uses: hashicorp/vault-action@4c06c5ccf5c0761b6029f56cfb1dcf5565918a3b # v3.4.0
         with:
-          webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          exportEnv: false
+          secrets: |
+            secret/data/products/camunda/ci/github-actions SLACK_ZEEBOT_RELIABILITY_TESTING_ALERTS_WEBHOOK_URL;
+      - id: slack-notify
+        uses: slackapi/slack-github-action@v3.0.1
+        with:
+          webhook: ${{ steps.slack-secrets.outputs.SLACK_ZEEBOT_RELIABILITY_TESTING_ALERTS_WEBHOOK_URL }}
           webhook-type: incoming-webhook
           payload: |
             {

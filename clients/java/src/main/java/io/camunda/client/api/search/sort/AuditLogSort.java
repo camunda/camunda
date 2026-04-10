@@ -23,8 +23,6 @@ public interface AuditLogSort extends SearchRequestSort<AuditLogSort> {
 
   AuditLogSort actorType();
 
-  AuditLogSort annotation();
-
   AuditLogSort auditLogKey();
 
   AuditLogSort batchOperationKey();

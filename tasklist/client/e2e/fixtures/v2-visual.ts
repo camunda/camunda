@@ -15,7 +15,7 @@ import {
   type Variable,
   endpoints,
   type ProcessDefinition,
-} from '@camunda/camunda-api-zod-schemas/8.9';
+} from '@camunda/camunda-api-zod-schemas/8.10';
 import {unassignedTask} from '@/mocks/v2/task';
 import {bpmnXml} from '@/mocks/v2/bpmnXml';
 import {
@@ -185,7 +185,7 @@ const test = base.extend<PlaywrightFixtures>({
   mockQueryVariablesByUserTaskRequest: async ({page}, use) => {
     await use(async ({variables = [], userTaskKey}) => {
       await page.route(
-        `**/v2/user-tasks/${userTaskKey}/variables/search**`,
+        `**/v2/user-tasks/${userTaskKey}/effective-variables/search**`,
         (route) =>
           route.fulfill({
             status: 200,

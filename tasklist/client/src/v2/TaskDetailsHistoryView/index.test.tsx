@@ -19,7 +19,8 @@ import {QueryClientProvider} from '@tanstack/react-query';
 import {getMockQueryClient} from 'common/testing/getMockQueryClient';
 import {LocationLog} from 'common/testing/LocationLog';
 import * as auditLogMocks from 'v2/mocks/auditLogs';
-import {endpoints} from '@camunda/camunda-api-zod-schemas/8.9';
+import {endpoints} from '@camunda/camunda-api-zod-schemas/8.10';
+import {vi} from 'vitest';
 
 function getRouter(initialEntry: string = '/0/history') {
   const routes = [
@@ -575,5 +576,35 @@ describe('<TaskDetailsHistoryView />', () => {
     expect(screen.getByTestId('search')).toHaveTextContent(
       'sort=operationType+asc',
     );
+  });
+
+  it('should poll audit logs again after the refetch interval', async () => {
+    const auditLogsResolver = vi.fn(() =>
+      HttpResponse.json(auditLogMocks.getQueryUserTaskAuditLogsResponseMock()),
+    );
+
+    nodeMockServer.use(
+      http.post(
+        endpoints.queryUserTaskAuditLogs.getUrl({
+          userTaskKey: ':userTaskKey',
+        }),
+        auditLogsResolver,
+      ),
+    );
+
+    vi.useFakeTimers({shouldAdvanceTime: true});
+
+    render(<RouterProvider router={getRouter()} />, {wrapper: getWrapper()});
+
+    await screen.findByTestId('task-details-history-view');
+
+    // Expect 2 initial calls: 1 from the route loader (ensureInfiniteQueryData) + 1 from useSuspenseInfiniteQuery (refetchOnMount)
+    expect(auditLogsResolver).toHaveBeenCalledTimes(2);
+
+    vi.advanceTimersByTime(5000);
+
+    await waitFor(() => expect(auditLogsResolver).toHaveBeenCalledTimes(3));
+
+    vi.useRealTimers();
   });
 });

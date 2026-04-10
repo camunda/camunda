@@ -18,11 +18,11 @@ import io.camunda.zeebe.engine.processing.batchoperation.handlers.MigrateProcess
 import io.camunda.zeebe.engine.processing.batchoperation.handlers.ModifyProcessInstanceBatchOperationExecutor;
 import io.camunda.zeebe.engine.processing.batchoperation.handlers.ResolveIncidentBatchOperationExecutor;
 import io.camunda.zeebe.engine.processing.batchoperation.itemprovider.ItemProviderFactory;
-import io.camunda.zeebe.engine.processing.batchoperation.scheduler.BatchOperationCommandAppender;
+import io.camunda.zeebe.engine.processing.batchoperation.scheduler.BatchOperationChunkAppender;
+import io.camunda.zeebe.engine.processing.batchoperation.scheduler.BatchOperationCommands;
 import io.camunda.zeebe.engine.processing.batchoperation.scheduler.BatchOperationExecutionScheduler;
-import io.camunda.zeebe.engine.processing.batchoperation.scheduler.BatchOperationInitializationHelper;
-import io.camunda.zeebe.engine.processing.batchoperation.scheduler.BatchOperationPageProcessor;
-import io.camunda.zeebe.engine.processing.batchoperation.scheduler.BatchOperationRetryHandler;
+import io.camunda.zeebe.engine.processing.batchoperation.scheduler.BatchOperationInitializationBehavior;
+import io.camunda.zeebe.engine.processing.batchoperation.scheduler.BatchOperationRetryPolicy;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
 import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
@@ -81,15 +81,14 @@ public final class BatchOperationSetupProcessors {
                 writers.command(), brokerRequestAuthorizationConverter));
 
     final var batchOperationInitializer =
-        new BatchOperationInitializationHelper(
+        new BatchOperationInitializationBehavior(
             new ItemProviderFactory(searchClientsProxy, batchOperationMetrics, partitionId),
-            new BatchOperationPageProcessor(engineConfiguration.getBatchOperationChunkSize()),
-            new BatchOperationCommandAppender(partitionId),
-            engineConfiguration.getBatchOperationQueryPageSize(),
+            new BatchOperationChunkAppender(engineConfiguration.getBatchOperationChunkSize()),
+            new BatchOperationCommands(partitionId),
             batchOperationMetrics);
 
     final var retryHandler =
-        new BatchOperationRetryHandler(
+        new BatchOperationRetryPolicy(
             engineConfiguration.getBatchOperationQueryRetryInitialDelay(),
             engineConfiguration.getBatchOperationQueryRetryMaxDelay(),
             engineConfiguration.getBatchOperationQueryRetryMax(),
@@ -184,6 +183,7 @@ public final class BatchOperationSetupProcessors {
                 scheduledTaskStateFactory,
                 batchOperationInitializer,
                 retryHandler,
-                engineConfiguration.getBatchOperationSchedulerInterval()));
+                engineConfiguration.getBatchOperationSchedulerInterval(),
+                engineConfiguration.getBatchOperationQueryPageSize()));
   }
 }

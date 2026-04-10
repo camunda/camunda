@@ -21,12 +21,14 @@ import io.camunda.zeebe.backup.common.BackupStoreException.UnexpectedManifestSta
 import io.camunda.zeebe.backup.common.Manifest;
 import io.camunda.zeebe.backup.testkit.BackupStoreTestKit;
 import io.camunda.zeebe.backup.testkit.support.TestBackupProvider;
+import io.camunda.zeebe.util.FileUtil;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import java.nio.file.attribute.PosixFilePermissions;
 import java.time.Duration;
 import java.util.concurrent.Executors;
 import org.junit.jupiter.api.BeforeEach;
@@ -166,6 +168,55 @@ public class FilesystemBackupStoreIT implements BackupStoreTestKit {
         backupDir.resolve("manifests").resolve(String.valueOf(node2Backup.id().partitionId()));
     assertThat(partitionContentsDir).isNotEmptyDirectory();
     assertThat(partitionManifestsDir).isNotEmptyDirectory();
+  }
+
+  @Test
+  void shouldSuccessfullyVerifyConnectionWhenDirectoryIsWritable() {
+    // given - backupStore is already set up with writable TempDir in @BeforeEach
+
+    // when/then
+    assertThat(backupStore.verifyConnection()).succeedsWithin(Duration.ofSeconds(10));
+  }
+
+  @Test
+  void shouldFailVerifyConnectionWhenDirectoryIsNotWritable(@TempDir final Path readOnlyDir)
+      throws IOException {
+    // given
+    final var readOnlyConfig =
+        new FilesystemBackupConfig.Builder().withBasePath(readOnlyDir.toString()).build();
+    final var readOnlyStore =
+        new FilesystemBackupStore(readOnlyConfig, Executors.newVirtualThreadPerTaskExecutor());
+
+    // when dir is readonly
+    final var permissions = PosixFilePermissions.fromString("r-xr-xr-x");
+    Files.setPosixFilePermissions(readOnlyDir, permissions);
+
+    // then
+    assertThat(readOnlyStore.verifyConnection())
+        .failsWithin(Duration.ofSeconds(10))
+        .withThrowableOfType(Throwable.class)
+        .withMessageContaining("is not writable");
+  }
+
+  @Test
+  void shouldFailVerifyConnectionWhenDirectoryDoesNotExist(@TempDir final Path tempDir)
+      throws IOException {
+    // given
+    final var nonExistentDir = tempDir.resolve("new-backup-dir");
+    final var config =
+        new FilesystemBackupConfig.Builder().withBasePath(nonExistentDir.toString()).build();
+    final var store =
+        new FilesystemBackupStore(config, Executors.newVirtualThreadPerTaskExecutor());
+
+    // when delete directory
+    FileUtil.deleteFolder(nonExistentDir);
+    assertThat(nonExistentDir).doesNotExist();
+
+    // then
+    assertThat(store.verifyConnection())
+        .failsWithin(Duration.ofSeconds(10))
+        .withThrowableOfType(Throwable.class)
+        .withMessageContaining("does not exist");
   }
 
   void uploadInProgressManifest(final Backup backup) {

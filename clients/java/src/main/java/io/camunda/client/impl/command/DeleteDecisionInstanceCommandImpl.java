@@ -31,18 +31,18 @@ import org.apache.hc.client5.http.config.RequestConfig;
 
 public class DeleteDecisionInstanceCommandImpl implements DeleteDecisionInstanceCommandStep1 {
 
-  private final long decisionInstanceKey;
+  private final long decisionEvaluationKey;
   private final DeleteDecisionInstanceRequest httpRequestObject;
   private final HttpClient httpClient;
   private final JsonMapper jsonMapper;
   private final RequestConfig.Builder httpRequestConfig;
 
   public DeleteDecisionInstanceCommandImpl(
-      final long decisionInstanceKey,
+      final long decisionEvaluationKey,
       final CamundaClientConfiguration config,
       final HttpClient httpClient,
       final JsonMapper jsonMapper) {
-    this.decisionInstanceKey = decisionInstanceKey;
+    this.decisionEvaluationKey = decisionEvaluationKey;
     this.httpClient = httpClient;
     this.jsonMapper = jsonMapper;
     httpRequestConfig = httpClient.newRequestConfig();
@@ -68,7 +68,7 @@ public class DeleteDecisionInstanceCommandImpl implements DeleteDecisionInstance
   public CamundaFuture<DeleteDecisionInstanceResponse> send() {
     final HttpCamundaFuture<DeleteDecisionInstanceResponse> result = new HttpCamundaFuture<>();
     httpClient.post(
-        "/decision-instances/" + decisionInstanceKey + "/deletion",
+        "/decision-instances/" + decisionEvaluationKey + "/deletion",
         jsonMapper.toJson(httpRequestObject),
         httpRequestConfig.build(),
         DeleteDecisionInstanceResponseImpl::new,

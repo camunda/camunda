@@ -20,6 +20,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.process.test.api.judge.ChatModelAdapter;
 import io.camunda.process.test.api.judge.ChatModelAdapterProvider;
 import io.camunda.process.test.api.judge.ProviderConfig;
+import java.util.Map;
 import java.util.stream.Stream;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -63,6 +64,14 @@ public class Langchain4jChatModelAdapterProviderTest {
             "openai-compatible",
             new OpenAiCompatibleChatModelAdapterProvider(),
             new BaseProviderConfig.OpenAiCompatibleConfig(
-                "mistral-7b", "http://localhost:11434/v1", null)));
+                "mistral-7b",
+                "http://localhost:11434/v1",
+                null,
+                Map.of("Authorization", "Bearer xyz"))),
+        Arguments.of(
+            "azure-openai",
+            new AzureOpenAiChatModelAdapterProvider(),
+            new BaseProviderConfig.AzureOpenAiConfig(
+                "gpt-4o", "https://my-resource.openai.azure.com/", "test-key")));
   }
 }

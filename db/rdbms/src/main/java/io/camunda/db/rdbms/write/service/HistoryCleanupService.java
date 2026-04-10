@@ -39,6 +39,7 @@ public class HistoryCleanupService {
   private final Duration usageMetricsTTL;
   private final Duration jobBatchMetricsCleanup;
   private final Duration jobBatchMetricsTTL;
+  private final double maxHistoryCleanupUsage;
 
   private final RdbmsWriterMetrics metrics;
 
@@ -79,6 +80,7 @@ public class HistoryCleanupService {
     jobBatchMetricsTTL = config.history().jobBatchMetricsTTL();
     cleanupBatchSize = config.history().historyCleanupBatchSize();
     processInstanceBatchSize = config.history().historyCleanupProcessInstanceBatchSize();
+    maxHistoryCleanupUsage = config.history().maxHistoryCleanupUsage();
     processInstanceWriter = rdbmsWriters.getProcessInstanceWriter();
     this.processInstanceReader = processInstanceReader;
     metrics = rdbmsWriters.getMetrics();
@@ -234,7 +236,10 @@ public class HistoryCleanupService {
       logCleanUpInfo("", partitionId, numDeletedRecords, cleanupDate, end, start);
 
       final var nextDuration =
-          calculateNewDuration(lastCleanupInterval.get(partitionId), numDeletedRecords);
+          calculateNewDuration(
+              lastCleanupInterval.get(partitionId),
+              numDeletedRecords,
+              Duration.ofMillis(end - start));
       LOG.trace("Schedule next cleanup for partition {} with TTL in {}", partitionId, nextDuration);
 
       saveLastCleanupInterval(partitionId, nextDuration);
@@ -325,8 +330,8 @@ public class HistoryCleanupService {
   }
 
   /**
-   * Calculates the next cleanup interval duration based on the number of deleted records and the
-   * previous interval. The interval is adjusted as follows:
+   * Calculates the next cleanup interval duration based on the number of deleted records, the
+   * previous interval, and the actual cleanup duration. The interval is adjusted as follows:
    *
    * <ul>
    *   <li>If this is the first run ({@code lastDuration} is {@code null}), use {@code
@@ -339,15 +344,23 @@ public class HistoryCleanupService {
    *       other entity type hits or exceeds {@code cleanupBatchSize}, halve the interval, but do
    *       not go below {@code minCleanupInterval}.
    *   <li>Otherwise, keep the interval unchanged.
+   *   <li>Additionally, if {@code cleanupDuration} is provided, enforce that the cleanup duration
+   *       does not exceed {@code maxHistoryCleanupUsage} of the total cycle time (cleanup +
+   *       interval). The required interval is {@code cleanupDuration * (1 - maxUsage) / maxUsage}.
+   *       The final interval is the maximum of the batch-size-based result and this required
+   *       interval, capped at {@code maxCleanupInterval}.
    * </ul>
    *
    * @param lastDuration the previous cleanup interval duration, or {@code null} if first run
    * @param numDeletedRecords a map containing the number of deleted records by entity type
+   * @param cleanupDuration the actual time taken by the last cleanup run
    * @return the next cleanup interval duration
    */
   @VisibleForTesting
   Duration calculateNewDuration(
-      final Duration lastDuration, final Map<String, Integer> numDeletedRecords) {
+      final Duration lastDuration,
+      final Map<String, Integer> numDeletedRecords,
+      final Duration cleanupDuration) {
     final int deletedProcessInstances = numDeletedRecords.getOrDefault("rootProcessInstance", 0);
 
     // Check if process instances hit their batch size limit
@@ -377,7 +390,50 @@ public class HistoryCleanupService {
       nextDuration = lastDuration;
     }
 
-    return nextDuration;
+    return ensureWithinMaxHistoryCleanupUsage(nextDuration, cleanupDuration);
+  }
+
+  /**
+   * Enforces the {@code maxHistoryCleanupUsage} limit. If the actual cleanup duration would cause
+   * the cleanup to exceed the configured maximum percentage of total cycle time (cleanup +
+   * interval), the interval is increased so that the ratio is respected.
+   *
+   * <p>Required interval = {@code lastCleanupDuration / maxUsage} - lastCleanupDuration, capped at
+   * {@code maxCleanupInterval}.
+   *
+   * @param proposedDuration the interval proposed by the batch-size-based logic
+   * @param lastCleanupDuration the actual time taken by the last cleanup run, or {@code null} if
+   *     unknown
+   * @return the interval to use, which is at least {@code proposedDuration}
+   */
+  @VisibleForTesting
+  Duration ensureWithinMaxHistoryCleanupUsage(
+      final Duration proposedDuration, final Duration lastCleanupDuration) {
+    if (lastCleanupDuration == null
+        || lastCleanupDuration.isZero()
+        || maxHistoryCleanupUsage <= 0) {
+      return proposedDuration;
+    }
+
+    final long usageLimitedMs =
+        (long)
+            (lastCleanupDuration.toMillis() * (1.0 / maxHistoryCleanupUsage)
+                - lastCleanupDuration.toMillis());
+    final Duration usageLimitedInterval = Duration.ofMillis(usageLimitedMs);
+
+    if (usageLimitedInterval.compareTo(proposedDuration) > 0) {
+      LOG.debug(
+          "Usage limit enforced: cleanup took {}ms, maxUsage={}%, required interval={}ms (was {}ms)",
+          lastCleanupDuration.toMillis(),
+          maxHistoryCleanupUsage * 100,
+          usageLimitedMs,
+          proposedDuration.toMillis());
+      return usageLimitedInterval.compareTo(maxCleanupInterval) < 0
+          ? usageLimitedInterval
+          : maxCleanupInterval;
+    }
+
+    return proposedDuration;
   }
 
   @VisibleForTesting

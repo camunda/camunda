@@ -122,7 +122,7 @@
             <dep>org.opensearch.client:opensearch-java</dep>
             <dep>com.fasterxml.jackson.core:jackson-databind</dep>
             <dep>jakarta.validation:jakarta.validation-api</dep>
-            <dep>org.springaicommunity:mcp-annotations</dep>
+            <dep>org.springframework.ai:spring-ai-mcp-annotations</dep>
           </ignoredUsedUndeclaredDependencies>
         </configuration>
       </plugin>

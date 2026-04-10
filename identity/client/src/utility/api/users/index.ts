@@ -12,7 +12,7 @@ import type {
   QueryUsersResponseBody,
   CreateUserRequestBody,
   UpdateUserRequestBody,
-} from "@camunda/camunda-api-zod-schemas/8.9";
+} from "@camunda/camunda-api-zod-schemas/8.10";
 
 import { ApiDefinition, apiDelete, apiPost, apiPut } from "../request";
 
@@ -48,7 +48,7 @@ export const updateUser: ApiDefinition<
   UpdateUserRequestBody & Pick<User, "username">
 > = (user) => {
   const { name, email, username, password } = user;
-  return apiPut(`${USERS_ENDPOINT}/${username}`, {
+  return apiPut(`${USERS_ENDPOINT}/${encodeURIComponent(username)}`, {
     name,
     email,
     password,
@@ -57,4 +57,4 @@ export const updateUser: ApiDefinition<
 
 export const deleteUser: ApiDefinition<undefined, Pick<User, "username">> = ({
   username,
-}) => apiDelete(`${USERS_ENDPOINT}/${username}`);
+}) => apiDelete(`${USERS_ENDPOINT}/${encodeURIComponent(username)}`);

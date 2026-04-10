@@ -6,18 +6,31 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {Container, Table, Th, Td} from './styled';
+import {
+  Container,
+  Table,
+  Th,
+  Td,
+  NameContainer,
+  InstanceName,
+  IncidentCount,
+  AdditionalContent,
+} from './styled';
 import {StateIcon} from 'modules/components/StateIcon';
+import pluralSuffix from 'modules/utils/pluralSuffix';
 
 type Column = {
   title?: string;
   content: React.ReactNode;
   dataTestId?: string;
   hideOverflowingContent?: boolean;
+  hidden?: boolean;
 };
 
 type Props = {
   state: React.ComponentProps<typeof StateIcon>['state'];
+  instanceName: string;
+  incidentsCount?: number;
   headerColumns: string[];
   bodyColumns: Column[];
   additionalContent?: React.ReactNode;
@@ -28,6 +41,8 @@ const InstanceHeader: React.FC<Props> = ({
   state,
   headerColumns,
   bodyColumns,
+  instanceName,
+  incidentsCount = 0,
   additionalContent,
   hideBottomBorder = false,
 }) => {
@@ -38,6 +53,14 @@ const InstanceHeader: React.FC<Props> = ({
     >
       <StateIcon state={state} size={24} data-testid={`${state}-icon`} />
 
+      <NameContainer title={instanceName}>
+        <InstanceName>{instanceName}</InstanceName>
+        {incidentsCount > 0 && (
+          <IncidentCount>
+            {pluralSuffix(incidentsCount, 'incident')}
+          </IncidentCount>
+        )}
+      </NameContainer>
       <Table>
         <thead>
           <tr>
@@ -48,24 +71,25 @@ const InstanceHeader: React.FC<Props> = ({
         </thead>
         <tbody>
           <tr>
-            {bodyColumns.map(
-              ({title, content, dataTestId, hideOverflowingContent}, index) => {
-                return (
-                  <Td
-                    key={index}
-                    title={title}
-                    data-testid={dataTestId}
-                    $hideOverflowingContent={hideOverflowingContent}
-                  >
-                    {content}
-                  </Td>
-                );
-              },
-            )}
+            {bodyColumns.map((column, index) => {
+              if (column.hidden) {
+                return null;
+              }
+              return (
+                <Td
+                  key={index}
+                  title={column.title}
+                  data-testid={column.dataTestId}
+                  $hideOverflowingContent={column.hideOverflowingContent}
+                >
+                  {column.content}
+                </Td>
+              );
+            })}
           </tr>
         </tbody>
       </Table>
-      {additionalContent}
+      <AdditionalContent>{additionalContent}</AdditionalContent>
     </Container>
   );
 };

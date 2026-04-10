@@ -11,8 +11,7 @@ import static io.camunda.gateway.mcp.tool.CallToolResultAssertions.assertTextCon
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.gateway.mcp.tool.ToolsTest;
+import io.camunda.gateway.mcp.OperationalToolsTest;
 import io.camunda.gateway.protocol.model.BrokerInfo;
 import io.camunda.gateway.protocol.model.Partition;
 import io.camunda.gateway.protocol.model.Partition.HealthEnum;
@@ -41,12 +40,13 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import tools.jackson.databind.json.JsonMapper;
 
 @ContextConfiguration(classes = {ClusterTools.class})
-class ClusterToolsTest extends ToolsTest {
+class ClusterToolsTest extends OperationalToolsTest {
 
   @MockitoBean private TopologyServices topologyServices;
-  @Autowired private ObjectMapper objectMapper;
+  @Autowired private JsonMapper objectMapper;
 
   @Nested
   class GetClusterStatus {

@@ -9,6 +9,8 @@ package io.camunda.zeebe.backup.gcs;
 
 import com.google.cloud.storage.BucketInfo;
 import io.camunda.zeebe.backup.gcs.util.GcsContainer;
+import java.time.Duration;
+import java.util.concurrent.ExecutionException;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -55,5 +57,45 @@ public class ConfigIT {
     // then
     Assertions.assertThatCode(() -> GcsBackupStore.validateConfig(config))
         .doesNotThrowAnyException();
+  }
+
+  @Test
+  void shouldSuccessfullyVerifyConnectionWhenBucketExists() throws Exception {
+    // given
+    final var bucketName = RandomStringUtils.insecure().nextAlphanumeric(12).toLowerCase();
+    final var config =
+        new GcsBackupConfig.Builder()
+            .withHost(GCS.externalEndpoint())
+            .withBucketName(bucketName)
+            .withoutAuthentication()
+            .build();
+
+    try (final var client = GcsBackupStore.buildClient(config)) {
+      client.create(BucketInfo.of(bucketName));
+    }
+
+    final var store = new GcsBackupStore(config);
+
+    // when - then
+    Assertions.assertThat(store.verifyConnection()).succeedsWithin(Duration.ofSeconds(10));
+  }
+
+  @Test
+  void shouldFailVerifyConnectionWhenHostNotReachable() {
+    // given
+    final var bucketName = RandomStringUtils.insecure().nextAlphanumeric(12).toLowerCase();
+    final var config =
+        new GcsBackupConfig.Builder()
+            .withHost("http://localhost:1")
+            .withBucketName(bucketName)
+            .withoutAuthentication()
+            .build();
+
+    final var store = new GcsBackupStore(config);
+
+    // when - then
+    Assertions.assertThat(store.verifyConnection())
+        .failsWithin(Duration.ofSeconds(11))
+        .withThrowableOfType(ExecutionException.class);
   }
 }

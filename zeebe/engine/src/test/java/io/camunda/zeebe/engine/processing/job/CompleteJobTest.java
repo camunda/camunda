@@ -20,7 +20,9 @@ import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
+import io.camunda.zeebe.protocol.record.intent.ProcessEventIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceMatcher;
@@ -29,6 +31,7 @@ import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.protocol.record.value.JobBatchRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
+import io.camunda.zeebe.protocol.record.value.ProcessEventRecordValue;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
@@ -158,7 +161,8 @@ public final class CompleteJobTest {
   @Test
   public void shouldCompleteJobWithVariables() {
     // given
-    ENGINE.createJob(jobType, PROCESS_ID);
+    final Record<JobRecordValue> jobCreated = ENGINE.createJob(jobType, PROCESS_ID);
+    final long processInstanceKey = jobCreated.getValue().getProcessInstanceKey();
     final Record<JobBatchRecordValue> batchRecord =
         ENGINE.jobs().withType(jobType).activate(username);
 
@@ -174,7 +178,26 @@ public final class CompleteJobTest {
     Assertions.assertThat(completedRecord)
         .hasRecordType(RecordType.EVENT)
         .hasIntent(JobIntent.COMPLETED);
-    assertThat(completedRecord.getValue().getVariables()).containsExactly(entry("foo", "bar"));
+    // Variables are intentionally not included in the COMPLETED event to avoid
+    // ExceededBatchRecordSizeException when large variables are propagated to follow-up events.
+    // Exporters can read variables from the JobIntent.COMPLETE command or the follow-up
+    // ProcessEvent.TRIGGERING event.
+    assertThat(completedRecord.getValue().getVariables()).isEmpty();
+
+    // Variables must still be propagated to the follow-up ProcessEvent.TRIGGERING record so
+    // the process instance receives the job output.
+    final ProcessEventRecordValue triggeringEvent =
+        (ProcessEventRecordValue)
+            RecordingExporter.records()
+                .limitToProcessInstance(processInstanceKey)
+                .filter(
+                    r ->
+                        r.getValueType() == ValueType.PROCESS_EVENT
+                            && r.getIntent() == ProcessEventIntent.TRIGGERING)
+                .findFirst()
+                .orElseThrow()
+                .getValue();
+    assertThat(triggeringEvent.getVariables()).containsExactly(entry("foo", "bar"));
   }
 
   @Test

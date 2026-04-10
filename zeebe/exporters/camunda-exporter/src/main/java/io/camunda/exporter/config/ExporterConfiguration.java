@@ -29,6 +29,7 @@ public class ExporterConfiguration {
   private AuditLogConfiguration auditLog = new AuditLogConfiguration();
   private HistoryDeletionConfiguration historyDeletion = new HistoryDeletionConfiguration();
   private boolean createSchema = true;
+  private boolean skipVariableWriteWithoutUserTasks = false;
 
   public AuditLogConfiguration getAuditLog() {
     return auditLog;
@@ -110,6 +111,15 @@ public class ExporterConfiguration {
     this.createSchema = createSchema;
   }
 
+  public boolean isSkipVariableWriteWithoutUserTasks() {
+    return skipVariableWriteWithoutUserTasks;
+  }
+
+  public void setSkipVariableWriteWithoutUserTasks(
+      final boolean skipVariableWriteWithoutUserTasks) {
+    this.skipVariableWriteWithoutUserTasks = skipVariableWriteWithoutUserTasks;
+  }
+
   public PostExportConfiguration getPostExport() {
     return postExport;
   }
@@ -171,6 +181,8 @@ public class ExporterConfiguration {
         + auditLog
         + ", historyDeletion="
         + historyDeletion
+        + ", skipVariableWriteWithoutUserTasks="
+        + skipVariableWriteWithoutUserTasks
         + '}';
   }
 

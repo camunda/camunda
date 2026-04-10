@@ -89,8 +89,8 @@ test.describe('process instance migration', () => {
 
     await processesPage.gotoProcessesPage({
       searchParams: {
-        process: 'orderProcess',
-        version: '1',
+        processDefinitionId: 'orderProcess',
+        processDefinitionVersion: '1',
         active: 'true',
         incidents: 'false',
         canceled: 'false',
@@ -250,6 +250,9 @@ test.describe('process instance migration', () => {
 
     await migrationView.confirmMigration();
 
+    await expect(migrationView.step1Header).toBeHidden();
+    await expect(migrationView.step2Header).toBeHidden();
+
     await processesPage.diagram.moveCanvasHorizontally(-200);
 
     await expect(
@@ -311,8 +314,8 @@ test.describe('process instance migration', () => {
 
     await processesPage.gotoProcessesPage({
       searchParams: {
-        process: 'migration-ahsp-process_v1',
-        version: '1',
+        processDefinitionId: 'migration-ahsp-process_v1',
+        processDefinitionVersion: '1',
         active: 'true',
       },
     });
@@ -476,8 +479,8 @@ test.describe('process instance migration', () => {
 
     await processesPage.gotoProcessesPage({
       searchParams: {
-        process: 'migration-ahsp-process_v2',
-        version: '2',
+        processDefinitionId: 'migration-ahsp-process_v2',
+        processDefinitionVersion: '2',
         active: 'true',
       },
     });

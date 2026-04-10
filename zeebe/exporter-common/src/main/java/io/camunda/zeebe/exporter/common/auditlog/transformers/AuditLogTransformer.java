@@ -59,7 +59,7 @@ public interface AuditLogTransformer<R extends RecordValue> {
 
   default void transform(final Record<R> record, final AuditLogEntry log) {}
 
-  default boolean supports(final Record<?> record) {
+  default boolean supports(final Record<R> record) {
     return config().supports(record);
   }
 

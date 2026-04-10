@@ -32,7 +32,6 @@ public class AuditLogTemplate extends AbstractTemplateDescriptor
   public static final String ACTOR_ID = "actorId";
   public static final String ACTOR_TYPE = "actorType";
   public static final String AGENT_ELEMENT_ID = "agentElementId";
-  public static final String ANNOTATION = "annotation";
   public static final String AUDIT_LOG_KEY = "auditLogKey";
   public static final String BATCH_OPERATION_KEY = "batchOperationKey";
   public static final String BATCH_OPERATION_TYPE = "batchOperationType";
@@ -101,5 +100,15 @@ public class AuditLogTemplate extends AbstractTemplateDescriptor
   @Override
   public Map<String, String> getBatchOperationDependantFilters() {
     return Map.of(AuditLogTemplate.ENTITY_TYPE, AuditLogEntityType.BATCH.toString());
+  }
+
+  @Override
+  public String getDecisionDependantField() {
+    return ENTITY_KEY;
+  }
+
+  @Override
+  public Map<String, String> getDecisionDependantFilters() {
+    return Map.of(AuditLogTemplate.ENTITY_TYPE, AuditLogEntityType.DECISION.toString());
   }
 }

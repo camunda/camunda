@@ -46,7 +46,8 @@ describe('BottomPanel - sequence flow mappings', () => {
 
     vi.stubGlobal('location', {
       ...window.location,
-      search: '?process=SequenceFlowMigration&version=1',
+      search:
+        '?processDefinitionId=SequenceFlowMigration&processDefinitionVersion=1',
     });
 
     processInstanceMigrationStore.enable();

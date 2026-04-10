@@ -10,12 +10,11 @@ import {
   render,
   waitForElementToBeRemoved,
   screen,
-  waitFor,
 } from 'modules/testing-library';
 import {MemoryRouter, Route, Routes} from 'react-router-dom';
 import {TopPanel} from './index';
 import {modificationsStore} from 'modules/stores/modifications';
-import {createIncident, searchResult} from 'modules/testUtils';
+import {searchResult} from 'modules/testUtils';
 import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
 import {open} from 'modules/mocks/diagrams';
 import {Paths} from 'modules/Routes';
@@ -29,10 +28,9 @@ import type {
   ElementInstance,
   ProcessInstance,
   SequenceFlow,
-} from '@camunda/camunda-api-zod-schemas/8.9';
+} from '@camunda/camunda-api-zod-schemas/8.10';
 import {mockSearchElementInstances} from 'modules/mocks/api/v2/elementInstances/searchElementInstances';
 import {mockFetchElementInstance} from 'modules/mocks/api/v2/elementInstances/fetchElementInstance';
-import {mockSearchIncidentsByProcessInstance} from 'modules/mocks/api/v2/incidents/searchIncidentsByProcessInstance';
 import {mockSearchJobs} from 'modules/mocks/api/v2/jobs/searchJobs';
 import {mockSearchDecisionInstances} from 'modules/mocks/api/v2/decisionInstances/searchDecisionInstances';
 import {mockSearchProcessInstances} from 'modules/mocks/api/v2/processInstances/searchProcessInstances';
@@ -41,10 +39,6 @@ import {
   SearchParamsUpdater,
   updateSearchParams,
 } from 'modules/testUtils/SearchParamsUpdater';
-
-const mockIncidents = searchResult([
-  createIncident({errorType: 'CONDITION_ERROR', elementId: 'Service5678'}),
-]);
 
 const mockSequenceFlowsV2: SequenceFlow[] = [
   {
@@ -185,15 +179,6 @@ describe('TopPanel', () => {
     );
 
     mockFetchProcessInstance().withSuccess(mockProcessInstance);
-    mockSearchIncidentsByProcessInstance(':instance_id').withSuccess(
-      mockIncidents,
-    );
-    mockSearchIncidentsByProcessInstance(':instance_id').withSuccess(
-      mockIncidents,
-    );
-    mockSearchIncidentsByProcessInstance(':instance_id').withSuccess(
-      mockIncidents,
-    );
     mockFetchProcessSequenceFlows().withSuccess({items: mockSequenceFlowsV2});
     mockFetchElementInstancesStatistics().withSuccess({
       items: [
@@ -245,16 +230,6 @@ describe('TopPanel', () => {
     await waitForElementToBeRemoved(screen.queryByTestId('diagram-spinner'));
   });
 
-  it('should render incident bar', async () => {
-    mockFetchProcessInstance().withSuccess(mockProcessInstance);
-
-    render(<TopPanel />, {
-      wrapper: getWrapper(),
-    });
-
-    expect(await screen.findByText('1 Incident occurred')).toBeInTheDocument();
-  });
-
   it('should show an error when a server error occurs', async () => {
     mockFetchProcessDefinitionXml().withServerError();
     mockFetchProcessDefinitionXml().withServerError();
@@ -304,50 +279,15 @@ describe('TopPanel', () => {
     ).toBeInTheDocument();
   });
 
-  it('should toggle incident bar', async () => {
-    const {user} = render(<TopPanel />, {
-      wrapper: getWrapper(),
-    });
-
-    await waitFor(() =>
-      expect(
-        screen.queryByText('Incidents - 1 result'),
-      ).not.toBeInTheDocument(),
-    );
-
-    await user.click(await screen.findByTitle('View 1 Incident in Instance 1'));
-
-    expect(await screen.findByText('Incidents - 1 result')).toBeInTheDocument();
-
-    await user.click(await screen.findByTitle('View 1 Incident in Instance 1'));
-
-    expect(screen.queryByText('Incidents - 1 result')).not.toBeInTheDocument();
-  });
-
-  it('should render metadata for default mode and modification dropdown for modification mode', async () => {
+  it('should render modification dropdown in modification mode', async () => {
     mockFetchElementInstance('2251799813699889').withSuccess(
       mockElementInstance,
     );
-    mockFetchProcessInstance().withSuccess(mockProcessInstance);
     mockSearchElementInstances().withSuccess(
       searchResult([mockElementInstance]),
     );
 
-    mockSearchIncidentsByProcessInstance('instance_id').withSuccess(
-      searchResult([]),
-    );
-
-    mockFetchElementInstancesStatistics().withSuccess({
-      items: [
-        {
-          elementId: mockElementInstance.elementId,
-          active: 1,
-          completed: 0,
-          canceled: 0,
-          incidents: 0,
-        },
-      ],
-    });
+    modificationsStore.enableModificationMode();
 
     render(<TopPanel />, {
       wrapper: getWrapper({
@@ -359,11 +299,6 @@ describe('TopPanel', () => {
     await waitForElementToBeRemoved(() =>
       screen.queryByTestId('diagram-spinner'),
     );
-
-    await screen.findByText(/Element Instance Key/);
-    await screen.findByText(/Execution Duration/);
-
-    modificationsStore.enableModificationMode();
 
     expect(screen.queryByText(/Start Date/)).not.toBeInTheDocument();
     expect(screen.queryByText(/End Date/)).not.toBeInTheDocument();

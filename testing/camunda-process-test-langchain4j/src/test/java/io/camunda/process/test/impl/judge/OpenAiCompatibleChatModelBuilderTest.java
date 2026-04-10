@@ -17,8 +17,17 @@ package io.camunda.process.test.impl.judge;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyMap;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 
 import dev.langchain4j.model.chat.ChatModel;
+import dev.langchain4j.model.openai.OpenAiChatModel;
+import io.camunda.process.test.impl.judge.BaseProviderConfig.OpenAiCompatibleConfig;
+import java.time.Duration;
+import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.NullAndEmptySource;
@@ -26,12 +35,15 @@ import org.junit.jupiter.params.provider.ValueSource;
 
 class OpenAiCompatibleChatModelBuilderTest {
 
+  private static final String MODEL = "llama3";
+  private static final String BASE_URL = "http://localhost:11434/v1";
+  private static final String API_KEY = "test-api-key";
+
   @Test
-  void shouldBuildChatModelWithApiKey() {
+  void shouldBuildChatModel() {
     // given
-    final BaseProviderConfig.OpenAiCompatibleConfig config =
-        new BaseProviderConfig.OpenAiCompatibleConfig(
-            "llama3", "http://localhost:11434/v1", "test-api-key");
+    final OpenAiCompatibleConfig config =
+        new OpenAiCompatibleConfig(MODEL, BASE_URL, API_KEY, null);
 
     // when
     final ChatModel chatModel = OpenAiCompatibleChatModelBuilder.build(config);
@@ -40,20 +52,119 @@ class OpenAiCompatibleChatModelBuilderTest {
     assertThat(chatModel).isNotNull();
   }
 
+  @Test
+  void shouldSetRequiredFieldsOnBuilder() {
+    // given
+    final OpenAiCompatibleConfig config = new OpenAiCompatibleConfig(MODEL, BASE_URL, null, null);
+    final OpenAiChatModel.OpenAiChatModelBuilder mockBuilder =
+        mock(OpenAiChatModel.OpenAiChatModelBuilder.class);
+
+    // when
+    OpenAiCompatibleChatModelBuilder.build(config, mockBuilder);
+
+    // then
+    verify(mockBuilder).baseUrl(BASE_URL);
+    verify(mockBuilder).modelName(MODEL);
+    verify(mockBuilder, never()).apiKey(any());
+    verify(mockBuilder, never()).customHeaders(anyMap());
+  }
+
+  @Test
+  void shouldApplyApiKeyToBuilderWhenNoAuthorizationHeader() {
+    // given
+    final OpenAiCompatibleConfig config =
+        new OpenAiCompatibleConfig(MODEL, BASE_URL, API_KEY, null);
+    final OpenAiChatModel.OpenAiChatModelBuilder mockBuilder =
+        mock(OpenAiChatModel.OpenAiChatModelBuilder.class);
+
+    // when
+    OpenAiCompatibleChatModelBuilder.build(config, mockBuilder);
+
+    // then
+    verify(mockBuilder).apiKey(API_KEY);
+  }
+
+  @Test
+  void shouldNotApplyApiKeyWhenAuthorizationHeaderPresent() {
+    // given
+    final Map<String, String> headers = Map.of("Authorization", "Bearer test-token");
+    final OpenAiCompatibleConfig config =
+        new OpenAiCompatibleConfig(MODEL, BASE_URL, API_KEY, headers);
+    final OpenAiChatModel.OpenAiChatModelBuilder mockBuilder =
+        mock(OpenAiChatModel.OpenAiChatModelBuilder.class);
+
+    // when
+    OpenAiCompatibleChatModelBuilder.build(config, mockBuilder);
+
+    // then
+    verify(mockBuilder, never()).apiKey(any());
+    verify(mockBuilder).customHeaders(headers);
+  }
+
   @ParameterizedTest
   @NullAndEmptySource
   @ValueSource(strings = {"  "})
-  void shouldBuildChatModelWithoutApiKey(final String apiKey) {
-    // given — null or blank apiKey is treated as absent
-    final BaseProviderConfig.OpenAiCompatibleConfig config =
-        new BaseProviderConfig.OpenAiCompatibleConfig(
-            "llama3", "http://localhost:11434/v1", apiKey);
+  void shouldNotApplyApiKeyToBuilderWhenNullOrBlank(final String apiKey) {
+    // given
+    final OpenAiCompatibleConfig config = new OpenAiCompatibleConfig(MODEL, BASE_URL, apiKey, null);
+    final OpenAiChatModel.OpenAiChatModelBuilder mockBuilder =
+        mock(OpenAiChatModel.OpenAiChatModelBuilder.class);
 
     // when
-    final ChatModel chatModel = OpenAiCompatibleChatModelBuilder.build(config);
+    OpenAiCompatibleChatModelBuilder.build(config, mockBuilder);
 
     // then
-    assertThat(chatModel).isNotNull();
+    verify(mockBuilder, never()).apiKey(any());
+  }
+
+  @Test
+  void shouldApplyHeadersToBuilder() {
+    // given
+    final Map<String, String> headers = Map.of("X-Test-Header", "test-header-value");
+    final OpenAiCompatibleConfig config =
+        new OpenAiCompatibleConfig(MODEL, BASE_URL, null, headers);
+    final OpenAiChatModel.OpenAiChatModelBuilder mockBuilder =
+        mock(OpenAiChatModel.OpenAiChatModelBuilder.class);
+
+    // when
+    OpenAiCompatibleChatModelBuilder.build(config, mockBuilder);
+
+    // then
+    verify(mockBuilder).customHeaders(headers);
+  }
+
+  @Test
+  void shouldApplyTimeoutToBuilder() {
+    // given
+    final OpenAiCompatibleConfig config =
+        new OpenAiCompatibleConfig(MODEL, BASE_URL, API_KEY, null);
+    config.setTimeout(Duration.ofSeconds(30));
+    final OpenAiChatModel.OpenAiChatModelBuilder mockBuilder =
+        mock(OpenAiChatModel.OpenAiChatModelBuilder.class);
+
+    // when
+    OpenAiCompatibleChatModelBuilder.build(config, mockBuilder);
+
+    // then
+    verify(mockBuilder).timeout(Duration.ofSeconds(30));
+    verify(mockBuilder, never()).temperature(any());
+  }
+
+  @Test
+  void shouldApplyTemperatureToBuilder() {
+    // given
+    final OpenAiCompatibleConfig config =
+        new OpenAiCompatibleConfig(MODEL, BASE_URL, API_KEY, null);
+    config.setTemperature(0.7);
+    final OpenAiChatModel.OpenAiChatModelBuilder mockBuilder =
+        mock(OpenAiChatModel.OpenAiChatModelBuilder.class);
+
+    // when
+    OpenAiCompatibleChatModelBuilder.build(config, mockBuilder);
+
+    // then
+    verify(mockBuilder, never()).timeout(any());
+    verify(mockBuilder).temperature(0.7);
   }
 
   @ParameterizedTest
@@ -61,8 +172,7 @@ class OpenAiCompatibleChatModelBuilderTest {
   @ValueSource(strings = {"  "})
   void shouldThrowWhenBaseUrlMissingOrBlank(final String baseUrl) {
     // given
-    final BaseProviderConfig.OpenAiCompatibleConfig config =
-        new BaseProviderConfig.OpenAiCompatibleConfig("llama3", baseUrl, null);
+    final OpenAiCompatibleConfig config = new OpenAiCompatibleConfig(MODEL, baseUrl, null, null);
 
     // when / then
     assertThatThrownBy(() -> OpenAiCompatibleChatModelBuilder.build(config))
@@ -76,8 +186,7 @@ class OpenAiCompatibleChatModelBuilderTest {
   @ValueSource(strings = {"  "})
   void shouldThrowWhenModelMissingOrBlank(final String model) {
     // given
-    final BaseProviderConfig.OpenAiCompatibleConfig config =
-        new BaseProviderConfig.OpenAiCompatibleConfig(model, "http://localhost:11434/v1", null);
+    final OpenAiCompatibleConfig config = new OpenAiCompatibleConfig(model, BASE_URL, null, null);
 
     // when / then
     assertThatThrownBy(() -> OpenAiCompatibleChatModelBuilder.build(config))

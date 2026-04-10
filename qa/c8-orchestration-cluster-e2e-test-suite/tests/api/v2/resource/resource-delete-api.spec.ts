@@ -16,6 +16,7 @@ import {
   assertNotFoundRequest,
   assertBadRequest,
 } from '../../../../utils/http';
+import {validateResponse} from '../../../../json-body-assertions';
 import {deployResourceAndGetMetadata} from '@requestHelpers';
 
 /* eslint-disable playwright/expect-expect */
@@ -38,6 +39,14 @@ test.describe.parallel('Resource Delete API', () => {
     );
 
     await assertStatusCode(res, 200);
+    await validateResponse(
+      {
+        path: '/resources/{resourceKey}/deletion',
+        method: 'POST',
+        status: '200',
+      },
+      res,
+    );
   });
 
   test('Delete Resource - Not Found 404', async ({request}) => {

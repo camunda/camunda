@@ -28,4 +28,14 @@ public abstract class AzureBackupStoreException extends RuntimeException {
       super(message);
     }
   }
+
+  public static final class ConfigurationException extends AzureBackupStoreException {
+    public ConfigurationException(final String message, final Throwable cause) {
+      super(message, cause);
+    }
+
+    public ConfigurationException(final String message) {
+      super(message);
+    }
+  }
 }

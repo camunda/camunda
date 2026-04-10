@@ -46,17 +46,21 @@ masterService: "opensearch"
 
 majorVersion: "2.19.0"
 
+replicas: 3
+
 config:
   opensearch.yml: |
     cluster.name: opensearch
     network.host: 0.0.0.0
     plugins.security.disabled: true
+    # Disable deprecation logging to avoid filling up the logs with warnings about deprecated features that we might be using in our tests
+    logger.org.opensearch.deprecation: "OFF"
 
 extraEnvs:
   - name: OPENSEARCH_INITIAL_ADMIN_PASSWORD
     value: "yourStrongPassword123!"
 
-opensearchJavaOpts: "-Xms1024m -Xmx1024m"
+opensearchJavaOpts: "-Xms3g -Xmx3g"
 
 sysctlInit:
   enabled: true
@@ -64,24 +68,25 @@ sysctlVmMaxMapCount: 262144
 
 resources:
   requests:
-    cpu: 3000m
-    memory: 4Gi
+    cpu: 7000m
+    memory: 8Gi
   limits:
-    cpu: 3000m
-    memory: 10Gi
+    cpu: 7000m
+    memory: 8Gi
 
 persistence:
   enabled: true
-  size: 128Gi
-  storageClass: "ssd"
+  size: 512Gi
+  storageClass: benchmark-ssd-zonal-v1
 
 nodeSelector:
-  component: benchmark-n2-standard-4
+  component: benchmark-n2-standard-8
+  topology.kubernetes.io/zone: __AVAILABILITY_ZONE__
 
 tolerations:
   - key: nodepool
     operator: Equal
-    value: n2-standard-4
+    value: n2-standard-8
     effect: NoSchedule
 
 antiAffinity: "hard"

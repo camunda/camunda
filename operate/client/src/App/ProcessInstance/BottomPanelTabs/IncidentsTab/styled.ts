@@ -14,7 +14,6 @@ const Container = styled.section`
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  padding-top: var(--cds-spacing-05);
 `;
 
 export {Container};

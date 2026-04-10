@@ -118,9 +118,7 @@ class IncidentSearchIT {
     final var result = camundaClient.newIncidentGetRequest(incidentKey).send().join();
 
     // then
-    assertThat(result).isNotNull();
-    assertThat(result.getIncidentKey()).isEqualTo(incidentKey);
-    assertThat(result.getRootProcessInstanceKey()).isEqualTo(incident.getProcessInstanceKey());
+    assertThat(result).isEqualTo(incident);
   }
 
   @Test

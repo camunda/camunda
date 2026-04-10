@@ -10,7 +10,7 @@ on:
       generation:
         description: 'Specifies the generation template which should be used by the testbench run'
         required: false
-        default: 'Zeebe SNAPSHOT'
+        default: 'Camunda SNAPSHOT'
         type: string
       branch:
         description: 'Specifies the branch, for which the QA Testbench run should be executed'
@@ -22,7 +22,7 @@ on:
       generation:
         description: 'Specifies the generation template which should be used by the testbench run'
         required: false
-        default: 'Zeebe SNAPSHOT'
+        default: 'Camunda SNAPSHOT'
         type: string
       branch:
         description: 'Specifies the branch, for which the QA Testbench run should be executed'
@@ -69,10 +69,21 @@ jobs:
     if: failure()
     steps:
       - uses: actions/checkout@v6
-      - id: slack-notify
-        uses: slackapi/slack-github-action@v2.1.1
+      - name: Import Secrets
+        id: secrets
+        uses: hashicorp/vault-action@79632e33d6953d190b940ffa440bf97821cabd80
         with:
-          webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          exportEnv: false
+          secrets: |
+            secret/data/products/camunda/ci/github-actions SLACK_ZEEBOT_ZEEBE_CI_WEBHOOK_URL;
+      - id: slack-notify
+        uses: slackapi/slack-github-action@v3.0.1
+        with:
+          webhook: ${{ steps.secrets.outputs.SLACK_ZEEBOT_ZEEBE_CI_WEBHOOK_URL }}
           webhook-type: incoming-webhook
           payload: |
             {

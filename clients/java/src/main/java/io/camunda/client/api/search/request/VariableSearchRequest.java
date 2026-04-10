@@ -16,11 +16,12 @@
 package io.camunda.client.api.search.request;
 
 import io.camunda.client.api.search.filter.VariableFilter;
+import io.camunda.client.api.search.page.AnyPage;
 import io.camunda.client.api.search.response.Variable;
 import io.camunda.client.api.search.sort.VariableSort;
 
 public interface VariableSearchRequest
-    extends TypedSearchRequest<VariableFilter, VariableSort, VariableSearchRequest>,
+    extends TypedSearchRequest<VariableFilter, VariableSort, AnyPage, VariableSearchRequest>,
         FinalSearchRequestStep<Variable> {
 
   /**

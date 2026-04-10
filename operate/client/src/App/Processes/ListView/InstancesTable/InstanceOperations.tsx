@@ -14,7 +14,7 @@ import {useCancelProcessInstance} from 'modules/mutations/processInstance/useCan
 import {useDeleteProcessInstance} from 'modules/mutations/processInstance/useDeleteProcessInstance';
 import {useResolveProcessInstanceIncidents} from 'modules/mutations/processInstance/useResolveProcessInstanceIncidents';
 import type {OperationConfig} from 'modules/components/Operations/types';
-import type {BatchOperationType} from '@camunda/camunda-api-zod-schemas/8.9';
+import type {BatchOperationType} from '@camunda/camunda-api-zod-schemas/8.10';
 
 type Props = {
   processInstanceKey: string;

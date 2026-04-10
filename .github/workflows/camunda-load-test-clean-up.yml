@@ -1,4 +1,6 @@
-# description: This workflow deletes eligible load tests that reached or passed their deadline
+# description: Deletes expired load test namespaces based on TTL deadline labels.
+#              Runs two parallel cleanup jobs: one for legacy GKE infra (Google Cloud auth),
+#              one for new infra (Teleport auth). Posts deleted namespaces to Slack.
 # type: CI
 # owner: camunda/orchestration-cluster-team
 name: camunda-load-test-clean-up.yml
@@ -46,10 +48,21 @@ jobs:
       - name: Delete namespaces eligible for deletion
         id: delete-namespaces
         run: .github/scripts/clean-up-load-test-namespaces.sh --execute "${{ inputs.date }}"
-      - id: slack-notify
-        uses: slackapi/slack-github-action@v2.1.1
+      - name: Import Slack webhook from Vault
+        id: slack-secrets
+        uses: hashicorp/vault-action@4c06c5ccf5c0761b6029f56cfb1dcf5565918a3b # v3.4.0
         with:
-          webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          exportEnv: false
+          secrets: |
+            secret/data/products/camunda/ci/github-actions SLACK_ZEEBOT_RELIABILITY_TESTING_ALERTS_WEBHOOK_URL;
+      - id: slack-notify
+        uses: slackapi/slack-github-action@v3.0.1
+        with:
+          webhook: ${{ steps.slack-secrets.outputs.SLACK_ZEEBOT_RELIABILITY_TESTING_ALERTS_WEBHOOK_URL }}
           webhook-type: incoming-webhook
           payload: |
             {
@@ -92,7 +105,8 @@ jobs:
       - name: Set up Teleport
         uses: teleport-actions/setup@v1
         with:
-          version: 17.2.2
+          proxy: camunda.teleport.sh:443
+          version: auto
       - name: Authenticate to Cluster using Teleport
         uses: teleport-actions/auth-k8s@v2
         with:
@@ -102,10 +116,21 @@ jobs:
       - name: Delete namespaces eligible for deletion
         id: delete-namespaces
         run: .github/scripts/clean-up-load-test-namespaces.sh --execute "${{ inputs.date }}"
-      - id: slack-notify
-        uses: slackapi/slack-github-action@v2.1.1
+      - name: Import Slack webhook from Vault
+        id: slack-secrets
+        uses: hashicorp/vault-action@4c06c5ccf5c0761b6029f56cfb1dcf5565918a3b # v3.4.0
         with:
-          webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          exportEnv: false
+          secrets: |
+            secret/data/products/camunda/ci/github-actions SLACK_ZEEBOT_RELIABILITY_TESTING_ALERTS_WEBHOOK_URL;
+      - id: slack-notify
+        uses: slackapi/slack-github-action@v3.0.1
+        with:
+          webhook: ${{ steps.slack-secrets.outputs.SLACK_ZEEBOT_RELIABILITY_TESTING_ALERTS_WEBHOOK_URL }}
           webhook-type: incoming-webhook
           payload: |
             {

@@ -19,7 +19,7 @@ import {Skeleton} from '../PartiallyExpandableDataTable/Skeleton';
 import {Details} from './Details';
 import {generateProcessKey} from 'modules/utils/generateProcessKey';
 import {useAvailableTenants} from 'modules/queries/useAvailableTenants';
-import type {ProcessDefinitionInstanceStatistics} from '@camunda/camunda-api-zod-schemas/8.9';
+import type {ProcessDefinitionInstanceStatistics} from '@camunda/camunda-api-zod-schemas/8.10';
 import {DEFAULT_TENANT} from 'modules/constants';
 import {InlineLoading} from '@carbon/react';
 import {getClientConfig} from 'modules/utils/getClientConfig';
@@ -77,8 +77,8 @@ const InstancesByProcessDefinition: React.FC<Props> = ({
           instance: (
             <LinkWrapper
               to={Locations.processes({
-                process: processDefinitionId,
-                version: version.toString(),
+                processDefinitionId,
+                processDefinitionVersion: version.toString(),
                 active: true,
                 incidents: true,
                 ...(totalInstancesCount === 0
@@ -89,7 +89,7 @@ const InstancesByProcessDefinition: React.FC<Props> = ({
                   : {}),
                 ...(isMultiTenancyEnabled
                   ? {
-                      tenant: normalizedTenantId,
+                      tenantId: normalizedTenantId,
                     }
                   : {}),
               })}

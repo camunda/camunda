@@ -15,16 +15,16 @@
  */
 package io.camunda.client.impl.search.request;
 
+import static io.camunda.client.api.search.request.SearchRequestBuilders.anyPage;
 import static io.camunda.client.api.search.request.SearchRequestBuilders.authorizationFilter;
 import static io.camunda.client.api.search.request.SearchRequestBuilders.authorizationSort;
-import static io.camunda.client.api.search.request.SearchRequestBuilders.searchRequestPage;
 
 import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.fetch.AuthorizationsSearchRequest;
 import io.camunda.client.api.search.filter.AuthorizationFilter;
+import io.camunda.client.api.search.page.AnyPage;
 import io.camunda.client.api.search.request.FinalSearchRequestStep;
-import io.camunda.client.api.search.request.SearchRequestPage;
 import io.camunda.client.api.search.response.Authorization;
 import io.camunda.client.api.search.response.SearchResponse;
 import io.camunda.client.api.search.sort.AuthorizationSort;
@@ -85,14 +85,14 @@ public class AuthorizationsSearchRequestImpl
   }
 
   @Override
-  public AuthorizationsSearchRequest page(final SearchRequestPage value) {
+  public AuthorizationsSearchRequest page(final AnyPage value) {
     request.setPage(provideSearchRequestProperty(value));
     return this;
   }
 
   @Override
-  public AuthorizationsSearchRequest page(final Consumer<SearchRequestPage> fn) {
-    return page(searchRequestPage(fn));
+  public AuthorizationsSearchRequest page(final Consumer<AnyPage> fn) {
+    return page(anyPage(fn));
   }
 
   @Override

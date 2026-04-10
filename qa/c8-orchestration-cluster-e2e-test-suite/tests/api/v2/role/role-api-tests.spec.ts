@@ -10,14 +10,15 @@ import {test, expect} from '@playwright/test';
 import {
   jsonHeaders,
   buildUrl,
-  assertRequiredFields,
   assertUnauthorizedRequest,
   assertNotFoundRequest,
   assertConflictRequest,
   assertEqualsForKeys,
   assertBadRequest,
   assertPaginatedRequest,
+  assertStatusCode,
 } from '../../../../utils/http';
+import {validateResponse} from '../../../../json-body-assertions';
 import {
   CREATE_NEW_ROLE,
   roleRequiredFields,
@@ -57,9 +58,16 @@ test.describe.parallel('Roles API Tests', () => {
         data: role,
       });
 
-      expect(res.status()).toBe(201);
+      await assertStatusCode(res, 201);
+      await validateResponse(
+        {
+          path: '/roles',
+          method: 'POST',
+          status: '201',
+        },
+        res,
+      );
       const json = await res.json();
-      assertRequiredFields(json, roleRequiredFields);
       assertEqualsForKeys(json, role, roleRequiredFields);
       if (json && json.roleId) {
         createdRoleIds.push(json.roleId);
@@ -127,9 +135,16 @@ test.describe.parallel('Roles API Tests', () => {
       const res = await request.get(buildUrl('/roles/{roleId}', p), {
         headers: jsonHeaders(),
       });
-      expect(res.status()).toBe(200);
+      await assertStatusCode(res, 200);
+      await validateResponse(
+        {
+          path: '/roles/{roleId}',
+          method: 'GET',
+          status: '200',
+        },
+        res,
+      );
       const json = await res.json();
-      assertRequiredFields(json, roleRequiredFields);
       assertEqualsForKeys(json, expectedBody, roleRequiredFields);
     }).toPass(defaultAssertionOptions);
   });
@@ -163,9 +178,16 @@ test.describe.parallel('Roles API Tests', () => {
         headers: jsonHeaders(),
         data: requestBody,
       });
-      expect(res.status()).toBe(200);
+      await assertStatusCode(res, 200);
+      await validateResponse(
+        {
+          path: '/roles/{roleId}',
+          method: 'PUT',
+          status: '200',
+        },
+        res,
+      );
       const json = await res.json();
-      assertRequiredFields(json, roleRequiredFields);
       assertEqualsForKeys(json, expectedBody, roleRequiredFields);
     }).toPass(defaultAssertionOptions);
   });
@@ -207,9 +229,16 @@ test.describe.parallel('Roles API Tests', () => {
         data: {name: 'missing description'},
       });
 
-      expect(res.status()).toBe(200);
+      await assertStatusCode(res, 200);
+      await validateResponse(
+        {
+          path: '/roles/{roleId}',
+          method: 'PUT',
+          status: '200',
+        },
+        res,
+      );
       const json = await res.json();
-      assertRequiredFields(json, roleRequiredFields);
       assertEqualsForKeys(json, expectedBody, roleRequiredFields);
     }).toPass(defaultAssertionOptions);
   });
@@ -239,12 +268,13 @@ test.describe.parallel('Roles API Tests', () => {
 
   test('Delete Role', async ({request}) => {
     const p = {roleId: state['roleId3'] as string};
+
     await test.step('Delete Role 204', async () => {
       await expect(async () => {
         const res = await request.delete(buildUrl('/roles/{roleId}', p), {
           headers: jsonHeaders(),
         });
-        expect(res.status()).toBe(204);
+        await assertStatusCode(res, 204);
       }).toPass(defaultAssertionOptions);
     });
 
@@ -298,6 +328,15 @@ test.describe.parallel('Roles API Tests', () => {
         data: {},
       });
 
+      await validateResponse(
+        {
+          path: '/roles/search',
+          method: 'POST',
+          status: '200',
+        },
+        res,
+      );
+
       await assertPaginatedRequest(res, {
         itemLengthGreaterThan: 2,
         totalItemGreaterThan: 2,
@@ -335,6 +374,14 @@ test.describe.parallel('Roles API Tests', () => {
         data: body,
       });
 
+      await validateResponse(
+        {
+          path: '/roles/search',
+          method: 'POST',
+          status: '200',
+        },
+        res,
+      );
       await assertPaginatedRequest(res, {
         itemsLengthEqualTo: 1,
         totalItemsEqualTo: 1,
@@ -342,7 +389,6 @@ test.describe.parallel('Roles API Tests', () => {
       const json = await res.json();
       const item = json.items[0];
       expect(item).toBeDefined();
-      assertRequiredFields(item, roleRequiredFields);
       assertEqualsForKeys(item, expectedBody, roleRequiredFields);
     }).toPass(defaultAssertionOptions);
   });
@@ -366,6 +412,15 @@ test.describe.parallel('Roles API Tests', () => {
         data: body,
       });
 
+      await validateResponse(
+        {
+          path: '/roles/search',
+          method: 'POST',
+          status: '200',
+        },
+        res,
+      );
+
       await assertPaginatedRequest(res, {
         itemsLengthEqualTo: 1,
         totalItemsEqualTo: 1,
@@ -373,7 +428,6 @@ test.describe.parallel('Roles API Tests', () => {
       const json = await res.json();
       const item = json.items[0];
       expect(item).toBeDefined();
-      assertRequiredFields(item, roleRequiredFields);
       assertEqualsForKeys(item, expectedBody, roleRequiredFields);
     }).toPass(defaultAssertionOptions);
   });
@@ -396,6 +450,15 @@ test.describe.parallel('Roles API Tests', () => {
         data: requestBody,
       });
 
+      await validateResponse(
+        {
+          path: '/roles/search',
+          method: 'POST',
+          status: '200',
+        },
+        res,
+      );
+
       await assertPaginatedRequest(res, {
         itemsLengthEqualTo: 1,
         totalItemsEqualTo: 1,
@@ -403,7 +466,6 @@ test.describe.parallel('Roles API Tests', () => {
       const json = await res.json();
       const item = json.items[0];
       expect(item).toBeDefined();
-      assertRequiredFields(item, roleRequiredFields);
       assertEqualsForKeys(item, expectedBody, roleRequiredFields);
     }).toPass(defaultAssertionOptions);
   });
@@ -419,6 +481,15 @@ test.describe.parallel('Roles API Tests', () => {
       headers: jsonHeaders(),
       data: body,
     });
+
+    await validateResponse(
+      {
+        path: '/roles/search',
+        method: 'POST',
+        status: '200',
+      },
+      res,
+    );
 
     await assertPaginatedRequest(res, {
       itemsLengthEqualTo: 0,

@@ -217,6 +217,7 @@ public class BrokerBasedPropertiesOverride {
     populateFromBatchOperations(override);
     populateFromExpression(override);
     populateFromProcessInstanceCreation(override);
+    populateFromJobs(override);
   }
 
   private void populateFromDistribution(final BrokerBasedProperties override) {
@@ -991,6 +992,7 @@ public class BrokerBasedPropertiesOverride {
         database.getHistory().getHistoryCleanupProcessInstanceBatchSize());
     history.setUsageMetricsCleanup(database.getHistory().getUsageMetricsCleanup());
     history.setUsageMetricsTTL(database.getHistory().getUsageMetricsTTL());
+    history.setMaxHistoryCleanupUsage(database.getHistory().getMaxHistoryCleanupUsage());
   }
 
   private void populateFromMonitoring(final BrokerBasedProperties override) {
@@ -1063,5 +1065,19 @@ public class BrokerBasedPropertiesOverride {
                 .getCamunda()
                 .getProcessInstanceCreation()
                 .isBusinessIdUniquenessEnabled());
+  }
+
+  private void populateFromJobs(final BrokerBasedProperties override) {
+    override
+        .getExperimental()
+        .getEngine()
+        .getJobs()
+        .setIncludeVariablesInJobCompletedEvent(
+            unifiedConfiguration
+                .getCamunda()
+                .getProcessing()
+                .getEngine()
+                .getJob()
+                .isIncludeVariablesInJobCompletedEvent());
   }
 }

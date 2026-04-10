@@ -140,7 +140,7 @@ test.describe.parallel('Batch Operation Items Search API Tests', () => {
 
             const body = await res.json();
             expect(body.page.totalItems).toBeGreaterThanOrEqual(1);
-            expect(body.items.length).toEqual(1);
+            expect(body.items).toHaveLength(1);
 
             const item = body.items[0];
             expect(item.itemKey).toBe(incidentKey);
@@ -161,6 +161,7 @@ test.describe.parallel('Batch Operation Items Search API Tests', () => {
   }) => {
     let processInstanceKeyToCancel: string;
     let batchOperationKey: string;
+
     await test.step('Create process instance to cancel', async () => {
       processInstanceKeyToCancel = (
         await createSingleInstance('processWithAnError', 1)
@@ -239,7 +240,7 @@ test.describe.parallel('Batch Operation Items Search API Tests', () => {
 
             const body = await res.json();
             expect(body.page.totalItems).toBeGreaterThanOrEqual(1);
-            expect(body.items.length).toEqual(1);
+            expect(body.items).toHaveLength(1);
 
             const item = body.items[0];
             expect(item.itemKey).toBe(processInstanceKeyToCancel);
@@ -261,6 +262,7 @@ test.describe.parallel('Batch Operation Items Search API Tests', () => {
     let processInstanceKey1: string;
     let processInstanceKey2: string;
     let batchOperationKey: string;
+
     await test.step('Create multiple process instances to cancel', async () => {
       const processInstances = await createInstances(
         'process_with_task_listener',
@@ -342,7 +344,7 @@ test.describe.parallel('Batch Operation Items Search API Tests', () => {
 
         const body = await res.json();
         expect(body.page.totalItems).toEqual(2);
-        expect(body.items.length).toEqual(2);
+        expect(body.items).toHaveLength(2);
 
         const item = body.items[0];
         expect([processInstanceKey1, processInstanceKey2]).toContain(
@@ -565,7 +567,7 @@ test.describe.parallel('Batch Operation Items Search API Tests', () => {
 
       const body = await res.json();
       expect(body.page.totalItems).toBe(0);
-      expect(body.items.length).toBe(0);
+      expect(body.items).toHaveLength(0);
     }).toPass(defaultAssertionOptions);
   });
 
@@ -634,7 +636,11 @@ test.describe.parallel('Batch Operation Items Search API Tests', () => {
         },
       );
 
-      await assertBadRequest(res, 'For input string: \"meow\"');
+      await assertBadRequest(
+        res,
+        "The provided itemKey 'meow' is not a valid key.",
+        'INVALID_ARGUMENT',
+      );
     }).toPass(defaultAssertionOptions);
   });
 });

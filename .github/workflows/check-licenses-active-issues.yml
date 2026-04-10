@@ -37,21 +37,21 @@ jobs:
 
     - name: Get Issues for camunda/camunda@single-app (all tracked branches)
       # Tracked branches are defiened in FOSSA UI
-      uses: camunda/infra-global-github-actions/fossa/get-issues@f5807d2242ed5d143402f3ff092901ce920b01d0
+      uses: camunda/infra-global-github-actions/fossa/get-issues@fc4fa13813cbc1835129967f10a12f24aa7a393c
       id: single-app
       with:
         api-key: ${{ steps.secrets.outputs.FOSSA_API_KEY }}
         project-locator: custom+50756/camunda/camunda@single-app
 
     - name: Get Issues for camunda/camunda@optimize (all tracked branches)
-      uses: camunda/infra-global-github-actions/fossa/get-issues@f5807d2242ed5d143402f3ff092901ce920b01d0
+      uses: camunda/infra-global-github-actions/fossa/get-issues@fc4fa13813cbc1835129967f10a12f24aa7a393c
       id: optimize
       with:
         api-key: ${{ steps.secrets.outputs.FOSSA_API_KEY }}
         project-locator: custom+50756/camunda/camunda@optimize
 
     - name: Get Issues for camunda/camunda@c8run (all tracked branches)
-      uses: camunda/infra-global-github-actions/fossa/get-issues@f5807d2242ed5d143402f3ff092901ce920b01d0
+      uses: camunda/infra-global-github-actions/fossa/get-issues@fc4fa13813cbc1835129967f10a12f24aa7a393c
       id: c8run
       with:
         api-key: ${{ steps.secrets.outputs.FOSSA_API_KEY }}
@@ -113,7 +113,7 @@ jobs:
 
     - name: Send Slack notification
       if: steps.check-issues.outputs.active-issues-found != '0' && github.event_name != 'pull_request'
-      uses: slackapi/slack-github-action@v2
+      uses: slackapi/slack-github-action@v3
       with:
         payload: |
           {

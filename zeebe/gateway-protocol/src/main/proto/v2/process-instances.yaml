@@ -42,6 +42,16 @@ paths:
                 $ref: '#/components/schemas/CreateProcessInstanceResult'
         "400":
           $ref: 'common-responses.yaml#/components/responses/InvalidData'
+        "409":
+          description: |
+            The process instance creation was rejected due to a business ID uniqueness conflict.
+            This can happen only when Business ID Uniqueness Control is enabled and an
+            active root process instance with the provided business ID already exists
+            for the same process definition and tenant.
+          content:
+            application/problem+json:
+              schema:
+                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
         "503":
@@ -279,7 +289,12 @@ paths:
         - Process instance
       operationId: cancelProcessInstance
       summary: Cancel process instance
-      description: Cancels a running process instance. As a cancellation includes more than just the removal of the process instance resource, the cancellation resource must be posted.
+      description: >
+        Cancels a running process instance. As a cancellation includes more than just the removal
+        of the process instance resource, the cancellation resource must be posted. Cancellation
+        can wait on listener-related processing; when that processing does not complete in time,
+        this endpoint can return 504. Other gateway timeout causes are also possible. Retry with
+        backoff and inspect listener worker availability and logs when this repeats.
       parameters:
         - name: processInstanceKey
           in: path
@@ -308,6 +323,8 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
+        "504":
+          $ref: 'common-responses.yaml#/components/responses/GatewayTimeoutTaskListenerBlocking'
 
   /process-instances/cancellation:
     post:

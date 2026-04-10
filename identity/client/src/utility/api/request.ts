@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import type { ProblemDetails } from "@camunda/camunda-api-zod-schemas/8.9";
+import type { ProblemDetails } from "@camunda/camunda-api-zod-schemas/8.10";
 
 export type ErrorResponse<Type = "generic" | "detailed"> =
   Type extends "detailed"

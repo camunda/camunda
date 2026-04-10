@@ -10,8 +10,8 @@ package io.camunda.gateway.mcp.config.tool;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.verify;
 
+import io.camunda.gateway.mcp.OperationalToolsTest;
 import io.camunda.gateway.mcp.mapper.CallToolResultMapper;
-import io.camunda.gateway.mcp.tool.ToolsTest;
 import io.modelcontextprotocol.spec.McpSchema.CallToolRequest;
 import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
 import io.modelcontextprotocol.spec.McpSchema.TextContent;
@@ -26,7 +26,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springaicommunity.mcp.annotation.McpToolParam;
+import org.springframework.ai.mcp.annotation.McpToolParam;
 import org.springframework.stereotype.Component;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -34,7 +34,7 @@ import org.springframework.validation.annotation.Validated;
 
 @ExtendWith(MockitoExtension.class)
 @ContextConfiguration(classes = {McpToolParamsUnwrappedValidationTest.TestTools.class})
-class McpToolParamsUnwrappedValidationTest extends ToolsTest {
+class McpToolParamsUnwrappedValidationTest extends OperationalToolsTest {
 
   @MockitoBean private TestTaskService taskService;
   @Captor private ArgumentCaptor<TaskRequest> taskRequestCaptor;

@@ -19,6 +19,8 @@ import {expect} from '@playwright/test';
 import {createMappingRule, createRole} from './role-requestHelpers';
 import {CREATE_NEW_GROUP, groupRequiredFields} from '../beans/requestBeans';
 import {Serializable} from 'playwright-core/types/structs';
+import {createUser} from './user-requestHelpers';
+import {validateResponse} from 'json-body-assertions';
 
 export async function assignUsersToGroup(
   request: APIRequestContext,
@@ -27,19 +29,21 @@ export async function assignUsersToGroup(
   state: Record<string, unknown>,
 ) {
   for (let i = 1; i <= numberOfUsers; i++) {
-    const user = 'test-user' + generateUniqueId();
-    const stateParams: Record<string, string> = {
-      groupId: groupId,
-      username: user,
-    };
-    const res = await request.put(
-      buildUrl('/groups/{groupId}/users/{username}', stateParams),
-      {
-        headers: jsonHeaders(),
-      },
-    );
-    expect(res.status()).toBe(204);
-    state[`username${groupId}${i}`] = user;
+    await expect(async () => {
+      const user = await createUser(request);
+      const stateParams: Record<string, string> = {
+        groupId: groupId,
+        username: user.username,
+      };
+      const res = await request.put(
+        buildUrl('/groups/{groupId}/users/{username}', stateParams),
+        {
+          headers: jsonHeaders(),
+        },
+      );
+      await assertStatusCode(res, 204);
+      state[`username${groupId}${i}`] = user.username;
+    }).toPass(defaultAssertionOptions);
   }
 }
 export async function assignMappingToGroup(
@@ -66,7 +70,7 @@ export async function assignMappingToGroup(
           headers: jsonHeaders(),
         },
       );
-      expect(res.status()).toBe(204);
+      await assertStatusCode(res, 204);
     }).toPass(defaultAssertionOptions);
   }
 }
@@ -90,7 +94,7 @@ export async function assignRoleToGroups(
           headers: jsonHeaders(),
         },
       );
-      expect(res.status()).toBe(204);
+      await assertStatusCode(res, 204);
     }).toPass(defaultAssertionOptions);
   }
 }
@@ -113,7 +117,7 @@ export async function assignClientToGroup(
           headers: jsonHeaders(),
         },
       );
-      expect(res.status()).toBe(204);
+      await assertStatusCode(res, 204);
       state[`clientId${groupId}${i}`] = clientId;
     }).toPass(defaultAssertionOptions);
   }
@@ -131,6 +135,14 @@ export async function createGroupAndStoreResponseFields(
       data: requestBody,
     });
     await assertStatusCode(res, 201);
+    await validateResponse(
+      {
+        path: '/groups',
+        method: 'POST',
+        status: '201',
+      },
+      res,
+    );
     const json = await res.json();
     assertRequiredFields(json, groupRequiredFields);
     const arrayKey = key ? `${key}${i}` : `${i}`;
@@ -166,6 +178,14 @@ export async function createGroup(
   });
 
   await assertStatusCode(res, 201);
+  await validateResponse(
+    {
+      path: '/groups',
+      method: 'POST',
+      status: '201',
+    },
+    res,
+  );
   const json = await res.json();
   assertRequiredFields(json, groupRequiredFields);
   if (state && key) {

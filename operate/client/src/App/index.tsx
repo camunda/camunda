@@ -7,11 +7,13 @@
  */
 
 import {
+  Navigate,
   Outlet,
   Route,
   RouterProvider,
   createBrowserRouter,
   createRoutesFromElements,
+  useLocation,
 } from 'react-router-dom';
 import {ErrorBoundary} from 'react-error-boundary';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
@@ -32,7 +34,15 @@ import {ThemeSwitcher} from 'modules/components/ThemeSwitcher';
 import {ForbiddenPage} from 'modules/components/ForbiddenPage';
 import {ReactQueryProvider} from 'modules/react-query/ReactQueryProvider';
 import {PageErrorBoundary} from 'modules/components/PageErrorBoundary';
-import {IS_NEW_PROCESS_INSTANCE_PAGE} from 'modules/feature-flags';
+import {useProcessInstance} from 'modules/queries/processInstance/useProcessInstance';
+
+const DefaultTabRedirect: React.FC = () => {
+  const location = useLocation();
+  const {data: processInstance} = useProcessInstance();
+  const pathname =
+    processInstance?.hasIncident === true ? 'incidents' : 'variables';
+  return <Navigate to={{pathname, search: location.search}} replace />;
+};
 
 const Wrapper: React.FC = () => {
   return (
@@ -85,72 +95,77 @@ const routes = createRoutesFromElements(
         }}
       />
       <Route
-        path={Paths.processInstance(undefined, IS_NEW_PROCESS_INSTANCE_PAGE)}
+        path={Paths.processInstance(undefined, true)}
         lazy={async () => {
           const {ProcessInstance} = await import('./ProcessInstance');
           return {Component: ProcessInstance};
         }}
       >
-        {IS_NEW_PROCESS_INSTANCE_PAGE ? (
-          <>
-            <Route
-              index
-              lazy={async () => {
-                const {VariablesTab} =
-                  await import('./ProcessInstance/BottomPanelTabs/VariablesTab/index');
-                return {Component: VariablesTab};
-              }}
-            />
-            <Route
-              path={Paths.processInstanceDetails({isRelative: true})}
-              lazy={async () => {
-                const {DetailsTab} =
-                  await import('./ProcessInstance/BottomPanelTabs/DetailsTab/index');
-                return {Component: DetailsTab};
-              }}
-            />
-            <Route
-              path={Paths.processInstanceIncidents({isRelative: true})}
-              lazy={async () => {
-                const {IncidentsTab} =
-                  await import('./ProcessInstance/BottomPanelTabs/IncidentsTab/index');
-                return {Component: IncidentsTab};
-              }}
-            />
-            <Route
-              path={Paths.processInstanceInputMappings({isRelative: true})}
-              lazy={async () => {
-                const {InputMappingsTab} =
-                  await import('./ProcessInstance/BottomPanelTabs/InputMappingsTab');
-                return {Component: InputMappingsTab};
-              }}
-            />
-            <Route
-              path={Paths.processInstanceOutputMappings({isRelative: true})}
-              lazy={async () => {
-                const {OutputMappingsTab} =
-                  await import('./ProcessInstance/BottomPanelTabs/OutputMappingsTab');
-                return {Component: OutputMappingsTab};
-              }}
-            />
-            <Route
-              path={Paths.processInstanceListeners({isRelative: true})}
-              lazy={async () => {
-                const {ListenersTab} =
-                  await import('./ProcessInstance/BottomPanelTabs/ListenersTab/index');
-                return {Component: ListenersTab};
-              }}
-            />
-            <Route
-              path={Paths.processInstanceOperationsLog({isRelative: true})}
-              lazy={async () => {
-                const {OperationsLogTab} =
-                  await import('./ProcessInstance/BottomPanelTabs/OperationsLogTab/index');
-                return {Component: OperationsLogTab};
-              }}
-            />
-          </>
-        ) : null}
+        <Route
+          path={Paths.processInstanceVariables({isRelative: true})}
+          lazy={async () => {
+            const {VariablesTab} =
+              await import('./ProcessInstance/BottomPanelTabs/VariablesTab/index');
+            return {Component: VariablesTab};
+          }}
+        />
+        <Route
+          path={Paths.processInstanceDetails({isRelative: true})}
+          lazy={async () => {
+            const {DetailsTab} =
+              await import('./ProcessInstance/BottomPanelTabs/DetailsTab/index');
+            return {Component: DetailsTab};
+          }}
+        />
+        <Route
+          path={Paths.processInstanceIncidents({isRelative: true})}
+          lazy={async () => {
+            const {IncidentsTab} =
+              await import('./ProcessInstance/BottomPanelTabs/IncidentsTab/index');
+            return {Component: IncidentsTab};
+          }}
+        />
+        <Route
+          path={Paths.processInstanceInputMappings({isRelative: true})}
+          lazy={async () => {
+            const {InputMappingsTab} =
+              await import('./ProcessInstance/BottomPanelTabs/InputMappingsTab');
+            return {Component: InputMappingsTab};
+          }}
+        />
+        <Route
+          path={Paths.processInstanceOutputMappings({isRelative: true})}
+          lazy={async () => {
+            const {OutputMappingsTab} =
+              await import('./ProcessInstance/BottomPanelTabs/OutputMappingsTab');
+            return {Component: OutputMappingsTab};
+          }}
+        />
+        <Route
+          path={Paths.processInstanceListeners({isRelative: true})}
+          lazy={async () => {
+            const {ListenersTab} =
+              await import('./ProcessInstance/BottomPanelTabs/ListenersTab/index');
+            return {Component: ListenersTab};
+          }}
+        />
+        <Route
+          path={Paths.processInstanceOperationsLog({isRelative: true})}
+          lazy={async () => {
+            const {OperationsLogTab} =
+              await import('./ProcessInstance/BottomPanelTabs/OperationsLogTab/index');
+            return {Component: OperationsLogTab};
+          }}
+        />
+        <Route
+          path={Paths.processInstanceHistory({isRelative: true})}
+          lazy={async () => {
+            const {InstanceHistoryTab} =
+              await import('./ProcessInstance/BottomPanelTabs/InstanceHistoryTab/index');
+            return {Component: InstanceHistoryTab};
+          }}
+        />
+        <Route path="*" element={<DefaultTabRedirect />} />
       </Route>
       <Route
         path={Paths.decisions()}

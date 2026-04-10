@@ -32,7 +32,7 @@ export class FiltersPanel {
   readonly processInstanceKeysFilter: Locator;
   readonly parentProcessInstanceKey: Locator;
   readonly elementFilter: Locator;
-  readonly operationIdFilter: Locator;
+  readonly batchOperationIdFilter: Locator;
   readonly resetFiltersButton: Locator;
   readonly errorMessageFilter: Locator;
   readonly startDateFilter: Locator;
@@ -80,7 +80,7 @@ export class FiltersPanel {
       name: /element/i,
     });
 
-    this.operationIdFilter = this.panel.getByRole('textbox', {
+    this.batchOperationIdFilter = this.panel.getByRole('textbox', {
       name: /operation id/i,
     });
     this.resetFiltersButton = this.panel.getByRole('button', {

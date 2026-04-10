@@ -23,11 +23,11 @@ const ElementField: React.FC = observer(() => {
   const isDisabled = batchModificationStore.state.isEnabled && !isFetching;
 
   return (
-    <Field name="flowNodeId">
+    <Field name="elementId">
       {({input}) => (
         <ComboBox
           titleText="Element"
-          id="flowNodeId"
+          id="elementId"
           aria-label="Select an Element"
           onChange={({selectedItem}) => {
             input.onChange(selectedItem?.id);

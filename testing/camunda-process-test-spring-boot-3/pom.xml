@@ -66,11 +66,6 @@
     </dependency>
 
     <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>zeebe-client-java</artifactId>
-    </dependency>
-
-    <dependency>
       <groupId>org.springframework</groupId>
       <artifactId>spring-test</artifactId>
     </dependency>
@@ -251,19 +246,24 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-dependency-plugin</artifactId>
-        <configuration>
-          <!-- Ignore any non-test scoped deps, we only have test source here -->
-          <ignoredNonTestScopedDependencies>
-            <dependency>*</dependency>
-          </ignoredNonTestScopedDependencies>
-          <!-- Ignore all unused/undeclared, we duplicate all from the base module -->
-          <ignoredUsedUndeclaredDependencies>
-            <dependency>*</dependency>
-          </ignoredUsedUndeclaredDependencies>
-          <ignoredUnusedDeclaredDependencies>
-            <dependency>*</dependency>
-          </ignoredUnusedDeclaredDependencies>
-        </configuration>
+        <executions>
+          <execution>
+            <id>analyze-dependencies</id>
+            <configuration>
+              <!-- Ignore any non-test scoped deps, we only have test source here -->
+              <ignoredNonTestScopedDependencies combine.self="override">
+                <dep>*</dep>
+              </ignoredNonTestScopedDependencies>
+              <!-- Ignore all unused/undeclared, we duplicate all from the base module -->
+              <ignoredUsedUndeclaredDependencies combine.self="override">
+                <dep>*</dep>
+              </ignoredUsedUndeclaredDependencies>
+              <ignoredUnusedDeclaredDependencies combine.self="override">
+                <dep>*</dep>
+              </ignoredUnusedDeclaredDependencies>
+            </configuration>
+          </execution>
+        </executions>
       </plugin>
 
       <!-- Add test re-/sources from the base module -->

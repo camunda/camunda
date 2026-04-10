@@ -27,12 +27,12 @@ import org.junit.jupiter.api.Test;
 
 public class DeleteDecisionInstanceRestTest extends ClientRestTest {
 
-  private static final long DECISION_INSTANCE_KEY = 123L;
+  private static final long DECISION_EVALUATION_KEY = 123L;
 
   @Test
   public void shouldSendDeleteCommand() {
     // when
-    client.newDeleteDecisionInstanceCommand(DECISION_INSTANCE_KEY).send().join();
+    client.newDeleteDecisionInstanceCommand(DECISION_EVALUATION_KEY).send().join();
 
     // then
     final DeleteDecisionInstanceRequest request =
@@ -44,11 +44,11 @@ public class DeleteDecisionInstanceRestTest extends ClientRestTest {
   public void shouldRaiseExceptionOnError() {
     // given
     gatewayService.errorOnRequest(
-        RestGatewayPaths.getDeleteDecisionInstanceUrl(DECISION_INSTANCE_KEY),
+        RestGatewayPaths.getDeleteDecisionInstanceUrl(DECISION_EVALUATION_KEY),
         () -> new ProblemDetail().title("Invalid request").status(400));
 
     assertThatThrownBy(
-            () -> client.newDeleteDecisionInstanceCommand(DECISION_INSTANCE_KEY).send().join())
+            () -> client.newDeleteDecisionInstanceCommand(DECISION_EVALUATION_KEY).send().join())
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Invalid request");
   }
@@ -60,7 +60,7 @@ public class DeleteDecisionInstanceRestTest extends ClientRestTest {
 
     // when
     client
-        .newDeleteDecisionInstanceCommand(DECISION_INSTANCE_KEY)
+        .newDeleteDecisionInstanceCommand(DECISION_EVALUATION_KEY)
         .operationReference(operationReference)
         .execute();
 

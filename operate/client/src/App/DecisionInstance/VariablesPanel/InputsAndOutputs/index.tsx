@@ -20,7 +20,7 @@ import {
   ErrorMessage,
 } from './styled';
 import {Skeleton} from './Skeleton';
-import type {DecisionInstance} from '@camunda/camunda-api-zod-schemas/8.9';
+import type {DecisionInstance} from '@camunda/camunda-api-zod-schemas/8.10';
 import {useDecisionInstance} from 'modules/queries/decisionInstances/useDecisionInstance';
 
 type RowProps = React.ComponentProps<typeof StructuredList>['rows'][number];

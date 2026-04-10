@@ -205,7 +205,9 @@ describe('OperationsLog Filters', () => {
       },
     });
     render(<Filters />, {
-      wrapper: getWrapper('/operations-log?process=process1&version=1'),
+      wrapper: getWrapper(
+        '/operations-log?processDefinitionId=process1&processDefinitionVersion=1',
+      ),
     });
 
     await waitFor(() => {

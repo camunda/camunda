@@ -12,7 +12,7 @@ import {request} from 'common/api/request';
 import {
   type QueryUserTaskAuditLogsResponseBody,
   auditLogSortFieldEnum,
-} from '@camunda/camunda-api-zod-schemas/8.9';
+} from '@camunda/camunda-api-zod-schemas/8.10';
 
 const MAX_AUDIT_LOGS_PER_REQUEST = 50;
 
@@ -74,6 +74,7 @@ function getUserTaskAuditLogsQueryOptions(
 
       return previousPage;
     },
+    refetchInterval: 5000,
   });
 }
 

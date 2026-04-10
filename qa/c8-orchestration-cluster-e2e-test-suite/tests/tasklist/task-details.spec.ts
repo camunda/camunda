@@ -221,7 +221,7 @@ test.describe('task details page', () => {
       'USD - United States Dollar',
       'EUR - Euro',
     );
-
+    await sleep(500);
     await taskDetailsPage.addDynamicListRow();
     await taskDetailsPage.fillDynamicList('Item Name*', 'Laptop');
     await taskDetailsPage.fillDynamicList('Unit Price*', '1');
@@ -230,7 +230,7 @@ test.describe('task details page', () => {
     await expect(taskDetailsPage.form).toContainText('EUR 231');
     await expect(taskDetailsPage.form).toContainText('EUR 264');
     await expect(taskDetailsPage.form).toContainText('Total: EUR 544.5');
-
+    await sleep(500);
     await taskDetailsPage.completeTaskButton.click();
 
     await expect(taskDetailsPage.taskCompletedBanner).toBeVisible({

@@ -164,6 +164,40 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
       }
       """;
 
+  private static final String EXPECTED_EFFECTIVE_VARIABLE_RESULT_JSON =
+      """
+      {
+        "items": [
+          {
+              "variableKey":"0",
+              "name":"name",
+              "value":"value",
+              "scopeKey":"1",
+              "processInstanceKey":"2",
+              "rootProcessInstanceKey":"3",
+              "tenantId":"<default>",
+              "isTruncated":false
+          },
+          {
+              "variableKey":"1",
+              "name":"name2",
+              "value":"value",
+              "scopeKey":"1",
+              "processInstanceKey":"2",
+              "rootProcessInstanceKey":"3",
+              "tenantId":"<default>",
+              "isTruncated":true
+          }
+        ],
+        "page": {
+          "totalItems": 2,
+          "startCursor": null,
+          "endCursor": null,
+          "hasMoreTotalItems": false
+        }
+      }
+      """;
+
   private static final String EXPECTED_AUDIT_LOG_RESULT_JSON =
       """
       {
@@ -173,7 +207,6 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
             "actorId": "1",
             "actorType": null,
             "agentElementId": null,
-            "annotation": null,
             "batchOperationKey": null,
             "batchOperationType": null,
             "category": null,
@@ -207,7 +240,6 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
             "actorId": "2",
             "actorType": null,
             "agentElementId": null,
-            "annotation": null,
             "batchOperationKey": null,
             "batchOperationType": null,
             "category": null,
@@ -335,6 +367,17 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
                       1L, "name2", "value", "valueLong", true, 1L, 2L, 3L, "bpid", "<default>")))
           .startCursor("0")
           .endCursor("1")
+          .build();
+
+  private static final SearchQueryResult<VariableEntity> SEARCH_EFFECTIVE_VAR_QUERY_RESULT =
+      new Builder<VariableEntity>()
+          .total(2L)
+          .items(
+              List.of(
+                  new VariableEntity(
+                      0L, "name", "value", null, false, 1L, 2L, 3L, "bpid", "<default>"),
+                  new VariableEntity(
+                      1L, "name2", "value", "valueLong", true, 1L, 2L, 3L, "bpid", "<default>")))
           .build();
 
   private static final SearchQueryResult<AuditLogEntity> SEARCH_AUDIT_LOG_QUERY_RESULT =
@@ -1022,6 +1065,49 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
 
     verify(userTaskServices)
         .searchUserTaskVariables(
+            eq(VALID_USER_TASK_KEY),
+            eq(
+                variableSearchQuery()
+                    .filter(f -> f.nameOperations(Operation.eq("varName")))
+                    .build()),
+            any());
+  }
+
+  @Test
+  public void shouldReturnEffectiveVariableForValidUserTaskKey() {
+    final var request =
+        """
+                {
+                    "filter":
+                        {
+                            "name": "varName"
+                        }
+
+                }""";
+
+    when(userTaskServices.searchUserTaskEffectiveVariables(
+            eq(VALID_USER_TASK_KEY),
+            eq(
+                variableSearchQuery()
+                    .filter(f -> f.nameOperations(Operation.eq("varName")))
+                    .build()),
+            any()))
+        .thenReturn(SEARCH_EFFECTIVE_VAR_QUERY_RESULT);
+    // when and then
+    webClient
+        .post()
+        .uri("/v2/user-tasks/" + VALID_USER_TASK_KEY + "/effective-variables/search")
+        .accept(APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectBody()
+        .json(EXPECTED_EFFECTIVE_VARIABLE_RESULT_JSON, JsonCompareMode.STRICT);
+
+    verify(userTaskServices)
+        .searchUserTaskEffectiveVariables(
             eq(VALID_USER_TASK_KEY),
             eq(
                 variableSearchQuery()

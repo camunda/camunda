@@ -22,9 +22,10 @@ public final class ProcessInstanceFixtures extends CommonFixtures {
   public static ProcessInstanceDbModel createRandomized(
       final Function<ProcessInstanceDbModelBuilder, ProcessInstanceDbModelBuilder>
           builderFunction) {
+    final var processInstanceKey = nextKey();
     final var builder =
         new ProcessInstanceDbModelBuilder()
-            .processInstanceKey(nextKey())
+            .processInstanceKey(processInstanceKey)
             .rootProcessInstanceKey(nextKey())
             .processDefinitionKey(nextKey())
             .processDefinitionId("process-" + RANDOM.nextInt(10000))
@@ -34,7 +35,7 @@ public final class ProcessInstanceFixtures extends CommonFixtures {
             .startDate(NOW.plus(RANDOM.nextInt(), ChronoUnit.MILLIS))
             .endDate(NOW.plus(RANDOM.nextInt(), ChronoUnit.MILLIS))
             .version(RANDOM.nextInt(10000))
-            .tenantId("tenant-" + RANDOM.nextInt(10000))
+            .tenantId("tenant-" + processInstanceKey)
             .partitionId(RANDOM.nextInt(10000))
             .businessId("business-" + RANDOM.nextInt(10000));
 

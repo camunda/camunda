@@ -25,7 +25,7 @@ import {
 } from "./components";
 import AuthorizationList from "./AuthorizationsList";
 import { isTenantsApiEnabled } from "src/configuration";
-import type { ResourceType } from "@camunda/camunda-api-zod-schemas/8.9";
+import type { ResourceType } from "@camunda/camunda-api-zod-schemas/8.10";
 
 const List: FC = () => {
   const { t } = useTranslate("authorizations");
@@ -73,7 +73,7 @@ const List: FC = () => {
       <PageHeader
         title={t("authorizations")}
         linkText={t("authorizations").toLowerCase()}
-        docsLinkPath="/docs/components/concepts/access-control/authorizations/"
+        docsLinkPath="/components/concepts/access-control/authorizations/"
       />
       <TabsTitle>{t("resourceType")}</TabsTitle>
       <TabsContainer>

@@ -15,7 +15,7 @@ services:
       - zeebe_network
 
   elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch:8.19.12
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.19.13
     container_name: elasticsearch
     environment:
       - discovery.type=single-node
@@ -61,7 +61,7 @@ services:
       - zeebe_network
 
   kibana:
-    image: docker.elastic.co/kibana/kibana:9.3.1
+    image: docker.elastic.co/kibana/kibana:9.3.2
     ports:
       - 5601:5601
     environment:
@@ -97,7 +97,7 @@ services:
 
   camunda:
     container_name: camunda
-    image: camunda/camunda:SNAPSHOT
+    image: ${CAMUNDA_DOCKER_IMAGE:-camunda/camunda:SNAPSHOT}
     environment:
       - 'JAVA_TOOL_OPTIONS=-Xms512m -Xmx1g'
       - ZEEBE_BROKER_NETWORK_HOST=camunda
@@ -129,6 +129,7 @@ services:
       - CAMUNDA_DATA_AUDITLOG_USER_EXCLUDES_1=BATCH
       - CAMUNDA_DATA_AUDITLOG_CLIENT_CATEGORIES_0=ADMIN
       - CAMUNDA_DATA_AUDITLOG_CLIENT_EXCLUDES_0=PROCESS_INSTANCE
+      - CAMUNDA_PROCESSINSTANCECREATION_BUSINESSIDUNIQUENESSENABLED=true
     ports:
       - 26500:26500
       - 9600:9600

@@ -16,34 +16,16 @@
 package io.camunda.process.test.impl.proxy;
 
 import io.camunda.process.test.api.CamundaProcessTestContext;
-import java.lang.reflect.Method;
-import org.checkerframework.checker.nullness.qual.Nullable;
 
 /**
  * Dynamic proxy to delegate to a {@link CamundaProcessTestContext} which allows to swap the context
  * object under the hood.
  */
-public class CamundaProcessTestContextProxy extends AbstractInvocationHandler {
-
-  private CamundaProcessTestContext delegate;
-
-  public void setContext(final CamundaProcessTestContext camundaProcessTestContext) {
-    delegate = camundaProcessTestContext;
-  }
-
-  public void removeContext() {
-    delegate = null;
-  }
+public class CamundaProcessTestContextProxy
+    extends AbstractInvocationHandler<CamundaProcessTestContext> {
 
   @Override
-  protected Object handleInvocation(
-      final Object proxy, final Method method, @Nullable final Object[] args) throws Throwable {
-    if (delegate == null) {
-      throw new RuntimeException(
-          "Cannot invoke "
-              + method
-              + " on CamundaProcessTestContext, as CamundaProcessTestContext is currently not initialized. Maybe you run outside of a testcase?");
-    }
-    return method.invoke(delegate, args);
+  protected Class<CamundaProcessTestContext> getDelegateClass() {
+    return CamundaProcessTestContext.class;
   }
 }

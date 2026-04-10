@@ -35,16 +35,13 @@ describe('Sorting', () => {
       {wrapper: Wrapper},
     );
 
-    expect(screen.getByText('Job Id')).toBeEnabled();
-    expect(screen.getByText('Incident Type')).toBeEnabled();
+    expect(screen.getByText('Type')).toBeEnabled();
     expect(screen.getByText('Failing Element')).toBeEnabled();
-    expect(screen.getByText('Job Id')).toBeEnabled();
-    expect(screen.getByText('Creation Date')).toBeEnabled();
-    expect(screen.getByText('Error Message')).toBeEnabled();
+    expect(screen.getByText('Created')).toBeEnabled();
     expect(await screen.findByText('Operations')).toBeInTheDocument();
   });
 
-  it('should disable sorting for jobKey and elementName', () => {
+  it('should disable sorting for elementName', () => {
     const incidents = [{...firstIncident, jobKey: ''}];
 
     render(
@@ -56,11 +53,8 @@ describe('Sorting', () => {
       {wrapper: Wrapper},
     );
     expect(
-      screen.getByRole('button', {name: 'Sort by Creation Date'}),
+      screen.getByRole('button', {name: 'Sort by Created'}),
     ).toBeInTheDocument();
-    expect(
-      screen.queryByRole('button', {name: 'Sort by Job Id'}),
-    ).not.toBeInTheDocument();
     expect(
       screen.queryByRole('button', {name: 'Sort by Failing Element'}),
     ).not.toBeInTheDocument();

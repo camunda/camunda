@@ -92,7 +92,8 @@ describe('Source Diagram', () => {
 
     locationSpy.mockImplementation(() => ({
       ...originalWindow.location,
-      search: '?active=true&incidents=true&process=demoProcess&version=3',
+      search:
+        '?active=true&incidents=true&processDefinitionId=demoProcess&processDefinitionVersion=3',
     }));
 
     render(<SourceDiagram />, {wrapper: Wrapper});

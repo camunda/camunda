@@ -62,7 +62,7 @@ const Wrapper: React.FC<{children?: React.ReactNode}> = observer(
         <QueryClientProvider client={getMockQueryClient()}>
           <MemoryRouter
             initialEntries={[
-              `${Paths.processes()}?process=${selectedProcessDefinition.processDefinitionId}&version=${selectedProcessDefinition.version}&flowNodeId=ServiceTask_0kt6c5i`,
+              `${Paths.processes()}?processDefinitionId=${selectedProcessDefinition.processDefinitionId}&processDefinitionVersion=${selectedProcessDefinition.version}&elementId=ServiceTask_0kt6c5i`,
             ]}
           >
             {children}

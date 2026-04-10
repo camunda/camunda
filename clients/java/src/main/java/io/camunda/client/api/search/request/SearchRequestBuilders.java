@@ -41,6 +41,11 @@ import io.camunda.client.api.search.filter.UserTaskFilter;
 import io.camunda.client.api.search.filter.UserTaskVariableFilter;
 import io.camunda.client.api.search.filter.VariableFilter;
 import io.camunda.client.api.search.filter.VariableValueFilter;
+import io.camunda.client.api.search.page.AnyPage;
+import io.camunda.client.api.search.page.CursorBackwardPage;
+import io.camunda.client.api.search.page.CursorForwardPage;
+import io.camunda.client.api.search.page.LimitPage;
+import io.camunda.client.api.search.page.OffsetPage;
 import io.camunda.client.api.search.sort.AuditLogSort;
 import io.camunda.client.api.search.sort.AuthorizationSort;
 import io.camunda.client.api.search.sort.BatchOperationItemSort;
@@ -98,7 +103,11 @@ import io.camunda.client.impl.search.filter.UserTaskFilterImpl;
 import io.camunda.client.impl.search.filter.UserTaskVariableFilterImpl;
 import io.camunda.client.impl.search.filter.VariableFilterImpl;
 import io.camunda.client.impl.search.filter.VariableValueFilterImpl;
-import io.camunda.client.impl.search.request.SearchRequestOffsetPageImpl;
+import io.camunda.client.impl.search.page.AnyPageImpl;
+import io.camunda.client.impl.search.page.CursorBackwardPageImpl;
+import io.camunda.client.impl.search.page.CursorForwardPageImpl;
+import io.camunda.client.impl.search.page.LimitPageImpl;
+import io.camunda.client.impl.search.page.OffsetPageImpl;
 import io.camunda.client.impl.search.request.SearchRequestPageImpl;
 import io.camunda.client.impl.search.sort.AuditLogSortImpl;
 import io.camunda.client.impl.search.sort.AuthorizationSortImpl;
@@ -191,10 +200,47 @@ public final class SearchRequestBuilders {
     return sort;
   }
 
+  /**
+   * @deprecated Use {@link #anyPage(Consumer)} instead. The returned {@link SearchRequestPage}
+   *     cannot be passed to {@code .page(...)} on typed search requests because it does not
+   *     implement the new {@link io.camunda.client.api.search.page.SearchPagination} marker
+   *     interface. This method will be removed in a future release.
+   */
+  @Deprecated
   public static SearchRequestPage searchRequestPage(final Consumer<SearchRequestPage> fn) {
     final SearchRequestPage filter = new SearchRequestPageImpl();
     fn.accept(filter);
     return filter;
+  }
+
+  public static AnyPage anyPage(final Consumer<AnyPage> fn) {
+    final AnyPage page = new AnyPageImpl();
+    fn.accept(page);
+    return page;
+  }
+
+  public static CursorForwardPage cursorForwardPage(final Consumer<CursorForwardPage> fn) {
+    final CursorForwardPage page = new CursorForwardPageImpl();
+    fn.accept(page);
+    return page;
+  }
+
+  public static OffsetPage offsetPage(final Consumer<OffsetPage> fn) {
+    final OffsetPage page = new OffsetPageImpl();
+    fn.accept(page);
+    return page;
+  }
+
+  public static LimitPage limitPage(final Consumer<LimitPage> fn) {
+    final LimitPage page = new LimitPageImpl();
+    fn.accept(page);
+    return page;
+  }
+
+  public static CursorBackwardPage cursorBackwardPage(final Consumer<CursorBackwardPage> fn) {
+    final CursorBackwardPage page = new CursorBackwardPageImpl();
+    fn.accept(page);
+    return page;
   }
 
   public static UserTaskFilter userTaskFilter(final Consumer<UserTaskFilter> fn) {
@@ -514,11 +560,5 @@ public final class SearchRequestBuilders {
     final GlobalTaskListenerSort sort = new GlobalTaskListenerSortImpl();
     fn.accept(sort);
     return sort;
-  }
-
-  public static SearchRequestOffsetPage offsetPage(final Consumer<SearchRequestOffsetPage> fn) {
-    final SearchRequestOffsetPage page = new SearchRequestOffsetPageImpl();
-    fn.accept(page);
-    return page;
   }
 }

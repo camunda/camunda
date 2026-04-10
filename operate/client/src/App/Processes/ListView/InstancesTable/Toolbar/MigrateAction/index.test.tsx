@@ -13,7 +13,7 @@ import {MigrateAction} from '.';
 import {processInstanceMigrationStore} from 'modules/stores/processInstanceMigration';
 import {tracking} from 'modules/tracking';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
-import type {ProcessInstance} from '@camunda/camunda-api-zod-schemas/8.9';
+import type {ProcessInstance} from '@camunda/camunda-api-zod-schemas/8.10';
 import {
   PROCESS_DEFINITION_ID,
   PROCESS_DEFINITION_KEY,
@@ -63,7 +63,7 @@ describe('<MigrateAction />', () => {
   it('should disable migrate button, when no active or incident instances are selected', () => {
     render(<MigrateAction />, {
       wrapper: createWrapper({
-        initialPath: `/processes?process=eventBasedGatewayProcess&version=1`,
+        initialPath: `/processes?processDefinitionId=eventBasedGatewayProcess&processDefinitionVersion=1`,
         withTestButtons: true,
       }),
     });
@@ -74,7 +74,7 @@ describe('<MigrateAction />', () => {
   it('should enable migrate button, when active or incident instances are selected', () => {
     render(<MigrateAction />, {
       wrapper: createWrapper({
-        initialPath: `/processes?process=eventBasedGatewayProcess&version=1`,
+        initialPath: `/processes?processDefinitionId=eventBasedGatewayProcess&processDefinitionVersion=1`,
         withTestButtons: true,
       }),
     });
@@ -96,7 +96,7 @@ describe('<MigrateAction />', () => {
   it('should enable migrate button when selected instances are called by parent', () => {
     render(<MigrateAction />, {
       wrapper: createWrapper({
-        initialPath: `/processes?process=eventBasedGatewayProcess&version=1`,
+        initialPath: `/processes?processDefinitionId=eventBasedGatewayProcess&processDefinitionVersion=1`,
         withTestButtons: true,
       }),
     });
@@ -118,7 +118,7 @@ describe('<MigrateAction />', () => {
 
     render(<MigrateAction />, {
       wrapper: createWrapper({
-        initialPath: `/processes?process=eventBasedGatewayProcess&version=1`,
+        initialPath: `/processes?processDefinitionId=eventBasedGatewayProcess&processDefinitionVersion=1`,
         withTestButtons: true,
       }),
     });
@@ -140,7 +140,7 @@ describe('<MigrateAction />', () => {
   it('should disable migrate button, when only finished instances are selected', () => {
     render(<MigrateAction />, {
       wrapper: createWrapper({
-        initialPath: `/processes?process=eventBasedGatewayProcess&version=1`,
+        initialPath: `/processes?processDefinitionId=eventBasedGatewayProcess&processDefinitionVersion=1`,
         withTestButtons: true,
       }),
     });
@@ -160,7 +160,7 @@ describe('<MigrateAction />', () => {
   it('should enable migrate button, when all instances are selected', async () => {
     const {user} = render(<MigrateAction />, {
       wrapper: createWrapper({
-        initialPath: `/processes?process=eventBasedGatewayProcess&version=1`,
+        initialPath: `/processes?processDefinitionId=eventBasedGatewayProcess&processDefinitionVersion=1`,
         withTestButtons: true,
       }),
     });
@@ -179,7 +179,7 @@ describe('<MigrateAction />', () => {
   it('should display migration helper modal on button click', async () => {
     const {user} = render(<MigrateAction />, {
       wrapper: createWrapper({
-        initialPath: `/processes?process=eventBasedGatewayProcess&version=1`,
+        initialPath: `/processes?processDefinitionId=eventBasedGatewayProcess&processDefinitionVersion=1`,
         withTestButtons: true,
       }),
     });
@@ -216,7 +216,7 @@ describe('<MigrateAction />', () => {
   });
 
   it.todo('should set correct store states after migrate click', async () => {
-    const SEARCH_STRING = `?process=${PROCESS_DEFINITION_ID}&version=1&active=true&incidents=false`;
+    const SEARCH_STRING = `?processDefinitionId=${PROCESS_DEFINITION_ID}&processDefinitionVersion=1&active=true&incidents=false`;
 
     const {user} = render(<MigrateAction />, {
       wrapper: createWrapper({
@@ -255,7 +255,7 @@ describe('<MigrateAction />', () => {
 
     const {user} = render(<MigrateAction />, {
       wrapper: createWrapper({
-        initialPath: `/processes?process=eventBasedGatewayProcess&version=1`,
+        initialPath: `/processes?processDefinitionId=eventBasedGatewayProcess&processDefinitionVersion=1`,
         withTestButtons: true,
       }),
     });
@@ -286,7 +286,7 @@ describe('<MigrateAction />', () => {
   it('should disable migrate action in batch modification mode', async () => {
     const {user} = render(<MigrateAction />, {
       wrapper: createWrapper({
-        initialPath: `/processes?process=eventBasedGatewayProcess&version=1`,
+        initialPath: `/processes?processDefinitionId=eventBasedGatewayProcess&processDefinitionVersion=1`,
         withTestButtons: true,
       }),
     });

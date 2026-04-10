@@ -22,7 +22,7 @@ describe('useMigrationSourceXml', () => {
     );
   };
 
-  it('should filter selectable flow nodes', async () => {
+  it('should filter selectable elements', async () => {
     mockFetchProcessDefinitionXml().withSuccess(open('instanceMigration.bpmn'));
 
     const {result} = renderHook(
@@ -39,7 +39,7 @@ describe('useMigrationSourceXml', () => {
     await waitFor(() => expect(result.current.data).toBeDefined());
 
     expect(
-      result.current.data?.selectableFlowNodes.map((flowNode) => flowNode.id),
+      result.current.data?.selectableElements.map((element) => element.id),
     ).toEqual([
       'checkPayment',
       'ExclusiveGateway',
@@ -84,7 +84,7 @@ describe('useMigrationSourceXml', () => {
     ]);
   });
 
-  it('should filter selectable flow nodes (ParticipantMigrationA)', async () => {
+  it('should filter selectable elements (ParticipantMigrationA)', async () => {
     mockFetchProcessDefinitionXml().withSuccess(
       open('ParticipantMigration_v1.bpmn'),
     );
@@ -103,11 +103,11 @@ describe('useMigrationSourceXml', () => {
     await waitFor(() => expect(result.current.data).toBeDefined());
 
     expect(
-      result.current.data?.selectableFlowNodes.map((flowNode) => flowNode.id),
+      result.current.data?.selectableElements.map((element) => element.id),
     ).toEqual(['TaskA']);
   });
 
-  it('should filter selectable flow nodes (ParticipantMigrationB)', async () => {
+  it('should filter selectable elements (ParticipantMigrationB)', async () => {
     mockFetchProcessDefinitionXml().withSuccess(
       open('ParticipantMigration_v1.bpmn'),
     );
@@ -126,7 +126,7 @@ describe('useMigrationSourceXml', () => {
     await waitFor(() => expect(result.current.data).toBeDefined());
 
     expect(
-      result.current.data?.selectableFlowNodes.map((flowNode) => flowNode.id),
+      result.current.data?.selectableElements.map((element) => element.id),
     ).toEqual(['TaskB']);
   });
 });

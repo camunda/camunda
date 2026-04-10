@@ -16,9 +16,10 @@
 package io.camunda.client.api.search.request;
 
 import io.camunda.client.api.search.filter.RoleFilter;
+import io.camunda.client.api.search.page.AnyPage;
 import io.camunda.client.api.search.response.Role;
 import io.camunda.client.api.search.sort.RoleSort;
 
 public interface RolesByTenantSearchRequest
-    extends TypedSearchRequest<RoleFilter, RoleSort, RolesByTenantSearchRequest>,
+    extends TypedSearchRequest<RoleFilter, RoleSort, AnyPage, RolesByTenantSearchRequest>,
         FinalSearchRequestStep<Role> {}

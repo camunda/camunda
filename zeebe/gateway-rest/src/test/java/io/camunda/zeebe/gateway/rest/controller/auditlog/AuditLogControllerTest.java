@@ -64,7 +64,6 @@ public class AuditLogControllerTest extends RestControllerTest {
             "actorType": "USER",
             "tenantId": "tenant",
             "result": "SUCCESS",
-            "annotation": "annotation",
             "category": "DEPLOYED_RESOURCES",
             "processDefinitionId": "processDefinitionId",
             "processDefinitionKey": "789",
@@ -110,7 +109,6 @@ public class AuditLogControllerTest extends RestControllerTest {
         "actorType": "USER",
         "tenantId": "tenant",
         "result": "SUCCESS",
-        "annotation": "annotation",
         "category": "DEPLOYED_RESOURCES",
         "processDefinitionId": "processDefinitionId",
         "processDefinitionKey": "789",
@@ -147,7 +145,6 @@ public class AuditLogControllerTest extends RestControllerTest {
           .actorType(AuditLogEntity.AuditLogActorType.USER)
           .tenantId("tenant")
           .result(AuditLogEntity.AuditLogOperationResult.SUCCESS)
-          .annotation("annotation")
           .category(AuditLogOperationCategory.DEPLOYED_RESOURCES)
           .processDefinitionId("processDefinitionId")
           .processDefinitionKey(789L)
@@ -371,7 +368,7 @@ public class AuditLogControllerTest extends RestControllerTest {
                   "type": "about:blank",
                   "title": "Bad Request",
                   "status": 400,
-                  "detail": "Unexpected value 'operationKey' for enum field 'field'. Use any of the following values: [actorId, actorType, annotation, auditLogKey, batchOperationKey, batchOperationType, category, decisionDefinitionId, decisionDefinitionKey, decisionEvaluationKey, decisionRequirementsId, decisionRequirementsKey, elementInstanceKey, entityKey, entityType, jobKey, operationType, processDefinitionId, processDefinitionKey, processInstanceKey, result, tenantId, timestamp, userTaskKey]",
+                  "detail": "Unexpected value 'operationKey' for enum field 'field'. Use any of the following values: [actorId, actorType, auditLogKey, batchOperationKey, batchOperationType, category, decisionDefinitionId, decisionDefinitionKey, decisionEvaluationKey, decisionRequirementsId, decisionRequirementsKey, elementInstanceKey, entityKey, entityType, jobKey, operationType, processDefinitionId, processDefinitionKey, processInstanceKey, result, tenantId, timestamp, userTaskKey]",
                   "instance": "%s"
                 }""",
             AUDIT_LOGS_SEARCH_URL);

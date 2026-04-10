@@ -76,14 +76,16 @@ describe('Optional Filters', () => {
     });
 
     await user.click(screen.getByRole('button', {name: /^more filters$/i}));
-    await user.click(screen.getByTestId('optional-filter-menuitem-ids'));
+    await user.click(
+      screen.getByTestId('optional-filter-menuitem-processInstanceKey'),
+    );
     await user.click(screen.getByRole('button', {name: /^more filters$/i}));
 
     expect(
       screen.getByLabelText(/^process instance key\(s\)$/i),
     ).toBeInTheDocument();
     expect(
-      screen.queryByTestId('optional-filter-menuitem-ids'),
+      screen.queryByTestId('optional-filter-menuitem-processInstanceKey'),
     ).not.toBeInTheDocument();
   });
 
@@ -94,13 +96,13 @@ describe('Optional Filters', () => {
 
     await user.click(screen.getByRole('button', {name: /^more filters$/i}));
     await user.click(
-      screen.getByTestId('optional-filter-menuitem-operationId'),
+      screen.getByTestId('optional-filter-menuitem-batchOperationId'),
     );
     await user.click(screen.getByRole('button', {name: /^more filters$/i}));
 
     expect(screen.getByLabelText(/^operation id$/i)).toBeInTheDocument();
     expect(
-      screen.queryByTestId('optional-filter-menuitem-operationId'),
+      screen.queryByTestId('optional-filter-menuitem-batchOperationId'),
     ).not.toBeInTheDocument();
   });
 
@@ -111,7 +113,7 @@ describe('Optional Filters', () => {
 
     await user.click(screen.getByRole('button', {name: /^more filters$/i}));
     await user.click(
-      screen.getByTestId('optional-filter-menuitem-parentInstanceId'),
+      screen.getByTestId('optional-filter-menuitem-parentProcessInstanceKey'),
     );
     await user.click(screen.getByRole('button', {name: /^more filters$/i}));
 
@@ -119,7 +121,7 @@ describe('Optional Filters', () => {
       screen.getByLabelText(/^Parent Process Instance Key$/i),
     ).toBeInTheDocument();
     expect(
-      screen.queryByTestId('optional-filter-menuitem-parentInstanceId'),
+      screen.queryByTestId('optional-filter-menuitem-parentProcessInstanceKey'),
     ).not.toBeInTheDocument();
   });
 
@@ -184,14 +186,16 @@ describe('Optional Filters', () => {
     await user.click(screen.getByRole('button', {name: /^more filters$/i}));
     await user.click(screen.getByTestId('optional-filter-menuitem-variable'));
     await user.click(screen.getByRole('button', {name: /^more filters$/i}));
-    await user.click(screen.getByTestId('optional-filter-menuitem-ids'));
-    await user.click(screen.getByRole('button', {name: /^more filters$/i}));
     await user.click(
-      screen.getByTestId('optional-filter-menuitem-operationId'),
+      screen.getByTestId('optional-filter-menuitem-processInstanceKey'),
     );
     await user.click(screen.getByRole('button', {name: /^more filters$/i}));
     await user.click(
-      screen.getByTestId('optional-filter-menuitem-parentInstanceId'),
+      screen.getByTestId('optional-filter-menuitem-batchOperationId'),
+    );
+    await user.click(screen.getByRole('button', {name: /^more filters$/i}));
+    await user.click(
+      screen.getByTestId('optional-filter-menuitem-parentProcessInstanceKey'),
     );
     await user.click(screen.getByRole('button', {name: /^more filters$/i}));
     await user.click(
@@ -220,18 +224,18 @@ describe('Optional Filters', () => {
 
   it('should delete optional filters', async () => {
     const MOCK_PARAMS = {
-      process: 'bigVarProcess',
-      version: '1',
-      ids: '2251799813685467',
-      parentInstanceId: '1954699813693756',
+      processDefinitionId: 'bigVarProcess',
+      processDefinitionVersion: '1',
+      processInstanceKey: '2251799813685467',
+      parentProcessInstanceKey: '1954699813693756',
       errorMessage: 'a random error',
       incidentErrorHashCode: '351027393',
-      startDateBefore: '2021-02-21 18:17:18',
-      startDateAfter: '2021-02-21 20:00:00',
-      endDateBefore: '2021-02-23 18:17:18',
-      endDateAfter: '2021-02-23 22:00:00',
-      flowNodeId: 'ServiceTask_0kt6c5i',
-      operationId: '2f5b1beb-cbeb-41c8-a2f0-4c0bcf76c4ee',
+      startDateTo: '2021-02-21 18:17:18',
+      startDateFrom: '2021-02-21 20:00:00',
+      endDateTo: '2021-02-23 18:17:18',
+      endDateFrom: '2021-02-23 22:00:00',
+      elementId: 'ServiceTask_0kt6c5i',
+      batchOperationId: '2f5b1beb-cbeb-41c8-a2f0-4c0bcf76c4ee',
       active: 'true',
       incidents: 'true',
       completed: 'true',
@@ -277,17 +281,17 @@ describe('Optional Filters', () => {
       expect(screen.getByTestId('search').textContent).toBe(
         `?${new URLSearchParams(
           Object.entries({
-            process: 'bigVarProcess',
-            version: '1',
-            parentInstanceId: '1954699813693756',
+            processDefinitionId: 'bigVarProcess',
+            processDefinitionVersion: '1',
+            parentProcessInstanceKey: '1954699813693756',
             errorMessage: 'a random error',
             incidentErrorHashCode: '351027393',
-            startDateBefore: '2021-02-21 18:17:18',
-            startDateAfter: '2021-02-21 20:00:00',
-            endDateBefore: '2021-02-23 18:17:18',
-            endDateAfter: '2021-02-23 22:00:00',
-            flowNodeId: 'ServiceTask_0kt6c5i',
-            operationId: '2f5b1beb-cbeb-41c8-a2f0-4c0bcf76c4ee',
+            startDateTo: '2021-02-21 18:17:18',
+            startDateFrom: '2021-02-21 20:00:00',
+            endDateTo: '2021-02-23 18:17:18',
+            endDateFrom: '2021-02-23 22:00:00',
+            elementId: 'ServiceTask_0kt6c5i',
+            batchOperationId: '2f5b1beb-cbeb-41c8-a2f0-4c0bcf76c4ee',
             active: 'true',
             incidents: 'true',
             completed: 'true',
@@ -312,16 +316,16 @@ describe('Optional Filters', () => {
       expect(screen.getByTestId('search').textContent).toBe(
         `?${new URLSearchParams(
           Object.entries({
-            process: 'bigVarProcess',
-            version: '1',
+            processDefinitionId: 'bigVarProcess',
+            processDefinitionVersion: '1',
             errorMessage: 'a random error',
             incidentErrorHashCode: '351027393',
-            startDateBefore: '2021-02-21 18:17:18',
-            startDateAfter: '2021-02-21 20:00:00',
-            endDateBefore: '2021-02-23 18:17:18',
-            endDateAfter: '2021-02-23 22:00:00',
-            flowNodeId: 'ServiceTask_0kt6c5i',
-            operationId: '2f5b1beb-cbeb-41c8-a2f0-4c0bcf76c4ee',
+            startDateTo: '2021-02-21 18:17:18',
+            startDateFrom: '2021-02-21 20:00:00',
+            endDateTo: '2021-02-23 18:17:18',
+            endDateFrom: '2021-02-23 22:00:00',
+            elementId: 'ServiceTask_0kt6c5i',
+            batchOperationId: '2f5b1beb-cbeb-41c8-a2f0-4c0bcf76c4ee',
             active: 'true',
             incidents: 'true',
             completed: 'true',
@@ -342,14 +346,14 @@ describe('Optional Filters', () => {
       expect(screen.getByTestId('search').textContent).toBe(
         `?${new URLSearchParams(
           Object.entries({
-            process: 'bigVarProcess',
-            version: '1',
-            startDateBefore: '2021-02-21 18:17:18',
-            startDateAfter: '2021-02-21 20:00:00',
-            endDateBefore: '2021-02-23 18:17:18',
-            endDateAfter: '2021-02-23 22:00:00',
-            flowNodeId: 'ServiceTask_0kt6c5i',
-            operationId: '2f5b1beb-cbeb-41c8-a2f0-4c0bcf76c4ee',
+            processDefinitionId: 'bigVarProcess',
+            processDefinitionVersion: '1',
+            startDateTo: '2021-02-21 18:17:18',
+            startDateFrom: '2021-02-21 20:00:00',
+            endDateTo: '2021-02-23 18:17:18',
+            endDateFrom: '2021-02-23 22:00:00',
+            elementId: 'ServiceTask_0kt6c5i',
+            batchOperationId: '2f5b1beb-cbeb-41c8-a2f0-4c0bcf76c4ee',
             active: 'true',
             incidents: 'true',
             completed: 'true',
@@ -368,12 +372,12 @@ describe('Optional Filters', () => {
       expect(screen.getByTestId('search').textContent).toBe(
         `?${new URLSearchParams(
           Object.entries({
-            process: 'bigVarProcess',
-            version: '1',
-            endDateBefore: '2021-02-23 18:17:18',
-            endDateAfter: '2021-02-23 22:00:00',
-            flowNodeId: 'ServiceTask_0kt6c5i',
-            operationId: '2f5b1beb-cbeb-41c8-a2f0-4c0bcf76c4ee',
+            processDefinitionId: 'bigVarProcess',
+            processDefinitionVersion: '1',
+            endDateTo: '2021-02-23 18:17:18',
+            endDateFrom: '2021-02-23 22:00:00',
+            elementId: 'ServiceTask_0kt6c5i',
+            batchOperationId: '2f5b1beb-cbeb-41c8-a2f0-4c0bcf76c4ee',
             active: 'true',
             incidents: 'true',
             completed: 'true',
@@ -392,10 +396,10 @@ describe('Optional Filters', () => {
       expect(screen.getByTestId('search').textContent).toBe(
         `?${new URLSearchParams(
           Object.entries({
-            process: 'bigVarProcess',
-            version: '1',
-            flowNodeId: 'ServiceTask_0kt6c5i',
-            operationId: '2f5b1beb-cbeb-41c8-a2f0-4c0bcf76c4ee',
+            processDefinitionId: 'bigVarProcess',
+            processDefinitionVersion: '1',
+            elementId: 'ServiceTask_0kt6c5i',
+            batchOperationId: '2f5b1beb-cbeb-41c8-a2f0-4c0bcf76c4ee',
             active: 'true',
             incidents: 'true',
             completed: 'true',
@@ -414,10 +418,10 @@ describe('Optional Filters', () => {
     expect(screen.getByTestId('search').textContent).toBe(
       `?${new URLSearchParams(
         Object.entries({
-          process: 'bigVarProcess',
-          version: '1',
-          flowNodeId: 'ServiceTask_0kt6c5i',
-          operationId: '2f5b1beb-cbeb-41c8-a2f0-4c0bcf76c4ee',
+          processDefinitionId: 'bigVarProcess',
+          processDefinitionVersion: '1',
+          elementId: 'ServiceTask_0kt6c5i',
+          batchOperationId: '2f5b1beb-cbeb-41c8-a2f0-4c0bcf76c4ee',
           active: 'true',
           incidents: 'true',
           completed: 'true',
@@ -443,9 +447,9 @@ describe('Optional Filters', () => {
       expect(screen.getByTestId('search').textContent).toBe(
         `?${new URLSearchParams(
           Object.entries({
-            process: 'bigVarProcess',
-            version: '1',
-            flowNodeId: 'ServiceTask_0kt6c5i',
+            processDefinitionId: 'bigVarProcess',
+            processDefinitionVersion: '1',
+            elementId: 'ServiceTask_0kt6c5i',
             active: 'true',
             incidents: 'true',
             completed: 'true',
@@ -459,17 +463,17 @@ describe('Optional Filters', () => {
 
   it('should remove optional filters on filter reset', async () => {
     const MOCK_PARAMS = {
-      process: 'bigVarProcess',
-      version: '1',
-      ids: '2251799813685467',
-      parentInstanceId: '1954699813693756',
+      processDefinitionId: 'bigVarProcess',
+      processDefinitionVersion: '1',
+      processInstanceKey: '2251799813685467',
+      parentProcessInstanceKey: '1954699813693756',
       errorMessage: 'a random error',
-      startDateBefore: '2021-02-21 18:17:18',
-      startDateAfter: '2021-02-21 20:00:00',
-      endDateBefore: '2021-02-23 18:17:18',
-      endDateAfter: '2021-02-23 22:00:00',
-      flowNodeId: 'ServiceTask_0kt6c5i',
-      operationId: '2f5b1beb-cbeb-41c8-a2f0-4c0bcf76c4ee',
+      startDateTo: '2021-02-21 18:17:18',
+      startDateFrom: '2021-02-21 20:00:00',
+      endDateTo: '2021-02-23 18:17:18',
+      endDateFrom: '2021-02-23 22:00:00',
+      elementId: 'ServiceTask_0kt6c5i',
+      batchOperationId: '2f5b1beb-cbeb-41c8-a2f0-4c0bcf76c4ee',
       active: 'true',
       incidents: 'true',
       completed: 'true',

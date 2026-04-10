@@ -12,6 +12,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.gateway.protocol.model.TopologyResponse;
 import io.camunda.it.mcp.McpServerTest;
+import io.camunda.zeebe.util.VersionUtil;
+import io.modelcontextprotocol.client.McpSyncClient;
 import io.modelcontextprotocol.spec.McpSchema.CallToolRequest;
 import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
 import io.modelcontextprotocol.spec.McpSchema.ListToolsResult;
@@ -20,78 +22,96 @@ import io.modelcontextprotocol.spec.McpSchema.TextContent;
 import io.modelcontextprotocol.spec.McpSchema.Tool;
 import java.util.Objects;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 abstract class McpServerAuthenticationTest extends McpServerTest {
 
   protected final ObjectMapper objectMapper = new ObjectMapper();
 
-  @Test
-  void returnsConfiguredInfoAndCapabilities() {
-    final var initializeResult = mcpClient.initialize();
-    assertThat(initializeResult).isNotNull();
+  @ParameterizedTest
+  @MethodSource("mcpServersToTest")
+  void returnsConfiguredInfoAndCapabilities(final String mcpServer) {
+    try (final McpSyncClient mcpClient =
+        createMcpClient(mcpServer, testInstance(), createMcpClientRequestCustomizer())) {
+      final var initializeResult = mcpClient.initialize();
+      assertThat(initializeResult).isNotNull();
 
-    assertThat(initializeResult.serverInfo().name())
-        .isEqualTo("Camunda 8 Orchestration API MCP Server");
-    assertThat(initializeResult.serverInfo().version()).startsWith("8.");
+      assertThat(initializeResult.serverInfo().name())
+          .contains("Camunda 8 Orchestration API")
+          .contains("MCP Server");
+      assertThat(initializeResult.serverInfo().version()).isEqualTo(VersionUtil.getVersion());
+      assertThat(initializeResult.instructions()).isNotBlank();
 
-    assertThat(initializeResult.capabilities())
-        .extracting(
-            ServerCapabilities::completions,
-            ServerCapabilities::experimental,
-            ServerCapabilities::logging)
-        .allMatch(Objects::isNull);
+      assertThat(initializeResult.capabilities())
+          .extracting(
+              ServerCapabilities::completions,
+              ServerCapabilities::experimental,
+              ServerCapabilities::logging)
+          .allMatch(Objects::isNull);
 
-    assertThat(initializeResult.capabilities().tools())
-        .isNotNull()
-        .satisfies(tools -> assertThat(tools.listChanged()).isFalse());
+      assertThat(initializeResult.capabilities().tools())
+          .isNotNull()
+          .satisfies(tools -> assertThat(tools.listChanged()).isFalse());
 
-    assertThat(initializeResult.capabilities().prompts())
-        .isNotNull()
-        .satisfies(prompts -> assertThat(prompts.listChanged()).isFalse());
+      assertThat(initializeResult.capabilities().prompts())
+          .isNotNull()
+          .satisfies(prompts -> assertThat(prompts.listChanged()).isFalse());
 
-    assertThat(initializeResult.capabilities().resources())
-        .isNotNull()
-        .satisfies(
-            resources -> {
-              assertThat(resources.listChanged()).isFalse();
-              assertThat(resources.subscribe()).isFalse();
-            });
+      assertThat(initializeResult.capabilities().resources())
+          .isNotNull()
+          .satisfies(
+              resources -> {
+                assertThat(resources.listChanged()).isFalse();
+                assertThat(resources.subscribe()).isFalse();
+              });
+    }
   }
 
   @Test
   void registersAllExpectedTools() {
-    final ListToolsResult listToolsResult = mcpClient.listTools();
-    assertThat(listToolsResult.tools())
-        .extracting(Tool::name)
-        .contains("getClusterStatus", "getTopology");
+    try (final McpSyncClient mcpClient =
+        createMcpClient("cluster", testInstance(), createMcpClientRequestCustomizer())) {
+      final ListToolsResult listToolsResult = mcpClient.listTools();
+      assertThat(listToolsResult.tools())
+          .extracting(Tool::name)
+          .contains("getClusterStatus", "getTopology");
+    }
   }
 
   @Test
   void fetchesClusterStatus() {
-    final CallToolResult result =
-        mcpClient.callTool(CallToolRequest.builder().name("getClusterStatus").build());
+    try (final McpSyncClient mcpClient =
+        createMcpClient("cluster", testInstance(), createMcpClientRequestCustomizer())) {
+      final CallToolResult result =
+          mcpClient.callTool(CallToolRequest.builder().name("getClusterStatus").build());
 
-    assertThat(result.isError()).isFalse();
-    assertThat(result.content())
-        .hasSize(1)
-        .first()
-        .isInstanceOfSatisfying(
-            TextContent.class, textContent -> assertThat(textContent.text()).isEqualTo("HEALTHY"));
+      assertThat(result.isError()).isFalse();
+      assertThat(result.content())
+          .hasSize(1)
+          .first()
+          .isInstanceOfSatisfying(
+              TextContent.class,
+              textContent -> assertThat(textContent.text()).isEqualTo("HEALTHY"));
+    }
   }
 
   @Test
   void fetchesTopology() {
-    final CallToolResult result =
-        mcpClient.callTool(CallToolRequest.builder().name("getTopology").build());
+    try (final McpSyncClient mcpClient =
+        createMcpClient("cluster", testInstance(), createMcpClientRequestCustomizer())) {
+      final CallToolResult result =
+          mcpClient.callTool(CallToolRequest.builder().name("getTopology").build());
 
-    assertThat(result.isError()).isFalse();
-    assertThat(result.structuredContent()).isNotNull();
+      assertThat(result.isError()).isFalse();
+      assertThat(result.structuredContent()).isNotNull();
 
-    final var topology =
-        objectMapper.convertValue(result.structuredContent(), TopologyResponse.class);
-    assertThat(topology.getClusterSize()).isEqualTo(1);
-    assertThat(topology.getBrokers()).hasSize(1);
-    assertThat(topology.getBrokers().getFirst().getNodeId().toString())
-        .isEqualTo(testInstance().nodeId().id());
+      final var topology =
+          objectMapper.convertValue(result.structuredContent(), TopologyResponse.class);
+      assertThat(topology.getClusterSize()).isEqualTo(1);
+      assertThat(topology.getBrokers()).hasSize(1);
+      assertThat(topology.getBrokers().getFirst().getNodeId().toString())
+          .isEqualTo(testInstance().nodeId().id());
+    }
   }
 }

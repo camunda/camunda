@@ -16,6 +16,7 @@
 package io.camunda.client.api.search.request;
 
 import io.camunda.client.api.search.filter.CorrelatedMessageSubscriptionFilter;
+import io.camunda.client.api.search.page.AnyPage;
 import io.camunda.client.api.search.response.CorrelatedMessageSubscription;
 import io.camunda.client.api.search.sort.CorrelatedMessageSubscriptionSort;
 
@@ -23,5 +24,6 @@ public interface CorrelatedMessageSubscriptionSearchRequest
     extends TypedSearchRequest<
             CorrelatedMessageSubscriptionFilter,
             CorrelatedMessageSubscriptionSort,
+            AnyPage,
             CorrelatedMessageSubscriptionSearchRequest>,
         FinalSearchRequestStep<CorrelatedMessageSubscription> {}

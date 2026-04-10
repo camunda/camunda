@@ -1,6 +1,9 @@
-# description: Create a Camunda load test for an individual PR. When a PR is closed, the test is cleaned up and removed
+# description: Creates a load test when a PR is labeled with 'benchmark'. Deploys with
+#              scenario 'max', waits 15 minutes, then profiles via async-profiler and
+#              posts flamegraph results as a PR comment. Cleans up on label removal or PR close.
+# calls: camunda-load-test.yml (scenario: max), profile-load-test.yml
 # type: CI
-# owner @camunda/reliability-testing
+# owner: @camunda/reliability-testing
 name: Camunda Pull Request Benchmark
 on:
   pull_request:
@@ -29,6 +32,8 @@ jobs:
     outputs:
       sanitized-name: c8-${{ steps.sanitize.outputs.branch_name }}
     steps:
+      - name: Checkout
+        uses: actions/checkout@v6
       - id: sanitize
         uses: camunda/infra-global-github-actions/sanitize-branch-name@main
         with:
@@ -66,6 +71,8 @@ jobs:
     runs-on: ubuntu-latest
     permissions: {}
     steps:
+      - name: Checkout
+        uses: actions/checkout@v6
       - name: Wait for load test to stabilize
         run: sleep 900  # 15 minutes
       - name: Observe build status
@@ -102,6 +109,8 @@ jobs:
       contents: 'read'
       pull-requests: 'write'
     steps:
+      - name: Checkout
+        uses: actions/checkout@v6
       - uses: actions/download-artifact@v8
         with:
           path: artifacts
@@ -180,7 +189,8 @@ jobs:
       - name: Set up Teleport
         uses: teleport-actions/setup@v1
         with:
-          version: 17.2.2
+          proxy: camunda.teleport.sh:443
+          version: auto
 
       - name: Authenticate to Cluster using Teleport
         uses: teleport-actions/auth-k8s@v2

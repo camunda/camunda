@@ -63,6 +63,7 @@ function getNavLinkSearchParam(options: {
     'processDefinitionKey',
     'processInstanceKey',
     'tenantIds',
+    'tenantId',
     'taskVariables',
   ] as const;
   const {filter, username, currentParams} = options;

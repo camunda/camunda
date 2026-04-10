@@ -101,6 +101,32 @@ class CsrfProtectionRequestMatcherTest {
   }
 
   @Test
+  void swaggerReferrerWithExtraPathDoesNotMatchForCsrf() {
+    final var request = prepareMockRequest();
+    request.setServerName("hel-1.operate.ultrawombat.com");
+    request.setScheme("https");
+    request.setServerPort(443);
+    request.addHeader(
+        REFERER,
+        "https://hel-1.operate.ultrawombat.com/00000000-0000-0000-0000-000000000000/swagger-ui/index.html");
+    request.getSession(true);
+    assertThat(matcher.matches(request)).isFalse();
+  }
+
+  @Test
+  void swaggerReferrerWithExtraPathAndPortDoesNotMatchForCsrf() {
+    final var request = prepareMockRequest();
+    request.setServerName("hel-1.operate.ultrawombat.com");
+    request.setScheme("https");
+    request.setServerPort(12345);
+    request.addHeader(
+        REFERER,
+        "https://hel-1.operate.ultrawombat.com:12345/00000000-0000-0000-0000-000000000000/swagger-ui/index.html");
+    request.getSession(true);
+    assertThat(matcher.matches(request)).isFalse();
+  }
+
+  @Test
   void arbitraryReferrerMatchesForCsrf() {
     final var request = prepareMockRequest();
     request.addHeader(REFERER, "http://localhost/fake-swagger/index.html");

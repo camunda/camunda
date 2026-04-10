@@ -14,10 +14,6 @@ import {mockDecisionDefinitions} from 'modules/mocks/mockDecisionDefinitions';
 import {Decision} from '..';
 import {createWrapper} from './mocks';
 
-vi.mock('modules/feature-flags', () => ({
-  IS_DECISION_DEFINITION_DELETION_ENABLED: true,
-}));
-
 describe('<Decision /> - operations', () => {
   beforeEach(() => {
     const selectedDecisionDefinition = mockDecisionDefinitions.items[5];
@@ -35,7 +31,9 @@ describe('<Decision /> - operations', () => {
 
   it('should show delete button when version is selected', async () => {
     render(<Decision />, {
-      wrapper: createWrapper('/decisions?name=invoiceClassification&version=1'),
+      wrapper: createWrapper(
+        '/decisions?decisionDefinitionId=invoiceClassification&decisionDefinitionVersion=1',
+      ),
     });
 
     expect(
@@ -59,7 +57,9 @@ describe('<Decision /> - operations', () => {
 
   it('should not show delete button when no version is selected', () => {
     render(<Decision />, {
-      wrapper: createWrapper('/decisions?name=invoiceClassification'),
+      wrapper: createWrapper(
+        '/decisions?decisionDefinitionId=invoiceClassification',
+      ),
     });
 
     expect(

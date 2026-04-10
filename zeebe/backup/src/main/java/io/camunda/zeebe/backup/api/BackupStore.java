@@ -61,4 +61,6 @@ public interface BackupStore {
   CompletableFuture<Optional<byte[]>> loadBackupMetadata(int partitionId);
 
   CompletableFuture<Void> closeAsync();
+
+  CompletableFuture<Void> verifyConnection();
 }

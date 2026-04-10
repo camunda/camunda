@@ -23,16 +23,9 @@ import io.camunda.client.api.command.InternalClientException;
 public class CamundaAssertJsonMapper {
 
   private final JsonMapper jsonMapper;
-  private final io.camunda.zeebe.client.api.JsonMapper zeebeJsonMapper;
 
   public CamundaAssertJsonMapper(final JsonMapper jsonMapper) {
     this.jsonMapper = jsonMapper;
-    zeebeJsonMapper = null;
-  }
-
-  public CamundaAssertJsonMapper(final io.camunda.zeebe.client.api.JsonMapper jsonMapper) {
-    this.jsonMapper = null;
-    zeebeJsonMapper = jsonMapper;
   }
 
   public JsonNode readJson(final String value) {
@@ -65,19 +58,11 @@ public class CamundaAssertJsonMapper {
   }
 
   private <T> T read(final String value, final Class<T> clazz) {
-    if (jsonMapper != null) {
-      return jsonMapper.fromJson(value, clazz);
-    } else {
-      return zeebeJsonMapper.fromJson(value, clazz);
-    }
+    return jsonMapper.fromJson(value, clazz);
   }
 
   private JsonNode write(final Object value) {
-    if (jsonMapper != null) {
-      return jsonMapper.transform(value, JsonNode.class);
-    } else {
-      return zeebeJsonMapper.fromJson(zeebeJsonMapper.toJson(value), JsonNode.class);
-    }
+    return jsonMapper.transform(value, JsonNode.class);
   }
 
   public static class JsonMappingException extends RuntimeException {

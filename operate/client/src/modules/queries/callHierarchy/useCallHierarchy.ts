@@ -7,7 +7,7 @@
  */
 
 import {useQuery} from '@tanstack/react-query';
-import {type ProcessInstance} from '@camunda/camunda-api-zod-schemas/8.9';
+import {type ProcessInstance} from '@camunda/camunda-api-zod-schemas/8.10';
 import {fetchCallHierarchy} from 'modules/api/v2/processInstances/fetchCallHierarchy';
 import {queryKeys} from '../queryKeys';
 

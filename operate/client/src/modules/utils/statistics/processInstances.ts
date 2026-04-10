@@ -6,21 +6,21 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import type {ProcessDefinitionStatistic} from '@camunda/camunda-api-zod-schemas/8.9';
+import type {ProcessDefinitionStatistic} from '@camunda/camunda-api-zod-schemas/8.10';
 
 function getInstancesCount(
   data: ProcessDefinitionStatistic[],
   elementId?: string,
 ) {
-  const flowNodeStatistics = data.find(
+  const elementStatistics = data.find(
     (statistics) => statistics.elementId === elementId,
   );
 
-  if (flowNodeStatistics === undefined) {
+  if (elementStatistics === undefined) {
     return 0;
   }
 
-  return flowNodeStatistics.active + flowNodeStatistics.incidents;
+  return elementStatistics.active + elementStatistics.incidents;
 }
 
 export {getInstancesCount};

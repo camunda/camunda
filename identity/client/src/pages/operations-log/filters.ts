@@ -6,25 +6,21 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {
-  buildArrayParam,
-  createSearchParamsSync,
-  parseArrayParam,
-} from "src/utility/filters/searchParamsFilters";
+import { createSearchParamsSync } from "src/utility/filters/searchParamsFilters";
 import {
   AuditLogEntityType,
   AuditLogOperationType,
   AuditLogResult,
   auditLogResultSchema,
-} from "@camunda/camunda-api-zod-schemas/8.9";
+} from "@camunda/camunda-api-zod-schemas/8.10";
 import { isValidDate } from "src/utility/validate";
 
 export type AuditLogFilters = {
-  operationType: AuditLogOperationType[];
+  operationType?: AuditLogOperationType;
   entityType?: AuditLogEntityType;
   relatedEntityType?: AuditLogEntityType;
   relatedEntityKey: string;
-  result: AuditLogResult | "all";
+  result?: AuditLogResult;
   actor: string;
   timestampFrom: string;
   timestampTo: string;
@@ -47,23 +43,17 @@ export const ALLOWED_ENTITY_TYPES = [
   "TENANT",
 ] as const satisfies readonly AuditLogEntityType[];
 
-export const ALLOWED_RESULT_TYPES = [
-  "all",
-  ...auditLogResultSchema.options,
-] as const;
+export const ALLOWED_RESULT_TYPES = [...auditLogResultSchema.options] as const;
 
 const auditLogSearchParamsSync = createSearchParamsSync<AuditLogFilters>({
   operationType: {
     parse: (params) => {
-      return parseArrayParam<AuditLogOperationType>(
-        params.get("operationType"),
-      ).filter((item): item is (typeof ALLOWED_OPERATION_TYPES)[number] =>
-        ALLOWED_OPERATION_TYPES.some((t) => t === item),
-      );
+      const entityType = params.get("operationType");
+      return ALLOWED_OPERATION_TYPES.find((t) => t === entityType);
     },
     serialize: (value, params) => {
-      const v = buildArrayParam(value);
-      if (v) params.set("operationType", v);
+      if (value) params.set("operationType", value);
+      else params.delete("operationType");
     },
   },
 
@@ -74,6 +64,7 @@ const auditLogSearchParamsSync = createSearchParamsSync<AuditLogFilters>({
     },
     serialize: (value, params) => {
       if (value) params.set("entityType", value);
+      else params.delete("entityType");
     },
   },
 
@@ -84,6 +75,7 @@ const auditLogSearchParamsSync = createSearchParamsSync<AuditLogFilters>({
     },
     serialize: (value, params) => {
       if (value) params.set("relatedEntityType", value);
+      else params.delete("relatedEntityType");
     },
   },
 
@@ -97,12 +89,11 @@ const auditLogSearchParamsSync = createSearchParamsSync<AuditLogFilters>({
   result: {
     parse: (params) => {
       const result = params.get("result");
-      return ALLOWED_RESULT_TYPES.find((t) => t === result) ?? "all";
+      return ALLOWED_RESULT_TYPES.find((t) => t === result);
     },
     serialize: (value, params) => {
-      if (value !== "all") {
-        params.set("result", value);
-      }
+      if (value) params.set("result", value);
+      else params.delete("result");
     },
   },
 

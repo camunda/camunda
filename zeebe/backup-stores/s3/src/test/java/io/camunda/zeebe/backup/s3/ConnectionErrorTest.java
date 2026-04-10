@@ -72,4 +72,18 @@ final class ConnectionErrorTest {
         .failsWithin(Duration.ofSeconds(10))
         .withThrowableOfType(ExecutionException.class);
   }
+
+  @Test
+  void shouldFailVerifyConnectionWhenStoreIsNotReachable() {
+    // given
+    // s3 container is not running
+
+    // when
+    final var res = store.verifyConnection();
+
+    // then
+    assertThat(res)
+        .failsWithin(Duration.ofSeconds(10))
+        .withThrowableOfType(ExecutionException.class);
+  }
 }

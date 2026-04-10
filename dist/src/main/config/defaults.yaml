@@ -80,6 +80,8 @@ camunda: # Type: io.camunda.configuration.Camunda
     # compression helps to improve the throughput.
     # Note: When there is no latency enabling this may have a performance impact.
     compression-algorithm: "none" # Type: io.camunda.configuration.Cluster$CompressionAlgorithm, Env: CAMUNDA_CLUSTER_COMPRESSIONALGORITHM
+    # The member id of this gateway node in the cluster. Only relevant for standalone gateway deployments.
+    gateway-id: null # Type: String, Env: CAMUNDA_CLUSTER_GATEWAYID
     global-listeners: # Type: io.camunda.zeebe.broker.system.configuration.engine.GlobalListenersCfg
       user-task: null # Type: List<io.camunda.zeebe.broker.system.configuration.engine.GlobalListenerCfg>, Env: CAMUNDA_CLUSTER_GLOBALLISTENERS_USERTASK
 
@@ -317,7 +319,7 @@ camunda: # Type: io.camunda.configuration.Camunda
     history-deletion: # Type: io.camunda.configuration.HistoryDeletion
       delay-between-runs: "1s" # Type: Duration, Env: CAMUNDA_DATA_HISTORYDELETION_DELAYBETWEENRUNS
       dependent-row-limit: 10000 # Type: Integer, Env: CAMUNDA_DATA_HISTORYDELETION_DEPENDENTROWLIMIT
-      max-delay-between-runs: "5m" # Type: Duration, Env: CAMUNDA_DATA_HISTORYDELETION_MAXDELAYBETWEENRUNS
+      max-delay-between-runs: "15s" # Type: Duration, Env: CAMUNDA_DATA_HISTORYDELETION_MAXDELAYBETWEENRUNS
       queue-batch-size: 100 # Type: Integer, Env: CAMUNDA_DATA_HISTORYDELETION_QUEUEBATCHSIZE
 
     primary-storage: # Type: io.camunda.configuration.PrimaryStorage
@@ -504,7 +506,7 @@ camunda: # Type: io.camunda.configuration.Camunda
         # value is set to 'BROKER', the total memory allocated to RocksDB will be equal to the configured
         # memory limit. If set to 'FRACTION', Zeebe will allocate a configurable percentage of total RAM to
         # RocksDB that can be configured via the memoryFraction configuration [0,1].
-        memory-allocation-strategy: "fraction" # Type: io.camunda.zeebe.db.impl.rocksdb.RocksDbConfiguration$MemoryAllocationStrategy, Env: CAMUNDA_DATA_PRIMARYSTORAGE_ROCKSDB_MEMORYALLOCATIONSTRATEGY
+        memory-allocation-strategy: "partition" # Type: io.camunda.zeebe.db.impl.rocksdb.RocksDbConfiguration$MemoryAllocationStrategy, Env: CAMUNDA_DATA_PRIMARYSTORAGE_ROCKSDB_MEMORYALLOCATIONSTRATEGY
         # Configures the fraction of total system memory to allocate to RocksDB when using the 'FRACTION'
         # memory allocation strategy. The value must be between 0 and 1 (exclusive). For example, a value of
         # 0.1 means 10% of total system memory will be allocated to RocksDB.
@@ -784,6 +786,9 @@ camunda: # Type: io.camunda.configuration.Camunda
           max-job-insert-batch-size: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_RDBMS_INSERTBATCHING_MAXJOBINSERTBATCHSIZE
           max-variable-insert-batch-size: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_RDBMS_INSERTBATCHING_MAXVARIABLEINSERTBATCHSIZE
 
+        # The maximum length of varchar fields in the database. This is relevant for user defined string
+        # fields like ids and names.
+        max-varchar-field-length: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_RDBMS_MAXVARCHARFIELDLENGTH
         metrics: # Type: io.camunda.configuration.RdbmsMetrics
           # The duration for which the table row count metrics are cached before being refreshed from the
           # database. This helps avoid performance impact on the database.
@@ -795,6 +800,10 @@ camunda: # Type: io.camunda.configuration.Camunda
         prefix: null # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_RDBMS_PREFIX
         # Process definition cache configuration. Defines the size of the process definition cache.
         process-cache: null # Type: io.camunda.configuration.RdbmsCache, Env: CAMUNDA_DATA_SECONDARYSTORAGE_RDBMS_PROCESSCACHE
+        query: # Type: io.camunda.configuration.RdbmsQuery
+          # The maximum number of total hits to return in search results.
+          max-total-hits: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_RDBMS_QUERY_MAXTOTALHITS
+
         # The maximum memory (in MB) that the execution queue can consume before it is flushed to the
         # database. This helps prevent OOM when processing large processes with large variables.
         queue-memory-limit: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_RDBMS_QUEUEMEMORYLIMIT
@@ -845,6 +854,16 @@ camunda: # Type: io.camunda.configuration.Camunda
       usage-metrics-minimum-age: null # Type: String, Env: CAMUNDA_DATABASE_RETENTION_USAGEMETRICSMINIMUMAGE
       usage-metrics-policy-name: null # Type: String, Env: CAMUNDA_DATABASE_RETENTION_USAGEMETRICSPOLICYNAME
 
+    schema-manager: # Type: io.camunda.configuration.beans.LegacySearchEngineSchemaManagerProperties
+      create-schema: null # Type: Boolean, Env: CAMUNDA_DATABASE_SCHEMAMANAGER_CREATESCHEMA
+      retry: # Type: io.camunda.search.schema.config.SchemaManagerConfiguration$SchemaManagerRetryConfiguration
+        max-retries: null # Type: Integer, Env: CAMUNDA_DATABASE_SCHEMAMANAGER_RETRY_MAXRETRIES
+        max-retry-delay: null # Type: Duration, Env: CAMUNDA_DATABASE_SCHEMAMANAGER_RETRY_MAXRETRYDELAY
+        min-retry-delay: null # Type: Duration, Env: CAMUNDA_DATABASE_SCHEMAMANAGER_RETRY_MINRETRYDELAY
+        retry-delay-multiplier: null # Type: Double, Env: CAMUNDA_DATABASE_SCHEMAMANAGER_RETRY_RETRYDELAYMULTIPLIER
+
+      version-check-restriction-enabled: null # Type: Boolean, Env: CAMUNDA_DATABASE_SCHEMAMANAGER_VERSIONCHECKRESTRICTIONENABLED
+
     security: null # Type: io.camunda.search.connect.configuration.SecurityConfiguration, Env: CAMUNDA_DATABASE_SECURITY
     socket-timeout: null # Type: Integer, Env: CAMUNDA_DATABASE_SOCKETTIMEOUT
     url: null # Type: String, Env: CAMUNDA_DATABASE_URL
@@ -859,6 +878,12 @@ camunda: # Type: io.camunda.configuration.Camunda
     # Defaults to {@link EngineConfiguration#DEFAULT_EXPRESSION_EVALUATION_TIMEOUT}.
     timeout: null # Type: Duration, Env: CAMUNDA_EXPRESSION_TIMEOUT
 
+  # Defines the mode in which Camunda is running. This is used to activate/deactivate certain features.
+  # The mode can be set via the "camunda.mode" property. Valid values are: - "all-in-one" - "broker" -
+  # "gateway" The mode is meant to be interpreted as case-insensitive. A null value means that launch
+  # modes are not used, and the behavior of the application will be defined by the active profiles and
+  # configuration properties.
+  mode: null # Type: String, Env: CAMUNDA_MODE
   monitoring: # Type: io.camunda.configuration.Monitoring
     jfr: null # Type: Boolean, Env: CAMUNDA_MONITORING_JFR
     metrics: # Type: io.camunda.configuration.Metrics
@@ -866,6 +891,19 @@ camunda: # Type: io.camunda.configuration.Camunda
       actor: false # Type: Boolean, Env: CAMUNDA_MONITORING_METRICS_ACTOR
       # Enable exporter execution metrics
       enable-exporter-execution-metrics: false # Type: Boolean, Env: CAMUNDA_MONITORING_METRICS_ENABLEEXPORTEREXECUTIONMETRICS
+      job-metrics: # Type: io.camunda.configuration.JobMetricsConfig
+        # Whether job metrics export is enabled.
+        enabled: true # Type: Boolean, Env: CAMUNDA_MONITORING_METRICS_JOBMETRICS_ENABLED
+        # The interval at which job metrics are exported.
+        export-interval: "5m" # Type: Duration, Env: CAMUNDA_MONITORING_METRICS_JOBMETRICS_EXPORTINTERVAL
+        # The maximum length of the job type used in job metrics labels.
+        max-job-type-length: 100 # Type: Integer, Env: CAMUNDA_MONITORING_METRICS_JOBMETRICS_MAXJOBTYPELENGTH
+        # The maximum length of the tenant ID used in job metrics labels.
+        max-tenant-id-length: 30 # Type: Integer, Env: CAMUNDA_MONITORING_METRICS_JOBMETRICS_MAXTENANTIDLENGTH
+        # The maximum number of unique metric keys tracked for job metrics.
+        max-unique-keys: 9500 # Type: Integer, Env: CAMUNDA_MONITORING_METRICS_JOBMETRICS_MAXUNIQUEKEYS
+        # The maximum length of the worker name used in job metrics labels.
+        max-worker-name-length: 100 # Type: Integer, Env: CAMUNDA_MONITORING_METRICS_JOBMETRICS_MAXWORKERNAMELENGTH
 
   operate: # Type: io.camunda.configuration.beanoverrides.LegacyOperateProperties
     backup: # Type: io.camunda.operate.property.BackupProperties
@@ -1204,6 +1242,14 @@ camunda: # Type: io.camunda.configuration.Camunda
       max-pool-size-multiplier: null # Type: Integer, Env: CAMUNDA_REST_APIEXECUTOR_MAXPOOLSIZEMULTIPLIER
       queue-capacity: null # Type: Integer, Env: CAMUNDA_REST_APIEXECUTOR_QUEUECAPACITY
 
+    job-metrics: # Type: io.camunda.zeebe.gateway.rest.config.GatewayRestConfiguration$JobMetricsConfiguration
+      enabled: null # Type: Boolean, Env: CAMUNDA_REST_JOBMETRICS_ENABLED
+      export-interval: null # Type: Duration, Env: CAMUNDA_REST_JOBMETRICS_EXPORTINTERVAL
+      max-job-type-length: null # Type: Integer, Env: CAMUNDA_REST_JOBMETRICS_MAXJOBTYPELENGTH
+      max-tenant-id-length: null # Type: Integer, Env: CAMUNDA_REST_JOBMETRICS_MAXTENANTIDLENGTH
+      max-unique-keys: null # Type: Integer, Env: CAMUNDA_REST_JOBMETRICS_MAXUNIQUEKEYS
+      max-worker-name-length: null # Type: Integer, Env: CAMUNDA_REST_JOBMETRICS_MAXWORKERNAMELENGTH
+
     process-cache: # Type: io.camunda.zeebe.gateway.rest.config.GatewayRestConfiguration$ProcessCacheConfiguration
       expiration-idle-millis: null # Type: Long, Env: CAMUNDA_REST_PROCESSCACHE_EXPIRATIONIDLEMILLIS
       max-size: null # Type: Integer, Env: CAMUNDA_REST_PROCESSCACHE_MAXSIZE
@@ -1276,8 +1322,12 @@ camunda: # Type: io.camunda.configuration.Camunda
     cloud: # Type: io.camunda.tasklist.property.CloudProperties
       cluster-id: null # Type: String, Env: CAMUNDA_TASKLIST_CLOUD_CLUSTERID
       console-url: null # Type: String, Env: CAMUNDA_TASKLIST_CLOUD_CONSOLEURL
+      mixpanel-a-p-i-host: null # Type: String, Env: CAMUNDA_TASKLIST_CLOUD_MIXPANELAPIHOST
+      mixpanel-token: null # Type: String, Env: CAMUNDA_TASKLIST_CLOUD_MIXPANELTOKEN
+      organization-id: null # Type: String, Env: CAMUNDA_TASKLIST_CLOUD_ORGANIZATIONID
       permission-audience: null # Type: String, Env: CAMUNDA_TASKLIST_CLOUD_PERMISSIONAUDIENCE
       permission-url: null # Type: String, Env: CAMUNDA_TASKLIST_CLOUD_PERMISSIONURL
+      stage: null # Type: String, Env: CAMUNDA_TASKLIST_CLOUD_STAGE
 
     database: null # Type: String, Env: CAMUNDA_TASKLIST_DATABASE
     documentation: # Type: io.camunda.tasklist.property.TasklistDocumentationProperties
@@ -1361,6 +1411,28 @@ camunda: # Type: io.camunda.configuration.Camunda
       gateway-address: null # Type: String, Env: CAMUNDA_TASKLIST_ZEEBE_GATEWAYADDRESS
       rest-address: null # Type: String, Env: CAMUNDA_TASKLIST_ZEEBE_RESTADDRESS
       secure: null # Type: Boolean, Env: CAMUNDA_TASKLIST_ZEEBE_SECURE
+
+  webapps: # Type: io.camunda.configuration.Webapps
+    identity: # Type: io.camunda.configuration.Webapp
+      # Whether the webapp is enabled or not. This also affects the webapp API.
+      enabled: true # Type: Boolean, Env: CAMUNDA_WEBAPPS_IDENTITY_ENABLED
+      # Whether the webapp UI is enabled or not. If false, the webapp API will still be available, but the
+      # webapp itself will not be accessible with a web browser.
+      ui-enabled: true # Type: Boolean, Env: CAMUNDA_WEBAPPS_IDENTITY_UIENABLED
+
+    operate: # Type: io.camunda.configuration.Webapp
+      # Whether the webapp is enabled or not. This also affects the webapp API.
+      enabled: true # Type: Boolean, Env: CAMUNDA_WEBAPPS_OPERATE_ENABLED
+      # Whether the webapp UI is enabled or not. If false, the webapp API will still be available, but the
+      # webapp itself will not be accessible with a web browser.
+      ui-enabled: true # Type: Boolean, Env: CAMUNDA_WEBAPPS_OPERATE_UIENABLED
+
+    tasklist: # Type: io.camunda.configuration.Webapp
+      # Whether the webapp is enabled or not. This also affects the webapp API.
+      enabled: true # Type: Boolean, Env: CAMUNDA_WEBAPPS_TASKLIST_ENABLED
+      # Whether the webapp UI is enabled or not. If false, the webapp API will still be available, but the
+      # webapp itself will not be accessible with a web browser.
+      ui-enabled: true # Type: Boolean, Env: CAMUNDA_WEBAPPS_TASKLIST_UIENABLED
 
 zeebe: # Type:
   broker: # Type: io.camunda.configuration.beans.LegacyBrokerBasedProperties

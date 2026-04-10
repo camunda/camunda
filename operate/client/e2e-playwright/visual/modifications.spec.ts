@@ -212,15 +212,17 @@ test.describe('modifications', () => {
 
     await processInstancePage.diagram.clickElement('check order items');
 
-    const firstVariableValueInput = page
-      .getByRole('textbox', {
-        name: /value/i,
-      })
-      .nth(0);
+    await page.getByRole('link', {name: /variables/i}).click();
 
-    await firstVariableValueInput.clear();
-    await firstVariableValueInput.fill('"test"');
-    await page.keyboard.press('Tab');
+    await processInstancePage.variablesEditor
+      .getEditor('loopCounter')
+      .first()
+      .click();
+    await processInstancePage.variablesEditor.waitForEditorToLoad();
+
+    await processInstancePage.variablesEditor.clear();
+    await processInstancePage.variablesEditor.fill('"test"');
+    await processInstancePage.variablesEditor.blur();
 
     await page
       .getByRole('button', {

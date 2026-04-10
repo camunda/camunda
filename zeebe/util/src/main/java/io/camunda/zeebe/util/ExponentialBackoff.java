@@ -86,7 +86,7 @@ public final class ExponentialBackoff implements LongUnaryOperator {
   }
 
   public long supplyRetryDelay(final long currentRetryDelay) {
-    final var delay = Math.max(Math.min(maxDelay, currentRetryDelay * backoffFactor), minDelay);
+    final var delay = Math.clamp(currentRetryDelay * backoffFactor, minDelay, maxDelay);
     final var jitter = computeJitter(delay);
     return Math.round(delay + jitter);
   }

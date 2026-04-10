@@ -27,14 +27,12 @@ import {TenantField} from 'modules/components/TenantField';
 import {getFilters} from 'modules/utils/filter/getProcessInstanceFilters';
 import {
   AUDIT_LOG_FILTER_FIELDS,
+  AUDIT_LOG_ENTITY_TYPE_FILTER_VALUES,
+  AUDIT_LOG_OPERATION_TYPE_FILTER_VALUES,
   type OperationsLogFilterField,
   type OperationsLogFilters,
 } from '../auditLogFilters';
-import {
-  auditLogEntityTypeSchema,
-  auditLogOperationTypeSchema,
-  auditLogResultSchema,
-} from '@camunda/camunda-api-zod-schemas/8.9';
+import {auditLogResultSchema} from '@camunda/camunda-api-zod-schemas/8.10';
 import {spaceAndCapitalize} from 'modules/utils/spaceAndCapitalize';
 import {DateRangeField} from 'modules/components/DateRangeField';
 import {useState} from 'react';
@@ -54,15 +52,15 @@ const Filters: React.FC = observer(() => {
     OperationsLogFilterField,
     OperationsLogFilters
   >(location.search, AUDIT_LOG_FILTER_FIELDS, []);
-  if (filterValues.process && filterValues.tenant !== 'all') {
-    filterValues.process = getDefinitionIdentifier(
-      filterValues.process,
-      filterValues.tenant,
+  if (filterValues.processDefinitionId && filterValues.tenantId !== 'all') {
+    filterValues.processDefinitionId = getDefinitionIdentifier(
+      filterValues.processDefinitionId,
+      filterValues.tenantId,
     );
   }
-  if (filterValues.tenant === 'all') {
-    delete filterValues.process;
-    delete filterValues.version;
+  if (filterValues.tenantId === 'all') {
+    delete filterValues.processDefinitionId;
+    delete filterValues.processDefinitionVersion;
   }
 
   const setFilters = (filters: OperationsLogFilters) => {
@@ -82,7 +80,9 @@ const Filters: React.FC = observer(() => {
         onSubmit={(values: OperationsLogFilters) => {
           setFilters({
             ...values,
-            process: splitDefinitionIdentifier(values.process).definitionId,
+            processDefinitionId: splitDefinitionIdentifier(
+              values.processDefinitionId,
+            ).definitionId,
           });
         }}
         initialValues={filterValues}
@@ -100,8 +100,8 @@ const Filters: React.FC = observer(() => {
               <Container>
                 <AutoSubmit
                   fieldsToSkipTimeout={[
-                    'process',
-                    'version',
+                    'processDefinitionId',
+                    'processDefinitionVersion',
                     'operationType',
                     'entityType',
                     'result',
@@ -114,8 +114,8 @@ const Filters: React.FC = observer(() => {
                       <Stack gap={5}>
                         <TenantField
                           onChange={() => {
-                            form.change('process', undefined);
-                            form.change('version', undefined);
+                            form.change('processDefinitionId', undefined);
+                            form.change('processDefinitionVersion', undefined);
                           }}
                         />
                       </Stack>
@@ -146,12 +146,12 @@ const Filters: React.FC = observer(() => {
                       <FilterMultiselect
                         name="operationType"
                         titleText="Operation type"
-                        items={auditLogOperationTypeSchema.options}
+                        items={AUDIT_LOG_OPERATION_TYPE_FILTER_VALUES}
                       />
                       <FilterMultiselect
                         name="entityType"
                         titleText="Entity type"
-                        items={auditLogEntityTypeSchema.options}
+                        items={AUDIT_LOG_ENTITY_TYPE_FILTER_VALUES}
                       />
                       <Field name="result">
                         {({input}) => (

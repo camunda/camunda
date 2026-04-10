@@ -14,6 +14,7 @@ import io.camunda.application.commons.CommonsModuleConfiguration;
 import io.camunda.application.commons.security.CamundaSecurityConfiguration.CamundaSecurityProperties;
 import io.camunda.authentication.config.AuthenticationProperties;
 import io.camunda.configuration.Camunda;
+import io.camunda.configuration.EngineJob;
 import io.camunda.configuration.NodeIdProvider.Type;
 import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.configuration.UnifiedConfiguration;
@@ -443,6 +444,12 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
   public TestStandaloneBroker withSecurityConfig(
       final Consumer<CamundaSecurityProperties> modifier) {
     modifier.accept(securityConfig);
+    return this;
+  }
+
+  @Override
+  public TestStandaloneBroker withJobConfig(final Consumer<EngineJob> modifier) {
+    modifier.accept(unifiedConfig.getProcessing().getEngine().getJob());
     return this;
   }
 

@@ -60,7 +60,7 @@ jobs:
 
   integration-tests:
     name: "[IT] Run on Elasticsearch"
-    runs-on: gcp-core-32-default
+    runs-on: gcp-core-32-longrunning
     timeout-minutes: 120
     needs: detect-changes
     if: ${{ needs.detect-changes.outputs.backend-changes == 'true' }}
@@ -144,7 +144,7 @@ jobs:
 
   integration-tests-os:
     name: "[IT] Run on OpenSearch"
-    runs-on: gcp-core-32-default
+    runs-on: gcp-core-32-longrunning
     timeout-minutes: 120
     needs: detect-changes
     if: ${{ needs.detect-changes.outputs.backend-changes == 'true' }}

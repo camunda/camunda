@@ -10,18 +10,22 @@ package io.camunda.gateway.mcp.tool;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.gateway.mcp.config.McpObjectMapperUtilities;
 import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
 import io.modelcontextprotocol.spec.McpSchema.TextContent;
 import org.skyscreamer.jsonassert.JSONAssert;
+import org.springframework.ai.util.json.JsonParser;
+import tools.jackson.databind.json.JsonMapper;
 
 public final class CallToolResultAssertions {
 
-  private static final ObjectMapper NON_NULL_MAPPER =
-      McpObjectMapperUtilities.getObjectMapper()
-          .copy()
-          .setDefaultPropertyInclusion(JsonInclude.Include.NON_NULL);
+  private static final JsonMapper NON_NULL_MAPPER =
+      JsonParser.getJsonMapper()
+          .rebuild()
+          .changeDefaultPropertyInclusion(
+              incl ->
+                  incl.withContentInclusion(JsonInclude.Include.NON_NULL)
+                      .withValueInclusion(JsonInclude.Include.NON_NULL))
+          .build();
 
   private CallToolResultAssertions() {}
 

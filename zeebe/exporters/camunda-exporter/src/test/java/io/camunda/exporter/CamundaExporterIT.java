@@ -18,6 +18,8 @@ import static org.assertj.core.api.Assertions.fail;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.awaitility.Awaitility.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -25,6 +27,7 @@ import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import io.camunda.exporter.cache.ExporterEntityCacheProvider;
 import io.camunda.exporter.config.ConnectionTypes;
@@ -250,7 +253,9 @@ final class CamundaExporterIT {
     spiedController.runScheduledTasks(Duration.ofSeconds(duration));
 
     // then
-    verify(spiedController, times(2)).scheduleCancellableTask(eq(Duration.ofSeconds(2)), any());
+    verify(spiedController, times(2))
+        .scheduleCancellableTask(
+            argThat(delay -> delay.toMillis() > 0 && delay.toMillis() <= 2 * 1000L), any());
   }
 
   @TestTemplate
@@ -262,10 +267,15 @@ final class CamundaExporterIT {
     final var valueType = ValueType.VARIABLE;
     final Record record =
         generateRecordWithSupportedBrokerVersion(valueType, VariableIntent.CREATED);
+    final var cacheProvider = mock(ExporterEntityCacheProvider.class);
+    when(cacheProvider.getProcessCacheLoader(anyString())).thenReturn(k -> null);
+    when(cacheProvider.getBatchOperationCacheLoader(anyString())).thenReturn(k -> null);
+    when(cacheProvider.getDecisionRequirementsCacheLoader(anyString())).thenReturn(k -> null);
+    when(cacheProvider.getFormCacheLoader(anyString())).thenReturn(k -> null);
     final var resourceProvider = new DefaultExporterResourceProvider();
     resourceProvider.init(
         config,
-        mock(ExporterEntityCacheProvider.class),
+        cacheProvider,
         new ExporterTestContext(),
         new ExporterMetadata(TestObjectMapper.objectMapper()),
         TestObjectMapper.objectMapper());

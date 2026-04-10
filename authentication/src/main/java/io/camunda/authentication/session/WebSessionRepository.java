@@ -9,6 +9,10 @@ package io.camunda.authentication.session;
 
 import io.camunda.search.clients.PersistentWebSessionClient;
 import io.camunda.search.entities.PersistentWebSessionEntity;
+import io.camunda.search.exception.CamundaSearchException;
+import io.github.resilience4j.core.IntervalFunction;
+import io.github.resilience4j.retry.Retry;
+import io.github.resilience4j.retry.RetryConfig;
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.Optional;
 import java.util.UUID;
@@ -20,6 +24,17 @@ public class WebSessionRepository implements SessionRepository<WebSession> {
 
   public static final Logger LOGGER = LoggerFactory.getLogger(WebSessionRepository.class);
   private static final String POLLING_HEADER = "x-is-polling";
+  private static final int MAX_RETRY_ATTEMPTS = 3;
+  private static final long INITIAL_RETRY_DELAY_MS = 100;
+
+  private static final Retry UPSERT_RETRY =
+      Retry.of(
+          "web-session-upsert",
+          RetryConfig.custom()
+              .maxAttempts(MAX_RETRY_ATTEMPTS)
+              .intervalFunction(IntervalFunction.ofExponentialBackoff(INITIAL_RETRY_DELAY_MS, 2))
+              .retryOnException(WebSessionRepository::isTransientFailure)
+              .build());
 
   private final PersistentWebSessionClient persistentWebSessionClient;
   private final WebSessionMapper webSessionMapper;
@@ -32,6 +47,16 @@ public class WebSessionRepository implements SessionRepository<WebSession> {
     this.persistentWebSessionClient = persistentWebSessionClient;
     this.webSessionMapper = webSessionMapper;
     this.request = request;
+  }
+
+  private static boolean isTransientFailure(final Throwable throwable) {
+    if (throwable instanceof final CamundaSearchException cse) {
+      return switch (cse.getReason()) {
+        case CONNECTION_FAILED, SEARCH_CLIENT_FAILED, SEARCH_SERVER_FAILED, UNKNOWN -> true;
+        default -> false;
+      };
+    }
+    return throwable instanceof RuntimeException;
   }
 
   @Override
@@ -99,9 +124,29 @@ public class WebSessionRepository implements SessionRepository<WebSession> {
   private void saveWebSessionIfChanged(final WebSession webSession) {
     if (webSession.isChanged()) {
       LOGGER.debug("Web Session {} changed, save in storage.", webSession);
-      Optional.of(webSession)
-          .map(webSessionMapper::toPersistentWebSession)
-          .ifPresent(persistentWebSessionClient::upsertPersistentWebSession);
+      final var entity = webSessionMapper.toPersistentWebSession(webSession);
+      upsertWithRetry(entity);
+    }
+  }
+
+  private void upsertWithRetry(final PersistentWebSessionEntity entity) {
+    try {
+      Retry.decorateRunnable(
+              UPSERT_RETRY, () -> persistentWebSessionClient.upsertPersistentWebSession(entity))
+          .run();
+    } catch (final CamundaSearchException e) {
+      LOGGER.warn(
+          "Failed to save web session to persistent storage after {} attempts: {} (reason: {})",
+          MAX_RETRY_ATTEMPTS,
+          e.getMessage(),
+          e.getReason(),
+          e);
+    } catch (final RuntimeException e) {
+      LOGGER.warn(
+          "Failed to save web session to persistent storage after {} attempts: {}",
+          MAX_RETRY_ATTEMPTS,
+          e.getMessage(),
+          e);
     }
   }
 

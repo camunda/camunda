@@ -21,48 +21,57 @@ import java.util.Optional;
 public enum BpmnElementType {
 
   // Default
-  UNSPECIFIED(null),
+  UNSPECIFIED(null, false),
 
   // Containers
-  PROCESS("process"),
-  SUB_PROCESS("subProcess"),
-  EVENT_SUB_PROCESS(null),
-  AD_HOC_SUB_PROCESS("adHocSubProcess"),
-  AD_HOC_SUB_PROCESS_INNER_INSTANCE(null),
+  PROCESS("process", true),
+  SUB_PROCESS("subProcess", true),
+  EVENT_SUB_PROCESS(null, true),
+  AD_HOC_SUB_PROCESS("adHocSubProcess", true),
+  AD_HOC_SUB_PROCESS_INNER_INSTANCE(null, true),
 
   // Events
-  START_EVENT("startEvent"),
-  INTERMEDIATE_CATCH_EVENT("intermediateCatchEvent"),
-  INTERMEDIATE_THROW_EVENT("intermediateThrowEvent"),
-  BOUNDARY_EVENT("boundaryEvent"),
-  END_EVENT("endEvent"),
+  START_EVENT("startEvent", false),
+  INTERMEDIATE_CATCH_EVENT("intermediateCatchEvent", false),
+  INTERMEDIATE_THROW_EVENT("intermediateThrowEvent", false),
+  BOUNDARY_EVENT("boundaryEvent", false),
+  END_EVENT("endEvent", false),
 
   // Tasks
-  SERVICE_TASK("serviceTask"),
-  RECEIVE_TASK("receiveTask"),
-  USER_TASK("userTask"),
-  MANUAL_TASK("manualTask"),
-  TASK("task"),
+  SERVICE_TASK("serviceTask", false),
+  RECEIVE_TASK("receiveTask", false),
+  USER_TASK("userTask", false),
+  MANUAL_TASK("manualTask", false),
+  TASK("task", false),
 
   // Gateways
-  EXCLUSIVE_GATEWAY("exclusiveGateway"),
-  PARALLEL_GATEWAY("parallelGateway"),
-  EVENT_BASED_GATEWAY("eventBasedGateway"),
-  INCLUSIVE_GATEWAY("inclusiveGateway"),
+  EXCLUSIVE_GATEWAY("exclusiveGateway", false),
+  PARALLEL_GATEWAY("parallelGateway", false),
+  EVENT_BASED_GATEWAY("eventBasedGateway", false),
+  INCLUSIVE_GATEWAY("inclusiveGateway", false),
 
   // Other
-  SEQUENCE_FLOW("sequenceFlow"),
-  MULTI_INSTANCE_BODY(null),
-  CALL_ACTIVITY("callActivity"),
+  SEQUENCE_FLOW("sequenceFlow", false),
+  MULTI_INSTANCE_BODY(null, true),
+  // Note that a call activity is not considered to be a container element. Whilst it creates a
+  // child process instance, it does not contain direct child elements itself.
+  CALL_ACTIVITY("callActivity", false),
 
-  BUSINESS_RULE_TASK("businessRuleTask"),
-  SCRIPT_TASK("scriptTask"),
-  SEND_TASK("sendTask");
+  BUSINESS_RULE_TASK("businessRuleTask", false),
+  SCRIPT_TASK("scriptTask", false),
+  SEND_TASK("sendTask", false);
 
   private final String elementTypeName;
 
-  BpmnElementType(final String elementTypeName) {
+  /**
+   * A container element is defined as an element that contains child elements within, such as a
+   * sub-process.
+   */
+  private final boolean isContainerElement;
+
+  BpmnElementType(final String elementTypeName, final boolean isContainerElement) {
     this.elementTypeName = elementTypeName;
+    this.isContainerElement = isContainerElement;
   }
 
   public Optional<String> getElementTypeName() {
@@ -78,5 +87,9 @@ public enum BpmnElementType {
         .findFirst()
         .orElseThrow(
             () -> new RuntimeException("Unsupported BPMN element of type " + elementTypeName));
+  }
+
+  public boolean isContainerElement() {
+    return isContainerElement;
   }
 }

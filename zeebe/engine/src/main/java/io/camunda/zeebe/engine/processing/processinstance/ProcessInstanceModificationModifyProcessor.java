@@ -458,16 +458,19 @@ public final class ProcessInstanceModificationModifyProcessor
     // collect terminate-by-id instructions, add key instructions to final list
     final var terminateInstructionIds = new HashSet<String>();
     final var terminateInstanceKeys = new HashSet<Long>();
-    handleTerminateByKeyInstructions(
-        terminateInstructionsInput,
-        finalTerminateInstructions,
-        terminateInstanceKeys,
-        terminateInstructionIds);
+    terminateInstructionsInput.forEach(
+        instruction -> {
+          if (instruction.getElementInstanceKey() > 0) {
+            finalTerminateInstructions.add(instruction);
+            terminateInstanceKeys.add(instruction.getElementInstanceKey());
+          } else {
+            terminateInstructionIds.add(instruction.getElementId());
+          }
+        });
 
     // iterate over all active element instances, including child instances
     // use a queue to iterate over the descendants, recursion might lead to StackOverflow
     if (!moveInstructions.isEmpty() || !terminateInstructionIds.isEmpty()) {
-      final var activatedScopes = new HashSet<String>();
       final var elementInstances =
           new ArrayDeque<>(elementInstanceState.getChildren(processInstanceKey));
       while (!elementInstances.isEmpty()) {
@@ -479,12 +482,17 @@ public final class ProcessInstanceModificationModifyProcessor
           final var moveInstruction = moveInstructions.get(elementId);
           final var ancestorScopeKey =
               determineAncestorScopeKey(moveInstruction, elementInstance.getParentKey(), process);
-          final var shouldActivate =
-              shouldActivateElement(
-                  elementInstance, activatedScopes, ancestorScopeKey, moveInstruction);
-          if (shouldActivate) {
-            addActivateInstruction(finalActivateInstructions, moveInstruction, ancestorScopeKey);
-          }
+          final var activateInstruction =
+              new ProcessInstanceModificationActivateInstruction()
+                  .setElementId(moveInstruction.getTargetElementId())
+                  .setAncestorScopeKey(ancestorScopeKey);
+          moveInstruction
+              .getVariableInstructions()
+              .forEach(
+                  vi ->
+                      activateInstruction.addVariableInstruction(
+                          (ProcessInstanceModificationVariableInstruction) vi));
+          finalActivateInstructions.add(activateInstruction);
           // terminate source element instance
           finalTerminateInstructions.add(
               new ProcessInstanceModificationTerminateInstruction()
@@ -510,61 +518,6 @@ public final class ProcessInstanceModificationModifyProcessor
     }
   }
 
-  private static void addActivateInstruction(
-      final List<ProcessInstanceModificationActivateInstructionValue> finalActivateInstructions,
-      final ProcessInstanceModificationMoveInstructionValue moveInstruction,
-      final long ancestorScopeKey) {
-    final var activateInstruction =
-        new ProcessInstanceModificationActivateInstruction()
-            .setElementId(moveInstruction.getTargetElementId())
-            .setAncestorScopeKey(ancestorScopeKey);
-    moveInstruction
-        .getVariableInstructions()
-        .forEach(
-            vi ->
-                activateInstruction.addVariableInstruction(
-                    (ProcessInstanceModificationVariableInstruction) vi));
-    finalActivateInstructions.add(activateInstruction);
-  }
-
-  /**
-   * Check whether this element instance is inside a multi-instance body. If so, activate only when
-   * the resolved target ancestor scope and the move instruction's source haven't been used yet.
-   *
-   * <p>This avoids creating one activate per child when moving out of an MI sub-process while still
-   * allowing one activate per source scope when moving inside it.
-   */
-  private boolean shouldActivateElement(
-      final ElementInstance elementInstance,
-      final HashSet<String> activatedMiBodyAncestorAndScopeKeys,
-      final long ancestorScopeKey,
-      final ProcessInstanceModificationMoveInstructionValue moveInstruction) {
-    final var miBodyAncestorKey = findMiBodyAncestorKey(elementInstance.getParentKey());
-    return miBodyAncestorKey < 0
-        || activatedMiBodyAncestorAndScopeKeys.add(
-            miBodyAncestorKey
-                + ":"
-                + ancestorScopeKey
-                + ":"
-                + moveInstruction.getSourceElementId());
-  }
-
-  private static void handleTerminateByKeyInstructions(
-      final List<ProcessInstanceModificationTerminateInstructionValue> terminateInstructionsInput,
-      final List<ProcessInstanceModificationTerminateInstructionValue> finalTerminateInstructions,
-      final HashSet<Long> terminateInstanceKeys,
-      final HashSet<String> terminateInstructionIds) {
-    terminateInstructionsInput.forEach(
-        instruction -> {
-          if (instruction.getElementInstanceKey() > 0) {
-            finalTerminateInstructions.add(instruction);
-            terminateInstanceKeys.add(instruction.getElementInstanceKey());
-          } else {
-            terminateInstructionIds.add(instruction.getElementId());
-          }
-        });
-  }
-
   private void mapMoveInstructionsByInstanceKey(
       final List<ProcessInstanceModificationMoveInstructionValue> moveInstructions,
       final List<ProcessInstanceModificationActivateInstructionValue> finalActivateInstructions,
@@ -577,7 +530,17 @@ public final class ProcessInstanceModificationModifyProcessor
       final var ancestorScopeKey =
           determineAncestorScopeKey(moveInstruction, elementInstance.getParentKey(), process);
 
-      addActivateInstruction(finalActivateInstructions, moveInstruction, ancestorScopeKey);
+      final var activateInstruction =
+          new ProcessInstanceModificationActivateInstruction()
+              .setElementId(moveInstruction.getTargetElementId())
+              .setAncestorScopeKey(ancestorScopeKey);
+      moveInstruction
+          .getVariableInstructions()
+          .forEach(
+              vi ->
+                  activateInstruction.addVariableInstruction(
+                      (ProcessInstanceModificationVariableInstruction) vi));
+      finalActivateInstructions.add(activateInstruction);
       // terminate source element instance
       finalTerminateInstructions.add(
           new ProcessInstanceModificationTerminateInstruction()
@@ -684,29 +647,6 @@ public final class ProcessInstanceModificationModifyProcessor
     // No matching ancestor found - return -1 to let the activation logic handle it
     // (it will create new flow scope instances as needed)
     return ElementActivationBehavior.NO_ANCESTOR_SCOPE_KEY;
-  }
-
-  /**
-   * Walks up the ancestor chain from the given key and returns the key of the first ancestor whose
-   * element type is {@link BpmnElementType#MULTI_INSTANCE_BODY}, or {@code -1} if none is found.
-   *
-   * <p>This is used to deduplicate activate instructions when a source element lives inside a
-   * multi-instance sub-process: all sibling instances share the same MI body ancestor, so only one
-   * activate instruction should be produced for the whole group.
-   */
-  private long findMiBodyAncestorKey(final long startKey) {
-    var currentKey = startKey;
-    while (currentKey > 0) {
-      final var instance = elementInstanceState.getInstance(currentKey);
-      if (instance == null) {
-        break;
-      }
-      if (instance.getValue().getBpmnElementType() == BpmnElementType.MULTI_INSTANCE_BODY) {
-        return currentKey;
-      }
-      currentKey = instance.getParentKey();
-    }
-    return -1;
   }
 
   private Either<Rejection, ?> validateCommand(
@@ -1464,11 +1404,7 @@ public final class ProcessInstanceModificationModifyProcessor
       final long elementInstanceKey,
       final ElementInstance currentElement) {
     final var childInstances = new ArrayList<ElementInstance>();
-    // terminate all child instances if the element is an event subprocess
-    if (elementType == BpmnElementType.EVENT_SUB_PROCESS
-        || elementType == BpmnElementType.SUB_PROCESS
-        || elementType == BpmnElementType.PROCESS
-        || elementType == BpmnElementType.MULTI_INSTANCE_BODY) {
+    if (elementType.isContainerElement()) {
       elementInstanceState.getChildren(elementInstanceKey).stream()
           .filter(ElementInstance::canTerminate)
           .forEach(childInstances::add);

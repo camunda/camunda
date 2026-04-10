@@ -111,9 +111,9 @@ final class StandaloneBackupManagerIT {
   private long generateData() {
     // creating a process instance with user task
     final long processInstanceKey;
-    try (final var zeebeClient = camunda.newClientBuilder().build()) {
+    try (final var camundaClient = camunda.newClientBuilder().build()) {
       // Deploy process with user task
-      zeebeClient
+      camundaClient
           .newDeployResourceCommand()
           .addProcessModel(
               Bpmn.createExecutableProcess("process-with-user-task")
@@ -127,7 +127,7 @@ final class StandaloneBackupManagerIT {
           .send()
           .join();
       processInstanceKey =
-          zeebeClient
+          camundaClient
               .newCreateInstanceCommand()
               .bpmnProcessId("process-with-user-task")
               .latestVersion()

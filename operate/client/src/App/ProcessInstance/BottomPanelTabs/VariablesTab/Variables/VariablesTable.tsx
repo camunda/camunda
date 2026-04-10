@@ -8,9 +8,9 @@
 
 import {useRef} from 'react';
 import {useForm, useFormState} from 'react-final-form';
-import {Button, Loading} from '@carbon/react';
+import {Button} from '@carbon/react';
 import {Edit} from '@carbon/react/icons';
-import {StructuredList, VariableName, VariableValue} from './styled';
+import {StructuredList, VariableName} from './styled';
 import {StructuredRows} from 'modules/components/StructuredList';
 import {OnLastVariableModificationRemoved} from './OnLastVariableModificationRemoved';
 import {FieldArray} from 'react-final-form-arrays';
@@ -24,6 +24,7 @@ import {Operation} from './NewVariableModification/Operation';
 import {ViewFullVariableButton} from './ViewFullVariableButton';
 import {useIsProcessInstanceRunning} from 'modules/queries/processInstance/useIsProcessInstanceRunning';
 import {useVariables} from 'modules/queries/variables/useVariables';
+import {InlineJsonEditor} from 'modules/components/InlineJsonEditor';
 
 type Props = {
   scopeId: string | null;
@@ -76,30 +77,39 @@ const VariablesTable: React.FC<Props> = ({
                 isPreview={Boolean(isTruncated)}
               />
             ) : (
-              <VariableValue $hasBackdrop={true}>
-                {isFetchingNextPage && (
-                  <Loading small data-testid="full-variable-loader" />
-                )}
-                {value}
-              </VariableValue>
+              <InlineJsonEditor
+                value={value}
+                isTruncatedValue={Boolean(isTruncated)}
+                readOnly
+                renderButton={
+                  isTruncated
+                    ? () => (
+                        <ViewFullVariableButton
+                          mode="show"
+                          variableKey={variableKey}
+                          variableName={name}
+                          variableValue={value}
+                          buttonLabel="Show all"
+                        />
+                      )
+                    : undefined
+                }
+              />
             ),
-            width: '55%',
+            width: 'auto',
           },
           {
             cellContent: (
               <Operations>
+                <ViewFullVariableButton
+                  variableName={name}
+                  variableKey={variableKey}
+                  variableValue={value}
+                  mode={isEditMode(name) ? 'edit' : 'show'}
+                />
                 {(() => {
-                  if (isModificationModeEnabled) {
+                  if (isModificationModeEnabled || !isProcessInstanceRunning) {
                     return null;
-                  }
-
-                  if (!isProcessInstanceRunning) {
-                    return (
-                      <ViewFullVariableButton
-                        variableName={name}
-                        variableKey={variableKey}
-                      />
-                    );
                   }
 
                   if (initialValues?.name === name) {
@@ -110,8 +120,8 @@ const VariablesTable: React.FC<Props> = ({
                     <Button
                       kind="ghost"
                       size="sm"
-                      tooltipPosition="left"
-                      iconDescription={`Edit variable ${name}`}
+                      tooltipPosition="top"
+                      iconDescription="Edit"
                       aria-label={`Edit variable ${name}`}
                       disabled={
                         isFetchingNextPage || form.getState().submitting
@@ -127,7 +137,7 @@ const VariablesTable: React.FC<Props> = ({
                 })()}
               </Operations>
             ),
-            width: '10%',
+            width: '120px',
           },
         ],
       })),
@@ -138,8 +148,8 @@ const VariablesTable: React.FC<Props> = ({
       dataTestId="variables-list"
       headerColumns={[
         {cellContent: 'Name', width: '35%'},
-        {cellContent: 'Value', width: '55%'},
-        {cellContent: '', width: '10%'},
+        {cellContent: 'Value', width: 'auto'},
+        {cellContent: '', width: '120px'},
       ]}
       headerSize="sm"
       verticalCellPadding="var(--cds-spacing-02)"
@@ -174,18 +184,26 @@ const VariablesTable: React.FC<Props> = ({
                             scopeId={scopeId}
                           />
                         ),
-                        width: '55%',
+                        width: 'auto',
                       },
                       {
                         cellContent: (
-                          <Operation
-                            variableName={variableName}
-                            onRemove={() => {
-                              fields.remove(index);
-                            }}
-                          />
+                          <Operations>
+                            <ViewFullVariableButton
+                              shouldSubmitOnApply={false}
+                              mode="add"
+                              scopeId={scopeId}
+                              variableName={variableName}
+                            />
+                            <Operation
+                              variableName={variableName}
+                              onRemove={() => {
+                                fields.remove(index);
+                              }}
+                            />
+                          </Operations>
                         ),
-                        width: '10%',
+                        width: '120px',
                       },
                     ],
                   }))}

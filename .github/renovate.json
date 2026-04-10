@@ -6,7 +6,7 @@
   ],
   "commitMessagePrefix": "deps:",
   "baseBranchPatterns": [
-    "/^stable\\/8\\.([6-9]|[1-9][0-9])/",
+    "/^stable\\/8\\.([7-9]|[1-9][0-9])/",
     "main"
   ],
   "dependencyDashboard": true,
@@ -265,16 +265,11 @@
       "allowedVersions": "!/-SNAPSHOT$/"
     },
     {
-      "description": "Exclude internal Maven modules and Maven dependencies lacking metadata.",
+      "description": "Exclude Maven dependencies lacking metadata.",
       "matchManagers": [
         "maven"
       ],
       "matchPackageNames": [
-        "/io.camunda:operate-parent/",
-        "/io.camunda:operate-qa/",
-        "/io.camunda:operate-qa-migration-tests-parent/",
-        "/io.camunda:tasklist-qa/",
-        "/io.camunda:tasklist-qa-migration-tests-parent/",
         "/net.jcip:jcip-annotations/"
       ],
       "enabled": false
@@ -338,7 +333,6 @@
       "matchPackageNames": [
         "/io.camunda.optimize:camunda-optimize/",
         "/io.camunda.optimize:util/",
-        "/io.camunda:zeebe-client-java/",
         "/io.camunda:zeebe-protocol/",
         "/ant-contrib:ant-contrib/"
       ],
@@ -351,6 +345,19 @@
       ],
       "matchDepTypes": [
         "parent-root"
+      ],
+      "enabled": false
+    },
+    {
+      "description": "Disable internal io.camunda Maven updates on stable branches; versions are controlled by the release process.",
+      "matchManagers": [
+        "maven"
+      ],
+      "matchBaseBranches": [
+        "/^stable\\/8\\..*/"
+      ],
+      "matchPackageNames": [
+        "/^io\\.camunda:.+/"
       ],
       "enabled": false
     },
@@ -538,6 +545,26 @@
       "prBodyNotes": [
         "**Manual verification required before merging:** Check that [apache/maven-surefire#3203](https://github.com/apache/maven-surefire/issues/3203) (inner class test report bug in 3.5.4) is fixed in this version. Do **not** merge until confirmed."
       ]
+    },
+    {
+      "description": "maven-failsafe-plugin must be updated together with maven-surefire-plugin as they share a common codebase. See the surefire rule above for known issues blocking updates.",
+      "matchManagers": [
+        "maven"
+      ],
+      "matchPackageNames": [
+        "org.apache.maven.plugins:maven-failsafe-plugin"
+      ],
+      "automerge": false,
+      "prBodyNotes": [
+        "**Manual verification required before merging:** maven-failsafe-plugin must be updated together with maven-surefire-plugin. Check that [apache/maven-surefire#3203](https://github.com/apache/maven-surefire/issues/3203) (inner class test report bug in 3.5.4) and the ArchUnit issue in 3.5.3 are fixed before updating both plugins."
+      ]
+    },
+    {
+      "description": "Prevent supply-chain-attacks by not creating branches or PRs before the minimum release age.",
+      "matchPackageNames": ["*"],
+      "minimumReleaseAge": "3 days",
+      "prCreation": "not-pending",
+      "internalChecksFilter": "strict"
     }
   ],
   "dockerfile": {

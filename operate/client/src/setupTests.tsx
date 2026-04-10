@@ -41,6 +41,67 @@ vi.mock('dmn-js-literal-expression/lib/Viewer', () => ({
   default: MockDmnJsLiteralExpressionViewer,
 }));
 
+vi.mock('modules/components/InlineJsonEditor', async () => {
+  const {useFieldError} = await import('modules/hooks/useFieldError');
+
+  const FieldErrorMessage: React.FC<{name: string}> = ({name}) => {
+    const fieldError = useFieldError(name);
+    if (!fieldError) {
+      return null;
+    }
+    return <div className="cds--form-requirement">{fieldError}</div>;
+  };
+
+  const InlineJsonEditorBase = ({
+    value,
+    onChange,
+    'data-testid': dataTestId,
+    readOnly,
+    onBlur,
+    onFocus,
+    id,
+    name,
+  }: {
+    value: string;
+    onChange?: (value: string) => void;
+    'data-testid'?: string;
+    readOnly?: boolean;
+    onBlur?: () => void;
+    onFocus?: () => void;
+    id?: string;
+    name?: string;
+  }) => {
+    if (readOnly) {
+      return (
+        <span data-testid={dataTestId} id={id}>
+          {value ?? ''}
+        </span>
+      );
+    }
+    return (
+      <>
+        {id && (
+          <label htmlFor={id} className="cds--visually-hidden">
+            Value
+          </label>
+        )}
+        <input
+          type="text"
+          data-testid={dataTestId}
+          id={id}
+          value={value ?? ''}
+          onChange={(event) => onChange?.(event.target.value)}
+          onBlur={onBlur}
+          onFocus={onFocus}
+        />
+        {name && <FieldErrorMessage name={name} />}
+      </>
+    );
+  };
+
+  return {InlineJsonEditor: InlineJsonEditorBase};
+});
+
 vi.mock('modules/components/JSONEditor', () => {
   return {
     useMonaco: () => {},

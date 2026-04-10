@@ -9,7 +9,7 @@
 import {fetchDecisionInstance} from 'modules/api/v2/decisionInstances/fetchDecisionInstance';
 import {queryKeys} from '../queryKeys';
 import {useQuery} from '@tanstack/react-query';
-import type {GetDecisionInstanceResponseBody} from '@camunda/camunda-api-zod-schemas/8.9';
+import type {GetDecisionInstanceResponseBody} from '@camunda/camunda-api-zod-schemas/8.10';
 import type {RequestError} from 'modules/request';
 
 type UnauthorizedError = {

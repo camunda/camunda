@@ -6,7 +6,10 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import type {CurrentUser, UserTask} from '@camunda/camunda-api-zod-schemas/8.9';
+import type {
+  CurrentUser,
+  UserTask,
+} from '@camunda/camunda-api-zod-schemas/8.10';
 import taskDetailsLayoutCommon from 'common/tasks/details/taskDetailsLayoutCommon.module.scss';
 import {Section} from '@carbon/react';
 import {TurnOnNotificationPermission} from 'common/tasks/details/TurnOnNotificationPermission';
@@ -26,6 +29,7 @@ import {tracking} from 'common/tracking';
 import {decodeTaskOpenedRef} from 'common/tracking/reftags';
 import {AssignButton} from './AssignButton';
 import {removeSortParam} from 'common/tasks/removeSortParam';
+import {removeRefParam} from 'common/tasks/removeRefParam';
 
 type OutletContext = {
   task: UserTask;
@@ -73,10 +77,14 @@ const TaskDetailsLayout: React.FC = () => {
         subtitle: `${task?.processName ?? task?.processDefinitionId} (${task?.processInstanceKey})`,
         isDismissable: true,
       });
-      navigate(pages.initial);
+      navigate({
+        pathname: pages.initial,
+        search: removeRefParam(searchParams),
+      });
     }
   }, [
     navigate,
+    searchParams,
     task?.processInstanceKey,
     task?.processName,
     task?.state,
@@ -85,11 +93,9 @@ const TaskDetailsLayout: React.FC = () => {
   ]);
 
   useEffect(() => {
-    const search = new URLSearchParams(searchParams);
-    const ref = search.get('ref');
-    if (search.has('ref')) {
-      search.delete('ref');
-      setSearchParams(search, {replace: true});
+    const ref = searchParams.get('ref');
+    if (searchParams.has('ref')) {
+      setSearchParams(removeRefParam(searchParams), {replace: true});
     }
 
     const taskOpenedRef = decodeTaskOpenedRef(ref);
@@ -128,6 +134,7 @@ const TaskDetailsLayout: React.FC = () => {
       selected: useMatch(pages.taskDetailsHistory()) !== null,
       to: {
         pathname: pages.taskDetailsHistory(id),
+        search: removeSortParam(searchParams.toString()),
       },
     },
   ];

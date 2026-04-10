@@ -4,9 +4,30 @@ set -exo pipefail
 # Contains OS specific sed function
 . utils.sh
 
-if [ -z $1 ]
-then
-  echo "Please provide an namespace name!"
+usage() {
+  cat <<'EOF'
+Usage: newCloudLoadTest.sh <namespace>
+
+Arguments:
+  namespace          Base namespace name. Will be prefixed with "c8-" if missing.
+
+Options:
+  -h, --help         Show this help message.
+
+Examples:
+  ./newCloudLoadTest.sh demo
+  ./newCloudLoadTest.sh c8-demo
+EOF
+}
+
+if [ "$1" = "-h" ] || [ "$1" = "--help" ]; then
+  usage
+  exit 0
+fi
+
+if [ -z "$1" ]; then
+  echo "Error: Missing namespace name."
+  usage
   exit 1
 fi
 
@@ -17,7 +38,17 @@ fi
 
 namespace=$1
 
+# Add c8- prefix if not present
+if [[ ! "$namespace" =~ ^c8- ]]; then
+  namespace="c8-$namespace"
+  echo "Namespace prefix added: $namespace"
+fi
+
 kubectl create namespace $namespace
+
+# Label namespace with registry (required to inject image pull secrets)
+kubectl label namespace "$namespace" registry=harbor --overwrite
+
 cp -rv cloud-default/ $namespace
 cd $namespace
 

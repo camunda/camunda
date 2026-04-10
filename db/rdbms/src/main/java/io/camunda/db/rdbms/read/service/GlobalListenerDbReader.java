@@ -58,16 +58,13 @@ public class GlobalListenerDbReader extends AbstractEntityReader<GlobalListenerE
         GlobalListenerDbQuery.of(b -> b.filter(query.filter()).sort(dbSort).page(dbPage));
 
     LOG.trace("[RDBMS DB] Search for global listeners with filter {}", dbQuery);
-    final var totalHits = globalListenerMapper.count(dbQuery);
-
-    if (shouldReturnEmptyPage(dbPage, totalHits)) {
-      return buildSearchQueryResult(totalHits, List.of(), dbSort);
-    }
-
-    final var hits =
-        globalListenerMapper.search(dbQuery).stream()
-            .map(GlobalListenerEntityMapper::toEntity)
-            .toList();
-    return buildSearchQueryResult(totalHits, hits, dbSort);
+    return executePagedQuery(
+        () -> globalListenerMapper.count(dbQuery),
+        () ->
+            globalListenerMapper.search(dbQuery).stream()
+                .map(GlobalListenerEntityMapper::toEntity)
+                .toList(),
+        dbPage,
+        dbSort);
   }
 }

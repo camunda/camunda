@@ -191,6 +191,18 @@ public class TaskControllerIT extends TasklistZeebeIntegrationTest {
         .taskIsCreated(flowNodeBpmnId);
   }
 
+  private List<TaskSearchResponse> executeSearchRequest(final TaskSearchRequest searchRequest)
+      throws Exception {
+    final var result =
+        mockMvcHelper.doRequest(post(TasklistURIs.TASKS_URL_V1.concat("/search")), searchRequest);
+
+    assertThat(result).hasOkHttpStatus().hasApplicationJsonContentType();
+
+    return objectMapper
+        .readerForListOf(TaskSearchResponse.class)
+        .readValue(result.getContentAsString());
+  }
+
   @Nested
   class SearchTaskTests {
     @Test
@@ -221,6 +233,49 @@ public class TaskControllerIT extends TasklistZeebeIntegrationTest {
                 assertThat(task.getTaskState()).isEqualTo(TaskState.CREATED);
                 assertThat(task.getAssignee()).isNull();
               });
+    }
+
+    @Test
+    public void searchTasksWithPagination() throws Exception {
+      // given
+      createTask("Process_1_" + UUID.randomUUID(), "Task_1_" + UUID.randomUUID(), 1);
+      createTask("Process_2_" + UUID.randomUUID(), "Task_2_" + UUID.randomUUID(), 1);
+      createTask("Process_3_" + UUID.randomUUID(), "Task_3_" + UUID.randomUUID(), 1);
+
+      // when
+      final var initialPageResult =
+          executeSearchRequest(new TaskSearchRequest().setState(TaskState.CREATED).setPageSize(2));
+
+      final var nextPagePagination =
+          initialPageResult.get(initialPageResult.size() - 1).getSortValues();
+      final var nextPageResult =
+          executeSearchRequest(
+              new TaskSearchRequest()
+                  .setState(TaskState.CREATED)
+                  .setPageSize(2)
+                  .setSearchAfter(nextPagePagination));
+
+      final var previousPagePagination = nextPageResult.get(0).getSortValues();
+      final var previousPageResult =
+          executeSearchRequest(
+              new TaskSearchRequest()
+                  .setState(TaskState.CREATED)
+                  .setPageSize(2)
+                  .setSearchBefore(previousPagePagination));
+
+      // then
+      assertThat(initialPageResult).hasSize(2);
+      assertThat(nextPageResult).hasSize(1);
+      assertThat(previousPageResult).hasSize(2);
+
+      final var initialPageTaskIds =
+          initialPageResult.stream().map(TaskSearchResponse::getId).toList();
+      final var nextPageTaskIds = nextPageResult.stream().map(TaskSearchResponse::getId).toList();
+      final var previousPageTaskIds =
+          previousPageResult.stream().map(TaskSearchResponse::getId).toList();
+      assertThat(nextPageTaskIds).doesNotContainAnyElementsOf(initialPageTaskIds);
+      assertThat(previousPageTaskIds).doesNotContainAnyElementsOf(nextPageTaskIds);
+      assertThat(previousPageTaskIds).containsExactlyElementsOf(initialPageTaskIds);
     }
 
     @Test

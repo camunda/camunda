@@ -78,277 +78,9 @@
         "x": 0,
         "y": 0
       },
-      "id": 282,
-      "panels": [],
-      "title": "Typical Load Tests",
-      "type": "row"
-    },
-    {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
-      },
-      "description": "Flow node instances completed or terminated per second over all partitions.",
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "fixedColor": "red",
-            "mode": "thresholds"
-          },
-          "mappings": [
-            {
-              "options": {
-                "match": "null",
-                "result": {
-                  "color": "red",
-                  "text": "0"
-                }
-              },
-              "type": "special"
-            }
-          ],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "red"
-              },
-              {
-                "color": "green",
-                "value": 290
-              }
-            ]
-          },
-          "unit": "none"
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 4,
-        "w": 8,
-        "x": 0,
-        "y": 1
-      },
-      "id": 298,
-      "options": {
-        "colorMode": "value",
-        "graphMode": "area",
-        "justifyMode": "auto",
-        "orientation": "auto",
-        "percentChangeColorMode": "standard",
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": "",
-          "values": false
-        },
-        "showPercentChange": false,
-        "text": {
-          "titleSize": 10
-        },
-        "textMode": "auto",
-        "wideLayout": true
-      },
-      "pluginVersion": "12.0.2",
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
-          },
-          "editorMode": "code",
-          "expr": "sum(rate(zeebe_element_instance_events_total{namespace=~\"(c8-)?medic.*typical\",type!=\"PROCESS\", action!=\"activated\"}[$__rate_interval])) by (namespace)",
-          "instant": true,
-          "interval": "",
-          "legendFormat": "{{namespace}}",
-          "refId": "B"
-        }
-      ],
-      "title": "Overall FNI  per s",
-      "type": "stat"
-    },
-    {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
-      },
-      "description": "Process instances completed or terminated per second over all partitions.",
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "fixedColor": "red",
-            "mode": "thresholds"
-          },
-          "mappings": [
-            {
-              "options": {
-                "match": "null",
-                "result": {
-                  "color": "red",
-                  "text": "0"
-                }
-              },
-              "type": "special"
-            }
-          ],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "red"
-              },
-              {
-                "color": "#EAB839",
-                "value": 30
-              },
-              {
-                "color": "green",
-                "value": 50
-              }
-            ]
-          },
-          "unit": "none"
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 4,
-        "w": 8,
-        "x": 8,
-        "y": 1
-      },
-      "id": 277,
-      "options": {
-        "colorMode": "value",
-        "graphMode": "area",
-        "justifyMode": "auto",
-        "orientation": "auto",
-        "percentChangeColorMode": "standard",
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": "",
-          "values": false
-        },
-        "showPercentChange": false,
-        "text": {
-          "titleSize": 10
-        },
-        "textMode": "auto",
-        "wideLayout": true
-      },
-      "pluginVersion": "12.0.2",
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
-          },
-          "editorMode": "code",
-          "expr": "sum(rate(zeebe_element_instance_events_total{namespace=~\"(c8-)?medic.*typical\", action=\"completed\", type=\"PROCESS\"}[$__rate_interval])) by (namespace)",
-          "instant": true,
-          "interval": "",
-          "legendFormat": "{{namespace}}",
-          "refId": "B"
-        }
-      ],
-      "title": "Completed processes per s",
-      "type": "stat"
-    },
-    {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
-      },
-      "description": "Tasks completed or terminated per second over all partitions.",
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "fixedColor": "red",
-            "mode": "fixed"
-          },
-          "mappings": [
-            {
-              "options": {
-                "match": "null",
-                "result": {
-                  "color": "red",
-                  "text": "0"
-                }
-              },
-              "type": "special"
-            }
-          ],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "red"
-              }
-            ]
-          },
-          "unit": "none"
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 4,
-        "w": 8,
-        "x": 16,
-        "y": 1
-      },
-      "id": 275,
-      "options": {
-        "colorMode": "none",
-        "graphMode": "area",
-        "justifyMode": "auto",
-        "orientation": "auto",
-        "percentChangeColorMode": "standard",
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": "",
-          "values": false
-        },
-        "showPercentChange": false,
-        "text": {
-          "titleSize": 10
-        },
-        "textMode": "auto",
-        "wideLayout": true
-      },
-      "pluginVersion": "12.0.2",
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
-          },
-          "editorMode": "code",
-          "expr": "sum(rate(zeebe_element_instance_events_total{namespace=~\"(c8-)?medic.*typical\", action=\"completed\", type=\"SERVICE_TASK\"}[$__rate_interval])) by (namespace)",
-          "instant": true,
-          "interval": "",
-          "legendFormat": "{{namespace}}",
-          "refId": "B"
-        }
-      ],
-      "title": "Completed tasks per s",
-      "type": "stat"
-    },
-    {
-      "collapsed": false,
-      "gridPos": {
-        "h": 1,
-        "w": 24,
-        "x": 0,
-        "y": 5
-      },
       "id": 280,
       "panels": [],
-      "title": "Mixed Load Tests",
+      "title": "Realistic Load Tests",
       "type": "row"
     },
     {
@@ -379,7 +111,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "red"
+                "color": "red",
+                "value": 0
               },
               {
                 "color": "green",
@@ -395,7 +128,7 @@
         "h": 4,
         "w": 8,
         "x": 0,
-        "y": 6
+        "y": 1
       },
       "id": 274,
       "options": {
@@ -464,7 +197,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "red"
+                "color": "red",
+                "value": 0
               },
               {
                 "color": "green",
@@ -480,7 +214,7 @@
         "h": 4,
         "w": 8,
         "x": 8,
-        "y": 6
+        "y": 1
       },
       "id": 278,
       "options": {
@@ -549,7 +283,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "red"
+                "color": "red",
+                "value": 0
               },
               {
                 "color": "dark-green",
@@ -565,7 +300,7 @@
         "h": 4,
         "w": 8,
         "x": 16,
-        "y": 6
+        "y": 1
       },
       "id": 276,
       "options": {
@@ -612,7 +347,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 10
+        "y": 5
       },
       "id": 307,
       "panels": [],
@@ -646,7 +381,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "red"
+                "color": "red",
+                "value": 0
               },
               {
                 "color": "green",
@@ -662,7 +398,7 @@
         "h": 8,
         "w": 8,
         "x": 0,
-        "y": 11
+        "y": 6
       },
       "id": 308,
       "options": {
@@ -732,7 +468,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "red"
+                "color": "red",
+                "value": 0
               },
               {
                 "color": "green",
@@ -748,7 +485,7 @@
         "h": 8,
         "w": 8,
         "x": 8,
-        "y": 11
+        "y": 6
       },
       "id": 309,
       "options": {
@@ -818,7 +555,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "red"
+                "color": "red",
+                "value": 0
               },
               {
                 "color": "dark-green",
@@ -834,7 +572,7 @@
         "h": 8,
         "w": 8,
         "x": 16,
-        "y": 11
+        "y": 6
       },
       "id": 310,
       "options": {
@@ -882,7 +620,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 19
+        "y": 14
       },
       "id": 286,
       "panels": [],
@@ -923,6 +661,7 @@
               "type": "linear"
             },
             "showPoints": "auto",
+            "showValues": false,
             "spanNulls": false,
             "stacking": {
               "group": "A",
@@ -937,7 +676,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green"
+                "color": "green",
+                "value": 0
               },
               {
                 "color": "red",
@@ -952,7 +692,7 @@
         "h": 7,
         "w": 24,
         "x": 0,
-        "y": 20
+        "y": 15
       },
       "id": 297,
       "options": {
@@ -1013,7 +753,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green"
+                "color": "green",
+                "value": 0
               },
               {
                 "color": "yellow",
@@ -1033,7 +774,7 @@
         "h": 8,
         "w": 8,
         "x": 0,
-        "y": 27
+        "y": 22
       },
       "id": 232,
       "options": {
@@ -1064,7 +805,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
-          "expr": "histogram_quantile(0.50, sum(rate(zeebe_process_instance_execution_time_bucket{namespace=~\"(c8-)?medic.*-typical|(c8-)?medic.*-latency\"}[$__rate_interval])) by (le, namespace))",
+          "expr": "histogram_quantile(0.50, sum(rate(zeebe_process_instance_execution_time_bucket{namespace=~\"(c8-)?medic.*-latency\"}[$__rate_interval])) by (le, namespace))",
           "instant": true,
           "interval": "",
           "legendFormat": "{{namespace}}",
@@ -1076,8 +817,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
-          "expr": "histogram_quantile(0.50, sum(rate(zeebe_process_instance_execution_time_seconds_bucket{namespace=~\"(c8-)?medic.*-typical|(c8-)?medic.*-latency\"}[$__rate_interval])) by (le, namespace))",
-          "hide": false,
+          "expr": "histogram_quantile(0.50, sum(rate(zeebe_process_instance_execution_time_seconds_bucket{namespace=~\"(c8-)?medic.*-latency\"}[$__rate_interval])) by (le, namespace))",
           "instant": false,
           "legendFormat": "{{namespace}}",
           "range": true,
@@ -1115,7 +855,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green"
+                "color": "green",
+                "value": 0
               },
               {
                 "color": "yellow",
@@ -1135,211 +876,7 @@
         "h": 4,
         "w": 8,
         "x": 8,
-        "y": 27
-      },
-      "id": 299,
-      "options": {
-        "colorMode": "value",
-        "graphMode": "area",
-        "justifyMode": "auto",
-        "orientation": "auto",
-        "percentChangeColorMode": "standard",
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": "",
-          "values": false
-        },
-        "showPercentChange": false,
-        "text": {
-          "titleSize": 10
-        },
-        "textMode": "auto",
-        "wideLayout": true
-      },
-      "pluginVersion": "12.0.2",
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
-          },
-          "editorMode": "code",
-          "expr": "histogram_quantile(0.90, sum(rate(zeebe_process_instance_execution_time_bucket{namespace=~\"(c8-)?medic.*-typical\"}[$__rate_interval])) by (le, namespace))",
-          "instant": true,
-          "interval": "",
-          "legendFormat": "{{namespace}}",
-          "refId": "B"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
-          },
-          "editorMode": "code",
-          "expr": "histogram_quantile(0.90, sum(rate(zeebe_process_instance_execution_time_seconds_bucket{namespace=~\"(c8-)?medic.*-typical\"}[$__rate_interval])) by (le, namespace))",
-          "hide": false,
-          "instant": false,
-          "legendFormat": "{{namespace}}",
-          "range": true,
-          "refId": "A"
-        }
-      ],
-      "title": "Normal Benchmark p90",
-      "type": "stat"
-    },
-    {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
-      },
-      "description": "99th percentile process instance execution latency",
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "fixedColor": "red",
-            "mode": "thresholds"
-          },
-          "mappings": [
-            {
-              "options": {
-                "match": "null",
-                "result": {
-                  "color": "red",
-                  "text": "0"
-                }
-              },
-              "type": "special"
-            }
-          ],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green"
-              },
-              {
-                "color": "yellow",
-                "value": 0.6
-              },
-              {
-                "color": "red",
-                "value": 0.8
-              }
-            ]
-          },
-          "unit": "s"
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 4,
-        "w": 8,
-        "x": 16,
-        "y": 27
-      },
-      "id": 300,
-      "options": {
-        "colorMode": "value",
-        "graphMode": "area",
-        "justifyMode": "auto",
-        "orientation": "auto",
-        "percentChangeColorMode": "standard",
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": "",
-          "values": false
-        },
-        "showPercentChange": false,
-        "text": {
-          "titleSize": 10
-        },
-        "textMode": "auto",
-        "wideLayout": true
-      },
-      "pluginVersion": "12.0.2",
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
-          },
-          "editorMode": "code",
-          "expr": "histogram_quantile(0.99, sum(rate(zeebe_process_instance_execution_time_bucket{namespace=~\"(c8-)?medic.*-typical\"}[$__rate_interval])) by (le, namespace))",
-          "instant": true,
-          "interval": "",
-          "legendFormat": "{{namespace}}",
-          "refId": "B"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
-          },
-          "editorMode": "code",
-          "expr": "histogram_quantile(0.99, sum(rate(zeebe_process_instance_execution_time_seconds_bucket{namespace=~\"(c8-)?medic.*-typical\"}[$__rate_interval])) by (le, namespace))",
-          "hide": false,
-          "instant": false,
-          "legendFormat": "{{namespace}}",
-          "range": true,
-          "refId": "A"
-        }
-      ],
-      "title": "Normal benchmark p99",
-      "type": "stat"
-    },
-    {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
-      },
-      "description": "90th percentile process instance execution latency",
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "fixedColor": "red",
-            "mode": "thresholds"
-          },
-          "mappings": [
-            {
-              "options": {
-                "match": "null",
-                "result": {
-                  "color": "red",
-                  "text": "0"
-                }
-              },
-              "type": "special"
-            }
-          ],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green"
-              },
-              {
-                "color": "yellow",
-                "value": 0.4
-              },
-              {
-                "color": "red",
-                "value": 0.6
-              }
-            ]
-          },
-          "unit": "s"
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 4,
-        "w": 8,
-        "x": 8,
-        "y": 31
+        "y": 26
       },
       "id": 305,
       "options": {
@@ -1383,7 +920,6 @@
           },
           "editorMode": "code",
           "expr": "histogram_quantile(0.90, sum(rate(zeebe_process_instance_execution_time_seconds_bucket{namespace=~\"(c8-)?medic.*-latency\"}[$__rate_interval])) by (le, namespace))",
-          "hide": false,
           "instant": false,
           "legendFormat": "{{namespace}}",
           "range": true,
@@ -1421,7 +957,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green"
+                "color": "green",
+                "value": 0
               },
               {
                 "color": "yellow",
@@ -1441,7 +978,7 @@
         "h": 4,
         "w": 8,
         "x": 16,
-        "y": 31
+        "y": 26
       },
       "id": 306,
       "options": {
@@ -1485,7 +1022,6 @@
           },
           "editorMode": "code",
           "expr": "histogram_quantile(0.99, sum(rate(zeebe_process_instance_execution_time_seconds_bucket{namespace=~\"(c8-)?medic.*-latency\"}[$__rate_interval])) by (le, namespace))",
-          "hide": false,
           "instant": false,
           "legendFormat": "{{namespace}}",
           "range": true,
@@ -1530,6 +1066,7 @@
               "type": "linear"
             },
             "showPoints": "never",
+            "showValues": false,
             "spanNulls": false,
             "stacking": {
               "group": "A",
@@ -1545,7 +1082,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "transparent"
+                "color": "transparent",
+                "value": 0
               },
               {
                 "color": "red",
@@ -1561,7 +1099,7 @@
         "h": 8,
         "w": 24,
         "x": 0,
-        "y": 35
+        "y": 30
       },
       "id": 288,
       "options": {
@@ -1639,7 +1177,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 43
+        "y": 38
       },
       "id": 284,
       "panels": [],
@@ -1663,6 +1201,9 @@
               "type": "auto"
             },
             "filterable": true,
+            "footer": {
+              "reducers": []
+            },
             "inspect": false
           },
           "mappings": [],
@@ -1670,7 +1211,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green"
+                "color": "green",
+                "value": 0
               }
             ]
           }
@@ -1723,7 +1265,8 @@
                   "mode": "absolute",
                   "steps": [
                     {
-                      "color": "green"
+                      "color": "green",
+                      "value": 0
                     },
                     {
                       "color": "red",
@@ -1783,7 +1326,8 @@
                   "mode": "absolute",
                   "steps": [
                     {
-                      "color": "green"
+                      "color": "green",
+                      "value": 0
                     },
                     {
                       "color": "semi-dark-orange",
@@ -1840,19 +1384,11 @@
         "h": 10,
         "w": 11,
         "x": 0,
-        "y": 44
+        "y": 39
       },
       "id": 243,
       "options": {
         "cellHeight": "sm",
-        "footer": {
-          "countRows": false,
-          "fields": "",
-          "reducer": [
-            "sum"
-          ],
-          "show": false
-        },
         "frameIndex": 0,
         "showHeader": true,
         "sortBy": [
@@ -1885,7 +1421,6 @@
           "editorMode": "code",
           "expr": "atomix_role{namespace=~\"(c8-)?medic.*\"} ",
           "format": "table",
-          "hide": false,
           "instant": true,
           "interval": "",
           "legendFormat": "",
@@ -1964,6 +1499,9 @@
               "type": "auto"
             },
             "filterable": false,
+            "footer": {
+              "reducers": []
+            },
             "inspect": false
           },
           "mappings": [],
@@ -1971,7 +1509,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green"
+                "color": "green",
+                "value": 0
               },
               {
                 "color": "red",
@@ -1999,19 +1538,11 @@
         "h": 5,
         "w": 13,
         "x": 11,
-        "y": 44
+        "y": 39
       },
       "id": 272,
       "options": {
         "cellHeight": "sm",
-        "footer": {
-          "countRows": false,
-          "fields": "",
-          "reducer": [
-            "sum"
-          ],
-          "show": false
-        },
         "showHeader": true
       },
       "pluginVersion": "12.0.2",
@@ -2105,7 +1636,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green"
+                "color": "green",
+                "value": 0
               },
               {
                 "color": "red",
@@ -2121,7 +1653,7 @@
         "h": 5,
         "w": 13,
         "x": 11,
-        "y": 49
+        "y": 44
       },
       "id": 39,
       "options": {
@@ -2163,7 +1695,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 54
+        "y": 49
       },
       "id": 290,
       "panels": [],
@@ -2198,7 +1730,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "red"
+                "color": "red",
+                "value": 0
               },
               {
                 "color": "green",
@@ -2214,7 +1747,7 @@
         "h": 4,
         "w": 8,
         "x": 0,
-        "y": 55
+        "y": 50
       },
       "id": 291,
       "options": {
@@ -2283,7 +1816,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "red"
+                "color": "red",
+                "value": 0
               },
               {
                 "color": "green",
@@ -2299,7 +1833,7 @@
         "h": 4,
         "w": 8,
         "x": 8,
-        "y": 55
+        "y": 50
       },
       "id": 292,
       "options": {
@@ -2368,7 +1902,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "red"
+                "color": "red",
+                "value": 0
               }
             ]
           },
@@ -2380,7 +1915,7 @@
         "h": 4,
         "w": 8,
         "x": 16,
-        "y": 55
+        "y": 50
       },
       "id": 293,
       "options": {
@@ -2449,7 +1984,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green"
+                "color": "green",
+                "value": 0
               },
               {
                 "color": "yellow",
@@ -2469,7 +2005,7 @@
         "h": 4,
         "w": 8,
         "x": 0,
-        "y": 59
+        "y": 54
       },
       "id": 301,
       "options": {
@@ -2513,7 +2049,6 @@
           },
           "editorMode": "code",
           "expr": "histogram_quantile(0.50, sum(rate(zeebe_process_instance_execution_time_seconds_bucket{namespace=~\"(c8-)?release-8.*\"}[$__rate_interval])) by (le, namespace))",
-          "hide": false,
           "instant": false,
           "legendFormat": "{{namespace}}",
           "range": true,
@@ -2551,7 +2086,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green"
+                "color": "green",
+                "value": 0
               },
               {
                 "color": "yellow",
@@ -2571,7 +2107,7 @@
         "h": 4,
         "w": 8,
         "x": 8,
-        "y": 59
+        "y": 54
       },
       "id": 302,
       "options": {
@@ -2615,7 +2151,6 @@
           },
           "editorMode": "code",
           "expr": "histogram_quantile(0.90, sum(rate(zeebe_process_instance_execution_time_seconds_bucket{namespace=~\"(c8-)?release-8.*\"}[$__rate_interval])) by (le, namespace))",
-          "hide": false,
           "instant": false,
           "legendFormat": "{{namespace}}",
           "range": true,
@@ -2653,7 +2188,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green"
+                "color": "green",
+                "value": 0
               },
               {
                 "color": "yellow",
@@ -2673,7 +2209,7 @@
         "h": 4,
         "w": 8,
         "x": 16,
-        "y": 59
+        "y": 54
       },
       "id": 303,
       "options": {
@@ -2717,7 +2253,6 @@
           },
           "editorMode": "code",
           "expr": "histogram_quantile(0.99, sum(rate(zeebe_process_instance_execution_time_seconds_bucket{namespace=~\"(c8-)?release-8.*\"}[$__rate_interval])) by (le, namespace))",
-          "hide": false,
           "instant": false,
           "legendFormat": "{{namespace}}",
           "range": true,
@@ -2744,6 +2279,9 @@
               "type": "auto"
             },
             "filterable": true,
+            "footer": {
+              "reducers": []
+            },
             "inspect": false
           },
           "mappings": [],
@@ -2751,7 +2289,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green"
+                "color": "green",
+                "value": 0
               }
             ]
           }
@@ -2804,7 +2343,8 @@
                   "mode": "absolute",
                   "steps": [
                     {
-                      "color": "green"
+                      "color": "green",
+                      "value": 0
                     },
                     {
                       "color": "red",
@@ -2864,7 +2404,8 @@
                   "mode": "absolute",
                   "steps": [
                     {
-                      "color": "green"
+                      "color": "green",
+                      "value": 0
                     },
                     {
                       "color": "semi-dark-orange",
@@ -2909,19 +2450,11 @@
         "h": 9,
         "w": 11,
         "x": 0,
-        "y": 63
+        "y": 58
       },
       "id": 294,
       "options": {
         "cellHeight": "sm",
-        "footer": {
-          "countRows": false,
-          "fields": "",
-          "reducer": [
-            "sum"
-          ],
-          "show": false
-        },
         "frameIndex": 0,
         "showHeader": true,
         "sortBy": [
@@ -2954,7 +2487,6 @@
           "editorMode": "code",
           "expr": "atomix_role{namespace=~\"(c8-)?release.*\"} ",
           "format": "table",
-          "hide": false,
           "instant": true,
           "interval": "",
           "legendFormat": "",
@@ -3033,7 +2565,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green"
+                "color": "green",
+                "value": 0
               },
               {
                 "color": "red",
@@ -3049,7 +2582,7 @@
         "h": 9,
         "w": 13,
         "x": 11,
-        "y": 63
+        "y": 58
       },
       "id": 296,
       "options": {
@@ -3086,8 +2619,9 @@
       "type": "stat"
     }
   ],
+  "preload": false,
   "refresh": "1m",
-  "schemaVersion": 41,
+  "schemaVersion": 42,
   "tags": [],
   "templating": {
     "list": [
@@ -3121,9 +2655,9 @@
       "1d"
     ]
   },
-  "timezone": "",
+  "timezone": "browser",
   "title": "Zeebe Medic Load Tests",
   "uid": "zeebe-medic-benchmark",
-  "version": 7,
+  "version": 1,
   "weekStart": ""
 }

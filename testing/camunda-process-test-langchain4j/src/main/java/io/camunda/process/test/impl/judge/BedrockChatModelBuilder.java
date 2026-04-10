@@ -15,84 +15,48 @@
  */
 package io.camunda.process.test.impl.judge;
 
-import static io.camunda.process.test.impl.judge.ModelBuilderSupport.hasText;
-import static io.camunda.process.test.impl.judge.ModelBuilderSupport.require;
+import static io.camunda.process.test.impl.ModelBuilderSupport.require;
 
 import dev.langchain4j.model.bedrock.BedrockChatModel;
+import dev.langchain4j.model.bedrock.BedrockChatRequestParameters;
 import dev.langchain4j.model.chat.ChatModel;
-import java.util.List;
-import java.util.Map;
+import io.camunda.process.test.impl.BedrockRuntimeClientFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import software.amazon.awssdk.auth.credentials.AnonymousCredentialsProvider;
-import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
-import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
-import software.amazon.awssdk.http.auth.scheme.NoAuthAuthScheme;
-import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.bedrockruntime.BedrockRuntimeClient;
-import software.amazon.awssdk.services.bedrockruntime.BedrockRuntimeClientBuilder;
 
 final class BedrockChatModelBuilder {
 
+  public static final String AMAZON_BEDROCK = "amazon-bedrock";
   private static final Logger LOG = LoggerFactory.getLogger(BedrockChatModelBuilder.class);
 
   private BedrockChatModelBuilder() {}
 
   static ChatModel build(final BaseProviderConfig.AmazonBedrockConfig config) {
     LOG.debug("Building Amazon Bedrock chat model");
-
-    final String model = require(config.getModel(), "model", "amazon-bedrock");
-
-    final boolean hasAccessKey = hasText(config.getCredentialsAccessKey());
-    final boolean hasSecretKey = hasText(config.getCredentialsSecretKey());
-    final boolean hasKeyPairAuth = hasAccessKey && hasSecretKey;
-    final boolean hasPartialKeyPair = hasAccessKey != hasSecretKey;
-    final boolean hasApiKeyAuth = hasText(config.getApiKey());
-
-    if (hasPartialKeyPair) {
-      throw new IllegalStateException(
-          "Incomplete key-pair authentication for the 'amazon-bedrock' provider: "
-              + "both 'accessKey' and 'secretKey' must be set together.");
-    }
-
-    if (hasKeyPairAuth && hasApiKeyAuth) {
-      throw new IllegalStateException(
-          "Ambiguous authentication for the 'amazon-bedrock' provider: "
-              + "both accessKey/secretKey and apiKey are set. Use only one authentication method.");
-    }
-
-    final BedrockRuntimeClientBuilder clientBuilder = BedrockRuntimeClient.builder();
-
-    if (hasText(config.getRegion())) {
-      LOG.debug("Using configured region '{}'", config.getRegion().trim());
-      clientBuilder.region(Region.of(config.getRegion().trim()));
-    } else {
-      LOG.debug("No region configured, falling back to AWS default region resolution");
-    }
-
-    if (hasKeyPairAuth) {
-      LOG.debug("Using access key / secret key authentication");
-      clientBuilder.credentialsProvider(
-          StaticCredentialsProvider.create(
-              AwsBasicCredentials.create(
-                  config.getCredentialsAccessKey().trim(),
-                  config.getCredentialsSecretKey().trim())));
-    } else if (hasApiKeyAuth) {
-      LOG.debug("Using API key (Bearer token) authentication");
-      clientBuilder
-          .credentialsProvider(AnonymousCredentialsProvider.create())
-          .putAuthScheme(NoAuthAuthScheme.create());
-
-      clientBuilder.overrideConfiguration(
-          cfg ->
-              cfg.headers(Map.of("Authorization", List.of("Bearer " + config.getApiKey().trim()))));
-    } else {
-      LOG.debug("No explicit credentials configured, falling back to AWS default credential chain");
-    }
-
-    final ChatModel chatModel =
-        BedrockChatModel.builder().client(clientBuilder.build()).modelId(model).build();
-    LOG.debug("Successfully built Amazon Bedrock chat model with modelId '{}'", model);
+    final ChatModel chatModel = build(config, BedrockChatModel.builder());
+    LOG.debug("Successfully built Amazon Bedrock chat model with modelId '{}'", config.getModel());
     return chatModel;
+  }
+
+  static ChatModel build(
+      final BaseProviderConfig.AmazonBedrockConfig config, final BedrockChatModel.Builder builder) {
+    final String model = require(config.getModel(), "model", AMAZON_BEDROCK);
+    final BedrockRuntimeClient client =
+        BedrockRuntimeClientFactory.build(
+            config.getRegion(),
+            config.getApiKey(),
+            config.getCredentialsAccessKey(),
+            config.getCredentialsSecretKey(),
+            config.getTimeout());
+    builder.client(client);
+    builder.modelId(model);
+    if (config.getTemperature() != null) {
+      LOG.debug("Setting temperature to {}", config.getTemperature());
+      final BedrockChatRequestParameters requestParameters =
+          BedrockChatRequestParameters.builder().temperature(config.getTemperature()).build();
+      builder.defaultRequestParameters(requestParameters);
+    }
+    return builder.build();
   }
 }

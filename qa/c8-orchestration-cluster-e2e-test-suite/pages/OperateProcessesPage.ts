@@ -25,7 +25,7 @@ class OperateProcessesPage {
   readonly versionSortButton: Locator;
   readonly processNameSortButton: Locator;
   readonly processInstancesTable: Locator;
-  readonly parentInstanceIdCell: Locator;
+  readonly parentProcessInstanceKeyCell: Locator;
   readonly endDateCell: Locator;
   readonly versionCell: Locator;
   readonly processInstanceKeyCell: Locator;
@@ -106,7 +106,7 @@ class OperateProcessesPage {
       .getByTestId('data-list')
       .getByTestId('cell-processInstanceKey')
       .first();
-    this.parentInstanceIdCell = page
+    this.parentProcessInstanceKeyCell = page
       .getByTestId('data-list')
       .getByRole('row')
       .first()

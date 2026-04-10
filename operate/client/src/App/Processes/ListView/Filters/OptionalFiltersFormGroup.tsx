@@ -40,21 +40,21 @@ import {Variable} from './VariableField';
 
 type OptionalFilter =
   | 'variable'
-  | 'ids'
-  | 'parentInstanceId'
-  | 'operationId'
+  | 'processInstanceKey'
+  | 'parentProcessInstanceKey'
+  | 'batchOperationId'
   | 'errorMessage'
-  | 'retriesLeft'
+  | 'hasRetriesLeft'
   | 'startDateRange'
   | 'endDateRange';
 
 const optionalFilters: Array<OptionalFilter> = [
   'variable',
-  'ids',
-  'operationId',
-  'parentInstanceId',
+  'processInstanceKey',
+  'batchOperationId',
+  'parentProcessInstanceKey',
   'errorMessage',
-  'retriesLeft',
+  'hasRetriesLeft',
   'startDateRange',
   'endDateRange',
 ];
@@ -73,8 +73,8 @@ const OPTIONAL_FILTER_FIELDS: Record<
     keys: ['variableName', 'variableValues'],
     label: 'Variable',
   },
-  ids: {
-    keys: ['ids'],
+  processInstanceKey: {
+    keys: ['processInstanceKey'],
     label: 'Process Instance Key(s)',
     type: 'multiline',
     placeholder: 'separated by space or comma',
@@ -85,8 +85,8 @@ const OPTIONAL_FILTER_FIELDS: Record<
       validatesIdsComplete,
     ),
   },
-  operationId: {
-    keys: ['operationId'],
+  batchOperationId: {
+    keys: ['batchOperationId'],
     label: 'Operation Id',
     type: 'text',
     validate: mergeValidators(
@@ -94,8 +94,8 @@ const OPTIONAL_FILTER_FIELDS: Record<
       validateOperationIdComplete,
     ),
   },
-  parentInstanceId: {
-    keys: ['parentInstanceId'],
+  parentProcessInstanceKey: {
+    keys: ['parentProcessInstanceKey'],
     label: 'Parent Process Instance Key',
     type: 'text',
     validate: mergeValidators(
@@ -109,17 +109,17 @@ const OPTIONAL_FILTER_FIELDS: Record<
     label: 'Error Message',
     type: 'text',
   },
-  retriesLeft: {
-    keys: ['retriesLeft'],
+  hasRetriesLeft: {
+    keys: ['hasRetriesLeft'],
     label: 'Failed job but retries left',
     type: 'checkbox',
   },
   startDateRange: {
-    keys: ['startDateAfter', 'startDateBefore'],
+    keys: ['startDateFrom', 'startDateTo'],
     label: 'Start Date Range',
   },
   endDateRange: {
-    keys: ['endDateAfter', 'endDateBefore'],
+    keys: ['endDateFrom', 'endDateTo'],
     label: 'End Date Range',
   },
 };
@@ -149,10 +149,10 @@ const OptionalFiltersFormGroup: React.FC<Props> = observer(
               : currentVisibleFilters),
             ...([
               ...intersection(Object.keys(filters), optionalFilters),
-              ...('startDateAfter' in filters && 'startDateBefore' in filters
+              ...('startDateFrom' in filters && 'startDateTo' in filters
                 ? ['startDateRange']
                 : []),
-              ...('endDateAfter' in filters && 'endDateBefore' in filters
+              ...('endDateFrom' in filters && 'endDateTo' in filters
                 ? ['endDateRange']
                 : []),
             ] as OptionalFilter[]),
@@ -206,8 +206,8 @@ const OptionalFiltersFormGroup: React.FC<Props> = observer(
                         filterName={filter}
                         popoverTitle="Filter instances by start date"
                         label={OPTIONAL_FILTER_FIELDS[filter].label}
-                        fromDateTimeKey="startDateAfter"
-                        toDateTimeKey="startDateBefore"
+                        fromDateTimeKey="startDateFrom"
+                        toDateTimeKey="startDateTo"
                       />
                     );
                   case 'endDateRange':
@@ -219,8 +219,8 @@ const OptionalFiltersFormGroup: React.FC<Props> = observer(
                         filterName={filter}
                         popoverTitle="Filter instances by end date"
                         label={OPTIONAL_FILTER_FIELDS[filter].label}
-                        fromDateTimeKey="endDateAfter"
-                        toDateTimeKey="endDateBefore"
+                        fromDateTimeKey="endDateFrom"
+                        toDateTimeKey="endDateTo"
                       />
                     );
                   default:

@@ -6,11 +6,13 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import type {ElementInstance} from '@camunda/camunda-api-zod-schemas/8.9';
+import type {ElementInstance} from '@camunda/camunda-api-zod-schemas/8.10';
 import {makeObservable, observable, action, override} from 'mobx';
 import {searchElementInstances} from 'modules/api/v2/elementInstances/searchElementInstances';
 import {logger} from 'modules/logger';
 import {NetworkReconnectionHandler} from 'modules/stores/networkReconnectionHandler';
+import type {RequestError} from 'modules/request';
+import {HTTP_STATUS_FORBIDDEN} from 'modules/constants/statusCode';
 
 const PAGE_SIZE = 50;
 const POLLING_INTERVAL = 5000;
@@ -24,7 +26,7 @@ type PageMetadata = {
 type NodeData = {
   items: ElementInstance[];
   pageMetadata: PageMetadata;
-  status: 'idle' | 'loading' | 'error' | 'loaded';
+  status: 'idle' | 'loading' | 'error' | 'error-permissions' | 'loaded';
 };
 
 type State = {
@@ -154,7 +156,7 @@ class ElementInstancesTreeStore extends NetworkReconnectionHandler {
         status: 'loaded',
       });
     } else {
-      this.setNodeStatus(scopeKey, 'error');
+      this.setNodeStatus(scopeKey, this.resolveErrorStatus(error));
       logger.error('Failed to fetch element instances', error);
     }
   };
@@ -257,7 +259,7 @@ class ElementInstancesTreeStore extends NetworkReconnectionHandler {
 
       return Math.max(0, response.items.length - PAGE_SIZE);
     } else {
-      this.setNodeStatus(scopeKey, 'error');
+      this.setNodeStatus(scopeKey, this.resolveErrorStatus(error));
       logger.error('Failed to fetch next page', error);
       return -1;
     }
@@ -312,10 +314,22 @@ class ElementInstancesTreeStore extends NetworkReconnectionHandler {
 
       return Math.min(PAGE_SIZE, response.items.length);
     } else {
-      this.setNodeStatus(scopeKey, 'error');
+      this.setNodeStatus(scopeKey, this.resolveErrorStatus(error));
       logger.error('Failed to fetch previous page', error);
       return -1;
     }
+  };
+
+  private resolveErrorStatus = (
+    error?: RequestError | null,
+  ): 'error' | 'error-permissions' => {
+    if (
+      error?.variant === 'failed-response' &&
+      error.response.status === HTTP_STATUS_FORBIDDEN
+    ) {
+      return 'error-permissions';
+    }
+    return 'error';
   };
 
   private setNodeStatus = (scopeKey: string, status: NodeData['status']) => {
@@ -463,8 +477,12 @@ class ElementInstancesTreeStore extends NetworkReconnectionHandler {
             });
           } else {
             if (!signal.aborted) {
-              this.setNodeStatus(scopeKey, 'error');
+              const errorStatus = this.resolveErrorStatus(error);
+              this.setNodeStatus(scopeKey, errorStatus);
               logger.error('Failed to poll element instances', error);
+              if (errorStatus === 'error-permissions') {
+                this.stopPolling();
+              }
             }
           }
         }),

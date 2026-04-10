@@ -10,14 +10,15 @@ import {test, expect} from '@playwright/test';
 import {
   jsonHeaders,
   buildUrl,
-  assertRequiredFields,
   assertUnauthorizedRequest,
   assertNotFoundRequest,
   assertConflictRequest,
   assertEqualsForKeys,
   assertBadRequest,
   assertPaginatedRequest,
+  assertStatusCode,
 } from '../../../../utils/http';
+import {validateResponse} from '../../../../json-body-assertions';
 import {
   CREATE_NEW_TENANT,
   tenantRequiredFields,
@@ -45,9 +46,16 @@ test.describe.parallel('Tenants API Tests', () => {
         data: tenant,
       });
 
-      expect(res.status()).toBe(201);
+      await assertStatusCode(res, 201);
+      await validateResponse(
+        {
+          path: '/tenants',
+          method: 'POST',
+          status: '201',
+        },
+        res,
+      );
       const json = await res.json();
-      assertRequiredFields(json, tenantRequiredFields);
       assertEqualsForKeys(json, tenant, tenantRequiredFields);
     }).toPass(defaultAssertionOptions);
   });
@@ -117,9 +125,16 @@ test.describe.parallel('Tenants API Tests', () => {
       const res = await request.get(buildUrl('/tenants/{tenantId}', p), {
         headers: jsonHeaders(),
       });
-      expect(res.status()).toBe(200);
+      await assertStatusCode(res, 200);
+      await validateResponse(
+        {
+          path: '/tenants/{tenantId}',
+          method: 'GET',
+          status: '200',
+        },
+        res,
+      );
       const json = await res.json();
-      assertRequiredFields(json, tenantRequiredFields);
       assertEqualsForKeys(json, expectedBody, tenantRequiredFields);
     }).toPass(defaultAssertionOptions);
   });
@@ -156,9 +171,16 @@ test.describe.parallel('Tenants API Tests', () => {
         headers: jsonHeaders(),
         data: requestBody,
       });
-      expect(res.status()).toBe(200);
+      await assertStatusCode(res, 200);
+      await validateResponse(
+        {
+          path: '/tenants/{tenantId}',
+          method: 'PUT',
+          status: '200',
+        },
+        res,
+      );
       const json = await res.json();
-      assertRequiredFields(json, tenantRequiredFields);
       assertEqualsForKeys(json, expectedBody, tenantRequiredFields);
     }).toPass(defaultAssertionOptions);
   });
@@ -200,9 +222,16 @@ test.describe.parallel('Tenants API Tests', () => {
         data: {name: 'missing description'},
       });
 
-      expect(res.status()).toBe(200);
+      await assertStatusCode(res, 200);
+      await validateResponse(
+        {
+          path: '/tenants/{tenantId}',
+          method: 'PUT',
+          status: '200',
+        },
+        res,
+      );
       const json = await res.json();
-      assertRequiredFields(json, tenantRequiredFields);
       assertEqualsForKeys(json, expectedBody, tenantRequiredFields);
     }).toPass(defaultAssertionOptions);
   });
@@ -232,12 +261,13 @@ test.describe.parallel('Tenants API Tests', () => {
 
   test('Delete tenant', async ({request}) => {
     const p = {tenantId: state['tenantId3'] as string};
+
     await test.step('Delete tenant 204', async () => {
       await expect(async () => {
         const res = await request.delete(buildUrl('/tenants/{tenantId}', p), {
           headers: jsonHeaders(),
         });
-        expect(res.status()).toBe(204);
+        await assertStatusCode(res, 204);
       }).toPass(defaultAssertionOptions);
     });
 
@@ -328,6 +358,15 @@ test.describe.parallel('Tenants API Tests', () => {
         data: body,
       });
 
+      await validateResponse(
+        {
+          path: '/tenants/search',
+          method: 'POST',
+          status: '200',
+        },
+        res,
+      );
+
       await assertPaginatedRequest(res, {
         itemsLengthEqualTo: 1,
         totalItemsEqualTo: 1,
@@ -335,7 +374,6 @@ test.describe.parallel('Tenants API Tests', () => {
       const json = await res.json();
       const item = json.items[0];
       expect(item).toBeDefined();
-      assertRequiredFields(item, tenantRequiredFields);
       assertEqualsForKeys(item, expectedBody, tenantRequiredFields);
     }).toPass(defaultAssertionOptions);
   });
@@ -359,6 +397,15 @@ test.describe.parallel('Tenants API Tests', () => {
         data: body,
       });
 
+      await validateResponse(
+        {
+          path: '/tenants/search',
+          method: 'POST',
+          status: '200',
+        },
+        res,
+      );
+
       await assertPaginatedRequest(res, {
         itemsLengthEqualTo: 1,
         totalItemsEqualTo: 1,
@@ -366,7 +413,6 @@ test.describe.parallel('Tenants API Tests', () => {
       const json = await res.json();
       const item = json.items[0];
       expect(item).toBeDefined();
-      assertRequiredFields(item, tenantRequiredFields);
       assertEqualsForKeys(item, expectedBody, tenantRequiredFields);
     }).toPass(defaultAssertionOptions);
   });
@@ -389,6 +435,15 @@ test.describe.parallel('Tenants API Tests', () => {
         data: requestBody,
       });
 
+      await validateResponse(
+        {
+          path: '/tenants/search',
+          method: 'POST',
+          status: '200',
+        },
+        res,
+      );
+
       await assertPaginatedRequest(res, {
         itemsLengthEqualTo: 1,
         totalItemsEqualTo: 1,
@@ -396,7 +451,6 @@ test.describe.parallel('Tenants API Tests', () => {
       const json = await res.json();
       const item = json.items[0];
       expect(item).toBeDefined();
-      assertRequiredFields(item, tenantRequiredFields);
       assertEqualsForKeys(item, expectedBody, tenantRequiredFields);
     }).toPass(defaultAssertionOptions);
   });
@@ -412,6 +466,15 @@ test.describe.parallel('Tenants API Tests', () => {
       headers: jsonHeaders(),
       data: body,
     });
+
+    await validateResponse(
+      {
+        path: '/tenants/search',
+        method: 'POST',
+        status: '200',
+      },
+      res,
+    );
 
     await assertPaginatedRequest(res, {
       itemsLengthEqualTo: 0,

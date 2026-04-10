@@ -12,7 +12,7 @@ import type {ProcessInstanceFilters} from 'modules/utils/filter/shared';
 import type {RequestFilters} from 'modules/utils/filter';
 import {getValidVariableValues} from 'modules/utils/filter/getValidVariableValues';
 import {buildProcessInstanceKeyCriterion} from 'modules/mutations/processes/buildProcessInstanceKeyCriterion';
-import type {QueryProcessInstancesRequestBody} from '@camunda/camunda-api-zod-schemas/8.9';
+import type {QueryProcessInstancesRequestBody} from '@camunda/camunda-api-zod-schemas/8.10';
 import type {BusinessObjects} from 'bpmn-js/lib/NavigatedViewer';
 import {getElementInstanceStateFilter} from './getElementInstanceStateFilter';
 
@@ -52,34 +52,47 @@ type BuildProcessInstanceFilterOptions = {
 // Unified input type that accepts either URL format or Request format
 type UnifiedProcessInstanceFilters = ProcessInstanceFilters | RequestFilters;
 
+const inputFilterSchemaV2 = z.object({
+  processInstanceKey: z.union([z.string(), z.array(z.string())]).optional(),
+  elementId: z.string().optional(),
+  batchOperationId: z.string().optional(),
+  tenantId: z.string().optional(),
+  processDefinitionVersion: z.string().optional(),
+  parentProcessInstanceKey: z.string().optional(),
+  hasRetriesLeft: z.boolean().optional(),
+  startDateFrom: z.string().optional(),
+  startDateTo: z.string().optional(),
+  endDateFrom: z.string().optional(),
+  endDateTo: z.string().optional(),
+});
+
+const inputFilterSchemaV1 = z.object({
+  ids: z.union([z.string(), z.array(z.string())]).optional(),
+  activityId: z.string().optional(),
+  processIds: z.array(z.string()).optional(),
+  retriesLeft: z.boolean().optional(),
+  startDateAfter: z.string().optional(),
+  startDateBefore: z.string().optional(),
+  endDateAfter: z.string().optional(),
+  endDateBefore: z.string().optional(),
+  parentInstanceId: z.string().optional(),
+});
+
 const inputFilterSchema = z
   .object({
-    ids: z.union([z.string(), z.array(z.string())]).optional(),
-    flowNodeId: z.string().optional(),
-    operationId: z.string().optional(),
-    tenant: z.string().optional(),
-    version: z.string().optional(),
+    ...inputFilterSchemaV2.shape,
+    ...inputFilterSchemaV1.shape,
     variableName: z.string().optional(),
     variableValues: z.string().optional(),
-    activityId: z.string().optional(),
-    batchOperationId: z.string().optional(),
-    tenantId: z.string().optional(),
-    processIds: z.array(z.string()).optional(),
     variable: z
       .object({
         name: z.string(),
         values: z.array(z.string()),
       })
       .optional(),
-    parentInstanceId: z.string().optional(),
     errorMessage: z.string().optional(),
     hasElementInstanceIncident: z.boolean().optional(),
     incidentErrorHashCode: z.number().optional(),
-    retriesLeft: z.boolean().optional(),
-    startDateAfter: z.string().optional(),
-    startDateBefore: z.string().optional(),
-    endDateAfter: z.string().optional(),
-    endDateBefore: z.string().optional(),
     active: z.boolean().optional(),
     completed: z.boolean().optional(),
     canceled: z.boolean().optional(),
@@ -88,26 +101,27 @@ const inputFilterSchema = z
   .transform((data) => {
     const normalized: NormalizedFilters = {};
 
-    if (data.ids) {
+    if (data.processInstanceKey) {
+      normalized.processInstanceKey =
+        typeof data.processInstanceKey === 'string'
+          ? data.processInstanceKey.split(',')
+          : data.processInstanceKey;
+    } else if (data.ids) {
       normalized.processInstanceKey =
         typeof data.ids === 'string' ? data.ids.split(',') : data.ids;
     }
 
-    if (data.flowNodeId) {
-      normalized.elementId = data.flowNodeId;
+    if (data.elementId) {
+      normalized.elementId = data.elementId;
     } else if (data.activityId) {
       normalized.elementId = data.activityId;
     }
 
-    if (data.operationId) {
-      normalized.batchOperationId = data.operationId;
-    } else if (data.batchOperationId) {
+    if (data.batchOperationId) {
       normalized.batchOperationId = data.batchOperationId;
     }
 
-    if (data.tenant) {
-      normalized.tenantId = data.tenant;
-    } else if (data.tenantId) {
+    if (data.tenantId) {
       normalized.tenantId = data.tenantId;
     }
 
@@ -127,7 +141,9 @@ const inputFilterSchema = z
       normalized.variable = data.variable;
     }
 
-    if (data.parentInstanceId) {
+    if (data.parentProcessInstanceKey) {
+      normalized.parentInstanceId = data.parentProcessInstanceKey;
+    } else if (data.parentInstanceId) {
       normalized.parentInstanceId = data.parentInstanceId;
     }
     if (data.errorMessage) {
@@ -139,20 +155,34 @@ const inputFilterSchema = z
     if (typeof data.incidentErrorHashCode === 'number') {
       normalized.incidentErrorHashCode = data.incidentErrorHashCode;
     }
-    if (data.retriesLeft) {
+
+    if (data.hasRetriesLeft) {
+      normalized.retriesLeft = data.hasRetriesLeft;
+    } else if (data.retriesLeft) {
       normalized.retriesLeft = data.retriesLeft;
     }
 
-    if (data.startDateAfter) {
+    if (data.startDateFrom) {
+      normalized.startDateAfter = data.startDateFrom;
+    } else if (data.startDateAfter) {
       normalized.startDateAfter = data.startDateAfter;
     }
-    if (data.startDateBefore) {
+
+    if (data.startDateTo) {
+      normalized.startDateBefore = data.startDateTo;
+    } else if (data.startDateBefore) {
       normalized.startDateBefore = data.startDateBefore;
     }
-    if (data.endDateAfter) {
+
+    if (data.endDateFrom) {
+      normalized.endDateAfter = data.endDateFrom;
+    } else if (data.endDateAfter) {
       normalized.endDateAfter = data.endDateAfter;
     }
-    if (data.endDateBefore) {
+
+    if (data.endDateTo) {
+      normalized.endDateBefore = data.endDateTo;
+    } else if (data.endDateBefore) {
       normalized.endDateBefore = data.endDateBefore;
     }
 

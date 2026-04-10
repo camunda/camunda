@@ -43,7 +43,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -77,8 +76,7 @@ public class AnnotationUtil {
               ActivatedJob::getRootProcessInstanceKey);
 
   public static boolean isVariable(final ParameterInfo parameterInfo) {
-    return parameterInfo.getParameter().isAnnotationPresent(Variable.class)
-        || isVariableLegacy(parameterInfo);
+    return parameterInfo.getParameter().isAnnotationPresent(Variable.class);
   }
 
   public static boolean isDocument(final ParameterInfo parameterInfo) {
@@ -113,48 +111,34 @@ public class AnnotationUtil {
   public static List<ParameterInfo> getVariableParameters(final MethodInfo methodInfo) {
     final List<ParameterInfo> result = new ArrayList<>();
     result.addAll(methodInfo.getParametersFilteredByAnnotation(Variable.class));
-    result.addAll(
-        methodInfo.getParametersFilteredByAnnotation(
-            io.camunda.zeebe.spring.client.annotation.Variable.class));
     return result;
   }
 
   public static List<ParameterInfo> getVariablesAsTypeParameters(final MethodInfo methodInfo) {
     final List<ParameterInfo> result = new ArrayList<>();
     result.addAll(methodInfo.getParametersFilteredByAnnotation(VariablesAsType.class));
-    result.addAll(
-        methodInfo.getParametersFilteredByAnnotation(
-            io.camunda.zeebe.spring.client.annotation.VariablesAsType.class));
     return result;
   }
 
   public static boolean isVariablesAsType(final ParameterInfo parameterInfo) {
-    return parameterInfo.getParameter().isAnnotationPresent(VariablesAsType.class)
-        || isVariablesAsTypeLegacy(parameterInfo);
+    return parameterInfo.getParameter().isAnnotationPresent(VariablesAsType.class);
   }
 
   public static boolean isCustomHeaders(final ParameterInfo parameterInfo) {
-    return parameterInfo.getParameter().isAnnotationPresent(CustomHeaders.class)
-        || isCustomHeadersLegacy(parameterInfo);
+    return parameterInfo.getParameter().isAnnotationPresent(CustomHeaders.class);
   }
 
   public static boolean isDeployment(final BeanInfo beanInfo) {
     return beanInfo.hasClassAnnotation(Deployments.class)
-        || beanInfo.hasClassAnnotation(Deployment.class)
-        || isDeploymentLegacy(beanInfo);
+        || beanInfo.hasClassAnnotation(Deployment.class);
   }
 
   public static boolean isJobWorker(final BeanInfo beanInfo) {
-    return beanInfo.hasMethodAnnotation(JobWorker.class) || isJobWorkerLegacy(beanInfo);
-  }
-
-  private static boolean isJobWorkerLegacy(final BeanInfo beanInfo) {
-    return beanInfo.hasMethodAnnotation(io.camunda.zeebe.spring.client.annotation.JobWorker.class);
+    return beanInfo.hasMethodAnnotation(JobWorker.class);
   }
 
   public static Optional<JobWorkerValue> getJobWorkerValue(final MethodInfo methodInfo) {
-    return getJobWorkerValueInternal(methodInfo)
-        .or(() -> getJobWorkerValueLegacyInternal(methodInfo));
+    return getJobWorkerValueInternal(methodInfo);
   }
 
   private static Optional<JobWorkerValue> getJobWorkerValueInternal(final MethodInfo methodInfo) {
@@ -278,12 +262,7 @@ public class AnnotationUtil {
 
   private static boolean usesActivatedJob(final MethodInfo methodInfo) {
     return methodInfo.getParameters().stream()
-        .anyMatch(
-            p ->
-                p.getParameter().getType().isAssignableFrom(ActivatedJob.class)
-                    || p.getParameter()
-                        .getType()
-                        .isAssignableFrom(io.camunda.zeebe.client.api.response.ActivatedJob.class));
+        .anyMatch(p -> p.getParameter().getType().isAssignableFrom(ActivatedJob.class));
   }
 
   public static List<String> usedVariableNames(final MethodInfo methodInfo) {
@@ -313,84 +292,11 @@ public class AnnotationUtil {
     return field.getName();
   }
 
-  private static Optional<JobWorkerValue> getJobWorkerValueLegacyInternal(
-      final MethodInfo methodInfo) {
-    final Optional<io.camunda.zeebe.spring.client.annotation.JobWorker> methodAnnotation =
-        methodInfo.getAnnotation(io.camunda.zeebe.spring.client.annotation.JobWorker.class);
-    if (methodAnnotation.isPresent()) {
-      final io.camunda.zeebe.spring.client.annotation.JobWorker annotation = methodAnnotation.get();
-      final SourceAware<String> name =
-          "".equals(annotation.name())
-              ? new GeneratedFromMethodInfo<>(
-                  methodInfo.getBeanInfo().getBeanName() + "#" + methodInfo.getMethodName())
-              : new FromAnnotation<>(annotation.name());
-      final SourceAware<String> type =
-          "".equals(annotation.type())
-              ? new GeneratedFromMethodInfo<>(methodInfo.getMethodName())
-              : new FromAnnotation<>(annotation.type());
-      final List<SourceAware<String>> fetchVariables = new ArrayList<>();
-      fetchVariables.addAll(
-          Arrays.stream(annotation.fetchVariables()).map(FromAnnotation::new).toList());
-      fetchVariables.addAll(
-          usedVariableNames(methodInfo).stream().map(GeneratedFromMethodInfo::new).toList());
-      return Optional.of(
-              new JobWorkerValue(
-                  type,
-                  name,
-                  annotation.timeout() == -1L
-                      ? new Empty<>()
-                      : new FromAnnotation<>(Duration.of(annotation.timeout(), ChronoUnit.MILLIS)),
-                  annotation.maxJobsActive() == -1
-                      ? new Empty<>()
-                      : new FromAnnotation<>(annotation.maxJobsActive()),
-                  annotation.requestTimeout() == -1L
-                      ? new Empty<>()
-                      : new FromAnnotation<>(
-                          Duration.of(annotation.requestTimeout(), ChronoUnit.SECONDS)),
-                  annotation.pollInterval() == -1L
-                      ? new Empty<>()
-                      : new FromAnnotation<>(
-                          Duration.of(annotation.pollInterval(), ChronoUnit.MILLIS)),
-                  annotation.autoComplete() ? new Empty<>() : new FromAnnotation<>(false),
-                  fetchVariables,
-                  annotation.enabled() ? new Empty<>() : new FromAnnotation<>(false),
-                  Arrays.stream(annotation.tenantIds())
-                      .map(tenantId -> (SourceAware<String>) new FromAnnotation<>(tenantId))
-                      .toList(),
-                  annotation.fetchAllVariables()
-                      ? new FromAnnotation<>(true)
-                      : usesActivatedJob(methodInfo)
-                          ? new GeneratedFromMethodInfo<>(true)
-                          : new Empty<>(),
-                  annotation.streamEnabled() ? new FromAnnotation<>(true) : new Empty<>(),
-                  annotation.streamTimeout() == -1L
-                      ? new Empty<>()
-                      : new FromAnnotation<>(
-                          Duration.of(annotation.streamTimeout(), ChronoUnit.MILLIS)),
-                  annotation.maxRetries() == -1
-                      ? new Empty<>()
-                      : new FromAnnotation<>(annotation.maxRetries()),
-                  new Empty<>(),
-                  new Empty<>()))
-          .map(
-              v -> {
-                v.setMethodInfo(methodInfo);
-                return v;
-              });
-    }
-    return Optional.empty();
-  }
-
   public static Optional<VariableValue> getVariableValue(final ParameterInfo parameterInfo) {
     if (isVariable(parameterInfo)) {
-      if (!isVariableLegacy(parameterInfo)) {
-        return Optional.of(
-            new VariableValue(
-                getVariableName(parameterInfo), parameterInfo, getVariableOptional(parameterInfo)));
-      } else {
-        return Optional.of(
-            new VariableValue(getVariableNameLegacy(parameterInfo), parameterInfo, true));
-      }
+      return Optional.of(
+          new VariableValue(
+              getVariableName(parameterInfo), parameterInfo, getVariableOptional(parameterInfo)));
     }
     return Optional.empty();
   }
@@ -423,7 +329,6 @@ public class AnnotationUtil {
       final List<DeploymentValue> values = new ArrayList<>();
       values.addAll(getDeploymentValuesFromRepeatable(beanInfo));
       values.addAll(getDeploymentValuesInternal(beanInfo));
-      values.addAll(getDeploymentResourcesLegacy(beanInfo));
       return values;
     }
     return Collections.emptyList();
@@ -457,47 +362,6 @@ public class AnnotationUtil {
             : deploymentAnnotation.tenantId(),
         ownJarOnly,
         annotatedClass);
-  }
-
-  private static List<DeploymentValue> getDeploymentResourcesLegacy(final BeanInfo beanInfo) {
-    return beanInfo
-        .getAnnotation(io.camunda.zeebe.spring.client.annotation.Deployment.class)
-        .map(AnnotationUtil::fromAnnotation)
-        .map(Arrays::asList)
-        .orElseGet(List::of);
-  }
-
-  private static DeploymentValue fromAnnotation(
-      final io.camunda.zeebe.spring.client.annotation.Deployment deploymentAnnotation) {
-    return new DeploymentValue(
-        Arrays.asList(deploymentAnnotation.resources()),
-        StringUtils.isEmpty(deploymentAnnotation.tenantId())
-            ? null
-            : deploymentAnnotation.tenantId(),
-        new FromLegacy<>(false),
-        null);
-  }
-
-  private static boolean isVariableLegacy(final ParameterInfo parameterInfo) {
-    return parameterInfo
-        .getParameter()
-        .isAnnotationPresent(io.camunda.zeebe.spring.client.annotation.Variable.class);
-  }
-
-  private static boolean isVariablesAsTypeLegacy(final ParameterInfo parameterInfo) {
-    return parameterInfo
-        .getParameter()
-        .isAnnotationPresent(io.camunda.zeebe.spring.client.annotation.VariablesAsType.class);
-  }
-
-  private static boolean isCustomHeadersLegacy(final ParameterInfo parameterInfo) {
-    return parameterInfo
-        .getParameter()
-        .isAnnotationPresent(io.camunda.zeebe.spring.client.annotation.CustomHeaders.class);
-  }
-
-  public static boolean isDeploymentLegacy(final BeanInfo beanInfo) {
-    return beanInfo.hasClassAnnotation(io.camunda.zeebe.spring.client.annotation.Deployment.class);
   }
 
   private static String getVariableName(final ParameterInfo param) {
@@ -552,34 +416,5 @@ public class AnnotationUtil {
     }
     LOG.trace("No document annotation found, defaulting to true");
     return true;
-  }
-
-  private static String getVariableNameLegacy(final ParameterInfo param) {
-    if (param
-        .getParameter()
-        .isAnnotationPresent(io.camunda.zeebe.spring.client.annotation.Variable.class)) {
-      final String nameFromAnnotation =
-          param
-              .getParameter()
-              .getAnnotation(io.camunda.zeebe.spring.client.annotation.Variable.class)
-              .name();
-      if (!Objects.equals(
-          nameFromAnnotation, io.camunda.zeebe.spring.client.annotation.Variable.DEFAULT_NAME)) {
-        LOG.trace("Extracting name {} from Variable.name", nameFromAnnotation);
-        return nameFromAnnotation;
-      }
-      final String valueFromAnnotation =
-          param
-              .getParameter()
-              .getAnnotation(io.camunda.zeebe.spring.client.annotation.Variable.class)
-              .value();
-      if (!Objects.equals(
-          valueFromAnnotation, io.camunda.zeebe.spring.client.annotation.Variable.DEFAULT_NAME)) {
-        LOG.trace("Extracting name {} from Variable.value", valueFromAnnotation);
-        return valueFromAnnotation;
-      }
-    }
-    LOG.trace("Extracting variable name from parameter name");
-    return param.getParameterName();
   }
 }

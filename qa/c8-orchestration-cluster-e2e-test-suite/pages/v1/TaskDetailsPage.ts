@@ -281,6 +281,7 @@ class TaskDetailsPageV1 {
   }
 
   async fillDynamicList(label: string, value: string) {
+    await sleep(500);
     const locator = this.page.getByLabel(label);
     const elements = await locator.all();
     if (elements.length === 0) {
@@ -319,7 +320,6 @@ class TaskDetailsPageV1 {
       `${locator} could not be filled with value "${value}" after ${maxRetries} attempts.`,
     );
   }
-
 
   async getDynamicListValues(label: string): Promise<string[]> {
     const locator = this.page.getByLabel(label);

@@ -7,7 +7,7 @@
  */
 
 import type {Route} from '@playwright/test';
-import {type QueryAuditLogsResponseBody} from '@camunda/camunda-api-zod-schemas/8.9';
+import {type QueryAuditLogsResponseBody} from '@camunda/camunda-api-zod-schemas/8.10';
 
 function mockResponses({auditLogs}: {auditLogs?: QueryAuditLogsResponseBody}) {
   return (route: Route) => {
@@ -56,7 +56,6 @@ const mockAuditLogs: QueryAuditLogsResponseBody = {
       actorType: 'USER',
       tenantId: null,
       result: 'SUCCESS',
-      annotation: null,
       category: 'DEPLOYED_RESOURCES',
       processDefinitionId: 'orderProcess',
       processDefinitionKey: '2251799813685249',
@@ -90,7 +89,6 @@ const mockAuditLogs: QueryAuditLogsResponseBody = {
       actorType: 'USER',
       tenantId: null,
       result: 'SUCCESS',
-      annotation: null,
       category: 'DEPLOYED_RESOURCES',
       processDefinitionId: 'orderProcess',
       processDefinitionKey: '2251799813685249',
@@ -124,7 +122,6 @@ const mockAuditLogs: QueryAuditLogsResponseBody = {
       actorType: 'USER',
       tenantId: null,
       result: 'FAIL',
-      annotation: null,
       category: 'DEPLOYED_RESOURCES',
       processDefinitionId: 'orderProcess',
       processDefinitionKey: '2251799813685249',

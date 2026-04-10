@@ -123,8 +123,8 @@ test.describe('processes page', () => {
       searchParams: {
         active: 'true',
         incidents: 'true',
-        process: 'bigVarProcess',
-        version: '1',
+        processDefinitionId: 'bigVarProcess',
+        processDefinitionVersion: '1',
       },
     });
 
@@ -163,8 +163,8 @@ test.describe('processes page', () => {
         incidents: 'true',
         completed: 'true',
         canceled: 'true',
-        process: 'eventSubprocessProcess',
-        version: '1',
+        processDefinitionId: 'eventSubprocessProcess',
+        processDefinitionVersion: '1',
       },
     });
 
@@ -212,12 +212,13 @@ test.describe('processes page', () => {
         incidents: 'true',
         completed: 'true',
         canceled: 'true',
-        process: 'eventSubprocessProcess',
-        version: '1',
+        processDefinitionId: 'eventSubprocessProcess',
+        processDefinitionVersion: '1',
       },
     });
 
     await expect(processesPage.processInstancesTable).toBeVisible();
+    await expect(page.getByTestId(/^state-overlay/).first()).toBeVisible();
 
     await expect(page).toHaveScreenshot();
   });
@@ -266,7 +267,7 @@ test.describe('processes page', () => {
     await filtersPanel.displayOptionalFilter('Variable');
     await filtersPanel.displayOptionalFilter('Error Message');
     await filtersPanel.displayOptionalFilter('Operation Id');
-    await filtersPanel.operationIdFilter.type('aaa');
+    await filtersPanel.batchOperationIdFilter.type('aaa');
     await expect(
       page.getByText('Id has to be a 16 to 19 digit number or a UUID'),
     ).toBeVisible();
@@ -358,7 +359,6 @@ test.describe('processes page', () => {
   test('filled with data and active batchOperationId filter', async ({
     page,
     processesPage,
-    processesPage: {filtersPanel},
   }) => {
     await page.route(
       URL_API_PATTERN,
@@ -379,11 +379,6 @@ test.describe('processes page', () => {
         batchOperationId: 'bf547ac3-9a35-45b9-ab06-b80b43785153',
       },
     });
-
-    await filtersPanel.displayOptionalFilter('Operation Id');
-    await filtersPanel.operationIdFilter.type(
-      'bf547ac3-9a35-45b9-ab06-b80b43785153',
-    );
 
     await expect(page.getByLabel('Sort by Operation State')).toBeInViewport();
 
@@ -393,7 +388,6 @@ test.describe('processes page', () => {
   test('filled with data, active batchOperationId filter and error message expanded', async ({
     page,
     processesPage,
-    processesPage: {filtersPanel},
   }) => {
     await page.route(
       URL_API_PATTERN,
@@ -414,11 +408,6 @@ test.describe('processes page', () => {
         batchOperationId: 'bf547ac3-9a35-45b9-ab06-b80b43785153',
       },
     });
-
-    await filtersPanel.displayOptionalFilter('Operation Id');
-    await filtersPanel.operationIdFilter.type(
-      'bf547ac3-9a35-45b9-ab06-b80b43785153',
-    );
 
     const errorRow = page.getByRole('row', {name: '6755399441062827'});
 

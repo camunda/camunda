@@ -19,11 +19,11 @@ const getMigrationSourceXmlParser =
   ({
     xml,
     diagramModel,
-    selectableFlowNodes,
+    selectableElements,
   }: {
     xml: string;
     diagramModel: DiagramModel;
-    selectableFlowNodes: BusinessObject[];
+    selectableElements: BusinessObject[];
   }) => {
     const selectableSequenceFlows = getMappableSequenceFlows(
       diagramModel?.elementsById,
@@ -32,7 +32,7 @@ const getMigrationSourceXmlParser =
     return {
       xml,
       diagramModel,
-      selectableFlowNodes: selectableFlowNodes
+      selectableElements: selectableElements
         .filter(isMigratableElement)
         .filter((sourceElement) => {
           return (

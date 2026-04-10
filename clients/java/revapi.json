@@ -63,6 +63,41 @@
           "old": "method java.lang.Object io.camunda.client.api.search.response.Form::getSchema()",
           "new": "method java.lang.String io.camunda.client.api.search.response.Form::getSchema()",
           "justification": "This method was previously returning Object, which was a bug. Changing it to String is a more accurate return type and remains backward-compatible, as callers can still treat the returned value as an Object if needed."
+        },
+        {
+          "ignore": true,
+          "code": "java.class.noLongerImplementsInterface",
+          "justification": "TypedPageableRequest was removed from search request interfaces because pagination model selection is now handled via the pagination type parameter in TypedSearchRequest. This provides compile-time type safety for the page() method, similar to how sort models work. The page() method remains available through TypedSearchRequest."
+        },
+        {
+          "ignore": true,
+          "code": "java.class.superTypeTypeParametersChanged",
+          "justification": "Added a pagination model type parameter to TypedSearchRequest and updated related interfaces (TypedFilterableRequest, TypedSortableRequest, TypedPageableRequest) to enable compile-time validation of pagination method usage. This mirrors the existing pattern used for sort models and search request now explicitly declare which pagination models they support (AnyPage, CursorForwardPage, OffsetPage, etc.)."
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method SELF io.camunda.client.api.search.request.TypedPageableRequest<SELF extends io.camunda.client.api.search.request.TypedPageableRequest<SELF>>::page(io.camunda.client.api.search.request.SearchRequestPage)",
+          "justification": "The page() method signature changed to accept typed pagination models (via SearchPagination<P>) instead of the legacy SearchRequestPage. The method is now available through TypedSearchRequest with type-safe pagination model parameters (AnyPage, OffsetPage, CursorForwardPage, etc.)."
+        },
+
+        {
+          "ignore": true,
+          "code": "java.class.removed",
+          "old": "class io.camunda.client.LegacyZeebeClientProperties",
+          "justification": "Removal of V1 APIs in 8.10+; compatibility impact accepted for this release."
+        },
+        {
+          "ignore": true,
+          "code": "java.field.removed",
+          "old": "field io.camunda.client.api.worker.metrics.MicrometerJobWorkerMetricsBuilder.Names.ZEEBE_JOB_ACTIVATED",
+          "justification": "Removal of V1 APIs in 8.10+; compatibility impact accepted for this release."
+        },
+        {
+          "ignore": true,
+          "code": "java.field.removed",
+          "old": "field io.camunda.client.api.worker.metrics.MicrometerJobWorkerMetricsBuilder.Names.ZEEBE_JOB_HANDLED",
+          "justification": "Removal of V1 APIs in 8.10+; compatibility impact accepted for this release."
         }
       ]
     }

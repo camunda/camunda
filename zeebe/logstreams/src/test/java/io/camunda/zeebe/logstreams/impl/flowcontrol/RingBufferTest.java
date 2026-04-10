@@ -187,19 +187,19 @@ final class RingBufferTest {
   @Test
   void findAndRemoveCleansUpRequestListenerOnSkippedEntries() {
     // given
-    final var ignored = new AtomicBoolean(false);
+    final var dropped = new AtomicBoolean(false);
     final Listener listener =
         new Listener() {
           @Override
           public void onSuccess() {}
 
           @Override
-          public void onIgnore() {
-            ignored.set(true);
-          }
+          public void onIgnore() {}
 
           @Override
-          public void onDropped() {}
+          public void onDropped() {
+            dropped.set(true);
+          }
         };
     final var buffer = new RingBuffer(8);
     final var skipped = new InFlightEntry(METRICS, null, listener);
@@ -211,8 +211,8 @@ final class RingBufferTest {
     // when
     buffer.findAndRemove(200);
 
-    // then — cleanup() should have called onIgnore on the skipped entry's listener
-    assertThat(ignored.get()).as("skipped entry's listener should receive onIgnore").isTrue();
+    // then — cleanup() should have called onDropped on the skipped entry's listener
+    assertThat(dropped.get()).as("skipped entry's listener should receive onDropped").isTrue();
   }
 
   /**
@@ -488,6 +488,7 @@ final class RingBufferTest {
       final var buffer = new RingBuffer(smallCapacity);
       final var failures = new ConcurrentLinkedQueue<Throwable>();
       final var startLatch = new CountDownLatch(1);
+      final var publishedIndex = new AtomicLong(0);
 
       final var writer =
           new Thread(
@@ -497,6 +498,7 @@ final class RingBufferTest {
                   final var entry = new InFlightEntry(METRICS, null, null);
                   entry.highestPosition = pos;
                   buffer.put(entry);
+                  publishedIndex.set(pos);
                 }
               });
 
@@ -508,6 +510,9 @@ final class RingBufferTest {
               () -> {
                 awaitLatch(startLatch);
                 for (long pos = 1; pos <= ITERATIONS; pos++) {
+                  if (pos > publishedIndex.get()) {
+                    LockSupport.parkNanos(1);
+                  }
                   final var entry = buffer.findAndRemove(pos);
                   if (entry != null) {
                     try {

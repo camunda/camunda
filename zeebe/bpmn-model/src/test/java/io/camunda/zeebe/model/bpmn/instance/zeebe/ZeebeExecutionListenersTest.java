@@ -22,7 +22,6 @@ import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.impl.BpmnModelConstants;
 import io.camunda.zeebe.model.bpmn.instance.BpmnModelElementInstanceTest;
 import io.camunda.zeebe.model.bpmn.instance.ExtensionElements;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import org.camunda.bpm.model.xml.instance.ModelElementInstance;
@@ -37,7 +36,7 @@ public class ZeebeExecutionListenersTest extends BpmnModelElementInstanceTest {
 
   @Override
   public Collection<ChildElementAssumption> getChildElementAssumptions() {
-    return Arrays.asList(
+    return Collections.singletonList(
         new ChildElementAssumption(BpmnModelConstants.ZEEBE_NS, ZeebeExecutionListener.class));
   }
 
@@ -71,6 +70,28 @@ public class ZeebeExecutionListenersTest extends BpmnModelElementInstanceTest {
                 ZeebeExecutionListenerEventType.end,
                 "task_end_el_2",
                 ZeebeExecutionListener.DEFAULT_RETRIES));
+
+    final ZeebeExecutionListener startListenerWithHeaders =
+        executionListeners.stream()
+            .filter(l -> "task_start_el_1".equals(l.getType()))
+            .findFirst()
+            .orElseThrow(
+                () ->
+                    new AssertionError("Expected execution listener with type 'task_start_el_1'"));
+    final ZeebeExecutionListener endListenerWithHeaders =
+        executionListeners.stream()
+            .filter(l -> "task_end_el_1".equals(l.getType()))
+            .findFirst()
+            .orElseThrow(
+                () -> new AssertionError("Expected execution listener with type 'task_end_el_1'"));
+    assertThat(startListenerWithHeaders.getTaskHeaders()).isNotNull();
+    assertThat(startListenerWithHeaders.getTaskHeaders().getHeaders())
+        .extracting(ZeebeHeader::getKey, ZeebeHeader::getValue)
+        .containsExactly(tuple("aKey", "aValue"), tuple("bKey", "bValue"));
+    assertThat(endListenerWithHeaders.getTaskHeaders()).isNotNull();
+    assertThat(endListenerWithHeaders.getTaskHeaders().getHeaders())
+        .extracting(ZeebeHeader::getKey, ZeebeHeader::getValue)
+        .containsExactly(tuple("cKey", "cValue"));
   }
 
   private Collection<ZeebeExecutionListener> getExecutionListeners(

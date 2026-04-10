@@ -970,7 +970,14 @@ After the REST endpoint is complete, extend the Java client:
 1. Add a new command method to `CamundaClient.java`.
 2. For **search**, implement `TypedSearchQueryRequest`.
 3. For **commands**, implement a step-builder chain guiding users from required to optional inputs, ending in `FinalCommandStep`.
-4. Provide client-level unit tests mocking REST API interactions.
+4. **Choose the correct pagination type** for your request based on the OpenAPI schema's `page` field:
+   - `AnyPage` (factory: `SearchRequestBuilders.anyPage()`) — when the schema uses `SearchQueryPageRequest` (supports offset *and* cursor pagination). Used by most search endpoints.
+   - `OffsetPage` (factory: `SearchRequestBuilders.offsetPage()`) — when the schema uses `OffsetPagination` (offset-only, `from` + `limit`).
+   - `CursorForwardPage` (factory: `SearchRequestBuilders.cursorForwardPage()`) — when the schema uses `CursorForwardPagination` (cursor-only, `after` + `limit`).
+
+   Each page type has a corresponding `*Impl` class that implements `TypedSearchRequestPropertyProvider<T>`, where `T` must match the generated protocol model expected by the endpoint. Using the wrong page type causes a `ClassCastException` at runtime. Follow the same type-safety pattern used for sort (`TypedSortableRequest<S, SELF>`).
+
+5. Provide client-level unit tests mocking REST API interactions.
 
 ---
 

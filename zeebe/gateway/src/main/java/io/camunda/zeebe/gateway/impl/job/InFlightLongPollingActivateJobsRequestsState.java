@@ -9,23 +9,20 @@ package io.camunda.zeebe.gateway.impl.job;
 
 import io.camunda.zeebe.gateway.metrics.LongPollingMetrics;
 import java.util.HashSet;
-import java.util.LinkedList;
-import java.util.Queue;
+import java.util.LinkedHashSet;
+import java.util.SequencedSet;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 
 public final class InFlightLongPollingActivateJobsRequestsState<T> {
 
   private final String jobType;
   private final LongPollingMetrics metrics;
-  private final Queue<InflightActivateJobsRequest<T>> activeRequests = new LinkedList<>();
-  private final Queue<InflightActivateJobsRequest<T>> pendingRequests = new LinkedList<>();
+  private final Set<InflightActivateJobsRequest<T>> activeRequests = new HashSet<>();
+  private final SequencedSet<InflightActivateJobsRequest<T>> pendingRequests =
+      new LinkedHashSet<>();
   private final Set<InflightActivateJobsRequest<T>> activeRequestsToBeRepeated = new HashSet<>();
-  private final AtomicInteger failedAttempts = new AtomicInteger();
+  private int failedAttempts;
   private long lastUpdatedTime;
-
-  private final AtomicBoolean ongoingNotification = new AtomicBoolean(false);
 
   public InFlightLongPollingActivateJobsRequestsState(
       final String jobType, final LongPollingMetrics metrics) {
@@ -34,12 +31,12 @@ public final class InFlightLongPollingActivateJobsRequestsState<T> {
   }
 
   public void incrementFailedAttempts(final long lastUpdatedTime) {
-    failedAttempts.incrementAndGet();
+    failedAttempts++;
     this.lastUpdatedTime = lastUpdatedTime;
   }
 
   public boolean shouldAttempt(final int attemptThreshold) {
-    return failedAttempts.get() < attemptThreshold;
+    return failedAttempts < attemptThreshold;
   }
 
   public void resetFailedAttempts() {
@@ -47,11 +44,11 @@ public final class InFlightLongPollingActivateJobsRequestsState<T> {
   }
 
   public int getFailedAttempts() {
-    return failedAttempts.get();
+    return failedAttempts;
   }
 
   public void setFailedAttempts(final int failedAttempts) {
-    this.failedAttempts.set(failedAttempts);
+    this.failedAttempts = failedAttempts;
     if (failedAttempts == 0) {
       activeRequestsToBeRepeated.addAll(activeRequests);
     }
@@ -62,47 +59,29 @@ public final class InFlightLongPollingActivateJobsRequestsState<T> {
   }
 
   public void enqueueRequest(final InflightActivateJobsRequest<T> request) {
-    if (!pendingRequests.contains(request)) {
-      pendingRequests.offer(request);
-    }
-    removeObsoleteRequestsAndUpdateMetrics();
-  }
-
-  public Queue<InflightActivateJobsRequest<T>> getPendingRequests() {
-    removeObsoleteRequestsAndUpdateMetrics();
-    return pendingRequests;
-  }
-
-  private void removeObsoleteRequestsAndUpdateMetrics() {
-    pendingRequests.removeIf(this::isObsolete);
-    activeRequests.removeIf(this::isObsolete);
-    activeRequestsToBeRepeated.removeIf(this::isObsolete);
-    metrics.setBlockedRequestsCount(jobType, pendingRequests.size());
-  }
-
-  private boolean isObsolete(final InflightActivateJobsRequest<T> request) {
-    return request.isTimedOut()
-        || request.isCanceled()
-        || request.isCompleted()
-        || request.isAborted();
+    pendingRequests.add(request);
+    updatePendingMetrics();
   }
 
   public void removeRequest(final InflightActivateJobsRequest<T> request) {
     pendingRequests.remove(request);
-    removeObsoleteRequestsAndUpdateMetrics();
+    updatePendingMetrics();
   }
 
   public InflightActivateJobsRequest<T> getNextPendingRequest() {
-    removeObsoleteRequestsAndUpdateMetrics();
-    final InflightActivateJobsRequest<T> request = pendingRequests.poll();
-    metrics.setBlockedRequestsCount(jobType, pendingRequests.size());
+    if (pendingRequests.isEmpty()) {
+      return null;
+    }
+    final var request = pendingRequests.removeFirst();
+    updatePendingMetrics();
     return request;
   }
 
   public void addActiveRequest(final InflightActivateJobsRequest<T> request) {
-    activeRequests.offer(request);
+    activeRequests.add(request);
     pendingRequests.remove(request);
     activeRequestsToBeRepeated.remove(request);
+    updatePendingMetrics();
   }
 
   public void removeActiveRequest(final InflightActivateJobsRequest<T> request) {
@@ -111,8 +90,11 @@ public final class InFlightLongPollingActivateJobsRequestsState<T> {
   }
 
   public boolean hasActiveRequests() {
-    removeObsoleteRequestsAndUpdateMetrics();
     return !activeRequests.isEmpty();
+  }
+
+  private void updatePendingMetrics() {
+    metrics.setBlockedRequestsCount(jobType, pendingRequests.size());
   }
 
   /**
@@ -122,13 +104,5 @@ public final class InFlightLongPollingActivateJobsRequestsState<T> {
    */
   public boolean shouldBeRepeated(final InflightActivateJobsRequest<T> request) {
     return activeRequestsToBeRepeated.contains(request) && !request.isLongPollingDisabled();
-  }
-
-  public boolean shouldNotifyAndStartNotification() {
-    return ongoingNotification.compareAndSet(false, true);
-  }
-
-  public void completeNotification() {
-    ongoingNotification.set(false);
   }
 }

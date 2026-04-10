@@ -7,7 +7,7 @@
  */
 
 import {addDays} from 'date-fns';
-import type {License} from '@camunda/camunda-api-zod-schemas/8.9';
+import type {License} from '@camunda/camunda-api-zod-schemas/8.10';
 
 const validLicense: License = {
   validLicense: true,

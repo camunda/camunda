@@ -13,6 +13,7 @@ import io.camunda.zeebe.backup.azure.AzureBackupStore;
 import io.camunda.zeebe.backup.filesystem.FilesystemBackupStore;
 import io.camunda.zeebe.backup.gcs.GcsBackupStore;
 import io.camunda.zeebe.backup.s3.S3BackupStore;
+import io.camunda.zeebe.broker.system.InvalidConfigurationException;
 import io.camunda.zeebe.broker.system.configuration.backup.AzureBackupStoreConfig;
 import io.camunda.zeebe.broker.system.configuration.backup.BackupCfg;
 import io.camunda.zeebe.broker.system.configuration.backup.FilesystemBackupStoreConfig;
@@ -54,20 +55,46 @@ public final class BackupStoreTransitionStep implements PartitionTransitionStep 
     if (shouldInstallOnTransition(context.getCurrentRole(), targetRole)
         || (context.getBackupStore() == null && targetRole != Role.INACTIVE)) {
       final var backupCfg = context.getBrokerCfg().getData().getBackup();
-      switch (backupCfg.getStore()) {
-        case NONE -> {
-          // No backup store is installed. BackupManager can handle this case
-          context.setBackupStore(null);
-          installed.complete(null);
+      final BackupStore store;
+      try {
+        store =
+            switch (backupCfg.getStore()) {
+              case NONE -> null; // No backup store is installed. BackupManager can handle this case
+              case S3 -> createS3Store(backupCfg);
+              case GCS -> createGcsStore(backupCfg);
+              case AZURE -> createAzureStore(backupCfg);
+              case FILESYSTEM -> createFilesystemStore(backupCfg);
+            };
+      } catch (final Exception e) {
+        installed.completeExceptionally("Failed to create backup store.", e);
+        return installed;
+      }
+
+      if (backupCfg.isRequired()) {
+        if (store == null) {
+          installed.completeExceptionally(
+              new InvalidConfigurationException(
+                  "Backup store is required but no backup store type is configured."));
+          return installed;
         }
-        case S3 -> installS3Store(context, backupCfg, installed);
-        case GCS -> installGcsStore(context, backupCfg, installed);
-        case AZURE -> installAzureStore(context, backupCfg, installed);
-        case FILESYSTEM -> installFilesystemStore(context, backupCfg, installed);
-        default ->
-            installed.completeExceptionally(
-                new IllegalArgumentException(
-                    "Unknown backup store type %s".formatted(backupCfg.getStore())));
+
+        store
+            .verifyConnection()
+            .whenCompleteAsync(
+                (ignore, err) -> {
+                  if (err != null) {
+                    context.setBackupStore(null);
+                    store.closeAsync();
+                    installed.completeExceptionally(err);
+                  } else {
+                    context.setBackupStore(store);
+                    installed.complete(null);
+                  }
+                },
+                context.getConcurrencyControl());
+      } else {
+        context.setBackupStore(store);
+        installed.complete(null);
       }
     } else {
       installed.complete(null);
@@ -80,64 +107,28 @@ public final class BackupStoreTransitionStep implements PartitionTransitionStep 
     return "BackupStore";
   }
 
-  private static void installS3Store(
-      final PartitionTransitionContext context,
-      final BackupCfg backupCfg,
-      final ActorFuture<Void> installed) {
-    try {
-      final var storeConfig = S3BackupStoreConfig.toStoreConfig(backupCfg.getS3());
-      final var backupStore = S3BackupStore.of(storeConfig);
-      context.setBackupStore(backupStore);
-      installed.complete(null);
-    } catch (final Exception error) {
-      installed.completeExceptionally("Failed to create backup store", error);
-    }
+  private static BackupStore createS3Store(final BackupCfg backupCfg) {
+    final var storeConfig = S3BackupStoreConfig.toStoreConfig(backupCfg.getS3());
+    return S3BackupStore.of(storeConfig);
   }
 
-  private static void installGcsStore(
-      final PartitionTransitionContext context,
-      final BackupCfg backupCfg,
-      final ActorFuture<Void> installed) {
-    try {
-      final var brokerGcsConfig = backupCfg.getGcs();
-      final var storeGcsConfig = GcsBackupStoreConfig.toStoreConfig(brokerGcsConfig);
-      final var gcsStore = GcsBackupStore.of(storeGcsConfig);
-      context.setBackupStore(gcsStore);
-      installed.complete(null);
-    } catch (final Exception error) {
-      installed.completeExceptionally("Failed to create backup store", error);
-    }
+  private static BackupStore createGcsStore(final BackupCfg backupCfg) {
+    final var brokerGcsConfig = backupCfg.getGcs();
+    final var storeGcsConfig = GcsBackupStoreConfig.toStoreConfig(brokerGcsConfig);
+    return GcsBackupStore.of(storeGcsConfig);
   }
 
-  private static void installAzureStore(
-      final PartitionTransitionContext context,
-      final BackupCfg backupCfg,
-      final ActorFuture<Void> installed) {
-    try {
-      final var brokerAzureConfig = backupCfg.getAzure();
-      final var storeAzureConfig = AzureBackupStoreConfig.toStoreConfig(brokerAzureConfig);
-      final var azureStore = AzureBackupStore.of(storeAzureConfig);
-      context.setBackupStore(azureStore);
-      installed.complete(null);
-    } catch (final Exception error) {
-      installed.completeExceptionally("Failed to create backup store", error);
-    }
+  private static BackupStore createAzureStore(final BackupCfg backupCfg) {
+    final var brokerAzureConfig = backupCfg.getAzure();
+    final var storeAzureConfig = AzureBackupStoreConfig.toStoreConfig(brokerAzureConfig);
+    return AzureBackupStore.of(storeAzureConfig);
   }
 
-  private static void installFilesystemStore(
-      final PartitionTransitionContext context,
-      final BackupCfg backupCfg,
-      final ActorFuture<Void> installed) {
-    try {
-      final var brokerFilesystemConfig = backupCfg.getFilesystem();
-      final var storeFilesystemConfig =
-          FilesystemBackupStoreConfig.toStoreConfig(brokerFilesystemConfig);
-      final var filesystemStore = FilesystemBackupStore.of(storeFilesystemConfig);
-      context.setBackupStore(filesystemStore);
-      installed.complete(null);
-    } catch (final Exception error) {
-      installed.completeExceptionally("Failed to create backup store", error);
-    }
+  private static BackupStore createFilesystemStore(final BackupCfg backupCfg) {
+    final var brokerFilesystemConfig = backupCfg.getFilesystem();
+    final var storeFilesystemConfig =
+        FilesystemBackupStoreConfig.toStoreConfig(brokerFilesystemConfig);
+    return FilesystemBackupStore.of(storeFilesystemConfig);
   }
 
   private boolean shouldInstallOnTransition(final Role currentRole, final Role targetRole) {

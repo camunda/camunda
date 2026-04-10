@@ -78,6 +78,9 @@
                   "mode": "basic",
                   "type": "color-background"
                 },
+                "footer": {
+                  "reducers": []
+                },
                 "inspect": false
               },
               "links": [],
@@ -112,7 +115,8 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "red"
+                    "color": "red",
+                    "value": 0
                   }
                 ]
               }
@@ -144,15 +148,7 @@
           "interval": "1s",
           "options": {
             "cellHeight": "sm",
-            "footer": {
-              "countRows": false,
-              "enablePagination": false,
-              "fields": "",
-              "reducer": [
-                "sum"
-              ],
-              "show": false
-            },
+            "enablePagination": false,
             "frameIndex": 0,
             "showHeader": true,
             "sortBy": []
@@ -168,7 +164,6 @@
               "exemplar": false,
               "expr": "atomix_role{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\", partition=~\"$partition\"}",
               "format": "time_series",
-              "hide": false,
               "instant": true,
               "interval": "",
               "intervalFactor": 1,
@@ -221,7 +216,8 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green"
+                    "color": "green",
+                    "value": 0
                   },
                   {
                     "color": "red",
@@ -233,8 +229,8 @@
             "overrides": []
           },
           "gridPos": {
-            "h": 2,
-            "w": 9,
+            "h": 3,
+            "w": 3,
             "x": 8,
             "y": 1
           },
@@ -276,6 +272,81 @@
         {
           "datasource": {
             "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "description": "Shows the count of active process instances in the partition.",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "mappings": [
+                {
+                  "options": {
+                    "0": {
+                      "index": 0,
+                      "text": "None"
+                    }
+                  },
+                  "type": "value"
+                }
+              ],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": 0
+                  }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 3,
+            "w": 6,
+            "x": 11,
+            "y": 1
+          },
+          "id": 709,
+          "options": {
+            "colorMode": "value",
+            "graphMode": "area",
+            "justifyMode": "auto",
+            "orientation": "auto",
+            "percentChangeColorMode": "standard",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "showPercentChange": false,
+            "textMode": "auto",
+            "wideLayout": true
+          },
+          "pluginVersion": "12.1.0",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
+              },
+              "editorMode": "code",
+              "expr": "max(zeebe_active_instances_count{namespace=~\"$namespace\", pod=~\"$pod\", partition=~\"$partition\"}) by (partition)",
+              "legendFormat": "Partition-{{partition}}",
+              "range": true,
+              "refId": "A"
+            }
+          ],
+          "title": "Active instances",
+          "type": "stat"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
             "uid": "$DS_PROMETHEUS"
           },
           "description": "Shows when and how often a pod was restarted.  The graph is zero when the pod is ready. With this it is also possible to determine how long it take for the pod to come ready again.",
@@ -308,6 +379,7 @@
                   "type": "linear"
                 },
                 "showPoints": "never",
+                "showValues": false,
                 "spanNulls": false,
                 "stacking": {
                   "group": "A",
@@ -325,7 +397,8 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green"
+                    "color": "green",
+                    "value": 0
                   },
                   {
                     "color": "red",
@@ -365,9 +438,8 @@
                 "uid": "${DS_PROMETHEUS}"
               },
               "editorMode": "code",
-              "expr": "1 - kube_pod_container_status_ready{pod=~\"$pod\", cluster=~\"$cluster\", container!~\"curator|curl\", namespace=~\"$namespace\"}",
+              "expr": "1 - kube_pod_container_status_ready{pod=~\"$pod\", cluster=~\"$cluster\", container!~\"curator|curl|leader.*\", namespace=~\"$namespace\"}",
               "format": "time_series",
-              "hide": false,
               "instant": false,
               "interval": "",
               "legendFormat": "{{pod}} restart",
@@ -402,7 +474,8 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green"
+                    "color": "green",
+                    "value": 0
                   },
                   {
                     "color": "red",
@@ -418,10 +491,10 @@
             "overrides": []
           },
           "gridPos": {
-            "h": 4,
+            "h": 3,
             "w": 9,
             "x": 8,
-            "y": 3
+            "y": 4
           },
           "id": 243,
           "options": {
@@ -492,6 +565,7 @@
                   "type": "linear"
                 },
                 "showPoints": "never",
+                "showValues": false,
                 "spanNulls": false,
                 "stacking": {
                   "group": "A",
@@ -508,7 +582,8 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green"
+                    "color": "green",
+                    "value": 0
                   },
                   {
                     "color": "red",
@@ -604,6 +679,7 @@
                   "type": "linear"
                 },
                 "showPoints": "never",
+                "showValues": false,
                 "spanNulls": false,
                 "stacking": {
                   "group": "A",
@@ -620,7 +696,8 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green"
+                    "color": "green",
+                    "value": 0
                   },
                   {
                     "color": "red",
@@ -661,7 +738,6 @@
               },
               "expr": "sum(rate(zeebe_exporter_events_total{cluster=~\"$cluster\", namespace=~\"$namespace\",partition=~\"$partition\",pod=~\"$pod\"}[$__rate_interval])) by (pod, partition, exporter)",
               "format": "time_series",
-              "hide": false,
               "interval": "",
               "intervalFactor": 1,
               "legendFormat": "{{pod}}-{{partition}}-exported",
@@ -706,6 +782,7 @@
                   "type": "linear"
                 },
                 "showPoints": "never",
+                "showValues": false,
                 "spanNulls": false,
                 "stacking": {
                   "group": "A",
@@ -721,7 +798,8 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green"
+                    "color": "green",
+                    "value": 0
                   },
                   {
                     "color": "red",
@@ -750,7 +828,7 @@
             "tooltip": {
               "hideZeros": false,
               "mode": "multi",
-              "sort": "none"
+              "sort": "desc"
             }
           },
           "pluginVersion": "12.1.0",
@@ -765,6 +843,18 @@
               "intervalFactor": 1,
               "legendFormat": "{{method}} Request",
               "refId": "A"
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
+              },
+              "editorMode": "code",
+              "expr": "sum by(uri, method) (\n  rate(http_server_requests_seconds_count{\n    method!~\"GET|OPTIONS|HEAD\",\n    namespace=~\"$namespace\",\n    uri!~\"^/actuator/health(/.*)?$|^/actuator/prometheus$|.*/mcp.*\",\n    uri!~\".*/search.*|.*/statistics.*\",\n  }[$__rate_interval]) != 0\n)",
+              "instant": false,
+              "legendFormat": "{{method}}: {{uri}}",
+              "range": true,
+              "refId": "B"
             }
           ],
           "title": "Requests handled by Gateway per sec",
@@ -794,7 +884,8 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "red"
+                    "color": "red",
+                    "value": 0
                   },
                   {
                     "color": "#EAB839",
@@ -887,6 +978,7 @@
                   "type": "linear"
                 },
                 "showPoints": "never",
+                "showValues": false,
                 "spanNulls": false,
                 "stacking": {
                   "group": "A",
@@ -903,7 +995,8 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green"
+                    "color": "green",
+                    "value": 0
                   },
                   {
                     "color": "red",
@@ -932,7 +1025,7 @@
             "tooltip": {
               "hideZeros": false,
               "mode": "multi",
-              "sort": "none"
+              "sort": "desc"
             }
           },
           "pluginVersion": "12.1.0",
@@ -977,7 +1070,8 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green"
+                    "color": "green",
+                    "value": 0
                   },
                   {
                     "color": "red",
@@ -1056,7 +1150,8 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green"
+                    "color": "green",
+                    "value": 0
                   },
                   {
                     "color": "red",
@@ -1135,7 +1230,8 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green"
+                    "color": "green",
+                    "value": 0
                   },
                   {
                     "color": "red",
@@ -1224,6 +1320,7 @@
                   "type": "linear"
                 },
                 "showPoints": "never",
+                "showValues": false,
                 "spanNulls": false,
                 "stacking": {
                   "group": "A",
@@ -1241,7 +1338,8 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "transparent"
+                    "color": "transparent",
+                    "value": 0
                   },
                   {
                     "color": "red",
@@ -1323,6 +1421,7 @@
                   "type": "linear"
                 },
                 "showPoints": "auto",
+                "showValues": false,
                 "spanNulls": false,
                 "stacking": {
                   "group": "A",
@@ -1339,7 +1438,8 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green"
+                    "color": "green",
+                    "value": 0
                   },
                   {
                     "color": "red",
@@ -1381,7 +1481,7 @@
             "tooltip": {
               "hideZeros": false,
               "mode": "single",
-              "sort": "none"
+              "sort": "desc"
             }
           },
           "pluginVersion": "12.1.0",
@@ -1426,7 +1526,8 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green"
+                    "color": "green",
+                    "value": 0
                   },
                   {
                     "color": "#EAB839",
@@ -1517,6 +1618,7 @@
                   "type": "linear"
                 },
                 "showPoints": "never",
+                "showValues": false,
                 "spanNulls": false,
                 "stacking": {
                   "group": "A",
@@ -1532,7 +1634,8 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green"
+                    "color": "green",
+                    "value": 0
                   },
                   {
                     "color": "red",
@@ -1616,7 +1719,6 @@
               },
               "expr": "container_memory_rss{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\", container=~\".*(orchestration|zeebe|camunda).*\"}",
               "format": "time_series",
-              "hide": false,
               "interval": "",
               "intervalFactor": 1,
               "legendFormat": "{{pod}} RSS",
@@ -1627,7 +1729,6 @@
                 "uid": "$DS_PROMETHEUS"
               },
               "expr": "max(kube_pod_container_resource_limits_memory_bytes{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\", container=~\".*(orchestration|zeebe|camunda).*\"})",
-              "hide": false,
               "interval": "",
               "legendFormat": "limit",
               "refId": "B"
@@ -1658,6 +1759,7 @@
                 "mode": "shades"
               },
               "custom": {
+                "axisPlacement": "auto",
                 "fillOpacity": 70,
                 "hideFrom": {
                   "legend": false,
@@ -1699,7 +1801,8 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "red"
+                    "color": "red",
+                    "value": 0
                   }
                 ]
               }
@@ -1725,8 +1828,9 @@
             "rowHeight": 0.9,
             "showValue": "auto",
             "tooltip": {
+              "hideZeros": false,
               "mode": "single",
-              "sort": "none"
+              "sort": "desc"
             }
           },
           "repeat": "partition",
@@ -1834,7 +1938,7 @@
             "h": 7,
             "w": 24,
             "x": 0,
-            "y": 2
+            "y": 194
           },
           "id": 272,
           "options": {
@@ -1891,7 +1995,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 9
+            "y": 291
           },
           "id": 418,
           "options": {
@@ -2010,7 +2114,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 9
+            "y": 291
           },
           "id": 421,
           "options": {
@@ -2023,7 +2127,7 @@
             "tooltip": {
               "hideZeros": false,
               "mode": "single",
-              "sort": "none"
+              "sort": "desc"
             }
           },
           "pluginVersion": "12.1.0",
@@ -2111,7 +2215,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 17
+            "y": 299
           },
           "id": 192,
           "options": {
@@ -2124,7 +2228,7 @@
             "tooltip": {
               "hideZeros": false,
               "mode": "single",
-              "sort": "none"
+              "sort": "desc"
             }
           },
           "pluginVersion": "12.1.0",
@@ -2153,7 +2257,6 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "description": "",
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -2226,7 +2329,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 17
+            "y": 299
           },
           "id": 602,
           "options": {
@@ -2242,7 +2345,7 @@
             "tooltip": {
               "hideZeros": false,
               "mode": "single",
-              "sort": "none"
+              "sort": "desc"
             }
           },
           "pluginVersion": "12.1.0",
@@ -2350,7 +2453,7 @@
             "h": 6,
             "w": 5,
             "x": 0,
-            "y": 25
+            "y": 307
           },
           "id": 194,
           "options": {
@@ -2363,7 +2466,7 @@
             "tooltip": {
               "hideZeros": false,
               "mode": "single",
-              "sort": "none"
+              "sort": "desc"
             }
           },
           "pluginVersion": "12.1.0",
@@ -2483,7 +2586,7 @@
             "h": 6,
             "w": 7,
             "x": 5,
-            "y": 25
+            "y": 307
           },
           "id": 199,
           "options": {
@@ -2622,7 +2725,7 @@
             "h": 4,
             "w": 7,
             "x": 12,
-            "y": 25
+            "y": 307
           },
           "id": 196,
           "options": {
@@ -2761,7 +2864,7 @@
             "h": 4,
             "w": 5,
             "x": 19,
-            "y": 25
+            "y": 307
           },
           "id": 200,
           "options": {
@@ -2900,7 +3003,7 @@
             "h": 8,
             "w": 5,
             "x": 12,
-            "y": 29
+            "y": 311
           },
           "id": 198,
           "options": {
@@ -3039,7 +3142,7 @@
             "h": 8,
             "w": 7,
             "x": 17,
-            "y": 29
+            "y": 311
           },
           "id": 268,
           "options": {
@@ -3144,7 +3247,7 @@
             "h": 6,
             "w": 5,
             "x": 0,
-            "y": 31
+            "y": 313
           },
           "id": 189,
           "options": {
@@ -3157,7 +3260,7 @@
             "tooltip": {
               "hideZeros": false,
               "mode": "single",
-              "sort": "none"
+              "sort": "desc"
             }
           },
           "pluginVersion": "12.1.0",
@@ -3279,7 +3382,7 @@
             "h": 6,
             "w": 7,
             "x": 5,
-            "y": 31
+            "y": 313
           },
           "id": 201,
           "options": {
@@ -3402,7 +3505,7 @@
             "h": 6,
             "w": 12,
             "x": 0,
-            "y": 37
+            "y": 319
           },
           "id": 604,
           "interval": "1s",
@@ -3432,7 +3535,6 @@
               "exemplar": false,
               "expr": "zeebe_stream_processor_state{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\", partition=~\"$partition\"}",
               "format": "time_series",
-              "hide": false,
               "instant": true,
               "interval": "",
               "intervalFactor": 1,
@@ -3531,7 +3633,7 @@
             "h": 6,
             "w": 12,
             "x": 12,
-            "y": 37
+            "y": 319
           },
           "id": 605,
           "interval": "1s",
@@ -3561,7 +3663,6 @@
               "exemplar": false,
               "expr": "zeebe_exporter_state{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\", partition=~\"$partition\"}",
               "format": "time_series",
-              "hide": false,
               "instant": true,
               "interval": "",
               "intervalFactor": 1,
@@ -3652,7 +3753,7 @@
             "h": 6,
             "w": 24,
             "x": 0,
-            "y": 43
+            "y": 325
           },
           "id": 543,
           "options": {
@@ -3749,7 +3850,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 49
+            "y": 331
           },
           "id": 561,
           "options": {
@@ -3762,7 +3863,7 @@
             "tooltip": {
               "hideZeros": false,
               "mode": "single",
-              "sort": "none"
+              "sort": "desc"
             }
           },
           "pluginVersion": "12.1.0",
@@ -3850,7 +3951,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 49
+            "y": 331
           },
           "id": 594,
           "options": {
@@ -3863,7 +3964,7 @@
             "tooltip": {
               "hideZeros": false,
               "mode": "single",
-              "sort": "none"
+              "sort": "desc"
             }
           },
           "pluginVersion": "12.1.0",
@@ -3958,7 +4059,7 @@
             "h": 5,
             "w": 12,
             "x": 0,
-            "y": 1105
+            "y": 1387
           },
           "id": 12,
           "options": {
@@ -4059,7 +4160,7 @@
             "h": 5,
             "w": 12,
             "x": 12,
-            "y": 1105
+            "y": 1387
           },
           "id": 13,
           "options": {
@@ -4168,7 +4269,7 @@
             "h": 6,
             "w": 24,
             "x": 0,
-            "y": 1200
+            "y": 1482
           },
           "id": 3,
           "options": {
@@ -4181,7 +4282,7 @@
             "tooltip": {
               "hideZeros": false,
               "mode": "multi",
-              "sort": "none"
+              "sort": "desc"
             }
           },
           "pluginVersion": "12.1.0",
@@ -4278,7 +4379,7 @@
             "h": 6,
             "w": 9,
             "x": 0,
-            "y": 1206
+            "y": 1488
           },
           "id": 4,
           "options": {
@@ -4291,7 +4392,7 @@
             "tooltip": {
               "hideZeros": false,
               "mode": "multi",
-              "sort": "none"
+              "sort": "desc"
             }
           },
           "pluginVersion": "12.1.0",
@@ -4379,7 +4480,7 @@
             "h": 6,
             "w": 7,
             "x": 9,
-            "y": 1206
+            "y": 1488
           },
           "id": 266,
           "options": {
@@ -4392,7 +4493,7 @@
             "tooltip": {
               "hideZeros": false,
               "mode": "multi",
-              "sort": "none"
+              "sort": "desc"
             }
           },
           "pluginVersion": "12.1.0",
@@ -4404,7 +4505,6 @@
               },
               "expr": "sum(rate(zeebe_exporter_events_total{cluster=~\"$cluster\", namespace=~\"$namespace\",partition=~\"$partition\",pod=~\"$pod\"}[$__rate_interval])) by (partition, pod)",
               "format": "time_series",
-              "hide": false,
               "interval": "",
               "intervalFactor": 1,
               "legendFormat": "{{pod}} Partition {{partition}}",
@@ -4481,7 +4581,7 @@
             "h": 6,
             "w": 8,
             "x": 16,
-            "y": 1206
+            "y": 1488
           },
           "id": 267,
           "options": {
@@ -4494,7 +4594,7 @@
             "tooltip": {
               "hideZeros": false,
               "mode": "multi",
-              "sort": "none"
+              "sort": "desc"
             }
           },
           "pluginVersion": "12.1.0",
@@ -4506,7 +4606,6 @@
               },
               "expr": "sum(rate(zeebe_replay_events_total{cluster=~\"$cluster\", namespace=~\"$namespace\",partition=~\"$partition\",pod=~\"$pod\"}[$__rate_interval])) by (partition, pod)",
               "format": "time_series",
-              "hide": false,
               "interval": "",
               "intervalFactor": 1,
               "legendFormat": "{{pod}} Partition {{partition}}",
@@ -4583,7 +4682,7 @@
             "h": 8,
             "w": 6,
             "x": 0,
-            "y": 1212
+            "y": 1494
           },
           "id": 290,
           "options": {
@@ -4682,7 +4781,7 @@
             "h": 8,
             "w": 6,
             "x": 6,
-            "y": 1212
+            "y": 1494
           },
           "id": 291,
           "options": {
@@ -4781,7 +4880,7 @@
             "h": 8,
             "w": 6,
             "x": 12,
-            "y": 1212
+            "y": 1494
           },
           "id": 288,
           "options": {
@@ -4880,7 +4979,7 @@
             "h": 8,
             "w": 6,
             "x": 18,
-            "y": 1212
+            "y": 1494
           },
           "id": 289,
           "options": {
@@ -4992,7 +5091,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 1106
+            "y": 1388
           },
           "id": 102,
           "options": {
@@ -5049,7 +5148,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 1106
+            "y": 1388
           },
           "id": 112,
           "options": {
@@ -5188,7 +5287,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 1204
+            "y": 1486
           },
           "id": 105,
           "options": {
@@ -5201,7 +5300,7 @@
             "tooltip": {
               "hideZeros": false,
               "mode": "multi",
-              "sort": "none"
+              "sort": "desc"
             }
           },
           "pluginVersion": "12.1.0",
@@ -5244,7 +5343,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 1204
+            "y": 1486
           },
           "id": 106,
           "options": {
@@ -5367,7 +5466,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 1212
+            "y": 1494
           },
           "id": 182,
           "options": {
@@ -5448,6 +5547,7 @@
                   "type": "linear"
                 },
                 "showPoints": "never",
+                "showValues": false,
                 "spanNulls": false,
                 "stacking": {
                   "group": "A",
@@ -5523,7 +5623,7 @@
             "h": 9,
             "w": 12,
             "x": 0,
-            "y": 1107
+            "y": 39
           },
           "id": 261,
           "options": {
@@ -5554,7 +5654,6 @@
               "editorMode": "code",
               "expr": "container_memory_rss{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\".*(orchestration|zeebe|camunda).*\", container=~\".*(orchestration|zeebe|camunda).*\"}",
               "format": "time_series",
-              "hide": false,
               "interval": "",
               "intervalFactor": 1,
               "legendFormat": "{{pod}} RSS",
@@ -5568,7 +5667,6 @@
               },
               "editorMode": "code",
               "expr": "max(kube_pod_container_resource_limits_memory_bytes{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\".*(orchestration|zeebe|camunda).*\", container=~\".*(orchestration|zeebe|camunda).*\"})",
-              "hide": false,
               "interval": "",
               "legendFormat": "limit",
               "range": true,
@@ -5625,6 +5723,7 @@
                   "type": "linear"
                 },
                 "showPoints": "never",
+                "showValues": false,
                 "spanNulls": false,
                 "stacking": {
                   "group": "A",
@@ -5700,7 +5799,7 @@
             "h": 9,
             "w": 12,
             "x": 12,
-            "y": 1107
+            "y": 39
           },
           "id": 659,
           "options": {
@@ -5731,7 +5830,6 @@
               "editorMode": "code",
               "expr": "camunda_memory_nmt_bytes{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\", state=~\"$memory_state\"}",
               "format": "time_series",
-              "hide": false,
               "interval": "",
               "intervalFactor": 1,
               "legendFormat": "{{pod}} {{type}} {{memory_state}}",
@@ -5746,7 +5844,6 @@
               "editorMode": "code",
               "expr": "camunda_memory_nmt_total_bytes{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\", state=~\"$memory_state\"}",
               "format": "time_series",
-              "hide": false,
               "interval": "",
               "intervalFactor": 1,
               "legendFormat": "{{pod}} {{type}} {{memory_state}}",
@@ -5792,6 +5889,7 @@
                   "type": "linear"
                 },
                 "showPoints": "never",
+                "showValues": false,
                 "spanNulls": false,
                 "stacking": {
                   "group": "A",
@@ -5824,7 +5922,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 1116
+            "y": 48
           },
           "id": 98,
           "options": {
@@ -5855,7 +5953,6 @@
               "editorMode": "code",
               "expr": "sum(jvm_memory_bytes_used{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\",area=\"heap\"}) by (pod)",
               "format": "time_series",
-              "hide": false,
               "intervalFactor": 1,
               "legendFormat": "{{pod}} used",
               "range": true,
@@ -5868,7 +5965,6 @@
               "editorMode": "code",
               "expr": "sum(jvm_memory_used_bytes{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\",area=\"heap\"}) by (pod)",
               "format": "time_series",
-              "hide": false,
               "intervalFactor": 1,
               "legendFormat": "{{pod}} used",
               "range": true,
@@ -5882,7 +5978,6 @@
               "editorMode": "code",
               "expr": "sum(jvm_memory_committed_bytes{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\",area=\"heap\"}) by (pod)",
               "format": "time_series",
-              "hide": false,
               "intervalFactor": 1,
               "legendFormat": "{{pod}} committed",
               "range": true,
@@ -5895,7 +5990,6 @@
               },
               "editorMode": "code",
               "expr": "sum(jvm_memory_max_bytes{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\", area=\"heap\"}) by (pod)",
-              "hide": false,
               "legendFormat": "{{pod}} max",
               "range": true,
               "refId": "F"
@@ -5938,6 +6032,7 @@
                   "type": "linear"
                 },
                 "showPoints": "never",
+                "showValues": false,
                 "spanNulls": false,
                 "stacking": {
                   "group": "A",
@@ -5970,7 +6065,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 1116
+            "y": 48
           },
           "id": 35,
           "options": {
@@ -5983,7 +6078,7 @@
             "tooltip": {
               "hideZeros": false,
               "mode": "multi",
-              "sort": "none"
+              "sort": "desc"
             }
           },
           "pluginVersion": "12.1.0",
@@ -6006,7 +6101,6 @@
               "editorMode": "code",
               "expr": "sum (jvm_buffer_memory_used_bytes{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\"}) by (namespace,pod,id)",
               "format": "time_series",
-              "hide": false,
               "intervalFactor": 1,
               "legendFormat": "Used {{pod}}:{{id}}",
               "range": true,
@@ -6051,6 +6145,7 @@
                   "type": "linear"
                 },
                 "showPoints": "auto",
+                "showValues": false,
                 "spanNulls": false,
                 "stacking": {
                   "group": "A",
@@ -6078,7 +6173,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 1181
+            "y": 56
           },
           "id": 579,
           "options": {
@@ -6091,7 +6186,7 @@
             "tooltip": {
               "hideZeros": false,
               "mode": "single",
-              "sort": "none"
+              "sort": "desc"
             }
           },
           "pluginVersion": "12.1.0",
@@ -6146,6 +6241,7 @@
                   "type": "linear"
                 },
                 "showPoints": "auto",
+                "showValues": false,
                 "spanNulls": false,
                 "stacking": {
                   "group": "A",
@@ -6173,7 +6269,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 1181
+            "y": 56
           },
           "id": 580,
           "options": {
@@ -6186,7 +6282,7 @@
             "tooltip": {
               "hideZeros": false,
               "mode": "single",
-              "sort": "none"
+              "sort": "desc"
             }
           },
           "pluginVersion": "12.1.0",
@@ -6241,6 +6337,7 @@
                   "type": "linear"
                 },
                 "showPoints": "never",
+                "showValues": false,
                 "spanNulls": false,
                 "stacking": {
                   "group": "A",
@@ -6272,7 +6369,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 1189
+            "y": 64
           },
           "id": 285,
           "options": {
@@ -6309,7 +6406,6 @@
               },
               "editorMode": "code",
               "expr": "sum(rate(jvm_gc_pause_seconds_count{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\"}[$__rate_interval])) by (gc, pod)",
-              "hide": false,
               "legendFormat": "{{pod}} {{gc}}",
               "range": true,
               "refId": "B"
@@ -6353,6 +6449,7 @@
                   "type": "linear"
                 },
                 "showPoints": "never",
+                "showValues": false,
                 "spanNulls": false,
                 "stacking": {
                   "group": "A",
@@ -6384,7 +6481,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 1189
+            "y": 64
           },
           "id": 286,
           "options": {
@@ -6421,7 +6518,6 @@
               },
               "editorMode": "code",
               "expr": "rate(jvm_gc_pause_seconds_sum{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\"}[$__rate_interval])",
-              "hide": false,
               "instant": false,
               "interval": "",
               "legendFormat": "{{pod}} {{gc}}",
@@ -6511,7 +6607,7 @@
             "h": 9,
             "w": 24,
             "x": 0,
-            "y": 1336
+            "y": 1618
           },
           "id": 614,
           "options": {
@@ -6529,7 +6625,7 @@
             "tooltip": {
               "hideZeros": false,
               "mode": "single",
-              "sort": "none"
+              "sort": "desc"
             }
           },
           "pluginVersion": "12.1.0",
@@ -6616,7 +6712,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 1345
+            "y": 1627
           },
           "id": 64,
           "options": {
@@ -6722,7 +6818,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 1345
+            "y": 1627
           },
           "id": 294,
           "options": {
@@ -6758,7 +6854,6 @@
               },
               "editorMode": "code",
               "expr": "jvm_threads_daemon{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\"}",
-              "hide": false,
               "interval": "",
               "legendFormat": "JVM daemon threads on {{pod}}",
               "range": true,
@@ -6771,7 +6866,6 @@
               },
               "editorMode": "code",
               "expr": "sum(jvm_threads_daemon_threads{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\"}) by (pod)",
-              "hide": false,
               "legendFormat": "JVM daemon threads on {{pod}}",
               "range": true,
               "refId": "C"
@@ -6783,7 +6877,6 @@
               },
               "editorMode": "code",
               "expr": "sum(jvm_threads_live_threads{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\"}) by (pod) - sum(jvm_threads_daemon_threads{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\"}) by (pod)",
-              "hide": false,
               "legendFormat": "JVM threads {{pod}}",
               "range": true,
               "refId": "E"
@@ -6874,7 +6967,7 @@
             "h": 5,
             "w": 24,
             "x": 0,
-            "y": 1337
+            "y": 1619
           },
           "id": 260,
           "options": {
@@ -6968,7 +7061,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 1342
+            "y": 1624
           },
           "id": 379,
           "options": {
@@ -7065,7 +7158,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 1342
+            "y": 1624
           },
           "id": 381,
           "options": {
@@ -7188,7 +7281,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 1350
+            "y": 1632
           },
           "id": 37,
           "options": {
@@ -7201,7 +7294,7 @@
             "tooltip": {
               "hideZeros": false,
               "mode": "multi",
-              "sort": "none"
+              "sort": "desc"
             }
           },
           "pluginVersion": "12.1.0",
@@ -7212,7 +7305,6 @@
               },
               "expr": "process_files_open_files{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\"}",
               "format": "time_series",
-              "hide": false,
               "interval": "",
               "intervalFactor": 1,
               "legendFormat": "{{pod}} use fds",
@@ -7298,7 +7390,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 1350
+            "y": 1632
           },
           "id": 40,
           "options": {
@@ -7311,7 +7403,7 @@
             "tooltip": {
               "hideZeros": false,
               "mode": "multi",
-              "sort": "none"
+              "sort": "desc"
             }
           },
           "pluginVersion": "12.1.0",
@@ -7398,7 +7490,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 1358
+            "y": 1640
           },
           "id": 122,
           "options": {
@@ -7499,7 +7591,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 1358
+            "y": 1640
           },
           "id": 124,
           "options": {
@@ -7598,7 +7690,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 1366
+            "y": 1648
           },
           "id": 126,
           "options": {
@@ -7696,7 +7788,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 1366
+            "y": 1648
           },
           "id": 127,
           "options": {
@@ -7768,7 +7860,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 1338
+            "y": 1620
           },
           "id": 339,
           "options": {
@@ -7832,7 +7924,6 @@
               },
               "editorMode": "code",
               "expr": "",
-              "hide": false,
               "legendFormat": "__auto",
               "range": true,
               "refId": "B"
@@ -7866,7 +7957,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 1338
+            "y": 1620
           },
           "id": 341,
           "options": {
@@ -7929,7 +8020,6 @@
               },
               "editorMode": "code",
               "expr": "",
-              "hide": false,
               "legendFormat": "__auto",
               "range": true,
               "refId": "B"
@@ -8004,7 +8094,7 @@
             "h": 10,
             "w": 12,
             "x": 0,
-            "y": 1346
+            "y": 1628
           },
           "id": 343,
           "options": {
@@ -8043,7 +8133,6 @@
               },
               "editorMode": "code",
               "expr": "histogram_quantile(0.90, sum(rate(zeebe_messaging_request_response_latency_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\", partition=~\"$partition\"}[$__rate_interval]) or rate(zeebe_messaging_request_response_latency_seconds_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\", partition=~\"$partition\"}[$__rate_interval])) by (topic, le))",
-              "hide": false,
               "legendFormat": "p90 {{topic}}",
               "range": true,
               "refId": "B"
@@ -8055,7 +8144,6 @@
               },
               "editorMode": "code",
               "expr": "histogram_quantile(0.99, sum(rate(zeebe_messaging_request_response_latency_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\", partition=~\"$partition\"}[$__rate_interval]) or rate(zeebe_messaging_request_response_latency_seconds_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\", partition=~\"$partition\"}[$__rate_interval])) by (topic, le))",
-              "hide": false,
               "legendFormat": "p99 {{topic}}",
               "range": true,
               "refId": "C"
@@ -8130,7 +8218,7 @@
             "h": 10,
             "w": 12,
             "x": 12,
-            "y": 1346
+            "y": 1628
           },
           "id": 345,
           "options": {
@@ -8169,7 +8257,6 @@
               },
               "editorMode": "code",
               "expr": "histogram_quantile(0.90, sum(rate(zeebe_messaging_request_size_kb_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\", partition=~\"$partition\"}[$__rate_interval])) by (topic, le))",
-              "hide": false,
               "legendFormat": "p90 {{topic}}",
               "range": true,
               "refId": "B"
@@ -8181,7 +8268,6 @@
               },
               "editorMode": "code",
               "expr": "histogram_quantile(0.99, sum(rate(zeebe_messaging_request_size_kb_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\", partition=~\"$partition\"}[$__rate_interval])) by (topic, le))",
-              "hide": false,
               "legendFormat": "p99 {{topic}}",
               "range": true,
               "refId": "C"
@@ -8254,7 +8340,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 1356
+            "y": 1638
           },
           "id": 347,
           "options": {
@@ -8267,7 +8353,7 @@
             "tooltip": {
               "hideZeros": false,
               "mode": "single",
-              "sort": "none"
+              "sort": "desc"
             }
           },
           "pluginVersion": "12.1.0",
@@ -8351,7 +8437,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 1356
+            "y": 1638
           },
           "id": 349,
           "options": {
@@ -8447,7 +8533,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 1364
+            "y": 1646
           },
           "id": 353,
           "options": {
@@ -8459,7 +8545,7 @@
             },
             "tooltip": {
               "mode": "single",
-              "sort": "none"
+              "sort": "desc"
             }
           },
           "pluginVersion": "11.4.0",
@@ -8543,7 +8629,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 1364
+            "y": 1646
           },
           "id": 351,
           "options": {
@@ -8555,7 +8641,7 @@
             },
             "tooltip": {
               "mode": "single",
-              "sort": "none"
+              "sort": "desc"
             }
           },
           "pluginVersion": "11.4.0",
@@ -8613,7 +8699,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 1339
+            "y": 1621
           },
           "id": 692,
           "options": {
@@ -8736,7 +8822,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 1339
+            "y": 1621
           },
           "id": 693,
           "options": {
@@ -8752,7 +8838,7 @@
             "tooltip": {
               "hideZeros": false,
               "mode": "single",
-              "sort": "none"
+              "sort": "desc"
             }
           },
           "pluginVersion": "12.1.0",
@@ -8828,7 +8914,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 1347
+            "y": 1629
           },
           "id": 132,
           "options": {
@@ -8879,7 +8965,6 @@
               "editorMode": "code",
               "expr": "sum(rate(zeebe_process_instance_execution_time_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\",partition=~\"$partition\",pod=~\"$pod\"}[$__rate_interval])) by (le)",
               "format": "heatmap",
-              "hide": false,
               "interval": "30s",
               "intervalFactor": 1,
               "legendFormat": "{{le}}",
@@ -8894,7 +8979,6 @@
               "editorMode": "code",
               "expr": "sum(rate(zeebe_process_instance_execution_time_seconds_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\",partition=~\"$partition\",pod=~\"$pod\"}[$__rate_interval])) by (le)",
               "format": "heatmap",
-              "hide": false,
               "instant": false,
               "legendFormat": "__auto",
               "range": true,
@@ -8971,7 +9055,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 1347
+            "y": 1629
           },
           "id": 222,
           "options": {
@@ -8984,7 +9068,7 @@
             "tooltip": {
               "hideZeros": false,
               "mode": "multi",
-              "sort": "none"
+              "sort": "desc"
             }
           },
           "pluginVersion": "12.1.0",
@@ -9021,7 +9105,6 @@
               },
               "editorMode": "code",
               "expr": "histogram_quantile(0.50, sum(rate(zeebe_process_instance_execution_time_seconds_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\", partition=~\"$partition\"}[$__rate_interval])) by (le))",
-              "hide": false,
               "instant": false,
               "legendFormat": "quantile-50th",
               "range": true,
@@ -9034,7 +9117,6 @@
               },
               "editorMode": "code",
               "expr": "histogram_quantile(0.99, sum(rate(zeebe_process_instance_execution_time_seconds_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\", partition=~\"$partition\"}[$__rate_interval])) by (le))",
-              "hide": false,
               "instant": false,
               "legendFormat": "quantile-99th",
               "range": true,
@@ -9069,7 +9151,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 1355
+            "y": 1637
           },
           "id": 133,
           "options": {
@@ -9134,7 +9216,6 @@
               "editorMode": "code",
               "expr": "sum(increase(zeebe_job_activation_time_seconds_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\",partition=~\"$partition\"}[$__rate_interval])) by (le)",
               "format": "heatmap",
-              "hide": false,
               "instant": false,
               "legendFormat": "{{le}}",
               "range": true,
@@ -9169,7 +9250,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 1355
+            "y": 1637
           },
           "id": 135,
           "options": {
@@ -9233,7 +9314,6 @@
               "editorMode": "code",
               "expr": "sum(increase(zeebe_job_life_time_seconds_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\",partition=~\"$partition\"}[$__rate_interval])) by (le)",
               "format": "heatmap",
-              "hide": false,
               "instant": false,
               "legendFormat": "{{le}}",
               "range": true,
@@ -9268,7 +9348,7 @@
             "h": 7,
             "w": 24,
             "x": 0,
-            "y": 1363
+            "y": 1645
           },
           "id": 28,
           "options": {
@@ -9393,7 +9473,7 @@
             "h": 10,
             "w": 24,
             "x": 0,
-            "y": 1370
+            "y": 1652
           },
           "id": 593,
           "options": {
@@ -9406,7 +9486,7 @@
             "tooltip": {
               "hideZeros": false,
               "mode": "single",
-              "sort": "none"
+              "sort": "desc"
             }
           },
           "pluginVersion": "12.1.0",
@@ -9432,7 +9512,6 @@
               "editorMode": "code",
               "expr": "histogram_quantile(0.90, sum(increase(zeebe_stream_processor_processing_duration_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\",partition=~\"$partition\",pod=~\"$pod\"}[$__rate_interval]) or rate(zeebe_stream_processor_processing_duration_seconds_bucket{namespace=~\"$namespace\",partition=~\"$partition\"}[$__rate_interval])) by (le, valueType, intent))",
               "format": "time_series",
-              "hide": false,
               "interval": "30s",
               "intervalFactor": 1,
               "legendFormat": "p90 {{valueType}}.{{intent}}",
@@ -9447,7 +9526,6 @@
               "editorMode": "code",
               "expr": "histogram_quantile(0.99, sum(increase(zeebe_stream_processor_processing_duration_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\",partition=~\"$partition\",pod=~\"$pod\"}[$__rate_interval]) or rate(zeebe_stream_processor_processing_duration_seconds_bucket{namespace=~\"$namespace\",partition=~\"$partition\"}[$__rate_interval])) by (le, valueType, intent))",
               "format": "time_series",
-              "hide": false,
               "interval": "30s",
               "intervalFactor": 1,
               "legendFormat": "p99 {{valueType}}.{{intent}}",
@@ -9483,7 +9561,7 @@
             "h": 7,
             "w": 12,
             "x": 0,
-            "y": 1380
+            "y": 1662
           },
           "id": 233,
           "options": {
@@ -9568,7 +9646,7 @@
             "h": 7,
             "w": 12,
             "x": 12,
-            "y": 1380
+            "y": 1662
           },
           "id": 269,
           "options": {
@@ -9652,7 +9730,7 @@
             "h": 7,
             "w": 12,
             "x": 0,
-            "y": 1387
+            "y": 1669
           },
           "id": 690,
           "options": {
@@ -9738,7 +9816,7 @@
             "h": 7,
             "w": 12,
             "x": 12,
-            "y": 1387
+            "y": 1669
           },
           "id": 691,
           "options": {
@@ -9824,7 +9902,7 @@
             "h": 7,
             "w": 12,
             "x": 0,
-            "y": 1394
+            "y": 1676
           },
           "id": 420,
           "options": {
@@ -9906,7 +9984,7 @@
             "h": 7,
             "w": 12,
             "x": 12,
-            "y": 1394
+            "y": 1676
           },
           "id": 419,
           "options": {
@@ -9962,6 +10040,276 @@
           ],
           "title": "Batch processing duration (in seconds)",
           "type": "heatmap"
+        },
+        {
+          "datasource": {
+            "uid": "$DS_PROMETHEUS"
+          },
+          "description": "Quantiles of time spent holding the sequencer lock during a write, by writer context",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "axisBorderShow": false,
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "barAlignment": 0,
+                "barWidthFactor": 0.6,
+                "drawStyle": "line",
+                "fillOpacity": 10,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "insertNulls": false,
+                "lineInterpolation": "linear",
+                "lineWidth": 1,
+                "pointSize": 5,
+                "scaleDistribution": {
+                  "log": 10,
+                  "type": "log"
+                },
+                "showPoints": "never",
+                "spanNulls": false,
+                "stacking": {
+                  "group": "A",
+                  "mode": "none"
+                },
+                "thresholdsStyle": {
+                  "mode": "off"
+                }
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green"
+                  },
+                  {
+                    "color": "red",
+                    "value": 80
+                  }
+                ]
+              },
+              "unit": "s"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 7,
+            "w": 12,
+            "x": 0,
+            "y": 1683
+          },
+          "id": 710,
+          "options": {
+            "legend": {
+              "calcs": [],
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": true
+            },
+            "tooltip": {
+              "hideZeros": false,
+              "mode": "multi",
+              "sort": "desc"
+            }
+          },
+          "pluginVersion": "12.1.0",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
+              },
+              "editorMode": "code",
+              "expr": "max(zeebe_sequencer_lock_hold_time_seconds_max{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\", pod=~\"$pod\"}) by (writer)",
+              "format": "time_series",
+              "interval": "30s",
+              "legendFormat": "max {{writer}}",
+              "refId": "A"
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
+              },
+              "editorMode": "code",
+              "expr": "avg(zeebe_sequencer_lock_hold_time_seconds{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\", pod=~\"$pod\", quantile=\"0.99\"}) by (writer)",
+              "format": "time_series",
+              "interval": "30s",
+              "legendFormat": "p99 {{writer}}",
+              "refId": "B"
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
+              },
+              "editorMode": "code",
+              "expr": "avg(zeebe_sequencer_lock_hold_time_seconds{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\", pod=~\"$pod\", quantile=\"0.9\"}) by (writer)",
+              "format": "time_series",
+              "interval": "30s",
+              "legendFormat": "p90 {{writer}}",
+              "refId": "C"
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
+              },
+              "editorMode": "code",
+              "expr": "avg(zeebe_sequencer_lock_hold_time_seconds{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\", pod=~\"$pod\", quantile=\"0.5\"}) by (writer)",
+              "format": "time_series",
+              "interval": "30s",
+              "legendFormat": "p50 {{writer}}",
+              "refId": "D"
+            }
+          ],
+          "title": "Sequencer Lock Hold Time Quantiles",
+          "type": "timeseries"
+        },
+        {
+          "datasource": {
+            "uid": "$DS_PROMETHEUS"
+          },
+          "description": "Quantiles of time spent waiting to acquire the sequencer lock, by who is waiting",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "axisBorderShow": false,
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "barAlignment": 0,
+                "barWidthFactor": 0.6,
+                "drawStyle": "line",
+                "fillOpacity": 10,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "insertNulls": false,
+                "lineInterpolation": "linear",
+                "lineWidth": 1,
+                "pointSize": 5,
+                "scaleDistribution": {
+                  "log": 10,
+                  "type": "log"
+                },
+                "showPoints": "never",
+                "spanNulls": false,
+                "stacking": {
+                  "group": "A",
+                  "mode": "none"
+                },
+                "thresholdsStyle": {
+                  "mode": "off"
+                }
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green"
+                  },
+                  {
+                    "color": "red",
+                    "value": 80
+                  }
+                ]
+              },
+              "unit": "s"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 7,
+            "w": 12,
+            "x": 12,
+            "y": 1683
+          },
+          "id": 711,
+          "options": {
+            "legend": {
+              "calcs": [],
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": true
+            },
+            "tooltip": {
+              "hideZeros": false,
+              "mode": "multi",
+              "sort": "desc"
+            }
+          },
+          "pluginVersion": "12.1.0",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
+              },
+              "editorMode": "code",
+              "expr": "max(zeebe_sequencer_lock_wait_time_seconds_max{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\", pod=~\"$pod\"}) by (waiter)",
+              "format": "time_series",
+              "interval": "30s",
+              "legendFormat": "max {{waiter}}",
+              "refId": "A"
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
+              },
+              "editorMode": "code",
+              "expr": "avg(zeebe_sequencer_lock_wait_time_seconds{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\", pod=~\"$pod\", quantile=\"0.99\"}) by (waiter)",
+              "format": "time_series",
+              "interval": "30s",
+              "legendFormat": "p99 {{waiter}}",
+              "refId": "B"
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
+              },
+              "editorMode": "code",
+              "expr": "avg(zeebe_sequencer_lock_wait_time_seconds{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\", pod=~\"$pod\", quantile=\"0.9\"}) by (waiter)",
+              "format": "time_series",
+              "interval": "30s",
+              "legendFormat": "p90 {{waiter}}",
+              "refId": "C"
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
+              },
+              "editorMode": "code",
+              "expr": "avg(zeebe_sequencer_lock_wait_time_seconds{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\", pod=~\"$pod\", quantile=\"0.5\"}) by (waiter)",
+              "format": "time_series",
+              "interval": "30s",
+              "legendFormat": "p50 {{waiter}}",
+              "refId": "D"
+            }
+          ],
+          "title": "Sequencer Lock Wait Time Quantiles",
+          "type": "timeseries"
         },
         {
           "datasource": {
@@ -10027,7 +10375,7 @@
             "h": 7,
             "w": 12,
             "x": 0,
-            "y": 1401
+            "y": 1690
           },
           "id": 310,
           "options": {
@@ -10062,7 +10410,6 @@
                 "uid": "$DS_PROMETHEUS"
               },
               "expr": "histogram_quantile(0.99, rate(zeebe_log_appender_commit_latency_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\",partition=~\"$partition\",pod=~\"$pod\"}[$__rate_interval]) or rate(zeebe_log_appender_commit_latency_seconds_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\",partition=~\"$partition\",pod=~\"$pod\"}[$__rate_interval]))",
-              "hide": false,
               "interval": "",
               "legendFormat": "p99 partition {{partition}}",
               "refId": "B"
@@ -10073,7 +10420,6 @@
                 "uid": "${DS_PROMETHEUS}"
               },
               "expr": "histogram_quantile(0.50, rate(zeebe_log_appender_commit_latency_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\",partition=~\"$partition\",pod=~\"$pod\"}[$__rate_interval]) or rate(zeebe_log_appender_commit_latency_seconds_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\",partition=~\"$partition\",pod=~\"$pod\"}[$__rate_interval]))",
-              "hide": false,
               "interval": "",
               "legendFormat": "MEDIAN partition {{partition}} ",
               "refId": "C"
@@ -10083,7 +10429,6 @@
                 "uid": "$DS_PROMETHEUS"
               },
               "expr": "sum(rate(zeebe_log_appender_commit_latency_sum{cluster=~\"$cluster\", namespace=~\"$namespace\",partition=~\"$partition\",pod=~\"$pod\"}[$__rate_interval])) by (partition) / sum(rate(zeebe_log_appender_commit_latency_count{cluster=~\"$cluster\", namespace=~\"$namespace\",partition=~\"$partition\",pod=~\"$pod\"}[$__rate_interval])) by (partition) or sum(rate(zeebe_log_appender_commit_latency_seconds_sum{cluster=~\"$cluster\", namespace=~\"$namespace\",partition=~\"$partition\",pod=~\"$pod\"}[$__rate_interval])) by (partition) / sum(rate(zeebe_log_appender_commit_latency_seconds_count{cluster=~\"$cluster\", namespace=~\"$namespace\",partition=~\"$partition\",pod=~\"$pod\"}[$__rate_interval])) by (partition) ",
-              "hide": false,
               "interval": "",
               "legendFormat": "AVG partition {{partition}}",
               "refId": "D"
@@ -10157,7 +10502,7 @@
             "h": 7,
             "w": 12,
             "x": 12,
-            "y": 1401
+            "y": 1690
           },
           "id": 311,
           "options": {
@@ -10192,7 +10537,6 @@
                 "uid": "${DS_PROMETHEUS}"
               },
               "expr": "histogram_quantile(0.99, rate(zeebe_log_appender_append_latency_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\",partition=~\"$partition\",pod=~\"$pod\"}[$__rate_interval]) or rate(zeebe_log_appender_append_latency_seconds_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\",partition=~\"$partition\",pod=~\"$pod\"}[$__rate_interval]))",
-              "hide": false,
               "interval": "",
               "legendFormat": "p99 partition {{partition}}",
               "refId": "B"
@@ -10202,7 +10546,6 @@
                 "uid": "$DS_PROMETHEUS"
               },
               "expr": "histogram_quantile(0.50, rate(zeebe_log_appender_append_latency_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\",partition=~\"$partition\",pod=~\"$pod\"}[$__rate_interval]) or rate(zeebe_log_appender_append_latency_seconds_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\",partition=~\"$partition\",pod=~\"$pod\"}[$__rate_interval]))",
-              "hide": false,
               "interval": "",
               "legendFormat": "MEDIAN partition {{partition}} ",
               "refId": "C"
@@ -10213,7 +10556,6 @@
                 "uid": "${DS_PROMETHEUS}"
               },
               "expr": "sum(rate(zeebe_log_appender_append_latency_sum{cluster=~\"$cluster\", namespace=~\"$namespace\",partition=~\"$partition\",pod=~\"$pod\"}[$__rate_interval])) by (partition) / sum(rate(zeebe_log_appender_append_latency_count{cluster=~\"$cluster\", namespace=~\"$namespace\",partition=~\"$partition\",pod=~\"$pod\"}[$__rate_interval])) by (partition) or sum(rate(zeebe_log_appender_append_latency_seconds_sum{cluster=~\"$cluster\", namespace=~\"$namespace\",partition=~\"$partition\",pod=~\"$pod\"}[$__rate_interval])) by (partition) / sum(rate(zeebe_log_appender_append_latency_seconds_count{cluster=~\"$cluster\", namespace=~\"$namespace\",partition=~\"$partition\",pod=~\"$pod\"}[$__rate_interval])) by (partition)  ",
-              "hide": false,
               "interval": "",
               "legendFormat": "AVG partition {{partition}}",
               "refId": "D"
@@ -10246,7 +10588,7 @@
             "h": 7,
             "w": 12,
             "x": 0,
-            "y": 1408
+            "y": 1697
           },
           "id": 235,
           "options": {
@@ -10329,7 +10671,7 @@
             "h": 7,
             "w": 12,
             "x": 12,
-            "y": 1408
+            "y": 1697
           },
           "id": 234,
           "options": {
@@ -10468,7 +10810,7 @@
             "h": 7,
             "w": 12,
             "x": 0,
-            "y": 1340
+            "y": 1622
           },
           "id": 26,
           "options": {
@@ -10567,7 +10909,7 @@
             "h": 7,
             "w": 12,
             "x": 12,
-            "y": 1340
+            "y": 1622
           },
           "id": 27,
           "options": {
@@ -10580,7 +10922,7 @@
             "tooltip": {
               "hideZeros": false,
               "mode": "multi",
-              "sort": "none"
+              "sort": "desc"
             }
           },
           "pluginVersion": "12.1.0",
@@ -10635,7 +10977,7 @@
             "h": 9,
             "w": 8,
             "x": 0,
-            "y": 1347
+            "y": 1629
           },
           "id": 22,
           "options": {
@@ -10729,7 +11071,7 @@
             "h": 9,
             "w": 8,
             "x": 8,
-            "y": 1347
+            "y": 1629
           },
           "id": 23,
           "options": {
@@ -10823,7 +11165,7 @@
             "h": 9,
             "w": 8,
             "x": 16,
-            "y": 1347
+            "y": 1629
           },
           "id": 24,
           "options": {
@@ -10932,7 +11274,7 @@
             "h": 8,
             "w": 24,
             "x": 0,
-            "y": 1113
+            "y": 1395
           },
           "id": 164,
           "options": {
@@ -11090,7 +11432,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 1178
+            "y": 1460
           },
           "id": 166,
           "options": {
@@ -11103,7 +11445,7 @@
             "tooltip": {
               "hideZeros": false,
               "mode": "multi",
-              "sort": "none"
+              "sort": "desc"
             }
           },
           "pluginVersion": "12.1.0",
@@ -11211,7 +11553,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 1178
+            "y": 1460
           },
           "id": 168,
           "options": {
@@ -11224,7 +11566,7 @@
             "tooltip": {
               "hideZeros": false,
               "mode": "multi",
-              "sort": "none"
+              "sort": "desc"
             }
           },
           "pluginVersion": "12.1.0",
@@ -11364,7 +11706,7 @@
             "h": 7,
             "w": 12,
             "x": 0,
-            "y": 1114
+            "y": 1396
           },
           "id": 278,
           "options": {
@@ -11506,7 +11848,7 @@
             "h": 7,
             "w": 12,
             "x": 12,
-            "y": 1114
+            "y": 1396
           },
           "id": 283,
           "options": {
@@ -11605,7 +11947,7 @@
             "h": 8,
             "w": 24,
             "x": 0,
-            "y": 1178
+            "y": 1460
           },
           "id": 373,
           "options": {
@@ -11705,7 +12047,7 @@
             "h": 7,
             "w": 12,
             "x": 0,
-            "y": 1186
+            "y": 1468
           },
           "id": 363,
           "options": {
@@ -11805,7 +12147,7 @@
             "h": 7,
             "w": 12,
             "x": 12,
-            "y": 1186
+            "y": 1468
           },
           "id": 406,
           "options": {
@@ -11905,7 +12247,7 @@
             "h": 7,
             "w": 12,
             "x": 0,
-            "y": 1193
+            "y": 1475
           },
           "id": 79,
           "options": {
@@ -11918,7 +12260,7 @@
             "tooltip": {
               "hideZeros": false,
               "mode": "multi",
-              "sort": "none"
+              "sort": "desc"
             }
           },
           "pluginVersion": "12.1.0",
@@ -12005,7 +12347,7 @@
             "h": 7,
             "w": 12,
             "x": 12,
-            "y": 1193
+            "y": 1475
           },
           "id": 114,
           "options": {
@@ -12060,7 +12402,7 @@
             "h": 7,
             "w": 12,
             "x": 0,
-            "y": 1200
+            "y": 1482
           },
           "id": 86,
           "options": {
@@ -12183,7 +12525,7 @@
             "h": 7,
             "w": 12,
             "x": 12,
-            "y": 1200
+            "y": 1482
           },
           "id": 305,
           "options": {
@@ -12196,7 +12538,7 @@
             "tooltip": {
               "hideZeros": false,
               "mode": "multi",
-              "sort": "none"
+              "sort": "desc"
             }
           },
           "pluginVersion": "12.1.0",
@@ -12217,7 +12559,6 @@
                 "uid": "${DS_PROMETHEUS}"
               },
               "expr": "histogram_quantile(0.50, sum(rate(atomix_append_entries_latency_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\", partition=~\"$partition\"}[$__rate_interval]) or rate(atomix_append_entries_latency_seconds_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\", partition=~\"$partition\"}[$__rate_interval])) by (le))",
-              "hide": false,
               "interval": "",
               "legendFormat": "Median",
               "refId": "C"
@@ -12249,7 +12590,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 1207
+            "y": 1489
           },
           "id": 70,
           "options": {
@@ -12395,7 +12736,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 1207
+            "y": 1489
           },
           "id": 72,
           "options": {
@@ -12409,7 +12750,7 @@
             "tooltip": {
               "hideZeros": false,
               "mode": "multi",
-              "sort": "none"
+              "sort": "desc"
             }
           },
           "pluginVersion": "12.1.0",
@@ -12497,7 +12838,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 1215
+            "y": 1497
           },
           "id": 432,
           "interval": "1s",
@@ -12514,7 +12855,7 @@
             "tooltip": {
               "hideZeros": false,
               "mode": "single",
-              "sort": "none"
+              "sort": "desc"
             }
           },
           "pluginVersion": "12.1.0",
@@ -12527,7 +12868,6 @@
               "editorMode": "code",
               "expr": "atomix_role{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\", partition=~\"$partition\"}",
               "format": "time_series",
-              "hide": false,
               "instant": false,
               "interval": "",
               "intervalFactor": 1,
@@ -12642,7 +12982,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 1215
+            "y": 1497
           },
           "id": 95,
           "interval": "1s",
@@ -12671,7 +13011,6 @@
               },
               "expr": "atomix_role{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\", partition=~\"$partition\"}",
               "format": "time_series",
-              "hide": false,
               "instant": false,
               "interval": "",
               "intervalFactor": 1,
@@ -12762,7 +13101,7 @@
             "h": 5,
             "w": 24,
             "x": 0,
-            "y": 1223
+            "y": 1505
           },
           "id": 205,
           "options": {
@@ -12889,7 +13228,7 @@
             "h": 5,
             "w": 24,
             "x": 0,
-            "y": 1228
+            "y": 1510
           },
           "id": 209,
           "options": {
@@ -12965,7 +13304,7 @@
             "h": 5,
             "w": 12,
             "x": 0,
-            "y": 1233
+            "y": 1515
           },
           "id": 215,
           "options": {
@@ -13031,7 +13370,7 @@
             "h": 5,
             "w": 12,
             "x": 12,
-            "y": 1233
+            "y": 1515
           },
           "id": 396,
           "options": {
@@ -13106,7 +13445,7 @@
             "h": 6,
             "w": 12,
             "x": 0,
-            "y": 1115
+            "y": 1397
           },
           "id": 78,
           "options": {
@@ -13169,7 +13508,6 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "description": "",
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -13231,7 +13569,7 @@
             "h": 8,
             "w": 24,
             "x": 0,
-            "y": 1178
+            "y": 1460
           },
           "id": 180,
           "options": {
@@ -13244,7 +13582,7 @@
             "tooltip": {
               "hideZeros": false,
               "mode": "multi",
-              "sort": "none"
+              "sort": "desc"
             }
           },
           "pluginVersion": "12.1.0",
@@ -13330,7 +13668,7 @@
             "h": 7,
             "w": 12,
             "x": 0,
-            "y": 1186
+            "y": 1468
           },
           "id": 368,
           "options": {
@@ -13430,7 +13768,7 @@
             "h": 7,
             "w": 12,
             "x": 12,
-            "y": 1186
+            "y": 1468
           },
           "id": 411,
           "options": {
@@ -13529,7 +13867,7 @@
             "h": 7,
             "w": 12,
             "x": 0,
-            "y": 1193
+            "y": 1475
           },
           "id": 300,
           "options": {
@@ -13542,7 +13880,7 @@
             "tooltip": {
               "hideZeros": false,
               "mode": "multi",
-              "sort": "none"
+              "sort": "desc"
             }
           },
           "pluginVersion": "12.1.0",
@@ -13566,7 +13904,6 @@
               },
               "editorMode": "code",
               "expr": "histogram_quantile(0.50, sum(rate(atomix_journal_flush_time_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\", partition=~\"$partition\"}[$__rate_interval]) or rate(atomix_journal_flush_time_seconds_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\", partition=~\"$partition\"}[$__rate_interval])) by (le))",
-              "hide": false,
               "interval": "",
               "legendFormat": "Median",
               "range": true,
@@ -13601,7 +13938,7 @@
             "h": 7,
             "w": 12,
             "x": 12,
-            "y": 1193
+            "y": 1475
           },
           "id": 89,
           "options": {
@@ -13685,7 +14022,7 @@
             "h": 7,
             "w": 12,
             "x": 0,
-            "y": 1200
+            "y": 1482
           },
           "id": 401,
           "options": {
@@ -13810,7 +14147,7 @@
             "h": 7,
             "w": 12,
             "x": 12,
-            "y": 1200
+            "y": 1482
           },
           "id": 416,
           "options": {
@@ -13848,7 +14185,6 @@
               },
               "editorMode": "code",
               "expr": "histogram_quantile(0.99, rate(atomix_journal_append_latency_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\",partition=~\"$partition\",pod=~\"$pod\"}[$__rate_interval]) or rate(atomix_journal_append_latency_seconds_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\",partition=~\"$partition\",pod=~\"$pod\"}[$__rate_interval]))",
-              "hide": false,
               "interval": "",
               "legendFormat": "p99 partition {{partition}}",
               "range": true,
@@ -13860,7 +14196,6 @@
               },
               "editorMode": "code",
               "expr": "histogram_quantile(0.50, rate(atomix_journal_append_latency_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\",partition=~\"$partition\",pod=~\"$pod\"}[$__rate_interval]) or rate(atomix_journal_append_latency_seconds_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\",partition=~\"$partition\",pod=~\"$pod\"}[$__rate_interval]))",
-              "hide": false,
               "interval": "",
               "legendFormat": "MEDIAN partition {{partition}} ",
               "range": true,
@@ -13872,7 +14207,6 @@
                 "uid": "${DS_PROMETHEUS}"
               },
               "expr": "sum(rate(atomix_journal_append_latency_sum{cluster=~\"$cluster\", namespace=~\"$namespace\",partition=~\"$partition\",pod=~\"$pod\"}[$__rate_interval])) by (partition) / sum(rate(atomix_journal_append_latency_count{cluster=~\"$cluster\", namespace=~\"$namespace\",partition=~\"$partition\",pod=~\"$pod\"}[$__rate_interval])) by (partition) or sum(rate(atomix_journal_append_latency_seconds_sum{cluster=~\"$cluster\", namespace=~\"$namespace\",partition=~\"$partition\",pod=~\"$pod\"}[$__rate_interval])) by (partition) / sum(rate(atomix_journal_append_latency_seconds_count{cluster=~\"$cluster\", namespace=~\"$namespace\",partition=~\"$partition\",pod=~\"$pod\"}[$__rate_interval])) by (partition) ",
-              "hide": false,
               "interval": "",
               "legendFormat": "AVG partition {{partition}}",
               "refId": "D"
@@ -13904,7 +14238,7 @@
             "h": 6,
             "w": 12,
             "x": 0,
-            "y": 1207
+            "y": 1489
           },
           "id": 386,
           "options": {
@@ -13987,7 +14321,7 @@
             "h": 6,
             "w": 12,
             "x": 12,
-            "y": 1207
+            "y": 1489
           },
           "id": 81,
           "options": {
@@ -14072,7 +14406,7 @@
             "h": 7,
             "w": 12,
             "x": 0,
-            "y": 1213
+            "y": 1495
           },
           "id": 426,
           "options": {
@@ -14196,7 +14530,7 @@
             "h": 7,
             "w": 12,
             "x": 12,
-            "y": 1213
+            "y": 1495
           },
           "id": 427,
           "options": {
@@ -14209,7 +14543,7 @@
             "tooltip": {
               "hideZeros": false,
               "mode": "multi",
-              "sort": "none"
+              "sort": "desc"
             }
           },
           "pluginVersion": "12.1.0",
@@ -14230,7 +14564,6 @@
                 "uid": "${DS_PROMETHEUS}"
               },
               "expr": "histogram_quantile(0.50, sum(rate(atomix_segment_flush_time_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\", partition=~\"$partition\"}[$__rate_interval]) or rate(atomix_segment_flush_time_seconds_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\", partition=~\"$partition\"}[$__rate_interval])) by (le))",
-              "hide": false,
               "interval": "",
               "legendFormat": "Median",
               "refId": "C"
@@ -14305,7 +14638,7 @@
             "h": 6,
             "w": 12,
             "x": 0,
-            "y": 1220
+            "y": 1502
           },
           "id": 304,
           "options": {
@@ -14318,7 +14651,7 @@
             "tooltip": {
               "hideZeros": false,
               "mode": "multi",
-              "sort": "none"
+              "sort": "desc"
             }
           },
           "pluginVersion": "12.1.0",
@@ -14342,7 +14675,6 @@
               },
               "editorMode": "code",
               "expr": "histogram_quantile(0.50, sum(rate(atomix_last_flushed_index_update_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\", partition=~\"$partition\"}[$__rate_interval]) or rate(atomix_last_flushed_index_update_seconds_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\", partition=~\"$partition\"}[$__rate_interval])) by (le))",
-              "hide": false,
               "interval": "",
               "legendFormat": "Median",
               "range": true,
@@ -14377,7 +14709,7 @@
             "h": 6,
             "w": 12,
             "x": 12,
-            "y": 1220
+            "y": 1502
           },
           "id": 391,
           "options": {
@@ -14461,7 +14793,7 @@
             "h": 6,
             "w": 12,
             "x": 0,
-            "y": 1226
+            "y": 1508
           },
           "id": 687,
           "options": {
@@ -14581,7 +14913,7 @@
             "h": 7,
             "w": 12,
             "x": 12,
-            "y": 1226
+            "y": 1508
           },
           "id": 560,
           "options": {
@@ -14594,7 +14926,7 @@
             "tooltip": {
               "hideZeros": false,
               "mode": "multi",
-              "sort": "none"
+              "sort": "desc"
             }
           },
           "pluginVersion": "12.1.0",
@@ -14692,7 +15024,7 @@
             "h": 6,
             "w": 24,
             "x": 0,
-            "y": 103
+            "y": 385
           },
           "id": 356,
           "options": {
@@ -14754,7 +15086,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 186
+            "y": 468
           },
           "id": 357,
           "options": {
@@ -14839,7 +15171,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 186
+            "y": 468
           },
           "id": 358,
           "options": {
@@ -14963,7 +15295,7 @@
             "h": 9,
             "w": 8,
             "x": 0,
-            "y": 194
+            "y": 476
           },
           "id": 586,
           "options": {
@@ -14976,7 +15308,7 @@
             "tooltip": {
               "hideZeros": false,
               "mode": "multi",
-              "sort": "none"
+              "sort": "desc"
             }
           },
           "pluginVersion": "12.1.0",
@@ -15062,7 +15394,7 @@
             "h": 9,
             "w": 8,
             "x": 8,
-            "y": 194
+            "y": 476
           },
           "id": 589,
           "options": {
@@ -15075,7 +15407,7 @@
             "tooltip": {
               "hideZeros": false,
               "mode": "multi",
-              "sort": "none"
+              "sort": "desc"
             }
           },
           "pluginVersion": "12.1.0",
@@ -15161,7 +15493,7 @@
             "h": 9,
             "w": 8,
             "x": 16,
-            "y": 194
+            "y": 476
           },
           "id": 590,
           "options": {
@@ -15174,7 +15506,7 @@
             "tooltip": {
               "hideZeros": false,
               "mode": "multi",
-              "sort": "none"
+              "sort": "desc"
             }
           },
           "pluginVersion": "12.1.0",
@@ -15260,7 +15592,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 203
+            "y": 485
           },
           "id": 606,
           "options": {
@@ -15273,7 +15605,7 @@
             "tooltip": {
               "hideZeros": false,
               "mode": "single",
-              "sort": "none"
+              "sort": "desc"
             }
           },
           "pluginVersion": "12.1.0",
@@ -15361,7 +15693,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 203
+            "y": 485
           },
           "id": 607,
           "options": {
@@ -15374,7 +15706,7 @@
             "tooltip": {
               "hideZeros": false,
               "mode": "single",
-              "sort": "none"
+              "sort": "desc"
             }
           },
           "pluginVersion": "12.1.0",
@@ -15402,7 +15734,6 @@
               },
               "editorMode": "code",
               "expr": "zeebe_backpressure_append_limit{namespace=~\"$namespace\", pod=~\"$pod\", partition=~\"$partition\"}",
-              "hide": false,
               "instant": false,
               "legendFormat": "Limit for partition {{partition}}",
               "range": true,
@@ -15472,7 +15803,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 211
+            "y": 493
           },
           "id": 608,
           "options": {
@@ -15566,7 +15897,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 211
+            "y": 493
           },
           "id": 609,
           "options": {
@@ -15664,7 +15995,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 219
+            "y": 501
           },
           "id": 610,
           "options": {
@@ -15701,7 +16032,6 @@
               },
               "editorMode": "code",
               "expr": "zeebe_flow_control_write_rate_maximum{namespace=~\"$namespace\", pod=~\"$pod\", partition=~\"$partition\"} != 0",
-              "hide": false,
               "instant": false,
               "legendFormat": "Maximum limit on {{partition}}",
               "range": true,
@@ -15776,7 +16106,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 219
+            "y": 501
           },
           "id": 611,
           "options": {
@@ -15839,7 +16169,7 @@
             "h": 9,
             "w": 6,
             "x": 0,
-            "y": 227
+            "y": 509
           },
           "id": 588,
           "options": {
@@ -15859,7 +16189,7 @@
             "tooltip": {
               "hideZeros": false,
               "mode": "single",
-              "sort": "none"
+              "sort": "desc"
             }
           },
           "pluginVersion": "12.1.0",
@@ -15911,7 +16241,7 @@
             "h": 9,
             "w": 6,
             "x": 6,
-            "y": 227
+            "y": 509
           },
           "id": 591,
           "options": {
@@ -15931,7 +16261,7 @@
             "tooltip": {
               "hideZeros": false,
               "mode": "single",
-              "sort": "none"
+              "sort": "desc"
             }
           },
           "pluginVersion": "12.1.0",
@@ -15984,7 +16314,7 @@
             "h": 9,
             "w": 5,
             "x": 12,
-            "y": 227
+            "y": 509
           },
           "id": 592,
           "options": {
@@ -16004,7 +16334,7 @@
             "tooltip": {
               "hideZeros": false,
               "mode": "single",
-              "sort": "none"
+              "sort": "desc"
             }
           },
           "pluginVersion": "12.1.0",
@@ -16063,7 +16393,7 @@
             "h": 9,
             "w": 7,
             "x": 17,
-            "y": 227
+            "y": 509
           },
           "id": 613,
           "options": {
@@ -16181,7 +16511,7 @@
             "h": 12,
             "w": 12,
             "x": 0,
-            "y": 115
+            "y": 397
           },
           "id": 154,
           "options": {
@@ -16206,7 +16536,6 @@
               },
               "editorMode": "code",
               "expr": "(((sum(zeebe_rocksdb_memory_estimate_table_readers_mem{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\"}) by (pod)) + (sum(zeebe_rocksdb_memory_size_all_mem_tables{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\"}) by (pod)) + (max(zeebe_rocksdb_memory_block_cache_capacity{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\"}) by (pod)) + (sum(rate(zeebe_rocksdb_live_estimate_num_keys{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\"}[$__rate_interval])) by (pod) * 10)) \nand on() (zeebe_rocksdb_memory_allocation_strategy{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\"}) )\nor\n( ((sum(zeebe_rocksdb_memory_estimate_table_readers_mem{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\", partition=~\"$partition\"}) by (pod, partition)) + (sum(zeebe_rocksdb_memory_size_all_mem_tables{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\",  partition=~\"$partition\"}) by (pod, partition)) + (sum(zeebe_rocksdb_memory_block_cache_capacity{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\", partition=~\"$partition\"}) by (pod, partition)) + (sum(rate(zeebe_rocksdb_live_estimate_num_keys{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\",  partition=~\"$partition\"}[$__rate_interval])) by (pod, partition) * 10)) \nunless on() (zeebe_rocksdb_memory_allocation_strategy{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\"}))",
-              "hide": false,
               "interval": "",
               "legendFormat": "{{pod}} memory {{partition}}",
               "range": true,
@@ -16282,7 +16611,7 @@
             "h": 6,
             "w": 7,
             "x": 12,
-            "y": 115
+            "y": 397
           },
           "id": 144,
           "options": {
@@ -16465,7 +16794,7 @@
             "h": 6,
             "w": 5,
             "x": 19,
-            "y": 115
+            "y": 397
           },
           "id": 706,
           "options": {
@@ -16568,7 +16897,7 @@
             "h": 6,
             "w": 12,
             "x": 12,
-            "y": 121
+            "y": 403
           },
           "id": 142,
           "options": {
@@ -16667,7 +16996,7 @@
             "h": 12,
             "w": 12,
             "x": 0,
-            "y": 127
+            "y": 409
           },
           "id": 151,
           "options": {
@@ -16766,7 +17095,7 @@
             "h": 6,
             "w": 12,
             "x": 12,
-            "y": 127
+            "y": 409
           },
           "id": 152,
           "options": {
@@ -16865,7 +17194,7 @@
             "h": 6,
             "w": 12,
             "x": 12,
-            "y": 133
+            "y": 415
           },
           "id": 150,
           "options": {
@@ -16964,7 +17293,7 @@
             "h": 13,
             "w": 12,
             "x": 0,
-            "y": 139
+            "y": 421
           },
           "id": 147,
           "options": {
@@ -16977,7 +17306,7 @@
             "tooltip": {
               "hideZeros": false,
               "mode": "multi",
-              "sort": "none"
+              "sort": "desc"
             }
           },
           "pluginVersion": "12.1.0",
@@ -17065,7 +17394,7 @@
             "h": 7,
             "w": 12,
             "x": 12,
-            "y": 139
+            "y": 421
           },
           "id": 149,
           "options": {
@@ -17165,7 +17494,7 @@
             "h": 6,
             "w": 12,
             "x": 12,
-            "y": 146
+            "y": 428
           },
           "id": 148,
           "options": {
@@ -17265,7 +17594,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 152
+            "y": 434
           },
           "id": 155,
           "options": {
@@ -17363,7 +17692,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 152
+            "y": 434
           },
           "id": 156,
           "options": {
@@ -17459,7 +17788,7 @@
             "h": 6,
             "w": 6,
             "x": 0,
-            "y": 160
+            "y": 442
           },
           "id": 158,
           "options": {
@@ -17472,7 +17801,7 @@
             "tooltip": {
               "hideZeros": false,
               "mode": "single",
-              "sort": "none"
+              "sort": "desc"
             }
           },
           "pluginVersion": "12.1.0",
@@ -17558,7 +17887,7 @@
             "h": 6,
             "w": 6,
             "x": 6,
-            "y": 160
+            "y": 442
           },
           "id": 157,
           "options": {
@@ -17656,7 +17985,7 @@
             "h": 6,
             "w": 12,
             "x": 12,
-            "y": 160
+            "y": 442
           },
           "id": 146,
           "options": {
@@ -17669,7 +17998,7 @@
             "tooltip": {
               "hideZeros": false,
               "mode": "multi",
-              "sort": "none"
+              "sort": "desc"
             }
           },
           "pluginVersion": "12.1.0",
@@ -17754,7 +18083,7 @@
             "h": 7,
             "w": 6,
             "x": 0,
-            "y": 166
+            "y": 448
           },
           "id": 159,
           "options": {
@@ -17852,7 +18181,7 @@
             "h": 7,
             "w": 6,
             "x": 6,
-            "y": 166
+            "y": 448
           },
           "id": 160,
           "options": {
@@ -17951,7 +18280,7 @@
             "h": 7,
             "w": 12,
             "x": 12,
-            "y": 166
+            "y": 448
           },
           "id": 153,
           "options": {
@@ -17988,7 +18317,6 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "description": "",
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -18052,7 +18380,7 @@
             "h": 11,
             "w": 24,
             "x": 0,
-            "y": 173
+            "y": 455
           },
           "id": 603,
           "options": {
@@ -18135,7 +18463,7 @@
             "h": 8,
             "w": 4,
             "x": 0,
-            "y": 1118
+            "y": 1400
           },
           "id": 675,
           "options": {
@@ -18199,7 +18527,7 @@
             "h": 8,
             "w": 10,
             "x": 4,
-            "y": 1118
+            "y": 1400
           },
           "id": 676,
           "options": {
@@ -18223,7 +18551,7 @@
             "tooltip": {
               "hideZeros": false,
               "mode": "single",
-              "sort": "none"
+              "sort": "desc"
             }
           },
           "pluginVersion": "12.1.0",
@@ -18272,7 +18600,7 @@
             "h": 8,
             "w": 10,
             "x": 14,
-            "y": 1118
+            "y": 1400
           },
           "id": 677,
           "options": {
@@ -18296,7 +18624,7 @@
             "tooltip": {
               "hideZeros": false,
               "mode": "single",
-              "sort": "none"
+              "sort": "desc"
             }
           },
           "pluginVersion": "12.1.0",
@@ -18385,7 +18713,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 1183
+            "y": 1465
           },
           "id": 667,
           "options": {
@@ -18398,7 +18726,7 @@
             "tooltip": {
               "hideZeros": false,
               "mode": "single",
-              "sort": "none"
+              "sort": "desc"
             }
           },
           "pluginVersion": "12.1.0",
@@ -18486,7 +18814,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 1183
+            "y": 1465
           },
           "id": 683,
           "options": {
@@ -18499,7 +18827,7 @@
             "tooltip": {
               "hideZeros": false,
               "mode": "single",
-              "sort": "none"
+              "sort": "desc"
             }
           },
           "pluginVersion": "12.1.0",
@@ -18543,7 +18871,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 1191
+            "y": 1473
           },
           "id": 670,
           "options": {
@@ -18628,7 +18956,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 1191
+            "y": 1473
           },
           "id": 673,
           "options": {
@@ -18708,7 +19036,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 1199
+            "y": 1481
           },
           "id": 669,
           "maxDataPoints": 494,
@@ -18837,7 +19165,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 1199
+            "y": 1481
           },
           "id": 674,
           "options": {
@@ -18850,7 +19178,7 @@
             "tooltip": {
               "hideZeros": false,
               "mode": "single",
-              "sort": "none"
+              "sort": "desc"
             }
           },
           "pluginVersion": "12.1.0",
@@ -18900,7 +19228,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 1207
+            "y": 1489
           },
           "id": 678,
           "options": {
@@ -18984,7 +19312,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 1207
+            "y": 1489
           },
           "id": 668,
           "options": {
@@ -19070,7 +19398,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 1215
+            "y": 1497
           },
           "id": 672,
           "options": {
@@ -19191,7 +19519,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 1215
+            "y": 1497
           },
           "id": 665,
           "options": {
@@ -19204,7 +19532,7 @@
             "tooltip": {
               "hideZeros": false,
               "mode": "single",
-              "sort": "none"
+              "sort": "desc"
             }
           },
           "pluginVersion": "12.1.0",
@@ -19266,7 +19594,7 @@
             "h": 10,
             "w": 12,
             "x": 0,
-            "y": 1119
+            "y": 1401
           },
           "id": 20,
           "options": {
@@ -19392,7 +19720,7 @@
             "h": 10,
             "w": 12,
             "x": 12,
-            "y": 1119
+            "y": 1401
           },
           "id": 255,
           "options": {
@@ -19405,7 +19733,7 @@
             "tooltip": {
               "hideZeros": false,
               "mode": "multi",
-              "sort": "none"
+              "sort": "desc"
             }
           },
           "pluginVersion": "12.1.0",
@@ -19449,7 +19777,7 @@
             "h": 10,
             "w": 12,
             "x": 0,
-            "y": 1186
+            "y": 1468
           },
           "id": 21,
           "options": {
@@ -19574,7 +19902,7 @@
             "h": 10,
             "w": 12,
             "x": 12,
-            "y": 1186
+            "y": 1468
           },
           "id": 185,
           "options": {
@@ -19587,7 +19915,7 @@
             "tooltip": {
               "hideZeros": false,
               "mode": "multi",
-              "sort": "none"
+              "sort": "desc"
             }
           },
           "pluginVersion": "12.1.0",
@@ -19679,7 +20007,7 @@
             "h": 10,
             "w": 24,
             "x": 0,
-            "y": 1196
+            "y": 1478
           },
           "id": 52,
           "options": {
@@ -19755,7 +20083,7 @@
             "h": 9,
             "w": 10,
             "x": 0,
-            "y": 1120
+            "y": 1402
           },
           "id": 616,
           "options": {
@@ -19850,7 +20178,7 @@
             "h": 9,
             "w": 3,
             "x": 10,
-            "y": 1120
+            "y": 1402
           },
           "id": 617,
           "options": {
@@ -19956,7 +20284,7 @@
             "h": 9,
             "w": 11,
             "x": 13,
-            "y": 1120
+            "y": 1402
           },
           "id": 621,
           "options": {
@@ -19969,7 +20297,7 @@
             "tooltip": {
               "hideZeros": false,
               "mode": "multi",
-              "sort": "none"
+              "sort": "desc"
             }
           },
           "pluginVersion": "12.1.0",
@@ -20015,7 +20343,7 @@
             "h": 5,
             "w": 24,
             "x": 0,
-            "y": 1186
+            "y": 1468
           },
           "id": 618,
           "options": {
@@ -20141,7 +20469,7 @@
             "h": 7,
             "w": 12,
             "x": 0,
-            "y": 1191
+            "y": 1473
           },
           "id": 628,
           "options": {
@@ -20168,7 +20496,6 @@
               },
               "editorMode": "code",
               "expr": "sum(rate(zeebe_camunda_exporter_cache_process_result_total{namespace=~\"$namespace\",partition=~\"$partition\"}[$__rate_interval])) by (partition)",
-              "hide": false,
               "instant": false,
               "legendFormat": "Cache access {{partition}}",
               "range": true,
@@ -20181,7 +20508,6 @@
               },
               "editorMode": "code",
               "expr": "sum(rate(zeebe_camunda_exporter_cache_process_result_total{namespace=~\"$namespace\",partition=~\"$partition\"}[$__rate_interval])) by (partition, type)",
-              "hide": false,
               "instant": false,
               "legendFormat": "P{{partition}} - {{type}}",
               "range": true,
@@ -20256,7 +20582,7 @@
             "h": 7,
             "w": 12,
             "x": 12,
-            "y": 1191
+            "y": 1473
           },
           "id": 623,
           "options": {
@@ -20269,7 +20595,7 @@
             "tooltip": {
               "hideZeros": false,
               "mode": "single",
-              "sort": "none"
+              "sort": "desc"
             }
           },
           "pluginVersion": "12.1.0",
@@ -20315,7 +20641,7 @@
             "h": 6,
             "w": 12,
             "x": 0,
-            "y": 1198
+            "y": 1480
           },
           "id": 626,
           "options": {
@@ -20367,7 +20693,6 @@
               "editorMode": "code",
               "expr": "sum(increase(zeebe_camunda_exporter_cache_process_load_duration_failure_seconds_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\"}[$__rate_interval])) by (le)",
               "format": "heatmap",
-              "hide": false,
               "interval": "30s",
               "intervalFactor": 1,
               "legendFormat": "__auto",
@@ -20383,7 +20708,6 @@
               "exemplar": false,
               "expr": "sum(increase(zeebe_camunda_exporter_cache_process_load_duration_failure_seconds_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\"}[$__rate_interval])) by (le)",
               "format": "heatmap",
-              "hide": false,
               "instant": false,
               "interval": "30",
               "legendFormat": "__auto",
@@ -20459,7 +20783,7 @@
             "h": 6,
             "w": 12,
             "x": 12,
-            "y": 1198
+            "y": 1480
           },
           "id": 627,
           "options": {
@@ -20472,7 +20796,7 @@
             "tooltip": {
               "hideZeros": false,
               "mode": "single",
-              "sort": "none"
+              "sort": "desc"
             }
           },
           "pluginVersion": "12.1.0",
@@ -20485,7 +20809,6 @@
               "editorMode": "code",
               "expr": "sum(rate(zeebe_camunda_exporter_cache_process_load_duration_success_seconds_count{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\"}[$__rate_interval])) by (partition)",
               "format": "heatmap",
-              "hide": false,
               "interval": "30s",
               "intervalFactor": 1,
               "legendFormat": "Success p{{partition}}",
@@ -20499,7 +20822,6 @@
               },
               "editorMode": "code",
               "expr": "sum(rate(zeebe_camunda_exporter_cache_process_load_duration_failure_seconds_count{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\"}[$__rate_interval])) by (partition)",
-              "hide": false,
               "instant": false,
               "legendFormat": "Failure p{{partition}}",
               "range": true,
@@ -20574,7 +20896,7 @@
             "h": 9,
             "w": 24,
             "x": 0,
-            "y": 1204
+            "y": 1486
           },
           "id": 643,
           "options": {
@@ -20615,7 +20937,6 @@
               },
               "editorMode": "code",
               "expr": "sum(rate(zeebe_camunda_exporter_archiver_batch_operations_total{namespace=~\"$namespace\",partition=~\"$partition\",pod=~\"$pod\"}[$__rate_interval])) by (partition, state)",
-              "hide": false,
               "instant": false,
               "legendFormat": "{{state}} batch operations [p{{partition}}]",
               "range": true,
@@ -20650,7 +20971,7 @@
             "h": 8,
             "w": 24,
             "x": 0,
-            "y": 1213
+            "y": 1495
           },
           "id": 647,
           "options": {
@@ -20698,7 +21019,6 @@
               "editorMode": "code",
               "expr": "sum(rate(zeebe_camunda_exporter_archiver_duration_seconds_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\"}[$__rate_interval])) by (le)",
               "format": "heatmap",
-              "hide": false,
               "instant": false,
               "interval": "30",
               "legendFormat": "{{le}}",
@@ -20734,7 +21054,7 @@
             "h": 8,
             "w": 8,
             "x": 0,
-            "y": 1221
+            "y": 1503
           },
           "id": 646,
           "options": {
@@ -20798,7 +21118,6 @@
               "exemplar": false,
               "expr": "sum(rate(zeebe_camunda_exporter_archiver_request_duration_seconds_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\", type=\"search\"}[$__rate_interval])) by (le)",
               "format": "heatmap",
-              "hide": false,
               "instant": false,
               "legendFormat": "{{le}}",
               "range": true,
@@ -20833,7 +21152,7 @@
             "h": 8,
             "w": 8,
             "x": 8,
-            "y": 1221
+            "y": 1503
           },
           "id": 645,
           "options": {
@@ -20881,7 +21200,6 @@
               "editorMode": "code",
               "expr": "sum(rate(zeebe_camunda_exporter_archiver_request_duration_seconds_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\", type=\"reindex\"}[$__rate_interval])) by (le)",
               "format": "heatmap",
-              "hide": false,
               "instant": false,
               "legendFormat": "{{le}}",
               "range": true,
@@ -20916,7 +21234,7 @@
             "h": 8,
             "w": 8,
             "x": 16,
-            "y": 1221
+            "y": 1503
           },
           "id": 658,
           "options": {
@@ -20964,7 +21282,6 @@
               "editorMode": "code",
               "expr": "sum(rate(zeebe_camunda_exporter_archiver_request_duration_seconds_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\", type=\"delete\"}[$__rate_interval])) by (le)",
               "format": "heatmap",
-              "hide": false,
               "instant": false,
               "legendFormat": "{{le}}",
               "range": true,
@@ -21012,7 +21329,7 @@
             "h": 9,
             "w": 10,
             "x": 0,
-            "y": 956
+            "y": 1238
           },
           "id": 630,
           "options": {
@@ -21099,7 +21416,7 @@
             "h": 9,
             "w": 11,
             "x": 10,
-            "y": 956
+            "y": 1238
           },
           "id": 636,
           "options": {
@@ -21195,7 +21512,7 @@
             "h": 9,
             "w": 3,
             "x": 21,
-            "y": 956
+            "y": 1238
           },
           "id": 634,
           "options": {
@@ -21238,7 +21555,6 @@
               "exemplar": false,
               "expr": "sum(increase(zeebe_rdbms_exporter_merged_queue_item_total{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\"}[$__rate_interval])) / sum(increase(zeebe_rdbms_exporter_enqueued_statements_total{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\"}[$__rate_interval]))",
               "format": "time_series",
-              "hide": false,
               "instant": false,
               "interval": "30s",
               "intervalFactor": 1,
@@ -21274,7 +21590,7 @@
             "h": 8,
             "w": 9,
             "x": 0,
-            "y": 965
+            "y": 1247
           },
           "id": 633,
           "options": {
@@ -21360,7 +21676,7 @@
             "h": 8,
             "w": 8,
             "x": 9,
-            "y": 965
+            "y": 1247
           },
           "id": 688,
           "options": {
@@ -21500,7 +21816,7 @@
             "h": 8,
             "w": 7,
             "x": 17,
-            "y": 965
+            "y": 1247
           },
           "id": 697,
           "options": {
@@ -21513,7 +21829,7 @@
             "tooltip": {
               "hideZeros": false,
               "mode": "single",
-              "sort": "none"
+              "sort": "desc"
             }
           },
           "pluginVersion": "12.1.0",
@@ -21547,7 +21863,6 @@
               "expr": "avg(rate(zeebe_rdbms_exporter_historyCleanup_duration_seconds_sum{cluster=~\"$cluster\", namespace=~\"$namespace\",partitionId=~\"$partition\"}[$__rate_interval]) > 0)",
               "format": "time_series",
               "fullMetaSearch": false,
-              "hide": false,
               "includeNullMetadata": true,
               "instant": false,
               "legendFormat": "History cleanup",
@@ -21639,7 +21954,7 @@
             "h": 8,
             "w": 9,
             "x": 0,
-            "y": 973
+            "y": 1255
           },
           "id": 684,
           "options": {
@@ -21695,7 +22010,6 @@
               "expr": "sort(max by(statementId) (increase(zeebe_rdbms_exporter_executed_statements_total{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\"}[$__rate_interval])))",
               "format": "table",
               "fullMetaSearch": false,
-              "hide": false,
               "includeNullMetadata": true,
               "instant": true,
               "interval": "30s",
@@ -21716,7 +22030,6 @@
               "expr": "sort(max by(statementId) (increase(zeebe_rdbms_exporter_merged_queue_item_total{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\"}[$__rate_interval])))",
               "format": "table",
               "fullMetaSearch": false,
-              "hide": false,
               "includeNullMetadata": true,
               "instant": true,
               "interval": "30s",
@@ -21833,7 +22146,7 @@
             "h": 8,
             "w": 8,
             "x": 9,
-            "y": 973
+            "y": 1255
           },
           "id": 685,
           "options": {
@@ -21846,7 +22159,7 @@
             "tooltip": {
               "hideZeros": false,
               "mode": "single",
-              "sort": "none"
+              "sort": "desc"
             }
           },
           "pluginVersion": "12.1.0",
@@ -21920,7 +22233,7 @@
             "h": 8,
             "w": 7,
             "x": 17,
-            "y": 973
+            "y": 1255
           },
           "id": 686,
           "options": {
@@ -22005,7 +22318,7 @@
             "h": 8,
             "w": 9,
             "x": 0,
-            "y": 981
+            "y": 1263
           },
           "id": 694,
           "options": {
@@ -22133,7 +22446,7 @@
             "h": 8,
             "w": 8,
             "x": 9,
-            "y": 981
+            "y": 1263
           },
           "id": 696,
           "options": {
@@ -22146,7 +22459,7 @@
             "tooltip": {
               "hideZeros": false,
               "mode": "single",
-              "sort": "none"
+              "sort": "desc"
             }
           },
           "pluginVersion": "12.1.0",
@@ -22193,7 +22506,7 @@
             "h": 8,
             "w": 7,
             "x": 17,
-            "y": 981
+            "y": 1263
           },
           "id": 704,
           "options": {
@@ -22319,7 +22632,7 @@
             "h": 8,
             "w": 9,
             "x": 0,
-            "y": 989
+            "y": 1271
           },
           "id": 689,
           "options": {
@@ -22332,7 +22645,7 @@
             "tooltip": {
               "hideZeros": false,
               "mode": "single",
-              "sort": "none"
+              "sort": "desc"
             }
           },
           "pluginVersion": "12.1.0",
@@ -22405,7 +22718,7 @@
             "h": 6,
             "w": 24,
             "x": 0,
-            "y": 1812
+            "y": 2094
           },
           "id": 170,
           "maxPerRow": 6,
@@ -22490,7 +22803,7 @@
             "h": 6,
             "w": 12,
             "x": 0,
-            "y": 1824
+            "y": 2106
           },
           "id": 174,
           "options": {
@@ -22567,7 +22880,7 @@
             "h": 6,
             "w": 12,
             "x": 12,
-            "y": 1824
+            "y": 2106
           },
           "id": 265,
           "options": {
@@ -22647,7 +22960,7 @@
             "h": 3,
             "w": 12,
             "x": 0,
-            "y": 999
+            "y": 1281
           },
           "id": 701,
           "options": {
@@ -22710,7 +23023,7 @@
             "h": 4,
             "w": 6,
             "x": 12,
-            "y": 999
+            "y": 1281
           },
           "id": 702,
           "options": {
@@ -22764,7 +23077,7 @@
             "h": 4,
             "w": 6,
             "x": 12,
-            "y": 1003
+            "y": 1285
           },
           "id": 695,
           "options": {
@@ -22818,7 +23131,7 @@
             "h": 4,
             "w": 6,
             "x": 18,
-            "y": 1003
+            "y": 1285
           },
           "id": 698,
           "options": {
@@ -22872,7 +23185,7 @@
             "h": 4,
             "w": 6,
             "x": 18,
-            "y": 1003
+            "y": 1285
           },
           "id": 703,
           "options": {
@@ -22926,7 +23239,7 @@
             "h": 4,
             "w": 6,
             "x": 12,
-            "y": 1007
+            "y": 1289
           },
           "id": 705,
           "options": {
@@ -22983,7 +23296,7 @@
             "h": 4,
             "w": 6,
             "x": 18,
-            "y": 1007
+            "y": 1289
           },
           "id": 700,
           "options": {
@@ -23021,6 +23334,179 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
+          "description": "The amount of backups and ranges deleted by the retention mechanism during its last execution.",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "fixedColor": "green",
+                "mode": "fixed"
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green"
+                  }
+                ]
+              },
+              "unit": "none"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 9,
+            "w": 6,
+            "x": 12,
+            "y": 1293
+          },
+          "id": 707,
+          "options": {
+            "colorMode": "value",
+            "graphMode": "none",
+            "justifyMode": "center",
+            "orientation": "auto",
+            "percentChangeColorMode": "standard",
+            "reduceOptions": {
+              "calcs": [
+                "last"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "showPercentChange": false,
+            "textMode": "value_and_name",
+            "wideLayout": true
+          },
+          "pluginVersion": "12.3.1",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
+              },
+              "editorMode": "code",
+              "expr": "camunda_backup_retention_backups_deleted_round{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\"}",
+              "interval": "",
+              "legendFormat": "Backups deleted - {{partition}}",
+              "range": true,
+              "refId": "A"
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
+              },
+              "editorMode": "builder",
+              "expr": "camunda_backup_retention_ranges_deleted_round{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\"}",
+              "instant": false,
+              "legendFormat": "Ranges deleted - p{{partition}}",
+              "range": true,
+              "refId": "B"
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
+              },
+              "editorMode": "builder",
+              "expr": "camunda_backup_retention_earliest_backup_id{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\"}",
+              "instant": false,
+              "legendFormat": "Earliest backup - p{{partition}}",
+              "range": true,
+              "refId": "C"
+            }
+          ],
+          "title": "Retention last execution",
+          "type": "stat"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "description": "Retention mechanism scheduled execution information",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "fixedColor": "green",
+                "mode": "fixed"
+              },
+              "fieldMinMax": false,
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green"
+                  }
+                ]
+              },
+              "unit": "dateTimeAsIsoNoDateIfToday"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 9,
+            "w": 6,
+            "x": 18,
+            "y": 1293
+          },
+          "id": 708,
+          "options": {
+            "colorMode": "value",
+            "graphMode": "none",
+            "justifyMode": "center",
+            "orientation": "horizontal",
+            "percentChangeColorMode": "standard",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "showPercentChange": false,
+            "textMode": "value_and_name",
+            "wideLayout": false
+          },
+          "pluginVersion": "12.3.1",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
+              },
+              "editorMode": "code",
+              "exemplar": false,
+              "expr": "camunda_backup_retention_last_execution_millis{cluster=~\"$cluster\", namespace=~\"$namespace\"}",
+              "instant": false,
+              "interval": "",
+              "legendFormat": "Last retention execution",
+              "range": true,
+              "refId": "A"
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
+              },
+              "editorMode": "builder",
+              "expr": "camunda_backup_retention_next_execution_millis{cluster=~\"$cluster\", namespace=~\"$namespace\"}",
+              "instant": false,
+              "legendFormat": "Next retention execution",
+              "range": true,
+              "refId": "B"
+            }
+          ],
+          "title": "Retention schedule",
+          "type": "stat"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -23045,7 +23531,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 1813
+            "y": 2095
           },
           "id": 319,
           "options": {
@@ -23106,7 +23592,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 1827
+            "y": 2109
           },
           "id": 323,
           "maxDataPoints": 25,
@@ -23157,7 +23643,6 @@
               },
               "expr": "sum(increase(zeebe_backup_operations_latency_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\", operation=\"status\"}[$__interval]) or increase(zeebe_backup_operations_latency_seconds_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\", operation=\"status\"}[$__interval])) by (le)",
               "format": "heatmap",
-              "hide": false,
               "interval": "",
               "legendFormat": "{{le}}",
               "refId": "A"
@@ -23198,7 +23683,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 1827
+            "y": 2109
           },
           "id": 325,
           "options": {
@@ -23227,7 +23712,6 @@
                 "uid": "${DS_PROMETHEUS}"
               },
               "expr": "max by (partition) ((rate(zeebe_backup_operations_latency_sum{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\", partition=~\"$partition\", operation=\"take\"}[1h]) / rate(zeebe_backup_operations_latency_count{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\", partition=~\"$partition\", operation=\"take\"}[1h])) or (rate(zeebe_backup_operations_latency_seconds_sum{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\", partition=~\"$partition\", operation=\"take\"}[1h]) / rate(zeebe_backup_operations_latency_seconds_count{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\", partition=~\"$partition\", operation=\"take\"}[1h])))",
-              "hide": false,
               "interval": "",
               "legendFormat": "Partition {{partition}}",
               "refId": "A"
@@ -23241,7 +23725,6 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "description": "",
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -23299,7 +23782,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 1835
+            "y": 2117
           },
           "id": 313,
           "options": {
@@ -23312,7 +23795,7 @@
             "tooltip": {
               "hideZeros": false,
               "mode": "single",
-              "sort": "none"
+              "sort": "desc"
             }
           },
           "pluginVersion": "12.1.0",
@@ -23323,7 +23806,6 @@
                 "uid": "${DS_PROMETHEUS}"
               },
               "expr": "sum(zeebe_backup_operations_total{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\"}) by (operation, result)",
-              "hide": false,
               "interval": "",
               "legendFormat": "{{operation}}: {{result}}",
               "refId": "B"
@@ -23360,7 +23842,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 1835
+            "y": 2117
           },
           "id": 321,
           "options": {
@@ -23457,7 +23939,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 1843
+            "y": 2125
           },
           "id": 335,
           "options": {
@@ -23470,7 +23952,7 @@
             },
             "tooltip": {
               "mode": "single",
-              "sort": "none"
+              "sort": "desc"
             }
           },
           "pluginVersion": "7.4.5",
@@ -23515,7 +23997,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 1843
+            "y": 2125
           },
           "id": 317,
           "options": {
@@ -23577,7 +24059,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 1851
+            "y": 2133
           },
           "id": 327,
           "options": {
@@ -23612,184 +24094,6 @@
           ],
           "title": "Current Checkpoint ID",
           "type": "stat"
-        },
-        {
-          "id": 707,
-          "type": "stat",
-          "title": "Retention last execution",
-          "description": "The amount of backups and ranges deleted by the retention mechanism during its last execution.",
-          "gridPos": {
-            "h": 9,
-            "w": 6,
-            "x": 12,
-            "y": 1011
-          },
-          "fieldConfig": {
-            "defaults": {
-              "mappings": [],
-              "thresholds": {
-                "mode": "absolute",
-                "steps": [
-                  {
-                    "color": "green",
-                    "value": null
-                  }
-                ]
-              },
-              "color": {
-                "mode": "fixed",
-                "fixedColor": "green"
-              },
-              "unit": "none"
-            },
-            "overrides": []
-          },
-          "pluginVersion": "12.3.1",
-          "targets": [
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
-              },
-              "expr": "camunda_backup_retention_backups_deleted_round{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\"}",
-              "interval": "",
-              "legendFormat": "Backups deleted - {{partition}}",
-              "refId": "A",
-              "editorMode": "code",
-              "range": true
-            },
-            {
-              "refId": "B",
-              "expr": "camunda_backup_retention_ranges_deleted_round{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\"}",
-              "range": true,
-              "instant": false,
-              "datasource": {
-                "uid": "${DS_PROMETHEUS}",
-                "type": "prometheus"
-              },
-              "hide": false,
-              "editorMode": "builder",
-              "legendFormat": "Ranges deleted - p{{partition}}"
-            },
-            {
-              "refId": "C",
-              "expr": "camunda_backup_retention_earliest_backup_id{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\"}",
-              "range": true,
-              "instant": false,
-              "datasource": {
-                "uid": "${DS_PROMETHEUS}",
-                "type": "prometheus"
-              },
-              "hide": false,
-              "editorMode": "builder",
-              "legendFormat": "Earliest backup - p{{partition}}"
-            }
-          ],
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
-          },
-          "options": {
-            "reduceOptions": {
-              "values": false,
-              "calcs": [
-                "last"
-              ],
-              "fields": ""
-            },
-            "orientation": "auto",
-            "textMode": "value_and_name",
-            "wideLayout": true,
-            "colorMode": "value",
-            "graphMode": "none",
-            "justifyMode": "center",
-            "showPercentChange": false,
-            "percentChangeColorMode": "standard"
-          }
-        },
-        {
-          "id": 708,
-          "type": "stat",
-          "title": "Retention schedule",
-          "description": "Retention mechanism scheduled execution information",
-          "gridPos": {
-            "h": 9,
-            "w": 6,
-            "x": 18,
-            "y": 1011
-          },
-          "fieldConfig": {
-            "defaults": {
-              "mappings": [],
-              "thresholds": {
-                "mode": "absolute",
-                "steps": [
-                  {
-                    "color": "green",
-                    "value": null
-                  }
-                ]
-              },
-              "color": {
-                "mode": "fixed",
-                "fixedColor": "green"
-              },
-              "unit": "dateTimeAsIsoNoDateIfToday",
-              "fieldMinMax": false
-            },
-            "overrides": []
-          },
-          "pluginVersion": "12.3.1",
-          "targets": [
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
-              },
-              "expr": "camunda_backup_retention_last_execution_millis{cluster=~\"$cluster\", namespace=~\"$namespace\"}",
-              "interval": "",
-              "legendFormat": "Last retention execution",
-              "refId": "A",
-              "editorMode": "code",
-              "range": true,
-              "instant": false,
-              "exemplar": false
-            },
-            {
-              "refId": "B",
-              "expr": "camunda_backup_retention_next_execution_millis{cluster=~\"$cluster\", namespace=~\"$namespace\"}",
-              "range": true,
-              "instant": false,
-              "datasource": {
-                "uid": "${DS_PROMETHEUS}",
-                "type": "prometheus"
-              },
-              "hide": false,
-              "editorMode": "builder",
-              "legendFormat": "Next retention execution"
-            }
-          ],
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
-          },
-          "options": {
-            "reduceOptions": {
-              "values": false,
-              "calcs": [
-                "lastNotNull"
-              ],
-              "fields": ""
-            },
-            "orientation": "horizontal",
-            "textMode": "value_and_name",
-            "wideLayout": false,
-            "colorMode": "value",
-            "graphMode": "none",
-            "justifyMode": "center",
-            "showPercentChange": false,
-            "percentChangeColorMode": "standard"
-          }
         }
       ],
       "title": "Backups",
@@ -23830,7 +24134,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 1814
+            "y": 2096
           },
           "id": 538,
           "options": {
@@ -23915,7 +24219,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 1814
+            "y": 2096
           },
           "id": 540,
           "options": {
@@ -24042,7 +24346,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 1828
+            "y": 2110
           },
           "id": 444,
           "options": {
@@ -24055,7 +24359,7 @@
             "tooltip": {
               "hideZeros": false,
               "mode": "single",
-              "sort": "none"
+              "sort": "desc"
             }
           },
           "pluginVersion": "12.1.0",
@@ -24155,7 +24459,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 1828
+            "y": 2110
           },
           "id": 446,
           "options": {
@@ -24168,7 +24472,7 @@
             "tooltip": {
               "hideZeros": false,
               "mode": "single",
-              "sort": "none"
+              "sort": "desc"
             }
           },
           "pluginVersion": "12.1.0",
@@ -24267,7 +24571,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 1836
+            "y": 2118
           },
           "id": 440,
           "options": {
@@ -24365,7 +24669,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 1836
+            "y": 2118
           },
           "id": 442,
           "options": {
@@ -24437,7 +24741,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 1815
+            "y": 2097
           },
           "id": 547,
           "options": {
@@ -24562,7 +24866,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 1815
+            "y": 2097
           },
           "id": 549,
           "options": {
@@ -24575,7 +24879,7 @@
             "tooltip": {
               "hideZeros": false,
               "mode": "single",
-              "sort": "none"
+              "sort": "desc"
             }
           },
           "pluginVersion": "12.1.0",
@@ -24678,7 +24982,7 @@
             "h": 6,
             "w": 8,
             "x": 0,
-            "y": 1816
+            "y": 2098
           },
           "id": 562,
           "options": {
@@ -24691,7 +24995,7 @@
             "tooltip": {
               "hideZeros": false,
               "mode": "multi",
-              "sort": "none"
+              "sort": "desc"
             }
           },
           "pluginVersion": "12.1.0",
@@ -24780,7 +25084,7 @@
             "h": 6,
             "w": 9,
             "x": 8,
-            "y": 1816
+            "y": 2098
           },
           "id": 563,
           "options": {
@@ -24793,7 +25097,7 @@
             "tooltip": {
               "hideZeros": false,
               "mode": "multi",
-              "sort": "none"
+              "sort": "desc"
             }
           },
           "pluginVersion": "12.1.0",
@@ -24882,7 +25186,7 @@
             "h": 6,
             "w": 7,
             "x": 17,
-            "y": 1816
+            "y": 2098
           },
           "id": 564,
           "options": {
@@ -24895,7 +25199,7 @@
             "tooltip": {
               "hideZeros": false,
               "mode": "multi",
-              "sort": "none"
+              "sort": "desc"
             }
           },
           "pluginVersion": "12.1.0",
@@ -24918,7 +25222,6 @@
                 "type": "prometheus",
                 "uid": "${DS_PROMETHEUS}"
               },
-              "hide": false,
               "refId": "B"
             }
           ],
@@ -25006,7 +25309,7 @@
             "h": 6,
             "w": 8,
             "x": 0,
-            "y": 1817
+            "y": 2099
           },
           "id": 566,
           "options": {
@@ -25019,7 +25322,7 @@
             "tooltip": {
               "hideZeros": false,
               "mode": "multi",
-              "sort": "none"
+              "sort": "desc"
             }
           },
           "pluginVersion": "12.1.0",
@@ -25031,7 +25334,6 @@
               },
               "editorMode": "code",
               "expr": "sum(zeebe_backpressure_inflight_requests_count{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\"}) by (partition)",
-              "hide": false,
               "legendFormat": "Partition: {{partition}}",
               "range": true,
               "refId": "B"
@@ -25107,7 +25409,7 @@
             "h": 6,
             "w": 8,
             "x": 8,
-            "y": 1817
+            "y": 2099
           },
           "id": 567,
           "options": {
@@ -25120,7 +25422,7 @@
             "tooltip": {
               "hideZeros": false,
               "mode": "multi",
-              "sort": "none"
+              "sort": "desc"
             }
           },
           "pluginVersion": "12.1.0",
@@ -25132,7 +25434,6 @@
               },
               "editorMode": "code",
               "expr": "sum(rate(zeebe_dropped_request_count_total{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\"}[$__rate_interval]) ) by (partition)",
-              "hide": false,
               "legendFormat": "Partition: {{partition}}",
               "range": true,
               "refId": "B"
@@ -25208,7 +25509,7 @@
             "h": 6,
             "w": 8,
             "x": 16,
-            "y": 1817
+            "y": 2099
           },
           "id": 568,
           "options": {
@@ -25221,7 +25522,7 @@
             "tooltip": {
               "hideZeros": false,
               "mode": "multi",
-              "sort": "none"
+              "sort": "desc"
             }
           },
           "pluginVersion": "12.1.0",
@@ -25233,7 +25534,6 @@
               },
               "editorMode": "code",
               "expr": "sum(zeebe_backpressure_requests_limit{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\"} and on(namespace, partition, pod, instance) (atomix_role{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\"} == 3)) by (partition)",
-              "hide": false,
               "legendFormat": "Partition: {{partition}}",
               "range": true,
               "refId": "B"
@@ -25341,7 +25641,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 1824
+            "y": 2106
           },
           "id": 573,
           "options": {
@@ -25354,7 +25654,7 @@
             "tooltip": {
               "hideZeros": false,
               "mode": "single",
-              "sort": "none"
+              "sort": "desc"
             }
           },
           "pluginVersion": "12.1.0",
@@ -25377,7 +25677,6 @@
               },
               "editorMode": "code",
               "expr": "sum(rate(zeebe_broker_jobs_push_fail_count_total{namespace=~\"$namespace\", pod=~\"$pod\"}[$__rate_interval])) by (namespace, pod)",
-              "hide": false,
               "legendFormat": "❌ {{pod}}",
               "range": true,
               "refId": "B"
@@ -25471,7 +25770,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 1824
+            "y": 2106
           },
           "id": 574,
           "options": {
@@ -25484,7 +25783,7 @@
             "tooltip": {
               "hideZeros": false,
               "mode": "single",
-              "sort": "none"
+              "sort": "desc"
             }
           },
           "pluginVersion": "12.1.0",
@@ -25507,7 +25806,6 @@
               },
               "editorMode": "code",
               "expr": "sum(rate(zeebe_gateway_job_stream_push_total{namespace=~\"$namespace\", pod=~\"$pod\", status=\"failure\"}[$__rate_interval])) by (namespace, pod)",
-              "hide": false,
               "legendFormat": "❌ {{pod}}",
               "range": true,
               "refId": "B"
@@ -25589,7 +25887,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 1832
+            "y": 2114
           },
           "id": 600,
           "options": {
@@ -25602,7 +25900,7 @@
             "tooltip": {
               "hideZeros": false,
               "mode": "single",
-              "sort": "none"
+              "sort": "desc"
             }
           },
           "pluginVersion": "12.1.0",
@@ -25696,7 +25994,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 1832
+            "y": 2114
           },
           "id": 601,
           "options": {
@@ -25709,7 +26007,7 @@
             "tooltip": {
               "hideZeros": false,
               "mode": "single",
-              "sort": "none"
+              "sort": "desc"
             }
           },
           "pluginVersion": "12.1.0",
@@ -25794,7 +26092,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 1840
+            "y": 2122
           },
           "id": 575,
           "options": {
@@ -25806,7 +26104,7 @@
             },
             "tooltip": {
               "mode": "single",
-              "sort": "none"
+              "sort": "desc"
             }
           },
           "targets": [
@@ -25904,7 +26202,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 1819
+            "y": 2101
           },
           "id": 570,
           "options": {
@@ -25917,7 +26215,7 @@
             "tooltip": {
               "hideZeros": false,
               "mode": "single",
-              "sort": "none"
+              "sort": "desc"
             }
           },
           "pluginVersion": "12.1.0",
@@ -26012,7 +26310,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 1819
+            "y": 2101
           },
           "id": 577,
           "options": {
@@ -26025,7 +26323,7 @@
             "tooltip": {
               "hideZeros": false,
               "mode": "single",
-              "sort": "none"
+              "sort": "desc"
             }
           },
           "pluginVersion": "12.1.0",
@@ -26119,7 +26417,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 1827
+            "y": 2109
           },
           "id": 578,
           "options": {
@@ -26132,7 +26430,7 @@
             "tooltip": {
               "hideZeros": false,
               "mode": "single",
-              "sort": "none"
+              "sort": "desc"
             }
           },
           "pluginVersion": "12.1.0",
@@ -26217,7 +26515,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 1827
+            "y": 2109
           },
           "id": 571,
           "options": {
@@ -26230,7 +26528,7 @@
             "tooltip": {
               "hideZeros": false,
               "mode": "single",
-              "sort": "none"
+              "sort": "desc"
             }
           },
           "pluginVersion": "12.1.0",
@@ -26326,7 +26624,7 @@
             "h": 8,
             "w": 8,
             "x": 0,
-            "y": 1820
+            "y": 2102
           },
           "id": 582,
           "options": {
@@ -26339,7 +26637,7 @@
             "tooltip": {
               "hideZeros": false,
               "mode": "single",
-              "sort": "none"
+              "sort": "desc"
             }
           },
           "pluginVersion": "12.1.0",
@@ -26421,7 +26719,7 @@
             "h": 8,
             "w": 8,
             "x": 8,
-            "y": 1820
+            "y": 2102
           },
           "id": 583,
           "options": {
@@ -26434,7 +26732,7 @@
             "tooltip": {
               "hideZeros": false,
               "mode": "single",
-              "sort": "none"
+              "sort": "desc"
             }
           },
           "pluginVersion": "12.1.0",
@@ -26446,7 +26744,6 @@
               },
               "editorMode": "code",
               "expr": "sum(rate(zeebe_dns_failed_total{namespace=~\"$namespace\", pod=~\"$pod\"}[$__rate_interval])) by (pod, code)",
-              "hide": false,
               "legendFormat": "{{pod}} {{code}}",
               "range": true,
               "refId": "B"
@@ -26517,7 +26814,7 @@
             "h": 8,
             "w": 8,
             "x": 16,
-            "y": 1820
+            "y": 2102
           },
           "id": 584,
           "options": {
@@ -26530,7 +26827,7 @@
             "tooltip": {
               "hideZeros": false,
               "mode": "single",
-              "sort": "none"
+              "sort": "desc"
             }
           },
           "pluginVersion": "12.1.0",
@@ -26542,7 +26839,6 @@
               },
               "editorMode": "code",
               "expr": "sum(rate(zeebe_dns_error_total{namespace=~\"$namespace\", pod=~\"$pod\"}[$__rate_interval])) by (pod)",
-              "hide": false,
               "legendFormat": "{{pod}} errors",
               "range": true,
               "refId": "C"
@@ -26626,7 +26922,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 1821
+            "y": 2103
           },
           "id": 596,
           "options": {
@@ -26663,7 +26959,6 @@
               },
               "editorMode": "code",
               "expr": "max(zeebe_cluster_changes_operations_completed{namespace=~\"$namespace\", pod=~\"$pod\"})",
-              "hide": false,
               "instant": false,
               "legendFormat": "Completed",
               "range": true,
@@ -26678,7 +26973,6 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "description": "",
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -26726,7 +27020,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 1821
+            "y": 2103
           },
           "id": 597,
           "options": {
@@ -26788,7 +27082,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 1829
+            "y": 2111
           },
           "id": 598,
           "options": {
@@ -26850,7 +27144,6 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "description": "",
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -26914,7 +27207,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 1829
+            "y": 2111
           },
           "id": 599,
           "options": {
@@ -27038,7 +27331,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 1822
+            "y": 2104
           },
           "id": 680,
           "options": {
@@ -27139,7 +27432,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 1822
+            "y": 2104
           },
           "id": 666,
           "options": {
@@ -27152,7 +27445,7 @@
             "tooltip": {
               "hideZeros": false,
               "mode": "multi",
-              "sort": "none"
+              "sort": "desc"
             }
           },
           "pluginVersion": "12.1.0",
@@ -27197,7 +27490,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 1830
+            "y": 2112
           },
           "id": 681,
           "options": {
@@ -27295,7 +27588,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 1830
+            "y": 2112
           },
           "id": 682,
           "options": {
@@ -27374,7 +27667,7 @@
   ],
   "preload": false,
   "refresh": "auto",
-  "schemaVersion": 41,
+  "schemaVersion": 42,
   "tags": [],
   "templating": {
     "list": [
@@ -27413,6 +27706,7 @@
         },
         "refresh": 2,
         "regex": "",
+        "regexApplyTo": "value",
         "sort": 1,
         "type": "query"
       },
@@ -27439,6 +27733,7 @@
         },
         "refresh": 2,
         "regex": "",
+        "regexApplyTo": "value",
         "sort": 1,
         "type": "query"
       },
@@ -27463,6 +27758,7 @@
         },
         "refresh": 2,
         "regex": "",
+        "regexApplyTo": "value",
         "sort": 1,
         "type": "query"
       },
@@ -27487,6 +27783,7 @@
         },
         "refresh": 2,
         "regex": "",
+        "regexApplyTo": "value",
         "sort": 1,
         "type": "query"
       },
@@ -27510,7 +27807,8 @@
           }
         ],
         "query": "committed, reserved",
-        "type": "custom"
+        "type": "custom",
+        "valuesFormat": "csv"
       }
     ]
   },
@@ -27529,8 +27827,9 @@
       "1d"
     ]
   },
-  "timezone": "",
+  "timezone": "browser",
   "title": "Zeebe",
   "uid": "zeebe-dashboard",
-  "version": 0
+  "version": 1,
+  "weekStart": ""
 }

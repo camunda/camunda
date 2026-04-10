@@ -558,7 +558,6 @@
           <ignoredUsedUndeclaredDependencies>
             <dependency>org.apache.tomcat.embed:tomcat-embed-core</dependency>
             <dependency>jakarta.servlet:jakarta.servlet-api</dependency>
-            <dependency>io.camunda:zeebe-client-java</dependency>
           </ignoredUsedUndeclaredDependencies>
           <ignoredUnusedDeclaredDependencies>
             <dependency>jakarta.servlet:jakarta.servlet-api</dependency>

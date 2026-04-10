@@ -8,6 +8,7 @@
 package io.camunda.zeebe.gateway.api.process;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.zeebe.gateway.api.util.GatewayTest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerSetVariablesRequest;
@@ -19,7 +20,10 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.VariableDocumentIntent;
 import io.camunda.zeebe.test.util.JsonUtil;
 import io.camunda.zeebe.test.util.MsgPackUtil;
+import io.grpc.Status;
+import io.grpc.StatusRuntimeException;
 import java.util.Collections;
+import java.util.concurrent.TimeoutException;
 import org.junit.Test;
 
 public final class SetVariablesTest extends GatewayTest {
@@ -56,5 +60,31 @@ public final class SetVariablesTest extends GatewayTest {
     final VariableDocumentRecord brokerRequestValue = brokerRequest.getRequestWriter();
     MsgPackUtil.assertEqualityExcluding(brokerRequestValue.getVariablesBuffer(), variables);
     assertThat(brokerRequestValue.getScopeKey()).isEqualTo(elementInstanceKey);
+  }
+
+  @Test
+  public void shouldMapTimeoutToDeadlineExceeded() {
+    // given
+    brokerClient.registerHandler(
+        BrokerSetVariablesRequest.class,
+        request -> {
+          throw new TimeoutException("request timeout");
+        });
+
+    final SetVariablesRequest request =
+        SetVariablesRequest.newBuilder()
+            .setElementInstanceKey(Protocol.encodePartitionId(1, 1))
+            .setVariables("{\"key\":\"value\"}")
+            .build();
+
+    // when / then
+    assertThatThrownBy(() -> client.setVariables(request))
+        .isInstanceOf(StatusRuntimeException.class)
+        .asInstanceOf(org.assertj.core.api.InstanceOfAssertFactories.THROWABLE)
+        .extracting(
+            t -> ((StatusRuntimeException) t).getStatus().getCode(),
+            t -> ((StatusRuntimeException) t).getStatus().getDescription())
+        .containsExactly(
+            Status.Code.DEADLINE_EXCEEDED, "Time out between gateway and broker: request timeout");
   }
 }

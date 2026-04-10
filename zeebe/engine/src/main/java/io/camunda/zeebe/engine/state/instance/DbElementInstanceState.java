@@ -40,19 +40,18 @@ import org.agrona.collections.MutableInteger;
 
 public final class DbElementInstanceState implements MutableElementInstanceState {
 
+  // active process instance counter
+  private static final long ACTIVE_PROCESS_INSTANCE_COUNTER_KEY = 1L;
   private final ColumnFamily<DbCompositeKey<DbForeignKey<DbLong>, DbForeignKey<DbLong>>, DbNil>
       parentChildColumnFamily;
   private final DbCompositeKey<DbForeignKey<DbLong>, DbForeignKey<DbLong>> parentChildKey;
   private final DbForeignKey<DbLong> parentKey;
-
   private final DbLong elementInstanceKey;
   private final ElementInstance elementInstance;
   private final ColumnFamily<DbLong, ElementInstance> elementInstanceColumnFamily;
-
   private final AwaitProcessInstanceResultMetadata awaitResultMetadata;
   private final ColumnFamily<DbLong, AwaitProcessInstanceResultMetadata>
       awaitProcessInstanceResultMetadataColumnFamily;
-
   private final DbLong flowScopeKey = new DbLong();
   private final DbString gatewayElementId = new DbString();
   private final DbString sequenceFlowElementId = new DbString();
@@ -68,7 +67,6 @@ public final class DbElementInstanceState implements MutableElementInstanceState
       numberOfTakenSequenceFlowsColumnFamily;
 
   private final MutableVariableState variableState;
-
   private final DbLong processDefinitionKey;
   private final DbCompositeKey<DbLong, DbLong> processInstanceKeyByProcessDefinitionKey;
 
@@ -88,6 +86,9 @@ public final class DbElementInstanceState implements MutableElementInstanceState
   private final ProcessInstanceByBusinessIdIndexKey processInstanceByBusinessIdIndexKey;
   private final ColumnFamily<ProcessInstanceByBusinessIdIndexKey, DbNil>
       processInstanceByBusinessIdIndexKeyColumnFamily;
+  private final DbLong activeProcessInstanceCounterKey;
+  private final DbLong activeProcessInstanceCounterValue;
+  private final ColumnFamily<DbLong, DbLong> activeProcessInstanceCounterColumnFamily;
 
   public DbElementInstanceState(
       final ZeebeDb<ZbColumnFamilies> zeebeDb,
@@ -168,6 +169,17 @@ public final class DbElementInstanceState implements MutableElementInstanceState
             transactionContext,
             processInstanceByBusinessIdIndexKey,
             DbNil.INSTANCE);
+
+    activeProcessInstanceCounterKey = new DbLong();
+    activeProcessInstanceCounterKey.wrapLong(ACTIVE_PROCESS_INSTANCE_COUNTER_KEY);
+    activeProcessInstanceCounterValue = new DbLong();
+    activeProcessInstanceCounterColumnFamily =
+        zeebeDb.createColumnFamily(
+            ZbColumnFamilies.ACTIVE_PROCESS_INSTANCE_COUNT,
+            transactionContext,
+            activeProcessInstanceCounterKey,
+            activeProcessInstanceCounterValue);
+    initializeActiveProcessInstanceCounterIfNeeded();
   }
 
   @Override
@@ -215,6 +227,7 @@ public final class DbElementInstanceState implements MutableElementInstanceState
       processDefinitionKey.wrapLong(recordValue.getProcessDefinitionKey());
       processInstanceKeyByProcessDefinitionKeyColumnFamily.deleteExisting(
           processInstanceKeyByProcessDefinitionKey);
+      decrementActiveProcessInstanceCount();
     }
 
     if (parent > 0) {
@@ -244,6 +257,7 @@ public final class DbElementInstanceState implements MutableElementInstanceState
       processDefinitionKey.wrapLong(recordValue.getProcessDefinitionKey());
       processInstanceKeyByProcessDefinitionKeyColumnFamily.insert(
           processInstanceKeyByProcessDefinitionKey, DbNil.INSTANCE);
+      incrementActiveProcessInstanceCount();
     }
   }
 
@@ -359,6 +373,12 @@ public final class DbElementInstanceState implements MutableElementInstanceState
   }
 
   @Override
+  public void removeRuntimeInstructions(final long processInstanceKey) {
+    elementInstanceKey.wrapLong(processInstanceKey);
+    runtimeInstructionsByProcessInstanceKey.deleteIfExists(elementInstanceKey);
+  }
+
+  @Override
   public void insertProcessInstanceKeyByBusinessId(
       final String businessId,
       final String processDefinitionId,
@@ -386,6 +406,38 @@ public final class DbElementInstanceState implements MutableElementInstanceState
 
     processInstanceByBusinessIdIndexKeyColumnFamily.deleteExisting(
         processInstanceByBusinessIdIndexKey);
+  }
+
+  private void incrementActiveProcessInstanceCount() {
+    final var currentValue =
+        activeProcessInstanceCounterColumnFamily.get(activeProcessInstanceCounterKey);
+
+    final long newValue = currentValue.getValue() + 1;
+
+    activeProcessInstanceCounterValue.wrapLong(newValue);
+    activeProcessInstanceCounterColumnFamily.update(
+        activeProcessInstanceCounterKey, activeProcessInstanceCounterValue);
+  }
+
+  private void decrementActiveProcessInstanceCount() {
+    final var currentValue =
+        activeProcessInstanceCounterColumnFamily.get(activeProcessInstanceCounterKey);
+
+    activeProcessInstanceCounterValue.wrapLong(currentValue.getValue() - 1);
+    activeProcessInstanceCounterColumnFamily.update(
+        activeProcessInstanceCounterKey, activeProcessInstanceCounterValue);
+  }
+
+  /** Initializes the root process instance counter if it hasn't been initialized yet. */
+  private void initializeActiveProcessInstanceCounterIfNeeded() {
+    final var currentValue =
+        activeProcessInstanceCounterColumnFamily.get(activeProcessInstanceCounterKey);
+
+    if (currentValue == null) {
+      activeProcessInstanceCounterValue.wrapLong(0);
+      activeProcessInstanceCounterColumnFamily.insert(
+          activeProcessInstanceCounterKey, activeProcessInstanceCounterValue);
+    }
   }
 
   @Override
@@ -589,6 +641,13 @@ public final class DbElementInstanceState implements MutableElementInstanceState
           return false;
         });
     return exists.get();
+  }
+
+  @Override
+  public long getActiveProcessInstanceCount() {
+    final var counter =
+        activeProcessInstanceCounterColumnFamily.get(activeProcessInstanceCounterKey);
+    return counter != null ? counter.getValue() : 0L;
   }
 
   private void removeNumberOfTakenSequenceFlows(final long flowScopeKey) {

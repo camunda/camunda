@@ -13,7 +13,7 @@ import FormModal from "src/components/modal/FormModal";
 import { assignTenantClient } from "src/utility/api/tenants";
 import TextField from "src/components/form/TextField";
 import { UseEntityModalProps } from "src/components/modal";
-import type { Tenant } from "@camunda/camunda-api-zod-schemas/8.9";
+import type { Tenant } from "@camunda/camunda-api-zod-schemas/8.10";
 
 const AssignClientsModal: FC<UseEntityModalProps<Tenant["tenantId"]>> = ({
   entity: tenantId,

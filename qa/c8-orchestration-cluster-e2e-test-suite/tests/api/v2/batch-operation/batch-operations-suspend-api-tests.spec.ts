@@ -89,6 +89,7 @@ test.describe('Suspend & Resume Batch Operation Tests', () => {
       await test.step('Create completed batch operation', async () => {
         return createCompletedBatchOperation(request);
       });
+
     const res = await suspendBatchOperation(request, key, 404);
     await assertNotFoundRequest(res, notFoundDetail(key));
   });
@@ -123,6 +124,7 @@ test.describe('Suspend & Resume Batch Operation Tests', () => {
       await test.step('Create batch operation for auth test', async () => {
         return createCancellationBatch(request, 3, 'batch_suspension_process');
       });
+
     const res = await request.post(
       buildUrl(`/batch-operations/${key}/suspension`),
       {

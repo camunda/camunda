@@ -90,6 +90,7 @@
                 <!-- map complex String schemas to String -->
                 <typeMapping>ProcessInstanceModificationActivateInstructionAncestorElementInstanceKey=String</typeMapping>
                 <typeMapping>ResourceKey=String</typeMapping>
+                <typeMapping>ScopeKey=String</typeMapping>
                 <typeMapping>ElementInstanceKey=String</typeMapping>
                 <!-- map specific filter properties to basic filter types -->
                 <typeMapping>AuditLogEntityKeyFilterProperty=BasicStringFilterProperty</typeMapping>
@@ -116,6 +117,8 @@
               <generateModelTests>false</generateModelTests>
               <!-- validate the spec on every generation -->
               <skipValidateSpec>false</skipValidateSpec>
+              <!-- only write files whose content changed to avoid spurious recompilation -->
+              <minimalUpdate>true</minimalUpdate>
               <openapiNormalizer>REF_AS_PARENT_IN_ALLOF=true</openapiNormalizer>
               <configOptions>
                 <additionalModelTypeAnnotations>@com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.ALWAYS)</additionalModelTypeAnnotations>
@@ -124,6 +127,7 @@
                 <jdk8>true</jdk8>
                 <openApiNullable>false</openApiNullable>
                 <useEnumCaseInsensitive>true</useEnumCaseInsensitive>
+                <hideGenerationTimestamp>true</hideGenerationTimestamp>
               </configOptions>
             </configuration>
           </execution>
@@ -145,6 +149,7 @@
                 <!-- map complex String schemas to String -->
                 <typeMapping>ProcessInstanceModificationActivateInstructionAncestorElementInstanceKey=String</typeMapping>
                 <typeMapping>ResourceKey=String</typeMapping>
+                <typeMapping>ScopeKey=String</typeMapping>
                 <typeMapping>ElementInstanceKey=String</typeMapping>
                 <!-- map specific filter properties to String for equality behavior -->
                 <typeMapping>AuditLogEntityKeyFilterProperty=String</typeMapping>
@@ -228,6 +233,8 @@
               <generateModelTests>false</generateModelTests>
               <!-- no validation needed, done in the advanced execution already -->
               <skipValidateSpec>true</skipValidateSpec>
+              <!-- only write files whose content changed to avoid spurious recompilation -->
+              <minimalUpdate>true</minimalUpdate>
               <configOptions>
                 <additionalModelTypeAnnotations>@com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.ALWAYS)</additionalModelTypeAnnotations>
                 <serializationLibrary>jackson</serializationLibrary>
@@ -236,6 +243,7 @@
                 <openApiNullable>false</openApiNullable>
                 <useEnumCaseInsensitive>true</useEnumCaseInsensitive>
                 <useOneOfInterfaces>false</useOneOfInterfaces>
+                <hideGenerationTimestamp>true</hideGenerationTimestamp>
               </configOptions>
             </configuration>
           </execution>

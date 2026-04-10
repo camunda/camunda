@@ -7,9 +7,9 @@
  */
 package io.camunda.zeebe.it.engine.client.command;
 
+import static java.util.Map.entry;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.assertj.core.api.Assertions.entry;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.CompleteJobCommandStep1;
@@ -22,6 +22,7 @@ import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import java.time.Duration;
 import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
@@ -32,7 +33,10 @@ public final class CompleteJobTest {
 
   @TestZeebe
   private static final TestStandaloneBroker ZEEBE =
-      new TestStandaloneBroker().withRecordingExporter(true).withUnauthenticatedAccess();
+      new TestStandaloneBroker()
+          .withJobConfig(b -> b.setIncludeVariablesInJobCompletedEvent(false))
+          .withRecordingExporter(true)
+          .withUnauthenticatedAccess();
 
   @AutoClose CamundaClient client;
   ZeebeResourcesHelper resourcesHelper;
@@ -75,7 +79,8 @@ public final class CompleteJobTest {
 
   @ParameterizedTest
   @ValueSource(booleans = {true, false})
-  public void shouldCompleteJobWithVariables(final boolean useRest, final TestInfo testInfo) {
+  public void shouldCompleteJobWithVariablesAndDisabledVariablesInJobCompletedEvent(
+      final boolean useRest, final TestInfo testInfo) {
     // given
     final String jobType = "job-" + testInfo.getDisplayName();
     final var jobKey = resourcesHelper.createSingleJob(jobType);
@@ -84,8 +89,12 @@ public final class CompleteJobTest {
     getCommand(client, useRest, jobKey).variables("{\"foo\":\"bar\"}").send().join();
 
     // then
+    // Variables are intentionally not included in the COMPLETED event to avoid
+    // ExceededBatchRecordSizeException when large variables are propagated to follow-up events.
+    // Exporters can read variables from the JobIntent.COMPLETE command or the follow-up
+    // ProcessEvent.TRIGGERING event.
     ZeebeAssertHelper.assertJobCompleted(
-        jobType, (job) -> assertThat(job.getVariables()).containsOnly(entry("foo", "bar")));
+        jobType, (job) -> assertThat(job.getVariables()).isEmpty());
   }
 
   @ParameterizedTest
@@ -150,8 +159,12 @@ public final class CompleteJobTest {
     getCommand(client, useRest, jobKey).variable(key, value).send().join();
 
     // then
+    // Variables are intentionally not included in the COMPLETED event to avoid
+    // ExceededBatchRecordSizeException when large variables are propagated to follow-up events.
+    // Exporters can read variables from the JobIntent.COMPLETE command or the follow-up
+    // ProcessEvent.TRIGGERING event.
     ZeebeAssertHelper.assertJobCompleted(
-        jobType, (job) -> assertThat(job.getVariables()).containsOnly(entry(key, value)));
+        jobType, (job) -> assertThat(job.getVariables()).isEmpty());
   }
 
   @ParameterizedTest
@@ -204,5 +217,41 @@ public final class CompleteJobTest {
       final CamundaClient client, final boolean useRest, final long jobKey) {
     final CompleteJobCommandStep1 completeJobCommandStep1 = client.newCompleteCommand(jobKey);
     return useRest ? completeJobCommandStep1.useRest() : completeJobCommandStep1.useGrpc();
+  }
+
+  // Tests with event variables enabled
+  @Nested
+  class EnabledVariablesTest {
+    @TestZeebe
+    private static final TestStandaloneBroker ZEEBE =
+        new TestStandaloneBroker()
+            .withJobConfig(b -> b.setIncludeVariablesInJobCompletedEvent(true))
+            .withRecordingExporter(true)
+            .withUnauthenticatedAccess();
+
+    @AutoClose CamundaClient client;
+    ZeebeResourcesHelper resourcesHelper;
+
+    @BeforeEach
+    public void init() {
+      client = ZEEBE.newClientBuilder().defaultRequestTimeout(Duration.ofSeconds(15)).build();
+      resourcesHelper = new ZeebeResourcesHelper(client);
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    public void shouldCompleteJobWithVariablesAndJobCompleteVariablesEnabled(
+        final boolean useRest, final TestInfo testInfo) {
+      // given
+      final String jobType = "job-" + testInfo.getDisplayName();
+      final var jobKey = resourcesHelper.createSingleJob(jobType);
+
+      // when
+      getCommand(client, useRest, jobKey).variables("{\"foo\":\"bar\"}").send().join();
+
+      // then
+      ZeebeAssertHelper.assertJobCompleted(
+          jobType, (job) -> assertThat(job.getVariables()).containsOnly(entry("foo", "bar")));
+    }
   }
 }

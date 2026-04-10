@@ -15,13 +15,13 @@
  */
 package io.camunda.client.impl.statistics.request;
 
+import static io.camunda.client.api.search.request.SearchRequestBuilders.cursorForwardPage;
 import static io.camunda.client.api.search.request.SearchRequestBuilders.jobErrorStatisticsFilter;
-import static io.camunda.client.api.search.request.SearchRequestBuilders.searchRequestPage;
 
 import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.command.FinalCommandStep;
-import io.camunda.client.api.search.request.SearchRequestPage;
+import io.camunda.client.api.search.page.CursorForwardPage;
 import io.camunda.client.api.statistics.filter.JobErrorStatisticsFilter;
 import io.camunda.client.api.statistics.request.JobErrorStatisticsRequest;
 import io.camunda.client.api.statistics.response.JobErrorStatistics;
@@ -112,14 +112,14 @@ public class JobErrorStatisticsRequestImpl
   }
 
   @Override
-  public JobErrorStatisticsRequest page(final SearchRequestPage value) {
+  public JobErrorStatisticsRequest page(final CursorForwardPage value) {
     final SearchQueryPageRequest page = provideSearchRequestProperty(value);
     request.setPage(new CursorForwardPagination().limit(page.getLimit()).after(page.getAfter()));
     return this;
   }
 
   @Override
-  public JobErrorStatisticsRequest page(final Consumer<SearchRequestPage> fn) {
-    return page(searchRequestPage(fn));
+  public JobErrorStatisticsRequest page(final Consumer<CursorForwardPage> fn) {
+    return page(cursorForwardPage(fn));
   }
 }

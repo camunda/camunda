@@ -189,8 +189,12 @@ public class DbAuthorizationState implements MutableAuthorizationState {
       final PersistedAuthorization candidateAuthorization,
       final PersistedAuthorization storedAuthorization) {
     return candidateAuthorization.getResourceType() == storedAuthorization.getResourceType()
+        && candidateAuthorization.getResourceMatcher() == storedAuthorization.getResourceMatcher()
         && Objects.equals(
-            candidateAuthorization.getResourceId(), storedAuthorization.getResourceId());
+            candidateAuthorization.getResourceId(), storedAuthorization.getResourceId())
+        && Objects.equals(
+            candidateAuthorization.getResourcePropertyName(),
+            storedAuthorization.getResourcePropertyName());
   }
 
   @Override

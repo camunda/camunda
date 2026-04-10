@@ -16,7 +16,7 @@ import {
 } from './useTotalRunningInstancesForElement';
 import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 import {mockFetchElementInstancesStatistics} from 'modules/mocks/api/v2/elementInstances/elementInstancesStatistics/fetchElementInstancesStatistics';
-import {type GetProcessInstanceStatisticsResponseBody} from '@camunda/camunda-api-zod-schemas/8.9';
+import {type GetProcessInstanceStatisticsResponseBody} from '@camunda/camunda-api-zod-schemas/8.10';
 import {
   createProcessInstance,
   mockProcessWithInputOutputMappingsXML,
@@ -49,7 +49,7 @@ describe('useTotalRunningInstancesForElement hooks', () => {
     mockFetchProcessInstance().withSuccess(createProcessInstance());
   });
 
-  it('should fetch total running instances for a single flow node', async () => {
+  it('should fetch total running instances for a single element', async () => {
     const mockData: GetProcessInstanceStatisticsResponseBody = {
       items: [
         {
@@ -78,7 +78,7 @@ describe('useTotalRunningInstancesForElement hooks', () => {
     expect(result.current.data).toBe(7); // active + incidents
   });
 
-  it('should fetch total running instances for multiple flow nodes', async () => {
+  it('should fetch total running instances for multiple elements', async () => {
     const mockData: GetProcessInstanceStatisticsResponseBody = {
       items: [
         {
@@ -117,7 +117,7 @@ describe('useTotalRunningInstancesForElement hooks', () => {
     }); // [active + incidents for node1, node2]
   });
 
-  it('should fetch total visible running instances for a single flow node', async () => {
+  it('should fetch total visible running instances for a single element', async () => {
     const mockData: GetProcessInstanceStatisticsResponseBody = {
       items: [
         {
@@ -142,7 +142,7 @@ describe('useTotalRunningInstancesForElement hooks', () => {
     expect(result.current.data).toBe(7); // active + incidents
   });
 
-  it('should fetch total visible running instances for multiple flow nodes', async () => {
+  it('should fetch total visible running instances for multiple elements', async () => {
     const mockData: GetProcessInstanceStatisticsResponseBody = {
       items: [
         {

@@ -45,11 +45,6 @@
     </dependency>
 
     <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>zeebe-client-java</artifactId>
-    </dependency>
-
-    <dependency>
       <groupId>org.springframework</groupId>
       <artifactId>spring-test</artifactId>
     </dependency>
@@ -205,22 +200,26 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-dependency-plugin</artifactId>
-        <configuration>
-          <ignoredNonTestScopedDependencies>
-            <dependency>org.springframework:spring-beans</dependency>
-            <dependency>org.awaitility:awaitility</dependency>
-            <dependency>org.apache.httpcomponents.client5:httpclient5</dependency>
-            <dependency>org.apache.httpcomponents.core5:httpcore5</dependency>
-            <dependency>io.camunda:camunda-process-test-json-test-cases</dependency>
-            <dependency>io.camunda:camunda-process-test-langchain4j</dependency>
-          </ignoredNonTestScopedDependencies>
-          <ignoredUnusedDeclaredDependencies>
-            <dep>dev.langchain4j:langchain4j-open-ai</dep>
-            <dep>dev.langchain4j:langchain4j-anthropic</dep>
-            <dep>dev.langchain4j:langchain4j-bedrock</dep>
-            <dep>io.camunda:camunda-process-test-langchain4j</dep>
-          </ignoredUnusedDeclaredDependencies>
-        </configuration>
+        <executions>
+          <execution>
+            <id>analyze-dependencies</id>
+            <configuration>
+              <ignoredNonTestScopedDependencies combine.children="append">
+                <dep>org.awaitility:awaitility</dep>
+                <dep>org.apache.httpcomponents.client5:httpclient5</dep>
+                <dep>org.apache.httpcomponents.core5:httpcore5</dep>
+                <dep>io.camunda:camunda-process-test-json-test-cases</dep>
+                <dep>io.camunda:camunda-process-test-langchain4j</dep>
+              </ignoredNonTestScopedDependencies>
+              <ignoredUnusedDeclaredDependencies combine.children="append">
+                <dep>dev.langchain4j:langchain4j-open-ai</dep>
+                <dep>dev.langchain4j:langchain4j-anthropic</dep>
+                <dep>dev.langchain4j:langchain4j-bedrock</dep>
+                <dep>io.camunda:camunda-process-test-langchain4j</dep>
+              </ignoredUnusedDeclaredDependencies>
+            </configuration>
+          </execution>
+        </executions>
       </plugin>
 
       <plugin>

@@ -17,7 +17,7 @@ import io.camunda.zeebe.protocol.record.value.management.CheckpointType;
 public final class CheckpointInfo extends UnpackedObject implements DbValue {
   private final LongProperty idProperty = new LongProperty("id");
   private final LongProperty positionProperty = new LongProperty("position");
-  private final LongProperty timestamp = new LongProperty("timestamp");
+  private final LongProperty timestamp = new LongProperty("timestamp", -1L);
   private final EnumProperty<CheckpointType> typeProperty =
       new EnumProperty<>("type", CheckpointType.class, CheckpointType.MANUAL_BACKUP);
   private final LongProperty firstLogPositionProperty = new LongProperty("firstLogPosition", -1L);

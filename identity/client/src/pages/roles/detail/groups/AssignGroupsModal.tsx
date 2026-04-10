@@ -17,7 +17,7 @@ import { TranslatedErrorInlineNotification } from "src/components/notifications/
 import DropdownSearch from "src/components/form/DropdownSearch";
 import FormModal from "src/components/modal/FormModal";
 import { assignRoleGroup } from "src/utility/api/roles";
-import type { Group, Role } from "@camunda/camunda-api-zod-schemas/8.9";
+import type { Group, Role } from "@camunda/camunda-api-zod-schemas/8.10";
 
 const SelectedGroups = styled.div`
   margin-top: 0;

@@ -16,9 +16,10 @@
 package io.camunda.client.api.search.request;
 
 import io.camunda.client.api.search.filter.GroupFilter;
+import io.camunda.client.api.search.page.AnyPage;
 import io.camunda.client.api.search.response.Group;
 import io.camunda.client.api.search.sort.GroupSort;
 
 public interface GroupsSearchRequest
-    extends TypedSearchRequest<GroupFilter, GroupSort, GroupsSearchRequest>,
+    extends TypedSearchRequest<GroupFilter, GroupSort, AnyPage, GroupsSearchRequest>,
         FinalSearchRequestStep<Group> {}

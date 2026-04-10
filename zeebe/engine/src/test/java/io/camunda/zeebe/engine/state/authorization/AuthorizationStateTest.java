@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.engine.state.authorization;
 
+import static io.camunda.zeebe.engine.processing.identity.authorization.property.UserTaskAuthorizationProperties.PROP_ASSIGNEE;
+import static io.camunda.zeebe.engine.processing.identity.authorization.property.UserTaskAuthorizationProperties.PROP_CANDIDATE_GROUPS;
 import static io.camunda.zeebe.protocol.record.Assertions.assertThat;
 import static io.camunda.zeebe.protocol.record.value.AuthorizationScope.WILDCARD;
 import static io.camunda.zeebe.protocol.record.value.AuthorizationScope.WILDCARD_CHAR;
@@ -21,6 +23,7 @@ import io.camunda.zeebe.protocol.record.value.AuthorizationResourceMatcher;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationScope;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
+import io.camunda.zeebe.test.util.junit.RegressionTest;
 import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -737,6 +740,72 @@ public class AuthorizationStateTest {
     assertThat(keys1).isEmpty();
     final var keys2 = authorizationState.getAuthorizationKeysForOwner(ownerType2, ownerId2);
     assertThat(keys2).containsExactly(authorizationKey2);
+  }
+
+  @RegressionTest("https://github.com/camunda/camunda/issues/48847")
+  void shouldNotLeaveStalePropertyScopesWhenDeletingCoexistingPropertyBasedAuthorizations() {
+    // Regression test: when two PROPERTY-based authorizations for the same owner/resourceType but
+    // different resourcePropertyNames coexist, deleting one while the other still exists must not
+    // leave stale scopes in the PERMISSIONS column family.
+
+    final var ownerId = "demo";
+    final var ownerType = AuthorizationOwnerType.GROUP;
+    final var resourceType = AuthorizationResourceType.USER_TASK;
+    final var permissions =
+        Set.of(PermissionType.READ, PermissionType.CLAIM, PermissionType.COMPLETE);
+
+    // given - create BOTH auths so they coexist (this is the critical precondition)
+    final var authKeyA = 1L;
+    authorizationState.create(
+        authKeyA,
+        new AuthorizationRecord()
+            .setAuthorizationKey(authKeyA)
+            .setOwnerId(ownerId)
+            .setOwnerType(ownerType)
+            .setResourceMatcher(AuthorizationResourceMatcher.PROPERTY)
+            .setResourcePropertyName(PROP_ASSIGNEE)
+            .setResourceType(resourceType)
+            .setPermissionTypes(permissions));
+
+    final var authKeyB = 2L;
+    authorizationState.create(
+        authKeyB,
+        new AuthorizationRecord()
+            .setAuthorizationKey(authKeyB)
+            .setOwnerId(ownerId)
+            .setOwnerType(ownerType)
+            .setResourceMatcher(AuthorizationResourceMatcher.PROPERTY)
+            .setResourcePropertyName(PROP_CANDIDATE_GROUPS)
+            .setResourceType(resourceType)
+            .setPermissionTypes(permissions));
+
+    // when - delete auth A while auth B still exists
+    authorizationState.delete(authKeyA);
+
+    // then - auth A's scopes must be gone; auth B's scopes must still be present
+    permissions.forEach(
+        pt -> {
+          final var scopes =
+              authorizationState.getAuthorizationScopes(ownerType, ownerId, resourceType, pt);
+          assertThat(scopes)
+              .as(
+                  "after deleting assignee auth, only candidateGroups scope should remain for %s[%s]",
+                  resourceType, pt)
+              .containsExactly(AuthorizationScope.property(PROP_CANDIDATE_GROUPS));
+        });
+
+    // when - delete auth B
+    authorizationState.delete(authKeyB);
+
+    // then - all scopes must be gone; no stale assignee scope must remain
+    permissions.forEach(
+        pt ->
+            assertThat(
+                    authorizationState.getAuthorizationScopes(ownerType, ownerId, resourceType, pt))
+                .as(
+                    "all scopes must be empty after deleting both auths — no stale assignee scope expected for %s[%s]",
+                    resourceType, pt)
+                .isEmpty());
   }
 
   @Test

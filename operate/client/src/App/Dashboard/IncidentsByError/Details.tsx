@@ -94,14 +94,14 @@ const Details: React.FC<Props> = ({
             <LinkWrapper
               tabIndex={tabIndex ?? 0}
               to={Locations.processes({
-                process: processDefinitionId,
-                version: processDefinitionVersion.toString(),
+                processDefinitionId,
+                processDefinitionVersion: processDefinitionVersion.toString(),
                 errorMessage: truncateErrorMessage(errorMessage),
                 incidentErrorHashCode,
                 incidents: true,
                 ...(isMultiTenancyEnabled
                   ? {
-                      tenant: normalizedTenantId,
+                      tenantId: normalizedTenantId,
                     }
                   : {}),
               })}

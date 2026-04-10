@@ -34,11 +34,6 @@ public record AuditLogSort(List<FieldSorting> orderings) implements SortOption {
       return this;
     }
 
-    public Builder annotation() {
-      currentOrdering = new FieldSorting("annotation", null);
-      return this;
-    }
-
     public Builder auditLogKey() {
       currentOrdering = new FieldSorting("auditLogKey", null);
       return this;

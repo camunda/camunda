@@ -30,7 +30,7 @@ import org.springframework.context.ApplicationContext;
  *
  * <ol>
  *   <li>If exactly one {@link ChatModelAdapter} bean exists and no provider is configured, use it.
- *   <li>If a provider is configured and a bean name matches, use that bean.
+ *   <li>If a provider is configured and a bean named {@code "<provider>"} exists, use that bean.
  *   <li>Otherwise, fall back to SPI-based resolution via {@link ChatModelAdapterResolver}.
  * </ol>
  */
@@ -85,7 +85,7 @@ public final class JudgeConfigResolver {
       return beans.values().iterator().next();
     }
 
-    // Provider configured: match by bean name (case-sensitive, per Spring conventions)
+    // Provider configured: match by provider bean name
     if (judgeConfiguration.hasProviderConfigured()) {
       final String provider = judgeConfiguration.getChatModel().getProvider().trim();
       return beans.get(provider);

@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {Page, Locator} from '@playwright/test';
+import {Page, Locator, expect} from '@playwright/test';
 
 class OperateHomePage {
   private page: Page;
@@ -56,6 +56,7 @@ class OperateHomePage {
 
   async clickEditVariableButton(variableName: string): Promise<void> {
     const editVariableButton = 'Edit variable ' + variableName;
+    await expect(this.page.getByLabel(editVariableButton)).toBeVisible({timeout: 30000});
     await this.page.getByLabel(editVariableButton).click();
   }
 

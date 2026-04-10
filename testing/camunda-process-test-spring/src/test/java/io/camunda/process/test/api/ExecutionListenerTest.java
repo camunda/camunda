@@ -30,6 +30,7 @@ import io.camunda.client.spring.event.CamundaClientCreatedSpringEvent;
 import io.camunda.client.spring.properties.CamundaClientProperties;
 import io.camunda.process.test.api.judge.ChatModelAdapter;
 import io.camunda.process.test.api.runtime.CamundaProcessTestContainerProvider;
+import io.camunda.process.test.api.similarity.EmbeddingModelAdapter;
 import io.camunda.process.test.api.testCases.TestCaseRunner;
 import io.camunda.process.test.impl.client.CamundaManagementClient;
 import io.camunda.process.test.impl.configuration.CamundaProcessTestRuntimeConfiguration;
@@ -38,23 +39,20 @@ import io.camunda.process.test.impl.coverage.ProcessCoverageBuilder;
 import io.camunda.process.test.impl.proxy.CamundaClientProxy;
 import io.camunda.process.test.impl.proxy.CamundaProcessTestContextProxy;
 import io.camunda.process.test.impl.proxy.TestCaseRunnerProxy;
-import io.camunda.process.test.impl.proxy.ZeebeClientProxy;
 import io.camunda.process.test.impl.runtime.CamundaProcessTestContainerRuntime;
 import io.camunda.process.test.impl.runtime.CamundaProcessTestRuntimeBuilder;
 import io.camunda.process.test.impl.testresult.CamundaProcessTestResultCollector;
 import io.camunda.process.test.impl.testresult.ProcessTestResult;
-import io.camunda.zeebe.client.ZeebeClient;
-import io.camunda.zeebe.client.ZeebeClientConfiguration;
-import io.camunda.zeebe.spring.client.event.ZeebeClientClosingEvent;
-import io.camunda.zeebe.spring.client.event.ZeebeClientCreatedEvent;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.net.URI;
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Answers;
@@ -83,7 +81,6 @@ public class ExecutionListenerTest {
   @Mock private ProcessCoverage processCoverage;
 
   @Mock private CamundaClientProxy camundaClientProxy;
-  @Mock private ZeebeClientProxy zeebeClientProxy;
   @Mock private CamundaProcessTestContextProxy camundaProcessTestContextProxy;
   @Mock private TestCaseRunnerProxy testCaseRunnerProxy;
   @Mock private CamundaManagementClient camundaManagementClient;
@@ -99,8 +96,6 @@ public class ExecutionListenerTest {
   private ApplicationContext applicationContext;
 
   @Mock private JsonMapper jsonMapper;
-  @Mock private io.camunda.zeebe.client.api.JsonMapper zeebeClientJsonMapper;
-  @Captor private ArgumentCaptor<ZeebeClient> zeebeClientArgumentCaptor;
   @Captor private ArgumentCaptor<CamundaProcessTestContext> camundaProcessTestContextArgumentCaptor;
   @Captor private ArgumentCaptor<TestCaseRunner> testCaseRunnerArgumentCaptor;
 
@@ -110,15 +105,13 @@ public class ExecutionListenerTest {
   @Captor
   private ArgumentCaptor<CamundaClientClosingSpringEvent> camundaClientClosingEventArgumentCaptor;
 
-  @Captor private ArgumentCaptor<ZeebeClientCreatedEvent> zeebeClientCreatedEventArgumentCaptor;
-  @Captor private ArgumentCaptor<ZeebeClientClosingEvent> zeebeClientClosingEventArgumentCaptor;
-
   @Mock private CamundaProcessTestContainerProvider containerProvider;
   @Mock private CamundaProcessTestContainerProvider anotherContainerProvider;
 
   @AfterEach
   void resetJudgeConfig() {
     CamundaAssert.setJudgeConfig(null);
+    CamundaAssert.setSemanticSimilarityConfig(null);
   }
 
   @BeforeEach
@@ -139,11 +132,7 @@ public class ExecutionListenerTest {
     lenient()
         .when(applicationContext.getBean(CamundaClientProxy.class))
         .thenReturn(camundaClientProxy);
-    lenient().when(applicationContext.getBean(ZeebeClientProxy.class)).thenReturn(zeebeClientProxy);
     lenient().when(applicationContext.getBean(JsonMapper.class)).thenReturn(null);
-    lenient()
-        .when(applicationContext.getBean(io.camunda.zeebe.client.api.JsonMapper.class))
-        .thenReturn(null);
     lenient()
         .when(applicationContext.getBean(CamundaProcessTestContextProxy.class))
         .thenReturn(camundaProcessTestContextProxy);
@@ -157,10 +146,13 @@ public class ExecutionListenerTest {
         .when(applicationContext.getBean(CamundaClientProperties.class))
         .thenReturn(camundaClientProperties);
     lenient().when(applicationContext.getBeansOfType(ChatModelAdapter.class)).thenReturn(Map.of());
+    lenient()
+        .when(applicationContext.getBeansOfType(EmbeddingModelAdapter.class))
+        .thenReturn(Map.of());
   }
 
   @Test
-  void shouldWireCamundaClientAndZeebeClient() throws Exception {
+  void shouldWireCamundaClient() {
     // given
     final CamundaProcessTestExecutionListener listener =
         new CamundaProcessTestExecutionListener(
@@ -171,34 +163,25 @@ public class ExecutionListenerTest {
     listener.beforeTestMethod(testContext);
 
     // then
-    verify(camundaClientProxy).setClient(camundaClientArgumentCaptor.capture());
-    verify(zeebeClientProxy).setClient(zeebeClientArgumentCaptor.capture());
+    verify(camundaClientProxy).setDelegate(camundaClientArgumentCaptor.capture());
 
     final CamundaClient camundaClient = camundaClientArgumentCaptor.getValue();
     assertThat(camundaClient).isNotNull();
-
-    final ZeebeClient zeebeClient = zeebeClientArgumentCaptor.getValue();
-    assertThat(zeebeClient).isNotNull();
 
     final CamundaClientConfiguration configuration = camundaClient.getConfiguration();
     assertThat(configuration.getGrpcAddress()).isEqualTo(GRPC_API_ADDRESS);
     assertThat(configuration.getRestAddress()).isEqualTo(REST_API_ADDRESS);
 
     verify(applicationContext).publishEvent(camundaClientCreatedEventArgumentCaptor.capture());
-    verify(applicationContext).publishEvent(zeebeClientCreatedEventArgumentCaptor.capture());
 
     final CamundaClientCreatedSpringEvent createdEvent =
         camundaClientCreatedEventArgumentCaptor.getValue();
     assertThat(createdEvent).isNotNull();
     assertThat(createdEvent.getClient()).isEqualTo(camundaClient);
-    final ZeebeClientCreatedEvent zeebeClientCreatedEvent =
-        zeebeClientCreatedEventArgumentCaptor.getValue();
-    assertThat(zeebeClientCreatedEvent).isNotNull();
-    assertThat(zeebeClientCreatedEvent.getClient()).isEqualTo(zeebeClient);
   }
 
   @Test
-  void shouldWireProcessTestContext() throws Exception {
+  void shouldWireProcessTestContext() {
     // given
     final URI connectorsRestApiAddress = URI.create("http://my-host:300");
     when(camundaContainerRuntime.getConnectorsRestApiAddress())
@@ -214,7 +197,7 @@ public class ExecutionListenerTest {
 
     // then
     verify(camundaProcessTestContextProxy)
-        .setContext(camundaProcessTestContextArgumentCaptor.capture());
+        .setDelegate(camundaProcessTestContextArgumentCaptor.capture());
 
     final CamundaProcessTestContext camundaProcessTestContext =
         camundaProcessTestContextArgumentCaptor.getValue();
@@ -233,7 +216,7 @@ public class ExecutionListenerTest {
   }
 
   @Test
-  void shouldWireTestCaseRunner() throws Exception {
+  void shouldWireTestCaseRunner() {
     // given
     final CamundaProcessTestExecutionListener listener =
         new CamundaProcessTestExecutionListener(
@@ -244,14 +227,14 @@ public class ExecutionListenerTest {
     listener.beforeTestMethod(testContext);
 
     // then
-    verify(testCaseRunnerProxy).setRunner(testCaseRunnerArgumentCaptor.capture());
+    verify(testCaseRunnerProxy).setDelegate(testCaseRunnerArgumentCaptor.capture());
 
     final TestCaseRunner testCaseRunner = testCaseRunnerArgumentCaptor.getValue();
     assertThat(testCaseRunner).isNotNull();
   }
 
   @Test
-  void shouldConfigureJsonMapper() throws Exception {
+  void shouldConfigureJsonMapper() {
     // given
     final CamundaProcessTestExecutionListener listener =
         new CamundaProcessTestExecutionListener(
@@ -264,37 +247,13 @@ public class ExecutionListenerTest {
     listener.beforeTestMethod(testContext);
 
     // then
-    verify(camundaClientProxy).setClient(camundaClientArgumentCaptor.capture());
+    verify(camundaClientProxy).setDelegate(camundaClientArgumentCaptor.capture());
 
     final CamundaClient camundaClient = camundaClientArgumentCaptor.getValue();
     assertThat(camundaClient).isNotNull();
 
     final CamundaClientConfiguration configuration = camundaClient.getConfiguration();
     assertThat(configuration.getJsonMapper()).isEqualTo(jsonMapper);
-  }
-
-  @Test
-  void shouldConfigureJsonMapperForZeebeClient() throws Exception {
-    // given
-    final CamundaProcessTestExecutionListener listener =
-        new CamundaProcessTestExecutionListener(
-            camundaRuntimeBuilder, processCoverageBuilder, NOOP);
-
-    when(applicationContext.getBean(io.camunda.zeebe.client.api.JsonMapper.class))
-        .thenReturn(zeebeClientJsonMapper);
-
-    // when
-    listener.beforeTestClass(testContext);
-    listener.beforeTestMethod(testContext);
-
-    // then
-    verify(zeebeClientProxy).setClient(zeebeClientArgumentCaptor.capture());
-
-    final ZeebeClient zeebeClient = zeebeClientArgumentCaptor.getValue();
-    assertThat(zeebeClient).isNotNull();
-
-    final ZeebeClientConfiguration configuration = zeebeClient.getConfiguration();
-    assertThat(configuration.getJsonMapper()).isEqualTo(zeebeClientJsonMapper);
   }
 
   @Test
@@ -315,7 +274,7 @@ public class ExecutionListenerTest {
   }
 
   @Test
-  void shouldCloseCamundClientAndZeebeClient() throws Exception {
+  void shouldCloseCamundaClient() throws Exception {
     // given
     final CamundaProcessTestExecutionListener listener =
         new CamundaProcessTestExecutionListener(
@@ -335,23 +294,13 @@ public class ExecutionListenerTest {
     final CamundaClientCreatedSpringEvent createdEvent =
         camundaClientCreatedEventArgumentCaptor.getValue();
 
-    verify(applicationContext).publishEvent(zeebeClientCreatedEventArgumentCaptor.capture());
-    final ZeebeClientCreatedEvent zeebeClientCreatedEvent =
-        zeebeClientCreatedEventArgumentCaptor.getValue();
-
     verify(applicationContext).publishEvent(camundaClientClosingEventArgumentCaptor.capture());
     final CamundaClientClosingSpringEvent closedClient =
         camundaClientClosingEventArgumentCaptor.getValue();
     assertThat(createdEvent.getClient()).isEqualTo(closedClient.getClient());
 
-    verify(applicationContext).publishEvent(zeebeClientClosingEventArgumentCaptor.capture());
-    final ZeebeClientClosingEvent zeebeClientClosingEvent =
-        zeebeClientClosingEventArgumentCaptor.getValue();
-    assertThat(zeebeClientCreatedEvent.getClient()).isEqualTo(zeebeClientClosingEvent.getClient());
-
-    verify(camundaClientProxy).removeClient();
-    verify(zeebeClientProxy).removeClient();
-    verify(camundaProcessTestContextProxy).removeContext();
+    verify(camundaClientProxy).removeDelegate();
+    verify(camundaProcessTestContextProxy).removeDelegate();
   }
 
   @Test
@@ -529,6 +478,67 @@ public class ExecutionListenerTest {
       cmcField.set(listener, camundaProcessTestResultCollector);
     } catch (final Throwable t) {
       throw new RuntimeException(t);
+    }
+  }
+
+  @Nested
+  class AssertionConfigurationTest {
+
+    @AfterEach
+    void resetAssertion() {
+      CamundaAssert.setAssertionTimeout(CamundaAssert.DEFAULT_ASSERTION_TIMEOUT);
+      CamundaAssert.setAssertionInterval(CamundaAssert.DEFAULT_ASSERTION_INTERVAL);
+    }
+
+    @Test
+    void shouldSetAssertionTimeoutFromConfig() {
+      // given
+      final Duration assertionTimeout = Duration.ofMinutes(5);
+      final Duration assertionInterval = Duration.ofMillis(123);
+
+      final CamundaProcessTestRuntimeConfiguration configuration =
+          new CamundaProcessTestRuntimeConfiguration();
+      configuration.getAssertion().setTimeout(assertionTimeout);
+      configuration.getAssertion().setInterval(assertionInterval);
+
+      when(applicationContext.getBean(CamundaProcessTestRuntimeConfiguration.class))
+          .thenReturn(configuration);
+
+      final CamundaProcessTestExecutionListener listener =
+          new CamundaProcessTestExecutionListener(
+              camundaRuntimeBuilder, processCoverageBuilder, NOOP);
+
+      // when
+      listener.beforeTestClass(testContext);
+      listener.beforeTestMethod(testContext);
+
+      // then
+      final CamundaAssertAwaitBehavior awaitBehavior = CamundaAssert.getAwaitBehavior();
+      assertThat(awaitBehavior.getAssertionTimeout()).isEqualTo(assertionTimeout);
+      assertThat(awaitBehavior.getAssertionInterval()).isEqualTo(assertionInterval);
+    }
+
+    @Test
+    void shouldNotOverrideAssertionTimeoutIfNotSetInConfig() {
+      // given
+      final Duration assertionTimeout = Duration.ofMinutes(1);
+      final Duration assertionInterval = Duration.ofMillis(50);
+
+      CamundaAssert.setAssertionTimeout(assertionTimeout);
+      CamundaAssert.setAssertionInterval(assertionInterval);
+
+      final CamundaProcessTestExecutionListener listener =
+          new CamundaProcessTestExecutionListener(
+              camundaRuntimeBuilder, processCoverageBuilder, NOOP);
+
+      // when
+      listener.beforeTestClass(testContext);
+      listener.beforeTestMethod(testContext);
+
+      // then
+      final CamundaAssertAwaitBehavior awaitBehavior = CamundaAssert.getAwaitBehavior();
+      assertThat(awaitBehavior.getAssertionTimeout()).isEqualTo(assertionTimeout);
+      assertThat(awaitBehavior.getAssertionInterval()).isEqualTo(assertionInterval);
     }
   }
 }

@@ -16,7 +16,7 @@ import {InstancesBar} from 'modules/components/InstancesBar';
 import {useAvailableTenants} from 'modules/queries/useAvailableTenants';
 import {useProcessDefinitionVersionStatistics} from 'modules/queries/processDefinitionStatistics/useProcessDefinitionVersionStatistics';
 import {InlineLoading} from '@carbon/react';
-import type {ProcessDefinitionInstanceVersionStatistics} from '@camunda/camunda-api-zod-schemas/8.9';
+import type {ProcessDefinitionInstanceVersionStatistics} from '@camunda/camunda-api-zod-schemas/8.10';
 import {DEFAULT_TENANT} from 'modules/constants';
 import {getClientConfig} from 'modules/utils/getClientConfig';
 
@@ -108,8 +108,8 @@ const Details: React.FC<Props> = ({
               <LinkWrapper
                 tabIndex={tabIndex ?? 0}
                 to={Locations.processes({
-                  process: processDefinitionId,
-                  version: processDefinitionVersion.toString(),
+                  processDefinitionId,
+                  processDefinitionVersion: processDefinitionVersion.toString(),
                   active: true,
                   incidents: true,
                   ...(totalInstancesCount === 0
@@ -120,7 +120,7 @@ const Details: React.FC<Props> = ({
                     : {}),
                   ...(isMultiTenancyEnabled
                     ? {
-                        tenant: normalizedTenantId,
+                        tenantId: normalizedTenantId,
                       }
                     : {}),
                 })}

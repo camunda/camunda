@@ -117,8 +117,7 @@ components:
           format: int64
         hasMoreTotalItems:
           description: |
-            Indicates whether there are more items matching the criteria beyond the returned items.
-            This is useful for determining if additional requests are needed to retrieve all results.
+            Indicates whether the `totalItems` value has been capped due to system limits. When true, `totalItems` is a lower bound and the actual number of matching items is greater than the reported value.
           type: boolean
         startCursor:
           description: The cursor value for getting the previous page of results. Use this in the `before` field of an ensuing request.

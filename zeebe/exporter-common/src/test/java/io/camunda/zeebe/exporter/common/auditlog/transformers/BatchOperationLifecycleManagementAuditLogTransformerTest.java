@@ -44,6 +44,7 @@ class BatchOperationLifecycleManagementAuditLogTransformerTest {
     transformer.transform(record, entity);
 
     // then
+    assertThat(entity.getEntityKey()).isEqualTo("456");
     assertThat(entity.getOperationType()).isEqualTo(AuditLogOperationType.SUSPEND);
   }
 }

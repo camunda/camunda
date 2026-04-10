@@ -14,6 +14,7 @@ import io.camunda.client.api.command.FinalCommandStep;
 import io.camunda.client.api.search.enums.OwnerType;
 import io.camunda.client.api.search.enums.PermissionType;
 import io.camunda.client.api.search.enums.ResourceType;
+import io.camunda.client.api.search.page.AnyPage;
 import io.camunda.client.api.search.request.TypedSearchRequest;
 import io.camunda.client.api.search.response.Authorization;
 import io.camunda.client.api.search.response.BaseResponse;
@@ -453,7 +454,9 @@ public final class EntityManager {
   // wraps a search request into a function that returns the number of found items
   // so we can avoid repeating this horrible generics mess multiple times
   private <
-          T, R extends BaseResponse<T>, S extends FinalCommandStep<R> & TypedSearchRequest<?, ?, S>>
+          T,
+          R extends BaseResponse<T>,
+          S extends FinalCommandStep<R> & TypedSearchRequest<?, ?, AnyPage, S>>
       SearchWithLimit<T> wrap(final S request) {
     return expected -> {
       final var response = request.page(p -> p.limit(expected)).send().join();

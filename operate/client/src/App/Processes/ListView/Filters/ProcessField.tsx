@@ -20,7 +20,7 @@ const ProcessField: React.FC = observer(() => {
   const tenantsById = useAvailableTenants();
 
   const form = useForm();
-  const tenantValue = useField('tenant').input.value;
+  const tenantValue = useField('tenantId').input.value;
   const specificTenantId =
     isMultiTenancyEnabled && tenantValue !== '' && tenantValue !== 'all'
       ? tenantValue
@@ -33,7 +33,7 @@ const ProcessField: React.FC = observer(() => {
     batchModificationStore.state.isEnabled;
 
   return (
-    <Field name="process" data-testid="filter-process-name-field">
+    <Field name="processDefinitionId" data-testid="filter-process-name-field">
       {({input}) => (
         <ComboBox
           titleText="Name"
@@ -46,10 +46,13 @@ const ProcessField: React.FC = observer(() => {
                 (d) => d.identifier === selectedItem?.id,
               );
               input.onChange(selectedItem?.id);
-              form.change('version', matchingProcess?.version ?? '');
-              form.change('flowNodeId', undefined);
+              form.change(
+                'processDefinitionVersion',
+                matchingProcess?.version ?? '',
+              );
+              form.change('elementId', undefined);
               if (isMultiTenancyEnabled && matchingProcess) {
-                form.change('tenant', matchingProcess.tenantId);
+                form.change('tenantId', matchingProcess.tenantId);
               }
             }
           }}

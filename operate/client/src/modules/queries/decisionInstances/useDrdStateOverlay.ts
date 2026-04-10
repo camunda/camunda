@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import type {DecisionInstanceState} from '@camunda/camunda-api-zod-schemas/8.9';
+import type {DecisionInstanceState} from '@camunda/camunda-api-zod-schemas/8.10';
 import {useMemo, useState} from 'react';
 
 type DecisionStateOverlay = {

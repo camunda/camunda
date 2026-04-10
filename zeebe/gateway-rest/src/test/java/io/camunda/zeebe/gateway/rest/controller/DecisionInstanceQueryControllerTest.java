@@ -530,9 +530,9 @@ public class DecisionInstanceQueryControllerTest extends RestControllerTest {
         """
             {
               "type": "about:blank",
-              "title": "Bad Request",
+              "title": "INVALID_ARGUMENT",
               "status": 400,
-              "detail": "Failed to parse date-time: [invalid]",
+              "detail": "The provided evaluationDate 'invalid' cannot be parsed as a date according to RFC 3339, section 5.6.",
               "instance": "/v2/decision-instances/search"
             }""";
     webClient

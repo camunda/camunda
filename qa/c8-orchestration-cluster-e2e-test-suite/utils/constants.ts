@@ -38,6 +38,10 @@ export const defaultAssertionOptions = {
   timeout: 30_000,
 };
 
+export const uniqueBusinessId = (prefix = 'biz'): string => {
+  return `${prefix}-${generateUniqueId()}`;
+};
+
 // Create unique auth role with optional custom ID
 export const createUniqueAuthRole = (customId?: string) => {
   const id = customId || generateUniqueId();

@@ -20,7 +20,7 @@ import AddModal from "src/pages/users/modals/AddModal";
 import EditModal from "src/pages/users/modals/EditModal";
 import DeleteModal from "src/pages/users/modals/DeleteModal";
 import PageEmptyState from "src/components/layout/PageEmptyState";
-import type { User } from "@camunda/camunda-api-zod-schemas/8.9";
+import type { User } from "@camunda/camunda-api-zod-schemas/8.10";
 
 const List: FC = () => {
   const { t } = useTranslate("users");
@@ -46,7 +46,7 @@ const List: FC = () => {
     <PageHeader
       title={t("users")}
       linkText={t("users").toLowerCase()}
-      docsLinkPath="/docs/components/identity/user/"
+      docsLinkPath="/components/admin/user/"
       shouldShowDocumentationLink={!shouldShowEmptyState}
     />
   );
@@ -57,7 +57,7 @@ const List: FC = () => {
         {pageHeader}
         <PageEmptyState
           resourceTypeTranslationKey={"user"}
-          docsLinkPath="/docs/components/identity/user/"
+          docsLinkPath="/components/admin/user/"
           handleClick={addUser}
         />
         {addUserModal}

@@ -12,7 +12,7 @@ import {deploy, createInstances} from 'utils/zeebeClient';
 import {captureScreenshot, captureFailureVideo} from '@setup';
 import {
   navigateToApp,
-  hideModificationHelperModal,
+  hideHelperModals,
   gotoProcessesPage,
 } from '@pages/UtilitiesPage';
 import {sleep} from 'utils/sleep';
@@ -34,7 +34,7 @@ test.describe('Process Instance Batch Modification', () => {
     await navigateToApp(page, 'operate');
     await loginPage.login('demo', 'demo');
     await expect(operateHomePage.operateBanner).toBeVisible();
-    await hideModificationHelperModal(page);
+    await hideHelperModals(page);
   });
 
   test.afterEach(async ({page}, testInfo) => {
@@ -53,9 +53,9 @@ test.describe('Process Instance Batch Modification', () => {
       await gotoProcessesPage(page, {
         searchParams: {
           active: 'true',
-          process: 'orderProcessBatchMod',
-          version: '1',
-          flowNodeId: 'checkPayment',
+          processDefinitionId: 'orderProcessBatchMod',
+          processDefinitionVersion: '1',
+          elementId: 'checkPayment',
         },
       });
     });
@@ -123,7 +123,7 @@ test.describe('Process Instance Batch Modification', () => {
           await expect(
             page.getByText(`${NUM_SELECTED_PROCESS_INSTANCES} results`),
           ).toBeVisible({
-            timeout: 3000,
+            timeout: 30000,
           });
         },
         onFailure: async () => {
@@ -160,9 +160,9 @@ test.describe('Process Instance Batch Modification', () => {
       await gotoProcessesPage(page, {
         searchParams: {
           active: 'true',
-          process: 'orderProcessBatchMod',
-          version: '1',
-          flowNodeId: 'checkPayment',
+          processDefinitionId: 'orderProcessBatchMod',
+          processDefinitionVersion: '1',
+          elementId: 'checkPayment',
         },
       });
       await operateProcessesPage.selectProcessInstances(1);

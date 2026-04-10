@@ -12,6 +12,7 @@ import static io.camunda.exporter.utils.ExporterUtil.map;
 import io.camunda.exporter.exceptions.PersistenceException;
 import io.camunda.exporter.handlers.ExportHandler;
 import io.camunda.exporter.store.BatchRequest;
+import io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate;
 import io.camunda.webapps.schema.entities.auditlog.AuditLogActorType;
 import io.camunda.webapps.schema.entities.operation.BatchOperationEntity;
 import io.camunda.webapps.schema.entities.operation.BatchOperationEntity.BatchOperationState;
@@ -24,6 +25,7 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
 import io.camunda.zeebe.protocol.record.value.BatchOperationCreationRecordValue;
 import io.camunda.zeebe.util.SemanticVersion;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -98,10 +100,23 @@ public class BatchOperationCreatedHandler
     // the same document. An index operation would fully replace the document, potentially
     // overwriting operationsTotalCount increments or state transitions applied by other partitions.
     // With upsert: if the document does not yet exist, it is created from the entity; if it
-    // already exists, the empty update map is a no-op — all fields in the CREATED event are
-    // idempotent across partitions (same values regardless of which partition exports), so there
-    // is nothing to update on an existing document.
-    batchRequest.upsert(indexName, entity.getId(), entity, Map.of());
+    // already exists, only the specified fields are updated without affecting other fields.
+    // Note: STATE is intentionally excluded from updateFields because a late CREATED event from a
+    // slow partition could overwrite a state that has already advanced (e.g., ACTIVE or COMPLETED).
+    // The state is set correctly on initial document creation via the entity.
+    final Map<String, Object> updateFields = new HashMap<>();
+    updateFields.put(BatchOperationTemplate.TYPE, entity.getType());
+
+    final var actorType = entity.getActorType();
+    if (actorType != null) {
+      updateFields.put(BatchOperationTemplate.ACTOR_TYPE, actorType);
+    }
+
+    final var actorId = entity.getActorId();
+    if (actorId != null) {
+      updateFields.put(BatchOperationTemplate.ACTOR_ID, actorId);
+    }
+    batchRequest.upsert(indexName, entity.getId(), entity, updateFields);
   }
 
   @Override

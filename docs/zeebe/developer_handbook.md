@@ -21,7 +21,7 @@ Generally, you'll need to do the following things:
 2. [Implement this `RecordValue` in the `protocol-impl` module](#implement-a-new-recordvalue-in-protocol-impl).
 3. Support this `RecordValue` in [Exporters and test setups](#support-a-recordvalue-in-exporters-and-test-setups).
 4. [Extend the official exporter documentation](#extend-official-documentation).
-5. [Support the new `ValueType` in Zeebe Process Test (ZPT)](#extend-zeebe-process-test).
+5. [Support the new `ValueType` in Camunda Process Test (CPT)](#extend-camunda-process-test).
 6. [Ensure that the new `ValueType` is processed](#add-valuetype-to-supported-types).
 7. Add support for it to the [CompactRecordLogger](/zeebe/test-util/src/main/java/io/camunda/zeebe/test/util/record/CompactRecordLogger.java).
 
@@ -98,9 +98,9 @@ Our Exporter configurations are documented in the [official docs](https://github
 In the previous steps we've extended the configuration of the Elasticsearch and OpenSearch exporters.
 These configurations options need to be added to the official documentation.
 
-### Extend Zeebe Process Test
+### Extend Camunda Process Test
 
-The [Zeebe Process Test (ZPT)](https://github.com/camunda/camunda-process-test/) library allows you to unit test your Camunda Platform 8 BPMN processes.
+The [Camunda Process Test (CPT)](https://github.com/camunda/camunda-process-test/) library allows you to unit test your Camunda Platform 8 BPMN processes.
 The [RecordStreamLogger](https://github.com/camunda/camunda-process-test/blob/main/filters/src/main/java/io/camunda/zeebe/process/test/filters/logger/RecordStreamLogger.java) class
 defines how the supported `ValueType`'s records are logged in tests.
 

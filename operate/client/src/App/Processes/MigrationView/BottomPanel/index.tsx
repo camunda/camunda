@@ -66,8 +66,8 @@ const BottomPanel: React.FC = observer(() => {
   });
 
   const mappableElements = getMappableElements(
-    sourceData?.selectableFlowNodes,
-    targetData?.selectableFlowNodes,
+    sourceData?.selectableElements,
+    targetData?.selectableElements,
   );
 
   const mappableSequenceFlows =
@@ -98,12 +98,12 @@ const BottomPanel: React.FC = observer(() => {
     }
 
     return [
-      ...sourceData.selectableFlowNodes,
+      ...sourceData.selectableElements,
       ...sourceData.selectableSequenceFlows,
     ]
       .filter((sourceElement) => {
         const targetElement = [
-          ...targetData.selectableFlowNodes,
+          ...targetData.selectableElements,
           ...targetData.selectableSequenceFlows,
         ].find((element) => element.id === sourceElement.id);
 
@@ -129,8 +129,7 @@ const BottomPanel: React.FC = observer(() => {
   };
 
   const hasSelectableSourceElements =
-    sourceData?.selectableFlowNodes &&
-    sourceData.selectableFlowNodes.length > 0;
+    sourceData?.selectableElements && sourceData.selectableElements.length > 0;
 
   const hasSelectableSourceSequenceFlows =
     sourceData?.selectableSequenceFlows &&
@@ -143,10 +142,10 @@ const BottomPanel: React.FC = observer(() => {
     sourceElement: string,
     targetElement: string | undefined,
   ) => {
-    const sourceBusinessObject = sourceData?.selectableFlowNodes.find(
+    const sourceBusinessObject = sourceData?.selectableElements.find(
       (element) => element.id === sourceElement,
     );
-    const targetBusinessObject = targetData?.selectableFlowNodes.find(
+    const targetBusinessObject = targetData?.selectableElements.find(
       (element) => element.id === targetElement,
     );
     return (

@@ -7,74 +7,39 @@
  */
 package io.camunda.operate.management;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.property.OperateProperties;
-import io.camunda.search.connect.es.ElasticsearchConnector;
-import io.camunda.search.connect.os.OpensearchConnector;
-import io.camunda.search.schema.SchemaManager;
-import io.camunda.search.schema.SearchEngineClient;
+import io.camunda.search.schema.SearchEngineHealthCheck;
 import io.camunda.search.schema.config.SearchEngineConfiguration;
-import io.camunda.search.schema.elasticsearch.ElasticsearchEngineClient;
-import io.camunda.search.schema.opensearch.OpensearchEngineClient;
 import io.camunda.spring.utils.ConditionalOnRdbmsDisabled;
-import io.camunda.webapps.schema.descriptors.IndexDescriptors;
 import io.camunda.zeebe.util.CloseableSilently;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 @Component
 @ConditionalOnRdbmsDisabled
 public class IndicesCheck implements CloseableSilently {
 
-  private static final Logger LOGGER = LoggerFactory.getLogger(IndicesCheck.class);
-
-  private final SearchEngineClient searchEngineClient;
-  private final SchemaManager schemaManager;
-  private final boolean isHealthCheckEnabled;
+  private final SearchEngineHealthCheck delegate;
 
   public IndicesCheck(
       final SearchEngineConfiguration configuration, final OperateProperties operateProperties) {
     final boolean isElasticSearch = configuration.connect().getTypeEnum().isElasticSearch();
-    final ObjectMapper objectMapper;
-    if (isElasticSearch) {
-      final var connector = new ElasticsearchConnector(configuration.connect());
-      objectMapper = connector.objectMapper();
-      searchEngineClient = new ElasticsearchEngineClient(connector.createClient(), objectMapper);
-      isHealthCheckEnabled = operateProperties.getElasticsearch().isHealthCheckEnabled();
-    } else {
-      final var connector = new OpensearchConnector(configuration.connect());
-      objectMapper = connector.objectMapper();
-      searchEngineClient = new OpensearchEngineClient(connector.createClient(), objectMapper);
-      isHealthCheckEnabled = operateProperties.getOpensearch().isHealthCheckEnabled();
-    }
-    final IndexDescriptors indexDescriptors =
-        new IndexDescriptors(configuration.connect().getIndexPrefix(), isElasticSearch);
-    schemaManager =
-        new SchemaManager(
-            searchEngineClient,
-            indexDescriptors.indices(),
-            indexDescriptors.templates(),
-            configuration,
-            objectMapper);
+    final boolean healthCheckEnabled =
+        isElasticSearch
+            ? operateProperties.getElasticsearch().isHealthCheckEnabled()
+            : operateProperties.getOpensearch().isHealthCheckEnabled();
+    delegate = new SearchEngineHealthCheck(configuration, healthCheckEnabled);
   }
 
   public boolean indicesArePresent() {
-    return schemaManager.isAllIndicesExist();
+    return delegate.indicesArePresent();
   }
 
   public boolean isHealthy() {
-    if (isHealthCheckEnabled) {
-      return searchEngineClient.isHealthy();
-    } else {
-      LOGGER.debug("Database health check is disabled.");
-      return true;
-    }
+    return delegate.isHealthy();
   }
 
   @Override
   public void close() {
-    searchEngineClient.close();
-    schemaManager.close();
+    delegate.close();
   }
 }

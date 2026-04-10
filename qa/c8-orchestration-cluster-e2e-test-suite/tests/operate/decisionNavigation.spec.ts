@@ -12,7 +12,6 @@ import {deploy, createSingleInstance} from 'utils/zeebeClient';
 import {captureScreenshot, captureFailureVideo} from '@setup';
 import {navigateToApp} from '@pages/UtilitiesPage';
 import {sleep} from 'utils/sleep';
-import {waitForAssertion} from 'utils/waitForAssertion';
 
 type ProcessInstance = {
   processInstanceKey: string;
@@ -49,7 +48,6 @@ test.describe('Decision Navigation', () => {
     operateDecisionInstancePage,
     operateDecisionsPage,
     operateHomePage,
-    operateDiagramPage,
   }) => {
     const processInstanceKey =
       processInstanceWithFailedDecision.processInstanceKey;
@@ -67,12 +65,10 @@ test.describe('Decision Navigation', () => {
       ).toBeVisible();
     });
 
-    await test.step('Wait for incidents banner to be visible', async () => {
+    await test.step('Wait for incidents tab to be visible', async () => {
       await expect
         .poll(
-          async () => {
-            return await operateProcessInstancePage.incidentsBanner.isVisible();
-          },
+          async () => await operateProcessInstancePage.incidentsTab.isVisible(),
           {timeout: 30000},
         )
         .toBe(true);
@@ -82,36 +78,12 @@ test.describe('Decision Navigation', () => {
       await operateProcessInstancePage.clickDiagramElement('Activity_1tjwahx');
     });
 
-    await test.step('Verify popover appears and navigate to decision', async () => {
-      await waitForAssertion({
-        assertion: async () => {
-          await expect(operateDiagramPage.popover).toBeVisible();
-        },
-        onFailure: async () => {
-          await operateProcessInstancePage.clickDiagramElement(
-            'Activity_1tjwahx',
-          );
-          await operateProcessInstancePage.clickDiagramElement(
-            'Activity_1tjwahx',
-          );
-        },
-      });
-      await waitForAssertion({
-        assertion: async () => {
-          await expect(
-            operateDiagramPage.viewRootCauseDecisionLink,
-          ).toBeVisible();
-        },
-        onFailure: async () => {
-          await operateProcessInstancePage.clickDiagramElement(
-            'Activity_1tjwahx',
-          );
-          await operateProcessInstancePage.clickDiagramElement(
-            'Activity_1tjwahx',
-          );
-        },
-      });
-      await operateDiagramPage.clickViewRootCauseDecisionLink();
+    await test.step('Navigate to failing root cause decision', async () => {
+      await operateProcessInstancePage.clickIncidentsTab();
+      await operateProcessInstancePage.navigateToFailingElementForIncident(
+        'Decision evaluation error.',
+        'Invoice Classification',
+      );
     });
 
     await test.step('Verify decision panel is visible', async () => {

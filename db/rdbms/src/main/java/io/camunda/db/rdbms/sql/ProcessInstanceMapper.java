@@ -9,6 +9,7 @@ package io.camunda.db.rdbms.sql;
 
 import io.camunda.db.rdbms.read.domain.DbQueryPage;
 import io.camunda.db.rdbms.read.domain.ProcessInstanceDbQuery;
+import io.camunda.db.rdbms.read.domain.ProcessInstanceStatisticsDbQuery;
 import io.camunda.db.rdbms.write.domain.Copyable;
 import io.camunda.db.rdbms.write.domain.ProcessInstanceDbModel;
 import io.camunda.search.entities.ProcessFlowNodeStatisticsEntity;
@@ -16,6 +17,7 @@ import io.camunda.search.entities.ProcessInstanceEntity;
 import io.camunda.util.ObjectBuilder;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.function.Function;
 
@@ -37,7 +39,7 @@ public interface ProcessInstanceMapper {
 
   List<ProcessInstanceEntity> search(ProcessInstanceDbQuery filter);
 
-  List<ProcessFlowNodeStatisticsEntity> flowNodeStatistics(long processInstanceKey);
+  List<ProcessFlowNodeStatisticsEntity> flowNodeStatistics(ProcessInstanceStatisticsDbQuery query);
 
   int deleteByKeys(List<Long> processInstanceKeys);
 
@@ -103,4 +105,6 @@ public interface ProcessInstanceMapper {
 
   record SelectExpiredRootProcessInstancesDto(
       int partitionId, OffsetDateTime cleanupDate, DbQueryPage page) {}
+
+  record ProcessInstanceTagsDto(long processInstanceKey, Collection<String> tags) {}
 }

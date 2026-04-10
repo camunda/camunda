@@ -10,7 +10,7 @@ import {buildMutationRequestBody} from './buildMutationRequestBody';
 import type {
   CreateCancellationBatchOperationRequestBody,
   CreateIncidentResolutionBatchOperationRequestBody,
-} from '@camunda/camunda-api-zod-schemas/8.9';
+} from '@camunda/camunda-api-zod-schemas/8.10';
 
 type Body =
   | CreateIncidentResolutionBatchOperationRequestBody
@@ -23,7 +23,7 @@ describe('buildMutationRequestBody', () => {
 
   it('adds processInstanceKey.$in when includeIds present', () => {
     const searchParams = createSearchParams({
-      flowNodeId: 'taskA',
+      elementId: 'taskA',
       incidents: 'true',
     });
 
@@ -45,7 +45,7 @@ describe('buildMutationRequestBody', () => {
 
   it('adds processInstanceKey.$notIn when excludeIds present', () => {
     const searchParams = createSearchParams({
-      flowNodeId: 'taskA',
+      elementId: 'taskA',
       incidents: 'true',
     });
 
@@ -67,7 +67,7 @@ describe('buildMutationRequestBody', () => {
 
   it('combines includeIds and excludeIds into processInstanceKey', () => {
     const searchParams = createSearchParams({
-      flowNodeId: 'taskA',
+      elementId: 'taskA',
       incidents: 'true',
     });
 
@@ -89,7 +89,7 @@ describe('buildMutationRequestBody', () => {
 
   it('handles single-element arrays', () => {
     const searchParams = createSearchParams({
-      flowNodeId: 'taskA',
+      elementId: 'taskA',
       incidents: 'true',
     });
 
@@ -111,7 +111,7 @@ describe('buildMutationRequestBody', () => {
 
   it('omits processInstanceKey when both include/exclude lists are empty', () => {
     const searchParams = createSearchParams({
-      flowNodeId: 'taskA',
+      elementId: 'taskA',
       incidents: 'true',
     });
 
@@ -132,7 +132,7 @@ describe('buildMutationRequestBody', () => {
 
   it('uses OR combination when both incidents and active are selected', () => {
     const searchParams = createSearchParams({
-      flowNodeId: 'taskA',
+      elementId: 'taskA',
       incidents: 'true',
       active: 'true',
     });
@@ -154,7 +154,7 @@ describe('buildMutationRequestBody', () => {
 
   it('uses hasIncident filter when only incidents checkbox is selected', () => {
     const searchParams = createSearchParams({
-      flowNodeId: 'taskA',
+      elementId: 'taskA',
       incidents: 'true',
     });
 
@@ -175,7 +175,7 @@ describe('buildMutationRequestBody', () => {
 
   it('uses state filter when only active checkbox is selected', () => {
     const searchParams = createSearchParams({
-      flowNodeId: 'taskA',
+      elementId: 'taskA',
       active: 'true',
     });
 
@@ -197,12 +197,12 @@ describe('buildMutationRequestBody', () => {
 
   it('maps additional filter fields to request body', () => {
     const searchParams = createSearchParams({
-      flowNodeId: 'taskA',
+      elementId: 'taskA',
       errorMessage: 'some error',
-      tenant: 'tenant-xyz',
-      operationId: 'batch-123',
-      parentInstanceId: 'parent-456',
-      retriesLeft: 'true',
+      tenantId: 'tenant-xyz',
+      batchOperationId: 'batch-123',
+      parentProcessInstanceKey: 'parent-456',
+      hasRetriesLeft: 'true',
       incidentErrorHashCode: '37136123613781',
       active: 'true',
     });
@@ -231,8 +231,8 @@ describe('buildMutationRequestBody', () => {
 
   it('maps process to processDefinitionId', () => {
     const searchParams = createSearchParams({
-      flowNodeId: 'taskA',
-      process: 'orderProcess',
+      elementId: 'taskA',
+      processDefinitionId: 'orderProcess',
       active: 'true',
     });
 
@@ -253,15 +253,15 @@ describe('buildMutationRequestBody', () => {
     });
   });
 
-  it('maps startDateAfter / startDateBefore to startDate $gt/$lt', () => {
+  it('maps startDateFrom / startDateTo to startDate $gt/$lt', () => {
     const after = '2020-01-01T00:00:00Z';
     const before = '2020-01-02T00:00:00Z';
 
     expect(
       buildMutationRequestBody({
         searchParams: createSearchParams({
-          startDateAfter: after,
-          startDateBefore: before,
+          startDateFrom: after,
+          startDateTo: before,
           active: 'true',
         }),
         includeIds: [],
@@ -281,7 +281,7 @@ describe('buildMutationRequestBody', () => {
     expect(
       buildMutationRequestBody({
         searchParams: createSearchParams({
-          startDateAfter: after,
+          startDateFrom: after,
           active: 'true',
         }),
         includeIds: [],
@@ -300,7 +300,7 @@ describe('buildMutationRequestBody', () => {
     expect(
       buildMutationRequestBody({
         searchParams: createSearchParams({
-          startDateBefore: before,
+          startDateTo: before,
           active: 'true',
         }),
         includeIds: [],
@@ -317,15 +317,15 @@ describe('buildMutationRequestBody', () => {
     });
   });
 
-  it('maps endDateAfter / endDateBefore to endDate $gt/$lt', () => {
+  it('maps endDateFrom / endDateTo to endDate $gt/$lt', () => {
     const after = '2020-01-01T00:00:00Z';
     const before = '2020-01-02T00:00:00Z';
 
     expect(
       buildMutationRequestBody({
         searchParams: createSearchParams({
-          endDateAfter: after,
-          endDateBefore: before,
+          endDateFrom: after,
+          endDateTo: before,
           active: 'true',
         }),
         includeIds: [],
@@ -345,7 +345,7 @@ describe('buildMutationRequestBody', () => {
     expect(
       buildMutationRequestBody({
         searchParams: createSearchParams({
-          endDateAfter: after,
+          endDateFrom: after,
           active: 'true',
         }),
         includeIds: [],
@@ -364,7 +364,7 @@ describe('buildMutationRequestBody', () => {
     expect(
       buildMutationRequestBody({
         searchParams: createSearchParams({
-          endDateBefore: before,
+          endDateTo: before,
           active: 'true',
         }),
         includeIds: [],
@@ -528,7 +528,7 @@ describe('buildMutationRequestBody', () => {
   it('adds processDefinitionKey when present', () => {
     const searchParams = createSearchParams({
       active: 'true',
-      flowNodeId: 'taskA',
+      elementId: 'taskA',
     });
 
     const body: Body = buildMutationRequestBody({

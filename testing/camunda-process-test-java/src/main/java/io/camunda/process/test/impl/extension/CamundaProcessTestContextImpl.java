@@ -47,14 +47,14 @@ import io.camunda.process.test.api.assertions.JobSelectors;
 import io.camunda.process.test.api.assertions.ProcessInstanceSelector;
 import io.camunda.process.test.api.assertions.UserTaskSelector;
 import io.camunda.process.test.api.assertions.UserTaskSelectors;
+import io.camunda.process.test.api.behavior.BehaviorCondition;
+import io.camunda.process.test.api.behavior.ConditionalBehaviorBuilder;
 import io.camunda.process.test.api.mock.JobWorkerMockBuilder;
 import io.camunda.process.test.impl.client.CamundaManagementClient;
 import io.camunda.process.test.impl.mock.BpmnExampleDataReader;
 import io.camunda.process.test.impl.mock.BpmnExampleDataReader.BpmnExampleDataReaderException;
 import io.camunda.process.test.impl.mock.JobWorkerMockBuilderImpl;
 import io.camunda.process.test.impl.runtime.CamundaProcessTestRuntime;
-import io.camunda.zeebe.client.ZeebeClient;
-import io.camunda.zeebe.client.ZeebeClientBuilder;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import java.io.ByteArrayInputStream;
@@ -113,8 +113,8 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
   private final CamundaManagementClient camundaManagementClient;
 
   private final JsonMapper jsonMapper;
-  private final io.camunda.zeebe.client.api.JsonMapper zeebeJsonMapper;
   private final CamundaAssertAwaitBehavior awaitBehavior;
+  private final ConditionalBehaviorEngine conditionalBehaviorEngine;
 
   public CamundaProcessTestContextImpl(
       final CamundaProcessTestRuntime camundaRuntime,
@@ -122,7 +122,7 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
       final CamundaManagementClient camundaManagementClient,
       final CamundaAssertAwaitBehavior awaitBehavior,
       final JsonMapper jsonMapper,
-      final io.camunda.zeebe.client.api.JsonMapper zeebeJsonMapper) {
+      final ConditionalBehaviorEngine conditionalBehaviorEngine) {
 
     camundaClientBuilderFactory = camundaRuntime.getCamundaClientBuilderFactory();
     camundaRestApiAddress = camundaRuntime.getCamundaRestApiAddress();
@@ -132,7 +132,7 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
     this.camundaManagementClient = camundaManagementClient;
     this.awaitBehavior = awaitBehavior;
     this.jsonMapper = jsonMapper;
-    this.zeebeJsonMapper = zeebeJsonMapper;
+    this.conditionalBehaviorEngine = conditionalBehaviorEngine;
   }
 
   @Override
@@ -148,37 +148,13 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
   @Override
   public CamundaClient createClient(final Consumer<CamundaClientBuilder> modifier) {
     final CamundaClientBuilder builder = camundaClientBuilderFactory.get();
+    // Instead of using the default REST connection, we use gRPC for now to avoid issues with stale
+    // long-polling connection of job workers. See https://github.com/camunda/camunda/issues/45177.
     builder.preferRestOverGrpc(false);
 
     modifier.accept(builder);
 
     final CamundaClient client = builder.build();
-    clientCreationCallback.accept(client);
-
-    return client;
-  }
-
-  @Override
-  public ZeebeClient createZeebeClient() {
-    return createZeebeClient(
-        builder -> {
-          if (zeebeJsonMapper != null) {
-            builder.withJsonMapper(zeebeJsonMapper);
-          }
-        });
-  }
-
-  @Override
-  public ZeebeClient createZeebeClient(final Consumer<ZeebeClientBuilder> modifier) {
-    final ZeebeClientBuilder builder =
-        ZeebeClient.newClientBuilder()
-            .usePlaintext()
-            .grpcAddress(getCamundaGrpcAddress())
-            .restAddress(getCamundaRestAddress());
-
-    modifier.accept(builder);
-
-    final ZeebeClient client = builder.build();
     clientCreationCallback.accept(client);
 
     return client;
@@ -689,6 +665,11 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
               .send()
               .join();
         });
+  }
+
+  @Override
+  public ConditionalBehaviorBuilder when(final BehaviorCondition condition) {
+    return conditionalBehaviorEngine.when(condition);
   }
 
   private void awaitUserTask(

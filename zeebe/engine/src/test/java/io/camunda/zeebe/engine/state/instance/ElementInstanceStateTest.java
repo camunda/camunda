@@ -15,9 +15,11 @@ import io.camunda.zeebe.engine.state.mutable.MutableElementInstanceState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.util.ProcessingStateRule;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRuntimeInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
+import io.camunda.zeebe.protocol.record.value.RuntimeInstructionType;
 import io.camunda.zeebe.test.util.MsgPackUtil;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.Arrays;
@@ -434,6 +436,8 @@ public final class ElementInstanceStateTest {
     final var nonEmptyColumns =
         Arrays.stream(ZbColumnFamilies.values())
             .filter(not(ZbColumnFamilies.KEY::equals))
+            // ACTIVE_PROCESS_INSTANCE_COUNT tracks the count of active process instances
+            .filter(not(ZbColumnFamilies.ACTIVE_PROCESS_INSTANCE_COUNT::equals))
             .filter(not(processingState::isEmpty))
             .collect(Collectors.toList());
 
@@ -512,6 +516,91 @@ public final class ElementInstanceStateTest {
     assertThat(metadata.getRequestStreamId()).isEqualTo(streamId);
   }
 
+  @Test
+  public void shouldReturnZeroWhenNoProcessInstances() {
+    // when
+    long count = elementInstanceState.getActiveProcessInstanceCount();
+    // then
+    assertThat(count).isEqualTo(0);
+
+    // when we create a PI
+    final ProcessInstanceRecord processInstanceRecord =
+        createProcessInstanceRecord().setBpmnElementType(BpmnElementType.PROCESS);
+    elementInstanceState.newInstance(
+        200, processInstanceRecord, ProcessInstanceIntent.ELEMENT_ACTIVATED);
+
+    // then we should return one
+    count = elementInstanceState.getActiveProcessInstanceCount();
+    assertThat(count).isEqualTo(1);
+  }
+
+  @Test
+  public void shouldCountMultipleProcessInstances() {
+    // given
+    final ProcessInstanceRecord processInstanceRecord1 =
+        createProcessInstanceRecord().setBpmnElementType(BpmnElementType.PROCESS);
+    final ProcessInstanceRecord processInstanceRecord2 =
+        createProcessInstanceRecord().setBpmnElementType(BpmnElementType.PROCESS);
+
+    elementInstanceState.newInstance(
+        201, processInstanceRecord1, ProcessInstanceIntent.ELEMENT_ACTIVATED);
+    elementInstanceState.newInstance(
+        202, processInstanceRecord2, ProcessInstanceIntent.ELEMENT_ACTIVATED);
+    // when
+    final long count = elementInstanceState.getActiveProcessInstanceCount();
+    // then
+    assertThat(count).isEqualTo(2);
+  }
+
+  @Test
+  public void shouldDecreaseCountWhenRootProcessInstanceRemoved() {
+    // given
+    final ProcessInstanceRecord processInstanceRecord1 =
+        createProcessInstanceRecord().setBpmnElementType(BpmnElementType.PROCESS);
+    final ProcessInstanceRecord processInstanceRecord2 =
+        createProcessInstanceRecord().setBpmnElementType(BpmnElementType.PROCESS);
+    elementInstanceState.newInstance(
+        203, processInstanceRecord1, ProcessInstanceIntent.ELEMENT_ACTIVATED);
+    elementInstanceState.newInstance(
+        204, processInstanceRecord2, ProcessInstanceIntent.ELEMENT_ACTIVATED);
+    // when
+    elementInstanceState.removeInstance(203);
+    final long count = elementInstanceState.getActiveProcessInstanceCount();
+    // then the count should be one
+    assertThat(count).isEqualTo(1);
+  }
+
+  @Test
+  public void shouldCountChildInstancesProcessInstances() {
+    // given
+    final ProcessInstanceRecord rootRecord =
+        createProcessInstanceRecord().setBpmnElementType(BpmnElementType.PROCESS);
+    final long rootKey1 = 300L;
+    final long rootKey2 = 301L;
+    final ElementInstance rootInstance1 =
+        elementInstanceState.newInstance(
+            rootKey1, rootRecord, ProcessInstanceIntent.ELEMENT_ACTIVATED);
+    final ElementInstance rootInstance2 =
+        elementInstanceState.newInstance(
+            rootKey2, rootRecord, ProcessInstanceIntent.ELEMENT_ACTIVATED);
+
+    // add child process instances started via call activities
+    final ProcessInstanceRecord childProcessRecord =
+        createProcessInstanceRecord()
+            .setElementId("childProcess")
+            .setBpmnElementType(BpmnElementType.PROCESS);
+    elementInstanceState.newInstance(
+        rootInstance1, 500L, childProcessRecord, ProcessInstanceIntent.ELEMENT_ACTIVATING);
+    elementInstanceState.newInstance(
+        rootInstance2, 501L, childProcessRecord, ProcessInstanceIntent.ELEMENT_ACTIVATING);
+
+    // when
+    final long count = elementInstanceState.getActiveProcessInstanceCount();
+
+    // then we should have 2 root process instances + 2 child process instances
+    assertThat(count).isEqualTo(4);
+  }
+
   private void assertElementInstance(final ElementInstance elementInstance, final int childCount) {
     Assertions.assertThat(elementInstance.getKey()).isEqualTo(100);
     Assertions.assertThat(elementInstance.getState())
@@ -566,5 +655,36 @@ public final class ElementInstanceStateTest {
     assertThat(record.getVersion()).isEqualTo(1);
     assertThat(record.getProcessDefinitionKey()).isEqualTo(2);
     assertThat(record.getBpmnElementType()).isEqualTo(BpmnElementType.START_EVENT);
+  }
+
+  @Test
+  public void shouldRemoveRuntimeInstructionsForProcessInstance() {
+    // given
+    final long processInstanceKey = 100L;
+    final var instruction =
+        new ProcessInstanceCreationRuntimeInstruction()
+            .setType(RuntimeInstructionType.TERMINATE_PROCESS_INSTANCE)
+            .setAfterElementId("taskA");
+    elementInstanceState.addRuntimeInstructions(processInstanceKey, List.of(instruction));
+
+    // verify instructions exist
+    assertThat(elementInstanceState.getRuntimeInstructionsForElementId(processInstanceKey, "taskA"))
+        .isNotEmpty();
+
+    // when
+    elementInstanceState.removeRuntimeInstructions(processInstanceKey);
+
+    // then
+    assertThat(elementInstanceState.getRuntimeInstructionsForElementId(processInstanceKey, "taskA"))
+        .isEmpty();
+  }
+
+  @Test
+  public void shouldNotFailWhenRemovingNonExistentRuntimeInstructions() {
+    // given - no runtime instructions exist for this key
+    final long processInstanceKey = 999L;
+
+    // when/then - should not throw
+    elementInstanceState.removeRuntimeInstructions(processInstanceKey);
   }
 }

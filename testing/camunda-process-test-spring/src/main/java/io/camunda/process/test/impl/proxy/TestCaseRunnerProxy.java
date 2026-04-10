@@ -16,45 +16,15 @@
 package io.camunda.process.test.impl.proxy;
 
 import io.camunda.process.test.api.testCases.TestCaseRunner;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import org.checkerframework.checker.nullness.qual.Nullable;
 
 /**
  * Dynamic proxy to delegate to a {@link TestCaseRunner} which allows to swap the object under the
  * hood.
  */
-public class TestCaseRunnerProxy extends AbstractInvocationHandler {
-
-  private TestCaseRunner delegate;
-
-  public void setRunner(final TestCaseRunner testCaseRunner) {
-    delegate = testCaseRunner;
-  }
-
-  public void removeRunner() {
-    delegate = null;
-  }
+public class TestCaseRunnerProxy extends AbstractInvocationHandler<TestCaseRunner> {
 
   @Override
-  protected Object handleInvocation(
-      final Object proxy, final Method method, @Nullable final Object[] args) throws Throwable {
-    if (delegate == null) {
-      throw new RuntimeException(
-          "Cannot invoke "
-              + method
-              + " on TestCaseRunner, as TestCaseRunner is currently not initialized. Maybe you run outside of a testcase?");
-    }
-    try {
-      return method.invoke(delegate, args);
-
-    } catch (final InvocationTargetException e) {
-      if (e.getCause() instanceof final AssertionError assertionError) {
-        // unwrap assertion errors to make them visible to the test framework
-        throw assertionError;
-      } else {
-        throw e;
-      }
-    }
+  protected Class<TestCaseRunner> getDelegateClass() {
+    return TestCaseRunner.class;
   }
 }

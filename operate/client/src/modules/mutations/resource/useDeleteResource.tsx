@@ -8,7 +8,7 @@
 
 import {useMutation} from '@tanstack/react-query';
 import {deleteResource} from 'modules/api/v2/resource/deleteResource';
-import {type DeleteResourceRequestBody} from '@camunda/camunda-api-zod-schemas/8.9';
+import {type DeleteResourceRequestBody} from '@camunda/camunda-api-zod-schemas/8.10';
 import type {RequestError} from 'modules/request';
 
 function useDeleteResource(

@@ -8,7 +8,11 @@
 package io.camunda.zeebe.broker.system;
 
 public class InvalidConfigurationException extends RuntimeException {
-  public InvalidConfigurationException(final String message, final Exception cause) {
+  public InvalidConfigurationException(final String message, final Throwable cause) {
     super(message, cause);
+  }
+
+  public InvalidConfigurationException(final String message) {
+    super(message);
   }
 }

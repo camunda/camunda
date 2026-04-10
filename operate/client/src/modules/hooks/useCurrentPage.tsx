@@ -19,12 +19,14 @@ const useCurrentPage = () => {
     | 'batch-operations'
     | 'operations-log'
     | 'process-details'
+    | 'process-details-variables'
     | 'process-details-details'
     | 'process-details-incidents'
     | 'process-details-input-mappings'
     | 'process-details-output-mappings'
     | 'process-details-listeners'
     | 'process-details-operations-log'
+    | 'process-details-instance-history'
     | 'decision-details'
     | 'login'
     | undefined {
@@ -49,6 +51,12 @@ const useCurrentPage = () => {
 
     if (matchPath(Paths.operationsLog(), location.pathname) !== null) {
       return 'operations-log';
+    }
+
+    if (
+      matchPath(Paths.processInstanceVariables(), location.pathname) !== null
+    ) {
+      return 'process-details-variables';
     }
 
     if (matchPath(Paths.processInstance(), location.pathname) !== null) {
@@ -90,6 +98,10 @@ const useCurrentPage = () => {
       null
     ) {
       return 'process-details-operations-log';
+    }
+
+    if (matchPath(Paths.processInstanceHistory(), location.pathname) !== null) {
+      return 'process-details-instance-history';
     }
 
     if (matchPath(Paths.decisionInstance(), location.pathname) !== null) {

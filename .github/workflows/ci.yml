@@ -42,6 +42,7 @@ jobs:
       commitlint: ${{ steps.filter.outputs.commitlint }}
       codeowners-check: ${{ steps.filter.outputs.codeowners-check }}
       maven-spotless-linter: ${{ steps.filter.outputs.maven-spotless-linter }}
+      validate-pom-metadata: ${{ steps.filter.outputs.validate-pom-metadata }}
       java-code-changes: ${{ steps.filter.outputs.java-code-changes }}
       camunda-docker-tests: ${{ steps.filter.outputs.camunda-docker-tests}}
       identity-frontend-tests: ${{ steps.filter.outputs.identity-frontend-tests }}
@@ -80,9 +81,9 @@ jobs:
     permissions: { }  # GITHUB_TOKEN unused in this job
     env:
       # renovate: datasource=github-releases depName=rhysd/actionlint
-      ACTIONLINT_VERSION: '1.7.11'
+      ACTIONLINT_VERSION: '1.7.12'
       # renovate: datasource=github-tags depName=open-policy-agent/conftest
-      CONFTEST_VERSION: '0.67.0'
+      CONFTEST_VERSION: '0.67.1'
     steps:
       - uses: actions/checkout@v6
       - uses: camunda/infra-global-github-actions/actionlint@main
@@ -156,6 +157,60 @@ jobs:
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
       - run: ./mvnw spotless:check
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+
+  junit-vintage-check:
+    if: needs.detect-changes.outputs.java-code-changes == 'true'
+    name: "Lint / JUnit Vintage Engine"
+    needs: [ detect-changes ]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions: { }  # GITHUB_TOKEN unused in this job
+    steps:
+      - uses: actions/checkout@v6
+      - name: Check for missing junit-vintage-engine
+        run: .ci/scripts/ci/check-junit-vintage-engine.sh .
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+
+  validate-pom-metadata:
+    if: needs.detect-changes.outputs.validate-pom-metadata == 'true'
+    name: "Lint / Flattened POM Metadata"
+    needs: [ detect-changes ]
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions: { }  # GITHUB_TOKEN unused in this job
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - uses: ./.github/actions/setup-build
+        with:
+          maven-cache-key-modifier: validate-pom-metadata
+          vault-address: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+      - name: Bootstrap reactor modules
+        run: ./mvnw clean install -B -T1C --no-snapshot-updates -DskipChecks=true -DskipTests=true
+      - name: Generate flattened POMs
+        run: ./mvnw -B -T1C --no-snapshot-updates -DskipChecks=true -Dcheckstyle.skip=true -DskipTests=true -Dquickly=false -PskipFrontendBuild process-resources
+      - name: Validate flattened POM metadata
+        uses: ./.github/actions/validate-pom-metadata
       - name: Observe build status
         if: always()
         continue-on-error: true
@@ -357,6 +412,7 @@ jobs:
       ZEEBE_IT_EXPORTER_MODULES: ${{ steps.set-constants.outputs.it_exporter }}
       # IT Engine = ZEEBE_CORE_FEATURES_MODULES + ZEEBE_PROTOCOL_MODULES + ZEEBE_GATEWAY_MODULES + ZEEBE_CLIENT_MODULES (explicit list)
       ZEEBE_IT_ENGINE_MODULES: ${{ steps.set-constants.outputs.it_engine }}
+      INTEGRATION_TESTS_MATRIX: ${{ steps.integration-tests-matrix.outputs.matrix }}
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions: { }
@@ -379,7 +435,7 @@ jobs:
           DISTRIBUTED="':zeebe-atomix-cluster',':zeebe-atomix-utils',':zeebe-broker',':zeebe-broker-client',':zeebe-cluster-config',':dynamic-node-id-provider',':zeebe-journal',':zeebe-logstreams',':zeebe-restore',':zeebe-scheduler',':zeebe-snapshots',':zeebe-stream-platform',':zeebe-transport'"
 
           # Zeebe modules owned by @camunda/camundaex
-          CLIENT="':zeebe-client-java',':camunda-client-java'"
+          CLIENT="':camunda-client-java'"
 
           # General UT configuration
           GENERAL_UT_EXTRA_SKIP="camunda-exporter rdbms-exporter"
@@ -418,6 +474,190 @@ jobs:
             echo "it_distributed=${IT_DISTRIBUTED}"
             echo "it_exporter=${IT_EXPORTER}"
             echo "it_engine=${IT_ENGINE}"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Build integration tests matrix
+        id: integration-tests-matrix
+        env:
+          ZEEBE_IT_DISTRIBUTED_MODULES: ${{ steps.set-constants.outputs.it_distributed }}
+          ZEEBE_IT_ENGINE_MODULES: ${{ steps.set-constants.outputs.it_engine }}
+          ZEEBE_IT_EXPORTER_MODULES: ${{ steps.set-constants.outputs.it_exporter }}
+          # Opt-in to stress testing the integration-tests job via the PR label "ci:stress-test".
+          STRESS_ENABLED: ${{ github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'ci:stress-test') }}
+        run: |
+          # The DOLLAR variable is necessary to avoid problems with escaping in jq.
+          DOLLAR='$'
+          base_matrix=$(cat <<EOF | jq -c '.'
+          [
+            {
+              "group": "root",
+              "name": "Root Acceptance Tests",
+              "maven-modules": "'qa/acceptance-tests'",
+              "maven-build-threads": 2,
+              "maven-test-fork-count": 3,
+              "runs-on": "gcp-perf-core-8-default",
+              "docker-repository": "localhost:5000/camunda/zeebe",
+              "docker-file": "Dockerfile",
+              "owner": "QA",
+              "module": "QA",
+              "stressRun": 1
+            },
+            {
+              "group": "zeebe-ds-modules",
+              "name": "Zeebe Distributed Platform Modules",
+              "maven-modules": "${ZEEBE_IT_DISTRIBUTED_MODULES}",
+              "maven-build-threads": 2,
+              "maven-test-fork-count": 7,
+              "runs-on": "gcp-perf-core-16-longrunning",
+              "docker-repository": "localhost:5000/camunda/zeebe",
+              "docker-file": "Dockerfile",
+              "owner": "Distributed Platform",
+              "module": "Zeebe",
+              "stressRun": 1
+            },
+            {
+              "group": "zeebe-engine-modules",
+              "name": "Zeebe Engine Modules",
+              "maven-modules": "${ZEEBE_IT_ENGINE_MODULES}",
+              "maven-build-threads": 2,
+              "maven-test-fork-count": 7,
+              "runs-on": "gcp-perf-core-16-longrunning",
+              "docker-repository": "localhost:5000/camunda/zeebe",
+              "docker-file": "Dockerfile",
+              "owner": "Core Features",
+              "module": "Zeebe",
+              "stressRun": 1
+            },
+            {
+              "group": "zeebe-exporter-modules",
+              "name": "Zeebe Exporter Modules",
+              "maven-modules": "${ZEEBE_IT_EXPORTER_MODULES}",
+              "maven-build-threads": 2,
+              "maven-test-fork-count": 7,
+              "runs-on": "gcp-perf-core-16-longrunning",
+              "docker-repository": "localhost:5000/camunda/zeebe",
+              "docker-file": "Dockerfile",
+              "owner": "DataLayer",
+              "module": "Zeebe",
+              "stressRun": 1
+            },
+            {
+              "group": "schema-manager",
+              "name": "Schema Manager",
+              "maven-modules": "schema-manager",
+              "maven-build-threads": 1,
+              "maven-test-fork-count": 3,
+              "runs-on": "gcp-perf-core-8-default",
+              "docker-repository": "localhost:5000/camunda/camunda",
+              "docker-file": "camunda.Dockerfile",
+              "owner": "Data Layer",
+              "module": "Schema Manager",
+              "stressRun": 1
+            },
+            {
+              "group": "zeebe-engine-integration",
+              "name": "Zeebe Engine QA",
+              "maven-modules": "zeebe/qa/integration-tests",
+              "maven-build-threads": 1,
+              "maven-test-fork-count": 10,
+              "runs-on": "gcp-perf-core-16-default",
+              "owner": "Core Features",
+              "module": "Zeebe",
+              "test-filter": "io.camunda.zeebe.it.engine.**,!**/*${DOLLAR}*.java",
+              "allow-stress": true,
+              "stressRun": 1
+            },
+            {
+              "group": "zeebe-ds-integration",
+              "name": "Zeebe Cluster QA",
+              "maven-modules": "zeebe/qa/integration-tests",
+              "maven-build-threads": 1,
+              "maven-test-fork-count": 10,
+              "runs-on": "gcp-perf-core-16-default",
+              "docker-repository": "localhost:5000/camunda/zeebe",
+              "docker-file": "Dockerfile",
+              "owner": "Distributed Platform",
+              "module": "Zeebe",
+              "test-filter": "io.camunda.zeebe.it.cluster.**,!io.camunda.zeebe.it.cluster.clustering.dynamic.ScaleUpPartitionsTest,!**/*${DOLLAR}*.java",
+              "allow-stress": true,
+              "stressRun": 1
+            },
+            {
+              "group": "zeebe-ds-integration-scaleup",
+              "name": "Zeebe Cluster ScaleUp QA",
+              "maven-modules": "zeebe/qa/integration-tests",
+              "maven-build-threads": 1,
+              "maven-test-fork-count": 1,
+              "runs-on": "gcp-perf-core-8-default",
+              "owner": "Distributed Platform",
+              "module": "Zeebe",
+              "test-filter": "io.camunda.zeebe.it.cluster.clustering.dynamic.ScaleUpPartitionsTest",
+              "stressRun": 1
+            },
+            {
+              "group": "zeebe-shared-integration",
+              "name": "Zeebe General QA",
+              "maven-modules": "zeebe/qa/integration-tests",
+              "maven-build-threads": 1,
+              "maven-test-fork-count": 10,
+              "runs-on": "gcp-perf-core-16-default",
+              "docker-repository": "localhost:5000/camunda/zeebe",
+              "docker-file": "Dockerfile",
+              "owner": "General",
+              "module": "Zeebe",
+              "test-filter": "!io.camunda.zeebe.it.engine.**,!io.camunda.zeebe.it.cluster.**,!**/*${DOLLAR}*.java",
+              "stressRun": 1
+            },
+            {
+              "group": "qa-camunda-process-test",
+              "name": "Camunda Process",
+              "maven-modules": "testing/camunda-process-test-java,testing/camunda-process-test-spring,testing/camunda-process-test-example",
+              "maven-build-threads": 1,
+              "maven-test-fork-count": 3,
+              "runs-on": "gcp-perf-core-8-default",
+              "docker-repository": "localhost:5000/camunda/camunda",
+              "docker-file": "camunda.Dockerfile",
+              "owner": "CamundaEx",
+              "module": "Testing",
+              "stressRun": 1
+            },
+            {
+              "group": "qa-update",
+              "name": "Zeebe QA - Update",
+              "maven-modules": "zeebe/qa/update-tests",
+              "maven-build-threads": 1,
+              "maven-test-fork-count": 10,
+              "runs-on": "gcp-perf-core-8-default",
+              "docker-repository": "localhost:5000/camunda/zeebe",
+              "docker-file": "Dockerfile",
+              "owner": "Core Features",
+              "module": "Zeebe",
+              "stressRun": 1
+            }
+          ]
+          EOF
+          )
+
+          if [[ "${STRESS_ENABLED}" == "true" ]]; then
+            zeebe_engine_template=$(jq -c '.[] | select(.group == "zeebe-engine-integration") | del(.stressRun)' <<< "${base_matrix}")
+            for run in {2..10}; do
+              base_matrix=$(jq -c --argjson entry "${zeebe_engine_template}" --argjson run "${run}" '. + [
+                $entry + {"stressRun": $run}
+              ]' <<< "${base_matrix}")
+            done
+
+            zeebe_ds_template=$(jq -c '.[] | select(.group == "zeebe-ds-integration") | del(.stressRun)' <<< "${base_matrix}")
+            for run in {2..10}; do
+              base_matrix=$(jq -c --argjson entry "${zeebe_ds_template}" --argjson run "${run}" '. + [
+                $entry + {"stressRun": $run}
+              ]' <<< "${base_matrix}")
+            done
+          fi
+
+          {
+            echo "matrix<<EOF"
+            echo "${base_matrix}"
+            echo "EOF"
           } >> "$GITHUB_OUTPUT"
 
   # Runs unit tests for all modules that are not Operate, Optimize, Tasklist, or Zeebe. This test will run any new modules that are added and are not included in setup-tests
@@ -684,6 +924,12 @@ jobs:
     name: "General / Integration / RDBMS ITs"
     timeout-minutes: 30
     runs-on: gcp-perf-core-8-default
+    strategy:
+      # In case of stress testing, we want the status from all jobs.
+      fail-fast: false
+      matrix:
+        # Opt-in to stress testing this job via the PR label "ci:stress-test".
+        include: ${{ github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'ci:stress-test') && fromJson('[{"stressRun":1},{"stressRun":2},{"stressRun":3},{"stressRun":4},{"stressRun":5},{"stressRun":6},{"stressRun":7},{"stressRun":8},{"stressRun":9},{"stressRun":10}]') || fromJson('[{"stressRun":1}]') }}
     outputs:
       flakyTests: ${{ steps.analyze-test-run.outputs.flakyTests }}
     permissions: { }  # no GITHUB_TOKEN is needed
@@ -709,7 +955,7 @@ jobs:
           -D forkCount=1
           -D maven.javadoc.skip=true
           -D skipUTs -D skipChecks
-          -D failsafe.rerunFailingTestsCount=${{ env.FLAKY_TEST_RERUN_COUNT }} -D flaky.test.reportDir=failsafe-reports
+          -D failsafe.rerunFailingTestsCount=${{ github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'ci:stress-test') && '0' || env.FLAKY_TEST_RERUN_COUNT }} -D flaky.test.reportDir=failsafe-reports
           -P rdbms,extract-flaky-tests
           -pl qa/acceptance-tests
           verify
@@ -724,12 +970,13 @@ jobs:
         uses: ./.github/actions/collect-test-artifacts
         if: ${{ failure() || cancelled() || steps.analyze-test-run.outputs.flakyTests != '' }}
         with:
-          name: "[IT] RDBMS"
+          name: "[IT] RDBMS (${{ matrix.stressRun }})"
       - name: Observe build status
         if: always()
         continue-on-error: true
         uses: ./.github/actions/observe-build-status
         with:
+          job_name: ${{ format('rdbms-integration-tests{0}', matrix.stressRun != 1 && format('/{0}', matrix.stressRun) || '') }}
           build_status: ${{ job.status }}
           user_reason: ${{ (steps.analyze-test-run.outputs.flakyTests != '') && 'flaky-tests' || '' }}
           user_description: "General"
@@ -740,7 +987,7 @@ jobs:
 
   integration-tests:
     if: needs.detect-changes.outputs.java-code-changes == 'true'
-    name: "${{ matrix.module }} / Integration / ${{ matrix.name }} ITs"
+    name: "${{ matrix.module }} / Integration / ${{ matrix.name }} ITs (${{ matrix.stressRun }})"
     needs: [ detect-changes, setup-tests ]
     timeout-minutes: 30
     permissions: { }  # GITHUB_TOKEN unused in this job
@@ -748,119 +995,11 @@ jobs:
     outputs:
       flakyTests: ${{ steps.analyze-test-run.outputs.flakyTests }}
     strategy:
+      # In case of stress testing, we want the status from all jobs.
       fail-fast: false
       matrix:
-        include:
-          - group: root
-            name: "Root Acceptance Tests"
-            maven-modules: "'qa/acceptance-tests'"
-            maven-build-threads: 2
-            maven-test-fork-count: 3
-            runs-on: gcp-perf-core-8-default
-            docker-repository: localhost:5000/camunda/zeebe
-            docker-file: Dockerfile
-            owner: "QA"
-            module: "QA"
-          - group: zeebe-ds-modules
-            name: "Zeebe Distributed Platform Modules"
-            maven-modules: ${{ needs.setup-tests.outputs.ZEEBE_IT_DISTRIBUTED_MODULES }}
-            maven-build-threads: 2
-            maven-test-fork-count: 7
-            runs-on: gcp-perf-core-16-longrunning
-            docker-repository: localhost:5000/camunda/zeebe
-            docker-file: Dockerfile
-            owner: "Distributed Platform"
-            module: "Zeebe"
-          - group: zeebe-engine-modules
-            name: "Zeebe Engine Modules"
-            maven-modules: ${{ needs.setup-tests.outputs.ZEEBE_IT_ENGINE_MODULES }}
-            maven-build-threads: 2
-            maven-test-fork-count: 7
-            runs-on: gcp-perf-core-16-longrunning
-            docker-repository: localhost:5000/camunda/zeebe
-            docker-file: Dockerfile
-            owner: "Core Features"
-            module: "Zeebe"
-          - group: zeebe-exporter-modules
-            name: "Zeebe Exporter Modules"
-            maven-modules: ${{ needs.setup-tests.outputs.ZEEBE_IT_EXPORTER_MODULES }}
-            maven-build-threads: 2
-            maven-test-fork-count: 7
-            runs-on: gcp-perf-core-16-longrunning
-            docker-repository: localhost:5000/camunda/zeebe
-            docker-file: Dockerfile
-            owner: "DataLayer"
-            module: "Zeebe"
-          - group: schema-manager
-            name: "Schema Manager"
-            maven-modules: "schema-manager"
-            maven-build-threads: 1
-            maven-test-fork-count: 3
-            runs-on: gcp-perf-core-8-default
-            docker-repository: localhost:5000/camunda/camunda
-            docker-file: camunda.Dockerfile
-            owner: "Data Layer"
-            module: "Schema Manager"
-          - group: zeebe-engine-integration
-            name: "Zeebe Engine QA"
-            maven-modules: "zeebe/qa/integration-tests"
-            maven-build-threads: 1
-            maven-test-fork-count: 10
-            runs-on: gcp-perf-core-16-default
-            owner: "Core Features"
-            module: "Zeebe"
-            test-filter: "io.camunda.zeebe.it.engine.**,!**/*$*.java"
-          - group: zeebe-ds-integration
-            name: "Zeebe Cluster QA"
-            maven-modules: "zeebe/qa/integration-tests"
-            maven-build-threads: 1
-            maven-test-fork-count: 10
-            runs-on: gcp-perf-core-16-default
-            docker-repository: localhost:5000/camunda/zeebe
-            docker-file: Dockerfile
-            owner: "Distributed Platform"
-            module: "Zeebe"
-            test-filter: "io.camunda.zeebe.it.cluster.**,!io.camunda.zeebe.it.cluster.clustering.dynamic.ScaleUpPartitionsTest,!**/*$*.java"
-          - group: zeebe-ds-integration-scaleup
-            name: "Zeebe Cluster ScaleUp QA"
-            maven-modules: "zeebe/qa/integration-tests"
-            maven-build-threads: 1
-            maven-test-fork-count: 1
-            runs-on: gcp-perf-core-8-default
-            owner: "Distributed Platform"
-            module: "Zeebe"
-            test-filter: "io.camunda.zeebe.it.cluster.clustering.dynamic.ScaleUpPartitionsTest"
-          - group: zeebe-shared-integration
-            name: "Zeebe General QA"
-            maven-modules: "zeebe/qa/integration-tests"
-            maven-build-threads: 1
-            maven-test-fork-count: 10
-            runs-on: gcp-perf-core-16-default
-            docker-repository: localhost:5000/camunda/zeebe
-            docker-file: Dockerfile
-            owner: "General"
-            module: "Zeebe"
-            test-filter: "!io.camunda.zeebe.it.engine.**,!io.camunda.zeebe.it.cluster.**,!**/*$*.java"
-          # - group: qa-update
-          #   name: "Zeebe QA - Update"
-          #   maven-modules: "zeebe/qa/update-tests"
-          #   maven-build-threads: 1
-          #   maven-test-fork-count: 10
-          #   runs-on: gcp-perf-core-8-default
-          #   docker-repository: localhost:5000/camunda/zeebe
-          #   docker-file: Dockerfile
-          #   owner: "Core Features"
-          #   module: "Zeebe"
-          - group: qa-camunda-process-test
-            name: "Camunda Process"
-            maven-modules: "testing/camunda-process-test-java,testing/camunda-process-test-spring,testing/camunda-process-test-example"
-            maven-build-threads: 1
-            maven-test-fork-count: 3
-            runs-on: gcp-perf-core-8-default
-            docker-repository: localhost:5000/camunda/camunda
-            docker-file: camunda.Dockerfile
-            owner: "CamundaEx"
-            module: "Testing"
+        # Opt-in to stress testing this job via the PR label "ci:stress-test".
+        include: ${{ fromJson(needs.setup-tests.outputs.INTEGRATION_TESTS_MATRIX) }}
     env:
       ZEEBE_TEST_DOCKER_IMAGE: localhost:5000/camunda/zeebe:current-test
       OPERATE_TEST_DOCKER_IMAGE: localhost:5000/camunda/operate:current-test
@@ -935,13 +1074,14 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           # Propagate matrix test filters (may be empty for other matrix entries)
           TEST_FILTER: ${{ matrix.test-filter }}
+          IS_STRESS_ENABLED: ${{ matrix.allow-stress == true && github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'ci:stress-test') }}
         shell: bash
         run: >
           ./mvnw -B -T ${{ matrix.maven-build-threads }} --no-snapshot-updates
           -D forkCount=${{ matrix.maven-test-fork-count }}
           -D maven.javadoc.skip=true
           -D skipUTs -D skipChecks
-          -D failsafe.rerunFailingTestsCount=${{ env.FLAKY_TEST_RERUN_COUNT }} -D flaky.test.reportDir=failsafe-reports
+          -D failsafe.rerunFailingTestsCount=${{ env.IS_STRESS_ENABLED == 'true' && '0' || env.FLAKY_TEST_RERUN_COUNT }} -D flaky.test.reportDir=failsafe-reports
           -Dio.camunda.process.test.camundaDockerImageName="${{ env.CAMUNDA_DOCKER_IMAGE_NAME }}"
           -Dio.camunda.process.test.camundaDockerImageVersion="${{ env.DOCKER_IMAGE_TAG }}"
           -Dio.camunda.process.test.camundaVersion="${{ env.DOCKER_IMAGE_TAG }}"
@@ -962,14 +1102,14 @@ jobs:
         if: ${{ failure() || cancelled() || steps.analyze-test-run.outputs.flakyTests != '' }}
         continue-on-error: true
         with:
-          name: "[IT] ${{ matrix.name }}"
+          name: "[IT] ${{ matrix.name }} (${{ matrix.stressRun }})"
       - name: Write matrix outputs for test analysis
         uses: cloudposse/github-action-matrix-outputs-write@v1
         id: matrix-write
         continue-on-error: true
         with:
           matrix-step-name: ${{ github.job }}
-          matrix-key: ${{ matrix.module }} - [IT] ${{ matrix.name }} - ${{ matrix.owner }}
+          matrix-key: ${{ matrix.module }} - [IT] ${{ matrix.name }} - ${{ matrix.owner }} (${{ matrix.stressRun }})
           outputs: |-
             flakyTests: ${{ toJson(steps.analyze-test-run.outputs.flakyTests) }}
             hasFlaky: ${{ steps.analyze-test-run.outputs.flakyTests != '' }}
@@ -978,7 +1118,7 @@ jobs:
         continue-on-error: true
         uses: ./.github/actions/observe-build-status
         with:
-          job_name: "integration-tests/${{ matrix.group }}"
+          job_name: ${{ format('integration-tests/{0}{1}', matrix.group, matrix.stressRun != 1 && format('/{0}', matrix.stressRun) || '') }}
           build_status: ${{ job.status }}
           user_reason: ${{ (steps.analyze-test-run.outputs.flakyTests != '') && 'flaky-tests' || '' }}
           user_description: ${{ matrix.owner }}
@@ -1247,7 +1387,7 @@ jobs:
           pr-number: ${{ github.event.pull_request.number }}
           branch-name: ${{ github.event.pull_request.head.ref }}
       - name: Delete matrix job generated artifacts
-        uses: geekyeggo/delete-artifact@v5
+        uses: geekyeggo/delete-artifact@v6
         with:
           name: |
             zeebe-unit-tests-*
@@ -1497,6 +1637,7 @@ jobs:
       - identity-tests
       - integration-tests
       - java-checks
+      - junit-vintage-check
       - maven-spotless-linter
       - openapi-lint
       - operate-ci
@@ -1506,6 +1647,7 @@ jobs:
       - renovatelint
       - setup-tests
       - tasklist-ci
+      - validate-pom-metadata
       - zeebe-ci
       - zeebe-unit-tests
     steps:

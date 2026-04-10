@@ -85,8 +85,8 @@ test.describe.skip('delete resource definitions', () => {
 
     await processesPage.gotoProcessesPage({
       searchParams: {
-        process: 'orderProcess',
-        version: '1',
+        processDefinitionId: 'orderProcess',
+        processDefinitionVersion: '1',
         active: 'true',
         incidents: 'true',
         canceled: 'true',
@@ -170,8 +170,8 @@ test.describe.skip('delete resource definitions', () => {
       searchParams: {
         evaluated: 'true',
         failed: 'true',
-        name: 'invoiceClassification',
-        version: '2',
+        decisionDefinitionId: 'invoiceClassification',
+        decisionDefinitionVersion: '2',
       },
     });
 

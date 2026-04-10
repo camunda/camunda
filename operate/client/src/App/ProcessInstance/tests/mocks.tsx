@@ -20,7 +20,7 @@ import {QueryClientProvider} from '@tanstack/react-query';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 import {mockFetchProcessSequenceFlows} from 'modules/mocks/api/v2/elementInstances/elementInstancesStatistics/sequenceFlows';
 import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
-import {type SequenceFlow} from '@camunda/camunda-api-zod-schemas/8.9';
+import {type SequenceFlow} from '@camunda/camunda-api-zod-schemas/8.10';
 import {mockFetchCallHierarchy} from 'modules/mocks/api/v2/processInstances/fetchCallHierarchy';
 import {mockFetchElementInstancesStatistics} from 'modules/mocks/api/v2/elementInstances/elementInstancesStatistics/fetchElementInstancesStatistics';
 import {mockSearchVariables} from 'modules/mocks/api/v2/variables/searchVariables';
@@ -30,6 +30,7 @@ import {mockSearchJobs} from 'modules/mocks/api/v2/jobs/searchJobs';
 import {mockSearchIncidentsByProcessInstance} from 'modules/mocks/api/v2/incidents/searchIncidentsByProcessInstance';
 import {mockQueryBatchOperationItems} from 'modules/mocks/api/v2/batchOperations/queryBatchOperationItems';
 import {mockSearchElementInstances} from 'modules/mocks/api/v2/elementInstances/searchElementInstances';
+import {VariablesTab} from 'App/ProcessInstance/BottomPanelTabs/VariablesTab';
 
 const mockSequenceFlowsV2: SequenceFlow[] = [
   {
@@ -128,7 +129,7 @@ function getWrapper(options?: {
     const router = createMemoryRouter(
       [
         {
-          path: Paths.processInstance(),
+          path: Paths.processInstance(undefined, true),
           element: (
             <>
               {children}
@@ -136,6 +137,7 @@ function getWrapper(options?: {
               <LocationLog />
             </>
           ),
+          children: [{index: true, element: <VariablesTab />}],
         },
         {
           path: Paths.processes(),

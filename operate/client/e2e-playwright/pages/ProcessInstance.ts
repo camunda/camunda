@@ -8,6 +8,7 @@
 
 import type {Page, Locator} from '@playwright/test';
 import {Diagram} from './components/Diagram';
+import {JSONEditor} from './components/JSONEditor';
 
 export class ProcessInstance {
   private page: Page;
@@ -36,6 +37,7 @@ export class ProcessInstance {
   readonly modifyInstanceButton: Locator;
   readonly listenerTypeFilter: Locator;
   readonly resetZoomButton: Locator;
+  readonly variablesEditor: InstanceType<typeof JSONEditor>;
 
   constructor(page: Page) {
     this.page = page;
@@ -57,11 +59,11 @@ export class ProcessInstance {
     this.variableSpinner = page.getByTestId('variable-operation-spinner');
     this.operationSpinner = page.getByTestId('operation-spinner');
     this.executionCountToggle =
-      this.instanceHistory.getByLabel(/^execution count$/i);
-    this.endDateToggle = this.instanceHistory.getByLabel(/^end date$/i);
+      this.instanceHistory.getByLabel('Execution count');
+    this.endDateToggle = this.instanceHistory.getByLabel('End date');
     this.listenersTabButton = page.getByTestId('listeners-tab-button');
-    this.operationsLogTabButton = page.getByRole('tab', {
-      name: /^Operations Log$/i,
+    this.operationsLogTabButton = page.getByRole('link', {
+      name: 'Operations Log',
     });
     this.operationsLogTable = page
       .getByTestId('data-table-container')
@@ -73,6 +75,7 @@ export class ProcessInstance {
     this.resetZoomButton = page.getByRole('button', {
       name: 'Reset diagram zoom',
     });
+    this.variablesEditor = new JSONEditor(page);
   }
 
   getEditVariableFieldSelector(variableName: string) {

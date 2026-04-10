@@ -21,10 +21,8 @@ import io.camunda.search.entities.ProcessInstanceEntity.ProcessInstanceState;
 import io.camunda.search.filter.ClusterVariableFilter;
 import io.camunda.search.filter.FilterBase;
 import io.camunda.search.filter.FilterBuilders;
-import io.camunda.search.filter.GlobalListenerFilter;
 import io.camunda.search.filter.ProcessDefinitionStatisticsFilter;
 import io.camunda.search.filter.UsageMetricsFilter;
-import io.camunda.search.filter.VariableFilter;
 import io.camunda.search.page.SearchQueryPage;
 import io.camunda.search.query.AuditLogQuery;
 import io.camunda.search.query.AuthorizationQuery;
@@ -563,6 +561,35 @@ public final class SearchQueryRequestMapper {
     return buildSearchQuery(filter, sort, page, SearchQueryBuilders::variableSearchQuery);
   }
 
+  public static Either<ProblemDetail, VariableQuery> toUserTaskEffectiveVariableQuery(
+      final io.camunda.gateway.protocol.model.simple.UserTaskVariableFilter filter,
+      final io.camunda.gateway.protocol.model.simple.OffsetPagination page,
+      final List<UserTaskVariableSearchQuerySortRequest> sort) {
+    return toUserTaskEffectiveVariableQuery(
+        new UserTaskEffectiveVariableSearchQueryRequest()
+            .filter(SimpleSearchQueryMapper.toUserTaskVariableFilter(filter))
+            .page(SimpleSearchQueryMapper.toOffsetPagination(page))
+            .sort(sort == null ? List.of() : sort));
+  }
+
+  public static Either<ProblemDetail, VariableQuery> toUserTaskEffectiveVariableQuery(
+      final UserTaskEffectiveVariableSearchQueryRequest request) {
+    if (request == null) {
+      return Either.right(SearchQueryBuilders.variableSearchQuery().build());
+    }
+
+    final var filter = SearchQueryFilterMapper.toUserTaskVariableFilter(request.getFilter());
+    final var page = toOffsetPagination(request.getPage());
+    final var sort =
+        SearchQuerySortRequestMapper.toSearchQuerySort(
+            SearchQuerySortRequestMapper.fromUserTaskVariableSearchQuerySortRequest(
+                request.getSort()),
+            SortOptionBuilders::variable,
+            SearchQuerySortRequestMapper::applyUserTaskVariableSortField);
+
+    return buildSearchQuery(filter, sort, page, SearchQueryBuilders::variableSearchQuery);
+  }
+
   public static Either<ProblemDetail, VariableQuery> toVariableQuery(
       final io.camunda.gateway.protocol.model.simple.VariableFilter filter,
       final io.camunda.gateway.protocol.model.simple.SearchQueryPageRequest page,
@@ -586,7 +613,7 @@ public final class SearchQueryRequestMapper {
             SearchQuerySortRequestMapper.fromVariableSearchQuerySortRequest(request.getSort()),
             SortOptionBuilders::variable,
             SearchQuerySortRequestMapper::applyVariableSortField);
-    final VariableFilter filter = SearchQueryFilterMapper.toVariableFilter(request.getFilter());
+    final var filter = SearchQueryFilterMapper.toVariableFilter(request.getFilter());
     return buildSearchQuery(filter, sort, page, SearchQueryBuilders::variableSearchQuery);
   }
 
@@ -891,7 +918,7 @@ public final class SearchQueryRequestMapper {
                 actualRequest.getSort()),
             SortOptionBuilders::globalListener,
             SearchQuerySortRequestMapper::applyGlobalTaskListenerSortField);
-    final GlobalListenerFilter filter =
+    final var filter =
         SearchQueryFilterMapper.toGlobalTaskListenerFilter(actualRequest.getFilter());
     return buildSearchQuery(filter, sort, page, SearchQueryBuilders::globalListenerSearchQuery);
   }

@@ -197,7 +197,7 @@ public abstract class ActivityImpl extends FlowNodeImpl implements Activity {
   public Query<BoundaryEvent> getBoundaryEvents() {
     final Collection<BoundaryEvent> queryElements =
         getParentElement().getChildElementsByType(BoundaryEvent.class).stream()
-            .filter(event -> event.getAttachedTo().equals(this))
+            .filter(event -> event.getAttachedTo() != null && event.getAttachedTo().equals(this))
             .collect(Collectors.toSet());
 
     return new QueryImpl<>(queryElements);

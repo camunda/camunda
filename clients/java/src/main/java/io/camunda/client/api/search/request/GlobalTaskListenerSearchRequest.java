@@ -16,11 +16,15 @@
 package io.camunda.client.api.search.request;
 
 import io.camunda.client.api.search.filter.GlobalTaskListenerFilter;
+import io.camunda.client.api.search.page.AnyPage;
 import io.camunda.client.api.search.response.GlobalTaskListener;
 import io.camunda.client.api.search.sort.GlobalTaskListenerSort;
 
 public interface GlobalTaskListenerSearchRequest
     extends TypedSearchRequest<
-            GlobalTaskListenerFilter, GlobalTaskListenerSort, GlobalTaskListenerSearchRequest>,
-        TypedPageableRequest<GlobalTaskListenerSearchRequest>,
+            GlobalTaskListenerFilter,
+            GlobalTaskListenerSort,
+            AnyPage,
+            GlobalTaskListenerSearchRequest>,
+        TypedPageableRequest<AnyPage, GlobalTaskListenerSearchRequest>,
         FinalSearchRequestStep<GlobalTaskListener> {}

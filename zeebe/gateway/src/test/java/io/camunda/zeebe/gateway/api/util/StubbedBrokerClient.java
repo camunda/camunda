@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
 
 public final class StubbedBrokerClient implements BrokerClient {
@@ -110,6 +111,9 @@ public final class StubbedBrokerClient implements BrokerClient {
       } catch (final RuntimeException e) {
         throwableConsumer.accept(new BrokerResponseException(e));
       }
+    } catch (final TimeoutException e) {
+      // Preserve timeout semantics so endpoint tests can assert gateway timeout mappings.
+      throwableConsumer.accept(e);
     } catch (final Exception e) {
       throwableConsumer.accept(new BrokerResponseException(e));
     }

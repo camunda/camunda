@@ -27,13 +27,12 @@ import java.util.function.BiFunction;
 import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springaicommunity.mcp.McpPredicates;
-import org.springaicommunity.mcp.annotation.McpTool;
-import org.springaicommunity.mcp.method.tool.ReturnMode;
-import org.springaicommunity.mcp.method.tool.utils.ClassUtils;
-import org.springaicommunity.mcp.provider.tool.AbstractMcpToolProvider;
-import org.springaicommunity.mcp.provider.tool.SyncMcpToolProvider;
+import org.springframework.ai.mcp.annotation.McpTool;
+import org.springframework.ai.mcp.annotation.common.McpPredicates;
+import org.springframework.ai.mcp.annotation.method.tool.ReturnMode;
+import org.springframework.ai.mcp.annotation.provider.tool.AbstractMcpToolProvider;
 import org.springframework.aop.support.AopUtils;
+import org.springframework.util.ClassUtils;
 
 /**
  * Camunda-specific provider for synchronous stateless MCP tool methods.
@@ -42,7 +41,8 @@ import org.springframework.aop.support.AopUtils;
  * and uses {@link CamundaJsonSchemaGenerator} for generating JSON schemas. This allows us to
  * control tool registration independently without relying on Spring AI's autoconfig exclusions.
  *
- * <p>Original Spring AI implementation: {@link SyncMcpToolProvider}
+ * <p>Original Spring AI implementation: {@link
+ * org.springframework.ai.mcp.annotation.provider.tool.SyncMcpToolProvider}
  */
 public class CamundaSyncStatelessMcpToolProvider extends AbstractMcpToolProvider {
 

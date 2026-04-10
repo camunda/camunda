@@ -14,14 +14,27 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.apache.commons.io.IOUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class SearchEngineClientUtils {
+
+  /**
+   * Maximum length of a comma-delimited index-pattern string passed in a URL request. Requests
+   * exceeding this limit may be rejected by the search engine. ES/OS limit this to 4096, but we use
+   * a lower value to be conservative
+   */
+  public static final int MAX_INDEX_PATTERN_REQUEST_LENGTH = 3500;
+
+  private static final Logger LOG = LoggerFactory.getLogger(SearchEngineClientUtils.class);
   private final ObjectMapper objectMapper;
 
   public SearchEngineClientUtils(final ObjectMapper objectMapper) {
@@ -36,6 +49,52 @@ public class SearchEngineClientUtils {
 
   public static <T, U> U convertValue(final T fromValue, final Function<T, U> converter) {
     return fromValue != null ? converter.apply(fromValue) : null;
+  }
+
+  /**
+   * Splits a comma-separated index-pattern string into batches where each batch's length does not
+   * exceed {@link #MAX_INDEX_PATTERN_REQUEST_LENGTH}. A single pattern that is itself longer than
+   * the limit is placed in its own batch.
+   *
+   * <p><b>Note:</b> If the pattern contains exclusion entries (segments starting with {@code -},
+   * e.g. {@code "index-a*,-index-a"}), batching is skipped entirely because splitting at a batch
+   * boundary could separate an include pattern from its paired exclusion, producing incorrect query
+   * results. In that case a warning is logged and the original pattern is returned as-is.
+   *
+   * @param namePattern comma-separated index patterns, e.g. {@code "index-a*,index-b*"}
+   * @return ordered list of comma-joined batches
+   */
+  public static List<String> batchPatterns(final String namePattern) {
+    if (namePattern == null || namePattern.isEmpty()) {
+      return Collections.emptyList();
+    }
+    final String[] patterns = namePattern.split(",");
+    for (final String pattern : patterns) {
+      if (pattern.startsWith("-")) {
+        LOG.debug(
+            "Index pattern [{}] contains exclusion entries; skipping batching to preserve "
+                + "exclusion semantics. The full pattern will be sent in a single request.",
+            namePattern);
+        return Collections.singletonList(namePattern);
+      }
+    }
+    final List<String> batches = new ArrayList<>();
+    final StringBuilder current = new StringBuilder();
+    for (final String pattern : patterns) {
+      if (current.length() > 0
+          && current.length() + 1 + pattern.length() > MAX_INDEX_PATTERN_REQUEST_LENGTH) {
+        batches.add(current.toString());
+        current.setLength(0);
+      }
+      if (current.length() > 0) {
+        current.append(",");
+      }
+      current.append(pattern);
+    }
+    if (current.length() > 0) {
+      batches.add(current.toString());
+    }
+    return batches;
   }
 
   public <T> T mapToSettings(

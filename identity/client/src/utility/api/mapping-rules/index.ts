@@ -11,7 +11,7 @@ import type {
   QueryMappingRulesRequestBody,
   QueryMappingRulesResponseBody,
   UpdateMappingRuleRequestBody,
-} from "@camunda/camunda-api-zod-schemas/8.9";
+} from "@camunda/camunda-api-zod-schemas/8.10";
 import {
   ApiDefinition,
   apiDelete,
@@ -34,7 +34,7 @@ export const updateMappingRule: ApiDefinition<
   undefined,
   UpdateMappingRuleRequestBody & Pick<MappingRule, "mappingRuleId">
 > = ({ mappingRuleId, claimName, claimValue, name }) =>
-  apiPut(`${MAPPING_RULES_ENDPOINT}/${mappingRuleId}`, {
+  apiPut(`${MAPPING_RULES_ENDPOINT}/${encodeURIComponent(mappingRuleId)}`, {
     name,
     claimName,
     claimValue,
@@ -44,4 +44,4 @@ export const deleteMappingRule: ApiDefinition<
   undefined,
   Pick<MappingRule, "mappingRuleId">
 > = ({ mappingRuleId }) =>
-  apiDelete(`${MAPPING_RULES_ENDPOINT}/${mappingRuleId}`);
+  apiDelete(`${MAPPING_RULES_ENDPOINT}/${encodeURIComponent(mappingRuleId)}`);

@@ -9,7 +9,6 @@ type C8Run interface {
 	OpenBrowser(ctx context.Context, url string) error
 	ProcessTree(commandPid int) []int
 	VersionCmd(ctx context.Context, javaBinaryPath string) *exec.Cmd
-	ElasticsearchCmd(ctx context.Context, elasticsearchVersion string, parentDir string) *exec.Cmd
 	ConnectorsCmd(ctx context.Context, javaBinary string, parentDir string, connectorsVersion string, camundaPort int) *exec.Cmd
 	CamundaCmd(ctx context.Context, camundaVersion string, parentDir string, extraArgs string, javaOpts string) *exec.Cmd
 }
@@ -22,12 +21,11 @@ type C8RunSettings struct {
 	Keystore             string
 	KeystorePassword     string
 	LogLevel             string
-	DisableElasticsearch bool
 	SecondaryStorageType string
 	Username             string
 	Password             string
-	Docker               bool
 	StartupUrl           string
+	StartupMarkerPath    string
 	ExtraDrivers         []string
 }
 
@@ -46,9 +44,8 @@ func (c C8RunSettings) GetProtocol() string {
 }
 
 type Processes struct {
-	Camunda       Process
-	Connectors    Process
-	Elasticsearch Process
+	Camunda    Process
+	Connectors Process
 }
 
 type Process struct {

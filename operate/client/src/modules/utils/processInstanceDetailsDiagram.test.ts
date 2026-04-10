@@ -17,82 +17,82 @@ import type {
 } from 'bpmn-js/lib/NavigatedViewer';
 
 describe('hasMultipleScopes', () => {
-  it('should return false if parentFlowNode is undefined', () => {
+  it('should return false if parent element is undefined', () => {
     const result = hasMultipleScopes(undefined, {});
     expect(result).toBe(false);
   });
 
-  it('should return false if totalRunningInstancesByFlowNode is undefined', () => {
-    const parentFlowNode: BusinessObject = {
+  it('should return false if total running instances by element is undefined', () => {
+    const parentElement: BusinessObject = {
       id: 'node1',
       name: 'Node 1',
       $type: 'bpmn:SequenceFlow',
     };
-    const result = hasMultipleScopes(parentFlowNode, undefined);
+    const result = hasMultipleScopes(parentElement, undefined);
     expect(result).toBe(false);
   });
 
-  it('should return false if totalRunningInstancesByFlowNode does not contain the parentFlowNode id', () => {
-    const parentFlowNode: BusinessObject = {
+  it('should return false if total running instances by element does not contain the parent element id', () => {
+    const parentElement: BusinessObject = {
       id: 'node1',
       name: 'Node 1',
       $type: 'bpmn:SequenceFlow',
     };
-    const result = hasMultipleScopes(parentFlowNode, {});
+    const result = hasMultipleScopes(parentElement, {});
     expect(result).toBe(false);
   });
 
   it('should return false if the scope count is 0 or undefined', () => {
-    const parentFlowNode: BusinessObject = {
+    const parentElement: BusinessObject = {
       id: 'node1',
       name: 'Node 1',
       $type: 'bpmn:SequenceFlow',
     };
-    const totalRunningInstancesByFlowNode = {
+    const totalRunningInstancesByElement = {
       node1: 0,
     };
     const result = hasMultipleScopes(
-      parentFlowNode,
-      totalRunningInstancesByFlowNode,
+      parentElement,
+      totalRunningInstancesByElement,
     );
     expect(result).toBe(false);
   });
 
   it('should return true if the scope count is greater than 1', () => {
-    const parentFlowNode: BusinessObject = {
+    const parentElement: BusinessObject = {
       id: 'node1',
       name: 'Node 1',
       $type: 'bpmn:SequenceFlow',
     };
-    const totalRunningInstancesByFlowNode = {
+    const totalRunningInstancesByElement = {
       node1: 2,
     };
     const result = hasMultipleScopes(
-      parentFlowNode,
-      totalRunningInstancesByFlowNode,
+      parentElement,
+      totalRunningInstancesByElement,
     );
     expect(result).toBe(true);
   });
 
-  it('should return false if the parentFlowNode has no parent and scope count is not greater than 1', () => {
-    const parentFlowNode: BusinessObject = {
+  it('should return false if the parent element has no parent and scope count is not greater than 1', () => {
+    const parentElement: BusinessObject = {
       id: 'node1',
       name: 'Node 1',
       $type: 'bpmn:SequenceFlow',
       $parent: undefined,
     };
-    const totalRunningInstancesByFlowNode = {
+    const totalRunningInstancesByElement = {
       node1: 0,
     };
     const result = hasMultipleScopes(
-      parentFlowNode,
-      totalRunningInstancesByFlowNode,
+      parentElement,
+      totalRunningInstancesByElement,
     );
     expect(result).toBe(false);
   });
 
   it('should return true if a parent in the hierarchy has a scope count greater than 1', () => {
-    const parentFlowNode: BusinessObject = {
+    const parentElement: BusinessObject = {
       id: 'node1',
       name: 'Node 1',
       $type: 'bpmn:Process',
@@ -109,21 +109,21 @@ describe('hasMultipleScopes', () => {
       },
     };
 
-    const totalRunningInstancesByFlowNode = {
+    const totalRunningInstancesByElement = {
       node1: 0,
       node2: 0,
       node3: 2, // Parent node3 has a scope count greater than 1
     };
 
     const result = hasMultipleScopes(
-      parentFlowNode,
-      totalRunningInstancesByFlowNode,
+      parentElement,
+      totalRunningInstancesByElement,
     );
     expect(result).toBe(true);
   });
 
   it('should return false if no parent in the hierarchy has a scope count greater than 1', () => {
-    const parentFlowNode: BusinessObject = {
+    const parentElement: BusinessObject = {
       id: 'node1',
       name: 'Node 1',
       $type: 'bpmn:Process',
@@ -140,21 +140,21 @@ describe('hasMultipleScopes', () => {
       },
     };
 
-    const totalRunningInstancesByFlowNode = {
+    const totalRunningInstancesByElement = {
       node1: 0,
       node2: 0,
       node3: 0, // No parent has a scope count greater than 1
     };
 
     const result = hasMultipleScopes(
-      parentFlowNode,
-      totalRunningInstancesByFlowNode,
+      parentElement,
+      totalRunningInstancesByElement,
     );
     expect(result).toBe(false);
   });
 
   it('should stop checking parents if a non-SubProcess parent is encountered', () => {
-    const parentFlowNode: BusinessObject = {
+    const parentElement: BusinessObject = {
       id: 'node1',
       name: 'Node 1',
       $type: 'bpmn:SequenceFlow',
@@ -171,21 +171,21 @@ describe('hasMultipleScopes', () => {
       },
     };
 
-    const totalRunningInstancesByFlowNode = {
+    const totalRunningInstancesByElement = {
       node1: 0,
       node2: 2, // This node is not a SubProcess, so it should not be checked
       node3: 0,
     };
 
     const result = hasMultipleScopes(
-      parentFlowNode,
-      totalRunningInstancesByFlowNode,
+      parentElement,
+      totalRunningInstancesByElement,
     );
     expect(result).toBe(false);
   });
 
-  it('should return true if a parent AdHocSubProcess has a scope count greater than 1', () => {
-    const parentFlowNode: BusinessObject = {
+  it('should return true if a parent AdHocSubProcess element has a scope count greater than 1', () => {
+    const parentElement: BusinessObject = {
       id: 'node1',
       name: 'Node 1',
       $type: 'bpmn:Process',
@@ -202,22 +202,22 @@ describe('hasMultipleScopes', () => {
       },
     };
 
-    const totalRunningInstancesByFlowNode = {
+    const totalRunningInstancesByElement = {
       node1: 0,
       node2: 2,
       node3: 0,
     };
 
     const result = hasMultipleScopes(
-      parentFlowNode,
-      totalRunningInstancesByFlowNode,
+      parentElement,
+      totalRunningInstancesByElement,
     );
     expect(result).toBe(true);
   });
 });
 
 describe('areInSameRunningScope', () => {
-  it('should return false if source flow node does not exist', () => {
+  it('should return false if source element does not exist', () => {
     const businessObjects: BusinessObjects = {
       node2: {
         id: 'node2',
@@ -230,7 +230,7 @@ describe('areInSameRunningScope', () => {
     expect(result).toBe(false);
   });
 
-  it('should return false if target flow node does not exist', () => {
+  it('should return false if target element does not exist', () => {
     const businessObjects: BusinessObjects = {
       node1: {
         id: 'node1',
@@ -243,7 +243,7 @@ describe('areInSameRunningScope', () => {
     expect(result).toBe(false);
   });
 
-  it('should return false if source flow node has no parent', () => {
+  it('should return false if source element has no parent', () => {
     const businessObjects: BusinessObjects = {
       node1: {
         id: 'node1',
@@ -267,7 +267,7 @@ describe('areInSameRunningScope', () => {
     expect(result).toBe(false);
   });
 
-  it('should return false if target flow node has no parent', () => {
+  it('should return false if target element has no parent', () => {
     const businessObjects: BusinessObjects = {
       node1: {
         id: 'node1',
@@ -314,7 +314,7 @@ describe('areInSameRunningScope', () => {
       process: parentProcess,
     };
 
-    const totalRunningInstancesByFlowNode = {
+    const totalRunningInstancesByElement = {
       process: 1,
     };
 
@@ -322,7 +322,7 @@ describe('areInSameRunningScope', () => {
       businessObjects,
       'node1',
       'node2',
-      totalRunningInstancesByFlowNode,
+      totalRunningInstancesByElement,
     );
     expect(result).toBe(true);
   });
@@ -350,7 +350,7 @@ describe('areInSameRunningScope', () => {
       process: parentProcess,
     };
 
-    const totalRunningInstancesByFlowNode = {
+    const totalRunningInstancesByElement = {
       process: 0,
     };
 
@@ -358,7 +358,7 @@ describe('areInSameRunningScope', () => {
       businessObjects,
       'node1',
       'node2',
-      totalRunningInstancesByFlowNode,
+      totalRunningInstancesByElement,
     );
     expect(result).toBe(false);
   });
@@ -393,7 +393,7 @@ describe('areInSameRunningScope', () => {
       process2,
     };
 
-    const totalRunningInstancesByFlowNode = {
+    const totalRunningInstancesByElement = {
       process1: 1,
       process2: 1,
     };
@@ -402,12 +402,12 @@ describe('areInSameRunningScope', () => {
       businessObjects,
       'node1',
       'node2',
-      totalRunningInstancesByFlowNode,
+      totalRunningInstancesByElement,
     );
     expect(result).toBe(false);
   });
 
-  it('should return false when totalRunningInstancesByFlowNode is undefined', () => {
+  it('should return false when totalRunningInstancesByElement is undefined', () => {
     const parentProcess: BusinessObject = {
       id: 'process',
       name: 'Process',
@@ -448,7 +448,7 @@ describe('getAncestorScopeType', () => {
       $type: 'bpmn:Process',
     };
 
-    const targetFlowNode: BusinessObject = {
+    const targetElement: BusinessObject = {
       id: 'task-1',
       name: 'Task 1',
       $type: 'bpmn:ServiceTask',
@@ -456,7 +456,7 @@ describe('getAncestorScopeType', () => {
     };
 
     const businessObjects: BusinessObjects = {
-      'task-1': targetFlowNode,
+      'task-1': targetElement,
       'task-2': {
         id: 'task-2',
         name: 'Task 2',
@@ -466,7 +466,7 @@ describe('getAncestorScopeType', () => {
       process: parentProcess,
     };
 
-    const totalRunningInstancesByFlowNode = {
+    const totalRunningInstancesByElement = {
       process: 1,
     };
 
@@ -474,7 +474,7 @@ describe('getAncestorScopeType', () => {
       businessObjects,
       'task-2',
       'task-1',
-      totalRunningInstancesByFlowNode,
+      totalRunningInstancesByElement,
     );
     expect(result).toBeUndefined();
   });
@@ -493,14 +493,14 @@ describe('getAncestorScopeType', () => {
       $parent: parentProcess,
     };
 
-    const targetFlowNode: BusinessObject = {
+    const targetElement: BusinessObject = {
       id: 'task-1',
       name: 'Task 1',
       $type: 'bpmn:ServiceTask',
       $parent: subprocess,
     };
 
-    const sourceFlowNode: BusinessObject = {
+    const sourceElement: BusinessObject = {
       id: 'task-2',
       name: 'Task 2',
       $type: 'bpmn:ServiceTask',
@@ -508,13 +508,13 @@ describe('getAncestorScopeType', () => {
     };
 
     const businessObjects: BusinessObjects = {
-      'task-1': targetFlowNode,
-      'task-2': sourceFlowNode,
+      'task-1': targetElement,
+      'task-2': sourceElement,
       subprocess,
       process: parentProcess,
     };
 
-    const totalRunningInstancesByFlowNode = {
+    const totalRunningInstancesByElement = {
       subprocess: 2,
       process: 1,
     };
@@ -523,7 +523,7 @@ describe('getAncestorScopeType', () => {
       businessObjects,
       'task-2',
       'task-1',
-      totalRunningInstancesByFlowNode,
+      totalRunningInstancesByElement,
     );
     expect(result).toBe('sourceParent');
   });
@@ -549,14 +549,14 @@ describe('getAncestorScopeType', () => {
       $parent: parentProcess,
     };
 
-    const targetFlowNode: BusinessObject = {
+    const targetElement: BusinessObject = {
       id: 'task-1',
       name: 'Task 1',
       $type: 'bpmn:ServiceTask',
       $parent: subprocess1,
     };
 
-    const sourceFlowNode: BusinessObject = {
+    const sourceElement: BusinessObject = {
       id: 'task-2',
       name: 'Task 2',
       $type: 'bpmn:ServiceTask',
@@ -564,14 +564,14 @@ describe('getAncestorScopeType', () => {
     };
 
     const businessObjects: BusinessObjects = {
-      'task-1': targetFlowNode,
-      'task-2': sourceFlowNode,
+      'task-1': targetElement,
+      'task-2': sourceElement,
       subprocess1,
       subprocess2,
       process: parentProcess,
     };
 
-    const totalRunningInstancesByFlowNode = {
+    const totalRunningInstancesByElement = {
       subprocess1: 2,
       subprocess2: 1,
       process: 1,
@@ -581,7 +581,7 @@ describe('getAncestorScopeType', () => {
       businessObjects,
       'task-2',
       'task-1',
-      totalRunningInstancesByFlowNode,
+      totalRunningInstancesByElement,
     );
     expect(result).toBe('inferred');
   });

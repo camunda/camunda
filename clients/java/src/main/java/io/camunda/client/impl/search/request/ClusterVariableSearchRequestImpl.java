@@ -15,16 +15,16 @@
  */
 package io.camunda.client.impl.search.request;
 
+import static io.camunda.client.api.search.request.SearchRequestBuilders.anyPage;
 import static io.camunda.client.api.search.request.SearchRequestBuilders.clusterVariableFilter;
 import static io.camunda.client.api.search.request.SearchRequestBuilders.clusterVariableSort;
-import static io.camunda.client.api.search.request.SearchRequestBuilders.searchRequestPage;
 
 import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.search.filter.ClusterVariableFilter;
+import io.camunda.client.api.search.page.AnyPage;
 import io.camunda.client.api.search.request.ClusterVariableSearchRequest;
 import io.camunda.client.api.search.request.FinalSearchRequestStep;
-import io.camunda.client.api.search.request.SearchRequestPage;
 import io.camunda.client.api.search.response.ClusterVariable;
 import io.camunda.client.api.search.response.SearchResponse;
 import io.camunda.client.api.search.sort.ClusterVariableSort;
@@ -107,14 +107,14 @@ public class ClusterVariableSearchRequestImpl
   }
 
   @Override
-  public ClusterVariableSearchRequest page(final SearchRequestPage value) {
+  public ClusterVariableSearchRequest page(final AnyPage value) {
     request.setPage(provideSearchRequestProperty(value));
     return this;
   }
 
   @Override
-  public ClusterVariableSearchRequest page(final Consumer<SearchRequestPage> fn) {
-    return page(searchRequestPage(fn));
+  public ClusterVariableSearchRequest page(final Consumer<AnyPage> fn) {
+    return page(anyPage(fn));
   }
 
   @Override

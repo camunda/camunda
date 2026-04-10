@@ -40,7 +40,6 @@ public class AuditLogResultImpl implements AuditLogResult {
   private String agentElementId;
   private String tenantId;
   private AuditLogResultEnum result;
-  private String annotation;
   private AuditLogCategoryEnum category;
   private String processDefinitionId;
   private String processDefinitionKey;
@@ -74,7 +73,6 @@ public class AuditLogResultImpl implements AuditLogResult {
     agentElementId = item.getAgentElementId();
     tenantId = item.getTenantId();
     result = EnumUtil.convert(item.getResult(), AuditLogResultEnum.class);
-    annotation = item.getAnnotation();
     category = EnumUtil.convert(item.getCategory(), AuditLogCategoryEnum.class);
     processDefinitionId = item.getProcessDefinitionId();
     processDefinitionKey = item.getProcessDefinitionKey();
@@ -194,15 +192,6 @@ public class AuditLogResultImpl implements AuditLogResult {
 
   public void setResult(final AuditLogResultEnum result) {
     this.result = result;
-  }
-
-  @Override
-  public String getAnnotation() {
-    return annotation;
-  }
-
-  public void setAnnotation(final String annotation) {
-    this.annotation = annotation;
   }
 
   @Override

@@ -7,71 +7,71 @@
  */
 
 type ProcessInstanceFilterField =
-  | 'process'
-  | 'version'
-  | 'ids'
-  | 'parentInstanceId'
+  | 'processDefinitionId'
+  | 'processDefinitionVersion'
+  | 'processInstanceKey'
+  | 'parentProcessInstanceKey'
   | 'errorMessage'
   | 'incidentErrorHashCode'
-  | 'flowNodeId'
+  | 'elementId'
   | 'variableName'
   | 'variableValues'
-  | 'operationId'
+  | 'batchOperationId'
   | 'active'
   | 'incidents'
   | 'completed'
   | 'canceled'
-  | 'startDateAfter'
-  | 'startDateBefore'
-  | 'endDateAfter'
-  | 'endDateBefore'
-  | 'tenant'
-  | 'retriesLeft';
+  | 'startDateFrom'
+  | 'startDateTo'
+  | 'endDateFrom'
+  | 'endDateTo'
+  | 'tenantId'
+  | 'hasRetriesLeft';
 
 type ProcessInstanceFilters = {
-  process?: string;
-  version?: string;
-  ids?: string;
-  parentInstanceId?: string;
+  processDefinitionId?: string;
+  processDefinitionVersion?: string;
+  processInstanceKey?: string;
+  parentProcessInstanceKey?: string;
   errorMessage?: string;
   incidentErrorHashCode?: number;
-  flowNodeId?: string;
+  elementId?: string;
   variableName?: string;
   variableValues?: string;
-  operationId?: string;
+  batchOperationId?: string;
   active?: boolean;
   incidents?: boolean;
   completed?: boolean;
   canceled?: boolean;
-  startDateAfter?: string;
-  startDateBefore?: string;
-  endDateAfter?: string;
-  endDateBefore?: string;
-  tenant?: string;
-  retriesLeft?: boolean;
+  startDateFrom?: string;
+  startDateTo?: string;
+  endDateFrom?: string;
+  endDateTo?: string;
+  tenantId?: string;
+  hasRetriesLeft?: boolean;
 };
 
 const PROCESS_INSTANCE_FILTER_FIELDS: ProcessInstanceFilterField[] = [
-  'process',
-  'version',
-  'ids',
-  'parentInstanceId',
+  'processDefinitionId',
+  'processDefinitionVersion',
+  'processInstanceKey',
+  'parentProcessInstanceKey',
   'errorMessage',
   'incidentErrorHashCode',
-  'flowNodeId',
+  'elementId',
   'variableName',
   'variableValues',
-  'operationId',
+  'batchOperationId',
   'active',
   'incidents',
   'completed',
   'canceled',
-  'startDateAfter',
-  'startDateBefore',
-  'endDateAfter',
-  'endDateBefore',
-  'tenant',
-  'retriesLeft',
+  'startDateFrom',
+  'startDateTo',
+  'endDateFrom',
+  'endDateTo',
+  'tenantId',
+  'hasRetriesLeft',
 ];
 
 const BOOLEAN_PROCESS_INSTANCE_FILTER_FIELDS: ProcessInstanceFilterField[] = [
@@ -79,7 +79,7 @@ const BOOLEAN_PROCESS_INSTANCE_FILTER_FIELDS: ProcessInstanceFilterField[] = [
   'incidents',
   'completed',
   'canceled',
-  'retriesLeft',
+  'hasRetriesLeft',
 ];
 
 export type {ProcessInstanceFilterField, ProcessInstanceFilters};

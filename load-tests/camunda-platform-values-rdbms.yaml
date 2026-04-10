@@ -2,8 +2,6 @@
 ################################################### Global cluster configuration
 ########################################################################################
 global:
-  elasticsearch:
-    enabled: false
   postgresql:
     auth:
       database: camunda
@@ -38,19 +36,20 @@ orchestration:
   extraConfiguration:
     - file: application.yml
       content: |
-        zeebe.gateway.monitoring.enabled: "true"
-        zeebe.gateway.threads.managementThreads: "1"
-        zeebe.broker.experimental.consistencyChecks.enablePreconditions: "true"
-        zeebe.broker.experimental.consistencyChecks.enableForeignKeyChecks: "true"
+        # Enable execution metrics exporter to be able to see the execution metrics, like process instance and job completion times
         zeebe.broker.executionMetricsExporterEnabled: "true"
+        camunda.flags.jfr.metrics: "true"
+        # Define when the broker should start to reject requests when the disk is almost full, for both processing and replication.
         zeebe.broker.data.disk.freeSpace.processing: "3GB"
         zeebe.broker.data.disk.freeSpace.replication: "2GB"
+        # We want to have this for long running load tests, to detect consistency issues early on and to have the foreign key checks enabled for better data integrity.
+        # Like endurance / soak tests  but not for our maximum stress tests, where we want to push the system to the limits and consistency checks might cause too much overhead.
+        zeebe.broker.experimental.consistencyChecks.enablePreconditions: "true"
+        zeebe.broker.experimental.consistencyChecks.enableForeignKeyChecks: "true"
         # Configure a rate limit for all writes, so that we can visualize flow control metrics.
         zeebe.broker.flowControl.write.enabled: "true"
-        zeebe.broker.flowControl.write.limit: 4000
+        zeebe.broker.flowControl.write.limit: 10000
         zeebe.broker.flowControl.write.throttling.enabled: "true"
-        #Metrics:
-        camunda.flags.jfr.metrics: "true"
         # RocksDB memory limit setting, limits the overall RocksDB memory usage
         # ZEEBE_BROKER_EXPERIMENTAL_ROCKSDB_MEMORYLIMIT
         zeebe.broker.experimental.rocksdb.memoryLimit: "64MB"
@@ -62,12 +61,11 @@ orchestration:
         camunda.data.secondary-storage.rdbms.history.default-history-ttl: PT1H
         camunda.data.secondary-storage.rdbms.history.min-history-cleanup-interval: PT1S
         camunda.data.secondary-storage.rdbms.history.max-history-cleanup-interval: PT1M
-
-########################################################################################
-################################################### Disable ElasticSearch for RDBMS
-########################################################################################
-elasticsearch:
-  enabled: false
+    # This file is loaded after application.yml (higher priority). It is empty by default,
+    # but can be overridden via --set-file for specific scenarios (e.g. max) to change settings
+    # like disabling consistency checks without duplicating the full application.yml content.
+    - file: application-override.yml
+      content: "# no overrides"
 
 ###########################################################################
 #
@@ -99,6 +97,7 @@ primary:
 
   nodeSelector:
     component: benchmark-n2-standard-4
+    topology.kubernetes.io/zone: __AVAILABILITY_ZONE__
 
   tolerations:
     - key: nodepool
@@ -108,7 +107,7 @@ primary:
 
   persistence:
     size: 128Gi
-    storageClass: "ssd"
+    storageClass: benchmark-ssd-zonal-v1
 
   extendedConfiguration: |-
     # WAL Performance Tuning
@@ -138,3 +137,41 @@ primary:
     pg_stat_statements.max = 10000
     track_io_timing = on
     track_functions = all
+
+########################################################################################
+################################################### Elasticsearch cluster configuration
+########################################################################################
+# We need ES for Optimize
+# But we do not need such a big cluster as with the Camunda Exporter, as we do not need to store as much data in ES, and we do not need to run any queries on it.
+elasticsearch:
+  enabled: true
+  clusterName: "elasticsearch"
+  master:
+    fullnameOverride: elastic
+    nameOverride: elastic
+    ## @param elasticsearch.master.replicaCount defines number of master-elegible replicas to deploy
+    replicaCount: 3
+    pdb:
+      minAvailable: 2
+    ## @param elasticsearch.master.heapSize
+    heapSize: 3g
+    persistence:
+      ## @param elasticsearch.master.persistence.size
+      size: 256Gi
+      storageClass: benchmark-ssd-zonal-v1
+      accessModes: ["ReadWriteOnce"]
+    resources:
+      requests:
+        cpu: 3000m
+        memory: 6Gi
+      limits:
+        cpu: 3000m
+        memory: 6Gi
+    nodeSelector:
+      component: benchmark-n2-standard-4
+      topology.kubernetes.io/zone: __AVAILABILITY_ZONE__
+    tolerations:
+      - key: nodepool
+        operator: Equal
+        value: n2-standard-4
+        effect: NoSchedule

@@ -16,7 +16,7 @@ import {
   type ProcessDefinition,
   type CreateProcessInstanceRequestBody,
   type QueryUserTaskAuditLogsRequestBody,
-} from '@camunda/camunda-api-zod-schemas/8.9';
+} from '@camunda/camunda-api-zod-schemas/8.10';
 import {BASE_REQUEST_OPTIONS, getFullURL} from 'common/api';
 
 const api = {
