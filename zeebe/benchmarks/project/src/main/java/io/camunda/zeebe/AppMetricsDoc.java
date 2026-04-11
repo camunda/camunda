@@ -13,14 +13,14 @@ import io.micrometer.core.instrument.Meter.Type;
 /** Metrics shared across all app types (Starter and Worker). */
 public enum AppMetricsDoc implements ExtendedMeterDocumentation {
   /**
-   * A counter that is incremented once when the client successfully connects to the gateway (i.e.
-   * after the first successful topology request). This metric is used by the verification workflow
+   * A gauge set to 1 when the client successfully connects to the gateway (i.e. after the first
+   * successful topology request), and 0 otherwise. This metric is used by the verification workflow
    * to confirm that the client is connected, regardless of whether the client uses gRPC or REST.
    */
   CONNECTED {
     @Override
     public String getDescription() {
-      return "Incremented once when the client successfully connects to the gateway (topology received).";
+      return "Set to 1 when the client successfully connects to the gateway (topology received), 0 otherwise.";
     }
 
     @Override
@@ -30,7 +30,7 @@ public enum AppMetricsDoc implements ExtendedMeterDocumentation {
 
     @Override
     public Type getType() {
-      return Type.COUNTER;
+      return Type.GAUGE;
     }
   };
 }

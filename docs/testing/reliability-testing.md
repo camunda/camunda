@@ -134,7 +134,7 @@ For every [supported/maintained](https://confluence.camunda.com/pages/viewpage.a
 As of today (16 Jun 2025), we have load tests running:
 
 1. Waits for all pods to be ready
-2. Checks gateway connectivity via the `app.connected` counter metric (incremented when topology is first received)
+2. Checks gateway connectivity via the `app.connected` gauge metric (set to 1 when topology is first received)
 3. Deletes the namespace (regardless of verification outcome)
 
 Results are posted to the `#reliability-testing-alerts` Slack channel.
