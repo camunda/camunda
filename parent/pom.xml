@@ -198,7 +198,7 @@
     <version.okio-jvm>3.17.0</version.okio-jvm>
     <version.jwks-rsa>0.23.0</version.jwks-rsa>
     <version.guava.annotations>r03</version.guava.annotations>
-    <version.nimbus-jose-jwt>10.8</version.nimbus-jose-jwt>
+    <version.nimbus-jose-jwt>10.9</version.nimbus-jose-jwt>
     <version.nimbus-sdk>11.37</version.nimbus-sdk>
     <version.keycloak>26.5.6</version.keycloak>
     <version.keycloak-client>26.0.8</version.keycloak-client>
