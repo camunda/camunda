@@ -29,6 +29,7 @@ import io.camunda.zeebe.util.FileUtil;
 import io.camunda.zeebe.util.logging.ThrottledLogger;
 import io.grpc.ClientInterceptor;
 import io.grpc.Status.Code;
+import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.binder.grpc.MetricCollectingClientInterceptor;
 import io.micrometer.core.instrument.binder.jvm.ClassLoaderMetrics;
 import io.micrometer.core.instrument.binder.jvm.JvmGcMetrics;
@@ -60,6 +61,7 @@ abstract class App implements Runnable {
   protected final AppCfg config;
   protected PrometheusMeterRegistry registry;
   protected ClientInterceptor monitoringInterceptor;
+  private Counter connectedCounter;
 
   private HTTPServer monitoringServer;
   private final Path credentialsCachePath;
@@ -106,6 +108,10 @@ abstract class App implements Runnable {
     }
 
     monitoringInterceptor = new MetricCollectingClientInterceptor(registry);
+    connectedCounter =
+        Counter.builder(StarterLatencyMetricsDoc.CONNECTED.getName())
+            .description(StarterLatencyMetricsDoc.CONNECTED.getDescription())
+            .register(registry);
     registerDefaultInstrumentation();
   }
 
@@ -145,6 +151,7 @@ abstract class App implements Runnable {
                   b.getPartitions()
                       .forEach(p -> LOG.info("{} - {}", p.getPartitionId(), p.getRole()));
                 });
+        connectedCounter.increment();
         break;
       } catch (final ClientStatusException e) {
         final var statusCode = e.getStatusCode();

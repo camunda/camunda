@@ -133,15 +133,15 @@ For every [supported/maintained](https://confluence.camunda.com/pages/viewpage.a
 
 As of today (16 Jun 2025), we have load tests running:
 
-* For all the last minor versions, they are run until the version goes out of support (and are updated on every patch)
-  * release-8-4-x
-  * release-8-5-x
-  * release-8-6-x
-  * Release-8-7-x
-* For the current alpha
-  * release-8-8-0-alpha5
-* One rolling release test, which is always updated
-  * Release-rolling
+1. Waits for all pods to be ready
+2. Checks gateway connectivity via the `app.connected` counter metric (incremented when topology is first received)
+3. Deletes the namespace (regardless of verification outcome)
+
+Results are posted to the `#reliability-testing-alerts` Slack channel.
+
+> [!Note]
+>
+> The scheduled workflow uses hardcoded release tags per stable branch. Patch releases do not require updates — only new minor versions (e.g., 8.10) or deprecated branches need the workflow to be updated.
 
 #### Weekly load tests
 
