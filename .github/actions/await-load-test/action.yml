@@ -1,6 +1,6 @@
 # description: Waits for a load test deployment to be healthy and connected.
 #              Verifies all pods are ready (with retry logic to handle pod reschedules),
-#              then checks Prometheus metrics for the app.connected counter
+#              then checks Prometheus metrics for the app.connected gauge
 #              to confirm gateway connectivity.
 # owner: @camunda/reliability-testing
 name: Await Load Test
@@ -127,7 +127,7 @@ runs:
         sleep 5  # wait for port-forward to establish
 
         # Check that the client has successfully connected to the gateway.
-        # app_connected_total >= 1 confirms that the topology was received (i.e. the
+        # app_connected >= 1 confirms that the topology was received (i.e. the
         # client authenticated and connected successfully, regardless of REST or gRPC).
         interval=30
         max_attempts=$((CONNECTIVITY_TIMEOUT / interval))
@@ -136,7 +136,7 @@ runs:
 
         while [[ $attempts -lt $max_attempts ]]; do
           count=$(curl -s "http://localhost:${local_port}/metrics" 2>/dev/null \
-            | { grep '^app_connected_total ' || true; } \
+            | { grep '^app_connected ' || true; } \
             | awk '{print $2}' \
             | cut -d. -f1)
 
