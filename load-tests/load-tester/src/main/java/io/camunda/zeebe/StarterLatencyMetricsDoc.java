@@ -139,6 +139,28 @@ public enum StarterLatencyMetricsDoc implements ExtendedMeterDocumentation {
     }
   },
 
+  /**
+   * A counter that is incremented once when the client successfully connects to the gateway (i.e.
+   * after the first successful topology request). This metric is used by the verification workflow
+   * to confirm that the client is connected, regardless of whether the client uses gRPC or REST.
+   */
+  CONNECTED {
+    @Override
+    public String getDescription() {
+      return "Incremented once when the client successfully connects to the gateway (topology received).";
+    }
+
+    @Override
+    public String getName() {
+      return "app.connected";
+    }
+
+    @Override
+    public Type getType() {
+      return Type.COUNTER;
+    }
+  },
+
   /** The latency of read benchmark queries executed against the Camunda cluster. */
   READ_BENCHMARK {
     private static final KeyName[] KEY_NAMES = new KeyName[] {StarterMetricKeyNames.QUERY_NAME};
