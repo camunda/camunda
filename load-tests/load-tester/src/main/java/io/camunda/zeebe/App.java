@@ -101,8 +101,8 @@ abstract class App implements Runnable {
 
     monitoringInterceptor = new MetricCollectingClientInterceptor(registry);
     connectedCounter =
-        Counter.builder(StarterLatencyMetricsDoc.CONNECTED.getName())
-            .description(StarterLatencyMetricsDoc.CONNECTED.getDescription())
+        Counter.builder(AppMetricsDoc.CONNECTED.getName())
+            .description(AppMetricsDoc.CONNECTED.getDescription())
             .register(registry);
     registerDefaultInstrumentation();
   }
