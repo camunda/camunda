@@ -15,6 +15,7 @@ import io.camunda.zeebe.dynamic.config.changes.ClusterChangeExecutor;
 import io.camunda.zeebe.dynamic.config.changes.PartitionChangeExecutor;
 import io.camunda.zeebe.dynamic.config.changes.PartitionScalingChangeExecutor;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
+import io.camunda.zeebe.dynamic.config.state.PartitionState.State;
 import io.camunda.zeebe.scheduler.AsyncClosable;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import java.util.List;
@@ -48,6 +49,28 @@ public interface ClusterConfigurationService extends AsyncClosable {
   }
 
   ClusterConfiguration getInitialClusterConfiguration();
+
+  /**
+   * Returns the current cluster configuration, including in-progress topology changes. Unlike
+   * {@link #getInitialClusterConfiguration()}, this reflects updates that occurred after startup
+   * (e.g., partitions in {@code JOINING} state during scale-up).
+   */
+  ClusterConfiguration getCurrentClusterConfiguration();
+
+  /**
+   * Returns the number of partitions assigned to the given member that are currently in the {@code
+   * JOINING} state.
+   */
+  default int getJoiningMemberPartitionCount(final MemberId memberId) {
+    final var config = getCurrentClusterConfiguration();
+    if (config == null || !config.hasMember(memberId)) {
+      return 0;
+    }
+    return (int)
+        config.getMember(memberId).partitions().values().stream()
+            .filter(p -> p.state() == State.JOINING)
+            .count();
+  }
 
   ClusterChangeExecutor getClusterChangeExecutor();
 

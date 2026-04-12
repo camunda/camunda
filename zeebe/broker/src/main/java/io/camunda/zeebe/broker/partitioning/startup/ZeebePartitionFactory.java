@@ -236,17 +236,26 @@ public final class ZeebePartitionFactory {
    * Determines the number of partitions this broker is responsible for. Attempts to get the actual
    * partition count from the cluster topology.
    */
-  private static int getPartitionsPerBroker(
+  static int getPartitionsPerBroker(
       final ClusterConfigurationService clusterConfigurationService, final MemberId localMemberId) {
     final long partitionCount =
         clusterConfigurationService.getMemberPartitions(localMemberId).size();
     if (partitionCount > 0) {
       return (int) partitionCount;
-    } else {
-      throw new IllegalStateException(
-          "Local broker with member id %s is not assigned to any partition in the topology."
-              .formatted(localMemberId));
     }
+
+    // Fall back to counting JOINING partitions — this happens during scale-up when a broker is
+    // being asked to join a partition for the first time, and the partition distribution does not
+    // include the partitions that are  in JOINING.
+    final int joiningPartitionCount =
+        clusterConfigurationService.getJoiningMemberPartitionCount(localMemberId);
+    if (joiningPartitionCount > 0) {
+      return joiningPartitionCount;
+    }
+
+    throw new IllegalStateException(
+        "Local broker with member id %s is not assigned to any partition in the topology."
+            .formatted(localMemberId));
   }
 
   private List<PartitionTransitionStep> generateTransitionSteps() {
