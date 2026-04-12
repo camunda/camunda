@@ -26,6 +26,7 @@ public class DynamicClusterConfigurationService implements ClusterConfigurationS
   private PartitionDistribution partitionDistribution;
 
   private volatile ClusterConfiguration initialClusterConfiguration;
+  private volatile ClusterConfiguration currentClusterConfiguration;
 
   private ClusterConfigurationManagerService clusterConfigurationManagerService;
   private final ClusterChangeExecutor clusterChangeExecutor;
@@ -75,6 +76,8 @@ public class DynamicClusterConfigurationService implements ClusterConfigurationS
           } else {
             clusterConfigurationManagerService.addUpdateListener(
                 brokerStartupContext.getBrokerClient().getTopologyManager());
+            clusterConfigurationManagerService.addUpdateListener(
+                config -> currentClusterConfiguration = config);
             clusterConfigurationManagerService
                 .getClusterTopology()
                 .onComplete(
@@ -88,6 +91,9 @@ public class DynamicClusterConfigurationService implements ClusterConfigurationS
                                   ConfigurationUtil.getPartitionDistributionFrom(
                                       configuration, PartitionManagerImpl.GROUP_NAME));
                           initialClusterConfiguration = configuration;
+                          if (currentClusterConfiguration == null) {
+                            currentClusterConfiguration = configuration;
+                          }
                           started.complete(null);
                         } catch (final Exception topologyConversionFailed) {
                           started.completeExceptionally(topologyConversionFailed);
@@ -123,6 +129,11 @@ public class DynamicClusterConfigurationService implements ClusterConfigurationS
   }
 
   @Override
+  public ClusterConfiguration getCurrentClusterConfiguration() {
+    return currentClusterConfiguration;
+  }
+
+  @Override
   public ClusterChangeExecutor getClusterChangeExecutor() {
     return clusterChangeExecutor;
   }
@@ -142,6 +153,7 @@ public class DynamicClusterConfigurationService implements ClusterConfigurationS
   @Override
   public ActorFuture<Void> closeAsync() {
     partitionDistribution = null;
+    currentClusterConfiguration = null;
     if (clusterConfigurationManagerService != null) {
       return clusterConfigurationManagerService.closeAsync();
     } else {
