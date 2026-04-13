@@ -46,9 +46,13 @@ public class BeanJobExceptionHandler extends JobExceptionHandlerImpl {
         DEFAULT_RETRIES_PROVIDER,
         ctx -> retryBackoff,
         DEFAULT_VARIABLES_PROVIDER,
-        failJobCommandStep2 ->
+        (commandStep, context) ->
             callbackCommandWrapperFactory
-                .create(failJobCommandStep2, 0, null, maxRetries)
+                .create(
+                    commandStep,
+                    context.getActivatedJob().getDeadline(),
+                    JobHandlerMetrics.counter(context.getActivatedJob()),
+                    maxRetries)
                 .executeAsync());
     this.maxRetries = maxRetries;
     this.retryBackoff = retryBackoff;
