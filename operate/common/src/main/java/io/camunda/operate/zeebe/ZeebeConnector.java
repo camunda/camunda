@@ -38,6 +38,9 @@ public class ZeebeConnector {
         ZeebeClient.newClientBuilder()
             .gatewayAddress(gatewayAddress)
             .defaultJobWorkerMaxJobsActive(JOB_WORKER_MAX_JOBS_ACTIVE);
+    if (zeebeProperties.getRequestTimeout() != null) {
+      builder.defaultRequestTimeout(zeebeProperties.getRequestTimeout());
+    }
     if (zeebeProperties.isSecure()) {
       builder.caCertificatePath(zeebeProperties.getCertificatePath());
       LOGGER.info("Use TLS connection to zeebe");

@@ -69,7 +69,6 @@ import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.common.document.DocumentField;
 import org.elasticsearch.index.query.*;
 import org.elasticsearch.search.SearchHit;
-import org.elasticsearch.search.SearchHits;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
 import org.elasticsearch.search.aggregations.Aggregations;
@@ -222,7 +221,7 @@ public class FlowNodeInstanceReader extends AbstractReader
     final List<Long> flowNodeInstanceKeys = new ArrayList<>();
     try {
       final SearchRequest searchRequest =
-          new SearchRequest(flowNodeInstanceTemplate.getAlias())
+          ElasticsearchUtil.createSearchRequest(flowNodeInstanceTemplate)
               .source(
                   new SearchSourceBuilder()
                       .query(
@@ -236,12 +235,20 @@ public class FlowNodeInstanceReader extends AbstractReader
                                           .map(Enum::name)
                                           .collect(Collectors.toList()))))
                       .fetchField(ID));
-      final SearchHits searchHits = tenantAwareClient.search(searchRequest).getHits();
-
-      for (final SearchHit searchHit : searchHits) {
-        final Map<String, DocumentField> documentFields = searchHit.getDocumentFields();
-        flowNodeInstanceKeys.add(Long.parseLong(documentFields.get(ID).getValue()));
-      }
+      tenantAwareClient.search(
+          searchRequest,
+          () -> {
+            ElasticsearchUtil.scroll(
+                searchRequest,
+                (hits) -> {
+                  for (final SearchHit searchHit : hits) {
+                    final Map<String, DocumentField> documentFields = searchHit.getDocumentFields();
+                    flowNodeInstanceKeys.add(Long.parseLong(documentFields.get(ID).getValue()));
+                  }
+                },
+                esClient);
+            return null;
+          });
     } catch (final IOException e) {
       throw new OperateRuntimeException(
           String.format("Could not retrieve flowNodeInstanceKey for flowNodeId %s ", flowNodeId),
