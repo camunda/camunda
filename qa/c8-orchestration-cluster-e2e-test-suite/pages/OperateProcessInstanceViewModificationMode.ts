@@ -151,7 +151,7 @@ export class OperateProcessInstanceViewModificationModePage {
         .locator(`[id="newVariables[${index}].value"]`),
       jsonEditorButton: this.page
         .getByTestId(`variable-newVariables[${index}]`)
-        .getByRole('button', {name: 'Open JSON editor'}),
+        .getByRole('button', {name: 'Open variable'}),
       deleteButton: this.page
         .getByTestId(`variable-newVariables[${index}]`)
         .getByRole('button', {name: 'Delete Variable'}),
@@ -189,7 +189,7 @@ export class OperateProcessInstanceViewModificationModePage {
         .getByTestId('edit-variable-value'),
       jsonEditorButton: this.page
         .getByTestId(`variable-${name}`)
-        .getByRole('button', {name: 'Open JSON editor'}),
+        .getByRole('button', {name: 'Open variable'}),
       jsonEditorModal: {
         header: this.page
           .getByRole('dialog')

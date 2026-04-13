@@ -114,6 +114,9 @@ class OperateProcessInstancePage {
       };
     };
   };
+  readonly openVariableButton: (variableName: string) => Locator;
+  readonly jsonEditorModalCopyButton: Locator;
+  readonly jsonEditorModalTitle: Locator;
 
   constructor(page: Page) {
     this.page = page;
@@ -321,29 +324,38 @@ class OperateProcessInstancePage {
         }),
         valueInputField:
           this.variableValueCellLocator(name).getByPlaceholder('Value'),
-        jsonEditorButton: this.variableValueCellLocator(name).getByRole(
+        jsonEditorButton: this.variableButtonsCellLocator(name).getByRole(
           'button',
-          {name: `Open JSON editor`},
+          {name: 'Open variable'},
         ),
         valueErrorMessage: this.variableValueCellLocator(name).locator(
           '[id="value-error-msg"]',
         ),
         jsonEditorModal: {
-          header: this.variableValueCellLocator(name)
-            .getByRole('dialog')
-            .getByRole('heading'),
-          cancelButton: this.variableValueCellLocator(name)
+          header: this.page.getByRole('dialog').getByRole('heading'),
+          cancelButton: this.page
             .getByRole('dialog')
             .getByRole('button', {name: 'Cancel'}),
-          applyButton: this.variableValueCellLocator(name)
+          applyButton: this.page
             .getByRole('dialog')
             .getByRole('button', {name: 'Apply'}),
-          inputField: this.variableValueCellLocator(name)
+          inputField: this.page
             .getByRole('dialog')
-            .getByRole('textbox'),
+            .getByRole('code')
+            .getByRole('textbox', {name: 'Editor content'}),
         },
       },
     });
+    this.openVariableButton = (variableName: string) =>
+      this.variableButtonsCellLocator(variableName).getByRole('button', {
+        name: 'Open variable',
+      });
+    this.jsonEditorModalCopyButton = this.page
+      .getByRole('dialog')
+      .getByRole('button', {name: /copy/i});
+    this.jsonEditorModalTitle = this.page
+      .getByRole('dialog')
+      .getByRole('heading');
     this.incidentErrorIndicators = page.getByTestId('incident-error-indicator');
     this.openButtonLast = page.locator('[aria-label="Open variable"]').last();
     this.openButtonFirst = page.locator('[aria-label="Open variable"]').first();
