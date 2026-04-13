@@ -57,6 +57,7 @@ const ViewFullVariableButtonShow: React.FC<ViewFullVariableButtonShowProps> = ({
           allowModeToggle={canEdit}
           onClose={() => setIsModalVisible(false)}
           onApply={(value) => {
+            form.reset({name: variableName, value: fullVariableValue});
             form.change(variableEditor.fieldName, value);
             if (shouldSubmitOnApply) {
               form.submit();
@@ -79,6 +80,7 @@ const ViewFullVariableButtonShow: React.FC<ViewFullVariableButtonShowProps> = ({
             });
           }}
           title={`Full value of ${variableName}`}
+          editModeTitle={`Edit Variable "${variableName}"`}
         />
       )}
     </>

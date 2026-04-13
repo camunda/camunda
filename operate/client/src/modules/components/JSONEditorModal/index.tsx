@@ -35,6 +35,7 @@ type Props = {
   onClose?: () => void;
   onApply?: (value: string | undefined) => void;
   title?: string;
+  editModeTitle?: string;
   readOnly?: boolean;
   allowModeToggle?: boolean;
 };
@@ -46,6 +47,7 @@ const JSONEditorModal: React.FC<Props> = observer(
     onClose,
     onApply,
     title,
+    editModeTitle,
     readOnly = false,
     allowModeToggle = false,
   }) => {
@@ -93,7 +95,7 @@ const JSONEditorModal: React.FC<Props> = observer(
     return (
       <Modal
         open={isVisible}
-        modalHeading={title}
+        modalHeading={isInEditMode && editModeTitle ? editModeTitle : title}
         onRequestClose={() => {
           onClose?.();
         }}

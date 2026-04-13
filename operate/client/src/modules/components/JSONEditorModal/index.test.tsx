@@ -183,6 +183,8 @@ describe('<JSONEditorModal />', () => {
   it('should switch from read-only to edit mode when edit button is clicked', async () => {
     const mockValue = '"i am a value"';
     const mockOnApply = vi.fn();
+    const mockTitle = 'View mode title';
+    const mockEditTitle = 'Edit mode title';
 
     const {user} = render(
       <JSONEditorModal
@@ -191,6 +193,8 @@ describe('<JSONEditorModal />', () => {
         allowModeToggle
         value={mockValue}
         onApply={mockOnApply}
+        title={mockTitle}
+        editModeTitle={mockEditTitle}
       />,
     );
 
@@ -198,6 +202,7 @@ describe('<JSONEditorModal />', () => {
     expect(
       screen.queryByRole('button', {name: /apply/i}),
     ).not.toBeInTheDocument();
+    expect(screen.getByRole('heading', {name: mockTitle})).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', {name: /^edit$/i}));
 
@@ -206,6 +211,13 @@ describe('<JSONEditorModal />', () => {
       screen.queryByRole('button', {name: /^edit$/i}),
     ).not.toBeInTheDocument();
     expect(screen.getByRole('button', {name: /^view$/i})).toBeInTheDocument();
+    expect(
+      screen.getByRole('heading', {name: mockEditTitle}),
+    ).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', {name: /^view$/i}));
+
+    expect(screen.getByRole('heading', {name: mockTitle})).toBeInTheDocument();
   });
 
   it('should switch back to view mode when view button is clicked', async () => {
