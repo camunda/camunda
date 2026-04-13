@@ -8,6 +8,7 @@
 package io.camunda.zeebe.broker.partitioning.topology;
 
 import static io.camunda.zeebe.broker.system.configuration.partitioning.Scheme.FIXED;
+import static io.camunda.zeebe.broker.system.configuration.partitioning.Scheme.REGION_AWARE;
 
 import io.atomix.cluster.MemberId;
 import io.atomix.primitive.partition.PartitionId;
@@ -46,7 +47,7 @@ public final class StaticConfigurationGenerator {
     final var replicationFactor = clusterCfg.getReplicationFactor();
 
     final var partitionDistributor = getPartitionDistributor(partitioningCfg);
-    final var clusterMembers = getRaftGroupMembers(clusterCfg);
+    final var clusterMembers = getRaftGroupMembers(clusterCfg, partitioningCfg);
     final var partitionIds = getSortedPartitionIds(partitionCount);
     final var partitionConfig = generatePartitionConfig(brokerCfg);
     final var clusterId = clusterCfg.getClusterId();
@@ -66,9 +67,12 @@ public final class StaticConfigurationGenerator {
   }
 
   private static PartitionDistributor buildPartitionDistributor(final PartitioningCfg config) {
-    return config.getScheme() == FIXED
-        ? buildFixedPartitionDistributor(config)
-        : new RoundRobinPartitionDistributor();
+    return switch (config.getScheme()) {
+      case FIXED -> buildFixedPartitionDistributor(config);
+      case REGION_AWARE -> throw new UnsupportedOperationException(
+          "RegionAwarePartitionDistributor is not yet implemented");
+      default -> new RoundRobinPartitionDistributor();
+    };
   }
 
   private static FixedPartitionDistributor buildFixedPartitionDistributor(
@@ -86,11 +90,32 @@ public final class StaticConfigurationGenerator {
     return distributionBuilder.build();
   }
 
-  private static Set<MemberId> getRaftGroupMembers(final ClusterCfg clusterCfg) {
+  private static Set<MemberId> getRaftGroupMembers(
+      final ClusterCfg clusterCfg, final PartitioningCfg partitioningCfg) {
+    if (partitioningCfg.getScheme() == REGION_AWARE) {
+      return getRegionAwareRaftGroupMembers(partitioningCfg);
+    }
+    // Legacy path: node ids are always 0 to clusterSize - 1
     final int clusterSize = clusterCfg.getClusterSize();
-    // node ids are always 0 to clusterSize - 1
     return IntStream.range(0, clusterSize)
         .mapToObj(nodeId -> MemberId.from(Integer.toString(nodeId)))
+        .collect(Collectors.toSet());
+  }
+
+  /**
+   * Generates composite {@link MemberId}s for all brokers in a region-aware cluster. The format is
+   * {@code "region-localNodeId"} (e.g. {@code "us-east1-0"}). Local node IDs are 0-indexed within
+   * each region, derived from the {@link
+   * io.camunda.zeebe.broker.system.configuration.partitioning.RegionAwareCfg} configuration in the
+   * same insertion order used by each broker to determine its own member ID.
+   */
+  private static Set<MemberId> getRegionAwareRaftGroupMembers(
+      final PartitioningCfg partitioningCfg) {
+    return partitioningCfg.getRegionAware().getRegions().entrySet().stream()
+        .flatMap(
+            e ->
+                IntStream.range(0, e.getValue().getNumberOfBrokers())
+                    .mapToObj(localId -> MemberId.from(e.getKey() + "-" + localId)))
         .collect(Collectors.toSet());
   }
 
