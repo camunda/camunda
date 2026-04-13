@@ -42,10 +42,10 @@ platform_values_stable := $(platform_values) -f values-stable.yaml
 all: install
 
 .PHONY: install
-install: install-storage create-credentials install-platform install-load-test install-elasticsearch-exporter
+install: install-storage create-credentials install-platform setup-authorizations install-load-test install-elasticsearch-exporter
 
 .PHONY: install-stable
-install-stable: install-storage create-credentials install-platform-stable install-load-test install-elasticsearch-exporter
+install-stable: install-storage create-credentials install-platform-stable setup-authorizations install-load-test install-elasticsearch-exporter
 
 # Install PostgreSQL database if secondary_storage is postgresql, or OpenSearch if secondary_storage is opensearch
 .PHONY: install-storage
@@ -71,6 +71,12 @@ endif
 create-credentials:
 	@echo "Creating camunda-credentials secret for namespace $(namespace)..."
 	./createCredsLoadTest.sh $(namespace)
+
+# Create Camunda authorizations for the orchestration client using the admin client
+.PHONY: setup-authorizations
+setup-authorizations:
+	@echo "Setting up Camunda authorizations for namespace $(namespace)..."
+	./setup-authorizations.sh $(namespace)
 
 # Install Elasticsearch Prometheus exporter if secondary_storage is elasticsearch
 .PHONY: install-elasticsearch-exporter
