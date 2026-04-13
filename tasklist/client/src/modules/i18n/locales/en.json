@@ -124,7 +124,7 @@
     "processesSubtitle": "Browse and run processes published by your organization.",
     "processesFetchFailed": "Processes could not be fetched",
     "processesStartFormNotFound": "Process does not exist or has no start form",
-    "processesProcessNoFormOrNotExistError": "Process {{bpmnProcessId}} does not exist or has no start form",
+    "processesProcessNoFormOrNotExistError": "Process {{processDefinitionKey}} does not exist or has no start form",
     "processesProcessNotFoundError": "We could not find any process with that name",
     "processesProcessNotPublishedError": "No published processes yet",
     "processesErrorBody": "Contact your process administrator to publish processes or learn how to publish processes ",

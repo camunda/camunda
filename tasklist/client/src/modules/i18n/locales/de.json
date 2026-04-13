@@ -124,7 +124,7 @@
     "processesSubtitle": "Durchsuchen und starten Sie Prozesse, die von Ihrer Organisation veröffentlicht wurden.",
     "processesFetchFailed": "Prozesse konnten nicht abgerufen werden",
     "processesStartFormNotFound": "Prozess existiert nicht oder hat kein Startformular",
-    "processesProcessNoFormOrNotExistError": "Prozess {{bpmnProcessId}} existiert nicht oder hat kein Startformular",
+    "processesProcessNoFormOrNotExistError": "Prozess {{processDefinitionKey}} existiert nicht oder hat kein Startformular",
     "processesProcessNotFoundError": "Wir konnten keinen Prozess mit diesem Namen finden",
     "processesProcessNotPublishedError": "Noch keine veröffentlichten Prozesse",
     "processesErrorBody": "Kontaktieren Sie Ihren Prozessadministrator, um Prozesse zu veröffentlichen oder lernen Sie, wie Sie Prozesse veröffentlichen ",

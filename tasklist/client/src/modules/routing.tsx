@@ -43,9 +43,10 @@ const pages = {
 
     return baseRoute;
   },
-  startProcessFromForm: '/new/:bpmnProcessId',
-  internalStartProcessFromForm(bpmnProcessId: string = ':bpmnProcessId') {
-    return `/processes/${bpmnProcessId}/start`;
+  internalStartProcessFromForm(
+    processDefinitionKey: string = ':processDefinitionKey',
+  ) {
+    return `/processes/${processDefinitionKey}/start`;
   },
 } as const;
 

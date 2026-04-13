@@ -373,7 +373,7 @@ describe('Processes', () => {
 
   it('should show a toast message when opened start form process does not exist', async () => {
     window.localStorage.setItem('hasConsentedToStartProcess', 'true');
-    const wrongBpmnProcessId = 'wrong-bpmn-process-id';
+    const wrongProcessDefinitionKey = 'wrong-bpmn-process-id';
     nodeMockServer.use(
       http.post('/v2/process-definitions/search', () => {
         return HttpResponse.json(
@@ -384,7 +384,7 @@ describe('Processes', () => {
 
     render(<Component />, {
       wrapper: getWrapper([
-        pages.internalStartProcessFromForm(wrongBpmnProcessId),
+        pages.internalStartProcessFromForm(wrongProcessDefinitionKey),
       ]),
     });
 
@@ -396,7 +396,7 @@ describe('Processes', () => {
       expect(mockedNotificationsStore.displayNotification).toBeCalledWith({
         isDismissable: false,
         kind: 'error',
-        title: `Process ${wrongBpmnProcessId} does not exist or has no start form`,
+        title: `Process ${wrongProcessDefinitionKey} does not exist or has no start form`,
       }),
     );
   });

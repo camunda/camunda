@@ -124,7 +124,7 @@
     "processesSubtitle": "Parcourez et exécutez les processus publiés par votre organisation.",
     "processesFetchFailed": "Les processus n'ont pas pu être récupérés",
     "processesStartFormNotFound": "Le processus n'existe pas ou n'a pas de formulaire de démarrage",
-    "processesProcessNoFormOrNotExistError": "Le processus {{bpmnProcessId}} n'existe pas ou n'a pas de formulaire de démarrage",
+    "processesProcessNoFormOrNotExistError": "Le processus {{processDefinitionKey}} n'existe pas ou n'a pas de formulaire de démarrage",
     "processesProcessNotFoundError": "Nous n'avons trouvé aucun processus avec ce nom",
     "processesProcessNotPublishedError": "Pas encore de processus publiés",
     "processesErrorBody": "Contactez votre administrateur de processus pour publier des processus ou apprendre à publier des processus ",

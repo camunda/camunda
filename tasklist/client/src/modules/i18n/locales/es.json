@@ -124,7 +124,7 @@
     "processesSubtitle": "Explorar y ejecutar procesos publicados por su organización.",
     "processesFetchFailed": "No se pudieron obtener los procesos",
     "processesStartFormNotFound": "El proceso no existe o no tiene un formulario de inicio",
-    "processesProcessNoFormOrNotExistError": "El proceso {{bpmnProcessId}} no existe o no tiene un formulario de inicio",
+    "processesProcessNoFormOrNotExistError": "El proceso {{processDefinitionKey}} no existe o no tiene un formulario de inicio",
     "processesProcessNotFoundError": "No pudimos encontrar ningún proceso con ese nombre",
     "processesProcessNotPublishedError": "No hay procesos publicados aún",
     "processesErrorBody": "Contacte a su administrador de procesos para publicar procesos o aprenda cómo publicar procesos ",

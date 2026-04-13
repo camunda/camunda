@@ -277,7 +277,7 @@ const ProcessesTab: React.FC = observer(() => {
           processDefinitionKey === null
             ? t('processesStartFormNotFound')
             : t('processesProcessNoFormOrNotExistError', {
-                bpmnProcessId: processDefinitionKey,
+                processDefinitionKey,
               }),
       });
       navigate({
