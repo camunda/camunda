@@ -1,46 +1,36 @@
 {
   "compilerOptions": {
-    "esModuleInterop": true,
-    "skipLibCheck": true,
+    /* Language and Environment */
     "target": "ES2022",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "skipLibCheck": true,
+    "jsx": "react-jsx",
     "allowJs": false,
-    "resolveJsonModule": true,
-    "moduleDetection": "force",
-    "isolatedModules": true,
-    "verbatimModuleSyntax": true,
+    "noEmit": true,
+    "plugins": [{"name": "typescript-plugin-css-modules"}],
 
-    "strict": true,
-    "noImplicitOverride": true,
-
+    /* Modules and Constraints */
     "module": "preserve",
     "moduleResolution": "Bundler",
-    "noEmit": true,
-
-    "lib": ["DOM", "DOM.Iterable", "ES2022"],
-    "alwaysStrict": true,
-
-    "allowSyntheticDefaultImports": true,
-    "forceConsistentCasingInFileNames": true,
-
-    "jsx": "react-jsx",
-    "strictNullChecks": true,
-    "noImplicitAny": true,
-    "noImplicitThis": true,
-    "strictBindCallApply": true,
-    "strictFunctionTypes": true,
-    "strictPropertyInitialization": true,
-    "noImplicitReturns": true,
-    "noFallthroughCasesInSwitch": true,
+    "moduleDetection": "force",
+    "verbatimModuleSyntax": true,
+    "isolatedModules": true,
+    "noUncheckedSideEffectImports": true,
+    "erasableSyntaxOnly": true,
+    "resolveJsonModule": true,
     "baseUrl": "src",
+    "types": ["vitest/globals"],
+
+    /* Type Checking */
+    "strict": true,
+    "noFallthroughCasesInSwitch": true,
+    "noImplicitOverride": true,
+    "noImplicitReturns": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
-    "useDefineForClassFields": true,
-    "types": ["vitest/globals"],
-    "plugins": [
-      {
-        "name": "typescript-plugin-css-modules"
-      }
-    ]
+    "noPropertyAccessFromIndexSignature": false,
+    "noUncheckedIndexedAccess": false,
+    "allowUnreachableCode": false,
   },
   "include": ["src", "./vite.config.ts"]
 }
