@@ -19,7 +19,7 @@ import {EventSchedule, UserAvatar} from '@carbon/react/icons';
 import {useTranslation} from 'react-i18next';
 import type {QueryUserTaskAuditLogsResponseBody} from '@camunda/camunda-api-zod-schemas/8.10';
 import {formatDate} from 'modules/dates/formatDate';
-import {getOperationTypeTranslationKey} from '../getOperationTypeTranslationKey';
+import {getOperationTypeTranslationKey} from 'pages/TaskDetailsHistoryView/getOperationTypeTranslationKey';
 import styles from './styles.module.scss';
 
 type AuditLogItem = QueryUserTaskAuditLogsResponseBody['items'][number];

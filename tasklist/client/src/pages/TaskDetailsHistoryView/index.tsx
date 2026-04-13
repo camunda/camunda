@@ -26,7 +26,7 @@ import {
 } from 'modules/api/useUserTaskAuditLogs.query';
 import {useSuspenseInfiniteQuery} from '@tanstack/react-query';
 import {SomethingWentWrong} from 'modules/error-handling/SomethingWentWrong';
-import {Forbidden} from 'modules/error-handling/Forbidden';
+import {Forbidden} from 'pages/Forbidden';
 import {useTranslation} from 'react-i18next';
 import {logger} from 'modules/utils/logger';
 import {requestErrorSchema} from 'modules/api/request';

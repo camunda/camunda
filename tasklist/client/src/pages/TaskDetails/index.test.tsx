@@ -7,7 +7,7 @@
  */
 
 import {Component} from './index';
-import {Component as LayoutComponent} from 'modules/TaskDetailsLayout';
+import {Component as LayoutComponent} from 'pages/TaskDetailsLayout';
 import {MemoryRouter, Route, Routes} from 'react-router-dom';
 import {
   render,

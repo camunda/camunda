@@ -11,7 +11,7 @@ import {Component, loader, ErrorBoundary} from './index';
 import {
   Component as AuditLogDetailsComponent,
   loader as auditLogDetailsLoader,
-} from './HistoryItemDetailsModal';
+} from 'pages/HistoryItemDetailsModal';
 import {render, screen, within, waitFor} from 'modules/testing/testing-library';
 import {http, HttpResponse} from 'msw';
 import {nodeMockServer} from 'modules/testing/nodeMockServer';

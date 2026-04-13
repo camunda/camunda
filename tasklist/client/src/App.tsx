@@ -29,7 +29,7 @@ import {
 } from 'modules/error-handling/errorBoundaries';
 import {tracking} from 'modules/tracking';
 import {getClientConfig} from 'modules/config/getClientConfig';
-import {Forbidden} from 'modules/error-handling/Forbidden';
+import {Forbidden} from 'pages/Forbidden';
 
 const Wrapper: React.FC = () => {
   return (
@@ -44,49 +44,47 @@ const Wrapper: React.FC = () => {
 const router = createBrowserRouter(
   createRoutesFromElements(
     <Route path="/" element={<Wrapper />} ErrorBoundary={ErrorWithinLayout}>
-      <Route path="login" lazy={() => import('modules/auth/Login')} />
+      <Route path="login" lazy={() => import('pages/Login')} />
       <Route
         path="new/:bpmnProcessId"
-        lazy={() => import('./modules/StartProcessFromForm')}
+        lazy={() => import('./pages/StartProcessFromForm')}
       />
-      <Route path="/" lazy={() => import('./modules/components/Layout')}>
+      <Route path="/" lazy={() => import('./pages/Layout')}>
         <Route path="forbidden" element={<Forbidden />} />
         <Route path="processes" ErrorBoundary={ErrorWithinLayout}>
-          <Route index lazy={() => import('./modules/ProcessesTab')} />
+          <Route index lazy={() => import('./pages/ProcessesTab')} />
           <Route
             path=":processDefinitionKey/start"
-            lazy={() => import('./modules/ProcessesTab')}
+            lazy={() => import('./pages/ProcessesTab')}
           />
         </Route>
         <Route
           path="/"
-          lazy={() => import('./modules/TasksTab')}
+          lazy={() => import('./pages/TasksTab')}
           ErrorBoundary={ErrorWithinLayout}
         >
           <Route
             index
-            lazy={() => import('./modules/tasks/EmptyPage')}
+            lazy={() => import('./pages/NoTaskSelected')}
             ErrorBoundary={ErrorWithinLayout}
           />
           <Route
             path=":id"
-            lazy={() => import('./modules/TaskDetailsLayout')}
+            lazy={() => import('./pages/TaskDetailsLayout')}
             ErrorBoundary={ErrorWithinLayout}
           >
-            <Route index lazy={() => import('./modules/TaskDetails')} />
+            <Route index lazy={() => import('./pages/TaskDetails')} />
             <Route
               path="process"
-              lazy={() => import('./modules/TaskDetailsProcessView')}
+              lazy={() => import('./pages/TaskDetailsProcessView')}
             />
             <Route
               path="history"
-              lazy={() => import('./modules/TaskDetailsHistoryView')}
+              lazy={() => import('./pages/TaskDetailsHistoryView')}
             >
               <Route
                 path=":auditLogKey"
-                lazy={() =>
-                  import('./modules/TaskDetailsHistoryView/HistoryItemDetailsModal')
-                }
+                lazy={() => import('./pages/HistoryItemDetailsModal')}
               />
             </Route>
           </Route>

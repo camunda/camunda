@@ -18,7 +18,7 @@ import {useTaskFilters} from 'modules/features/tasks/filters/useTaskFilters';
 import {useTasks} from 'modules/api/useTasks.query';
 import {useAutoSelectNextTask} from 'modules/tasks/next-task/useAutoSelectNextTask';
 import {autoSelectNextTaskStore} from 'modules/tasks/next-task/autoSelectFirstTask';
-import type {OutletContext} from 'modules/TaskDetailsLayout';
+import type {OutletContext} from 'pages/TaskDetailsLayout';
 import {Variables} from './Variables';
 import {FormJS} from './FormJS';
 import {useUploadDocuments} from 'modules/api/useUploadDocuments.mutation';

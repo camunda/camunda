@@ -37,7 +37,7 @@ const getWrapper = () => {
   return Wrapper;
 };
 
-describe('<EmptyPage />', () => {
+describe('<NoTaskSelected />', () => {
   afterEach(() => {
     clearStateLocally('hasCompletedTask');
   });

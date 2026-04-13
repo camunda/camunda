@@ -18,7 +18,7 @@ import styles from './styles.module.scss';
 import {useTasks} from 'modules/api/useTasks.query';
 import {useTaskFilters} from 'modules/features/tasks/filters/useTaskFilters';
 
-const EmptyPage: React.FC = () => {
+const NoTaskSelected: React.FC = () => {
   const {isPending, data} = useTasks(useTaskFilters());
   const tasks = data?.pages.flat() ?? [];
   const hasNoTasks = tasks.length === 0;
@@ -107,6 +107,6 @@ const EmptyPage: React.FC = () => {
   );
 };
 
-EmptyPage.displayName = 'EmptyPage';
+NoTaskSelected.displayName = 'NoTaskSelected';
 
-export {EmptyPage as Component};
+export {NoTaskSelected as Component};

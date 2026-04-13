@@ -31,7 +31,7 @@ import {FailedVariableFetchError} from 'modules/tasks/details/FailedVariableFetc
 import {CompleteTaskButton} from 'modules/tasks/details/CompleteTaskButton';
 import {createVariableFieldName} from 'modules/tasks/variables-editor/createVariableFieldName';
 import {getVariableFieldName} from 'modules/tasks/variables-editor/getVariableFieldName';
-import {VariableEditor} from 'modules/TaskDetails/Variables/VariableEditor';
+import {VariableEditor} from './VariableEditor';
 import {IconButton} from 'modules/tasks/variables-editor/IconButton';
 import {ResetForm} from 'modules/tasks/variables-editor/ResetForm';
 import type {FormValues} from 'modules/tasks/variables-editor/types';
