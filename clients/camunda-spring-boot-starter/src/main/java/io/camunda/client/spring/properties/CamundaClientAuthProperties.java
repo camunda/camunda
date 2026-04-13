@@ -96,6 +96,14 @@ public class CamundaClientAuthProperties {
   /** The data read timeout for requests to the OAuth credentials provider. */
   private Duration readTimeout = DEFAULT_READ_TIMEOUT;
 
+  /**
+   * The lead time before actual token expiry at which a background refresh is triggered. The token
+   * is still considered valid inside this window; this is a policy knob for how early refresh kicks
+   * in so callers don't have to block on a synchronous refresh at the cliff edge. Must be strictly
+   * larger than the internal expiry grace period.
+   */
+  private Duration proactiveTokenRefreshThreshold = DEFAULT_PROACTIVE_TOKEN_REFRESH_THRESHOLD;
+
   @NestedConfigurationProperty
   private CamundaClientAuthClientAssertionProperties clientAssertion =
       new CamundaClientAuthClientAssertionProperties();
@@ -138,6 +146,14 @@ public class CamundaClientAuthProperties {
 
   public void setReadTimeout(final Duration readTimeout) {
     this.readTimeout = readTimeout;
+  }
+
+  public Duration getProactiveTokenRefreshThreshold() {
+    return proactiveTokenRefreshThreshold;
+  }
+
+  public void setProactiveTokenRefreshThreshold(final Duration proactiveTokenRefreshThreshold) {
+    this.proactiveTokenRefreshThreshold = proactiveTokenRefreshThreshold;
   }
 
   public String getCredentialsCachePath() {
@@ -295,6 +311,10 @@ public class CamundaClientAuthProperties {
         + connectTimeout
         + ", readTimeout="
         + readTimeout
+        + ", proactiveTokenRefreshThreshold="
+        + proactiveTokenRefreshThreshold
+        + ", clientAssertion="
+        + clientAssertion
         + '}';
   }
 
