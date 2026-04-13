@@ -15,8 +15,9 @@ import { options } from "src/utility/components/editor/options.ts";
 import useTranslate from "src/utility/localization";
 import { Copy, Edit } from "@carbon/react/icons";
 import Flex from "src/components/layout/Flex.tsx";
-import { spacing03, supportError } from "@carbon/elements";
+import { spacing03 } from "@carbon/elements";
 import { useNotifications } from "src/components/notifications";
+import { themeStore } from "src/common/theme/theme.ts";
 
 type EditorFirstParam = Parameters<
   NonNullable<ComponentProps<typeof JSONEditor>["onMount"]>
@@ -45,6 +46,7 @@ const JSONEditor: FC<JSONEditorProps> = observer(
       <Editor
         options={{ ...options, readOnly }}
         language="json"
+        theme={themeStore.actualTheme === "dark" ? "vs-dark" : "light"}
         value={value}
         height="32vh"
         width="100%"
@@ -138,7 +140,9 @@ const JSONEditorField: FC<JSONEditorFieldProps> = ({
         >
           <FormLabel>{label}</FormLabel>
           {errors?.length > 0 && (
-            <FormLabel style={{ color: supportError }}>{errors}</FormLabel>
+            <FormLabel style={{ color: "var(--cds-support-error)" }}>
+              {errors}
+            </FormLabel>
           )}
         </Flex>
         <Flex spacing="small" style={{ alignSelf: "end" }}>

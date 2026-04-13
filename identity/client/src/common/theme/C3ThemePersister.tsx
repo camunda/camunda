@@ -6,8 +6,18 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import styled from "styled-components";
+import { useC3Profile } from "@camunda/camunda-composite-components";
+import { themeStore } from "src/common/theme/theme";
+import { useEffect } from "react";
 
-export const Description = styled.p`
-  color: var(--cds-text-secondary);
-`;
+const C3ThemePersister: React.FC = () => {
+  const { theme } = useC3Profile();
+
+  useEffect(() => {
+    themeStore.changeTheme(theme);
+  }, [theme]);
+
+  return null;
+};
+
+export { C3ThemePersister };
