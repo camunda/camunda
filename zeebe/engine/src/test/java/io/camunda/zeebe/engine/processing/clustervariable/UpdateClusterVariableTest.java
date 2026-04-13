@@ -181,6 +181,27 @@ public final class UpdateClusterVariableTest {
   }
 
   @Test
+  public void updateTenantScopedClusterVariableWithInvalidTenant() {
+    // when
+    final var record =
+        ENGINE_RULE
+            .clusterVariables()
+            .withName("KEY_INVALID_TENANT")
+            .setTenantScope()
+            .withTenantId("invalid-tenant-id")
+            .withValue("\"UPDATED_VALUE\"")
+            .expectRejection()
+            .update();
+
+    // then
+    Assertions.assertThat(record)
+        .hasIntent(ClusterVariableIntent.UPDATE)
+        .hasRejectionType(RejectionType.NOT_FOUND)
+        .hasRejectionReason(
+            "Expected to create cluster variable for tenant with ID 'invalid-tenant-id', but no tenant with this ID exists.");
+  }
+
+  @Test
   public void updateNonExistingTenantScopedClusterVariable() {
     // when
     final var record =
