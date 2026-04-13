@@ -44,15 +44,34 @@ abstract class AbstractArchiverRepositoryTest {
   @MethodSource("archiveBatchSuppliers")
   void shouldReturnFailedFutureWhenGetNextBatchFails(
       final Function<ArchiverRepository, CompletableFuture<?>> archiveBatchSupplier) {
+    // given
+    givenSearchRequestsFail();
+
     // when
     final var result = archiveBatchSupplier.apply(repository);
 
-    // then fails when it tries to access ES/OS, since there is no backing database
+    // then fails when it tries to access ES/OS
     assertThat(result)
         .as("Should return a future that completes exceptionally, not throw synchronously")
         .failsWithin(Duration.ofSeconds(5))
         .withThrowableOfType(ExecutionException.class)
         .withRootCauseInstanceOf(ConnectException.class);
+  }
+
+  @ParameterizedTest
+  @MethodSource("archiveBatchSuppliers")
+  void shouldReturnEmptyBatchWhenNoResultsFound(
+      final Function<ArchiverRepository, CompletableFuture<?>> archiveBatchSupplier) {
+    // given
+    givenNoSearchResultsFound();
+
+    // when
+    final var result = archiveBatchSupplier.apply(repository);
+
+    // then fails when it tries to access ES/OS, since there is no backing database
+    assertThat(result)
+        .as("Should return a future that completes successfully with an empty batch")
+        .succeedsWithin(Duration.ofSeconds(5));
   }
 
   static Stream<Named<Function<ArchiverRepository, CompletableFuture<?>>>> archiveBatchSuppliers() {
@@ -71,6 +90,7 @@ abstract class AbstractArchiverRepositoryTest {
   @Test
   void shouldNotSetLifecycleIfRetentionIsDisabled() {
     // given
+    givenSearchRequestsFail();
     retention.setEnabled(false);
 
     // when
@@ -81,6 +101,10 @@ abstract class AbstractArchiverRepositoryTest {
         .as("did not try connecting to non existent ES/OS")
         .succeedsWithin(Duration.ofSeconds(5));
   }
+
+  abstract void givenSearchRequestsFail();
+
+  abstract void givenNoSearchResultsFound();
 
   abstract ArchiverRepository createRepository();
 }

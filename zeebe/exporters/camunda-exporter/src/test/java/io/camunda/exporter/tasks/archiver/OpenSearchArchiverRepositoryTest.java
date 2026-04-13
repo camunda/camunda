@@ -23,17 +23,16 @@ import io.camunda.webapps.schema.entities.listview.ProcessInstanceForListViewEnt
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import jakarta.json.Json;
 import java.io.IOException;
-import java.net.URISyntaxException;
+import java.net.ConnectException;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
-import org.apache.hc.core5.http.HttpHost;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
 import org.opensearch.client.json.JsonData;
-import org.opensearch.client.json.jackson.JacksonJsonpMapper;
 import org.opensearch.client.opensearch.OpenSearchAsyncClient;
 import org.opensearch.client.opensearch.core.SearchRequest;
 import org.opensearch.client.opensearch.core.SearchResponse;
@@ -43,7 +42,6 @@ import org.opensearch.client.opensearch.generic.OpenSearchGenericClient;
 import org.opensearch.client.opensearch.indices.GetIndexResponse;
 import org.opensearch.client.opensearch.indices.OpenSearchIndicesAsyncClient;
 import org.opensearch.client.transport.OpenSearchTransport;
-import org.opensearch.client.transport.httpclient5.ApacheHttpClient5TransportBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -51,20 +49,45 @@ final class OpenSearchArchiverRepositoryTest extends AbstractArchiverRepositoryT
   private static final Logger LOGGER =
       LoggerFactory.getLogger(OpenSearchArchiverRepositoryTest.class);
 
-  private final OpenSearchTransport transport = Mockito.spy(createOpenSearchTransport());
+  private final OpenSearchTransport transport = mock(OpenSearchTransport.class);
+  private final OpenSearchAsyncClient client = mock(OpenSearchAsyncClient.class);
 
-  @Test
-  void shouldCloseTransportOnClose() throws Exception {
-    // when
-    repository.close();
+  @Override
+  @BeforeEach
+  void setup() {
+    super.setup();
+    when(client._transport()).thenReturn(transport);
+  }
 
-    // then
-    Mockito.verify(transport, Mockito.times(1)).close();
+  @Override
+  void givenSearchRequestsFail() {
+    try {
+      when(client.search(any(SearchRequest.class), any()))
+          .thenReturn(CompletableFuture.failedFuture(new ConnectException("Connection failed")));
+    } catch (final IOException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  @Override
+  void givenNoSearchResultsFound() {
+    try {
+      final var response =
+          new SearchResponse.Builder<>()
+              .took(1)
+              .timedOut(false)
+              .shards(s -> s.total(1).successful(1).failed(0))
+              .hits(h -> h.total(t -> t.value(0).relation(TotalHitsRelation.Eq)).hits(List.of()))
+              .build();
+      when(client.search(any(SearchRequest.class), any()))
+          .thenReturn(CompletableFuture.completedFuture(response));
+    } catch (final IOException e) {
+      throw new RuntimeException(e);
+    }
   }
 
   @Override
   OpenSearchArchiverRepository createRepository() {
-    final var client = new OpenSearchAsyncClient(transport);
     final var metrics = new CamundaExporterMetrics(new SimpleMeterRegistry());
     final var config = new HistoryConfiguration();
     config.setRetention(retention);
@@ -78,6 +101,15 @@ final class OpenSearchArchiverRepositoryTest extends AbstractArchiverRepositoryT
         Runnable::run,
         metrics,
         LOGGER);
+  }
+
+  @Test
+  void shouldCloseTransportOnClose() throws Exception {
+    // when
+    repository.close();
+
+    // then
+    Mockito.verify(transport, Mockito.times(1)).close();
   }
 
   @Test
@@ -127,7 +159,6 @@ final class OpenSearchArchiverRepositoryTest extends AbstractArchiverRepositoryT
     // given
     final var config = new HistoryConfiguration();
     config.setProcessInstanceRetentionMode(ProcessInstanceRetentionMode.PI_HIERARCHY);
-    final var client = mock(OpenSearchAsyncClient.class);
     final var repository = createRepository(client, config);
     final var hit1 = createHit("1", "2024-01-01", null); // Legacy
     final var hit2 = createHit("2", "2024-01-01", 100L); // Root
@@ -149,7 +180,6 @@ final class OpenSearchArchiverRepositoryTest extends AbstractArchiverRepositoryT
     // given
     final var config = new HistoryConfiguration();
     config.setProcessInstanceRetentionMode(ProcessInstanceRetentionMode.PI_HIERARCHY_IGNORE_LEGACY);
-    final var client = mock(OpenSearchAsyncClient.class);
     final var repository = createRepository(client, config);
 
     final var hit1 = createHit("1", "2024-01-01", null);
@@ -165,21 +195,6 @@ final class OpenSearchArchiverRepositoryTest extends AbstractArchiverRepositoryT
     // then - purely based on mapping logic which splits by root key presence
     assertThat(batch.processInstanceKeys()).containsExactly(1L);
     assertThat(batch.rootProcessInstanceKeys()).containsExactly(100L);
-  }
-
-  private OpenSearchTransport createOpenSearchTransport() {
-    try {
-      return ApacheHttpClient5TransportBuilder.builder(HttpHost.create("http://127.0.0.1:1"))
-          .setHttpClientConfigCallback(
-              httpClientBuilder -> {
-                httpClientBuilder.disableContentCompression();
-                return httpClientBuilder;
-              })
-          .setMapper(new JacksonJsonpMapper())
-          .build();
-    } catch (final URISyntaxException e) {
-      throw new RuntimeException(e);
-    }
   }
 
   private OpenSearchArchiverRepository createRepository(
