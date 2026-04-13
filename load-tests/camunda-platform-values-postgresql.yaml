@@ -43,11 +43,11 @@ postgresqlSharedPreloadLibraries: pg_stat_statements
 primary:
   resources:
     requests:
-      memory: 4Gi
+      memory: 8Gi
       cpu: 3000m
     limits:
       cpu: 3000m
-      memory: 6Gi
+      memory: 12Gi
 
   nodeSelector:
     component: benchmark-n2-standard-4
@@ -60,12 +60,12 @@ primary:
       effect: NoSchedule
 
   persistence:
-    size: 128Gi
-    storageClass: "ssd"
+    size: 512Gi
+    storageClass: "benchmark-ssd-zonal-v1"
 
   extendedConfiguration: |-
     # WAL Performance Tuning
-    wal_buffers = 64MB
+    wal_buffers = 128MB
     max_wal_size = 4GB
     min_wal_size = 1GB
     checkpoint_timeout = 20min
@@ -75,9 +75,9 @@ primary:
 
     # Memory Settings
     shared_buffers = 2GB
-    effective_cache_size = 4500MB
+    effective_cache_size = 7GB
     work_mem = 32MB
-    maintenance_work_mem = 512MB
+    maintenance_work_mem = 1GB
 
     # Autovacuum - Aggressive for high UPDATE/DELETE volume
     autovacuum_max_workers = 6
