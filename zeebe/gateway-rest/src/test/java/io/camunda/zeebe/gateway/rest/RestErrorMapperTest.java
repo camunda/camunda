@@ -18,6 +18,9 @@ import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
 
 public class RestErrorMapperTest {
 
@@ -113,6 +116,70 @@ public class RestErrorMapperTest {
         .isEqualTo(HttpStatus.BAD_REQUEST);
     assertThat(RestErrorMapper.mapStatus(Status.DEADLINE_EXCEEDED))
         .isEqualTo(HttpStatus.GATEWAY_TIMEOUT);
+  }
+
+  @Test
+  void shouldMapAuthenticationExceptionToUnauthorizedProblemDetail() {
+    // given
+    final Throwable error = new BadCredentialsException("Invalid credentials");
+
+    // when
+    final ProblemDetail pd = RestErrorMapper.mapErrorToProblem(error);
+
+    // then
+    assertThat(pd).isNotNull();
+    assertThat(pd.getStatus()).isEqualTo(HttpStatus.UNAUTHORIZED.value());
+    assertThat(pd.getDetail()).isEqualTo("Invalid credentials");
+    assertThat(pd.getTitle()).isEqualTo(HttpStatus.UNAUTHORIZED.name());
+  }
+
+  @Test
+  void shouldMapOAuth2AuthenticationExceptionToUnauthorizedProblemDetail() {
+    // given
+    final Throwable error =
+        new OAuth2AuthenticationException(
+            new org.springframework.security.oauth2.core.OAuth2Error("invalid_token"),
+            "The access token is invalid");
+
+    // when
+    final ProblemDetail pd = RestErrorMapper.mapErrorToProblem(error);
+
+    // then
+    assertThat(pd).isNotNull();
+    assertThat(pd.getStatus()).isEqualTo(HttpStatus.UNAUTHORIZED.value());
+    assertThat(pd.getDetail()).isEqualTo("The access token is invalid");
+    assertThat(pd.getTitle()).isEqualTo(HttpStatus.UNAUTHORIZED.name());
+  }
+
+  @Test
+  void shouldMapWrappedAuthenticationExceptionToUnauthorizedProblemDetail() {
+    // given
+    final Throwable error =
+        new CompletionException(new BadCredentialsException("Wrapped auth error"));
+
+    // when
+    final ProblemDetail pd = RestErrorMapper.mapErrorToProblem(error);
+
+    // then
+    assertThat(pd).isNotNull();
+    assertThat(pd.getStatus()).isEqualTo(HttpStatus.UNAUTHORIZED.value());
+    assertThat(pd.getDetail()).isEqualTo("Wrapped auth error");
+    assertThat(pd.getTitle()).isEqualTo(HttpStatus.UNAUTHORIZED.name());
+  }
+
+  @Test
+  void shouldMapAccessDeniedExceptionToForbiddenProblemDetail() {
+    // given
+    final Throwable error = new AccessDeniedException("Access denied");
+
+    // when
+    final ProblemDetail pd = RestErrorMapper.mapErrorToProblem(error);
+
+    // then
+    assertThat(pd).isNotNull();
+    assertThat(pd.getStatus()).isEqualTo(HttpStatus.FORBIDDEN.value());
+    assertThat(pd.getDetail()).isEqualTo("Access denied");
+    assertThat(pd.getTitle()).isEqualTo(HttpStatus.FORBIDDEN.name());
   }
 
   // Sample custom ServiceException for testing
