@@ -10,7 +10,7 @@ import {lazy, Suspense, useEffect, useRef, useState} from 'react';
 import {observer} from 'mobx-react';
 import {beautifyJSON} from 'modules/utils/editor/beautifyJSON';
 import {Button, Modal} from '@carbon/react';
-import {Edit} from '@carbon/react/icons';
+import {Edit, View} from '@carbon/react/icons';
 import {Toolbar} from './styled';
 import {CopyButton} from '../CopyButton';
 
@@ -36,10 +36,19 @@ type Props = {
   onApply?: (value: string | undefined) => void;
   title?: string;
   readOnly?: boolean;
+  allowModeToggle?: boolean;
 };
 
 const JSONEditorModal: React.FC<Props> = observer(
-  ({value, isVisible, onClose, onApply, title, readOnly = false}) => {
+  ({
+    value,
+    isVisible,
+    onClose,
+    onApply,
+    title,
+    readOnly = false,
+    allowModeToggle = false,
+  }) => {
     const [editedValue, setEditedValue] = useState(value);
     const [isValid, setIsValid] = useState(true);
     const [isInEditMode, setIsInEditMode] = useState(!readOnly);
@@ -69,7 +78,17 @@ const JSONEditorModal: React.FC<Props> = observer(
     }
 
     const isReadOnly = readOnly && !isInEditMode;
-    const canSwitchToEdit = readOnly && !isInEditMode && onApply !== undefined;
+    const canToggleMode = readOnly && allowModeToggle;
+
+    const toggleEditMode = () => {
+      if (!isInEditMode) {
+        setIsInEditMode(true);
+        return;
+      }
+
+      setIsInEditMode(false);
+      setEditedValue(beautifyJSON(value));
+    };
 
     return (
       <Modal
@@ -92,15 +111,16 @@ const JSONEditorModal: React.FC<Props> = observer(
         preventCloseOnClickOutside
       >
         <Toolbar>
-          {canSwitchToEdit && (
+          {canToggleMode && (
             <Button
               kind="ghost"
               size="sm"
-              renderIcon={Edit}
-              iconDescription="Edit"
-              hasIconOnly
-              onClick={() => setIsInEditMode(true)}
-            />
+              renderIcon={!isInEditMode ? Edit : View}
+              iconDescription={`Switch to ${!isInEditMode ? 'edit' : 'view'} mode}`}
+              onClick={toggleEditMode}
+            >
+              {!isInEditMode ? 'Edit' : 'View'}
+            </Button>
           )}
           <CopyButton value={editedValue} />
         </Toolbar>

@@ -149,7 +149,7 @@ describe('<JSONEditorModal />', () => {
     ).toBeInTheDocument();
   });
 
-  it('should not show edit button in read-only mode when onApply is not provided', () => {
+  it('should not show mode toggle button when allowModeToggle is not set', () => {
     const mockValue = '"i am a value"';
 
     render(<JSONEditorModal isVisible readOnly value={mockValue} />);
@@ -159,7 +159,7 @@ describe('<JSONEditorModal />', () => {
     ).not.toBeInTheDocument();
   });
 
-  it('should show edit button in read-only mode when onApply is provided', async () => {
+  it('should show edit button in read-only mode when allowModeToggle is set', async () => {
     const mockValue = '"i am a value"';
     const mockOnApply = vi.fn();
 
@@ -167,6 +167,7 @@ describe('<JSONEditorModal />', () => {
       <JSONEditorModal
         isVisible
         readOnly
+        allowModeToggle
         value={mockValue}
         onApply={mockOnApply}
       />,
@@ -176,7 +177,7 @@ describe('<JSONEditorModal />', () => {
     expect(
       screen.queryByRole('button', {name: /apply/i}),
     ).not.toBeInTheDocument();
-    expect(screen.getByRole('button', {name: /edit/i})).toBeInTheDocument();
+    expect(screen.getByRole('button', {name: /^edit$/i})).toBeInTheDocument();
   });
 
   it('should switch from read-only to edit mode when edit button is clicked', async () => {
@@ -187,6 +188,7 @@ describe('<JSONEditorModal />', () => {
       <JSONEditorModal
         isVisible
         readOnly
+        allowModeToggle
         value={mockValue}
         onApply={mockOnApply}
       />,
@@ -197,11 +199,42 @@ describe('<JSONEditorModal />', () => {
       screen.queryByRole('button', {name: /apply/i}),
     ).not.toBeInTheDocument();
 
-    await user.click(screen.getByRole('button', {name: /edit/i}));
+    await user.click(screen.getByRole('button', {name: /^edit$/i}));
 
     expect(screen.getByRole('button', {name: /apply/i})).toBeInTheDocument();
     expect(
-      screen.queryByRole('button', {name: /edit/i}),
+      screen.queryByRole('button', {name: /^edit$/i}),
+    ).not.toBeInTheDocument();
+    expect(screen.getByRole('button', {name: /^view$/i})).toBeInTheDocument();
+  });
+
+  it('should switch back to view mode when view button is clicked', async () => {
+    const mockValue = '"i am a value"';
+    const mockOnApply = vi.fn();
+
+    const {user} = render(
+      <JSONEditorModal
+        isVisible
+        readOnly
+        allowModeToggle
+        value={mockValue}
+        onApply={mockOnApply}
+      />,
+    );
+
+    expect(await screen.findByDisplayValue(mockValue)).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', {name: /^edit$/i}));
+    expect(screen.getByRole('button', {name: /apply/i})).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', {name: /^view$/i}));
+
+    expect(
+      screen.queryByRole('button', {name: /apply/i}),
+    ).not.toBeInTheDocument();
+    expect(screen.getByRole('button', {name: /^edit$/i})).toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', {name: /^view$/i}),
     ).not.toBeInTheDocument();
   });
 
@@ -214,6 +247,7 @@ describe('<JSONEditorModal />', () => {
       <JSONEditorModal
         isVisible
         readOnly
+        allowModeToggle
         value={mockValue}
         onApply={mockOnApply}
         onClose={mockOnClose}
@@ -222,7 +256,7 @@ describe('<JSONEditorModal />', () => {
 
     expect(await screen.findByDisplayValue(mockValue)).toBeInTheDocument();
 
-    await user.click(screen.getByRole('button', {name: /edit/i}));
+    await user.click(screen.getByRole('button', {name: /^edit$/i}));
     expect(screen.getByRole('button', {name: /apply/i})).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', {name: /close/i}));
@@ -232,6 +266,7 @@ describe('<JSONEditorModal />', () => {
       <JSONEditorModal
         isVisible={false}
         readOnly
+        allowModeToggle
         value={mockValue}
         onApply={mockOnApply}
         onClose={mockOnClose}
@@ -242,6 +277,7 @@ describe('<JSONEditorModal />', () => {
       <JSONEditorModal
         isVisible
         readOnly
+        allowModeToggle
         value={mockValue}
         onApply={mockOnApply}
         onClose={mockOnClose}
@@ -252,6 +288,6 @@ describe('<JSONEditorModal />', () => {
     expect(
       screen.queryByRole('button', {name: /apply/i}),
     ).not.toBeInTheDocument();
-    expect(screen.getByRole('button', {name: /edit/i})).toBeInTheDocument();
+    expect(screen.getByRole('button', {name: /^edit$/i})).toBeInTheDocument();
   });
 });

@@ -90,6 +90,10 @@ const VariablesTable: React.FC<Props> = ({
                           variableName={name}
                           variableValue={value}
                           buttonLabel="Show all"
+                          canEdit={
+                            !isModificationModeEnabled &&
+                            !!isProcessInstanceRunning
+                          }
                         />
                       )
                     : undefined
@@ -106,6 +110,9 @@ const VariablesTable: React.FC<Props> = ({
                   variableKey={variableKey}
                   variableValue={value}
                   mode={isEditMode(name) ? 'edit' : 'show'}
+                  canEdit={
+                    !isModificationModeEnabled && !!isProcessInstanceRunning
+                  }
                 />
                 {(() => {
                   if (isModificationModeEnabled || !isProcessInstanceRunning) {

@@ -23,6 +23,7 @@ const ViewFullVariableButtonShow: React.FC<ViewFullVariableButtonShowProps> = ({
   buttonLabel,
   variableValue,
   shouldSubmitOnApply,
+  canEdit = false,
 }) => {
   const [isModalVisible, setIsModalVisible] = useState(false);
   const {data, isLoading} = useVariable(variableKey, {
@@ -53,6 +54,7 @@ const ViewFullVariableButtonShow: React.FC<ViewFullVariableButtonShowProps> = ({
           value={fullVariableValue}
           isVisible={isModalVisible}
           readOnly
+          allowModeToggle={canEdit}
           onClose={() => setIsModalVisible(false)}
           onApply={(value) => {
             form.change(variableEditor.fieldName, value);

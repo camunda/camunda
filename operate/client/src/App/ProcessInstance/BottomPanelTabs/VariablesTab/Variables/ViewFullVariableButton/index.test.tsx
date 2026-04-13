@@ -94,7 +94,7 @@ describe('<ViewFullVariableButton />', () => {
     expect(await screen.findByText(/"foo": "bar"/)).toBeInTheDocument();
   });
 
-  it('should allow switching to edit mode in show mode', async () => {
+  it('should not show edit toggle button in show mode when canEdit is false', async () => {
     const mockVariableName = 'foo-variable';
     const mockVariableKey = 'variable-key-123';
     const mockVariableValue = '{"foo": "bar", "test": 123}';
@@ -129,17 +129,66 @@ describe('<ViewFullVariableButton />', () => {
 
     expect(screen.getByRole('dialog')).toBeInTheDocument();
     expect(
+      screen.queryByRole('button', {name: /^edit$/i}),
+    ).not.toBeInTheDocument();
+  });
+
+  it('should allow switching to edit mode in show mode when canEdit is true', async () => {
+    const mockVariableName = 'foo-variable';
+    const mockVariableKey = 'variable-key-123';
+    const mockVariableValue = '{"foo": "bar", "test": 123}';
+
+    mockGetVariable().withSuccess(
+      createVariable({
+        variableKey: mockVariableKey,
+        name: mockVariableName,
+        value: mockVariableValue,
+      }),
+    );
+
+    const {user} = render(
+      <ViewFullVariableButton
+        mode="show"
+        canEdit
+        variableName={mockVariableName}
+        variableKey={mockVariableKey}
+        variableValue={mockVariableValue}
+      />,
+      {wrapper: createWrapper()},
+    );
+
+    await user.click(
+      screen.getByRole('button', {
+        name: 'Open',
+      }),
+    );
+
+    await waitForElementToBeRemoved(() =>
+      screen.queryByTestId('variable-operation-spinner'),
+    );
+
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
+    expect(
       screen.queryByRole('button', {name: /apply/i}),
     ).not.toBeInTheDocument();
-    expect(screen.getByRole('button', {name: /edit/i})).toBeInTheDocument();
+    expect(screen.getByRole('button', {name: /^edit$/i})).toBeInTheDocument();
 
-    await user.click(screen.getByRole('button', {name: /edit/i}));
+    await user.click(screen.getByRole('button', {name: /^edit$/i}));
 
     expect(screen.getByRole('button', {name: /apply/i})).toBeInTheDocument();
     expect(
-      screen.queryByRole('button', {name: /edit/i}),
+      screen.queryByRole('button', {name: /^edit$/i}),
     ).not.toBeInTheDocument();
+    expect(screen.getByRole('button', {name: /^view$/i})).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', {name: /^view$/i}));
+
+    expect(
+      screen.queryByRole('button', {name: /apply/i}),
+    ).not.toBeInTheDocument();
+    expect(screen.getByRole('button', {name: /^edit$/i})).toBeInTheDocument();
   });
+
   it('should open JSON editor modal for mode edit', async () => {
     const mockVariableName = 'foo-variable';
     const mockVariableKey = 'variable-key-123';
