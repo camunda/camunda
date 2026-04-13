@@ -68,7 +68,7 @@ jobs:
     needs: [ qa ]
     if: failure()
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - name: Import Secrets
         id: secrets
         uses: hashicorp/vault-action@79632e33d6953d190b940ffa440bf97821cabd80
@@ -81,7 +81,7 @@ jobs:
           secrets: |
             secret/data/products/camunda/ci/github-actions SLACK_ZEEBOT_ZEEBE_CI_WEBHOOK_URL;
       - id: slack-notify
-        uses: slackapi/slack-github-action@v3.0.1
+        uses: slackapi/slack-github-action@af78098f536edbc4de71162a307590698245be95 # v3.0.1
         with:
           webhook: ${{ steps.secrets.outputs.SLACK_ZEEBOT_ZEEBE_CI_WEBHOOK_URL }}
           webhook-type: incoming-webhook
