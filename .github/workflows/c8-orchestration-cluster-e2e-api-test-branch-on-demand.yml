@@ -207,7 +207,6 @@ jobs:
           CAMUNDA_AUTH_STRATEGY: "BASIC"
           CAMUNDA_BASIC_AUTH_USERNAME: "demo"
           CAMUNDA_BASIC_AUTH_PASSWORD: "demo"
-          CAMUNDA_TASKLIST_V2_MODE_ENABLED: "false"
           CAMUNDA_PROCESSINSTANCECREATION_BUSINESSIDUNIQUENESSENABLED: "true"
         run: |
           if [[ "$NON_STANDALONE" == "true" ]]; then
@@ -218,10 +217,10 @@ jobs:
             export CORE_APPLICATION_URL="http://localhost:8080"
             export ZEEBE_REST_ADDRESS="http://localhost:8080"
           fi
-          
+
           echo "Running API tests"
           npm run test -- --project=api-tests
-          
+
         working-directory: qa/c8-orchestration-cluster-e2e-test-suite
 
       - name: Publish test results to TestRail
@@ -392,7 +391,6 @@ jobs:
           CAMUNDA_AUTH_STRATEGY: "BASIC"
           CAMUNDA_BASIC_AUTH_USERNAME: "demo"
           CAMUNDA_BASIC_AUTH_PASSWORD: "demo"
-          CAMUNDA_TASKLIST_V2_MODE_ENABLED: "false"
           CAMUNDA_PROCESSINSTANCECREATION_BUSINESSIDUNIQUENESSENABLED: "true"
         run: |
           echo "Running API tests against H2/RDBMS backend"

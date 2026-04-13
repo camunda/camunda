@@ -150,7 +150,6 @@ jobs:
           SLACK_BOT_USER_OAUTH_TOKEN: ${{ steps.secrets.outputs.SLACK_CORE_DOMAIN_BOT_TOKEN }}
           VERSION: ${{ matrix.branch }}
           API_TESTS_ONLY: true
-          CAMUNDA_TASKLIST_V2_MODE_ENABLED: "false"
           DATABASE: "Elasticsearch"
           CAMUNDA_PROCESSINSTANCECREATION_BUSINESSIDUNIQUENESSENABLED: "true"
         run: |
@@ -571,7 +570,6 @@ jobs:
           CAMUNDA_AUTH_STRATEGY: "BASIC"
           CAMUNDA_BASIC_AUTH_USERNAME: "demo"
           CAMUNDA_BASIC_AUTH_PASSWORD: "demo"
-          CAMUNDA_TASKLIST_V2_MODE_ENABLED: "false"
           API_TESTS_ONLY: true
           VERSION: ${{ steps.sanitize.outputs.safe_branch  }}
           DATABASE: "RDBMS"
@@ -641,6 +639,9 @@ jobs:
             tasklist_mode: v2
           - branch: stable/8.7
             tasklist_mode: v2
+          # V1 mode removed from main - only V2 tests remain
+          - branch: main
+            tasklist_mode: v1
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
@@ -787,7 +788,10 @@ jobs:
           fi
 
           if [[ "${{ matrix.tasklist_mode }}" == "v2" ]]; then
-            if [[ "${{ matrix.branch }}" == "main" || "${{ matrix.branch }}" == "stable/8.9" ]]; then
+            if [[ "${{ matrix.branch }}" == "main" ]]; then
+              echo "Running all tests in V2 mode on main"
+              npm run test -- --project=chromium
+            elif [[ "${{ matrix.branch }}" == "stable/8.9" ]]; then
               echo "Running all tests in V2 mode on ${{ matrix.branch }}, excluding V1-specific tests"
               npm run test -- --project=chromium --grep-invert "tests/(common-flows/v1|tasklist/v1)/"
             else
@@ -795,7 +799,7 @@ jobs:
               npm run test -- --project=chromium --grep-invert "@v1-only"
             fi
           else
-            if [[ "${{ matrix.branch }}" == "main" || "${{ matrix.branch }}" == "stable/8.9" ]]; then
+            if [[ "${{ matrix.branch }}" == "stable/8.9" ]]; then
               echo "Running V1 specific tests only: common-flows/v1/ and tests/tasklist/v1/"
               npm run test -- --project=chromium tests/common-flows/v1/ tests/tasklist/v1/
             elif [[ "${{ matrix.branch }}" == "stable/8.8" ]]; then
