@@ -503,28 +503,30 @@ public abstract class ElasticsearchUtil {
     String scrollId = response.getScrollId();
     SearchHits hits = response.getHits();
 
-    while (hits.getHits().length != 0) {
-      if (searchHitMapper != null) {
-        result.addAll(mapSearchHits(hits.getHits(), searchHitMapper));
-      } else {
-        result.addAll(mapSearchHits(hits.getHits(), objectMapper, clazz));
+    try {
+      while (hits.getHits().length != 0) {
+        if (searchHitMapper != null) {
+          result.addAll(mapSearchHits(hits.getHits(), searchHitMapper));
+        } else {
+          result.addAll(mapSearchHits(hits.getHits(), objectMapper, clazz));
+        }
+
+        // call response processor
+        if (searchHitsProcessor != null) {
+          searchHitsProcessor.accept(response.getHits());
+        }
+
+        final SearchScrollRequest scrollRequest = new SearchScrollRequest(scrollId);
+        scrollRequest.scroll(TimeValue.timeValueMillis(SCROLL_KEEP_ALIVE_MS));
+
+        response = esClient.scroll(scrollRequest, RequestOptions.DEFAULT);
+
+        scrollId = response.getScrollId();
+        hits = response.getHits();
       }
-
-      // call response processor
-      if (searchHitsProcessor != null) {
-        searchHitsProcessor.accept(response.getHits());
-      }
-
-      final SearchScrollRequest scrollRequest = new SearchScrollRequest(scrollId);
-      scrollRequest.scroll(TimeValue.timeValueMillis(SCROLL_KEEP_ALIVE_MS));
-
-      response = esClient.scroll(scrollRequest, RequestOptions.DEFAULT);
-
-      scrollId = response.getScrollId();
-      hits = response.getHits();
+    } finally {
+      clearScroll(scrollId, esClient);
     }
-
-    clearScroll(scrollId, esClient);
 
     return result;
   }
@@ -551,23 +553,25 @@ public abstract class ElasticsearchUtil {
     String scrollId = response.getScrollId();
     SearchHits hits = response.getHits();
 
-    while (hits.getHits().length != 0) {
+    try {
+      while (hits.getHits().length != 0) {
 
-      // call response processor
-      if (searchHitsProcessor != null) {
-        searchHitsProcessor.accept(response.getHits());
+        // call response processor
+        if (searchHitsProcessor != null) {
+          searchHitsProcessor.accept(response.getHits());
+        }
+
+        final SearchScrollRequest scrollRequest = new SearchScrollRequest(scrollId);
+        scrollRequest.scroll(scrollKeepAliveTimeValue);
+
+        response = esClient.scroll(scrollRequest, RequestOptions.DEFAULT);
+
+        scrollId = response.getScrollId();
+        hits = response.getHits();
       }
-
-      final SearchScrollRequest scrollRequest = new SearchScrollRequest(scrollId);
-      scrollRequest.scroll(scrollKeepAliveTimeValue);
-
-      response = esClient.scroll(scrollRequest, RequestOptions.DEFAULT);
-
-      scrollId = response.getScrollId();
-      hits = response.getHits();
+    } finally {
+      clearScroll(scrollId, esClient);
     }
-
-    clearScroll(scrollId, esClient);
   }
 
   public static void scrollWith(
@@ -600,22 +604,24 @@ public abstract class ElasticsearchUtil {
 
     String scrollId = response.getScrollId();
     SearchHits hits = response.getHits();
-    while (hits.getHits().length != 0) {
-      // call response processor
-      if (searchHitsProcessor != null) {
-        searchHitsProcessor.accept(response.getHits());
+    try {
+      while (hits.getHits().length != 0) {
+        // call response processor
+        if (searchHitsProcessor != null) {
+          searchHitsProcessor.accept(response.getHits());
+        }
+
+        final SearchScrollRequest scrollRequest = new SearchScrollRequest(scrollId);
+        scrollRequest.scroll(TimeValue.timeValueMillis(SCROLL_KEEP_ALIVE_MS));
+
+        response = esClient.scroll(scrollRequest, RequestOptions.DEFAULT);
+
+        scrollId = response.getScrollId();
+        hits = response.getHits();
       }
-
-      final SearchScrollRequest scrollRequest = new SearchScrollRequest(scrollId);
-      scrollRequest.scroll(TimeValue.timeValueMillis(SCROLL_KEEP_ALIVE_MS));
-
-      response = esClient.scroll(scrollRequest, RequestOptions.DEFAULT);
-
-      scrollId = response.getScrollId();
-      hits = response.getHits();
+    } finally {
+      clearScroll(scrollId, esClient);
     }
-
-    clearScroll(scrollId, esClient);
   }
 
   public static void clearScroll(final String scrollId, final RestHighLevelClient esClient) {
