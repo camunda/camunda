@@ -22,6 +22,7 @@ import io.camunda.zeebe.config.AppCfg;
 import io.camunda.zeebe.config.AppConfigLoader;
 import io.camunda.zeebe.util.logging.ThrottledLogger;
 import io.grpc.ClientInterceptor;
+import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.binder.grpc.MetricCollectingClientInterceptor;
 import io.micrometer.core.instrument.binder.jvm.ClassLoaderMetrics;
 import io.micrometer.core.instrument.binder.jvm.JvmGcMetrics;
@@ -38,6 +39,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.time.Duration;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -50,6 +52,7 @@ abstract class App implements Runnable {
       new ThrottledLogger(LoggerFactory.getLogger(App.class), Duration.ofSeconds(5));
   private static final Logger LOG = LoggerFactory.getLogger(App.class);
   private static HTTPServer monitoringServer;
+  private static final AtomicInteger CONNECTED = new AtomicInteger(0);
 
   static void createApp(final Function<AppCfg, Runnable> appFactory) {
     final AppCfg appCfg = AppConfigLoader.load();
@@ -75,6 +78,9 @@ abstract class App implements Runnable {
     }
 
     monitoringInterceptor = new MetricCollectingClientInterceptor(registry);
+    Gauge.builder(AppMetricsDoc.CONNECTED.getName(), CONNECTED, AtomicInteger::get)
+        .description(AppMetricsDoc.CONNECTED.getDescription())
+        .register(registry);
     registerDefaultInstrumentation();
   }
 
@@ -87,7 +93,7 @@ abstract class App implements Runnable {
     new JvmThreadMetrics().bindTo(registry);
   }
 
-  private static void stopMonitoringServer() {
+  private static synchronized void stopMonitoringServer() {
     if (monitoringServer != null) {
       monitoringServer.stop();
       monitoringServer = null;
@@ -106,6 +112,7 @@ abstract class App implements Runnable {
                   b.getPartitions()
                       .forEach(p -> LOG.info("{} - {}", p.getPartitionId(), p.getRole()));
                 });
+        CONNECTED.set(1);
         break;
       } catch (final Exception e) {
         THROTTLED_LOGGER.warn("Topology request failed", e);
