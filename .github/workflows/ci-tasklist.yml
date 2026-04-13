@@ -181,7 +181,7 @@ jobs:
           node-version: 24
       - run: npm ci
         name: Install dependencies
-      - run: npm run test:ci -- --no-file-parallelism --maxWorkers 1
+      - run: npm run test:ci
         name: Unit & Integration tests
       - name: Observe build status
         if: always()
