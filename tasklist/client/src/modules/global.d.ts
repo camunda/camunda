@@ -35,7 +35,6 @@ export declare global {
       mixpanelAPIHost?: null | string;
       isMultiTenancyEnabled?: boolean;
       maxRequestSize?: number;
-      clientMode?: 'v1' | 'v2';
     };
     Osano?: {
       cm?: {
