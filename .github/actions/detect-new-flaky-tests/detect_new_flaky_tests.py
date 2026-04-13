@@ -138,8 +138,11 @@ def _github_api(url: str, token: str, method: str = "GET", data: bytes | None = 
         raise GitHubAPIError(msg) from exc
 
 
-def _find_existing_comment(owner: str, repo: str, pr_number: int, token: str) -> int | None:
-    """Find an existing comment with COMMENT_MARKER and return its id, or None."""
+def _find_existing_comment(owner: str, repo: str, pr_number: int, token: str) -> tuple[int, bool] | None:
+    """Find an existing comment with COMMENT_MARKER.
+
+    Returns (comment_id, is_resolved) or None if no comment exists.
+    """
     page = 1
     while True:
         url = f"https://api.github.com/repos/{owner}/{repo}/issues/{pr_number}/comments?per_page=100&page={page}"
@@ -148,17 +151,20 @@ def _find_existing_comment(owner: str, repo: str, pr_number: int, token: str) ->
         if not comments:
             break
         for c in comments:
-            if COMMENT_MARKER in (c.get("body") or ""):
-                return c["id"]
+            body = c.get("body") or ""
+            if COMMENT_MARKER in body:
+                is_resolved = "✅ Resolved — No New Flaky Tests" in body
+                return c["id"], is_resolved
         page += 1
     return None
 
 
 def post_or_update_comment(owner: str, repo: str, pr_number: int, body: str, token: str) -> None:
     """Create a new comment or update the existing one (matched by COMMENT_MARKER)."""
-    existing_id = _find_existing_comment(owner, repo, pr_number, token)
+    result = _find_existing_comment(owner, repo, pr_number, token)
     payload = json.dumps({"body": body}).encode()
-    if existing_id:
+    if result:
+        existing_id, _ = result
         url = f"https://api.github.com/repos/{owner}/{repo}/issues/comments/{existing_id}"
         _github_api(url, token, method="PATCH", data=payload)
         print(f"{PREFIX} Updated existing comment (id={existing_id}).")
@@ -175,10 +181,6 @@ def _resolve_comment(owner: str, repo: str, comment_id: int, token: str) -> None
     raw = _github_api(url, token)
     current_body = json.loads(raw).get("body", "")
 
-    # If the comment is already resolved, don't re-wrap it in strikethrough
-    if "✅ Resolved — No New Flaky Tests" in current_body:
-        print(f"{PREFIX} Comment (id={comment_id}) is already resolved — skipping update.")
-        return
 
     # Strip the marker line — we'll re-add it at the top
     previous_warning_body = current_body.replace(COMMENT_MARKER, "").strip()
@@ -344,9 +346,13 @@ def main() -> None:
         # If a previous run left a warning comment, update it to "resolved".
         owner, repo = github_repository.split("/", 1)
         try:
-            existing_id = _find_existing_comment(owner, repo, pr_number, github_token)
-            if existing_id:
-                _resolve_comment(owner, repo, existing_id, github_token)
+            result = _find_existing_comment(owner, repo, pr_number, github_token)
+            if result:
+                existing_id, is_resolved = result
+                if is_resolved:
+                    print(f"{PREFIX} Comment (id={existing_id}) is already resolved — skipping update.")
+                else:
+                    _resolve_comment(owner, repo, existing_id, github_token)
         except GitHubAPIError:
             if blocking:
                 sys.exit(1)
