@@ -418,6 +418,11 @@ public final class OAuthCredentialsProviderBuilder {
   /**
    * The initial backoff duration applied between token fetch retry attempts. Subsequent delays grow
    * geometrically by {@link #tokenFetchBackoffMultiplier(double)}. The default value is 1 second.
+   *
+   * <p>If the token endpoint replies with a {@code Retry-After} header, the server-specified delay
+   * always takes precedence over the computed backoff, regardless of whether it is shorter or
+   * longer. The total retry duration may therefore differ from what the {@code initialBackoff *
+   * multiplier^n} progression alone would suggest.
    */
   public OAuthCredentialsProviderBuilder tokenFetchInitialBackoff(
       final Duration tokenFetchInitialBackoff) {
