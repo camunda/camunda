@@ -51,18 +51,20 @@ spec:
               done
               echo "Camunda gateway ready"
 
-              echo "Fetching admin token..."
-              ADMIN_TOKEN=$(curl -sf -X POST \
-                "http://keycloak/auth/realms/camunda-platform/protocol/openid-connect/token" \
-                -H "Content-Type: application/x-www-form-urlencoded" \
-                -d "grant_type=client_credentials" \
-                -d "client_id=admin" \
-                -d "client_secret=${ADMIN_CLIENT_SECRET}" | jq -r '.access_token')
-
-              if [ -z "$ADMIN_TOKEN" ] || [ "$ADMIN_TOKEN" = "null" ]; then
-                echo "Failed to get admin token — check that global.identity.auth.admin is enabled"
-                exit 1
-              fi
+              echo "Fetching admin token (retrying until Keycloak is fully ready)..."
+              ADMIN_TOKEN=""
+              until [ -n "$ADMIN_TOKEN" ] && [ "$ADMIN_TOKEN" != "null" ]; do
+                ADMIN_TOKEN=$(curl -s -X POST \
+                  "http://keycloak/auth/realms/camunda-platform/protocol/openid-connect/token" \
+                  -H "Content-Type: application/x-www-form-urlencoded" \
+                  -d "grant_type=client_credentials" \
+                  -d "client_id=admin" \
+                  -d "client_secret=${ADMIN_CLIENT_SECRET}" | jq -r '.access_token // empty')
+                if [ -z "$ADMIN_TOKEN" ] || [ "$ADMIN_TOKEN" = "null" ]; then
+                  echo "  token not ready yet, retrying in 10s..."
+                  sleep 10
+                fi
+              done
               echo "Got admin token"
 
               create_authorization() {
