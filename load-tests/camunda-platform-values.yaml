@@ -49,6 +49,12 @@ global:
           existingSecretKey: identity-keycloak-admin-password
     auth:
       enabled: true
+      admin:
+        enabled: true
+        clientId: admin
+        secret:
+          existingSecret: camunda-credentials
+          existingSecretKey: identity-admin-client-token
       optimize:
         clientId: optimize
         secret:
