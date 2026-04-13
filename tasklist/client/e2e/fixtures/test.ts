@@ -17,7 +17,6 @@ import {TaskFormView} from '@/pageElements/TaskFormView';
 
 type PlaywrightFixtures = {
   makeAxeBuilder: () => AxeBuilder;
-  resetData: () => Promise<void>;
   header: Header;
   loginPage: LoginPage;
   taskVariableView: TaskVariableView;
