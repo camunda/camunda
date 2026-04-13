@@ -1,0 +1,34 @@
+load-tester:
+  monitor-data-availability: false
+  monitor-data-availability-interval: 50ms
+  perform-read-benchmarks: true
+  disabled-queries: "process_instances_active,audit_log_by_category"
+  starter:
+    process-id: benchmark
+    rate: 30.5
+    rate-duration: 5m
+    threads: 2
+    bpmn-xml-path: bpmn/realistic/bankCustomerComplaintDisputeHandling.bpmn
+    extra-bpmn-models:
+      - bpmn/realistic/determineFraudRatingConfidence.dmn
+      - bpmn/realistic/refundingProcess.bpmn
+    business-key: customerId
+    payload-path: bpmn/realistic/realisticPayload.json
+    with-results: false
+    with-results-timeout: 60s
+    duration-limit: 0
+    start-via-message: false
+    msg-name: msg
+  worker:
+    job-type: benchmark-task
+    worker-name: benchmark-worker
+    threads: 10
+    capacity: 30
+    polling-delay: 1s
+    completion-delay: 300ms
+    payload-path: bpmn/big_payload.json
+    stream-enabled: true
+    timeout: 0s
+    send-message: true
+    message-name: msg
+    correlation-key-variable-name: var

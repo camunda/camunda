@@ -12,23 +12,27 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.CamundaFuture;
+import io.camunda.client.api.command.ClientStatusException;
 import io.camunda.client.api.command.DeployResourceCommandStep1.DeployResourceCommandStep2;
 import io.camunda.client.api.response.Process;
 import io.camunda.client.api.response.ProcessInstanceEvent;
+import io.camunda.client.api.response.Topology;
 import io.camunda.client.api.search.response.ProcessInstance;
 import io.camunda.client.api.search.response.SearchResponse;
 import io.camunda.client.api.search.sort.ProcessInstanceSort;
-import io.camunda.zeebe.config.AppCfg;
-import io.camunda.zeebe.config.StarterCfg;
+import io.camunda.zeebe.config.LoadTesterProperties;
+import io.camunda.zeebe.config.StarterProperties;
 import io.camunda.zeebe.read.DataReadMeter;
 import io.camunda.zeebe.read.DataReadMeterQueryProvider;
 import io.camunda.zeebe.util.logging.ThrottledLogger;
 import io.camunda.zeebe.util.micrometer.MicrometerUtil;
 import io.grpc.Status.Code;
 import io.grpc.StatusRuntimeException;
+import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
 import java.time.Duration;
 import java.time.Instant;
+import org.slf4j.Logger;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.Collections;
@@ -48,7 +52,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class Starter extends App {
+public class Starter {
 
   private static final Logger THROTTLED_LOGGER =
       new ThrottledLogger(LoggerFactory.getLogger(Starter.class), Duration.ofSeconds(5));
@@ -57,7 +61,12 @@ public class Starter extends App {
   private static final TypeReference<HashMap<String, Object>> VARIABLES_TYPE_REF =
       new TypeReference<>() {};
   private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
-  private final StarterCfg starterCfg;
+
+  private final CamundaClient client;
+  private final LoadTesterProperties config;
+  private final StarterProperties starterCfg;
+  private final MeterRegistry registry;
+
   private Timer responseLatencyTimer;
   private ScheduledExecutorService executorService;
   private ProcessInstanceStartMeter processInstanceStartMeter;
@@ -67,18 +76,17 @@ public class Starter extends App {
   private final AtomicReference<Instant> lastProcessInstanceKeyTimestamp =
       new AtomicReference<>(Instant.now());
 
-  Starter(final AppCfg config) {
-    super(config);
+  Starter(
+      final CamundaClient client, final LoadTesterProperties config, final MeterRegistry registry) {
+    this.client = client;
+    this.config = config;
     starterCfg = config.getStarter();
+    this.registry = registry;
   }
 
-  @Override
   public void run() {
     responseLatencyTimer =
         MicrometerUtil.buildTimer(StarterLatencyMetricsDoc.RESPONSE_LATENCY).register(registry);
-
-    final CamundaClient client = createCamundaClient();
-
     // init - check for topology and deploy process
     printTopology(client);
 
@@ -102,26 +110,6 @@ public class Starter extends App {
     final ScheduledFuture<?> scheduledTask =
         scheduleProcessInstanceCreation(executorService, countDownLatch, client);
 
-    Runtime.getRuntime()
-        .addShutdownHook(
-            new Thread(
-                () -> {
-                  if (!executorService.isShutdown()) {
-                    executorService.shutdown();
-                    if (config.isMonitorDataAvailability()) {
-                      processInstanceStartMeter.close();
-                    }
-                    if (config.isPerformReadBenchmarks()) {
-                      dataReadMeter.close();
-                    }
-                    try {
-                      executorService.awaitTermination(60, TimeUnit.SECONDS);
-                    } catch (final InterruptedException e) {
-                      LOG.error("Shutdown executor service was interrupted", e);
-                    }
-                  }
-                }));
-
     // wait for starter to finish
     try {
       countDownLatch.await();
@@ -140,6 +128,23 @@ public class Starter extends App {
 
     if (config.isPerformReadBenchmarks()) {
       dataReadMeter.close();
+    }
+  }
+
+  void close() {
+    if (executorService != null && !executorService.isShutdown()) {
+      executorService.shutdown();
+      if (config.isMonitorDataAvailability() && processInstanceStartMeter != null) {
+        processInstanceStartMeter.close();
+      }
+      if (config.isPerformReadBenchmarks() && dataReadMeter != null) {
+        dataReadMeter.close();
+      }
+      try {
+        executorService.awaitTermination(60, TimeUnit.SECONDS);
+      } catch (final InterruptedException e) {
+        LOG.error("Shutdown executor service was interrupted", e);
+      }
     }
   }
 
@@ -197,7 +202,7 @@ public class Starter extends App {
         starterCfg.getRate(),
         starterCfg.getRateDuration());
 
-    final String variablesString = readVariables(starterCfg.getPayloadPath());
+    final String variablesString = PayloadReader.readVariables(starterCfg.getPayloadPath());
     final Map<String, Object> baseVariables =
         Collections.unmodifiableMap(deserializeVariables(variablesString));
 
@@ -319,11 +324,7 @@ public class Starter extends App {
     return variables;
   }
 
-  private CamundaClient createCamundaClient() {
-    return newClientBuilder().numJobWorkerExecutionThreads(0).build();
-  }
-
-  private void deployProcess(final CamundaClient client, final StarterCfg starterCfg) {
+  private void deployProcess(final CamundaClient client, final StarterProperties starterCfg) {
     final var deployCmd = constructDeploymentCommand(client, starterCfg);
 
     while (true) {
@@ -351,7 +352,7 @@ public class Starter extends App {
   }
 
   private static DeployResourceCommandStep2 constructDeploymentCommand(
-      final CamundaClient client, final StarterCfg starterCfg) {
+      final CamundaClient client, final StarterProperties starterCfg) {
     final var deployCmd =
         client.newDeployResourceCommand().addResourceFromClasspath(starterCfg.getBpmnXmlPath());
 
@@ -364,7 +365,7 @@ public class Starter extends App {
     return deployCmd;
   }
 
-  private BooleanSupplier createContinuationCondition(final StarterCfg starterCfg) {
+  private BooleanSupplier createContinuationCondition(final StarterProperties starterCfg) {
     final int durationLimit = starterCfg.getDurationLimit();
 
     if (durationLimit > 0) {
@@ -378,7 +379,39 @@ public class Starter extends App {
     }
   }
 
-  public static void main(final String[] args) {
-    createApp(Starter::new);
+  private void printTopology(final CamundaClient client) {
+    while (true) {
+      try {
+        final Topology topology = client.newTopologyRequest().send().join();
+        topology
+            .getBrokers()
+            .forEach(
+                b -> {
+                  LOG.info("Broker {} - {} ({})", b.getNodeId(), b.getAddress(), b.getVersion());
+                  b.getPartitions()
+                      .forEach(p -> LOG.info("{} - {}", p.getPartitionId(), p.getRole()));
+                });
+        break;
+      } catch (final ClientStatusException e) {
+        final var statusCode = e.getStatusCode();
+        if (statusCode.equals(Code.UNAUTHENTICATED) || statusCode.equals(Code.PERMISSION_DENIED)) {
+          LOG.error(
+              "Failed to retrieve topology due to authentication error; check your config", e);
+          System.exit(1);
+        }
+        reportErrorAndSleep("Failed to retrieve topology due to client exception: ", e);
+      } catch (final Exception e) {
+        reportErrorAndSleep("Topology request failed: ", e);
+      }
+    }
+  }
+
+  private static void reportErrorAndSleep(final String error, final Exception e) {
+    THROTTLED_LOGGER.warn(error, e);
+    try {
+      Thread.sleep(1000);
+    } catch (final InterruptedException ex) {
+      throw new RuntimeException(ex);
+    }
   }
 }

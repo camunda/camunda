@@ -1,0 +1,60 @@
+load-tester:
+  monitor-data-availability: true
+  monitor-data-availability-interval: 250ms
+  perform-read-benchmarks: false
+  disabled-queries: ""
+  starter:
+    process-id: benchmark
+    rate: 300
+    rate-duration: 1s
+    threads: 2
+    bpmn-xml-path: bpmn/one_task.bpmn
+    extra-bpmn-models: []
+    business-key: businessKey
+    payload-path: bpmn/big_payload.json
+    with-results: false
+    with-results-timeout: 60s
+    duration-limit: 0
+    start-via-message: false
+    msg-name: msg
+  worker:
+    job-type: benchmark-task
+    worker-name: benchmark-worker
+    threads: 10
+    capacity: 30
+    polling-delay: 1s
+    completion-delay: 300ms
+    payload-path: bpmn/big_payload.json
+    stream-enabled: true
+    timeout: 0s
+    send-message: false
+    message-name: defaultMessage
+    correlation-key-variable-name: correlationKey-var
+
+camunda:
+  client:
+    grpc-address: http://localhost:26500
+    rest-address: http://localhost:8080
+    prefer-rest-over-grpc: true
+    auth:
+      method: oidc
+      client-id: orchestration
+      client-secret: hF0cvAMxQjhjbjDtCag2
+      audience: orchestration-api
+      token-url: http://localhost:18080/auth/realms/camunda-platform/protocol/openid-connect/token
+
+management:
+  server:
+    port: 9600
+  endpoints:
+    web:
+      base-path: /
+      exposure:
+        include: prometheus,health
+      path-mapping:
+        prometheus: metrics
+
+logging:
+  level:
+    io.camunda: INFO
+    root: WARN

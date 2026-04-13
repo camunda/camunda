@@ -11,9 +11,10 @@ import io.camunda.client.CamundaClient;
 import io.camunda.client.api.worker.JobHandler;
 import io.camunda.client.api.worker.JobWorker;
 import io.camunda.client.api.worker.JobWorkerMetrics;
-import io.camunda.zeebe.config.AppCfg;
-import io.camunda.zeebe.config.WorkerCfg;
+import io.camunda.zeebe.config.LoadTesterProperties;
+import io.camunda.zeebe.config.WorkerProperties;
 import io.camunda.zeebe.util.logging.ThrottledLogger;
+import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Tags;
 import java.time.Duration;
 import java.util.concurrent.ArrayBlockingQueue;
@@ -23,25 +24,33 @@ import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class Worker extends App {
+public class Worker {
 
   public static final Logger LOGGER = LoggerFactory.getLogger(Worker.class);
   private static final Logger THROTTLED_LOGGER = new ThrottledLogger(LOGGER, Duration.ofSeconds(5));
-  private final WorkerCfg workerCfg;
 
-  Worker(final AppCfg config) {
-    super(config);
-    workerCfg = config.getWorker();
+  private final CamundaClient client;
+  private final LoadTesterProperties config;
+  private final WorkerProperties workerCfg;
+  private final MeterRegistry registry;
+
+  private JobWorker worker;
+  private ResponseChecker responseChecker;
+
+  Worker(
+      final CamundaClient client, final LoadTesterProperties config, final MeterRegistry registry) {
+    this.client = client;
+    this.config = config;
+    this.workerCfg = config.getWorker();
+    this.registry = registry;
   }
 
-  @Override
   public void run() {
     final String jobType = workerCfg.getJobType();
     final long completionDelay = workerCfg.getCompletionDelay().toMillis();
     final boolean isStreamEnabled = workerCfg.isStreamEnabled();
-    final var variables = readVariables(workerCfg.getPayloadPath());
+    final var variables = PayloadReader.readVariables(workerCfg.getPayloadPath());
     final BlockingQueue<Future<?>> requestFutures = new ArrayBlockingQueue<>(10_000);
-    final CamundaClient client = createCamundaClient();
     final JobWorkerMetrics metrics =
         JobWorkerMetrics.micrometer()
             .withMeterRegistry(registry)
@@ -49,30 +58,38 @@ public class Worker extends App {
             .build();
     printTopology(client);
 
-    final JobWorker worker =
+    final var timeout =
+        workerCfg.getTimeout() != Duration.ZERO
+            ? workerCfg.getTimeout()
+            : workerCfg.getCompletionDelay().multipliedBy(6);
+
+    worker =
         client
             .newWorker()
             .jobType(jobType)
-            .handler(handleJob(client, variables, completionDelay, requestFutures))
+            .handler(handleJob(variables, completionDelay, requestFutures))
+            .name(workerCfg.getWorkerName())
+            .timeout(timeout)
+            .maxJobsActive(workerCfg.getCapacity())
+            .pollInterval(workerCfg.getPollingDelay())
             .streamEnabled(isStreamEnabled)
             .metrics(metrics)
             .open();
 
-    final ResponseChecker responseChecker = new ResponseChecker(requestFutures);
+    responseChecker = new ResponseChecker(requestFutures);
     responseChecker.start();
+  }
 
-    Runtime.getRuntime()
-        .addShutdownHook(
-            new Thread(
-                () -> {
-                  worker.close();
-                  client.close();
-                  responseChecker.close();
-                }));
+  void close() {
+    if (worker != null) {
+      worker.close();
+    }
+    if (responseChecker != null) {
+      responseChecker.close();
+    }
   }
 
   private JobHandler handleJob(
-      final CamundaClient client,
       final String variables,
       final long completionDelay,
       final BlockingQueue<Future<?>> requestFutures) {
@@ -86,7 +103,7 @@ public class Worker extends App {
         final var correlationKey =
             job.getVariable(workerCfg.getCorrelationKeyVariableName()).toString();
 
-        final boolean messagePublishedSuccessfully = publishMessage(client, correlationKey);
+        final boolean messagePublishedSuccessfully = publishMessage(correlationKey);
         if (!messagePublishedSuccessfully) {
           // Instead of failing the job, we simply let the job time out, so someone else has to
           // pick up the job later. This might delay the individual process instance, but overall it
@@ -112,7 +129,7 @@ public class Worker extends App {
     };
   }
 
-  private boolean publishMessage(final CamundaClient client, final String correlationKey) {
+  private boolean publishMessage(final String correlationKey) {
     final var messageName = workerCfg.getMessageName();
 
     LOGGER.debug("Publish message '{}' with correlation key '{}'", messageName, correlationKey);
@@ -155,22 +172,27 @@ public class Worker extends App {
     }
   }
 
-  private CamundaClient createCamundaClient() {
-    final WorkerCfg workerCfg = config.getWorker();
-    final var timeout =
-        config.getWorker().getTimeout() != Duration.ZERO
-            ? config.getWorker().getTimeout()
-            : workerCfg.getCompletionDelay().multipliedBy(6);
-    return newClientBuilder()
-        .numJobWorkerExecutionThreads(workerCfg.getThreads())
-        .defaultJobWorkerName(workerCfg.getWorkerName())
-        .defaultJobTimeout(timeout)
-        .defaultJobWorkerMaxJobsActive(workerCfg.getCapacity())
-        .defaultJobPollInterval(workerCfg.getPollingDelay())
-        .build();
-  }
-
-  public static void main(final String[] args) {
-    createApp(Worker::new);
+  private void printTopology(final CamundaClient client) {
+    while (true) {
+      try {
+        final var topology = client.newTopologyRequest().send().join();
+        topology
+            .getBrokers()
+            .forEach(
+                b -> {
+                  LOGGER.info("Broker {} - {} ({})", b.getNodeId(), b.getAddress(), b.getVersion());
+                  b.getPartitions()
+                      .forEach(p -> LOGGER.info("{} - {}", p.getPartitionId(), p.getRole()));
+                });
+        break;
+      } catch (final Exception e) {
+        THROTTLED_LOGGER.warn("Topology request failed: ", e);
+        try {
+          Thread.sleep(1000);
+        } catch (final InterruptedException ex) {
+          throw new RuntimeException(ex);
+        }
+      }
+    }
   }
 }

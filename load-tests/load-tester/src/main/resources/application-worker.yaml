@@ -1,0 +1,3 @@
+camunda:
+  client:
+    execution-threads: ${load-tester.worker.threads:10}

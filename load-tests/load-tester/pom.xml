@@ -28,27 +28,45 @@
     <!-- java version -->
     <version.java>21</version.java>
 
-    <!-- dependency versions -->
-    <version.config>1.4.6</version.config>
-
     <!-- maven plugin versions -->
     <plugin.version.license>3.0</plugin.version.license>
     <plugin.version.jib>3.5.1</plugin.version.jib>
   </properties>
 
   <dependencies>
-    <!-- Benchmark only dependencies -->
+    <!-- Spring Boot -->
     <dependency>
-      <groupId>com.typesafe</groupId>
-      <artifactId>config</artifactId>
-      <version>${version.config}</version>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-spring-boot-starter</artifactId>
     </dependency>
+
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-web</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-actuator</artifactId>
+    </dependency>
+
+    <!-- Camunda / Zeebe -->
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>zeebe-protocol</artifactId>
     </dependency>
 
-    <!-- Shared dependencies with the rest of the project -->
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-client-java</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-util</artifactId>
+    </dependency>
+
+    <!-- Shared dependencies -->
     <dependency>
       <groupId>com.google.guava</groupId>
       <artifactId>guava</artifactId>
@@ -65,38 +83,8 @@
     </dependency>
 
     <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>camunda-client-java</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>zeebe-util</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>io.prometheus</groupId>
-      <artifactId>prometheus-metrics-exporter-httpserver</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>io.prometheus</groupId>
-      <artifactId>prometheus-metrics-model</artifactId>
-    </dependency>
-
-    <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-api</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>org.apache.logging.log4j</groupId>
-      <artifactId>log4j-core</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>org.apache.logging.log4j</groupId>
-      <artifactId>log4j-slf4j2-impl</artifactId>
     </dependency>
 
     <dependency>
@@ -124,6 +112,13 @@
       <artifactId>jackson-core</artifactId>
     </dependency>
 
+    <!-- Test -->
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-test</artifactId>
+      <scope>test</scope>
+    </dependency>
+
     <dependency>
       <groupId>org.assertj</groupId>
       <artifactId>assertj-core</artifactId>
@@ -147,6 +142,7 @@
       <artifactId>awaitility</artifactId>
       <scope>test</scope>
     </dependency>
+
     <dependency>
       <groupId>org.mockito</groupId>
       <artifactId>mockito-core</artifactId>
@@ -206,7 +202,10 @@
                 <image>gcr.io/zeebe-io/starter:SNAPSHOT</image>
               </to>
               <container>
-                <mainClass>io.camunda.zeebe.Starter</mainClass>
+                <mainClass>io.camunda.zeebe.LoadTesterApplication</mainClass>
+                <jvmFlags>
+                  <jvmFlag>-Dspring.profiles.active=starter</jvmFlag>
+                </jvmFlags>
               </container>
             </configuration>
           </plugin>
@@ -229,7 +228,10 @@
                 <image>gcr.io/zeebe-io/worker:SNAPSHOT</image>
               </to>
               <container>
-                <mainClass>io.camunda.zeebe.Worker</mainClass>
+                <mainClass>io.camunda.zeebe.LoadTesterApplication</mainClass>
+                <jvmFlags>
+                  <jvmFlag>-Dspring.profiles.active=worker</jvmFlag>
+                </jvmFlags>
               </container>
             </configuration>
           </plugin>
