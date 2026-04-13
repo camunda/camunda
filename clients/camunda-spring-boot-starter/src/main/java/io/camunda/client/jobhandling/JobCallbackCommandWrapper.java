@@ -166,14 +166,6 @@ public class JobCallbackCommandWrapper {
     }
   }
 
-  private void increaseBackoff() {
-    currentRetryDelay.getAndUpdate(backoffSupplier::supplyRetryDelay);
-  }
-
-  private void scheduleExecution() {
-    scheduledExecutorService.schedule(action, currentRetryDelay.get(), TimeUnit.MILLISECONDS);
-  }
-
   @Override
   public String toString() {
     return "{"
