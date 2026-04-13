@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>io.camunda</groupId>
+    <artifactId>camunda-testing</artifactId>
+    <version>8.9.1-SNAPSHOT</version>
+    <relativePath>../pom.xml</relativePath>
+  </parent>
+
+  <artifactId>camunda-process-test-spring-boot-4</artifactId>
+  <packaging>pom</packaging>
+
+  <name>Camunda Process Test Spring Boot 4 (relocated)</name>
+  <description>Relocated artifact. Use camunda-process-test-spring instead.
+    This module exists to provide a migration path for users upgrading from 8.7/8.8,
+    where this artifact was the canonical Spring Boot 4 testing library.</description>
+
+  <distributionManagement>
+    <relocation>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-process-test-spring</artifactId>
+      <message>camunda-process-test-spring-boot-4 has been replaced by camunda-process-test-spring</message>
+    </relocation>
+  </distributionManagement>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>flatten-maven-plugin</artifactId>
+        <configuration>
+          <pomElements>
+            <distributionManagement/>
+          </pomElements>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+
+</project>
