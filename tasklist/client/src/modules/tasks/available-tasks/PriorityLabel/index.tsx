@@ -13,7 +13,7 @@ import {
   SkillLevelIntermediate,
   SkillLevelAdvanced,
   Critical,
-} from '@carbon/icons-react';
+} from '@carbon/react/icons';
 import {LabelWithPopover} from 'modules/tasks/available-tasks/LabelWithPopover';
 import {getPriorityLabel} from 'modules/tasks/getPriorityLabel';
 
