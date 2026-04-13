@@ -19,6 +19,7 @@ import io.camunda.operate.conditions.DatabaseInfo;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.util.apps.nobeans.TestApplicationWithNoBeans;
 import io.camunda.security.configuration.SecurityConfiguration;
+import java.time.Duration;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -70,6 +71,7 @@ public class PropertiesIT {
     assertThat(operateProperties.getZeebeElasticsearch().getBatchSize()).isEqualTo(222);
     assertThat(operateProperties.getZeebeElasticsearch().getPrefix()).isEqualTo("somePrefix");
     assertThat(operateProperties.getZeebe().getGatewayAddress()).isEqualTo("someZeebeHost:999");
+    assertThat(operateProperties.getZeebe().getRequestTimeout()).isEqualTo(Duration.ofSeconds(50));
     assertThat(operateProperties.getOperationExecutor().getBatchSize()).isEqualTo(555);
     assertThat(operateProperties.getOperationExecutor().getWorkerId()).isEqualTo("someWorker");
     assertThat(operateProperties.getOperationExecutor().getLockTimeout()).isEqualTo(15000);

@@ -24,6 +24,7 @@ camunda:
       completedReaderMinEmptyBatches: 10
     zeebe:
       gatewayAddress: someZeebeHost:999
+      requestTimeout: PT50S
     operationExecutor:
       batchSize: 555
       workerId: someWorker
