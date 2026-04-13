@@ -26,7 +26,8 @@ const ElementInstanceIcon = styled(BaseElementInstanceIcon)<{
 `;
 const TreeNode = styled(BaseTreeNode)`
   .cds--tree-node__label {
-    height: 2rem;
+    min-height: 2rem;
+    height: auto;
 
     .cds--tree-parent-node__toggle {
       margin-left: ${INSTANCE_HISTORY_LEFT_PADDING};
@@ -35,6 +36,15 @@ const TreeNode = styled(BaseTreeNode)`
 
   .cds--tree-node__label__details {
     width: 100%;
+  }
+
+  /* Multi-line nodes: pin caret and icon to the first line */
+  &:has([data-multiline]) .cds--tree-node__label {
+    align-items: flex-start;
+
+    .cds--tree-parent-node__toggle {
+      margin-top: 0.5rem;
+    }
   }
 `;
 

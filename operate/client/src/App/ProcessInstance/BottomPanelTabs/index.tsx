@@ -16,7 +16,6 @@ import {useProcessInstanceElementSelection} from 'modules/hooks/useProcessInstan
 import {useProcessInstance} from 'modules/queries/processInstance/useProcessInstance';
 import {useProcessInstanceIncidentsCount} from 'modules/queries/incidents/useProcessInstanceIncidentsCount';
 import {useElementInstanceIncidentsCount} from 'modules/queries/incidents/useElementInstanceIncidentsCount';
-
 function useSelectionAwareIncidentsCount(
   processInstanceKey: string,
   hasIncident: boolean,
@@ -52,7 +51,8 @@ function useSelectionAwareIncidentsCount(
 const BottomPanelTabs: React.FC<{isHistoryTabVisible: boolean}> = ({
   isHistoryTabVisible,
 }) => {
-  const {hasSelection} = useProcessInstanceElementSelection();
+  const {hasSelection, selectedElementInstanceKey} =
+    useProcessInstanceElementSelection();
   const {data: processInstance} = useProcessInstance();
   const {processInstanceId} = useProcessInstancePageParams();
   const {currentPage} = useCurrentPage();
@@ -80,7 +80,8 @@ const BottomPanelTabs: React.FC<{isHistoryTabVisible: boolean}> = ({
       key: 'details',
       selected: currentPage === 'process-details-details',
       title: 'Details',
-      visible: hasSelection,
+      visible:
+        hasSelection && selectedElementInstanceKey !== processInstanceId,
     },
     {
       label: 'Variables',

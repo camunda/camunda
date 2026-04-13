@@ -36,6 +36,7 @@ import {LastModification} from './LastModification';
 import {Forbidden} from 'modules/components/Forbidden';
 import {Frame} from 'modules/components/Frame';
 import {ProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
+import {AgentDataProvider} from 'modules/contexts/agentData';
 import {useProcessInstance} from 'modules/queries/processInstance/useProcessInstance';
 import {useProcessTitle} from 'modules/queries/processInstance/useProcessTitle';
 import {useCallHierarchy} from 'modules/queries/callHierarchy/useCallHierarchy';
@@ -206,6 +207,7 @@ const ProcessInstance: React.FC = observer(() => {
   }
 
   return (
+    <AgentDataProvider processInstanceKey={processInstance?.processInstanceKey}>
     <ProcessDefinitionKeyContext.Provider
       value={processInstance?.processDefinitionKey}
     >
@@ -343,6 +345,7 @@ const ProcessInstance: React.FC = observer(() => {
         />
       )}
     </ProcessDefinitionKeyContext.Provider>
+    </AgentDataProvider>
   );
 });
 

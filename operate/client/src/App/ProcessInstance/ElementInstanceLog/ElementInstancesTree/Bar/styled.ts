@@ -24,7 +24,7 @@ const Container = styled.div`
 const StateIcon = styled(BaseStateIcon)`
   position: absolute;
   left: ${INSTANCE_HISTORY_LEFT_PADDING};
-  align-self: center;
+  top: 0.5rem;
 `;
 
 export {NodeName, Container, StateIcon};

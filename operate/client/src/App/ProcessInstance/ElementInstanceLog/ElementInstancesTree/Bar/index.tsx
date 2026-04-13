@@ -13,6 +13,7 @@ import {Layer, Stack, Tag} from '@carbon/react';
 import {formatDate} from 'modules/utils/date';
 import type {ElementInstance} from '@camunda/camunda-api-zod-schemas/8.10';
 import {ModificationIcons} from './ModificationIcons';
+import {useAgentData} from 'modules/contexts/agentData';
 
 type Props = {
   elementInstanceKey: string;
@@ -43,6 +44,9 @@ const Bar = forwardRef<HTMLDivElement, Props>(
     },
     ref,
   ) => {
+    const {getIterationSummary} = useAgentData();
+    const iterationSummary = getIterationSummary(elementId);
+
     return (
       <Container ref={ref} data-testid={`node-details-${elementInstanceKey}`}>
         <Stack orientation="horizontal" gap={5}>
@@ -51,7 +55,26 @@ const Bar = forwardRef<HTMLDivElement, Props>(
           ) : (
             <StateIcon state={elementInstanceState} size={16} />
           )}
-          <NodeName>{elementName}</NodeName>
+          {iterationSummary ? (
+            <div data-multiline style={{display: 'flex', flexDirection: 'column', minWidth: 0, flex: 1, marginLeft: 'var(--cds-spacing-02)', padding: 'var(--cds-spacing-02) 0'}}>
+              <span>{elementName}</span>
+              <span
+                style={{
+                  fontSize: 11,
+                  color: 'var(--cds-text-secondary)',
+                  lineHeight: '1.4',
+                  display: '-webkit-box',
+                  WebkitLineClamp: 10,
+                  WebkitBoxOrient: 'vertical' as const,
+                  overflow: 'hidden',
+                }}
+              >
+                {iterationSummary}
+              </span>
+            </div>
+          ) : (
+            <NodeName>{elementName}</NodeName>
+          )}
           {isRoot && latestMigrationDate !== null && (
             <Tag type="green">{`Migrated ${formatDate(latestMigrationDate)}`}</Tag>
           )}

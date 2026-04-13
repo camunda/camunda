@@ -165,6 +165,14 @@ const routes = createRoutesFromElements(
             return {Component: InstanceHistoryTab};
           }}
         />
+        <Route
+          path={Paths.processInstanceAiAgent({isRelative: true})}
+          lazy={async () => {
+            const {AiAgentTab} =
+              await import('./ProcessInstance/BottomPanelTabs/AiAgentTab/index');
+            return {Component: AiAgentTab};
+          }}
+        />
         <Route path="*" element={<DefaultTabRedirect />} />
       </Route>
       <Route

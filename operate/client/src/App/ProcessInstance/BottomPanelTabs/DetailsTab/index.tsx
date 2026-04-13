@@ -21,6 +21,13 @@ import {getExecutionDuration} from './getExecutionDuration';
 import {EmptyMessageContainer, Container, Callout} from './styled';
 import {StructuredList} from 'modules/components/StructuredList';
 import {useProcessInstance} from 'modules/queries/processInstance/useProcessInstance';
+import {useAgentData} from 'modules/contexts/agentData';
+import {
+  DefaultAgentDetail,
+  IterationDetail,
+  ToolCallDetail,
+  ElementDetailsSection,
+} from '../AiAgentTab/AgentDetailPanel';
 
 const DetailsTab: React.FC = () => {
   const {
@@ -34,6 +41,14 @@ const DetailsTab: React.FC = () => {
   const {data: xmlData} = useProcessInstanceXml({
     processDefinitionKey: processInstance?.processDefinitionKey,
   });
+
+  const {
+    isAgentElement,
+    agentSubprocessKey,
+    getAgentDataForElement,
+    getIterationForElement,
+    getToolCallForElement,
+  } = useAgentData();
 
   const businessObject = selectedElementId
     ? xmlData?.businessObjects[selectedElementId]
@@ -89,6 +104,14 @@ const DetailsTab: React.FC = () => {
       ? calledProcessInstancesSearchResult?.items?.[0]
       : undefined;
   const job = jobSearchResult?.[0];
+
+  const showAgentContent =
+    isAgentElement(selectedElementId) && agentSubprocessKey !== null;
+
+  const agentData = useMemo(() => {
+    if (!showAgentContent || !agentSubprocessKey) return null;
+    return getAgentDataForElement(agentSubprocessKey);
+  }, [showAgentContent, agentSubprocessKey, getAgentDataForElement]);
 
   const rows = useMemo(() => {
     if (!resolvedElementInstance) {
@@ -259,6 +282,52 @@ const DetailsTab: React.FC = () => {
           }
         />
       </EmptyMessageContainer>
+    );
+  }
+
+  // When an agent element is selected, show the appropriate detail view
+  if (showAgentContent && agentData && selectedElementId) {
+    const elementDetailsProps = {
+      elementInstanceKey: elementInstanceKey ?? '-',
+      executionDuration: resolvedElementInstance?.startDate
+        ? getExecutionDuration(
+            resolvedElementInstance.startDate,
+            resolvedElementInstance.endDate,
+          )
+        : '-',
+      retriesLeft: job?.retries,
+    };
+
+    // Check if an LLM call element is selected → show iteration detail
+    const iteration = getIterationForElement(selectedElementId);
+    if (iteration) {
+      return (
+        <Container data-testid="details-tab" style={{overflowY: 'auto'}}>
+          <ElementDetailsSection details={elementDetailsProps} />
+          <IterationDetail iteration={iteration} />
+        </Container>
+      );
+    }
+
+    // Check if a tool element is selected → show tool call detail
+    const toolInfo = getToolCallForElement(selectedElementId);
+    if (toolInfo) {
+      return (
+        <Container data-testid="details-tab" style={{overflowY: 'auto'}}>
+          <ElementDetailsSection details={elementDetailsProps} />
+          <ToolCallDetail tool={toolInfo.tool} iteration={toolInfo.iteration} />
+        </Container>
+      );
+    }
+
+    // Default: show the agent subprocess overview
+    return (
+      <Container data-testid="details-tab" style={{overflowY: 'auto'}}>
+        <DefaultAgentDetail
+          agentData={agentData}
+          elementDetails={elementDetailsProps}
+        />
+      </Container>
     );
   }
 

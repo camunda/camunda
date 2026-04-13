@@ -10,6 +10,7 @@ import {createPortal} from 'react-dom';
 
 import {Container} from './styled';
 import {
+  Checkmark,
   CheckmarkOutline,
   Error,
   RadioButtonChecked,
@@ -53,6 +54,7 @@ const StateOverlay: React.FC<Props> = observer(
       >
         {['FAILED', 'incidents'].includes(state) && <WarningFilled />}
         {state === 'active' && <RadioButtonChecked />}
+        {state === 'completed' && <Checkmark />}
         {['EVALUATED', 'completedEndEvents'].includes(state) && (
           <CheckmarkOutline />
         )}

@@ -12,7 +12,7 @@ type State = {
   isExecutionCountVisible: boolean;
 };
 const DEFAULT_STATE: State = {
-  isExecutionCountVisible: false,
+  isExecutionCountVisible: true,
 };
 
 class ExecutionCountToggle {

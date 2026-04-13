@@ -39,6 +39,11 @@ const SUBPROCESS_WITH_INCIDENTS = {
   right: -12,
 };
 
+const AGENT_STATUS_TAG = {
+  top: -28,
+  left: 0,
+};
+
 export {
   MODIFICATIONS,
   DECISION_STATE,
@@ -48,4 +53,5 @@ export {
   COMPLETED_BADGE,
   COMPLETED_END_EVENT_BADGE,
   SUBPROCESS_WITH_INCIDENTS,
+  AGENT_STATUS_TAG,
 };

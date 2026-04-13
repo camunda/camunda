@@ -21,6 +21,7 @@ import {
   COMPLETED_BADGE,
   COMPLETED_END_EVENT_BADGE,
   SUBPROCESS_WITH_INCIDENTS,
+  AGENT_STATUS_TAG,
 } from 'modules/bpmn-js/badgePositions';
 import {DiagramShell} from 'modules/components/DiagramShell';
 import {computed} from 'mobx';
@@ -31,6 +32,8 @@ import {ModificationInfoBanner} from './ModificationInfoBanner';
 import {ModificationDropdown} from './ModificationDropdown';
 import {StateOverlay} from 'modules/components/StateOverlay';
 import {executionCountToggleStore} from 'modules/stores/executionCountToggle';
+import {useAgentData} from 'modules/contexts/agentData';
+import {AgentStatusOverlay} from './AgentStatusOverlay';
 import {useElementStatistics} from 'modules/queries/elementInstancesStatistics/useElementStatistics';
 import {useSelectableElements} from 'modules/queries/elementInstancesStatistics/useSelectableElements';
 import {useExecutedElements} from 'modules/queries/elementInstancesStatistics/useExecutedElements';
@@ -61,6 +64,7 @@ import {getAncestorScopeType} from 'modules/utils/processInstanceDetailsDiagram'
 
 const OVERLAY_TYPE_STATE = 'elementState';
 const OVERLAY_TYPE_MODIFICATIONS_BADGE = 'modificationsBadge';
+const OVERLAY_TYPE_AGENT_STATUS = 'agentStatus';
 
 const overlayPositions = {
   active: ACTIVE_BADGE,
@@ -116,6 +120,7 @@ const TopPanel: React.FC = observer(() => {
     useProcessSequenceFlows(processInstanceId);
   const processDefinitionKey = useProcessDefinitionKeyContext();
   const {isExecutionCountVisible} = executionCountToggleStore.state;
+  const {isAgentInstance, getAgentStatusLabel} = useAgentData();
 
   const {data: selectedElementRunningInstancesCount} =
     useTotalRunningInstancesForElement(selectedElementId ?? undefined);
@@ -167,6 +172,19 @@ const TopPanel: React.FC = observer(() => {
       ? allElementStateOverlays
       : notCompletedElementStateOverlays;
   }, [statistics, businessObjects, isExecutionCountVisible]);
+
+  const agentStatusLabel = isAgentInstance ? getAgentStatusLabel() : null;
+  const agentStatusOverlays = useMemo(() => {
+    if (!agentStatusLabel) return [];
+    return [
+      {
+        payload: {label: agentStatusLabel},
+        type: OVERLAY_TYPE_AGENT_STATUS,
+        elementId: 'AI_Agent',
+        position: AGENT_STATUS_TAG,
+      },
+    ];
+  }, [agentStatusLabel]);
 
   const selectedElementIds = useMemo(() => {
     return selectedAnchorElementId
@@ -228,6 +246,9 @@ const TopPanel: React.FC = observer(() => {
   );
   const modificationBadgeOverlays = diagramOverlaysStore.state.overlays.filter(
     ({type}) => type === OVERLAY_TYPE_MODIFICATIONS_BADGE,
+  );
+  const agentOverlays = diagramOverlaysStore.state.overlays.filter(
+    ({type}) => type === OVERLAY_TYPE_AGENT_STATUS,
   );
 
   const modifiableElements = useModifiableElements();
@@ -375,8 +396,9 @@ const TopPanel: React.FC = observer(() => {
                     ? [
                         ...(elementStateOverlays ?? []),
                         ...modificationBadgesPerElement.get(),
+                        ...agentStatusOverlays,
                       ]
-                    : elementStateOverlays
+                    : [...(elementStateOverlays ?? []), ...agentStatusOverlays]
                 }
                 selectedElementOverlay={
                   isModificationModeEnabled && <ModificationDropdown />
@@ -434,6 +456,16 @@ const TopPanel: React.FC = observer(() => {
                       container={overlay.container}
                       newTokenCount={payload.newTokenCount}
                       cancelledTokenCount={payload.cancelledTokenCount}
+                    />
+                  );
+                })}
+                {agentOverlays.map((overlay) => {
+                  const payload = overlay.payload as {label: string};
+                  return (
+                    <AgentStatusOverlay
+                      key={overlay.elementId}
+                      container={overlay.container}
+                      label={payload.label}
                     />
                   );
                 })}
