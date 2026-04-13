@@ -175,8 +175,7 @@ public final class DeleteClusterVariableTest {
     Assertions.assertThat(record)
         .hasIntent(ClusterVariableIntent.DELETE)
         .hasRejectionType(RejectionType.NOT_FOUND)
-        .hasRejectionReason(
-            "Expected to create cluster variable for tenant with ID 'invalid-tenant-id', but no tenant with this ID exists.");
+        .hasRejectionReason("Tenant with ID 'invalid-tenant-id' does not exist.");
   }
 
   @Test
