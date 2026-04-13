@@ -8,7 +8,6 @@
 package io.camunda.zeebe.engine.processing.deployment.transform;
 
 import static io.camunda.zeebe.util.buffer.BufferUtil.wrapArray;
-import static java.util.Map.entry;
 
 import io.camunda.zeebe.el.ExpressionLanguageMetrics;
 import io.camunda.zeebe.engine.Loggers;
@@ -27,18 +26,15 @@ import io.camunda.zeebe.util.FeatureFlags;
 import java.time.InstantSource;
 import java.util.ArrayList;
 import java.util.Iterator;
-import java.util.Map;
-import java.util.Map.Entry;
+import java.util.List;
 import org.agrona.DirectBuffer;
 import org.slf4j.Logger;
 
 public final class DeploymentTransformer {
 
   private static final Logger LOG = Loggers.PROCESS_PROCESSOR_LOGGER;
-  private static final DeploymentResourceTransformer UNKNOWN_RESOURCE =
-      new UnknownResourceTransformer();
   private final ValidationConfig config;
-  private final Map<String, DeploymentResourceTransformer> resourceTransformers;
+  private final List<DeploymentResourceTransformer> resourceTransformers;
   private final ChecksumGenerator checksumGenerator = new ChecksumGenerator();
   // internal changes during processing
   private RejectionType rejectionType;
@@ -66,6 +62,7 @@ public final class DeploymentTransformer {
             config,
             clock,
             expressionLanguageMetrics);
+
     final var dmnResourceTransformer =
         new DmnResourceTransformer(
             keyGenerator,
@@ -78,17 +75,23 @@ public final class DeploymentTransformer {
         new FormResourceTransformer(
             keyGenerator, stateWriter, checksumGenerator, processingState.getFormState(), config);
 
-    final var resourceTransformer =
+    final var rpaTransformer =
         new RpaTransformer(
             keyGenerator, stateWriter, checksumGenerator, processingState.getResourceState());
 
+    final var defaultResourceTransformer =
+        new DefaultResourceTransformer(
+            keyGenerator, stateWriter, checksumGenerator, processingState.getResourceState());
+
+    // Order matters: transformers are checked in order, and the first that can handle the resource
+    // will be used. DefaultResourceTransformer should be last as it accepts any file.
     resourceTransformers =
-        Map.ofEntries(
-            entry(".bpmn", bpmnResourceTransformer),
-            entry(".xml", bpmnResourceTransformer),
-            entry(".dmn", dmnResourceTransformer),
-            entry(".form", formResourceTransformer),
-            entry(".rpa", resourceTransformer));
+        List.of(
+            bpmnResourceTransformer,
+            dmnResourceTransformer,
+            formResourceTransformer,
+            rpaTransformer,
+            defaultResourceTransformer);
   }
 
   public DirectBuffer getChecksum(final byte[] resource) {
@@ -170,7 +173,7 @@ public final class DeploymentTransformer {
       final DeploymentResourceContext context,
       final StringBuilder errors) {
     final var resourceName = deploymentResource.getResourceName();
-    final var transformer = getResourceTransformer(resourceName);
+    final var transformer = getResourceTransformer(deploymentResource);
 
     if (resourceName.length() > config.maxNameFieldLength()) {
       errors.append(
@@ -201,13 +204,12 @@ public final class DeploymentTransformer {
       final DeploymentResource deploymentResource,
       final DeploymentRecord deploymentEvent,
       final StringBuilder errors) {
-    final var resourceName = deploymentResource.getResourceName();
-    final var transformer = getResourceTransformer(resourceName);
+    final var transformer = getResourceTransformer(deploymentResource);
     try {
       transformer.writeRecords(deploymentResource, deploymentEvent);
       return true;
     } catch (final RuntimeException e) {
-      handleUnexpectedError(resourceName, e, errors);
+      handleUnexpectedError(deploymentResource.getResourceName(), e, errors);
     }
     return false;
   }
@@ -220,35 +222,20 @@ public final class DeploymentTransformer {
     return rejectionReason;
   }
 
-  private DeploymentResourceTransformer getResourceTransformer(final String resourceName) {
-    return resourceTransformers.entrySet().stream()
-        .filter(entry -> resourceName.endsWith(entry.getKey()))
-        .map(Entry::getValue)
+  private DeploymentResourceTransformer getResourceTransformer(final DeploymentResource resource) {
+    return resourceTransformers.stream()
+        .filter(transformer -> transformer.canTransform(resource))
         .findFirst()
-        .orElse(UNKNOWN_RESOURCE);
+        .orElseThrow(
+            () ->
+                new IllegalStateException(
+                    "No transformer found for resource: " + resource.getResourceName()));
   }
 
   private static void handleUnexpectedError(
       final String resourceName, final RuntimeException exception, final StringBuilder errors) {
     LOG.error("Unexpected error while processing resource '{}'", resourceName, exception);
     errors.append("\n'").append(resourceName).append("': ").append(exception.getMessage());
-  }
-
-  private static final class UnknownResourceTransformer implements DeploymentResourceTransformer {
-
-    @Override
-    public Either<Failure, Void> createMetadata(
-        final DeploymentResource resource,
-        final DeploymentRecord deployment,
-        final DeploymentResourceContext context) {
-      final var failureMessage =
-          String.format("%n'%s': unknown resource type", resource.getResourceName());
-      return Either.left(new Failure(failureMessage));
-    }
-
-    @Override
-    public void writeRecords(
-        final DeploymentResource resource, final DeploymentRecord deployment) {}
   }
 
   private record BpmnResource(

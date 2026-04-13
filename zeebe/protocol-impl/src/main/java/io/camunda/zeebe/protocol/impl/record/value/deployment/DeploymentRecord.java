@@ -246,6 +246,11 @@ public final class DeploymentRecord extends UnifiedRecordValue implements Deploy
         .anyMatch(x -> x.endsWith(".rpa"));
   }
 
+  /**
+   * Returns {@code true} if every resource in this deployment is a duplicate of an already-deployed
+   * version (i.e. its content and filename have not changed since the last deployment), {@code
+   * false} if at least one resource is new or changed.
+   */
   public boolean hasDuplicatesOnly() {
     return processesMetadata().stream().allMatch(ProcessMetadata::isDuplicate)
         && decisionRequirementsMetadata().stream()

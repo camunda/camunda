@@ -15,6 +15,18 @@ import io.camunda.zeebe.util.Either;
 interface DeploymentResourceTransformer {
 
   /**
+   * Determines if this transformer can handle the given resource.
+   *
+   * <p>Transformers are checked in order, and the first transformer that returns {@code true} will
+   * be used to process the resource. This allows transformers to make decisions based on file
+   * extension, content, or any other criteria.
+   *
+   * @param resource the resource to check
+   * @return {@code true} if this transformer can handle the resource, {@code false} otherwise
+   */
+  boolean canTransform(DeploymentResource resource);
+
+  /**
    * Step 1 of transforming the given resource: The transformer should add the deployed resource's
    * metadata to the deployment record, but not write any event records yet.
    *
