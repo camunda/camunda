@@ -11,6 +11,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.gateway.mcp.config.tool.McpToolParamsUnwrapped;
 import io.modelcontextprotocol.spec.McpSchema.CallToolRequest;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.media.Schema.RequiredMode;
 import jakarta.validation.Valid;
 import java.lang.reflect.Method;
 import org.junit.jupiter.api.Test;
@@ -79,6 +81,32 @@ class CamundaJsonSchemaGeneratorTest {
   }
 
   @Test
+  void shouldNotIncludeSwaggerDefaultSentinelInSchema() throws Exception {
+    // given — a method parameter type annotated with @Schema (like the generated API models)
+    final JsonNode schema =
+        generateMethodSchema("withSwaggerAnnotatedParam", SwaggerAnnotatedDto.class);
+
+    // when — inspecting properties that don't have an explicit defaultValue
+    final JsonNode properties = schema.get("properties");
+
+    // then — no "default": "##default" sentinel should leak into the schema
+    final JsonNode dtoProperties = properties.get("dto").get("properties");
+    assertThat(dtoProperties.get("name").has("default")).isFalse();
+    assertThat(dtoProperties.get("description").has("default")).isFalse();
+  }
+
+  @Test
+  void shouldPreserveExplicitDefaultValue() throws Exception {
+    // given — a method parameter type with an explicit @Schema(defaultValue = "active")
+    final JsonNode schema =
+        generateMethodSchema("withSwaggerAnnotatedParam", SwaggerAnnotatedDto.class);
+
+    // then — the explicitly set default is preserved
+    final JsonNode dtoProperties = schema.get("properties").get("dto").get("properties");
+    assertThat(dtoProperties.get("status").get("default").asText()).isEqualTo("active");
+  }
+
+  @Test
   void shouldExcludeFrameworkParamsFromMcpToolParamsSchema() throws Exception {
     final JsonNode schema =
         generateMethodSchema(
@@ -118,6 +146,37 @@ class CamundaJsonSchemaGeneratorTest {
 
   public record DtoWithRepeatedTypes(Address homeAddress, Address workAddress) {}
 
+  /** Mimics the generated API model classes that use @Schema without explicit defaultValue. */
+  public static class SwaggerAnnotatedDto {
+    @Schema(name = "name", description = "The name.", requiredMode = RequiredMode.NOT_REQUIRED)
+    private String name;
+
+    @Schema(
+        name = "description",
+        description = "The description.",
+        requiredMode = RequiredMode.NOT_REQUIRED)
+    private String description;
+
+    @Schema(
+        name = "status",
+        description = "The status.",
+        defaultValue = "active",
+        requiredMode = RequiredMode.NOT_REQUIRED)
+    private String status;
+
+    public String getName() {
+      return name;
+    }
+
+    public String getDescription() {
+      return description;
+    }
+
+    public String getStatus() {
+      return status;
+    }
+  }
+
   public static class TestToolMethods {
     public void withOnlyFrameworkParams(final CallToolRequest request) {}
 
@@ -130,5 +189,7 @@ class CamundaJsonSchemaGeneratorTest {
 
     public void withMcpToolParamsAndContext(
         @McpToolParamsUnwrapped @Valid final TaskDto dto, final McpSyncRequestContext context) {}
+
+    public void withSwaggerAnnotatedParam(final SwaggerAnnotatedDto dto) {}
   }
 }
