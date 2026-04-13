@@ -469,22 +469,25 @@ public abstract class OpenSearchUtil {
     String scrollId = response.scrollId();
     HitsMetadata hits = response.hits();
 
-    while (hits.hits().size() != 0) {
-      result.addAll(hits.hits().stream().map(m -> ((Hit) m).source()).toList());
-      // call response processor
-      if (searchHitsProcessor != null) {
-        searchHitsProcessor.accept(response.hits());
+    try {
+      while (hits.hits().size() != 0) {
+        result.addAll(hits.hits().stream().map(m -> ((Hit) m).source()).toList());
+        // call response processor
+        if (searchHitsProcessor != null) {
+          searchHitsProcessor.accept(response.hits());
+        }
+
+        final ScrollRequest.Builder scrollRequest = new ScrollRequest.Builder();
+        scrollRequest.scrollId(scrollId);
+        scrollRequest.scroll(Time.of(t -> t.time(SCROLL_KEEP_ALIVE_MS)));
+
+        response = osClient.scroll(scrollRequest.build(), clazz);
+        scrollId = response.scrollId();
+        hits = response.hits();
       }
-
-      final ScrollRequest.Builder scrollRequest = new ScrollRequest.Builder();
-      scrollRequest.scrollId(scrollId);
-      scrollRequest.scroll(Time.of(t -> t.time(SCROLL_KEEP_ALIVE_MS)));
-
-      response = osClient.scroll(scrollRequest.build(), clazz);
-      scrollId = response.scrollId();
-      hits = response.hits();
+    } finally {
+      clearScroll(scrollId, osClient);
     }
-    clearScroll(scrollId, osClient);
 
     return result;
   }

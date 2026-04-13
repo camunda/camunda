@@ -19,12 +19,19 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.tasklist.exceptions.PersistenceException;
 import java.io.IOException;
+import org.apache.lucene.search.TotalHits;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.bulk.BulkResponse;
 import org.elasticsearch.action.index.IndexRequest;
+import org.elasticsearch.action.search.ClearScrollRequest;
+import org.elasticsearch.action.search.SearchRequest;
+import org.elasticsearch.action.search.SearchResponse;
+import org.elasticsearch.action.search.SearchScrollRequest;
 import org.elasticsearch.action.support.WriteRequest.RefreshPolicy;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
+import org.elasticsearch.search.SearchHit;
+import org.elasticsearch.search.SearchHits;
 import org.elasticsearch.xcontent.XContentType;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -131,6 +138,61 @@ class ElasticsearchUtilTest {
                     esClient, bulkRequest, RefreshPolicy.NONE, maxBulkRequestSize))
         .isInstanceOf(PersistenceException.class)
         .hasMessageContaining("greater than max allowed");
+  }
+
+  @Test
+  void shouldClearScrollWhenProcessorThrowsInScrollWith() throws Exception {
+    final RestHighLevelClient esClient = mock(RestHighLevelClient.class);
+    final SearchResponse searchResponse = mock(SearchResponse.class);
+    final SearchHit hit = mock(SearchHit.class);
+    final SearchHits hits =
+        new SearchHits(new SearchHit[] {hit}, new TotalHits(1, TotalHits.Relation.EQUAL_TO), 1.0f);
+    when(searchResponse.getHits()).thenReturn(hits);
+    when(searchResponse.getScrollId()).thenReturn("scroll-id-1");
+    when(esClient.search(any(SearchRequest.class), any())).thenReturn(searchResponse);
+
+    final SearchRequest request = new SearchRequest("some-alias");
+    assertThatThrownBy(
+            () ->
+                ElasticsearchUtil.scrollWith(
+                    request,
+                    esClient,
+                    h -> {
+                      throw new RuntimeException("processor failure");
+                    },
+                    null,
+                    null))
+        .isInstanceOf(RuntimeException.class)
+        .hasMessage("processor failure");
+
+    final ArgumentCaptor<ClearScrollRequest> clearCaptor =
+        ArgumentCaptor.forClass(ClearScrollRequest.class);
+    verify(esClient).clearScroll(clearCaptor.capture(), any());
+    assertThat(clearCaptor.getValue().getScrollIds()).containsExactly("scroll-id-1");
+  }
+
+  @Test
+  void shouldClearScrollWhenScrollCallThrowsInScrollWith() throws Exception {
+    final RestHighLevelClient esClient = mock(RestHighLevelClient.class);
+    final SearchResponse searchResponse = mock(SearchResponse.class);
+    final SearchHit hit = mock(SearchHit.class);
+    final SearchHits hits =
+        new SearchHits(new SearchHit[] {hit}, new TotalHits(1, TotalHits.Relation.EQUAL_TO), 1.0f);
+    when(searchResponse.getHits()).thenReturn(hits);
+    when(searchResponse.getScrollId()).thenReturn("scroll-id-2");
+    when(esClient.search(any(SearchRequest.class), any())).thenReturn(searchResponse);
+    when(esClient.scroll(any(SearchScrollRequest.class), any()))
+        .thenThrow(new IOException("network boom"));
+
+    final SearchRequest request = new SearchRequest("some-alias");
+    assertThatThrownBy(() -> ElasticsearchUtil.scrollWith(request, esClient, h -> {}, null, null))
+        .isInstanceOf(IOException.class)
+        .hasMessage("network boom");
+
+    final ArgumentCaptor<ClearScrollRequest> clearCaptor =
+        ArgumentCaptor.forClass(ClearScrollRequest.class);
+    verify(esClient).clearScroll(clearCaptor.capture(), any());
+    assertThat(clearCaptor.getValue().getScrollIds()).containsExactly("scroll-id-2");
   }
 
   @Test
