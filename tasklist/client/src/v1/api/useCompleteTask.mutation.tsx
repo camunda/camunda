@@ -7,7 +7,7 @@
  */
 
 import {useMutation, useQueryClient} from '@tanstack/react-query';
-import {useTranslation} from 'react-i18next';
+import {t} from 'i18next';
 import {request, requestErrorSchema} from 'common/api/request';
 import {notificationsStore} from 'common/notifications/notifications.store';
 import {isTaskTimeoutError} from 'common/utils/taskErrorHandling';
@@ -42,7 +42,6 @@ type Payload = {
 
 function useCompleteTask() {
   const client = useQueryClient();
-  const {t} = useTranslation();
 
   function refetchTask(taskId: string) {
     return client.fetchQuery({

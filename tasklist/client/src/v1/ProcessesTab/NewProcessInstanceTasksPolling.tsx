@@ -11,10 +11,11 @@ import type {Task} from 'v1/api/types';
 import {useLocation, useNavigate} from 'react-router-dom';
 import {tracking} from 'common/tracking';
 import {useQuery} from '@tanstack/react-query';
-import {request, type RequestError} from 'common/api/request';
+import {request} from 'common/api/request';
 import {api} from 'v1/api';
 import type {NewProcessInstance} from 'common/processes/newProcessInstance';
 import {observer} from 'mobx-react-lite';
+import {useEffect} from 'react';
 type NewTasksResponse = Task[];
 
 type Props = {
@@ -27,8 +28,8 @@ const NewProcessInstanceTasksPolling: React.FC<Props> = observer(
     const navigate = useNavigate();
     const location = useLocation();
 
-    useQuery<NewTasksResponse, RequestError | Error>({
-      queryKey: ['newTasks', instance?.id],
+    const {data} = useQuery({
+      queryKey: ['newTasks', newInstance, instance?.id],
       enabled: instance !== null,
       refetchInterval: 1000,
       queryFn: async () => {
@@ -48,29 +49,7 @@ const NewProcessInstanceTasksPolling: React.FC<Props> = observer(
         if (response !== null) {
           const data = await response.json();
 
-          if (data.length === 0) {
-            return null;
-          }
-
-          newInstance.removeInstance();
-
-          if (
-            data.length === 1 &&
-            location.pathname === `/${pages.processes()}`
-          ) {
-            const [{id}] = data;
-
-            tracking.track({
-              eventName: 'process-tasks-polling-ended',
-              outcome: 'single-task-found',
-            });
-
-            navigate({pathname: pages.taskDetails(id)});
-
-            return null;
-          }
-
-          return data;
+          return data as NewTasksResponse;
         }
 
         if (error !== null) {
@@ -82,6 +61,30 @@ const NewProcessInstanceTasksPolling: React.FC<Props> = observer(
       gcTime: 0,
       refetchOnWindowFocus: false,
     });
+
+    useEffect(() => {
+      if (data === undefined) {
+        return;
+      }
+      if (data.length === 0) {
+        return;
+      }
+
+      newInstance.removeInstance();
+
+      if (data.length === 1 && location.pathname === `/${pages.processes()}`) {
+        const [{id}] = data;
+
+        tracking.track({
+          eventName: 'process-tasks-polling-ended',
+          outcome: 'single-task-found',
+        });
+
+        navigate({pathname: pages.taskDetails(id)});
+
+        return;
+      }
+    }, [data, location.pathname, navigate, newInstance]);
 
     return null;
   },

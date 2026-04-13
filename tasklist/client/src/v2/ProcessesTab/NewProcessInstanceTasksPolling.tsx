@@ -15,6 +15,7 @@ import {api} from 'v2/api';
 import type {QueryUserTasksResponseBody} from '@camunda/camunda-api-zod-schemas/8.10';
 import type {NewProcessInstance} from 'common/processes/newProcessInstance';
 import {observer} from 'mobx-react-lite';
+import {useEffect} from 'react';
 
 type Props = {
   newInstance: NewProcessInstance;
@@ -26,8 +27,8 @@ const NewProcessInstanceTasksPolling: React.FC<Props> = observer(
     const navigate = useNavigate();
     const location = useLocation();
 
-    useQuery({
-      queryKey: ['newTasks', instance?.id],
+    const {data} = useQuery({
+      queryKey: ['newTasks', newInstance, instance?.id],
       enabled: instance !== null,
       refetchInterval: 1000,
       queryFn: async () => {
@@ -50,29 +51,6 @@ const NewProcessInstanceTasksPolling: React.FC<Props> = observer(
 
         if (response !== null) {
           const data = (await response.json()) as QueryUserTasksResponseBody;
-          const {items} = data;
-
-          if (items.length === 0) {
-            return null;
-          }
-
-          newInstance.removeInstance();
-
-          if (
-            items.length === 1 &&
-            location.pathname === `/${pages.processes()}`
-          ) {
-            const [{userTaskKey}] = items;
-
-            tracking.track({
-              eventName: 'process-tasks-polling-ended',
-              outcome: 'single-task-found',
-            });
-
-            navigate({pathname: pages.taskDetails(userTaskKey)});
-
-            return null;
-          }
 
           return data;
         }
@@ -86,6 +64,31 @@ const NewProcessInstanceTasksPolling: React.FC<Props> = observer(
       gcTime: 0,
       refetchOnWindowFocus: false,
     });
+
+    useEffect(() => {
+      if (data === undefined) {
+        return;
+      }
+
+      const {items} = data;
+
+      if (items.length === 0) {
+        return;
+      }
+
+      newInstance.removeInstance();
+
+      if (items.length === 1 && location.pathname === `/${pages.processes()}`) {
+        const [{userTaskKey}] = items;
+
+        tracking.track({
+          eventName: 'process-tasks-polling-ended',
+          outcome: 'single-task-found',
+        });
+
+        navigate({pathname: pages.taskDetails(userTaskKey)});
+      }
+    }, [data, newInstance, navigate, location.pathname]);
 
     return null;
   },
