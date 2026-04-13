@@ -280,7 +280,7 @@ The [scheduled release load test workflow](https://github.com/camunda/camunda/bl
 After deployment, each load test is verified by the [verify-and-cleanup workflow](https://github.com/camunda/camunda/blob/main/.github/workflows/camunda-verify-and-cleanup-load-test.yml), which:
 
 1. Waits for all pods to be ready
-2. Checks gateway connectivity via the Topology gRPC metric
+2. Checks gateway connectivity via the `app.connected` gauge metric (set to 1 when topology is first received)
 3. Deletes the namespace (regardless of verification outcome)
 
 Results are posted to the `#reliability-testing-alerts` Slack channel.

@@ -1,6 +1,6 @@
 # description: Waits for a load test deployment to be healthy and connected.
 #              Verifies all pods are ready (with retry logic to handle pod reschedules),
-#              then checks Prometheus metrics for a successful Topology gRPC call
+#              then checks Prometheus metrics for the app.connected gauge
 #              to confirm gateway connectivity.
 # owner: @camunda/reliability-testing
 name: Await Load Test
@@ -126,9 +126,9 @@ runs:
         pf_pid=$!
         sleep 5  # wait for port-forward to establish
 
-        # Check that the client has successfully called Topology on the gateway.
-        # grpc_client_responses_received_messages_total{method="Topology"} >= 1
-        # confirms the client can reach the gateway and the cluster is operational.
+        # Check that the client has successfully connected to the gateway.
+        # app_connected >= 1 confirms that the topology was received (i.e. the
+        # client authenticated and connected successfully, regardless of REST or gRPC).
         interval=30
         max_attempts=$((CONNECTIVITY_TIMEOUT / interval))
         attempts=0
@@ -136,12 +136,12 @@ runs:
 
         while [[ $attempts -lt $max_attempts ]]; do
           count=$(curl -s "http://localhost:${local_port}/metrics" 2>/dev/null \
-            | { grep 'grpc_client_responses_received_messages_total{.*method="Topology"' || true; } \
+            | { grep '^app_connected ' || true; } \
             | awk '{print $2}' \
             | cut -d. -f1)
 
           if [[ -n "$count" ]] && [[ "$count" -ge 1 ]]; then
-            echo "Namespace $NAMESPACE: client connected to gateway (Topology responses=$count)"
+            echo "Namespace $NAMESPACE: client connected to gateway (app.connected=$count)"
             verified=true
             break
           fi
@@ -155,7 +155,7 @@ runs:
         wait $pf_pid 2>/dev/null || true
 
         if [[ "$verified" != "true" ]]; then
-          echo "::error::Namespace $NAMESPACE client did not connect to gateway within timeout"
+          echo "::error::Namespace $NAMESPACE client did not connect to gateway within timeout (app.connected metric never reached 1)"
           echo "status=failure" >> "$GITHUB_OUTPUT"
           exit 1
         fi
