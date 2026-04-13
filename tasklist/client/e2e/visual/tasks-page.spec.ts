@@ -7,7 +7,7 @@
  */
 
 import {expect} from '@playwright/test';
-import {test, MOCK_TENANTS} from '@/fixtures/v2-visual';
+import {test, MOCK_TENANTS} from '@/fixtures/visual';
 import {unassignedTask} from '@/mocks/v2/task';
 import {variables} from '@/mocks/v2/variables';
 

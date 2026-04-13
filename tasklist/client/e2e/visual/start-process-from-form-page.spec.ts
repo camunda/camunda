@@ -7,7 +7,7 @@
  */
 
 import {expect} from '@playwright/test';
-import {test} from '@/fixtures/v2-visual';
+import {test} from '@/fixtures/visual';
 
 test.describe('v2 start process from form page', () => {
   test('v2 api not supported message', async ({page}) => {

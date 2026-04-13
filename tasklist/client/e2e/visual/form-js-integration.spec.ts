@@ -7,7 +7,7 @@
  */
 
 import {expect} from '@playwright/test';
-import {test} from '@/fixtures/v2-visual';
+import {test} from '@/fixtures/visual';
 import {unassignedTask} from '@/mocks/v2/task';
 import {bigFormBpmnXml} from '@/mocks/v2/bpmnXml';
 

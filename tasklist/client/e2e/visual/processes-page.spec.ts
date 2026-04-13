@@ -7,7 +7,7 @@
  */
 
 import {expect} from '@playwright/test';
-import {test} from '@/fixtures/v2-visual';
+import {test} from '@/fixtures/visual';
 import {mockProcesses} from '@/mocks/v2/processes';
 
 test.describe('processes page', () => {
