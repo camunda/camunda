@@ -11,19 +11,19 @@ import type {
   CurrentUser,
   UserTask,
 } from '@camunda/camunda-api-zod-schemas/8.10';
-import {FormJSRenderer} from 'common/form-js/FormJSRenderer';
-import type {FormManager} from 'common/form-js/formManager';
-import {notificationsStore} from 'common/notifications/notifications.store';
-import {CompleteTaskButton} from 'common/tasks/details/CompleteTaskButton';
-import {DetailsFooter} from 'common/tasks/details/DetailsFooter';
-import {extractVariablesFromFormSchema} from 'common/tasks/details/extractVariablesFromFormSchema';
-import {FailedVariableFetchError} from 'common/tasks/details/FailedVariableFetchError';
-import {formatVariablesToFormData} from 'common/tasks/details/formatVariablesToFormData';
+import {FormJSRenderer} from 'v2/form-js/FormJSRenderer';
+import type {FormManager} from 'v2/form-js/formManager';
+import {notificationsStore} from 'v2/notifications/notifications.store';
+import {CompleteTaskButton} from 'v2/tasks/details/CompleteTaskButton';
+import {DetailsFooter} from 'v2/tasks/details/DetailsFooter';
+import {extractVariablesFromFormSchema} from 'v2/tasks/details/extractVariablesFromFormSchema';
+import {FailedVariableFetchError} from 'v2/tasks/details/FailedVariableFetchError';
+import {formatVariablesToFormData} from 'v2/tasks/details/formatVariablesToFormData';
 import {
   ScrollableContent,
   TaskDetailsContainer,
   TaskDetailsRow,
-} from 'common/tasks/details/TaskDetailsLayout';
+} from 'v2/tasks/details/TaskDetailsLayout';
 import {useMemo, useRef, useState} from 'react';
 import {useTranslation} from 'react-i18next';
 import {match, Pattern} from 'ts-pattern';

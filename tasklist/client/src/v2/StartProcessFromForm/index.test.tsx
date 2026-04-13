@@ -6,11 +6,11 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {render, screen} from 'common/testing/testing-library';
+import {render, screen} from 'v2/testing/testing-library';
 import {Component} from './index';
 import {MemoryRouter, Route, Routes} from 'react-router-dom';
 import {QueryClientProvider} from '@tanstack/react-query';
-import {getMockQueryClient} from 'common/testing/getMockQueryClient';
+import {getMockQueryClient} from 'v2/testing/getMockQueryClient';
 
 const getWrapper = ({
   initialEntries,

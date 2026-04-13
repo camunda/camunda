@@ -7,7 +7,7 @@
  */
 
 import {useQuery} from '@tanstack/react-query';
-import {request} from 'common/api/request';
+import {request} from 'v2/api/request';
 import {api} from './index';
 import type {
   QueryProcessDefinitionsRequestBody,

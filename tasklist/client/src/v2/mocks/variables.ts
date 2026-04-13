@@ -10,7 +10,7 @@ import type {
   QueryVariablesByUserTaskResponseBody,
   Variable,
 } from '@camunda/camunda-api-zod-schemas/8.10';
-import {DEFAULT_TENANT_ID} from 'common/multitenancy/constants';
+import {DEFAULT_TENANT_ID} from 'v2/multitenancy/constants';
 
 const variables: Variable[] = [
   {

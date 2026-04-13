@@ -10,14 +10,14 @@ import {t as _t} from 'i18next';
 import {useState} from 'react';
 import {useTranslation} from 'react-i18next';
 import type {UserTask} from '@camunda/camunda-api-zod-schemas/8.10';
-import {AsyncActionButton} from 'common/components/AsyncActionButton';
-import {notificationsStore} from 'common/notifications/notifications.store';
-import {tracking} from 'common/tracking';
+import {AsyncActionButton} from 'v2/components/AsyncActionButton';
+import {notificationsStore} from 'v2/notifications/notifications.store';
+import {tracking} from 'v2/tracking';
 import {useAssignTask} from 'v2/api/useAssignTask.mutation';
 import {useUnassignTask} from 'v2/api/useUnassignTask.mutation';
 import {usePollForAssignmentResult} from 'v2/api/usePollForAssignmentResult.mutation';
 import {parseDenialReason} from 'v2/utils/parseDenialReason';
-import {requestErrorSchema} from 'common/api/request';
+import {requestErrorSchema} from 'v2/api/request';
 
 type AssignmentStatus =
   | 'off'

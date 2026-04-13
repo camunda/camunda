@@ -6,14 +6,14 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {pages} from 'common/routing';
+import {pages} from 'v2/routing';
 import {useLocation, useNavigate} from 'react-router-dom';
-import {tracking} from 'common/tracking';
+import {tracking} from 'v2/tracking';
 import {useQuery} from '@tanstack/react-query';
-import {request} from 'common/api/request';
+import {request} from 'v2/api/request';
 import {api} from 'v2/api';
 import type {QueryUserTasksResponseBody} from '@camunda/camunda-api-zod-schemas/8.10';
-import type {NewProcessInstance} from 'common/processes/newProcessInstance';
+import type {NewProcessInstance} from 'v2/processes/newProcessInstance';
 import {observer} from 'mobx-react-lite';
 
 type Props = {

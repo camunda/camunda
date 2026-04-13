@@ -20,23 +20,23 @@ import {Maximize, Close} from '@carbon/react/icons';
 import type {Variable} from '@camunda/camunda-api-zod-schemas/8.10';
 import {Field, useFormState} from 'react-final-form';
 import {FieldArray} from 'react-final-form-arrays';
-import {DelayedErrorField} from 'common/tasks/variables-editor/VariableEditor/DelayedErrorField';
-import {LoadingTextarea} from 'common/tasks/variables-editor/VariableEditor/LoadingTextarea';
-import {OnNewVariableAdded} from 'common/tasks/variables-editor/VariableEditor/OnNewVariableAdded';
-import {mergeValidators} from 'common/tasks/variables-editor/VariableEditor/mergeValidators';
-import type {FormValues} from 'common/tasks/variables-editor/types';
+import {DelayedErrorField} from 'v2/tasks/variables-editor/VariableEditor/DelayedErrorField';
+import {LoadingTextarea} from 'v2/tasks/variables-editor/VariableEditor/LoadingTextarea';
+import {OnNewVariableAdded} from 'v2/tasks/variables-editor/VariableEditor/OnNewVariableAdded';
+import {mergeValidators} from 'v2/tasks/variables-editor/VariableEditor/mergeValidators';
+import type {FormValues} from 'v2/tasks/variables-editor/types';
 import {
   createVariableFieldName,
   createNewVariableFieldName,
-} from 'common/tasks/variables-editor/createVariableFieldName';
+} from 'v2/tasks/variables-editor/createVariableFieldName';
 import {
   validateValueJSON,
   validateNameCharacters,
   validateNameComplete,
   validateDuplicateNames,
   validateValueComplete,
-} from 'common/tasks/variables-editor/VariableEditor/validators';
-import styles from 'common/tasks/variables-editor/VariableEditor/styles.module.scss';
+} from 'v2/tasks/variables-editor/VariableEditor/validators';
+import styles from 'v2/tasks/variables-editor/VariableEditor/styles.module.scss';
 import cn from 'classnames';
 import {useTranslation} from 'react-i18next';
 

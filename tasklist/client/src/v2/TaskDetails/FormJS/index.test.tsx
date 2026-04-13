@@ -6,17 +6,17 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {render, screen, waitFor} from 'common/testing/testing-library';
+import {render, screen, waitFor} from 'v2/testing/testing-library';
 import {FormJS} from './index';
-import {nodeMockServer} from 'common/testing/nodeMockServer';
+import {nodeMockServer} from 'v2/testing/nodeMockServer';
 import {http, HttpResponse} from 'msw';
 import noop from 'lodash/noop';
 import * as formMocks from 'v2/mocks/form';
 import * as variableMocks from 'v2/mocks/variables';
-import * as userMocks from 'common/mocks/current-user';
+import * as userMocks from 'v2/mocks/current-user';
 import {assignedTaskWithForm, unassignedTaskWithForm} from 'v2/mocks/task';
 import {QueryClientProvider} from '@tanstack/react-query';
-import {getMockQueryClient} from 'common/testing/getMockQueryClient';
+import {getMockQueryClient} from 'v2/testing/getMockQueryClient';
 import type {QueryVariablesByUserTaskRequestBody} from '@camunda/camunda-api-zod-schemas/8.10';
 
 const REQUESTED_VARIABLES = ['myVar', 'isCool'];

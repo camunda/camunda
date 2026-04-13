@@ -17,19 +17,19 @@ import {
   createRoutesFromElements,
 } from 'react-router-dom';
 import {ErrorBoundary} from 'react-error-boundary';
-import {Notifications} from 'common/notifications';
-import {NetworkStatusWatcher} from 'common/NetworkStatusWatcher';
-import {ThemeProvider} from 'common/theme/ThemeProvider';
-import {SessionWatcher} from 'common/auth/SessionWatcher';
-import {TrackPagination} from 'common/tracking/TrackPagination';
-import {ReactQueryProvider} from 'common/react-query/ReactQueryProvider';
+import {Notifications} from 'v2/notifications';
+import {NetworkStatusWatcher} from 'v2/NetworkStatusWatcher';
+import {ThemeProvider} from 'v2/theme/ThemeProvider';
+import {SessionWatcher} from 'v2/auth/SessionWatcher';
+import {TrackPagination} from 'v2/tracking/TrackPagination';
+import {ReactQueryProvider} from 'v2/react-query/ReactQueryProvider';
 import {
   ErrorWithinLayout,
   FallbackErrorPage,
-} from 'common/error-handling/errorBoundaries';
-import {tracking} from 'common/tracking';
-import {getClientConfig} from 'common/config/getClientConfig';
-import {Forbidden} from 'common/error-handling/Forbidden';
+} from 'v2/error-handling/errorBoundaries';
+import {tracking} from 'v2/tracking';
+import {getClientConfig} from 'v2/config/getClientConfig';
+import {Forbidden} from 'v2/error-handling/Forbidden';
 
 const Wrapper: React.FC = () => {
   return (
@@ -44,12 +44,12 @@ const Wrapper: React.FC = () => {
 const router = createBrowserRouter(
   createRoutesFromElements(
     <Route path="/" element={<Wrapper />} ErrorBoundary={ErrorWithinLayout}>
-      <Route path="login" lazy={() => import('common/auth/Login')} />
+      <Route path="login" lazy={() => import('v2/auth/Login')} />
       <Route
         path="new/:bpmnProcessId"
         lazy={() => import('./v2/StartProcessFromForm')}
       />
-      <Route path="/" lazy={() => import('./common/components/Layout')}>
+      <Route path="/" lazy={() => import('./v2/components/Layout')}>
         <Route path="forbidden" element={<Forbidden />} />
         <Route path="processes" ErrorBoundary={ErrorWithinLayout}>
           <Route index lazy={() => import('./v2/ProcessesTab')} />
@@ -65,7 +65,7 @@ const router = createBrowserRouter(
         >
           <Route
             index
-            lazy={() => import('./common/tasks/EmptyPage')}
+            lazy={() => import('./v2/tasks/EmptyPage')}
             ErrorBoundary={ErrorWithinLayout}
           />
           <Route

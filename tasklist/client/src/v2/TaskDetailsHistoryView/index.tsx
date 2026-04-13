@@ -15,8 +15,8 @@ import {
   useRevalidator,
   useRouteError,
 } from 'react-router-dom';
-import {pages, useTaskDetailsParams} from 'common/routing';
-import {reactQueryClient} from 'common/react-query/reactQueryClient';
+import {pages, useTaskDetailsParams} from 'v2/routing';
+import {reactQueryClient} from 'v2/react-query/reactQueryClient';
 import {
   getUserTaskAuditLogsQueryOptions,
   DEFAULT_SORT,
@@ -25,11 +25,11 @@ import {
   type AuditLogSortField,
 } from 'v2/api/useUserTaskAuditLogs.query';
 import {useSuspenseInfiniteQuery} from '@tanstack/react-query';
-import {SomethingWentWrong} from 'common/error-handling/SomethingWentWrong';
-import {Forbidden} from 'common/error-handling/Forbidden';
+import {SomethingWentWrong} from 'v2/error-handling/SomethingWentWrong';
+import {Forbidden} from 'v2/error-handling/Forbidden';
 import {useTranslation} from 'react-i18next';
-import {logger} from 'common/utils/logger';
-import {requestErrorSchema} from 'common/api/request';
+import {logger} from 'v2/utils/logger';
+import {requestErrorSchema} from 'v2/api/request';
 import {
   DataTable,
   Table,
@@ -42,7 +42,7 @@ import {
   Button,
 } from '@carbon/react';
 import {Information} from '@carbon/react/icons';
-import {formatDate} from 'common/dates/formatDate';
+import {formatDate} from 'v2/dates/formatDate';
 import {ColumnHeader} from './ColumnHeader';
 import {getOperationTypeTranslationKey} from './getOperationTypeTranslationKey';
 import {getSortParams} from './sortUtils';

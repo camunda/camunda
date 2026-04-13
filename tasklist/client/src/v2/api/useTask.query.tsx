@@ -12,7 +12,7 @@ import {
   useQueryClient,
 } from '@tanstack/react-query';
 import {api} from 'v2/api';
-import {type RequestError, request} from 'common/api/request';
+import {type RequestError, request} from 'v2/api/request';
 import type {UserTask} from '@camunda/camunda-api-zod-schemas/8.10';
 
 function getUseTaskQueryKey(userTaskKey: UserTask['userTaskKey']) {

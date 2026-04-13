@@ -14,26 +14,26 @@ import {
   waitFor,
   waitForElementToBeRemoved,
   within,
-} from 'common/testing/testing-library';
-import {nodeMockServer} from 'common/testing/nodeMockServer';
+} from 'v2/testing/testing-library';
+import {nodeMockServer} from 'v2/testing/nodeMockServer';
 import {http, HttpResponse, type PathParams} from 'msw';
 import {MemoryRouter} from 'react-router-dom';
 import {Component} from './index';
-import {notificationsStore} from 'common/notifications/notifications.store';
+import {notificationsStore} from 'v2/notifications/notifications.store';
 import * as formMocks from 'v2/mocks/form';
-import * as userMocks from 'common/mocks/current-user';
+import * as userMocks from 'v2/mocks/current-user';
 import {
   getProcessDefinitionMock,
   getQueryProcessDefinitionsResponseMock,
 } from 'v2/mocks/processDefinitions';
-import {LocationLog} from 'common/testing/LocationLog';
+import {LocationLog} from 'v2/testing/LocationLog';
 import {QueryClientProvider} from '@tanstack/react-query';
-import {getMockQueryClient} from 'common/testing/getMockQueryClient';
-import {pages} from 'common/routing';
-import * as clientConfig from 'common/config/getClientConfig';
+import {getMockQueryClient} from 'v2/testing/getMockQueryClient';
+import {pages} from 'v2/routing';
+import * as clientConfig from 'v2/config/getClientConfig';
 import type {QueryProcessDefinitionsRequestBody} from '@camunda/camunda-api-zod-schemas/8.10';
 
-vi.mock('common/notifications/notifications.store', () => ({
+vi.mock('v2/notifications/notifications.store', () => ({
   notificationsStore: {
     displayNotification: vi.fn(() => () => {}),
   },

@@ -12,15 +12,15 @@ import {Stack} from '@carbon/react';
 import {observer} from 'mobx-react-lite';
 import {useTasks} from 'v2/api/useTasks.query';
 import {useTaskFilters} from 'v2/features/tasks/filters/useTaskFilters';
-import {useAutoSelectNextTask} from 'common/tasks/next-task/useAutoSelectNextTask';
+import {useAutoSelectNextTask} from 'v2/tasks/next-task/useAutoSelectNextTask';
 import {useTranslation} from 'react-i18next';
-import {autoSelectNextTaskStore} from 'common/tasks/next-task/autoSelectFirstTask';
-import {pages} from 'common/routing';
-import {Options} from 'common/tasks/available-tasks/Options';
-import {Filters} from 'common/tasks/available-tasks/Filters';
+import {autoSelectNextTaskStore} from 'v2/tasks/next-task/autoSelectFirstTask';
+import {pages} from 'v2/routing';
+import {Options} from 'v2/tasks/available-tasks/Options';
+import {Filters} from 'v2/tasks/available-tasks/Filters';
 import {AvailableTasks} from './AvailableTasks';
-import styles from 'common/tasks/page.module.scss';
-import {CollapsiblePanel} from 'common/tasks/available-tasks/CollapsiblePanel';
+import styles from 'v2/tasks/page.module.scss';
+import {CollapsiblePanel} from 'v2/tasks/available-tasks/CollapsiblePanel';
 
 function useAutoSelectNextTaskSideEffects() {
   const {enabled} = autoSelectNextTaskStore;

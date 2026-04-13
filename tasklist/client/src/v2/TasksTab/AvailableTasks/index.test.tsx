@@ -11,15 +11,15 @@ import {
   screen,
   waitForElementToBeRemoved,
   within,
-} from 'common/testing/testing-library';
+} from 'v2/testing/testing-library';
 import {AvailableTasks} from './index';
 import {Link, MemoryRouter} from 'react-router-dom';
-import {nodeMockServer} from 'common/testing/nodeMockServer';
+import {nodeMockServer} from 'v2/testing/nodeMockServer';
 import {http, HttpResponse} from 'msw';
 import * as tasksMocks from 'v2/mocks/tasks';
-import * as userMocks from 'common/mocks/current-user';
+import * as userMocks from 'v2/mocks/current-user';
 import {QueryClientProvider} from '@tanstack/react-query';
-import {getMockQueryClient} from 'common/testing/getMockQueryClient';
+import {getMockQueryClient} from 'v2/testing/getMockQueryClient';
 
 function noop() {
   return Promise.resolve([]);

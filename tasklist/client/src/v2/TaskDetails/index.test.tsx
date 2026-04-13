@@ -14,25 +14,25 @@ import {
   screen,
   waitFor,
   waitForElementToBeRemoved,
-} from 'common/testing/testing-library';
+} from 'v2/testing/testing-library';
 import {http, HttpResponse} from 'msw';
-import {nodeMockServer} from 'common/testing/nodeMockServer';
-import {LocationLog} from 'common/testing/LocationLog';
-import {notificationsStore} from 'common/notifications/notifications.store';
+import {nodeMockServer} from 'v2/testing/nodeMockServer';
+import {LocationLog} from 'v2/testing/LocationLog';
+import {notificationsStore} from 'v2/notifications/notifications.store';
 import * as formMocks from 'v2/mocks/form';
 import * as variableMocks from 'v2/mocks/variables';
 import * as taskMocks from 'v2/mocks/task';
 import * as tasksMocks from 'v2/mocks/tasks';
-import * as userMocks from 'common/mocks/current-user';
+import * as userMocks from 'v2/mocks/current-user';
 import {QueryClientProvider} from '@tanstack/react-query';
-import {getMockQueryClient} from 'common/testing/getMockQueryClient';
+import {getMockQueryClient} from 'v2/testing/getMockQueryClient';
 
 const {getQueryVariablesResponseMock} = variableMocks;
 const {getQueryTasksResponseMock} = tasksMocks;
 
 const MOCK_USER_TASK_KEY = '0';
 
-vi.mock('common/notifications/notifications.store', () => ({
+vi.mock('v2/notifications/notifications.store', () => ({
   notificationsStore: {
     displayNotification: vi.fn(() => () => {}),
   },

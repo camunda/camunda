@@ -23,27 +23,27 @@ import {
   ScrollableContent,
   TaskDetailsContainer,
   TaskDetailsRow,
-} from 'common/tasks/details/TaskDetailsLayout';
-import {Separator} from 'common/tasks/variables-editor/Separator';
+} from 'v2/tasks/details/TaskDetailsLayout';
+import {Separator} from 'v2/tasks/variables-editor/Separator';
 import {useQueryAllVariables} from 'v2/api/useQueryAllVariables.query';
 import {useTranslation} from 'react-i18next';
-import {FailedVariableFetchError} from 'common/tasks/details/FailedVariableFetchError';
-import {CompleteTaskButton} from 'common/tasks/details/CompleteTaskButton';
-import {createVariableFieldName} from 'common/tasks/variables-editor/createVariableFieldName';
-import {getVariableFieldName} from 'common/tasks/variables-editor/getVariableFieldName';
+import {FailedVariableFetchError} from 'v2/tasks/details/FailedVariableFetchError';
+import {CompleteTaskButton} from 'v2/tasks/details/CompleteTaskButton';
+import {createVariableFieldName} from 'v2/tasks/variables-editor/createVariableFieldName';
+import {getVariableFieldName} from 'v2/tasks/variables-editor/getVariableFieldName';
 import {VariableEditor} from 'v2/TaskDetails/Variables/VariableEditor';
-import {IconButton} from 'common/tasks/variables-editor/IconButton';
-import {ResetForm} from 'common/tasks/variables-editor/ResetForm';
-import type {FormValues} from 'common/tasks/variables-editor/types';
-import styles from 'common/tasks/variables-editor/styles.module.scss';
+import {IconButton} from 'v2/tasks/variables-editor/IconButton';
+import {ResetForm} from 'v2/tasks/variables-editor/ResetForm';
+import type {FormValues} from 'v2/tasks/variables-editor/types';
+import styles from 'v2/tasks/variables-editor/styles.module.scss';
 import cn from 'classnames';
 import {useFetchFullVariable} from 'v2/api/useFetchFullVariable.mutation';
 import {tryParseJSON} from 'v2/features/tasks/details/tryParseJSON';
 
 const JSONEditorModal = lazy(async () => {
   const [{loadMonaco}, {JSONEditorModal}] = await Promise.all([
-    import('common/loadMonaco'),
-    import('common/tasks/variables-editor/JSONEditorModal'),
+    import('v2/loadMonaco'),
+    import('v2/tasks/variables-editor/JSONEditorModal'),
   ]);
 
   loadMonaco();

@@ -12,12 +12,12 @@ import {
   Component as AuditLogDetailsComponent,
   loader as auditLogDetailsLoader,
 } from './HistoryItemDetailsModal';
-import {render, screen, within, waitFor} from 'common/testing/testing-library';
+import {render, screen, within, waitFor} from 'v2/testing/testing-library';
 import {http, HttpResponse} from 'msw';
-import {nodeMockServer} from 'common/testing/nodeMockServer';
+import {nodeMockServer} from 'v2/testing/nodeMockServer';
 import {QueryClientProvider} from '@tanstack/react-query';
-import {getMockQueryClient} from 'common/testing/getMockQueryClient';
-import {LocationLog} from 'common/testing/LocationLog';
+import {getMockQueryClient} from 'v2/testing/getMockQueryClient';
+import {LocationLog} from 'v2/testing/LocationLog';
 import * as auditLogMocks from 'v2/mocks/auditLogs';
 import {endpoints} from '@camunda/camunda-api-zod-schemas/8.10';
 import {vi} from 'vitest';

@@ -7,10 +7,10 @@
  */
 
 import {MemoryRouter} from 'react-router-dom';
-import {render, screen} from 'common/testing/testing-library';
+import {render, screen} from 'v2/testing/testing-library';
 import {ColumnHeader} from './ColumnHeader';
 import {Table, TableHead, TableRow} from '@carbon/react';
-import {LocationLog} from 'common/testing/LocationLog';
+import {LocationLog} from 'v2/testing/LocationLog';
 
 function getWrapper(initialEntry: string = '/') {
   const Wrapper: React.FC<{children: React.ReactNode}> = ({children}) => (

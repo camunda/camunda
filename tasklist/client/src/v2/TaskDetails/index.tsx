@@ -10,20 +10,20 @@ import {useLocation, useNavigate, useOutletContext} from 'react-router-dom';
 import {observer} from 'mobx-react-lite';
 import {useCompleteTask} from 'v2/api/useCompleteTask.mutation';
 import {useTranslation} from 'react-i18next';
-import {pages, useTaskDetailsParams} from 'common/routing';
-import {tracking} from 'common/tracking';
-import {notificationsStore} from 'common/notifications/notifications.store';
-import {getStateLocally, storeStateLocally} from 'common/local-storage';
+import {pages, useTaskDetailsParams} from 'v2/routing';
+import {tracking} from 'v2/tracking';
+import {notificationsStore} from 'v2/notifications/notifications.store';
+import {getStateLocally, storeStateLocally} from 'v2/local-storage';
 import {useTaskFilters} from 'v2/features/tasks/filters/useTaskFilters';
 import {useTasks} from 'v2/api/useTasks.query';
-import {useAutoSelectNextTask} from 'common/tasks/next-task/useAutoSelectNextTask';
-import {autoSelectNextTaskStore} from 'common/tasks/next-task/autoSelectFirstTask';
+import {useAutoSelectNextTask} from 'v2/tasks/next-task/useAutoSelectNextTask';
+import {autoSelectNextTaskStore} from 'v2/tasks/next-task/autoSelectFirstTask';
 import type {OutletContext} from 'v2/TaskDetailsLayout';
 import {Variables} from './Variables';
 import {FormJS} from './FormJS';
-import {useUploadDocuments} from 'common/api/useUploadDocuments.mutation';
+import {useUploadDocuments} from 'v2/api/useUploadDocuments.mutation';
 import {parseDenialReason} from 'v2/utils/parseDenialReason';
-import {requestErrorSchema} from 'common/api/request';
+import {requestErrorSchema} from 'v2/api/request';
 
 const TaskDetails: React.FC = observer(() => {
   const {task, currentUser} = useOutletContext<OutletContext>();

@@ -9,10 +9,10 @@
 import {useLayoutEffect} from 'react';
 import {Content} from '@carbon/react';
 import {useTranslation} from 'react-i18next';
-import {tracking} from 'common/tracking';
-import ErrorRobotImage from 'common/images/error-robot.svg';
-import {StartProcessFromFormMessage} from 'common/public-start-form/StartProcessFromFormMessage';
-import styles from 'common/public-start-form/startProcessFromForm.module.scss';
+import {tracking} from 'v2/tracking';
+import ErrorRobotImage from 'v2/images/error-robot.svg';
+import {StartProcessFromFormMessage} from 'v2/public-start-form/StartProcessFromFormMessage';
+import styles from 'v2/public-start-form/startProcessFromForm.module.scss';
 
 const StartProcessFromForm: React.FC = () => {
   const {t} = useTranslation();

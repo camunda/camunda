@@ -7,7 +7,7 @@
  */
 
 import type {Form} from '@camunda/camunda-api-zod-schemas/8.10';
-import * as schemas from 'common/mocks/form-schema';
+import * as schemas from 'v2/mocks/form-schema';
 
 const form: Form = {
   formKey: 'form-0',

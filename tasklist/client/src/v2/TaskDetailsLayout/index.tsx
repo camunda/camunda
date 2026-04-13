@@ -10,26 +10,26 @@ import type {
   CurrentUser,
   UserTask,
 } from '@camunda/camunda-api-zod-schemas/8.10';
-import taskDetailsLayoutCommon from 'common/tasks/details/taskDetailsLayoutCommon.module.scss';
+import taskDetailsLayoutCommon from 'v2/tasks/details/taskDetailsLayoutCommon.module.scss';
 import {Section} from '@carbon/react';
-import {TurnOnNotificationPermission} from 'common/tasks/details/TurnOnNotificationPermission';
-import {TabListNav} from 'common/tasks/details/TabListNav';
-import {Aside} from 'common/tasks/details/Aside';
-import {pages, useTaskDetailsParams} from 'common/routing';
+import {TurnOnNotificationPermission} from 'v2/tasks/details/TurnOnNotificationPermission';
+import {TabListNav} from 'v2/tasks/details/TabListNav';
+import {Aside} from 'v2/tasks/details/Aside';
+import {pages, useTaskDetailsParams} from 'v2/routing';
 import {useTranslation} from 'react-i18next';
-import {useCurrentUser} from 'common/api/useCurrentUser.query';
+import {useCurrentUser} from 'v2/api/useCurrentUser.query';
 import {Outlet, useMatch, useNavigate, useSearchParams} from 'react-router-dom';
-import {DetailsSkeleton} from 'common/tasks/details/DetailsSkeleton';
+import {DetailsSkeleton} from 'v2/tasks/details/DetailsSkeleton';
 import {useProcessDefinitionXml} from 'v2/api/useProcessDefinitionXml.query';
 import {useTask} from 'v2/api/useTask.query';
 import {useEffect} from 'react';
-import {notificationsStore} from 'common/notifications/notifications.store';
-import {TaskDetailsHeader} from 'common/tasks/details/TaskDetailsHeader';
-import {tracking} from 'common/tracking';
-import {decodeTaskOpenedRef} from 'common/tracking/reftags';
+import {notificationsStore} from 'v2/notifications/notifications.store';
+import {TaskDetailsHeader} from 'v2/tasks/details/TaskDetailsHeader';
+import {tracking} from 'v2/tracking';
+import {decodeTaskOpenedRef} from 'v2/tracking/reftags';
 import {AssignButton} from './AssignButton';
-import {removeSortParam} from 'common/tasks/removeSortParam';
-import {removeRefParam} from 'common/tasks/removeRefParam';
+import {removeSortParam} from 'v2/tasks/removeSortParam';
+import {removeRefParam} from 'v2/tasks/removeRefParam';
 
 type OutletContext = {
   task: UserTask;

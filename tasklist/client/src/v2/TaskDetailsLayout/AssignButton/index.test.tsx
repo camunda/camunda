@@ -6,17 +6,17 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {render, screen, waitFor} from 'common/testing/testing-library';
+import {render, screen, waitFor} from 'v2/testing/testing-library';
 import {AssignButton} from './index';
 import {assignedTask, unassignedTask} from 'v2/mocks/task';
-import {currentUser} from 'common/mocks/current-user';
-import {getMockQueryClient} from 'common/testing/getMockQueryClient';
+import {currentUser} from 'v2/mocks/current-user';
+import {getMockQueryClient} from 'v2/testing/getMockQueryClient';
 import {QueryClientProvider} from '@tanstack/react-query';
-import {nodeMockServer} from 'common/testing/nodeMockServer';
+import {nodeMockServer} from 'v2/testing/nodeMockServer';
 import {http, HttpResponse} from 'msw';
-import {notificationsStore} from 'common/notifications/notifications.store';
+import {notificationsStore} from 'v2/notifications/notifications.store';
 
-vi.mock('common/notifications/notifications.store', () => ({
+vi.mock('v2/notifications/notifications.store', () => ({
   notificationsStore: {
     displayNotification: vi.fn(() => () => {}),
   },

@@ -9,11 +9,11 @@
 import {HttpResponse, http} from 'msw';
 import {QueryClientProvider} from '@tanstack/react-query';
 import {MemoryRouter, Routes, Route} from 'react-router-dom';
-import {render, screen, waitFor} from 'common/testing/testing-library';
-import {getMockQueryClient} from 'common/testing/getMockQueryClient';
-import {nodeMockServer} from 'common/testing/nodeMockServer';
-import {LocationLog} from 'common/testing/LocationLog';
-import * as userMocks from 'common/mocks/current-user';
+import {render, screen, waitFor} from 'v2/testing/testing-library';
+import {getMockQueryClient} from 'v2/testing/getMockQueryClient';
+import {nodeMockServer} from 'v2/testing/nodeMockServer';
+import {LocationLog} from 'v2/testing/LocationLog';
+import * as userMocks from 'v2/mocks/current-user';
 import * as taskMocks from 'v2/mocks/task';
 import {Component} from '.';
 

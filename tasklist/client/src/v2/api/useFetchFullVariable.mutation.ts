@@ -8,7 +8,7 @@
 
 import {api} from 'v2/api';
 import {useMutation, useQueryClient} from '@tanstack/react-query';
-import {request} from 'common/api/request';
+import {request} from 'v2/api/request';
 import type {
   Variable,
   QueryVariablesByUserTaskResponseBody,

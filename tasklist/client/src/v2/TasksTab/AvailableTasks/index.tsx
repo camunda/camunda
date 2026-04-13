@@ -12,10 +12,10 @@ import {Stack} from '@carbon/react';
 import {Search} from '@carbon/react/icons';
 import {useTaskFilters} from 'v2/features/tasks/filters/useTaskFilters';
 import type {UserTask} from '@camunda/camunda-api-zod-schemas/8.10';
-import {useCurrentUser} from 'common/api/useCurrentUser.query';
-import {AvailableTaskItem} from 'common/tasks/available-tasks/AvailableTaskItem';
-import {AvailableTasksSkeleton} from 'common/tasks/available-tasks/AvailableTasksSkeleton';
-import styles from 'common/tasks/available-tasks/styles.module.scss';
+import {useCurrentUser} from 'v2/api/useCurrentUser.query';
+import {AvailableTaskItem} from 'v2/tasks/available-tasks/AvailableTaskItem';
+import {AvailableTasksSkeleton} from 'v2/tasks/available-tasks/AvailableTasksSkeleton';
+import styles from 'v2/tasks/available-tasks/styles.module.scss';
 import cn from 'classnames';
 
 type Props = {

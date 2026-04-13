@@ -7,7 +7,7 @@
  */
 
 import {useOutletContext} from 'react-router-dom';
-import {ProcessDiagramView} from 'common/tasks/details/ProcessDiagramView';
+import {ProcessDiagramView} from 'v2/tasks/details/ProcessDiagramView';
 import type {OutletContext} from 'v2/TaskDetailsLayout';
 
 const TaskDetailsProcessView: React.FC = () => {

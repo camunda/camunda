@@ -8,7 +8,7 @@
 
 import {useMutation} from '@tanstack/react-query';
 import {api} from 'v2/api';
-import {request} from 'common/api/request';
+import {request} from 'v2/api/request';
 import type {UserTask} from '@camunda/camunda-api-zod-schemas/8.10';
 
 function useUnassignTask() {

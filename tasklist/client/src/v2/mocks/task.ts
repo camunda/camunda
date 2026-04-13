@@ -7,8 +7,8 @@
  */
 
 import type {UserTask} from '@camunda/camunda-api-zod-schemas/8.10';
-import {currentUser} from 'common/mocks/current-user';
-import {DEFAULT_TENANT_ID} from 'common/multitenancy/constants';
+import {currentUser} from 'v2/mocks/current-user';
+import {DEFAULT_TENANT_ID} from 'v2/multitenancy/constants';
 import {uniqueId} from './utils';
 
 const unassignedTask = (customFields: Partial<UserTask> = {}): UserTask => ({

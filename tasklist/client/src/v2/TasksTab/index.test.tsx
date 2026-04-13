@@ -6,20 +6,15 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {
-  render,
-  screen,
-  fireEvent,
-  waitFor,
-} from 'common/testing/testing-library';
+import {render, screen, fireEvent, waitFor} from 'v2/testing/testing-library';
 import {MemoryRouter} from 'react-router-dom';
 import {Component} from './index';
 import {http, HttpResponse} from 'msw';
-import {nodeMockServer} from 'common/testing/nodeMockServer';
-import * as userMocks from 'common/mocks/current-user';
+import {nodeMockServer} from 'v2/testing/nodeMockServer';
+import * as userMocks from 'v2/mocks/current-user';
 import {QueryClientProvider} from '@tanstack/react-query';
-import {getMockQueryClient} from 'common/testing/getMockQueryClient';
-import {LocationLog} from 'common/testing/LocationLog';
+import {getMockQueryClient} from 'v2/testing/getMockQueryClient';
+import {LocationLog} from 'v2/testing/LocationLog';
 import {unassignedTask} from 'v2/mocks/task';
 import {getQueryTasksResponseMock} from 'v2/mocks/tasks';
 import {

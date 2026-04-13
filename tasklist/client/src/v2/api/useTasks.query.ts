@@ -8,10 +8,10 @@
 
 import {useInfiniteQuery} from '@tanstack/react-query';
 import {api} from './index';
-import {request} from 'common/api/request';
+import {request} from 'v2/api/request';
 import {getQueryVariables} from 'v2/api/getQueryVariables';
 import type {TaskFilters} from 'v2/features/tasks/filters/useTaskFilters';
-import {useCurrentUser} from 'common/api/useCurrentUser.query';
+import {useCurrentUser} from 'v2/api/useCurrentUser.query';
 import {
   type QueryUserTasksRequestBody,
   type QueryUserTasksResponseBody,

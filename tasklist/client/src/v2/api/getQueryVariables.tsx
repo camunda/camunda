@@ -7,7 +7,7 @@
  */
 
 import {type QueryUserTasksRequestBody} from '@camunda/camunda-api-zod-schemas/8.10';
-import {getStateLocally} from 'common/local-storage';
+import {getStateLocally} from 'v2/local-storage';
 import {type TaskFilters} from 'v2/features/tasks/filters/useTaskFilters';
 
 const SORT_BY_FIELD: Record<

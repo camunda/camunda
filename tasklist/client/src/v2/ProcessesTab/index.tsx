@@ -28,35 +28,35 @@ import {
 import {useEffect, useMemo, useRef, useState} from 'react';
 import {useTranslation} from 'react-i18next';
 import {observer} from 'mobx-react-lite';
-import {newProcessInstance} from 'common/processes/newProcessInstance';
-import {FirstTimeModal} from 'common/processes/FirstTimeModal';
-import {notificationsStore} from 'common/notifications/notifications.store';
-import {logger} from 'common/utils/logger';
+import {newProcessInstance} from 'v2/processes/newProcessInstance';
+import {FirstTimeModal} from 'v2/processes/FirstTimeModal';
+import {notificationsStore} from 'v2/notifications/notifications.store';
+import {logger} from 'v2/utils/logger';
 import {NewProcessInstanceTasksPolling} from './NewProcessInstanceTasksPolling';
-import {tracking} from 'common/tracking';
+import {tracking} from 'v2/tracking';
 import {useProcessDefinitions} from 'v2/api/useProcessDefinitions.query';
-import {useCurrentUser} from 'common/api/useCurrentUser.query';
+import {useCurrentUser} from 'v2/api/useCurrentUser.query';
 import styles from './styles.module.scss';
 import cn from 'classnames';
-import {getClientConfig} from 'common/config/getClientConfig';
+import {getClientConfig} from 'v2/config/getClientConfig';
 import {useCreateProcessInstance} from 'v2/api/useCreateProcessInstance.mutation';
 import {C3EmptyState} from '@camunda/camunda-composite-components';
-import EmptyMessageImage from 'common/processes/empty-message-image.svg';
-import {ProcessTile} from 'common/processes/ProcessTile';
-import {getProcessDisplayName} from 'common/processes/getProcessDisplayName';
+import EmptyMessageImage from 'v2/processes/empty-message-image.svg';
+import {ProcessTile} from 'v2/processes/ProcessTile';
+import {getProcessDisplayName} from 'v2/processes/getProcessDisplayName';
 import type {ProcessDefinition} from '@camunda/camunda-api-zod-schemas/8.10';
 
 import {
   START_FORM_FILTER_OPTIONS,
   type FilterOption,
-} from 'common/processes/constants';
-import {MultitenancyDropdown} from 'common/multitenancy/MultitenancyDropdown';
-import {getStateLocally, storeStateLocally} from 'common/local-storage';
-import {pages} from 'common/routing';
-import {FormModal} from 'common/processes/FormModal';
-import {useUploadDocuments} from 'common/api/useUploadDocuments.mutation';
+} from 'v2/processes/constants';
+import {MultitenancyDropdown} from 'v2/multitenancy/MultitenancyDropdown';
+import {getStateLocally, storeStateLocally} from 'v2/local-storage';
+import {pages} from 'v2/routing';
+import {FormModal} from 'v2/processes/FormModal';
+import {useUploadDocuments} from 'v2/api/useUploadDocuments.mutation';
 import {useProcessStartForm} from 'v2/api/useProcessStartForm.query';
-import {useIsMultitenancyEnabled} from 'common/multitenancy/useIsMultitenancyEnabled';
+import {useIsMultitenancyEnabled} from 'v2/multitenancy/useIsMultitenancyEnabled';
 import {tryParseJSON} from 'v2/features/tasks/details/tryParseJSON';
 
 const FilterDropdown: React.FC<{
