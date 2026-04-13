@@ -547,4 +547,60 @@ describe('<DetailsTab />', () => {
       screen.queryByRole('link', {name: 'Open Tasklist'}),
     ).not.toBeInTheDocument();
   });
+
+  it('should handle tasklistUrl with trailing slash', async () => {
+    vi.spyOn(clientConfig, 'getClientConfig').mockReturnValue({
+      ...clientConfig.getClientConfig(),
+      tasklistUrl: 'https://tasklist.example.com/',
+    });
+
+    mockFetchProcessDefinitionXml().withSuccess(CAMUNDA_USER_TASK_XML);
+    mockFetchElementInstance('123456789').withSuccess({
+      ...mockElementInstance,
+      type: 'USER_TASK',
+    });
+    mockSearchUserTasks().withSuccess(searchResult([mockUserTask]));
+
+    render(<DetailsTab />, {
+      wrapper: getWrapper('elementId=Task_1&elementInstanceKey=123456789'),
+    });
+
+    const link = await screen.findByRole('link', {
+      name: 'Open Tasklist',
+    });
+    await waitFor(() => {
+      expect(link).toHaveAttribute(
+        'href',
+        'https://tasklist.example.com/999888777?filter=all-open',
+      );
+    });
+  });
+
+  it('should handle tasklistUrl with a subpath', async () => {
+    vi.spyOn(clientConfig, 'getClientConfig').mockReturnValue({
+      ...clientConfig.getClientConfig(),
+      tasklistUrl: 'https://tasklist.example.com/tasklist',
+    });
+
+    mockFetchProcessDefinitionXml().withSuccess(CAMUNDA_USER_TASK_XML);
+    mockFetchElementInstance('123456789').withSuccess({
+      ...mockElementInstance,
+      type: 'USER_TASK',
+    });
+    mockSearchUserTasks().withSuccess(searchResult([mockUserTask]));
+
+    render(<DetailsTab />, {
+      wrapper: getWrapper('elementId=Task_1&elementInstanceKey=123456789'),
+    });
+
+    const link = await screen.findByRole('link', {
+      name: 'Open Tasklist',
+    });
+    await waitFor(() => {
+      expect(link).toHaveAttribute(
+        'href',
+        'https://tasklist.example.com/tasklist/999888777?filter=all-open',
+      );
+    });
+  });
 });
