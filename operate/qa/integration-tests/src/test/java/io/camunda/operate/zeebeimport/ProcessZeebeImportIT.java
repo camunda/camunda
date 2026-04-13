@@ -63,7 +63,8 @@ public class ProcessZeebeImportIT extends OperateZeebeAbstractIT {
     assertThat(processEntity.getKey()).isEqualTo(processDefinitionKey);
     assertThat(processEntity.getBpmnProcessId()).isEqualTo("demoProcess");
     assertThat(processEntity.getVersion()).isEqualTo(1);
-    assertThat(processEntity.getBpmnXml()).isNotEmpty();
+    // the bpmn xml is now explicitly excluded from the reader.getProcess
+    assertThat(processEntity.getBpmnXml()).isNull();
     assertThat(processEntity.getName()).isEqualTo("Demo process");
     assertThat(processEntity.getVersionTag()).isEqualTo("demo-tag_v1");
   }
