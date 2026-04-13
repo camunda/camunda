@@ -93,6 +93,7 @@ public class UpdateClusterVariableAuthorizationTest {
   @Test
   public void shouldBeAuthorizedToUpdateTenantScopedClusterVariable() {
     // given
+    engine.tenant().newTenant().withTenantId(TENANT_ID).create();
     engine
         .clusterVariables()
         .withName(VARIABLE_NAME)
@@ -165,6 +166,7 @@ public class UpdateClusterVariableAuthorizationTest {
   @Test
   public void shouldBeAuthorizedToUpdateTenantScopedClusterVariableWithSpecificPermissions() {
     // given
+    engine.tenant().newTenant().withTenantId(TENANT_ID).create();
     engine
         .clusterVariables()
         .withName(VARIABLE_NAME + "_specific")
@@ -231,6 +233,7 @@ public class UpdateClusterVariableAuthorizationTest {
   @Test
   public void shouldBeUnauthorizedToUpdateTenantScopedClusterVariableIfNoPermissions() {
     // given
+    engine.tenant().newTenant().withTenantId(TENANT_ID).create();
     engine
         .clusterVariables()
         .withName(VARIABLE_NAME)

@@ -76,6 +76,7 @@ public class CreateClusterVariableAuthorizationTest {
   @Test
   public void shouldBeAuthorizedToCreateTenantScopedClusterVariable() {
     // when
+    engine.tenant().newTenant().withTenantId(TENANT_ID).create();
     engine
         .clusterVariables()
         .withName(VARIABLE_NAME)
@@ -133,6 +134,7 @@ public class CreateClusterVariableAuthorizationTest {
         VARIABLE_NAME + "_specific");
 
     // when
+    engine.tenant().newTenant().withTenantId(TENANT_ID).create();
     engine
         .clusterVariables()
         .withName(VARIABLE_NAME + "_specific")
@@ -178,6 +180,7 @@ public class CreateClusterVariableAuthorizationTest {
     final var user = createUser();
 
     // when
+    engine.tenant().newTenant().withTenantId(TENANT_ID).create();
     final var rejection =
         engine
             .clusterVariables()
