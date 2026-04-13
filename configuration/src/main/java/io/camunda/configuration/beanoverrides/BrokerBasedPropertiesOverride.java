@@ -60,6 +60,7 @@ import io.camunda.zeebe.broker.system.configuration.backup.FilesystemBackupStore
 import io.camunda.zeebe.broker.system.configuration.backup.GcsBackupStoreConfig;
 import io.camunda.zeebe.broker.system.configuration.backup.GcsBackupStoreConfig.GcsBackupStoreAuth;
 import io.camunda.zeebe.broker.system.configuration.backup.S3BackupStoreConfig;
+import io.camunda.zeebe.broker.system.configuration.partitioning.RegionAwareCfg;
 import io.camunda.zeebe.broker.system.configuration.partitioning.Scheme;
 import io.camunda.zeebe.db.AccessMetricsConfiguration;
 import io.camunda.zeebe.dynamic.config.gossip.ClusterConfigurationGossiperConfig;
@@ -410,6 +411,7 @@ public class BrokerBasedPropertiesOverride {
     override.getCluster().setClusterSize(cluster.getSize());
     override.getCluster().setClusterName(cluster.getName());
     override.getCluster().setClusterId(cluster.getClusterId());
+    override.getCluster().setRegion(cluster.getRegion());
 
     populateFromMembership(override);
     populateFromRaftProperties(override);
@@ -451,6 +453,14 @@ public class BrokerBasedPropertiesOverride {
       final var fixedPartitionCfgList =
           partitioning.getFixed().stream().map(FixedPartition::toFixedPartitionCfg).toList();
       partitioningCfg.setFixed(fixedPartitionCfgList);
+    }
+
+    final RegionAwareCfg regionAware = partitioning.getRegionAware();
+    if (partitioning.getScheme() == Partitioning.Scheme.REGION_AWARE
+        && !regionAware.getRegions().isEmpty()) {
+      final PartitioningCfg partitioningCfg = override.getExperimental().getPartitioning();
+      partitioningCfg.setScheme(Scheme.REGION_AWARE);
+      partitioningCfg.setRegionAware(regionAware);
     }
   }
 

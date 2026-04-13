@@ -151,6 +151,18 @@ public class Cluster implements Cloneable {
    */
   @NestedConfigurationProperty private Partitioning partitioning = new Partitioning();
 
+  /**
+   * The region this broker belongs to. When set, the partitioning scheme must be {@link
+   * io.camunda.zeebe.broker.system.configuration.partitioning.Scheme#REGION_AWARE} and the
+   * broker's {@code nodeId} must be unique within this region only (0-indexed within the region).
+   *
+   * <p>When {@code null}, the broker operates in the standard non-region-aware mode and all
+   * existing behaviour is preserved.
+   *
+   * <p>Environment variable: {@code CAMUNDA_CLUSTER_REGION}.
+   */
+  private String region;
+
   private boolean sendOnLegacySubject = true;
   private boolean receiveOnLegacySubject = true;
 
@@ -322,6 +334,14 @@ public class Cluster implements Cloneable {
     this.partitioning = partitioning;
   }
 
+  public String getRegion() {
+    return region;
+  }
+
+  public void setRegion(final String region) {
+    this.region = region;
+  }
+
   public boolean isReceiveOnLegacySubject() {
     return receiveOnLegacySubject;
   }
@@ -377,6 +397,9 @@ public class Cluster implements Cloneable {
         + compressionAlgorithm
         + ", globalListeners="
         + globalListeners
+        + ", region='"
+        + region
+        + '\''
         + ", sendOnLegacySubject="
         + sendOnLegacySubject
         + ", receiveOnLegacySubject="
