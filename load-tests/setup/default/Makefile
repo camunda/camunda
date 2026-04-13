@@ -89,7 +89,7 @@ endif
 
 # Install/upgrade Camunda Platform helm chart
 .PHONY: install-platform
-install-platform: setup-leader-balancer
+install-platform: setup-leader-balancer setup-elasticsearch
 	helm upgrade $(namespace) camunda-platform-helm/charts/$(helm_chart) \
 		--install \
 		--namespace $(namespace) \
@@ -135,6 +135,11 @@ setup-leader-balancer:
 		echo "Leader balancer cronjob already exists"; \
 	fi
 
+
+.PHONY: setup-elasticsearch
+setup-elasticsearch:
+	kubectl apply --server-side --namespace $(namespace) -f elasticsearch.yaml
+
 # Generates templates from the Camunda Platform helm chart
 .PHONY: template
 template:
@@ -157,6 +162,7 @@ clean:
 	-kubectl delete -n $(namespace) pvc -l app.kubernetes.io/instance=$(namespace)
 	-kubectl delete -n $(namespace) pvc -l app=elasticsearch-master
 	-kubectl delete -n $(namespace) cronjob leader-balancer
+	-kubectl delete -n $(namespace) -f elasticsearch.yaml
 ifeq ($(secondary_storage),postgresql)
 	@echo "Cleaning up PostgreSQL database for namespace $(namespace)..."
 	-helm --namespace $(namespace) uninstall postgres

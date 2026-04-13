@@ -292,36 +292,36 @@ prometheusServiceMonitor:
 ################################################### Elasticsearch cluster configuration
 ########################################################################################
 elasticsearch:
-  enabled: true
-  clusterName: "elasticsearch"
-  master:
-    fullnameOverride: elastic
-    nameOverride: elastic
-    ## @param elasticsearch.master.replicaCount defines number of master-elegible replicas to deploy
-    replicaCount: 3
-    pdb:
-      minAvailable: 2
-    ## @param elasticsearch.master.heapSize
-    heapSize: 3g
-    persistence:
-      ## @param elasticsearch.master.persistence.size
-      size: 512Gi
-      storageClass: benchmark-ssd-zonal-v1
-      accessModes: ["ReadWriteOnce"]
-    resources:
-      requests:
-        cpu: 7000m
-        memory: 8Gi
-      limits:
-        cpu: 7000m
-        memory: 8Gi
-    nodeSelector:
-      component: benchmark-n2-standard-8
-      topology.kubernetes.io/zone: __AVAILABILITY_ZONE__
-    tolerations:
-      - key: nodepool
-        operator: Equal
-        value: n2-standard-8
-        effect: NoSchedule
-  extraConfig:
-    logger.org.elasticsearch.deprecation: "OFF"
+  enabled: false
+  #clusterName: "elasticsearch"
+  #master:
+  #  fullnameOverride: elastic
+  #  nameOverride: elastic
+  #  ## @param elasticsearch.master.replicaCount defines number of master-elegible replicas to deploy
+  #  replicaCount: 3
+  #  pdb:
+  #    minAvailable: 2
+  #  ## @param elasticsearch.master.heapSize
+  #  heapSize: 3g
+  #  persistence:
+  #    ## @param elasticsearch.master.persistence.size
+  #    size: 512Gi
+  #    storageClass: benchmark-ssd-zonal-v1
+  #    accessModes: ["ReadWriteOnce"]
+  #  resources:
+  #    requests:
+  #      cpu: 7000m
+  #      memory: 8Gi
+  #    limits:
+  #      cpu: 7000m
+  #      memory: 8Gi
+  #  nodeSelector:
+  #    component: benchmark-n2-standard-8
+  #    topology.kubernetes.io/zone: __AVAILABILITY_ZONE__
+  #  tolerations:
+  #    - key: nodepool
+  #      operator: Equal
+  #      value: n2-standard-8
+  #      effect: NoSchedule
+  #extraConfig:
+  #  logger.org.elasticsearch.deprecation: "OFF"

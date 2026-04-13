@@ -1,0 +1,50 @@
+apiVersion: elasticsearch.k8s.elastic.co/v1
+kind: Elasticsearch
+metadata:
+  name: elasticsearch
+spec:
+  version: 8.18.0
+  nodeSets:
+    - name: masters
+      count: 3
+
+      config:
+        # Disable mmap for compatibility with containers that lack the required vm.max_map_count sysctl
+        node.store.allow_mmap: "false"
+        # Disable deprecation warnings - https://github.com/camunda/camunda/issues/26285
+        logger.org.elasticsearch.deprecation: "OFF"
+
+      podTemplate:
+        spec:
+          nodeSelector:
+            component: benchmark-n2-standard-8
+            topology.kubernetes.io/zone: __AVAILABILITY_ZONE__
+          tolerations:
+            - effect: NoSchedule
+              key: nodepool
+              operator: Equal
+              value: n2-standard-8
+
+          containers:
+            - name: elasticsearch
+              resources:
+                requests:
+                  cpu: 7
+                  memory: 8Gi
+                limits:
+                  cpu: 7
+                  memory: 8Gi
+
+              env:
+                - name: ELASTICSEARCH_HEAP_SIZE
+                  value: 3g
+
+        volumeClaimTemplates:
+          - metadata:
+            name: elasticsearch-data
+            spec:
+              accessModes: [ReadWriteOnce]
+              storageClassName: benchmark-ssd-zonal-v1
+              resources:
+                requests:
+                  storage: 512Gi
