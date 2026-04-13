@@ -87,35 +87,39 @@ test.describe.parallel('Resolve related incidents API Tests', () => {
     let incidentKeys: string[] = [];
 
     await test.step('Search for incidents related to created process instance', async () => {
-      const incidents = await request.post(
-        buildUrl(
-          `/process-instances/${processInstanceKeyWithIncidentToResolve}/incidents/search`,
-        ),
-        {
-          headers: jsonHeaders(),
-        },
-      );
-      await assertStatusCode(incidents, 200);
-      await validateResponse(
-        {
-          path: '/process-instances/{processInstanceKey}/incidents/search',
-          method: 'POST',
-          status: '200',
-        },
-        incidents,
-      );
-      const body = await incidents.json();
-      expect(body.page.totalItems).toEqual(2);
-      expect(body.items.length).toEqual(2);
-      for (const incident of body.items) {
-        incidentKeys.push(incident.incidentKey);
-        expect(incident.state).toBe('ACTIVE');
-        if (incident.errorType === 'EXTRACT_VALUE_ERROR') {
-          elementInstanceKey = incident.elementInstanceKey;
+      await expect(async () => {
+        incidentKeys = [];
+        elementInstanceKey = '';
+        const incidents = await request.post(
+          buildUrl(
+            `/process-instances/${processInstanceKeyWithIncidentToResolve}/incidents/search`,
+          ),
+          {
+            headers: jsonHeaders(),
+          },
+        );
+        await assertStatusCode(incidents, 200);
+        await validateResponse(
+          {
+            path: '/process-instances/{processInstanceKey}/incidents/search',
+            method: 'POST',
+            status: '200',
+          },
+          incidents,
+        );
+        const body = await incidents.json();
+        expect(body.page.totalItems).toEqual(2);
+        expect(body.items.length).toEqual(2);
+        for (const incident of body.items) {
+          incidentKeys.push(incident.incidentKey);
+          expect(incident.state).toBe('ACTIVE');
+          if (incident.errorType === 'EXTRACT_VALUE_ERROR') {
+            elementInstanceKey = incident.elementInstanceKey;
+          }
         }
-      }
-      expect(elementInstanceKey).not.toEqual('');
-      expect(incidentKeys.length).toEqual(2);
+        expect(elementInstanceKey).not.toEqual('');
+        expect(incidentKeys.length).toEqual(2);
+      }).toPass(defaultAssertionOptions);
     });
 
     await test.step('Update element instance variables', async () => {

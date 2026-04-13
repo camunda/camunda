@@ -21,11 +21,10 @@ import {findUserTask} from '@requestHelpers';
 /* eslint-disable playwright/expect-expect */
 test.describe.parallel('Search User Task Variables Tests', () => {
   const {state, beforeAll, beforeEach, afterEach} =
-    setupProcessInstanceForTests(
-      'user_task_api_test_process',
-      'user_task_api_test_process',
-      {testset1: 'something', testset2: 'something else', zip: 123},
-    );
+    setupProcessInstanceForTests('user_task_api_test_process', {
+      processName: 'user_task_api_test_process',
+      variables: {testset1: 'something', testset2: 'something else', zip: 123},
+    });
 
   test.beforeAll(beforeAll);
 

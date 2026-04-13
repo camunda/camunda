@@ -7,10 +7,11 @@
  */
 
 import {test} from '@playwright/test';
+import {randomUUID} from 'crypto';
 import {
   cancelProcessInstance,
   createInstances,
-  deploy,
+  deployWithSubstitutions,
 } from '../../../../utils/zeebeClient';
 import {
   assertBadRequest,
@@ -21,17 +22,24 @@ import {
 } from '../../../../utils/http';
 import {activateJobToObtainAValidJobKey} from '@requestHelpers';
 
+const runSuffix = randomUUID().slice(0, 8);
+const processId = `jobApiProcess-completion-${runSuffix}`;
+const taskType = `jobApiTaskType-completion-${runSuffix}`;
+
 // Running the job tests on the same process instance leads to conflicts
 /* eslint-disable playwright/expect-expect */
 test.describe('Job Completion API Tests', () => {
   const state: Record<string, unknown> = {};
 
   test.beforeAll(async () => {
-    await deploy(['./resources/job_api_process.bpmn']);
+    await deployWithSubstitutions('./resources/job_api_process.bpmn', {
+      jobApiProcess: processId,
+      jobApiTaskType: taskType,
+    });
   });
 
   test.beforeEach(async () => {
-    const processInstance = await createInstances('jobApiProcess', 1, 1);
+    const processInstance = await createInstances(processId, 1, 1);
     state['processInstanceKey'] = processInstance[0].processInstanceKey;
   });
 
@@ -42,10 +50,7 @@ test.describe('Job Completion API Tests', () => {
   });
 
   test('Complete Job - success', async ({request}) => {
-    const jobKey = await activateJobToObtainAValidJobKey(
-      request,
-      'jobApiTaskType',
-    );
+    const jobKey = await activateJobToObtainAValidJobKey(request, taskType);
 
     const completeRes = await request.post(
       buildUrl(`/jobs/${jobKey}/completion`),
@@ -99,7 +104,7 @@ test.describe('Job Completion API Tests', () => {
     await test.step('Activate a job to obtain a valid job key', async () => {
       localState['jobKey'] = await activateJobToObtainAValidJobKey(
         request,
-        'jobApiTaskType',
+        taskType,
       );
     });
 

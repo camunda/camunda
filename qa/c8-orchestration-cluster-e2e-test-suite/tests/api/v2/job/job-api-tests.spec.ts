@@ -7,10 +7,11 @@
  */
 
 import {expect, test} from '@playwright/test';
+import {randomUUID} from 'crypto';
 import {
   cancelProcessInstance,
   createInstances,
-  deploy,
+  deployWithSubstitutions,
 } from '../../../../utils/zeebeClient';
 import {
   assertBadRequest,
@@ -20,7 +21,6 @@ import {
   assertUnauthorizedRequest,
   buildUrl,
   jsonHeaders,
-  paginatedResponseFields,
 } from '../../../../utils/http';
 import {
   validateResponse,
@@ -31,14 +31,19 @@ import {jobResponseFields} from '../../../../utils/beans/requestBeans';
 
 test.describe.parallel('Job API Tests', () => {
   const state: Record<string, unknown> = {};
+  const runSuffix = randomUUID().slice(0, 8);
+  const processId = `processWithThreeParallelTasks-${runSuffix}`;
+  const someTaskType = `someTask-${runSuffix}`;
 
   test.beforeAll(async () => {
-    await deploy(['./resources/processWithThreeParallelTasks.bpmn']);
-    const processInstance = await createInstances(
-      'processWithThreeParallelTasks',
-      1,
-      1,
+    await deployWithSubstitutions(
+      './resources/processWithThreeParallelTasks.bpmn',
+      {
+        processWithThreeParallelTasks: processId,
+        someTask: someTaskType,
+      },
     );
+    const processInstance = await createInstances(processId, 1, 1);
     state['processInstanceKey'] = processInstance[0].processInstanceKey;
     state['processDefinitionKey'] = processInstance[0].processDefinitionKey;
     state['processDefinitionVersion'] =
@@ -54,8 +59,8 @@ test.describe.parallel('Job API Tests', () => {
 
   test('Activate Jobs - only required fields', async ({request}) => {
     const expectedJobFields: Record<string, unknown> = {
-      type: 'someTask',
-      processDefinitionId: 'processWithThreeParallelTasks',
+      type: someTaskType,
+      processDefinitionId: processId,
       processDefinitionVersion: state['processDefinitionVersion'],
       elementId: 'Activity_0r0cymb',
       customHeaders: {},
@@ -71,7 +76,7 @@ test.describe.parallel('Job API Tests', () => {
     const res = await request.post(buildUrl('/jobs/activation'), {
       headers: jsonHeaders(),
       data: {
-        type: 'someTask',
+        type: someTaskType,
         timeout: 10000,
         maxJobsToActivate: 1,
       },

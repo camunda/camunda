@@ -7,6 +7,7 @@
  */
 
 import {expect, test} from '@playwright/test';
+import {randomUUID} from 'crypto';
 import {
   assertBadRequest,
   assertNotFoundRequest,
@@ -19,11 +20,18 @@ import {
   setupProcessInstanceForTests,
 } from '@requestHelpers';
 
+const runSuffix = randomUUID().slice(0, 8);
+const processId = `jobApiProcess-error-${runSuffix}`;
+const taskType = `jobApiTaskType-error-${runSuffix}`;
+
 /* eslint-disable playwright/expect-expect */
 test.describe('Job Error API Tests', () => {
   const {beforeAll, beforeEach, afterEach} = setupProcessInstanceForTests(
     'job_api_process',
-    'jobApiProcess',
+    {
+      processName: processId,
+      substitutions: {jobApiProcess: processId, jobApiTaskType: taskType},
+    },
   );
 
   test.beforeAll(beforeAll);
@@ -33,10 +41,7 @@ test.describe('Job Error API Tests', () => {
   test.afterEach(afterEach);
 
   test('Throw Error for Job - success', async ({request}) => {
-    const jobKey = await activateJobToObtainAValidJobKey(
-      request,
-      'jobApiTaskType',
-    );
+    const jobKey = await activateJobToObtainAValidJobKey(request, taskType);
 
     const errorRes = await request.post(buildUrl(`/jobs/${jobKey}/error`), {
       headers: jsonHeaders(),
@@ -84,7 +89,7 @@ test.describe('Job Error API Tests', () => {
     await test.step('Activate job to obtain a valid job key', async () => {
       localState['jobKey'] = await activateJobToObtainAValidJobKey(
         request,
-        'jobApiTaskType',
+        taskType,
       );
     });
 
