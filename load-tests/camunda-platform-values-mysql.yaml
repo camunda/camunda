@@ -67,11 +67,11 @@ auth:
 primary:
   resources:
     requests:
-      memory: 4Gi
+      memory: 8Gi
       cpu: 3000m
     limits:
       cpu: 3000m
-      memory: 6Gi
+      memory: 12Gi
 
   nodeSelector:
     component: benchmark-n2-standard-4
@@ -84,8 +84,8 @@ primary:
       effect: NoSchedule
 
   persistence:
-    size: 128Gi
-    storageClass: "ssd"
+    size: 512Gi
+    storageClass: "benchmark-ssd-zonal-v1"
 
   configuration: |-
     [mysqld]
@@ -115,7 +115,7 @@ primary:
     innodb_flush_method            = O_DIRECT  # default on Linux; explicit for clarity
 
     # Buffer pool (default: 128MB)
-    innodb_buffer_pool_size        = 3G        # ~50% of 6Gi limit
+    innodb_buffer_pool_size        = 6G        # ~50% of 12Gi limit
 
     # Write I/O (not a dynamic variable — must live in my.cnf, cannot SET GLOBAL)
     innodb_write_io_threads        = 8         # default 4; doubled for write-heavy workload

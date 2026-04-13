@@ -95,12 +95,13 @@ spec:
         fsGroup: 54321
 
       nodeSelector:
-        component: benchmark-n2-standard-4
+        component: benchmark-n2-standard-8
+        topology.kubernetes.io/zone: __AVAILABILITY_ZONE__
 
       tolerations:
         - key: nodepool
           operator: Equal
-          value: n2-standard-4
+          value: n2-standard-8
           effect: NoSchedule
 
       containers:
@@ -127,10 +128,10 @@ spec:
               protocol: TCP
           resources:
             requests:
-              memory: 3Gi
+              memory: 8Gi
               cpu: "3000m"
             limits:
-              memory: 6Gi
+              memory: 12Gi
               cpu: "3000m"
           # startupProbe gates liveness/readiness until Oracle is fully open.
           # On first run the slim image creates the database from scratch (~20-30
@@ -183,8 +184,8 @@ spec:
       spec:
         accessModes:
           - ReadWriteOnce
-        storageClassName: ssd
+        storageClassName: benchmark-ssd-zonal-v1
         resources:
           requests:
-            storage: 128Gi
+            storage: 512Gi
 

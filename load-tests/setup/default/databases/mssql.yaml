@@ -78,12 +78,13 @@ spec:
         fsGroup: 10001
 
       nodeSelector:
-        component: benchmark-n2-standard-4
+        component: benchmark-n2-standard-8
+        topology.kubernetes.io/zone: __AVAILABILITY_ZONE__
 
       tolerations:
         - key: nodepool
           operator: Equal
-          value: n2-standard-4
+          value: n2-standard-8
           effect: NoSchedule
 
       containers:
@@ -103,10 +104,10 @@ spec:
               protocol: TCP
           resources:
             requests:
-              memory: 4Gi
+              memory: 8Gi
               cpu: "3000m"
             limits:
-              memory: 6Gi
+              memory: 12Gi
               cpu: "3000m"
           readinessProbe:
             exec:
@@ -148,8 +149,8 @@ spec:
       spec:
         accessModes:
           - ReadWriteOnce
-        storageClassName: ssd
+        storageClassName: benchmark-ssd-zonal-v1
         resources:
           requests:
-            storage: 128Gi
+            storage: 512Gi
 
