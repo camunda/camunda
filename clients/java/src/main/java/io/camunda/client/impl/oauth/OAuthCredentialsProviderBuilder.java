@@ -26,6 +26,7 @@ import static io.camunda.client.impl.CamundaClientEnvironmentVariables.OAUTH_ENV
 import static io.camunda.client.impl.CamundaClientEnvironmentVariables.OAUTH_ENV_CLIENT_SECRET;
 import static io.camunda.client.impl.CamundaClientEnvironmentVariables.OAUTH_ENV_CONNECT_TIMEOUT;
 import static io.camunda.client.impl.CamundaClientEnvironmentVariables.OAUTH_ENV_ISSUER_URL;
+import static io.camunda.client.impl.CamundaClientEnvironmentVariables.OAUTH_ENV_PROACTIVE_TOKEN_REFRESH_THRESHOLD;
 import static io.camunda.client.impl.CamundaClientEnvironmentVariables.OAUTH_ENV_READ_TIMEOUT;
 import static io.camunda.client.impl.CamundaClientEnvironmentVariables.OAUTH_ENV_SSL_CLIENT_KEYSTORE_KEY_SECRET;
 import static io.camunda.client.impl.CamundaClientEnvironmentVariables.OAUTH_ENV_SSL_CLIENT_KEYSTORE_PATH;
@@ -42,6 +43,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
+import io.camunda.client.impl.CamundaClientCredentials;
 import io.camunda.client.impl.util.SSLContextUtil;
 import io.camunda.client.impl.util.VersionUtil;
 import java.io.File;
@@ -66,6 +68,7 @@ public final class OAuthCredentialsProviderBuilder {
   public static final String INVALID_ARGUMENT_MSG = "Expected valid %s but none was provided.";
   public static final Duration DEFAULT_CONNECT_TIMEOUT = Duration.ofSeconds(5);
   public static final Duration DEFAULT_READ_TIMEOUT = DEFAULT_CONNECT_TIMEOUT;
+  public static final Duration DEFAULT_PROACTIVE_TOKEN_REFRESH_THRESHOLD = Duration.ofSeconds(30);
   public static final String DEFAULT_CREDENTIALS_CACHE_PATH =
       Paths.get(System.getProperty("user.home"), ".camunda", "credentials")
           .toAbsolutePath()
@@ -89,6 +92,7 @@ public final class OAuthCredentialsProviderBuilder {
   private File credentialsCache;
   private Duration connectTimeout;
   private Duration readTimeout;
+  private Duration proactiveTokenRefreshThreshold;
   private boolean applyEnvironmentOverrides = true;
   private Path clientAssertionKeystorePath;
   private String clientAssertionKeystorePassword;
@@ -328,6 +332,35 @@ public final class OAuthCredentialsProviderBuilder {
     return readTimeout;
   }
 
+  /**
+   * Window before actual token expiry during which a background refresh is triggered eagerly. The
+   * token remains valid inside this window; this is purely a policy knob controlling how early
+   * refresh kicks in, so concurrent callers don't have to block on a synchronous refresh at the
+   * cliff edge. Must be strictly larger than {@link CamundaClientCredentials#EXPIRY_GRACE_PERIOD}.
+   * The default is 30 seconds.
+   */
+  public OAuthCredentialsProviderBuilder proactiveTokenRefreshThreshold(
+      final Duration proactiveTokenRefreshThreshold) {
+    this.proactiveTokenRefreshThreshold = proactiveTokenRefreshThreshold;
+    return this;
+  }
+
+  private OAuthCredentialsProviderBuilder proactiveTokenRefreshThreshold(
+      final String proactiveTokenRefreshThreshold) {
+    if (proactiveTokenRefreshThreshold != null) {
+      return proactiveTokenRefreshThreshold(
+          Duration.ofMillis(Long.parseLong(proactiveTokenRefreshThreshold)));
+    }
+    return this;
+  }
+
+  /**
+   * @see #proactiveTokenRefreshThreshold(Duration)
+   */
+  public Duration getProactiveTokenRefreshThreshold() {
+    return proactiveTokenRefreshThreshold;
+  }
+
   public OAuthCredentialsProviderBuilder clientAssertionKeystorePath(
       final String clientAssertionKeystorePath) {
     if (clientAssertionKeystorePath != null) {
@@ -538,6 +571,8 @@ public final class OAuthCredentialsProviderBuilder {
     applyEnvironmentValueIfNotNull(this::credentialsCachePath, OAUTH_ENV_CACHE_PATH);
     applyEnvironmentValueIfNotNull(this::readTimeout, OAUTH_ENV_READ_TIMEOUT);
     applyEnvironmentValueIfNotNull(this::connectTimeout, OAUTH_ENV_CONNECT_TIMEOUT);
+    applyEnvironmentValueIfNotNull(
+        this::proactiveTokenRefreshThreshold, OAUTH_ENV_PROACTIVE_TOKEN_REFRESH_THRESHOLD);
   }
 
   private void applyDefaults() {
@@ -551,6 +586,9 @@ public final class OAuthCredentialsProviderBuilder {
 
     if (readTimeout == null) {
       readTimeout = DEFAULT_READ_TIMEOUT;
+    }
+    if (proactiveTokenRefreshThreshold == null) {
+      proactiveTokenRefreshThreshold = DEFAULT_PROACTIVE_TOKEN_REFRESH_THRESHOLD;
     }
     if (clientAssertionKeystoreKeyPassword == null) {
       clientAssertionKeystoreKeyPassword = clientAssertionKeystorePassword;
@@ -594,12 +632,30 @@ public final class OAuthCredentialsProviderBuilder {
       }
       validateTimeout(connectTimeout, "ConnectTimeout");
       validateTimeout(readTimeout, "ReadTimeout");
+      validateProactiveTokenRefreshThreshold(proactiveTokenRefreshThreshold);
     } catch (final NullPointerException
         | IOException
         | KeyStoreException
         | NoSuchAlgorithmException
         | CertificateException e) {
       throw new IllegalArgumentException(e);
+    }
+  }
+
+  private void validateProactiveTokenRefreshThreshold(final Duration threshold) {
+    if (threshold.isZero() || threshold.isNegative()) {
+      throw new IllegalArgumentException(
+          String.format(
+              "Proactive token refresh threshold is %s milliseconds, expected a positive duration.",
+              threshold.toMillis()));
+    }
+    if (threshold.compareTo(CamundaClientCredentials.EXPIRY_GRACE_PERIOD) <= 0) {
+      throw new IllegalArgumentException(
+          String.format(
+              "Proactive token refresh threshold (%s ms) must be strictly larger than the expiry "
+                  + "grace period (%s ms); otherwise eager refresh would never fire before the "
+                  + "token is considered invalid.",
+              threshold.toMillis(), CamundaClientCredentials.EXPIRY_GRACE_PERIOD.toMillis()));
     }
   }
 
