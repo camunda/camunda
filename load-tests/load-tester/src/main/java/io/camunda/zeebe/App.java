@@ -21,6 +21,7 @@ import io.camunda.zeebe.util.FileUtil;
 import io.camunda.zeebe.util.logging.ThrottledLogger;
 import io.grpc.ClientInterceptor;
 import io.grpc.Status.Code;
+import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.binder.grpc.MetricCollectingClientInterceptor;
 import io.micrometer.core.instrument.binder.jvm.ClassLoaderMetrics;
 import io.micrometer.core.instrument.binder.jvm.JvmGcMetrics;
@@ -40,6 +41,7 @@ import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -52,6 +54,7 @@ abstract class App implements Runnable {
   protected final AppCfg config;
   protected PrometheusMeterRegistry registry;
   protected ClientInterceptor monitoringInterceptor;
+  private final AtomicInteger connected = new AtomicInteger(0);
 
   private HTTPServer monitoringServer;
   private final Path credentialsCachePath;
@@ -98,6 +101,9 @@ abstract class App implements Runnable {
     }
 
     monitoringInterceptor = new MetricCollectingClientInterceptor(registry);
+    Gauge.builder(AppMetricsDoc.CONNECTED.getName(), connected, AtomicInteger::get)
+        .description(AppMetricsDoc.CONNECTED.getDescription())
+        .register(registry);
     registerDefaultInstrumentation();
   }
 
@@ -137,6 +143,7 @@ abstract class App implements Runnable {
                   b.getPartitions()
                       .forEach(p -> LOG.info("{} - {}", p.getPartitionId(), p.getRole()));
                 });
+        connected.set(1);
         break;
       } catch (final ClientStatusException e) {
         final var statusCode = e.getStatusCode();
