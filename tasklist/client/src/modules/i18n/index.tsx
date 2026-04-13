@@ -78,9 +78,4 @@ const translationResources: Resource = Object.keys(
 const getCurrentDateLocale = () =>
   localeDefinitions[i18n.language]?.dateLocale ?? dateLocaleEnUS;
 
-export {
-  localeDefinitions,
-  languageItems,
-  translationResources,
-  getCurrentDateLocale,
-};
+export {languageItems, translationResources, getCurrentDateLocale};

@@ -57,4 +57,4 @@ function toggleSorting(
   return params.toString();
 }
 
-export {getSortParams, toggleSorting, INITIAL_SORT_ORDER, sortParamsSchema};
+export {getSortParams, toggleSorting, INITIAL_SORT_ORDER};

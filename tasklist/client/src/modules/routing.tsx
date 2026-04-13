@@ -55,21 +55,10 @@ function useTaskDetailsParams(): {id: string} {
   return {id: id ?? ''};
 }
 
-function useStartProcessParams(): {bpmnProcessId: string} {
-  const {bpmnProcessId} = useParams<'bpmnProcessId'>();
-
-  return {bpmnProcessId: bpmnProcessId ?? ''};
-}
-
 function useHistoryItemDetailsParams(): {id: string; auditLogKey: string} {
   const {id, auditLogKey} = useParams<'id' | 'auditLogKey'>();
 
   return {id: id ?? '', auditLogKey: auditLogKey ?? ''};
 }
 
-export {
-  pages,
-  useTaskDetailsParams,
-  useStartProcessParams,
-  useHistoryItemDetailsParams,
-};
+export {pages, useTaskDetailsParams, useHistoryItemDetailsParams};

@@ -71,5 +71,5 @@ function useTaskFilters(): TaskFilters {
   }, [queryString]);
 }
 
-export {useTaskFilters, filtersSchema};
+export {useTaskFilters};
 export type {TaskFilters};

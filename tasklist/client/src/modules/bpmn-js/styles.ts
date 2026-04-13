@@ -20,6 +20,4 @@ const bpmnRendererColors = {
   },
 };
 
-const highlightedSequenceFlowsColor = 'var(--cds-link-inverse)';
-
-export {bpmnRendererColors, highlightedSequenceFlowsColor};
+export {bpmnRendererColors};

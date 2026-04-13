@@ -45,10 +45,6 @@ const router = createBrowserRouter(
   createRoutesFromElements(
     <Route path="/" element={<Wrapper />} ErrorBoundary={ErrorWithinLayout}>
       <Route path="login" lazy={() => import('pages/Login')} />
-      <Route
-        path="new/:bpmnProcessId"
-        lazy={() => import('./pages/StartProcessFromForm')}
-      />
       <Route path="/" lazy={() => import('./pages/Layout')}>
         <Route path="forbidden" element={<Forbidden />} />
         <Route path="processes" ErrorBoundary={ErrorWithinLayout}>

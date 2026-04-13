@@ -75,5 +75,5 @@ const namedCustomFiltersSchema = customFiltersSchema.merge(
 type CustomFilters = z.infer<typeof customFiltersSchema>;
 type NamedCustomFilters = z.infer<typeof namedCustomFiltersSchema>;
 
-export {customFiltersSchema, namedCustomFiltersSchema};
+export {namedCustomFiltersSchema};
 export type {CustomFilters, NamedCustomFilters};
