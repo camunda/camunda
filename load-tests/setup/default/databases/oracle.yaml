@@ -1,3 +1,9 @@
+# -------
+#
+# owner: @data-layer
+#
+# -------
+
 # oracle.yaml — Plain Kubernetes manifests for Oracle Database Free 23c.
 #
 # Uses the gvenzl/oracle-free image (same as db/docker-compose.yml) which runs
@@ -21,14 +27,6 @@
 # created lock file → ORA-01081. The dshm emptyDir (medium: Memory) below
 # removes this limit, mirroring what Docker (and Docker Compose) provide on a
 # typical host.
-#
-# Resources:
-#   image           : gvenzl/oracle-free:23-slim
-#   storage         : 128 Gi, storageClass ssd (ReadWriteOnce)
-#   requests/limits : 3 Gi / 6 Gi  ·  3000m CPU
-#   nodeSelector    : component=benchmark-n2-standard-4
-#   SYS password    : sys_user_password  ← load-test only, NOT for production
-#   APP user        : camunda / camunda  ← load-test only, NOT for production
 #
 # The ClusterIP Service is named "oracle" to match the JDBC URL in
 # camunda-platform-values-oracle.yaml:
