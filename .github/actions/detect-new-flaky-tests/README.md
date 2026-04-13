@@ -48,10 +48,11 @@ one per CI job that had flaky tests:
 ]
 ```
 
-### Input 2: Baseline flaky tests (`KNOWN_FLAKY_TESTS`)
+### Input 2: Baseline flaky tests (`KNOWN_FLAKY_TESTS_FILE`)
 
-Queried from BigQuery at runtime. Contains all tests that have been flaky on
-`main` or `stable/*` in the last 60 days:
+Queried from BigQuery at runtime and written to a temporary JSON file.
+The file path is passed to the action. Contains all tests that have been flaky
+on `main` or `stable/*` in the last 14 days:
 
 ```json
 [
@@ -69,7 +70,7 @@ SELECT DISTINCT test_class_name, test_name
 FROM `ci-30-162810.prod_ci_analytics.test_status_v1` ts
 LEFT OUTER JOIN `ci-30-162810.prod_ci_analytics.build_status_v2` bs
   ON ts.ci_url = bs.ci_url AND ts.build_id = bs.build_id AND ts.job_name = bs.job_name
-WHERE ts.report_time >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 60 DAY)
+WHERE ts.report_time >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 14 DAY)
   AND ts.ci_url = "https://github.com/camunda/camunda"
   AND test_status = "flaky"
   AND (
@@ -82,7 +83,7 @@ WHERE ts.report_time >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 60 DAY)
 ```
 
 This returns every test that flaked at least once on `main` or `stable/*` in
-the last 60 days. The GCP service account key is fetched from Vault.
+the last 14 days. The GCP service account key is fetched from Vault.
 
 ## Processing Steps
 
@@ -241,26 +242,26 @@ The `detect-new-flaky-tests` job is defined in `.github/workflows/ci.yml`:
 You can test the script locally if you have `bq` CLI authenticated:
 
 ```bash
-# 1. Query BigQuery for baseline (or use a subset)
-KNOWN=$(bq query --project_id=ci-30-162810 --use_legacy_sql=false --format=json \
+# 1. Query BigQuery for baseline and save to file
+bq query --project_id=ci-30-162810 --use_legacy_sql=false --format=json \
   'SELECT DISTINCT test_class_name, test_name
    FROM `ci-30-162810.prod_ci_analytics.test_status_v1` ts
    LEFT OUTER JOIN `ci-30-162810.prod_ci_analytics.build_status_v2` bs
      ON ts.ci_url=bs.ci_url AND ts.build_id=bs.build_id AND ts.job_name=bs.job_name
-   WHERE ts.report_time >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 60 DAY)
+   WHERE ts.report_time >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 14 DAY)
      AND ts.ci_url="https://github.com/camunda/camunda"
      AND test_status = "flaky"
      AND (
        (build_trigger="merge_group" AND (build_base_ref="refs/heads/main" OR build_base_ref LIKE "refs/heads/stable/%"))
        OR (build_trigger="push" AND (build_ref="refs/heads/main" OR build_ref LIKE "refs/heads/stable/%"))
-     )' 2>/dev/null)
+     )' 2>/dev/null > /tmp/known-flaky-tests.json
 
 # 2. Simulate PR flaky test data
 PR_DATA='[{"job":"rdbms-integration-tests","flaky_tests":"io.camunda.it.rdbms.db.processinstance.ProcessInstanceIT.shouldSelectRootExpiredRootProcessInstances(CamundaRdbmsTestApplication)[5]"}]'
 
 # 3. Run (will fail at post_comment since GITHUB_TOKEN is fake — that's OK)
 PR_FLAKY_TESTS_DATA="$PR_DATA" \
-KNOWN_FLAKY_TESTS="$KNOWN" \
+KNOWN_FLAKY_TESTS_FILE=/tmp/known-flaky-tests.json \
 PR_NUMBER=12345 \
 GITHUB_TOKEN=fake \
 GITHUB_REPOSITORY=camunda/camunda \
@@ -274,15 +275,15 @@ is KNOWN or NEW. It will fail at the `post_comment` step if a test is NEW
 ## FAQ
 
 <details>
-<summary><strong>Will old flaky tests be flagged as new after 60 days?</strong></summary>
+<summary><strong>Will old flaky tests be flagged as new after 14 days?</strong></summary>
 
-No. The 60-day window is a rolling query against `main` and `stable/*`
+No. The 14-day window is a rolling query against `main` and `stable/*`
 branches. Tests on those branches keep running normally (via `push` and
 `merge_group` triggers). As long as a test continues to flake on `main`, fresh
 entries keep appearing in BigQuery — it never falls out of the window.
 
 A test only drops out of the baseline if it **hasn't flaked on `main`/`stable/*`
-for 60+ days**. That likely means it was fixed. If a PR triggers it again,
+for 14+ days**. That likely means it was fixed. If a PR triggers it again,
 flagging it as NEW is the correct behavior.
 
 </details>
@@ -290,7 +291,7 @@ flagging it as NEW is the correct behavior.
 <details>
 <summary><strong>What about tests that flake very rarely (e.g., once every few months)?</strong></summary>
 
-If a test last flaked on main 61+ days ago and your PR hits it, it will be
+If a test last flaked on main 15+ days ago and your PR hits it, it will be
 flagged as NEW. In this case:
 
 1. Add the `ci:flaky-test-bypass` label to your PR

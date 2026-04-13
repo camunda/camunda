@@ -6,9 +6,9 @@ Compares flaky tests from the current PR run against known flaky tests
 are found.
 
 Inputs (environment variables):
-  PR_FLAKY_TESTS_DATA  – JSON array of {job, flaky_tests}
-  KNOWN_FLAKY_TESTS    – JSON array of {test_class_name, test_name}
-  PR_NUMBER            – Pull request number
+  PR_FLAKY_TESTS_DATA    – JSON array of {job, flaky_tests}
+  KNOWN_FLAKY_TESTS_FILE – Path to a JSON file with [{test_class_name, test_name}]
+  PR_NUMBER              – Pull request number
   GITHUB_TOKEN         – GitHub API token
   GITHUB_REPOSITORY    – owner/repo
   GITHUB_OUTPUT        – Path to the output file for setting step outputs
@@ -113,6 +113,10 @@ def set_output(name: str, value: str) -> None:
             fh.write(f"{name}={value}\n")
 
 
+class GitHubAPIError(Exception):
+    """Raised when a GitHub API call fails."""
+
+
 def _github_api(url: str, token: str, method: str = "GET", data: bytes | None = None) -> bytes:
     req = urllib.request.Request(
         url,
@@ -129,8 +133,9 @@ def _github_api(url: str, token: str, method: str = "GET", data: bytes | None = 
             return resp.read()
     except urllib.error.HTTPError as exc:
         body = exc.read().decode(errors="replace")
-        print(f"{PREFIX} GitHub API error: {exc.status} {exc.reason} — {body}")
-        sys.exit(1)
+        msg = f"GitHub API error: {exc.status} {exc.reason} — {body}"
+        print(f"{PREFIX} {msg}")
+        raise GitHubAPIError(msg) from exc
 
 
 def _find_existing_comment(owner: str, repo: str, pr_number: int, token: str) -> int | None:
@@ -242,7 +247,7 @@ def _is_same_test(baseline_key: str, normalized_key: str) -> bool:
 
 def main() -> None:
     pr_flaky_json = os.environ.get("PR_FLAKY_TESTS_DATA", "")
-    baseline_flaky_json = os.environ.get("KNOWN_FLAKY_TESTS", "")
+    known_flaky_file = os.environ.get("KNOWN_FLAKY_TESTS_FILE", "")
     pr_number = int(os.environ.get("PR_NUMBER", "0"))
     github_token = os.environ.get("GITHUB_TOKEN", "")
     github_repository = os.environ.get("GITHUB_REPOSITORY", "")
@@ -294,12 +299,15 @@ def main() -> None:
 
     baseline_flaky_tests: list[dict] = []
     try:
-        if baseline_flaky_json and baseline_flaky_json.strip():
-            baseline_flaky_tests = json.loads(baseline_flaky_json)
+        if known_flaky_file and os.path.isfile(known_flaky_file):
+            with open(known_flaky_file, encoding="utf-8") as f:
+                baseline_flaky_tests = json.load(f)
+        elif known_flaky_file:
+            print(f"{PREFIX} WARNING: Known flaky tests file not found: {known_flaky_file}")
     except json.JSONDecodeError as exc:
         print(f"{PREFIX} Failed to parse baseline flaky tests - treating all PR flaky tests as new: {exc}")
 
-    print(f"{PREFIX} Baseline flaky tests from main/stable (last 60 days): {len(baseline_flaky_tests)} entries")
+    print(f"{PREFIX} Baseline flaky tests from main/stable (last 14 days): {len(baseline_flaky_tests)} entries")
 
     # BigQuery test_name may include parameters and suffixes, e.g.
     #   "shouldDoSomething(CamundaRdbmsTestApplication) camundaWithOracleDB"
@@ -310,8 +318,6 @@ def main() -> None:
         baseline_keys.add(key)
 
     print(f"{PREFIX} Unique baseline flaky test keys: {len(baseline_keys)}")
-    for i, key in enumerate(sorted(baseline_keys)):
-        print(f"{PREFIX}   [{i+1}] {key}")
 
     # -- Compare --------------------------------------------------------------
     print(f"\n{'='*80}")
@@ -321,13 +327,10 @@ def main() -> None:
     new_flaky_tests: list[dict] = []
     for test in pr_flaky_tests:
         normalized_key = get_test_key(test)
-        # Normalized keys have no params; baseline keys may have params/suffixes.
-        # Match if the baseline key is the same test method (exact or with param suffix).
-        is_known = any(_is_same_test(k, normalized_key) for k in baseline_keys)
-        matched = [k for k in baseline_keys if _is_same_test(k, normalized_key)] if is_known else []
-        status = f"KNOWN (matched: {matched})" if is_known else "NEW (not seen on main/stable)"
+        matched = [k for k in baseline_keys if _is_same_test(k, normalized_key)]
+        status = f"KNOWN (matched: {matched})" if matched else "NEW (not seen on main/stable)"
         print(f"{PREFIX}   {normalized_key} → {status}")
-        if not is_known:
+        if not matched:
             new_flaky_tests.append(test)
 
     print(f"\n{PREFIX} --- Result ---")
@@ -340,9 +343,14 @@ def main() -> None:
         set_output("has-new-flaky-tests", "false")
         # If a previous run left a warning comment, update it to "resolved".
         owner, repo = github_repository.split("/", 1)
-        existing_id = _find_existing_comment(owner, repo, pr_number, github_token)
-        if existing_id:
-            _resolve_comment(owner, repo, existing_id, github_token)
+        try:
+            existing_id = _find_existing_comment(owner, repo, pr_number, github_token)
+            if existing_id:
+                _resolve_comment(owner, repo, existing_id, github_token)
+        except GitHubAPIError:
+            if blocking:
+                sys.exit(1)
+            print(f"{PREFIX} WARNING: Failed to resolve comment (non-blocking mode) — continuing.")
         return
 
     print(f"\n{PREFIX} ❌ Found {len(new_flaky_tests)} NEW flaky test(s)!")
@@ -392,7 +400,12 @@ def main() -> None:
 
     # -- Post or update comment ------------------------------------------------
     owner, repo = github_repository.split("/", 1)
-    post_or_update_comment(owner, repo, pr_number, comment_body, github_token)
+    try:
+        post_or_update_comment(owner, repo, pr_number, comment_body, github_token)
+    except GitHubAPIError:
+        if blocking:
+            sys.exit(1)
+        print(f"{PREFIX} WARNING: Failed to post/update comment (non-blocking mode) — continuing.")
 
     set_output("has-new-flaky-tests", "true")
     if blocking:
