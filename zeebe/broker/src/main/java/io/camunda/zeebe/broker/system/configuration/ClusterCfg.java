@@ -12,6 +12,8 @@ import static io.camunda.zeebe.protocol.Protocol.START_PARTITION_ID;
 import static io.camunda.zeebe.util.StringUtil.LIST_SANITIZER;
 
 import io.atomix.cluster.messaging.MessagingConfig.CompressionAlgorithm;
+import io.camunda.zeebe.broker.system.configuration.partitioning.RegionAwareCfg;
+import io.camunda.zeebe.broker.system.configuration.partitioning.Scheme;
 import java.time.Duration;
 import java.util.Collections;
 import java.util.List;
@@ -30,6 +32,21 @@ public final class ClusterCfg implements ConfigurationEntry {
 
   private static final String NODE_ID_ERROR_MSG =
       "Node id %s needs to be non negative and smaller then cluster size %s.";
+  private static final String REGION_SCHEME_ERROR_MSG =
+      "Broker has region '%s' configured but partitioning scheme is %s; set scheme to REGION_AWARE.";
+  private static final String REGION_NOT_FOUND_ERROR_MSG =
+      "Broker region '%s' is not defined in the regionAware partitioning configuration. "
+          + "Configured regions: %s.";
+  private static final String NODE_ID_REGION_ERROR_MSG =
+      "Node id %d is out of range for region '%s' (numberOfBrokers=%d). "
+          + "nodeId must be in [0, numberOfBrokers).";
+  private static final String BROKER_SUM_ERROR_MSG =
+      "Sum of numberOfBrokers across all regions (%d) must equal clusterSize (%d).";
+  private static final String REPLICA_SUM_ERROR_MSG =
+      "Sum of numberOfReplicas across all regions (%d) must equal replicationFactor (%d).";
+  private static final String REPLICAS_EXCEED_BROKERS_ERROR_MSG =
+      "Region '%s' has numberOfReplicas (%d) > numberOfBrokers (%d). "
+          + "Two replicas of the same partition cannot reside on one broker.";
   private static final String REPLICATION_FACTOR_ERROR_MSG =
       "Replication factor %s needs to be larger then zero and not larger then cluster size %s.";
 
@@ -46,6 +63,19 @@ public final class ClusterCfg implements ConfigurationEntry {
 
   private List<Integer> partitionIds;
   private Integer nodeId = 0;
+  /**
+   * The region this broker belongs to. When set, the partitioning scheme must be {@link
+   * io.camunda.zeebe.broker.system.configuration.partitioning.Scheme#REGION_AWARE} and the broker's
+   * {@link #nodeId} must be unique within this region only (i.e. in the range {@code [0,
+   * numberOfBrokers)} as configured in {@link
+   * io.camunda.zeebe.broker.system.configuration.partitioning.RegionAwareCfg}).
+   *
+   * <p>When {@code null}, the broker operates in the standard non-region-aware mode and all
+   * existing behaviour is preserved.
+   *
+   * <p>Environment variable: {@code CAMUNDA_CLUSTER_REGION}.
+   */
+  private String region;
   // TODO add javaDoc
   private Long nodeVersion = 0L;
   private String clusterId;
@@ -68,8 +98,12 @@ public final class ClusterCfg implements ConfigurationEntry {
       throw new IllegalArgumentException("Partition count must not be smaller than 1.");
     }
 
-    if (nodeId < 0) {
-      throw new IllegalArgumentException("Node id must be positive");
+    if (region != null && !region.isBlank()) {
+      validateRegionAwareConfig(globalConfig);
+    } else {
+      if (nodeId < 0) {
+        throw new IllegalArgumentException("Node id must be positive");
+      }
     }
 
     if (replicationFactor < 1 || replicationFactor > clusterSize) {
@@ -97,6 +131,59 @@ public final class ClusterCfg implements ConfigurationEntry {
     }
   }
 
+  private void validateRegionAwareConfig(final BrokerCfg globalConfig) {
+    final var partitioningCfg = globalConfig.getExperimental().getPartitioning();
+
+    if (partitioningCfg.getScheme() != Scheme.REGION_AWARE) {
+      throw new IllegalArgumentException(
+          String.format(REGION_SCHEME_ERROR_MSG, region, partitioningCfg.getScheme()));
+    }
+
+    final RegionAwareCfg regionAwareCfg = partitioningCfg.getRegionAware();
+    final var regions = regionAwareCfg.getRegions();
+
+    if (!regions.containsKey(region)) {
+      throw new IllegalArgumentException(
+          String.format(REGION_NOT_FOUND_ERROR_MSG, region, regions.keySet()));
+    }
+
+    final var regionCfg = regions.get(region);
+    if (nodeId < 0 || nodeId >= regionCfg.getNumberOfBrokers()) {
+      throw new IllegalArgumentException(
+          String.format(NODE_ID_REGION_ERROR_MSG, nodeId, region, regionCfg.getNumberOfBrokers()));
+    }
+
+    final int totalBrokers = regions.values().stream().mapToInt(r -> r.getNumberOfBrokers()).sum();
+    if (totalBrokers != clusterSize) {
+      throw new IllegalArgumentException(
+          String.format(BROKER_SUM_ERROR_MSG, totalBrokers, clusterSize));
+    }
+
+    final int totalReplicas =
+        regions.values().stream().mapToInt(r -> r.getNumberOfReplicas()).sum();
+    if (totalReplicas != replicationFactor) {
+      throw new IllegalArgumentException(
+          String.format(REPLICA_SUM_ERROR_MSG, totalReplicas, replicationFactor));
+    }
+
+    regions.forEach(
+        (regionName, cfg) -> {
+          if (cfg.getNumberOfReplicas() > cfg.getNumberOfBrokers()) {
+            throw new IllegalArgumentException(
+                String.format(
+                    REPLICAS_EXCEED_BROKERS_ERROR_MSG,
+                    regionName,
+                    cfg.getNumberOfReplicas(),
+                    cfg.getNumberOfBrokers()));
+          }
+          if (cfg.getNumberOfBrokers() < 1 || cfg.getNumberOfReplicas() < 1) {
+            throw new IllegalArgumentException(
+                String.format(
+                    "Region '%s' must have at least 1 broker and 1 replica.", regionName));
+          }
+        });
+  }
+
   private void initPartitionIds() {
     partitionIds =
         IntStream.range(START_PARTITION_ID, START_PARTITION_ID + partitionsCount)
@@ -118,6 +205,14 @@ public final class ClusterCfg implements ConfigurationEntry {
 
   public void setNodeId(final Integer nodeId) {
     this.nodeId = nodeId;
+  }
+
+  public String getRegion() {
+    return region;
+  }
+
+  public void setRegion(final String region) {
+    this.region = region;
   }
 
   public int getPartitionsCount() {
@@ -218,6 +313,7 @@ public final class ClusterCfg implements ConfigurationEntry {
         initialContactPoints,
         partitionIds,
         nodeId,
+        region,
         partitionsCount,
         replicationFactor,
         clusterSize,
@@ -240,6 +336,7 @@ public final class ClusterCfg implements ConfigurationEntry {
     }
     final ClusterCfg that = (ClusterCfg) o;
     return Objects.equals(nodeId, that.nodeId)
+        && Objects.equals(region, that.region)
         && partitionsCount == that.partitionsCount
         && replicationFactor == that.replicationFactor
         && clusterSize == that.clusterSize
@@ -263,6 +360,9 @@ public final class ClusterCfg implements ConfigurationEntry {
         + partitionIds
         + ", nodeId="
         + nodeId
+        + ", region='"
+        + region
+        + '\''
         + ", partitionsCount="
         + partitionsCount
         + ", replicationFactor="
