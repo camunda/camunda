@@ -14,7 +14,6 @@ import {TaskVariableView} from '@/pageElements/TaskVariableView';
 import {TasksPage} from '@/pageElements/TasksPage';
 import {ProcessesPage} from '@/pageElements/ProcessesPage';
 import {TaskFormView} from '@/pageElements/TaskFormView';
-import {sleep} from '@/utils/sleep';
 
 type PlaywrightFixtures = {
   makeAxeBuilder: () => AxeBuilder;
@@ -41,15 +40,6 @@ const test = base.extend<PlaywrightFixtures>({
       ]);
 
     await use(makeAxeBuilder);
-  },
-  resetData: async ({baseURL}, use) => {
-    await use(async () => {
-      await fetch(`${baseURL}../v1/external/devUtil/recreateData`, {
-        method: 'POST',
-      });
-
-      await sleep(1000);
-    });
   },
   header: async ({page}, use) => {
     await use(new Header(page));
