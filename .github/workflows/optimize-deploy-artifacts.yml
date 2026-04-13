@@ -38,7 +38,7 @@ jobs:
       id: "pom-info"
       uses: YunaBraska/java-info-action@575e99f42f2915cc62410c7917fef5558257042c # 3.0.1
       with:
-        work-dir: .
+        work-dir: ./optimize
     - name: "Read Parent Pom Info"
       id: "parent-pom-info"
       uses: YunaBraska/java-info-action@575e99f42f2915cc62410c7917fef5558257042c # 3.0.1
