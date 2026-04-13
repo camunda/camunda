@@ -26,6 +26,10 @@
  *  - `[TYPE] … expected object but got string` — the newer server returns a
  *    JSON-serialized string where the older schema declares an object (common
  *    when a structured field is stringified across versions).
+ *  - `...and N more` — the assert-json-body library truncates errors to 15
+ *    and returns the rest as a summary line.  When all visible errors were
+ *    tolerable, the hidden ones very likely are too, so the summary line
+ *    is also filtered.
  *
  * All other error categories (`[MISSING]`, other `[TYPE]`, `[ENUM]`) still
  * fail as before.
@@ -61,6 +65,16 @@ const _nullTypeRe = /^\[TYPE\] .+ but got null$/;
 /** Object-to-string pattern: `[TYPE] /some/path expected object but got string` */
 const _objectToStringRe = /^\[TYPE\] .+ expected object but got string$/;
 
+/**
+ * Truncation summary from assert-json-body: `...and 35 more`.
+ *
+ * When `throw: false` is used, the library internally throws with at most
+ * 15 error lines + a summary, then parses the message back into an array.
+ * The summary leaks into the errors array as a plain string.  When every
+ * visible error was tolerable, the summary is tolerable too.
+ */
+const _truncationSummaryRe = /^\.\.\.and \d+ more$/;
+
 function _isTolerableForwardCompatError(e: string): boolean {
   // [EXTRA] — newer server added a field not in the older spec
   if (e.startsWith('[EXTRA]')) return true;
@@ -70,6 +84,8 @@ function _isTolerableForwardCompatError(e: string): boolean {
   // [TYPE] … expected object but got string — newer server returns a
   // JSON-serialized string where the older schema declares an object
   if (_objectToStringRe.test(e)) return true;
+  // Truncation summary line from the library's internal error formatting
+  if (_truncationSummaryRe.test(e)) return true;
   return false;
 }
 
