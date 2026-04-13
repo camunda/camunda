@@ -107,7 +107,7 @@ public class BatchOperationInitializationBehavior {
     return switch (result) {
       case Finished(final var endCursor, final int itemsProcessed) -> {
         context = context.withNextPage(endCursor, itemsProcessed);
-        finishInitialization(batchOperation, taskResultBuilder);
+        finishInitialization(taskResultBuilder, context);
         startExecutionPhase(taskResultBuilder, context);
         yield new Success(endCursor);
       }
@@ -157,8 +157,12 @@ public class BatchOperationInitializationBehavior {
   }
 
   private void finishInitialization(
-      final PersistedBatchOperation batchOperation, final TaskResultBuilder resultBuilder) {
-    commands.appendFinishInitializationCommand(resultBuilder, batchOperation.getKey());
+      final TaskResultBuilder resultBuilder, final InitializationContext context) {
+    final var batchOperation = context.operation();
+    final int partitionLocalTotalCount =
+        batchOperation.getNumTotalItems() + context.itemsProcessed();
+    commands.appendFinishInitializationCommand(
+        resultBuilder, batchOperation.getKey(), partitionLocalTotalCount);
     metrics.recordInitialized(batchOperation.getBatchOperationType());
   }
 

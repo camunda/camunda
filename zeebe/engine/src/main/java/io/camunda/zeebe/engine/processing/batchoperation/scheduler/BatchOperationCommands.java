@@ -51,9 +51,13 @@ public class BatchOperationCommands {
   }
 
   public void appendFinishInitializationCommand(
-      final TaskResultBuilder builder, final long batchOperationKey) {
+      final TaskResultBuilder builder,
+      final long batchOperationKey,
+      final int operationsTotalCount) {
     final var command =
-        new BatchOperationInitializationRecord().setBatchOperationKey(batchOperationKey);
+        new BatchOperationInitializationRecord()
+            .setBatchOperationKey(batchOperationKey)
+            .setOperationsTotalCount(operationsTotalCount);
     LOG.trace("Appending batch operation {} initializing finished command", batchOperationKey);
 
     builder.appendCommandRecord(
