@@ -43,7 +43,7 @@ import {useCreateProcessInstance} from 'v2/api/useCreateProcessInstance.mutation
 import {C3EmptyState} from '@camunda/camunda-composite-components';
 import EmptyMessageImage from 'common/processes/empty-message-image.svg';
 import {ProcessTile} from 'common/processes/ProcessTile';
-import {getMultiModeProcessDisplayName} from 'common/processes/getMultiModeProcessDisplayName';
+import {getProcessDisplayName} from 'common/processes/getProcessDisplayName';
 import type {ProcessDefinition} from '@camunda/camunda-api-zod-schemas/8.10';
 
 import {
@@ -460,9 +460,7 @@ const ProcessesTab: React.FC = observer(() => {
                         >
                           <ProcessTile
                             process={process}
-                            displayName={getMultiModeProcessDisplayName(
-                              process,
-                            )}
+                            displayName={getProcessDisplayName(process)}
                             isFirst={idx === 0}
                             isStartButtonDisabled={instance !== null}
                             data-testid="process-tile"
@@ -497,7 +495,7 @@ const ProcessesTab: React.FC = observer(() => {
                             onStartProcessError={() => {
                               setSelectedProcess(null);
                               const displayName =
-                                getMultiModeProcessDisplayName(process);
+                                getProcessDisplayName(process);
                               tracking.track({
                                 eventName: 'process-start-failed',
                               });
@@ -557,9 +555,7 @@ const ProcessesTab: React.FC = observer(() => {
 
       <FormModal
         processDisplayName={
-          selectedProcess === null
-            ? ''
-            : getMultiModeProcessDisplayName(selectedProcess)
+          selectedProcess === null ? '' : getProcessDisplayName(selectedProcess)
         }
         schema={formQueryResult.data?.schema ?? null}
         fetchStatus={formQueryResult.fetchStatus}

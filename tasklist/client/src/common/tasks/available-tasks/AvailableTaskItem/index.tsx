@@ -23,7 +23,7 @@ import {
 } from 'common/dates/formatDateRelative';
 import {unraw} from './unraw';
 import type {CurrentUser} from '@camunda/camunda-api-zod-schemas/8.10';
-import {useMultiModeTaskFilters} from 'common/tasks/filters/useMultiModeTaskFilters';
+import {useTaskFilters} from 'v2/features/tasks/filters/useTaskFilters';
 import {encodeTaskOpenedRef} from 'common/tracking/reftags';
 import {AssigneeTag} from 'common/components/AssigneeTag';
 import {DateLabel} from 'common/tasks/available-tasks/DateLabel';
@@ -70,7 +70,7 @@ const AvailableTaskItem = React.forwardRef<HTMLDivElement, Props>(
   ) => {
     const location = useLocation();
     const isActive = useIsCurrentTaskOpen(taskId);
-    const {filter, sortBy} = useMultiModeTaskFilters();
+    const {filter, sortBy} = useTaskFilters();
     const {t} = useTranslation();
 
     const creationDate = formatISODateTime(creationDateString);

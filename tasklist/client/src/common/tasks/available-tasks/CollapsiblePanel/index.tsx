@@ -20,9 +20,9 @@ import {SidePanelOpen, SidePanelClose, Filter} from '@carbon/react/icons';
 import cn from 'classnames';
 import {useNavigate, useSearchParams} from 'react-router-dom';
 import {
-  useMultiModeTaskFilters,
-  type MultiModeTaskFilters,
-} from 'common/tasks/filters/useMultiModeTaskFilters';
+  useTaskFilters,
+  type TaskFilters,
+} from 'v2/features/tasks/filters/useTaskFilters';
 import {ControlledNavLink} from './ControlledNavLink';
 import {prepareCustomFiltersParams} from 'common/tasks/filters/prepareCustomFiltersParams';
 import {getStateLocally} from 'common/local-storage';
@@ -45,7 +45,7 @@ function getCustomFilterParams(options: {username: string; filter: string}) {
 
 function getNavLinkSearchParam(options: {
   currentParams: URLSearchParams;
-  filter: MultiModeTaskFilters['filter'];
+  filter: TaskFilters['filter'];
   username: string;
 }): string {
   const CUSTOM_FILTERS_PARAMS = [
@@ -116,7 +116,7 @@ const CollapsiblePanel: React.FC = () => {
     string | undefined
   >();
   const wasCollapsed = usePrevious(isCollapsed);
-  const {filter} = useMultiModeTaskFilters();
+  const {filter} = useTaskFilters();
   const [searchParams] = useSearchParams();
   const customFilters = Object.entries(getStateLocally('customFilters') ?? {});
   const {data} = useCurrentUser();

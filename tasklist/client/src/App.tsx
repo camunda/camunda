@@ -41,103 +41,59 @@ const Wrapper: React.FC = () => {
   );
 };
 
-const v1Routes = createRoutesFromElements(
-  <Route path="/" element={<Wrapper />} ErrorBoundary={ErrorWithinLayout}>
-    <Route path="login" lazy={() => import('common/auth/Login')} />
-    <Route
-      path="new/:bpmnProcessId"
-      lazy={() => import('./v1/StartProcessFromForm')}
-    />
-    <Route path="/" lazy={() => import('./common/components/Layout')}>
-      <Route path="forbidden" element={<Forbidden />} />
-      <Route path="processes" ErrorBoundary={ErrorWithinLayout}>
-        <Route index lazy={() => import('./v1/ProcessesTab')} />
-        <Route
-          path=":bpmnProcessId/start"
-          lazy={() => import('./v1/ProcessesTab')}
-        />
-      </Route>
+const router = createBrowserRouter(
+  createRoutesFromElements(
+    <Route path="/" element={<Wrapper />} ErrorBoundary={ErrorWithinLayout}>
+      <Route path="login" lazy={() => import('common/auth/Login')} />
       <Route
-        path="/"
-        lazy={() => import('./v1/TasksTab')}
-        ErrorBoundary={ErrorWithinLayout}
-      >
-        <Route
-          index
-          lazy={() => import('./common/tasks/EmptyPage')}
-          ErrorBoundary={ErrorWithinLayout}
-        />
-        <Route
-          path=":id"
-          lazy={() => import('./v1/TaskDetailsLayout')}
-          ErrorBoundary={ErrorWithinLayout}
-        >
-          <Route index lazy={() => import('./v1/TaskDetails')} />
+        path="new/:bpmnProcessId"
+        lazy={() => import('./v2/StartProcessFromForm')}
+      />
+      <Route path="/" lazy={() => import('./common/components/Layout')}>
+        <Route path="forbidden" element={<Forbidden />} />
+        <Route path="processes" ErrorBoundary={ErrorWithinLayout}>
+          <Route index lazy={() => import('./v2/ProcessesTab')} />
           <Route
-            path="process"
-            lazy={() => import('./v1/TaskDetailsProcessView')}
+            path=":processDefinitionKey/start"
+            lazy={() => import('./v2/ProcessesTab')}
           />
         </Route>
-      </Route>
-    </Route>
-  </Route>,
-);
-
-const v2Routes = createRoutesFromElements(
-  <Route path="/" element={<Wrapper />} ErrorBoundary={ErrorWithinLayout}>
-    <Route path="login" lazy={() => import('common/auth/Login')} />
-    <Route
-      path="new/:bpmnProcessId"
-      lazy={() => import('./v2/StartProcessFromForm')}
-    />
-    <Route path="/" lazy={() => import('./common/components/Layout')}>
-      <Route path="forbidden" element={<Forbidden />} />
-      <Route path="processes" ErrorBoundary={ErrorWithinLayout}>
-        <Route index lazy={() => import('./v2/ProcessesTab')} />
         <Route
-          path=":processDefinitionKey/start"
-          lazy={() => import('./v2/ProcessesTab')}
-        />
-      </Route>
-      <Route
-        path="/"
-        lazy={() => import('./v2/TasksTab')}
-        ErrorBoundary={ErrorWithinLayout}
-      >
-        <Route
-          index
-          lazy={() => import('./common/tasks/EmptyPage')}
-          ErrorBoundary={ErrorWithinLayout}
-        />
-        <Route
-          path=":id"
-          lazy={() => import('./v2/TaskDetailsLayout')}
+          path="/"
+          lazy={() => import('./v2/TasksTab')}
           ErrorBoundary={ErrorWithinLayout}
         >
-          <Route index lazy={() => import('./v2/TaskDetails')} />
           <Route
-            path="process"
-            lazy={() => import('./v2/TaskDetailsProcessView')}
+            index
+            lazy={() => import('./common/tasks/EmptyPage')}
+            ErrorBoundary={ErrorWithinLayout}
           />
           <Route
-            path="history"
-            lazy={() => import('./v2/TaskDetailsHistoryView')}
+            path=":id"
+            lazy={() => import('./v2/TaskDetailsLayout')}
+            ErrorBoundary={ErrorWithinLayout}
           >
+            <Route index lazy={() => import('./v2/TaskDetails')} />
             <Route
-              path=":auditLogKey"
-              lazy={() =>
-                import('./v2/TaskDetailsHistoryView/HistoryItemDetailsModal')
-              }
+              path="process"
+              lazy={() => import('./v2/TaskDetailsProcessView')}
             />
+            <Route
+              path="history"
+              lazy={() => import('./v2/TaskDetailsHistoryView')}
+            >
+              <Route
+                path=":auditLogKey"
+                lazy={() =>
+                  import('./v2/TaskDetailsHistoryView/HistoryItemDetailsModal')
+                }
+              />
+            </Route>
           </Route>
         </Route>
       </Route>
-    </Route>
-  </Route>,
-);
-
-const router = createBrowserRouter(
-  getClientConfig().clientMode === 'v1' ? v1Routes : v2Routes,
+    </Route>,
+  ),
   {
     basename: import.meta.env.DEV ? '/' : getClientConfig().baseName,
   },

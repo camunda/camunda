@@ -14,17 +14,13 @@ import {t} from 'i18next';
 import {ProcessTag} from './ProcessTag';
 import styles from './styles.module.scss';
 import cn from 'classnames';
-import type {MultiModeProcess} from 'common/processes';
 import type {ProcessDefinition} from '@camunda/camunda-api-zod-schemas/8.10';
+
 type InlineLoadingStatus = NonNullable<InlineLoadingProps['status']>;
 
 type LoadingStatus = InlineLoadingStatus | 'active-tasks';
 
 type ProcessTagVariant = React.ComponentProps<typeof ProcessTag>['variant'];
-
-function isV2(process: MultiModeProcess): process is ProcessDefinition {
-  return 'processDefinitionKey' in process;
-}
 
 function convertStatus(status: LoadingStatus): InlineLoadingStatus {
   if (status === 'active-tasks') {
@@ -54,38 +50,18 @@ function getAsyncButtonDescription(status: LoadingStatus) {
   return '';
 }
 
-function getTags(process: MultiModeProcess): ProcessTagVariant[] {
+function getTags(process: ProcessDefinition): ProcessTagVariant[] {
   const tags: ProcessTagVariant[] = [];
 
-  if (
-    (!isV2(process) && typeof process.startEventFormId === 'string') ||
-    (isV2(process) && process.hasStartForm === true)
-  ) {
+  if (process.hasStartForm === true) {
     tags.push('start-form');
   }
 
   return tags;
 }
 
-function getNormalizedProcess(process: MultiModeProcess): {
-  bpmnProcessId: string;
-  hasStartForm: boolean;
-} {
-  if (isV2(process)) {
-    return {
-      bpmnProcessId: process.processDefinitionId,
-      hasStartForm: process.hasStartForm,
-    };
-  }
-
-  return {
-    bpmnProcessId: process.bpmnProcessId,
-    hasStartForm: process.startEventFormId !== null,
-  };
-}
-
 type Props = {
-  process: MultiModeProcess;
+  process: ProcessDefinition;
   className?: string;
   isFirst: boolean;
   isStartButtonDisabled: boolean;
@@ -112,7 +88,7 @@ const ProcessTile: React.FC<Props> = ({
   ...props
 }) => {
   const {t} = useTranslation();
-  const {bpmnProcessId, hasStartForm} = getNormalizedProcess(process);
+  const {processDefinitionId, hasStartForm} = process;
   const tags = getTags(process);
 
   return (
@@ -123,7 +99,7 @@ const ProcessTile: React.FC<Props> = ({
             <h4 className={styles.title}>{displayName}</h4>
           </div>
           <span className={styles.subtitle}>
-            {displayName === bpmnProcessId ? '' : bpmnProcessId}
+            {displayName === processDefinitionId ? '' : processDefinitionId}
           </span>
         </Stack>
         <div className={styles.buttonRow}>

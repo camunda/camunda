@@ -11,9 +11,9 @@ import {OverflowMenu, OverflowMenuItem} from '@carbon/react';
 import {SortAscending, Checkmark} from '@carbon/react/icons';
 import {tracking} from 'common/tracking';
 import {
-  useMultiModeTaskFilters,
-  type MultiModeTaskFilters,
-} from 'common/tasks/filters/useMultiModeTaskFilters';
+  useTaskFilters,
+  type TaskFilters,
+} from 'v2/features/tasks/filters/useTaskFilters';
 import {t as _t} from 'i18next';
 import {useTranslation} from 'react-i18next';
 import styles from './styles.module.scss';
@@ -25,14 +25,14 @@ type Props = {
   disabled: boolean;
 };
 
-const SORTING_OPTIONS_ORDER: MultiModeTaskFilters['sortBy'][] = [
+const SORTING_OPTIONS_ORDER: TaskFilters['sortBy'][] = [
   'creation',
   'due',
   'follow-up',
   'priority',
 ];
 
-const COMPLETED_SORTING_OPTIONS_ORDER: MultiModeTaskFilters['sortBy'][] = [
+const COMPLETED_SORTING_OPTIONS_ORDER: TaskFilters['sortBy'][] = [
   'creation',
   'due',
   'follow-up',
@@ -61,7 +61,7 @@ const getSortingOptions = () =>
 const Filters: React.FC<Props> = memo(({disabled}) => {
   const customFilters = getStateLocally('customFilters');
   const [searchParams, setSearchParams] = useSearchParams();
-  const {filter, sortBy} = useMultiModeTaskFilters();
+  const {filter, sortBy} = useTaskFilters();
   const sortOptionsOrder = ['completed', 'custom'].includes(filter)
     ? COMPLETED_SORTING_OPTIONS_ORDER
     : SORTING_OPTIONS_ORDER;

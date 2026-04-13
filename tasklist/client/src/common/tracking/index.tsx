@@ -9,7 +9,7 @@
 import {type Mixpanel} from 'mixpanel-browser';
 import {getStage} from 'common/config/getStage';
 import type {CurrentUser} from '@camunda/camunda-api-zod-schemas/8.10';
-import type {MultiModeTaskFilters} from 'common/tasks/filters/useMultiModeTaskFilters';
+import {type TaskFilters} from 'v2/features/tasks/filters/useTaskFilters';
 import {getClientConfig} from 'common/config/getClientConfig';
 
 const EVENT_PREFIX = 'tasklist:';
@@ -47,8 +47,8 @@ type Events =
       eventName: 'task-opened';
       by?: 'user' | 'auto-select';
       position?: number;
-      filter?: MultiModeTaskFilters['filter'];
-      sorting?: MultiModeTaskFilters['sortBy'];
+      filter?: TaskFilters['filter'];
+      sorting?: TaskFilters['sortBy'];
     }
   | {
       eventName: 'task-empty-page-opened';
@@ -58,14 +58,14 @@ type Events =
       eventName: 'task-completed';
       isCamundaForm: boolean;
       hasRemainingTasks: boolean;
-      filter: MultiModeTaskFilters['filter'];
+      filter: TaskFilters['filter'];
       customFilters: string[];
       customFilterVariableCount: number;
     }
   | {
       eventName: 'tasks-filtered';
-      filter: MultiModeTaskFilters['filter'];
-      sorting: MultiModeTaskFilters['sortBy'];
+      filter: TaskFilters['filter'];
+      sorting: TaskFilters['sortBy'];
       customFilters: string[];
       customFilterVariableCount: number;
     }

@@ -6,15 +6,10 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {getProcessDisplayName} from 'v1/utils/getProcessDisplayName';
-import type {MultiModeProcess} from './index';
+import type {ProcessDefinition} from '@camunda/camunda-api-zod-schemas/8.10';
 
-function getMultiModeProcessDisplayName(process: MultiModeProcess) {
-  if ('bpmnProcessId' in process) {
-    return getProcessDisplayName(process);
-  }
-
+function getProcessDisplayName(process: ProcessDefinition) {
   return process.name ?? process.processDefinitionId;
 }
 
-export {getMultiModeProcessDisplayName};
+export {getProcessDisplayName};

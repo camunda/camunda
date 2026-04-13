@@ -8,7 +8,6 @@
 
 import {formatRFC3339} from 'date-fns';
 import type {CustomFilters} from './customFiltersSchema';
-import {getClientConfig} from 'common/config/getClientConfig';
 
 function prepareCustomFiltersParams(
   body: CustomFilters,
@@ -26,7 +25,6 @@ function prepareCustomFiltersParams(
     taskId,
   } = body;
   const params: Record<string, string> = {};
-  const {clientMode} = getClientConfig();
 
   if (body === undefined) {
     return params;
@@ -64,11 +62,7 @@ function prepareCustomFiltersParams(
   }
 
   if (tenant !== undefined && tenant !== '') {
-    if (clientMode === 'v1') {
-      params.tenantIds = JSON.stringify([tenant]);
-    } else {
-      params.tenantId = tenant;
-    }
+    params.tenantId = tenant;
   }
 
   if (dueDateFrom !== undefined) {
@@ -88,11 +82,7 @@ function prepareCustomFiltersParams(
   }
 
   if (taskId !== undefined) {
-    if (clientMode === 'v1') {
-      params.taskDefinitionId = taskId;
-    } else {
-      params.elementId = taskId;
-    }
+    params.elementId = taskId;
   }
 
   return params;

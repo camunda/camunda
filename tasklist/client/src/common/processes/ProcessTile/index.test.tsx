@@ -8,10 +8,10 @@
 
 import {ProcessTile} from '.';
 import {render, screen, waitFor, within} from 'common/testing/testing-library';
-import {createMockProcess} from 'v1/api/useProcesses.query';
 import {QueryClientProvider} from '@tanstack/react-query';
 import {getMockQueryClient} from 'common/testing/getMockQueryClient';
 import {MemoryRouter} from 'react-router-dom';
+import {getProcessDefinitionMock} from 'v2/mocks/processDefinitions';
 
 const getWrapper = () => {
   const mockClient = getMockQueryClient();
@@ -31,7 +31,7 @@ describe('ProcessTile', () => {
   it('should show the title of the process', () => {
     render(
       <ProcessTile
-        process={createMockProcess('processId')}
+        process={getProcessDefinitionMock({processDefinitionId: 'processId'})}
         isFirst={false}
         isStartButtonDisabled={false}
         onStartProcess={() => {}}
@@ -51,7 +51,7 @@ describe('ProcessTile', () => {
   it('should show the Start Process button', () => {
     render(
       <ProcessTile
-        process={createMockProcess('processId')}
+        process={getProcessDefinitionMock({processDefinitionId: 'processId'})}
         isFirst={false}
         isStartButtonDisabled={false}
         onStartProcess={() => {}}
@@ -73,7 +73,10 @@ describe('ProcessTile', () => {
   it('should show the Requires Form Input tag if the process has a start form', () => {
     render(
       <ProcessTile
-        process={createMockProcess('processId')}
+        process={getProcessDefinitionMock({
+          processDefinitionId: 'processId',
+          hasStartForm: true,
+        })}
         isFirst={false}
         isStartButtonDisabled={false}
         onStartProcess={() => {}}
@@ -95,7 +98,7 @@ describe('ProcessTile', () => {
   it('should disable start button', () => {
     render(
       <ProcessTile
-        process={createMockProcess('processId')}
+        process={getProcessDefinitionMock({processDefinitionId: 'processId'})}
         isFirst={false}
         isStartButtonDisabled
         onStartProcess={() => {}}
@@ -119,7 +122,7 @@ describe('ProcessTile', () => {
 
     const {user} = render(
       <ProcessTile
-        process={createMockProcess('processId')}
+        process={getProcessDefinitionMock({processDefinitionId: 'processId'})}
         isFirst={false}
         isStartButtonDisabled={false}
         onStartProcess={onStartProcess}
@@ -144,7 +147,7 @@ describe('ProcessTile', () => {
 
     const {rerender} = render(
       <ProcessTile
-        process={createMockProcess('processId')}
+        process={getProcessDefinitionMock({processDefinitionId: 'processId'})}
         isFirst={false}
         isStartButtonDisabled={false}
         onStartProcess={() => {}}
@@ -160,7 +163,7 @@ describe('ProcessTile', () => {
 
     rerender(
       <ProcessTile
-        process={createMockProcess('processId')}
+        process={getProcessDefinitionMock({processDefinitionId: 'processId'})}
         isFirst={false}
         isStartButtonDisabled={false}
         onStartProcess={() => {}}
@@ -181,7 +184,7 @@ describe('ProcessTile', () => {
 
     const {rerender} = render(
       <ProcessTile
-        process={createMockProcess('processId')}
+        process={getProcessDefinitionMock({processDefinitionId: 'processId'})}
         isFirst={false}
         isStartButtonDisabled={false}
         onStartProcess={() => {}}
@@ -197,7 +200,7 @@ describe('ProcessTile', () => {
 
     rerender(
       <ProcessTile
-        process={createMockProcess('processId')}
+        process={getProcessDefinitionMock({processDefinitionId: 'processId'})}
         isFirst={false}
         isStartButtonDisabled={false}
         onStartProcess={() => {}}

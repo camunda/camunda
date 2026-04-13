@@ -15,10 +15,11 @@ import {decodeTaskEmptyPageRef} from 'common/tracking/reftags';
 import {useSearchParams} from 'react-router-dom';
 import {tracking} from 'common/tracking';
 import styles from './styles.module.scss';
-import {useMultiModeTasks} from './useMultiModeTasks';
+import {useTasks} from 'v2/api/useTasks.query';
+import {useTaskFilters} from 'v2/features/tasks/filters/useTaskFilters';
 
 const EmptyPage: React.FC = () => {
-  const {isPending, data} = useMultiModeTasks();
+  const {isPending, data} = useTasks(useTaskFilters());
   const tasks = data?.pages.flat() ?? [];
   const hasNoTasks = tasks.length === 0;
   const isOldUser = getStateLocally('hasCompletedTask') === true;
