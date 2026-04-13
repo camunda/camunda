@@ -28,6 +28,9 @@ import io.camunda.exporter.tasks.historydeletion.HistoryDeletionJob;
 import io.camunda.exporter.tasks.incident.IncidentUpdateTask;
 import io.camunda.exporter.tasks.utils.TestExporterResourceProvider;
 import io.camunda.zeebe.exporter.common.cache.ExporterEntityCacheImpl;
+import io.camunda.zeebe.exporter.common.tasks.BackgroundTask;
+import io.camunda.zeebe.exporter.common.tasks.ReschedulingTask;
+import io.camunda.zeebe.exporter.common.tasks.RunnableTask;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.InstantSource;
 import java.util.List;
@@ -35,24 +38,24 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.slf4j.LoggerFactory;
 
-class BackgroundTaskManagerFactoryTest {
+class CamundaCamundaBackgroundTaskManagerFactoryTest {
 
   private static final int PARTITION_ID = 1;
   private static final String EXPORTER_ID = "test-exporter";
 
-  private BackgroundTaskManagerFactory factory;
+  private CamundaBackgroundTaskManagerFactory factory;
   private final ExporterConfiguration config = new ExporterConfiguration();
 
   @BeforeEach
   void setUp() {
     factory =
-        new BackgroundTaskManagerFactory(
+        new CamundaBackgroundTaskManagerFactory(
             PARTITION_ID,
             EXPORTER_ID,
             config,
             new TestExporterResourceProvider("", true),
             new CamundaExporterMetrics(new SimpleMeterRegistry()),
-            LoggerFactory.getLogger(BackgroundTaskManagerFactoryTest.class),
+            LoggerFactory.getLogger(CamundaCamundaBackgroundTaskManagerFactoryTest.class),
             mock(ExporterMetadata.class),
             new ObjectMapper(),
             mock(ExporterEntityCacheImpl.class),
@@ -214,12 +217,19 @@ class BackgroundTaskManagerFactoryTest {
         .anyMatch(task -> isTaskOfType(task, ApplyRolloverPeriodJob.class));
   }
 
-  private List<RunnableTask> getTasksFromManager(final BackgroundTaskManager taskManager) {
+  private List<RunnableTask> getTasksFromManager(final CamundaBackgroundTaskManager taskManager) {
     try {
-      final var field = BackgroundTaskManager.class.getDeclaredField("tasks");
-      field.setAccessible(true);
+      // The camunda-exporter BackgroundTaskManager delegates to the common one; get the delegate
+      final var delegateField = CamundaBackgroundTaskManager.class.getDeclaredField("delegate");
+      delegateField.setAccessible(true);
+      final var delegate = delegateField.get(taskManager);
+      // Tasks are stored in the common BackgroundTaskManager
+      final var tasksField =
+          io.camunda.zeebe.exporter.common.tasks.BackgroundTaskManager.class.getDeclaredField(
+              "tasks");
+      tasksField.setAccessible(true);
       @SuppressWarnings("unchecked")
-      final var tasks = (List<RunnableTask>) field.get(taskManager);
+      final var tasks = (List<RunnableTask>) tasksField.get(delegate);
       return tasks;
     } catch (final Exception e) {
       throw new RuntimeException("Failed to access tasks field", e);

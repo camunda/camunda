@@ -48,8 +48,8 @@ import io.camunda.exporter.exceptions.PersistenceException;
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.exporter.store.ExporterBatchWriter;
-import io.camunda.exporter.tasks.BackgroundTaskManager;
-import io.camunda.exporter.tasks.BackgroundTaskManagerFactory;
+import io.camunda.exporter.tasks.CamundaBackgroundTaskManager;
+import io.camunda.exporter.tasks.CamundaBackgroundTaskManagerFactory;
 import io.camunda.search.schema.MappingSource;
 import io.camunda.search.schema.SchemaManager;
 import io.camunda.search.schema.SearchEngineClient;
@@ -84,7 +84,7 @@ public class CamundaExporter implements Exporter {
   private long lastPosition = -1;
   private final ExporterResourceProvider provider;
   private CamundaExporterMetrics metrics;
-  private BackgroundTaskManager taskManager;
+  private CamundaBackgroundTaskManager taskManager;
   private ExporterMetadata metadata;
   private SearchEngineClient searchEngineClient;
   private int partitionId;
@@ -264,7 +264,7 @@ public class CamundaExporter implements Exporter {
         clientAdapter.objectMapper());
 
     taskManager =
-        new BackgroundTaskManagerFactory(
+        new CamundaBackgroundTaskManagerFactory(
                 context.getPartitionId(),
                 context.getConfiguration().getId().toLowerCase(),
                 configuration,

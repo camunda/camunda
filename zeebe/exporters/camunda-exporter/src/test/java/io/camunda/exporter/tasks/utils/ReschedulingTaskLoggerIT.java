@@ -11,8 +11,8 @@ import static org.awaitility.Awaitility.await;
 
 import co.elastic.clients.json.JsonData;
 import io.camunda.exporter.config.ExporterConfiguration;
-import io.camunda.exporter.tasks.util.ReschedulingTaskLogger;
 import io.camunda.search.connect.es.ElasticsearchConnector;
+import io.camunda.zeebe.exporter.common.tasks.util.ReschedulingTaskLogger;
 import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
 import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.Test;

@@ -7,6 +7,7 @@
  */
 package io.camunda.exporter.tasks;
 
+import static io.camunda.zeebe.exporter.common.tasks.BackgroundTaskManager.buildExecutor;
 import static io.camunda.zeebe.protocol.Protocol.START_PARTITION_ID;
 
 import co.elastic.clients.elasticsearch.ElasticsearchAsyncClient;
@@ -62,18 +63,19 @@ import io.camunda.webapps.schema.descriptors.template.UsageMetricTUTemplate;
 import io.camunda.webapps.schema.descriptors.template.UsageMetricTemplate;
 import io.camunda.zeebe.exporter.common.cache.ExporterEntityCacheImpl;
 import io.camunda.zeebe.exporter.common.cache.process.CachedProcessEntity;
-import io.camunda.zeebe.util.error.FatalErrorHandler;
+import io.camunda.zeebe.exporter.common.tasks.BackgroundTask;
+import io.camunda.zeebe.exporter.common.tasks.ReschedulingTask;
+import io.camunda.zeebe.exporter.common.tasks.RunnableTask;
 import java.time.Duration;
 import java.time.InstantSource;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
 import org.opensearch.client.opensearch.OpenSearchAsyncClient;
 import org.opensearch.client.opensearch.generic.OpenSearchGenericClient;
 import org.slf4j.Logger;
 
-public final class BackgroundTaskManagerFactory {
+public final class CamundaBackgroundTaskManagerFactory {
   private final int partitionId;
   private final String exporterId;
   private final ExporterConfiguration config;
@@ -92,7 +94,7 @@ public final class BackgroundTaskManagerFactory {
   private final ExporterEntityCacheImpl<Long, CachedProcessEntity> processCache;
   private final InstantSource clock;
 
-  public BackgroundTaskManagerFactory(
+  public CamundaBackgroundTaskManagerFactory(
       final int partitionId,
       final String exporterId,
       final ExporterConfiguration config,
@@ -115,8 +117,8 @@ public final class BackgroundTaskManagerFactory {
     this.clock = clock;
   }
 
-  public BackgroundTaskManager build() {
-    executor = buildExecutor();
+  public CamundaBackgroundTaskManager build() {
+    executor = buildExecutor("CamundaExporter", partitionId, logger);
 
     // initialize all repositories based on connection type to reuse clients
     if (config.getConnect().getTypeEnum().isOpenSearch()) {
@@ -143,7 +145,7 @@ public final class BackgroundTaskManagerFactory {
 
     final List<RunnableTask> tasks = buildTasks();
 
-    return new BackgroundTaskManager(
+    return new CamundaBackgroundTaskManager(
         partitionId,
         archiverRepository,
         incidentRepository,
@@ -519,21 +521,5 @@ public final class BackgroundTaskManagerFactory {
             config.getHistory(),
             logger,
             executor));
-  }
-
-  private ScheduledThreadPoolExecutor buildExecutor() {
-    final var threadFactory =
-        Thread.ofPlatform()
-            .name("exporter-" + exporterId + "-p" + partitionId + "-tasks-", 0)
-            .uncaughtExceptionHandler(FatalErrorHandler.uncaughtExceptionHandler(logger))
-            .factory();
-    final var executor = new ScheduledThreadPoolExecutor(0, threadFactory);
-    executor.setContinueExistingPeriodicTasksAfterShutdownPolicy(false);
-    executor.setExecuteExistingDelayedTasksAfterShutdownPolicy(false);
-    executor.setRemoveOnCancelPolicy(true);
-    executor.allowCoreThreadTimeOut(true);
-    executor.setKeepAliveTime(1, TimeUnit.MINUTES);
-
-    return executor;
   }
 }
