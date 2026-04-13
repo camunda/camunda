@@ -648,6 +648,7 @@ class Modifications {
     if (parentScope !== undefined && 'parentScopeIds' in parentScope) {
       return parentScope.parentScopeIds[elementId];
     }
+    return undefined;
   };
 
   addCancelModification = ({

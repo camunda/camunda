@@ -52,6 +52,7 @@ const MigrateAction: React.FC = observer(() => {
     if (!hasSelectedRunningInstances) {
       return 'You can only migrate instances in active or incident state.';
     }
+    return undefined;
   };
 
   const handleSubmit = () => {

@@ -15,13 +15,15 @@ const getEventSubProcessType = ({
 }: {
   businessObject: BusinessObject;
 }) => {
-  if (isEventSubProcess({businessObject})) {
-    const startEvent = businessObject.flowElements?.find((businessObject) => {
-      return hasType({businessObject, types: ['bpmn:StartEvent']});
-    });
-
-    return startEvent?.eventDefinitions?.[0]?.$type;
+  if (!isEventSubProcess({businessObject})) {
+    return undefined;
   }
+
+  const startEvent = businessObject.flowElements?.find((businessObject) => {
+    return hasType({businessObject, types: ['bpmn:StartEvent']});
+  });
+
+  return startEvent?.eventDefinitions?.[0]?.$type;
 };
 
 export {getEventSubProcessType};

@@ -40,6 +40,7 @@ const useProcessInstance = <T = ProcessInstance>(
       if (processInstance !== undefined && isInstanceRunning(processInstance)) {
         return 5000;
       }
+      return undefined;
     },
   });
 };

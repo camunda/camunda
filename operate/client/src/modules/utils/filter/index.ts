@@ -82,6 +82,7 @@ function parseFilterTime(value: string) {
     const parsedDate = parse(value, 'HH:mm:ss', new Date());
     return isValid(parsedDate) ? parsedDate : undefined;
   }
+  return undefined;
 }
 
 function updateFiltersSearchString<Filters extends object>(

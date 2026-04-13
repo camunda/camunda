@@ -21,6 +21,7 @@ const validateNameCharacters: FieldValidator<string | undefined> = (
   if (variableName.includes('"') || variableName.includes(' ')) {
     return ERRORS.INVALID_NAME;
   }
+  return undefined;
 };
 
 const validateModifiedNameComplete: FieldValidator<string | undefined> = (
@@ -36,6 +37,7 @@ const validateModifiedNameComplete: FieldValidator<string | undefined> = (
   if (variableValue.trim() !== '' && variableName === '') {
     return ERRORS.EMPTY_NAME;
   }
+  return undefined;
 };
 
 const validateModifiedNameNotDuplicate =
@@ -94,6 +96,7 @@ const validateNameComplete =
     if (meta?.dirty && isVariableDuplicate) {
       return ERRORS.DUPLICATE_NAME;
     }
+    return undefined;
   };
 
 const validateNameNotDuplicate = (
@@ -107,6 +110,7 @@ const validateNameNotDuplicate = (
     if (meta?.dirty && isVariableDuplicate) {
       return ERRORS.DUPLICATE_NAME;
     }
+    return undefined;
   }, VALIDATION_DELAY);
 
 const validateValueComplete: FieldValidator<string | undefined> =

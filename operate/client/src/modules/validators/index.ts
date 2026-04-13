@@ -68,6 +68,7 @@ const validateIdsCharacters: FieldValidator<
   ) {
     return ERRORS.ids;
   }
+  return undefined;
 };
 
 const validateDecisionIdsCharacters: FieldValidator<
@@ -79,6 +80,7 @@ const validateDecisionIdsCharacters: FieldValidator<
   ) {
     return ERRORS.decisionsIds;
   }
+  return undefined;
 };
 
 const validateIdsLength: FieldValidator<
@@ -87,6 +89,7 @@ const validateIdsLength: FieldValidator<
   if (areIdsTooLong(value)) {
     return ERRORS.ids;
   }
+  return undefined;
 };
 
 const validateDecisionIdsLength: FieldValidator<
@@ -95,6 +98,7 @@ const validateDecisionIdsLength: FieldValidator<
   if (areDecisionIdsTooLong(value)) {
     return ERRORS.decisionsIds;
   }
+  return undefined;
 };
 
 const validatesIdsComplete: FieldValidator<
@@ -103,6 +107,7 @@ const validatesIdsComplete: FieldValidator<
   if (!areIdsComplete(value)) {
     return ERRORS.ids;
   }
+  return undefined;
 }, VALIDATION_TIMEOUT);
 
 const validatesDecisionIdsComplete: FieldValidator<
@@ -111,6 +116,7 @@ const validatesDecisionIdsComplete: FieldValidator<
   if (!areDecisionIdsComplete(value)) {
     return ERRORS.decisionsIds;
   }
+  return undefined;
 }, VALIDATION_TIMEOUT);
 
 const validateParentInstanceIdCharacters: FieldValidator<
@@ -119,6 +125,7 @@ const validateParentInstanceIdCharacters: FieldValidator<
   if (value !== '' && !/^[0-9]+$/.test(value)) {
     return ERRORS.parentInstanceId;
   }
+  return undefined;
 };
 
 const validateParentInstanceIdComplete: FieldValidator<
@@ -127,6 +134,7 @@ const validateParentInstanceIdComplete: FieldValidator<
   if (!areIdsComplete(value)) {
     return ERRORS.parentInstanceId;
   }
+  return undefined;
 }, VALIDATION_TIMEOUT);
 
 const validateParentInstanceIdNotTooLong: FieldValidator<
@@ -135,12 +143,14 @@ const validateParentInstanceIdNotTooLong: FieldValidator<
   if (areIdsTooLong(value)) {
     return ERRORS.parentInstanceId;
   }
+  return undefined;
 };
 
 const validateTimeComplete = promisifyValidator((value = '') => {
   if (value !== '' && !isValid(parseFilterTime(value.trim()))) {
     return ERRORS.time;
   }
+  return undefined;
 }, VALIDATION_TIMEOUT);
 
 const validateTimeRange = promisifyValidator(
@@ -174,6 +184,7 @@ const validateTimeRange = promisifyValidator(
       // ' ' allows the field to have error indicators without error message
       return meta?.name === 'fromTime' ? ERRORS.timeRange : ' ';
     }
+    return undefined;
   },
   VALIDATION_TIMEOUT,
 );
@@ -182,6 +193,7 @@ const validateTimeCharacters = (value = '') => {
   if (value !== '' && value.replace(/[0-9]|:/g, '') !== '') {
     return ERRORS.time;
   }
+  return undefined;
 };
 
 const validateVariableNameCharacters: FieldValidator<string | undefined> = (
@@ -262,6 +274,7 @@ const validateOperationIdCharacters: FieldValidator<
   if (!schema.safeParse(value).success) {
     return ERRORS.operationId;
   }
+  return undefined;
 };
 
 /**
@@ -279,6 +292,7 @@ const validateOperationIdComplete: FieldValidator<
   if (!schema.safeParse(value).success) {
     return ERRORS.operationId;
   }
+  return undefined;
 }, VALIDATION_TIMEOUT);
 
 export {

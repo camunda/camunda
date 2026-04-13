@@ -86,6 +86,7 @@ const MoveAction: React.FC = observer(() => {
     if (isAttachedToAnEventBasedGateway(businessObject)) {
       return 'Elements attached to an event based gateway are not supported.';
     }
+    return undefined;
   };
 
   return (

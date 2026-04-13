@@ -20,7 +20,7 @@
     "strict": true,
     "noFallthroughCasesInSwitch": true,
     "noImplicitOverride": true,
-    "noImplicitReturns": false, // TODO: enable with https://github.com/camunda/camunda/issues/50173
+    "noImplicitReturns": true,
     "noUnusedLocals": true,
     "noUnusedParameters": false, // TODO: enable with https://github.com/camunda/camunda/issues/50173
     "noPropertyAccessFromIndexSignature": false,
