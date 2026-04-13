@@ -23,6 +23,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
+import java.time.Duration;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
@@ -263,6 +264,28 @@ public final class OAuthCredentialsCacheTest {
   }
 
   @Test
+  public void shouldRejectNullRefreshThresholdWhenProactiveCallbackProvided() throws IOException {
+    // given
+    final OAuthCredentialsCache cache = new OAuthCredentialsCache(cacheFile);
+    cache.readCache();
+
+    // when / then — a non-null callback paired with a null threshold should fail fast
+    // rather than NPE inside shouldRefreshProactively()
+    assertThatThrownBy(
+            () ->
+                cache.computeIfMissingOrInvalid(
+                    WOMBAT_CLIENT_ID,
+                    () -> WOMBAT,
+                    () -> {
+                      /* no-op */
+                    },
+                    null))
+        .isInstanceOf(NullPointerException.class)
+        .hasMessageContaining("proactiveTokenRefreshThreshold")
+        .hasMessageContaining("non-null");
+  }
+
+  @Test
   public void shouldInvokeProactiveRefreshCallbackWhenTokenIsNearingExpiry() throws IOException {
     // given — a token that is within the proactive refresh window (expires in 45s: valid but
     // past the 60s proactive threshold)
@@ -276,7 +299,10 @@ public final class OAuthCredentialsCacheTest {
     // when
     final CamundaClientCredentials result =
         cache.computeIfMissingOrInvalid(
-            WOMBAT_CLIENT_ID, () -> WOMBAT, () -> callbackInvoked.set(true));
+            WOMBAT_CLIENT_ID,
+            () -> WOMBAT,
+            () -> callbackInvoked.set(true),
+            Duration.ofSeconds(60));
 
     // then — returns the still-valid token but triggers the callback
     assertThat(result.getAccessToken()).isEqualTo("nearExpiry");
@@ -293,7 +319,10 @@ public final class OAuthCredentialsCacheTest {
     // when — WOMBAT has expiry in year 3020, far from any threshold
     final CamundaClientCredentials result =
         cache.computeIfMissingOrInvalid(
-            WOMBAT_CLIENT_ID, () -> WOMBAT, () -> callbackInvoked.set(true));
+            WOMBAT_CLIENT_ID,
+            () -> WOMBAT,
+            () -> callbackInvoked.set(true),
+            Duration.ofSeconds(60));
 
     // then — returns the token without triggering the callback
     assertThat(result.getAccessToken()).isEqualTo("wombat");

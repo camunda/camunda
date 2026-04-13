@@ -91,6 +91,8 @@ public class CredentialsProviderConfiguration {
             .credentialsCachePath(camundaClientProperties.getAuth().getCredentialsCachePath())
             .connectTimeout(camundaClientProperties.getAuth().getConnectTimeout())
             .readTimeout(camundaClientProperties.getAuth().getReadTimeout())
+            .proactiveTokenRefreshThreshold(
+                camundaClientProperties.getAuth().getProactiveTokenRefreshThreshold())
             .clientAssertionKeystorePath(
                 camundaClientProperties.getAuth().getClientAssertion().getKeystorePath())
             .clientAssertionKeystorePassword(
