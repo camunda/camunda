@@ -17,8 +17,6 @@ import io.camunda.db.rdbms.write.RdbmsWriters;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtension;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
 import io.camunda.search.entities.ProcessDefinitionEntity;
-import io.camunda.search.filter.ProcessDefinitionFilter;
-import io.camunda.search.page.SearchQueryPage;
 import io.camunda.search.query.ProcessDefinitionQuery;
 import io.camunda.search.sort.ProcessDefinitionSort;
 import io.camunda.search.sort.ProcessDefinitionSort.Builder;
@@ -148,10 +146,8 @@ public class ProcessDefinitionSortIT {
     final var searchResult =
         reader
             .search(
-                new ProcessDefinitionQuery(
-                    new ProcessDefinitionFilter.Builder().versionTags(versionTag).build(),
-                    ProcessDefinitionSort.of(sortBuilder),
-                    SearchQueryPage.of(b -> b)))
+                ProcessDefinitionQuery.of(
+                    b -> b.filter(f -> f.versionTags(versionTag)).sort(sortBuilder).page(p -> p)))
             .items();
 
     assertThat(searchResult).hasSize(20);

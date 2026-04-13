@@ -26,7 +26,8 @@
     SELECT PROCESS_DEFINITION_KEY,
     PROCESS_DEFINITION_ID,
     RESOURCE_NAME,
-    BPMN_XML,
+    <if test="resultConfig.includeXml">BPMN_XML,</if>
+    <if test="!resultConfig.includeXml">NULL AS BPMN_XML,</if>
     NAME,
     TENANT_ID,
     VERSION_TAG,

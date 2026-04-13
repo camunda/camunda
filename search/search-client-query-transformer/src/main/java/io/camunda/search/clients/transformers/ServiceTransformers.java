@@ -151,6 +151,7 @@ import io.camunda.search.clients.transformers.filter.VariableValueFilterTransfor
 import io.camunda.search.clients.transformers.query.TypedSearchQueryTransformer;
 import io.camunda.search.clients.transformers.result.DecisionInstanceResultConfigTransformer;
 import io.camunda.search.clients.transformers.result.DecisionRequirementsResultConfigTransformer;
+import io.camunda.search.clients.transformers.result.ProcessDefinitionResultConfigTransformer;
 import io.camunda.search.clients.transformers.result.ProcessInstanceResultConfigTransformer;
 import io.camunda.search.clients.transformers.sort.AuditLogSortTransformer;
 import io.camunda.search.clients.transformers.sort.AuthorizationFieldSortingTransformer;
@@ -267,6 +268,7 @@ import io.camunda.search.query.UserTaskQuery;
 import io.camunda.search.query.VariableQuery;
 import io.camunda.search.result.DecisionInstanceQueryResultConfig;
 import io.camunda.search.result.DecisionRequirementsQueryResultConfig;
+import io.camunda.search.result.ProcessDefinitionQueryResultConfig;
 import io.camunda.search.result.ProcessInstanceQueryResultConfig;
 import io.camunda.search.sort.AuditLogSort;
 import io.camunda.search.sort.AuthorizationSort;
@@ -667,6 +669,8 @@ public final class ServiceTransformers {
         new DecisionRequirementsResultConfigTransformer());
     mappers.put(
         ProcessInstanceQueryResultConfig.class, new ProcessInstanceResultConfigTransformer());
+    mappers.put(
+        ProcessDefinitionQueryResultConfig.class, new ProcessDefinitionResultConfigTransformer());
 
     // aggregation
     mappers.put(
