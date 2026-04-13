@@ -83,6 +83,7 @@ describe('<ProcessOperations />', () => {
       totalProcessInstancesCount: 2,
       visibleIds: ['1', '2'],
       visibleRunningIds: ['1', '2'],
+      visibleFinishedIds: [],
     });
     processInstancesSelectionStore.selectProcessInstance('1');
     processInstancesSelectionStore.selectProcessInstance('2');

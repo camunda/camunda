@@ -40,6 +40,7 @@ const Wrapper: React.FC<{children?: React.ReactNode}> = observer(
         totalProcessInstancesCount: 10,
         visibleIds: ['123', '456', '789'],
         visibleRunningIds: ['123', '456', '789'],
+        visibleFinishedIds: [],
       });
 
       return () => {
