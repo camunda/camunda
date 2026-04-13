@@ -113,6 +113,30 @@ const ReadOnlyEditorWrapper = styled.div<{
     `};
 `;
 
+const CopyIcon = styled.span<{$isCopying?: boolean}>`
+  position: absolute;
+  top: ${EDITOR_PADDING_TOP}px;
+  right: 0;
+  padding: 0.25rem;
+  color: var(--cds-icon-secondary);
+  opacity: 0;
+  transition: opacity 0.2s ease-in-out;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+
+  ${ReadOnlyEditorWrapper}:hover & {
+    opacity: 1;
+  }
+
+  ${({$isCopying}) =>
+    $isCopying &&
+    css`
+      opacity: 1;
+    `}
+`;
+
 const ReadOnlyEditorContent = styled.pre`
   font-size: ${EDITOR_FONT_SIZE}px;
   line-height: ${EDITOR_LINE_HEIGHT}px;
@@ -154,5 +178,6 @@ export {
   EditorLoader,
   ReadOnlyEditorWrapper,
   ReadOnlyEditorContent,
+  CopyIcon,
   WriteModeEditor,
 };
