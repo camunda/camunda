@@ -17,19 +17,19 @@ import {
   createRoutesFromElements,
 } from 'react-router-dom';
 import {ErrorBoundary} from 'react-error-boundary';
-import {Notifications} from 'v2/notifications';
-import {NetworkStatusWatcher} from 'v2/NetworkStatusWatcher';
-import {ThemeProvider} from 'v2/theme/ThemeProvider';
-import {SessionWatcher} from 'v2/auth/SessionWatcher';
-import {TrackPagination} from 'v2/tracking/TrackPagination';
-import {ReactQueryProvider} from 'v2/react-query/ReactQueryProvider';
+import {Notifications} from 'modules/notifications';
+import {NetworkStatusWatcher} from 'modules/NetworkStatusWatcher';
+import {ThemeProvider} from 'modules/theme/ThemeProvider';
+import {SessionWatcher} from 'modules/auth/SessionWatcher';
+import {TrackPagination} from 'modules/tracking/TrackPagination';
+import {ReactQueryProvider} from 'modules/react-query/ReactQueryProvider';
 import {
   ErrorWithinLayout,
   FallbackErrorPage,
-} from 'v2/error-handling/errorBoundaries';
-import {tracking} from 'v2/tracking';
-import {getClientConfig} from 'v2/config/getClientConfig';
-import {Forbidden} from 'v2/error-handling/Forbidden';
+} from 'modules/error-handling/errorBoundaries';
+import {tracking} from 'modules/tracking';
+import {getClientConfig} from 'modules/config/getClientConfig';
+import {Forbidden} from 'modules/error-handling/Forbidden';
 
 const Wrapper: React.FC = () => {
   return (
@@ -44,48 +44,48 @@ const Wrapper: React.FC = () => {
 const router = createBrowserRouter(
   createRoutesFromElements(
     <Route path="/" element={<Wrapper />} ErrorBoundary={ErrorWithinLayout}>
-      <Route path="login" lazy={() => import('v2/auth/Login')} />
+      <Route path="login" lazy={() => import('modules/auth/Login')} />
       <Route
         path="new/:bpmnProcessId"
-        lazy={() => import('./v2/StartProcessFromForm')}
+        lazy={() => import('./modules/StartProcessFromForm')}
       />
-      <Route path="/" lazy={() => import('./v2/components/Layout')}>
+      <Route path="/" lazy={() => import('./modules/components/Layout')}>
         <Route path="forbidden" element={<Forbidden />} />
         <Route path="processes" ErrorBoundary={ErrorWithinLayout}>
-          <Route index lazy={() => import('./v2/ProcessesTab')} />
+          <Route index lazy={() => import('./modules/ProcessesTab')} />
           <Route
             path=":processDefinitionKey/start"
-            lazy={() => import('./v2/ProcessesTab')}
+            lazy={() => import('./modules/ProcessesTab')}
           />
         </Route>
         <Route
           path="/"
-          lazy={() => import('./v2/TasksTab')}
+          lazy={() => import('./modules/TasksTab')}
           ErrorBoundary={ErrorWithinLayout}
         >
           <Route
             index
-            lazy={() => import('./v2/tasks/EmptyPage')}
+            lazy={() => import('./modules/tasks/EmptyPage')}
             ErrorBoundary={ErrorWithinLayout}
           />
           <Route
             path=":id"
-            lazy={() => import('./v2/TaskDetailsLayout')}
+            lazy={() => import('./modules/TaskDetailsLayout')}
             ErrorBoundary={ErrorWithinLayout}
           >
-            <Route index lazy={() => import('./v2/TaskDetails')} />
+            <Route index lazy={() => import('./modules/TaskDetails')} />
             <Route
               path="process"
-              lazy={() => import('./v2/TaskDetailsProcessView')}
+              lazy={() => import('./modules/TaskDetailsProcessView')}
             />
             <Route
               path="history"
-              lazy={() => import('./v2/TaskDetailsHistoryView')}
+              lazy={() => import('./modules/TaskDetailsHistoryView')}
             >
               <Route
                 path=":auditLogKey"
                 lazy={() =>
-                  import('./v2/TaskDetailsHistoryView/HistoryItemDetailsModal')
+                  import('./modules/TaskDetailsHistoryView/HistoryItemDetailsModal')
                 }
               />
             </Route>

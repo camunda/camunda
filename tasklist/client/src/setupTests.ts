@@ -7,10 +7,10 @@
  */
 
 import '@testing-library/jest-dom/vitest';
-import {nodeMockServer} from 'v2/testing/nodeMockServer';
-import {configure} from 'v2/testing/testing-library';
-import {reactQueryClient} from 'v2/react-query/reactQueryClient';
-import en from 'v2/i18n/locales/en.json';
+import {nodeMockServer} from 'modules/testing/nodeMockServer';
+import {configure} from 'modules/testing/testing-library';
+import {reactQueryClient} from 'modules/react-query/reactQueryClient';
+import en from 'modules/i18n/locales/en.json';
 import i18n, {t} from 'i18next';
 import ResizeObserverPolyfill from 'resize-observer-polyfill';
 
