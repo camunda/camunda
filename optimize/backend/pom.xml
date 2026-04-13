@@ -285,13 +285,6 @@
     </dependency>
 
     <dependency>
-      <groupId>org.apache.httpcomponents</groupId>
-      <artifactId>httpasyncclient</artifactId>
-      <version>4.1.5</version>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>zeebe-protocol-jackson</artifactId>
       <version>${project.version}</version>
@@ -566,6 +559,15 @@
       <groupId>org.elasticsearch.client</groupId>
       <artifactId>elasticsearch-rest-client</artifactId>
       <version>${version.elasticsearch}</version>
+    </dependency>
+
+    <!-- httpasyncclient is pulled in at compile scope via optimize-commons →
+         elasticsearch-rest-client, but is only used by the Zeebe data generator
+         (src/it). Override the scope to test to satisfy dependency:analyze. -->
+    <dependency>
+      <groupId>org.apache.httpcomponents</groupId>
+      <artifactId>httpasyncclient</artifactId>
+      <scope>test</scope>
     </dependency>
 
     <dependency>
