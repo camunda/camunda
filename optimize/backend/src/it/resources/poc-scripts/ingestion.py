@@ -15,6 +15,16 @@ PAGE_SIZE        = 1000
 STATE_FILE       = Path(__file__).parent / ".reporting_metrics_position.json"
 # ──────────────────────────────────────────────────────────────────────────────
 
+
+def parse_bool(value: str) -> bool:
+    normalized = value.strip().strip('"').lower()
+    if normalized == "true":
+        return True
+    if normalized == "false":
+        return False
+    raise ValueError(f"Invalid boolean value: {value}")
+
+
 FIELD_MAP = {
     "REPORTING_PROCESS_baselineCost":              ("baselineCost",              float),
     "REPORTING_PROCESS_llmCost":                   ("llmCost",                   float),
@@ -40,9 +50,9 @@ FIELD_MAP = {
     "REPORTING_PROCESS_customerSatisfactionScore": ("customerSatisfactionScore", float),
     "REPORTING_PROCESS_fraudRiskScore":            ("fraudRiskScore",            float),
     "REPORTING_PROCESS_externalServiceCostUsd":    ("externalServiceCostUsd",    float),
-    "REPORTING_PROCESS_slaBreached":               ("slaBreached",               bool),
-    "REPORTING_PROCESS_escalated":                 ("escalated",                 bool),
-    "REPORTING_PROCESS_manualOverride":            ("manualOverride",            bool),
+    "REPORTING_PROCESS_slaBreached":               ("slaBreached",               parse_bool),
+    "REPORTING_PROCESS_escalated":                 ("escalated",                 parse_bool),
+    "REPORTING_PROCESS_manualOverride":            ("manualOverride",            parse_bool),
 }
 
 
@@ -161,7 +171,7 @@ def count_pending(es: Elasticsearch, from_position: int) -> int:
     return count
 
 
-def run_import_round(es: Elasticsearch, from_position: int) -> tuple[int, int, int]:
+def run_import_round(es: Elasticsearch, from_position: int) -> tuple[int, int, int, int, int, int]:
     """
     Fetch REPORTING_PROCESS_* variable records with position > from_position,
     group by processInstanceKey, bulk-upsert into dest index.
@@ -216,7 +226,14 @@ def run_import_round(es: Elasticsearch, from_position: int) -> tuple[int, int, i
                     "processDefinitionKey": str(v.get("processDefinitionKey", "")),
                     "tenantId": v.get("tenantId", ""),
                 }
-            pi_docs[pi_key][field_name] = cast(v["value"].strip('"'))
+            try:
+                pi_docs[pi_key][field_name] = cast(v["value"].strip('"'))
+            except (TypeError, ValueError) as e:
+                print(
+                    f"  skipping value for {v['name']} on PI {pi_key}: "
+                    f"could not parse {v['value']!r} ({e})"
+                )
+                continue
             if ts is not None:
                 prev_first = pi_docs[pi_key].get("firstSeenAt")
                 prev_last  = pi_docs[pi_key].get("lastSeenAt")
