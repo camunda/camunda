@@ -23,9 +23,9 @@
   <properties>
     <version.java>17</version.java>
     <!-- Override Spring Boot version for 4.x compatibility -->
-    <version.spring-boot>4.0.3</version.spring-boot>
+    <version.spring-boot>4.0.5</version.spring-boot>
     <!-- Spring Framework 7.x is required for Spring Boot 4.0 -->
-    <version.spring>7.0.5</version.spring>
+    <version.spring>7.0.6</version.spring>
     <!-- JUnit 6.x is required for Spring Boot 4.0 compatibility -->
     <version.junit>6.0.3</version.junit>
   </properties>
