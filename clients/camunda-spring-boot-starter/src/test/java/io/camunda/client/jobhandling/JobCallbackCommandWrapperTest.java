@@ -364,7 +364,7 @@ public class JobCallbackCommandWrapperTest {
 
     backoffSupplier = BackoffSupplier.newBackoffBuilder().jitterFactor(0).backoffFactor(2).build();
 
-    // initial delay in CommandWrapper is 50ms
+    // initial delay in JobCallbackCommandWrapper is 50ms
     final JobCallbackCommandWrapper wrapper =
         new JobCallbackCommandWrapper(
             command,
