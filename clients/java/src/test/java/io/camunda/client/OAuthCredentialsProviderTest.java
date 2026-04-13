@@ -1408,6 +1408,38 @@ public final class OAuthCredentialsProviderTest {
     }
 
     @Test
+    void shouldHonorRetryAfterHeaderEvenWhenShorterThanComputedBackoff() throws IOException {
+      // given — a large computed backoff (5s) but a short Retry-After header (0s).
+      // Retry-After must win unconditionally, even when shorter than the computed backoff.
+      currentWiremockRuntimeInfo
+          .getWireMock()
+          .register(
+              WireMock.post(WireMock.urlPathEqualTo("/oauth/token"))
+                  .inScenario(SCENARIO)
+                  .whenScenarioStateIs(com.github.tomakehurst.wiremock.stubbing.Scenario.STARTED)
+                  .willReturn(WireMock.aResponse().withStatus(429).withHeader("Retry-After", "0"))
+                  .willSetStateTo("second"));
+      stubTokenSuccess("second");
+      final OAuthCredentialsProvider provider =
+          retryProviderBuilder()
+              .tokenFetchInitialBackoff(Duration.ofSeconds(5))
+              .tokenFetchMaxRetries(2)
+              .build();
+
+      // when
+      final long started = System.nanoTime();
+      provider.applyCredentials(applier);
+      final long elapsedMs = (System.nanoTime() - started) / 1_000_000L;
+
+      // then — succeeded, and elapsed time is well below the computed backoff of 5s,
+      // proving Retry-After: 0 was honored rather than the larger computed delay.
+      assertThat(applier.getCredentials())
+          .containsExactly(new Credential("Authorization", TOKEN_TYPE + " " + ACCESS_TOKEN));
+      assertThat(requestCount()).isEqualTo(2);
+      assertThat(elapsedMs).isLessThan(3_000L);
+    }
+
+    @Test
     void shouldFallBackToComputedBackoffWhenRetryAfterUnparseable() throws IOException {
       // given — unparseable Retry-After value should be ignored, falling back to the
       // computed (jittered) backoff based on initial=10ms

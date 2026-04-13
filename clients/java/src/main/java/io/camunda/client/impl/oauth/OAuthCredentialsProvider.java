@@ -321,14 +321,13 @@ public final class OAuthCredentialsProvider implements CredentialsProvider {
       } catch (final IOException e) {
         lastException = e;
         if (attempt < tokenFetchMaxRetries) {
-          // Honor a server-provided Retry-After hint when present: sleep at least that long but
-          // not less than our computed backoff. Otherwise fall back to jittered exponential.
+          // Honor a server-provided Retry-After hint when present: always use it as-is,
+          // ignoring our computed backoff. Otherwise fall back to jittered exponential.
           final Long retryAfterMs =
               (e instanceof RetryableOAuthFailureException)
                   ? ((RetryableOAuthFailureException) e).retryAfterMs()
                   : null;
-          final long sleepMs =
-              retryAfterMs != null ? Math.max(retryAfterMs, backoffMs) : withEqualJitter(backoffMs);
+          final long sleepMs = retryAfterMs != null ? retryAfterMs : withEqualJitter(backoffMs);
           LOG.warn(
               "Token fetch failed for clientId={} (attempt {}/{}), retrying in {}ms{}: {}",
               clientId,
