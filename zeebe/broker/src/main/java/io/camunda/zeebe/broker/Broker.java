@@ -65,7 +65,7 @@ public final class Broker implements AutoCloseable {
 
     final ActorScheduler scheduler = this.systemContext.getScheduler();
     final BrokerInfo localBroker = createBrokerInfo(getConfig());
-    final var nodeId = MemberId.from(String.valueOf(getConfig().getCluster().getNodeId()));
+    final var nodeId = buildMemberId(getConfig().getCluster());
 
     healthCheckService =
         new BrokerHealthCheckService(
@@ -161,6 +161,23 @@ public final class Broker implements AutoCloseable {
       result.setVersion(version);
     }
     return result;
+  }
+
+  /**
+   * Builds the Atomix {@link MemberId} for this broker. When a region is configured, the member ID
+   * is a composite string {@code "region-nodeId"} (e.g. {@code "us-east1-0"}), making the broker's
+   * identity unique across regions even when {@code nodeId} values are only unique within a region.
+   * When no region is configured the member ID is the plain integer string, preserving existing
+   * behaviour.
+   */
+  private static MemberId buildMemberId(
+      final io.camunda.zeebe.broker.system.configuration.ClusterCfg clusterCfg) {
+    final String region = clusterCfg.getRegion();
+    final int numericId = clusterCfg.getNodeId();
+    if (region != null && !region.isBlank()) {
+      return MemberId.from(region + "-" + numericId);
+    }
+    return MemberId.from(String.valueOf(numericId));
   }
 
   private ExporterRepository buildExporterRepository(final BrokerCfg cfg) {
