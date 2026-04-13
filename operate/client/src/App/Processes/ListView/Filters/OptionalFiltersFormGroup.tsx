@@ -41,6 +41,7 @@ import {Variable} from './VariableField';
 type OptionalFilter =
   | 'variable'
   | 'processInstanceKey'
+  | 'businessId'
   | 'parentProcessInstanceKey'
   | 'batchOperationId'
   | 'errorMessage'
@@ -51,6 +52,7 @@ type OptionalFilter =
 const optionalFilters: Array<OptionalFilter> = [
   'variable',
   'processInstanceKey',
+  'businessId',
   'batchOperationId',
   'parentProcessInstanceKey',
   'errorMessage',
@@ -85,9 +87,14 @@ const OPTIONAL_FILTER_FIELDS: Record<
       validatesIdsComplete,
     ),
   },
+  businessId: {
+    keys: ['businessId'],
+    label: 'Business ID',
+    type: 'text',
+  },
   batchOperationId: {
     keys: ['batchOperationId'],
-    label: 'Operation Id',
+    label: 'Operation ID',
     type: 'text',
     validate: mergeValidators(
       validateOperationIdCharacters,

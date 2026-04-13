@@ -165,6 +165,8 @@ const TaskDetailsLayout: React.FC = () => {
         dueDate={task.dueDate}
         followUpDate={task.followUpDate}
         priority={task.priority}
+        // TODO: Replace with actual businessId from API response (task.businessId)
+        businessId={`ORDER-${task.id.slice(-6)}`}
         candidateUsers={task.candidateUsers}
         candidateGroups={task.candidateGroups}
         tenantId={task.tenantId}

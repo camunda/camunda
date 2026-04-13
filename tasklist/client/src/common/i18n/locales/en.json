@@ -99,6 +99,7 @@
     "formJSPoweredByLogoLabel": "Camunda logo",
     "formJSLargeFilePayloadError": "File size exceeds the limit of {{size}}. Try to upload smaller files.",
     "taskDetailsTenantLabel": "Tenant",
+    "taskDetailsBusinessIdLabel": "Business ID",
     "multiTenancyDropdownLabel": "Tenant",
     "taskDetailsNewVariableNameFieldLabel": "Name",
     "notificationActionButtonLabel": "Action",

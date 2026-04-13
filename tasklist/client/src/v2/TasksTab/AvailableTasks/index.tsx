@@ -95,6 +95,8 @@ const AvailableTasks: React.FC<Props> = ({
                     processDisplayName={
                       task.processName ?? task.processDefinitionId
                     }
+                    // TODO: Replace with actual businessId from API response (task.businessId)
+                    businessId={`ORDER-${task.userTaskKey.toString().slice(-6)}`}
                     assignee={task.assignee}
                     creationDate={task.creationDate}
                     followUpDate={task.followUpDate}

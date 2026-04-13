@@ -136,6 +136,8 @@ const InstancesTable: React.FC = observer(() => {
                 </Link>
               ),
               decisionDefinitionVersion,
+              // TODO: Replace with actual businessId from API response
+              businessId: `ORDER-${decisionEvaluationInstanceKey.slice(-6)}`,
               tenantId: isTenantColumnVisible ? tenantId : undefined,
               evaluationDate: formatDate(evaluationDate),
               processInstanceKey: processInstanceKey ? (
@@ -170,6 +172,11 @@ const InstancesTable: React.FC = observer(() => {
           {
             header: 'Version',
             key: 'decisionDefinitionVersion',
+          },
+          {
+            header: 'Business ID',
+            key: 'businessId',
+            isDisabled: true,
           },
           ...(isTenantColumnVisible
             ? [

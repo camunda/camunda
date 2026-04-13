@@ -38,11 +38,13 @@ import {Close} from '@carbon/react/icons';
 
 type OptionalFilter =
   | 'decisionEvaluationInstanceKey'
+  | 'businessId'
   | 'processInstanceKey'
   | 'evaluationDateRange';
 
 const optionalFilters: Array<OptionalFilter> = [
   'decisionEvaluationInstanceKey',
+  'businessId',
   'processInstanceKey',
   'evaluationDateRange',
 ];
@@ -69,6 +71,11 @@ const OPTIONAL_FILTER_FIELDS: Record<
       validateDecisionIdsLength,
       validatesDecisionIdsComplete,
     ),
+  },
+  businessId: {
+    keys: ['businessId'],
+    label: 'Business ID',
+    type: 'text',
   },
   processInstanceKey: {
     keys: ['processInstanceKey'],

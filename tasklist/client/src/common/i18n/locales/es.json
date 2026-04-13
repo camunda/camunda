@@ -99,6 +99,7 @@
     "formJSPoweredByLogoLabel": "Logo de Camunda",
     "formJSLargeFilePayloadError": "El tamaño del archivo excede el límite de {{size}}. Intente cargar archivos más pequeños.",
     "taskDetailsTenantLabel": "Arrendatario",
+    "taskDetailsBusinessIdLabel": "Business ID",
     "multiTenancyDropdownLabel": "Arrendatario",
     "taskDetailsNewVariableNameFieldLabel": "Nombre",
     "notificationActionButtonLabel": "Acción",
