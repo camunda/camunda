@@ -9,32 +9,31 @@ package io.camunda.exporter.tasks.archiver;
 
 import io.camunda.exporter.ExporterResourceProvider;
 import io.camunda.exporter.config.ExporterConfiguration;
-import io.camunda.webapps.schema.descriptors.ProcessInstanceDependant;
-import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
+import io.camunda.webapps.schema.descriptors.DecisionInstanceDependant;
+import io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.TestInstance.Lifecycle;
 
 @TestInstance(Lifecycle.PER_CLASS)
-public class ProcessInstanceArchiverJobIT extends ArchiverJobIT<ProcessInstanceArchiverJob> {
+public class StandaloneDecisionArchiverJobIT extends ArchiverJobIT<StandaloneDecisionArchiverJob> {
   @Override
-  ProcessInstanceArchiverJob createArchiveJob(
+  StandaloneDecisionArchiverJob createArchiveJob(
       final ExporterConfiguration config,
       final ExporterResourceProvider resourceProvider,
       final ArchiverRepository repository) {
 
     final var dependantTemplates =
         resourceProvider.getIndexTemplateDescriptors().stream()
-            .filter(ProcessInstanceDependant.class::isInstance)
-            .map(ProcessInstanceDependant.class::cast)
+            .filter(DecisionInstanceDependant.class::isInstance)
+            .map(DecisionInstanceDependant.class::cast)
             .toList();
 
-    return new ProcessInstanceArchiverJob(
-        config.getHistory(),
+    return new StandaloneDecisionArchiverJob(
         repository,
-        resourceProvider.getIndexTemplateDescriptor(ListViewTemplate.class),
-        dependantTemplates,
+        resourceProvider.getIndexTemplateDescriptor(DecisionInstanceTemplate.class),
         exporterMetrics,
         LOGGER,
-        executor);
+        executor,
+        dependantTemplates);
   }
 }
