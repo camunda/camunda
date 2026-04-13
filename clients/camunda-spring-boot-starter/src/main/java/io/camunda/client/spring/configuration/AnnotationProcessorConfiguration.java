@@ -18,11 +18,15 @@ package io.camunda.client.spring.configuration;
 import io.camunda.client.annotation.customizer.JobWorkerValueCustomizer;
 import io.camunda.client.jobhandling.JobWorkerManager;
 import io.camunda.client.lifecycle.CamundaClientLifecycleAware;
+import io.camunda.client.spring.annotation.customizer.JobWorkerValueCustomizerCompat;
 import io.camunda.client.spring.annotation.processor.DeploymentAnnotationProcessor;
 import io.camunda.client.spring.annotation.processor.JobWorkerAnnotationProcessor;
 import io.camunda.client.spring.event.CamundaClientEventListener;
+import io.camunda.zeebe.spring.client.annotation.customizer.ZeebeWorkerValueCustomizer;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Bean;
@@ -45,7 +49,15 @@ public class AnnotationProcessorConfiguration {
   @Bean
   public JobWorkerAnnotationProcessor jobWorkerPostProcessor(
       final JobWorkerManager jobWorkerManager,
-      final List<JobWorkerValueCustomizer> jobWorkerValueCustomizers) {
-    return new JobWorkerAnnotationProcessor(jobWorkerManager, jobWorkerValueCustomizers);
+      final List<JobWorkerValueCustomizer> jobWorkerValueCustomizers,
+      @Autowired(required = false) final List<ZeebeWorkerValueCustomizer> legacyCustomizers) {
+    final List<JobWorkerValueCustomizer> allCustomizers =
+        new ArrayList<>(jobWorkerValueCustomizers);
+    if (legacyCustomizers != null) {
+      legacyCustomizers.stream()
+          .map(JobWorkerValueCustomizerCompat::new)
+          .forEach(allCustomizers::add);
+    }
+    return new JobWorkerAnnotationProcessor(jobWorkerManager, allCustomizers);
   }
 }

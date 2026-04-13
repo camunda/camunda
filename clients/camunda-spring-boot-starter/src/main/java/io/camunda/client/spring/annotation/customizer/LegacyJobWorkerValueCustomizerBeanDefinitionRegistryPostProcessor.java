@@ -20,7 +20,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.config.BeanDefinition;
-import org.springframework.beans.factory.support.BeanDefinitionBuilder;
 import org.springframework.beans.factory.support.BeanDefinitionRegistry;
 import org.springframework.beans.factory.support.BeanDefinitionRegistryPostProcessor;
 
@@ -42,11 +41,6 @@ public class LegacyJobWorkerValueCustomizerBeanDefinitionRegistryPostProcessor
         LOG.warn(
             "Bean '{}' is implementing deprecated interface ZeebeWorkerValueCustomizer, please migrate to JobWorkerValueCustomizer",
             beanDefinitionName);
-        final BeanDefinitionBuilder beanDefinitionBuilder =
-            BeanDefinitionBuilder.genericBeanDefinition(JobWorkerValueCustomizerCompat.class)
-                .addConstructorArgReference(beanDefinitionName);
-        registry.registerBeanDefinition(
-            beanDefinitionName + "_Compat", beanDefinitionBuilder.getBeanDefinition());
       }
     }
   }

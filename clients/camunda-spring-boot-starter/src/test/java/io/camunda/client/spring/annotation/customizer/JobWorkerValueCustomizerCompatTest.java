@@ -17,12 +17,9 @@ package io.camunda.client.spring.annotation.customizer;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.client.annotation.customizer.JobWorkerValueCustomizer;
 import io.camunda.client.spring.configuration.CamundaBeanPostProcessorConfiguration;
-import java.util.Set;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.system.CapturedOutput;
 import org.springframework.boot.test.system.OutputCaptureExtension;
@@ -34,17 +31,9 @@ import org.springframework.boot.test.system.OutputCaptureExtension;
     })
 @ExtendWith(OutputCaptureExtension.class)
 public class JobWorkerValueCustomizerCompatTest {
-  @Autowired Set<JobWorkerValueCustomizer> jobWorkerValueCustomizers;
 
   @Test
-  void shouldPostProcessBean(final CapturedOutput capturedOutput) {
-    assertThat(jobWorkerValueCustomizers).hasSize(1);
-    final JobWorkerValueCustomizer jobWorkerValueCustomizer =
-        jobWorkerValueCustomizers.iterator().next();
-    assertThat(jobWorkerValueCustomizer).isInstanceOf(JobWorkerValueCustomizerCompat.class);
-    final JobWorkerValueCustomizerCompat customizer =
-        (JobWorkerValueCustomizerCompat) jobWorkerValueCustomizer;
-    assertThat(customizer.getCustomizer()).isNotNull();
+  void shouldLogDeprecationWarningForLegacyBean(final CapturedOutput capturedOutput) {
     assertThat(capturedOutput)
         .contains(
             "Bean 'testZeebeWorkerValueCustomizer' is implementing deprecated interface ZeebeWorkerValueCustomizer, please migrate to JobWorkerValueCustomizer");
