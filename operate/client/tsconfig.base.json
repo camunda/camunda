@@ -24,7 +24,7 @@
     "noUnusedLocals": false, // TODO: enable with https://github.com/camunda/camunda/issues/50173
     "noUnusedParameters": false, // TODO: enable with https://github.com/camunda/camunda/issues/50173
     "noPropertyAccessFromIndexSignature": false,
-    "noUncheckedIndexedAccess": false, // TODO: enable with https://github.com/camunda/camunda/issues/50173
+    "noUncheckedIndexedAccess": true,
     "allowUnreachableCode": false
   }
 }

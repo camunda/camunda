@@ -119,12 +119,7 @@ const InstancesTable: React.FC = observer(() => {
 
   const request: QueryAuditLogsRequestBody = useMemo(() => {
     return {
-      sort: [
-        {
-          field: sort[0].field,
-          order: sort[0].order,
-        },
-      ],
+      sort,
       filter: {
         category: {$neq: 'ADMIN'},
         processDefinitionKey: selectedProcessDefinition?.processDefinitionKey,

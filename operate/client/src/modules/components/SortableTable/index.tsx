@@ -177,9 +177,9 @@ const SortableTable = <
                         {...props}
                         key={key}
                         label={header.header}
-                        sortKey={headerColumns[index].sortKey ?? header.key}
-                        isDefault={headerColumns[index].isDefault}
-                        isDisabled={headerColumns[index].isDisabled}
+                        sortKey={headerColumns[index]?.sortKey ?? header.key}
+                        isDefault={headerColumns[index]?.isDefault}
+                        isDisabled={headerColumns[index]?.isDisabled}
                         onSort={onSort}
                       />
                     );

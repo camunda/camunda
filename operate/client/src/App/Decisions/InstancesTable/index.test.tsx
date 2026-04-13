@@ -173,12 +173,12 @@ describe('<InstancesTable />', () => {
 
     const [, firstDecisionInstance, secondDecisionInstance] = rows;
     expect(
-      within(firstDecisionInstance).getByText(
+      within(firstDecisionInstance!).getByText(
         invoiceClassification.decisionDefinitionName,
       ),
     ).toBeInTheDocument();
     expect(
-      within(firstDecisionInstance).getByTestId(
+      within(firstDecisionInstance!).getByTestId(
         `EVALUATED-icon-${invoiceClassification.decisionEvaluationInstanceKey}`,
       ),
     ).toBeInTheDocument();

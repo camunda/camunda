@@ -89,10 +89,10 @@ describe('useDecisionDefinitions', () => {
     });
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(result.current.data![0].name).toBe('Decision A');
-    expect(result.current.data![0].identifier).toBe('decisionA##<default>');
-    expect(result.current.data![1].name).toBe('Decision B');
-    expect(result.current.data![1].identifier).toBe('decisionB##<default>');
+    expect(result.current.data?.[0]?.name).toBe('Decision A');
+    expect(result.current.data?.[0]?.identifier).toBe('decisionA##<default>');
+    expect(result.current.data?.[1]?.name).toBe('Decision B');
+    expect(result.current.data?.[1]?.identifier).toBe('decisionB##<default>');
   });
 });
 

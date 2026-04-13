@@ -16,7 +16,7 @@ import {mockDecisionDefinitions} from 'modules/mocks/mockDecisionDefinitions';
 
 describe('<Decision />', () => {
   beforeEach(() => {
-    const selectedDecisionDefinition = mockDecisionDefinitions.items[5];
+    const selectedDecisionDefinition = mockDecisionDefinitions.items[5]!;
     mockSearchDecisionDefinitions().withSuccess({
       items: [selectedDecisionDefinition],
       page: {
@@ -103,7 +103,7 @@ describe('<Decision />', () => {
 
   it('should render text on error', async () => {
     mockFetchDecisionDefinitionXML().withServerError(404);
-    const selectedDecisionDefinition = mockDecisionDefinitions.items[6];
+    const selectedDecisionDefinition = mockDecisionDefinitions.items[6]!;
     mockSearchDecisionDefinitions().withSuccess({
       items: [selectedDecisionDefinition],
       page: {
