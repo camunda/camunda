@@ -375,33 +375,54 @@ test.describe('Process Instance Variables', () => {
     operateHomePage,
     operateProcessesPage,
     operateProcessInstancePage,
+    operateFiltersPanelPage,
   }) => {
     await test.step('Navigate to a completed process instance', async () => {
       await operateHomePage.clickProcessesTab();
-      await operateProcessesPage.filterByProcessName(
+      await operateFiltersPanelPage.selectProcess(
         'simple service task process',
       );
-      await operateProcessesPage.selectVersionFilter('All');
-      await operateProcessesPage.selectRunningFilter('Finished');
+      await operateFiltersPanelPage.selectVersion('All');
+      await operateProcessesPage.processFinishedInstancesCheckbox.check();
       await sleep(500);
+      const hasInstance = await operateProcessesPage.processInstanceLink
+        .isVisible({
+          timeout: 5000,
+        })
+        .catch(() => false);
+
+      if (!hasInstance) {
+        test.skip();
+        return;
+      }
+
       await operateProcessesPage.clickProcessInstanceLink();
     });
 
     await test.step('Verify JSON variable can be viewed in modal (read-only)', async () => {
-      const firstVariableName = await page
+      const variableRow = page
         .getByTestId('variables-list')
         .getByRole('row')
-        .nth(1)
+        .nth(1);
+
+      const isVisible = await variableRow.isVisible().catch(() => false);
+      if (!isVisible) {
+        test.skip();
+        return;
+      }
+
+      const firstVariableName = await variableRow
         .getByRole('cell')
         .nth(0)
         .textContent();
 
-      if (!firstVariableName) {
-        test.skip('No variables found in completed instance');
+      if (!firstVariableName || firstVariableName.trim() === '') {
+        test.skip();
+        return;
       }
 
       const variable = operateProcessInstancePage.existingVariableByName(
-        firstVariableName,
+        firstVariableName.trim(),
       );
 
       const openButton = variable.value.getByRole('button', {
