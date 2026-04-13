@@ -125,23 +125,11 @@ We have different scenarios targeting different use cases and versions.
 
 #### Release load tests
 
-For every [supported/maintained](https://confluence.camunda.com/pages/viewpage.action?pageId=245400921&spaceKey=HAN&title=Standard%2Band%2BExtended%2BSupport%2BPeriods) version, we run a continuous load test with artificial load. They are created or updated [as part of the release process](https://github.com/camunda/zeebe-engineering-processes/blob/main/src/main/resources/release/setup_benchmark.bpmn). Triggering our ad-hoc [Zeebe Benchmark GitHub workflow](https://github.com/camunda/camunda/actions/workflows/zeebe-benchmark.yml).
+For every [supported/maintained](https://confluence.camunda.com/pages/viewpage.action?pageId=245400921&spaceKey=HAN&title=Standard%2Band%2BExtended%2BSupport%2BPeriods) version, we run a continuous load test with a realistic workload. They are created or updated [as part of the release process](https://github.com/camunda/zeebe-engineering-processes/blob/main/src/main/resources/release/setup_benchmark.bpmn), which triggers the [Camunda release load test workflow](https://github.com/camunda/camunda/blob/main/.github/workflows/camunda-release-load-test.yaml).
 
 **Goal:** Validating the reliability of our releases and detecting earlier issues, especially with alpha versions and updates.
 
-**Validation:** The tailored [Zeebe Medic Dashboard](https://grafana.dev.zeebe.io/d/zeebe-medic-benchmark/zeebe-medic-benchmarks?orgId=1&refresh=1m), can be used to observe and validate the performance of the different load tests
-
-As of today (16 Jun 2025), we have load tests running:
-
-1. Waits for all pods to be ready
-2. Checks gateway connectivity via the `app.connected` gauge metric (set to 1 when topology is first received)
-3. Deletes the namespace (regardless of verification outcome)
-
-Results are posted to the `#reliability-testing-alerts` Slack channel.
-
-> [!Note]
->
-> The scheduled workflow uses hardcoded release tags per stable branch. Patch releases do not require updates — only new minor versions (e.g., 8.10) or deprecated branches need the workflow to be updated.
+**Validation:** The tailored [Zeebe Medic Dashboard](https://dashboard.benchmark.camunda.cloud/d/zeebe-medic-benchmark/zeebe-medic-benchmarks?orgId=1&refresh=1m), can be used to observe and validate the performance of the different load tests
 
 #### Weekly load tests
 
