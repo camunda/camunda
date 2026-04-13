@@ -269,7 +269,7 @@
   </select>
 
   <sql id="jobErrorStatisticsFilter">
-    WHERE STATE IN ('ERROR_THROWN', 'FAILED', 'CANCELED', 'TIMED_OUT')
+    WHERE STATE IN ('ERROR_THROWN', 'FAILED', 'TIMED_OUT')
     <if test="authorizedTenantIds != null and !authorizedTenantIds.isEmpty()">
       AND TENANT_ID IN
       <foreach collection="authorizedTenantIds" item="tenantId" open="(" separator="," close=")">
