@@ -93,7 +93,7 @@ abstract class App implements Runnable {
     new JvmThreadMetrics().bindTo(registry);
   }
 
-  private static void stopMonitoringServer() {
+  private static synchronized void stopMonitoringServer() {
     if (monitoringServer != null) {
       monitoringServer.stop();
       monitoringServer = null;
