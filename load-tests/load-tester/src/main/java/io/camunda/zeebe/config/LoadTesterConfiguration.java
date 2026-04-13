@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe;
+package io.camunda.zeebe.config;
 
 import io.grpc.ClientInterceptor;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -16,6 +16,7 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class LoadTesterConfiguration {
 
+  // Auto-collected by camunda-spring-boot-starter into the CamundaClient's gRPC channel
   @Bean
   ClientInterceptor monitoringInterceptor(final MeterRegistry meterRegistry) {
     return new MetricCollectingClientInterceptor(meterRegistry);

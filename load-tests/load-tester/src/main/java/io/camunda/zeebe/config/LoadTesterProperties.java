@@ -11,7 +11,6 @@ import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
 import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.boot.context.properties.NestedConfigurationProperty;
 
 @ConfigurationProperties("load-tester")
 public class LoadTesterProperties {
@@ -20,10 +19,6 @@ public class LoadTesterProperties {
   private Duration monitorDataAvailabilityInterval = Duration.ofMillis(250);
   private boolean performReadBenchmarks = false;
   private String disabledQueries = "";
-
-  @NestedConfigurationProperty private StarterProperties starter = new StarterProperties();
-
-  @NestedConfigurationProperty private WorkerProperties worker = new WorkerProperties();
 
   public boolean isMonitorDataAvailability() {
     return monitorDataAvailability;
@@ -65,21 +60,5 @@ public class LoadTesterProperties {
         .map(String::trim)
         .filter(s -> !s.isBlank())
         .toList();
-  }
-
-  public StarterProperties getStarter() {
-    return starter;
-  }
-
-  public void setStarter(final StarterProperties starter) {
-    this.starter = starter;
-  }
-
-  public WorkerProperties getWorker() {
-    return worker;
-  }
-
-  public void setWorker(final WorkerProperties worker) {
-    this.worker = worker;
   }
 }

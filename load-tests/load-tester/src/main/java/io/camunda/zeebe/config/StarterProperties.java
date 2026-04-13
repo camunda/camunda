@@ -10,7 +10,9 @@ package io.camunda.zeebe.config;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+import org.springframework.boot.context.properties.ConfigurationProperties;
 
+@ConfigurationProperties("load-tester.starter")
 public class StarterProperties {
 
   private String processId = "benchmark";

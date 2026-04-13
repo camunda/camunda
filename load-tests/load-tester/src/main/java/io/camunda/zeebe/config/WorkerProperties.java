@@ -8,7 +8,9 @@
 package io.camunda.zeebe.config;
 
 import java.time.Duration;
+import org.springframework.boot.context.properties.ConfigurationProperties;
 
+@ConfigurationProperties("load-tester.worker")
 public class WorkerProperties {
 
   private String jobType = "benchmark-task";

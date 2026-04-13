@@ -5,13 +5,13 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe;
+package io.camunda.zeebe.worker;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.worker.JobHandler;
 import io.camunda.client.api.worker.JobWorker;
 import io.camunda.client.api.worker.JobWorkerMetrics;
-import io.camunda.zeebe.config.LoadTesterProperties;
+import io.camunda.zeebe.PayloadReader;
 import io.camunda.zeebe.config.WorkerProperties;
 import io.camunda.zeebe.util.logging.ThrottledLogger;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -23,33 +23,45 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.SmartLifecycle;
+import org.springframework.context.annotation.Profile;
+import org.springframework.stereotype.Component;
 
-public class Worker {
+@Component
+@Profile("worker")
+public class Worker implements SmartLifecycle {
 
   public static final Logger LOGGER = LoggerFactory.getLogger(Worker.class);
   private static final Logger THROTTLED_LOGGER = new ThrottledLogger(LOGGER, Duration.ofSeconds(5));
 
   private final CamundaClient client;
-  private final LoadTesterProperties config;
   private final WorkerProperties workerCfg;
   private final MeterRegistry registry;
+  private final PayloadReader payloadReader;
 
+  private volatile boolean running = false;
   private JobWorker worker;
   private ResponseChecker responseChecker;
 
   Worker(
-      final CamundaClient client, final LoadTesterProperties config, final MeterRegistry registry) {
+      final CamundaClient client,
+      final WorkerProperties workerCfg,
+      final MeterRegistry registry,
+      final PayloadReader payloadReader) {
     this.client = client;
-    this.config = config;
-    this.workerCfg = config.getWorker();
+    this.workerCfg = workerCfg;
     this.registry = registry;
+    this.payloadReader = payloadReader;
   }
 
-  public void run() {
+  @Override
+  public void start() {
+    running = true;
+
     final String jobType = workerCfg.getJobType();
     final long completionDelay = workerCfg.getCompletionDelay().toMillis();
     final boolean isStreamEnabled = workerCfg.isStreamEnabled();
-    final var variables = PayloadReader.readVariables(workerCfg.getPayloadPath());
+    final var variables = payloadReader.readVariables(workerCfg.getPayloadPath());
     final BlockingQueue<Future<?>> requestFutures = new ArrayBlockingQueue<>(10_000);
     final JobWorkerMetrics metrics =
         JobWorkerMetrics.micrometer()
@@ -80,13 +92,20 @@ public class Worker {
     responseChecker.start();
   }
 
-  void close() {
+  @Override
+  public void stop() {
+    running = false;
     if (worker != null) {
       worker.close();
     }
     if (responseChecker != null) {
       responseChecker.close();
     }
+  }
+
+  @Override
+  public boolean isRunning() {
+    return running;
   }
 
   private JobHandler handleJob(

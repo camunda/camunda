@@ -5,8 +5,10 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe;
+package io.camunda.zeebe.starter;
 
+import io.camunda.zeebe.Clock;
+import io.camunda.zeebe.StarterLatencyMetricsDoc;
 import io.camunda.zeebe.StarterLatencyMetricsDoc.StarterMetricKeyNames;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.util.micrometer.MicrometerUtil;

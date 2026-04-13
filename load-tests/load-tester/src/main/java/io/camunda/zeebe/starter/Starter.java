@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe;
+package io.camunda.zeebe.starter;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -16,10 +16,11 @@ import io.camunda.client.api.command.ClientStatusException;
 import io.camunda.client.api.command.DeployResourceCommandStep1.DeployResourceCommandStep2;
 import io.camunda.client.api.response.Process;
 import io.camunda.client.api.response.ProcessInstanceEvent;
-import io.camunda.client.api.response.Topology;
 import io.camunda.client.api.search.response.ProcessInstance;
 import io.camunda.client.api.search.response.SearchResponse;
 import io.camunda.client.api.search.sort.ProcessInstanceSort;
+import io.camunda.zeebe.PayloadReader;
+import io.camunda.zeebe.StarterLatencyMetricsDoc;
 import io.camunda.zeebe.config.LoadTesterProperties;
 import io.camunda.zeebe.config.StarterProperties;
 import io.camunda.zeebe.read.DataReadMeter;
@@ -32,7 +33,6 @@ import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
 import java.time.Duration;
 import java.time.Instant;
-import org.slf4j.Logger;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.Collections;
@@ -51,8 +51,13 @@ import java.util.function.BooleanSupplier;
 import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.SmartLifecycle;
+import org.springframework.context.annotation.Profile;
+import org.springframework.stereotype.Component;
 
-public class Starter {
+@Component
+@Profile("starter")
+public class Starter implements SmartLifecycle {
 
   private static final Logger THROTTLED_LOGGER =
       new ThrottledLogger(LoggerFactory.getLogger(Starter.class), Duration.ofSeconds(5));
@@ -66,7 +71,10 @@ public class Starter {
   private final LoadTesterProperties config;
   private final StarterProperties starterCfg;
   private final MeterRegistry registry;
+  private final PayloadReader payloadReader;
 
+  private volatile boolean running = false;
+  private Thread starterThread;
   private Timer responseLatencyTimer;
   private ScheduledExecutorService executorService;
   private ProcessInstanceStartMeter processInstanceStartMeter;
@@ -77,14 +85,41 @@ public class Starter {
       new AtomicReference<>(Instant.now());
 
   Starter(
-      final CamundaClient client, final LoadTesterProperties config, final MeterRegistry registry) {
+      final CamundaClient client,
+      final LoadTesterProperties config,
+      final StarterProperties starterCfg,
+      final MeterRegistry registry,
+      final PayloadReader payloadReader) {
     this.client = client;
     this.config = config;
-    starterCfg = config.getStarter();
+    this.starterCfg = starterCfg;
     this.registry = registry;
+    this.payloadReader = payloadReader;
   }
 
-  public void run() {
+  @Override
+  public void start() {
+    running = true;
+    starterThread = new Thread(this::run, "starter");
+    starterThread.setDaemon(true);
+    starterThread.start();
+  }
+
+  @Override
+  public void stop() {
+    running = false;
+    shutdownResources();
+    if (starterThread != null) {
+      starterThread.interrupt();
+    }
+  }
+
+  @Override
+  public boolean isRunning() {
+    return running;
+  }
+
+  private void run() {
     responseLatencyTimer =
         MicrometerUtil.buildTimer(StarterLatencyMetricsDoc.RESPONSE_LATENCY).register(registry);
     // init - check for topology and deploy process
@@ -114,37 +149,31 @@ public class Starter {
     try {
       countDownLatch.await();
     } catch (final InterruptedException e) {
-      LOG.error("Awaiting of count down latch was interrupted.", e);
+      LOG.info("Starter interrupted");
+      Thread.currentThread().interrupt();
     }
 
     LOG.info("Starter finished");
 
     scheduledTask.cancel(true);
-    executorService.shutdown();
-
-    if (config.isMonitorDataAvailability()) {
-      processInstanceStartMeter.close();
-    }
-
-    if (config.isPerformReadBenchmarks()) {
-      dataReadMeter.close();
-    }
+    shutdownResources();
   }
 
-  void close() {
+  private void shutdownResources() {
     if (executorService != null && !executorService.isShutdown()) {
       executorService.shutdown();
-      if (config.isMonitorDataAvailability() && processInstanceStartMeter != null) {
-        processInstanceStartMeter.close();
-      }
-      if (config.isPerformReadBenchmarks() && dataReadMeter != null) {
-        dataReadMeter.close();
-      }
       try {
         executorService.awaitTermination(60, TimeUnit.SECONDS);
       } catch (final InterruptedException e) {
         LOG.error("Shutdown executor service was interrupted", e);
+        Thread.currentThread().interrupt();
       }
+    }
+    if (config.isMonitorDataAvailability() && processInstanceStartMeter != null) {
+      processInstanceStartMeter.close();
+    }
+    if (config.isPerformReadBenchmarks() && dataReadMeter != null) {
+      dataReadMeter.close();
     }
   }
 
@@ -202,7 +231,7 @@ public class Starter {
         starterCfg.getRate(),
         starterCfg.getRateDuration());
 
-    final String variablesString = PayloadReader.readVariables(starterCfg.getPayloadPath());
+    final String variablesString = payloadReader.readVariables(starterCfg.getPayloadPath());
     final Map<String, Object> baseVariables =
         Collections.unmodifiableMap(deserializeVariables(variablesString));
 
@@ -382,7 +411,7 @@ public class Starter {
   private void printTopology(final CamundaClient client) {
     while (true) {
       try {
-        final Topology topology = client.newTopologyRequest().send().join();
+        final var topology = client.newTopologyRequest().send().join();
         topology
             .getBrokers()
             .forEach(

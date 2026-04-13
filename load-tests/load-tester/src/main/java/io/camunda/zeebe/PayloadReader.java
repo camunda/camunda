@@ -9,24 +9,34 @@ package io.camunda.zeebe;
 
 import com.google.common.util.concurrent.UncheckedExecutionException;
 import java.io.BufferedReader;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import org.springframework.core.io.ResourceLoader;
+import org.springframework.stereotype.Component;
 
-public final class PayloadReader {
+@Component
+public class PayloadReader {
 
-  public static String readVariables(final String payloadPath) {
+  private final ResourceLoader resourceLoader;
+
+  PayloadReader(final ResourceLoader resourceLoader) {
+    this.resourceLoader = resourceLoader;
+  }
+
+  public String readVariables(final String payloadPath) {
     try {
-      final var classLoader = PayloadReader.class.getClassLoader();
-      try (final InputStream fromResource = classLoader.getResourceAsStream(payloadPath)) {
-        if (fromResource != null) {
-          return tryReadVariables(fromResource);
+      // try classpath first
+      final var classpathResource = resourceLoader.getResource("classpath:" + payloadPath);
+      if (classpathResource.exists()) {
+        try (final InputStream is = classpathResource.getInputStream()) {
+          return tryReadVariables(is);
         }
-        // unable to find from resources, try as regular file
-        try (final InputStream fromFile = new FileInputStream(payloadPath)) {
-          return tryReadVariables(fromFile);
-        }
+      }
+      // fall back to file system
+      final var fileResource = resourceLoader.getResource("file:" + payloadPath);
+      try (final InputStream is = fileResource.getInputStream()) {
+        return tryReadVariables(is);
       }
     } catch (final IOException e) {
       throw new UncheckedExecutionException(e);

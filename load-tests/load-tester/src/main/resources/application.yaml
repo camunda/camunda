@@ -39,7 +39,6 @@ camunda:
     auth:
       method: oidc
       client-id: orchestration
-      client-secret: hF0cvAMxQjhjbjDtCag2
       audience: orchestration-api
       token-url: http://localhost:18080/auth/realms/camunda-platform/protocol/openid-connect/token
 

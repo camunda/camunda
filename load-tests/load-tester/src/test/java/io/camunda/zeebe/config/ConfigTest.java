@@ -22,7 +22,11 @@ import org.springframework.test.context.ActiveProfiles;
 public class ConfigTest {
 
   @SpringBootApplication
-  @EnableConfigurationProperties(LoadTesterProperties.class)
+  @EnableConfigurationProperties({
+    LoadTesterProperties.class,
+    StarterProperties.class,
+    WorkerProperties.class
+  })
   static class TestApp {}
 
   @Nested
@@ -30,19 +34,19 @@ public class ConfigTest {
   class DefaultConfigTest {
 
     @Autowired private LoadTesterProperties props;
+    @Autowired private StarterProperties starterCfg;
+    @Autowired private WorkerProperties workerCfg;
 
     @Test
     public void shouldReadDefaultAppConfig() {
-      // then
+      // then - shared properties
       assertThat(props.isMonitorDataAvailability()).isTrue();
       assertThat(props.getMonitorDataAvailabilityInterval()).hasMillis(250);
       assertThat(props.isPerformReadBenchmarks()).isFalse();
       assertThat(props.getDisabledQueriesList()).isEmpty();
 
       // starter
-      final var starterCfg = props.getStarter();
       assertThat(starterCfg).isNotNull();
-
       assertThat(starterCfg.getProcessId()).isEqualTo("benchmark");
       assertThat(starterCfg.getRate()).isEqualTo(300.0);
       assertThat(starterCfg.getRateDuration()).hasSeconds(1);
@@ -58,9 +62,7 @@ public class ConfigTest {
       assertThat(starterCfg.isStartViaMessage()).isFalse();
 
       // worker
-      final var workerCfg = props.getWorker();
       assertThat(workerCfg).isNotNull();
-
       assertThat(workerCfg.getJobType()).isEqualTo("benchmark-task");
       assertThat(workerCfg.getWorkerName()).isEqualTo("benchmark-worker");
       assertThat(workerCfg.getThreads()).isEqualTo(10);
@@ -82,10 +84,12 @@ public class ConfigTest {
   class DifferentConfigTest {
 
     @Autowired private LoadTesterProperties props;
+    @Autowired private StarterProperties starterCfg;
+    @Autowired private WorkerProperties workerCfg;
 
     @Test
     public void shouldReadDifferentAppConfig() {
-      // then
+      // then - shared properties
       assertThat(props.isMonitorDataAvailability()).isFalse();
       assertThat(props.getMonitorDataAvailabilityInterval()).hasMillis(50);
       assertThat(props.isPerformReadBenchmarks()).isTrue();
@@ -93,9 +97,7 @@ public class ConfigTest {
           .containsExactlyInAnyOrder("process_instances_active", "audit_log_by_category");
 
       // starter
-      final var starterCfg = props.getStarter();
       assertThat(starterCfg).isNotNull();
-
       assertThat(starterCfg.getProcessId()).isEqualTo("benchmark");
       assertThat(starterCfg.getRate()).isEqualTo(30.5);
       assertThat(starterCfg.getRateDuration()).hasMinutes(5);
@@ -117,9 +119,7 @@ public class ConfigTest {
       assertThat(starterCfg.isStartViaMessage()).isFalse();
 
       // worker
-      final var workerCfg = props.getWorker();
       assertThat(workerCfg).isNotNull();
-
       assertThat(workerCfg.getJobType()).isEqualTo("benchmark-task");
       assertThat(workerCfg.getWorkerName()).isEqualTo("benchmark-worker");
       assertThat(workerCfg.getThreads()).isEqualTo(10);
