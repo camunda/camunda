@@ -217,4 +217,209 @@ test.describe('Process Instance Variables', () => {
       await expect(page.getByText('by', {exact: true})).toBeVisible();
     });
   });
+
+  test('Edit JSON variable with inline editor', async ({
+    page,
+    operateHomePage,
+    operateProcessesPage,
+    operateProcessInstancePage,
+  }) => {
+    test.slow();
+
+    await test.step('Navigate to Processes tab and open the process instance', async () => {
+      await operateHomePage.clickProcessesTab();
+      await operateProcessesPage.filterByProcessName(
+        'simple service task process',
+      );
+      await operateProcessesPage.clickProcessInstanceLink();
+      await expect(operateProcessInstancePage.addVariableButton).toBeEnabled();
+    });
+
+    await test.step('Add a JSON variable', async () => {
+      await operateProcessInstancePage.clickAddVariableButton();
+      await operateProcessInstancePage.fillNewVariable(
+        'jsonPayload',
+        '{"status":"active","count":42}',
+      );
+      await expect(operateProcessInstancePage.saveVariableButton).toBeEnabled();
+      await operateProcessInstancePage.clickSaveVariableButton();
+      await expect(operateProcessInstancePage.variableSpinner).toBeHidden({
+        timeout: 60000,
+      });
+    });
+
+    await test.step('Edit JSON variable inline and verify changes persist', async () => {
+      const variable = operateProcessInstancePage.existingVariableByName(
+        'jsonPayload',
+      );
+
+      await variable.editVariableModal.button.click();
+      await variable.editVariableModal.valueInputField.waitFor({state: 'visible'});
+      await variable.editVariableModal.valueInputField.fill(
+        '{"status":"updated","count":100}',
+      );
+      await variable.editVariableModal.saveButton.click();
+      await expect(operateProcessInstancePage.variableSpinner).toBeHidden({
+        timeout: 60000,
+      });
+
+      await page.reload();
+      await expect(
+        page.getByText('"status":"updated","count":100', {exact: false}),
+      ).toBeVisible();
+    });
+
+    await test.step('Verify inline editor shows validation error for invalid JSON', async () => {
+      const variable = operateProcessInstancePage.existingVariableByName(
+        'jsonPayload',
+      );
+
+      await variable.editVariableModal.button.click();
+      await variable.editVariableModal.valueInputField.waitFor({state: 'visible'});
+      await variable.editVariableModal.valueInputField.clear();
+      await variable.editVariableModal.valueInputField.fill('{invalid json');
+
+      await operateProcessInstancePage.checkExistingVariableErrorMessageText(
+        'jsonPayload',
+        'Value has to be JSON',
+      );
+      await expect(variable.editVariableModal.saveButton).toBeDisabled();
+
+      await variable.editVariableModal.exitButton.click();
+    });
+  });
+
+  test('Edit JSON variable with modal editor', async ({
+    page,
+    operateHomePage,
+    operateProcessesPage,
+    operateProcessInstancePage,
+  }) => {
+    test.slow();
+
+    await test.step('Navigate to Processes tab and open the process instance', async () => {
+      await operateHomePage.clickProcessesTab();
+      await operateProcessesPage.filterByProcessName(
+        'simple service task process',
+      );
+      await operateProcessesPage.clickProcessInstanceLink();
+      await expect(operateProcessInstancePage.addVariableButton).toBeEnabled();
+    });
+
+    await test.step('Add a JSON variable', async () => {
+      await operateProcessInstancePage.clickAddVariableButton();
+      await operateProcessInstancePage.fillNewVariable(
+        'modalTestVar',
+        '{"data":"initial"}',
+      );
+      await expect(operateProcessInstancePage.saveVariableButton).toBeEnabled();
+      await operateProcessInstancePage.clickSaveVariableButton();
+      await expect(operateProcessInstancePage.variableSpinner).toBeHidden({
+        timeout: 60000,
+      });
+    });
+
+    await test.step('Open JSON editor modal and edit variable', async () => {
+      const variable = operateProcessInstancePage.existingVariableByName(
+        'modalTestVar',
+      );
+
+      await variable.editVariableModal.button.click();
+      await variable.editVariableModal.valueInputField.waitFor({state: 'visible'});
+
+      await variable.editVariableModal.jsonEditorButton.click();
+      await expect(variable.editVariableModal.jsonEditorModal.header).toBeVisible();
+
+      await variable.editVariableModal.jsonEditorModal.inputField.fill(
+        '{"data":"modal-edited","verified":true}',
+      );
+      await variable.editVariableModal.jsonEditorModal.applyButton.click();
+
+      await variable.editVariableModal.saveButton.click();
+      await expect(operateProcessInstancePage.variableSpinner).toBeHidden({
+        timeout: 60000,
+      });
+
+      await page.reload();
+      await expect(
+        page.getByText('"data":"modal-edited"', {exact: false}),
+      ).toBeVisible();
+    });
+
+    await test.step('Verify JSON editor modal can cancel changes', async () => {
+      const variable = operateProcessInstancePage.existingVariableByName(
+        'modalTestVar',
+      );
+
+      await variable.editVariableModal.button.click();
+      await variable.editVariableModal.valueInputField.waitFor({state: 'visible'});
+
+      await variable.editVariableModal.jsonEditorButton.click();
+      await expect(variable.editVariableModal.jsonEditorModal.header).toBeVisible();
+
+      await variable.editVariableModal.jsonEditorModal.inputField.fill(
+        '{"data":"should-be-cancelled"}',
+      );
+      await variable.editVariableModal.jsonEditorModal.cancelButton.click();
+
+      await expect(
+        variable.editVariableModal.valueInputField,
+      ).toHaveValue('"data":"modal-edited","verified":true');
+
+      await variable.editVariableModal.exitButton.click();
+    });
+  });
+
+  test('View JSON variable in modal (read-only)', async ({
+    page,
+    operateHomePage,
+    operateProcessesPage,
+    operateProcessInstancePage,
+  }) => {
+    await test.step('Navigate to a completed process instance', async () => {
+      await operateHomePage.clickProcessesTab();
+      await operateProcessesPage.filterByProcessName(
+        'simple service task process',
+      );
+      await operateProcessesPage.selectVersionFilter('All');
+      await operateProcessesPage.selectRunningFilter('Finished');
+      await sleep(500);
+      await operateProcessesPage.clickProcessInstanceLink();
+    });
+
+    await test.step('Verify JSON variable can be viewed in modal (read-only)', async () => {
+      const firstVariableName = await page
+        .getByTestId('variables-list')
+        .getByRole('row')
+        .nth(1)
+        .getByRole('cell')
+        .nth(0)
+        .textContent();
+
+      if (!firstVariableName) {
+        test.skip('No variables found in completed instance');
+      }
+
+      const variable = operateProcessInstancePage.existingVariableByName(
+        firstVariableName,
+      );
+
+      const openButton = variable.value.getByRole('button', {
+        name: /^open/i,
+      });
+
+      if (await openButton.isVisible()) {
+        await openButton.click();
+        await expect(
+          page.getByRole('dialog').getByRole('textbox'),
+        ).toBeVisible();
+
+        const dialog = page.getByRole('dialog');
+        await expect(dialog).toBeVisible();
+
+        await dialog.getByRole('button', {name: /close|cancel/i}).click();
+        await expect(dialog).not.toBeVisible();
+      }
+    });
+  });
 });

@@ -407,6 +407,106 @@ test.describe('process instance page', () => {
     await expect(page).toHaveScreenshot();
   });
 
+  test('inline JSON edit - before focusing', async ({
+    page,
+    processInstancePage,
+  }) => {
+    const jsonVariable = {
+      variableKey: '2251799813687144-payload',
+      name: 'payload',
+      value: '{"status":"active","count":42}',
+      isTruncated: false,
+      tenantId: '',
+      processInstanceKey: '2251799813687144',
+      scopeKey: '2251799813687144',
+      rootProcessInstanceKey: null,
+    };
+
+    await page.route(
+      URL_API_PATTERN,
+      mockResponses({
+        processInstanceDetail: runningInstance.detail,
+        callHierarchy: runningInstance.callHierarchy,
+        elementInstances: runningInstance.elementInstances,
+        statistics: runningInstance.statistics,
+        sequenceFlows: runningInstance.sequenceFlows,
+        variables: [jsonVariable],
+        xml: runningInstance.xml,
+      }),
+    );
+
+    await processInstancePage.gotoProcessInstancePage({
+      key: runningInstance.detail.processInstanceKey,
+    });
+    await processInstancePage.resetZoomButton.click();
+    await page.waitForTimeout(500);
+    await expect(page.getByTestId(/^state-overlay/)).toHaveText('1');
+
+    await page
+      .getByTestId('variable-payload')
+      .getByRole('button', {name: /^edit$/i})
+      .click();
+
+    await processInstancePage.variablesEditor.waitForEditorToLoad();
+
+    await expect(page).toHaveScreenshot();
+  });
+
+  test('inline JSON edit - error state after blurring', async ({
+    page,
+    processInstancePage,
+  }) => {
+    const jsonVariable = {
+      variableKey: '2251799813687144-payload',
+      name: 'payload',
+      value: '{"status":"active","count":42}',
+      isTruncated: false,
+      tenantId: '',
+      processInstanceKey: '2251799813687144',
+      scopeKey: '2251799813687144',
+      rootProcessInstanceKey: null,
+    };
+
+    await page.route(
+      URL_API_PATTERN,
+      mockResponses({
+        processInstanceDetail: runningInstance.detail,
+        callHierarchy: runningInstance.callHierarchy,
+        elementInstances: runningInstance.elementInstances,
+        statistics: runningInstance.statistics,
+        sequenceFlows: runningInstance.sequenceFlows,
+        variables: [jsonVariable],
+        xml: runningInstance.xml,
+      }),
+    );
+
+    await processInstancePage.gotoProcessInstancePage({
+      key: runningInstance.detail.processInstanceKey,
+    });
+    await processInstancePage.resetZoomButton.click();
+    await page.waitForTimeout(500);
+    await expect(page.getByTestId(/^state-overlay/)).toHaveText('1');
+
+    await page
+      .getByTestId('variable-payload')
+      .getByRole('button', {name: /^edit$/i})
+      .click();
+
+    await processInstancePage.variablesEditor.waitForEditorToLoad();
+
+    await processInstancePage.variablesEditor.clear();
+    await processInstancePage.variablesEditor.fill('{invalid');
+
+    await expect(page.getByText('Value has to be JSON')).toBeVisible();
+
+    // Blur the editor by clicking elsewhere
+    await page.getByText('Variables').click();
+
+    await expect(page.getByText('Value has to be JSON')).toBeVisible();
+
+    await expect(page).toHaveScreenshot();
+  });
+
   test('JSON viewer modal - running instance - view mode', async ({
     page,
     processInstancePage,
