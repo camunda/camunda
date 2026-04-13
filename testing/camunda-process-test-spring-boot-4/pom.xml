@@ -51,7 +51,6 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>camunda-spring-boot-4-starter</artifactId>
-      <version>${project.version}</version>
     </dependency>
 
     <!--
@@ -190,6 +189,12 @@
 
     <dependency>
       <groupId>org.testcontainers</groupId>
+      <artifactId>testcontainers</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.testcontainers</groupId>
       <artifactId>testcontainers-junit-jupiter</artifactId>
       <scope>test</scope>
     </dependency>
@@ -209,7 +214,6 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-shade-plugin</artifactId>
-        <version>3.6.2</version>
         <executions>
           <execution>
             <goals>
