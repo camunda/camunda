@@ -34,7 +34,8 @@ public interface ThrowErrorCommandStep1
   ThrowErrorCommandStep2 errorCode(String errorCode);
 
   interface ThrowErrorCommandStep2
-      extends FinalCommandStep<ThrowErrorResponse>, CommandWithVariables<ThrowErrorCommandStep2> {
+      extends JobCallbackFinalCommandStep<ThrowErrorResponse>,
+          CommandWithVariables<ThrowErrorCommandStep2> {
     /**
      * Provide an error message describing the reason for the non-technical error. If the error is
      * not caught by an error catch event, this message will be a part of the raised incident.

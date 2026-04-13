@@ -20,9 +20,8 @@ import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.worker.BackoffSupplier;
 import io.camunda.client.impl.worker.JobWorkerBuilderImpl;
 import io.camunda.client.jobhandling.CamundaClientExecutorService;
-import io.camunda.client.jobhandling.CommandExceptionHandlingStrategy;
-import io.camunda.client.jobhandling.DefaultCommandExceptionHandlingStrategy;
 import io.camunda.client.jobhandling.DefaultJobExceptionHandlerSupplier;
+import io.camunda.client.jobhandling.JobCallbackCommandWrapperFactory;
 import io.camunda.client.jobhandling.JobExceptionHandlerSupplier;
 import io.camunda.client.jobhandling.JobWorkerFactory;
 import io.camunda.client.jobhandling.JobWorkerManager;
@@ -68,15 +67,6 @@ public class CamundaClientAllAutoConfiguration {
 
   @Bean
   @ConditionalOnMissingBean
-  public CommandExceptionHandlingStrategy commandExceptionHandlingStrategy(
-      final BackoffSupplier backoffSupplier,
-      final CamundaClientExecutorService scheduledExecutorService) {
-    return new DefaultCommandExceptionHandlingStrategy(
-        backoffSupplier, scheduledExecutorService.getScheduledExecutor());
-  }
-
-  @Bean
-  @ConditionalOnMissingBean
   public ParameterResolverStrategy parameterResolverStrategy(final JsonMapper jsonMapper) {
     return new DefaultParameterResolverStrategy(jsonMapper);
   }
@@ -89,12 +79,19 @@ public class CamundaClientAllAutoConfiguration {
   }
 
   @Bean
+  public JobCallbackCommandWrapperFactory jobCallbackCommandWrapperFactory(
+      final MetricsRecorder metricsRecorder,
+      final BackoffSupplier backoffSupplier,
+      final CamundaClientExecutorService camundaClientExecutorService) {
+    return new JobCallbackCommandWrapperFactory(
+        backoffSupplier, camundaClientExecutorService.getScheduledExecutor(), metricsRecorder);
+  }
+
+  @Bean
   @ConditionalOnMissingBean
   public JobExceptionHandlerSupplier jobExceptionHandlingSupplier(
-      final CommandExceptionHandlingStrategy commandExceptionHandlingStrategy,
-      final MetricsRecorder metricsRecorder) {
-    return new DefaultJobExceptionHandlerSupplier(
-        commandExceptionHandlingStrategy, metricsRecorder);
+      final JobCallbackCommandWrapperFactory jobCallbackCommandWrapperFactory) {
+    return new DefaultJobExceptionHandlerSupplier(jobCallbackCommandWrapperFactory);
   }
 
   @Bean

@@ -24,7 +24,7 @@ import io.camunda.client.annotation.JobWorker;
 import io.camunda.client.bean.BeanInfo;
 import io.camunda.client.bean.MethodInfo;
 import io.camunda.client.jobhandling.BeanJobHandlerFactory;
-import io.camunda.client.jobhandling.CommandExceptionHandlingStrategy;
+import io.camunda.client.jobhandling.JobCallbackCommandWrapperFactory;
 import io.camunda.client.jobhandling.JobWorkerManager;
 import io.camunda.client.jobhandling.ManagedJobWorker;
 import io.camunda.client.jobhandling.parameter.ParameterResolverStrategy;
@@ -48,23 +48,23 @@ public class JobWorkerAnnotationProcessor extends AbstractCamundaAnnotationProce
   private static final Logger LOGGER = LoggerFactory.getLogger(JobWorkerAnnotationProcessor.class);
 
   private final JobWorkerManager jobWorkerManager;
-  private final CommandExceptionHandlingStrategy commandExceptionHandlingStrategy;
   private final MetricsRecorder metricsRecorder;
   private final ParameterResolverStrategy parameterResolverStrategy;
   private final ResultProcessorStrategy resultProcessorStrategy;
+  private final JobCallbackCommandWrapperFactory jobCallbackCommandWrapperFactory;
   private final List<ManagedJobWorker> managedJobWorkers = new ArrayList<>();
 
   public JobWorkerAnnotationProcessor(
       final JobWorkerManager jobWorkerManager,
-      final CommandExceptionHandlingStrategy commandExceptionHandlingStrategy,
       final MetricsRecorder metricsRecorder,
       final ParameterResolverStrategy parameterResolverStrategy,
-      final ResultProcessorStrategy resultProcessorStrategy) {
+      final ResultProcessorStrategy resultProcessorStrategy,
+      final JobCallbackCommandWrapperFactory jobCallbackCommandWrapperFactory) {
     this.jobWorkerManager = jobWorkerManager;
-    this.commandExceptionHandlingStrategy = commandExceptionHandlingStrategy;
     this.metricsRecorder = metricsRecorder;
     this.parameterResolverStrategy = parameterResolverStrategy;
     this.resultProcessorStrategy = resultProcessorStrategy;
+    this.jobCallbackCommandWrapperFactory = jobCallbackCommandWrapperFactory;
   }
 
   @Override
@@ -87,10 +87,10 @@ public class JobWorkerAnnotationProcessor extends AbstractCamundaAnnotationProce
                           jobWorkerValue,
                           new BeanJobHandlerFactory(
                               methodInfo,
-                              commandExceptionHandlingStrategy,
                               parameterResolverStrategy,
                               resultProcessorStrategy,
-                              metricsRecorder)))
+                              metricsRecorder,
+                              jobCallbackCommandWrapperFactory)))
               .ifPresent(newManagedJobWorkers::add);
         },
         ReflectionUtils.USER_DECLARED_METHODS);

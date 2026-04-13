@@ -32,22 +32,23 @@ import java.util.List;
 
 public class BeanJobHandlerFactory implements JobHandlerFactory {
   private final MethodInfo methodInfo;
-  private final CommandExceptionHandlingStrategy commandExceptionHandlingStrategy;
   private final ParameterResolverStrategy parameterResolverStrategy;
   private final ResultProcessorStrategy resultProcessorStrategy;
   private final MetricsRecorder metricsRecorder;
+  private final JobCallbackCommandWrapperFactory jobCallbackCommandWrapperFactory;
 
   public BeanJobHandlerFactory(
       final MethodInfo methodInfo,
-      final CommandExceptionHandlingStrategy commandExceptionHandlingStrategy,
       final ParameterResolverStrategy parameterResolverStrategy,
       final ResultProcessorStrategy resultProcessorStrategy,
-      final MetricsRecorder metricsRecorder) {
+      final MetricsRecorder metricsRecorder,
+      final JobCallbackCommandWrapperFactory jobCallbackCommandWrapperFactory) {
     this.methodInfo = methodInfo;
-    this.commandExceptionHandlingStrategy = commandExceptionHandlingStrategy;
     this.parameterResolverStrategy = parameterResolverStrategy;
     this.resultProcessorStrategy = resultProcessorStrategy;
     this.metricsRecorder = metricsRecorder;
+
+    this.jobCallbackCommandWrapperFactory = jobCallbackCommandWrapperFactory;
   }
 
   private List<ParameterResolver> createParameterResolvers(final CamundaClient camundaClient) {
@@ -77,9 +78,9 @@ public class BeanJobHandlerFactory implements JobHandlerFactory {
         methodInfo::invoke,
         autoComplete,
         maxRetries,
-        commandExceptionHandlingStrategy,
         metricsRecorder,
         createParameterResolvers(context.camundaClient()),
-        createResultProcessor(context.camundaClient()));
+        createResultProcessor(context.camundaClient()),
+        jobCallbackCommandWrapperFactory);
   }
 }
