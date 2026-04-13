@@ -208,7 +208,7 @@
       "enabled": false
     },
     {
-      "description": "Exclude major updates to Spring, we will do those manually",
+      "description": "Exclude major updates to Spring and JUnit Jupiter, we will do those manually",
       "matchManagers": [
         "maven",
         "custom.regex"
