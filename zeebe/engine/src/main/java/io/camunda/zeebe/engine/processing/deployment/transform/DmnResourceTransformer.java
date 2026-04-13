@@ -77,6 +77,11 @@ public final class DmnResourceTransformer implements DeploymentResourceTransform
   }
 
   @Override
+  public boolean canTransform(final DeploymentResource resource) {
+    return resource.getResourceName().endsWith(".dmn");
+  }
+
+  @Override
   public Either<Failure, Void> createMetadata(
       final DeploymentResource resource,
       final DeploymentRecord deployment,

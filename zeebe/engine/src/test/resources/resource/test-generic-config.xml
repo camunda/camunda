@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+  <setting name="timeout" value="30"/>
+  <setting name="retries" value="3"/>
+  <setting name="mode" value="production"/>
+  <features>
+    <feature name="logging" enabled="true"/>
+    <feature name="monitoring" enabled="false"/>
+  </features>
+</configuration>

@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.engine.processing.deployment;
 
-import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 
@@ -141,24 +140,6 @@ public class DeploymentRejectionTest {
         .hasIntent(DeploymentIntent.CREATE)
         .hasRejectionType(RejectionType.INVALID_ARGUMENT)
         .hasRejectionReason("Expected to deploy at least one resource, but none given");
-  }
-
-  @Test
-  public void shouldRejectDeploymentIfNotParsable() {
-    // when
-    final Record<DeploymentRecordValue> rejectedDeployment =
-        ENGINE
-            .deployment()
-            .withXmlResource("not a process".getBytes(UTF_8))
-            .expectRejection()
-            .deploy();
-
-    // then
-    Assertions.assertThat(rejectedDeployment)
-        .hasKey(ExecuteCommandResponseDecoder.keyNullValue())
-        .hasRecordType(RecordType.COMMAND_REJECTION)
-        .hasIntent(DeploymentIntent.CREATE)
-        .hasRejectionType(RejectionType.INVALID_ARGUMENT);
   }
 
   @Test
