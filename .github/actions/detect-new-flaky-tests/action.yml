@@ -10,8 +10,8 @@ inputs:
   pr-flaky-tests-data:
     description: 'JSON array of {job, flaky_tests} from collect-flaky-tests'
     required: true
-  known-flaky-tests:
-    description: 'JSON array of {test_class_name, test_name} from BigQuery'
+  known-flaky-tests-file:
+    description: 'Path to a JSON file containing an array of {test_class_name, test_name} from BigQuery'
     required: true
   pr-number:
     description: 'Pull request number'
@@ -34,7 +34,7 @@ runs:
       shell: bash
       env:
         PR_FLAKY_TESTS_DATA: ${{ inputs.pr-flaky-tests-data }}
-        KNOWN_FLAKY_TESTS: ${{ inputs.known-flaky-tests }}
+        KNOWN_FLAKY_TESTS_FILE: ${{ inputs.known-flaky-tests-file }}
         PR_NUMBER: ${{ inputs.pr-number }}
         BLOCKING: ${{ inputs.blocking }}
         GITHUB_TOKEN: ${{ github.token }}
