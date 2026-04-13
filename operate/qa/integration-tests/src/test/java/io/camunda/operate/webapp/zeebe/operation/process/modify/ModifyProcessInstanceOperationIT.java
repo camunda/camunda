@@ -255,7 +255,7 @@ public class ModifyProcessInstanceOperationIT extends OperateZeebeSearchAbstract
     searchContainerManager.refreshIndices("*operation*");
 
     // Validate that the flow node instance ids were read
-    verify(mockFlowNodeInstanceReader, times(2))
+    verify(mockFlowNodeInstanceReader, times(1))
         .getFlowNodeInstanceKeysByIdAndStates(
             MOCK_PROCESS_INSTANCE_KEY, "taskA", List.of(FlowNodeState.ACTIVE));
 

@@ -94,6 +94,7 @@ public class OperateZeebeSearchAbstractIT {
   @Autowired protected FlowNodeInstanceReader flowNodeInstanceReader;
   protected OperateJ5Tester operateTester;
   protected OperateServicesAdapter operateServicesAdapter;
+  @Autowired protected OperateProperties operateProperties;
 
   @BeforeAll
   public void beforeAllSetup() {
@@ -165,8 +166,8 @@ public class OperateZeebeSearchAbstractIT {
             new ModifyProcessZeebeWrapper(
                 camundaClient,
                 new AddTokenHandler(),
-                new CancelTokenHandler(flowNodeInstanceReader),
-                new MoveTokenHandler(flowNodeInstanceReader)));
+                new CancelTokenHandler(flowNodeInstanceReader, operateProperties),
+                new MoveTokenHandler(flowNodeInstanceReader, operateProperties)));
 
     // Implementing tests can add any additional setup needed to run before each test
     runAdditionalBeforeEachSetup();

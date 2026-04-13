@@ -868,30 +868,37 @@ public class ModifyProcessInstanceOperationZeebeIT extends OperateZeebeAbstractI
   }
 
   @Test
-  public void shouldCancelMultiInstance() throws Exception {
-    // Given
+  public void shouldCancelAllMultiInstance() throws Exception {
+    // given
     tester
         .deployProcess("usertest/multiInstance_v_2.bpmn")
         .and()
-        .startProcessInstance("multiInstanceProcess", "{ \"items\": [1,2,3]}")
+        .startProcessInstance(
+            "multiInstanceProcess",
+            "{ \"items\": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30]}")
         .waitUntil()
         .processInstanceIsStarted()
         .and()
-        .flowNodesAreActive("filterMapSubProcess", 3);
+        .flowNodesAreActive("filterTask", 30);
     // when
     tester
         .modifyProcessInstanceOperation(
             List.of(
                 new Modification()
                     .setModification(Modification.Type.CANCEL_TOKEN)
-                    .setFromFlowNodeId("filterMapSubProcess")))
+                    .setFromFlowNodeId("filterTask")
+                    .setNewTokensCount(0)))
         .waitUntil()
         .operationIsCompleted()
         .and()
         .flowNodeIsTerminated("filterMapSubProcess");
-
-    assertThat(tester.getFlowNodeStateFor("filterMapSubProcess"))
-        .isEqualTo(FlowNodeStateDto.TERMINATED);
+    // then - verify that both the multi-instance body and the inner task are terminated
+    tester.getAllFlowNodeInstances(tester.getProcessInstanceKey()).stream()
+        .filter(
+            i ->
+                i.getFlowNodeId().equals("filterTask")
+                    || i.getFlowNodeId().equals("filterMapSubProcess"))
+        .forEach(i -> assertThat(i.getState()).isEqualTo(FlowNodeState.TERMINATED));
   }
 
   private List<String> varsToStrings(final List<Long> flowNodeKeys) {

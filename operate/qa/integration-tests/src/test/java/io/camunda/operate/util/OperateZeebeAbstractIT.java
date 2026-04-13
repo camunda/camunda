@@ -188,8 +188,8 @@ public abstract class OperateZeebeAbstractIT extends OperateAbstractIT {
             new ModifyProcessZeebeWrapper(
                 camundaClient,
                 new AddTokenHandler(),
-                new CancelTokenHandler(flowNodeInstanceReader),
-                new MoveTokenHandler(flowNodeInstanceReader)));
+                new CancelTokenHandler(flowNodeInstanceReader, operateProperties),
+                new MoveTokenHandler(flowNodeInstanceReader, operateProperties)));
     workerName = TestUtil.createRandomString(10);
 
     tester =
