@@ -256,7 +256,7 @@ public class GatewayErrorMapperTest {
     assertThat(pd).isNotNull();
     assertThat(pd.getStatus()).isEqualTo(HttpStatus.UNAUTHORIZED.value());
     assertThat(pd.getDetail()).isEqualTo("Invalid credentials");
-    assertThat(pd.getTitle()).isEqualTo(BadCredentialsException.class.getName());
+    assertThat(pd.getTitle()).isEqualTo("UNAUTHORIZED");
   }
 
   @Test
@@ -274,7 +274,7 @@ public class GatewayErrorMapperTest {
     assertThat(pd).isNotNull();
     assertThat(pd.getStatus()).isEqualTo(HttpStatus.UNAUTHORIZED.value());
     assertThat(pd.getDetail()).isEqualTo("The access token is invalid");
-    assertThat(pd.getTitle()).isEqualTo(OAuth2AuthenticationException.class.getName());
+    assertThat(pd.getTitle()).isEqualTo("UNAUTHORIZED");
   }
 
   @Test
@@ -290,6 +290,7 @@ public class GatewayErrorMapperTest {
     assertThat(pd).isNotNull();
     assertThat(pd.getStatus()).isEqualTo(HttpStatus.UNAUTHORIZED.value());
     assertThat(pd.getDetail()).isEqualTo("Wrapped auth error");
+    assertThat(pd.getTitle()).isEqualTo("UNAUTHORIZED");
   }
 
   @Test
@@ -304,7 +305,7 @@ public class GatewayErrorMapperTest {
     assertThat(pd).isNotNull();
     assertThat(pd.getStatus()).isEqualTo(HttpStatus.FORBIDDEN.value());
     assertThat(pd.getDetail()).isEqualTo("Access denied");
-    assertThat(pd.getTitle()).isEqualTo(AccessDeniedException.class.getName());
+    assertThat(pd.getTitle()).isEqualTo("FORBIDDEN");
   }
 
   // Sample custom ServiceException for testing

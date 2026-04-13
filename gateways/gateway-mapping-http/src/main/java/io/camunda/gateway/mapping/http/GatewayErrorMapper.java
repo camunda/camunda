@@ -48,11 +48,11 @@ public class GatewayErrorMapper {
     } else if (exception instanceof final AuthenticationException ae) {
       LOG.warn("Expected to handle REST request, but an authentication error occurred", error);
       return createProblemDetail(
-          HttpStatus.UNAUTHORIZED, ae.getMessage(), exception.getClass().getName());
+          HttpStatus.UNAUTHORIZED, ae.getMessage(), HttpStatus.UNAUTHORIZED.name());
     } else if (exception instanceof final AccessDeniedException ade) {
       LOG.warn("Expected to handle REST request, but access was denied", error);
       return createProblemDetail(
-          HttpStatus.FORBIDDEN, ade.getMessage(), exception.getClass().getName());
+          HttpStatus.FORBIDDEN, ade.getMessage(), HttpStatus.FORBIDDEN.name());
     } else {
       LOG.error("Expected to handle REST request, but an unexpected error occurred", error);
       return createProblemDetail(
