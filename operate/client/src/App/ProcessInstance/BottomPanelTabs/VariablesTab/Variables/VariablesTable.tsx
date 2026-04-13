@@ -25,6 +25,7 @@ import {ViewFullVariableButton} from './ViewFullVariableButton';
 import {useIsProcessInstanceRunning} from 'modules/queries/processInstance/useIsProcessInstanceRunning';
 import {useVariables} from 'modules/queries/variables/useVariables';
 import {InlineJsonEditor} from 'modules/components/InlineJsonEditor';
+import {getVariable} from 'modules/api/v2/variables/getVariable';
 
 type Props = {
   scopeId: string | null;
@@ -81,6 +82,18 @@ const VariablesTable: React.FC<Props> = ({
                 value={value}
                 isTruncatedValue={Boolean(isTruncated)}
                 readOnly
+                onCopy={
+                  isTruncated
+                    ? async () => {
+                        const {response, error} =
+                          await getVariable(variableKey);
+                        if (response !== null) {
+                          return response.value;
+                        }
+                        throw error;
+                      }
+                    : undefined
+                }
                 renderButton={
                   isTruncated
                     ? () => (
