@@ -44,8 +44,8 @@ spec:
               echo "Keycloak ready"
 
               echo "Waiting for Camunda gateway..."
-              until curl -s --connect-timeout 5 -o /dev/null \
-                "http://camunda-gateway:8080"; do
+              until curl -sf --connect-timeout 5 -o /dev/null \
+                "http://camunda-gateway:8080/actuator/health"; do
                 echo "  not ready, retrying in 10s..."
                 sleep 10
               done
