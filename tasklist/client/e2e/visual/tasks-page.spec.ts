@@ -488,7 +488,6 @@ test.describe('tasks page', () => {
       mixpanelToken: null,
       mixpanelAPIHost: null,
       isMultiTenancyEnabled: true,
-      clientMode: 'v2',
     });
 
     await tasksPage.gotoTaskDetails(NON_FORM_TASK_WITH_TENANT.userTaskKey);

@@ -103,7 +103,6 @@ test.describe('processes page', () => {
       mixpanelToken: null,
       mixpanelAPIHost: null,
       isMultiTenancyEnabled: true,
-      clientMode: 'v2',
     });
 
     mockQueryProcessDefinitionsRequest();

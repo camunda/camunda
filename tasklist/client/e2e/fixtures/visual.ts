@@ -126,7 +126,7 @@ const test = base.extend<PlaywrightFixtures>({
                 stage: null,
                 mixpanelToken: null,
                 mixpanelAPIHost: null,
-                clientMode: 'v2',
+                
               };
             `,
       }),
