@@ -10,6 +10,8 @@ package io.camunda.configuration;
 import io.camunda.db.rdbms.write.RdbmsWriterConfig;
 import io.camunda.exporter.rdbms.ExporterConfiguration;
 import java.time.Duration;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
 
 public class Rdbms extends SecondaryStorageDatabase<RdbmsHistory> {
@@ -77,6 +79,17 @@ public class Rdbms extends SecondaryStorageDatabase<RdbmsHistory> {
   private RdbmsInsertBatching insertBatching = new RdbmsInsertBatching();
 
   @NestedConfigurationProperty private RdbmsQuery query = new RdbmsQuery();
+
+  /**
+   * Optional: Configure multiple independent RDBMS exporters, each with its own data source. Useful
+   * for multi-region setups where data needs to be exported to multiple databases.
+   *
+   * <p>When this map is non-empty, a separate exporter is created for each entry. The exporter name
+   * in the Zeebe broker config will be "rdbms-{key}".
+   *
+   * <p>When this map is empty (default), the single-exporter mode is used (backwards-compatible).
+   */
+  private Map<String, Rdbms> exporters = new LinkedHashMap<>();
 
   public Boolean getAutoDdl() {
     return autoDdl;
@@ -204,5 +217,13 @@ public class Rdbms extends SecondaryStorageDatabase<RdbmsHistory> {
 
   public void setDdlLockWaitTimeout(final Duration ddlLockWaitTimeout) {
     this.ddlLockWaitTimeout = ddlLockWaitTimeout;
+  }
+
+  public Map<String, Rdbms> getExporters() {
+    return exporters;
+  }
+
+  public void setExporters(final Map<String, Rdbms> exporters) {
+    this.exporters = exporters;
   }
 }
