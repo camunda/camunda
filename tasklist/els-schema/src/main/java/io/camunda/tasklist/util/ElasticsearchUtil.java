@@ -99,6 +99,7 @@ public abstract class ElasticsearchUtil {
     return result;
   }
 
+<<<<<<< HEAD
   /**
    * Scrolls through all search results using ES client and collects document IDs with their index
    * names into a map.
@@ -107,6 +108,128 @@ public abstract class ElasticsearchUtil {
    * @param searchRequestBuilder Search request builder
    * @return Map of document ID to index name
    */
+=======
+  public static <T extends TasklistEntity> List<T> scroll(
+      final SearchRequest searchRequest,
+      final Class<T> clazz,
+      final ObjectMapper objectMapper,
+      final RestHighLevelClient esClient)
+      throws IOException {
+    return scroll(searchRequest, clazz, objectMapper, esClient, null, null);
+  }
+
+  public static <T extends TasklistEntity> List<T> scroll(
+      final SearchRequest searchRequest,
+      final Class<T> clazz,
+      final ObjectMapper objectMapper,
+      final RestHighLevelClient esClient,
+      final Consumer<SearchHits> searchHitsProcessor,
+      final Consumer<Aggregations> aggsProcessor)
+      throws IOException {
+
+    searchRequest.scroll(TimeValue.timeValueMillis(SCROLL_KEEP_ALIVE_MS));
+    SearchResponse response = esClient.search(searchRequest, RequestOptions.DEFAULT);
+
+    // call aggregations processor
+    if (aggsProcessor != null) {
+      aggsProcessor.accept(response.getAggregations());
+    }
+
+    final List<T> result = new ArrayList<>();
+    String scrollId = response.getScrollId();
+    SearchHits hits = response.getHits();
+
+    try {
+      while (hits.getHits().length != 0) {
+        result.addAll(mapSearchHits(hits.getHits(), objectMapper, clazz));
+
+        // call response processor
+        if (searchHitsProcessor != null) {
+          searchHitsProcessor.accept(response.getHits());
+        }
+
+        final SearchScrollRequest scrollRequest = new SearchScrollRequest(scrollId);
+        scrollRequest.scroll(TimeValue.timeValueMillis(SCROLL_KEEP_ALIVE_MS));
+
+        response = esClient.scroll(scrollRequest, RequestOptions.DEFAULT);
+
+        scrollId = response.getScrollId();
+        hits = response.getHits();
+      }
+    } finally {
+      clearScroll(scrollId, esClient);
+    }
+
+    return result;
+  }
+
+  public static void scrollWith(
+      final SearchRequest searchRequest,
+      final RestHighLevelClient esClient,
+      final Consumer<SearchHits> searchHitsProcessor,
+      final Consumer<Aggregations> aggsProcessor,
+      final Consumer<SearchHits> firstResponseConsumer)
+      throws IOException {
+
+    searchRequest.scroll(TimeValue.timeValueMillis(SCROLL_KEEP_ALIVE_MS));
+    SearchResponse response = esClient.search(searchRequest, RequestOptions.DEFAULT);
+
+    if (firstResponseConsumer != null) {
+      firstResponseConsumer.accept(response.getHits());
+    }
+
+    // call aggregations processor
+    if (aggsProcessor != null) {
+      aggsProcessor.accept(response.getAggregations());
+    }
+
+    String scrollId = response.getScrollId();
+    SearchHits hits = response.getHits();
+    try {
+      while (hits.getHits().length != 0) {
+        // call response processor
+        if (searchHitsProcessor != null) {
+          searchHitsProcessor.accept(response.getHits());
+        }
+
+        final SearchScrollRequest scrollRequest = new SearchScrollRequest(scrollId);
+        scrollRequest.scroll(TimeValue.timeValueMillis(SCROLL_KEEP_ALIVE_MS));
+
+        response = esClient.scroll(scrollRequest, RequestOptions.DEFAULT);
+
+        scrollId = response.getScrollId();
+        hits = response.getHits();
+      }
+    } finally {
+      clearScroll(scrollId, esClient);
+    }
+  }
+
+  public static void clearScroll(final String scrollId, final RestHighLevelClient esClient) {
+    if (scrollId != null) {
+      // clear the scroll
+      final ClearScrollRequest clearScrollRequest = new ClearScrollRequest();
+      clearScrollRequest.addScrollId(scrollId);
+      try {
+        esClient.clearScroll(clearScrollRequest, RequestOptions.DEFAULT);
+      } catch (final Exception e) {
+        LOGGER.warn("Error occurred when clearing the scroll with id [{}]", scrollId);
+      }
+    }
+  }
+
+  public static List<String> scrollIdsToList(
+      final SearchRequest request, final RestHighLevelClient esClient) throws IOException {
+    final List<String> result = new ArrayList<>();
+
+    final Consumer<SearchHits> collectIds =
+        (hits) -> result.addAll(map(hits.getHits(), SEARCH_HIT_ID_TO_STRING));
+
+    scrollWith(request, esClient, collectIds, null, null);
+    return result;
+  }
+
+>>>>>>> b3f3a6aa (fix: always clear ES scroll context on exception)
   public static Map<String, String> scrollIdsWithIndexToMap(
       final ElasticsearchClient client, final SearchRequest.Builder searchRequestBuilder) {
     return scrollAllStream(client, searchRequestBuilder, MAP_CLASS)

@@ -249,6 +249,7 @@ public abstract class ElasticsearchUtil {
                         client.scroll(
                             r -> r.scrollId(lastScrollId.get()).scroll(scrollKeepAlive), docClass);
 
+<<<<<<< HEAD
                     lastScrollId.set(response.scrollId());
 
                     if (response.hits().hits().isEmpty()) {
@@ -268,6 +269,130 @@ public abstract class ElasticsearchUtil {
   }
 
   private static void clearScrollSilently(final ElasticsearchClient client, final String scrollId) {
+=======
+    try {
+      while (hits.getHits().length != 0) {
+        if (searchHitMapper != null) {
+          result.addAll(mapSearchHits(hits.getHits(), searchHitMapper));
+        } else {
+          result.addAll(mapSearchHits(hits.getHits(), objectMapper, clazz));
+        }
+
+        // call response processor
+        if (searchHitsProcessor != null) {
+          searchHitsProcessor.accept(response.getHits());
+        }
+
+        final SearchScrollRequest scrollRequest = new SearchScrollRequest(scrollId);
+        scrollRequest.scroll(TimeValue.timeValueMillis(SCROLL_KEEP_ALIVE_MS));
+
+        response = esClient.scroll(scrollRequest, RequestOptions.DEFAULT);
+
+        scrollId = response.getScrollId();
+        hits = response.getHits();
+      }
+    } finally {
+      clearScroll(scrollId, esClient);
+    }
+
+    return result;
+  }
+
+  public static void scroll(
+      final SearchRequest searchRequest,
+      final Consumer<SearchHits> searchHitsProcessor,
+      final RestHighLevelClient esClient)
+      throws IOException {
+    scroll(searchRequest, searchHitsProcessor, esClient, SCROLL_KEEP_ALIVE_MS);
+  }
+
+  public static void scroll(
+      final SearchRequest searchRequest,
+      final Consumer<SearchHits> searchHitsProcessor,
+      final RestHighLevelClient esClient,
+      final long scrollKeepAlive)
+      throws IOException {
+    final var scrollKeepAliveTimeValue = TimeValue.timeValueMillis(scrollKeepAlive);
+
+    searchRequest.scroll(scrollKeepAliveTimeValue);
+    SearchResponse response = esClient.search(searchRequest, RequestOptions.DEFAULT);
+
+    String scrollId = response.getScrollId();
+    SearchHits hits = response.getHits();
+
+    try {
+      while (hits.getHits().length != 0) {
+
+        // call response processor
+        if (searchHitsProcessor != null) {
+          searchHitsProcessor.accept(response.getHits());
+        }
+
+        final SearchScrollRequest scrollRequest = new SearchScrollRequest(scrollId);
+        scrollRequest.scroll(scrollKeepAliveTimeValue);
+
+        response = esClient.scroll(scrollRequest, RequestOptions.DEFAULT);
+
+        scrollId = response.getScrollId();
+        hits = response.getHits();
+      }
+    } finally {
+      clearScroll(scrollId, esClient);
+    }
+  }
+
+  public static void scrollWith(
+      final SearchRequest searchRequest,
+      final RestHighLevelClient esClient,
+      final Consumer<SearchHits> searchHitsProcessor)
+      throws IOException {
+    scrollWith(searchRequest, esClient, searchHitsProcessor, null, null);
+  }
+
+  public static void scrollWith(
+      final SearchRequest searchRequest,
+      final RestHighLevelClient esClient,
+      final Consumer<SearchHits> searchHitsProcessor,
+      final Consumer<Aggregations> aggsProcessor,
+      final Consumer<SearchHits> firstResponseConsumer)
+      throws IOException {
+
+    searchRequest.scroll(TimeValue.timeValueMillis(SCROLL_KEEP_ALIVE_MS));
+    SearchResponse response = esClient.search(searchRequest, RequestOptions.DEFAULT);
+
+    if (firstResponseConsumer != null) {
+      firstResponseConsumer.accept(response.getHits());
+    }
+
+    // call aggregations processor
+    if (aggsProcessor != null) {
+      aggsProcessor.accept(response.getAggregations());
+    }
+
+    String scrollId = response.getScrollId();
+    SearchHits hits = response.getHits();
+    try {
+      while (hits.getHits().length != 0) {
+        // call response processor
+        if (searchHitsProcessor != null) {
+          searchHitsProcessor.accept(response.getHits());
+        }
+
+        final SearchScrollRequest scrollRequest = new SearchScrollRequest(scrollId);
+        scrollRequest.scroll(TimeValue.timeValueMillis(SCROLL_KEEP_ALIVE_MS));
+
+        response = esClient.scroll(scrollRequest, RequestOptions.DEFAULT);
+
+        scrollId = response.getScrollId();
+        hits = response.getHits();
+      }
+    } finally {
+      clearScroll(scrollId, esClient);
+    }
+  }
+
+  public static void clearScroll(final String scrollId, final RestHighLevelClient esClient) {
+>>>>>>> b3f3a6aa (fix: always clear ES scroll context on exception)
     if (scrollId != null) {
       try {
         client.clearScroll(cs -> cs.scrollId(scrollId));
