@@ -18,7 +18,7 @@
     "lint:fix": "eslint . --fix"
   },
   "dependencies": {
-    "@camunda/camunda-api-zod-schemas": "0.0.55",
+    "@camunda/camunda-api-zod-schemas": "0.0.56",
     "@camunda/camunda-composite-components": "0.22.6",
     "@carbon/elements": "^11.57.0",
     "@carbon/react": "1.100.0",
@@ -57,7 +57,7 @@
     "event-source-polyfill": "1.0.31",
     "license-checker": "25.0.1",
     "monaco-editor": "0.55.1",
-    "prettier": "3.8.1",
+    "prettier": "3.8.2",
     "rollup": "4.59.1",
     "rollup-plugin-license": "^3.5.3",
     "rollup-plugin-sbom": "3.0.5",
