@@ -28,7 +28,7 @@ import {
   getSubprocessOverlayFromIncidentElements,
 } from 'modules/utils/elements';
 import {useBusinessObjects} from 'modules/queries/processDefinitions/useBusinessObjects';
-import {parseProcessInstancesFilter} from 'modules/utils/filter/v2/processInstancesSearch';
+import {parseProcessInstancesFilter} from 'modules/utils/filter/processInstancesSearch';
 import {
   getProcessDefinitionName,
   useProcessDefinitionSelection,

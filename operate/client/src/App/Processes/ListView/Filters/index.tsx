@@ -16,7 +16,7 @@ import {
   parseProcessInstancesFilter,
   updateProcessInstancesFilterSearchString,
   type ProcessInstancesFilter,
-} from 'modules/utils/filter/v2/processInstancesSearch';
+} from 'modules/utils/filter/processInstancesSearch';
 import {AutoSubmit} from 'modules/components/AutoSubmit';
 import {ProcessField} from './ProcessField';
 import {ProcessVersionField} from './ProcessVersionField';

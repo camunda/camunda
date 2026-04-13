@@ -6,8 +6,8 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {Header} from '../Header';
-import {DiagramWrapper} from '../styled';
+import {Header} from './Header';
+import {DiagramWrapper} from './styled';
 import {observer} from 'mobx-react';
 import {DiagramShell} from 'modules/components/DiagramShell';
 import {Diagram} from 'modules/components/Diagram';

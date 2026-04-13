@@ -21,7 +21,7 @@ import {
 } from 'modules/testUtils';
 import {TargetDiagram} from './TargetDiagram';
 import {processInstanceMigrationStore} from 'modules/stores/processInstanceMigration';
-import {Wrapper} from '../tests/mocks';
+import {Wrapper} from './tests/mocks';
 import * as filterModule from 'modules/hooks/useProcessInstanceStatisticsFilters';
 import {mockFetchProcessInstancesStatistics} from 'modules/mocks/api/v2/processInstances/fetchProcessInstancesStatistics';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';

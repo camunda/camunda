@@ -14,7 +14,7 @@ import type {RequestFilters} from 'modules/utils/filter';
 import {
   buildProcessInstanceFilter,
   type BuildProcessInstanceFilterOptions,
-} from 'modules/utils/filter/v2/processInstanceFilterBuilder';
+} from 'modules/utils/filter/processInstanceFilterBuilder';
 
 type BuildMutationRequestBodyParams = {
   baseFilter: RequestFilters;
