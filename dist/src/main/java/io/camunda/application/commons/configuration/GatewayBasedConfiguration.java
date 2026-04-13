@@ -16,7 +16,7 @@ import io.atomix.utils.net.Address;
 import io.camunda.application.commons.actor.ActorSchedulerConfiguration.SchedulerConfiguration;
 import io.camunda.application.commons.broker.client.BrokerClientConfiguration.BrokerClientCfg;
 import io.camunda.application.commons.condition.ConditionalOnAnyHttpGatewayEnabled;
-import io.camunda.application.commons.job.JobHandlerConfiguration.ActivateJobHandlerConfiguration;
+import io.camunda.application.commons.job.HttpJobHandlerConfiguration.ActivateJobHandlerConfiguration;
 import io.camunda.configuration.beans.GatewayBasedProperties;
 import io.camunda.zeebe.gateway.RestApiCompositeFilter;
 import io.camunda.zeebe.gateway.impl.configuration.ClusterCfg;

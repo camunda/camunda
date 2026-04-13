@@ -37,6 +37,8 @@ public final class LongPollingActivateJobsHandler<T> implements ActivateJobsHand
   private static final Logger LOG = Loggers.LONG_POLLING;
   private static final String ERROR_MSG_ACTIVATED_EXHAUSTED =
       "Expected to activate jobs of type '%s', but no jobs available and at least one broker returned 'RESOURCE_EXHAUSTED'. Please try again later.";
+  private static final String PURGE_ERROR_MSG =
+      "Cluster was purged; pending job activation requests have been cancelled. Please retry.";
 
   private final RoundRobinActivateJobsHandler<T> activateJobsHandler;
   private final BrokerClient brokerClient;
@@ -88,6 +90,27 @@ public final class LongPollingActivateJobsHandler<T> implements ActivateJobsHand
               JOBS_AVAILABLE_TOPIC, this::onJobAvailableNotification);
           actor.runAtFixedRate(Duration.ofMillis(probeTimeoutMillis), this::probe);
         });
+  }
+
+  /**
+   * Fails all pending and active long-poll requests so clients can reconnect. Called from the
+   * topology listener when the cluster incarnation changes (e.g., after a purge). Safe to call
+   * before the actor is started (no-op since there are no pending requests).
+   */
+  public void onClusterIncarnationChanged() {
+    if (actor == null) {
+      return;
+    }
+    actor.run(this::failAllOpenRequests);
+  }
+
+  private void failAllOpenRequests() {
+    final var error = new RuntimeException(PURGE_ERROR_MSG);
+    LOG.info(
+        "Cluster purge detected, cancelling all pending job activation requests across {} job types",
+        jobTypeState.size());
+    jobTypeState.forEach((type, state) -> state.failAllRequests(error));
+    jobTypeState.clear();
   }
 
   /***
