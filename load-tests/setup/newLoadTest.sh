@@ -164,6 +164,7 @@ sed_inplace "s/__DEADLINE_DATE__/$deadline_date/"    Makefile
 # the upstream yaml files via the same sed pass.
 sed_inplace "s/__NAMESPACE__/$namespace/"                       load-test-values.yaml resources/*.yaml
 sed_inplace "s/__AVAILABILITY_ZONE__/$availability_zone/"        *.yaml resources/namespace.yaml
+sed_inplace "s/__AVAILABILITY_ZONE__/$availability_zone/" databases/*.yaml
 sed_inplace "s/__AUTHOR__/$git_author/"                          *.yaml resources/namespace.yaml
 sed_inplace "s/__DEADLINE_DATE__/$deadline_date/"                resources/namespace.yaml
 
