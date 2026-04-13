@@ -118,7 +118,7 @@ const JSONEditorModal: React.FC<Props> = observer(
               kind="ghost"
               size="sm"
               renderIcon={!isInEditMode ? Edit : View}
-              iconDescription={`Switch to ${!isInEditMode ? 'edit' : 'view'} mode}`}
+              iconDescription={`Switch to ${!isInEditMode ? 'edit' : 'view'} mode`}
               onClick={toggleEditMode}
             >
               {!isInEditMode ? 'Edit' : 'View'}
