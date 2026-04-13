@@ -31,23 +31,25 @@ import io.camunda.search.test.utils.SearchDBExtension;
 import io.camunda.search.test.utils.TestObjectMapper;
 import io.camunda.zeebe.exporter.api.context.Context;
 import io.camunda.zeebe.exporter.test.ExporterTestContext;
-import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.function.Consumer;
+import org.agrona.CloseHelper;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.TestTemplate;
 import org.junit.jupiter.api.extension.RegisterExtension;
+import org.opensearch.client.opensearch.OpenSearchAsyncClient;
 import org.opensearch.client.opensearch.generic.OpenSearchGenericClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public abstract class ArchiverJobIT<T extends ArchiverJob<?>> {
-  private static final Logger LOGGER = LoggerFactory.getLogger(ArchiverJobIT.class);
-  private static final int PARTITION_ID = 1;
+  protected static final Logger LOGGER = LoggerFactory.getLogger(ArchiverJobIT.class);
+  protected static final int PARTITION_ID = 1;
 
   @RegisterExtension private static SearchDBExtension searchDB = SearchDBExtension.create();
 
@@ -55,9 +57,11 @@ public abstract class ArchiverJobIT<T extends ArchiverJob<?>> {
   private static CamundaExporterITTemplateExtension templateExtension =
       new CamundaExporterITTemplateExtension(searchDB);
 
-  private Context context;
-  private CamundaExporterMetrics exporterMetrics;
-  private ExecutorService executor;
+  protected CamundaExporterMetrics exporterMetrics;
+  protected ExecutorService executor;
+  protected Context context;
+
+  private final List<AutoCloseable> resourcesToClose = new ArrayList<>();
 
   @BeforeEach
   void setup() {
@@ -67,7 +71,7 @@ public abstract class ArchiverJobIT<T extends ArchiverJob<?>> {
   }
 
   @AfterEach
-  void teardown() throws IOException {
+  void teardown() throws Exception {
     final var openSearchAwsInstanceUrl =
         Optional.ofNullable(System.getProperty(TEST_INTEGRATION_OPENSEARCH_AWS_URL)).orElse("");
     if (openSearchAwsInstanceUrl.isEmpty()) {
@@ -79,11 +83,16 @@ public abstract class ArchiverJobIT<T extends ArchiverJob<?>> {
       executor.shutdown();
       executor = null;
     }
+
+    CloseHelper.quietCloseAll(resourcesToClose);
+    resourcesToClose.clear();
   }
 
   @TestTemplate
   void shouldExecuteWithoutErrorsWhenNothingToArchive(
       final ExporterConfiguration config, final SearchClientAdapter ignored) throws Exception {
+    // just a basic smoke test to verify that the job runs and creates well-formed queries etc
+    // when there's nothing to actually archive
     withArchiverJob(
         config,
         job -> {
@@ -98,11 +107,8 @@ public abstract class ArchiverJobIT<T extends ArchiverJob<?>> {
 
     final ExporterResourceProvider exporterResourceProvider = exporterResourceProvider(config);
 
-    try (final ArchiverRepository repository =
-            createArchiverRepository(config, exporterResourceProvider);
-        final T job =
-            createArchiveJob(
-                config, exporterResourceProvider, repository, exporterMetrics, LOGGER, executor)) {
+    final var repository = createArchiverRepository(config, exporterResourceProvider);
+    try (final T job = createArchiveJob(config, exporterResourceProvider, repository)) {
       jobConsumer.accept(job);
     }
   }
@@ -127,40 +133,50 @@ public abstract class ArchiverJobIT<T extends ArchiverJob<?>> {
       final ExporterConfiguration config, final ExporterResourceProvider resourceProvider) {
     final var isElasticsearch = ConnectionTypes.isElasticSearch(config.getConnect().getType());
     if (isElasticsearch) {
-      final var connector = new ElasticsearchConnector(config.getConnect());
-      final ElasticsearchAsyncClient asyncClient = connector.createAsyncClient();
-
-      return new ElasticsearchArchiverRepository(
-          PARTITION_ID,
-          config.getHistory(),
-          resourceProvider,
-          asyncClient,
-          executor,
-          exporterMetrics,
-          LOGGER);
+      return closeLater(
+          new ElasticsearchArchiverRepository(
+              PARTITION_ID,
+              config.getHistory(),
+              resourceProvider,
+              createAsyncESClient(config),
+              executor,
+              exporterMetrics,
+              LOGGER));
     } else {
-      final var connector = new OpensearchConnector(config.getConnect());
-      final var asyncClient = connector.createAsyncClient();
+      final var asyncClient = createOSAsyncClient(config);
       final var genericClient =
           new OpenSearchGenericClient(asyncClient._transport(), asyncClient._transportOptions());
 
-      return new OpenSearchArchiverRepository(
-          PARTITION_ID,
-          config.getHistory(),
-          resourceProvider,
-          asyncClient,
-          genericClient,
-          executor,
-          exporterMetrics,
-          LOGGER);
+      return closeLater(
+          new OpenSearchArchiverRepository(
+              PARTITION_ID,
+              config.getHistory(),
+              resourceProvider,
+              asyncClient,
+              genericClient,
+              executor,
+              exporterMetrics,
+              LOGGER));
     }
+  }
+
+  protected ElasticsearchAsyncClient createAsyncESClient(final ExporterConfiguration config) {
+    final var connector = new ElasticsearchConnector(config.getConnect());
+    return connector.createAsyncClient();
+  }
+
+  protected OpenSearchAsyncClient createOSAsyncClient(final ExporterConfiguration config) {
+    final var connector = new OpensearchConnector(config.getConnect());
+    return connector.createAsyncClient();
+  }
+
+  protected <R extends AutoCloseable> R closeLater(final R resource) {
+    resourcesToClose.add(resource);
+    return resource;
   }
 
   abstract T createArchiveJob(
       final ExporterConfiguration config,
       final ExporterResourceProvider resourceProvider,
-      final ArchiverRepository repository,
-      CamundaExporterMetrics exporterMetrics,
-      Logger logger,
-      Executor executor);
+      final ArchiverRepository repository);
 }
