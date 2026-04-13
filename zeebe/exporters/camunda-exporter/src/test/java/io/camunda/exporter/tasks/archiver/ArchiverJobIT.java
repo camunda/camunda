@@ -36,7 +36,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.function.Consumer;
 import org.agrona.CloseHelper;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -95,13 +94,13 @@ public abstract class ArchiverJobIT<T extends ArchiverJob<?>> {
     // when there's nothing to actually archive
     withArchiverJob(
         config,
-        job -> {
+        (job, resources) -> {
           final var archived = job.execute().toCompletableFuture().join();
           assertThat(archived).isEqualTo(0);
         });
   }
 
-  void withArchiverJob(final ExporterConfiguration config, final Consumer<T> jobConsumer)
+  void withArchiverJob(final ExporterConfiguration config, final ArchiveJobConsumer<T> jobConsumer)
       throws Exception {
     createSchemas(config);
 
@@ -109,7 +108,7 @@ public abstract class ArchiverJobIT<T extends ArchiverJob<?>> {
 
     final var repository = createArchiverRepository(config, exporterResourceProvider);
     try (final T job = createArchiveJob(config, exporterResourceProvider, repository)) {
-      jobConsumer.accept(job);
+      jobConsumer.accept(job, exporterResourceProvider);
     }
   }
 
@@ -179,4 +178,8 @@ public abstract class ArchiverJobIT<T extends ArchiverJob<?>> {
       final ExporterConfiguration config,
       final ExporterResourceProvider resourceProvider,
       final ArchiverRepository repository);
+
+  interface ArchiveJobConsumer<T> {
+    void accept(T job, ExporterResourceProvider resourceProvider) throws Exception;
+  }
 }
