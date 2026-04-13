@@ -281,6 +281,32 @@ Long-term target: Org-level IdP setup and cluster provisioning are performed cen
 
 Outcome: The organization’s IdP is connected, tenants and roles exist, and cluster-local policy is projected to the associated OCs. Cluster admins and developers can authenticate via the Enterprise IdP and start using cluster UIs and APIs, with Hub acting as the central identity and policy entry point.
 
+### 3.2 Quality goals
+
+The Security Gateway Framework and unified identity plane must meet the following quality goals:
+
+- Security and correctness
+  - Authorization decisions are deterministic: given the same token, policy, and resource, all instances (Hub, OC) reach the same result.
+  - Default behavior is deny-by-default if policy, tenant context, or token validation is unclear.
+  - All external integrations (IdPs, engines) are accessed via well-defined ports with strict input validation.
+
+- Robustness and resilience
+  - Temporary failures (network, IdP, OC downtime) do not corrupt policy state; propagation is retried and gaps can be detected and repaired.
+  - Idempotent apply semantics ensure that replays of the same policy version do not change effective behavior.
+
+- Performance and scalability
+  - Policy evaluation adds minimal per-request overhead for common paths (UI/API calls, worker calls).
+  - Policy propagation is efficient for large numbers of clusters and tenants; diffs are used instead of full snapshots where possible.
+
+- Observability and logging
+  - All authentication and authorization decisions are logged with enough context (principal, resource, action, tenant, result, correlation IDs) to trace end-to-end flows.
+  - Policy propagation (Hub → OC → Engine) is observable per cluster with clear status (last version applied, last error, latency) and logs for both success and failure paths.
+  - Logs follow consistent structure and severity levels so they can be indexed and correlated across Hub and OCs.
+
+- Operational simplicity
+  - Identity deployments (Hub, OC-only) are manageable by platform teams without deep knowledge of internal policy data structures.
+  - Rollout state of policy per cluster/OC is visible in tooling without digging into raw logs or databases.
+
 ---
 
 ## 4. Target system context
