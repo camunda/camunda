@@ -34,15 +34,20 @@ public class S3TestBackupProvider extends TestBackupProvider {
   }
 
   public static Backup simpleBackup(final boolean legacy) throws IOException {
-    return simpleBackup(version(legacy));
+    return TestBackupProvider.simpleBackup(version(legacy));
   }
 
   public static Backup simpleBackupWithId(final BackupIdentifierImpl id, final boolean legacy)
       throws IOException {
-    return simpleBackupWithId(id, version(legacy));
+    return TestBackupProvider.simpleBackupWithId(id, version(legacy));
+  }
+
+  public static Backup simpleBackupWithId(final BackupIdentifierImpl id, final String legacyVersion)
+      throws IOException {
+    return TestBackupProvider.simpleBackupWithId(id, legacyVersion);
   }
 
   public static Backup backupWithoutSnapshot(final boolean legacy) throws IOException {
-    return backupWithoutSnapshot(version(legacy));
+    return TestBackupProvider.backupWithoutSnapshot(version(legacy));
   }
 }

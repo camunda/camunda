@@ -310,8 +310,10 @@ public interface S3BackupStoreTests extends BackupStoreTestKit {
   @Test
   default void backupStructureShouldBeDistinct() throws IOException {
     // given
+    // Pin the legacy version, as 8.8.is the last version with the old directory structure
+    final String legacyVersion = "8.8.0";
     final var legacyBackup =
-        S3TestBackupProvider.simpleBackupWithId(new BackupIdentifierImpl(1, 2, 3), true);
+        S3TestBackupProvider.simpleBackupWithId(new BackupIdentifierImpl(1, 2, 3), legacyVersion);
     final var backup =
         S3TestBackupProvider.simpleBackupWithId(new BackupIdentifierImpl(1, 2, 10), false);
 
