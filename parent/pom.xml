@@ -92,6 +92,7 @@
     <version.rocksdbjni>10.9.1</version.rocksdbjni>
     <version.sbe>1.37.1</version.sbe>
     <version.scala>3.8.3</version.scala>
+    <version.kafka>4.2.0</version.kafka>
     <version.slf4j>2.0.17</version.slf4j>
     <version.snakeyaml>2.6</version.snakeyaml>
     <version.javax>1.3.2</version.javax>
@@ -1455,6 +1456,12 @@
         <groupId>uk.co.real-logic</groupId>
         <artifactId>sbe-tool</artifactId>
         <version>${version.sbe}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.apache.kafka</groupId>
+        <artifactId>kafka-clients</artifactId>
+        <version>${version.kafka}</version>
       </dependency>
 
       <dependency>
