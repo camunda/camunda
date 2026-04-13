@@ -82,7 +82,7 @@ describe('<Task />', () => {
           return HttpResponse.json(
             taskMocks.assignedTask({
               userTaskKey: MOCK_USER_TASK_KEY,
-              formKey: undefined,
+              formKey: null,
             }),
           );
         },
@@ -134,7 +134,7 @@ describe('<Task />', () => {
           return HttpResponse.json(
             taskMocks.completedTask({
               userTaskKey: MOCK_USER_TASK_KEY,
-              formKey: undefined,
+              formKey: null,
             }),
           );
         },
@@ -248,7 +248,7 @@ describe('<Task />', () => {
           return HttpResponse.json(
             taskMocks.assignedTask({
               userTaskKey: MOCK_USER_TASK_KEY,
-              formKey: undefined,
+              formKey: null,
             }),
           );
         },
@@ -272,7 +272,7 @@ describe('<Task />', () => {
         return HttpResponse.json(
           taskMocks.completedTask({
             userTaskKey: MOCK_USER_TASK_KEY,
-            formKey: undefined,
+            formKey: null,
           }),
         );
       }),
@@ -334,7 +334,7 @@ describe('<Task />', () => {
           return HttpResponse.json(
             taskMocks.assignedTask({
               userTaskKey: MOCK_USER_TASK_KEY,
-              formKey: undefined,
+              formKey: null,
             }),
           );
         },
@@ -494,7 +494,7 @@ describe('<Task />', () => {
           return HttpResponse.json(
             taskMocks.assignedTask({
               userTaskKey: MOCK_USER_TASK_KEY,
-              formKey: undefined,
+              formKey: null,
             }),
           );
         },
@@ -559,7 +559,7 @@ describe('<Task />', () => {
           return HttpResponse.json(
             taskMocks.assignedTask({
               userTaskKey: MOCK_USER_TASK_KEY,
-              formKey: undefined,
+              formKey: null,
             }),
           );
         },
@@ -583,7 +583,7 @@ describe('<Task />', () => {
         return HttpResponse.json(
           taskMocks.assignedTask({
             userTaskKey: MOCK_USER_TASK_KEY,
-            formKey: undefined,
+            formKey: null,
             state: 'COMPLETING',
           }),
         );
@@ -630,7 +630,7 @@ describe('<Task />', () => {
         return HttpResponse.json(
           taskMocks.assignedTask({
             userTaskKey: MOCK_USER_TASK_KEY,
-            formKey: undefined,
+            formKey: null,
           }),
         );
       }),
@@ -682,7 +682,7 @@ describe('<Task />', () => {
         return HttpResponse.json(
           taskMocks.unassignedTask({
             userTaskKey: MOCK_USER_TASK_KEY,
-            formKey: undefined,
+            formKey: null,
           }),
         );
       }),
@@ -695,7 +695,7 @@ describe('<Task />', () => {
         return HttpResponse.json(
           taskMocks.assignedTask({
             userTaskKey: MOCK_USER_TASK_KEY,
-            formKey: undefined,
+            formKey: null,
           }),
         );
       }),
