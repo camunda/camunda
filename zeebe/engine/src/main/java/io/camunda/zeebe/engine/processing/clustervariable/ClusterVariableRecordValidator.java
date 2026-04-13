@@ -127,9 +127,7 @@ public class ClusterVariableRecordValidator {
     if (!tenantExists) {
       return Either.left(
           new Rejection(
-              RejectionType.NOT_FOUND,
-              "Expected to create cluster variable for tenant with ID '%s', but no tenant with this ID exists."
-                  .formatted(tenantId)));
+              RejectionType.NOT_FOUND, "Tenant with ID '%s' does not exist.".formatted(tenantId)));
     }
     return Either.right(clusterVariableRecord);
   }

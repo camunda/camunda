@@ -326,8 +326,7 @@ public class TenantAwareClusterVariableTest {
     assertThat(record)
         .hasIntent(ClusterVariableIntent.CREATE)
         .hasRejectionType(RejectionType.NOT_FOUND)
-        .hasRejectionReason(
-            "Expected to create cluster variable for tenant with ID 'INVALID_TENANT', but no tenant with this ID exists.");
+        .hasRejectionReason("Tenant with ID 'INVALID_TENANT' does not exist.");
   }
 
   @Test
