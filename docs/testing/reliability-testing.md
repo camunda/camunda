@@ -275,7 +275,21 @@ When we look at an example release process instance from the past, we can find t
 | `benchmark_name`    | `release-8-7-x` | The name of the load test              |
 | `stable_vms`        | `true`          | Whether to use stable VM types or not  |
 
-In our post-release process, we map our `release_version` variable to the `workflow_ref_name` as input to update our existing load test.
+##### Scheduled smoke tests
+
+The [scheduled release load test workflow](https://github.com/camunda/camunda/blob/main/.github/workflows/camunda-scheduled-release-load-tests.yml) runs daily at 04:00 UTC to validate that release load tests can be created for all active stable branches (8.6, 8.7, 8.8, 8.9) and main. Each branch's load test is created by calling the release load test workflow on that branch (`@stable/8.x`), ensuring the correct infrastructure files are used.
+
+After deployment, each load test is verified by the [verify-and-cleanup workflow](https://github.com/camunda/camunda/blob/main/.github/workflows/camunda-verify-and-cleanup-load-test.yml), which:
+
+1. Waits for all pods to be ready
+2. Checks gateway connectivity via the `app.connected` gauge metric (set to 1 when topology is first received)
+3. Deletes the namespace (regardless of verification outcome)
+
+Results are posted to the `#reliability-testing-alerts` Slack channel.
+
+> [!Note]
+>
+> The scheduled workflow uses hardcoded release tags per stable branch. Patch releases do not require updates — only new minor versions (e.g., 8.10) or deprecated branches need the workflow to be updated.
 
 #### Weekly load tests
 
