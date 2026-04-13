@@ -310,6 +310,27 @@ public class TenantAwareClusterVariableTest {
   }
 
   @Test
+  public void shouldRejectTenantScopedVariableWithInvalidTenant() {
+    // when
+    final var record =
+        ENGINE
+            .clusterVariables()
+            .withName("invalidTenantVar")
+            .setTenantScope()
+            .withValue("\"value\"")
+            .withTenantId("INVALID_TENANT")
+            .expectRejection()
+            .create(USERNAME);
+
+    // then
+    assertThat(record)
+        .hasIntent(ClusterVariableIntent.CREATE)
+        .hasRejectionType(RejectionType.NOT_FOUND)
+        .hasRejectionReason(
+            "Expected to create cluster variable for tenant with ID 'INVALID_TENANT', but no tenant with this ID exists.");
+  }
+
+  @Test
   public void shouldRejectVariableWithoutScope() {
     // when
     final var record =

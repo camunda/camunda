@@ -160,6 +160,26 @@ public final class DeleteClusterVariableTest {
   }
 
   @Test
+  public void deleteTenantScopedClusterVariableWithInvalidTenant() {
+    // when
+    final var record =
+        ENGINE_RULE
+            .clusterVariables()
+            .withName("KEY_INVALID_TENANT")
+            .setTenantScope()
+            .withTenantId("invalid-tenant-id")
+            .expectRejection()
+            .delete();
+
+    // then
+    Assertions.assertThat(record)
+        .hasIntent(ClusterVariableIntent.DELETE)
+        .hasRejectionType(RejectionType.NOT_FOUND)
+        .hasRejectionReason(
+            "Expected to create cluster variable for tenant with ID 'invalid-tenant-id', but no tenant with this ID exists.");
+  }
+
+  @Test
   public void deleteNonExistingTenantScopedClusterVariable() {
     // when
     final var record =
