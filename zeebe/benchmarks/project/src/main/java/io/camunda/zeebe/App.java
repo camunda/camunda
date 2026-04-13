@@ -52,7 +52,7 @@ abstract class App implements Runnable {
       new ThrottledLogger(LoggerFactory.getLogger(App.class), Duration.ofSeconds(5));
   private static final Logger LOG = LoggerFactory.getLogger(App.class);
   private static HTTPServer monitoringServer;
-  private static final AtomicInteger connected = new AtomicInteger(0);
+  private static final AtomicInteger CONNECTED = new AtomicInteger(0);
 
   static void createApp(final Function<AppCfg, Runnable> appFactory) {
     final AppCfg appCfg = AppConfigLoader.load();
@@ -78,7 +78,7 @@ abstract class App implements Runnable {
     }
 
     monitoringInterceptor = new MetricCollectingClientInterceptor(registry);
-    Gauge.builder(AppMetricsDoc.CONNECTED.getName(), connected, AtomicInteger::get)
+    Gauge.builder(AppMetricsDoc.CONNECTED.getName(), CONNECTED, AtomicInteger::get)
         .description(AppMetricsDoc.CONNECTED.getDescription())
         .register(registry);
     registerDefaultInstrumentation();
@@ -112,7 +112,7 @@ abstract class App implements Runnable {
                   b.getPartitions()
                       .forEach(p -> LOG.info("{} - {}", p.getPartitionId(), p.getRole()));
                 });
-        connected.set(1);
+        CONNECTED.set(1);
         break;
       } catch (final Exception e) {
         THROTTLED_LOGGER.warn("Topology request failed", e);
