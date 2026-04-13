@@ -74,7 +74,7 @@ runs:
     - name: Cache local Maven repository
       # Only use the full cache action if we're on main or stable/* branches
       if: ${{ startsWith(github.ref_name, 'stable/') || github.ref_name == 'main' }}
-      uses: actions/cache@v4
+      uses: actions/cache@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5.0.4
       with:
         path: ${{ env.MAVEN_CACHE_PATH }}
         key: ${{ env.MAVEN_CACHE_KEY }}
@@ -83,7 +83,7 @@ runs:
     - name: Restore maven cache
       # Restore cache (but don't save it) if we're not on main or stable/* branches
       if: ${{ !(startsWith(github.ref_name, 'stable/') || github.ref_name == 'main') }}
-      uses: actions/cache/restore@v4
+      uses: actions/cache/restore@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5.0.4
       with:
         # This has to match the 'Cache local Maven repository' step above
         path: ${{ env.MAVEN_CACHE_PATH }}

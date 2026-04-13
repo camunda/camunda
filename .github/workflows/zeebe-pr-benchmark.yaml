@@ -102,11 +102,11 @@ jobs:
       contents: 'read'
       pull-requests: 'write'
     steps:
-      - uses: actions/download-artifact@v8
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           path: artifacts
       - name: Comment PR with profiling results
-        uses: actions/github-script@v8
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8.0.0
         with:
           script: |
             const fs = require('fs');
@@ -176,15 +176,15 @@ jobs:
       id-token: 'write'
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - name: Set up Teleport
-        uses: teleport-actions/setup@v1
+        uses: teleport-actions/setup@b638ff596557cc3959eb6b5287d5e58e0c8ac6a6 # v1.1.1
         with:
           proxy: camunda.teleport.sh:443
           version: auto
 
       - name: Authenticate to Cluster using Teleport
-        uses: teleport-actions/auth-k8s@v2
+        uses: teleport-actions/auth-k8s@0f46164469ae4fcd4d359d40e06bab17d4be17c9 # v2.0.6
         with:
           proxy: camunda.teleport.sh:443
           token: ${{ env.TELEPORT_JOIN_TOKEN }}
