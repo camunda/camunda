@@ -1,7 +1,7 @@
 {
   "extends": "../tsconfig.base.json",
   "compilerOptions": {
-    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "tsBuildInfoFile": "../node_modules/.tmp/tsconfig.e2e-playwright.tsbuildinfo",
     "baseUrl": ".",
     "paths": {
       "@/*": ["./*"]
