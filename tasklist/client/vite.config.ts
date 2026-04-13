@@ -30,8 +30,6 @@ export default defineConfig(({mode}) => ({
     port: 3000,
     open: true,
     proxy: {
-      '/api': 'http://localhost:8080',
-      '/v1': 'http://localhost:8080',
       '/v2': 'http://localhost:8080',
       '/login': {
         target: 'http://localhost:8080',
