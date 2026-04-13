@@ -395,7 +395,7 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
       final SearchResponse<?> response, final String field, final String rolloverInterval) {
     final var hits = response.hits().hits();
     if (hits.isEmpty()) {
-      new ArchiveBatch(null, List.of());
+      return new ArchiveBatch(null, List.of());
     }
 
     final String endDate = hits.getFirst().fields().get(field).toJson().asJsonArray().getString(0);
