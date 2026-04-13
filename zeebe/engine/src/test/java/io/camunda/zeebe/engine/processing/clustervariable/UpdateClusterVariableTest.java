@@ -13,6 +13,7 @@ import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.ClusterVariableIntent;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
+import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -20,10 +21,16 @@ import org.junit.Test;
 public final class UpdateClusterVariableTest {
 
   @ClassRule public static final EngineRule ENGINE_RULE = EngineRule.singlePartition();
+  public static final String TENANT = "tenant-1";
 
   @Rule
   public final RecordingExporterTestWatcher recordingExporterTestWatcher =
       new RecordingExporterTestWatcher();
+
+  @BeforeClass
+  public static void setup() {
+    ENGINE_RULE.tenant().newTenant().withTenantId(TENANT).create();
+  }
 
   @Test
   public void updateGlobalScopedClusterVariable() {
@@ -59,7 +66,7 @@ public final class UpdateClusterVariableTest {
         .withName("KEY_2")
         .setTenantScope()
         .withValue("\"VALUE\"")
-        .withTenantId("tenant_1")
+        .withTenantId(TENANT)
         .create();
 
     // when
@@ -68,7 +75,7 @@ public final class UpdateClusterVariableTest {
             .clusterVariables()
             .withName("KEY_2")
             .setTenantScope()
-            .withTenantId("tenant_1")
+            .withTenantId(TENANT)
             .withValue("\"UPDATED_VALUE\"")
             .update();
 
@@ -87,7 +94,7 @@ public final class UpdateClusterVariableTest {
         .withName("KEY_TO_UPDATE_1")
         .setTenantScope()
         .withValue("\"VALUE\"")
-        .withTenantId("tenant_1")
+        .withTenantId(TENANT)
         .create();
 
     // when
@@ -114,7 +121,7 @@ public final class UpdateClusterVariableTest {
         .clusterVariables()
         .withName("KEY_TO_UPDATE_2")
         .setGlobalScope()
-        .withTenantId("tenant_1")
+        .withTenantId(TENANT)
         .withValue("\"VALUE\"")
         .create();
 
@@ -181,7 +188,7 @@ public final class UpdateClusterVariableTest {
             .clusterVariables()
             .withName("KEY_3")
             .setTenantScope()
-            .withTenantId("tenant_1")
+            .withTenantId(TENANT)
             .withValue("\"UPDATED_VALUE\"")
             .expectRejection()
             .update();
@@ -190,7 +197,7 @@ public final class UpdateClusterVariableTest {
         .hasIntent(ClusterVariableIntent.UPDATE)
         .hasRejectionType(RejectionType.NOT_FOUND)
         .hasRejectionReason(
-            "Invalid cluster variable name: 'KEY_3'. The variable does not exist in the scope 'tenant: 'tenant_1''");
+            "Invalid cluster variable name: 'KEY_3'. The variable does not exist in the scope 'tenant: 'tenant-1''");
   }
 
   @Test
@@ -209,7 +216,7 @@ public final class UpdateClusterVariableTest {
             .clusterVariables()
             .withName("KEY_4")
             .setTenantScope()
-            .withTenantId("tenant-1")
+            .withTenantId(TENANT)
             .withValue("\"UPDATED_VALUE\"")
             .expectRejection()
             .update();
@@ -230,7 +237,7 @@ public final class UpdateClusterVariableTest {
         .withName("KEY_5")
         .setTenantScope()
         .withValue("\"VALUE\"")
-        .withTenantId("tenant-1")
+        .withTenantId(TENANT)
         .create();
 
     // when
