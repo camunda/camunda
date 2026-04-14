@@ -25,6 +25,7 @@ import java.net.http.HttpResponse.BodyHandlers;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
@@ -35,7 +36,9 @@ import java.util.function.BinaryOperator;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -260,7 +263,78 @@ final class VersionCompatibilityMatrix {
         Optional.ofNullable(System.getenv("ZEEBE_CI_CHECK_VERSION_COMPATIBILITY_TOTAL"))
             .map(Integer::parseInt)
             .orElse(1);
-    return shard(combinations, index, total);
+    final var shardedCombinations = shard(combinations, index, total).toList();
+
+    if (isFullyCached(shardedCombinations)) {
+      LOG.info(
+          "All {} version pairs in shard {}/{} are fully cached, skipping to avoid"
+              + " unnecessary resource usage",
+          shardedCombinations.size(),
+          index,
+          total);
+      return Stream.empty();
+    }
+
+    return shardedCombinations.stream();
+  }
+
+  /**
+   * Checks if all version pairs are fully cached by reading the cache file referenced by the {@code
+   * ZEEBE_CI_CHECK_VERSION_COMPATIBILITY_REPORT} environment variable. The expected number of test
+   * methods per pair is derived reflectively from {@link RollingUpdateTest} to ensure that newly
+   * added test methods are not silently skipped.
+   *
+   * <p>Returns {@code false} if the cache file is missing, empty, or cannot be read — in those
+   * cases the shard should run normally.
+   */
+  private static boolean isFullyCached(final List<Arguments> combinations) {
+    final var reportPath =
+        Optional.ofNullable(System.getenv("ZEEBE_CI_CHECK_VERSION_COMPATIBILITY_REPORT"))
+            .map(Path::of)
+            .orElse(null);
+    final var expectedMethods = countVersionMatrixTestMethods(RollingUpdateTest.class);
+    return isFullyCached(combinations, reportPath, expectedMethods);
+  }
+
+  @VisibleForTesting
+  static boolean isFullyCached(
+      final List<Arguments> combinations, final Path reportPath, final long expectedMethods) {
+    if (reportPath == null || !Files.exists(reportPath) || expectedMethods <= 0) {
+      return false;
+    }
+
+    try {
+      final var methodCountPerPair =
+          Files.readAllLines(reportPath).stream()
+              .filter(line -> line.contains(","))
+              .collect(
+                  Collectors.groupingBy(
+                      line -> line.substring(line.indexOf(',') + 1), Collectors.counting()));
+
+      return combinations.stream()
+          .map(args -> args.get()[0] + "->" + args.get()[1])
+          .allMatch(pair -> methodCountPerPair.getOrDefault(pair, 0L) >= expectedMethods);
+    } catch (final IOException e) {
+      LOG.warn("Failed to read cache file at {}, proceeding with full shard", reportPath, e);
+      return false;
+    }
+  }
+
+  /**
+   * Counts the number of {@link ParameterizedTest} methods in the given test class that use
+   * {@code @MethodSource("versionMatrix")}. This is the authoritative source for how many test
+   * methods each version pair must have cached to be considered fully tested.
+   */
+  @VisibleForTesting
+  static long countVersionMatrixTestMethods(final Class<?> testClass) {
+    return Arrays.stream(testClass.getDeclaredMethods())
+        .filter(m -> m.isAnnotationPresent(ParameterizedTest.class))
+        .filter(
+            m -> {
+              final var source = m.getAnnotation(MethodSource.class);
+              return source != null && Arrays.asList(source.value()).contains("versionMatrix");
+            })
+        .count();
   }
 
   @VisibleForTesting

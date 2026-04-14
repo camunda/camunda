@@ -327,6 +327,145 @@ class VersionCompatibilityMatrixTest {
   }
 
   @Nested
+  class FullyCachedTest {
+
+    @Test
+    void shouldReturnFalseWhenCacheFileDoesNotExist(
+        @org.junit.jupiter.api.io.TempDir final Path tempDir) {
+      // given
+      final var combinations =
+          List.of(Arguments.of("8.7.0", "8.7.11"), Arguments.of("8.7.11", "8.7.12"));
+
+      // when / then
+      assertThat(
+              VersionCompatibilityMatrix.isFullyCached(combinations, tempDir.resolve("missing"), 3))
+          .isFalse();
+    }
+
+    @Test
+    void shouldReturnFalseWhenCachePathIsNull() {
+      // given
+      final var combinations = List.of(Arguments.of("8.7.0", "8.7.11"));
+
+      // when / then
+      assertThat(VersionCompatibilityMatrix.isFullyCached(combinations, null, 3)).isFalse();
+    }
+
+    @Test
+    void shouldReturnTrueWhenAllPairsFullyCached(
+        @org.junit.jupiter.api.io.TempDir final Path tempDir) throws Exception {
+      // given
+      final var cacheFile = tempDir.resolve("cache");
+      Files.writeString(
+          cacheFile,
+          """
+          methodA,8.7.0->8.7.11
+          methodB,8.7.0->8.7.11
+          methodC,8.7.0->8.7.11
+          methodA,8.7.11->8.7.12
+          methodB,8.7.11->8.7.12
+          methodC,8.7.11->8.7.12
+          """);
+      final var combinations =
+          List.of(Arguments.of("8.7.0", "8.7.11"), Arguments.of("8.7.11", "8.7.12"));
+
+      // when / then
+      assertThat(VersionCompatibilityMatrix.isFullyCached(combinations, cacheFile, 3)).isTrue();
+    }
+
+    @Test
+    void shouldReturnFalseWhenSomePairsMissingFromCache(
+        @org.junit.jupiter.api.io.TempDir final Path tempDir) throws Exception {
+      // given
+      final var cacheFile = tempDir.resolve("cache");
+      Files.writeString(
+          cacheFile,
+          """
+          methodA,8.7.0->8.7.11
+          methodB,8.7.0->8.7.11
+          methodC,8.7.0->8.7.11
+          """);
+      final var combinations =
+          List.of(Arguments.of("8.7.0", "8.7.11"), Arguments.of("8.7.11", "8.7.12"));
+
+      // when / then
+      assertThat(VersionCompatibilityMatrix.isFullyCached(combinations, cacheFile, 3)).isFalse();
+    }
+
+    @Test
+    void shouldReturnFalseWhenPairPartiallyCached(
+        @org.junit.jupiter.api.io.TempDir final Path tempDir) throws Exception {
+      // given \u2014 pair 8.7.0->8.7.11 only has 2 of 3 methods cached
+      final var cacheFile = tempDir.resolve("cache");
+      Files.writeString(
+          cacheFile,
+          """
+          methodA,8.7.0->8.7.11
+          methodB,8.7.0->8.7.11
+          methodA,8.7.11->8.7.12
+          methodB,8.7.11->8.7.12
+          methodC,8.7.11->8.7.12
+          """);
+      final var combinations =
+          List.of(Arguments.of("8.7.0", "8.7.11"), Arguments.of("8.7.11", "8.7.12"));
+
+      // when / then
+      assertThat(VersionCompatibilityMatrix.isFullyCached(combinations, cacheFile, 3)).isFalse();
+    }
+
+    @Test
+    void shouldReturnFalseWhenCacheFileIsEmpty(@org.junit.jupiter.api.io.TempDir final Path tempDir)
+        throws Exception {
+      // given
+      final var cacheFile = tempDir.resolve("cache");
+      Files.writeString(cacheFile, "");
+      final var combinations = List.of(Arguments.of("8.7.0", "8.7.11"));
+
+      // when / then
+      assertThat(VersionCompatibilityMatrix.isFullyCached(combinations, cacheFile, 3)).isFalse();
+    }
+  }
+
+  @Nested
+  class CountVersionMatrixTestMethodsTest {
+
+    @Test
+    void shouldCountOnlyVersionMatrixParameterizedMethods() {
+      // when / then — DummyTestClass has exactly 2 @ParameterizedTest methods
+      // with @MethodSource("versionMatrix")
+      assertThat(VersionCompatibilityMatrix.countVersionMatrixTestMethods(DummyTestClass.class))
+          .isEqualTo(2);
+    }
+
+    @Test
+    void shouldReturnZeroForClassWithNoMatchingMethods() {
+      // when / then
+      assertThat(
+              VersionCompatibilityMatrix.countVersionMatrixTestMethods(
+                  VersionCompatibilityMatrixTest.class))
+          .isZero();
+    }
+
+    @SuppressWarnings("unused")
+    static class DummyTestClass {
+      @ParameterizedTest
+      @MethodSource("versionMatrix")
+      void matchingMethodA() {}
+
+      @ParameterizedTest
+      @MethodSource("versionMatrix")
+      void matchingMethodB() {}
+
+      @ParameterizedTest
+      @MethodSource("otherSource")
+      void nonMatchingParameterized() {}
+
+      @Test
+      void plainTest() {}
+    }
+  }
+
+  @Nested
   class VersionInfoTest {
 
     @Test
