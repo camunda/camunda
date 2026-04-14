@@ -304,6 +304,11 @@ public final class RdbmsExporter {
     // Check if the background task has confirmed any positions and update the broker
     final long confirmed = replicationContext.confirmedPosition().get();
     if (confirmed > lastFlushedPosition) {
+      LOG.info(
+          "[RDBMS Exporter P{}] Replication confirmed position {}. Updating broker position to {}",
+          partitionId,
+          confirmed,
+          confirmed);
       lastFlushedPosition = confirmed;
       controller.updateLastExportedRecordPosition(confirmed);
     }
