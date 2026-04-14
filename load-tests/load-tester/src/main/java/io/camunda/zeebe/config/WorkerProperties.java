@@ -9,19 +9,19 @@ package io.camunda.zeebe.config;
 
 import java.time.Duration;
 
-public class WorkerCfg {
+public class WorkerProperties {
 
-  private String jobType;
-  private String workerName;
-  private int threads;
-  private int capacity;
-  private Duration pollingDelay;
-  private Duration completionDelay;
-  private String payloadPath;
-  private boolean isStreamEnabled;
-  private Duration timeout;
+  private String jobType = "benchmark-task";
+  private String workerName = "benchmark-worker";
+  private int threads = 10;
+  private int capacity = 30;
+  private Duration pollingDelay = Duration.ofSeconds(1);
+  private Duration completionDelay = Duration.ofMillis(300);
+  private String payloadPath = "bpmn/big_payload.json";
+  private boolean streamEnabled = true;
+  private Duration timeout = Duration.ZERO;
   private boolean sendMessage = false;
-  private String messageName = "defaultMessage";
+  private String messageName = "messageName";
   private String correlationKeyVariableName = "correlationKey-var";
 
   public String getJobType() {
@@ -81,11 +81,11 @@ public class WorkerCfg {
   }
 
   public boolean isStreamEnabled() {
-    return isStreamEnabled;
+    return streamEnabled;
   }
 
-  public void setStreamEnabled(final boolean isStreamEnabled) {
-    this.isStreamEnabled = isStreamEnabled;
+  public void setStreamEnabled(final boolean streamEnabled) {
+    this.streamEnabled = streamEnabled;
   }
 
   public Duration getTimeout() {

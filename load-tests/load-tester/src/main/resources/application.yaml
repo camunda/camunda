@@ -1,0 +1,86 @@
+# Camunda Load Tester - Spring Boot Configuration
+# Override any property via environment variables, e.g.:
+#   CAMUNDA_CLIENT_GRPC_ADDRESS=http://zeebe:26500
+#   LOAD_TESTER_STARTER_RATE=500
+
+server:
+  port: 9600
+
+management:
+  server:
+    port: ${server.port}
+  endpoints:
+    web:
+      exposure:
+        include: health,prometheus
+
+#camunda:
+#  client:
+#    grpc-address: http://localhost:26500
+#    rest-address: http://localhost:8080
+#    prefer-rest-over-grpc: true
+#    auth:
+#      method: oidc
+#      client-id: orchestration
+#      audience: orchestration-api
+#      token-url: http://localhost:18080/auth/realms/camunda-platform/protocol/openid-connect/token
+
+
+# Camunda client configuration (auto-configured by camunda-spring-boot-starter)
+camunda:
+  client:
+    mode: self-managed
+    grpc-address: ${ZEEBE_GRPC_ADDRESS:http://localhost:26500}
+    rest-address: ${ZEEBE_REST_ADDRESS:http://localhost:8080}
+    prefer-rest-over-grpc: true
+    auth:
+      method: ${ZEEBE_AUTH_METHOD:oidc}
+      username: ${ZEEBE_AUTH_USERNAME:demo}
+      password: ${ZEEBE_AUTH_PASSWORD:demo}
+      client-id: ${ZEEBE_CLIENT_ID:orchestration}
+      client-secret: ${ZEEBE_CLIENT_SECRET:demo}
+      audience: ${ZEEBE_TOKEN_AUDIENCE:orchestration-api}
+      token-url: ${ZEEBE_AUTHORIZATION_SERVER_URL:http://localhost:18080/auth/realms/camunda-platform/protocol/openid-connect/token}
+    worker:
+      defaults:
+        name: benchmark-worker
+        type: benchmark-task
+        stream-enabled: true
+        max-jobs-active: 30
+        poll-interval: 1s
+        # completionDelay * 6 (matches main branch's computed default)
+        timeout: 1800ms
+
+# Load tester specific configuration
+load-tester:
+  monitor-data-availability: true
+  monitor-data-availability-interval: 250ms
+  perform-read-benchmarks: false
+  disabled-queries: ""
+  starter:
+    process-id: benchmark
+    rate: 300
+    rate-duration: 1s
+    threads: 2
+    bpmn-xml-path: bpmn/one_task.bpmn
+    extra-bpmn-models: []
+    business-key: businessKey
+    payload-path: bpmn/big_payload.json
+    with-results: false
+    with-results-timeout: 60s
+    duration-limit: 0
+    msg-name: msg
+    start-via-message: false
+  worker:
+    job-type: benchmark-task
+    worker-name: benchmark-worker
+    threads: 10
+    capacity: 30
+    polling-delay: 1s
+    completion-delay: 300ms
+    payload-path: bpmn/typical_payload.json
+    stream-enabled: true
+    timeout: 0s
+    send-message: false
+    message-name: messageName
+    correlation-key-variable-name: correlationKey-var

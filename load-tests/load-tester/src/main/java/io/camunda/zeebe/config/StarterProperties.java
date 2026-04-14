@@ -10,44 +10,21 @@ package io.camunda.zeebe.config;
 import java.time.Duration;
 import java.util.List;
 
-public class StarterCfg {
+public class StarterProperties {
 
-  private String processId;
-  private double rate;
+  private String processId = "benchmark";
+  private double rate = 300;
   private Duration rateDuration = Duration.ofSeconds(1);
-  private int threads;
-
-  /** Paths are relative to classpath. */
-  private String bpmnXmlPath;
-
-  private List<String> extraBpmnModels;
-
-  private String businessKey;
-
-  private String payloadPath;
-  private boolean withResults;
-  private Duration withResultsTimeout;
-
-  private int durationLimit;
-
-  private boolean startViaMessage;
-  private String msgName;
-
-  public boolean isStartViaMessage() {
-    return startViaMessage;
-  }
-
-  public void setStartViaMessage(final boolean startViaMessage) {
-    this.startViaMessage = startViaMessage;
-  }
-
-  public String getMsgName() {
-    return msgName;
-  }
-
-  public void setMsgName(final String msgName) {
-    this.msgName = msgName;
-  }
+  private int threads = 2;
+  private String bpmnXmlPath = "bpmn/one_task.bpmn";
+  private List<String> extraBpmnModels = List.of();
+  private String businessKey = "businessKey";
+  private String payloadPath = "bpmn/big_payload.json";
+  private boolean withResults = false;
+  private Duration withResultsTimeout = Duration.ofSeconds(60);
+  private int durationLimit = 0;
+  private boolean startViaMessage = false;
+  private String msgName = "msg";
 
   public String getProcessId() {
     return processId;
@@ -85,6 +62,14 @@ public class StarterCfg {
     this.threads = threads;
   }
 
+  public String getBpmnXmlPath() {
+    return bpmnXmlPath;
+  }
+
+  public void setBpmnXmlPath(final String bpmnXmlPath) {
+    this.bpmnXmlPath = bpmnXmlPath;
+  }
+
   public List<String> getExtraBpmnModels() {
     return extraBpmnModels;
   }
@@ -99,14 +84,6 @@ public class StarterCfg {
 
   public void setBusinessKey(final String businessKey) {
     this.businessKey = businessKey;
-  }
-
-  public String getBpmnXmlPath() {
-    return bpmnXmlPath;
-  }
-
-  public void setBpmnXmlPath(final String bpmnXmlPath) {
-    this.bpmnXmlPath = bpmnXmlPath;
   }
 
   public String getPayloadPath() {
@@ -139,5 +116,21 @@ public class StarterCfg {
 
   public void setDurationLimit(final int durationLimit) {
     this.durationLimit = durationLimit;
+  }
+
+  public boolean isStartViaMessage() {
+    return startViaMessage;
+  }
+
+  public void setStartViaMessage(final boolean startViaMessage) {
+    this.startViaMessage = startViaMessage;
+  }
+
+  public String getMsgName() {
+    return msgName;
+  }
+
+  public void setMsgName(final String msgName) {
+    this.msgName = msgName;
   }
 }
