@@ -5,6 +5,11 @@
 # -------
 
 # oracle.yaml — Plain Kubernetes manifests for Oracle Database Free 23c.
+
+# Current limitations
+# - the currently used Oracle free image only supports up to 12GB of tablespace.
+#     This currently fills up with audit logs and undo logs even with an aggressive history TTL
+#
 #
 # Uses the gvenzl/oracle-free image (same as db/docker-compose.yml) which runs
 # Oracle Database Free 23c. The plain slim variant is used instead of
@@ -185,5 +190,5 @@ spec:
         storageClassName: benchmark-ssd-zonal-v1
         resources:
           requests:
-            storage: 512Gi
+            storage: 128Gi
 
