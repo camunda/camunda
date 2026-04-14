@@ -55,7 +55,7 @@ public class UpdateMappingRuleMultiPartitionTest {
         .withName(name + "New")
         .update();
 
-    for (int partitionId = 2; partitionId < PARTITION_COUNT; partitionId++) {
+    for (int partitionId = 2; partitionId <= PARTITION_COUNT; partitionId++) {
       assertThat(
               RecordingExporter.mappingRuleRecords()
                   .withPartitionId(partitionId)
