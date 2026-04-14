@@ -18,7 +18,6 @@ package io.camunda.client.elementinstance;
 import static io.camunda.client.util.assertions.SortAssert.assertSort;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.tomakehurst.wiremock.http.RequestMethod;
 import com.github.tomakehurst.wiremock.verification.LoggedRequest;
 import io.camunda.client.api.search.enums.ElementInstanceState;
@@ -34,8 +33,6 @@ import org.instancio.Instancio;
 import org.junit.jupiter.api.Test;
 
 public class ElementInstanceTest extends ClientRestTest {
-  private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
-
   @Test
   void shouldSearchElementInstance() {
     // when
@@ -61,7 +58,6 @@ public class ElementInstanceTest extends ClientRestTest {
                     .processDefinitionId("complexProcess")
                     .processInstanceKey(3L)
                     .elementId("elementId")
-                    .elementName("elementName")
                     .hasIncident(true)
                     .incidentKey(4L)
                     .tenantId("<default>")
@@ -81,7 +77,6 @@ public class ElementInstanceTest extends ClientRestTest {
     assertThat(filter.getProcessDefinitionId()).isEqualTo("complexProcess");
     assertThat(filter.getProcessInstanceKey()).isEqualTo("3");
     assertThat(filter.getElementId().get$Eq()).isEqualTo("elementId");
-    assertThat(filter.getElementName().get$Eq()).isEqualTo("elementName");
     assertThat(filter.getHasIncident()).isTrue();
     assertThat(filter.getIncidentKey()).isEqualTo("4");
     assertThat(filter.getTenantId()).isEqualTo("<default>");
@@ -293,40 +288,6 @@ public class ElementInstanceTest extends ClientRestTest {
     assertThat(filter.getEndDate()).isNotNull();
     assertThat(filter.getStartDate().get$In()).isNotNull();
     assertThat(filter.getEndDate().get$In()).isNotNull();
-  }
-
-  @Test
-  void shouldSerializeExactMatchStringFiltersAsPlainStrings() throws Exception {
-    // when
-    client
-        .newElementInstanceSearchRequest()
-        .filter(f -> f.elementId("elementId").elementName("elementName"))
-        .send()
-        .join();
-
-    // then
-    final var requestBody =
-        OBJECT_MAPPER.readTree(gatewayService.getLastRequest().getBodyAsString());
-    assertThat(requestBody.at("/filter/elementId").isTextual()).isTrue();
-    assertThat(requestBody.at("/filter/elementId").textValue()).isEqualTo("elementId");
-    assertThat(requestBody.at("/filter/elementName").isTextual()).isTrue();
-    assertThat(requestBody.at("/filter/elementName").textValue()).isEqualTo("elementName");
-  }
-
-  @Test
-  void shouldSerializeAdvancedStringFiltersAsObjects() throws Exception {
-    // when
-    client
-        .newElementInstanceSearchRequest()
-        .filter(f -> f.elementId(b -> b.like("*Event*")).elementName(b -> b.like("*Order*")))
-        .send()
-        .join();
-
-    // then
-    final var requestBody =
-        OBJECT_MAPPER.readTree(gatewayService.getLastRequest().getBodyAsString());
-    assertThat(requestBody.at("/filter/elementId/$like").textValue()).isEqualTo("*Event*");
-    assertThat(requestBody.at("/filter/elementName/$like").textValue()).isEqualTo("*Order*");
   }
 
   @Test

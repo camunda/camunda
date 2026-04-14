@@ -17,16 +17,6 @@ components:
       x-semantic-type: ElementId
       example: Activity_106kosb
 
-    ElementIdFilterProperty:
-      description: ElementId property with full advanced search capabilities.
-      oneOf:
-        - type: string
-          title: Exact match
-          description: Matches the value exactly.
-          allOf:
-            - $ref: '#/components/schemas/ElementId'
-        - $ref: 'filters.yaml#/components/schemas/AdvancedStringFilter'
-
     FormId:
       description: The user-defined id for the form
       type: string
@@ -105,3 +95,45 @@ components:
       minLength: 1
       maxLength: 256
       example: order-12345
+
+
+    ## Filters
+
+    ElementIdFilterProperty:
+      description: ElementId property with full advanced search capabilities.
+      oneOf:
+        - type: string
+          title: Exact match
+          description: Matches the value exactly.
+          allOf:
+            - $ref: '#/components/schemas/ElementId'
+        - $ref: '#/components/schemas/AdvancedElementIdFilter'
+
+    AdvancedElementIdFilter:
+      title: Advanced filter
+      description: Advanced ElementId filter.
+      type: object
+      properties:
+        $eq:
+          description: Checks for equality with the provided value.
+          allOf:
+            - $ref: '#/components/schemas/ElementId'
+        $neq:
+          description: Checks for inequality with the provided value.
+          allOf:
+            - $ref: '#/components/schemas/ElementId'
+        $exists:
+          description: Checks if the current property exists.
+          type: boolean
+        $in:
+          description: Checks if the property matches any of the provided values.
+          type: array
+          items:
+            $ref: '#/components/schemas/ElementId'
+        $notIn:
+          description: Checks if the property matches none of the provided values.
+          type: array
+          items:
+            $ref: '#/components/schemas/ElementId'
+        $like:
+          $ref: 'filters.yaml#/components/schemas/LikeFilter'
