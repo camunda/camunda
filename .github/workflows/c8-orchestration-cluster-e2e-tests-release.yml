@@ -246,7 +246,6 @@ jobs:
           CAMUNDA_AUTH_STRATEGY: "BASIC"
           CAMUNDA_BASIC_AUTH_USERNAME: "demo"
           CAMUNDA_BASIC_AUTH_PASSWORD: "demo"
-          CAMUNDA_TASKLIST_V2_MODE_ENABLED: "false"
           CAMUNDA_PROCESSINSTANCECREATION_BUSINESSIDUNIQUENESSENABLED: "true"
         run: |
           if [[ "$NON_STANDALONE" == "true" ]]; then
@@ -659,7 +658,6 @@ jobs:
           CAMUNDA_AUTH_STRATEGY: "BASIC"
           CAMUNDA_BASIC_AUTH_USERNAME: "demo"
           CAMUNDA_BASIC_AUTH_PASSWORD: "demo"
-          CAMUNDA_TASKLIST_V2_MODE_ENABLED: "false"
           CAMUNDA_PROCESSINSTANCECREATION_BUSINESSIDUNIQUENESSENABLED: "true"
           DB_NAME: ${{ matrix.database.database-name }}
           VERSION: ${{ steps.sanitize.outputs.safe_branch  }}
@@ -674,11 +672,7 @@ jobs:
             kill "$(cat dev-dist/camunda.pid)" 2>/dev/null || true
           fi
   c8-orchestration-cluster-e2e-tests:
-    name: C8 Orchestration Cluster E2E Tests Release (Tasklist ${{ matrix.tasklist_mode }} mode)
-    strategy:
-      fail-fast: false
-      matrix:
-        tasklist_mode: ${{ fromJSON( (needs.validate-release.outputs.base == 'stable/8.6' || needs.validate-release.outputs.base == 'stable/8.7') && '["v1"]' || '["v1","v2"]' ) }}
+    name: C8 Orchestration Cluster E2E Tests Release
     needs: validate-release
     runs-on: ubuntu-latest
     timeout-minutes: 60
@@ -688,7 +682,6 @@ jobs:
         run: |
           echo "Release version: ${{ needs.validate-release.outputs.release_version }}"
           echo "Base branch: ${{ needs.validate-release.outputs.base }}"
-          echo "Tasklist mode: ${{ matrix.tasklist_mode }}"
 
       - uses: actions/checkout@v6
         with:
@@ -738,13 +731,7 @@ jobs:
             DATABASE=elasticsearch docker compose up -d zeebe operate tasklist
           else
             echo "Using standalone camunda container"
-            if [[ "${{ matrix.tasklist_mode }}" == "v1" ]]; then
-              echo "Starting with Tasklist V1 mode enabled"
-              CAMUNDA_TASKLIST_V2_MODE_ENABLED=false DATABASE=elasticsearch docker compose up -d camunda
-            else
-              echo "Starting with default Tasklist V2 mode"
-              DATABASE=elasticsearch docker compose up -d camunda
-            fi
+            DATABASE=elasticsearch docker compose up -d camunda
           fi
         working-directory: qa/c8-orchestration-cluster-e2e-test-suite/config
 
@@ -846,40 +833,16 @@ jobs:
           CAMUNDA_AUTH_STRATEGY: "BASIC"
           CAMUNDA_BASIC_AUTH_USERNAME: "demo"
           CAMUNDA_BASIC_AUTH_PASSWORD: "demo"
-          CAMUNDA_TASKLIST_V2_MODE_ENABLED: ${{ matrix.tasklist_mode == 'v2' && 'true' || 'false' }}
         run: |
           if [[ "$NON_STANDALONE" == "true" ]]; then
             export CORE_APPLICATION_TASKLIST_URL="http://localhost:8080"
             export CORE_APPLICATION_OPERATE_URL="http://localhost:8081"
             export ZEEBE_REST_ADDRESS="http://localhost:8089"
-            TEST_ARGS=(--project=chromium)
           else
             export CORE_APPLICATION_URL="http://localhost:8080"
             export ZEEBE_REST_ADDRESS="http://localhost:8080"
-            TEST_ARGS=(--project=chromium)
-
-            if [[ "${{ matrix.tasklist_mode }}" == "v2" ]]; then
-              echo "Running V2 mode tests"
-              if [[ "${{ needs.validate-release.outputs.base }}" == "stable/8.8" ]]; then
-                # stable/8.8: run all tests excluding @v1-only tagged tests
-                TEST_ARGS+=(tests/ --grep-invert '@v1-only')
-              else
-                # main, stable 8.9: run all tests excluding v1/ directories
-                TEST_ARGS+=(tests/ --grep-invert 'v1/')
-              fi
-            else
-              echo "Running V1 mode tests"
-              if [[ "${{ needs.validate-release.outputs.base }}" == "stable/8.8" ]]; then
-                # stable/8.8: no v1/ directories, run regular directories for V1 mode
-                TEST_ARGS+=(tests/tasklist/ tests/common-flows/)
-              else
-                # main, stable 8.9: has v1/ directories for V1 mode
-                TEST_ARGS+=(tests/tasklist/v1/ tests/common-flows/v1/)
-              fi
-            fi
           fi
-          echo "Running tests with args: ${TEST_ARGS[*]}"
-          npm run test -- "${TEST_ARGS[@]}"
+          npm run test -- --project=chromium
         working-directory: qa/c8-orchestration-cluster-e2e-test-suite
 
       - name: Publish test results to TestRail
@@ -897,14 +860,14 @@ jobs:
             --username "$TESTRAIL_USERNAME" \
             --key "$TESTRAIL_KEY" \
             parse_junit --suite-id 17050 \
-            --title "Release C8 Orchestration Cluster Test Run Results - v${{ needs.validate-release.outputs.release_version }} (Tasklist ${{ matrix.tasklist_mode }} mode) - $(date '+%Y-%m-%d %H:%M:%S')" \
+            --title "Release C8 Orchestration Cluster Test Run Results - v${{ needs.validate-release.outputs.release_version }} - $(date '+%Y-%m-%d %H:%M:%S')" \
             --close-run \
             -f "$JUNIT_RESULTS_FILE"
 
       - uses: actions/upload-artifact@v7
         if: failure()
         with:
-          name: C8 Orchestration Cluster E2E Test Result Release v${{ needs.validate-release.outputs.release_version }} (Tasklist ${{ matrix.tasklist_mode }} mode)
+          name: C8 Orchestration Cluster E2E Test Result Release v${{ needs.validate-release.outputs.release_version }}
           path: qa/c8-orchestration-cluster-e2e-test-suite/html-report
           retention-days: 10
 
@@ -912,7 +875,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v7
         with:
-          name: json-report-release-e2e-${{ needs.validate-release.outputs.release_version }}${{ matrix.tasklist_mode && format('-{0}', matrix.tasklist_mode) || '' }}
+          name: json-report-release-e2e-${{ needs.validate-release.outputs.release_version }}
           path: qa/c8-orchestration-cluster-e2e-test-suite/json-report/**
           retention-days: 60
 

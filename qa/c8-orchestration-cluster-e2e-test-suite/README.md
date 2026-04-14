@@ -68,7 +68,6 @@ CAMUNDA_AUTH_STRATEGY=BASIC
 CAMUNDA_BASIC_AUTH_USERNAME=demo
 CAMUNDA_BASIC_AUTH_PASSWORD=demo
 ZEEBE_REST_ADDRESS=http://localhost:8080
-CAMUNDA_TASKLIST_V2_MODE_ENABLED=false
 DATABASE_CONTAINER=<Service name from db/docker-compose.yml>
 ```
 
@@ -82,14 +81,6 @@ For running tests locally, ensure you have an active instance. To set it up:
 
 1. Open a terminal in the `config` folder inside the `c8-orchestration-cluster-e2e-test-suite` directory.
 2. Run:
-
-**For Tasklist V1 mode:**
-
-```bash
-CAMUNDA_TASKLIST_V2_MODE_ENABLED=false DATABASE=elasticsearch docker compose up -d camunda
-```
-
-**For Tasklist V2 mode:**
 
 ```bash
 DATABASE=elasticsearch docker compose up -d camunda
@@ -211,27 +202,19 @@ This test suite follows the **Page Object Model (POM)** pattern for reusability 
 ### Directory Structure
 
 - **Page objects**: `qa/c8-orchestration-cluster-e2e-test-suite/pages`
-  - `pages/`: V2 page objects (default)
-  - `pages/v1/`: Tasklist V1-specific page objects
+  - `pages/`: Page objects
 - **Test specs**: `qa/c8-orchestration-cluster-e2e-test-suite/tests`
-  - `tests/tasklist/`: V2 Tasklist tests
-  - `tests/tasklist/v1/`: V1 Tasklist tests
-  - `tests/common-flows/`: V2 common flow tests
-  - `tests/common-flows/v1/`: V1 common flow tests
+  - `tests/tasklist/`: Tasklist tests
+  - `tests/common-flows/`: Common flow tests
   - `tests/operate/`: Operate tests
   - `tests/identity/`: Identity tests
   - `tests/api/`: API tests
 - **Utilities/fixtures**: `qa/c8-orchestration-cluster-e2e-test-suite/utils`
 - **Test data**: `qa/c8-orchestration-cluster-e2e-test-suite/resources`
 
-### Test Mode Separation
+### Test Organization
 
-Starting with Camunda 8.8, Tasklist V2 is the default mode. The test suite reflects this:
-
-- **V2 Mode (Default)**: All tests run against Tasklist V2 unless specified otherwise
-- **V1 Mode (Explicit)**: V1 tests require explicit project specification
-- Tests are organized into mode-specific directories for clear separation
-- Page objects are separated by mode to eliminate compatibility overhead
+Tests are organized by application under `tests/`, with page objects in `pages/`. All tests run against Tasklist V2 (the current default mode).
 
 ---
 
