@@ -642,6 +642,11 @@
       <artifactId>commons-compress</artifactId>
       <scope>test</scope>
     </dependency>
+    <dependency>
+      <groupId>tools.jackson.core</groupId>
+      <artifactId>jackson-databind</artifactId>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
 
   <repositories>
@@ -678,7 +683,7 @@
               <value>${version.identity}</value>
             </property>
           </systemProperties>
-          <excludedGroups>rdbms, multi-db-test, compatibility-test</excludedGroups>
+          <excludedGroups>rdbms, multi-db-test, compatibility-test, nightly</excludedGroups>
         </configuration>
         <dependencies>
           <dependency>
