@@ -108,6 +108,8 @@ public class CamundaJsonSchemaGenerator {
     // The Swagger2Module reads @Schema.defaultValue() and emits it into the JSON Schema "default"
     // field. When defaultValue is not explicitly set, the annotation returns the sentinel
     // "##default" (Schema.DEFAULT_SENTINEL), which leaks into the generated schema. Strip it.
+    // Can be removed when upstream is fixed:
+    // https://github.com/victools/jsonschema-generator/issues/573
     builder
         .forFields()
         .withInstanceAttributeOverride((node, field, context) -> removeDefaultSentinel(node));
