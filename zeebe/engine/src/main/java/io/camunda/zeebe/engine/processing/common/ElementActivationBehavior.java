@@ -401,12 +401,24 @@ public final class ElementActivationBehavior {
       final AbstractFlowElement elementToActivate,
       final long flowScopeKey) {
 
-    final var elementInstanceKey = keyGenerator.nextKey();
+    final long elementInstanceKey;
+    final long elementFlowScopeKey;
+
+    // If the instruction directly activates the process itself we must ensure we don't override the
+    // process instance key, and we remove the flow scope key. If we don't the flow scope key would
+    // be set to the process instance key and the element instance key would be newly generated.
+    if (isProcess(elementToActivate)) {
+      elementInstanceKey = processInstanceRecord.getProcessInstanceKey();
+      elementFlowScopeKey = -1L;
+    } else {
+      elementInstanceKey = keyGenerator.nextKey();
+      elementFlowScopeKey = flowScopeKey;
+    }
+
     final var elementRecord =
-        createElementRecord(processInstanceRecord, elementToActivate, flowScopeKey);
+        createElementRecord(processInstanceRecord, elementToActivate, elementFlowScopeKey);
     commandWriter.appendFollowUpCommand(
         elementInstanceKey, ProcessInstanceIntent.ACTIVATE_ELEMENT, elementRecord);
-
     return elementInstanceKey;
   }
 
