@@ -41,6 +41,7 @@ public class OidcUserAuthenticationConverter
   private final HttpServletRequest request;
   private final Map<String, JwtDecoder> jwtDecoders;
   private final Map<String, List<String>> additionalJwkSetUrisByIssuer;
+  private final Map<String, Boolean> preferIdTokenClaimsByRegistrationId;
 
   public OidcUserAuthenticationConverter(
       final OAuth2AuthorizedClientRepository authorizedClientRepository,
@@ -52,6 +53,7 @@ public class OidcUserAuthenticationConverter
         accessTokenDecoderFactory,
         tokenClaimsConverter,
         request,
+        Collections.emptyMap(),
         Collections.emptyMap());
   }
 
@@ -61,6 +63,22 @@ public class OidcUserAuthenticationConverter
       final TokenClaimsConverter tokenClaimsConverter,
       final HttpServletRequest request,
       final Map<String, List<String>> additionalJwkSetUrisByIssuer) {
+    this(
+        authorizedClientRepository,
+        accessTokenDecoderFactory,
+        tokenClaimsConverter,
+        request,
+        additionalJwkSetUrisByIssuer,
+        Collections.emptyMap());
+  }
+
+  public OidcUserAuthenticationConverter(
+      final OAuth2AuthorizedClientRepository authorizedClientRepository,
+      final OidcAccessTokenDecoderFactory accessTokenDecoderFactory,
+      final TokenClaimsConverter tokenClaimsConverter,
+      final HttpServletRequest request,
+      final Map<String, List<String>> additionalJwkSetUrisByIssuer,
+      final Map<String, Boolean> preferIdTokenClaimsByRegistrationId) {
     this.authorizedClientRepository = authorizedClientRepository;
     this.accessTokenDecoderFactory = accessTokenDecoderFactory;
     this.tokenClaimsConverter = tokenClaimsConverter;
@@ -70,6 +88,10 @@ public class OidcUserAuthenticationConverter
             ? additionalJwkSetUrisByIssuer.entrySet().stream()
                 .collect(
                     Collectors.toUnmodifiableMap(Map.Entry::getKey, e -> List.copyOf(e.getValue())))
+            : Collections.emptyMap();
+    this.preferIdTokenClaimsByRegistrationId =
+        preferIdTokenClaimsByRegistrationId != null
+            ? Map.copyOf(preferIdTokenClaimsByRegistrationId)
             : Collections.emptyMap();
     jwtDecoders = new ConcurrentHashMap<>();
   }
@@ -94,12 +116,29 @@ public class OidcUserAuthenticationConverter
   }
 
   protected Map<String, Object> getClaims(final OAuth2AuthenticationToken authenticationToken) {
+    // When prefer-id-token-claims is enabled for the current registration we short-circuit the
+    // access-token decode path entirely and use the OidcUser principal attributes (which Spring
+    // populates with the ID-token and userInfo merged claims). This lets operators opt in to
+    // sourcing authorisation-relevant claims from userInfo in setups where the access token is
+    // signed by a key set that Camunda cannot reach, or lacks claims Camunda needs.
+    if (shouldPreferIdTokenClaims(authenticationToken)) {
+      return getIdTokenClaims(authenticationToken);
+    }
     return Optional.ofNullable(getAccessTokenClaims(authenticationToken))
         .orElseGet(
             () -> {
               LOGGER.warn("Falling back to ID Token claims");
               return getIdTokenClaims(authenticationToken);
             });
+  }
+
+  private boolean shouldPreferIdTokenClaims(final OAuth2AuthenticationToken authenticationToken) {
+    if (preferIdTokenClaimsByRegistrationId.isEmpty()) {
+      return false;
+    }
+    final var registrationId = authenticationToken.getAuthorizedClientRegistrationId();
+    return registrationId != null
+        && Boolean.TRUE.equals(preferIdTokenClaimsByRegistrationId.get(registrationId));
   }
 
   protected Map<String, Object> getAccessTokenClaims(
