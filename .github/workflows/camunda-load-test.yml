@@ -62,13 +62,8 @@ on:
         type: boolean
         required: false
         default: true
-      enable-operate:
-        description: 'Enable Operate for load testing'
-        type: boolean
-        required: false
-        default: true
-      enable-tasklist:
-        description: 'Enable Tasklist for load testing'
+      enable-webapps:
+        description: 'Enable Operate and Tasklist for load testing'
         type: boolean
         required: false
         default: true
@@ -163,13 +158,8 @@ on:
         type: boolean
         required: false
         default: true
-      enable-operate:
-        description: 'Enable Operate for load testing'
-        type: boolean
-        required: false
-        default: true
-      enable-tasklist:
-        description: 'Enable Tasklist for load testing'
+      enable-webapps:
+        description: 'Enable Operate and Tasklist for load testing'
         type: boolean
         required: false
         default: true
@@ -277,9 +267,8 @@ jobs:
           ORCHESTRATION_TAG: ${{ inputs.orchestration-tag }}
           ENABLE_OPTIMIZE: ${{ inputs.enable-optimize }}
           OPTIMIZE_TAG: ${{ inputs.optimize-tag }}
-          ENABLE_OPERATE: ${{ inputs.enable-operate }}
+          ENABLE_WEBAPPS: ${{ inputs.enable-webapps }}
           OPERATE_TAG: ${{ inputs.operate-tag }}
-          ENABLE_TASKLIST: ${{ inputs.enable-tasklist }}
           TASKLIST_TAG: ${{ inputs.tasklist-tag }}
           IDENTITY_TAG: ${{ inputs.identity-tag }}
           CONNECTORS_TAG: ${{ inputs.connectors-tag }}
@@ -325,11 +314,11 @@ jobs:
             validate_image "camunda/optimize:${OPTIMIZE_TAG}" || exit 1
           fi
 
-          if [[ "${ENABLE_OPERATE}" == "true" && -n "${OPERATE_TAG}" ]]; then
+          if [[ "${ENABLE_WEBAPPS}" == "true" && -n "${OPERATE_TAG}" ]]; then
             validate_image "camunda/operate:${OPERATE_TAG}" || exit 1
           fi
 
-          if [[ "${ENABLE_TASKLIST}" == "true" && -n "${TASKLIST_TAG}" ]]; then
+          if [[ "${ENABLE_WEBAPPS}" == "true" && -n "${TASKLIST_TAG}" ]]; then
             validate_image "camunda/tasklist:${TASKLIST_TAG}" || exit 1
           fi
 
@@ -422,12 +411,12 @@ jobs:
           minimus: true
       - uses: ./.github/actions/build-frontend
         name: Build Operate Frontend
-        if: ${{ inputs.build-frontend && inputs.enable-operate }}
+        if: ${{ inputs.build-frontend && inputs.enable-webapps }}
         with:
           directory: ./operate/client
       - uses: ./.github/actions/build-frontend
         name: Build Tasklist Frontend
-        if: ${{ inputs.build-frontend && inputs.enable-tasklist }}
+        if: ${{ inputs.build-frontend && inputs.enable-webapps }}
         with:
           directory: ./tasklist/client
       - uses: ./.github/actions/build-frontend
@@ -451,7 +440,7 @@ jobs:
           dockerfile: 'Dockerfile'
       - uses: ./.github/actions/build-platform-docker
         name: Build Operate Docker Image
-        if: ${{ inputs.enable-operate }}
+        if: ${{ inputs.enable-webapps }}
         with:
           repository: '${{ env.IMAGE_REPOSITORY }}/operate'
           revision: ${{ inputs.ref }}
@@ -461,7 +450,7 @@ jobs:
           dockerfile: 'operate.Dockerfile'
       - uses: ./.github/actions/build-platform-docker
         name: Build Tasklist Docker Image
-        if: ${{ inputs.enable-tasklist }}
+        if: ${{ inputs.enable-webapps }}
         with:
           repository: '${{ env.IMAGE_REPOSITORY }}/tasklist'
           revision: ${{ inputs.ref }}
@@ -629,7 +618,7 @@ jobs:
           # the GitHub action by default. We need to correctly configure the git user here to make it work
           git config user.name ${{ github.actor }}
           # Create the namespace for the load test
-          ./newBenchmark.sh ${{ env.NAMESPACE }} ${{ inputs.secondary-storage-type }} ${{ inputs.ttl }} ${{ inputs.enable-optimize }} ${{ inputs.enable-operate }} ${{ inputs.enable-tasklist }}
+          ./newBenchmark.sh ${{ env.NAMESPACE }} ${{ inputs.secondary-storage-type }} ${{ inputs.ttl }} ${{ inputs.enable-optimize }} ${{ inputs.enable-webapps }}
           # Annotate namespace with the workflow run URL for traceability
           kubectl annotate namespace ${{ env.NAMESPACE }} \
             "github.com/workflow-run-url=${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
@@ -679,7 +668,7 @@ jobs:
           fi
 
           # Inject Operate image configuration when enabled
-          if [[ "${{ inputs.enable-operate }}" == "true" ]]; then
+          if [[ "${{ inputs.enable-webapps }}" == "true" ]]; then
             if [[ -n "${{ inputs.operate-tag }}" ]]; then
               # Explicit operate tag: use it directly (Docker Hub image)
               additional_platform_config+=" \
@@ -694,7 +683,7 @@ jobs:
           fi
 
           # Inject Tasklist image configuration when enabled
-          if [[ "${{ inputs.enable-tasklist }}" == "true" ]]; then
+          if [[ "${{ inputs.enable-webapps }}" == "true" ]]; then
             if [[ -n "${{ inputs.tasklist-tag }}" ]]; then
               # Explicit tasklist tag: use it directly (Docker Hub image)
               additional_platform_config+=" \
@@ -733,8 +722,7 @@ jobs:
           make ${{ inputs.stable-vms && 'install-stable' || 'install' }} \
             secondary_storage=${{ inputs.secondary-storage-type }} \
             enable_optimize=${{ inputs.enable-optimize }} \
-            enable_operate=${{ inputs.enable-operate }} \
-            enable_tasklist=${{ inputs.enable-tasklist }} \
+            enable_webapps=${{ inputs.enable-webapps }} \
             additional_platform_configuration="$additional_platform_config" \
             additional_load_test_configuration="$load_test_config"
       - name: Summarize platform deployment

@@ -2,8 +2,7 @@ namespace ?= __NAMESPACE__
 secondary_storage ?= __STORAGE_TYPE__
 helm_chart ?= camunda-platform-8.7
 enable_optimize ?= __ENABLE_OPTIMIZE__
-enable_operate ?= __ENABLE_OPERATE__
-enable_tasklist ?= __ENABLE_TASKLIST__
+enable_webapps ?= __ENABLE_WEBAPPS__
 curl_image ?= curlimages/curl:7.87.0
 camunda_management_url ?= http://zeebe-gateway:9600
 prometheus_elasticsearch_exporter_chart_version ?= 7.2.1
@@ -34,13 +33,9 @@ ifneq ($(enable_optimize),true)
 platform_values += --set optimize.enabled=false
 endif
 
-# Disable Operate if not enabled
-ifneq ($(enable_operate),true)
+# Disable Operate and Tasklist if webapps not enabled
+ifneq ($(enable_webapps),true)
 platform_values += --set operate.enabled=false
-endif
-
-# Disable Tasklist if not enabled
-ifneq ($(enable_tasklist),true)
 platform_values += --set tasklist.enabled=false
 endif
 
