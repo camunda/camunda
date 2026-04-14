@@ -17,11 +17,15 @@ package io.camunda.process.test.impl.runtime;
 
 import static io.camunda.process.test.impl.runtime.util.PropertiesUtil.getPropertyOrDefault;
 
+import io.camunda.client.CamundaClient;
+import io.camunda.client.CamundaClientBuilder;
+import io.camunda.client.ClientProperties;
 import io.camunda.process.test.api.CamundaClientBuilderFactory;
 import io.camunda.process.test.api.CamundaProcessTestRuntimeMode;
 import io.camunda.process.test.impl.runtime.properties.CamundaContainerRuntimeProperties;
 import io.camunda.process.test.impl.runtime.properties.ConnectorsContainerRuntimeProperties;
 import io.camunda.process.test.impl.runtime.properties.CoverageReportProperties;
+import io.camunda.process.test.impl.runtime.properties.RemoteRuntimeClientProperties;
 import io.camunda.process.test.impl.runtime.properties.RemoteRuntimeProperties;
 import io.camunda.process.test.impl.runtime.util.VersionedPropertiesUtil;
 import java.io.IOException;
@@ -52,6 +56,7 @@ public final class ContainerRuntimePropertiesUtil {
   private final ConnectorsContainerRuntimeProperties connectorsContainerRuntimeProperties;
   private final RemoteRuntimeProperties remoteRuntimeProperties;
   private final CoverageReportProperties coverageReportProperties;
+  private final Properties properties;
 
   private final CamundaProcessTestRuntimeMode runtimeMode;
   private final boolean multiTenancyEnabled;
@@ -60,6 +65,8 @@ public final class ContainerRuntimePropertiesUtil {
 
   public ContainerRuntimePropertiesUtil(
       final Properties properties, final GitPropertiesUtil gitProperties) {
+
+    this.properties = properties;
 
     final VersionedPropertiesUtil versionedPropsReader = new VersionedPropertiesUtil(gitProperties);
 
@@ -218,8 +225,54 @@ public final class ContainerRuntimePropertiesUtil {
     return runtimeMode;
   }
 
+  /**
+   * Returns a {@link CamundaClientBuilderFactory} that applies all standard {@link ClientProperties}
+   * from the loaded properties file (e.g. {@code camunda-container-runtime.properties}).
+   *
+   * <p>For the remote runtime, the backwards-compatible {@code remote.client.grpcAddress} and
+   * {@code remote.client.restAddress} are applied as overrides if explicitly set.
+   */
   public CamundaClientBuilderFactory getCamundaClientBuilderFactory() {
-    return remoteRuntimeProperties.getRemoteClientProperties().getClientBuilderFactory();
+    return () -> {
+      final CamundaClientBuilder clientBuilder = createCamundaClientBuilder();
+      // Apply all standard ClientProperties from the loaded properties file
+      clientBuilder.withProperties(properties);
+      // Backwards compatibility for the remote runtime: apply remote client addresses as overrides
+      if (runtimeMode == CamundaProcessTestRuntimeMode.REMOTE) {
+        final RemoteRuntimeClientProperties remoteClientProps =
+            remoteRuntimeProperties.getRemoteClientProperties();
+        final URI remoteGrpcAddress = remoteClientProps.getGrpcAddress();
+        if (remoteGrpcAddress != null) {
+          clientBuilder.grpcAddress(remoteGrpcAddress);
+        }
+        final URI remoteRestAddress = remoteClientProps.getRestAddress();
+        if (remoteRestAddress != null) {
+          clientBuilder.restAddress(remoteRestAddress);
+        }
+      }
+      return clientBuilder;
+    };
+  }
+
+  private CamundaClientBuilder createCamundaClientBuilder() {
+    // Use cloud builder if cloud cluster ID is set in the properties
+    final String clusterId = properties.getProperty(ClientProperties.CLOUD_CLUSTER_ID);
+    if (clusterId != null && !clusterId.isEmpty()) {
+      return CamundaClient.newCloudClientBuilder()
+          .withClusterId(clusterId)
+          .withClientId(properties.getProperty(ClientProperties.CLOUD_CLIENT_ID))
+          .withClientSecret(properties.getProperty(ClientProperties.CLOUD_CLIENT_SECRET))
+          .withRegion(properties.getProperty(ClientProperties.CLOUD_REGION));
+    }
+    // For remote runtime with legacy SaaS mode, still use cloud builder
+    if (runtimeMode == CamundaProcessTestRuntimeMode.REMOTE) {
+      final RemoteRuntimeClientProperties remoteClientProps =
+          remoteRuntimeProperties.getRemoteClientProperties();
+      if (remoteClientProps.getMode() == RemoteRuntimeClientProperties.ClientMode.saas) {
+        return remoteRuntimeProperties.createCamundaClientBuilder();
+      }
+    }
+    return CamundaClient.newClientBuilder();
   }
 
   public RemoteRuntimeProperties getRemoteRuntimeProperties() {

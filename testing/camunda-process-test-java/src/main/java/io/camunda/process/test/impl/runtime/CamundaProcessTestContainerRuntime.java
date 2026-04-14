@@ -15,7 +15,6 @@
  */
 package io.camunda.process.test.impl.runtime;
 
-import io.camunda.client.CamundaClient;
 import io.camunda.client.CamundaClientBuilder;
 import io.camunda.client.CredentialsProvider;
 import io.camunda.process.test.api.CamundaClientBuilderFactory;
@@ -72,6 +71,7 @@ public class CamundaProcessTestContainerRuntime
   private final CamundaContainer camundaContainer;
   private final ConnectorsContainer connectorsContainer;
 
+  private final CamundaClientBuilderFactory camundaClientBuilderFactory;
   private final boolean isMultiTenancyEnabled;
   private final boolean connectorsEnabled;
 
@@ -79,6 +79,7 @@ public class CamundaProcessTestContainerRuntime
       final CamundaProcessTestRuntimeBuilder builder, final ContainerFactory containerFactory) {
     this.containerFactory = containerFactory;
 
+    camundaClientBuilderFactory = builder.getConfiguredCamundaClientBuilderFactory();
     isMultiTenancyEnabled = builder.isMultiTenancyEnabled();
     connectorsEnabled = builder.isConnectorsEnabled();
 
@@ -215,22 +216,20 @@ public class CamundaProcessTestContainerRuntime
 
   @Override
   public CamundaClientBuilderFactory getCamundaClientBuilderFactory() {
-
     return () -> {
-      final CamundaClientBuilder client =
-          CamundaClient.newClientBuilder()
+      final CamundaClientBuilder builder =
+          camundaClientBuilderFactory
+              .get()
               .restAddress(getCamundaRestApiAddress())
               .grpcAddress(getCamundaGrpcApiAddress());
-
       if (isMultiTenancyEnabled) {
-        client.credentialsProvider(
+        builder.credentialsProvider(
             CredentialsProvider.newBasicAuthCredentialsProviderBuilder()
                 .username(MultiTenancyConfiguration.MULTITENANCY_USER_USERNAME)
                 .password(MultiTenancyConfiguration.MULTITENANCY_USER_PASSWORD)
                 .build());
       }
-
-      return client;
+      return builder;
     };
   }
 

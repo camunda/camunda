@@ -15,11 +15,14 @@
  */
 package io.camunda.client.spring.configuration;
 
+import io.camunda.client.CamundaClient;
+import io.camunda.client.CamundaClientBuilder;
 import io.camunda.client.CamundaClientConfiguration;
 import io.camunda.client.CredentialsProvider;
 import io.camunda.client.api.JsonMapper;
 import io.camunda.client.jobhandling.CamundaClientExecutorService;
 import io.camunda.client.spring.properties.CamundaClientProperties;
+import io.camunda.client.spring.properties.CamundaClientProperties.ClientMode;
 import io.grpc.ClientInterceptor;
 import java.net.MalformedURLException;
 import java.net.URI;
@@ -234,6 +237,100 @@ public class SpringCamundaClientConfiguration implements CamundaClientConfigurat
           throw new IllegalStateException(
               String.format("Unrecognized zeebe protocol '%s'", protocol));
     };
+  }
+
+  /**
+   * Creates a new {@link CamundaClientBuilder} configured with all settings from this
+   * configuration. Use this to apply all client properties (auth, addresses, etc.) to the builder.
+   *
+   * <p>If SaaS mode is detected (i.e. a cluster ID is set), a cloud client builder is used.
+   * Otherwise, a regular self-managed client builder is returned.
+   *
+   * @return a new {@link CamundaClientBuilder} with all settings applied
+   */
+  public CamundaClientBuilder toBuilder() {
+    final CamundaClientBuilder builder = createClientBuilder();
+
+    if (getRestAddress() != null) {
+      builder.restAddress(getRestAddress());
+    }
+    if (getGrpcAddress() != null) {
+      builder.grpcAddress(getGrpcAddress());
+    }
+    builder.preferRestOverGrpc(preferRestOverGrpc());
+    if (getDefaultTenantId() != null) {
+      builder.defaultTenantId(getDefaultTenantId());
+    }
+    if (getDefaultJobWorkerTenantIds() != null) {
+      builder.defaultJobWorkerTenantIds(getDefaultJobWorkerTenantIds());
+    }
+    if (getDefaultJobWorkerTenantFilter() != null) {
+      builder.defaultJobWorkerTenantFilter(getDefaultJobWorkerTenantFilter());
+    }
+    builder.numJobWorkerExecutionThreads(getNumJobWorkerExecutionThreads());
+    builder.defaultJobWorkerMaxJobsActive(getDefaultJobWorkerMaxJobsActive());
+    if (getDefaultJobWorkerName() != null) {
+      builder.defaultJobWorkerName(getDefaultJobWorkerName());
+    }
+    builder.defaultJobTimeout(getDefaultJobTimeout());
+    builder.defaultJobPollInterval(getDefaultJobPollInterval());
+    builder.defaultMessageTimeToLive(getDefaultMessageTimeToLive());
+    builder.defaultRequestTimeout(getDefaultRequestTimeout());
+    builder.defaultRequestTimeoutOffset(getDefaultRequestTimeoutOffset());
+    if (getCaCertificatePath() != null) {
+      builder.caCertificatePath(getCaCertificatePath());
+    }
+    if (getKeepAlive() != null) {
+      builder.keepAlive(getKeepAlive());
+    }
+    if (getOverrideAuthority() != null) {
+      builder.overrideAuthority(getOverrideAuthority());
+    }
+    builder.maxMessageSize(getMaxMessageSize());
+    builder.maxMetadataSize(getMaxMetadataSize());
+    builder.defaultJobWorkerStreamEnabled(getDefaultJobWorkerStreamEnabled());
+    builder.maxHttpConnections(getMaxHttpConnections());
+    if (credentialsProvider != null) {
+      builder.credentialsProvider(credentialsProvider);
+    }
+    if (jsonMapper != null) {
+      builder.withJsonMapper(jsonMapper);
+    }
+    if (interceptors != null && !interceptors.isEmpty()) {
+      builder.withInterceptors(interceptors.toArray(new ClientInterceptor[0]));
+    }
+    if (chainHandlers != null && !chainHandlers.isEmpty()) {
+      builder.withChainHandlers(chainHandlers.toArray(new AsyncExecChainHandler[0]));
+    }
+    if (zeebeClientExecutorService != null) {
+      final ScheduledExecutorService scheduledExecutor =
+          zeebeClientExecutorService.getScheduledExecutor();
+      if (scheduledExecutor != null) {
+        builder.jobWorkerSchedulingExecutor(
+            scheduledExecutor,
+            zeebeClientExecutorService.isScheduledExecutorOwnedByCamundaClient());
+      }
+      final ExecutorService jobHandlingExecutor =
+          zeebeClientExecutorService.getJobHandlingExecutor();
+      if (jobHandlingExecutor != null) {
+        builder.jobHandlingExecutor(
+            jobHandlingExecutor,
+            zeebeClientExecutorService.isJobHandlingExecutorOwnedByCamundaClient());
+      }
+    }
+    return builder;
+  }
+
+  private CamundaClientBuilder createClientBuilder() {
+    if (camundaClientProperties.getMode() == ClientMode.saas
+        || camundaClientProperties.getCloud().getClusterId() != null) {
+      return CamundaClient.newCloudClientBuilder()
+          .withClusterId(camundaClientProperties.getCloud().getClusterId())
+          .withClientId(camundaClientProperties.getAuth().getClientId())
+          .withClientSecret(camundaClientProperties.getAuth().getClientSecret())
+          .withRegion(camundaClientProperties.getCloud().getRegion());
+    }
+    return CamundaClient.newClientBuilder();
   }
 
   @Override

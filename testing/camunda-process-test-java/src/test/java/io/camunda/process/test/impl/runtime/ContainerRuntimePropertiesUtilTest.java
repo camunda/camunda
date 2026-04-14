@@ -17,6 +17,7 @@ package io.camunda.process.test.impl.runtime;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.client.CamundaClientConfiguration;
 import io.camunda.process.test.api.CamundaProcessTestRuntimeMode;
 import io.camunda.process.test.impl.runtime.properties.CamundaContainerRuntimeProperties;
 import io.camunda.process.test.impl.runtime.properties.ConnectorsContainerRuntimeProperties;
@@ -508,6 +509,22 @@ public class ContainerRuntimePropertiesUtilTest {
           .isEqualTo("custom/coverage-report");
       assertThat(coverageReportProperties.getCoverageExcludedProcesses())
           .containsExactlyInAnyOrder("process1", "process2");
+    }
+
+    @Test
+    public void shouldHaveCustomClientProperties() {
+      // when
+      final ContainerRuntimePropertiesUtil propertiesUtil =
+          ContainerRuntimePropertiesUtil.readProperties(
+              "/containerRuntimePropertiesUtil/", emptyGitProperties);
+
+      // then: verify via the client builder factory (which now uses standard ClientProperties)
+      final CamundaClientConfiguration clientBuilder =
+          propertiesUtil.getCamundaClientBuilderFactory().get().build().getConfiguration();
+
+      // The backwards-compatible remote.client.grpcAddress and remote.client.restAddress are used
+      assertThat(clientBuilder.getRestAddress()).isEqualTo(URI.create("http://0.0.0.0:8089"));
+      assertThat(clientBuilder.getGrpcAddress()).isEqualTo(URI.create("http://0.0.0.0:8088"));
     }
   }
 }

@@ -16,6 +16,7 @@
 package io.camunda.process.test.api;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.client.CamundaClientBuilder;
 import io.camunda.client.api.JsonMapper;
 import io.camunda.process.test.impl.assertions.CamundaDataSource;
 import io.camunda.process.test.impl.client.CamundaManagementClient;
@@ -537,14 +538,42 @@ public class CamundaProcessTestExtension
   }
 
   /**
+   * Configure the client builder factory to create the Camunda client. Use this for a full custom
+   * client configuration.
+   *
+   * @param camundaClientBuilderFactory the factory to create the Camunda client builder
+   * @return the extension builder
+   * @since 8.10.0
+   */
+  public CamundaProcessTestExtension withCamundaClientBuilderFactory(
+      final CamundaClientBuilderFactory camundaClientBuilderFactory) {
+    runtimeBuilder.withCamundaClientBuilderFactory(camundaClientBuilderFactory);
+    return this;
+  }
+
+  /**
    * Configure the connection to the remote runtime using the given client builder.
    *
    * @param camundaClientBuilderFactory the client builder to configure the connection
    * @return the extension builder
+   * @deprecated use {@link #withCamundaClientBuilderFactory(CamundaClientBuilderFactory)} instead.
+   * @since 8.8.0
    */
+  @Deprecated
   public CamundaProcessTestExtension withRemoteCamundaClientBuilderFactory(
       final CamundaClientBuilderFactory camundaClientBuilderFactory) {
-    runtimeBuilder.withRemoteCamundaClientBuilderFactory(camundaClientBuilderFactory);
+    return withCamundaClientBuilderFactory(camundaClientBuilderFactory);
+  }
+
+  /**
+   * Override the existing connection configuration to the Camunda runtime.
+   *
+   * @param camundaClientBuilderOverrides consumer that overrides the client builder's configuration
+   * @return the extension builder
+   */
+  public CamundaProcessTestExtension withCamundaClientBuilderOverrides(
+      final Consumer<CamundaClientBuilder> camundaClientBuilderOverrides) {
+    runtimeBuilder.withCamundaClientBuilderOverrides(camundaClientBuilderOverrides);
     return this;
   }
 
