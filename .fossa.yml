@@ -49,9 +49,6 @@ targets:
       target: io.camunda:tasklist-qa
     - type: maven
       path: bom/
-      target: io.camunda:tasklist-qa-backup-restore-tests
-    - type: maven
-      path: bom/
       target: io.camunda:tasklist-qa-migration-tests
     - type: maven
       path: bom/

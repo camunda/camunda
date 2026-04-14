@@ -8,6 +8,8 @@
 package io.camunda.tasklist.qa.backup;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import io.camunda.client.CamundaClient;
+import io.camunda.client.CamundaClientBuilder;
 import io.camunda.tasklist.qa.util.TestContext;
 import io.camunda.tasklist.qa.util.rest.StatefulRestTemplate;
 import org.opensearch.client.opensearch.OpenSearchClient;
@@ -17,6 +19,7 @@ public class BackupRestoreTestContext extends TestContext<BackupRestoreTestConte
   private ElasticsearchClient esClient;
   private OpenSearchClient osClient;
   private StatefulRestTemplate tasklistRestClient;
+  private CamundaClient camundaClient;
 
   public ElasticsearchClient getEsClient() {
     return esClient;
@@ -36,13 +39,25 @@ public class BackupRestoreTestContext extends TestContext<BackupRestoreTestConte
     return this;
   }
 
-  public StatefulRestTemplate getTasklistRestClient() {
-    return tasklistRestClient;
+  public CamundaClient getCamundaClient() {
+    if (camundaClient == null) {
+      return createCamundaClient();
+    }
+    return camundaClient;
   }
 
-  public BackupRestoreTestContext setTasklistRestClient(
-      final StatefulRestTemplate operateRestClient) {
-    tasklistRestClient = operateRestClient;
+  public BackupRestoreTestContext setCamundaClient(final CamundaClient camundaClient) {
+    this.camundaClient = camundaClient;
     return this;
+  }
+
+  public CamundaClient createCamundaClient() {
+    final CamundaClientBuilder builder =
+        CamundaClient.newClientBuilder()
+            .grpcAddress(getZeebeGrpcAddress())
+            .preferRestOverGrpc(false)
+            .defaultJobWorkerMaxJobsActive(5);
+    camundaClient = builder.build();
+    return camundaClient;
   }
 }

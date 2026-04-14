@@ -13,8 +13,7 @@ import {sleep} from 'utils/sleep';
 import {captureScreenshot, captureFailureVideo} from '@setup';
 import {navigateToApp} from '@pages/UtilitiesPage';
 
-test.beforeAll(async ({resetData}) => {
-  await resetData();
+test.beforeAll(async () => {
   await deploy([
     './resources/usertask_to_be_assigned.bpmn',
     './resources/usertask_for_scrolling_1.bpmn',

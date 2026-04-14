@@ -11,7 +11,6 @@ import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.json.jackson.JacksonJsonpMapper;
 import co.elastic.clients.transport.rest_client.RestClientTransport;
 import io.camunda.client.CamundaClient;
-import io.camunda.client.CamundaClientBuilder;
 import io.camunda.tasklist.CommonUtils;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.qa.backup.generator.BackupRestoreDataGenerator;
@@ -19,7 +18,6 @@ import io.camunda.tasklist.qa.util.TestContainerUtil;
 import io.camunda.tasklist.qa.util.TestUtil;
 import io.camunda.webapps.backup.TakeBackupResponseDto;
 import java.io.IOException;
-import java.net.URI;
 import java.util.List;
 import org.apache.http.HttpHost;
 import org.elasticsearch.client.RestClient;
@@ -135,7 +133,7 @@ public class BackupRestoreTest {
     createElsSnapshotRepository(testContext);
 
     testContainerUtil.startStandaloneBroker(testContext);
-    createCamundaClient(testContext.getZeebeGrpcAddress());
+    camundaClient = testContext.createCamundaClient();
   }
 
   private OpenSearchClient createOsClient() {
@@ -166,13 +164,13 @@ public class BackupRestoreTest {
     createOsSnapshotRepository(testContext);
 
     testContainerUtil.startStandaloneBroker(testContext);
-    createCamundaClient(testContext.getZeebeGrpcAddress());
+    camundaClient = testContext.createCamundaClient();
   }
 
   private void startTasklist() {
     testContainerUtil.startTasklistContainer(tasklistContainer, testContext);
     LOGGER.info("************ Tasklist started  ************");
-    testContext.setTasklistRestClient(tasklistAPICaller.createTasklistRestClient(testContext));
+    tasklistAPICaller.createClients(testContext);
   }
 
   private void stopTasklist() {
@@ -276,13 +274,6 @@ public class BackupRestoreTest {
             CreateRepositoryRequest.of(
                 r ->
                     r.name(REPOSITORY_NAME).type("fs").settings(s -> s.location(REPOSITORY_NAME))));
-  }
-
-  private CamundaClient createCamundaClient(final URI grpcAddress) {
-    final CamundaClientBuilder builder =
-        CamundaClient.newClientBuilder().grpcAddress(grpcAddress).defaultJobWorkerMaxJobsActive(5);
-    camundaClient = builder.build();
-    return camundaClient;
   }
 }
 
