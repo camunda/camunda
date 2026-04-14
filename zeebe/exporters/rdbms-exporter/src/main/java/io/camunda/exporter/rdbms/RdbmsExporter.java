@@ -296,7 +296,13 @@ public final class RdbmsExporter {
 
   private void captureCurrentLsnAndEnqueue() {
     final long currentLsn = replicationContext.lsnProvider().getCurrentLsn();
-    replicationContext.pendingEntries().offer(new LsnPositionEntry(currentLsn, lastPosition));
+    if (!replicationContext.pendingEntries().offer(new LsnPositionEntry(currentLsn, lastPosition))) {
+      LOG.warn(
+          "[RDBMS Exporter P{}] Replication queue is full, dropping LSN entry (lsn={}, position={})",
+          partitionId,
+          currentLsn,
+          lastPosition);
+    }
 
     // Check if the background task has confirmed any positions and update the broker
     final long confirmed = replicationContext.confirmedPosition().get();

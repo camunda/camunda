@@ -9,7 +9,7 @@ package io.camunda.exporter.rdbms.replication;
 
 import io.camunda.db.rdbms.write.ReplicationLsnProvider;
 import java.time.Duration;
-import java.util.Queue;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
@@ -20,13 +20,13 @@ import java.util.concurrent.atomic.AtomicLong;
 public final class ReplicationMonitor {
 
   private final ReplicationLsnProvider lsnProvider;
-  private final Queue<LsnPositionEntry> pendingEntries;
+  private final BlockingQueue<LsnPositionEntry> pendingEntries;
   private final AtomicLong confirmedPosition;
   private final Duration pollingInterval;
 
   public ReplicationMonitor(
       final ReplicationLsnProvider lsnProvider,
-      final Queue<LsnPositionEntry> pendingEntries,
+      final BlockingQueue<LsnPositionEntry> pendingEntries,
       final AtomicLong confirmedPosition,
       final Duration pollingInterval) {
     this.lsnProvider = lsnProvider;
