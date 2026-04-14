@@ -1508,16 +1508,15 @@ jobs:
           exit ${{ ((contains(needs.*.result, 'cancelled') || contains(needs.*.result, 'failure')) && 1) || 0 }}
 
 
-  # Dynamically generate the Docker tag (e.g., SNAPSHOT or X.Y-SNAPSHOT) and concurrency group based on branch name
+  # Dynamically generate the concurrency group based on branch name
   utils-get-concurrency-group-for-maven-snapshot:
     needs: [ check-results ]
-    uses: ./.github/workflows/generate-snapshot-docker-tag-and-concurrency-group.yml
+    uses: ./.github/workflows/generate-concurrency-group.yml
     secrets: inherit
     permissions:
       contents: read
     if: always() && needs.check-results.result == 'success'
     with:
-      job_to_run: 'concurrency-group'
       base_group_name: deploy-maven-snapshot
 
   deploy-snapshots:
@@ -1568,10 +1567,19 @@ jobs:
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
           user_description: "General"
 
-  # Dynamically generate the Docker tag (e.g., SNAPSHOT or X.Y-SNAPSHOT) and concurrency group based on branch name
-  utils-get-snapshot-docker-tag-and-concurrency-group:
+  # Dynamically generate the Docker tag (e.g., SNAPSHOT or X.Y-SNAPSHOT) based on branch name
+  utils-get-snapshot-docker-tag:
     needs: [ check-results ]
-    uses: ./.github/workflows/generate-snapshot-docker-tag-and-concurrency-group.yml
+    uses: ./.github/workflows/generate-snapshot-docker-tag.yml
+    secrets: inherit
+    permissions:
+      contents: read
+    if: always() && needs.check-results.result == 'success'
+
+  # Dynamically generate the concurrency group based on branch name
+  utils-get-concurrency-group-for-docker-snapshot:
+    needs: [ check-results ]
+    uses: ./.github/workflows/generate-concurrency-group.yml
     secrets: inherit
     permissions:
       contents: read
@@ -1581,13 +1589,13 @@ jobs:
 
   deploy-camunda-docker-snapshot:
     name: Deploy snapshot Camunda Docker image
-    needs: [ check-results, utils-get-snapshot-docker-tag-and-concurrency-group]
+    needs: [ check-results, utils-get-snapshot-docker-tag, utils-get-concurrency-group-for-docker-snapshot ]
     runs-on: ubuntu-latest
     timeout-minutes: 20
     permissions: { }  # GITHUB_TOKEN unused in this job
     if: always() && needs.check-results.result == 'success' && github.repository == 'camunda/camunda' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/stable/'))
     concurrency:
-      group: ${{ needs.utils-get-snapshot-docker-tag-and-concurrency-group.outputs.concurrency_group_name }}
+      group: ${{ needs.utils-get-concurrency-group-for-docker-snapshot.outputs.concurrency_group_name }}
       cancel-in-progress: false
     steps:
       - uses: actions/checkout@v6
@@ -1621,7 +1629,7 @@ jobs:
         id: build-camunda-docker
         with:
           repository: camunda/camunda
-          version: ${{ needs.utils-get-snapshot-docker-tag-and-concurrency-group.outputs.version_tag }}
+          version: ${{ needs.utils-get-snapshot-docker-tag.outputs.version_tag }}
           distball: ${{ steps.build-camunda.outputs.distball }}
           platforms: ${{ env.DOCKER_PLATFORMS }}
           dockerfile: camunda.Dockerfile
