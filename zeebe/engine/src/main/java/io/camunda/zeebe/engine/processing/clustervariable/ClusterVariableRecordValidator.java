@@ -108,7 +108,6 @@ public class ClusterVariableRecordValidator {
               RejectionType.INVALID_ARGUMENT,
               "Invalid cluster variable scope. Tenant-scoped variables must have a non-blank tenant ID."));
     } else if (clusterVariableRecord.isTenantScoped()) {
-      // Validate that the tenant exists
       return validateTenantExists(clusterVariableRecord);
     } else if (clusterVariableRecord.isGloballyScoped()) {
       return Either.right(clusterVariableRecord);
