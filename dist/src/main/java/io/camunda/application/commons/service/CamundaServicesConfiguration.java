@@ -74,6 +74,7 @@ import io.camunda.service.UserTaskServices;
 import io.camunda.service.VariableServices;
 import io.camunda.service.cache.ProcessCache;
 import io.camunda.service.security.SecurityContextProvider;
+import io.camunda.spring.utils.DatabaseTypeUtils;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
 import io.camunda.zeebe.gateway.impl.job.ActivateJobsHandler;
@@ -81,6 +82,7 @@ import io.camunda.zeebe.gateway.rest.config.GatewayRestConfiguration;
 import io.micrometer.core.instrument.MeterRegistry;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.env.Environment;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 @Configuration(proxyBeanMethods = false)
@@ -476,7 +478,8 @@ public class CamundaServicesConfiguration {
       final ProcessDefinitionSearchClient processDefinitionSearchClient,
       final DecisionRequirementSearchClient decisionRequirementSearchClient,
       final ResourceSearchClient resourceSearchClient,
-      final GatewayRestConfiguration gatewayRestConfiguration) {
+      final GatewayRestConfiguration gatewayRestConfiguration,
+      final Environment environment) {
     return new ResourceServices(
         brokerClient,
         securityContextProvider,
@@ -485,6 +488,7 @@ public class CamundaServicesConfiguration {
         processDefinitionSearchClient,
         decisionRequirementSearchClient,
         resourceSearchClient,
+        DatabaseTypeUtils.isSecondaryStorageEnabled(environment),
         gatewayRestConfiguration.getResourceCache().getMaxSize());
   }
 

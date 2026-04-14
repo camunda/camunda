@@ -16,7 +16,6 @@ import io.camunda.search.clients.DecisionRequirementSearchClient;
 import io.camunda.search.clients.ProcessDefinitionSearchClient;
 import io.camunda.search.clients.ResourceSearchClient;
 import io.camunda.search.entities.ResourceEntity;
-import io.camunda.search.exception.NoSecondaryStorageException;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.security.SecurityContextProvider;
@@ -36,6 +35,7 @@ public final class ResourceServices extends ApiServices<ResourceServices> {
   private final ProcessDefinitionSearchClient processDefinitionSearchClient;
   private final DecisionRequirementSearchClient decisionRequirementSearchClient;
   private final ResourceSearchClient resourceSearchClient;
+  private final boolean secondaryStorageEnabled;
   private final Cache<Long, ResourceEntity> resourceCache;
 
   public ResourceServices(
@@ -46,6 +46,7 @@ public final class ResourceServices extends ApiServices<ResourceServices> {
       final ProcessDefinitionSearchClient processDefinitionSearchClient,
       final DecisionRequirementSearchClient decisionRequirementSearchClient,
       final ResourceSearchClient resourceSearchClient,
+      final boolean secondaryStorageEnabled,
       final long resourceCacheMaxSize) {
     super(
         brokerClient,
@@ -55,6 +56,7 @@ public final class ResourceServices extends ApiServices<ResourceServices> {
     this.processDefinitionSearchClient = processDefinitionSearchClient;
     this.decisionRequirementSearchClient = decisionRequirementSearchClient;
     this.resourceSearchClient = resourceSearchClient;
+    this.secondaryStorageEnabled = secondaryStorageEnabled;
     resourceCache = Caffeine.newBuilder().maximumSize(resourceCacheMaxSize).build();
   }
 
@@ -79,7 +81,8 @@ public final class ResourceServices extends ApiServices<ResourceServices> {
     if (request.operationReference() != null) {
       brokerRequest.setOperationReference(request.operationReference());
     }
-    return sendBrokerRequest(brokerRequest, authentication);
+    return sendBrokerRequest(brokerRequest, authentication)
+        .whenComplete((result, ex) -> resourceCache.invalidate(request.resourceKey()));
   }
 
   /**
@@ -155,16 +158,15 @@ public final class ResourceServices extends ApiServices<ResourceServices> {
     if (cached != null) {
       return CompletableFuture.completedFuture(cached);
     }
-    try {
-      final var securityContext =
-          securityContextProvider.provideSecurityContext(authentication);
+    if (secondaryStorageEnabled) {
+      final var securityContext = securityContextProvider.provideSecurityContext(authentication);
       final var entity =
           resourceSearchClient.withSecurityContext(securityContext).getResource(resourceKey);
       if (entity != null) {
         resourceCache.put(resourceKey, entity);
       }
       return CompletableFuture.completedFuture(entity);
-    } catch (final NoSecondaryStorageException e) {
+    } else {
       // Fall back to primary storage when running without secondary storage
       return fetchResource(new ResourceFetchRequest(resourceKey), authentication)
           .thenApply(
@@ -187,3 +189,4 @@ public final class ResourceServices extends ApiServices<ResourceServices> {
 
   public record ResourceFetchRequest(long resourceKey) {}
 }
+
