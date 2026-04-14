@@ -644,7 +644,8 @@ public class WebSecurityConfig {
           oidcAccessTokenDecoderFactory,
           tokenClaimsConverter,
           request,
-          buildAdditionalJwkSetUrisByIssuer(oidcProviderRepository));
+          buildAdditionalJwkSetUrisByIssuer(oidcProviderRepository),
+          buildPreferIdTokenClaimsByRegistrationId(oidcProviderRepository));
     }
 
     @Bean
@@ -796,6 +797,13 @@ public class WebSecurityConfig {
                     }
                     return a;
                   }));
+    }
+
+    private Map<String, Boolean> buildPreferIdTokenClaimsByRegistrationId(
+        final OidcAuthenticationConfigurationRepository oidcProviderRepository) {
+      return oidcProviderRepository.getOidcAuthenticationConfigurations().entrySet().stream()
+          .filter(entry -> entry.getValue().isPreferIdTokenClaims())
+          .collect(toMap(Map.Entry::getKey, entry -> Boolean.TRUE));
     }
 
     @Bean
