@@ -21,11 +21,7 @@ public interface ExporterPositionMapper {
 
   long getMinReplicationLsnPostgres();
 
-  long findCurrentLsnAuroraPostgres();
+  long findCurrentLsnAurora();
 
-  long getMinReplicationLsnAuroraPostgres();
-
-  long findCurrentLsnAuroraMySQL();
-
-  long getMinReplicationLsnAuroraMySQL();
+  long getMinReplicationLsnAurora();
 }
