@@ -1,4 +1,3 @@
-
 # Unified Identity Architecture
 
 **IMPORTANT**: This document is a work in progress and reflects the current thinking on the unified identity architecture for Camunda Hub and Orchestration Clusters. It is intended to provide a high-level overview of the proposed design, including key components, interactions, and deployment models. The architecture is subject to change as we iterate on the design and gather feedback from stakeholders.
@@ -147,8 +146,9 @@ These limitations motivate a unified identity plane with consistent semantics an
 
 The target architecture is based on the following assumptions:
 
-- In SaaS, there is one shared Hub instance that serves multiple organizations.
+- In SaaS, there is one shared Hub instance that serves multiple organizations. Each organization owns one or more Orchestration Clusters; Hub partitions all policy data by `organization_id`.
   - In the first iterations, identity and policy data in Hub are separated only logically, via organization-aware persistence and queries in shared Hub storage.
+- In Self-Managed, there is always exactly one organization — the customer's own deployment. The `organization_id` field exists in the data model for architectural consistency with the SaaS multi-org model, but it is fixed to a single value and has no operational significance in Self-Managed. A Self-Managed deployment may own one or more OC clusters, all belonging to that single organization.
 - In full mode, each Orchestration Cluster is associated with exactly one Hub organization boundary for policy management; policies are always authored “above” the cluster in Hub and projected downward.
   - In SaaS today, Hub itself does not own the current list of OCs. Hub must read cluster metadata from the Console backend for the Admin UI and for policy targeting.
   - Discovering newly created OCs, and keeping the Hub-side view in sync, is still an open integration question in Self-Managed.
@@ -317,7 +317,7 @@ This section describes the unified identity system at a high level, showing how 
 
 In full mode, the platform runs with both Hub (management/control plane) and Orchestration Cluster (execution plane). Both use the same identity model and the same Security Gateway Framework.
 
-Configuration flows top-down: Hub is the central source of truth for all policy. Configuration is authored once in Hub and propagated via the outbox pattern to each OC, which then propagates scoped views to individual engines. The Admin UI in each OC runs in read-only mode, showing the local projection of Hub policy. In SaaS, this full-mode topology is realized by one shared Hub instance serving multiple organizations; in Self-Managed, the same topology is expected once Hub can host the Console backend with experimental cluster discovery enabled.
+Configuration flows top-down: Hub is the central source of truth for all policy. Configuration is authored once in Hub and propagated via the outbox pattern to each OC, which then propagates scoped views to individual engines. The Admin UI in each OC runs in read-only mode, showing the local projection of Hub policy. In SaaS, this full-mode topology is realized by one shared Hub instance serving multiple organizations, where each organization owns one or more OC clusters and all policy data is partitioned by `organization_id`. In Self-Managed, the same topology applies but with exactly one organization: Hub manages a single customer organization and its OC clusters, so `organization_id` is fixed and the multi-org partitioning is present in the model but not operationally relevant.
 
 ```mermaid
 flowchart TB
@@ -369,14 +369,32 @@ flowchart TB
     Tasklist["Tasklist"]
     Admin["Admin"]
 
-    OC["Orchestration Cluster"]
+    subgraph OC["Orchestration Cluster"]
+      OCLib["Security Gateway Framework"]
 
-    Operate & Tasklist & Admin --> OC
+      OCLib -->|"config propagation"| Engine2
+      OCLib -->|"config propagation"| EngineN
+
+      subgraph EngineN["Default Engine"]
+        EngLibN["Security Engine Framework"]
+      end
+
+      subgraph Engine2["Engine2 (optional)"]
+        EngLib2["Security Engine Framework"]
+      end
+    end
   end
 
-  Infra["Infrastructure (IDPs, DBs)"]
+  Operate & Tasklist & Admin --> OC
 
-  OC --> Infra
+  IdPs[("[1 - N] IDPs (per tenant/engine)")]
+  DBs[("DBs (primary/secondary)")]
+
+  Engine2 & EngineN --> DBs
+  OC --> IdPs
+
+  style Engine2 fill:#34a853,color:#fff
+  style EngineN fill:#34a853,color:#fff
 ```
 
 - OC is the single source of truth for all policy and configuration.
@@ -511,7 +529,9 @@ Key building blocks in OC-only mode:
 
 Configuration propagation chain: OC → Engine.
 
-### 5.2 Unified policy model
+---
+
+## 5.2 Unified policy model
 
 The unified identity architecture is built around a single policy model that is shared between Hub Identity & Policy and OC Identity. Hub is the source of truth for this model per cluster; in shared-Hub deployments, Hub stores it per organization and cluster. Each OC hosts a cluster-local projection of the same concepts for enforcement.
 
@@ -574,22 +594,27 @@ At a high level, the shared policy model consists of:
 
 Both Hub and OC use exactly the same policy model, but with different responsibilities.
 
-- **Hub Identity & Policy**
-  - Acts as **policy source of truth** for all clusters.
-  - Authoring location for tenants, roles, groups, mapping rules, and authorizations.
-  - Stores organization-scoped `PolicyVersion` records per cluster and drives propagation via Outbox/`OutboxEvent`. See section `5.3`.
+- **Hub Identity & Policy** (central policy authoring and propagation)
+  - Acts as **policy source of truth** for all clusters in full-mode deployments.
+  - Authoring location for tenants, roles, groups, mapping rules, and authorizations (all with full scope awareness: `ALL`, `TENANT`, `ENGINE`, `TENANT_ENGINE`).
+  - Stores organization-scoped `PolicyVersion` records per cluster and drives propagation via Outbox/`OutboxEvent`.
+  - Handles authentication for Hub applications (Console, Web Modeler, Admin UI) via the same Security Gateway Framework instance.
+  - Does **not** enforce authorization for runtime execution APIs; that is strictly an OC responsibility.
 
-- **OC Identity**
-  - Hosts a **cluster-local projection** of the same entities.
-  - Enforces authorizations for:
+- **OC Identity** (cluster-local policy enforcement)
+  - Hosts a **cluster-local projection** of the same entities received from Hub (or locally authored in OC-only mode).
+  - Enforces authorizations for all incoming requests:
     - Web UIs on the cluster (Operate, Tasklist, Admin).
     - Cluster runtime APIs (gRPC/REST) for workers and integrations.
+  - Validates IdP tokens for users and machines accessing the cluster.
+  - Derives tenant assignments and roles from token claims via mapping rules.
+  - Routes identity-scoped policy updates to engines via the `EngineCommandPort`.
   - Does not invent new policy; it only applies and enforces what Hub (or, in standalone mode, local OC configuration) defines.
 
 This unified model allows:
 
-- The same concepts (tenants, roles, groups, mapping rules, authorizations, principals) to be used consistently on both **management** and **execution** planes.
-- Identity-as-code and migrations to operate on one canonical representation (`PolicyVersion`) per cluster, with clear ownership (Hub) and enforcement (OC).
+- The same concepts (tenants, roles, groups, mapping rules, authorizations, principals, scope metadata) to be used consistently on both **management** and **execution** planes.
+- Identity-as-code and migrations to operate on one canonical representation (`PolicyVersion`) per cluster, with clear ownership (Hub or OC-local) and enforcement (OC or engine-local).
 
 #### 5.2.2 Responsibility matrix (IdP and policy-related information)
 
@@ -1193,11 +1218,13 @@ The same library core is reused in all deployments. **In every runtime profile, 
 
 Hub enforces AuthN/AuthZ for its own application scope: Console, Web Modeler, and the Admin UI are all protected by Hub-scoped roles and authorizations. This is exactly the same `AuthorizationService` and `IdpPort` used by OC, just configured with Hub-scoped resources instead of cluster/engine resources.
 
-| Profile | AuthN/AuthZ enforcement | Policy source | Outbox dispatch to OCs | Engine projection |
-|---|---|---|---|---|
-| `HUB` | ✅ Hub-scoped (org, workspace, cluster resources) | Hub is SoT | ✅ via `OutboxPort` | ❌ no engines in Hub |
-| `OC_MANAGED` | ✅ Cluster-scoped (engine, tenant, task resources) | Receives from Hub | ❌ | ✅ via `EngineCommandPort` |
-| `OC_STANDALONE` | ✅ Cluster-scoped (engine, tenant, task resources) | OC is local SoT | ❌ | ✅ via `EngineCommandPort` |
+**Security Gateway Framework responsibilities by profile:**
+
+| Profile | AuthN/AuthZ enforcement | Policy source | Policy authoring | Outbox dispatch to OCs | Engine projection | Runtime context |
+|---|---|---|---|---|---|---|
+| `HUB` | ✅ Hub-scoped (org, workspace, cluster resources) | Hub is SoT | ✅ via Admin UI/API | ✅ via `OutboxPort` | ❌ no engines in Hub | Hub authentication and policy management for Hub applications |
+| `OC_MANAGED` | ✅ Cluster-scoped (engine, tenant, task resources) | Receives from Hub | ❌ (read-only) | ❌ | ✅ via `EngineCommandPort` | OC receives policy via `/identity/policies/apply` endpoint from Hub; enforces for all cluster requests |
+| `OC_STANDALONE` | ✅ Cluster-scoped (engine, tenant, task resources) | OC is local SoT | ✅ via Admin UI/API | ❌ | ✅ via `EngineCommandPort` | OC is fully autonomous; local policy authoring and engine projection |
 
 ```mermaid
 flowchart TB
@@ -1246,6 +1273,8 @@ flowchart LR
   Apply --> OcWrite
 ```
 
+- There is no dedicated or separate IdP "for the gateway"; the framework acts as the OIDC/SAML client against the configured IdPs.
+
 #### 5.4.2 Why a shared Security Gateway Framework layer?
 
 The extra layer between UIs/clients and engines is intentional:
@@ -1262,12 +1291,73 @@ The extra layer between UIs/clients and engines is intentional:
 - Pluggable backends
   - Concrete persistence (SQL, search), outbox transport, and IdP clients can be swapped or customized by providing alternative adapters, without changing the domain model.
 
-The IdP plays a standard role in this picture:
+### 5.5 Security Engine Framework
 
-- Hub and OC instances of the framework use the `IdpPort` to integrate with OIDC/SAML IdPs per tenant.
-- There is no dedicated or separate IdP “for the gateway”; the framework acts as the OIDC/SAML client against the configured IdPs.
+The **Security Engine Framework** is the identity sub-framework embedded directly inside each engine (Zeebe). It is the engine-side counterpart to the Security Gateway Framework and follows the same hexagonal principle: all external dependencies are hidden behind port interfaces.
 
-### 5.5 Persistent sessions
+The OC Security Gateway Framework communicates with each engine exclusively through the `EngineCommandPort` outbound port, which translates into engine-level identity commands. The Security Engine Framework receives those commands via its own inbound port and decides how to persist and apply the identity state changes inside the engine.
+
+**Key rule:** engines never talk to IdPs directly, never hold policy versions, and never interpret scope metadata beyond what is needed for their own authorization decisions. The Security Gateway Framework on the OC side is responsible for deciding what to forward and how to scope it; see [ADR-0004](adr/0004-oc-identity-data-persistence-and-engine-command-scope.md) for the open decision on how scope metadata flows into the engine.
+
+```mermaid
+graph LR
+  subgraph EXT_IN_SEF["Inbound adapters (engine)"]
+    CMD_IN["Identity Command Handler</br>receives commands from OC via EngineCommandPort"]
+    AUTHZ_IN["Authorization Request Handler</br>called by engine command processing"]
+  end
+
+  subgraph SEF["Security Engine Framework (embedded in engine)"]
+    subgraph IN_PORTS_SEF["Inbound port interfaces"]
+      ICP["IdentityCommandPort</br>(apply policy updates to engine state)"]
+      EAP["EngineAuthorizationPort</br>(evaluate authz for engine operations)"]
+    end
+    SEF_LOGIC["Domain Logic</br>(applies identity state,</br>evaluates RBAC/ABAC per command)"]
+    subgraph OUT_PORTS_SEF["Outbound port interfaces"]
+      ISP["IdentityStatePort</br>(read / write identity state)"]
+    end
+  end
+
+  subgraph EXT_OUT_SEF["Outbound adapter implementations"]
+    ROCKS["IdentityStatePort</br>RocksDB (primary storage)</br>AuthorizationState, MembershipState,</br>MappingRuleState, TenantState"]
+  end
+
+  CMD_IN -->|"calls"| ICP
+  AUTHZ_IN -->|"calls"| EAP
+  ICP & EAP -->|"implemented by"| SEF_LOGIC
+  SEF_LOGIC -->|"calls"| ISP
+  ISP -->|"implemented by"| ROCKS
+```
+
+**Inbound port responsibilities:**
+
+| Inbound port | Responsibility |
+|---|---|
+| `IdentityCommandPort` | Receive and apply identity state updates forwarded by the OC Security Gateway Framework (tenants, roles, groups, mapping rules, authorizations). Persists the effective state to primary storage via `IdentityStatePort`. |
+| `EngineAuthorizationPort` | Evaluate whether a given engine command (e.g. create process instance, complete user task) is authorized for the requesting principal, using the identity state held in primary storage. |
+
+**Outbound port responsibilities:**
+
+| Outbound port | Responsibility |
+|---|---|
+| `IdentityStatePort` | Read and write identity state (authorizations, roles, memberships, mapping rules, tenants) to the engine's primary storage (RocksDB). Abstracts the concrete state class layer from the domain logic. |
+
+**Open question:** how identity data is persisted in the OC (direct write from the OC SGF to secondary storage vs. routing through engine commands and the exporter) is an unresolved design question that also determines what scope metadata the engine must receive. See [ADR-0004: Identity data persistence in the Orchestration Cluster](adr/0004-oc-identity-data-persistence-and-engine-command-scope.md).
+
+#### 5.5.1 Why a shared Security Engine Framework layer?
+
+The dedicated enforcement layer inside each engine is intentional:
+
+- Command-time authorization isolated from business logic
+  - All engine commands requiring authorization pass through `EngineAuthorizationPort`. Command processors focus on process execution and never embed role or tenant logic directly.
+- Primary-storage-optimized identity state
+  - Identity state (authorizations, tenants, memberships) is held in RocksDB (primary storage), co-located with engine state, avoiding round-trips to secondary storage on every command.
+  - Query-time authorization for UIs and APIs is handled by the OC Security Gateway Framework against secondary storage; the Security Engine Framework covers command-time decisions only.
+- Engine state is a projection, never a source of truth
+  - Engines only apply what the OC Security Gateway Framework forwards; they cannot author or override policy.
+- Pluggable state adapter
+  - `IdentityStatePort` decouples authorization logic from the concrete persistence backend (RocksDB today), so the backend can be swapped without changing domain logic.
+
+### 5.6 Persistent sessions
 
 Persistent sessions are required for the OC authentication UX and remain part of the unified architecture.
 
@@ -1287,13 +1377,13 @@ Persistent sessions are required for the OC authentication UX and remain part of
   - In OC-only mode, OC is the only session authority.
 - Session data is not propagated via the policy outbox flow.
 
-### 5.6 Single shared Admin UI
+### 5.7 Single shared Admin UI
 
 TODO
 
-### 5.7 Scoped Policies
+### 5.8 Scoped Policies
 
-#### 5.7.1 Multi Engine support
+#### 5.8.1 Multi Engine support
 
 The unified identity plane supports multiple engines per Orchestration Cluster in both deployment modes:
 
@@ -1331,7 +1421,7 @@ flowchart TB
 - Engines consume the cluster-level projection; they do not define their own identity models and cannot override OC policy.
 - In OC-only mode, the same projection model applies with local flow: OC → Engines.
 
-#### 5.7.2 Multi Tenant support
+#### 5.8.2 Multi Tenant support
 
 Multi-tenancy is a first-class concern in the policy model. Tenant configuration is authored once in Hub and propagated top-down to OC and then to engines. Each layer maintains tenant-aware roles, mapping rules, and authorizations.
 
@@ -1364,7 +1454,7 @@ On each request, the Security Gateway Framework:
 2. Loads the tenant-specific policy view (roles, mappings, authorizations).
 3. Enforces permissions within the tenant boundary, preventing cross-tenant data access.
 
-#### 5.7.3 Global vs scoped policies (tenant and engine)
+#### 5.8.3 Global vs scoped policies (tenant and engine)
 
 The policy model supports both:
 
@@ -1615,7 +1705,7 @@ flowchart TB
 
 In SaaS, Camunda operates one shared Hub instance for many customer organizations. The unified identity library therefore has to support multi-organization policy authoring and propagation inside a single Hub runtime.
 
-- One shared Hub instance serves multiple organizations; policy and identity data in Hub must therefore be partitioned by organization.
+- One shared Hub instance serves **many organizations** (one per customer); policy and identity data in Hub must therefore be partitioned by organization. Each organization owns one or more OC clusters. This is in direct contrast to Self-Managed, where there is always exactly one organization.
 - In the first iterations, this partitioning is logical only: shared Hub databases and infrastructure are reused, while policy tables and queries are keyed by `organization_id`.
 - Each OC remains associated with exactly one organization boundary for policy propagation.
 - Today, Hub does not own orchestration-cluster metadata directly in SaaS. To show/select OCs and target policy rollout, Hub must query the Console backend.
@@ -1695,6 +1785,15 @@ This section contains detailed Architectural Decision Records (ADRs) for the Sec
 - [ADR-0001: Link PolicyVersion with policy data via versioned change sets](adr/0001-policy-version-change-sets.md)
 - [ADR-0002: Placement of the Security Gateway Framework (embedded vs standalone service)](adr/0002-placement-of-the-security-gateway-framework.md)
 - [ADR-0003: Push vs Pull Policy Propagation (Hub ↔ Orchestration Clusters)](adr/0003-Push-vs-Pull-Policy-Propagation.md)
+- [ADR-0004: Identity data persistence in the Orchestration Cluster (Open)](adr/0004-oc-identity-data-persistence-and-engine-command-scope.md)
+
+---
+
+## 10. Migration path
+
+The migration path from the current split identity systems (Auth0 in SaaS, Management Identity and OC Identity in Self-Managed) to the unified Security Gateway Framework is documented in a dedicated file:
+
+- **[Migration Path](migration_path.md)**
 
 ---
 
