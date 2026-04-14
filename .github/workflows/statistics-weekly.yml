@@ -11,7 +11,8 @@ on:
   pull_request:
     paths:
       - '.github/workflows/statistics-weekly.yml'
-      - '.ci/scripts/setup-medic-lookup.sh'
+      - '.ci/scripts/ci/setup-medic-lookup.sh'
+      - '.ci/scripts/ci/create-ci-slo-report.sh'
   workflow_dispatch: {}
 
 env:
@@ -19,7 +20,7 @@ env:
 
 jobs:
   failed-tests:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-slim
     timeout-minutes: 5
     permissions: {}  # GITHUB_TOKEN unused in this job
     steps:
@@ -139,6 +140,76 @@ jobs:
                 text:
                   type: "mrkdwn"
                   text: "${{ steps.message.outputs.MESSAGE }}"
+
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+
+  ci-slo:
+    runs-on: ubuntu-slim
+    timeout-minutes: 5
+    permissions: {}  # GITHUB_TOKEN unused in this job
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+
+      - name: Import Secrets
+        id: secrets
+        uses: hashicorp/vault-action@4c06c5ccf5c0761b6029f56cfb1dcf5565918a3b # v3.4.0
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          exportEnv: false # we rely on step outputs, no need for environment variables
+          secrets: |
+            secret/data/products/camunda/ci/github-actions SLACK_TOPMONOREPOCI_WEBHOOK_URL;
+            secret/data/products/zeebe/ci/ci-analytics gcloud_sa_key;
+
+      - name: Login to Google Cloud
+        id: auth
+        uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3
+        with:
+          credentials_json: ${{ steps.secrets.outputs.gcloud_sa_key }}
+
+      - name: Setup Google Cloud SDK
+        uses: google-github-actions/setup-gcloud@aa5489c8933f4cc7a4f7d45035b3b1440c9c10db # v3
+
+      - name: Print Google Cloud SDK version used
+        shell: bash
+        run: |
+          gcloud info
+
+      - name: Create CI SLO report
+        id: slo_message
+        shell: bash
+        run: |
+          bash .ci/scripts/ci/create-ci-slo-report.sh
+
+      - name: Debug notification
+        if: github.event_name == 'pull_request'
+        shell: bash
+        run: |
+          echo '${{ steps.slo_message.outputs.MESSAGE }}'
+
+      - name: Send notification
+        if: github.event_name != 'pull_request'
+        uses: slackapi/slack-github-action@af78098f536edbc4de71162a307590698245be95 # v3.0.1
+        with:
+          webhook: ${{ steps.secrets.outputs.SLACK_TOPMONOREPOCI_WEBHOOK_URL }}
+          webhook-type: webhook-trigger
+          # For posting a rich message using Block Kit
+          payload: |
+            blocks:
+              - type: "section"
+                text:
+                  type: "mrkdwn"
+                  text: ${{ toJSON(steps.slo_message.outputs.MESSAGE) }}
 
       - name: Observe build status
         if: always()
