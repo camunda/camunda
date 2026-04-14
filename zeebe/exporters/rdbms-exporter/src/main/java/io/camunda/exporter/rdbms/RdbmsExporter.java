@@ -13,6 +13,8 @@ import io.camunda.db.rdbms.write.RdbmsWriters;
 import io.camunda.db.rdbms.write.domain.ExporterPositionModel;
 import io.camunda.db.rdbms.write.service.HistoryCleanupService;
 import io.camunda.db.rdbms.write.service.HistoryDeletionService;
+import io.camunda.db.rdbms.write.ReplicationLsnProvider;
+import io.camunda.exporter.rdbms.replication.LsnPositionEntry;
 import io.camunda.exporter.rdbms.tasks.RdbmsBackgroundTaskManager;
 import io.camunda.zeebe.exporter.api.ExporterException;
 import io.camunda.zeebe.exporter.api.context.Controller;
@@ -27,6 +29,9 @@ import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Queue;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.atomic.AtomicLong;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -60,6 +65,12 @@ public final class RdbmsExporter {
   // Track the oldest record timestamp in the current batch for exporting latency calculation
   private long oldestRecordTimestampInBatch = -1;
 
+  // Async replication support
+  private final ReplicationLsnProvider replicationLsnProvider;
+  private final Duration asyncReplicationPollingInterval;
+  private final Queue<LsnPositionEntry> pendingReplicationEntries;
+  private final AtomicLong confirmedReplicationPosition;
+
   private RdbmsExporter(
       final int partitionId,
       final Duration flushInterval,
@@ -68,7 +79,9 @@ public final class RdbmsExporter {
       final Map<ValueType, List<RdbmsExportHandler>> handlers,
       final RdbmsSchemaManager rdbmsSchemaManager,
       final HistoryCleanupService historyCleanupService,
-      final HistoryDeletionService historyDeletionService) {
+      final HistoryDeletionService historyDeletionService,
+      final ReplicationLsnProvider replicationLsnProvider,
+      final Duration asyncReplicationPollingInterval) {
     this.historyCleanupService = historyCleanupService;
     this.rdbmsWriters = rdbmsWriters;
     registeredHandlers = handlers;
@@ -78,6 +91,15 @@ public final class RdbmsExporter {
     this.queueSize = queueSize;
     this.rdbmsSchemaManager = rdbmsSchemaManager;
     this.historyDeletionService = historyDeletionService;
+    this.replicationLsnProvider = replicationLsnProvider;
+    this.asyncReplicationPollingInterval = asyncReplicationPollingInterval;
+    if (replicationLsnProvider != null) {
+      pendingReplicationEntries = new ConcurrentLinkedQueue<>();
+      confirmedReplicationPosition = new AtomicLong(-1);
+    } else {
+      pendingReplicationEntries = null;
+      confirmedReplicationPosition = null;
+    }
 
     LOG.info(
         "[RDBMS Exporter P{}] RdbmsExporter created with Configuration: flushInterval={}, queueSize={}",
@@ -127,7 +149,13 @@ public final class RdbmsExporter {
     lastFlushedPosition = lastPosition;
 
     rdbmsWriters.getExecutionQueue().registerPreFlushListener(this::updatePositionInRdbms);
-    rdbmsWriters.getExecutionQueue().registerPostFlushListener(this::updatePositionInBroker);
+    if (isAsyncReplicationEnabled()) {
+      rdbmsWriters
+          .getExecutionQueue()
+          .registerPostFlushListener(this::captureCurrentLsnAndEnqueue);
+    } else {
+      rdbmsWriters.getExecutionQueue().registerPostFlushListener(this::updatePositionInBroker);
+    }
     rdbmsWriters.getExecutionQueue().registerPostFlushListener(this::recordExportingLatency);
 
     // Start background tasks (history cleanup and deletion) in a separate thread pool,
@@ -274,6 +302,22 @@ public final class RdbmsExporter {
     controller.updateLastExportedRecordPosition(lastPosition);
   }
 
+  private boolean isAsyncReplicationEnabled() {
+    return replicationLsnProvider != null;
+  }
+
+  private void captureCurrentLsnAndEnqueue() {
+    final long currentLsn = replicationLsnProvider.getCurrentLsn();
+    pendingReplicationEntries.offer(new LsnPositionEntry(currentLsn, lastPosition));
+
+    // Check if the background task has confirmed any positions and update the broker
+    final long confirmed = confirmedReplicationPosition.get();
+    if (confirmed > lastFlushedPosition) {
+      lastFlushedPosition = confirmed;
+      controller.updateLastExportedRecordPosition(confirmed);
+    }
+  }
+
   private void updatePositionInRdbms() {
     if (lastPosition > exporterRdbmsPosition.lastExportedPosition()) {
       LOG.trace("[RDBMS Exporter P{}] Updating position to {} in rdbms", partitionId, lastPosition);
@@ -362,6 +406,24 @@ public final class RdbmsExporter {
     return registeredHandlers;
   }
 
+  @VisibleForTesting
+  Queue<LsnPositionEntry> getPendingReplicationEntries() {
+    return pendingReplicationEntries;
+  }
+
+  @VisibleForTesting
+  AtomicLong getConfirmedReplicationPosition() {
+    return confirmedReplicationPosition;
+  }
+
+  Duration getAsyncReplicationPollingInterval() {
+    return asyncReplicationPollingInterval;
+  }
+
+  ReplicationLsnProvider getReplicationLsnProvider() {
+    return replicationLsnProvider;
+  }
+
   public static final class Builder {
 
     private int partitionId;
@@ -372,6 +434,8 @@ public final class RdbmsExporter {
     private Map<ValueType, List<RdbmsExportHandler>> handlers = new EnumMap<>(ValueType.class);
     private HistoryCleanupService historyCleanupService;
     private HistoryDeletionService historyDeletionService;
+    private ReplicationLsnProvider replicationLsnProvider;
+    private Duration asyncReplicationPollingInterval;
 
     public Builder partitionId(final int value) {
       partitionId = value;
@@ -422,6 +486,16 @@ public final class RdbmsExporter {
       return this;
     }
 
+    public Builder replicationLsnProvider(final ReplicationLsnProvider value) {
+      replicationLsnProvider = value;
+      return this;
+    }
+
+    public Builder asyncReplicationPollingInterval(final Duration value) {
+      asyncReplicationPollingInterval = value;
+      return this;
+    }
+
     public RdbmsExporter build() {
       return new RdbmsExporter(
           partitionId,
@@ -431,7 +505,9 @@ public final class RdbmsExporter {
           handlers,
           rdbmsSchemaManager,
           historyCleanupService,
-          historyDeletionService);
+          historyDeletionService,
+          replicationLsnProvider,
+          asyncReplicationPollingInterval);
     }
   }
 }
