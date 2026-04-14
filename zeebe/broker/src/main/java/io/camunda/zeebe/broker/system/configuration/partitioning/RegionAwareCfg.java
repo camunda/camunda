@@ -15,8 +15,8 @@ import java.util.LinkedHashMap;
  *
  * <p>Maps region names to their respective {@link RegionCfg}. The insertion order of this map is
  * significant: broker {@link io.atomix.cluster.MemberId}s are assigned sequentially per region in
- * iteration order. For example, given regions {@code us-east1} (2 brokers) then {@code us-west1}
- * (2 brokers), the member IDs will be {@code us-east1-0}, {@code us-east1-1}, {@code us-west1-0},
+ * iteration order. For example, given regions {@code us-east1} (2 brokers) then {@code us-west1} (2
+ * brokers), the member IDs will be {@code us-east1-0}, {@code us-east1-1}, {@code us-west1-0},
  * {@code us-west1-1}.
  *
  * <p>The map <strong>must</strong> be a {@link LinkedHashMap} to preserve YAML insertion order.

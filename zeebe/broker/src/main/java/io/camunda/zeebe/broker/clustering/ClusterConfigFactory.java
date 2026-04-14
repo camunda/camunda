@@ -33,7 +33,8 @@ public final class ClusterConfigFactory {
     final var messaging = messagingConfig(cluster, network);
     final var member =
         memberConfig(
-            network.getInternalApi(), cluster.getNodeId(), config.getCluster().getNodeVersion());
+            network.getInternalApi(), cluster.getNodeId(),
+            config.getCluster().getNodeVersion(), config.getCluster().getRegion());
 
     return new ClusterConfig()
         .setClusterId(name)
@@ -44,13 +45,16 @@ public final class ClusterConfigFactory {
   }
 
   private MemberConfig memberConfig(
-      final SocketBindingCfg network, final int nodeId, final long nodeVersion) {
+      final SocketBindingCfg network,
+      final int nodeId,
+      final long nodeVersion,
+      final String region) {
     final var advertisedAddress =
         Address.from(network.getAdvertisedHost(), network.getAdvertisedPort());
 
     return new MemberConfig()
         .setAddress(advertisedAddress)
-        .setId(String.valueOf(nodeId))
+        .setId(region + "-" + nodeId)
         .setNodeVersion(nodeVersion);
   }
 
