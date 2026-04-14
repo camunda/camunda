@@ -12,8 +12,8 @@ import static io.camunda.zeebe.protocol.Protocol.START_PARTITION_ID;
 import static io.camunda.zeebe.util.StringUtil.LIST_SANITIZER;
 
 import io.atomix.cluster.messaging.MessagingConfig.CompressionAlgorithm;
-import io.camunda.zeebe.broker.system.configuration.partitioning.RegionAwareCfg;
 import io.camunda.zeebe.broker.system.configuration.partitioning.Scheme;
+import io.camunda.zeebe.broker.system.configuration.partitioning.ZoneAwareCfg;
 import java.time.Duration;
 import java.util.Collections;
 import java.util.List;
@@ -69,12 +69,13 @@ public final class ClusterCfg implements ConfigurationEntry {
   private List<Integer> partitionIds;
 
   private Integer nodeId = 0;
+
   /**
    * The region this broker belongs to. When set, the partitioning scheme must be {@link
    * io.camunda.zeebe.broker.system.configuration.partitioning.Scheme#REGION_AWARE} and the broker's
    * {@link #nodeId} must be unique within this region only (i.e. in the range {@code [0,
    * numberOfBrokers)} as configured in {@link
-   * io.camunda.zeebe.broker.system.configuration.partitioning.RegionAwareCfg}).
+   * io.camunda.zeebe.broker.system.configuration.partitioning.ZoneAwareCfg}).
    *
    * <p>When {@code null}, the broker operates in the standard non-region-aware mode and all
    * existing behaviour is preserved.
@@ -82,6 +83,7 @@ public final class ClusterCfg implements ConfigurationEntry {
    * <p>Environment variable: {@code CAMUNDA_CLUSTER_REGION}.
    */
   private String region;
+
   // TODO add javaDoc
   private Long nodeVersion = 0L;
 
@@ -108,7 +110,7 @@ public final class ClusterCfg implements ConfigurationEntry {
     }
 
     if (region != null && !region.isBlank()) {
-      validateRegionAwareConfig(globalConfig);
+      validateZoneAwareConfig(globalConfig);
     } else {
       if (nodeId < 0) {
         throw new IllegalArgumentException("Node id must be positive");
@@ -140,7 +142,7 @@ public final class ClusterCfg implements ConfigurationEntry {
     }
   }
 
-  private void validateRegionAwareConfig(final BrokerCfg globalConfig) {
+  private void validateZoneAwareConfig(final BrokerCfg globalConfig) {
     final var partitioningCfg = globalConfig.getExperimental().getPartitioning();
 
     if (partitioningCfg.getScheme() != Scheme.REGION_AWARE) {
@@ -148,7 +150,7 @@ public final class ClusterCfg implements ConfigurationEntry {
           String.format(REGION_SCHEME_ERROR_MSG, region, partitioningCfg.getScheme()));
     }
 
-    final RegionAwareCfg regionAwareCfg = partitioningCfg.getRegionAware();
+    final ZoneAwareCfg regionAwareCfg = partitioningCfg.getZoneAware();
     final var regions = regionAwareCfg.getRegions();
 
     if (!regions.containsKey(region)) {

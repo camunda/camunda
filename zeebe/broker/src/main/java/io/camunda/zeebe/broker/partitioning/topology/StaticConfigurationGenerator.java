@@ -26,6 +26,8 @@ import io.camunda.zeebe.dynamic.config.state.ExporterState.State;
 import io.camunda.zeebe.dynamic.config.state.ExportingConfig;
 import io.camunda.zeebe.dynamic.config.state.ExportingState;
 import io.camunda.zeebe.dynamic.config.util.RoundRobinPartitionDistributor;
+import io.camunda.zeebe.dynamic.config.util.ZoneAwarePartitionDistributor;
+import io.camunda.zeebe.dynamic.config.util.ZoneAwarePartitionDistributor.ZoneSpec;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -69,10 +71,32 @@ public final class StaticConfigurationGenerator {
   private static PartitionDistributor buildPartitionDistributor(final PartitioningCfg config) {
     return switch (config.getScheme()) {
       case FIXED -> buildFixedPartitionDistributor(config);
-      case REGION_AWARE -> throw new UnsupportedOperationException(
-          "RegionAwarePartitionDistributor is not yet implemented");
+      case REGION_AWARE -> buildZoneAwarePartitionDistributor(config);
       default -> new RoundRobinPartitionDistributor();
     };
+  }
+
+  private static ZoneAwarePartitionDistributor buildZoneAwarePartitionDistributor(
+      final PartitioningCfg config) {
+    final var regions = config.getZoneAware().getRegions();
+    final List<ZoneSpec> specs =
+        regions.entrySet().stream()
+            .map(
+                e -> {
+                  final String regionName = e.getKey();
+                  final var regionCfg = e.getValue();
+                  final List<MemberId> brokers =
+                      IntStream.range(0, regionCfg.getNumberOfBrokers())
+                          .mapToObj(localId -> MemberId.from(regionName + "-" + localId))
+                          .toList();
+                  return new ZoneSpec(
+                      regionName,
+                      regionCfg.getNumberOfReplicas(),
+                      regionCfg.getPriority(),
+                      brokers);
+                })
+            .toList();
+    return new ZoneAwarePartitionDistributor(specs);
   }
 
   private static FixedPartitionDistributor buildFixedPartitionDistributor(
@@ -93,7 +117,7 @@ public final class StaticConfigurationGenerator {
   private static Set<MemberId> getRaftGroupMembers(
       final ClusterCfg clusterCfg, final PartitioningCfg partitioningCfg) {
     if (partitioningCfg.getScheme() == REGION_AWARE) {
-      return getRegionAwareRaftGroupMembers(partitioningCfg);
+      return getZoneAwareRaftGroupMembers(partitioningCfg);
     }
     // Legacy path: node ids are always 0 to clusterSize - 1
     final int clusterSize = clusterCfg.getClusterSize();
@@ -106,12 +130,11 @@ public final class StaticConfigurationGenerator {
    * Generates composite {@link MemberId}s for all brokers in a region-aware cluster. The format is
    * {@code "region-localNodeId"} (e.g. {@code "us-east1-0"}). Local node IDs are 0-indexed within
    * each region, derived from the {@link
-   * io.camunda.zeebe.broker.system.configuration.partitioning.RegionAwareCfg} configuration in the
+   * io.camunda.zeebe.broker.system.configuration.partitioning.ZoneAwareCfg} configuration in the
    * same insertion order used by each broker to determine its own member ID.
    */
-  private static Set<MemberId> getRegionAwareRaftGroupMembers(
-      final PartitioningCfg partitioningCfg) {
-    return partitioningCfg.getRegionAware().getRegions().entrySet().stream()
+  private static Set<MemberId> getZoneAwareRaftGroupMembers(final PartitioningCfg partitioningCfg) {
+    return partitioningCfg.getZoneAware().getRegions().entrySet().stream()
         .flatMap(
             e ->
                 IntStream.range(0, e.getValue().getNumberOfBrokers())
