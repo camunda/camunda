@@ -238,7 +238,7 @@ outputs:
         (
           github.event_name == 'push' ||
           github.event_name == 'schedule' ||
-          steps.filter-common.outputs.github-actions-change == 'true' ||
+          steps.ci-github-actions.outputs.ci-relevant == 'true' ||
           steps.filter-alwaysgreen.outputs.docker-build-helm-integration == 'true'
         )
         &&
