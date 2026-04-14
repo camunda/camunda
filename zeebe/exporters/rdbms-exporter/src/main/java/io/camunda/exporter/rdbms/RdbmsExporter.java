@@ -145,12 +145,7 @@ public final class RdbmsExporter {
     // decoupled from the main export thread
     backgroundTaskManager =
         new RdbmsBackgroundTaskManager(
-            partitionId,
-            historyCleanupService,
-            historyDeletionService,
-            LOG,
-            RdbmsBackgroundTaskManager.DEFAULT_CLOSE_TIMEOUT,
-            replicationContext);
+            partitionId, historyCleanupService, historyDeletionService, LOG, replicationContext);
     backgroundTaskManager.start();
 
     LOG.info(
@@ -296,7 +291,9 @@ public final class RdbmsExporter {
 
   private void captureCurrentLsnAndEnqueue() {
     final long currentLsn = replicationContext.lsnProvider().getCurrentLsn();
-    if (!replicationContext.pendingEntries().offer(new LsnPositionEntry(currentLsn, lastPosition))) {
+    if (!replicationContext
+        .pendingEntries()
+        .offer(new LsnPositionEntry(currentLsn, lastPosition))) {
       LOG.warn(
           "[RDBMS Exporter P{}] Replication queue is full, dropping LSN entry (lsn={}, position={})",
           partitionId,
