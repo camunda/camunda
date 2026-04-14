@@ -33,6 +33,7 @@ public record SearchClientReaders(
     ProcessDefinitionInstanceVersionStatisticsReader
         processDefinitionInstanceVersionStatisticsReader,
     ProcessInstanceStatisticsReader processInstanceStatisticsReader,
+    ResourceReader resourceReader,
     RoleReader roleReader,
     RoleMemberReader roleMemberReader,
     SequenceFlowReader sequenceFlowReader,

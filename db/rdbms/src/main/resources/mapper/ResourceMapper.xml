@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!--
+  ~ Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+  ~ one or more contributor license agreements. See the NOTICE file distributed
+  ~ with this work for additional information regarding copyright ownership.
+  ~ Licensed under the Camunda License 1.0. You may not use this file
+  ~ except in compliance with the Camunda License 1.0.
+  -->
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="io.camunda.db.rdbms.sql.ResourceMapper">
+
+  <resultMap id="searchResultMap" type="io.camunda.search.entities.ResourceEntity">
+    <constructor>
+      <idArg column="RESOURCE_KEY" javaType="java.lang.Long"/>
+      <arg column="RESOURCE_ID" javaType="java.lang.String"
+        typeHandler="io.camunda.db.rdbms.sql.typehandler.NullToEmptyStringTypeHandler"/>
+      <arg column="RESOURCE_NAME" javaType="java.lang.String"
+        typeHandler="io.camunda.db.rdbms.sql.typehandler.NullToEmptyStringTypeHandler"/>
+      <arg column="VERSION" javaType="int"/>
+      <arg column="VERSION_TAG" javaType="java.lang.String"/>
+      <arg column="DEPLOYMENT_KEY" javaType="java.lang.Long"/>
+      <arg column="TENANT_ID" javaType="java.lang.String"
+        typeHandler="io.camunda.db.rdbms.sql.typehandler.NullToEmptyStringTypeHandler"/>
+    </constructor>
+  </resultMap>
+
+  <insert id="insert" parameterType="io.camunda.db.rdbms.write.domain.ResourceDbModel">
+    INSERT INTO ${prefix}RESOURCE (RESOURCE_KEY, RESOURCE_ID, RESOURCE_NAME, VERSION, VERSION_TAG,
+                                   DEPLOYMENT_KEY, TENANT_ID)
+    VALUES (#{resourceKey}, #{resourceId}, #{resourceName}, #{version}, #{versionTag},
+            #{deploymentKey}, #{tenantId})
+  </insert>
+
+  <delete id="delete" parameterType="java.lang.Long">
+    DELETE
+    FROM ${prefix}RESOURCE
+    WHERE RESOURCE_KEY = #{resourceKey}
+  </delete>
+
+  <select id="count" parameterType="io.camunda.db.rdbms.read.domain.ResourceDbQuery" resultType="long">
+    SELECT COUNT(*) FROM (
+      SELECT 1 as col
+      FROM ${prefix}RESOURCE
+      <include refid="io.camunda.db.rdbms.sql.ResourceMapper.searchFilter"/>
+      ${count.limit}
+    ) t
+  </select>
+
+  <select id="search" parameterType="io.camunda.db.rdbms.read.domain.ResourceDbQuery"
+    resultMap="io.camunda.db.rdbms.sql.ResourceMapper.searchResultMap">
+    SELECT * FROM (
+    SELECT
+    RESOURCE_KEY,
+    RESOURCE_ID,
+    RESOURCE_NAME,
+    VERSION,
+    VERSION_TAG,
+    DEPLOYMENT_KEY,
+    TENANT_ID
+    FROM ${prefix}RESOURCE
+    <include refid="io.camunda.db.rdbms.sql.ResourceMapper.searchFilter"/>
+    ) t
+    <include refid="io.camunda.db.rdbms.sql.Commons.keySetPageFilter"/>
+    <include refid="io.camunda.db.rdbms.sql.Commons.orderBy"/>
+    <include refid="io.camunda.db.rdbms.sql.Commons.paging"/>
+  </select>
+
+  <sql id="searchFilter">
+    WHERE 1 = 1
+    <if test="filter.resourceKeys != null and !filter.resourceKeys.isEmpty()">
+      AND RESOURCE_KEY IN
+      <foreach close=")" collection="filter.resourceKeys" item="value" open="("
+        separator=", ">#{value}
+      </foreach>
+    </if>
+    <if test="filter.resourceIds != null and !filter.resourceIds.isEmpty()">
+      AND RESOURCE_ID IN
+      <foreach close=")" collection="filter.resourceIds" item="value" open="("
+        separator=", ">#{value}
+      </foreach>
+    </if>
+    <if test="filter.tenantId != null">
+      AND TENANT_ID = #{filter.tenantId}
+    </if>
+  </sql>
+
+</mapper>

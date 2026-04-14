@@ -2198,4 +2198,23 @@
     </sql>
   </changeSet>
 
+  <changeSet id="create_resource_table" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <tableExists tableName="${prefix}RESOURCE"/>
+      </not>
+    </preConditions>
+    <createTable tableName="${prefix}RESOURCE">
+      <column name="RESOURCE_KEY" type="BIGINT">
+        <constraints primaryKey="true"/>
+      </column>
+      <column name="RESOURCE_ID" type="NVARCHAR(${userCharColumnSize})"/>
+      <column name="RESOURCE_NAME" type="NVARCHAR(${userCharColumnSize})"/>
+      <column name="VERSION" type="SMALLINT"/>
+      <column name="VERSION_TAG" type="NVARCHAR(${userCharColumnSize})"/>
+      <column name="DEPLOYMENT_KEY" type="BIGINT"/>
+      <column name="TENANT_ID" type="NVARCHAR(${userCharColumnSize})"/>
+    </createTable>
+  </changeSet>
+
 </databaseChangeLog>

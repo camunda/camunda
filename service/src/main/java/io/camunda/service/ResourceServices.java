@@ -10,8 +10,13 @@ package io.camunda.service;
 import static io.camunda.search.query.SearchQueryBuilders.decisionRequirementsSearchQuery;
 import static io.camunda.search.query.SearchQueryBuilders.processDefinitionSearchQuery;
 
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
 import io.camunda.search.clients.DecisionRequirementSearchClient;
 import io.camunda.search.clients.ProcessDefinitionSearchClient;
+import io.camunda.search.clients.ResourceSearchClient;
+import io.camunda.search.entities.ResourceEntity;
+import io.camunda.search.exception.NoSecondaryStorageException;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.security.SecurityContextProvider;
@@ -30,6 +35,8 @@ public final class ResourceServices extends ApiServices<ResourceServices> {
 
   private final ProcessDefinitionSearchClient processDefinitionSearchClient;
   private final DecisionRequirementSearchClient decisionRequirementSearchClient;
+  private final ResourceSearchClient resourceSearchClient;
+  private final Cache<Long, ResourceEntity> resourceCache;
 
   public ResourceServices(
       final BrokerClient brokerClient,
@@ -37,7 +44,9 @@ public final class ResourceServices extends ApiServices<ResourceServices> {
       final ApiServicesExecutorProvider executorProvider,
       final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter,
       final ProcessDefinitionSearchClient processDefinitionSearchClient,
-      final DecisionRequirementSearchClient decisionRequirementSearchClient) {
+      final DecisionRequirementSearchClient decisionRequirementSearchClient,
+      final ResourceSearchClient resourceSearchClient,
+      final long resourceCacheMaxSize) {
     super(
         brokerClient,
         securityContextProvider,
@@ -45,6 +54,8 @@ public final class ResourceServices extends ApiServices<ResourceServices> {
         brokerRequestAuthorizationConverter);
     this.processDefinitionSearchClient = processDefinitionSearchClient;
     this.decisionRequirementSearchClient = decisionRequirementSearchClient;
+    this.resourceSearchClient = resourceSearchClient;
+    resourceCache = Caffeine.newBuilder().maximumSize(resourceCacheMaxSize).build();
   }
 
   public CompletableFuture<DeploymentRecord> deployResources(
@@ -116,10 +127,57 @@ public final class ResourceServices extends ApiServices<ResourceServices> {
     }
   }
 
+  /**
+   * Fetches a resource by key from primary storage (broker). Used for content retrieval.
+   *
+   * @param request the resource fetch request
+   * @param authentication the authentication context
+   * @return a future with the resource record
+   */
   public CompletableFuture<ResourceRecord> fetchResource(
       final ResourceFetchRequest request, final CamundaAuthentication authentication) {
     return sendBrokerRequest(
         new BrokerFetchResourceRequest().setResourceKey(request.resourceKey()), authentication);
+  }
+
+  /**
+   * Gets resource metadata by key. Fetches from secondary storage (search) if available, with
+   * fallback to primary storage (broker) when running without secondary storage. Results are cached
+   * to avoid repeated lookups.
+   *
+   * @param resourceKey the resource key
+   * @param authentication the authentication context
+   * @return a future with the resource entity
+   */
+  public CompletableFuture<ResourceEntity> getByKey(
+      final long resourceKey, final CamundaAuthentication authentication) {
+    final var cached = resourceCache.getIfPresent(resourceKey);
+    if (cached != null) {
+      return CompletableFuture.completedFuture(cached);
+    }
+    try {
+      final var securityContext =
+          securityContextProvider.provideSecurityContext(authentication);
+      final var entity =
+          resourceSearchClient.withSecurityContext(securityContext).getResource(resourceKey);
+      if (entity != null) {
+        resourceCache.put(resourceKey, entity);
+      }
+      return CompletableFuture.completedFuture(entity);
+    } catch (final NoSecondaryStorageException e) {
+      // Fall back to primary storage when running without secondary storage
+      return fetchResource(new ResourceFetchRequest(resourceKey), authentication)
+          .thenApply(
+              record ->
+                  new ResourceEntity(
+                      record.getResourceKey(),
+                      record.getResourceId(),
+                      record.getResourceName(),
+                      record.getVersion(),
+                      record.getVersionTag(),
+                      record.getDeploymentKey(),
+                      record.getTenantId()));
+    }
   }
 
   public record DeployResourcesRequest(Map<String, byte[]> resources, String tenantId) {}

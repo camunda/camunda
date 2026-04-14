@@ -22,6 +22,7 @@ import io.camunda.search.clients.FlowNodeInstanceSearchClient;
 import io.camunda.search.clients.FormSearchClient;
 import io.camunda.search.clients.GlobalListenerSearchClient;
 import io.camunda.search.clients.GroupSearchClient;
+import io.camunda.search.clients.ResourceSearchClient;
 import io.camunda.search.clients.IncidentSearchClient;
 import io.camunda.search.clients.JobSearchClient;
 import io.camunda.search.clients.MappingRuleSearchClient;
@@ -473,14 +474,18 @@ public class CamundaServicesConfiguration {
       final ApiServicesExecutorProvider executorProvider,
       final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter,
       final ProcessDefinitionSearchClient processDefinitionSearchClient,
-      final DecisionRequirementSearchClient decisionRequirementSearchClient) {
+      final DecisionRequirementSearchClient decisionRequirementSearchClient,
+      final ResourceSearchClient resourceSearchClient,
+      final GatewayRestConfiguration gatewayRestConfiguration) {
     return new ResourceServices(
         brokerClient,
         securityContextProvider,
         executorProvider,
         brokerRequestAuthorizationConverter,
         processDefinitionSearchClient,
-        decisionRequirementSearchClient);
+        decisionRequirementSearchClient,
+        resourceSearchClient,
+        gatewayRestConfiguration.getResourceCache().getMaxSize());
   }
 
   @Bean

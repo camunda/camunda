@@ -70,8 +70,11 @@ public class ResourceController {
   @CamundaGetMapping(path = "/resources/{resourceKey}")
   public CompletableFuture<ResponseEntity<Object>> getResource(
       @PathVariable final long resourceKey) {
+    final var authentication = authenticationProvider.getCamundaAuthentication();
     return RequestExecutor.executeServiceMethod(
-        () -> fetchResource(resourceKey), ResponseMapper::toGetResourceResponse, HttpStatus.OK);
+        () -> resourceServices.getByKey(resourceKey, authentication),
+        ResponseMapper::toGetResourceResponse,
+        HttpStatus.OK);
   }
 
   @CamundaGetMapping(path = "/resources/{resourceKey}/content")

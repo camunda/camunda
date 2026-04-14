@@ -29,6 +29,7 @@ import io.camunda.exporter.rdbms.handlers.FlowNodeExportHandler;
 import io.camunda.exporter.rdbms.handlers.FlowNodeInstanceIncidentExportHandler;
 import io.camunda.exporter.rdbms.handlers.FormExportHandler;
 import io.camunda.exporter.rdbms.handlers.GlobalListenerExportHandler;
+import io.camunda.exporter.rdbms.handlers.ResourceExportHandler;
 import io.camunda.exporter.rdbms.handlers.GroupExportHandler;
 import io.camunda.exporter.rdbms.handlers.HistoryDeletionDeletedHandler;
 import io.camunda.exporter.rdbms.handlers.IncidentExportHandler;
@@ -281,6 +282,8 @@ public class RdbmsExporterWrapper implements Exporter {
     builder.withHandler(
         ValueType.GLOBAL_LISTENER,
         new GlobalListenerExportHandler(rdbmsWriters.getGlobalListenerWriter()));
+    builder.withHandler(
+        ValueType.RESOURCE, new ResourceExportHandler(rdbmsWriters.getResourceWriter()));
 
     if (config.getAuditLog().isEnabled()) {
       registerAuditLogHandlers(rdbmsWriters, builder, config, partitionId);

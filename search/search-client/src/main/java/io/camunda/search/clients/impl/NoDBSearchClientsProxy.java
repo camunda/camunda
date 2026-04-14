@@ -448,4 +448,15 @@ public class NoDBSearchClientsProxy implements SearchClientsProxy {
       final GlobalListenerQuery query) {
     throw new NoSecondaryStorageException();
   }
+
+  @Override
+  public io.camunda.search.entities.ResourceEntity getResource(final long key) {
+    throw new NoSecondaryStorageException();
+  }
+
+  @Override
+  public SearchQueryResult<io.camunda.search.entities.ResourceEntity> searchResources(
+      final io.camunda.search.query.ResourceQuery query) {
+    throw new NoSecondaryStorageException();
+  }
 }

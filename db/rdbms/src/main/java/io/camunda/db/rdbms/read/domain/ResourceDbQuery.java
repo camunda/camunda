@@ -1,0 +1,69 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+package io.camunda.db.rdbms.read.domain;
+
+import io.camunda.search.entities.ResourceEntity;
+import io.camunda.search.filter.FilterBuilders;
+import io.camunda.search.filter.ResourceFilter;
+import io.camunda.util.ObjectBuilder;
+import java.util.Collections;
+import java.util.Objects;
+import java.util.function.Function;
+
+public record ResourceDbQuery(
+    ResourceFilter filter, DbQuerySorting<ResourceEntity> sort, DbQueryPage page) {
+
+  public static ResourceDbQuery of(
+      final Function<ResourceDbQuery.Builder, ObjectBuilder<ResourceDbQuery>> fn) {
+    return fn.apply(new ResourceDbQuery.Builder()).build();
+  }
+
+  public static final class Builder implements ObjectBuilder<ResourceDbQuery> {
+
+    private static final ResourceFilter EMPTY_FILTER = FilterBuilders.resource().build();
+
+    private ResourceFilter filter;
+    private DbQuerySorting<ResourceEntity> sort;
+    private DbQueryPage page;
+
+    public Builder filter(final ResourceFilter value) {
+      filter = value;
+      return this;
+    }
+
+    public Builder sort(final DbQuerySorting<ResourceEntity> value) {
+      sort = value;
+      return this;
+    }
+
+    public Builder page(final DbQueryPage value) {
+      page = value;
+      return this;
+    }
+
+    public Builder filter(
+        final Function<ResourceFilter.Builder, ObjectBuilder<ResourceFilter>> fn) {
+      return filter(FilterBuilders.resource(fn));
+    }
+
+    public Builder sort(
+        final Function<
+                DbQuerySorting.Builder<ResourceEntity>,
+                ObjectBuilder<DbQuerySorting<ResourceEntity>>>
+            fn) {
+      return sort(DbQuerySorting.of(fn));
+    }
+
+    @Override
+    public ResourceDbQuery build() {
+      filter = Objects.requireNonNullElse(filter, EMPTY_FILTER);
+      sort = Objects.requireNonNullElse(sort, new DbQuerySorting<>(Collections.emptyList()));
+      return new ResourceDbQuery(filter, sort, page);
+    }
+  }
+}

@@ -14,12 +14,17 @@ public class GatewayRestConfiguration {
   private static final int DEFAULT_MAX_NAME_FIELD_LENGTH = 32 * 1024;
 
   private final ProcessCacheConfiguration processCache = new ProcessCacheConfiguration();
+  private final ResourceCacheConfiguration resourceCache = new ResourceCacheConfiguration();
   private final ApiExecutorConfiguration apiExecutor = new ApiExecutorConfiguration();
   private final JobMetricsConfiguration jobMetrics = new JobMetricsConfiguration();
   private int maxNameFieldLength = DEFAULT_MAX_NAME_FIELD_LENGTH;
 
   public ProcessCacheConfiguration getProcessCache() {
     return processCache;
+  }
+
+  public ResourceCacheConfiguration getResourceCache() {
+    return resourceCache;
   }
 
   public ApiExecutorConfiguration getApiExecutor() {
@@ -44,8 +49,7 @@ public class GatewayRestConfiguration {
     this.maxNameFieldLength = maxNameFieldLength;
   }
 
-  public static class ProcessCacheConfiguration {
-    private static final int DEFAULT_CACHE_SIZE = 100;
+  public static class ProcessCacheConfiguration {    private static final int DEFAULT_CACHE_SIZE = 100;
 
     /**
      * Process cache max size. Default value: {@link ProcessCacheConfiguration#DEFAULT_CACHE_SIZE}.
@@ -69,6 +73,22 @@ public class GatewayRestConfiguration {
 
     public void setExpirationIdleMillis(final Long expirationIdleMillis) {
       this.expirationIdleMillis = expirationIdleMillis;
+    }
+  }
+
+  /** Configuration for the resource metadata cache. */
+  public static class ResourceCacheConfiguration {
+    private static final int DEFAULT_CACHE_SIZE = 100;
+
+    /** Resource cache max size. Default value: {@link ResourceCacheConfiguration#DEFAULT_CACHE_SIZE}. */
+    private int maxSize = DEFAULT_CACHE_SIZE;
+
+    public int getMaxSize() {
+      return maxSize;
+    }
+
+    public void setMaxSize(final int maxSize) {
+      this.maxSize = maxSize;
     }
   }
 

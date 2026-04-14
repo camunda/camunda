@@ -435,6 +435,13 @@ public class SearchClientReaderConfiguration {
   }
 
   @Bean
+  public io.camunda.search.clients.reader.ResourceReader resourceReader(
+      final SearchClientBasedQueryExecutor executor, final IndexDescriptors descriptors) {
+    return new io.camunda.search.clients.reader.ResourceDocumentReader(
+        executor, descriptors.get(io.camunda.webapps.schema.descriptors.index.ResourceIndex.class));
+  }
+
+  @Bean
   public ProcessCache searchClientProcessCache(
       final GatewayRestConfiguration configuration, final SearchClientBasedQueryExecutor executor) {
 

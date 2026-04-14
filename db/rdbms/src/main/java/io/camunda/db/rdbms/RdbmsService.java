@@ -19,6 +19,7 @@ import io.camunda.db.rdbms.read.service.DecisionRequirementsDbReader;
 import io.camunda.db.rdbms.read.service.FlowNodeInstanceDbReader;
 import io.camunda.db.rdbms.read.service.FormDbReader;
 import io.camunda.db.rdbms.read.service.GlobalListenerDbReader;
+import io.camunda.db.rdbms.read.service.ResourceDbReader;
 import io.camunda.db.rdbms.read.service.GroupDbReader;
 import io.camunda.db.rdbms.read.service.GroupMemberDbReader;
 import io.camunda.db.rdbms.read.service.HistoryDeletionDbReader;
@@ -96,6 +97,7 @@ public class RdbmsService {
   private final IncidentProcessInstanceStatisticsByDefinitionDbReader
       incidentProcessInstanceStatisticsByDefinitionDbReader;
   private final GlobalListenerDbReader globalListenerDbReader;
+  private final ResourceDbReader resourceDbReader;
 
   public RdbmsService(
       final RdbmsWriterFactory rdbmsWriterFactory,
@@ -139,7 +141,8 @@ public class RdbmsService {
           incidentProcessInstanceStatisticsByErrorDbReader,
       final IncidentProcessInstanceStatisticsByDefinitionDbReader
           incidentProcessInstanceStatisticsByDefinitionDbReader,
-      final GlobalListenerDbReader globalListenerDbReader) {
+      final GlobalListenerDbReader globalListenerDbReader,
+      final ResourceDbReader resourceDbReader) {
     this.rdbmsWriterFactory = rdbmsWriterFactory;
     this.auditLogReader = auditLogReader;
     this.authorizationReader = authorizationReader;
@@ -182,6 +185,7 @@ public class RdbmsService {
     this.incidentProcessInstanceStatisticsByDefinitionDbReader =
         incidentProcessInstanceStatisticsByDefinitionDbReader;
     this.globalListenerDbReader = globalListenerDbReader;
+    this.resourceDbReader = resourceDbReader;
   }
 
   public AuthorizationDbReader getAuthorizationReader() {
@@ -339,6 +343,10 @@ public class RdbmsService {
 
   public GlobalListenerDbReader getGlobalListenerDbReader() {
     return globalListenerDbReader;
+  }
+
+  public ResourceDbReader getResourceDbReader() {
+    return resourceDbReader;
   }
 
   public RdbmsWriters createWriter(final RdbmsWriterConfig config) {

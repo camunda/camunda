@@ -464,7 +464,8 @@ public final class ServiceTransformers {
             JobWorkerStatisticsQuery.class,
             JobTimeSeriesStatisticsQuery.class,
             JobErrorStatisticsQuery.class,
-            GlobalListenerQuery.class)
+            GlobalListenerQuery.class,
+            io.camunda.search.query.ResourceQuery.class)
         .forEach(cls -> mappers.put(cls, searchQueryTransformer));
 
     // document entity -> domain entity
@@ -498,6 +499,9 @@ public final class ServiceTransformers {
     mappers.put(UserEntity.class, new UserEntityTransformer());
     mappers.put(AuditLogEntity.class, new AuditLogEntityTransformer());
     mappers.put(GlobalListenerEntity.class, new GlobalListenerEntityTransformer());
+    mappers.put(
+        io.camunda.webapps.schema.entities.resource.ResourceEntity.class,
+        new io.camunda.search.clients.transformers.entity.ResourceEntityTransformer());
 
     // domain field sorting -> database field sorting
     mappers.put(AuthorizationSort.class, new AuthorizationFieldSortingTransformer());
@@ -534,6 +538,8 @@ public final class ServiceTransformers {
         IncidentProcessInstanceStatisticsByDefinitionSort.class,
         new IncidentFieldSortingTransformer());
     mappers.put(GlobalListenerSort.class, new GlobalListenerFieldSortingTransformer());
+    mappers.put(
+        io.camunda.search.sort.ResourceSort.class, new ResourceFieldSortingTransformer());
 
     // filters -> search query
     mappers.put(
@@ -661,6 +667,10 @@ public final class ServiceTransformers {
     mappers.put(
         GlobalListenerFilter.class,
         new GlobalListenerFilterTransformer(indexDescriptors.get(GlobalListenerIndex.class)));
+    mappers.put(
+        io.camunda.search.filter.ResourceFilter.class,
+        new ResourceFilterTransformer(indexDescriptors.get(
+            io.camunda.webapps.schema.descriptors.index.ResourceIndex.class)));
     // result config -> source config
     mappers.put(
         DecisionInstanceQueryResultConfig.class, new DecisionInstanceResultConfigTransformer());

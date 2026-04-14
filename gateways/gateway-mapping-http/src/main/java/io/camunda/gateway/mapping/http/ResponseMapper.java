@@ -397,6 +397,17 @@ public final class ResponseMapper {
         .resourceKey(String.valueOf(resourceRecord.getResourceKey()));
   }
 
+  public static ResourceResult toGetResourceResponse(
+      final io.camunda.search.entities.ResourceEntity resourceEntity) {
+    return new ResourceResult()
+        .resourceName(resourceEntity.resourceName())
+        .version(resourceEntity.version())
+        .versionTag(emptyToNull(resourceEntity.versionTag()))
+        .resourceId(resourceEntity.resourceId())
+        .tenantId(resourceEntity.tenantId())
+        .resourceKey(String.valueOf(resourceEntity.resourceKey()));
+  }
+
   public static String toGetResourceContentResponse(final ResourceRecord resourceRecord) {
     return resourceRecord.getResourceProp();
   }

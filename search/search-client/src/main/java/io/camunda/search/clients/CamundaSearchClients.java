@@ -556,6 +556,18 @@ public class CamundaSearchClients implements SearchClientsProxy {
     return doSearchWithReader(readers.globalListenerReader(), query);
   }
 
+  @Override
+  public io.camunda.search.entities.ResourceEntity getResource(final long key) {
+    return doGetWithReader(readers.resourceReader(), key)
+        .orElseThrow(() -> entityByKeyNotFoundException("Resource", key));
+  }
+
+  @Override
+  public SearchQueryResult<io.camunda.search.entities.ResourceEntity> searchResources(
+      final io.camunda.search.query.ResourceQuery query) {
+    return doSearchWithReader(readers.resourceReader(), query);
+  }
+
   protected <T, Q extends TypedSearchQuery<?, ?>> Optional<T> doGetWithReader(
       final SearchEntityReader<T, Q> reader, final long key) {
     return doGet(a -> reader.getByKey(key, a));

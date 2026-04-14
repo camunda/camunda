@@ -25,6 +25,7 @@ import io.camunda.search.clients.reader.DecisionRequirementsReader;
 import io.camunda.search.clients.reader.FlowNodeInstanceReader;
 import io.camunda.search.clients.reader.FormReader;
 import io.camunda.search.clients.reader.GlobalListenerReader;
+import io.camunda.search.clients.reader.ResourceReader;
 import io.camunda.search.clients.reader.GroupMemberReader;
 import io.camunda.search.clients.reader.GroupReader;
 import io.camunda.search.clients.reader.IncidentProcessInstanceStatisticsByDefinitionReader;
@@ -146,7 +147,8 @@ public class SearchClientConfiguration {
           incidentProcessInstanceStatisticsByErrorReader,
       final IncidentProcessInstanceStatisticsByDefinitionReader
           incidentProcessInstanceStatisticsByDefinitionReader,
-      final GlobalListenerReader globalListenerReader) {
+      final GlobalListenerReader globalListenerReader,
+      final ResourceReader resourceReader) {
     return new SearchClientReaders(
         authorizationReader,
         batchOperationReader,
@@ -171,6 +173,7 @@ public class SearchClientConfiguration {
         processDefinitionInstanceStatisticsReader,
         processDefinitionInstanceVersionStatisticsReader,
         processInstanceFlowNodeStatisticsReader,
+        resourceReader,
         roleReader,
         roleMemberReader,
         sequenceFlowReader,

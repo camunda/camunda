@@ -319,4 +319,13 @@ public final class SearchQueryBuilders {
       final Function<GlobalListenerQuery.Builder, ObjectBuilder<GlobalListenerQuery>> fn) {
     return fn.apply(globalListenerSearchQuery()).build();
   }
+
+  public static ResourceQuery.Builder resourceSearchQuery() {
+    return new ResourceQuery.Builder();
+  }
+
+  public static ResourceQuery resourceSearchQuery(
+      final Function<ResourceQuery.Builder, ObjectBuilder<ResourceQuery>> fn) {
+    return fn.apply(resourceSearchQuery()).build();
+  }
 }

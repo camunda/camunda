@@ -450,4 +450,15 @@ public class NoopSearchClientsProxy implements SearchClientsProxy {
       final GlobalListenerQuery query) {
     return SearchQueryResult.empty();
   }
+
+  @Override
+  public io.camunda.search.entities.ResourceEntity getResource(final long key) {
+    return null;
+  }
+
+  @Override
+  public SearchQueryResult<io.camunda.search.entities.ResourceEntity> searchResources(
+      final io.camunda.search.query.ResourceQuery query) {
+    return SearchQueryResult.empty();
+  }
 }
