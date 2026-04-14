@@ -60,6 +60,7 @@ const NewProcessInstanceTasksPolling: React.FC<Props> = observer(
 
           if (
             items.length === 1 &&
+            items[0] !== undefined &&
             location.pathname === `/${pages.processes()}`
           ) {
             const [{userTaskKey}] = items;

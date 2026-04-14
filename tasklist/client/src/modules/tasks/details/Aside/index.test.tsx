@@ -120,9 +120,11 @@ describe('<Aside />', () => {
       isMultiTenancyEnabled: true,
     });
 
+    const firstTenant = userMocks.currentUserWithTenants.tenants[0]!;
+
     const currentUserWithSingleTenant = {
       ...userMocks.currentUserWithTenants,
-      tenants: [userMocks.currentUserWithTenants.tenants[0]],
+      tenants: [firstTenant],
     };
 
     nodeMockServer.use(

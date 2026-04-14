@@ -37,7 +37,7 @@ const ControlledNavLink: React.FC<Props> = ({
         cn(
           styles.link,
           {
-            [styles.active]: isActive,
+            [styles.active!]: isActive,
             pending: isPending,
             transitioning: isTransitioning,
           },
