@@ -203,17 +203,21 @@ const normalProjects = [
     use: devices['Desktop Edge'],
     testIgnore: ['v2-stateless-tests/**', 'tests/api/**/*.spec.ts'],
   },
-  {
-    name: 'tasklist-v1-e2e',
-    testMatch: ['tests/tasklist/v1/*.spec.ts'],
-    use: devices['Desktop Edge'],
-    testIgnore: [
-      'tests/tasklist/v1/task-panel.spec.ts',
-      'v2-stateless-tests/**',
-      'tests/api/**/*.spec.ts',
-    ],
-    teardown: 'chromium-subset',
-  },
+  ...(isV2ModeEnabled
+    ? []
+    : [
+        {
+          name: 'tasklist-v1-e2e',
+          testMatch: ['tests/tasklist/v1/*.spec.ts'],
+          use: devices['Desktop Edge'],
+          testIgnore: [
+            'tests/tasklist/v1/task-panel.spec.ts',
+            'v2-stateless-tests/**',
+            'tests/api/**/*.spec.ts',
+          ],
+          teardown: 'chromium-subset',
+        },
+      ]),
   {
     name: 'tasklist-v2-e2e',
     testMatch: ['tests/tasklist/*.spec.ts'],

@@ -641,6 +641,9 @@ jobs:
             tasklist_mode: v2
           - branch: stable/8.7
             tasklist_mode: v2
+          # V1 mode not supported on main - only V2 runs on main
+          - branch: main
+            tasklist_mode: v1
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
@@ -795,7 +798,7 @@ jobs:
               npm run test -- --project=chromium --grep-invert "@v1-only"
             fi
           else
-            if [[ "${{ matrix.branch }}" == "main" || "${{ matrix.branch }}" == "stable/8.9" ]]; then
+            if [[ "${{ matrix.branch }}" == "stable/8.9" ]]; then
               echo "Running V1 specific tests only: common-flows/v1/ and tests/tasklist/v1/"
               npm run test -- --project=chromium tests/common-flows/v1/ tests/tasklist/v1/
             elif [[ "${{ matrix.branch }}" == "stable/8.8" ]]; then
