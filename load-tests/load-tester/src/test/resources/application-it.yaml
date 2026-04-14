@@ -1,0 +1,14 @@
+# Integration test configuration — overrides application.yaml to enable the Camunda client
+camunda:
+  client:
+    enabled: true
+    mode: self-managed
+    auth:
+      method: none
+    # Use gRPC for job activation in ITs. The REST API added new fields (e.g. tenantFilter)
+    # that older SNAPSHOT Docker images do not understand, causing 400 Bad Request.
+    # gRPC/protobuf is forward-compatible and silently ignores unknown fields.
+    prefer-rest-over-grpc: false
+    worker:
+      defaults:
+        type: benchmark-task

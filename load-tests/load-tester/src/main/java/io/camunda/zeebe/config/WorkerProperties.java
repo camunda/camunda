@@ -9,60 +9,18 @@ package io.camunda.zeebe.config;
 
 import java.time.Duration;
 
-public class WorkerCfg {
+public class WorkerProperties {
 
-  private String jobType;
-  private String workerName;
-  private int threads;
-  private int capacity;
-  private Duration pollingDelay;
-  private Duration completionDelay;
-  private String payloadPath;
-  private boolean isStreamEnabled;
-  private Duration timeout;
+  // Worker connection properties (jobType, workerName, threads, capacity, pollingDelay,
+  // streamEnabled, timeout) are configured via camunda.client.worker.defaults.* and
+  // auto-applied by the camunda-spring-boot-starter. Only properties consumed directly
+  // by Worker.java are kept here.
+
+  private Duration completionDelay = Duration.ofMillis(300);
+  private String payloadPath = "bpmn/big_payload.json";
   private boolean sendMessage = false;
-  private String messageName = "defaultMessage";
+  private String messageName = "messageName";
   private String correlationKeyVariableName = "correlationKey-var";
-
-  public String getJobType() {
-    return jobType;
-  }
-
-  public void setJobType(final String jobType) {
-    this.jobType = jobType;
-  }
-
-  public String getWorkerName() {
-    return workerName;
-  }
-
-  public void setWorkerName(final String workerName) {
-    this.workerName = workerName;
-  }
-
-  public int getThreads() {
-    return threads;
-  }
-
-  public void setThreads(final int threads) {
-    this.threads = threads;
-  }
-
-  public int getCapacity() {
-    return capacity;
-  }
-
-  public void setCapacity(final int capacity) {
-    this.capacity = capacity;
-  }
-
-  public Duration getPollingDelay() {
-    return pollingDelay;
-  }
-
-  public void setPollingDelay(final Duration pollingDelay) {
-    this.pollingDelay = pollingDelay;
-  }
 
   public Duration getCompletionDelay() {
     return completionDelay;
@@ -78,22 +36,6 @@ public class WorkerCfg {
 
   public void setPayloadPath(final String payloadPath) {
     this.payloadPath = payloadPath;
-  }
-
-  public boolean isStreamEnabled() {
-    return isStreamEnabled;
-  }
-
-  public void setStreamEnabled(final boolean isStreamEnabled) {
-    this.isStreamEnabled = isStreamEnabled;
-  }
-
-  public Duration getTimeout() {
-    return timeout;
-  }
-
-  public void setTimeout(final Duration timeout) {
-    this.timeout = timeout;
   }
 
   public boolean isSendMessage() {
