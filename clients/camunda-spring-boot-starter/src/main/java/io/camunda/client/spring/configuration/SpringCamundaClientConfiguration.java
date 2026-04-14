@@ -31,6 +31,7 @@ import io.grpc.ClientInterceptor;
 import java.net.URI;
 import java.time.Duration;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
 import org.apache.hc.client5.http.async.AsyncExecChainHandler;
@@ -250,51 +251,31 @@ public class SpringCamundaClientConfiguration implements CamundaClientConfigurat
   public CamundaClientBuilder toBuilder() {
     final CamundaClientBuilder builder = createClientBuilder();
 
-    if (getRestAddress() != null) {
-      builder.restAddress(getRestAddress());
-    }
-    if (getGrpcAddress() != null) {
-      builder.grpcAddress(getGrpcAddress());
-    }
+    Optional.ofNullable(getRestAddress()).ifPresent(builder::restAddress);
+    Optional.ofNullable(getGrpcAddress()).ifPresent(builder::grpcAddress);
     builder.preferRestOverGrpc(preferRestOverGrpc());
-    if (getDefaultTenantId() != null) {
-      builder.defaultTenantId(getDefaultTenantId());
-    }
-    if (getDefaultJobWorkerTenantIds() != null) {
-      builder.defaultJobWorkerTenantIds(getDefaultJobWorkerTenantIds());
-    }
-    if (getDefaultJobWorkerTenantFilter() != null) {
-      builder.defaultJobWorkerTenantFilter(getDefaultJobWorkerTenantFilter());
-    }
+    Optional.ofNullable(getDefaultTenantId()).ifPresent(builder::defaultTenantId);
+    Optional.ofNullable(getDefaultJobWorkerTenantIds())
+        .ifPresent(builder::defaultJobWorkerTenantIds);
+    Optional.ofNullable(getDefaultJobWorkerTenantFilter())
+        .ifPresent(builder::defaultJobWorkerTenantFilter);
     builder.numJobWorkerExecutionThreads(getNumJobWorkerExecutionThreads());
     builder.defaultJobWorkerMaxJobsActive(getDefaultJobWorkerMaxJobsActive());
-    if (getDefaultJobWorkerName() != null) {
-      builder.defaultJobWorkerName(getDefaultJobWorkerName());
-    }
+    Optional.ofNullable(getDefaultJobWorkerName()).ifPresent(builder::defaultJobWorkerName);
     builder.defaultJobTimeout(getDefaultJobTimeout());
     builder.defaultJobPollInterval(getDefaultJobPollInterval());
     builder.defaultMessageTimeToLive(getDefaultMessageTimeToLive());
     builder.defaultRequestTimeout(getDefaultRequestTimeout());
     builder.defaultRequestTimeoutOffset(getDefaultRequestTimeoutOffset());
-    if (getCaCertificatePath() != null) {
-      builder.caCertificatePath(getCaCertificatePath());
-    }
-    if (getKeepAlive() != null) {
-      builder.keepAlive(getKeepAlive());
-    }
-    if (getOverrideAuthority() != null) {
-      builder.overrideAuthority(getOverrideAuthority());
-    }
+    Optional.ofNullable(getCaCertificatePath()).ifPresent(builder::caCertificatePath);
+    Optional.ofNullable(getKeepAlive()).ifPresent(builder::keepAlive);
+    Optional.ofNullable(getOverrideAuthority()).ifPresent(builder::overrideAuthority);
     builder.maxMessageSize(getMaxMessageSize());
     builder.maxMetadataSize(getMaxMetadataSize());
     builder.defaultJobWorkerStreamEnabled(getDefaultJobWorkerStreamEnabled());
     builder.maxHttpConnections(getMaxHttpConnections());
-    if (credentialsProvider != null) {
-      builder.credentialsProvider(credentialsProvider);
-    }
-    if (jsonMapper != null) {
-      builder.withJsonMapper(jsonMapper);
-    }
+    Optional.ofNullable(credentialsProvider).ifPresent(builder::credentialsProvider);
+    Optional.ofNullable(jsonMapper).ifPresent(builder::withJsonMapper);
     if (interceptors != null && !interceptors.isEmpty()) {
       builder.withInterceptors(interceptors.toArray(new ClientInterceptor[0]));
     }

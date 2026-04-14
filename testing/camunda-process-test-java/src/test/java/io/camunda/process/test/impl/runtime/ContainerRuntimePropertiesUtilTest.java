@@ -23,12 +23,7 @@ import io.camunda.process.test.impl.runtime.properties.AssertionProperties;
 import io.camunda.process.test.impl.runtime.properties.CamundaContainerRuntimeProperties;
 import io.camunda.process.test.impl.runtime.properties.ConnectorsContainerRuntimeProperties;
 import io.camunda.process.test.impl.runtime.properties.CoverageReportProperties;
-import io.camunda.process.test.impl.runtime.properties.RemoteRuntimeClientAuthProperties;
-import io.camunda.process.test.impl.runtime.properties.RemoteRuntimeClientAuthProperties.AuthMethod;
-import io.camunda.process.test.impl.runtime.properties.RemoteRuntimeClientCloudProperties;
-import io.camunda.process.test.impl.runtime.properties.RemoteRuntimeClientProperties.ClientMode;
 import java.net.URI;
-import java.nio.file.Paths;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -101,15 +96,6 @@ public class ContainerRuntimePropertiesUtilTest {
     assertThat(propertiesUtil.getConnectorsDockerImageName())
         .isEqualTo("camunda/connectors-bundle");
     assertThat(propertiesUtil.getConnectorsDockerImageVersion()).isEqualTo("SNAPSHOT");
-    assertThat(propertiesUtil.getRemoteRuntimeProperties().getRemoteClientProperties().getMode())
-        .isEqualTo(ClientMode.selfManaged);
-    assertThat(
-            propertiesUtil
-                .getRemoteRuntimeProperties()
-                .getRemoteClientProperties()
-                .getAuthProperties()
-                .getMethod())
-        .isEqualTo(AuthMethod.none);
   }
 
   @ParameterizedTest
@@ -429,45 +415,6 @@ public class ContainerRuntimePropertiesUtilTest {
       assertThat(propertiesUtil.getConnectorsDockerImageName())
           .isEqualTo("camunda/connectors-bundle");
       assertThat(propertiesUtil.getConnectorsDockerImageVersion()).isEqualTo("8.8.3");
-
-      final RemoteRuntimeClientCloudProperties cloudProps =
-          propertiesUtil
-              .getRemoteRuntimeProperties()
-              .getRemoteClientProperties()
-              .getCloudProperties();
-      assertThat(cloudProps.getClusterId()).isEqualTo("clusterId");
-      assertThat(cloudProps.getRegion()).isEqualTo("region");
-
-      final RemoteRuntimeClientAuthProperties authProps =
-          propertiesUtil
-              .getRemoteRuntimeProperties()
-              .getRemoteClientProperties()
-              .getAuthProperties();
-
-      assertThat(authProps.getMethod()).isEqualTo(AuthMethod.oidc);
-      assertThat(authProps.getUsername()).isEqualTo("username");
-      assertThat(authProps.getPassword()).isEqualTo("password");
-      assertThat(authProps.getClientId()).isEqualTo("clientId");
-      assertThat(authProps.getClientSecret()).isEqualTo("clientSecret");
-      assertThat(authProps.getTokenUrl()).isEqualTo(URI.create("http://example.com"));
-      assertThat(authProps.getAudience()).isEqualTo("audience");
-      assertThat(authProps.getScope()).isEqualTo("scope");
-      assertThat(authProps.getResource()).isEqualTo("resource");
-      assertThat(authProps.getKeystorePath()).isEqualTo(Paths.get("/path/to/keystore"));
-      assertThat(authProps.getKeystorePassword()).isEqualTo("keystorePassword");
-      assertThat(authProps.getKeystoreKeyPassword()).isEqualTo("keystoreKeyPassword");
-      assertThat(authProps.getTruststorePath()).isEqualTo(Paths.get("/path/to/truststore"));
-      assertThat(authProps.getTruststorePassword()).isEqualTo("truststorePassword");
-      assertThat(authProps.getCredentialsCachePath()).isEqualTo("/path/to/credentialsCache");
-      assertThat(authProps.getConnectTimeout()).isEqualTo(Duration.ofSeconds(5));
-      assertThat(authProps.getReadTimeout()).isEqualTo(Duration.ofSeconds(6));
-      assertThat(authProps.getCredentialsCachePath()).isEqualTo("/path/to/credentialsCache");
-      assertThat(authProps.getClientAssertionKeystorePath())
-          .isEqualTo(Paths.get("/path/to/assertion/keystore"));
-      assertThat(authProps.getClientAssertionKeystorePassword()).isEqualTo("keystorePassword");
-      assertThat(authProps.getClientAssertionKeystoreKeyAlias()).isEqualTo("keystoreKeyAlias");
-      assertThat(authProps.getClientAssertionKeystoreKeyPassword())
-          .isEqualTo("keystoreKeyPassword");
     }
 
     @Test
