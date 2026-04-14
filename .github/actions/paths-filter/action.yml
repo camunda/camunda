@@ -449,7 +449,7 @@ runs:
         c8-e2e-test-suite-change:
           - 'qa/c8-orchestration-cluster-e2e-test-suite/**'
 
-  - uses: dorny/paths-filter@v3
+  - uses: dorny/paths-filter@v4
     id: filter-alwaysgreen
     with:
       base: ${{ github.event.merge_group.base_ref || '' }}
