@@ -158,7 +158,7 @@ public class RdbmsExporterWrapper implements Exporter {
     builder.historyDeletionService(historyDeletionService);
 
     if (config.getAsyncReplication().isEnabled()) {
-      final var lsnProvider = rdbmsService.getReplicationLsnProvider();
+      final var lsnProvider = rdbmsWriters.getExporterPositionService().getReplicationLsnProvider();
       if (lsnProvider == null) {
         throw new ExporterException(
             "Async replication is enabled but no ReplicationLsnProvider is available. "

@@ -343,18 +343,6 @@ public class RdbmsService {
     return globalListenerDbReader;
   }
 
-  /**
-   * Returns the replication LSN provider, or null if async replication is not configured. The
-   * provider is set by database-specific auto-configuration.
-   */
-  public ReplicationLsnProvider getReplicationLsnProvider() {
-    return replicationLsnProvider;
-  }
-
-  public void setReplicationLsnProvider(final ReplicationLsnProvider replicationLsnProvider) {
-    this.replicationLsnProvider = replicationLsnProvider;
-  }
-
   public RdbmsWriters createWriter(final RdbmsWriterConfig config) {
     return rdbmsWriterFactory.createWriter(config);
   }
