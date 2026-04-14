@@ -15,31 +15,41 @@ import java.util.concurrent.Executor;
 
 final class TestRepository extends NoopArchiverRepository {
   final List<DocumentMove> moves = new ArrayList<>();
-  ArchiveBatch batch;
+  List<ArchiveBatch> batches = List.of();
+  int currentBatchIndex = 0;
+
+  public <T extends ArchiveBatch> CompletableFuture<T> getNextBatch() {
+    if (batches.isEmpty()) {
+      return CompletableFuture.completedFuture(null);
+    }
+    final var index = currentBatchIndex % batches.size();
+    currentBatchIndex = index + 1;
+    return CompletableFuture.completedFuture((T) batches.get(index));
+  }
 
   @Override
   public CompletableFuture<ArchiveBatch> getProcessInstancesNextBatch(final int size) {
-    return CompletableFuture.completedFuture(batch);
+    return getNextBatch();
   }
 
   @Override
   public CompletableFuture<ArchiveBatch> getBatchOperationsNextBatch() {
-    return CompletableFuture.completedFuture(batch);
+    return getNextBatch();
   }
 
   @Override
   public CompletableFuture<ArchiveBatch> getUsageMetricTUNextBatch() {
-    return CompletableFuture.completedFuture(batch);
+    return getNextBatch();
   }
 
   @Override
   public CompletableFuture<ArchiveBatch> getUsageMetricNextBatch() {
-    return CompletableFuture.completedFuture(batch);
+    return getNextBatch();
   }
 
   @Override
   public CompletableFuture<ArchiveBatch> getStandaloneDecisionNextBatch() {
-    return CompletableFuture.completedFuture(batch);
+    return getNextBatch();
   }
 
   @Override

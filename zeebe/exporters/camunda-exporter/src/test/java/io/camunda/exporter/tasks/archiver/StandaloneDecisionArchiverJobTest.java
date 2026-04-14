@@ -47,7 +47,7 @@ class StandaloneDecisionArchiverJobTest {
   @Test
   void shouldReturnZeroIfNoStandaloneDecisionIdsGiven() {
     // given
-    repository.batch = new ArchiveBatch("2024-01-01", List.of());
+    repository.batches = List.of(new ArchiveBatch("2024-01-01", List.of()));
 
     // when
     final var result = job.archiveNextBatch();
@@ -60,7 +60,7 @@ class StandaloneDecisionArchiverJobTest {
   @Test
   void shouldMoveStandaloneDecisionInstances() {
     // given
-    repository.batch = new ArchiveBatch("2024-01-01", List.of("1", "2", "3"));
+    repository.batches = List.of(new ArchiveBatch("2024-01-01", List.of("1", "2", "3")));
 
     // when
     final var result = job.archiveNextBatch();
@@ -80,7 +80,7 @@ class StandaloneDecisionArchiverJobTest {
   @Test
   void shouldRecordStandaloneDecisionInstancesIncrease() {
     // given
-    repository.batch = new ArchiveBatch("2024-01-01", List.of("1", "2", "3"));
+    repository.batches = List.of(new ArchiveBatch("2024-01-01", List.of("1", "2", "3")));
 
     // when
     final var count =
