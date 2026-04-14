@@ -9,8 +9,8 @@ package io.camunda.exporter.rdbms.replication;
 
 import io.camunda.db.rdbms.write.ReplicationLsnProvider;
 import java.time.Duration;
-import java.util.Queue;
-import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
@@ -20,11 +20,17 @@ import java.util.concurrent.atomic.AtomicLong;
 public record ReplicationContext(
     ReplicationLsnProvider lsnProvider,
     Duration pollingInterval,
-    Queue<LsnPositionEntry> pendingEntries,
+    BlockingQueue<LsnPositionEntry> pendingEntries,
     AtomicLong confirmedPosition) {
+
+  public static final int DEFAULT_QUEUE_CAPACITY = 8192;
 
   public ReplicationContext(
       final ReplicationLsnProvider lsnProvider, final Duration pollingInterval) {
-    this(lsnProvider, pollingInterval, new ConcurrentLinkedQueue<>(), new AtomicLong(-1));
+    this(
+        lsnProvider,
+        pollingInterval,
+        new ArrayBlockingQueue<>(DEFAULT_QUEUE_CAPACITY),
+        new AtomicLong(-1));
   }
 }
