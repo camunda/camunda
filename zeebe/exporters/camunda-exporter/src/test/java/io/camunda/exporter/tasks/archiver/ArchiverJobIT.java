@@ -31,6 +31,7 @@ import io.camunda.search.test.utils.SearchDBExtension;
 import io.camunda.search.test.utils.TestObjectMapper;
 import io.camunda.zeebe.exporter.api.context.Context;
 import io.camunda.zeebe.exporter.test.ExporterTestContext;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -95,8 +96,11 @@ public abstract class ArchiverJobIT<T extends ArchiverJob> {
     withArchiverJob(
         config,
         (job, resources) -> {
-          final var archived = job.execute().toCompletableFuture().join();
-          assertThat(archived).isEqualTo(0);
+          // when
+          final var archived = job.execute();
+
+          // then
+          assertThat(archived).succeedsWithin(Duration.ofSeconds(5L)).isEqualTo(0);
         });
   }
 
