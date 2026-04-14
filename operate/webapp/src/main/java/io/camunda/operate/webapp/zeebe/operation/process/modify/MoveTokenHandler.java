@@ -9,6 +9,7 @@ package io.camunda.operate.webapp.zeebe.operation.process.modify;
 
 import io.camunda.client.api.command.ModifyProcessInstanceCommandStep1;
 import io.camunda.operate.exceptions.OperateRuntimeException;
+import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.webapp.reader.FlowNodeInstanceReader;
 import io.camunda.operate.webapp.rest.dto.operation.ModifyProcessInstanceRequestDto.Modification;
 import io.camunda.webapps.schema.entities.flownode.FlowNodeState;
@@ -26,9 +27,13 @@ import org.springframework.util.StringUtils;
 public class MoveTokenHandler {
   private static final Logger LOGGER = LoggerFactory.getLogger(MoveTokenHandler.class);
   private final FlowNodeInstanceReader flowNodeInstanceReader;
+  private final OperateProperties operateProperties;
 
-  public MoveTokenHandler(final FlowNodeInstanceReader flowNodeInstanceReader) {
+  public MoveTokenHandler(
+      final FlowNodeInstanceReader flowNodeInstanceReader,
+      final OperateProperties operateProperties) {
     this.flowNodeInstanceReader = flowNodeInstanceReader;
+    this.operateProperties = operateProperties;
   }
 
   public ModifyProcessInstanceCommandStep1.ModifyProcessInstanceCommandStep2 moveToken(
@@ -36,23 +41,101 @@ public class MoveTokenHandler {
       final Long processInstanceKey,
       final Modification modification) {
 
-    final int newTokensCount = calculateNewTokensCount(modification, processInstanceKey);
+    final Integer specificTokensCount = modification.getNewTokensCount();
+    if (specificTokensCount != null && specificTokensCount <= 0) {
+      LOGGER.debug(
+          "Skipping MOVE_TOKEN processing for flowNode {} and process instance {} since newTokensCount is {}",
+          modification.getFromFlowNodeId(),
+          processInstanceKey,
+          specificTokensCount);
+      return null;
+    }
+
+    final List<Long> flowNodeInstanceKeysToCancel =
+        resolveFlowNodeInstanceKeysToCancel(processInstanceKey, modification);
+
+    final int newTokensCount = resolveNewTokensCount(modification, flowNodeInstanceKeysToCancel);
 
     if (newTokensCount > 0) {
+      // The number of tokens activated must equal the number cancelled so that the process
+      // instance token count stays consistent when the max modification limit kicks in.
+      final List<Long> keysToCancel =
+          flowNodeInstanceKeysToCancel.subList(
+              0, Math.min(newTokensCount, flowNodeInstanceKeysToCancel.size()));
+
+      if (keysToCancel.isEmpty()) {
+        throw new OperateRuntimeException(
+            String.format(
+                "Abort MOVE_TOKEN (CANCEL step): Can't find active flowNode instances for process instance %s and flowNode id %s",
+                processInstanceKey, modification.getFromFlowNodeId()));
+      }
+
       final ModifyProcessInstanceCommandStep1.ModifyProcessInstanceCommandStep3 nextStep =
           activateNewNodes(currentStep, modification, newTokensCount);
 
       moveGlobalVariables(nextStep, modification);
 
-      return cancelTokensOnOriginalNodes(nextStep, processInstanceKey, modification);
+      return cancelTokensOnOriginalNodes(nextStep, keysToCancel);
     } else {
-      LOGGER.info(
+      LOGGER.debug(
           "Skipping MOVE_TOKEN processing for flowNode {} and process instance {} since newTokensCount is {}",
           modification.getFromFlowNodeId(),
           processInstanceKey,
           newTokensCount);
       return null;
     }
+  }
+
+  private List<Long> resolveFlowNodeInstanceKeysToCancel(
+      final Long processInstanceKey, final Modification modification) {
+    if (StringUtils.hasText(modification.getFromFlowNodeInstanceKey())) {
+      return List.of(Long.parseLong(modification.getFromFlowNodeInstanceKey()));
+    } else if (StringUtils.hasText(modification.getFromFlowNodeId())) {
+      final int limit = operateProperties.getOperationExecutor().getMaxModifyTokensLimit();
+      final List<Long> keys =
+          flowNodeInstanceReader.getFlowNodeInstanceKeysByIdAndStates(
+              processInstanceKey, modification.getFromFlowNodeId(), List.of(FlowNodeState.ACTIVE));
+      if (keys.size() > limit) {
+        LOGGER.warn(
+            "Found {} active instances for flow node '{}' in process instance {}, "
+                + "limiting to {} due to maxModifyTokensLimit",
+            keys.size(),
+            modification.getFromFlowNodeId(),
+            processInstanceKey,
+            limit);
+        return keys.subList(0, limit);
+      }
+      return keys;
+    } else {
+      return List.of();
+    }
+  }
+
+  private int resolveNewTokensCount(
+      final Modification modification, final List<Long> resolvedCancelKeys) {
+    Integer newTokensCount = modification.getNewTokensCount();
+    if (newTokensCount == null) {
+      if (StringUtils.hasText(modification.getFromFlowNodeInstanceKey())) {
+        newTokensCount = 1;
+      } else if (StringUtils.hasText(modification.getFromFlowNodeId())) {
+        newTokensCount = resolvedCancelKeys.size();
+      } else {
+        LOGGER.warn(
+            "MOVE_TOKEN attempted with no flowNodeId, flowNodeInstanceKey, or newTokenCount specified");
+        newTokensCount = 0;
+      }
+    } else {
+      final int limit = operateProperties.getOperationExecutor().getMaxModifyTokensLimit();
+      if (newTokensCount > limit) {
+        LOGGER.warn(
+            "newTokensCount {} exceeds maxModifyTokensLimit {}, capping to limit",
+            newTokensCount,
+            limit);
+        newTokensCount = limit;
+      }
+    }
+    LOGGER.debug("MOVE_TOKEN has a newTokensCount value of {}", newTokensCount);
+    return newTokensCount;
   }
 
   private ModifyProcessInstanceCommandStep1.ModifyProcessInstanceCommandStep3 activateNewNodes(
@@ -129,63 +212,12 @@ public class MoveTokenHandler {
   private ModifyProcessInstanceCommandStep1.ModifyProcessInstanceCommandStep2
       cancelTokensOnOriginalNodes(
           final ModifyProcessInstanceCommandStep1.ModifyProcessInstanceCommandStep2 nextStep,
-          final Long processInstanceKey,
-          final Modification modification) {
-    final String fromFlowNodeId = modification.getFromFlowNodeId();
-    final String fromFlowNodeInstanceKey = modification.getFromFlowNodeInstanceKey();
-    final List<Long> flowNodeInstanceKeysToCancel;
-
-    // Build the list of instances to cancel
-    if (StringUtils.hasText(fromFlowNodeInstanceKey)) {
-      final Long flowNodeInstanceKey = Long.parseLong(fromFlowNodeInstanceKey);
-      flowNodeInstanceKeysToCancel = List.of(flowNodeInstanceKey);
-    } else {
-      flowNodeInstanceKeysToCancel =
-          flowNodeInstanceReader.getFlowNodeInstanceKeysByIdAndStates(
-              processInstanceKey, fromFlowNodeId, List.of(FlowNodeState.ACTIVE));
-    }
-
-    if (flowNodeInstanceKeysToCancel.isEmpty()) {
-      throw new OperateRuntimeException(
-          String.format(
-              "Abort MOVE_TOKEN (CANCEL step): Can't find not finished flowNodeInstance keys for process instance %s and flowNode id %s",
-              processInstanceKey, fromFlowNodeId));
-    }
-
+          final List<Long> flowNodeInstanceKeysToCancel) {
     LOGGER.debug(
         "Move [Cancel token from flowNodeInstanceKeys: {} ]", flowNodeInstanceKeysToCancel);
     for (final Long flowNodeInstanceKey : flowNodeInstanceKeysToCancel) {
       nextStep.and().terminateElement(flowNodeInstanceKey);
     }
-
     return nextStep;
-  }
-
-  private int calculateNewTokensCount(
-      final Modification modification, final Long processInstanceKey) {
-    Integer newTokensCount = modification.getNewTokensCount();
-
-    if (newTokensCount == null) {
-      if (modification.getFromFlowNodeInstanceKey() != null) {
-        // If a flow node instance key was specified, assume that flow node is valid. Zeebe
-        // will correctly fail attempts to migrate off an invalid flow node
-        newTokensCount = 1;
-      } else if (modification.getFromFlowNodeId() != null) {
-        newTokensCount =
-            flowNodeInstanceReader
-                .getFlowNodeInstanceKeysByIdAndStates(
-                    processInstanceKey,
-                    modification.getFromFlowNodeId(),
-                    List.of(FlowNodeState.ACTIVE))
-                .size();
-      } else {
-        LOGGER.warn(
-            "MOVE_TOKEN attempted with no flowNodeId, flowNodeInstanceKey, or newTokenCount specified");
-        newTokensCount = 0;
-      }
-    }
-
-    LOGGER.info("MOVE_TOKEN has a newTokensCount value of {}", newTokensCount);
-    return newTokensCount;
   }
 }

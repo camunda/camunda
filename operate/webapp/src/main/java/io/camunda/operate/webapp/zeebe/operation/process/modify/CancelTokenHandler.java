@@ -9,6 +9,7 @@ package io.camunda.operate.webapp.zeebe.operation.process.modify;
 
 import io.camunda.client.api.command.ModifyProcessInstanceCommandStep1;
 import io.camunda.operate.exceptions.OperateRuntimeException;
+import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.webapp.reader.FlowNodeInstanceReader;
 import io.camunda.operate.webapp.rest.dto.operation.ModifyProcessInstanceRequestDto.Modification;
 import io.camunda.webapps.schema.entities.flownode.FlowNodeState;
@@ -23,9 +24,13 @@ import org.springframework.util.StringUtils;
 public class CancelTokenHandler {
   private static final Logger LOGGER = LoggerFactory.getLogger(CancelTokenHandler.class);
   private final FlowNodeInstanceReader flowNodeInstanceReader;
+  private final OperateProperties operateProperties;
 
-  public CancelTokenHandler(final FlowNodeInstanceReader flowNodeInstanceReader) {
+  public CancelTokenHandler(
+      final FlowNodeInstanceReader flowNodeInstanceReader,
+      final OperateProperties operateProperties) {
     this.flowNodeInstanceReader = flowNodeInstanceReader;
+    this.operateProperties = operateProperties;
   }
 
   public ModifyProcessInstanceCommandStep1.ModifyProcessInstanceCommandStep2 cancelToken(
@@ -40,9 +45,22 @@ public class CancelTokenHandler {
       LOGGER.debug("Cancel token from flowNodeInstanceKey {} ", flowNodeInstanceKey);
       flowNodeInstanceKeys = List.of(Long.parseLong(flowNodeInstanceKey));
     } else {
-      flowNodeInstanceKeys =
+      final int limit = operateProperties.getOperationExecutor().getMaxModifyTokensLimit();
+      final List<Long> allKeys =
           flowNodeInstanceReader.getFlowNodeInstanceKeysByIdAndStates(
               processInstanceKey, modification.getFromFlowNodeId(), List.of(FlowNodeState.ACTIVE));
+      if (allKeys.size() > limit) {
+        LOGGER.warn(
+            "Found {} active instances for flow node '{}' in process instance {}, "
+                + "limiting cancellation to {} due to maxModifyTokensLimit",
+            allKeys.size(),
+            modification.getFromFlowNodeId(),
+            processInstanceKey,
+            limit);
+        flowNodeInstanceKeys = allKeys.subList(0, limit);
+      } else {
+        flowNodeInstanceKeys = allKeys;
+      }
     }
 
     if (flowNodeInstanceKeys.isEmpty()) {

@@ -8,6 +8,7 @@
 package io.camunda.operate.webapp.zeebe.operation.process.modify;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -20,6 +21,8 @@ import static org.mockito.Mockito.withSettings;
 import io.camunda.client.api.command.ModifyProcessInstanceCommandStep1;
 import io.camunda.client.api.command.ModifyProcessInstanceCommandStep1.ModifyProcessInstanceCommandStep2;
 import io.camunda.client.api.command.ModifyProcessInstanceCommandStep1.ModifyProcessInstanceCommandStep3;
+import io.camunda.operate.exceptions.OperateRuntimeException;
+import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.webapp.reader.FlowNodeInstanceReader;
 import io.camunda.operate.webapp.rest.dto.operation.ModifyProcessInstanceRequestDto.Modification;
 import io.camunda.operate.webapp.rest.dto.operation.ModifyProcessInstanceRequestDto.Modification.Type;
@@ -46,7 +49,7 @@ public class MoveTokenHandlerTest {
 
   @BeforeEach
   public void setup() {
-    moveTokenHandler = new MoveTokenHandler(mockFlowNodeInstanceReader);
+    moveTokenHandler = new MoveTokenHandler(mockFlowNodeInstanceReader, new OperateProperties());
 
     mockZeebeCommand =
         Mockito.mock(
@@ -162,7 +165,7 @@ public class MoveTokenHandlerTest {
     verify(mockZeebeCommand, times(1)).terminateElement(456L);
     verify((ModifyProcessInstanceCommandStep2) mockZeebeCommand, times(1)).and();
 
-    verify(mockFlowNodeInstanceReader, times(2))
+    verify(mockFlowNodeInstanceReader, times(1))
         .getFlowNodeInstanceKeysByIdAndStates(123L, "taskA", List.of(FlowNodeState.ACTIVE));
   }
 
@@ -214,6 +217,87 @@ public class MoveTokenHandlerTest {
     verify((ModifyProcessInstanceCommandStep2) mockZeebeCommand, times(1)).and();
 
     verifyNoInteractions(mockFlowNodeInstanceReader);
+  }
+
+  @Test
+  public void testMoveTokenLimitedByMaxLimit() {
+    // given
+    final int testLimit = 5;
+    final OperateProperties operateProperties = new OperateProperties();
+    operateProperties.getOperationExecutor().setMaxModifyTokensLimit(testLimit);
+    final MoveTokenHandler limitedHandler =
+        new MoveTokenHandler(mockFlowNodeInstanceReader, operateProperties);
+
+    final List<Long> allKeys = List.of(1L, 2L, 3L, 4L, 5L, 6L, 7L, 8L);
+    when(mockFlowNodeInstanceReader.getFlowNodeInstanceKeysByIdAndStates(
+            123L, "taskA", List.of(FlowNodeState.ACTIVE)))
+        .thenReturn(allKeys);
+
+    // when
+    final Modification modification =
+        new Modification()
+            .setModification(Type.MOVE_TOKEN)
+            .setFromFlowNodeId("taskA")
+            .setToFlowNodeId("taskB");
+
+    final ModifyProcessInstanceCommandStep1.ModifyProcessInstanceCommandStep2 result =
+        limitedHandler.moveToken(mockZeebeCommand, 123L, modification);
+
+    // then
+    assertThat(result).isNotNull();
+    verify(mockZeebeCommand, times(testLimit)).activateElement("taskB");
+    verify(mockZeebeCommand, times(testLimit)).terminateElement(anyLong());
+    verify(mockZeebeCommand, Mockito.never()).terminateElement(6L);
+  }
+
+  @Test
+  public void testMoveTokenSpecificCountCappedByMaxLimit() {
+    // given
+    final int testLimit = 5;
+    final OperateProperties operateProperties = new OperateProperties();
+    operateProperties.getOperationExecutor().setMaxModifyTokensLimit(testLimit);
+    final MoveTokenHandler limitedHandler =
+        new MoveTokenHandler(mockFlowNodeInstanceReader, operateProperties);
+
+    final List<Long> allKeys = List.of(1L, 2L, 3L, 4L, 5L, 6L, 7L, 8L);
+    when(mockFlowNodeInstanceReader.getFlowNodeInstanceKeysByIdAndStates(
+            123L, "taskA", List.of(FlowNodeState.ACTIVE)))
+        .thenReturn(allKeys);
+
+    // when
+    final Modification modification =
+        new Modification()
+            .setModification(Type.MOVE_TOKEN)
+            .setFromFlowNodeId("taskA")
+            .setToFlowNodeId("taskB")
+            .setNewTokensCount(testLimit + 2);
+
+    final ModifyProcessInstanceCommandStep1.ModifyProcessInstanceCommandStep2 result =
+        limitedHandler.moveToken(mockZeebeCommand, 123L, modification);
+
+    // then
+    assertThat(result).isNotNull();
+    verify(mockZeebeCommand, times(testLimit)).activateElement("taskB");
+    verify(mockZeebeCommand, times(testLimit)).terminateElement(anyLong());
+  }
+
+  @Test
+  public void testMoveTokenThrowsWhenNoInstancesFound() {
+    // given
+    when(mockFlowNodeInstanceReader.getFlowNodeInstanceKeysByIdAndStates(
+            123L, "taskA", List.of(FlowNodeState.ACTIVE)))
+        .thenReturn(List.of());
+
+    final Modification modification =
+        new Modification()
+            .setModification(Type.MOVE_TOKEN)
+            .setFromFlowNodeId("taskA")
+            .setToFlowNodeId("taskB")
+            .setNewTokensCount(2);
+
+    assertThatThrownBy(() -> moveTokenHandler.moveToken(mockZeebeCommand, 123L, modification))
+        .isInstanceOf(OperateRuntimeException.class)
+        .hasMessageContaining("Abort MOVE_TOKEN (CANCEL step)");
   }
 
   @Test

@@ -7,12 +7,15 @@
  */
 package io.camunda.operate.property;
 
+import java.time.Duration;
+
 public class ZeebeProperties {
 
   private String brokerContactPoint;
   private String gatewayAddress = "localhost:26500";
   private boolean isSecure = false;
   private String certificatePath = null;
+  private Duration requestTimeout = null;
 
   public boolean isSecure() {
     return isSecure;
@@ -48,6 +51,15 @@ public class ZeebeProperties {
 
   public ZeebeProperties setGatewayAddress(final String gatewayAddress) {
     this.gatewayAddress = gatewayAddress;
+    return this;
+  }
+
+  public Duration getRequestTimeout() {
+    return requestTimeout;
+  }
+
+  public ZeebeProperties setRequestTimeout(final Duration requestTimeout) {
+    this.requestTimeout = requestTimeout;
     return this;
   }
 }
