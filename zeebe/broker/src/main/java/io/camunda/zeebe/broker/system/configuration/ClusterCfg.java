@@ -150,7 +150,15 @@ public final class ClusterCfg implements ConfigurationEntry {
     }
 
     final var regionCfg = regions.get(region);
-    if (nodeId < 0 || nodeId >= regionCfg.getNumberOfBrokers()) {
+    int globalOffset = 0;
+    for (final var entry : regions.entrySet()) {
+      if (entry.getKey().equals(region)) {
+        break;
+      }
+      globalOffset += entry.getValue().getNumberOfBrokers();
+    }
+    final int localNodeId = nodeId - globalOffset;
+    if (localNodeId < 0 || localNodeId >= regionCfg.getNumberOfBrokers()) {
       throw new IllegalArgumentException(
           String.format(NODE_ID_REGION_ERROR_MSG, nodeId, region, regionCfg.getNumberOfBrokers()));
     }

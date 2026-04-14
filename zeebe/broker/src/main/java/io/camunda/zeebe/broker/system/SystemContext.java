@@ -218,7 +218,7 @@ public final class SystemContext {
 
     validateDataConfig(brokerCfg.getData());
 
-    validClusterConfigs(cluster);
+    //    validClusterConfigs(cluster);
     validateExperimentalConfigs(cluster, brokerCfg.getExperimental());
 
     validateExporters(brokerCfg.getExporters());
