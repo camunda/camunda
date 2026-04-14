@@ -267,19 +267,14 @@ class PostgresAsyncReplicationIT {
 
   static void waitForReplication() {
     final String url =
-        "jdbc:postgresql://"
-            + primary.getHost()
-            + ":"
-            + primary.getMappedPort(5432)
-            + "/testdb";
+        "jdbc:postgresql://" + primary.getHost() + ":" + primary.getMappedPort(5432) + "/testdb";
     System.out.println("[AsyncReplicationIT] Waiting for replication at " + url);
 
     int attempts = 0;
     while (attempts < 60) {
       try (final Connection conn = DriverManager.getConnection(url, "postgres", "secret");
           final Statement stmt = conn.createStatement();
-          final ResultSet rs =
-              stmt.executeQuery("SELECT count(*) FROM pg_stat_replication")) {
+          final ResultSet rs = stmt.executeQuery("SELECT count(*) FROM pg_stat_replication")) {
         if (rs.next() && rs.getInt(1) > 0) {
           System.out.println(
               "[AsyncReplicationIT] Replication established after " + attempts + " attempts");
