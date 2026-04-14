@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ~ Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+  ~ one or more contributor license agreements. See the NOTICE file distributed
+  ~ with this work for additional information regarding copyright ownership.
+  ~ Licensed under the Camunda License 1.0. You may not use this file
+  ~ except in compliance with the Camunda License 1.0.
+  -->
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>io.camunda</groupId>
+    <artifactId>camunda-testing</artifactId>
+    <version>8.8.22-SNAPSHOT</version>
+    <relativePath>../pom.xml</relativePath>
+  </parent>
+
+  <artifactId>camunda-process-test-spring-boot-3</artifactId>
+
+  <name>Camunda Process Test Spring Boot 3</name>
+  <description>Camunda Process Test Spring for Spring Boot 3.x (alias for camunda-process-test-spring).</description>
+
+  <licenses>
+    <license>
+      <name>Apache License, Version 2.0</name>
+      <url>http://www.apache.org/licenses/LICENSE-2.0</url>
+    </license>
+  </licenses>
+
+  <distributionManagement>
+    <relocation>
+      <artifactId>camunda-process-test-spring</artifactId>
+      <message>camunda-process-test-spring-boot-3 is an alias for camunda-process-test-spring (Spring Boot 3.x).
+        Use camunda-process-test-spring-boot-4 for Spring Boot 4.x compatibility.</message>
+    </relocation>
+  </distributionManagement>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>flatten-maven-plugin</artifactId>
+        <configuration>
+          <pomElements>
+            <distributionManagement></distributionManagement>
+          </pomElements>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+
+</project>
