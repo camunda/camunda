@@ -439,7 +439,7 @@ describe('Optional Filters', () => {
       screen.queryByRole('textbox', {name: /^value$/i}),
     ).not.toBeInTheDocument();
 
-    await removeOptionalFilter({user, screen, label: 'Operation Id'});
+    await removeOptionalFilter({user, screen, label: 'Operation ID'});
 
     vi.runOnlyPendingTimers();
 
@@ -458,7 +458,7 @@ describe('Optional Filters', () => {
         ).toString()}`,
       ),
     );
-    expect(screen.queryByLabelText('Operation Id')).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('Operation ID')).not.toBeInTheDocument();
   });
 
   it('should remove optional filters on filter reset', async () => {

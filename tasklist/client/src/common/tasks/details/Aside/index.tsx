@@ -20,6 +20,7 @@ type Props = {
   dueDate: string | null | undefined;
   followUpDate: string | null | undefined;
   priority: number | null | undefined;
+  businessId?: string | null;
   candidateUsers: string[];
   candidateGroups: string[];
   tenantId: string;
@@ -32,6 +33,7 @@ const Aside: React.FC<Props> = ({
   dueDate,
   followUpDate,
   priority,
+  businessId,
   candidateUsers,
   candidateGroups,
   tenantId,
@@ -61,6 +63,17 @@ const Aside: React.FC<Props> = ({
             </ContainedListItem>
           )}
         </>
+        {businessId ? (
+          <ContainedListItem>
+            <span className={styles.itemHeading}>
+              {t('taskDetailsBusinessIdLabel')}
+            </span>
+            <br />
+            <span className={styles.itemBody} data-testid="business-id">
+              {businessId}
+            </span>
+          </ContainedListItem>
+        ) : null}
         <ContainedListItem>
           <span className={styles.itemHeading}>
             {t('taskDetailsCreationDateLabel')}

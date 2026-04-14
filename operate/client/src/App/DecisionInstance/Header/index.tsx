@@ -28,6 +28,10 @@ const getHeaderColumns = (isMultiTenancyEnabled: boolean = false) => {
       name: 'Version',
       skeletonWidth: '33px',
     },
+    {
+      name: 'Business ID',
+      skeletonWidth: '120px',
+    },
     ...(isMultiTenancyEnabled
       ? [
           {
@@ -115,6 +119,12 @@ const Header: React.FC<HeaderProps> = ({
                 {decisionInstance.decisionDefinitionVersion}
               </Link>
             ),
+          },
+          {
+            // TODO: Replace with actual businessId from API response (decisionInstance.businessId)
+            title: `ORDER-${decisionInstance.decisionEvaluationInstanceKey.slice(-6)}`,
+            content: `ORDER-${decisionInstance.decisionEvaluationInstanceKey.slice(-6)}`,
+            dataTestId: 'business-id',
           },
           {
             hidden: !isMultiTenancyEnabled,

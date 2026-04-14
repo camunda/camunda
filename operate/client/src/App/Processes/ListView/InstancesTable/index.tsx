@@ -188,6 +188,8 @@ const InstancesTable: React.FC<InstancesTableProps> = observer(
                 </Link>
               ),
               processVersion: instance.processDefinitionVersion,
+              // TODO: Replace with actual businessId from API response
+              businessId: `ORDER-${instance.processInstanceKey.slice(-6)}`,
               versionTag: instance.processDefinitionVersionTag ?? '--',
               tenant: isTenantColumnVisible ? instance.tenantId : undefined,
               ...(isOperationStateColumnVisible && {
@@ -259,6 +261,11 @@ const InstancesTable: React.FC<InstancesTableProps> = observer(
               header: 'Version',
               key: 'processVersion',
               sortKey: 'processDefinitionVersion',
+            },
+            {
+              header: 'Business ID',
+              key: 'businessId',
+              isDisabled: true,
             },
             ...(hasVersionTags
               ? [

@@ -273,7 +273,7 @@ describe('Filters', () => {
     await user.click(screen.getByText('Variable'));
 
     await user.click(screen.getByRole('button', {name: 'More Filters'}));
-    await user.click(screen.getByText('Operation Id'));
+    await user.click(screen.getByText('Operation ID'));
     await user.type(
       screen.getByLabelText(/^operation id$/i),
 
@@ -450,8 +450,8 @@ describe('Filters', () => {
 
     expect(screen.getByTestId('search')).toBeEmptyDOMElement();
     await user.click(screen.getByRole('button', {name: 'More Filters'}));
-    await user.click(screen.getByText('Operation Id'));
-    await removeOptionalFilter({user, screen, label: 'Operation Id'});
+    await user.click(screen.getByText('Operation ID'));
+    await removeOptionalFilter({user, screen, label: 'Operation ID'});
 
     expect(screen.getByTestId('search')).toBeEmptyDOMElement();
   });
@@ -509,7 +509,7 @@ describe('Filters', () => {
       },
       {name: 'Variable', fields: ['Name', 'Value']},
       {name: 'Process Instance Key(s)', fields: ['Process Instance Key(s)']},
-      {name: 'Operation Id', fields: ['Operation Id']},
+      {name: 'Operation ID', fields: ['Operation ID']},
     ];
 
     let fieldLabels = optionalFilters.reduce((acc, optionalFilter) => {

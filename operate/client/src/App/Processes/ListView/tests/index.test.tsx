@@ -354,7 +354,7 @@ describe('Instances', () => {
     });
   });
 
-  it('should hide Operation State column when Operation Id filter is not set', async () => {
+  it('should hide Operation State column when Operation ID filter is not set', async () => {
     mockSearchProcessInstances().withSuccess(
       mockProcessInstancesV2WithOperation,
     );
@@ -370,7 +370,7 @@ describe('Instances', () => {
     expect(screen.queryByText('Operation State')).not.toBeInTheDocument();
   });
 
-  it('should show Operation State column when Operation Id filter is set', async () => {
+  it('should show Operation State column when Operation ID filter is set', async () => {
     const queryString =
       '?batchOperationId=f4be6304-a0e0-4976-b81b-7a07fb4e96e5';
 
