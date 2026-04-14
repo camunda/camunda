@@ -34,10 +34,13 @@ import io.camunda.client.jobhandling.result.DocumentResultProcessorFailureHandli
 import io.camunda.client.jobhandling.result.ResultProcessorStrategy;
 import io.camunda.client.metrics.JobWorkerMetricsFactory;
 import io.camunda.client.metrics.MetricsRecorder;
+import io.camunda.client.spring.annotation.customizer.JobWorkerValueCustomizerCompat;
 import io.camunda.client.spring.configuration.condition.ConditionalOnCamundaClientEnabled;
 import io.camunda.client.spring.properties.CamundaClientProperties;
 import io.camunda.client.spring.properties.PropertyBasedJobWorkerValueCustomizer;
 import io.camunda.zeebe.client.ZeebeClient;
+import io.camunda.zeebe.spring.client.annotation.customizer.ZeebeWorkerValueCustomizer;
+import java.util.ArrayList;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -127,8 +130,16 @@ public class CamundaClientAllAutoConfiguration {
   @Bean
   public JobWorkerManager jobWorkerManager(
       final List<JobWorkerValueCustomizer> jobWorkerValueCustomizers,
+      @Autowired(required = false) final List<ZeebeWorkerValueCustomizer> legacyCustomizers,
       final JobWorkerFactory jobWorkerFactory) {
-    return new JobWorkerManager(jobWorkerValueCustomizers, jobWorkerFactory);
+    final List<JobWorkerValueCustomizer> allCustomizers =
+        new ArrayList<>(jobWorkerValueCustomizers);
+    if (legacyCustomizers != null) {
+      legacyCustomizers.stream()
+          .map(JobWorkerValueCustomizerCompat::new)
+          .forEach(allCustomizers::add);
+    }
+    return new JobWorkerManager(allCustomizers, jobWorkerFactory);
   }
 
   @Bean("backoffSupplier")
