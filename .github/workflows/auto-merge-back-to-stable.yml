@@ -28,7 +28,7 @@ jobs:
         shell: bash
     env:
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      DRY_RUN: ${{ vars.AUTO_MERGE_DRY_RUN || 'true' }}
+      DRY_RUN: ${{ vars.AUTO_MERGE_DRY_RUN || 'false' }}
       MERGE_QUEUE_TIMEOUT_MINUTES: ${{ vars.MERGE_QUEUE_TIMEOUT_MINUTES || '180' }}
     
     steps:
