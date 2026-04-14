@@ -44,7 +44,7 @@
     FROM pg_stat_replication;
   </select>
 
-  <select id="findCurrentLsnAurora" resultMap="java.lang.Long">
+  <select id="findCurrentLsnAurora" resultType="java.lang.Long">
     SELECT DURABLE_LSN AS last_lsn
     FROM aurora_global_db_instance_status()
     WHERE SESSION_ID = 'MASTER_SESSION_ID';
