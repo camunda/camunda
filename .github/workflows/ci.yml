@@ -1820,7 +1820,7 @@ jobs:
         secret/data/github.com/organizations/camunda NEXUS_PSW | TEST_DOCKER_PASSWORD_CAMUNDA_CLOUD;
   alwaysgreen-helm-deploy-status:
     name: Observe Helm chart Integration Tests status
-    needs: alwaysgreen-helm-deploy
+    needs: [alwaysgreen-helm-deploy, detect-changes]
     if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 3
@@ -1933,6 +1933,7 @@ jobs:
       - actionlint
       - alwaysgreen-build-and-push
       - alwaysgreen-helm-deploy
+      - alwaysgreen-helm-deploy-status
       - alwaysgreen-trigger-saas-e2e
       - archunit-tests
       - build-platform-frontend
