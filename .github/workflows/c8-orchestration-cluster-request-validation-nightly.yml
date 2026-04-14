@@ -148,7 +148,6 @@ jobs:
           CAMUNDA_BASIC_AUTH_USERNAME: "demo"
           CAMUNDA_BASIC_AUTH_PASSWORD: "demo"
           VERSION: ${{ matrix.branch }}
-          CAMUNDA_TASKLIST_V2_MODE_ENABLED: "false"
           CORE_APPLICATION_URL: "http://localhost:8080"
           ZEEBE_REST_ADDRESS: "http://localhost:8080"
           V2_STATELESS_TESTS: "true"

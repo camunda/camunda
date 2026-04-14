@@ -246,7 +246,6 @@ jobs:
           CAMUNDA_AUTH_STRATEGY: "BASIC"
           CAMUNDA_BASIC_AUTH_USERNAME: "demo"
           CAMUNDA_BASIC_AUTH_PASSWORD: "demo"
-          CAMUNDA_TASKLIST_V2_MODE_ENABLED: "false"
           CAMUNDA_PROCESSINSTANCECREATION_BUSINESSIDUNIQUENESSENABLED: "true"
         run: |
           if [[ "$NON_STANDALONE" == "true" ]]; then
@@ -659,7 +658,6 @@ jobs:
           CAMUNDA_AUTH_STRATEGY: "BASIC"
           CAMUNDA_BASIC_AUTH_USERNAME: "demo"
           CAMUNDA_BASIC_AUTH_PASSWORD: "demo"
-          CAMUNDA_TASKLIST_V2_MODE_ENABLED: "false"
           CAMUNDA_PROCESSINSTANCECREATION_BUSINESSIDUNIQUENESSENABLED: "true"
           DB_NAME: ${{ matrix.database.database-name }}
           VERSION: ${{ steps.sanitize.outputs.safe_branch  }}
@@ -678,7 +676,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        tasklist_mode: ${{ fromJSON( (needs.validate-release.outputs.base == 'stable/8.6' || needs.validate-release.outputs.base == 'stable/8.7') && '["v1"]' || '["v1","v2"]' ) }}
+        tasklist_mode: ${{ fromJSON( (needs.validate-release.outputs.base == 'stable/8.6' || needs.validate-release.outputs.base == 'stable/8.7') && '["v1"]' || needs.validate-release.outputs.base == 'main' && '["v2"]' || '["v1","v2"]' ) }}
     needs: validate-release
     runs-on: ubuntu-latest
     timeout-minutes: 60
@@ -860,11 +858,14 @@ jobs:
 
             if [[ "${{ matrix.tasklist_mode }}" == "v2" ]]; then
               echo "Running V2 mode tests"
-              if [[ "${{ needs.validate-release.outputs.base }}" == "stable/8.8" ]]; then
+              if [[ "${{ needs.validate-release.outputs.base }}" == "main" ]]; then
+                # main: V1 directories removed, run all tests
+                TEST_ARGS+=(tests/)
+              elif [[ "${{ needs.validate-release.outputs.base }}" == "stable/8.8" ]]; then
                 # stable/8.8: run all tests excluding @v1-only tagged tests
                 TEST_ARGS+=(tests/ --grep-invert '@v1-only')
               else
-                # main, stable 8.9: run all tests excluding v1/ directories
+                # stable/8.9: run all tests excluding v1/ directories
                 TEST_ARGS+=(tests/ --grep-invert 'v1/')
               fi
             else
@@ -873,7 +874,7 @@ jobs:
                 # stable/8.8: no v1/ directories, run regular directories for V1 mode
                 TEST_ARGS+=(tests/tasklist/ tests/common-flows/)
               else
-                # main, stable 8.9: has v1/ directories for V1 mode
+                # stable/8.9: has v1/ directories for V1 mode
                 TEST_ARGS+=(tests/tasklist/v1/ tests/common-flows/v1/)
               fi
             fi
