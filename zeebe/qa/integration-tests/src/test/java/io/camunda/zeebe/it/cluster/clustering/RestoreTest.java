@@ -108,7 +108,7 @@ public final class RestoreTest {
         .timeout(60, TimeUnit.SECONDS)
         .ignoreExceptions()
         .untilAsserted(
-            () -> assertThat(clusteringRule.getLeaderForPartition(1).getNodeId()).isEqualTo(2));
+            () -> assertThat(clusteringRule.getLeaderForPartition(1).getNodeId()).isEqualTo("2"));
 
     publishMessage();
   }

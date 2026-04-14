@@ -56,7 +56,7 @@ public final class TopologyRequestRestTest extends ClientRestTest {
             .partitionsCount(2)
             .addBrokersItem(
                 new BrokerInfo()
-                    .nodeId(0)
+                    .nodeId("0")
                     .host("host1")
                     .port(123)
                     .version("1.22.3-SNAPSHOT")
@@ -66,7 +66,7 @@ public final class TopologyRequestRestTest extends ClientRestTest {
                             new Partition().partitionId(1).role(FOLLOWER).health(UNHEALTHY))))
             .addBrokersItem(
                 new BrokerInfo()
-                    .nodeId(1)
+                    .nodeId("1")
                     .host("host2")
                     .port(212)
                     .version("2.22.3-SNAPSHOT")
@@ -76,7 +76,7 @@ public final class TopologyRequestRestTest extends ClientRestTest {
                             new Partition().partitionId(1).role(LEADER).health(HEALTHY))))
             .addBrokersItem(
                 new BrokerInfo()
-                    .nodeId(2)
+                    .nodeId("2")
                     .host("host3")
                     .port(432)
                     .version("3.22.3-SNAPSHOT")
@@ -100,7 +100,7 @@ public final class TopologyRequestRestTest extends ClientRestTest {
     assertThat(brokers).hasSize(3);
 
     io.camunda.client.api.response.BrokerInfo broker = brokers.get(0);
-    assertThat(broker.getNodeId()).isEqualTo(0);
+    assertThat(broker.getNodeId()).isEqualTo("0");
     assertThat(broker.getHost()).isEqualTo("host1");
     assertThat(broker.getPort()).isEqualTo(123);
     assertThat(broker.getAddress()).isEqualTo("host1:123");
@@ -112,7 +112,7 @@ public final class TopologyRequestRestTest extends ClientRestTest {
             tuple(1, PartitionBrokerRole.FOLLOWER, PartitionBrokerHealth.UNHEALTHY));
 
     broker = brokers.get(1);
-    assertThat(broker.getNodeId()).isEqualTo(1);
+    assertThat(broker.getNodeId()).isEqualTo("1");
     assertThat(broker.getHost()).isEqualTo("host2");
     assertThat(broker.getPort()).isEqualTo(212);
     assertThat(broker.getAddress()).isEqualTo("host2:212");
@@ -124,7 +124,7 @@ public final class TopologyRequestRestTest extends ClientRestTest {
             tuple(1, PartitionBrokerRole.LEADER, PartitionBrokerHealth.HEALTHY));
 
     broker = brokers.get(2);
-    assertThat(broker.getNodeId()).isEqualTo(2);
+    assertThat(broker.getNodeId()).isEqualTo("2");
     assertThat(broker.getHost()).isEqualTo("host3");
     assertThat(broker.getPort()).isEqualTo(432);
     assertThat(broker.getAddress()).isEqualTo("host3:432");
@@ -147,7 +147,7 @@ public final class TopologyRequestRestTest extends ClientRestTest {
             .partitionsCount(1)
             .addBrokersItem(
                 new BrokerInfo()
-                    .nodeId(0)
+                    .nodeId("0")
                     .host("host1")
                     .port(123)
                     .version("1.22.3-SNAPSHOT")

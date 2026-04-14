@@ -48,7 +48,7 @@ public class DiskSpaceMonitoringFailOverTest {
     final var leaderId = clusteringRule.getLeaderForPartition(1).getNodeId();
     final var followers =
         clusteringRule.getBrokers().stream()
-            .filter(b -> b.getConfig().getCluster().getNodeId() != leaderId)
+            .filter(b -> b.getConfig().getCluster().getNodeId() != Integer.parseInt(leaderId))
             .collect(Collectors.toList());
 
     followers.forEach(
@@ -80,7 +80,10 @@ public class DiskSpaceMonitoringFailOverTest {
     // then
     Awaitility.await()
         .timeout(Duration.ofSeconds(60))
-        .untilAsserted(() -> assertThat(clusteringRule.isBrokerHealthy(newLeaderId)).isFalse());
+        .untilAsserted(
+            () ->
+                assertThat(clusteringRule.isBrokerHealthy(Integer.parseInt(newLeaderId)))
+                    .isFalse());
     // should install StreamProcessor and immediately pause it
     Awaitility.await(
             "Stream processor of broker " + newLeaderId + " is expected to be in paused state.")

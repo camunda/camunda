@@ -19,9 +19,10 @@ import java.util.List;
 
 public interface BrokerInfo {
   /**
-   * @return the node if of the broker
+   * @return the node ID of the broker; in region-aware clusters this includes the region prefix,
+   *     e.g. "us-east1-0"
    */
-  int getNodeId();
+  String getNodeId();
 
   /**
    * @return the address host of the broker

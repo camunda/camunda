@@ -80,7 +80,14 @@ public class NodeIProviderConfigurationUtils {
                 });
           }
         };
-    nodeIdProvider.initialize(cluster.getSize()).join();
+    final String localRegion = cluster.getRegion();
+    final var regionCfg =
+        (localRegion != null && !localRegion.isBlank())
+            ? cluster.getPartitioning().getRegionAware().getRegions().get(localRegion)
+            : null;
+    final int localClusterSize =
+        regionCfg != null ? regionCfg.getNumberOfBrokers() : cluster.getSize();
+    nodeIdProvider.initialize(localClusterSize).join();
     return nodeIdProvider;
   }
 

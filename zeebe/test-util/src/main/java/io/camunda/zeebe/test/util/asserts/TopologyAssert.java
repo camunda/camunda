@@ -83,7 +83,7 @@ public final class TopologyAssert extends AbstractObjectAssert<TopologyAssert, T
       for (final PartitionInfo partition : broker.getPartitions()) {
         if (partition.getHealth() != PartitionBrokerHealth.HEALTHY) {
           throw failure(
-              "Expected all partitions to be healthy, but partition <%d> of broker <%d> is <%s>",
+              "Expected all partitions to be healthy, but partition <%d> of broker <%s> is <%s>",
               partition.getPartitionId(), broker.getNodeId(), partition.getHealth());
         }
         hasHealthyPartition = true;
@@ -263,7 +263,7 @@ public final class TopologyAssert extends AbstractObjectAssert<TopologyAssert, T
             .filter(p -> p.partitionInfo.isLeader())
             .map(p -> p.brokerInfo.getNodeId())
             .findFirst();
-    return has(hasLeaderForPartition(partitionId, expectedLeaderId, leader));
+    return has(hasLeaderForPartition(partitionId, String.valueOf(expectedLeaderId), leader));
   }
 
   /**
@@ -276,9 +276,9 @@ public final class TopologyAssert extends AbstractObjectAssert<TopologyAssert, T
   public TopologyAssert doesNotContainBroker(final int nodeId) {
     isNotNull();
 
-    final Set<Integer> brokerIds =
+    final Set<String> brokerIds =
         actual.getBrokers().stream().map(BrokerInfo::getNodeId).collect(Collectors.toSet());
-    if (brokerIds.contains(nodeId)) {
+    if (brokerIds.contains(String.valueOf(nodeId))) {
       throw failure(
           "Expected topology not to contain broker with ID <%d>, but found the following: <%s>",
           nodeId, brokerIds);
@@ -309,7 +309,7 @@ public final class TopologyAssert extends AbstractObjectAssert<TopologyAssert, T
     if (leaderForPartition.isPresent()) {
       {
         throw failure(
-            "Expected topology not to contain leader for partition <%d>, but found broker <%d>",
+            "Expected topology not to contain leader for partition <%d>, but found broker <%s>",
             partitionId, leaderForPartition.get());
       }
     }
@@ -327,9 +327,9 @@ public final class TopologyAssert extends AbstractObjectAssert<TopologyAssert, T
   public TopologyAssert containsBroker(final int nodeId) {
     isNotNull();
 
-    final Set<Integer> brokers =
+    final Set<String> brokers =
         actual.getBrokers().stream().map(BrokerInfo::getNodeId).collect(Collectors.toSet());
-    if (!brokers.contains(nodeId)) {
+    if (!brokers.contains(String.valueOf(nodeId))) {
       throw failure(
           "Expected topology to contain broker with ID <%d>, but found only the following: <%s>",
           nodeId, brokers);
@@ -362,13 +362,12 @@ public final class TopologyAssert extends AbstractObjectAssert<TopologyAssert, T
 
   @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
   private VerboseCondition<Topology> hasLeaderForPartition(
-      final int partitionId, final int expectedLeaderId, final Optional<Integer> leader) {
+      final int partitionId, final String expectedLeaderId, final Optional<String> leader) {
     return VerboseCondition.verboseCondition(
-        topology -> leader.isPresent() && leader.get() == expectedLeaderId,
-        "a topology where the leader of partition '%d' is '%d'"
+        topology -> leader.isPresent() && leader.get().equals(expectedLeaderId),
+        "a topology where the leader of partition '%d' is '%s'"
             .formatted(partitionId, expectedLeaderId),
-        topology ->
-            " but the actual leader is '%s'".formatted(leader.map(String::valueOf).orElse("null")));
+        topology -> " but the actual leader is '%s'".formatted(leader.orElse("null")));
   }
 
   private VerboseCondition<Topology> hasPartitionId(

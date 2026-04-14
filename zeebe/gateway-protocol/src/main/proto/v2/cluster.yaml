@@ -95,10 +95,9 @@ components:
         - version
       properties:
         nodeId:
-          description: The unique (within a cluster) node ID for the broker.
-          type: integer
-          format: int32
-          example: 0
+          description: The unique (within a cluster) node ID for the broker. In region-aware clusters this includes the region prefix, e.g. "us-east1-0".
+          type: string
+          example: "0"
         host:
           description: The hostname for reaching the broker.
           type: string
