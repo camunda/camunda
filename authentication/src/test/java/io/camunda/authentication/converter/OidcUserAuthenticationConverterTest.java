@@ -13,6 +13,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -20,6 +21,7 @@ import static org.mockito.Mockito.when;
 import io.camunda.authentication.config.OidcAccessTokenDecoderFactory;
 import io.camunda.security.auth.CamundaAuthentication;
 import jakarta.servlet.http.HttpServletRequest;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
@@ -435,5 +437,102 @@ public class OidcUserAuthenticationConverterTest {
     // then — null passed because empty map has no entry for this issuer
     verify(oidcAccessTokenDecoderFactory)
         .createAccessTokenDecoder(eq(clientRegistration), isNull());
+  }
+
+  @Test
+  public void shouldUseIdTokenClaimsWhenPreferIdTokenClaimsIsEnabled() {
+    // given — converter configured with prefer-id-token-claims=true for the current registration
+    final var registrationId = "pingfed";
+    final var converter =
+        new OidcUserAuthenticationConverter(
+            authorizedClientRepository,
+            oidcAccessTokenDecoderFactory,
+            tokenClaimsConverter,
+            request,
+            Collections.emptyMap(),
+            Map.of(registrationId, true));
+
+    // OidcUser attributes carry the ID-token + userInfo merged claims (including the
+    // userInfo-only claim)
+    final var oidcUser = mock(OidcUser.class);
+    final Map<String, Object> principalAttributes =
+        Map.of("sub", "alice", "groups", List.of("group-a"));
+    when(oidcUser.getAttributes()).thenReturn(principalAttributes);
+
+    final var authentication = mock(OAuth2AuthenticationToken.class);
+    when(authentication.getPrincipal()).thenReturn(oidcUser);
+    when(authentication.getAuthorizedClientRegistrationId()).thenReturn(registrationId);
+
+    when(tokenClaimsConverter.convert(any()))
+        .thenReturn(CamundaAuthentication.of(b -> b.user("alice")));
+
+    // when
+    converter.convert(authentication);
+
+    // then — TokenClaimsConverter receives the principal attributes verbatim
+    @SuppressWarnings("unchecked")
+    final ArgumentCaptor<Map<String, Object>> claimsCaptor = ArgumentCaptor.forClass(Map.class);
+    verify(tokenClaimsConverter).convert(claimsCaptor.capture());
+    assertThat(claimsCaptor.getValue())
+        .containsEntry("sub", "alice")
+        .containsEntry("groups", List.of("group-a"));
+
+    // and — the access token is NOT decoded and the authorised client repository is NOT hit
+    verify(jwtDecoder, never()).decode(any());
+    verify(oidcAccessTokenDecoderFactory, never()).createAccessTokenDecoder(any(), any());
+    verify(authorizedClientRepository, never()).loadAuthorizedClient(any(), any(), any());
+  }
+
+  @Test
+  public void shouldDecodeAccessTokenWhenPreferIdTokenClaimsIsDisabledForRegistration() {
+    // given — converter configured with prefer-id-token-claims=true for a DIFFERENT registration
+    // than the one the authentication is for. The flag must only apply when the current
+    // registration is explicitly opted in.
+    final var converter =
+        new OidcUserAuthenticationConverter(
+            authorizedClientRepository,
+            oidcAccessTokenDecoderFactory,
+            tokenClaimsConverter,
+            request,
+            Collections.emptyMap(),
+            Map.of("other-reg", true));
+
+    final var oidcUser = mock(OidcUser.class);
+    when(oidcUser.getAttributes()).thenReturn(Map.of("sub", "alice", "groups", List.of("group-a")));
+
+    final var authentication = mock(OAuth2AuthenticationToken.class);
+    when(authentication.getPrincipal()).thenReturn(oidcUser);
+    when(authentication.getAuthorizedClientRegistrationId()).thenReturn("current-reg");
+
+    final var accessTokenValue = "test-access-token";
+    final var accessToken = mock(OAuth2AccessToken.class);
+    when(accessToken.getTokenValue()).thenReturn(accessTokenValue);
+
+    final var providerDetails = mock(ClientRegistration.ProviderDetails.class);
+    when(providerDetails.getIssuerUri()).thenReturn("https://issuer.example.com");
+    final var clientRegistration = mock(ClientRegistration.class);
+    when(clientRegistration.getRegistrationId()).thenReturn("current-reg");
+    when(clientRegistration.getProviderDetails()).thenReturn(providerDetails);
+
+    final var authorizedClient = mock(OAuth2AuthorizedClient.class);
+    when(authorizedClient.getAccessToken()).thenReturn(accessToken);
+    when(authorizedClient.getClientRegistration()).thenReturn(clientRegistration);
+    when(authorizedClientRepository.loadAuthorizedClient(any(), any(), any()))
+        .thenReturn(authorizedClient);
+
+    final Map<String, Object> accessTokenClaims = Map.of("sub", "alice");
+    final var jwt = mock(Jwt.class);
+    when(jwtDecoder.decode(eq(accessTokenValue))).thenReturn(jwt);
+    when(jwt.getClaims()).thenReturn(accessTokenClaims);
+
+    when(tokenClaimsConverter.convert(any()))
+        .thenReturn(CamundaAuthentication.of(b -> b.user("alice")));
+
+    // when
+    converter.convert(authentication);
+
+    // then — the access token is decoded and its claims are used (default behaviour)
+    verify(jwtDecoder).decode(eq(accessTokenValue));
+    verify(tokenClaimsConverter).convert(eq(accessTokenClaims));
   }
 }
