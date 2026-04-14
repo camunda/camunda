@@ -35,6 +35,7 @@ public class ProcessInstanceArchiverJob extends ArchiverJob<ProcessInstanceArchi
   private final HistoryConfiguration config;
   private final ListViewTemplate processInstanceTemplate;
   private final List<ProcessInstanceDependant> processInstanceDependants;
+  private final RecentlyArchivedProcessInstances recentlyArchivedProcessInstances;
   private final Queue<ProcessInstanceArchiveBatch> pendingBatches =
       new java.util.concurrent.ConcurrentLinkedQueue<>();
 
@@ -59,6 +60,7 @@ public class ProcessInstanceArchiverJob extends ArchiverJob<ProcessInstanceArchi
         processInstanceDependants.stream()
             .sorted(Comparator.comparing(ProcessInstanceDependant::getFullQualifiedName))
             .toList(); // sort to ensure the execution order is stable
+    recentlyArchivedProcessInstances = new RecentlyArchivedProcessInstances(largeBatchSize());
   }
 
   @Override
@@ -75,7 +77,13 @@ public class ProcessInstanceArchiverJob extends ArchiverJob<ProcessInstanceArchi
         .getProcessInstancesNextBatch(largeBatchSize())
         .thenApply(
             batch -> {
-              final var chunks = batch.chunk(config.getRolloverBatchSize());
+              if (batch == null) {
+                return null;
+              }
+              final var deduped = recentlyArchivedProcessInstances.deduplicate(batch);
+              final var duplication = batch.size() - deduped.size();
+              getExporterMetrics().recordProcessInstancesArchivingDeduplicated(duplication);
+              final var chunks = deduped.chunk(config.getRolloverBatchSize());
               final var first = chunks.removeFirst();
               pendingBatches.addAll(chunks);
               return first;
@@ -91,7 +99,12 @@ public class ProcessInstanceArchiverJob extends ArchiverJob<ProcessInstanceArchi
   protected CompletableFuture<Integer> archive(
       final IndexTemplateDescriptor templateDescriptor, final ProcessInstanceArchiveBatch batch) {
     return archiveProcessDependants(batch)
-        .thenComposeAsync(v -> super.archive(templateDescriptor, batch), getExecutor());
+        .thenComposeAsync(v -> super.archive(templateDescriptor, batch), getExecutor())
+        .thenApply(
+            archived -> {
+              recentlyArchivedProcessInstances.markRecentlyArchived(batch);
+              return archived;
+            });
   }
 
   @Override

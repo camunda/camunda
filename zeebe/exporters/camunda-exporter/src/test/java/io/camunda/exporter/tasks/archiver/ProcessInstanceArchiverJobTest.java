@@ -62,8 +62,10 @@ final class ProcessInstanceArchiverJobTest extends ArchiverJobRecordingMetricsAb
   @BeforeEach
   void setUp() {
     // given
-    repository.batch =
-        new ProcessInstanceArchiveBatch("2024-01-01", List.of(1L, 2L, 3L), List.of());
+    repository.batches =
+        List.of(
+            new ProcessInstanceArchiveBatch("2024-01-01", List.of(1L, 2L, 3L), List.of()),
+            new ProcessInstanceArchiveBatch("2024-01-01", List.of(4L, 5L, 6L), List.of()));
   }
 
   @AfterEach
@@ -189,7 +191,8 @@ final class ProcessInstanceArchiverJobTest extends ArchiverJobRecordingMetricsAb
             metrics,
             LOGGER,
             executor);
-    repository.batch = new ProcessInstanceArchiveBatch("2024-01-01", List.of(1L, 2L), List.of());
+    repository.batches =
+        List.of(new ProcessInstanceArchiveBatch("2024-01-01", List.of(1L, 2L), List.of()));
 
     // when
     final int count = job.execute().toCompletableFuture().join();
@@ -207,7 +210,8 @@ final class ProcessInstanceArchiverJobTest extends ArchiverJobRecordingMetricsAb
   @Test
   void shouldReturnEmptyBatchIfNoIdsGiven() {
     // given
-    repository.batch = new ProcessInstanceArchiveBatch("2024-01-01", List.of(), List.of());
+    repository.batches =
+        List.of(new ProcessInstanceArchiveBatch("2024-01-01", List.of(), List.of()));
 
     // when
     final var nextBatch = job.getNextBatch().toCompletableFuture().join();
@@ -222,9 +226,10 @@ final class ProcessInstanceArchiverJobTest extends ArchiverJobRecordingMetricsAb
   @Test
   void shouldRequestLargeBatchAndChunkIt() {
     // given
-    repository.batch =
-        new ProcessInstanceArchiveBatch(
-            "2024-01-01", LongStream.rangeClosed(1L, 300L).boxed().toList(), List.of());
+    repository.batches =
+        List.of(
+            new ProcessInstanceArchiveBatch(
+                "2024-01-01", LongStream.rangeClosed(1L, 300L).boxed().toList(), List.of()));
 
     // when
     final var first = job.getNextBatch().toCompletableFuture().join();
@@ -251,9 +256,10 @@ final class ProcessInstanceArchiverJobTest extends ArchiverJobRecordingMetricsAb
   @Test
   void shouldRequestAgainWhenChunksExhausted() {
     // given
-    repository.batch =
-        new ProcessInstanceArchiveBatch(
-            "2024-01-01", LongStream.rangeClosed(1L, 200L).boxed().toList(), List.of());
+    repository.batches =
+        List.of(
+            new ProcessInstanceArchiveBatch(
+                "2024-01-01", LongStream.rangeClosed(1L, 200L).boxed().toList(), List.of()));
 
     // when
     final var first = job.getNextBatch().toCompletableFuture().join();
@@ -273,6 +279,34 @@ final class ProcessInstanceArchiverJobTest extends ArchiverJobRecordingMetricsAb
         .isEqualTo(
             new ProcessInstanceArchiveBatch(
                 "2024-01-01", LongStream.rangeClosed(1L, 100L).boxed().toList(), List.of()));
+
+    verify(repository, times(2)).getProcessInstancesNextBatch(1_000);
+  }
+
+  @Test
+  void shouldSkipAlreadyArchivedProcessInstances() {
+    // given
+    repository.batches =
+        List.of(
+            new ProcessInstanceArchiveBatch("2024-01-01", List.of(1L, 2L, 3L), List.of(7L, 8L)));
+    final var count1 = getArchiverJob().execute().toCompletableFuture().join();
+
+    // 2nd batch has overlapping ids with 1st batch, but also new ones. Should skip the overlapping
+    // ones, but still use the new ones
+    repository.batches =
+        List.of(
+            new ProcessInstanceArchiveBatch("2024-01-01", List.of(2L, 3L, 4L), List.of(8L, 9L)));
+
+    // when
+    final var count2 = getArchiverJob().execute().toCompletableFuture().join();
+
+    // then
+    assertThat(count1).isEqualTo(5);
+    assertThat(count2).isEqualTo(2);
+    assertArchivingCounts(7);
+    assertThat(getMeterRegistry().counter(getJobMetricName(), "state", "deduplicated").count())
+        .isEqualTo(3);
+    assertArchiverTimer(2); // job executed twice
 
     verify(repository, times(2)).getProcessInstancesNextBatch(1_000);
   }
