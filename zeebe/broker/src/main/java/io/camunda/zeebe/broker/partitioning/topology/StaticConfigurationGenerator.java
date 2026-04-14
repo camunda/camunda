@@ -90,7 +90,10 @@ public final class StaticConfigurationGenerator {
                           .mapToObj(localId -> MemberId.from(regionName + "-" + localId))
                           .toList();
                   return new RegionSpec(
-                      regionName, regionCfg.getNumberOfReplicas(), regionCfg.getPriority(), brokers);
+                      regionName,
+                      regionCfg.getNumberOfReplicas(),
+                      regionCfg.getPriority(),
+                      brokers);
                 })
             .toList();
     return new RegionAwarePartitionDistributor(specs);

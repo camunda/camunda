@@ -51,7 +51,6 @@ public final class ClusterConfigurationManagerService
   private static final String COORDINATOR_ID = "0";
   private final ClusterConfigurationManagerImpl clusterConfigurationManager;
   private final ClusterConfigurationGossiper clusterConfigurationGossiper;
-  private final boolean isCoordinator;
   private final PersistedClusterConfiguration persistedClusterConfiguration;
   private final Path configurationFile;
   private final ConfigurationChangeCoordinator configurationChangeCoordinator;
@@ -98,7 +97,6 @@ public final class ClusterConfigurationManagerService
             config,
             clusterConfigurationManager::onGossipReceived,
             topologyMetrics);
-    isCoordinator = localMemberId.id().equals(COORDINATOR_ID);
     configurationChangeCoordinator =
         new ConfigurationChangeCoordinatorImpl(
             clusterConfigurationManager, localMemberId, managerActor);
@@ -193,7 +191,7 @@ public final class ClusterConfigurationManagerService
       final StaticConfiguration staticConfiguration) {
     final var result = new CompletableActorFuture<Void>();
     final ClusterConfigurationInitializer clusterConfigurationInitializer =
-        isCoordinator
+        staticConfiguration.getIsCoordinator()
             ? getCoordinatorInitializer(staticConfiguration)
             : getNonCoordinatorInitializer(staticConfiguration);
 
