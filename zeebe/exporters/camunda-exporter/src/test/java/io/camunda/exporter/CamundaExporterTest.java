@@ -228,6 +228,8 @@ final class CamundaExporterTest {
     @Test
     void shouldScheduleInitialFlushAtConfiguredDelay() {
       // given
+      final var clock = new MutableClock(1000);
+      testContext.setClock(clock);
       configuration.getBulk().setDelay(5);
       exporter =
           new CamundaExporter(
