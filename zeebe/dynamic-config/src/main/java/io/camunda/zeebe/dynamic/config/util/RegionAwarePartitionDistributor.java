@@ -42,9 +42,8 @@ import java.util.Set;
  * <p>Regions must have distinct priority values; equal priorities produce undefined failover
  * ordering.
  *
- * <p>Example distribution with 3 regions (us-east1 prio=1000 × 2 replicas/2 brokers,
- * us-west1 prio=500 × 2 replicas/2 brokers, euro-east1 prio=10 × 1 replica/1 broker),
- * 5 partitions, RF=5:
+ * <p>Example distribution with 3 regions (us-east1 prio=1000 × 2 replicas/2 brokers, us-west1
+ * prio=500 × 2 replicas/2 brokers, euro-east1 prio=10 × 1 replica/1 broker), 5 partitions, RF=5:
  *
  * <pre>
  * +------------------+-------------+-------------+-------------+-------------+---------------+
