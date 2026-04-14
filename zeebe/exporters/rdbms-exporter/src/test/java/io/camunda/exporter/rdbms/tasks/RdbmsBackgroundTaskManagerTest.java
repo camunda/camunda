@@ -18,9 +18,8 @@ import io.camunda.db.rdbms.write.ReplicationLsnProvider;
 import io.camunda.db.rdbms.write.service.HistoryCleanupService;
 import io.camunda.db.rdbms.write.service.HistoryDeletionService;
 import io.camunda.exporter.rdbms.replication.LsnPositionEntry;
+import io.camunda.exporter.rdbms.replication.ReplicationContext;
 import java.time.Duration;
-import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.atomic.AtomicLong;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -175,11 +174,10 @@ final class RdbmsBackgroundTaskManagerTest {
     void shouldRunReplicationMonitorWhenProviderConfigured() {
       // given
       final var lsnProvider = mock(ReplicationLsnProvider.class);
-      final var queue = new ConcurrentLinkedQueue<LsnPositionEntry>();
-      queue.offer(new LsnPositionEntry(100, 1));
-      final var confirmedPosition = new AtomicLong(-1);
-
       when(lsnProvider.getReplicaLsn()).thenReturn(100L);
+
+      final var replicationContext = new ReplicationContext(lsnProvider, Duration.ofMillis(50));
+      replicationContext.pendingEntries().offer(new LsnPositionEntry(100, 1));
 
       final var manager =
           new RdbmsBackgroundTaskManager(
@@ -188,17 +186,15 @@ final class RdbmsBackgroundTaskManagerTest {
               historyDeletionService,
               LoggerFactory.getLogger(RdbmsBackgroundTaskManagerTest.class),
               CLOSE_TIMEOUT,
-              lsnProvider,
-              queue,
-              confirmedPosition,
-              Duration.ofMillis(50));
+              replicationContext);
 
       // when
       manager.start();
 
       // then
       Awaitility.await("ReplicationMonitor should confirm position")
-          .untilAsserted(() -> assertThat(confirmedPosition.get()).isEqualTo(1));
+          .untilAsserted(
+              () -> assertThat(replicationContext.confirmedPosition().get()).isEqualTo(1));
 
       manager.close();
     }
