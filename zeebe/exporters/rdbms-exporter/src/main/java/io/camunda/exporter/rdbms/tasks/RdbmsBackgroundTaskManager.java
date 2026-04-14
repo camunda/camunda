@@ -9,10 +9,9 @@ package io.camunda.exporter.rdbms.tasks;
 
 import static io.camunda.zeebe.exporter.common.tasks.BackgroundTaskManager.buildExecutor;
 
-import io.camunda.db.rdbms.write.ReplicationLsnProvider;
 import io.camunda.db.rdbms.write.service.HistoryCleanupService;
 import io.camunda.db.rdbms.write.service.HistoryDeletionService;
-import io.camunda.exporter.rdbms.replication.LsnPositionEntry;
+import io.camunda.exporter.rdbms.replication.ReplicationContext;
 import io.camunda.exporter.rdbms.replication.ReplicationMonitor;
 import io.camunda.zeebe.exporter.common.tasks.BackgroundTaskManager;
 import io.camunda.zeebe.exporter.common.tasks.RunnableTask;
@@ -22,9 +21,7 @@ import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Queue;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
-import java.util.concurrent.atomic.AtomicLong;
 import org.slf4j.Logger;
 
 /**
@@ -43,10 +40,7 @@ public final class RdbmsBackgroundTaskManager implements CloseableSilently {
   private final HistoryDeletionService historyDeletionService;
   private final Logger logger;
   private final Duration closeTimeout;
-  private final ReplicationLsnProvider replicationLsnProvider;
-  private final Queue<LsnPositionEntry> pendingReplicationEntries;
-  private final AtomicLong confirmedReplicationPosition;
-  private final Duration asyncReplicationPollingInterval;
+  private final ReplicationContext replicationContext;
 
   private BackgroundTaskManager delegate;
 
@@ -55,16 +49,7 @@ public final class RdbmsBackgroundTaskManager implements CloseableSilently {
       final HistoryCleanupService historyCleanupService,
       final HistoryDeletionService historyDeletionService,
       final Logger logger) {
-    this(
-        partitionId,
-        historyCleanupService,
-        historyDeletionService,
-        logger,
-        DEFAULT_CLOSE_TIMEOUT,
-        null,
-        null,
-        null,
-        null);
+    this(partitionId, historyCleanupService, historyDeletionService, logger, DEFAULT_CLOSE_TIMEOUT);
   }
 
   RdbmsBackgroundTaskManager(
@@ -73,16 +58,7 @@ public final class RdbmsBackgroundTaskManager implements CloseableSilently {
       final HistoryDeletionService historyDeletionService,
       final Logger logger,
       final Duration closeTimeout) {
-    this(
-        partitionId,
-        historyCleanupService,
-        historyDeletionService,
-        logger,
-        closeTimeout,
-        null,
-        null,
-        null,
-        null);
+    this(partitionId, historyCleanupService, historyDeletionService, logger, closeTimeout, null);
   }
 
   public RdbmsBackgroundTaskManager(
@@ -91,19 +67,13 @@ public final class RdbmsBackgroundTaskManager implements CloseableSilently {
       final HistoryDeletionService historyDeletionService,
       final Logger logger,
       final Duration closeTimeout,
-      final ReplicationLsnProvider replicationLsnProvider,
-      final Queue<LsnPositionEntry> pendingReplicationEntries,
-      final AtomicLong confirmedReplicationPosition,
-      final Duration asyncReplicationPollingInterval) {
+      final ReplicationContext replicationContext) {
     this.partitionId = partitionId;
     this.historyCleanupService = historyCleanupService;
     this.historyDeletionService = historyDeletionService;
     this.logger = logger;
     this.closeTimeout = closeTimeout;
-    this.replicationLsnProvider = replicationLsnProvider;
-    this.pendingReplicationEntries = pendingReplicationEntries;
-    this.confirmedReplicationPosition = confirmedReplicationPosition;
-    this.asyncReplicationPollingInterval = asyncReplicationPollingInterval;
+    this.replicationContext = replicationContext;
   }
 
   /**
@@ -161,18 +131,18 @@ public final class RdbmsBackgroundTaskManager implements CloseableSilently {
             executor,
             logger));
 
-    if (replicationLsnProvider != null) {
+    if (replicationContext != null) {
       final var replicationMonitor =
           new ReplicationMonitor(
-              replicationLsnProvider,
-              pendingReplicationEntries,
-              confirmedReplicationPosition,
-              asyncReplicationPollingInterval);
+              replicationContext.lsnProvider(),
+              replicationContext.pendingEntries(),
+              replicationContext.confirmedPosition(),
+              replicationContext.pollingInterval());
       tasks.add(
           new SelfSchedulingTask(
               "ReplicationMonitor",
               replicationMonitor::checkReplication,
-              () -> asyncReplicationPollingInterval,
+              replicationContext::pollingInterval,
               executor,
               logger));
     }

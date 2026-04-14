@@ -33,6 +33,7 @@ import io.camunda.db.rdbms.write.service.ExporterPositionService;
 import io.camunda.db.rdbms.write.service.HistoryCleanupService;
 import io.camunda.db.rdbms.write.service.HistoryDeletionService;
 import io.camunda.db.rdbms.write.service.RdbmsPurger;
+import io.camunda.exporter.rdbms.replication.ReplicationContext;
 import io.camunda.zeebe.exporter.api.ExporterException;
 import io.camunda.zeebe.exporter.api.context.Controller;
 import io.camunda.zeebe.exporter.api.context.ScheduledTask;
@@ -465,8 +466,7 @@ class RdbmsExporterTest {
 
     createExporter(
         b ->
-            b.replicationLsnProvider(lsnProvider)
-                .asyncReplicationPollingInterval(Duration.ofSeconds(15))
+            b.replicationContext(new ReplicationContext(lsnProvider, Duration.ofSeconds(15)))
                 .withHandler(ValueType.JOB, mockHandler(ValueType.JOB)));
 
     // when
@@ -485,8 +485,7 @@ class RdbmsExporterTest {
 
     createExporter(
         b ->
-            b.replicationLsnProvider(lsnProvider)
-                .asyncReplicationPollingInterval(Duration.ofSeconds(15))
+            b.replicationContext(new ReplicationContext(lsnProvider, Duration.ofSeconds(15)))
                 .withHandler(ValueType.JOB, mockHandler(ValueType.JOB)));
 
     // when
@@ -494,9 +493,10 @@ class RdbmsExporterTest {
     executionQueue.flush();
 
     // then
-    assertThat(exporter.getPendingReplicationEntries()).hasSize(1);
-    assertThat(exporter.getPendingReplicationEntries().peek().lsn()).isEqualTo(100L);
-    assertThat(exporter.getPendingReplicationEntries().peek().position()).isEqualTo(1L);
+    final var pendingEntries = exporter.getReplicationContext().pendingEntries();
+    assertThat(pendingEntries).hasSize(1);
+    assertThat(pendingEntries.peek().lsn()).isEqualTo(100L);
+    assertThat(pendingEntries.peek().position()).isEqualTo(1L);
   }
 
   @Test
@@ -507,12 +507,11 @@ class RdbmsExporterTest {
 
     createExporter(
         b ->
-            b.replicationLsnProvider(lsnProvider)
-                .asyncReplicationPollingInterval(Duration.ofSeconds(15))
+            b.replicationContext(new ReplicationContext(lsnProvider, Duration.ofSeconds(15)))
                 .withHandler(ValueType.JOB, mockHandler(ValueType.JOB)));
 
     // Simulate the background task confirming position 1
-    exporter.getConfirmedReplicationPosition().set(1L);
+    exporter.getReplicationContext().confirmedPosition().set(1L);
 
     // when — export a record and flush, which triggers the post-flush listener
     exporter.export(mockRecord(ValueType.JOB, 2));
@@ -530,8 +529,7 @@ class RdbmsExporterTest {
 
     createExporter(
         b ->
-            b.replicationLsnProvider(lsnProvider)
-                .asyncReplicationPollingInterval(Duration.ofSeconds(15))
+            b.replicationContext(new ReplicationContext(lsnProvider, Duration.ofSeconds(15)))
                 .withHandler(ValueType.JOB, mockHandler(ValueType.JOB)));
 
     // confirmed position is still -1 (nothing confirmed yet)
