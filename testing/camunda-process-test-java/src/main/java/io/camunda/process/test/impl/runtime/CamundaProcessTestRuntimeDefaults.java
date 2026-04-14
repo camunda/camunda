@@ -41,7 +41,7 @@ public class CamundaProcessTestRuntimeDefaults {
 
   public static final URI LOCAL_CAMUNDA_MONITORING_API_ADDRESS =
       URI.create("http://0.0.0.0:" + ContainerRuntimePorts.CAMUNDA_MONITORING_API);
-  public static final URI LOCAL_CONNECTORS_REST_API_ADDRESS = URI.create("http://0.0.0.0:8085");
+  public static final URI LOCAL_CONNECTORS_REST_API_ADDRESS = URI.create("http://0.0.0.0:8086");
 
   public static final Duration DEFAULT_REMOTE_RUNTIME_CONNECTION_TIMEOUT = Duration.ofMinutes(1);
 
