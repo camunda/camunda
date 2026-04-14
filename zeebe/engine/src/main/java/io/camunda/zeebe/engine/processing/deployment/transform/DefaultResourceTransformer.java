@@ -206,7 +206,8 @@ class DefaultResourceTransformer implements DeploymentResourceTransformer {
   /**
    * Holds the parsed identity of a deployment resource: its unique ID and an optional version tag.
    *
-   * @param id the resource identifier (must not be null or blank)
+   * @param id the resource identifier — for generic resources this is the filename, for structured
+   *     resources (e.g. RPA) it is parsed from the content
    * @param versionTag an optional version tag
    */
   public record ResourceInfo(String id, Optional<String> versionTag) {

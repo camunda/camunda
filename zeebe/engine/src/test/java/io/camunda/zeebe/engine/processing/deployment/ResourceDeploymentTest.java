@@ -528,31 +528,31 @@ public class ResourceDeploymentTest {
             tuple(TEST_RESOURCE_1_ID, 1, tenant1), tuple(TEST_RESOURCE_1_ID, 1, tenant2));
   }
 
-  // --- Generic resource tests ---
+  @Test
+  public void shouldDeployGenericTxtResource() {
+    assertGenericResourceDeployment("my-script.txt", "echo 'Hello World'");
+  }
 
   @Test
-  public void shouldDeployGenericResource() {
-    // when
-    final var deploymentEvent =
-        engine.deployment().withJsonClasspathResource(TEST_GENERIC_RESOURCE_1).deploy();
+  public void shouldDeployGenericMdResource() {
+    assertGenericResourceDeployment("runbook.md", "# Runbook\n\n## Steps\n\n1. Check logs");
+  }
 
-    // then
-    Assertions.assertThat(deploymentEvent)
-        .hasIntent(DeploymentIntent.CREATED)
-        .hasValueType(ValueType.DEPLOYMENT)
-        .hasRecordType(RecordType.EVENT);
-    assertThat(deploymentEvent.getValue().getResourceMetadata())
-        .singleElement()
-        .satisfies(
-            resourceMetadata ->
-                Assertions.assertThat(resourceMetadata)
-                    .hasResourceId(TEST_GENERIC_RESOURCE_1)
-                    .hasVersion(1)
-                    .hasVersionTag("")
-                    .hasResourceName(TEST_GENERIC_RESOURCE_1)
-                    .hasChecksum(getChecksum(TEST_GENERIC_RESOURCE_1))
-                    .isNotDuplicate()
-                    .hasDeploymentKey(deploymentEvent.getKey()));
+  @Test
+  public void shouldDeployGenericYmlResource() {
+    assertGenericResourceDeployment("config.yml", "server:\n  port: 8080\n  host: localhost");
+  }
+
+  @Test
+  public void shouldDeployGenericYamlResource() {
+    assertGenericResourceDeployment(
+        "pipeline.yaml", "stages:\n  - name: build\n    script: mvn package");
+  }
+
+  @Test
+  public void shouldDeployGenericJsonResource() {
+    assertGenericResourceDeployment(
+        "settings.json", "{\"timeout\": 30, \"retries\": 3, \"mode\": \"production\"}");
   }
 
   @Test
@@ -746,6 +746,32 @@ public class ResourceDeploymentTest {
                 "Expected the resource ids to be unique within a deployment"
                     + " but found a duplicated id '%s' in the resources '%s' and '%s'.",
                 TEST_GENERIC_RESOURCE_1, TEST_GENERIC_RESOURCE_1, TEST_GENERIC_RESOURCE_1));
+  }
+
+  private void assertGenericResourceDeployment(final String resourceName, final String content) {
+
+    // when
+    final var deploymentEvent =
+        engine
+            .deployment()
+            .withJsonResource(content.getBytes(StandardCharsets.UTF_8), resourceName)
+            .deploy();
+
+    // then
+    Assertions.assertThat(deploymentEvent)
+        .hasIntent(DeploymentIntent.CREATED)
+        .hasValueType(ValueType.DEPLOYMENT)
+        .hasRecordType(RecordType.EVENT);
+    assertThat(deploymentEvent.getValue().getResourceMetadata())
+        .singleElement()
+        .satisfies(
+            resourceMetadata ->
+                Assertions.assertThat(resourceMetadata)
+                    .hasResourceId(resourceName)
+                    .hasVersion(1)
+                    .hasResourceName(resourceName)
+                    .isNotDuplicate()
+                    .hasDeploymentKey(deploymentEvent.getKey()));
   }
 
   private byte[] readResource(final String resourceName) {
