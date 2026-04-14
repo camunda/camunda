@@ -7,6 +7,13 @@ on:
   workflow_call:
 
 jobs:
+  # Dynamically generate the Docker tag (e.g., SNAPSHOT or X.Y-SNAPSHOT) based on branch name
+  utils-get-snapshot-docker-tag:
+    uses: ./.github/workflows/generate-snapshot-docker-tag.yml
+    secrets: inherit
+    permissions:
+      contents: read
+
   deploy-artifacts:
     name: Deploy Artifacts
     runs-on: gcp-core-4-default
