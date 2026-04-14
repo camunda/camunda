@@ -156,9 +156,7 @@ export class OperateProcessInstanceViewModificationModePage {
         .getByTestId(`variable-newVariables[${index}]`)
         .getByRole('button', {name: 'Delete Variable'}),
       jsonEditorModal: {
-        header: this.page
-          .getByRole('dialog')
-          .getByText('Edit a new Variable'),
+        header: this.page.getByRole('dialog').getByText('Edit a new Variable'),
         cancelButton: this.page
           .getByRole('dialog')
           .getByRole('button', {name: 'Cancel'}),
@@ -480,9 +478,7 @@ export class OperateProcessInstanceViewModificationModePage {
   getEditVariableFieldSelector(variableName: string) {
     return this.page
       .getByTestId(`variable-${variableName}`)
-      .getByRole('textbox', {
-        name: 'value',
-      });
+      .getByTestId('edit-variable-value');
   }
 
   async undoModification() {
@@ -558,8 +554,14 @@ export class OperateProcessInstanceViewModificationModePage {
   }
 
   async editVariableValue(variableName: string, value: string) {
-    await this.getEditVariableFieldSelector(variableName).clear();
-    await this.getEditVariableFieldSelector(variableName).type(value);
+    await this.getEditVariableFieldSelector(variableName).click();
+
+    await expect(this.page.getByRole('code')).toBeVisible();
+
+    await this.page.keyboard.press('Control+A');
+    await this.page.keyboard.press('Backspace');
+
+    await this.page.keyboard.insertText(value);
     await this.page.keyboard.press('Tab');
   }
 

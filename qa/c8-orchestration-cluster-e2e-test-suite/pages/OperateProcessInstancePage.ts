@@ -111,9 +111,11 @@ class OperateProcessInstancePage {
         cancelButton: Locator;
         applyButton: Locator;
         inputField: Locator;
+        copyButton: Locator;
       };
     };
   };
+  readonly editor: Locator;
   readonly openVariableButton: (variableName: string) => Locator;
   readonly jsonEditorModalCopyButton: Locator;
   readonly jsonEditorModalTitle: Locator;
@@ -159,10 +161,10 @@ class OperateProcessInstancePage {
       'to view the variables, select a single element instance in the instance history',
     );
     this.addVariableButton = page.getByRole('button', {name: 'Add variable'});
-    this.saveVariableButton = page.getByRole('button', {name: 'Save variable'});
+    this.saveVariableButton = page.getByRole('button', {name: 'Save'});
     this.newVariableNameField = page.getByRole('textbox', {name: 'Name'});
-    this.newVariableValueField = page.getByRole('textbox', {name: 'Value'});
-    this.editVariableValueField = page.getByRole('textbox', {name: 'Value'});
+    this.newVariableValueField = page.getByRole('group', {name: 'Value'});
+    this.editVariableValueField = page.getByRole('group', {name: 'Value'});
     this.variableSpinner = page.getByTestId('full-variable-loader');
     this.operationSpinner = page.getByTestId('operation-spinner');
     this.executionCountToggleOn = this.instanceHistory.getByLabel(
@@ -326,7 +328,7 @@ class OperateProcessInstancePage {
           this.variableValueCellLocator(name).getByPlaceholder('Value'),
         jsonEditorButton: this.variableButtonsCellLocator(name).getByRole(
           'button',
-          {name: 'Open variable'},
+          {name: 'Open'},
         ),
         valueErrorMessage: this.variableValueCellLocator(name).locator(
           '[id="value-error-msg"]',
@@ -343,20 +345,14 @@ class OperateProcessInstancePage {
             .getByRole('dialog')
             .getByRole('code')
             .getByRole('textbox', {name: 'Editor content'}),
+          copyButton: this.page
+            .getByRole('dialog')
+            .getByRole('button', {name: /copy/i}),
         },
       },
     });
-    this.openVariableButton = (variableName: string) =>
-      this.variableButtonsCellLocator(variableName).getByRole('button', {
-        name: 'Open variable',
-      });
-    this.jsonEditorModalCopyButton = this.page
-      .getByRole('dialog')
-      .getByRole('button', {name: /copy/i});
-    this.jsonEditorModalTitle = this.page
-      .getByRole('dialog')
-      .getByRole('heading');
     this.incidentErrorIndicators = page.getByTestId('incident-error-indicator');
+    this.editor = page.getByRole('code');
     this.openButtonLast = page.locator('[aria-label="Open variable"]').last();
     this.openButtonFirst = page.locator('[aria-label="Open variable"]').first();
     this.editButton = page.getByRole('button', {name:'Edit'});
@@ -410,9 +406,7 @@ class OperateProcessInstancePage {
   getEditVariableFieldSelector(variableName: string) {
     return this.page
       .getByTestId(`variable-${variableName}`)
-      .getByRole('textbox', {
-        name: 'value',
-      });
+      .getByTestId('edit-variable-value');
   }
 
   getNewVariableNameFieldSelector = (variableName: string) => {
@@ -539,28 +533,20 @@ class OperateProcessInstancePage {
     await this.getNewVariableNameFieldSelector(variableIndex).type(name);
     await this.page.keyboard.press('Tab');
 
-    await this.getNewVariableValueFieldSelector(variableIndex).type(value);
+    await expect(this.page.getByRole('code')).toBeVisible();
+    await this.page.keyboard.insertText(value);
     await this.page.keyboard.press('Tab');
   }
 
-  async editVariableValueModificationMode(variableName: string, oldValue: string, value: string, isFirstVariable = true) {
-    if (isFirstVariable) {
-      await this.openButtonFirst.click();
-    } else {
-      await this.openButtonLast.click();
-    }
-    await sleep(5000);
-     await this.page
-      .getByLabel('Edit Variable "' + variableName + '"')
-      .getByText(oldValue)
-      .dblclick();
-    await this.page.keyboard.press('Backspace');
-    await this.page.keyboard.type(value);
-    await this.applyVariableButton.click();
+  async editVariableValueModificationMode(variableName: string, value: string) {
+    await this.getEditVariableFieldSelector(variableName).click();
+    await this.clearVariableValueInput();
+    await this.fillVariableValueInput(value);
+    await this.page.keyboard.press('Tab');
   }
 
-  async clickEditVariableButton(variableName: string): Promise<void> {
-    const editVariableButton = 'Edit variable ' + variableName;
+  async clickEditVariableButton(): Promise<void> {
+    const editVariableButton = 'Edit';
     await this.page.getByLabel(editVariableButton).click();
   }
 
@@ -568,12 +554,15 @@ class OperateProcessInstancePage {
     await this.variableValueInput.click();
   }
 
-  async clearVariableValueInput(): Promise<void> {
-    await this.variableValueInput.clear();
+  async fillVariableValueInput(value: string) {
+    await expect(this.editor).toBeVisible();
+    await this.page.keyboard.insertText(value);
   }
 
-  async fillVariableValueInput(value: string): Promise<void> {
-    await this.variableValueInput.fill(value);
+  async clearVariableValueInput() {
+    await expect(this.editor).toBeVisible();
+    await this.page.keyboard.press('Control+A');
+    await this.page.keyboard.press('Backspace');
   }
 
   async clickSaveVariableButton(): Promise<void> {
@@ -586,9 +575,8 @@ class OperateProcessInstancePage {
 
   async fillNewVariable(name: string, value: string): Promise<void> {
     await this.newVariableNameField.fill(name);
-    await this.openButtonLast.click();
-    await sleep(5000);
-    await this.page.keyboard.type(value);
+    await this.newVariableValueField.click();
+    await this.fillVariableValueInput(value);
   }
 
   async getProcessInstanceKey(): Promise<string> {

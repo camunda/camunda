@@ -180,7 +180,7 @@ test.describe.skip('Process Instance Modifications', () => {
       ).toBeVisible();
       await expect(
         operateProcessInstancePage.getEditVariableFieldSelector('foo'),
-      ).toHaveValue('3');
+      ).toHaveText('3');
     });
 
     await test.step('Undo last modification and verify value reverted to 1', async () => {
@@ -188,7 +188,7 @@ test.describe.skip('Process Instance Modifications', () => {
 
       await expect(
         operateProcessInstancePage.getEditVariableFieldSelector('foo'),
-      ).toHaveValue('1');
+      ).toHaveText('1');
       await expect(
         operateProcessInstancePage.lastAddedModificationText,
       ).toBeVisible();
@@ -197,7 +197,7 @@ test.describe.skip('Process Instance Modifications', () => {
       ).toBeVisible();
       await expect(
         operateProcessInstancePage.getEditVariableFieldSelector('foo'),
-      ).toHaveValue('1');
+      ).toHaveText('1');
     });
 
     await test.step('Navigate to different flow node and undo', async () => {
@@ -222,10 +222,10 @@ test.describe.skip('Process Instance Modifications', () => {
 
       await expect(
         operateProcessInstancePage.getEditVariableFieldSelector('test'),
-      ).toHaveValue('123');
+      ).toHaveText('123');
       await expect(
         operateProcessInstancePage.getEditVariableFieldSelector('foo'),
-      ).toHaveValue('1');
+      ).toHaveText('1');
     });
 
     await test.step('Undo again and verify all modifications removed', async () => {
@@ -242,10 +242,10 @@ test.describe.skip('Process Instance Modifications', () => {
       ).toBeVisible();
       await expect(
         operateProcessInstancePage.getEditVariableFieldSelector('test'),
-      ).toHaveValue('123');
+      ).toHaveText('123');
       await expect(
         operateProcessInstancePage.getEditVariableFieldSelector('foo'),
-      ).toHaveValue('"bar"');
+      ).toHaveText('"bar"');
     });
 
     await test.step('Edit variable and remove from summary modal', async () => {
@@ -266,10 +266,10 @@ test.describe.skip('Process Instance Modifications', () => {
 
       await expect(
         operateProcessInstancePage.getEditVariableFieldSelector('test'),
-      ).toHaveValue('123');
+      ).toHaveText('123');
       await expect(
         operateProcessInstancePage.getEditVariableFieldSelector('foo'),
-      ).toHaveValue('"bar"');
+      ).toHaveText('"bar"');
       await expect(
         operateProcessInstancePage.lastAddedModificationText,
       ).toBeVisible();
@@ -281,7 +281,7 @@ test.describe.skip('Process Instance Modifications', () => {
       ).toBeVisible();
       await expect(
         operateProcessInstancePage.getEditVariableFieldSelector('foo'),
-      ).toHaveValue('"bar"');
+      ).toHaveText('"bar"');
     });
   });
 
@@ -368,7 +368,7 @@ test.describe.skip('Process Instance Modifications', () => {
         operateProcessInstanceViewModificationModePage.getEditVariableFieldSelector(
           'testVariableNumber',
         ),
-      ).toHaveValue('123');
+      ).toHaveText('123');
     });
 
     await test.step('Add variable on process-level and verify warning appeared', async () => {

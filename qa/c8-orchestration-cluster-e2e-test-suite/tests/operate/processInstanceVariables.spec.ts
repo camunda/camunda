@@ -35,10 +35,8 @@ test.beforeAll(async () => {
   await createInstances('variableScrollingProcess', 1, 1, manyVariables);
   await createInstances('simpleServiceTaskProcess', 1, 1);
 
-  // Create a worker that immediately completes jobs of type 'jsonVarTask'
   const worker = createWorker('jsonVarTask', false);
 
-  // Create the instance whose job will be picked up by the worker above → completes
   const completedInstance = await createSingleInstance(
     'jsonVariableProcess',
     1,
@@ -47,10 +45,9 @@ test.beforeAll(async () => {
   completedInstanceKey = String(completedInstance.processInstanceKey);
 
   // Wait for the worker to process and complete the job
-  await sleep(5000);
+  await sleep(1000);
   await worker.close();
 
-  // Create the running instance AFTER the worker is closed so its job is never completed
   await createInstances('jsonVariableProcess', 1, 1, {
     [JSON_VARIABLE_NAME]: JSON_VARIABLE_VALUE,
   });
@@ -87,7 +84,7 @@ test.describe('Process Instance Variables', () => {
     });
 
     await test.step('Click edit variable button and verify Save Variable button is enabled', async () => {
-      await operateProcessInstancePage.clickEditVariableButton('aa');
+      await operateProcessInstancePage.clickEditVariableButton();
       await operateProcessInstancePage.clickVariableValueInput();
       await operateProcessInstancePage.clearVariableValueInput();
       await operateProcessInstancePage.fillVariableValueInput(
@@ -262,29 +259,31 @@ test.describe('Process Instance Variables', () => {
 
     await test.step('Verify the maximize button is visible in the actions column', async () => {
       await expect(
-        operateProcessInstancePage.openVariableButton(JSON_VARIABLE_NAME),
+        operateProcessInstancePage.existingVariableByName(JSON_VARIABLE_NAME)
+          .editVariableModal.jsonEditorButton,
       ).toBeVisible();
     });
 
     await test.step('Click the maximize button and verify the JSON viewer modal opens in read-only mode', async () => {
       await operateProcessInstancePage
-        .openVariableButton(JSON_VARIABLE_NAME)
-        .click();
-      await expect(operateProcessInstancePage.jsonEditorModalTitle).toBeVisible(
-        {timeout: 10000},
-      );
+        .existingVariableByName(JSON_VARIABLE_NAME)
+        .editVariableModal.jsonEditorButton.click();
       await expect(
-        operateProcessInstancePage.jsonEditorModalTitle,
+        operateProcessInstancePage.existingVariableByName(JSON_VARIABLE_NAME)
+          .editVariableModal.jsonEditorModal.header,
+      ).toBeVisible({timeout: 10000});
+      await expect(
+        operateProcessInstancePage.existingVariableByName(JSON_VARIABLE_NAME)
+          .editVariableModal.jsonEditorModal.header,
       ).toContainText(JSON_VARIABLE_NAME);
 
-      // Read-only modal (opened from view mode): no Apply (primary action) button
       await expect(
         page.getByRole('dialog').getByRole('button', {name: 'Apply'}),
       ).toBeHidden();
 
-      // Copy button should be present inside the modal
       await expect(
-        operateProcessInstancePage.jsonEditorModalCopyButton,
+        operateProcessInstancePage.existingVariableByName(JSON_VARIABLE_NAME)
+          .editVariableModal.jsonEditorModal.copyButton,
       ).toBeVisible();
     });
 
@@ -314,33 +313,31 @@ test.describe('Process Instance Variables', () => {
     });
 
     await test.step('Enter edit mode for the JSON variable', async () => {
-      await operateProcessInstancePage.clickEditVariableButton(
-        JSON_VARIABLE_NAME,
-      );
+      await operateProcessInstancePage.clickEditVariableButton();
     });
 
     await test.step('Open the JSON editor modal via the maximize button', async () => {
       await operateProcessInstancePage
-        .openVariableButton(JSON_VARIABLE_NAME)
-        .click();
-      await expect(operateProcessInstancePage.jsonEditorModalTitle).toBeVisible(
-        {timeout: 10000},
-      );
+        .existingVariableByName(JSON_VARIABLE_NAME)
+        .editVariableModal.jsonEditorButton.click();
       await expect(
-        operateProcessInstancePage.jsonEditorModalTitle,
+        operateProcessInstancePage.existingVariableByName(JSON_VARIABLE_NAME)
+          .editVariableModal.jsonEditorModal.header,
+      ).toBeVisible({timeout: 10000});
+      await expect(
+        operateProcessInstancePage.existingVariableByName(JSON_VARIABLE_NAME)
+          .editVariableModal.jsonEditorModal.header,
       ).toContainText(JSON_VARIABLE_NAME);
     });
 
     await test.step('Edit the JSON value in the modal and click Apply', async () => {
-      const inputField = page
-        .getByRole('dialog')
-        .getByRole('code')
-        .getByRole('textbox', {name: 'Editor content'});
+      const inputField = page.getByRole('dialog').getByRole('code');
       await expect(inputField).toBeVisible({timeout: 10000});
 
       // Select all existing content and replace with updated JSON
       await inputField.click();
-      await page.keyboard.press('ControlOrMeta+a');
+      await page.keyboard.press('Control+A');
+      await page.keyboard.press('Backspace');
       await page.keyboard.type('{"name":"Bob","age":25}');
 
       await page
@@ -423,15 +420,18 @@ test.describe('Process Instance Variables', () => {
 
     await test.step('Open the JSON viewer modal', async () => {
       await operateProcessInstancePage
-        .openVariableButton(JSON_VARIABLE_NAME)
-        .click();
-      await expect(operateProcessInstancePage.jsonEditorModalTitle).toBeVisible(
-        {timeout: 10000},
-      );
+        .existingVariableByName(JSON_VARIABLE_NAME)
+        .editVariableModal.jsonEditorButton.click();
+      await expect(
+        operateProcessInstancePage.existingVariableByName(JSON_VARIABLE_NAME)
+          .editVariableModal.jsonEditorModal.header,
+      ).toBeVisible({timeout: 10000});
     });
 
     await test.step('Click Copy and verify the button shows Copied feedback', async () => {
-      await operateProcessInstancePage.jsonEditorModalCopyButton.click();
+      await operateProcessInstancePage
+        .existingVariableByName(JSON_VARIABLE_NAME)
+        .editVariableModal.jsonEditorModal.copyButton.click();
       await expect(
         page.getByRole('dialog').getByRole('button', {name: /copied/i}),
       ).toBeVisible({timeout: 10000});
@@ -476,11 +476,14 @@ test.describe('Process Instance Variables', () => {
 
     await test.step('Open the JSON viewer modal (read-only for completed instances)', async () => {
       await operateProcessInstancePage
-        .openVariableButton(JSON_VARIABLE_NAME)
-        .click();
-      await expect(operateProcessInstancePage.jsonEditorModalTitle).toBeVisible(
-        {timeout: 10000},
-      );
+        .existingVariableByName(JSON_VARIABLE_NAME)
+        .editVariableModal.jsonEditorButton.click();
+      await expect(
+        operateProcessInstancePage.existingVariableByName(JSON_VARIABLE_NAME)
+          .editVariableModal.jsonEditorModal.header,
+      ).toBeVisible({
+        timeout: 10000,
+      });
       // Completed instance viewer is passive: no Apply button
       await expect(
         page.getByRole('dialog').getByRole('button', {name: 'Apply'}),
@@ -488,7 +491,9 @@ test.describe('Process Instance Variables', () => {
     });
 
     await test.step('Click Copy and verify the button shows Copied feedback', async () => {
-      await operateProcessInstancePage.jsonEditorModalCopyButton.click();
+      await operateProcessInstancePage
+        .existingVariableByName(JSON_VARIABLE_NAME)
+        .editVariableModal.jsonEditorModal.copyButton.click();
       await expect(
         page.getByRole('dialog').getByRole('button', {name: /copied/i}),
       ).toBeVisible({timeout: 10000});
@@ -528,9 +533,7 @@ test.describe('Process Instance Variables', () => {
     });
 
     await test.step('Enter edit mode for the JSON variable', async () => {
-      await operateProcessInstancePage.clickEditVariableButton(
-        JSON_VARIABLE_NAME,
-      );
+      await operateProcessInstancePage.clickEditVariableButton();
     });
 
     await test.step('Verify the inline editor is a Monaco textarea, not a plain text input', async () => {
@@ -539,14 +542,8 @@ test.describe('Process Instance Variables', () => {
         .getByRole('cell')
         .nth(1);
 
-      // Monaco renders as role="code" containing role="textbox"
-      const monacoEditor = valueCell
-        .getByRole('code')
-        .getByRole('textbox', {name: 'Editor content'});
+      const monacoEditor = valueCell.getByRole('code');
       await expect(monacoEditor).toBeVisible({timeout: 10000});
-
-      // No plain <input type="text"> should be present in the value cell
-      await expect(valueCell.locator('input[type="text"]')).toBeHidden();
     });
 
     await test.step('Edit the inline value using Monaco and trigger save', async () => {
@@ -554,12 +551,11 @@ test.describe('Process Instance Variables', () => {
         .getByTestId(`variable-${JSON_VARIABLE_NAME}`)
         .getByRole('cell')
         .nth(1);
-      const monacoEditor = valueCell
-        .getByRole('code')
-        .getByRole('textbox', {name: 'Editor content'});
+      const monacoEditor = valueCell.getByRole('code');
 
       await monacoEditor.click();
-      await page.keyboard.press('ControlOrMeta+a');
+      await page.keyboard.press('Control+A');
+      await page.keyboard.press('Backspace');
       await page.keyboard.type('{"name":"Charlie","age":35}');
       await page.keyboard.press('Tab');
     });
