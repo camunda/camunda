@@ -19,7 +19,8 @@ orchestration:
   data:
     secondaryStorage:
       rdbms:
-        url: jdbc:postgresql://postgresql:5432/camunda
+        # In replication mode the Bitnami chart exposes the writer via the primary service.
+        url: jdbc:postgresql://postgresql-primary:5432/camunda
 
 ###########################################################################
 #
@@ -38,9 +39,16 @@ image:
   repository: camunda-benchmark/dockerhub/bitnami/postgresql
   tag: latest
 
+architecture: replication
+
 postgresqlSharedPreloadLibraries: pg_stat_statements
 
 primary:
+  initdb:
+    scripts:
+      01-grant-pg-read-all-stats.sql: |
+        GRANT pg_read_all_stats TO camunda;
+
   resources:
     requests:
       memory: 8Gi
@@ -50,13 +58,13 @@ primary:
       memory: 12Gi
 
   nodeSelector:
-    component: benchmark-n2-standard-4
+    component: benchmark-n2-standard-8
     topology.kubernetes.io/zone: __AVAILABILITY_ZONE__
 
   tolerations:
     - key: nodepool
       operator: Equal
-      value: n2-standard-4
+      value: n2-standard-8
       effect: NoSchedule
 
   persistence:
@@ -91,3 +99,29 @@ primary:
     pg_stat_statements.max = 10000
     track_io_timing = on
     track_functions = all
+
+readReplicas:
+  replicaCount: 2
+
+  resources:
+    requests:
+      memory: 8Gi
+      cpu: 3000m
+    limits:
+      cpu: 3000m
+      memory: 12Gi
+
+  nodeSelector:
+    component: benchmark-n2-standard-8
+    topology.kubernetes.io/zone: __AVAILABILITY_ZONE__
+
+  tolerations:
+    - key: nodepool
+      operator: Equal
+      value: n2-standard-8
+      effect: NoSchedule
+
+  persistence:
+    size: 512Gi
+    storageClass: "benchmark-ssd-zonal-v1"
+
