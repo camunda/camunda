@@ -545,9 +545,8 @@ class OperateProcessInstancePage {
     await this.page.keyboard.press('Tab');
   }
 
-  async clickEditVariableButton(): Promise<void> {
-    const editVariableButton = 'Edit';
-    await this.page.getByLabel(editVariableButton).click();
+  async clickEditVariableButton(variableName: string): Promise<void> {
+    await this.getVariableTestId(variableName).getByLabel('Edit').click();
   }
 
   async clickVariableValueInput(): Promise<void> {

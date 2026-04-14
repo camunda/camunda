@@ -84,7 +84,7 @@ test.describe('Process Instance Variables', () => {
     });
 
     await test.step('Click edit variable button and verify Save Variable button is enabled', async () => {
-      await operateProcessInstancePage.clickEditVariableButton();
+      await operateProcessInstancePage.clickEditVariableButton('aa');
       await operateProcessInstancePage.clickVariableValueInput();
       await operateProcessInstancePage.clearVariableValueInput();
       await operateProcessInstancePage.fillVariableValueInput(
@@ -313,7 +313,9 @@ test.describe('Process Instance Variables', () => {
     });
 
     await test.step('Enter edit mode for the JSON variable', async () => {
-      await operateProcessInstancePage.clickEditVariableButton();
+      await operateProcessInstancePage.clickEditVariableButton(
+        JSON_VARIABLE_NAME,
+      );
     });
 
     await test.step('Open the JSON editor modal via the maximize button', async () => {
@@ -533,7 +535,9 @@ test.describe('Process Instance Variables', () => {
     });
 
     await test.step('Enter edit mode for the JSON variable', async () => {
-      await operateProcessInstancePage.clickEditVariableButton();
+      await operateProcessInstancePage.clickEditVariableButton(
+        JSON_VARIABLE_NAME,
+      );
     });
 
     await test.step('Verify the inline editor is a Monaco textarea, not a plain text input', async () => {
