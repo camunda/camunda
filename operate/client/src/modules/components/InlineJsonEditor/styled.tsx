@@ -16,6 +16,7 @@ import {
   EDITOR_PADDING_BOTTOM,
   EDITOR_PADDING_TOP,
 } from './constants';
+import {InlineLoading} from '@carbon/react';
 
 const ring = (color: string) => css`
   content: '';
@@ -113,7 +114,7 @@ const ReadOnlyEditorWrapper = styled.div<{
     `};
 `;
 
-const CopyIcon = styled.span<{$isCopying?: boolean}>`
+const CopyIcon = styled.span`
   position: absolute;
   top: ${EDITOR_PADDING_TOP}px;
   right: 0;
@@ -129,12 +130,15 @@ const CopyIcon = styled.span<{$isCopying?: boolean}>`
   ${ReadOnlyEditorWrapper}:hover & {
     opacity: 1;
   }
+`;
 
-  ${({$isCopying}) =>
-    $isCopying &&
-    css`
-      opacity: 1;
-    `}
+const CopyLoadingIcon = styled(InlineLoading)`
+  position: absolute;
+  display: block;
+  top: ${EDITOR_PADDING_TOP}px;
+  right: 0;
+  min-block-size: auto;
+  inline-size: auto;
 `;
 
 const ReadOnlyEditorContent = styled.pre`
@@ -179,5 +183,6 @@ export {
   ReadOnlyEditorWrapper,
   ReadOnlyEditorContent,
   CopyIcon,
+  CopyLoadingIcon,
   WriteModeEditor,
 };

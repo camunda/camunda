@@ -6,7 +6,12 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {ReadOnlyEditorContent, ReadOnlyEditorWrapper, CopyIcon} from './styled';
+import {
+  ReadOnlyEditorContent,
+  ReadOnlyEditorWrapper,
+  CopyIcon,
+  CopyLoadingIcon,
+} from './styled';
 import {useCallback, useMemo, useState} from 'react';
 import {EDITOR_MAX_LINES} from './constants';
 import {notificationsStore} from 'modules/stores/notifications';
@@ -50,9 +55,16 @@ const ReadOnlyEditor: React.FC<Props> = ({
       setIsCopying(true);
       try {
         valueToCopy = await onCopy();
-      } finally {
+      } catch {
         setIsCopying(false);
+        notificationsStore.displayNotification({
+          kind: 'error',
+          title: `Failed to fetch full ${label}`,
+          isDismissable: true,
+        });
+        return;
       }
+      setIsCopying(false);
     }
 
     try {
@@ -104,20 +116,23 @@ const ReadOnlyEditor: React.FC<Props> = ({
         tabIndex={0}
         role={isReadOnly ? 'button' : undefined}
         aria-label={isReadOnly ? `Copy ${label}` : undefined}
-        aria-busy={isCopying || undefined}
-        onClick={isReadOnly && !isCopying ? handleCopy : undefined}
-        onKeyDown={isReadOnly && !isCopying ? handleCopyKeyDown : undefined}
+        aria-disabled={isReadOnly && isCopying ? true : undefined}
+        onClick={isReadOnly ? handleCopy : undefined}
+        onKeyDown={isReadOnly ? handleCopyKeyDown : undefined}
       >
         {value || placeholder}
       </ReadOnlyEditorContent>
-      {isReadOnly && (
-        <CopyIcon
-          data-testid="copy-icon-indicator"
-          aria-hidden="true"
-          $isCopying={isCopying}
-        >
+      {isReadOnly && !isCopying && (
+        <CopyIcon data-testid="copy-icon-indicator" aria-hidden="true">
           <Copy size={16} />
         </CopyIcon>
+      )}
+      {isReadOnly && isCopying && (
+        <CopyLoadingIcon
+          data-testid="copy-loading-indicator"
+          aria-hidden="true"
+          status="active"
+        />
       )}
       {renderButton && renderButton()}
     </ReadOnlyEditorWrapper>

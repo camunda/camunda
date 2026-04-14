@@ -131,6 +131,53 @@ describe('<ReadOnlyEditor />', () => {
 
       expect(mockWriteText).not.toHaveBeenCalledWith('"truncated..."');
     });
+
+    it('should show an error notification and not copy when onCopy rejects', async () => {
+      const onCopy = vi.fn().mockRejectedValue(new Error('Network error'));
+      const {user} = render(
+        <ReadOnlyEditor {...defaultProps} onCopy={onCopy} />,
+      );
+
+      await user.click(screen.getByTestId('json-editor-readonly'));
+
+      expect(mockWriteText).not.toHaveBeenCalled();
+      expect(notificationsStore.displayNotification).toHaveBeenCalledWith({
+        kind: 'error',
+        title: 'Failed to fetch full myVar',
+        isDismissable: true,
+      });
+    });
+
+    it('should show the loading spinner while onCopy is in progress', async () => {
+      let resolveOnCopy!: (value: string) => void;
+      const onCopy = vi.fn(
+        () =>
+          new Promise<string>((resolve) => {
+            resolveOnCopy = resolve;
+          }),
+      );
+      const {user} = render(
+        <ReadOnlyEditor {...defaultProps} onCopy={onCopy} />,
+      );
+
+      user.click(screen.getByTestId('json-editor-readonly'));
+
+      expect(
+        await screen.findByTestId('copy-loading-indicator'),
+      ).toBeInTheDocument();
+      expect(
+        screen.queryByTestId('copy-icon-indicator'),
+      ).not.toBeInTheDocument();
+
+      resolveOnCopy('"full value"');
+
+      expect(
+        await screen.findByTestId('copy-icon-indicator'),
+      ).toBeInTheDocument();
+      expect(
+        screen.queryByTestId('copy-loading-indicator'),
+      ).not.toBeInTheDocument();
+    });
   });
 
   describe('renderButton prop', () => {
