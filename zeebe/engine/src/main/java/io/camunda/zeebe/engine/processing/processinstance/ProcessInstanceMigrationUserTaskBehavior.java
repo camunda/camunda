@@ -20,7 +20,6 @@ import io.camunda.zeebe.engine.processing.deployment.model.element.AbstractFlowE
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableJobWorkerElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableMultiInstanceBody;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableUserTask;
-import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceMigrationMigrateProcessor.SafetyCheckFailedException;
 import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceMigrationPreconditions.ProcessInstanceMigrationPreconditionFailedException;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.state.deployment.DeployedProcess;
@@ -101,8 +100,9 @@ public class ProcessInstanceMigrationUserTaskBehavior {
 
     final var job = jobState.getJob(jobKey);
     if (job == null) {
-      throw new SafetyCheckFailedException(
-          String.format(ERROR_JOB_NOT_FOUND, elementId, processInstanceKey, jobKey));
+      throw new ProcessInstanceMigrationPreconditionFailedException(
+          String.format(ERROR_JOB_NOT_FOUND, elementId, processInstanceKey, jobKey),
+          RejectionType.INVALID_STATE);
     }
 
     final ExecutableJobWorkerElement sourceElement =
