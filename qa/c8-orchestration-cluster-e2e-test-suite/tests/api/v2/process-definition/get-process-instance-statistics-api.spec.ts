@@ -79,7 +79,6 @@ test.describe.parallel('Get process instance statistics API Tests', () => {
   });
 
   test('Get process instance statistics - Success', async ({request}) => {
-    await expect(async () => {
         const res = await request.post(
           buildUrl(`/process-definitions/statistics/process-instances`),
           {
@@ -97,11 +96,9 @@ test.describe.parallel('Get process instance statistics API Tests', () => {
             res,
         );
         expect(body.page.totalItems).toBeGreaterThanOrEqual(1);
-    }).toPass(defaultAssertionOptions);
   });
 
   test('Get process instance statistics sort by activeInstancesWithIncidentCount - Success', async ({request}) => {
-    await expect(async () => {
         const res = await request.post(
           buildUrl(`/process-definitions/statistics/process-instances`),
           {
@@ -132,11 +129,9 @@ test.describe.parallel('Get process instance statistics API Tests', () => {
         );
         const expectedActiveInstancesWithIncidentCountList = [...actualActiveInstancesWithIncidentCountList].sort();
         expect(actualActiveInstancesWithIncidentCountList).toEqual(expectedActiveInstancesWithIncidentCountList);
-    }).toPass(defaultAssertionOptions);
   });
 
   test('Get process instance statistics sort by activeInstancesWithoutIncidentCount - Success', async ({request}) => {
-    await expect(async () => {
         const res = await request.post(
           buildUrl(`/process-definitions/statistics/process-instances`),
           {
@@ -167,12 +162,10 @@ test.describe.parallel('Get process instance statistics API Tests', () => {
         );
         const expectedActiveInstancesWithoutIncidentCountList = [...actualActiveInstancesWithoutIncidentCountList].sort();
         expect(actualActiveInstancesWithoutIncidentCountList).toEqual(expectedActiveInstancesWithoutIncidentCountList);
-    }).toPass(defaultAssertionOptions);
   });
 
   //Skipped due to bug 50945: https://github.com/camunda/camunda/issues/50945
   test.skip('Get process instance statistics sort by processDefinitionId - Success', async ({request}) => {
-    await expect(async () => {
         const res = await request.post(
           buildUrl(`/process-definitions/statistics/process-instances`),
           {
@@ -203,12 +196,10 @@ test.describe.parallel('Get process instance statistics API Tests', () => {
         );
         const expectedProcessDefinitionIdList = [...actualProcessDefinitionIdList].sort();
         expect(actualProcessDefinitionIdList).toEqual(expectedProcessDefinitionIdList);
-    }).toPass(defaultAssertionOptions);
   });
 
   test('Get process instance statistics sort by not existing field - Bad Request', async ({request}) => {
     const notExistingField = "meow";
-    await expect(async () => {
         const res = await request.post(
           buildUrl(`/process-definitions/statistics/process-instances`),
           {
@@ -224,7 +215,6 @@ test.describe.parallel('Get process instance statistics API Tests', () => {
           }
         );
         await assertBadRequest(res, `Unexpected value '${notExistingField}' for enum field 'field'.`);
-    }).toPass(defaultAssertionOptions);
   });
 
   test('Get process instance statistics with page limit 1 - Success', async ({request}) => {
@@ -257,7 +247,6 @@ test.describe.parallel('Get process instance statistics API Tests', () => {
   });
 
   test('Get process instance statistics with page limit -1 - Bad Request', async ({request}) => {
-    await expect(async () => {
         const res = await request.post(
           buildUrl(`/process-definitions/statistics/process-instances`),
           {
@@ -271,11 +260,9 @@ test.describe.parallel('Get process instance statistics API Tests', () => {
           }
         );
         await assertInvalidArgument(res, 400, 'The value for page.limit is \'-1\' but must be a non-negative number.');
-    }).toPass(defaultAssertionOptions);
   });
 
   test('Get process instance statistics - Unauthorized', async ({request}) => {
-    await expect(async () => {
         const res = await request.post(
           buildUrl(`/process-definitions/statistics/process-instances`),
           {
@@ -283,12 +270,10 @@ test.describe.parallel('Get process instance statistics API Tests', () => {
           }
         );
         await assertUnauthorizedRequest(res);
-    }).toPass(defaultAssertionOptions);
   });
 
   test('Get process instance statistics with user without proper authorization - Forbidden, 200, empty result', async ({request}) => {
     const token = encode(`${userWithResourcesAuthorizationToSendRequest.username}:${userWithResourcesAuthorizationToSendRequest.password}`);
-    await expect(async () => {
         const res = await request.post(
           buildUrl(`/process-definitions/statistics/process-instances`),
           {
@@ -308,6 +293,5 @@ test.describe.parallel('Get process instance statistics API Tests', () => {
         expect(body.page.totalItems).toEqual(0);
         expect(body.items.length).toEqual(0);
         expect(body.page.hasMoreTotalItems).toBe(false);
-    }).toPass(defaultAssertionOptions);
   });
 });
