@@ -21,6 +21,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.camunda.db.rdbms.RdbmsSchemaManager;
+import io.camunda.db.rdbms.write.ReplicationLsnProvider;
 import io.camunda.db.rdbms.write.RdbmsWriterMetrics;
 import io.camunda.db.rdbms.write.RdbmsWriters;
 import io.camunda.db.rdbms.write.queue.ExecutionQueue;
@@ -454,6 +455,106 @@ class RdbmsExporterTest {
     // then - a new task should still be scheduled (thanks to the finally block)
     verify(controller, times(initialScheduleCount + 1))
         .scheduleCancellableTask(any(Duration.class), any());
+  }
+
+  @Test
+  void shouldNotUpdateBrokerPositionImmediatelyWhenAsyncReplicationEnabled() {
+    // given
+    final var lsnProvider = mock(ReplicationLsnProvider.class);
+    when(lsnProvider.getCurrentLsn()).thenReturn(100L);
+
+    createExporter(
+        b ->
+            b.replicationLsnProvider(lsnProvider)
+                .asyncReplicationPollingInterval(Duration.ofSeconds(15))
+                .withHandler(ValueType.JOB, mockHandler(ValueType.JOB)));
+
+    // when
+    exporter.export(mockRecord(ValueType.JOB, 1));
+    executionQueue.flush();
+
+    // then — broker position should NOT be updated (deferred to background task)
+    verify(controller, never()).updateLastExportedRecordPosition(1L);
+  }
+
+  @Test
+  void shouldEnqueueLsnPositionEntryAfterFlushWhenAsyncReplicationEnabled() {
+    // given
+    final var lsnProvider = mock(ReplicationLsnProvider.class);
+    when(lsnProvider.getCurrentLsn()).thenReturn(100L);
+
+    createExporter(
+        b ->
+            b.replicationLsnProvider(lsnProvider)
+                .asyncReplicationPollingInterval(Duration.ofSeconds(15))
+                .withHandler(ValueType.JOB, mockHandler(ValueType.JOB)));
+
+    // when
+    exporter.export(mockRecord(ValueType.JOB, 1));
+    executionQueue.flush();
+
+    // then
+    assertThat(exporter.getPendingReplicationEntries()).hasSize(1);
+    assertThat(exporter.getPendingReplicationEntries().peek().lsn()).isEqualTo(100L);
+    assertThat(exporter.getPendingReplicationEntries().peek().position()).isEqualTo(1L);
+  }
+
+  @Test
+  void shouldUpdateBrokerPositionFromConfirmedPositionOnFlush() {
+    // given
+    final var lsnProvider = mock(ReplicationLsnProvider.class);
+    when(lsnProvider.getCurrentLsn()).thenReturn(100L);
+
+    createExporter(
+        b ->
+            b.replicationLsnProvider(lsnProvider)
+                .asyncReplicationPollingInterval(Duration.ofSeconds(15))
+                .withHandler(ValueType.JOB, mockHandler(ValueType.JOB)));
+
+    // Simulate the background task confirming position 1
+    exporter.getConfirmedReplicationPosition().set(1L);
+
+    // when — export a record and flush, which triggers the post-flush listener
+    exporter.export(mockRecord(ValueType.JOB, 2));
+    executionQueue.flush();
+
+    // then — broker should be updated with the confirmed position
+    verify(controller).updateLastExportedRecordPosition(1L);
+  }
+
+  @Test
+  void shouldNotUpdateBrokerPositionWhenConfirmedPositionNotAdvanced() {
+    // given
+    final var lsnProvider = mock(ReplicationLsnProvider.class);
+    when(lsnProvider.getCurrentLsn()).thenReturn(100L);
+
+    createExporter(
+        b ->
+            b.replicationLsnProvider(lsnProvider)
+                .asyncReplicationPollingInterval(Duration.ofSeconds(15))
+                .withHandler(ValueType.JOB, mockHandler(ValueType.JOB)));
+
+    // confirmed position is still -1 (nothing confirmed yet)
+
+    // when
+    exporter.export(mockRecord(ValueType.JOB, 1));
+    executionQueue.flush();
+
+    // then — LSN was enqueued but no confirmed position yet, so no broker update
+    verify(controller, never()).updateLastExportedRecordPosition(Mockito.anyLong());
+  }
+
+  @Test
+  void shouldUpdateBrokerPositionImmediatelyWhenAsyncReplicationDisabled() {
+    // given — no lsnProvider means async replication disabled (current behavior)
+    createExporter(b -> b.withHandler(ValueType.JOB, mockHandler(ValueType.JOB)));
+
+    // when
+    exporter.export(mockRecord(ValueType.JOB, 1));
+    executionQueue.flush();
+
+    // then
+    verify(controller).updateLastExportedRecordPosition(1L);
   }
 
   // ------------------------------------------------
