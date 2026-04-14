@@ -66,11 +66,13 @@ public class CamundaProcessTestRemoteRuntimeTest {
 
   @Test
   void shouldCreateRuntimeWithDefaults() {
-    // given/when
-    final CamundaProcessTestRuntime camundaRuntime =
+    // given
+    final CamundaProcessTestRuntimeBuilder builder =
         CamundaProcessTestContainerRuntime.newBuilder()
-            .withRuntimeMode(CamundaProcessTestRuntimeMode.REMOTE)
-            .build();
+            .withRuntimeMode(CamundaProcessTestRuntimeMode.REMOTE);
+
+    // when
+    final CamundaProcessTestRuntime camundaRuntime = builder.build();
 
     // then
     assertThat(camundaRuntime.getCamundaRestApiAddress())
@@ -82,10 +84,13 @@ public class CamundaProcessTestRemoteRuntimeTest {
         .hasPort(ContainerRuntimePorts.CAMUNDA_GATEWAY_API);
 
     assertThat(camundaRuntime.getCamundaMonitoringApiAddress())
-        .isEqualTo(CamundaProcessTestRuntimeDefaults.LOCAL_CAMUNDA_MONITORING_API_ADDRESS);
+        .hasHost("0.0.0.0")
+        .hasPort(ContainerRuntimePorts.CAMUNDA_MONITORING_API);
 
-    assertThat(camundaRuntime.getConnectorsRestApiAddress())
-        .isEqualTo(CamundaProcessTestRuntimeDefaults.LOCAL_CONNECTORS_REST_API_ADDRESS);
+    assertThat(camundaRuntime.getConnectorsRestApiAddress()).hasHost("0.0.0.0").hasPort(8086);
+
+    assertThat(builder.getRemoteRuntimeConnectionTimeout())
+        .isEqualTo(CamundaProcessTestRuntimeDefaults.DEFAULT_REMOTE_RUNTIME_CONNECTION_TIMEOUT);
   }
 
   @Test
