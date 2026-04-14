@@ -18,6 +18,7 @@ package io.camunda.process.test.impl.runtime;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.ClientProperties;
+import io.camunda.client.CamundaClient;
 import io.camunda.client.CamundaClientConfiguration;
 import java.net.URI;
 import java.time.Duration;
@@ -25,8 +26,8 @@ import java.util.Properties;
 import org.junit.jupiter.api.Test;
 
 /**
- * Verifies that standard {@link ClientProperties} set in a {@code camunda-container-runtime.properties}
- * file are applied to the Camunda client builder via {@link ContainerRuntimePropertiesUtil}.
+ * Verifies that standard {@link ClientProperties} set in a properties file are applied to the
+ * Camunda client builder via {@link ContainerRuntimePropertiesUtil}.
  */
 public class ClientPropertiesConfigurationTest {
 
@@ -39,7 +40,7 @@ public class ClientPropertiesConfigurationTest {
     properties.setProperty(ClientProperties.REST_ADDRESS, "http://custom-host:8080");
 
     // when
-    final io.camunda.client.CamundaClientConfiguration config = buildClientConfiguration(properties);
+    final CamundaClientConfiguration config = buildClientConfiguration(properties);
 
     // then
     assertThat(config.getRestAddress()).isEqualTo(URI.create("http://custom-host:8080"));
@@ -52,7 +53,7 @@ public class ClientPropertiesConfigurationTest {
     properties.setProperty(ClientProperties.GRPC_ADDRESS, "http://custom-host:26500");
 
     // when
-    final io.camunda.client.CamundaClientConfiguration config = buildClientConfiguration(properties);
+    final CamundaClientConfiguration config = buildClientConfiguration(properties);
 
     // then
     assertThat(config.getGrpcAddress()).isEqualTo(URI.create("http://custom-host:26500"));
@@ -65,10 +66,24 @@ public class ClientPropertiesConfigurationTest {
     properties.setProperty(ClientProperties.DEFAULT_REQUEST_TIMEOUT, "30000"); // 30 seconds in ms
 
     // when
-    final io.camunda.client.CamundaClientConfiguration config = buildClientConfiguration(properties);
+    final CamundaClientConfiguration config = buildClientConfiguration(properties);
 
     // then
     assertThat(config.getDefaultRequestTimeout()).isEqualTo(Duration.ofSeconds(30));
+  }
+
+  @Test
+  void shouldApplyRequestTimeoutOffsetFromClientProperties() {
+    // given
+    final Properties properties = buildVersionProperties();
+    properties.setProperty(
+        ClientProperties.DEFAULT_REQUEST_TIMEOUT_OFFSET, "5000"); // 5 seconds in ms
+
+    // when
+    final CamundaClientConfiguration config = buildClientConfiguration(properties);
+
+    // then
+    assertThat(config.getDefaultRequestTimeoutOffset()).isEqualTo(Duration.ofSeconds(5));
   }
 
   @Test
@@ -78,7 +93,7 @@ public class ClientPropertiesConfigurationTest {
     properties.setProperty(ClientProperties.DEFAULT_TENANT_ID, "my-tenant");
 
     // when
-    final io.camunda.client.CamundaClientConfiguration config = buildClientConfiguration(properties);
+    final CamundaClientConfiguration config = buildClientConfiguration(properties);
 
     // then
     assertThat(config.getDefaultTenantId()).isEqualTo("my-tenant");
@@ -91,10 +106,23 @@ public class ClientPropertiesConfigurationTest {
     properties.setProperty(ClientProperties.KEEP_ALIVE, "30000"); // 30 seconds in ms
 
     // when
-    final io.camunda.client.CamundaClientConfiguration config = buildClientConfiguration(properties);
+    final CamundaClientConfiguration config = buildClientConfiguration(properties);
 
     // then
     assertThat(config.getKeepAlive()).isEqualTo(Duration.ofSeconds(30));
+  }
+
+  @Test
+  void shouldApplyOverrideAuthorityFromClientProperties() {
+    // given
+    final Properties properties = buildVersionProperties();
+    properties.setProperty(ClientProperties.OVERRIDE_AUTHORITY, "custom-authority");
+
+    // when
+    final CamundaClientConfiguration config = buildClientConfiguration(properties);
+
+    // then
+    assertThat(config.getOverrideAuthority()).isEqualTo("custom-authority");
   }
 
   @Test
@@ -104,10 +132,23 @@ public class ClientPropertiesConfigurationTest {
     properties.setProperty(ClientProperties.MAX_MESSAGE_SIZE, "10485760"); // 10 MB in bytes
 
     // when
-    final io.camunda.client.CamundaClientConfiguration config = buildClientConfiguration(properties);
+    final CamundaClientConfiguration config = buildClientConfiguration(properties);
 
     // then
     assertThat(config.getMaxMessageSize()).isEqualTo(10_485_760L);
+  }
+
+  @Test
+  void shouldApplyMaxMetadataSizeFromClientProperties() {
+    // given
+    final Properties properties = buildVersionProperties();
+    properties.setProperty(ClientProperties.MAX_METADATA_SIZE, "2048");
+
+    // when
+    final CamundaClientConfiguration config = buildClientConfiguration(properties);
+
+    // then
+    assertThat(config.getMaxMetadataSize()).isEqualTo(2048L);
   }
 
   @Test
@@ -117,7 +158,7 @@ public class ClientPropertiesConfigurationTest {
     properties.setProperty(ClientProperties.PREFER_REST_OVER_GRPC, "true");
 
     // when
-    final io.camunda.client.CamundaClientConfiguration config = buildClientConfiguration(properties);
+    final CamundaClientConfiguration config = buildClientConfiguration(properties);
 
     // then
     assertThat(config.preferRestOverGrpc()).isTrue();
@@ -130,10 +171,89 @@ public class ClientPropertiesConfigurationTest {
     properties.setProperty(ClientProperties.JOB_WORKER_EXECUTION_THREADS, "4");
 
     // when
-    final io.camunda.client.CamundaClientConfiguration config = buildClientConfiguration(properties);
+    final CamundaClientConfiguration config = buildClientConfiguration(properties);
 
     // then
     assertThat(config.getNumJobWorkerExecutionThreads()).isEqualTo(4);
+  }
+
+  @Test
+  void shouldApplyWorkerMaxJobsActiveFromClientProperties() {
+    // given
+    final Properties properties = buildVersionProperties();
+    properties.setProperty(ClientProperties.JOB_WORKER_MAX_JOBS_ACTIVE, "50");
+
+    // when
+    final CamundaClientConfiguration config = buildClientConfiguration(properties);
+
+    // then
+    assertThat(config.getDefaultJobWorkerMaxJobsActive()).isEqualTo(50);
+  }
+
+  @Test
+  void shouldApplyWorkerNameFromClientProperties() {
+    // given
+    final Properties properties = buildVersionProperties();
+    properties.setProperty(ClientProperties.DEFAULT_JOB_WORKER_NAME, "my-worker");
+
+    // when
+    final CamundaClientConfiguration config = buildClientConfiguration(properties);
+
+    // then
+    assertThat(config.getDefaultJobWorkerName()).isEqualTo("my-worker");
+  }
+
+  @Test
+  void shouldApplyJobTimeoutFromClientProperties() {
+    // given
+    final Properties properties = buildVersionProperties();
+    properties.setProperty(ClientProperties.DEFAULT_JOB_TIMEOUT, "120000"); // 2 minutes in ms
+
+    // when
+    final CamundaClientConfiguration config = buildClientConfiguration(properties);
+
+    // then
+    assertThat(config.getDefaultJobTimeout()).isEqualTo(Duration.ofMinutes(2));
+  }
+
+  @Test
+  void shouldApplyJobPollIntervalFromClientProperties() {
+    // given
+    final Properties properties = buildVersionProperties();
+    properties.setProperty(ClientProperties.DEFAULT_JOB_POLL_INTERVAL, "1000"); // 1 second in ms
+
+    // when
+    final CamundaClientConfiguration config = buildClientConfiguration(properties);
+
+    // then
+    assertThat(config.getDefaultJobPollInterval()).isEqualTo(Duration.ofSeconds(1));
+  }
+
+  @Test
+  void shouldApplyMessageTimeToLiveFromClientProperties() {
+    // given
+    final Properties properties = buildVersionProperties();
+    properties.setProperty(
+        ClientProperties.DEFAULT_MESSAGE_TIME_TO_LIVE, "60000"); // 1 minute in ms
+
+    // when
+    final CamundaClientConfiguration config = buildClientConfiguration(properties);
+
+    // then
+    assertThat(config.getDefaultMessageTimeToLive()).isEqualTo(Duration.ofMinutes(1));
+  }
+
+  @Test
+  void shouldApplyStreamEnabledFromClientProperties() {
+    // given
+    final Properties properties = buildVersionProperties();
+    properties.setProperty(ClientProperties.STREAM_ENABLED, "true");
+
+    // when
+    final CamundaClientConfiguration config = buildClientConfiguration(properties);
+
+    // then
+    assertThat(config.getDefaultJobWorkerStreamEnabled()).isTrue();
   }
 
   @Test
@@ -143,7 +263,7 @@ public class ClientPropertiesConfigurationTest {
     properties.setProperty(ClientProperties.CA_CERTIFICATE_PATH, "/path/to/cert");
 
     // when
-    final io.camunda.client.CamundaClientConfiguration config = buildClientConfiguration(properties);
+    final CamundaClientConfiguration config = buildClientConfiguration(properties);
 
     // then
     assertThat(config.getCaCertificatePath()).isEqualTo("/path/to/cert");
@@ -159,7 +279,7 @@ public class ClientPropertiesConfigurationTest {
     properties.setProperty(ClientProperties.CLOUD_REGION, "eu-west");
 
     // when
-    final io.camunda.client.CamundaClientConfiguration config = buildClientConfiguration(properties);
+    final CamundaClientConfiguration config = buildClientConfiguration(properties);
 
     // then
     assertThat(config.getRestAddress())
@@ -176,7 +296,7 @@ public class ClientPropertiesConfigurationTest {
     properties.setProperty("remote.client.grpcAddress", "http://remote-host:26500");
 
     // when
-    final io.camunda.client.CamundaClientConfiguration config = buildClientConfiguration(properties);
+    final CamundaClientConfiguration config = buildClientConfiguration(properties);
 
     // then
     assertThat(config.getGrpcAddress()).isEqualTo(URI.create("http://remote-host:26500"));
@@ -190,17 +310,30 @@ public class ClientPropertiesConfigurationTest {
     properties.setProperty("remote.client.restAddress", "http://remote-host:8080");
 
     // when
-    final io.camunda.client.CamundaClientConfiguration config = buildClientConfiguration(properties);
+    final CamundaClientConfiguration config = buildClientConfiguration(properties);
 
     // then
     assertThat(config.getRestAddress()).isEqualTo(URI.create("http://remote-host:8080"));
   }
 
-  private CamundaClientConfiguration buildClientConfiguration(
-      final Properties properties) {
+  @Test
+  void shouldOverrideStandardClientPropertiesWithRemoteClientAddress() {
+    // given - remote.client overrides the standard ClientProperties
+    final Properties properties = buildVersionProperties();
+    properties.setProperty(ClientProperties.REST_ADDRESS, "http://standard:8080");
+    properties.setProperty("remote.client.restAddress", "http://remote-override:8080");
+
+    // when
+    final CamundaClientConfiguration config = buildClientConfiguration(properties);
+
+    // then - remote address wins
+    assertThat(config.getRestAddress()).isEqualTo(URI.create("http://remote-override:8080"));
+  }
+
+  private CamundaClientConfiguration buildClientConfiguration(final Properties properties) {
     final ContainerRuntimePropertiesUtil propertiesUtil =
         new ContainerRuntimePropertiesUtil(properties, emptyGitProperties);
-    final io.camunda.client.CamundaClient client =
+    final CamundaClient client =
         propertiesUtil.getCamundaClientBuilderFactory().get().build();
     try {
       return client.getConfiguration();

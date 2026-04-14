@@ -20,6 +20,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.CamundaClientBuilder;
 import io.camunda.client.CamundaClientConfiguration;
+import io.camunda.client.CredentialsProvider;
 import io.camunda.client.impl.NoopCredentialsProvider;
 import io.camunda.client.impl.oauth.OAuthCredentialsProvider;
 import io.camunda.client.spring.configuration.CamundaClientAllAutoConfiguration;
@@ -33,34 +34,38 @@ import java.net.URI;
 import java.time.Duration;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
+import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.TestPropertySource;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 
+@ExtendWith(SpringExtension.class)
+@ContextConfiguration(classes = CamundaProcessTestDefaultConfigurationTest.TestConfig.class)
+@EnableConfigurationProperties({
+  CamundaProcessTestRuntimeConfiguration.class,
+  LegacyCamundaProcessTestRuntimeConfiguration.class
+})
 public class CamundaProcessTestDefaultConfigurationTest {
 
   @Nested
-  @SpringBootTest(
-      classes = {
-        CamundaProcessTestDefaultConfigurationTest.TestConfig.class,
-        CamundaSpringProcessTestContext.class
-      })
-  @EnableConfigurationProperties({
-    CamundaProcessTestRuntimeConfiguration.class,
-    LegacyCamundaProcessTestRuntimeConfiguration.class
-  })
   @TestPropertySource(
       properties = {
         "camunda.client.rest-address=http://custom-host:8080",
         "camunda.client.grpc-address=http://custom-host:26500",
         "camunda.client.request-timeout=PT30S",
-        "camunda.client.tenantId=custom-tenant"
+        "camunda.client.tenantId=custom-tenant",
+        "camunda.client.worker.defaults.max-jobs-active=50",
+        "camunda.client.worker.defaults.timeout=PT2M",
+        "camunda.client.message-time-to-live=PT1M",
+        "camunda.client.maxMessageSize=5242880",
+        "camunda.client.keepalive=PT45S"
       })
   class ShouldApplyCamundaClientProperties {
 
@@ -91,6 +96,36 @@ public class CamundaProcessTestDefaultConfigurationTest {
     }
 
     @Test
+    void shouldApplyWorkerMaxJobsActive() {
+      final CamundaClientConfiguration config = buildConfiguration();
+      assertThat(config.getDefaultJobWorkerMaxJobsActive()).isEqualTo(50);
+    }
+
+    @Test
+    void shouldApplyJobTimeout() {
+      final CamundaClientConfiguration config = buildConfiguration();
+      assertThat(config.getDefaultJobTimeout()).isEqualTo(Duration.ofMinutes(2));
+    }
+
+    @Test
+    void shouldApplyMessageTimeToLive() {
+      final CamundaClientConfiguration config = buildConfiguration();
+      assertThat(config.getDefaultMessageTimeToLive()).isEqualTo(Duration.ofMinutes(1));
+    }
+
+    @Test
+    void shouldApplyMaxMessageSize() {
+      final CamundaClientConfiguration config = buildConfiguration();
+      assertThat(config.getMaxMessageSize()).isEqualTo(5_242_880L);
+    }
+
+    @Test
+    void shouldApplyKeepAlive() {
+      final CamundaClientConfiguration config = buildConfiguration();
+      assertThat(config.getKeepAlive()).isEqualTo(Duration.ofSeconds(45));
+    }
+
+    @Test
     void shouldUseNoopCredentialsByDefault() {
       final CamundaClientConfiguration config = buildConfiguration();
       assertThat(config.getCredentialsProvider()).isInstanceOf(NoopCredentialsProvider.class);
@@ -105,30 +140,32 @@ public class CamundaProcessTestDefaultConfigurationTest {
   }
 
   @Nested
-  @SpringBootTest(
-      classes = {
-        CamundaProcessTestDefaultConfigurationTest.TestConfig.class,
-        CamundaSpringProcessTestContext.class
-      })
-  @EnableConfigurationProperties({
-    CamundaProcessTestRuntimeConfiguration.class,
-    LegacyCamundaProcessTestRuntimeConfiguration.class
-  })
   @TestPropertySource(
       properties = {
         "camunda.client.auth.method=oidc",
         "camunda.client.auth.client-id=my-client-id",
         "camunda.client.auth.client-secret=my-client-secret",
-        "camunda.client.auth.token-url=https://auth.example.com/token"
+        "camunda.client.auth.token-url=https://auth.example.com/token",
+        "camunda.client.auth.audience=my-audience"
       })
   class ShouldApplyAuthProperties {
 
     @Autowired private CamundaClientBuilderFactory clientBuilderFactory;
+    @Autowired private CredentialsProvider camundaClientCredentialsProvider;
 
     @Test
-    void shouldApplyOAuthCredentials() {
+    void shouldApplyOAuthCredentialsProvider() {
       final CamundaClientConfiguration config = buildConfiguration();
       assertThat(config.getCredentialsProvider()).isInstanceOf(OAuthCredentialsProvider.class);
+    }
+
+    @Test
+    void shouldUseOAuthCredentialsProviderFromSpringContext() {
+      // The Spring context creates the CredentialsProvider bean from the auth properties.
+      // Verify the same provider instance is injected into the client builder.
+      assertThat(camundaClientCredentialsProvider).isInstanceOf(OAuthCredentialsProvider.class);
+      final CamundaClientConfiguration config = buildConfiguration();
+      assertThat(config.getCredentialsProvider()).isSameAs(camundaClientCredentialsProvider);
     }
 
     private CamundaClientConfiguration buildConfiguration() {
@@ -140,16 +177,41 @@ public class CamundaProcessTestDefaultConfigurationTest {
   }
 
   @Nested
-  @SpringBootTest(
+  @TestPropertySource(
+      properties = {
+        "camunda.process-test.remote.client.grpc-address=http://remote-grpc:26500",
+        "camunda.process-test.remote.client.rest-address=http://remote-rest:8080"
+      })
+  class ShouldApplyRemoteClientProperties {
+
+    @Autowired private CamundaClientBuilderFactory clientBuilderFactory;
+
+    @Test
+    void shouldApplyRemoteGrpcAddress() {
+      final CamundaClientConfiguration config = buildConfiguration();
+      assertThat(config.getGrpcAddress()).isEqualTo(URI.create("http://remote-grpc:26500"));
+    }
+
+    @Test
+    void shouldApplyRemoteRestAddress() {
+      final CamundaClientConfiguration config = buildConfiguration();
+      assertThat(config.getRestAddress()).isEqualTo(URI.create("http://remote-rest:8080"));
+    }
+
+    private CamundaClientConfiguration buildConfiguration() {
+      final CamundaClientBuilder builder = clientBuilderFactory.get();
+      try (final CamundaClient client = builder.build()) {
+        return client.getConfiguration();
+      }
+    }
+  }
+
+  @Nested
+  @ContextConfiguration(
       classes = {
         CamundaProcessTestDefaultConfigurationTest.TestConfig.class,
-        CamundaProcessTestDefaultConfigurationTest.CustomFactoryConfig.class,
-        CamundaSpringProcessTestContext.class
+        CamundaProcessTestDefaultConfigurationTest.CustomFactoryConfig.class
       })
-  @EnableConfigurationProperties({
-    CamundaProcessTestRuntimeConfiguration.class,
-    LegacyCamundaProcessTestRuntimeConfiguration.class
-  })
   class ShouldUseCustomCamundaClientBuilderFactory {
 
     @Autowired
