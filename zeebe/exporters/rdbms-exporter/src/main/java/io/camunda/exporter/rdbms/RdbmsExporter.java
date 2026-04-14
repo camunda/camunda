@@ -10,10 +10,10 @@ package io.camunda.exporter.rdbms;
 import io.camunda.db.rdbms.RdbmsSchemaManager;
 import io.camunda.db.rdbms.write.RdbmsWriterMetrics.FlushTrigger;
 import io.camunda.db.rdbms.write.RdbmsWriters;
+import io.camunda.db.rdbms.write.ReplicationLsnProvider;
 import io.camunda.db.rdbms.write.domain.ExporterPositionModel;
 import io.camunda.db.rdbms.write.service.HistoryCleanupService;
 import io.camunda.db.rdbms.write.service.HistoryDeletionService;
-import io.camunda.db.rdbms.write.ReplicationLsnProvider;
 import io.camunda.exporter.rdbms.replication.LsnPositionEntry;
 import io.camunda.exporter.rdbms.tasks.RdbmsBackgroundTaskManager;
 import io.camunda.zeebe.exporter.api.ExporterException;
@@ -150,9 +150,7 @@ public final class RdbmsExporter {
 
     rdbmsWriters.getExecutionQueue().registerPreFlushListener(this::updatePositionInRdbms);
     if (isAsyncReplicationEnabled()) {
-      rdbmsWriters
-          .getExecutionQueue()
-          .registerPostFlushListener(this::captureCurrentLsnAndEnqueue);
+      rdbmsWriters.getExecutionQueue().registerPostFlushListener(this::captureCurrentLsnAndEnqueue);
     } else {
       rdbmsWriters.getExecutionQueue().registerPostFlushListener(this::updatePositionInBroker);
     }
@@ -160,9 +158,23 @@ public final class RdbmsExporter {
 
     // Start background tasks (history cleanup and deletion) in a separate thread pool,
     // decoupled from the main export thread
-    backgroundTaskManager =
-        new RdbmsBackgroundTaskManager(
-            partitionId, historyCleanupService, historyDeletionService, LOG);
+    if (isAsyncReplicationEnabled()) {
+      backgroundTaskManager =
+          new RdbmsBackgroundTaskManager(
+              partitionId,
+              historyCleanupService,
+              historyDeletionService,
+              LOG,
+              RdbmsBackgroundTaskManager.DEFAULT_CLOSE_TIMEOUT,
+              replicationLsnProvider,
+              pendingReplicationEntries,
+              confirmedReplicationPosition,
+              asyncReplicationPollingInterval);
+    } else {
+      backgroundTaskManager =
+          new RdbmsBackgroundTaskManager(
+              partitionId, historyCleanupService, historyDeletionService, LOG);
+    }
     backgroundTaskManager.start();
 
     LOG.info(

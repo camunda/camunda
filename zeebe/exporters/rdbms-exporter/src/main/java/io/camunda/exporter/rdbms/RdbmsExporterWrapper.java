@@ -58,6 +58,7 @@ import io.camunda.exporter.rdbms.handlers.batchoperation.ProcessInstanceMigratio
 import io.camunda.exporter.rdbms.handlers.batchoperation.ProcessInstanceModificationBatchOperationExportHandler;
 import io.camunda.search.entities.BatchOperationType;
 import io.camunda.zeebe.exporter.api.Exporter;
+import io.camunda.zeebe.exporter.api.ExporterException;
 import io.camunda.zeebe.exporter.api.context.Context;
 import io.camunda.zeebe.exporter.api.context.Controller;
 import io.camunda.zeebe.exporter.common.auditlog.transformers.AuditLogTransformer;
@@ -154,6 +155,18 @@ public class RdbmsExporterWrapper implements Exporter {
                 config.getHistoryDeletion().getDependentRowLimit()),
             context.clock());
     builder.historyDeletionService(historyDeletionService);
+
+    if (config.getAsyncReplication().isEnabled()) {
+      final var lsnProvider = rdbmsService.getReplicationLsnProvider();
+      if (lsnProvider == null) {
+        throw new ExporterException(
+            "Async replication is enabled but no ReplicationLsnProvider is available. "
+                + "Ensure the database supports async replication and the provider is configured.");
+      }
+      builder
+          .replicationLsnProvider(lsnProvider)
+          .asyncReplicationPollingInterval(config.getAsyncReplication().getPollingInterval());
+    }
 
     createHandlers(partitionId, rdbmsWriters, builder, config, historyCleanupService);
     createBatchOperationHandlers(rdbmsWriters, builder, historyCleanupService);

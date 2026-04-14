@@ -36,7 +36,7 @@ import org.slf4j.Logger;
  */
 public final class RdbmsBackgroundTaskManager implements CloseableSilently {
 
-  static final Duration DEFAULT_CLOSE_TIMEOUT = Duration.ofSeconds(10);
+  public static final Duration DEFAULT_CLOSE_TIMEOUT = Duration.ofSeconds(10);
 
   private final int partitionId;
   private final HistoryCleanupService historyCleanupService;
@@ -85,7 +85,7 @@ public final class RdbmsBackgroundTaskManager implements CloseableSilently {
         null);
   }
 
-  RdbmsBackgroundTaskManager(
+  public RdbmsBackgroundTaskManager(
       final int partitionId,
       final HistoryCleanupService historyCleanupService,
       final HistoryDeletionService historyDeletionService,

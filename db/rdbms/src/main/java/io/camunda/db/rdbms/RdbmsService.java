@@ -48,6 +48,7 @@ import io.camunda.db.rdbms.write.RdbmsWriterConfig;
 import io.camunda.db.rdbms.write.RdbmsWriterConfig.Builder;
 import io.camunda.db.rdbms.write.RdbmsWriterFactory;
 import io.camunda.db.rdbms.write.RdbmsWriters;
+import io.camunda.db.rdbms.write.ReplicationLsnProvider;
 import java.util.function.Consumer;
 
 /** A holder for all rdbms services */
@@ -96,6 +97,7 @@ public class RdbmsService {
   private final IncidentProcessInstanceStatisticsByDefinitionDbReader
       incidentProcessInstanceStatisticsByDefinitionDbReader;
   private final GlobalListenerDbReader globalListenerDbReader;
+  private ReplicationLsnProvider replicationLsnProvider;
 
   public RdbmsService(
       final RdbmsWriterFactory rdbmsWriterFactory,
@@ -339,6 +341,18 @@ public class RdbmsService {
 
   public GlobalListenerDbReader getGlobalListenerDbReader() {
     return globalListenerDbReader;
+  }
+
+  /**
+   * Returns the replication LSN provider, or null if async replication is not configured. The
+   * provider is set by database-specific auto-configuration.
+   */
+  public ReplicationLsnProvider getReplicationLsnProvider() {
+    return replicationLsnProvider;
+  }
+
+  public void setReplicationLsnProvider(final ReplicationLsnProvider replicationLsnProvider) {
+    this.replicationLsnProvider = replicationLsnProvider;
   }
 
   public RdbmsWriters createWriter(final RdbmsWriterConfig config) {
