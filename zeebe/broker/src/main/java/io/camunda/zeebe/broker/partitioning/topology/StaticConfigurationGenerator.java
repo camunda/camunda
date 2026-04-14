@@ -25,6 +25,8 @@ import io.camunda.zeebe.dynamic.config.state.ExporterState;
 import io.camunda.zeebe.dynamic.config.state.ExporterState.State;
 import io.camunda.zeebe.dynamic.config.state.ExportingConfig;
 import io.camunda.zeebe.dynamic.config.state.ExportingState;
+import io.camunda.zeebe.dynamic.config.util.RegionAwarePartitionDistributor;
+import io.camunda.zeebe.dynamic.config.util.RegionAwarePartitionDistributor.RegionSpec;
 import io.camunda.zeebe.dynamic.config.util.RoundRobinPartitionDistributor;
 import java.util.HashMap;
 import java.util.List;
@@ -69,10 +71,29 @@ public final class StaticConfigurationGenerator {
   private static PartitionDistributor buildPartitionDistributor(final PartitioningCfg config) {
     return switch (config.getScheme()) {
       case FIXED -> buildFixedPartitionDistributor(config);
-      case REGION_AWARE -> throw new UnsupportedOperationException(
-          "RegionAwarePartitionDistributor is not yet implemented");
+      case REGION_AWARE -> buildRegionAwarePartitionDistributor(config);
       default -> new RoundRobinPartitionDistributor();
     };
+  }
+
+  private static RegionAwarePartitionDistributor buildRegionAwarePartitionDistributor(
+      final PartitioningCfg config) {
+    final var regions = config.getRegionAware().getRegions();
+    final List<RegionSpec> specs =
+        regions.entrySet().stream()
+            .map(
+                e -> {
+                  final String regionName = e.getKey();
+                  final var regionCfg = e.getValue();
+                  final List<MemberId> brokers =
+                      IntStream.range(0, regionCfg.getNumberOfBrokers())
+                          .mapToObj(localId -> MemberId.from(regionName + "-" + localId))
+                          .toList();
+                  return new RegionSpec(
+                      regionName, regionCfg.getNumberOfReplicas(), regionCfg.getPriority(), brokers);
+                })
+            .toList();
+    return new RegionAwarePartitionDistributor(specs);
   }
 
   private static FixedPartitionDistributor buildFixedPartitionDistributor(
