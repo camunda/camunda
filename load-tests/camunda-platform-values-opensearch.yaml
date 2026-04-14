@@ -52,15 +52,56 @@ config:
   opensearch.yml: |
     cluster.name: opensearch
     network.host: 0.0.0.0
-    plugins.security.disabled: true
     # Disable deprecation logging to avoid filling up the logs with warnings about deprecated features that we might be using in our tests
     logger.org.opensearch.deprecation: "OFF"
 
 extraEnvs:
   - name: OPENSEARCH_INITIAL_ADMIN_PASSWORD
     value: "yourStrongPassword123!"
+  - name: DISABLE_INSTALL_DEMO_CONFIG
+    value: "true"
 
 opensearchJavaOpts: "-Xms3g -Xmx3g"
+
+# Remove bundled plugins that are not needed for Camunda.
+# OpenSearch ships with 24 plugins by default (vs 0 for Elasticsearch).
+# These consume ~15-20% extra RAM and 40+ additional thread pools, causing
+# write throughput degradation and cascading backpressure on the Zeebe exporters.
+# We keep only opensearch-index-management (ISM/retention) and its dependency
+# opensearch-job-scheduler.
+extraVolumes:
+  - name: plugins-dir
+    emptyDir: {}
+
+extraVolumeMounts:
+  - name: plugins-dir
+    mountPath: /usr/share/opensearch/plugins
+
+extraInitContainers:
+  - name: copy-and-prune-plugins
+    image: opensearchproject/opensearch:2.19.0
+    command:
+      - sh
+      - -c
+      - |
+        # Copy all plugins from the image to the shared emptyDir volume
+        cp -a /usr/share/opensearch/plugins/* /target/
+
+        # Remove all plugins except index-management and job-scheduler
+        PLUGINS_TO_REMOVE="opensearch-alerting opensearch-anomaly-detection opensearch-asynchronous-search opensearch-cross-cluster-replication opensearch-custom-codecs opensearch-flow-framework opensearch-geospatial opensearch-knn opensearch-ltr opensearch-ml opensearch-neural-search opensearch-notifications opensearch-notifications-core opensearch-observability opensearch-performance-analyzer opensearch-reports-scheduler opensearch-security opensearch-security-analytics opensearch-skills opensearch-sql opensearch-system-templates query-insights"
+
+        for plugin in $PLUGINS_TO_REMOVE; do
+          if [ -d "/target/$plugin" ]; then
+            echo "Removing plugin: $plugin"
+            rm -rf "/target/$plugin"
+          fi
+        done
+
+        echo "Remaining plugins:"
+        ls /target/
+    volumeMounts:
+      - name: plugins-dir
+        mountPath: /target
 
 sysctlInit:
   enabled: true
