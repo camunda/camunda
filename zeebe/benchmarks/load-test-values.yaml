@@ -7,6 +7,11 @@ global:
   nodeSelector:
     component: benchmark-n2-standard-4
     topology.kubernetes.io/zone: __AVAILABILITY_ZONE__
+  tolerations:
+    - key: nodepool
+      operator: Equal
+      value: n2-standard-4
+      effect: NoSchedule
 
 # OAuth configuration for load tests to connect to the Zeebe gateway via Identity/Keycloak.
 # In 8.7, all components are deployed separately (unlike 8.8's unified orchestration cluster).
