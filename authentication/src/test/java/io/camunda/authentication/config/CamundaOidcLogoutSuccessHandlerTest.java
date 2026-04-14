@@ -153,6 +153,26 @@ public class CamundaOidcLogoutSuccessHandlerTest {
     assertThat(targetUrl).doesNotContain("logout_hint=");
   }
 
+  @Test
+  void shouldSetLogoutMessageAttributeWhenEndSessionEndpointNotAvailable() {
+    // given
+    final MockHttpServletRequest request = buildMockHttpServletRequestWithReferer(ALLOWED_REFERER);
+    final MockHttpServletResponse response = new MockHttpServletResponse();
+    final OAuth2AuthenticationToken authentication = createAuthentication("user@camunda.com");
+
+    // when
+    when(clientRegistrationRepository.findByRegistrationId("client"))
+        .thenReturn(clientRegistrationWithoutEndSessionEndpoint());
+
+    handler.determineTargetUrl(request, response, authentication);
+
+    // then
+    assertThat(request.getAttribute(CamundaOidcLogoutSuccessHandler.LOGOUT_MESSAGE_ATTRIBUTE))
+        .isEqualTo(
+            "The identity provider's end_session_endpoint is not available. "
+                + "The local session has been terminated, but the IdP session will still be active.");
+  }
+
   private static MockHttpServletRequest buildMockHttpServletRequestWithReferer(
       final String referer) {
     final MockHttpServletRequest request = new MockHttpServletRequest();
@@ -188,6 +208,17 @@ public class CamundaOidcLogoutSuccessHandlerTest {
         new DefaultOAuth2User(List.of(new SimpleGrantedAuthority("ROLE_USER")), attributes, "sub");
 
     return new OAuth2AuthenticationToken(user, user.getAuthorities(), "client");
+  }
+
+  private ClientRegistration clientRegistrationWithoutEndSessionEndpoint() {
+    return ClientRegistration.withRegistrationId("client")
+        .clientId("client-id")
+        .clientSecret("client-secret")
+        .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
+        .redirectUri("{baseUrl}/login/oauth2/code/{registrationId}")
+        .authorizationUri("https://idp.com/oauth2/v1/authorize")
+        .tokenUri("https://idp.com/oauth2/v1/token")
+        .build();
   }
 
   private ClientRegistration clientRegistration() {
