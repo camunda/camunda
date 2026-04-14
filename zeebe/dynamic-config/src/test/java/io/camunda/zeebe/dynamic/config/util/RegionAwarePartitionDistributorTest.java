@@ -18,9 +18,13 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.IntStream;
 import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 final class RegionAwarePartitionDistributorTest {
 
+  private static final Logger LOG =
+      LoggerFactory.getLogger(RegionAwarePartitionDistributorTest.class);
   private static final String GROUP = "raft";
 
   // -------------------------------------------------------------------------
@@ -28,9 +32,7 @@ final class RegionAwarePartitionDistributorTest {
   // -------------------------------------------------------------------------
 
   private static List<MemberId> brokers(final String region, final int count) {
-    return IntStream.range(0, count)
-        .mapToObj(i -> MemberId.from(region + "-" + i))
-        .toList();
+    return IntStream.range(0, count).mapToObj(i -> MemberId.from(region + "-" + i)).toList();
   }
 
   private static List<PartitionId> partitions(final int count) {
@@ -198,8 +200,7 @@ final class RegionAwarePartitionDistributorTest {
   @Test
   void shouldRoundRobinBrokersWithinRegionAcrossPartitions() {
     // given — one region, 2 brokers, 1 replica per partition
-    final var specs =
-        List.of(new RegionSpec("us-east1", 1, 1000, brokers("us-east1", 2)));
+    final var specs = List.of(new RegionSpec("us-east1", 1, 1000, brokers("us-east1", 2)));
     final var distributor = new RegionAwarePartitionDistributor(specs);
 
     // when
@@ -244,8 +245,7 @@ final class RegionAwarePartitionDistributorTest {
   @Test
   void shouldBehaveCorrectlyWithSingleRegion() {
     // given
-    final var specs =
-        List.of(new RegionSpec("us-east1", 3, 1000, brokers("us-east1", 3)));
+    final var specs = List.of(new RegionSpec("us-east1", 3, 1000, brokers("us-east1", 3)));
     final var distributor = new RegionAwarePartitionDistributor(specs);
 
     // when
@@ -273,23 +273,119 @@ final class RegionAwarePartitionDistributorTest {
     final var distributor = new RegionAwarePartitionDistributor(specs);
 
     // when / then
-    assertThatThrownBy(
-            () -> distributor.distributePartitions(allBrokers(specs), partitions(1), 4))
+    assertThatThrownBy(() -> distributor.distributePartitions(allBrokers(specs), partitions(1), 4))
         .isInstanceOf(IllegalStateException.class)
         .hasMessageContaining("replicationFactor");
+  }
+
+  // -------------------------------------------------------------------------
+  // Priority table visualization
+  // -------------------------------------------------------------------------
+
+  @Test
+  void shouldPrintPriorityTableForDocumentedExample() {
+    // given — the 3-region, 5-partition example from the class-level Javadoc
+    final var specs =
+        List.of(
+            new RegionSpec("us-east1", 2, 1000, brokers("us-east1", 2)),
+            new RegionSpec("us-west1", 2, 500, brokers("us-west1", 2)),
+            new RegionSpec("euro-east1", 1, 10, brokers("euro-east1", 1)));
+    final int rf = 5;
+    final var distributor = new RegionAwarePartitionDistributor(specs);
+
+    // when
+    final var result = distributor.distributePartitions(allBrokers(specs), partitions(5), rf);
+
+    // then — table is printed to the logs; this test acts as a visual smoke-check
+    logPriorityTable(result, specs);
+    assertThat(result).hasSize(5);
+  }
+
+  /**
+   * Logs a Markdown-style table showing the Raft election priority of every broker for every
+   * partition. Columns are ordered by region (highest priority region first) and then by local
+   * broker index within the region. The broker with priority {@code targetPriority} (==
+   * replicationFactor) is the preferred leader for that partition.
+   *
+   * <p>Example output:
+   *
+   * <pre>
+   * Partition \ Broker | us-east1-0 | us-east1-1 | us-west1-0 | us-west1-1 | euro-east1-0
+   * -------------------|------------|------------|------------|------------|--------------
+   *                  1 |     5      |     4      |     3      |     2      |      1
+   *                  2 |     4      |     5      |     2      |     3      |      1
+   * </pre>
+   */
+  private static void logPriorityTable(
+      final Set<PartitionMetadata> result, final List<RegionSpec> specs) {
+    // Collect all brokers in deterministic column order (region declaration order, then local id)
+    final List<MemberId> columns = specs.stream().flatMap(s -> s.brokers().stream()).toList();
+
+    // Sort partitions by numeric id for stable row order
+    final List<PartitionMetadata> rows =
+        result.stream().sorted((a, b) -> Integer.compare(a.id().id(), b.id().id())).toList();
+
+    // Compute column widths
+    final int partitionColWidth =
+        Math.max(
+            "Partition".length(),
+            rows.stream().mapToInt(p -> String.valueOf(p.id().id()).length()).max().orElse(1));
+    final int[] brokerColWidths =
+        columns.stream().mapToInt(m -> Math.max(m.id().length(), 3)).toArray();
+
+    // Header row
+    final var header = new StringBuilder();
+    header.append(padLeft("Partition", partitionColWidth));
+    for (int c = 0; c < columns.size(); c++) {
+      header.append(" | ").append(center(columns.get(c).id(), brokerColWidths[c]));
+    }
+
+    // Separator row
+    final var separator = new StringBuilder();
+    separator.append("-".repeat(partitionColWidth));
+    for (final int w : brokerColWidths) {
+      separator.append("-|-").append("-".repeat(w));
+    }
+
+    // Data rows
+    final var dataRows = new StringBuilder();
+    for (final PartitionMetadata pm : rows) {
+      final var row = new StringBuilder();
+      row.append(padLeft(String.valueOf(pm.id().id()), partitionColWidth));
+      for (int c = 0; c < columns.size(); c++) {
+        final int priority = pm.getPriority(columns.get(c));
+        row.append(" | ").append(center(String.valueOf(priority), brokerColWidths[c]));
+      }
+      dataRows.append('\n').append(row);
+    }
+
+    LOG.info(
+        "\nRaft priority table (priority == RF → preferred leader):\n{}\n{}{}\n",
+        header,
+        separator,
+        dataRows);
+  }
+
+  private static String padLeft(final String s, final int width) {
+    return " ".repeat(Math.max(0, width - s.length())) + s;
+  }
+
+  private static String center(final String s, final int width) {
+    final int padding = Math.max(0, width - s.length());
+    final int left = padding / 2;
+    final int right = padding - left;
+    return " ".repeat(left) + s + " ".repeat(right);
   }
 
   @Test
   void shouldThrowWhenBrokerNotInClusterMembers() {
     // given — spec declares 2 brokers but we only pass 1 to distributePartitions
-    final var specs =
-        List.of(new RegionSpec("us-east1", 2, 1000, brokers("us-east1", 2)));
+    final var specs = List.of(new RegionSpec("us-east1", 2, 1000, brokers("us-east1", 2)));
     final var distributor = new RegionAwarePartitionDistributor(specs);
     final Set<MemberId> onlyOneBroker = Set.of(MemberId.from("us-east1-0"));
 
     // when / then
-    assertThatThrownBy(
-            () -> distributor.distributePartitions(onlyOneBroker, partitions(1), 2))
+    assertThatThrownBy(() -> distributor.distributePartitions(onlyOneBroker, partitions(1), 2))
         .isInstanceOf(IllegalStateException.class)
         .hasMessageContaining("us-east1-1");
   }
