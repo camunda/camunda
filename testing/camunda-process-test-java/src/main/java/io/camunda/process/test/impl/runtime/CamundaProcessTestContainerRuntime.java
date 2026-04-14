@@ -15,8 +15,6 @@
  */
 package io.camunda.process.test.impl.runtime;
 
-import io.camunda.client.CamundaClientBuilder;
-import io.camunda.client.CredentialsProvider;
 import io.camunda.process.test.api.CamundaClientBuilderFactory;
 import io.camunda.process.test.api.runtime.CamundaProcessTestContainerContext;
 import io.camunda.process.test.impl.containers.CamundaContainer;
@@ -238,21 +236,11 @@ public class CamundaProcessTestContainerRuntime
 
   @Override
   public CamundaClientBuilderFactory getCamundaClientBuilderFactory() {
-    return () -> {
-      final CamundaClientBuilder builder =
-          camundaClientBuilderFactory
-              .get()
-              .restAddress(getCamundaRestApiAddress())
-              .grpcAddress(getCamundaGrpcApiAddress());
-      if (isMultiTenancyEnabled) {
-        builder.credentialsProvider(
-            CredentialsProvider.newBasicAuthCredentialsProviderBuilder()
-                .username(MultiTenancyConfiguration.MULTITENANCY_USER_USERNAME)
-                .password(MultiTenancyConfiguration.MULTITENANCY_USER_PASSWORD)
-                .build());
-      }
-      return builder;
-    };
+    return () ->
+        camundaClientBuilderFactory
+            .get()
+            .restAddress(getCamundaRestApiAddress())
+            .grpcAddress(getCamundaGrpcApiAddress());
   }
 
   public CamundaContainer getCamundaContainer() {

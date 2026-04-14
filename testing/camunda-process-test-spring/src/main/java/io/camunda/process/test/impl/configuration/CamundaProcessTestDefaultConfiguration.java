@@ -34,6 +34,7 @@ import io.camunda.zeebe.client.impl.ZeebeObjectMapper;
 import io.grpc.ClientInterceptor;
 import java.net.URI;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.Executors;
 import org.apache.hc.client5.http.async.AsyncExecChainHandler;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -106,24 +107,34 @@ public class CamundaProcessTestDefaultConfiguration {
             camundaClientCredentialsProvider,
             jobExceptionHandlingSupplier);
 
+    // Pre-compute remote address overrides once so every factory invocation is lightweight.
+    final CamundaClientProperties remoteClientProperties =
+        runtimeConfiguration.getRemote().getClient();
+    final URI remoteGrpcAddress =
+        isExplicitlyConfigured(
+                remoteClientProperties.getGrpcAddress(),
+                CamundaClientBuilderImpl.DEFAULT_GRPC_ADDRESS)
+            ? remoteClientProperties.getGrpcAddress()
+            : null;
+    final URI remoteRestAddress =
+        isExplicitlyConfigured(
+                remoteClientProperties.getRestAddress(),
+                CamundaClientBuilderImpl.DEFAULT_REST_ADDRESS)
+            ? remoteClientProperties.getRestAddress()
+            : null;
+
     return () -> {
       final CamundaClientBuilder builder = configuration.toBuilder();
       // Backwards compatibility: apply remote client addresses only when explicitly configured
       // (i.e. different from the default addresses of CamundaClientProperties).
       // This matches the previously supported camunda.process-test.remote.client.* properties.
-      final CamundaClientProperties remoteClientProperties =
-          runtimeConfiguration.getRemote().getClient();
-      final URI defaultGrpcAddress = CamundaClientBuilderImpl.DEFAULT_GRPC_ADDRESS;
-      final URI remoteGrpcAddress = remoteClientProperties.getGrpcAddress();
-      if (remoteGrpcAddress != null && !remoteGrpcAddress.equals(defaultGrpcAddress)) {
-        builder.grpcAddress(remoteGrpcAddress);
-      }
-      final URI defaultRestAddress = CamundaClientBuilderImpl.DEFAULT_REST_ADDRESS;
-      final URI remoteRestAddress = remoteClientProperties.getRestAddress();
-      if (remoteRestAddress != null && !remoteRestAddress.equals(defaultRestAddress)) {
-        builder.restAddress(remoteRestAddress);
-      }
+      Optional.ofNullable(remoteGrpcAddress).ifPresent(builder::grpcAddress);
+      Optional.ofNullable(remoteRestAddress).ifPresent(builder::restAddress);
       return builder;
     };
+  }
+
+  private static boolean isExplicitlyConfigured(final URI address, final URI defaultAddress) {
+    return address != null && !address.equals(defaultAddress);
   }
 }
