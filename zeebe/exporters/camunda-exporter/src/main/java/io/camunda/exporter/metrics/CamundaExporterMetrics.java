@@ -44,6 +44,12 @@ public class CamundaExporterMetrics implements AutoCloseable {
   /** Count of completed process instances that have been archived. */
   private final Counter processInstancesArchived;
 
+  /**
+   * Count of how often we see process instances that have been archived already (due to
+   * search/delete visibility in ES/OS).
+   */
+  private final Counter processInstanceArchivingDeduplicated;
+
   /** Count of completed batch operations that are in progress of archiving. */
   private final Counter batchOperationsArchiving;
 
@@ -132,6 +138,12 @@ public class CamundaExporterMetrics implements AutoCloseable {
             .tag("state", "archiving")
             .description(
                 "Count of completed process instances that have been found, and are now in progress of archiving.")
+            .register(meterRegistry);
+    processInstanceArchivingDeduplicated =
+        Counter.builder(meterName("archiver.process.instances"))
+            .tag("state", "deduplicated")
+            .description(
+                "Count of process instances that were previously archived, but were found again in the search for completed entities to archive.")
             .register(meterRegistry);
     batchOperationsArchived =
         Counter.builder(meterName("archiver.batch.operations"))
@@ -343,6 +355,10 @@ public class CamundaExporterMetrics implements AutoCloseable {
     processInstancesArchiving.increment(count);
   }
 
+  public void recordProcessInstancesArchivingDeduplicated(final int count) {
+    processInstanceArchivingDeduplicated.increment(count);
+  }
+
   public void recordBatchOperationsArchived(final int count) {
     batchOperationsArchived.increment(count);
   }
@@ -460,6 +476,7 @@ public class CamundaExporterMetrics implements AutoCloseable {
     meterRegistry.remove(flushLatency);
     meterRegistry.remove(processInstancesArchived);
     meterRegistry.remove(processInstancesArchiving);
+    meterRegistry.remove(processInstanceArchivingDeduplicated);
     meterRegistry.remove(batchOperationsArchived);
     meterRegistry.remove(batchOperationsArchiving);
     meterRegistry.remove(archiverSearchTimer);

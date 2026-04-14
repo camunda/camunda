@@ -17,41 +17,47 @@ import java.util.concurrent.Executor;
 
 final class TestRepository extends NoopArchiverRepository {
   final List<DocumentMove> moves = new ArrayList<>();
-  ArchiveBatch batch;
+  List<ArchiveBatch> batches = List.of();
+  int currentBatchIndex = 0;
 
   public <T extends ArchiveBatch> CompletableFuture<T> getNextBatch() {
-    return CompletableFuture.completedFuture((T) batch);
+    if (batches.isEmpty()) {
+      return CompletableFuture.completedFuture(null);
+    }
+    final var index = currentBatchIndex % batches.size();
+    currentBatchIndex = index + 1;
+    return CompletableFuture.completedFuture((T) batches.get(index));
   }
 
   @Override
   public CompletableFuture<ProcessInstanceArchiveBatch> getProcessInstancesNextBatch(
       final int size) {
-    return CompletableFuture.completedFuture((ProcessInstanceArchiveBatch) batch);
+    return getNextBatch();
   }
 
   @Override
   public CompletableFuture<BasicArchiveBatch> getBatchOperationsNextBatch() {
-    return CompletableFuture.completedFuture((BasicArchiveBatch) batch);
+    return getNextBatch();
   }
 
   @Override
   public CompletableFuture<BasicArchiveBatch> getUsageMetricTUNextBatch() {
-    return CompletableFuture.completedFuture((BasicArchiveBatch) batch);
+    return getNextBatch();
   }
 
   @Override
   public CompletableFuture<BasicArchiveBatch> getUsageMetricNextBatch() {
-    return CompletableFuture.completedFuture((BasicArchiveBatch) batch);
+    return getNextBatch();
   }
 
   @Override
   public CompletableFuture<BasicArchiveBatch> getJobBatchMetricsNextBatch() {
-    return CompletableFuture.completedFuture((BasicArchiveBatch) batch);
+    return getNextBatch();
   }
 
   @Override
   public CompletableFuture<BasicArchiveBatch> getStandaloneDecisionNextBatch() {
-    return CompletableFuture.completedFuture((BasicArchiveBatch) batch);
+    return getNextBatch();
   }
 
   @Override
