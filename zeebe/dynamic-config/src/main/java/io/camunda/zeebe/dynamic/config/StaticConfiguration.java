@@ -25,6 +25,10 @@ public record StaticConfiguration(
     DynamicPartitionConfig partitionConfig,
     String clusterId) {
 
+  public boolean getIsCoordinator() {
+    return localMemberId.equals(clusterMembers.stream().min(MemberId::compareTo).orElseThrow());
+  }
+
   public int partitionCount() {
     return partitionIds.size();
   }
