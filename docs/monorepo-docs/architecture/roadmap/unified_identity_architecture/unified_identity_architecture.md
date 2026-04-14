@@ -150,9 +150,8 @@ The target architecture is based on the following assumptions:
   - In the first iterations, identity and policy data in Hub are separated only logically, via organization-aware persistence and queries in shared Hub storage.
 - In Self-Managed, there is always exactly one organization — the customer's own deployment. The `organization_id` field exists in the data model for architectural consistency with the SaaS multi-org model, but it is fixed to a single value and has no operational significance in Self-Managed. A Self-Managed deployment may own one or more OC clusters, all belonging to that single organization.
 - In full mode, each Orchestration Cluster is associated with exactly one Hub organization boundary for policy management; policies are always authored “above” the cluster in Hub and projected downward.
-  - In SaaS today, Hub itself does not own the current list of OCs. Hub must read cluster metadata from the Console backend for the Admin UI and for policy targeting.
-  - Discovering newly created OCs, and keeping the Hub-side view in sync, is still an open integration question in Self-Managed.
-    - In future Self-Managed full-mode deployments, Hub should be able to read OCs directly once the Console backend is embedded in Hub and the experimental discovery mode (`CAMUNDA_CONSOLE_EXPERIMENTAL_DISCOVERY_MODE=true`) is enabled.
+  - The library itself has no knowledge of how a host application discovers or tracks Orchestration Clusters. Cluster registration and enumeration are exposed as generic port interfaces: the host application calls `ClusterRegistrationService` (inbound port) to inform the library about new or updated clusters; the library calls `ClusterRegistryPort` (outbound port) when it needs to enumerate clusters for outbox dispatch or policy targeting.
+  - How a specific host application learns about newly created OCs — whether by querying an external service, consuming provisioning events, or reading configuration — is entirely an integration concern for the host and not part of the library.
 - In OC-only mode, the Orchestration Cluster is the local source of truth for policy; there is no Hub and therefore no cross-cluster policy coordination.
 - All engines within a given Orchestration Cluster share the same OC-level; engines never talk to IdPs directly and are not configured as OIDC/SAML clients.
   - There will be one client per IDP (could be multiple per engine); we rely on roles and claims to decide which Engines each user can access and what they can do there.
@@ -194,6 +193,7 @@ Key design principles (selected):
 - One identity plane for Hub and OC, with Hub as policy SoT whenever present.
 - One Hub runtime in SaaS, serving many organizations, with organization-aware policy partitioning in shared Hub storage.
 - SaaS / self-managed parity: same concepts (tenants, mapping rules, fine‑grained permissions, BYO IdP) in both deployment models.
+- Generic library with no product-specific code: the library contains no knowledge of how clusters are discovered or provisioned in any particular host application. All cluster lifecycle interactions go through two dedicated port interfaces — `ClusterRegistrationService` (inbound: host notifies library of new or updated clusters) and `ClusterRegistryPort` (outbound: library queries host for the current cluster list). How a host application (Hub in SaaS, Hub in Self-Managed full mode) learns about new OCs is exclusively an adapter concern and never leaks into the library domain.
 - Hexagonal architecture: all persistence, messaging, OC command creation, and engine‑level wiring are behind interfaces; default implementations can be swapped or replaced entirely.
 - IdP-agnostic: only relies on OIDC and SAML standards, so any compliant IdP can integrate.
 - Automated lifecycle and migrations: IdP claim mapping and outbox-based policy replication, with idempotent and observable migrations.
@@ -265,7 +265,7 @@ Outcome: The OC acts as local SoT for identity and policy. Users and workers can
 
 #### 3.1.5 Configure identity for a new organization (full mode: Hub + OC, long-term target)
 
-Long-term target: Org-level IdP setup and cluster provisioning are performed centrally via Hub. Early iterations may still rely on lower-level configuration on individual components and, in SaaS, on cluster metadata coming from the Console backend.
+Long-term target: Org-level IdP setup and cluster provisioning are performed centrally via Hub.
 
 - Actor: Organization administrator (Hub)
 - Goal: Connect the organization’s IdP, provision an Orchestration Cluster, and define baseline access.
@@ -275,8 +275,7 @@ Long-term target: Org-level IdP setup and cluster provisioning are performed cen
   3. Org admin creates or imports tenants (for example `default`, `retail`, `wholesale`) in the Hub Admin UI.
   4. Org admin defines mapping rules (claims → roles/tenants) and assigns baseline roles and groups for key personas (for example Cluster Admins, Developers, Support).
   5. Org admin provisions (or selects) an Orchestration Cluster and associates it with the organization/tenants.
-     - In SaaS today, this selection depends on cluster metadata read from the Console backend.
-     - In future Self-Managed full mode, the same lookup should be possible directly in Hub once the embedded Console backend is enabled with `CAMUNDA_CONSOLE_EXPERIMENTAL_DISCOVERY_MODE=true`.
+     - Cluster selection is resolved via the `ClusterRegistryPort`; the host application (Hub) provides the adapter implementation that enumerates available clusters.
   6. Hub Security Gateway Framework persists this configuration in the organization-scoped Hub partition, produces a new `PolicyVersion`, and starts outbox-based propagation to the relevant OC(s).
 
 Outcome: The organization’s IdP is connected, tenants and roles exist, and cluster-local policy is projected to the associated OCs. Cluster admins and developers can authenticate via the Enterprise IdP and start using cluster UIs and APIs, with Hub acting as the central identity and policy entry point.
@@ -624,7 +623,7 @@ The following table summarizes which information must be known to which componen
 |---------------------------------------------|-----------------------------------------------------------------|---------------------------------------------------------------------|----------------------------------|----------------------------------------|
 | IdP client credentials (client IDs/secrets) | Yes (managed centrally or per-tenant)                          | Yes (cluster-local credentials / secrets per OC / tenant / engine)  | Yes                              | No                                     |
 | IdP connections per tenant (OIDC/SAML)      | Yes (for Hub apps)                                             | Yes (for cluster-side authn)                                        | Yes                              | No (trusts OC)                         |
-| Organization / cluster ownership metadata   | Yes (organization boundary + OC lookup, currently via Console backend in SaaS) | Yes (cluster-local identity context)                                | No                               | No                                     |
+| Organization / cluster ownership metadata   | Yes (organization boundary + OC enumeration via `ClusterRegistryPort`) | Yes (cluster-local identity context)                                | No                               | No                                     |
 | Tenant                                      | Yes (SoT)                                                      | Yes (projection per cluster)                                        | Yes (SoT)                        | Indirectly via OC commands             |
 | Mapping rules (claims → roles/tenants)      | Yes (SoT)                                                      | Yes (projection per cluster)                                        | Yes                              | No                                     |
 | Roles and groups                            | Yes (SoT)                                                      | Yes (projection per cluster)                                        | Yes                              | No (only resulting permissions)        |
@@ -1148,6 +1147,7 @@ graph LR
     AC["Admin REST Controller</br>@RestController, Spring MVC"]
     PEP["PEP / Security Filter</br>Spring Security Filter Chain"]
     PAC["Policy Apply Controller</br>POST /identity/policies/apply"]
+    CREG_IN["Cluster Registration Adapter</br>triggered by provisioning events,</br>config, or any host-side mechanism"]
   end
 
   subgraph CORE["Security Gateway Framework (library)"]
@@ -1156,6 +1156,7 @@ graph LR
       AZ["AuthorizationService"]
       TS["TenantService"]
       PA["PolicyApplyService"]
+      CRS["ClusterRegistrationService</br>(HUB only)"]
     end
     DL["Domain Logic</br>(implements inbound ports,</br>calls outbound ports)"]
     subgraph OUT_PORTS["Outbound port interfaces</br>(defined in Core)"]
@@ -1164,6 +1165,7 @@ graph LR
       IDP_P["IdpPort"]
       CMD_P["EngineCommandPort</br>(OC runtime only)"]
       FT_P["FeatureTogglePort"]
+      CRX["ClusterRegistryPort</br>(HUB only)"]
     end
   end
 
@@ -1173,21 +1175,24 @@ graph LR
     IDP_I["IdpPort</br>OIDC/SAML client</br>(Keycloak, Entra, Auth0)"]
     CMD_I["EngineCommandPort</br>Engine projection command adapter</br>(OC backend service layer)"]
     FT_I["FeatureTogglePort</br>Spring @ConfigurationProperties</br>or Unleash / LaunchDarkly"]
+    CRX_I["ClusterRegistryPort</br>Hub adapter: in-memory registry</br>populated via ClusterRegistrationService"]
   end
 
   AC -->|"calls"| PS
   PEP -->|"calls"| AZ
   PAC -->|"calls"| PA
+  CREG_IN -->|"calls"| CRS
 
-  PS & AZ & TS & PA -->|"implemented by"| DL
+  PS & AZ & TS & PA & CRS -->|"implemented by"| DL
 
-  DL -->|"calls"| PR & OX & IDP_P & CMD_P & FT_P
+  DL -->|"calls"| PR & OX & IDP_P & CMD_P & FT_P & CRX
 
   PR -->|"implemented by"| PR_I
   OX -->|"implemented by"| OX_I
   IDP_P -->|"implemented by"| IDP_I
   CMD_P -->|"implemented by"| CMD_I
   FT_P -->|"implemented by"| FT_I
+  CRX -->|"implemented by"| CRX_I
 ```
 
 **Inbound port responsibilities and example usage by profile:**
@@ -1198,6 +1203,7 @@ graph LR
 | `TenantService` | Resolve and validate the active tenant context for the current request. Provides tenant-aware policy lookup and ensures tenant scoping is applied consistently before authorization decisions are made. | `HUB`, `OC_MANAGED`, `OC_STANDALONE` | Request filter, tenant resolver, REST controller support |
 | `PolicyService` | Handle policy authoring and policy read operations in the local source-of-truth runtime. Validates and persists changes to tenants, roles, groups, mapping rules, principals, and authorizations. | `HUB`, `OC_STANDALONE` | Admin REST controller, Admin UI backend |
 | `PolicyApplyService` | Accept and apply externally produced policy payloads (`POLICY_SNAPSHOT`, `POLICY_DIFF`) to the local projection. Performs version checks, idempotency handling, and apply orchestration. | `OC_MANAGED` | `POST /identity/policies/apply` controller |
+| `ClusterRegistrationService` | Accept cluster registration and update notifications from the host application. The host calls this port when a new cluster is discovered or an existing cluster's metadata changes (name, organization scope, etc.). | `HUB` | Hub adapter triggered by provisioning events, configuration, or any other host-side discovery mechanism |
 
 **Outbound port responsibilities and example usage by profile:**
 
@@ -1209,6 +1215,7 @@ graph LR
 | `EngineCommandPort` | Emit engine-scoped projection commands from OC to engines after local apply or local authoring changes. | `OC_MANAGED`, `OC_STANDALONE` | OC engine command adapter backed by engine command handling                      |
 | `FeatureTogglePort` | Expose runtime feature switches for mode-gated behavior (for example outbox dispatch, shadow evaluation). | `HUB`, `OC_MANAGED`, `OC_STANDALONE` | Spring `@ConfigurationProperties` adapter, Unleash adapter, LaunchDarkly adapter |
 | `SessionStore` | Persist and retrieve authenticated sessions (create, read, update, delete, cleanup). | `HUB`, `OC_MANAGED`, `OC_STANDALONE` | Redis adapter, SQL session adapter, in-memory adapter                            |
+| `ClusterRegistryPort` | Retrieve the current list of known clusters for a given organization scope. Called by the library when enumerating targets for outbox dispatch, policy targeting, or Admin UI listing. The host application provides the implementation; the library has no opinion on how the host populates this list. | `HUB` | Hub adapter backed by an in-memory registry populated via `ClusterRegistrationService`, a local DB, or any other host-side cluster store |
 
 This design guarantees that **swapping a database, replacing the IdP client, or providing a custom command backend requires only a new adapter class** — no changes to the domain core.
 
@@ -1220,11 +1227,11 @@ Hub enforces AuthN/AuthZ for its own application scope: Console, Web Modeler, an
 
 **Security Gateway Framework responsibilities by profile:**
 
-| Profile | AuthN/AuthZ enforcement | Policy source | Policy authoring | Outbox dispatch to OCs | Engine projection | Runtime context |
-|---|---|---|---|---|---|---|
-| `HUB` | ✅ Hub-scoped (org, workspace, cluster resources) | Hub is SoT | ✅ via Admin UI/API | ✅ via `OutboxPort` | ❌ no engines in Hub | Hub authentication and policy management for Hub applications |
-| `OC_MANAGED` | ✅ Cluster-scoped (engine, tenant, task resources) | Receives from Hub | ❌ (read-only) | ❌ | ✅ via `EngineCommandPort` | OC receives policy via `/identity/policies/apply` endpoint from Hub; enforces for all cluster requests |
-| `OC_STANDALONE` | ✅ Cluster-scoped (engine, tenant, task resources) | OC is local SoT | ✅ via Admin UI/API | ❌ | ✅ via `EngineCommandPort` | OC is fully autonomous; local policy authoring and engine projection |
+| Profile | AuthN/AuthZ enforcement | Policy source | Policy authoring | Outbox dispatch to OCs | Engine projection | Cluster registry | Runtime context |
+|---|---|---|---|---|---|---|---|
+| `HUB` | ✅ Hub-scoped (org, workspace, cluster resources) | Hub is SoT | ✅ via Admin UI/API | ✅ via `OutboxPort` | ❌ no engines in Hub | ✅ `ClusterRegistrationService` + `ClusterRegistryPort` | Hub authentication and policy management for Hub applications |
+| `OC_MANAGED` | ✅ Cluster-scoped (engine, tenant, task resources) | Receives from Hub | ❌ (read-only) | ❌ | ✅ via `EngineCommandPort` | ❌ | OC receives policy via `/identity/policies/apply` endpoint from Hub; enforces for all cluster requests |
+| `OC_STANDALONE` | ✅ Cluster-scoped (engine, tenant, task resources) | OC is local SoT | ✅ via Admin UI/API | ❌ | ✅ via `EngineCommandPort` | ❌ | OC is fully autonomous; local policy authoring and engine projection |
 
 ```mermaid
 flowchart TB
@@ -1236,11 +1243,11 @@ flowchart TB
 
   Core["Always-on core<br>Spring Security filter chain<br>Scope resolver + Session handling<br>IdpPort (all modes)"]
 
-  Hub --> HubIn["Inbound ports enabled:<br>AuthorizationService, TenantService, PolicyService"]
+  Hub --> HubIn["Inbound ports enabled:<br>AuthorizationService, TenantService, PolicyService,<br>ClusterRegistrationService"]
   OCM --> OCMIn["Inbound ports enabled:<br>AuthorizationService, TenantService, PolicyApplyService"]
   OCS --> OCSIn["Inbound ports enabled:<br>AuthorizationService, TenantService, PolicyService"]
 
-  Hub --> HubPorts["Outbound ports required:<br>PolicyRepository, IdpPort, OutboxPort, SessionStore"]
+  Hub --> HubPorts["Outbound ports required:<br>PolicyRepository, IdpPort, OutboxPort,<br>SessionStore, ClusterRegistryPort"]
   OCM --> OCMPorts["Outbound ports required:<br>PolicyRepository, IdpPort, EngineCommandPort, SessionStore"]
   OCS --> OCSPorts["Outbound ports required:<br>PolicyRepository, IdpPort, EngineCommandPort, SessionStore"]
 ```
@@ -1260,6 +1267,7 @@ flowchart LR
   subgraph HubRuntime["HUB runtime only"]
     HubAuthoring["Policy authoring<br>(Hub-scoped: org/workspace/cluster)"]
     HubOutbox["Outbox dispatcher<br>(PolicyVersion + OutboxPort)"]
+    HubCluster["Cluster registry<br>(ClusterRegistrationService ← host<br>ClusterRegistryPort → host adapter)"]
     HubAuthoring --> HubOutbox
   end
 
@@ -1482,7 +1490,7 @@ This section illustrates selected runtime flows as concrete user journeys, focus
 2. Hub Security Gateway Framework authenticates the user against the configured IdP for the Hub organization and derives roles/tenants via mapping rules.
 3. Admin creates or updates tenants, roles, mapping rules, and authorizations for a specific Orchestration Cluster in the Admin UI.
 4. Hub Security Gateway Framework:
-  - Resolves the organization and target cluster context (with cluster metadata currently coming from the Console backend in SaaS).
+  - Resolves the organization and target cluster context via `ClusterRegistryPort`.
   - Validates and persists the changes in the Hub DB under that organization scope.
   - Writes a new `PolicyVersion` and associated `EntityRevision` and `PolicyVersionChange` rows.
   - Writes one or more `OutboxEvent`s in status `PENDING` for the affected OCs.
@@ -1653,7 +1661,7 @@ An advanced Self-Managed topology where the customer also operates Hub. Hub beco
 
 - Hub and all OC instances are deployed and operated by the customer on their own infrastructure.
 - The Enterprise IdP is integrated at both Hub (management plane auth) and OC (execution plane auth) levels.
-- Cluster discovery in Hub becomes feasible once the Console backend is hosted in Hub and the experimental discovery mode (`CAMUNDA_CONSOLE_EXPERIMENTAL_DISCOVERY_MODE=true`) is enabled.
+- Cluster discovery and registration are handled via the `ClusterRegistryPort` and `ClusterRegistrationService` ports; the host application's adapter determines how new OCs are discovered and registered.
 - Policy flows top-down: Hub → OC → Engine, same as in SaaS, but without a Camunda-operated broker.
 - Suitable for large-scale or multi-cluster Self-Managed environments requiring centralized policy governance.
 
@@ -1708,8 +1716,7 @@ In SaaS, Camunda operates one shared Hub instance for many customer organization
 - One shared Hub instance serves **many organizations** (one per customer); policy and identity data in Hub must therefore be partitioned by organization. Each organization owns one or more OC clusters. This is in direct contrast to Self-Managed, where there is always exactly one organization.
 - In the first iterations, this partitioning is logical only: shared Hub databases and infrastructure are reused, while policy tables and queries are keyed by `organization_id`.
 - Each OC remains associated with exactly one organization boundary for policy propagation.
-- Today, Hub does not own orchestration-cluster metadata directly in SaaS. To show/select OCs and target policy rollout, Hub must query the Console backend.
-- Discovering newly created OCs, and deciding how Hub learns about them without drifting from Console, remains an open question.
+- Cluster enumeration and registration in Hub are handled via `ClusterRegistryPort` (outbound) and `ClusterRegistrationService` (inbound) ports. How Hub's adapter implementation populates the cluster registry is a host-application integration concern, not a library concern.
 - During migration, SaaS may still keep Auth0 or another broker as an internal implementation detail; this does not change the target policy model.
 
 ```mermaid
@@ -1722,14 +1729,12 @@ flowchart TB
       Console["Console"]
       WebModeler["Web Modeler"]
       AdminHub["Admin UI (read/write)"]
-      ConsoleBackend["Console backend / cluster registry"]
 
       subgraph Hub["Shared Hub"]
         SecGatHub["Security Gateway Framework"]
       end
 
       Console & WebModeler & AdminHub --> Hub
-      Hub --> ConsoleBackend
     end
 
     subgraph OrgA["Organization A"]
@@ -1774,9 +1779,7 @@ This unified architecture builds on existing identity arc42 docs and ADRs for OC
 - Exact SPI boundaries for OC/engine command creation.
 - Migration path from current Auth0-based SaaS setup to “Enterprise IdP as SoT” while keeping Auth0 as a private implementation detail.
 - If the endpoints to apply policy changes are public, Hub will not be aware of what a customer applies to OC and will run out of sync.
-- Which data should be persisted directly by security gateway (like sessions) and which should go via engine / exporter? (We will need policy metadata, but this is not of interest for the engine so will not be part of any record through the engine)
 - How can we apply a snapshot multiple times? How could we reset the projections in primary and secondary storage?
-- How Hub should discover newly created OCs in SaaS while the authoritative cluster list still lives in the Console backend, and how that evolves once Console is embedded in Hub for Self-Managed with `CAMUNDA_CONSOLE_EXPERIMENTAL_DISCOVERY_MODE=true`.
 
 ### 9.2 Detailed ADRs
 
