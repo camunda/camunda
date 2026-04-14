@@ -145,10 +145,12 @@ services:
       - zeebe_network
 
   postgres-primary:
-    image: bitnamilegacy/postgresql:15
+    image: bitnamilegacy/postgresql:17
     container_name: pg-primary
     ports:
       - "5432:5432"
+    volumes:
+      - ./docker-compose-init/01-grant-pg-read-all-stats.sql:/docker-entrypoint-initdb.d/01-grant-pg-read-all-stats.sql:ro
     environment:
       - POSTGRESQL_POSTGRES_PASSWORD=camunda
       - POSTGRES_USER=camunda
@@ -161,7 +163,7 @@ services:
       - pgnet
 
   postgres-replica-1:
-    image: bitnamilegacy/postgresql:15
+    image: bitnamilegacy/postgresql:17
     container_name: pg-replica1
     depends_on:
       - postgres-primary
@@ -178,7 +180,7 @@ services:
       - pgnet
 
   postgres-replica-2:
-    image: bitnamilegacy/postgresql:15
+    image: bitnamilegacy/postgresql:17
     container_name: pg-replica2
     depends_on:
       - postgres-primary
