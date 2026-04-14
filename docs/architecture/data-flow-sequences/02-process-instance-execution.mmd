@@ -1,0 +1,54 @@
+%% Journey 2: Process Instance Execution
+%% Create a process instance, execute a service task via job worker, complete.
+
+sequenceDiagram
+    autonumber
+    participant Client as Client App
+    participant GW as Gateway (REST / gRPC)
+    participant Broker as Broker
+    participant Engine as Engine
+    participant Log as Log Stream
+    participant State as State Store
+    participant Worker as Job Worker
+    participant CExp as Camunda Exporter
+    participant ES as Elasticsearch
+    participant Operate as Operate
+
+    Client->>GW: Create process instance (REST or gRPC)
+    GW->>Broker: BrokerCreateProcessInstanceRequest
+    Broker->>Engine: PROCESS_INSTANCE_CREATION:CREATE
+    Engine->>State: Create instance state
+    Engine->>Log: PROCESS_INSTANCE:ACTIVATED
+    Engine->>Log: ELEMENT_ACTIVATING → ELEMENT_ACTIVATED (start event)
+
+    Note over Engine,Log: Engine advances through BPMN elements
+
+    Engine->>Log: JOB:CREATED (for service task)
+    Engine->>State: Store Job record
+    Log->>CExp: Export all events
+    CExp->>ES: Index process instance, flow nodes, jobs
+    Operate->>ES: Query running instances
+
+    Note over Worker,GW: Job Worker activates & completes job
+
+    Worker->>GW: ActivateJobs (gRPC stream or REST)
+    GW->>Broker: BrokerActivateJobsRequest
+    Broker->>Engine: JOB_BATCH:ACTIVATE
+    Engine->>Log: JOB:ACTIVATED
+    Engine-->>Worker: Activated job (via gateway)
+
+    Worker->>Worker: Execute business logic
+
+    Worker->>GW: CompleteJob (with result variables)
+    GW->>Broker: BrokerCompleteJobRequest
+    Broker->>Engine: JOB:COMPLETE
+    Engine->>State: Update job + variables
+    Engine->>Log: JOB:COMPLETED
+    Engine->>Log: VARIABLE:CREATED (result variables)
+
+    Note over Engine,Log: Engine continues to next element(s)
+
+    Engine->>Log: ELEMENT_COMPLETING → ELEMENT_COMPLETED (end event)
+    Engine->>Log: PROCESS_INSTANCE:COMPLETED
+    Log->>CExp: Export completion events
+    CExp->>ES: Update instance state to COMPLETED

@@ -1,204 +1,115 @@
-%% Camunda 8 — Data-Flow Diagram
-%% Shows four key data journeys through the system.
+%% Camunda 8 — Data-Flow Overview
+%% Shows how data enters, flows through, and exits the system.
 %% Renderable with any Mermaid-compatible viewer (GitHub, VS Code, etc.)
+%%
+%% This is a single flowchart covering all four key data journeys.
+%% For detailed step-by-step sequence diagrams of each journey, see:
+%%   data-flow-sequences/01-deploy-process-definition.mmd
+%%   data-flow-sequences/02-process-instance-execution.mmd
+%%   data-flow-sequences/03-user-task-lifecycle.mmd
+%%   data-flow-sequences/04-export-record-pipeline.mmd
 
-%% ═══════════════════════════════════════════════════════════════
-%% Journey 1: Process Definition Deployment
-%% ═══════════════════════════════════════════════════════════════
+flowchart LR
+    %% ── External Actors ──────────────────────────────────────────
+    Dev["👨‍💻 Developer"]
+    Worker["⚙️ Job Worker"]
+    EndUser["👤 End User"]
 
-sequenceDiagram
-    autonumber
-    participant Dev as Developer / Modeler
-    participant GW as Gateway<br/>(REST / gRPC)
-    participant Auth as Auth Layer
-    participant Broker as Broker
-    participant Engine as Engine
-    participant Log as Log Stream
-    participant State as State Store<br/>(RocksDB)
-    participant CExp as Camunda Exporter
-    participant RExp as RDBMS Exporter
-    participant ES as Elasticsearch /<br/>OpenSearch
-    participant DB as RDBMS
-    participant Operate as Operate
-    participant Tasklist as Tasklist
+    %% ── Gateways ─────────────────────────────────────────────────
+    subgraph GW ["API Gateway"]
+        REST["REST /v2"]
+        GRPC["gRPC"]
+    end
 
-    Note over Dev,Tasklist: 🔵 Journey 1 — Deploy a Process Definition
+    %% ── Zeebe Core ───────────────────────────────────────────────
+    subgraph Core ["Zeebe Core (per partition)"]
+        Engine["Engine<br/>(BPMN / DMN)"]
+        Log["Log Stream"]
+        State["State Store<br/>(RocksDB)"]
+    end
 
-    Dev->>GW: Deploy BPMN resource<br/>(REST POST /v2/deployments<br/>or gRPC DeployResource)
-    GW->>Auth: Authenticate & authorize
-    Auth-->>GW: ✅ Allowed
-    GW->>Broker: BrokerDeployResourceRequest<br/>(routed to partition 1)
-    Broker->>Engine: DEPLOYMENT:CREATE command
-    Engine->>Engine: Parse & validate BPMN<br/>(bpmn-model)
-    Engine->>State: Store ProcessDefinition
-    Engine->>Log: Write DEPLOYMENT:CREATED event
-    Engine->>Log: Write PROCESS:CREATED event
-    Log->>CExp: Export DEPLOYMENT + PROCESS records
-    CExp->>ES: Bulk index to<br/>process-definition index
-    Log->>RExp: Export DEPLOYMENT + PROCESS records
-    RExp->>DB: INSERT into<br/>process_definition table
-    Note over Operate,Tasklist: Webapps query secondary storage
-    Operate->>ES: Search process definitions
-    Tasklist->>ES: Search startable processes
+    %% ── Exporters ────────────────────────────────────────────────
+    subgraph Exp ["Exporters"]
+        CamExp["Camunda Exporter"]
+        RDBMSExp["RDBMS Exporter"]
+    end
 
-%% ═══════════════════════════════════════════════════════════════
-%% Journey 2: Process Instance Execution
-%% ═══════════════════════════════════════════════════════════════
+    %% ── Secondary Storage ────────────────────────────────────────
+    ES["Elasticsearch /<br/>OpenSearch"]
+    DB["RDBMS"]
 
-sequenceDiagram
-    autonumber
-    participant Client as Client App
-    participant GW as Gateway<br/>(REST / gRPC)
-    participant Broker as Broker
-    participant Engine as Engine
-    participant Log as Log Stream
-    participant State as State Store
-    participant Worker as Job Worker
-    participant CExp as Camunda Exporter
-    participant ES as Elasticsearch
-    participant Operate as Operate
+    %% ── Search Abstraction ───────────────────────────────────────
+    Search["Search Client"]
 
-    Note over Client,Operate: 🟢 Journey 2 — Execute a Process Instance
+    %% ── Webapps ──────────────────────────────────────────────────
+    subgraph Webapps ["Webapps"]
+        Operate["Operate"]
+        Tasklist["Tasklist"]
+        Optimize["Optimize"]
+    end
 
-    Client->>GW: Create process instance<br/>(REST POST /v2/process-instances<br/>or gRPC CreateProcessInstance)
-    GW->>Broker: BrokerCreateProcessInstanceRequest
-    Broker->>Engine: PROCESS_INSTANCE_CREATION:CREATE
-    Engine->>State: Create instance state
-    Engine->>Log: PROCESS_INSTANCE:ACTIVATED
-    Engine->>Log: PROCESS_INSTANCE:ELEMENT_ACTIVATING<br/>(start event)
-    Engine->>Log: PROCESS_INSTANCE:ELEMENT_ACTIVATED<br/>(start event)
+    %% ═══════════════════════════════════════════════════════════
+    %% Journey 1 — Deploy Process Definition (blue)
+    %% Dev → Gateway → Engine → Log → Exporter → ES → Operate
+    %% ═══════════════════════════════════════════════════════════
+    Dev -- "1. Deploy BPMN<br/>(REST/gRPC)" --> REST & GRPC
+    REST & GRPC -- "2. DEPLOYMENT:CREATE<br/>command" --> Engine
+    Engine -- "3. Parse & validate<br/>(bpmn-model)" --> Engine
+    Engine -- "4. Store definition" --> State
+    Engine -- "5. DEPLOYMENT:CREATED<br/>+ PROCESS:CREATED" --> Log
 
-    Note over Engine,Log: Engine advances through BPMN elements
+    %% ═══════════════════════════════════════════════════════════
+    %% Journey 2 — Process Instance Execution (green)
+    %% Client → Gateway → Engine → Job Worker → Engine → Log
+    %% ═══════════════════════════════════════════════════════════
+    Dev -- "6. Create instance" --> REST & GRPC
+    REST & GRPC -- "7. PI_CREATION:CREATE" --> Engine
+    Engine -- "8. Activate elements,<br/>create jobs" --> Log
+    Engine -- "9. Update state" --> State
+    GRPC -- "10. ActivateJobs" --- Worker
+    Worker -- "11. CompleteJob<br/>(+ result vars)" --> GRPC
+    GRPC -- "12. JOB:COMPLETE" --> Engine
+    Engine -- "13. JOB:COMPLETED<br/>+ advance flow" --> Log
 
-    Engine->>Log: JOB:CREATED<br/>(for service task)
-    Engine->>State: Store Job record
-    Log->>CExp: Export all events
-    CExp->>ES: Index process instance,<br/>flow nodes, jobs
-    Operate->>ES: Query running instances
+    %% ═══════════════════════════════════════════════════════════
+    %% Journey 3 — User Task (orange)
+    %% Engine → Log → Exporter → ES → Tasklist → User → Engine
+    %% ═══════════════════════════════════════════════════════════
+    Engine -- "14. USER_TASK:CREATED" --> Log
+    EndUser -- "15. View tasks" --> Tasklist
+    Tasklist -- "16. Search tasks" --> Search
+    EndUser -- "17. Claim & complete" --> Tasklist
+    Tasklist -- "18. Assign / Complete<br/>(REST)" --> REST
+    REST -- "19. USER_TASK:COMPLETE" --> Engine
+    Engine -- "20. USER_TASK:COMPLETED<br/>+ advance" --> Log
 
-    Note over Worker,GW: Job Worker activates & completes job
+    %% ═══════════════════════════════════════════════════════════
+    %% Journey 4 — Export Pipeline (purple)
+    %% Log → ExporterDirector → Exporter → ES/RDBMS → Webapps
+    %% ═══════════════════════════════════════════════════════════
+    Log -- "21. Stream all records<br/>(any ValueType × Intent)" --> CamExp
+    Log -- "21. Stream all records" --> RDBMSExp
+    CamExp -- "22. Bulk index<br/>(HTTP)" --> ES
+    RDBMSExp -- "23. INSERT/UPDATE<br/>(JDBC)" --> DB
+    ES --> Search
+    DB --> Search
+    Search -- "24. Query results" --> Operate
+    Search -- "24. Query results" --> Tasklist
+    ES -- "25. Aggregation<br/>queries" --> Optimize
 
-    Worker->>GW: ActivateJobs (gRPC stream<br/>or REST POST /v2/jobs/activation)
-    GW->>Broker: BrokerActivateJobsRequest
-    Broker->>Engine: JOB_BATCH:ACTIVATE
-    Engine->>Log: JOB:ACTIVATED
-    Engine-->>Worker: Activated job<br/>(via gateway)
+    %% ── Styles ───────────────────────────────────────────────────
+    classDef actor fill:#e1bee7,stroke:#6a1b9a
+    classDef gateway fill:#c8e6c9,stroke:#2e7d32
+    classDef core fill:#fff9c4,stroke:#f9a825
+    classDef exporter fill:#d1c4e9,stroke:#4527a0
+    classDef storage fill:#ffe0b2,stroke:#e65100
+    classDef webapp fill:#bbdefb,stroke:#1565c0
+    classDef search fill:#b2dfdb,stroke:#00695c
 
-    Worker->>Worker: Execute business logic
-
-    Worker->>GW: CompleteJob<br/>(with result variables)
-    GW->>Broker: BrokerCompleteJobRequest
-    Broker->>Engine: JOB:COMPLETE
-    Engine->>State: Update job + variables
-    Engine->>Log: JOB:COMPLETED
-    Engine->>Log: VARIABLE:CREATED<br/>(result variables)
-
-    Note over Engine,Log: Engine continues to next element(s)
-
-    Engine->>Log: PROCESS_INSTANCE:ELEMENT_COMPLETING<br/>(end event)
-    Engine->>Log: PROCESS_INSTANCE:COMPLETED
-    Log->>CExp: Export completion events
-    CExp->>ES: Update instance state<br/>to COMPLETED
-
-%% ═══════════════════════════════════════════════════════════════
-%% Journey 3: User Task Lifecycle
-%% ═══════════════════════════════════════════════════════════════
-
-sequenceDiagram
-    autonumber
-    participant Engine as Engine
-    participant Log as Log Stream
-    participant CExp as Camunda Exporter
-    participant ES as Elasticsearch
-    participant TL as Tasklist
-    participant User as End User
-    participant GW as Gateway<br/>(REST)
-    participant Broker as Broker
-
-    Note over Engine,Broker: 🟠 Journey 3 — User Task Lifecycle
-
-    Engine->>Log: USER_TASK:CREATING<br/>(engine hits user task element)
-    Engine->>Log: USER_TASK:CREATED
-    Log->>CExp: Export USER_TASK records
-    CExp->>ES: Index user task<br/>(state: CREATED)
-
-    User->>TL: Open Tasklist UI
-    TL->>ES: Search user tasks<br/>(filtered by assignee / candidate)
-    ES-->>TL: Task list
-    TL-->>User: Display tasks
-
-    User->>TL: Claim task
-    TL->>GW: POST /v2/user-tasks/{id}/assignment
-    GW->>Broker: BrokerAssignUserTaskRequest
-    Broker->>Engine: USER_TASK:ASSIGN
-    Engine->>Log: USER_TASK:ASSIGNED
-    Log->>CExp: Export assignment
-    CExp->>ES: Update task assignee
-
-    User->>User: Fill in form / provide data
-
-    User->>TL: Complete task
-    TL->>GW: POST /v2/user-tasks/{id}/completion
-    GW->>Broker: BrokerCompleteUserTaskRequest
-    Broker->>Engine: USER_TASK:COMPLETE
-    Engine->>Log: USER_TASK:COMPLETED
-    Engine->>Log: VARIABLE:CREATED<br/>(form output)
-
-    Note over Engine,Log: Engine advances process<br/>past user task
-
-    Log->>CExp: Export completion
-    CExp->>ES: Update task state<br/>to COMPLETED
-
-%% ═══════════════════════════════════════════════════════════════
-%% Journey 4: Export Record Pipeline
-%% ═══════════════════════════════════════════════════════════════
-
-sequenceDiagram
-    autonumber
-    participant Engine as Engine
-    participant Log as Log Stream
-    participant ExDir as Exporter Director<br/>(Broker)
-    participant CExp as Camunda Exporter
-    participant RExp as RDBMS Exporter
-    participant ES as Elasticsearch /<br/>OpenSearch
-    participant DB as RDBMS
-    participant Search as Search Client<br/>(Abstraction)
-    participant Svc as Service Layer
-    participant Operate as Operate
-    participant Tasklist as Tasklist
-    participant Optimize as Optimize
-
-    Note over Engine,Optimize: 🟣 Journey 4 — Export Record Pipeline
-
-    Engine->>Log: Append record<br/>(any ValueType × Intent)
-
-    Note over Log,ExDir: Exporter Director reads<br/>from log position
-
-    ExDir->>CExp: record (position N)
-    CExp->>CExp: Handler selection<br/>(83 handlers by ValueType)
-    CExp->>CExp: Transform to<br/>ES/OS document
-    CExp->>ES: Bulk index request<br/>(HTTP)
-    ES-->>CExp: Ack
-    CExp->>ExDir: Update exported position
-
-    ExDir->>RExp: record (position N)
-    RExp->>RExp: Handler selection<br/>(42 handlers by ValueType)
-    RExp->>RExp: Transform to<br/>DB model
-    RExp->>DB: INSERT / UPDATE<br/>(JDBC / MyBatis)
-    DB-->>RExp: Ack
-    RExp->>ExDir: Update exported position
-
-    Note over ES,Optimize: Webapps read from secondary storage<br/>(eventually consistent)
-
-    Operate->>Search: Search process instances
-    Search->>ES: HTTP query
-    ES-->>Search: Results
-    Search-->>Operate: ProcessInstanceEntity[]
-
-    Tasklist->>Search: Search user tasks
-    Search->>DB: JDBC query<br/>(if RDBMS mode)
-    DB-->>Search: Results
-    Search-->>Tasklist: UserTaskEntity[]
-
-    Optimize->>ES: Analytics queries<br/>(aggregations)
-    ES-->>Optimize: Aggregated data
+    class Dev,Worker,EndUser actor
+    class REST,GRPC gateway
+    class Engine,Log,State core
+    class CamExp,RDBMSExp exporter
+    class ES,DB storage
+    class Operate,Tasklist,Optimize webapp
+    class Search search
