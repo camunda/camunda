@@ -63,6 +63,7 @@ public final class ClusterCfg implements ConfigurationEntry {
 
   private List<Integer> partitionIds;
   private Integer nodeId = 0;
+
   /**
    * The region this broker belongs to. When set, the partitioning scheme must be {@link
    * io.camunda.zeebe.broker.system.configuration.partitioning.Scheme#REGION_AWARE} and the broker's
@@ -76,6 +77,7 @@ public final class ClusterCfg implements ConfigurationEntry {
    * <p>Environment variable: {@code CAMUNDA_CLUSTER_REGION}.
    */
   private String region;
+
   // TODO add javaDoc
   private Long nodeVersion = 0L;
   private String clusterId;
