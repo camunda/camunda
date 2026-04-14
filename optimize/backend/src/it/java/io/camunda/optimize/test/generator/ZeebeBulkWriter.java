@@ -7,7 +7,6 @@
  */
 package io.camunda.optimize.test.generator;
 
-import co.elastic.clients.elasticsearch._types.Refresh;
 import co.elastic.clients.elasticsearch.core.BulkRequest;
 import co.elastic.clients.elasticsearch.core.BulkResponse;
 import co.elastic.clients.elasticsearch.core.bulk.BulkOperation;
@@ -31,6 +30,9 @@ import org.slf4j.LoggerFactory;
 class ZeebeBulkWriter {
 
   private static final Logger LOG = LoggerFactory.getLogger(ZeebeBulkWriter.class);
+  private static final int MAX_RETRIES = 4;
+  private static final long RETRY_BACKOFF_MS = 5_000L;
+
   private final OptimizeElasticsearchClient esClient;
   private final int batchSize;
 
@@ -102,26 +104,52 @@ class ZeebeBulkWriter {
     sliceOps(ops).forEach(slice -> sendBulkSlice(index, slice));
   }
 
-  /** Sends one pre-sized slice of bulk operations and logs any per-item errors. */
+  /**
+   * Sends one pre-sized slice of bulk operations with exponential-backoff retries. A fresh {@link
+   * BulkRequest} is built on each attempt so the request is not reused after a partial send.
+   */
   private void sendBulkSlice(final String index, final List<BulkOperation> slice) {
-    final BulkRequest request = buildBulkRequest(index, slice);
-    try {
-      final BulkResponse response = esClient.getEsClient().bulk(request);
-      if (response.errors()) {
-        final long failures =
-            response.items().stream().filter(item -> item.error() != null).count();
-        LOG.warn("{} bulk errors for index '{}'", failures, index);
+    IOException lastException = null;
+    for (int attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+      try {
+        final BulkRequest request = buildBulkRequest(index, slice);
+        final BulkResponse response = esClient.getEsClient().bulk(request);
+        if (response.errors()) {
+          final long failures =
+              response.items().stream().filter(item -> item.error() != null).count();
+          LOG.warn("{} bulk errors for index '{}'", failures, index);
+        }
+        return;
+      } catch (final IOException e) {
+        lastException = e;
+        if (attempt < MAX_RETRIES) {
+          final long delay = RETRY_BACKOFF_MS * attempt;
+          LOG.warn(
+              "Bulk insert attempt {}/{} failed for index '{}' ({}); retrying in {} ms",
+              attempt,
+              MAX_RETRIES,
+              index,
+              e.getMessage(),
+              delay);
+          try {
+            Thread.sleep(delay);
+          } catch (final InterruptedException ie) {
+            Thread.currentThread().interrupt();
+            throw new OptimizeRuntimeException(
+                "Interrupted during bulk retry for index: " + index, ie);
+          }
+        }
       }
-    } catch (final IOException e) {
-      throw new OptimizeRuntimeException("Bulk insert failed for index: " + index, e);
     }
+    throw new OptimizeRuntimeException(
+        "Bulk insert failed after " + MAX_RETRIES + " attempts for index: " + index, lastException);
   }
 
   /** Builds a {@link BulkRequest} targeting {@code index} with the given operations. */
   private static BulkRequest buildBulkRequest(final String index, final List<BulkOperation> slice) {
     return BulkRequest.of(
         b -> {
-          b.index(index).refresh(Refresh.True);
+          b.index(index);
           slice.forEach(b::operations);
           return b;
         });
