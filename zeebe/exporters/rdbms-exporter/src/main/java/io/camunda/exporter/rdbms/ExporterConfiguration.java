@@ -43,6 +43,7 @@ public class ExporterConfiguration {
   private CacheConfiguration processCache = new CacheConfiguration();
   private CacheConfiguration decisionRequirementsCache = new CacheConfiguration();
   private CacheConfiguration batchOperationCache = new CacheConfiguration();
+  private AsyncReplicationConfiguration asyncReplication = new AsyncReplicationConfiguration();
 
   public AuditLogConfiguration getAuditLog() {
     return auditLog;
@@ -141,6 +142,14 @@ public class ExporterConfiguration {
     this.insertBatching = insertBatching;
   }
 
+  public AsyncReplicationConfiguration getAsyncReplication() {
+    return asyncReplication;
+  }
+
+  public void setAsyncReplication(final AsyncReplicationConfiguration asyncReplication) {
+    this.asyncReplication = asyncReplication;
+  }
+
   public void validate() {
 
     final List<String> errors = new ArrayList<>(history.validate());
@@ -187,6 +196,8 @@ public class ExporterConfiguration {
               "batchOperationCache.maxSize must be greater than 0 but was %d",
               batchOperationCache.getMaxSize()));
     }
+
+    errors.addAll(asyncReplication.validate());
 
     if (!errors.isEmpty()) {
       throw new ExporterException(
@@ -295,6 +306,8 @@ public class ExporterConfiguration {
         + decisionRequirementsCache
         + ", batchOperationCache="
         + batchOperationCache
+        + ", asyncReplication.enabled="
+        + asyncReplication.enabled
         + '}';
   }
 
@@ -608,6 +621,40 @@ public class ExporterConfiguration {
 
     public void setMaxHistoryCleanupUsage(final double maxHistoryCleanupUsage) {
       this.maxHistoryCleanupUsage = maxHistoryCleanupUsage;
+    }
+  }
+
+  public static class AsyncReplicationConfiguration {
+    public static final Duration DEFAULT_POLLING_INTERVAL = Duration.ofSeconds(15);
+
+    private boolean enabled = false;
+    private Duration pollingInterval = DEFAULT_POLLING_INTERVAL;
+
+    public boolean isEnabled() {
+      return enabled;
+    }
+
+    public void setEnabled(final boolean enabled) {
+      this.enabled = enabled;
+    }
+
+    public Duration getPollingInterval() {
+      return pollingInterval;
+    }
+
+    public void setPollingInterval(final Duration pollingInterval) {
+      this.pollingInterval = pollingInterval;
+    }
+
+    public List<String> validate() {
+      final List<String> errors = new ArrayList<>();
+      if (enabled && (pollingInterval.isNegative() || pollingInterval.isZero())) {
+        errors.add(
+            String.format(
+                "asyncReplication.pollingInterval must be a positive duration but was %s",
+                pollingInterval));
+      }
+      return errors;
     }
   }
 }
