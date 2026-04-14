@@ -20,8 +20,12 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.databind.module.SimpleModule;
 import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.command.InternalClientException;
+import io.camunda.client.impl.http.StringFilterPropertyDeserializer;
+import io.camunda.client.impl.http.StringFilterPropertySerializer;
+import io.camunda.client.protocol.rest.StringFilterProperty;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Map;
@@ -45,6 +49,10 @@ public final class CamundaObjectMapper implements JsonMapper {
     this.objectMapper
         .configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false)
         .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+    final SimpleModule module = new SimpleModule("camunda-client");
+    module.addSerializer(StringFilterProperty.class, new StringFilterPropertySerializer());
+    module.addDeserializer(StringFilterProperty.class, new StringFilterPropertyDeserializer());
+    this.objectMapper.registerModule(module);
   }
 
   @Override

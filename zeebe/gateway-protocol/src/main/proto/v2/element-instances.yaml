@@ -298,7 +298,7 @@ components:
         elementId:
           description: The element ID for this element instance.
           allOf:
-            - $ref: 'filters.yaml#/components/schemas/StringFilterProperty'
+            - $ref: 'identifiers.yaml#/components/schemas/ElementIdFilterProperty'
         elementName:
           description: >
             The element name. This only works for data created with 8.8 and onwards.

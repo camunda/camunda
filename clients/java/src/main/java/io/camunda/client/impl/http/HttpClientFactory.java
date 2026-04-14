@@ -17,11 +17,13 @@ package io.camunda.client.impl.http;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.module.SimpleModule;
 import io.camunda.client.CamundaClientConfiguration;
 import io.camunda.client.CredentialsProvider;
 import io.camunda.client.impl.NoopCredentialsProvider;
 import io.camunda.client.impl.util.AddressUtil;
 import io.camunda.client.impl.util.VersionUtil;
+import io.camunda.client.protocol.rest.StringFilterProperty;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -71,8 +73,17 @@ public class HttpClientFactory {
   /** The versioned base REST API context path the client uses for requests */
   public static final String REST_API_PATH = "/v2";
 
-  private static final ObjectMapper JSON_MAPPER =
-      new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+  private static final ObjectMapper JSON_MAPPER = createJsonMapper();
+
+  private static ObjectMapper createJsonMapper() {
+    final ObjectMapper mapper =
+        new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+    final SimpleModule module = new SimpleModule("camunda-client");
+    module.addSerializer(StringFilterProperty.class, new StringFilterPropertySerializer());
+    module.addDeserializer(StringFilterProperty.class, new StringFilterPropertyDeserializer());
+    mapper.registerModule(module);
+    return mapper;
+  }
 
   private final CamundaClientConfiguration config;
 

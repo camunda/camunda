@@ -17,6 +17,16 @@ components:
       x-semantic-type: ElementId
       example: Activity_106kosb
 
+    ElementIdFilterProperty:
+      description: ElementId property with full advanced search capabilities.
+      oneOf:
+        - type: string
+          title: Exact match
+          description: Matches the value exactly.
+          allOf:
+            - $ref: '#/components/schemas/ElementId'
+        - $ref: 'filters.yaml#/components/schemas/AdvancedStringFilter'
+
     FormId:
       description: The user-defined id for the form
       type: string
@@ -95,4 +105,3 @@ components:
       minLength: 1
       maxLength: 256
       example: order-12345
-
