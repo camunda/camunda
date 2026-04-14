@@ -30,6 +30,7 @@ public record UserTaskFilter(
     List<Operation<String>> stateOperations,
     List<Long> processInstanceKeys,
     List<Long> processDefinitionKeys,
+    List<Operation<String>> processDefinitionIdOperations,
     List<Operation<String>> candidateUserOperations,
     List<Operation<String>> candidateGroupOperations,
     List<Operation<String>> tenantIdOperations,
@@ -55,6 +56,7 @@ public record UserTaskFilter(
     private List<Operation<String>> stateOperations;
     private List<Long> processInstanceKeys;
     private List<Long> processDefinitionKeys;
+    private List<Operation<String>> processDefinitionIdOperations;
     private List<Operation<String>> candidateUserOperations;
     private List<Operation<String>> candidateGroupOperations;
     private List<Operation<String>> tenantIdOperations;
@@ -175,6 +177,22 @@ public record UserTaskFilter(
     public Builder processDefinitionKeys(final List<Long> values) {
       processDefinitionKeys = addValuesToList(processDefinitionKeys, values);
       return this;
+    }
+
+    public UserTaskFilter.Builder processDefinitionIdOperations(
+        final List<Operation<String>> operations) {
+      processDefinitionIdOperations = addValuesToList(processDefinitionIdOperations, operations);
+      return this;
+    }
+
+    @SafeVarargs
+    public final UserTaskFilter.Builder processDefinitionIdOperations(
+        final Operation<String> operation, final Operation<String>... operations) {
+      return processDefinitionIdOperations(collectValues(operation, operations));
+    }
+
+    public UserTaskFilter.Builder processDefinitionIds(final String value, final String... values) {
+      return processDefinitionIdOperations(FilterUtil.mapDefaultToOperation(value, values));
     }
 
     public Builder candidateUserOperations(final List<Operation<String>> operations) {
@@ -307,6 +325,7 @@ public record UserTaskFilter(
           Objects.requireNonNullElse(stateOperations, Collections.emptyList()),
           Objects.requireNonNullElse(processInstanceKeys, Collections.emptyList()),
           Objects.requireNonNullElse(processDefinitionKeys, Collections.emptyList()),
+          Objects.requireNonNullElse(processDefinitionIdOperations, Collections.emptyList()),
           Objects.requireNonNullElse(candidateUserOperations, Collections.emptyList()),
           Objects.requireNonNullElse(candidateGroupOperations, Collections.emptyList()),
           Objects.requireNonNullElse(tenantIdOperations, Collections.emptyList()),

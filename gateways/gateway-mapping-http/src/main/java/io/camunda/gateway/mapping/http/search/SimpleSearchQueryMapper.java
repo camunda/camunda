@@ -355,7 +355,9 @@ public class SimpleSearchQueryMapper {
       ofNullable(filter.getTenantId())
           .map(SimpleSearchQueryMapper::getStringFilter)
           .ifPresent(filterModel::tenantId);
-      ofNullable(filter.getProcessDefinitionId()).ifPresent(filterModel::processDefinitionId);
+      ofNullable(filter.getProcessDefinitionId())
+          .map(SimpleSearchQueryMapper::getStringFilter)
+          .ifPresent(filterModel::processDefinitionId);
       ofNullable(filter.getCreationDate())
           .map(SimpleSearchQueryMapper::getDateTimeFilter)
           .ifPresent(filterModel::creationDate);

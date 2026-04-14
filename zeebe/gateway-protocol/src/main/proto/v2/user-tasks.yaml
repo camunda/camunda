@@ -520,9 +520,9 @@ components:
             - $ref: 'filters.yaml#/components/schemas/StringFilterProperty'
           description: Tenant ID of this user task.
         processDefinitionId:
-          allOf:
-            - $ref: 'identifiers.yaml#/components/schemas/ProcessDefinitionId'
           description: The ID of the process definition.
+          allOf:
+            - $ref: 'filters.yaml#/components/schemas/StringFilterProperty'
         creationDate:
           allOf:
             - $ref: 'filters.yaml#/components/schemas/DateTimeFilterProperty'
