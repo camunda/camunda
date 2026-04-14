@@ -89,6 +89,152 @@ public class CamundaProcessTestRemoteRuntimeTest {
   }
 
   @Test
+  void shouldHaveDefaultRemoteConnectorsRestApiPort() {
+    // given / when
+    final CamundaProcessTestRuntime camundaRuntime =
+        CamundaProcessTestContainerRuntime.newBuilder()
+            .withRuntimeMode(CamundaProcessTestRuntimeMode.REMOTE)
+            .build();
+
+    // then - port must be 8086 to match C8Run default since 8.9
+    assertThat(camundaRuntime.getConnectorsRestApiAddress()).hasHost("0.0.0.0").hasPort(8086);
+  }
+
+  @Test
+  void shouldAllowOverridingRemoteConnectorsRestApiAddress() {
+    // given
+    final URI customAddress = URI.create("http://connectors.example.com:9876");
+
+    // when
+    final CamundaProcessTestRuntime camundaRuntime =
+        CamundaProcessTestContainerRuntime.newBuilder()
+            .withRuntimeMode(CamundaProcessTestRuntimeMode.REMOTE)
+            .withRemoteConnectorsRestApiAddress(customAddress)
+            .build();
+
+    // then
+    assertThat(camundaRuntime.getConnectorsRestApiAddress()).isEqualTo(customAddress);
+  }
+
+  @Test
+  void shouldHaveDefaultRemoteCamundaMonitoringApiAddress() {
+    // given / when
+    final CamundaProcessTestRuntime camundaRuntime =
+        CamundaProcessTestContainerRuntime.newBuilder()
+            .withRuntimeMode(CamundaProcessTestRuntimeMode.REMOTE)
+            .build();
+
+    // then
+    assertThat(camundaRuntime.getCamundaMonitoringApiAddress())
+        .hasHost("0.0.0.0")
+        .hasPort(ContainerRuntimePorts.CAMUNDA_MONITORING_API);
+  }
+
+  @Test
+  void shouldAllowOverridingRemoteCamundaMonitoringApiAddress() {
+    // given
+    final URI customAddress = URI.create("http://camunda.example.com:8765");
+
+    // when
+    final CamundaProcessTestRuntime camundaRuntime =
+        CamundaProcessTestContainerRuntime.newBuilder()
+            .withRuntimeMode(CamundaProcessTestRuntimeMode.REMOTE)
+            .withRemoteCamundaMonitoringApiAddress(customAddress)
+            .build();
+
+    // then
+    assertThat(camundaRuntime.getCamundaMonitoringApiAddress()).isEqualTo(customAddress);
+  }
+
+  @Test
+  void shouldHaveDefaultRemoteRuntimeConnectionTimeout() {
+    // given / when
+    final CamundaProcessTestRuntimeBuilder builder =
+        CamundaProcessTestContainerRuntime.newBuilder()
+            .withRuntimeMode(CamundaProcessTestRuntimeMode.REMOTE);
+
+    // then
+    assertThat(builder.getRemoteRuntimeConnectionTimeout()).isEqualTo(Duration.ofMinutes(1));
+  }
+
+  @Test
+  void shouldAllowOverridingRemoteRuntimeConnectionTimeout() {
+    // given
+    final Duration customTimeout = Duration.ofSeconds(30);
+
+    // when
+    final CamundaProcessTestRuntimeBuilder builder =
+        CamundaProcessTestContainerRuntime.newBuilder()
+            .withRuntimeMode(CamundaProcessTestRuntimeMode.REMOTE)
+            .withRemoteRuntimeConnectionTimeout(customTimeout);
+
+    // then
+    assertThat(builder.getRemoteRuntimeConnectionTimeout()).isEqualTo(customTimeout);
+  }
+
+  @Test
+  void shouldHaveDefaultRemoteClientGrpcAddress() {
+    // given / when
+    final CamundaProcessTestRuntime camundaRuntime =
+        CamundaProcessTestContainerRuntime.newBuilder()
+            .withRuntimeMode(CamundaProcessTestRuntimeMode.REMOTE)
+            .build();
+
+    // then
+    assertThat(camundaRuntime.getCamundaGrpcApiAddress())
+        .hasHost("0.0.0.0")
+        .hasPort(ContainerRuntimePorts.CAMUNDA_GATEWAY_API);
+  }
+
+  @Test
+  void shouldAllowOverridingRemoteClientGrpcAddress() {
+    // given
+    final URI customGrpcAddress = URI.create("grpc://camunda.example.com:9876");
+
+    // when
+    final CamundaProcessTestRuntime camundaRuntime =
+        CamundaProcessTestContainerRuntime.newBuilder()
+            .withRuntimeMode(CamundaProcessTestRuntimeMode.REMOTE)
+            .withCamundaClientBuilderFactory(
+                () -> CamundaClient.newClientBuilder().grpcAddress(customGrpcAddress))
+            .build();
+
+    // then
+    assertThat(camundaRuntime.getCamundaGrpcApiAddress()).isEqualTo(customGrpcAddress);
+  }
+
+  @Test
+  void shouldHaveDefaultRemoteClientRestAddress() {
+    // given / when
+    final CamundaProcessTestRuntime camundaRuntime =
+        CamundaProcessTestContainerRuntime.newBuilder()
+            .withRuntimeMode(CamundaProcessTestRuntimeMode.REMOTE)
+            .build();
+
+    // then
+    assertThat(camundaRuntime.getCamundaRestApiAddress())
+        .hasHost("0.0.0.0")
+        .hasPort(ContainerRuntimePorts.CAMUNDA_REST_API);
+  }
+
+  @Test
+  void shouldAllowOverridingRemoteClientRestAddress() {
+    // given
+    final URI customRestAddress = URI.create("http://camunda.example.com:8765");
+
+    // when
+    final CamundaProcessTestRuntime camundaRuntime =
+        CamundaProcessTestContainerRuntime.newBuilder()
+            .withRuntimeMode(CamundaProcessTestRuntimeMode.REMOTE)
+            .withCamundaClientBuilderFactory(
+                () -> CamundaClient.newClientBuilder().restAddress(customRestAddress))
+            .build();
+
+    // then
+    assertThat(camundaRuntime.getCamundaRestApiAddress()).isEqualTo(customRestAddress);
+  }
+
+  @Test
   void shouldConfigureRuntime() {
     // given
     final URI remoteCamundaMonitoringApiAddress = URI.create("http://camunda.com:1000");
