@@ -149,20 +149,6 @@ public final class ClusterCfg implements ConfigurationEntry {
           String.format(REGION_NOT_FOUND_ERROR_MSG, region, regions.keySet()));
     }
 
-    final var regionCfg = regions.get(region);
-    int globalOffset = 0;
-    for (final var entry : regions.entrySet()) {
-      if (entry.getKey().equals(region)) {
-        break;
-      }
-      globalOffset += entry.getValue().getNumberOfBrokers();
-    }
-    final int localNodeId = nodeId - globalOffset;
-    if (localNodeId < 0 || localNodeId >= regionCfg.getNumberOfBrokers()) {
-      throw new IllegalArgumentException(
-          String.format(NODE_ID_REGION_ERROR_MSG, nodeId, region, regionCfg.getNumberOfBrokers()));
-    }
-
     final int totalBrokers = regions.values().stream().mapToInt(r -> r.getNumberOfBrokers()).sum();
     if (totalBrokers != clusterSize) {
       throw new IllegalArgumentException(

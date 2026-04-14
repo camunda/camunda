@@ -77,7 +77,10 @@ public class BrokerBasedConfiguration {
     final var cpuThreads = threadCfg.getCpuThreadCount();
     final var ioThreads = threadCfg.getIoThreadCount();
     final var metricsEnabled = properties.getExperimental().getFeatures().isEnableActorMetrics();
-    final var nodeId = String.valueOf(properties.getCluster().getNodeId());
+    final var nodeId =
+        properties.getCluster().getRegion()
+            + "-"
+            + String.valueOf(properties.getCluster().getNodeId());
     return new SchedulerConfiguration(cpuThreads, ioThreads, metricsEnabled, "Broker", nodeId);
   }
 

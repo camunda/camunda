@@ -60,16 +60,10 @@ public final class ClusterConfigFactory {
 
     final String memberId;
     if (region != null && !region.isBlank() && partitioningCfg.getScheme() == Scheme.REGION_AWARE) {
-      int offset = 0;
-      for (final var entry : partitioningCfg.getRegionAware().getRegions().entrySet()) {
-        if (entry.getKey().equals(region)) {
-          break;
-        }
-        offset += entry.getValue().getNumberOfBrokers();
-      }
-      memberId = region + "-" + (nodeId - offset);
+      memberId = region + "-" + (nodeId);
     } else {
-      memberId = (region != null && !region.isBlank()) ? region + "-" + nodeId : String.valueOf(nodeId);
+      memberId =
+          (region != null && !region.isBlank()) ? region + "-" + nodeId : String.valueOf(nodeId);
     }
 
     return new MemberConfig()

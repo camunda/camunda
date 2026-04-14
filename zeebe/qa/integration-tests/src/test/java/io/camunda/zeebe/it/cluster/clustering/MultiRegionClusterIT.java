@@ -42,9 +42,8 @@ import org.junit.jupiter.api.Test;
  * io.camunda.zeebe.broker.clustering.ClusterConfigFactory} converts a broker's global nodeId to a
  * local (region-scoped) nodeId by subtracting the cumulative broker count of all preceding regions:
  * east (offset=0) produces {@code "us-east1-0"}, west (global=1, offset=1) produces {@code
- * "us-west1-0"}. {@link
- * io.camunda.zeebe.broker.partitioning.topology.StaticConfigurationGenerator} always uses local IDs
- * 0..N-1 per region, so the two member ID namespaces are consistent.
+ * "us-west1-0"}. {@link io.camunda.zeebe.broker.partitioning.topology.StaticConfigurationGenerator}
+ * always uses local IDs 0..N-1 per region, so the two member ID namespaces are consistent.
  *
  * <p>The test verifies:
  *
@@ -75,8 +74,10 @@ final class MultiRegionClusterIT {
     // west broker uses global nodeId=1 — contact points set to east's cluster address
     brokerWest =
         createBroker(
-            1, REGION_WEST, regionAwareCfg, List.of(brokerEast.address(TestZeebePort.CLUSTER)));
-    brokerWest.start();
+            0, REGION_WEST, regionAwareCfg, List.of(brokerEast.address(TestZeebePort.CLUSTER)));
+    CompletableFuture.runAsync(() -> brokerWest.start());
+
+    Awaitility.await().until(() -> brokerWest.isStarted());
 
     // when — wait for both brokers to form the cluster and elect a leader for partition 1
     try (final var client = brokerEast.newClientBuilder().build()) {
