@@ -16,8 +16,10 @@
 package io.camunda.process.test.impl.runtime;
 
 import io.camunda.client.CamundaClientBuilder;
+import io.camunda.client.CredentialsProvider;
 import io.camunda.process.test.api.CamundaClientBuilderFactory;
 import io.camunda.process.test.api.CamundaProcessTestRuntimeMode;
+import io.camunda.process.test.impl.containers.CamundaContainer.MultiTenancyConfiguration;
 import io.camunda.process.test.impl.containers.ContainerFactory;
 import java.net.URI;
 import java.time.Duration;
@@ -384,6 +386,15 @@ public class CamundaProcessTestRuntimeBuilder {
   public CamundaClientBuilderFactory getConfiguredCamundaClientBuilderFactory() {
     return () -> {
       final CamundaClientBuilder clientBuilder = camundaClientBuilderFactory.get();
+
+      if (isMultiTenancyEnabled && runtimeMode == CamundaProcessTestRuntimeMode.MANAGED) {
+        clientBuilder.credentialsProvider(
+            CredentialsProvider.newBasicAuthCredentialsProviderBuilder()
+                .username(MultiTenancyConfiguration.MULTITENANCY_USER_USERNAME)
+                .password(MultiTenancyConfiguration.MULTITENANCY_USER_PASSWORD)
+                .build());
+      }
+
       camundaClientOverrides.accept(clientBuilder);
       return clientBuilder;
     };
