@@ -2,6 +2,8 @@ version: '3.9'
 
 networks:
   zeebe_network: { }
+  pgnet:
+    driver: bridge
 
 services:
 
@@ -141,3 +143,53 @@ services:
       - 9605:9605 # required for Performance Analyzer
     networks:
       - zeebe_network
+
+  postgres-primary:
+    image: bitnamilegacy/postgresql:15
+    container_name: pg-primary
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRESQL_POSTGRES_PASSWORD=camunda
+      - POSTGRES_USER=camunda
+      - POSTGRES_PASSWORD=camunda
+      - POSTGRESQL_DATABASE=camunda
+      - POSTGRESQL_REPLICATION_MODE=master
+      - POSTGRESQL_REPLICATION_USER=repl_user
+      - POSTGRESQL_REPLICATION_PASSWORD=repl_pass
+    networks:
+      - pgnet
+
+  postgres-replica-1:
+    image: bitnamilegacy/postgresql:15
+    container_name: pg-replica1
+    depends_on:
+      - postgres-primary
+    ports:
+      - "5433:5432"
+    environment:
+      - POSTGRES_USER=camunda
+      - POSTGRES_PASSWORD=camunda
+      - POSTGRESQL_REPLICATION_MODE=slave
+      - POSTGRESQL_MASTER_HOST=postgres-primary
+      - POSTGRESQL_REPLICATION_USER=repl_user
+      - POSTGRESQL_REPLICATION_PASSWORD=repl_pass
+    networks:
+      - pgnet
+
+  postgres-replica-2:
+    image: bitnamilegacy/postgresql:15
+    container_name: pg-replica2
+    depends_on:
+      - postgres-primary
+    ports:
+      - "5434:5432"
+    environment:
+      - POSTGRES_USER=camunda
+      - POSTGRES_PASSWORD=camunda
+      - POSTGRESQL_REPLICATION_MODE=slave
+      - POSTGRESQL_MASTER_HOST=postgres-primary
+      - POSTGRESQL_REPLICATION_USER=repl_user
+      - POSTGRESQL_REPLICATION_PASSWORD=repl_pass
+    networks:
+      - pgnet
