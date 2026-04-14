@@ -332,6 +332,62 @@
 
 ---
 
+## webapps-common/
+
+**Purpose:** Shared utility library for the Camunda web applications (Operate, Tasklist, Optimize), providing common HTTP and path utilities.
+
+**Exposes:** `HttpUtils` (URL extraction from HTTP requests), `TreePath` (path manipulation utilities).
+
+**Depends on (internal):** None (lightweight utility)
+
+**Depends on (external):** Jakarta Servlet API
+
+**Key data objects:** Request path manipulation, URL redirect tracking. No domain objects.
+
+---
+
+## document/
+
+**Purpose:** Pluggable document storage abstraction with implementations for cloud providers and local storage, used by the service layer for document upload/download operations.
+
+**Exposes:** `DocumentStore` interface (create, get, delete documents, verify content hash), `DocumentReference`, `DocumentStoreRegistry`, `DocumentCreationRequest`, `DocumentLink`, `DocumentError`. Provider implementations for GCP Cloud Storage, AWS S3, Azure Blob Storage, and in-memory storage.
+
+**Depends on (internal):** `zeebe-util`, Jackson
+
+**Depends on (external):** Google Cloud Storage SDK, AWS SDK (S3), Azure Blob Storage SDK
+
+**Key data objects:** `DocumentReference`, `DocumentContent`, `DocumentLink`, `DocumentError`, `DocumentCreationRequest`.
+
+---
+
+## configuration/
+
+**Purpose:** Unified Spring Boot configuration system aggregating all Camunda component properties (cluster, security, database, processing, APIs, backups) into a single `UnifiedConfiguration` entry point.
+
+**Exposes:** `UnifiedConfiguration` root bean, `Camunda` config class with nested properties for: Cluster, System, Data, Api, Processing, Security, Expression, Webapps. 40+ configuration classes covering Engine, Security, Cache, RDBMS, backup stores, etc.
+
+**Depends on (internal):** All major Camunda modules (zeebe-broker, zeebe-gateway, zeebe-db, search, exporters, operate/tasklist-common)
+
+**Depends on (external):** Spring Boot, RocksDB, RDBMS, Elasticsearch/OpenSearch, backup stores (GCS, S3, Azure), Azure KeyVault
+
+**Key data objects:** 40+ Spring `@ConfigurationProperties` classes.
+
+---
+
+## testing/
+
+**Purpose:** Testing framework for Camunda process applications using Testcontainers, supporting JUnit 5, Spring Boot, and remote runtime configurations.
+
+**Exposes:** `CamundaProcessTest` annotation, `CamundaAssertAwaitBehavior`, `CamundaProcessTestContainerProvider`, `TestCaseRunner`, `ConditionalBehaviorBuilder`. Provides opinionated test harnesses for deploying BPMN, creating instances, and asserting outcomes.
+
+**Depends on (internal):** `camunda-client-java`, `camunda-spring-boot-starter`
+
+**Depends on (external):** Testcontainers (Docker), JUnit 5, Docker (for Camunda, Elasticsearch, Connectors containers)
+
+**Key data objects:** Test runtime configurations, container context, assertion properties, test case definitions.
+
+---
+
 ## qa/
 
 **Purpose:** Cross-component quality assurance test suites covering acceptance tests, end-to-end UI tests, architecture compliance, and compatibility testing.

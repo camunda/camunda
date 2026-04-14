@@ -54,7 +54,7 @@ flowchart LR
     %% ═══════════════════════════════════════════════════════════
     Dev -- "1. Deploy BPMN<br/>(REST/gRPC)" --> REST & GRPC
     REST & GRPC -- "2. DEPLOYMENT:CREATE<br/>command" --> Engine
-    Engine -- "3. Parse & validate<br/>(bpmn-model)" --> Engine
+    Engine -- "3. Parse and validate<br/>(bpmn-model)" --> Engine
     Engine -- "4. Store definition" --> State
     Engine -- "5. DEPLOYMENT:CREATED<br/>+ PROCESS:CREATED" --> Log
 
@@ -78,7 +78,7 @@ flowchart LR
     Engine -- "14. USER_TASK:CREATED" --> Log
     EndUser -- "15. View tasks" --> Tasklist
     Tasklist -- "16. Search tasks" --> Search
-    EndUser -- "17. Claim & complete" --> Tasklist
+    EndUser -- "17. Claim and complete" --> Tasklist
     Tasklist -- "18. Assign / Complete<br/>(REST)" --> REST
     REST -- "19. USER_TASK:COMPLETE" --> Engine
     Engine -- "20. USER_TASK:COMPLETED<br/>+ advance" --> Log
