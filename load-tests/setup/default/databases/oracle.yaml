@@ -71,6 +71,88 @@ spec:
       protocol: TCP
 
 ---
+# Periodic Oracle cleanup to reduce pressure on the 12 GB Oracle Free limit.
+# The sidecar executes this script on an interval and keeps only recent unified
+# audit records while purging dropped-object recycle bin entries.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: oracle-space-guard
+  labels:
+    app.kubernetes.io/name: oracle
+data:
+  space-guard.sh: |
+    #!/bin/bash
+    set -euo pipefail
+
+    interval_seconds="${ORACLE_SPACE_GUARD_INTERVAL_SECONDS:-900}"
+    connect_string="sys/${ORACLE_PASSWORD}@//127.0.0.1:1521/FREEPDB1 as sysdba"
+
+    run_cleanup() {
+      sqlplus -s "$connect_string" <<'SQL'
+    SET PAGESIZE 0 FEEDBACK OFF VERIFY OFF HEADING OFF ECHO OFF
+    WHENEVER SQLERROR CONTINUE
+
+    BEGIN
+      EXECUTE IMMEDIATE 'ALTER SYSTEM SET recyclebin=OFF SCOPE=BOTH';
+    EXCEPTION
+      WHEN OTHERS THEN NULL;
+    END;
+    /
+
+    BEGIN
+      EXECUTE IMMEDIATE 'ALTER SYSTEM SET undo_retention=300 SCOPE=BOTH';
+    EXCEPTION
+      WHEN OTHERS THEN NULL;
+    END;
+    /
+
+    PURGE DBA_RECYCLEBIN;
+
+    BEGIN
+      DBMS_AUDIT_MGMT.INIT_CLEANUP(
+        audit_trail_type         => DBMS_AUDIT_MGMT.AUDIT_TRAIL_UNIFIED,
+        default_cleanup_interval => 12);
+    EXCEPTION
+      WHEN OTHERS THEN NULL;
+    END;
+    /
+
+    BEGIN
+      DBMS_AUDIT_MGMT.SET_LAST_ARCHIVE_TIMESTAMP(
+        audit_trail_type  => DBMS_AUDIT_MGMT.AUDIT_TRAIL_UNIFIED,
+        last_archive_time => SYSTIMESTAMP - INTERVAL '30' MINUTE);
+    EXCEPTION
+      WHEN OTHERS THEN NULL;
+    END;
+    /
+
+    BEGIN
+      DBMS_AUDIT_MGMT.CLEAN_AUDIT_TRAIL(
+        audit_trail_type        => DBMS_AUDIT_MGMT.AUDIT_TRAIL_UNIFIED,
+        use_last_arch_timestamp => TRUE);
+    EXCEPTION
+      WHEN OTHERS THEN NULL;
+    END;
+    /
+
+    EXIT
+    SQL
+    }
+
+    echo "oracle-space-guard: cleanup interval is ${interval_seconds}s"
+
+    until run_cleanup; do
+      echo "oracle-space-guard: database not ready yet, retrying in 30s"
+      sleep 30
+    done
+
+    while true; do
+      sleep "$interval_seconds"
+      run_cleanup || echo "oracle-space-guard: cleanup failed, retrying on next interval"
+    done
+
+---
 # StatefulSet — single replica with a 128 Gi SSD PVC.
 # The volumeClaimTemplate creates a PVC named "oracle-data-oracle-0";
 # this PVC is NOT removed automatically when the StatefulSet is deleted
@@ -168,6 +250,31 @@ spec:
             - name: dshm
               mountPath: /dev/shm
 
+        - name: oracle-space-guard
+          image: gvenzl/oracle-free:23-slim
+          command:
+            - /bin/bash
+            - /opt/oracle/space-guard/space-guard.sh
+          env:
+            - name: ORACLE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: oracle-secret
+                  key: ORACLE_PASSWORD
+            - name: ORACLE_SPACE_GUARD_INTERVAL_SECONDS
+              value: "900"
+          resources:
+            requests:
+              memory: 256Mi
+              cpu: "100m"
+            limits:
+              memory: 512Mi
+              cpu: "500m"
+          volumeMounts:
+            - name: oracle-space-guard
+              mountPath: /opt/oracle/space-guard
+              readOnly: true
+
       # Provide Oracle with a /dev/shm large enough for its SGA.
       # The default Kubernetes /dev/shm is 64 MB; Oracle AMM needs ~2 GB.
       # medium: Memory makes this an in-memory tmpfs; its size is bounded by
@@ -176,6 +283,10 @@ spec:
         - name: dshm
           emptyDir:
             medium: Memory
+        - name: oracle-space-guard
+          configMap:
+            name: oracle-space-guard
+            defaultMode: 493
 
   # PVC template — creates "oracle-data-oracle-0" on first deployment.
   # storageClass "ssd" provisions a 128 Gi SSD-backed volume.
