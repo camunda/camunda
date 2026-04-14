@@ -561,13 +561,14 @@
       <version>${version.elasticsearch}</version>
     </dependency>
 
-    <!-- httpasyncclient is pulled in at compile scope via optimize-commons →
-         elasticsearch-rest-client, but is only used by the Zeebe data generator
-         (src/it). Override the scope to test to satisfy dependency:analyze. -->
+    <!-- httpasyncclient is required at runtime by ElasticsearchClientBuilder
+         (via elasticsearch-rest-client) but is not directly imported in src/main.
+         runtime scope keeps it on the startup classpath without triggering
+         the dependency:analyze "non-test scoped test only" warning. -->
     <dependency>
       <groupId>org.apache.httpcomponents</groupId>
       <artifactId>httpasyncclient</artifactId>
-      <scope>test</scope>
+      <scope>runtime</scope>
     </dependency>
 
     <dependency>
