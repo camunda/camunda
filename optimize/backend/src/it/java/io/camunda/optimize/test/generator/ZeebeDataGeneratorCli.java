@@ -92,14 +92,10 @@ public final class ZeebeDataGeneratorCli {
     final ElasticsearchConnection connection =
         new ElasticsearchConnection(host, port, username, password);
     final RestClient restClient = buildRestClient(connection);
-    final ElasticsearchClient rawClient =
-        new ElasticsearchClient(
-            new RestClientTransport(
-                restClient, new JacksonJsonpMapper(ObjectMapperFactory.OPTIMIZE_MAPPER)));
     final OptimizeElasticsearchClient esClient = buildEsClient(restClient, prefix);
 
-    final long positionOffset = queryMaxPosition(rawClient, prefix) + 1;
-    final long instanceKeyOffset = queryMaxInstanceKey(rawClient, prefix) + 1;
+    final long positionOffset = queryMaxPosition(esClient.getEsClient(), prefix) + 1;
+    final long instanceKeyOffset = queryMaxInstanceKey(esClient.getEsClient(), prefix) + 1;
     LOG.info(
         "Continuing from positionOffset={}, instanceKeyOffset={}",
         positionOffset,
@@ -200,6 +196,9 @@ public final class ZeebeDataGeneratorCli {
   static RestClient buildRestClient(final ElasticsearchConnection connection) {
     final org.elasticsearch.client.RestClientBuilder builder =
         RestClient.builder(new HttpHost(connection.host(), connection.port(), "http"));
+    // 60 s socket timeout — bulk slices should complete well within this; retries handle transient
+    // overloads
+    builder.setRequestConfigCallback(rc -> rc.setSocketTimeout(60_000).setConnectTimeout(10_000));
     if (connection.username() != null) {
       final BasicCredentialsProvider credentialsProvider = new BasicCredentialsProvider();
       credentialsProvider.setCredentials(
