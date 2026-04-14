@@ -203,6 +203,12 @@ const queryKeys = {
   currentUser: {
     get: () => ['currentUser'],
   },
+  userTasks: {
+    getByElementInstance: (elementInstanceKey: string) => [
+      'userTasksByElementInstance',
+      elementInstanceKey,
+    ],
+  },
   variable: {
     get: (variableKey: string) => ['variable', variableKey],
   },

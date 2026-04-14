@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {render, screen} from 'modules/testing-library';
+import {render, screen, waitFor} from 'modules/testing-library';
 import {createMemoryRouter, RouterProvider} from 'react-router-dom';
 import {QueryClientProvider} from '@tanstack/react-query';
 import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
@@ -19,12 +19,15 @@ import {mockSearchJobs} from 'modules/mocks/api/v2/jobs/searchJobs';
 import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
 import {mockSearchProcessInstances} from 'modules/mocks/api/v2/processInstances/searchProcessInstances';
 import {mockSearchDecisionInstances} from 'modules/mocks/api/v2/decisionInstances/searchDecisionInstances';
+import {mockSearchUserTasks} from 'modules/mocks/api/v2/userTasks/searchUserTasks';
 import {searchResult} from 'modules/testUtils';
+import * as clientConfig from 'modules/utils/getClientConfig';
 import type {
   ElementInstance,
   Job,
   ProcessInstance,
   DecisionInstance,
+  UserTask,
 } from '@camunda/camunda-api-zod-schemas/8.10';
 
 const PROCESS_INSTANCE_ID = '111222333';
@@ -48,6 +51,17 @@ const USER_TASK_XML = `<?xml version="1.0" encoding="UTF-8"?>
 <bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn">
   <bpmn:process id="Process_1" isExecutable="true">
     <bpmn:userTask id="Task_1" name="User Task" />
+  </bpmn:process>
+</bpmn:definitions>`;
+
+const CAMUNDA_USER_TASK_XML = `<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn">
+  <bpmn:process id="Process_1" isExecutable="true">
+    <bpmn:userTask id="Task_1" name="User Task">
+      <bpmn:extensionElements>
+        <zeebe:userTask />
+      </bpmn:extensionElements>
+    </bpmn:userTask>
   </bpmn:process>
 </bpmn:definitions>`;
 
@@ -151,6 +165,33 @@ const mockCalledDecisionInstance = {
   tenantId: '<default>',
   rootProcessInstanceKey: null,
 } satisfies DecisionInstance;
+
+const mockUserTask = {
+  userTaskKey: '999888777',
+  state: 'CREATED',
+  processDefinitionVersion: 1,
+  processDefinitionId: 'process-def-1',
+  processName: null,
+  processInstanceKey: PROCESS_INSTANCE_ID,
+  rootProcessInstanceKey: null,
+  processDefinitionKey: PROCESS_DEFINITION_KEY,
+  name: 'User Task',
+  elementId: 'Task_1',
+  elementInstanceKey: '123456789',
+  tenantId: '<default>',
+  assignee: null,
+  candidateGroups: [],
+  candidateUsers: [],
+  dueDate: null,
+  followUpDate: null,
+  creationDate: '2023-01-15T10:00:00.000Z',
+  completionDate: null,
+  customHeaders: null,
+  formKey: null,
+  externalFormReference: null,
+  tags: [],
+  priority: 50,
+} satisfies UserTask;
 
 function getWrapper(initialSearchParams?: string) {
   const path = Paths.processInstanceDetails({
@@ -383,5 +424,127 @@ describe('<DetailsTab />', () => {
     expect(await screen.findByText('Element Instance Key')).toBeInTheDocument();
     expect(screen.getByText('Execution Duration')).toBeInTheDocument();
     expect(screen.getByText('-')).toBeInTheDocument();
+  });
+
+  it('should display open tasklist link for camunda user tasks when tasklistUrl is configured', async () => {
+    vi.spyOn(clientConfig, 'getClientConfig').mockReturnValue({
+      ...clientConfig.getClientConfig(),
+      tasklistUrl: 'https://tasklist.example.com',
+    });
+
+    mockFetchProcessDefinitionXml().withSuccess(CAMUNDA_USER_TASK_XML);
+    mockFetchElementInstance('123456789').withSuccess({
+      ...mockElementInstance,
+      type: 'USER_TASK',
+    });
+    mockSearchUserTasks().withSuccess(searchResult([mockUserTask]));
+
+    render(<DetailsTab />, {
+      wrapper: getWrapper('elementId=Task_1&elementInstanceKey=123456789'),
+    });
+
+    const link = await screen.findByRole('link', {
+      name: 'Open Tasklist',
+    });
+    expect(link).toBeInTheDocument();
+    await waitFor(() => {
+      expect(link).toHaveAttribute(
+        'href',
+        'https://tasklist.example.com/999888777?filter=all-open',
+      );
+    });
+  });
+
+  it('should link to completed filter for completed user tasks', async () => {
+    vi.spyOn(clientConfig, 'getClientConfig').mockReturnValue({
+      ...clientConfig.getClientConfig(),
+      tasklistUrl: 'https://tasklist.example.com',
+    });
+
+    mockFetchProcessDefinitionXml().withSuccess(CAMUNDA_USER_TASK_XML);
+    mockFetchElementInstance('123456789').withSuccess({
+      ...mockElementInstance,
+      type: 'USER_TASK',
+    });
+    mockSearchUserTasks().withSuccess(
+      searchResult([
+        {
+          ...mockUserTask,
+          state: 'COMPLETED',
+          completionDate: '2023-01-15T10:05:00.000Z',
+        },
+      ]),
+    );
+
+    render(<DetailsTab />, {
+      wrapper: getWrapper('elementId=Task_1&elementInstanceKey=123456789'),
+    });
+
+    const link = await screen.findByRole('link', {
+      name: 'Open Tasklist',
+    });
+    await waitFor(() => {
+      expect(link).toHaveAttribute(
+        'href',
+        'https://tasklist.example.com/999888777?filter=completed',
+      );
+    });
+  });
+
+  it('should not display open tasklist link for job worker user tasks', async () => {
+    vi.spyOn(clientConfig, 'getClientConfig').mockReturnValue({
+      ...clientConfig.getClientConfig(),
+      tasklistUrl: 'https://tasklist.example.com',
+    });
+
+    mockFetchProcessDefinitionXml().withSuccess(USER_TASK_XML);
+    mockFetchElementInstance('123456789').withSuccess({
+      ...mockElementInstance,
+      type: 'USER_TASK',
+    });
+
+    render(<DetailsTab />, {
+      wrapper: getWrapper('elementId=Task_1&elementInstanceKey=123456789'),
+    });
+
+    expect(await screen.findByText('Element Instance Key')).toBeInTheDocument();
+    expect(
+      screen.queryByRole('link', {name: 'Open Tasklist'}),
+    ).not.toBeInTheDocument();
+  });
+
+  it('should not display open tasklist link when tasklistUrl is not configured', async () => {
+    mockFetchProcessDefinitionXml().withSuccess(CAMUNDA_USER_TASK_XML);
+    mockFetchElementInstance('123456789').withSuccess({
+      ...mockElementInstance,
+      type: 'USER_TASK',
+    });
+
+    render(<DetailsTab />, {
+      wrapper: getWrapper('elementId=Task_1&elementInstanceKey=123456789'),
+    });
+
+    expect(await screen.findByText('Element Instance Key')).toBeInTheDocument();
+    expect(
+      screen.queryByRole('link', {name: 'Open Tasklist'}),
+    ).not.toBeInTheDocument();
+  });
+
+  it('should not display open tasklist link for non-user-task elements', async () => {
+    vi.spyOn(clientConfig, 'getClientConfig').mockReturnValue({
+      ...clientConfig.getClientConfig(),
+      tasklistUrl: 'https://tasklist.example.com',
+    });
+
+    mockFetchElementInstance('123456789').withSuccess(mockElementInstance);
+
+    render(<DetailsTab />, {
+      wrapper: getWrapper('elementId=Task_1&elementInstanceKey=123456789'),
+    });
+
+    expect(await screen.findByText('Element Instance Key')).toBeInTheDocument();
+    expect(
+      screen.queryByRole('link', {name: 'Open Tasklist'}),
+    ).not.toBeInTheDocument();
   });
 });
