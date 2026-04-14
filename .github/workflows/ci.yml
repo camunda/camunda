@@ -993,9 +993,7 @@ jobs:
         id: build-camunda-docker
         with:
           repository: camunda/camunda
-          version: |
-            ${{ needs.utils-get-snapshot-docker-tag.outputs.version_tag }}
-            ${{ needs.utils-get-snapshot-docker-tag.outputs.snapshot_tag }}
+          version: ${{ needs.utils-get-snapshot-docker-tag.outputs.version_tag }}
           distball: ${{ steps.build-camunda.outputs.distball }}
           platforms: ${{ env.DOCKER_PLATFORMS }}
           dockerfile: camunda.Dockerfile
