@@ -1,0 +1,10 @@
+# Integration test configuration — overrides application.yaml to enable the Camunda client
+camunda:
+  client:
+    enabled: true
+    mode: self-managed
+    auth:
+      method: none
+    worker:
+      defaults:
+        type: benchmark-task

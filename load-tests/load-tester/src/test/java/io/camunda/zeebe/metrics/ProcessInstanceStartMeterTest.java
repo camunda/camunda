@@ -5,13 +5,13 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe;
+package io.camunda.zeebe.metrics;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.awaitility.Awaitility.await;
 
-import io.camunda.zeebe.ProcessInstanceStartMeter.AvailabilityChecker;
+import io.camunda.zeebe.metrics.ProcessInstanceStartMeter.AvailabilityChecker;
 import io.camunda.zeebe.protocol.Protocol;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Duration;
