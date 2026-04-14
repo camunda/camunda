@@ -7,6 +7,7 @@
  */
 package io.camunda.authentication.config;
 
+import static io.camunda.authentication.config.CamundaOidcLogoutSuccessHandler.LOGOUT_MESSAGE_ATTRIBUTE;
 import static org.springframework.http.HttpStatus.*;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -42,7 +43,11 @@ public class WebappRedirectStrategy implements RedirectStrategy {
       throws IOException {
 
     if (url == null || DEFAULT_REDIRECT_URL.equals(url)) {
+      final String message = (String) request.getAttribute(LOGOUT_MESSAGE_ATTRIBUTE);
       response.setStatus(NO_CONTENT.value());
+      if (message != null) {
+        response.setHeader("X-Logout-Message", message);
+      }
       return;
     }
 
