@@ -43,26 +43,24 @@ env:
 
 jobs:
   # Dynamically generate the Docker tag (e.g., SNAPSHOT or X.Y-SNAPSHOT) based on branch name
-  utils-get-snapshot-docker-tag-and-concurrency-group:
-    uses: ./.github/workflows/generate-snapshot-docker-tag-and-concurrency-group.yml
+  utils-get-snapshot-docker-tag:
+    uses: ./.github/workflows/generate-snapshot-docker-tag.yml
     secrets: inherit
     permissions:
       contents: read
-    with:
-      job_to_run: 'snapshot-tag'
 
   build:
-    # Execute build even if utils-get-snapshot-docker-tag-and-concurrency-group is skipped
+    # Execute build even if utils-get-snapshot-docker-tag is skipped
     if: >
-      always() && 
+      always() &&
       contains(
         fromJson('["success", "skipped"]'),
-        needs.utils-get-snapshot-docker-tag-and-concurrency-group.result
+        needs.utils-get-snapshot-docker-tag.result
       )
     name: Build
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    needs: [ utils-get-snapshot-docker-tag-and-concurrency-group ]
+    needs: [ utils-get-snapshot-docker-tag ]
     steps:
       # Setup: checkout branch
       - name: Checkout '${{ inputs.branch }}' branch
@@ -141,11 +139,11 @@ jobs:
       - name: Build SNAPSHOT Docker image
         if: >
           env.SHOULD_PUSH_DOCKER_SNAPSHOT == 'true' &&
-          needs.utils-get-snapshot-docker-tag-and-concurrency-group.result != 'skipped'
+          needs.utils-get-snapshot-docker-tag.result != 'skipped'
         uses: ./.github/actions/build-platform-docker
         with:
           repository: camunda/operate
-          version: ${{ needs.utils-get-snapshot-docker-tag-and-concurrency-group.outputs.version_tag }}
+          version: ${{ needs.utils-get-snapshot-docker-tag.outputs.version_tag }}
           push: true
           platforms: ${{ env.DOCKER_PLATFORMS }}
           dockerfile: operate.Dockerfile
