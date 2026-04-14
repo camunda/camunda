@@ -15,15 +15,6 @@
  */
 package io.camunda.process.test.impl.runtime;
 
-import io.camunda.client.CamundaClient;
-import io.camunda.client.CamundaClientBuilder;
-import io.camunda.client.CredentialsProvider;
-import io.camunda.client.spring.configuration.CredentialsProviderConfiguration;
-import io.camunda.client.spring.properties.CamundaClientAuthProperties;
-import io.camunda.client.spring.properties.CamundaClientCloudProperties;
-import io.camunda.client.spring.properties.CamundaClientProperties;
-import io.camunda.client.spring.properties.CamundaClientProperties.ClientMode;
-import io.camunda.process.test.api.CamundaClientBuilderFactory;
 import io.camunda.process.test.api.CamundaProcessTestRuntimeMode;
 import io.camunda.process.test.impl.configuration.CamundaProcessTestRuntimeConfiguration;
 
@@ -83,66 +74,5 @@ public class CamundaSpringProcessTestRuntimeBuilder {
             runtimeConfiguration.getRemote().getConnectorsRestApiAddress())
         .withRemoteRuntimeConnectionTimeout(
             runtimeConfiguration.getRemote().getRuntimeConnectionTimeout());
-
-    final CamundaClientBuilderFactory remoteClientBuilderFactory =
-        createRemoteClientBuilderFactory(runtimeConfiguration);
-    runtimeBuilder.withRemoteCamundaClientBuilderFactory(remoteClientBuilderFactory);
-  }
-
-  private static CamundaClientBuilderFactory createRemoteClientBuilderFactory(
-      final CamundaProcessTestRuntimeConfiguration runtimeConfiguration) {
-    final CamundaClientProperties remoteClientProperties =
-        runtimeConfiguration.getRemote().getClient();
-
-    final CamundaClientBuilder clientBuilder = createCamundaClientBuilder(remoteClientProperties);
-
-    if (remoteClientProperties.getRestAddress() != null) {
-      clientBuilder.restAddress(remoteClientProperties.getRestAddress());
-    }
-    if (remoteClientProperties.getGrpcAddress() != null) {
-      clientBuilder.grpcAddress(remoteClientProperties.getGrpcAddress());
-    }
-    if (remoteClientProperties.getRequestTimeout() != null) {
-      clientBuilder.defaultRequestTimeout(remoteClientProperties.getRequestTimeout());
-    }
-
-    return () -> clientBuilder;
-  }
-
-  private static CamundaClientBuilder createCamundaClientBuilder(
-      final CamundaClientProperties clientProperties) {
-
-    if (clientProperties.getMode() == ClientMode.saas) {
-      return createCamundaSaasClientBuilder(clientProperties);
-
-    } else {
-      return CamundaClient.newClientBuilder();
-    }
-  }
-
-  private static CamundaClientBuilder createCamundaSaasClientBuilder(
-      final CamundaClientProperties clientProperties) {
-    final CamundaClientCloudProperties cloudProperties = clientProperties.getCloud();
-    final CamundaClientAuthProperties authProperties = clientProperties.getAuth();
-
-    final var cloudBuilderStep =
-        CamundaClient.newCloudClientBuilder()
-            .withClusterId(cloudProperties.getClusterId())
-            .withClientId(authProperties.getClientId())
-            .withClientSecret(authProperties.getClientSecret())
-            .withRegion(cloudProperties.getRegion());
-
-    if (authProperties.getMethod() != null) {
-      final CredentialsProvider credentialsProvider = createCredentialsProvider(clientProperties);
-      cloudBuilderStep.credentialsProvider(credentialsProvider);
-    }
-
-    return cloudBuilderStep;
-  }
-
-  private static CredentialsProvider createCredentialsProvider(
-      final CamundaClientProperties clientProperties) {
-    return new CredentialsProviderConfiguration()
-        .camundaClientCredentialsProvider(clientProperties);
   }
 }
