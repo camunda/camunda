@@ -1,0 +1,79 @@
+# Camunda Load Tester - Spring Boot Configuration
+# Override any property via environment variables, e.g.:
+#   CAMUNDA_CLIENT_ZEEBE_GRPC_ADDRESS=http://zeebe:26500
+#   LOAD_TESTER_STARTER_RATE=500
+
+server:
+  port: 9600
+
+management:
+  server:
+    port: ${server.port}
+  endpoints:
+    web:
+      exposure:
+        include: health,prometheus
+
+# Camunda client configuration (auto-configured by spring-boot-starter-camunda-sdk on 8.7)
+camunda:
+  client:
+    mode: selfManaged
+    auth:
+      username: ${ZEEBE_AUTH_USERNAME:demo}
+      password: ${ZEEBE_AUTH_PASSWORD:demo}
+      client-id: ${ZEEBE_CLIENT_ID:orchestration}
+      client-secret: ${ZEEBE_CLIENT_SECRET:demo}
+      audience: ${ZEEBE_TOKEN_AUDIENCE:orchestration-api}
+    zeebe:
+      grpc-address: ${ZEEBE_GRPC_ADDRESS:http://localhost:26500}
+      rest-address: ${ZEEBE_REST_ADDRESS:http://localhost:8080}
+      prefer-rest-over-grpc: true
+      # Number of threads for job handler execution. The old HOCON app used 10 threads
+      # (app.worker.threads=10). The starter default is 1, which is too low when
+      # handleJob() blocks with Thread.sleep(completionDelay).
+      execution-threads: ${LOAD_TESTER_WORKER_THREADS:10}
+      defaults:
+        # Bridge LOAD_TESTER_WORKER_* env vars from the Helm chart so that
+        # @JobWorker picks up the correct values per deployment.
+        name: ${LOAD_TESTER_WORKER_WORKER_NAME:benchmark-worker}
+        type: ${LOAD_TESTER_WORKER_JOB_TYPE:benchmark-task}
+        stream-enabled: true
+        max-jobs-active: ${LOAD_TESTER_WORKER_CAPACITY:30}
+        poll-interval: ${LOAD_TESTER_WORKER_POLLING_DELAY:1s}
+        # Default: completionDelay(300ms) * 6 = 1800ms. The old HOCON app computed
+        # this dynamically; here it's static. Update if completionDelay changes.
+        timeout: 1800ms
+
+# Load tester specific configuration
+# These are application-level properties consumed by Starter.java and Worker.java.
+# They are distinct from camunda.client.zeebe.defaults.* (above) which control the
+# framework-level job activation (type, capacity, polling, streaming, timeout).
+load-tester:
+  monitor-data-availability: ${LOAD_TESTER_MONITOR_DATA_AVAILABILITY:true}
+  monitor-data-availability-interval: 250ms
+  starter:
+    process-id: ${LOAD_TESTER_STARTER_PROCESS_ID:benchmark}
+    rate: ${LOAD_TESTER_STARTER_RATE:300}
+    rate-duration: ${LOAD_TESTER_STARTER_RATE_DURATION:1s}
+    threads: ${LOAD_TESTER_STARTER_THREADS:2}
+    bpmn-xml-path: ${LOAD_TESTER_STARTER_BPMN_XML_PATH:bpmn/one_task.bpmn}
+    # Extra BPMN models: set via indexed env vars, e.g.
+    # LOAD_TESTER_STARTER_EXTRA_BPMN_MODELS_0_=bpmn/realistic/refundingProcess.bpmn
+    extra-bpmn-models: []
+    business-key: ${LOAD_TESTER_STARTER_BUSINESS_KEY:businessKey}
+    payload-path: ${LOAD_TESTER_STARTER_PAYLOAD_PATH:bpmn/big_payload.json}
+    with-results: false
+    with-results-timeout: 60s
+    duration-limit: ${LOAD_TESTER_STARTER_DURATION_LIMIT:0}
+    msg-name: msg
+    start-via-message: false
+  # Worker-specific properties consumed by Worker.java.
+  # These control what the job handler does (completion delay, message publishing, payload).
+  # Connection properties (type, name, threads, capacity, polling, streaming, timeout)
+  # are configured via camunda.client.zeebe.defaults.* above.
+  worker:
+    completion-delay: ${LOAD_TESTER_WORKER_COMPLETION_DELAY:300ms}
+    payload-path: ${LOAD_TESTER_WORKER_PAYLOAD_PATH:bpmn/typical_payload.json}
+    send-message: ${LOAD_TESTER_WORKER_SEND_MESSAGE:false}
+    message-name: ${LOAD_TESTER_WORKER_MESSAGE_NAME:messageName}
+    correlation-key-variable-name: ${LOAD_TESTER_WORKER_CORRELATION_KEY_VARIABLE_NAME:correlationKey-var}

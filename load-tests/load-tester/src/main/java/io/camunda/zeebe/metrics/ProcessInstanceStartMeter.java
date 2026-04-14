@@ -13,9 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.zeebe;
+package io.camunda.zeebe.metrics;
 
-import io.camunda.zeebe.StarterLatencyMetricsDoc.StarterMetricKeyNames;
+import io.camunda.zeebe.metrics.StarterLatencyMetricsDoc.StarterMetricKeyNames;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.util.micrometer.MicrometerUtil;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -32,7 +32,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class ProcessInstanceStartMeter implements AutoCloseable {
-
+  private static final long MAX_DURATION = Duration.ofSeconds(90).toNanos();
   private static final Logger LOG = LoggerFactory.getLogger(ProcessInstanceStartMeter.class);
   private final ConcurrentHashMap<Integer, Timer> partitionToTimerMap;
   private final Map<Long, PiCreationResult> startedInstances;
@@ -40,16 +40,23 @@ public class ProcessInstanceStartMeter implements AutoCloseable {
   private final AvailabilityChecker availabilityChecker;
   private final MeterRegistry registry;
   private final Duration availabilityCheckInterval;
+  private final Clock clock;
+  private final Timer dataAvailabilityQueryDurationTimer;
 
   public ProcessInstanceStartMeter(
+      final Clock clock,
       final MeterRegistry meterRegistry,
       final ScheduledExecutorService scheduledExecutorService,
       final Duration availabilityCheckInterval,
       final AvailabilityChecker availabilityChecker) {
+    this.clock = clock;
     registry = meterRegistry;
     partitionToTimerMap = new ConcurrentHashMap<>();
     startedInstances = new ConcurrentHashMap<>();
     piCheckExecutorService = scheduledExecutorService;
+    dataAvailabilityQueryDurationTimer =
+        MicrometerUtil.buildTimer(StarterLatencyMetricsDoc.DATA_AVAILABILITY_QUERY_DURATION)
+            .register(registry);
     this.availabilityCheckInterval = availabilityCheckInterval;
     this.availabilityChecker = availabilityChecker;
   }
@@ -86,32 +93,63 @@ public class ProcessInstanceStartMeter implements AutoCloseable {
     }
 
     LOG.debug("Current instances awaiting {}", startedInstances.size());
+    final var startQueryTime = clock.getNanos();
     availabilityChecker
-        .findAvailableInstances(
-            startedInstances.values().stream().map(PiCreationResult::businessKey).toList())
+        .findAvailableInstances(List.copyOf(startedInstances.keySet()))
         .whenCompleteAsync(
             (availableInstances, error) -> {
+              final var endQueryTime = clock.getNanos();
+              dataAvailabilityQueryDurationTimer.record(
+                  endQueryTime - startQueryTime, TimeUnit.NANOSECONDS);
+
               if (error != null) {
                 LOG.error("Error while checking for available process instances", error);
+                cleanUpStaleInstances();
                 return;
               }
 
-              LOG.debug("Available process instances items: {} ", availableInstances.size());
-              availableInstances.stream()
-                  .map(startedInstances::get)
-                  .filter(Objects::nonNull)
-                  .forEach(this::recordInstanceAvailable);
+              LOG.debug("Available process instances items: {}", availableInstances.size());
+              processAvailableInstances(availableInstances);
+              cleanUpStaleInstances();
             },
             piCheckExecutorService);
   }
 
-  private void recordInstanceAvailable(final PiCreationResult awaitingPI) {
-    final long durationNanos = System.nanoTime() - awaitingPI.startTimeNanos;
-    LOG.debug(
-        "Process instance {} retrieved in {} ms",
-        awaitingPI.processInstanceKey,
-        TimeUnit.NANOSECONDS.toMillis(durationNanos));
+  private void cleanUpStaleInstances() {
+    // clean up stale instances which exceeded the max duration - to save memory
+    final long nanoTime = clock.getNanos();
+    final var instancesWhereTimeExceededDeadline =
+        startedInstances.values().stream()
+            .filter(piCreationResult -> nanoTime - piCreationResult.startTimeNanos > MAX_DURATION)
+            .toList();
+    instancesWhereTimeExceededDeadline.forEach(
+        piResults -> {
+          final long durationNanos = clock.getNanos() - piResults.startTimeNanos;
+          LOG.debug(
+              "Process instance {} was not retrieved after {} ms, removing it from the awaiting list.",
+              piResults.processInstanceKey,
+              TimeUnit.NANOSECONDS.toMillis(durationNanos));
+          recordInstanceAvailable(piResults, durationNanos);
+        });
+  }
 
+  private void processAvailableInstances(final List<Long> availableInstances) {
+    availableInstances.stream()
+        .map(startedInstances::get)
+        .filter(Objects::nonNull)
+        .forEach(
+            piResults -> {
+              final long durationNanos = clock.getNanos() - piResults.startTimeNanos;
+              LOG.debug(
+                  "Process instance {} retrieved in {} ms",
+                  piResults.processInstanceKey,
+                  TimeUnit.NANOSECONDS.toMillis(durationNanos));
+              recordInstanceAvailable(piResults, durationNanos);
+            });
+  }
+
+  private void recordInstanceAvailable(
+      final PiCreationResult awaitingPI, final long durationNanos) {
     final int partitionId = Protocol.decodePartitionId(awaitingPI.processInstanceKey);
     partitionToTimerMap
         .computeIfAbsent(
@@ -124,13 +162,12 @@ public class ProcessInstanceStartMeter implements AutoCloseable {
     startedInstances.remove(awaitingPI.processInstanceKey);
   }
 
-  public void recordProcessInstanceStart(
-      final long processInstanceKey, final long businessKey, final long startTimeNanos) {
+  public void recordProcessInstanceStart(final long processInstanceKey, final long startTimeNanos) {
     startedInstances.put(
-        processInstanceKey, new PiCreationResult(processInstanceKey, businessKey, startTimeNanos));
+        processInstanceKey, new PiCreationResult(processInstanceKey, startTimeNanos));
   }
 
-  record PiCreationResult(long processInstanceKey, long businessKey, long startTimeNanos) {}
+  private record PiCreationResult(long processInstanceKey, long startTimeNanos) {}
 
   /**
    * Interface to check the availability of process instances.
@@ -141,11 +178,10 @@ public class ProcessInstanceStartMeter implements AutoCloseable {
     /**
      * Finds the process instances that are available from the given list of process instance keys.
      *
-     * @param businessInstanceKeys the list of business instance keys to check identify the process
-     *     instances
+     * @param processInstanceKeys the list of process instance keys to check
      * @return a CompletionStage that, when completed, provides the list of available process
      *     instance keys
      */
-    CompletionStage<List<Long>> findAvailableInstances(List<Long> businessInstanceKeys);
+    CompletionStage<List<Long>> findAvailableInstances(List<Long> processInstanceKeys);
   }
 }

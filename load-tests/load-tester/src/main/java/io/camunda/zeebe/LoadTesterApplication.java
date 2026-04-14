@@ -13,3 +13,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package io.camunda.zeebe;
+
+import io.camunda.zeebe.config.LoadTesterProperties;
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.scheduling.annotation.EnableScheduling;
+
+@SpringBootApplication
+@EnableScheduling
+@EnableConfigurationProperties(LoadTesterProperties.class)
+public class LoadTesterApplication {
+
+  public static void main(final String[] args) {
+    SpringApplication.run(LoadTesterApplication.class, args);
+  }
+}

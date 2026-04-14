@@ -13,3 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package io.camunda.zeebe.metrics;
+
+@FunctionalInterface
+/** Clock interface to abstract away System.nanoTime() usage, and improve testability. */
+public interface Clock {
+
+  /** Returns the current time in nanoseconds. */
+  long getNanos();
+}

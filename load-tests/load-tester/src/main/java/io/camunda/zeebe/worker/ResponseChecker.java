@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.zeebe;
+package io.camunda.zeebe.worker;
 
 import io.camunda.zeebe.util.logging.ThrottledLogger;
 import io.grpc.Status.Code;
