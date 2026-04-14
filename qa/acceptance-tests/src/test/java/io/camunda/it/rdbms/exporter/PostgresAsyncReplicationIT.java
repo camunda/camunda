@@ -14,7 +14,6 @@ import io.camunda.db.rdbms.LiquibaseSchemaManager;
 import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.db.rdbms.config.VendorDatabaseProperties;
 import io.camunda.db.rdbms.sql.ExporterPositionMapper;
-import io.camunda.db.rdbms.write.PostgresReplicationLsnProvider;
 import io.camunda.exporter.rdbms.RdbmsExporterWrapper;
 import io.camunda.zeebe.broker.exporter.context.ExporterConfiguration;
 import io.camunda.zeebe.broker.exporter.context.ExporterContext;
@@ -141,10 +140,6 @@ class PostgresAsyncReplicationIT {
 
   @BeforeEach
   void setUp() {
-    // Wire the PostgresReplicationLsnProvider so the exporter can track replication state
-    rdbmsService.setReplicationLsnProvider(
-        new PostgresReplicationLsnProvider(exporterPositionMapper));
-
     exporter =
         new RdbmsExporterWrapper(rdbmsService, liquibaseSchemaManager, vendorDatabaseProperties);
 
@@ -175,19 +170,16 @@ class PostgresAsyncReplicationIT {
     // given — export records while replica is in sync
     waitForReplicasInSync();
 
+    // Export initial records and wait for broker position to advance
     for (int i = 0; i < 5; i++) {
       exporter.export(FIXTURES.getProcessInstanceStartedRecord());
     }
 
-    // The background ReplicationMonitor polls the replica LSN and advances confirmedPosition.
-    // Each export() triggers a flush + captureCurrentLsnAndEnqueue() which reads confirmedPosition
-    // and updates the broker. Wait for the broker position to advance.
     await()
         .atMost(Duration.ofSeconds(30))
         .pollInterval(Duration.ofMillis(500))
         .untilAsserted(
             () -> {
-              // Export another record to trigger captureCurrentLsnAndEnqueue → broker update
               exporter.export(FIXTURES.getProcessInstanceStartedRecord());
               assertThat(controller.getPosition()).isGreaterThan(0);
             });
@@ -201,15 +193,24 @@ class PostgresAsyncReplicationIT {
       exporter.export(FIXTURES.getProcessInstanceStartedRecord());
     }
 
-    // Allow the ReplicationMonitor to poll a few times so the system stabilizes after pause.
-    // Any in-flight confirmed positions from before the pause will be consumed here.
+    // Wait for the position to stabilize after the pause. The ReplicationMonitor may still
+    // confirm pre-pause LSNs for a few poll cycles. We detect stabilization by checking that
+    // the position hasn't changed across two consecutive polls (3 seconds apart).
+    // Wait for position to stabilize: same value across two consecutive polls.
+    // We update lastSeen BEFORE the assertion so it persists even when the assertion fails.
+    final long[] lastSeen = {-1};
     await()
-        .atMost(Duration.ofSeconds(10))
-        .pollInterval(Duration.ofMillis(500))
+        .atMost(Duration.ofSeconds(30))
+        .pollInterval(Duration.ofSeconds(3))
         .untilAsserted(
             () -> {
               exporter.export(FIXTURES.getProcessInstanceStartedRecord());
-              // Just wait for a few polls — position may still advance from pre-pause confirmations
+              final long previous = lastSeen[0];
+              final long current = controller.getPosition();
+              lastSeen[0] = current;
+              assertThat(current)
+                  .as("Position should stabilize (stop advancing)")
+                  .isEqualTo(previous);
             });
 
     // Capture the stabilized position after the pause has taken effect
