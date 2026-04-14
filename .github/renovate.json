@@ -615,7 +615,8 @@
       "customType": "regex",
       "managerFilePatterns": [
         "/clients/camunda-spring-boot-[34]-starter/pom\\.xml$/",
-        "/testing/camunda-process-test-spring-boot-[34]/pom\\.xml$/"
+        "/testing/camunda-process-test-spring-boot-[34]/pom\\.xml$/",
+        "/library-parent/pom\\.xml$/"
       ],
       "matchStrings": [
         "<version\\.spring-boot>(?<currentValue>[^<]+)</version\\.spring-boot>"
@@ -628,7 +629,8 @@
       "customType": "regex",
       "managerFilePatterns": [
         "/clients/camunda-spring-boot-[34]-starter/pom\\.xml$/",
-        "/testing/camunda-process-test-spring-boot-[34]/pom\\.xml$/"
+        "/testing/camunda-process-test-spring-boot-[34]/pom\\.xml$/",
+        "/library-parent/pom\\.xml$/"
       ],
       "matchStrings": [
         "<version\\.spring>(?<currentValue>[^<]+)</version\\.spring>"
@@ -641,7 +643,8 @@
       "customType": "regex",
       "managerFilePatterns": [
         "/clients/camunda-spring-boot-[34]-starter/pom\\.xml$/",
-        "/testing/camunda-process-test-spring-boot-[34]/pom\\.xml$/"
+        "/testing/camunda-process-test-spring-boot-[34]/pom\\.xml$/",
+        "/library-parent/pom\\.xml$/"
       ],
       "matchStrings": [
         "<version\\.junit>(?<currentValue>[^<]+)</version\\.junit>"
