@@ -578,14 +578,24 @@ public class ExecutionListenerTest {
     // given
     ENGINE
         .deployment()
-        .withXmlClasspathResource(
-            "/processes/process_with_execution_listeners_and_task_headers.bpmn")
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .serviceTask(
+                    "task",
+                    task ->
+                        task.zeebeJobType(SERVICE_TASK_TYPE)
+                            .zeebeTaskHeader("foo", "bar")
+                            .zeebeExecutionListener(l -> l.start().type("start"))
+                            .zeebeExecutionListener(l -> l.end().type("end")))
+                .endEvent()
+                .done())
         .deploy();
 
     // when both start and end execution listeners are created and completed
-    final long processInstanceKey =
-        ENGINE.processInstance().ofBpmnProcessId("Process_1x1wunc").create();
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
     ENGINE.job().ofInstance(processInstanceKey).withType("start").complete();
+    ENGINE.job().ofInstance(processInstanceKey).withType(SERVICE_TASK_TYPE).complete();
     ENGINE.job().ofInstance(processInstanceKey).withType("end").complete();
 
     // then
@@ -613,6 +623,112 @@ public class ExecutionListenerTest {
                 assertThat(r.getValue().getCustomHeaders())
                     .describedAs("Expect that the completed jobs also have the task headers")
                     .isEqualTo(Map.of("foo", "bar")));
+  }
+
+  @Test
+  public void shouldCreateExecutionListenerJobWithOnlyListenerTaskHeaders() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .serviceTask(
+                    "task",
+                    task ->
+                        task.zeebeJobType(SERVICE_TASK_TYPE)
+                            .zeebeExecutionListener(
+                                l ->
+                                    l.start()
+                                        .type("startListener")
+                                        .zeebeTaskHeader("listenerOnlyKey", "listenerOnlyValue")))
+                .endEvent()
+                .done())
+        .deploy();
+
+    // when
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // then
+    assertThat(
+            jobRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .withJobKind(JobKind.EXECUTION_LISTENER)
+                .withIntent(JobIntent.CREATED)
+                .withType("startListener")
+                .getFirst())
+        .extracting(r -> r.getValue().getCustomHeaders())
+        .describedAs(
+            "Listener job should contain only the listener-specific headers when no base headers are defined")
+        .isEqualTo(Map.of("listenerOnlyKey", "listenerOnlyValue"));
+  }
+
+  @Test
+  public void shouldCreateExecutionListenerJobWithMergedTaskHeaders() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .serviceTask(
+                    "task",
+                    task ->
+                        task.zeebeJobType(SERVICE_TASK_TYPE)
+                            .zeebeTaskHeader("baseKey", "baseValue")
+                            .zeebeTaskHeader("overrideKey", "baseOverride")
+                            .zeebeExecutionListener(
+                                l ->
+                                    l.start()
+                                        .type("startListener")
+                                        .zeebeTaskHeader("listenerKey", "listenerValue")
+                                        .zeebeTaskHeader("overrideKey", "listenerOverride"))
+                            .zeebeExecutionListener(
+                                l ->
+                                    l.end()
+                                        .type("endListener")
+                                        .zeebeTaskHeader("endListenerKey", "endListenerValue")))
+                .endEvent()
+                .done())
+        .deploy();
+
+    // when
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+    ENGINE.job().ofInstance(processInstanceKey).withType("startListener").complete();
+    ENGINE.job().ofInstance(processInstanceKey).withType(SERVICE_TASK_TYPE).complete();
+    ENGINE.job().ofInstance(processInstanceKey).withType("endListener").complete();
+
+    // then
+    assertThat(
+            jobRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .withJobKind(JobKind.EXECUTION_LISTENER)
+                .withIntent(JobIntent.CREATED)
+                .withType("startListener")
+                .getFirst())
+        .extracting(r -> r.getValue().getCustomHeaders())
+        .describedAs(
+            "Start listener should have base headers, listener-specific headers, and listener should override base for conflicting keys")
+        .isEqualTo(
+            Map.of(
+                "baseKey", "baseValue",
+                "listenerKey", "listenerValue",
+                "overrideKey", "listenerOverride"));
+
+    assertThat(
+            jobRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .withJobKind(JobKind.EXECUTION_LISTENER)
+                .withIntent(JobIntent.CREATED)
+                .withType("endListener")
+                .getFirst())
+        .extracting(r -> r.getValue().getCustomHeaders())
+        .describedAs("End listener should have base headers and listener-specific headers")
+        .isEqualTo(
+            Map.of(
+                "baseKey", "baseValue",
+                "endListenerKey", "endListenerValue",
+                "overrideKey", "baseOverride"));
   }
 
   // test util methods
