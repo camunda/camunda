@@ -678,7 +678,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        tasklist_mode: ${{ fromJSON( (needs.validate-release.outputs.base == 'stable/8.6' || needs.validate-release.outputs.base == 'stable/8.7') && '["v1"]' || '["v1","v2"]' ) }}
+        tasklist_mode: ${{ fromJSON( (needs.validate-release.outputs.base == 'stable/8.6' || needs.validate-release.outputs.base == 'stable/8.7') && '["v1"]' || needs.validate-release.outputs.base == 'main' && '["v2"]' || '["v1","v2"]' ) }}
     needs: validate-release
     runs-on: ubuntu-latest
     timeout-minutes: 60
@@ -864,7 +864,7 @@ jobs:
                 # stable/8.8: run all tests excluding @v1-only tagged tests
                 TEST_ARGS+=(tests/ --grep-invert '@v1-only')
               else
-                # main, stable 8.9: run all tests excluding v1/ directories
+                # stable/8.9: run all tests excluding v1/ directories
                 TEST_ARGS+=(tests/ --grep-invert 'v1/')
               fi
             else
@@ -873,7 +873,7 @@ jobs:
                 # stable/8.8: no v1/ directories, run regular directories for V1 mode
                 TEST_ARGS+=(tests/tasklist/ tests/common-flows/)
               else
-                # main, stable 8.9: has v1/ directories for V1 mode
+                # stable/8.9: has v1/ directories for V1 mode
                 TEST_ARGS+=(tests/tasklist/v1/ tests/common-flows/v1/)
               fi
             fi

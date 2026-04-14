@@ -7,7 +7,7 @@
  */
 
 import {test} from '@fixtures';
-import {navigateToApp} from '@pages/v1/UtilitiesPage';
+import {navigateToApp} from '@pages/UtilitiesPage';
 import {expect} from '@playwright/test';
 import {captureScreenshot, captureFailureVideo} from '@setup';
 
