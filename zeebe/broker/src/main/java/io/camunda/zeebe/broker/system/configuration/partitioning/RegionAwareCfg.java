@@ -16,8 +16,8 @@ import java.util.LinkedHashMap;
  * <p>Maps region names to their respective {@link RegionCfg}. The insertion order of this map is
  * significant: broker {@link io.atomix.cluster.MemberId}s are assigned sequentially per region in
  * iteration order. For example, given regions {@code us-east1} (2 brokers) then {@code us-west1}
- * (2 brokers), the member IDs will be {@code us-east1:0}, {@code us-east1:1}, {@code us-west1:0},
- * {@code us-west1:1}.
+ * (2 brokers), the member IDs will be {@code us-east1-0}, {@code us-east1-1}, {@code us-west1-0},
+ * {@code us-west1-1}.
  *
  * <p>The map <strong>must</strong> be a {@link LinkedHashMap} to preserve YAML insertion order.
  * This is enforced via the {@link JsonDeserialize} annotation.
@@ -33,18 +33,19 @@ import java.util.LinkedHashMap;
  *     partitioning:
  *       scheme: REGION_AWARE
  *       region-aware:
- *         us-east1:
- *           numberOfBrokers: 2
- *           numberOfReplicas: 2
- *           priority: 1000
- *         us-west1:
- *           numberOfBrokers: 2
- *           numberOfReplicas: 2
- *           priority: 500
- *         euro-east1:
- *           numberOfBrokers: 1
- *           numberOfReplicas: 1
- *           priority: 10
+ *         regions:
+ *           us-east1:
+ *             numberOfBrokers: 2
+ *             numberOfReplicas: 2
+ *             priority: 1000
+ *           us-west1:
+ *             numberOfBrokers: 2
+ *             numberOfReplicas: 2
+ *             priority: 500
+ *           euro-east1:
+ *             numberOfBrokers: 1
+ *             numberOfReplicas: 1
+ *             priority: 10
  * }</pre>
  */
 public final class RegionAwareCfg {
