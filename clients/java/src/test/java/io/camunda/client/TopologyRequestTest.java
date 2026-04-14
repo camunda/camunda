@@ -50,21 +50,21 @@ public final class TopologyRequestTest extends ClientTest {
         3,
         "1.22.3-SNAPSHOT",
         broker(
-            0,
+            "0",
             "host1",
             123,
             "1.22.3-SNAPSHOT",
             partition(0, LEADER, HEALTHY),
             partition(1, FOLLOWER, UNHEALTHY)),
         broker(
-            1,
+            "1",
             "host2",
             212,
             "2.22.3-SNAPSHOT",
             partition(0, FOLLOWER, HEALTHY),
             partition(1, LEADER, HEALTHY)),
         broker(
-            2,
+            "2",
             "host3",
             432,
             "3.22.3-SNAPSHOT",
@@ -84,7 +84,7 @@ public final class TopologyRequestTest extends ClientTest {
     assertThat(brokers).hasSize(3);
 
     BrokerInfo broker = brokers.get(0);
-    assertThat(broker.getNodeId()).isEqualTo(0);
+    assertThat(broker.getNodeId()).isEqualTo("0");
     assertThat(broker.getHost()).isEqualTo("host1");
     assertThat(broker.getPort()).isEqualTo(123);
     assertThat(broker.getAddress()).isEqualTo("host1:123");
@@ -96,7 +96,7 @@ public final class TopologyRequestTest extends ClientTest {
             tuple(1, PartitionBrokerRole.FOLLOWER, PartitionBrokerHealth.UNHEALTHY));
 
     broker = brokers.get(1);
-    assertThat(broker.getNodeId()).isEqualTo(1);
+    assertThat(broker.getNodeId()).isEqualTo("1");
     assertThat(broker.getHost()).isEqualTo("host2");
     assertThat(broker.getPort()).isEqualTo(212);
     assertThat(broker.getAddress()).isEqualTo("host2:212");
@@ -108,7 +108,7 @@ public final class TopologyRequestTest extends ClientTest {
             tuple(1, PartitionBrokerRole.LEADER, PartitionBrokerHealth.HEALTHY));
 
     broker = brokers.get(2);
-    assertThat(broker.getNodeId()).isEqualTo(2);
+    assertThat(broker.getNodeId()).isEqualTo("2");
     assertThat(broker.getHost()).isEqualTo("host3");
     assertThat(broker.getPort()).isEqualTo(432);
     assertThat(broker.getAddress()).isEqualTo("host3:432");
@@ -128,7 +128,7 @@ public final class TopologyRequestTest extends ClientTest {
         1,
         1,
         "1.22.3-SNAPSHOT",
-        broker(0, "host1", 123, "1.22.3-SNAPSHOT", partition(0, LEADER, DEAD)));
+        broker("0", "host1", 123, "1.22.3-SNAPSHOT", partition(0, LEADER, DEAD)));
 
     // when
     final Topology topology = client.newTopologyRequest().send().join();

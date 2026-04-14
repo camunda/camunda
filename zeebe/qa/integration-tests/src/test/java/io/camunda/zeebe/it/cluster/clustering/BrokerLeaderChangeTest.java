@@ -41,7 +41,8 @@ public final class BrokerLeaderChangeTest {
   public void shouldBecomeFollowerAfterRestart() {
     // given
     final int partition = Protocol.START_PARTITION_ID;
-    final int oldLeader = clusteringRule.getLeaderForPartition(partition).getNodeId();
+    final int oldLeader =
+        Integer.parseInt(clusteringRule.getLeaderForPartition(partition).getNodeId());
     clusteringRule.stopBrokerAndAwaitNewLeader(oldLeader);
 
     // when
@@ -50,7 +51,7 @@ public final class BrokerLeaderChangeTest {
     // then
     final Stream<PartitionInfo> partitionInfo =
         clusteringRule.getTopologyFromClient().getBrokers().stream()
-            .filter(b -> b.getNodeId() == oldLeader)
+            .filter(b -> b.getNodeId().equals(String.valueOf(oldLeader)))
             .flatMap(b -> b.getPartitions().stream().filter(p -> p.getPartitionId() == partition));
 
     assertThat(partitionInfo).noneMatch(PartitionInfo::isLeader);

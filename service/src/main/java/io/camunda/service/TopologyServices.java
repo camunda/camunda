@@ -110,10 +110,11 @@ public final class TopologyServices extends ApiServices<TopologyServices> {
     final var address = Address.from(brokerAddress);
 
     broker
-        .nodeId(brokerId)
+        .nodeId(topology.getBrokerMemberId(brokerId))
         .host(address.host())
         .port(address.port())
-        .version(topology.getBrokerVersion(brokerId));
+        .version(topology.getBrokerVersion(brokerId))
+        .region(topology.getBrokerRegion(brokerId));
   }
 
   private void addPartitionInfoToBrokerInfo(
@@ -235,20 +236,26 @@ public final class TopologyServices extends ApiServices<TopologyServices> {
   }
 
   public record Broker(
-      Integer nodeId, String host, Integer port, List<Partition> partitions, String version) {
+      String nodeId,
+      String host,
+      Integer port,
+      List<Partition> partitions,
+      String version,
+      String region) {
 
     static class Builder {
-      Integer nodeId;
+      String nodeId;
       String host;
       Integer port;
       List<Partition> partitions = new ArrayList<>();
       String version;
+      String region;
 
       public static Builder create() {
         return new Builder();
       }
 
-      public Builder nodeId(final Integer nodeId) {
+      public Builder nodeId(final String nodeId) {
         this.nodeId = nodeId;
         return this;
       }
@@ -273,8 +280,13 @@ public final class TopologyServices extends ApiServices<TopologyServices> {
         return this;
       }
 
+      public Builder region(final String region) {
+        this.region = region;
+        return this;
+      }
+
       public Broker build() {
-        return new Broker(nodeId, host, port, partitions, version);
+        return new Broker(nodeId, host, port, partitions, version, region);
       }
     }
   }

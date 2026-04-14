@@ -74,10 +74,10 @@ record TestTopology(
     }
   }
 
-  record TestBroker(int nodeId, List<PartitionInfo> partitions) implements BrokerInfo {
+  record TestBroker(String nodeId, List<PartitionInfo> partitions) implements BrokerInfo {
 
     @Override
-    public int getNodeId() {
+    public String getNodeId() {
       return nodeId;
     }
 

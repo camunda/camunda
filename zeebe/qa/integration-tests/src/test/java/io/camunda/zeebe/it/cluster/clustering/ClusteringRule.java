@@ -315,6 +315,10 @@ public class ClusteringRule extends ExternalResource {
     return brokers.computeIfAbsent(nodeId, this::createBroker);
   }
 
+  public Broker getBroker(final String nodeId) {
+    return getBroker(Integer.parseInt(nodeId));
+  }
+
   private CompletableFuture<Void> startBrokers() {
     //noinspection resource
     final var brokerStartFutures =
@@ -599,6 +603,14 @@ public class ClusteringRule extends ExternalResource {
     startBroker(nodeId);
   }
 
+  public void restartBroker(final String nodeId) {
+    restartBroker(Integer.parseInt(nodeId));
+  }
+
+  public void startBroker(final String nodeId) {
+    startBroker(Integer.parseInt(nodeId));
+  }
+
   public void startBroker(final int nodeId) {
     final var broker = Objects.requireNonNull(getBroker(nodeId), "must get existing broker");
     //noinspection resource
@@ -639,13 +651,17 @@ public class ClusteringRule extends ExternalResource {
   }
 
   public BrokerInfo awaitOtherLeader(final int partitionId, final int previousLeader) {
+    return awaitOtherLeader(partitionId, String.valueOf(previousLeader));
+  }
+
+  public BrokerInfo awaitOtherLeader(final int partitionId, final String previousLeader) {
     return Awaitility.await()
         .pollInterval(Duration.ofMillis(100))
         .atMost(Duration.ofMinutes(1))
         .ignoreExceptions()
         .until(
             () -> getLeaderForPartition(partitionId),
-            (leader) -> leader.getNodeId() != previousLeader);
+            (leader) -> !leader.getNodeId().equals(previousLeader));
   }
 
   public void stepDown(final Broker broker, final int partitionId) {
@@ -686,6 +702,14 @@ public class ClusteringRule extends ExternalResource {
           assertion ->
               assertion.doesNotContainBroker(nodeId).hasLeaderForEachPartition(partitionCount));
     }
+  }
+
+  public void stopBrokerAndAwaitNewLeader(final String nodeId) {
+    stopBrokerAndAwaitNewLeader(Integer.parseInt(nodeId));
+  }
+
+  public void stopBroker(final String nodeId) {
+    stopBroker(Integer.parseInt(nodeId));
   }
 
   public void stopBroker(final int nodeId) {
@@ -731,13 +755,17 @@ public class ClusteringRule extends ExternalResource {
               assertThat(serverOfExpectedLeader.promote())
                   .describedAs("Promote request is successful")
                   .succeedsWithin(Duration.ofSeconds(15));
-              final int currentLeaderId = getLeaderForPartition(partitionId).getNodeId();
+              final String currentLeaderId = getLeaderForPartition(partitionId).getNodeId();
               assertThat(currentLeaderId)
                   .withFailMessage(
-                      "Expected the leader of partition %d to be %d, but was %d",
+                      "Expected the leader of partition %d to be %d, but was %s",
                       partitionId, expectedLeaderId, currentLeaderId)
-                  .isEqualTo(expectedLeaderId);
+                  .isEqualTo(String.valueOf(expectedLeaderId));
             });
+  }
+
+  public void forceNewLeaderForPartition(final String expectedLeaderId, final int partitionId) {
+    forceNewLeaderForPartition(Integer.parseInt(expectedLeaderId), partitionId);
   }
 
   public void waitForTopology(final Consumer<TopologyAssert> assertions) {
@@ -806,6 +834,10 @@ public class ClusteringRule extends ExternalResource {
         .filter(id -> id != leaderNodeId)
         .map(brokers::get)
         .collect(Collectors.toList());
+  }
+
+  public List<Broker> getOtherBrokerObjects(final String leaderNodeId) {
+    return getOtherBrokerObjects(Integer.parseInt(leaderNodeId));
   }
 
   public Path getSegmentsDirectory(final Broker broker) {
@@ -991,7 +1023,8 @@ public class ClusteringRule extends ExternalResource {
   public int stopAnyFollower() {
     final var leaderForPartition = getLeaderForPartition(START_PARTITION_ID);
 
-    final var otherBrokerObjects = getOtherBrokerObjects(leaderForPartition.getNodeId());
+    final var otherBrokerObjects =
+        getOtherBrokerObjects(Integer.parseInt(leaderForPartition.getNodeId()));
     final var nodeId = otherBrokerObjects.get(0).getConfig().getCluster().getNodeId();
     stopBroker(nodeId);
     return nodeId;

@@ -150,7 +150,7 @@ public final class RecordingGatewayService extends GatewayImplBase {
   }
 
   public static BrokerInfo broker(
-      final int nodeId,
+      final String nodeId,
       final String host,
       final int port,
       final String version,

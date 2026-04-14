@@ -52,9 +52,12 @@ public final class ClusterConfigFactory {
     final var advertisedAddress =
         Address.from(network.getAdvertisedHost(), network.getAdvertisedPort());
 
+    final var memberId =
+        (region != null && !region.isBlank()) ? region + "-" + nodeId : String.valueOf(nodeId);
+
     return new MemberConfig()
         .setAddress(advertisedAddress)
-        .setId(region + "-" + nodeId)
+        .setId(memberId)
         .setNodeVersion(nodeVersion);
   }
 

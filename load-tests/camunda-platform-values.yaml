@@ -252,6 +252,12 @@ orchestration:
         # RocksDB memory limit setting, limits the overall RocksDB memory usage
         # ZEEBE_BROKER_EXPERIMENTAL_ROCKSDB_MEMORYLIMIT
         zeebe.broker.experimental.rocksdb.memoryLimit: "64MB"
+        camunda.cluster.region: "us-east"
+        camunda.cluster.partitioning.scheme: REGION_AWARE
+        camunda.cluster.partitioning.region-aware.regions.us-east.numerOfreplicas: 3
+        camunda.cluster.partitioning.region-aware.regions.us-east.numberOfBrokers: 3
+        camunda.cluster.partitioning.region-aware.regions.us-east.priority: 1000
+
     # This file is loaded after application.yml (higher priority). It is empty by default,
     # but can be overridden via --set-file for specific scenarios (e.g. max) to change settings
     # like disabling consistency checks without duplicating the full application.yml content.

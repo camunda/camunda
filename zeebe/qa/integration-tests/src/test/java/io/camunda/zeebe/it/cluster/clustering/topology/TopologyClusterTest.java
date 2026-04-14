@@ -62,7 +62,9 @@ public final class TopologyClusterTest {
       final List<BrokerInfo> brokers = topology.getBrokers();
 
       assertThat(brokers.size()).isEqualTo(3);
-      assertThat(brokers).extracting(BrokerInfo::getNodeId).containsExactlyInAnyOrder(0, 1, 2);
+      assertThat(brokers)
+          .extracting(BrokerInfo::getNodeId)
+          .containsExactlyInAnyOrder("0", "1", "2");
     }
   }
 

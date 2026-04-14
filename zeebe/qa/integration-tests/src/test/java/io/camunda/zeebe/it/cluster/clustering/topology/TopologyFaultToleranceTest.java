@@ -75,7 +75,7 @@ final class TopologyFaultToleranceTest {
                     .hasBrokersCount(1)
                     .hasBrokerSatisfying(
                         broker -> {
-                          assertThat(broker.getNodeId()).isEqualTo(clusterSize - 1);
+                          assertThat(broker.getNodeId()).isEqualTo(String.valueOf(clusterSize - 1));
                           assertThat(broker.getPartitions())
                               .describedAs("has %d follower partitions", partitionsCount)
                               .hasSize(partitionsCount)

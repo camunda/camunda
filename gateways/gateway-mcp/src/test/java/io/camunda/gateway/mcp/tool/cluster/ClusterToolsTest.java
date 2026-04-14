@@ -114,7 +114,7 @@ class ClusterToolsTest extends OperationalToolsTest {
               .lastCompletedChangeId("1")
               .addBrokersItem(
                   new BrokerInfo()
-                      .nodeId(0)
+                      .nodeId("0")
                       .host("localhost")
                       .port(26501)
                       .version(version)
@@ -125,7 +125,7 @@ class ClusterToolsTest extends OperationalToolsTest {
                               .role(RoleEnum.LEADER)))
               .addBrokersItem(
                   new BrokerInfo()
-                      .nodeId(1)
+                      .nodeId("1")
                       .host("localhost")
                       .port(26502)
                       .version(version)
@@ -136,7 +136,7 @@ class ClusterToolsTest extends OperationalToolsTest {
                               .role(RoleEnum.FOLLOWER)))
               .addBrokersItem(
                   new BrokerInfo()
-                      .nodeId(2)
+                      .nodeId("2")
                       .host("localhost")
                       .port(26503)
                       .version(version)
@@ -149,23 +149,26 @@ class ClusterToolsTest extends OperationalToolsTest {
           new Topology(
               List.of(
                   new Broker(
-                      0,
+                      "0",
                       "localhost",
                       26501,
                       List.of(new TopologyServices.Partition(1, Role.LEADER, Health.HEALTHY)),
-                      version),
+                      version,
+                      null),
                   new Broker(
-                      1,
+                      "1",
                       "localhost",
                       26502,
                       List.of(new TopologyServices.Partition(1, Role.FOLLOWER, Health.HEALTHY)),
-                      version),
+                      version,
+                      null),
                   new Broker(
-                      2,
+                      "2",
                       "localhost",
                       26503,
                       List.of(new TopologyServices.Partition(1, Role.INACTIVE, Health.UNHEALTHY)),
-                      version)),
+                      version,
+                      null)),
               "cluster-id",
               3,
               1,

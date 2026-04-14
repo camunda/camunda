@@ -45,6 +45,23 @@ public interface BrokerClusterState {
 
   String getBrokerVersion(int brokerId);
 
+  /**
+   * Returns the region the broker belongs to, or {@code null} if not configured (non-region-aware
+   * clusters).
+   */
+  default String getBrokerRegion(final int brokerId) {
+    return null;
+  }
+
+  /**
+   * Returns the composite member ID for the broker. In region-aware clusters this is {@code
+   * region-nodeId} (e.g. {@code us-east1-0}). In non-region-aware clusters this falls back to the
+   * string representation of the integer node ID.
+   */
+  default String getBrokerMemberId(final int brokerId) {
+    return String.valueOf(brokerId);
+  }
+
   PartitionHealthStatus getPartitionHealth(int brokerId, int partition);
 
   long getLastCompletedChangeId();

@@ -173,7 +173,10 @@ public class FailOverReplicationTest {
     final List<Broker> followers = clusteringRule.getOtherBrokerObjects(newLeaderId);
     final var followerA =
         followers.stream()
-            .filter(broker -> broker.getConfig().getCluster().getNodeId() != previousLeaderId)
+            .filter(
+                broker ->
+                    broker.getConfig().getCluster().getNodeId()
+                        != Integer.parseInt(previousLeaderId))
             .findFirst()
             .orElseThrow();
 
@@ -193,7 +196,7 @@ public class FailOverReplicationTest {
     clusteringRule.waitForSnapshotAtBroker(previousLeader);
     final var nextLeader = clusteringRule.awaitOtherLeader(1, newLeaderId);
 
-    assertThat(nextLeader.getNodeId()).isEqualTo(getNodeId(followerA));
+    assertThat(nextLeader.getNodeId()).isEqualTo(String.valueOf(getNodeId(followerA)));
     clusteringRule.waitForSnapshotAtBroker(previousLeader);
   }
 

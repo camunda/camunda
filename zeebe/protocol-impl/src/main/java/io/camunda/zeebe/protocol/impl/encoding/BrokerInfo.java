@@ -52,6 +52,7 @@ import org.slf4j.Logger;
 public final class BrokerInfo implements BufferReader, BufferWriter {
 
   private static final String BROKER_INFO_PROPERTY_NAME = "brokerInfo";
+  private static final String BROKER_REGION_PROPERTY_NAME = "brokerRegion";
   private static final DirectBuffer COMMAND_API_NAME = wrapString("commandApi");
 
   private static final Logger LOG = Loggers.PROTOCOL_LOGGER;
@@ -75,6 +76,7 @@ public final class BrokerInfo implements BufferReader, BufferWriter {
   private int clusterSize;
   private int replicationFactor;
   private DirectBuffer version = new UnsafeBuffer();
+  private String region;
 
   public BrokerInfo() {
     reset();
@@ -93,6 +95,7 @@ public final class BrokerInfo implements BufferReader, BufferWriter {
     replicationFactor = replicationFactorNullValue();
     addresses.clear();
     version.wrap(0, 0);
+    region = null;
     clearPartitions();
 
     return this;
@@ -179,6 +182,27 @@ public final class BrokerInfo implements BufferReader, BufferWriter {
 
   public void setVersion(final DirectBuffer buffer, final int offset, final int length) {
     version.wrap(buffer, offset, length);
+  }
+
+  public String getRegion() {
+    return region;
+  }
+
+  /**
+   * Returns the composite member ID for this broker. In region-aware clusters this is {@code
+   * region-nodeId} (e.g. {@code us-east1-0}). In non-region-aware clusters this is the string
+   * representation of the integer node ID.
+   */
+  public String getMemberId() {
+    if (region != null && !region.isBlank()) {
+      return region + "-" + nodeId;
+    }
+    return String.valueOf(nodeId);
+  }
+
+  public BrokerInfo setRegion(final String region) {
+    this.region = region;
+    return this;
   }
 
   public Map<DirectBuffer, DirectBuffer> getAddresses() {
@@ -416,7 +440,9 @@ public final class BrokerInfo implements BufferReader, BufferWriter {
   public static BrokerInfo fromProperties(final Properties properties) {
     final String property = properties.getProperty(BROKER_INFO_PROPERTY_NAME);
     if (property != null) {
-      return readFromString(property);
+      final BrokerInfo brokerInfo = readFromString(property);
+      brokerInfo.region = properties.getProperty(BROKER_REGION_PROPERTY_NAME);
+      return brokerInfo;
     } else {
       return null;
     }
@@ -433,6 +459,9 @@ public final class BrokerInfo implements BufferReader, BufferWriter {
 
   public void writeIntoProperties(final Properties memberProperties) {
     memberProperties.setProperty(BROKER_INFO_PROPERTY_NAME, writeToString());
+    if (region != null) {
+      memberProperties.setProperty(BROKER_REGION_PROPERTY_NAME, region);
+    }
   }
 
   private String writeToString() {
@@ -499,6 +528,9 @@ public final class BrokerInfo implements BufferReader, BufferWriter {
         + partitionHealthStatuses
         + ", version="
         + BufferUtil.bufferAsString(version)
+        + ", region='"
+        + region
+        + '\''
         + '}';
   }
 }

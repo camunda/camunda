@@ -686,8 +686,9 @@ message TopologyResponse {
 }
 
 message BrokerInfo {
-  // unique (within a cluster) node ID for the broker
-  int32 nodeId = 1;
+  // unique (within a cluster) node ID for the broker; in region-aware clusters this includes the
+  // region prefix, e.g. "us-east1-0"
+  string nodeId = 1;
   // hostname of the broker
   string host = 2;
   // port for the broker
@@ -696,6 +697,8 @@ message BrokerInfo {
   repeated Partition partitions = 4;
   // broker version
   string version = 5;
+  // region the broker belongs to; empty string when not in a region-aware cluster
+  string region = 6;
 }
 
 message Partition {

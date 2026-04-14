@@ -41,7 +41,7 @@ final class TopologyAssertTest {
       // given
       final var partition =
           new TestPartition(1, PartitionBrokerRole.LEADER, PartitionBrokerHealth.HEALTHY);
-      final var broker = new TestBroker(1, List.of(partition));
+      final var broker = new TestBroker("1",List.of(partition));
       final Topology topology = new TestTopology(1, 1, 1, List.of(broker));
 
       // when
@@ -56,7 +56,7 @@ final class TopologyAssertTest {
       // given
       final var partition =
           new TestPartition(1, PartitionBrokerRole.FOLLOWER, PartitionBrokerHealth.HEALTHY);
-      final var broker = new TestBroker(1, List.of(partition));
+      final var broker = new TestBroker("1",List.of(partition));
       final Topology topology = new TestTopology(1, 1, 1, List.of(broker));
 
       // when
@@ -71,7 +71,7 @@ final class TopologyAssertTest {
       // given
       final var partition =
           new TestPartition(1, PartitionBrokerRole.LEADER, PartitionBrokerHealth.UNHEALTHY);
-      final var broker = new TestBroker(1, List.of(partition));
+      final var broker = new TestBroker("1",List.of(partition));
       final Topology topology = new TestTopology(1, 1, 1, List.of(broker));
 
       // when
@@ -89,7 +89,7 @@ final class TopologyAssertTest {
       // given
       final var partition =
           new TestPartition(1, PartitionBrokerRole.LEADER, PartitionBrokerHealth.HEALTHY);
-      final var broker = new TestBroker(1, List.of(partition));
+      final var broker = new TestBroker("1",List.of(partition));
       final Topology topology = new TestTopology(1, 1, 1, List.of(broker));
 
       // when
@@ -111,7 +111,7 @@ final class TopologyAssertTest {
               1,
               2,
               List.of(
-                  new TestBroker(2, List.of(partition)), new TestBroker(2, List.of(partition))));
+                  new TestBroker("2",List.of(partition)), new TestBroker("2",List.of(partition))));
 
       // when
       final var topologyAssert = TopologyAssert.assertThat(topology);
@@ -126,7 +126,7 @@ final class TopologyAssertTest {
       // given
       final var partition =
           new TestPartition(1, PartitionBrokerRole.FOLLOWER, PartitionBrokerHealth.HEALTHY);
-      final var broker = new TestBroker(1, List.of(partition));
+      final var broker = new TestBroker("1",List.of(partition));
       final Topology topology = new TestTopology(1, 1, 1, List.of(broker));
 
       // when
@@ -145,7 +145,7 @@ final class TopologyAssertTest {
       // given
       final var partition =
           new TestPartition(1, PartitionBrokerRole.FOLLOWER, PartitionBrokerHealth.HEALTHY);
-      final var broker = new TestBroker(1, List.of(partition));
+      final var broker = new TestBroker("1",List.of(partition));
       final Topology topology = new TestTopology(1, 1, 1, List.of(broker));
 
       // when
@@ -167,7 +167,7 @@ final class TopologyAssertTest {
               1,
               2,
               List.of(
-                  new TestBroker(1, List.of(partition)), new TestBroker(2, List.of(partition))));
+                  new TestBroker("1",List.of(partition)), new TestBroker("2",List.of(partition))));
 
       // when
       final var topologyAssert = TopologyAssert.assertThat(topology);

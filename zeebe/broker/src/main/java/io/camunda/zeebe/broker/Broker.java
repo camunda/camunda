@@ -160,6 +160,11 @@ public final class Broker implements AutoCloseable {
     if (version != null && !version.isBlank()) {
       result.setVersion(version);
     }
+
+    final String region = clusterCfg.getRegion();
+    if (region != null && !region.isBlank()) {
+      result.setRegion(region);
+    }
     return result;
   }
 

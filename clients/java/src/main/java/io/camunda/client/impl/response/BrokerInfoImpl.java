@@ -25,7 +25,7 @@ import java.util.Objects;
 
 public final class BrokerInfoImpl implements BrokerInfo {
 
-  private final int nodeId;
+  private final String nodeId;
   private final String host;
   private final int port;
   private final String version;
@@ -56,7 +56,7 @@ public final class BrokerInfoImpl implements BrokerInfo {
   }
 
   @Override
-  public int getNodeId() {
+  public String getNodeId() {
     return nodeId;
   }
 
@@ -101,8 +101,8 @@ public final class BrokerInfoImpl implements BrokerInfo {
     }
 
     final BrokerInfoImpl that = (BrokerInfoImpl) o;
-    return nodeId == that.nodeId
-        && port == that.port
+    return port == that.port
+        && Objects.equals(nodeId, that.nodeId)
         && Objects.equals(host, that.host)
         && Objects.equals(version, that.version)
         && Objects.equals(partitions, that.partitions);

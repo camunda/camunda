@@ -124,11 +124,13 @@ public final class EndpointManager {
     final String brokerAddress = topology.getBrokerAddress(brokerId);
     final Address address = Address.from(brokerAddress);
 
+    final String region = topology.getBrokerRegion(brokerId);
     brokerInfo
-        .setNodeId(brokerId)
+        .setNodeId(topology.getBrokerMemberId(brokerId))
         .setHost(address.host())
         .setPort(address.port())
-        .setVersion(topology.getBrokerVersion(brokerId));
+        .setVersion(topology.getBrokerVersion(brokerId))
+        .setRegion(region != null ? region : "");
   }
 
   private void addPartitionInfoToBrokerInfo(
