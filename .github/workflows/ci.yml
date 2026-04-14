@@ -1752,6 +1752,28 @@ jobs:
         secret/data/products/zeebe/ci/zeebe REGISTRY_HUB_DOCKER_COM_PSW | TEST_DOCKER_PASSWORD;
         secret/data/github.com/organizations/camunda NEXUS_USR | TEST_DOCKER_USERNAME_CAMUNDA_CLOUD;
         secret/data/github.com/organizations/camunda NEXUS_PSW | TEST_DOCKER_PASSWORD_CAMUNDA_CLOUD;
+  alwaysgreen-helm-deploy-status:
+    name: Observe Helm chart Integration Tests status
+    needs: alwaysgreen-helm-deploy
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    permissions: { }
+    steps:
+      - uses: actions/checkout@v6
+      - run: |
+          # shellcheck disable=SC2242
+          exit ${{ ((contains(needs.*.result, 'cancelled') || contains(needs.*.result, 'failure')) && 1) || 0 }}
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ needs.alwaysgreen-helm-deploy.result }}
+          job_name: alwaysgreen-helm-deploy-status
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
   alwaysgreen-trigger-saas-e2e:
     name: "AlwaysGreen / Trigger SaaS E2E tests"
     runs-on: ubuntu-latest
@@ -1781,7 +1803,7 @@ jobs:
 
       - name: Trigger + watch SaaS E2E downstream workflow
         id: saas-e2e
-        uses: ./.ci/saas-downstream-e2e
+        uses: ./.github/actions/saas-downstream-e2e
         with:
           github_token: ${{ steps.github-token.outputs.token }}
           target_repo: camunda/c8-cross-component-e2e-tests
@@ -1804,7 +1826,7 @@ jobs:
         uses: ./.github/actions/observe-build-status
         with:
           build_status: ${{ job.status }}
-          job_name: trigger-saas-e2e
+          job_name: alwaysgreen-trigger-saas-e2e
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}

@@ -67,7 +67,7 @@ runs:
         SINCE_MINUTES: ${{ inputs.since_minutes }}
       run: |
         set -euo pipefail
-        ./.ci/saas-downstream-e2e/trigger-dispatch.sh
+        "${{ github.action_path }}/trigger-dispatch.sh"
 
     - name: Wait for downstream workflow to finish
       id: wait
@@ -79,4 +79,4 @@ runs:
         CORRELATION_ID: ${{ inputs.correlation_id }}
       run: |
         set -euo pipefail
-        ./.ci/saas-downstream-e2e/wait-run.sh
+        "${{ github.action_path }}/wait-run.sh"
