@@ -29,7 +29,7 @@ public class ConfigTest {
     final var appCfg = AppConfigLoader.load();
 
     // then
-    assertThat(appCfg.getBrokerUrl()).isEqualTo("localhost:26500");
+    assertThat(appCfg.getBrokerUrl()).isEqualTo("grpc://localhost:26500");
     assertThat(appCfg.isTls()).isFalse();
     assertThat(appCfg.getMonitoringPort()).isEqualTo(9600);
     assertThat(appCfg.isMonitorDataAvailability()).isFalse();
@@ -78,7 +78,7 @@ public class ConfigTest {
     final var appCfg = AppConfigLoader.load("different-application.conf");
 
     // then
-    assertThat(appCfg.getBrokerUrl()).isEqualTo("localhost:26500");
+    assertThat(appCfg.getBrokerUrl()).isEqualTo("grpc://localhost:26500");
     assertThat(appCfg.isTls()).isFalse();
     assertThat(appCfg.getMonitoringPort()).isEqualTo(9600);
     assertThat(appCfg.isMonitorDataAvailability()).isTrue();
