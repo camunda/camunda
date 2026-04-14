@@ -49,6 +49,7 @@ public final class BpmnResourceTransformer implements DeploymentResourceTransfor
   private final BpmnValidator validator;
   private final ProcessState processState;
   private final boolean enableStraightThroughProcessingLoopDetector;
+  private final BpmnElementOrderValidator elementOrderValidator;
 
   public BpmnResourceTransformer(
       final KeyGenerator keyGenerator,
@@ -70,6 +71,7 @@ public final class BpmnResourceTransformer implements DeploymentResourceTransfor
     validator =
         BpmnFactory.createValidator(clock, expressionProcessor, config, expressionLanguageMetrics);
     this.enableStraightThroughProcessingLoopDetector = enableStraightThroughProcessingLoopDetector;
+    elementOrderValidator = new BpmnElementOrderValidator();
   }
 
   @Override
@@ -161,9 +163,11 @@ public final class BpmnResourceTransformer implements DeploymentResourceTransfor
       final DirectBufferInputStream resourceStream = new DirectBufferInputStream(resource);
       return Either.right(Bpmn.readModelFromStream(resourceStream));
     } catch (final ModelParseException e) {
+      final var errorMessage = e.getCause() != null ? e.getCause().getMessage() : e.getMessage();
+      final var improvedMessage =
+          elementOrderValidator.improveElementOrderingErrorMessage(errorMessage);
       final var failureMessage =
-          String.format(
-              "'%s': %s", deploymentResource.getResourceName(), e.getCause().getMessage());
+          String.format("'%s': %s", deploymentResource.getResourceName(), improvedMessage);
       return Either.left(new Failure(failureMessage));
     }
   }

@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.deployment;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 
@@ -689,5 +690,54 @@ public class DeploymentRejectionTest {
         .hasRecordType(RecordType.EVENT)
         .hasValueType(ValueType.DEPLOYMENT)
         .hasIntent(DeploymentIntent.CREATED);
+  }
+
+  @Test
+  public void shouldRejectDeploymentWithImprovedErrorForElementOrderingViolation() {
+    // given - a BPMN with wrong element ordering (outgoing after timerEventDefinition)
+    final String bpmnWithWrongOrder =
+        """
+        <?xml version="1.0" encoding="UTF-8"?>
+        <bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+                           xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"
+                           xmlns:dc="http://www.omg.org/spec/DD/20100524/DC"
+                           xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                           id="Definitions_1"
+                           targetNamespace="http://bpmn.io/schema/bpmn">
+          <bpmn:process id="TestProcess" isExecutable="true">
+            <bpmn:startEvent id="StartEvent_Timer" name="Timer Start">
+              <bpmn:timerEventDefinition id="TimerEventDefinition_1">
+                <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">PT1H</bpmn:timeDuration>
+              </bpmn:timerEventDefinition>
+              <bpmn:outgoing>Flow_1</bpmn:outgoing>
+            </bpmn:startEvent>
+            <bpmn:sequenceFlow id="Flow_1" sourceRef="StartEvent_Timer" targetRef="Task_1"/>
+            <bpmn:userTask id="Task_1" name="Do something">
+              <bpmn:incoming>Flow_1</bpmn:incoming>
+            </bpmn:userTask>
+          </bpmn:process>
+        </bpmn:definitions>
+        """;
+
+    // when
+    final Record<DeploymentRecordValue> rejectedDeployment =
+        ENGINE
+            .deployment()
+            .withXmlResource(bpmnWithWrongOrder.getBytes(UTF_8), "wrong-order.bpmn")
+            .expectRejection()
+            .deploy();
+
+    // then
+    Assertions.assertThat(rejectedDeployment)
+        .hasKey(ExecuteCommandResponseDecoder.keyNullValue())
+        .hasRecordType(RecordType.COMMAND_REJECTION)
+        .hasIntent(DeploymentIntent.CREATE)
+        .hasRejectionType(RejectionType.INVALID_ARGUMENT);
+
+    assertThat(rejectedDeployment.getRejectionReason())
+        .contains("Element 'outgoing' must be placed before event definitions")
+        .contains("timerEventDefinition")
+        .contains(
+            "The BPMN 2.0 schema requires flow element references to appear before event definitions");
   }
 }
