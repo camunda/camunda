@@ -149,3 +149,253 @@ jobs:
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+
+  ci-slo-report:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions: {}  # GITHUB_TOKEN unused in this job
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+
+      - name: Import Secrets
+        id: secrets
+        uses: hashicorp/vault-action@4c06c5ccf5c0761b6029f56cfb1dcf5565918a3b # v3.4.0
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          exportEnv: false # we rely on step outputs, no need for environment variables
+          secrets: |
+            secret/data/products/camunda/ci/github-actions SLACK_TOPMONOREPOCI_WEBHOOK_URL;
+            secret/data/products/zeebe/ci/ci-analytics gcloud_sa_key;
+
+      - name: Login to Google Cloud
+        id: auth
+        uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3
+        with:
+          credentials_json: ${{ steps.secrets.outputs.gcloud_sa_key }}
+
+      - name: Setup Google Cloud SDK
+        uses: google-github-actions/setup-gcloud@aa5489c8933f4cc7a4f7d45035b3b1440c9c10db # v3
+
+      - name: Create SLO report with BigQuery data
+        id: slo-report
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          # SLO Thresholds based on https://docs.google.com/document/d/1VDnNy4KOidxOev2_BNNA-BEJQKSTUhspiYqlEKRPaSM/edit?tab=t.0#heading=h.86dc18cxsiwk
+          MERGE_QUEUE_SUCCESS_RATE_THRESHOLD=95.0
+          MAIN_BRANCH_SUCCESS_RATE_THRESHOLD=98.0
+          MEDIAN_MERGE_QUEUE_DURATION_THRESHOLD=30  # minutes
+          P95_MERGE_QUEUE_DURATION_THRESHOLD=60     # minutes
+
+          # Calculate date ranges for current week and previous week
+          CURRENT_WEEK_START=$(date -u -d 'last monday 00:00:00' '+%Y-%m-%d %H:%M:%S')
+          CURRENT_WEEK_END=$(date -u '+%Y-%m-%d %H:%M:%S')
+          PREV_WEEK_START=$(date -u -d 'last monday 00:00:00 - 7 days' '+%Y-%m-%d %H:%M:%S')
+          PREV_WEEK_END=$(date -u -d 'last monday 00:00:00' '+%Y-%m-%d %H:%M:%S')
+
+          # Query 1: Merge Queue Success Rate (current week)
+          # shellcheck disable=SC2016
+          MERGE_QUEUE_STATS=$(bq query --format=json --use_legacy_sql=false --quiet=true "
+            SELECT
+              COUNTIF(build_conclusion = 'success') AS successful_runs,
+              COUNT(*) AS total_runs,
+              ROUND(COUNTIF(build_conclusion = 'success') / COUNT(*) * 100, 2) AS success_rate
+            FROM \`ci-30-162810.prod_ci_analytics.build_status_v2\`
+            WHERE build_trigger = 'merge_group'
+              AND build_base_ref = 'refs/heads/main'
+              AND build_started_at >= TIMESTAMP('$CURRENT_WEEK_START')
+              AND build_started_at < TIMESTAMP('$CURRENT_WEEK_END')
+          ")
+
+          # Query 2: Merge Queue Success Rate (previous week)
+          # shellcheck disable=SC2016
+          MERGE_QUEUE_STATS_PREV=$(bq query --format=json --use_legacy_sql=false --quiet=true "
+            SELECT
+              ROUND(COUNTIF(build_conclusion = 'success') / COUNT(*) * 100, 2) AS success_rate
+            FROM \`ci-30-162810.prod_ci_analytics.build_status_v2\`
+            WHERE build_trigger = 'merge_group'
+              AND build_base_ref = 'refs/heads/main'
+              AND build_started_at >= TIMESTAMP('$PREV_WEEK_START')
+              AND build_started_at < TIMESTAMP('$PREV_WEEK_END')
+          ")
+
+          # Query 3: Main Branch Success Rate (current week)
+          # shellcheck disable=SC2016
+          MAIN_BRANCH_STATS=$(bq query --format=json --use_legacy_sql=false --quiet=true "
+            SELECT
+              COUNTIF(build_conclusion = 'success') AS successful_runs,
+              COUNT(*) AS total_runs,
+              ROUND(COUNTIF(build_conclusion = 'success') / COUNT(*) * 100, 2) AS success_rate
+            FROM \`ci-30-162810.prod_ci_analytics.build_status_v2\`
+            WHERE build_trigger = 'push'
+              AND build_ref = 'refs/heads/main'
+              AND build_started_at >= TIMESTAMP('$CURRENT_WEEK_START')
+              AND build_started_at < TIMESTAMP('$CURRENT_WEEK_END')
+          ")
+
+          # Query 4: Main Branch Success Rate (previous week)
+          # shellcheck disable=SC2016
+          MAIN_BRANCH_STATS_PREV=$(bq query --format=json --use_legacy_sql=false --quiet=true "
+            SELECT
+              ROUND(COUNTIF(build_conclusion = 'success') / COUNT(*) * 100, 2) AS success_rate
+            FROM \`ci-30-162810.prod_ci_analytics.build_status_v2\`
+            WHERE build_trigger = 'push'
+              AND build_ref = 'refs/heads/main'
+              AND build_started_at >= TIMESTAMP('$PREV_WEEK_START')
+              AND build_started_at < TIMESTAMP('$PREV_WEEK_END')
+          ")
+
+          # Query 5: Merge Queue Duration Stats (current week)
+          # shellcheck disable=SC2016
+          MERGE_QUEUE_DURATION=$(bq query --format=json --use_legacy_sql=false --quiet=true "
+            SELECT
+              ROUND(APPROX_QUANTILES(TIMESTAMP_DIFF(build_completed_at, build_started_at, MINUTE), 100)[OFFSET(50)], 1) AS median_minutes,
+              ROUND(APPROX_QUANTILES(TIMESTAMP_DIFF(build_completed_at, build_started_at, MINUTE), 100)[OFFSET(95)], 1) AS p95_minutes
+            FROM \`ci-30-162810.prod_ci_analytics.build_status_v2\`
+            WHERE build_trigger = 'merge_group'
+              AND build_base_ref = 'refs/heads/main'
+              AND build_started_at >= TIMESTAMP('$CURRENT_WEEK_START')
+              AND build_started_at < TIMESTAMP('$CURRENT_WEEK_END')
+              AND build_completed_at IS NOT NULL
+          ")
+
+          # Query 6: Merge Queue Duration Stats (previous week)
+          # shellcheck disable=SC2016
+          MERGE_QUEUE_DURATION_PREV=$(bq query --format=json --use_legacy_sql=false --quiet=true "
+            SELECT
+              ROUND(APPROX_QUANTILES(TIMESTAMP_DIFF(build_completed_at, build_started_at, MINUTE), 100)[OFFSET(50)], 1) AS median_minutes,
+              ROUND(APPROX_QUANTILES(TIMESTAMP_DIFF(build_completed_at, build_started_at, MINUTE), 100)[OFFSET(95)], 1) AS p95_minutes
+            FROM \`ci-30-162810.prod_ci_analytics.build_status_v2\`
+            WHERE build_trigger = 'merge_group'
+              AND build_base_ref = 'refs/heads/main'
+              AND build_started_at >= TIMESTAMP('$PREV_WEEK_START')
+              AND build_started_at < TIMESTAMP('$PREV_WEEK_END')
+              AND build_completed_at IS NOT NULL
+          ")
+
+          # Parse results
+          MQ_SUCCESS_RATE=$(echo "$MERGE_QUEUE_STATS" | jq -r '.[0].success_rate // 0')
+          MQ_TOTAL_RUNS=$(echo "$MERGE_QUEUE_STATS" | jq -r '.[0].total_runs // 0')
+          MQ_SUCCESSFUL_RUNS=$(echo "$MERGE_QUEUE_STATS" | jq -r '.[0].successful_runs // 0')
+          MQ_SUCCESS_RATE_PREV=$(echo "$MERGE_QUEUE_STATS_PREV" | jq -r '.[0].success_rate // 0')
+
+          MAIN_SUCCESS_RATE=$(echo "$MAIN_BRANCH_STATS" | jq -r '.[0].success_rate // 0')
+          MAIN_TOTAL_RUNS=$(echo "$MAIN_BRANCH_STATS" | jq -r '.[0].total_runs // 0')
+          MAIN_SUCCESSFUL_RUNS=$(echo "$MAIN_BRANCH_STATS" | jq -r '.[0].successful_runs // 0')
+          MAIN_SUCCESS_RATE_PREV=$(echo "$MAIN_BRANCH_STATS_PREV" | jq -r '.[0].success_rate // 0')
+
+          MQ_MEDIAN=$(echo "$MERGE_QUEUE_DURATION" | jq -r '.[0].median_minutes // 0')
+          MQ_P95=$(echo "$MERGE_QUEUE_DURATION" | jq -r '.[0].p95_minutes // 0')
+          MQ_MEDIAN_PREV=$(echo "$MERGE_QUEUE_DURATION_PREV" | jq -r '.[0].median_minutes // 0')
+          MQ_P95_PREV=$(echo "$MERGE_QUEUE_DURATION_PREV" | jq -r '.[0].p95_minutes // 0')
+
+          # Calculate trends (delta from previous week)
+          MQ_SUCCESS_DELTA=$(awk "BEGIN {printf \"%.2f\", $MQ_SUCCESS_RATE - $MQ_SUCCESS_RATE_PREV}")
+          MAIN_SUCCESS_DELTA=$(awk "BEGIN {printf \"%.2f\", $MAIN_SUCCESS_RATE - $MAIN_SUCCESS_RATE_PREV}")
+          MQ_MEDIAN_DELTA=$(awk "BEGIN {printf \"%.1f\", $MQ_MEDIAN - $MQ_MEDIAN_PREV}")
+          MQ_P95_DELTA=$(awk "BEGIN {printf \"%.1f\", $MQ_P95 - $MQ_P95_PREV}")
+
+          # Format trend indicators
+          format_trend() {
+            local delta="$1"
+            local inverse="${2:-false}"  # for metrics where lower is better
+
+            if (( $(echo "$delta == 0" | bc -l) )); then
+              echo "→"
+            elif (( $(echo "$delta > 0" | bc -l) )); then
+              if [ "$inverse" = "true" ]; then
+                echo "↗ +$delta"
+              else
+                echo "↗ +$delta"
+              fi
+            else
+              if [ "$inverse" = "true" ]; then
+                echo "↘ $delta"
+              else
+                echo "↘ $delta"
+              fi
+            fi
+          }
+
+          MQ_SUCCESS_TREND=$(format_trend "$MQ_SUCCESS_DELTA")
+          MAIN_SUCCESS_TREND=$(format_trend "$MAIN_SUCCESS_DELTA")
+          MQ_MEDIAN_TREND=$(format_trend "$MQ_MEDIAN_DELTA" "true")
+          MQ_P95_TREND=$(format_trend "$MQ_P95_DELTA" "true")
+
+          # Health indicators
+          get_health_indicator() {
+            local value="$1"
+            local threshold="$2"
+            local compare="${3:-ge}"  # ge (greater/equal) or le (less/equal)
+
+            if [ "$compare" = "ge" ]; then
+              if (( $(echo "$value >= $threshold" | bc -l) )); then
+                echo "✅"
+              else
+                echo "⚠️"
+              fi
+            else
+              if (( $(echo "$value <= $threshold" | bc -l) )); then
+                echo "✅"
+              else
+                echo "⚠️"
+              fi
+            fi
+          }
+
+          MQ_SUCCESS_HEALTH=$(get_health_indicator "$MQ_SUCCESS_RATE" "$MERGE_QUEUE_SUCCESS_RATE_THRESHOLD")
+          MAIN_SUCCESS_HEALTH=$(get_health_indicator "$MAIN_SUCCESS_RATE" "$MAIN_BRANCH_SUCCESS_RATE_THRESHOLD")
+          MQ_MEDIAN_HEALTH=$(get_health_indicator "$MQ_MEDIAN" "$MEDIAN_MERGE_QUEUE_DURATION_THRESHOLD" "le")
+          MQ_P95_HEALTH=$(get_health_indicator "$MQ_P95" "$P95_MERGE_QUEUE_DURATION_THRESHOLD" "le")
+
+          # Build the report message
+          {
+            echo "MESSAGE<<EOF"
+            echo "📊 *Weekly CI SLO Report*"
+            echo ""
+            echo "*Merge Queue Success Rate*"
+            echo "$MQ_SUCCESS_HEALTH ${MQ_SUCCESS_RATE}% ($MQ_SUCCESSFUL_RUNS/$MQ_TOTAL_RUNS runs) • Target: ≥${MERGE_QUEUE_SUCCESS_RATE_THRESHOLD}% • Trend: $MQ_SUCCESS_TREND"
+            echo ""
+            echo "*Main Branch Success Rate*"
+            echo "$MAIN_SUCCESS_HEALTH ${MAIN_SUCCESS_RATE}% ($MAIN_SUCCESSFUL_RUNS/$MAIN_TOTAL_RUNS runs) • Target: ≥${MAIN_BRANCH_SUCCESS_RATE_THRESHOLD}% • Trend: $MAIN_SUCCESS_TREND"
+            echo ""
+            echo "*Merge Queue Duration*"
+            echo "$MQ_MEDIAN_HEALTH Median: ${MQ_MEDIAN}min • Target: ≤${MEDIAN_MERGE_QUEUE_DURATION_THRESHOLD}min • Trend: $MQ_MEDIAN_TREND"
+            echo "$MQ_P95_HEALTH P95: ${MQ_P95}min • Target: ≤${P95_MERGE_QUEUE_DURATION_THRESHOLD}min • Trend: $MQ_P95_TREND"
+            echo ""
+            echo "📈 View details: <https://dashboard.int.camunda.com/d/5cd87b35-d2f2-4686-b3ab-2ef4de504364/github-action-slo-camunda-camunda-monorepo?orgId=1|Grafana Dashboard>"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Debug SLO report
+        if: github.event_name == 'pull_request'
+        shell: bash
+        run: |
+          echo '${{ steps.slo-report.outputs.MESSAGE }}'
+
+      - name: Send SLO report to Slack
+        if: github.event_name != 'pull_request'
+        uses: slackapi/slack-github-action@af78098f536edbc4de71162a307590698245be95 # v3.0.1
+        with:
+          webhook: ${{ steps.secrets.outputs.SLACK_TOPMONOREPOCI_WEBHOOK_URL }}
+          webhook-type: webhook-trigger
+          payload: |
+            blocks:
+              - type: "section"
+                text:
+                  type: "mrkdwn"
+                  text: "${{ steps.slo-report.outputs.MESSAGE }}"
+
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
