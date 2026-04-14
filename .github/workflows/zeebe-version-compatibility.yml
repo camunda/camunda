@@ -39,12 +39,22 @@ jobs:
       - name: Find previous report
         id: get-last-run-id
         run: |
-          runs=$(gh api /repos/${{ github.repository }}/actions/workflows/zeebe-version-compatibility.yml/runs)
-          last_run_id=$(echo "$runs" | jq 'first(.workflow_runs[] | select(.status=="completed").id)')
-          echo "last_run_id=$last_run_id" >> "$GITHUB_OUTPUT"
+          run_ids=$(gh api '/repos/${{ github.repository }}/actions/workflows/zeebe-version-compatibility.yml/runs?branch=main' \
+            | jq -r '[.workflow_runs[] | select(.status=="completed" and .conclusion!="cancelled").id] | .[:10] | .[]')
+          for run_id in $run_ids; do
+            has_artifact=$(gh api "/repos/${{ github.repository }}/actions/runs/${run_id}/artifacts" \
+              | jq '[.artifacts[] | select(.name=="zeebe-version-compatibility")] | length')
+            if [ "$has_artifact" -gt 0 ]; then
+              echo "Found report artifact in run $run_id"
+              echo "last_run_id=$run_id" >> "$GITHUB_OUTPUT"
+              break
+            fi
+            echo "Run $run_id has no report artifact, trying next..."
+          done
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Download previous report
+        if: steps.get-last-run-id.outputs.last_run_id != ''
         uses: actions/download-artifact@v8
         continue-on-error: true
         with:
