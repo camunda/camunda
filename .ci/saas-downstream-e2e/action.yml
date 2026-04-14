@@ -1,0 +1,82 @@
+name: "Trigger + watch SaaS downstream E2E workflow"
+description: "Dispatches repository_dispatch to a downstream repo and waits for the workflow run to complete."
+
+inputs:
+  github_token:
+    description: "GitHub token used for dispatch + GH API polling"
+    required: true
+  target_repo:
+    description: "Target repository in owner/repo format"
+    required: true
+  event_type:
+    description: "repository_dispatch event_type"
+    required: true
+  workflow_file:
+    description: "Downstream workflow file name to watch (e.g. playwright_saas_pr_trigger_monorepo.yml)"
+    required: true
+  since_minutes:
+    description: "How many minutes back to search for a downstream run"
+    required: true
+  source_repo:
+    description: "Source repository (owner/repo) for correlation payload"
+    required: true
+  source_sha:
+    description: "Source commit sha for correlation payload"
+    required: true
+  correlation_id:
+    description: "Correlation ID used to link dispatch <-> downstream run"
+    required: true
+
+  c8_version:
+    required: true
+  zeebe_version:
+    required: true
+  operate_version:
+    required: true
+  tasklist_version:
+    required: true
+  connectors_version:
+    required: true
+  optimize_version:
+    required: true
+
+outputs:
+  downstream_run_url:
+    description: "URL of the downstream workflow run"
+    value: ${{ steps.wait.outputs.downstream_run_url }}
+
+runs:
+  using: "composite"
+  steps:
+    - name: Trigger repository_dispatch
+      id: trigger
+      shell: bash
+      env:
+        GITHUB_TOKEN: ${{ inputs.github_token }}
+        TARGET_REPO: ${{ inputs.target_repo }}
+        EVENT_TYPE: ${{ inputs.event_type }}
+        SOURCE_REPO: ${{ inputs.source_repo }}
+        SOURCE_SHA: ${{ inputs.source_sha }}
+        CORRELATION_ID: ${{ inputs.correlation_id }}
+        C8_VERSION: ${{ inputs.c8_version }}
+        ZEEBE_VERSION: ${{ inputs.zeebe_version }}
+        OPERATE_VERSION: ${{ inputs.operate_version }}
+        TASKLIST_VERSION: ${{ inputs.tasklist_version }}
+        CONNECTORS_VERSION: ${{ inputs.connectors_version }}
+        OPTIMIZE_VERSION: ${{ inputs.optimize_version }}
+        SINCE_MINUTES: ${{ inputs.since_minutes }}
+      run: |
+        set -euo pipefail
+        ./.ci/saas-downstream-e2e/trigger-dispatch.sh
+
+    - name: Wait for downstream workflow to finish
+      id: wait
+      shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.github_token }}
+        TARGET_REPO: ${{ inputs.target_repo }}
+        WORKFLOW_FILE: ${{ inputs.workflow_file }}
+        CORRELATION_ID: ${{ inputs.correlation_id }}
+      run: |
+        set -euo pipefail
+        ./.ci/saas-downstream-e2e/wait-run.sh
