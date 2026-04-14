@@ -132,6 +132,11 @@ public final class StaticConfigurationGenerator {
    * each region, derived from the {@link
    * io.camunda.zeebe.broker.system.configuration.partitioning.RegionAwareCfg} configuration in the
    * same insertion order used by each broker to determine its own member ID.
+   *
+   * <p>Each broker's global node ID is mapped to a local ID by subtracting the cumulative broker
+   * count of all preceding regions. {@link
+   * io.camunda.zeebe.broker.clustering.ClusterConfigFactory} performs the same offset computation
+   * to produce a consistent member ID.
    */
   private static Set<MemberId> getRegionAwareRaftGroupMembers(
       final PartitioningCfg partitioningCfg) {

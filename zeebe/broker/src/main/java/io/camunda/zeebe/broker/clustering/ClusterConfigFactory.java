@@ -17,7 +17,9 @@ import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.configuration.ClusterCfg;
 import io.camunda.zeebe.broker.system.configuration.MembershipCfg;
 import io.camunda.zeebe.broker.system.configuration.NetworkCfg;
+import io.camunda.zeebe.broker.system.configuration.PartitioningCfg;
 import io.camunda.zeebe.broker.system.configuration.SocketBindingCfg;
+import io.camunda.zeebe.broker.system.configuration.partitioning.Scheme;
 import java.util.Collection;
 import java.util.Collections;
 
@@ -33,8 +35,11 @@ public final class ClusterConfigFactory {
     final var messaging = messagingConfig(cluster, network);
     final var member =
         memberConfig(
-            network.getInternalApi(), cluster.getNodeId(),
-            config.getCluster().getNodeVersion(), config.getCluster().getRegion());
+            network.getInternalApi(),
+            cluster.getNodeId(),
+            config.getCluster().getNodeVersion(),
+            config.getCluster().getRegion(),
+            config.getExperimental().getPartitioning());
 
     return new ClusterConfig()
         .setClusterId(name)
@@ -48,12 +53,24 @@ public final class ClusterConfigFactory {
       final SocketBindingCfg network,
       final int nodeId,
       final long nodeVersion,
-      final String region) {
+      final String region,
+      final PartitioningCfg partitioningCfg) {
     final var advertisedAddress =
         Address.from(network.getAdvertisedHost(), network.getAdvertisedPort());
 
-    final var memberId =
-        (region != null && !region.isBlank()) ? region + "-" + nodeId : String.valueOf(nodeId);
+    final String memberId;
+    if (region != null && !region.isBlank() && partitioningCfg.getScheme() == Scheme.REGION_AWARE) {
+      int offset = 0;
+      for (final var entry : partitioningCfg.getRegionAware().getRegions().entrySet()) {
+        if (entry.getKey().equals(region)) {
+          break;
+        }
+        offset += entry.getValue().getNumberOfBrokers();
+      }
+      memberId = region + "-" + (nodeId - offset);
+    } else {
+      memberId = (region != null && !region.isBlank()) ? region + "-" + nodeId : String.valueOf(nodeId);
+    }
 
     return new MemberConfig()
         .setAddress(advertisedAddress)
