@@ -16,4 +16,16 @@ public interface ExporterPositionMapper {
   void update(ExporterPositionModel variable);
 
   ExporterPositionModel findOne(int key);
+
+  long findCurrentLsnPostgres();
+
+  long getMinReplicationLsnPostgres();
+
+  long findCurrentLsnAuroraPostgres();
+
+  long getMinReplicationLsnAuroraPostgres();
+
+  long findCurrentLsnAuroraMySQL();
+
+  long getMinReplicationLsnAuroraMySQL();
 }
