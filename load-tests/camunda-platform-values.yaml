@@ -124,10 +124,14 @@ connectors:
         secret:
           existingSecret: camunda-credentials
           existingSecretKey: connectors-security-authentication-oidc-secret
+  livenessProbe:
+    enabled: true
   env:
     # https://docs.camunda.io/docs/self-managed/components/connectors/connectors-configuration/#google-stackdriver-json-logging
     - name: CONNECTORS_LOG_APPENDER
       value: stackdriver
+    - name: JAVA_TOOL_OPTIONS
+      value: "-XX:+ExitOnOutOfMemoryError -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/tmp"
   tolerations:
     - key: nodepool
       operator: Equal
