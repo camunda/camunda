@@ -10,8 +10,8 @@ package io.camunda.db.rdbms.write;
 import io.camunda.db.rdbms.sql.ExporterPositionMapper;
 
 /**
- * Aurora (MySQL/PostgreSQL) implementation using {@code aurora_global_db_instance_status()} to track
- * durable LSN across global database instances.
+ * Aurora (MySQL/PostgreSQL) implementation using {@code aurora_global_db_instance_status()} to
+ * track durable LSN across global database instances.
  */
 public final class AuroraReplicationLsnProvider implements ReplicationLsnProvider {
 
