@@ -8,7 +8,6 @@
 package io.camunda.zeebe.protocol.impl.encoding;
 
 import static io.camunda.zeebe.protocol.record.BrokerInfoEncoder.clusterSizeNullValue;
-import static io.camunda.zeebe.protocol.record.BrokerInfoEncoder.nodeIdNullValue;
 import static io.camunda.zeebe.protocol.record.BrokerInfoEncoder.partitionsCountNullValue;
 import static io.camunda.zeebe.protocol.record.BrokerInfoEncoder.replicationFactorNullValue;
 import static io.camunda.zeebe.protocol.record.BrokerInfoEncoder.versionHeaderLength;
@@ -52,7 +51,7 @@ import org.slf4j.Logger;
 public final class BrokerInfo implements BufferReader, BufferWriter {
 
   private static final String BROKER_INFO_PROPERTY_NAME = "brokerInfo";
-  private static final String BROKER_REGION_PROPERTY_NAME = "brokerRegion";
+  private static final String BROKER_NODE_ID_PROPERTY_NAME = "brokerNodeId";
   private static final DirectBuffer COMMAND_API_NAME = wrapString("commandApi");
 
   private static final Logger LOG = Loggers.PROTOCOL_LOGGER;
@@ -71,31 +70,34 @@ public final class BrokerInfo implements BufferReader, BufferWriter {
   private final Map<Integer, Long> partitionLeaderTerms = new HashMap<>();
   private final Map<Integer, PartitionHealthStatus> partitionHealthStatuses = new HashMap<>();
 
-  private int nodeId;
+  private String nodeId;
   private int partitionsCount;
   private int clusterSize;
   private int replicationFactor;
   private DirectBuffer version = new UnsafeBuffer();
-  private String region;
 
   public BrokerInfo() {
     reset();
   }
 
-  public BrokerInfo(final int nodeId, final String commandApiAddress) {
+  public BrokerInfo(final String nodeId, final String commandApiAddress) {
     reset();
     this.nodeId = nodeId;
     setCommandApiAddress(BufferUtil.wrapString(commandApiAddress));
   }
 
+  /** Convenience constructor for non-region-aware clusters. */
+  public BrokerInfo(final int nodeId, final String commandApiAddress) {
+    this(String.valueOf(nodeId), commandApiAddress);
+  }
+
   public BrokerInfo reset() {
-    nodeId = nodeIdNullValue();
+    nodeId = null;
     partitionsCount = partitionsCountNullValue();
     clusterSize = clusterSizeNullValue();
     replicationFactor = replicationFactorNullValue();
     addresses.clear();
     version.wrap(0, 0);
-    region = null;
     clearPartitions();
 
     return this;
@@ -113,16 +115,36 @@ public final class BrokerInfo implements BufferReader, BufferWriter {
     partitionHealthStatuses.remove(partitionId);
   }
 
-  public int getNodeId() {
-    if (nodeIdNullValue() == nodeId) {
+  /**
+   * Returns the node ID for this broker. In region-aware clusters this is the composite string
+   * {@code "region-localId"} (e.g. {@code "us-east1-0"}). In non-region-aware clusters this is the
+   * string representation of the integer node ID.
+   */
+  public String getNodeId() {
+    if (nodeId == null) {
       throw new IllegalStateException("nodeId is not set");
     }
     return nodeId;
   }
 
-  public BrokerInfo setNodeId(final int nodeId) {
+  public BrokerInfo setNodeId(final String nodeId) {
     this.nodeId = nodeId;
     return this;
+  }
+
+  /** Convenience overload for non-region-aware clusters. */
+  public BrokerInfo setNodeId(final int nodeId) {
+    return setNodeId(String.valueOf(nodeId));
+  }
+
+  /**
+   * Returns the numeric (local) node ID, which is unique within a region. Parses the trailing
+   * integer from the composite node ID string (e.g. {@code "us-east1-0"} → {@code 0}).
+   */
+  public int getLocalNodeId() {
+    final String id = getNodeId();
+    final int lastDash = id.lastIndexOf('-');
+    return Integer.parseInt(lastDash >= 0 ? id.substring(lastDash + 1) : id);
   }
 
   public int getPartitionsCount() {
@@ -182,27 +204,6 @@ public final class BrokerInfo implements BufferReader, BufferWriter {
 
   public void setVersion(final DirectBuffer buffer, final int offset, final int length) {
     version.wrap(buffer, offset, length);
-  }
-
-  public String getRegion() {
-    return region;
-  }
-
-  /**
-   * Returns the composite member ID for this broker. In region-aware clusters this is {@code
-   * region-nodeId} (e.g. {@code us-east1-0}). In non-region-aware clusters this is the string
-   * representation of the integer node ID.
-   */
-  public String getMemberId() {
-    if (region != null && !region.isBlank()) {
-      return region + "-" + nodeId;
-    }
-    return String.valueOf(nodeId);
-  }
-
-  public BrokerInfo setRegion(final String region) {
-    this.region = region;
-    return this;
   }
 
   public Map<DirectBuffer, DirectBuffer> getAddresses() {
@@ -297,7 +298,7 @@ public final class BrokerInfo implements BufferReader, BufferWriter {
 
     bodyDecoder.wrap(buffer, offset, headerDecoder.blockLength(), headerDecoder.version());
 
-    nodeId = bodyDecoder.nodeId();
+    nodeId = String.valueOf(bodyDecoder.nodeId());
     partitionsCount = bodyDecoder.partitionsCount();
     clusterSize = bodyDecoder.clusterSize();
     replicationFactor = bodyDecoder.replicationFactor();
@@ -384,7 +385,7 @@ public final class BrokerInfo implements BufferReader, BufferWriter {
   public int write(final MutableDirectBuffer buffer, final int offset) {
     bodyEncoder
         .wrapAndApplyHeader(buffer, offset, headerEncoder)
-        .nodeId(nodeId)
+        .nodeId(getLocalNodeId())
         .partitionsCount(partitionsCount)
         .clusterSize(clusterSize)
         .replicationFactor(replicationFactor);
@@ -441,7 +442,13 @@ public final class BrokerInfo implements BufferReader, BufferWriter {
     final String property = properties.getProperty(BROKER_INFO_PROPERTY_NAME);
     if (property != null) {
       final BrokerInfo brokerInfo = readFromString(property);
-      brokerInfo.region = properties.getProperty(BROKER_REGION_PROPERTY_NAME);
+      // Override the plain numeric nodeId from SBE with the full composite node ID (e.g.
+      // "region-localId") if the broker published one. Falls back to the SBE int for nodes
+      // that predate this field.
+      final String compositeNodeId = properties.getProperty(BROKER_NODE_ID_PROPERTY_NAME);
+      if (compositeNodeId != null) {
+        brokerInfo.nodeId = compositeNodeId;
+      }
       return brokerInfo;
     } else {
       return null;
@@ -459,8 +466,8 @@ public final class BrokerInfo implements BufferReader, BufferWriter {
 
   public void writeIntoProperties(final Properties memberProperties) {
     memberProperties.setProperty(BROKER_INFO_PROPERTY_NAME, writeToString());
-    if (region != null) {
-      memberProperties.setProperty(BROKER_REGION_PROPERTY_NAME, region);
+    if (nodeId != null) {
+      memberProperties.setProperty(BROKER_NODE_ID_PROPERTY_NAME, nodeId);
     }
   }
 
@@ -512,8 +519,9 @@ public final class BrokerInfo implements BufferReader, BufferWriter {
   @Override
   public String toString() {
     return "BrokerInfo{"
-        + "nodeId="
+        + "nodeId='"
         + nodeId
+        + '\''
         + ", partitionsCount="
         + partitionsCount
         + ", clusterSize="
@@ -528,9 +536,6 @@ public final class BrokerInfo implements BufferReader, BufferWriter {
         + partitionHealthStatuses
         + ", version="
         + BufferUtil.bufferAsString(version)
-        + ", region='"
-        + region
-        + '\''
         + '}';
   }
 }
