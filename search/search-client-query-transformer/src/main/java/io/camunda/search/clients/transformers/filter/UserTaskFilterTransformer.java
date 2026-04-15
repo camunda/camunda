@@ -61,9 +61,9 @@ public class UserTaskFilterTransformer extends IndexFilterTransformer<UserTaskFi
     ofNullable(getProcessInstanceKeysQuery(filter.processInstanceKeys())).ifPresent(queries::add);
     ofNullable(getProcessDefinitionKeyQuery(filter.processDefinitionKeys()))
         .ifPresent(queries::add);
-    ofNullable(getBpmnProcessIdQuery(filter.bpmnProcessIds())).ifPresent(queries::add);
     ofNullable(getElementIdQuery(filter.elementIds())).ifPresent(queries::add);
     queries.addAll(getNameQuery(filter.nameOperations()));
+    queries.addAll(getProcessDefinitionIdsQuery(filter.processDefinitionIdOperations()));
     queries.addAll(getCandidateUsersQuery(filter.candidateUserOperations()));
     queries.addAll(getCandidateGroupsQuery(filter.candidateGroupOperations()));
     queries.addAll(getAssigneesQuery(filter.assigneeOperations()));
@@ -173,11 +173,17 @@ public class UserTaskFilterTransformer extends IndexFilterTransformer<UserTaskFi
   }
 
   private SearchQuery getProcessDefinitionKeyQuery(final List<Long> processDefinitionIds) {
+    // In ElasticSearch, "processDefinitionKey" is stored in field "processDefinitionId"
     return longTerms(PROCESS_DEFINITION_ID, processDefinitionIds);
   }
 
   private SearchQuery getUserTaskKeysQuery(final List<Long> userTaskKeys) {
     return longTerms(KEY, userTaskKeys);
+  }
+
+  private List<SearchQuery> getProcessDefinitionIdsQuery(final List<Operation<String>> processDefinitionIds) {
+    // In ElasticSearch, "processDefinitionId" is stored in field "bpmnProcessId"
+    return stringOperations(BPMN_PROCESS_ID, processDefinitionIds);
   }
 
   private List<SearchQuery> getCandidateUsersQuery(final List<Operation<String>> candidateUsers) {
@@ -221,10 +227,6 @@ public class UserTaskFilterTransformer extends IndexFilterTransformer<UserTaskFi
 
   private List<SearchQuery> getTenantQuery(final List<Operation<String>> tenant) {
     return stringOperations(TENANT_ID, tenant);
-  }
-
-  private SearchQuery getBpmnProcessIdQuery(final List<String> bpmnProcessId) {
-    return stringTerms(BPMN_PROCESS_ID, bpmnProcessId);
   }
 
   private SearchQuery getElementInstanceKeyQuery(final List<Long> elementInstanceKeys) {

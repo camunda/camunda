@@ -882,7 +882,7 @@ public class SearchQueryFilterMapper {
       Optional.ofNullable(filter.getState())
           .map(mapToStringOperations())
           .ifPresent(builder::stateOperations);
-      ofNullable(filter.getProcessDefinitionId())
+      Optional.ofNullable(filter.getProcessDefinitionId())
           .map(mapToStringOperations())
           .ifPresent(builder::processDefinitionIdOperations);
       Optional.ofNullable(filter.getElementId()).ifPresent(builder::elementIds);

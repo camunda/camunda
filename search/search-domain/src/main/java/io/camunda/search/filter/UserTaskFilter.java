@@ -24,7 +24,6 @@ public record UserTaskFilter(
     List<Long> userTaskKeys,
     List<String> elementIds,
     List<Operation<String>> nameOperations,
-    List<String> bpmnProcessIds,
     List<Operation<String>> assigneeOperations,
     List<Operation<Integer>> priorityOperations,
     List<Operation<String>> stateOperations,
@@ -50,7 +49,6 @@ public record UserTaskFilter(
     private List<Long> userTaskKeys;
     private List<String> elementIds;
     private List<Operation<String>> nameOperations;
-    private List<String> bpmnProcessIds;
     private List<Operation<String>> assigneeOperations;
     private List<Operation<Integer>> priorityOperations;
     private List<Operation<String>> stateOperations;
@@ -101,15 +99,6 @@ public record UserTaskFilter(
     public final Builder nameOperations(
         final Operation<String> operation, final Operation<String>... operations) {
       return nameOperations(collectValues(operation, operations));
-    }
-
-    public Builder bpmnProcessIds(final String... values) {
-      return bpmnProcessIds(collectValuesAsList(values));
-    }
-
-    public Builder bpmnProcessIds(final List<String> values) {
-      bpmnProcessIds = addValuesToList(bpmnProcessIds, values);
-      return this;
     }
 
     public Builder assigneeOperations(final List<Operation<String>> operations) {
@@ -179,19 +168,19 @@ public record UserTaskFilter(
       return this;
     }
 
-    public UserTaskFilter.Builder processDefinitionIdOperations(
+    public Builder processDefinitionIdOperations(
         final List<Operation<String>> operations) {
       processDefinitionIdOperations = addValuesToList(processDefinitionIdOperations, operations);
       return this;
     }
 
     @SafeVarargs
-    public final UserTaskFilter.Builder processDefinitionIdOperations(
+    public final Builder processDefinitionIdOperations(
         final Operation<String> operation, final Operation<String>... operations) {
       return processDefinitionIdOperations(collectValues(operation, operations));
     }
 
-    public UserTaskFilter.Builder processDefinitionIds(final String value, final String... values) {
+    public Builder processDefinitionIds(final String value, final String... values) {
       return processDefinitionIdOperations(FilterUtil.mapDefaultToOperation(value, values));
     }
 
@@ -319,7 +308,6 @@ public record UserTaskFilter(
           Objects.requireNonNullElse(userTaskKeys, Collections.emptyList()),
           Objects.requireNonNullElse(elementIds, Collections.emptyList()),
           Objects.requireNonNullElse(nameOperations, Collections.emptyList()),
-          Objects.requireNonNullElse(bpmnProcessIds, Collections.emptyList()),
           Objects.requireNonNullElse(assigneeOperations, Collections.emptyList()),
           Objects.requireNonNullElse(priorityOperations, Collections.emptyList()),
           Objects.requireNonNullElse(stateOperations, Collections.emptyList()),
