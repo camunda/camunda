@@ -1,4 +1,15 @@
-# Additional values file to run Zeebe on stable VMs
+# Additional values file to run on stable VMs
+elasticsearch:
+  master:
+    nodeSelector:
+      component: benchmark-n2-standard-8
+      topology.kubernetes.io/zone: __AVAILABILITY_ZONE__
+    tolerations:
+      - key: nodepool
+        operator: Equal
+        value: n2-standard-8-stable
+        effect: NoSchedule
+
 zeebe:
   # Require n2-standard-4-stable to ensure the broker is the only application running on its node
   nodeSelector:
