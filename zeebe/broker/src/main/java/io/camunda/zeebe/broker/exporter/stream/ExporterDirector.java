@@ -618,12 +618,16 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
   /**
    * Handles a replay request from an exporter container. Seeks the log reader to the first position
    * to replay ({@code state.getLowestPosition() + 1}) and resumes reading if all exporters are
-   * already opened.
+   * already opened and the director is not currently mid-export.
    *
    * <p>If called during startup (before all exporters are opened), the seek is still performed now
    * so that the result can be returned to the caller. {@link #startActiveExportingFrom(long)} will
    * perform a redundant but harmless seek afterward using {@link
    * ExportersState#getLowestPosition()}.
+   *
+   * <p>If called while the director is currently exporting a record ({@code inExportingPhase ==
+   * true}), {@code readNextEvent()} is NOT submitted here — the normal export-completion callback
+   * will resume processing with the reader already positioned for replay.
    *
    * @param requestedPosition the position to which the exporter's state was reset (i.e., {@code
    *     fromPosition - 1})
@@ -652,11 +656,11 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
       return false;
     }
 
-    if (allExportersOpened) {
-      inExportingPhase = false;
+    if (allExportersOpened && !inExportingPhase) {
       actor.submit(this::readNextEvent);
     }
     // If not allExportersOpened, startActiveExportingFrom() will seek again and start reading.
+    // If currently exporting, the normal export completion callback will resume processing.
     return true;
   }
 

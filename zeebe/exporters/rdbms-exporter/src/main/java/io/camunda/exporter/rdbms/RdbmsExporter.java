@@ -101,11 +101,6 @@ public final class RdbmsExporter {
       throw new ExporterException("Schema is not ready for use");
     }
 
-    if (!flushAfterEachRecord()) {
-      currentFlushTask =
-          controller.scheduleCancellableTask(flushInterval, this::flushAndReschedule);
-    }
-
     initializeRdbmsPosition();
     lastPosition = controller.getLastExportedRecordPosition();
     if (exporterRdbmsPosition.lastExportedPosition() > -1) {
@@ -144,6 +139,10 @@ public final class RdbmsExporter {
     rdbmsWriters.getExecutionQueue().registerPostFlushListener(this::updatePositionInBroker);
     rdbmsWriters.getExecutionQueue().registerPostFlushListener(this::recordExportingLatency);
 
+    if (!flushAfterEachRecord()) {
+      currentFlushTask =
+          controller.scheduleCancellableTask(flushInterval, this::flushAndReschedule);
+    }
     // schedule first cleanup in 1 second. Future intervals are given by the history cleanup service
     // itself
     currentCleanupTask =

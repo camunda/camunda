@@ -104,7 +104,7 @@ final class ExporterReplayTest {
 
   public static final class TestExporter implements Exporter {
     static final List<Long> EXPORTED_RECORD_POSITIONS = new CopyOnWriteArrayList<>();
-    static volatile boolean REPLAY_REQUESTED;
+    static final AtomicBoolean REPLAY_REQUESTED = new AtomicBoolean();
 
     private static final AtomicBoolean REQUEST_REPLAY_ON_OPEN = new AtomicBoolean(false);
     private static final AtomicLong REPLAY_FROM_POSITION = new AtomicLong(-1L);
@@ -123,7 +123,7 @@ final class ExporterReplayTest {
       if (REQUEST_REPLAY_ON_OPEN.compareAndSet(true, false)) {
         final long replayFromPosition = REPLAY_FROM_POSITION.get();
         if (replayFromPosition > 0) {
-          REPLAY_REQUESTED = controller.requestReplay(replayFromPosition);
+          REPLAY_REQUESTED.set(controller.requestReplay(replayFromPosition));
         }
       }
     }
@@ -138,14 +138,14 @@ final class ExporterReplayTest {
       EXPORTED_RECORD_POSITIONS.clear();
       REPLAY_FROM_POSITION.set(fromPosition);
       REQUEST_REPLAY_ON_OPEN.set(true);
-      REPLAY_REQUESTED = false;
+      REPLAY_REQUESTED.set(false);
     }
 
     static void reset() {
       EXPORTED_RECORD_POSITIONS.clear();
       REPLAY_FROM_POSITION.set(-1L);
       REQUEST_REPLAY_ON_OPEN.set(false);
-      REPLAY_REQUESTED = false;
+      REPLAY_REQUESTED.set(false);
     }
   }
 }
