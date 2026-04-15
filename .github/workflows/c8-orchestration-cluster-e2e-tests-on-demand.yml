@@ -75,6 +75,12 @@ jobs:
           else
             echo "NON_STANDALONE=false" >> "$GITHUB_ENV"
           fi
+          if [[ "$base" == "main" ]]; then
+            echo "CAMUNDA_DOCKER_IMAGE=camunda/camunda:SNAPSHOT" >> "$GITHUB_ENV"
+          elif [[ "$base" == stable/* ]]; then
+            minor="${base#stable/}"
+            echo "CAMUNDA_DOCKER_IMAGE=camunda/camunda:${minor}-SNAPSHOT" >> "$GITHUB_ENV"
+          fi
 
       - name: Start Camunda
         run: |
@@ -433,6 +439,12 @@ jobs:
             echo "NON_STANDALONE=true" >> "$GITHUB_ENV"
           else
             echo "NON_STANDALONE=false" >> "$GITHUB_ENV"
+          fi
+          if [[ "$base" == "main" ]]; then
+            echo "CAMUNDA_DOCKER_IMAGE=camunda/camunda:SNAPSHOT" >> "$GITHUB_ENV"
+          elif [[ "$base" == stable/* ]]; then
+            minor="${base#stable/}"
+            echo "CAMUNDA_DOCKER_IMAGE=camunda/camunda:${minor}-SNAPSHOT" >> "$GITHUB_ENV"
           fi
 
       - name: Start Camunda

@@ -25,6 +25,16 @@ jobs:
         with:
           ref: ${{ matrix.branch }}
 
+      - name: Set CAMUNDA_DOCKER_IMAGE
+        run: |
+          branch="${{ matrix.branch }}"
+          if [[ "$branch" == "main" ]]; then
+            echo "CAMUNDA_DOCKER_IMAGE=camunda/camunda:SNAPSHOT" >> "$GITHUB_ENV"
+          elif [[ "$branch" == stable/* ]]; then
+            minor="${branch#stable/}"
+            echo "CAMUNDA_DOCKER_IMAGE=camunda/camunda:${minor}-SNAPSHOT" >> "$GITHUB_ENV"
+          fi
+
       - name: Start Camunda
         shell: bash
         run: |
@@ -646,6 +656,16 @@ jobs:
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           ref: ${{ matrix.branch }}
+
+      - name: Set CAMUNDA_DOCKER_IMAGE
+        run: |
+          branch="${{ matrix.branch }}"
+          if [[ "$branch" == "main" ]]; then
+            echo "CAMUNDA_DOCKER_IMAGE=camunda/camunda:SNAPSHOT" >> "$GITHUB_ENV"
+          elif [[ "$branch" == stable/* ]]; then
+            minor="${branch#stable/}"
+            echo "CAMUNDA_DOCKER_IMAGE=camunda/camunda:${minor}-SNAPSHOT" >> "$GITHUB_ENV"
+          fi
 
       - name: Start Camunda
         run: |
