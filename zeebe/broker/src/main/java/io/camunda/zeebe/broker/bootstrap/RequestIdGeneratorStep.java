@@ -33,7 +33,7 @@ public class RequestIdGeneratorStep implements StartupStep<BrokerStartupContext>
         new SnowflakeIdGenerator(
             SnowflakeIdGenerator.NODE_ID_BITS_DEFAULT,
             SnowflakeIdGenerator.SEQUENCE_BITS_DEFAULT,
-            brokerInfo.getNodeId(),
+            brokerInfo.getLocalNodeId(),
             TIMESTAMP_OFFSET_2023,
             SystemEpochClock.INSTANCE);
 

@@ -143,9 +143,14 @@ public final class Broker implements AutoCloseable {
   private BrokerInfo createBrokerInfo(final BrokerCfg brokerCfg) {
     final var clusterCfg = brokerCfg.getCluster();
 
+    final String region = clusterCfg.getRegion();
+    final int numericId = clusterCfg.getNodeId();
+    final String nodeIdStr =
+        (region != null && !region.isBlank()) ? region + "-" + numericId : String.valueOf(numericId);
+
     final BrokerInfo result =
         new BrokerInfo(
-            clusterCfg.getNodeId(),
+            nodeIdStr,
             NetUtil.toSocketAddressString(
                 brokerCfg.getNetwork().getCommandApi().getAdvertisedAddress()));
 
@@ -159,11 +164,6 @@ public final class Broker implements AutoCloseable {
     final String version = VersionUtil.getVersion();
     if (version != null && !version.isBlank()) {
       result.setVersion(version);
-    }
-
-    final String region = clusterCfg.getRegion();
-    if (region != null && !region.isBlank()) {
-      result.setRegion(region);
     }
     return result;
   }
@@ -245,7 +245,7 @@ public final class Broker implements AutoCloseable {
 
     private final BrokerStartupProcess brokerStartupProcess;
 
-    private final int nodeId;
+    private final String nodeId;
 
     private BrokerStartupActor(final BrokerStartupContextImpl startupContext) {
       nodeId = startupContext.getBrokerInfo().getNodeId();

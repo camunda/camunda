@@ -12,6 +12,7 @@ import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.camunda.zeebe.protocol.record.PartitionHealthStatus;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Random;
@@ -189,28 +190,47 @@ public record BrokerClientTopologyImpl(
       brokers = new IntArrayList(5, NODE_ID_NULL);
       randomBroker = new Random();
 
-      distributedBrokerInfos.forEach(
-          brokerInfo -> {
-            final int nodeId = brokerInfo.getNodeId();
-            brokers.add(brokerInfo.getNodeId());
-            final String clientAddress = brokerInfo.getCommandApiAddress();
-            if (clientAddress != null) {
-              brokerAddresses.put(nodeId, brokerInfo.getCommandApiAddress());
-            }
-            brokerVersions.put(nodeId, brokerInfo.getVersion());
-            final String region = brokerInfo.getRegion();
-            if (region != null) {
-              brokerRegions.put(nodeId, region);
-            }
-            brokerMemberIds.put(nodeId, brokerInfo.getMemberId());
-            brokerInfo.consumePartitions(
-                pId -> {}, // nothing to consume
-                (leaderPartitionId, term) -> setPartitionLeader(leaderPartitionId, nodeId, term),
-                followerPartitionId -> addPartitionFollower(followerPartitionId, nodeId),
-                inactivePartitionId -> addPartitionInactive(inactivePartitionId, nodeId));
-            brokerInfo.consumePartitionsHealth(
-                (partition, health) -> setPartitionHealthStatus(nodeId, partition, health));
-          });
+      // Sort by composite nodeId for a stable, globally-unique int key assignment.
+      // This is necessary when multiple brokers share the same local nodeId (e.g. in a
+      // multi-region cluster where each region uses 0-indexed local IDs).
+      final List<BrokerInfo> sortedBrokerInfos =
+          distributedBrokerInfos.stream()
+              .sorted(
+                  Comparator.comparing(
+                      bi -> bi.getNodeId() != null ? bi.getNodeId() : "",
+                      Comparator.naturalOrder()))
+              .toList();
+
+      for (int idx = 0; idx < sortedBrokerInfos.size(); idx++) {
+        final BrokerInfo brokerInfo = sortedBrokerInfos.get(idx);
+        // Use the sorted index as the globally-unique int key (avoids collisions in multi-region
+        // setups where two brokers may have the same local numeric ID such as 0).
+        final int key = idx;
+        final String nodeIdStr = brokerInfo.getNodeId();
+        brokers.add(key);
+        final String clientAddress = brokerInfo.getCommandApiAddress();
+        if (clientAddress != null) {
+          brokerAddresses.put(key, clientAddress);
+        }
+        brokerVersions.put(key, brokerInfo.getVersion());
+        brokerMemberIds.put(key, nodeIdStr);
+        // Derive region: strip the "-<localId>" suffix from the composite nodeId.
+        final int localNumericId = brokerInfo.getLocalNodeId();
+        final String nodeSuffix = "-" + localNumericId;
+        if (nodeIdStr != null
+            && nodeIdStr.endsWith(nodeSuffix)
+            && nodeIdStr.length() > nodeSuffix.length()) {
+          brokerRegions.put(
+              key, nodeIdStr.substring(0, nodeIdStr.length() - nodeSuffix.length()));
+        }
+        brokerInfo.consumePartitions(
+            pId -> {}, // nothing to consume
+            (leaderPartitionId, term) -> setPartitionLeader(leaderPartitionId, key, term),
+            followerPartitionId -> addPartitionFollower(followerPartitionId, key),
+            inactivePartitionId -> addPartitionInactive(inactivePartitionId, key));
+        brokerInfo.consumePartitionsHealth(
+            (partition, health) -> setPartitionHealthStatus(key, partition, health));
+      }
     }
 
     void setPartitionLeader(final int partitionId, final int leaderId, final long term) {

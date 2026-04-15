@@ -573,8 +573,7 @@ final class BrokerTopologyManagerTest {
   }
 
   private Member createMemberFromBrokerInfo(final BrokerInfo broker) {
-    final Member member =
-        new Member(new MemberConfig().setId(Integer.toString(broker.getNodeId())));
+    final Member member = new Member(new MemberConfig().setId(broker.getNodeId()));
     broker.writeIntoProperties(member.properties());
     members.add(member);
     return member;

@@ -116,7 +116,7 @@ public final class TopologyManagerImpl extends Actor
 
     final BrokerInfo brokerInfo = BrokerInfo.fromProperties(eventSource.properties());
 
-    if (brokerInfo != null && brokerInfo.getNodeId() != localBroker.getNodeId()) {
+    if (brokerInfo != null && !brokerInfo.getNodeId().equals(localBroker.getNodeId())) {
       actor.run(
           () -> {
             switch (clusterMembershipEvent.type()) {
@@ -153,7 +153,7 @@ public final class TopologyManagerImpl extends Actor
 
   private void removeIfLeader(final BrokerInfo brokerInfo, final Integer partition) {
     final BrokerInfo currentLeader = partitionLeaders.get(partition);
-    if (currentLeader != null && currentLeader.getNodeId() == brokerInfo.getNodeId()) {
+    if (currentLeader != null && currentLeader.getNodeId().equals(brokerInfo.getNodeId())) {
       partitionLeaders.remove(partition);
     }
   }
@@ -179,7 +179,7 @@ public final class TopologyManagerImpl extends Actor
             .filter(
                 entry -> {
                   final var broker = entry.getValue();
-                  return broker.getNodeId() == brokerInfo.getNodeId();
+                  return broker.getNodeId().equals(brokerInfo.getNodeId());
                 })
             .map(Entry::getKey)
             .toList();

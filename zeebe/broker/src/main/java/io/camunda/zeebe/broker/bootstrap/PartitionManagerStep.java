@@ -60,7 +60,7 @@ final class PartitionManagerStep extends AbstractBrokerStartupStep {
                 .registerInconsistentConfigurationListener(
                     (newTopology, oldTopology) ->
                         shutdownOnInconsistentTopology(
-                            brokerStartupContext.getBrokerInfo().getNodeId(),
+                            MemberId.from(brokerStartupContext.getBrokerInfo().getNodeId()),
                             brokerStartupContext.getSpringBrokerBridge(),
                             newTopology,
                             oldTopology));
@@ -106,11 +106,10 @@ final class PartitionManagerStep extends AbstractBrokerStartupStep {
   }
 
   private void shutdownOnInconsistentTopology(
-      final int localBrokerId,
+      final MemberId localMemberId,
       final SpringBrokerBridge springBrokerBridge,
       final ClusterConfiguration newTopology,
       final ClusterConfiguration oldTopology) {
-    final MemberId localMemberId = MemberId.from(String.valueOf(localBrokerId));
     LOGGER.warn(
         """
           Received a newer topology which has a different state for this broker.
