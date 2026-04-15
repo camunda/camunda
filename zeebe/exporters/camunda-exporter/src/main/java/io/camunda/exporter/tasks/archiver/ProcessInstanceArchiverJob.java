@@ -99,7 +99,7 @@ public class ProcessInstanceArchiverJob extends ArchiverJob<ProcessInstanceArchi
   protected CompletableFuture<Integer> archive(
       final IndexTemplateDescriptor templateDescriptor, final ProcessInstanceArchiveBatch batch) {
     return archiveProcessDependants(batch)
-        .thenComposeAsync(v -> super.archive(templateDescriptor, batch), getExecutor())
+        .thenComposeAsync(v -> archive(templateDescriptor, batch, Map.of()), getExecutor())
         .thenApply(
             archived -> {
               recentlyArchivedProcessInstances.markRecentlyArchived(batch);
@@ -152,7 +152,7 @@ public class ProcessInstanceArchiverJob extends ArchiverJob<ProcessInstanceArchi
     final var futures = new ArrayList<CompletableFuture<?>>();
 
     for (final var dependant : processInstanceDependants) {
-      futures.add(super.archive(dependant, batch));
+      futures.add(archive(dependant, batch, Map.of()));
     }
 
     return CompletableFuture.allOf(futures.toArray(CompletableFuture[]::new));

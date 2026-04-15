@@ -28,6 +28,7 @@ import io.camunda.exporter.tasks.archiver.JobBatchMetricsArchiverJob;
 import io.camunda.exporter.tasks.archiver.OpenSearchArchiverRepository;
 import io.camunda.exporter.tasks.archiver.OpensearchAuditLogArchiverRepository;
 import io.camunda.exporter.tasks.archiver.ProcessInstanceArchiverJob;
+import io.camunda.exporter.tasks.archiver.ProcessInstanceByIdArchiverJob;
 import io.camunda.exporter.tasks.archiver.ProcessInstanceToBeArchivedCountJob;
 import io.camunda.exporter.tasks.archiver.StandaloneDecisionArchiverJob;
 import io.camunda.exporter.tasks.archiver.UsageMetricArchiverJob;
@@ -403,15 +404,30 @@ public final class CamundaBackgroundTaskManagerFactory {
         .map(ProcessInstanceDependant.class::cast)
         .forEach(dependantTemplates::add);
 
-    return buildReschedulingArchiverTask(
-        new ProcessInstanceArchiverJob(
-            config.getHistory(),
-            archiverRepository,
-            resourceProvider.getIndexTemplateDescriptor(ListViewTemplate.class),
-            dependantTemplates,
-            metrics,
-            logger,
-            executor));
+    final ProcessInstanceArchiverJob piArchiverJob;
+
+    if (config.getHistory().isArchiveByIdEnabled()) {
+      piArchiverJob =
+          new ProcessInstanceByIdArchiverJob(
+              config.getHistory(),
+              archiverRepository,
+              resourceProvider.getIndexTemplateDescriptor(ListViewTemplate.class),
+              dependantTemplates,
+              metrics,
+              logger,
+              executor);
+    } else {
+      piArchiverJob =
+          new ProcessInstanceArchiverJob(
+              config.getHistory(),
+              archiverRepository,
+              resourceProvider.getIndexTemplateDescriptor(ListViewTemplate.class),
+              dependantTemplates,
+              metrics,
+              logger,
+              executor);
+    }
+    return buildReschedulingArchiverTask(piArchiverJob);
   }
 
   private ReschedulingTask buildBatchOperationArchiverJob() {
