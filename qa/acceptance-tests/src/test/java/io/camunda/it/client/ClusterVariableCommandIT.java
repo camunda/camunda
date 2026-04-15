@@ -7,6 +7,7 @@
  */
 package io.camunda.it.client;
 
+import static io.camunda.it.util.TestHelper.createTenant;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -16,6 +17,7 @@ import io.camunda.client.api.command.ProblemException;
 import io.camunda.qa.util.compatibility.CompatibilityTest;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import java.util.UUID;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 @MultiDbTest
@@ -25,6 +27,13 @@ public class ClusterVariableCommandIT {
   private static final String VALUE_RESULT = "\"%s\"";
 
   private static CamundaClient camundaClient;
+
+  @BeforeAll
+  static void setUp() {
+    // Create tenants needed for tests
+    createTenant(camundaClient, "tenant_1", "Tenant 1");
+    createTenant(camundaClient, "tenant_123", "Tenant 123");
+  }
 
   // ============ CREATE TESTS ============
 

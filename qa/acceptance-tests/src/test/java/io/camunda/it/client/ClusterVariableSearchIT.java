@@ -7,6 +7,7 @@
  */
 package io.camunda.it.client;
 
+import static io.camunda.it.util.TestHelper.createTenant;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.CamundaClient;
@@ -63,6 +64,11 @@ public class ClusterVariableSearchIT {
 
   @BeforeAll
   static void setupClusterVariables() {
+    // Create tenants needed for tests
+    createTenant(camundaClient, "tenant_1", "Tenant 1");
+    createTenant(camundaClient, "tenant_2", "Tenant 2");
+    createTenant(camundaClient, "tenant_3", "Tenant 3");
+
     // Setup global scoped variables
     globalVarName1 = "globalVarSearch1_" + UUID.randomUUID();
     globalVarValue1 = "testValue1_" + UUID.randomUUID();

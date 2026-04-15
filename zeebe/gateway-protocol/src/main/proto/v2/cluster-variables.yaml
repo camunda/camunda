@@ -64,6 +64,12 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/Unauthorized'
         "403":
           $ref: 'common-responses.yaml#/components/responses/Forbidden'
+        "404":
+          description: The tenant with the given ID was not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
   /cluster-variables/search:

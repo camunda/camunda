@@ -11,6 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 
 import io.camunda.zeebe.engine.state.immutable.ClusterVariableState;
+import io.camunda.zeebe.engine.state.immutable.TenantState;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.protocol.impl.record.value.clustervariable.ClusterVariableRecord;
 import io.camunda.zeebe.protocol.record.Assertions;
@@ -19,6 +20,7 @@ import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.ClusterVariableIntent;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.stream.Stream;
+import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -29,10 +31,16 @@ import org.junit.jupiter.params.provider.MethodSource;
 public final class CreateClusterVariableTest {
 
   @ClassRule public static final EngineRule ENGINE_RULE = EngineRule.singlePartition();
+  public static final String TENANT = "tenant-1";
 
   @Rule
   public final RecordingExporterTestWatcher recordingExporterTestWatcher =
       new RecordingExporterTestWatcher();
+
+  @BeforeClass
+  public static void setup() {
+    ENGINE_RULE.tenant().newTenant().withTenantId(TENANT).create();
+  }
 
   @Test
   public void createGlobalScopedClusterVariable() {
@@ -60,7 +68,7 @@ public final class CreateClusterVariableTest {
             .withName("KEY_2")
             .withValue("\"VALUE\"")
             .setTenantScope()
-            .withTenantId("tenant_1")
+            .withTenantId(TENANT)
             .create();
     // then
     Assertions.assertThat(record)
@@ -133,6 +141,25 @@ public final class CreateClusterVariableTest {
   }
 
   @Test
+  public void createTenantScopedClusterVariableWithInvalidTenant() {
+    // when
+    final var record =
+        ENGINE_RULE
+            .clusterVariables()
+            .withName("KEY_INVALID_TENANT")
+            .setTenantScope()
+            .withTenantId("invalid-tenant-id")
+            .withValue("\"VALUE\"")
+            .expectRejection()
+            .create();
+    // then
+    Assertions.assertThat(record)
+        .hasIntent(ClusterVariableIntent.CREATE)
+        .hasRejectionType(RejectionType.NOT_FOUND)
+        .hasRejectionReason("Tenant with ID 'invalid-tenant-id' does not exist.");
+  }
+
+  @Test
   public void globalScopedAndTenantScopedClusterVariableDoNotOverlap() {
     // given
     final var recordGlobal =
@@ -149,7 +176,7 @@ public final class CreateClusterVariableTest {
             .withName("KEY_5")
             .setTenantScope()
             .withValue("\"VALUE\"")
-            .withTenantId("tenant-1")
+            .withTenantId(TENANT)
             .create();
     // then
     Assertions.assertThat(recordGlobal)
@@ -169,9 +196,10 @@ public final class CreateClusterVariableTest {
     final ClusterVariableRecord clusterVariableRecord =
         new ClusterVariableRecord().setName(clusterVariableName);
     final ClusterVariableState clusterVariableState = mock(ClusterVariableState.class);
+    final TenantState tenantState = mock(TenantState.class);
     final ClusterVariableRecordValidator clusterVariableRecordValidator =
         new ClusterVariableRecordValidator(
-            clusterVariableState, new ClusterVariableValidationConfiguration(10));
+            clusterVariableState, tenantState, new ClusterVariableValidationConfiguration(10));
     // when
     final var result = clusterVariableRecordValidator.validateName(clusterVariableRecord);
     // then

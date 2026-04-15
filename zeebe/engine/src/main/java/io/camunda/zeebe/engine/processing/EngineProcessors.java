@@ -375,6 +375,7 @@ public final class EngineProcessors {
         keyGenerator,
         typedRecordProcessors,
         processingState.getClusterVariableState(),
+        processingState.getTenantState(),
         writers,
         commandDistributionBehavior,
         authCheckBehavior,
