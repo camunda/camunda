@@ -144,40 +144,39 @@ public final class ClusterCfg implements ConfigurationEntry {
     final RegionAwareCfg regionAwareCfg = partitioningCfg.getRegionAware();
     final var regions = regionAwareCfg.getRegions();
 
-    if (!regions.containsKey(region)) {
+    final var regionNames = regions.stream().map(r -> r.getName()).toList();
+    if (!regionNames.contains(region)) {
       throw new IllegalArgumentException(
-          String.format(REGION_NOT_FOUND_ERROR_MSG, region, regions.keySet()));
+          String.format(REGION_NOT_FOUND_ERROR_MSG, region, regionNames));
     }
 
-    final int totalBrokers = regions.values().stream().mapToInt(r -> r.getNumberOfBrokers()).sum();
+    final int totalBrokers = regions.stream().mapToInt(r -> r.getNumberOfBrokers()).sum();
     if (totalBrokers != clusterSize) {
       throw new IllegalArgumentException(
           String.format(BROKER_SUM_ERROR_MSG, totalBrokers, clusterSize));
     }
 
-    final int totalReplicas =
-        regions.values().stream().mapToInt(r -> r.getNumberOfReplicas()).sum();
+    final int totalReplicas = regions.stream().mapToInt(r -> r.getNumberOfReplicas()).sum();
     if (totalReplicas != replicationFactor) {
       throw new IllegalArgumentException(
           String.format(REPLICA_SUM_ERROR_MSG, totalReplicas, replicationFactor));
     }
 
-    regions.forEach(
-        (regionName, cfg) -> {
-          if (cfg.getNumberOfReplicas() > cfg.getNumberOfBrokers()) {
-            throw new IllegalArgumentException(
-                String.format(
-                    REPLICAS_EXCEED_BROKERS_ERROR_MSG,
-                    regionName,
-                    cfg.getNumberOfReplicas(),
-                    cfg.getNumberOfBrokers()));
-          }
-          if (cfg.getNumberOfBrokers() < 1 || cfg.getNumberOfReplicas() < 1) {
-            throw new IllegalArgumentException(
-                String.format(
-                    "Region '%s' must have at least 1 broker and 1 replica.", regionName));
-          }
-        });
+    for (final var cfg : regions) {
+      if (cfg.getNumberOfReplicas() > cfg.getNumberOfBrokers()) {
+        throw new IllegalArgumentException(
+            String.format(
+                REPLICAS_EXCEED_BROKERS_ERROR_MSG,
+                cfg.getName(),
+                cfg.getNumberOfReplicas(),
+                cfg.getNumberOfBrokers()));
+      }
+      if (cfg.getNumberOfBrokers() < 1 || cfg.getNumberOfReplicas() < 1) {
+        throw new IllegalArgumentException(
+            String.format(
+                "Region '%s' must have at least 1 broker and 1 replica.", cfg.getName()));
+      }
+    }
   }
 
   private void initPartitionIds() {

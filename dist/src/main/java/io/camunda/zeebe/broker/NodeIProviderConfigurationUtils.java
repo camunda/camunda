@@ -83,7 +83,10 @@ public class NodeIProviderConfigurationUtils {
     final String localRegion = cluster.getRegion();
     final var regionCfg =
         (localRegion != null && !localRegion.isBlank())
-            ? cluster.getPartitioning().getRegionAware().getRegions().get(localRegion)
+            ? cluster.getPartitioning().getRegionAware().getRegions().stream()
+                .filter(r -> localRegion.equals(r.getName()))
+                .findFirst()
+                .orElse(null)
             : null;
     final int localClusterSize =
         regionCfg != null ? regionCfg.getNumberOfBrokers() : cluster.getSize();

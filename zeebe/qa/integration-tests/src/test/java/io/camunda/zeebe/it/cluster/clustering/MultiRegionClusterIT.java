@@ -18,7 +18,6 @@ import io.camunda.zeebe.broker.system.configuration.partitioning.RegionCfg;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.cluster.TestZeebePort;
 import java.time.Duration;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import org.awaitility.Awaitility;
@@ -222,21 +221,19 @@ final class MultiRegionClusterIT {
    */
   private static RegionAwareCfg buildRegionAwareCfg() {
     final var east = new RegionCfg();
+    east.setName(REGION_EAST);
     east.setNumberOfBrokers(1);
     east.setNumberOfReplicas(1);
     east.setPriority(1000);
 
     final var west = new RegionCfg();
+    west.setName(REGION_WEST);
     west.setNumberOfBrokers(1);
     west.setNumberOfReplicas(1);
     west.setPriority(500);
 
-    final var regions = new LinkedHashMap<String, RegionCfg>();
-    regions.put(REGION_EAST, east);
-    regions.put(REGION_WEST, west);
-
     final var cfg = new RegionAwareCfg();
-    cfg.setRegions(regions);
+    cfg.setRegions(List.of(east, west));
     return cfg;
   }
 
@@ -246,21 +243,19 @@ final class MultiRegionClusterIT {
    */
   private static RegionAwareCfg buildMultiBrokerRegionAwareCfg() {
     final var east = new RegionCfg();
+    east.setName(REGION_EAST);
     east.setNumberOfBrokers(2);
     east.setNumberOfReplicas(1);
     east.setPriority(1000);
 
     final var west = new RegionCfg();
+    west.setName(REGION_WEST);
     west.setNumberOfBrokers(2);
     west.setNumberOfReplicas(1);
     west.setPriority(500);
 
-    final var regions = new LinkedHashMap<String, RegionCfg>();
-    regions.put(REGION_EAST, east);
-    regions.put(REGION_WEST, west);
-
     final var cfg = new RegionAwareCfg();
-    cfg.setRegions(regions);
+    cfg.setRegions(List.of(east, west));
     return cfg;
   }
 }

@@ -457,6 +457,7 @@ public class BrokerBasedPropertiesOverride {
 
     final RegionAwareCfg regionAware = partitioning.getRegionAware();
     if (partitioning.getScheme() == Partitioning.Scheme.REGION_AWARE
+        && regionAware.getRegions() != null
         && !regionAware.getRegions().isEmpty()) {
       final PartitioningCfg partitioningCfg = override.getExperimental().getPartitioning();
       partitioningCfg.setScheme(Scheme.REGION_AWARE);

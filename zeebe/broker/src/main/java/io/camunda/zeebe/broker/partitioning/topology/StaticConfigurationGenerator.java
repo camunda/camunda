@@ -80,11 +80,10 @@ public final class StaticConfigurationGenerator {
       final PartitioningCfg config) {
     final var regions = config.getRegionAware().getRegions();
     final List<RegionSpec> specs =
-        regions.entrySet().stream()
+        regions.stream()
             .map(
-                e -> {
-                  final String regionName = e.getKey();
-                  final var regionCfg = e.getValue();
+                regionCfg -> {
+                  final String regionName = regionCfg.getName();
                   final List<MemberId> brokers =
                       IntStream.range(0, regionCfg.getNumberOfBrokers())
                           .mapToObj(localId -> MemberId.from(regionName + "-" + localId))
@@ -140,11 +139,11 @@ public final class StaticConfigurationGenerator {
    */
   private static Set<MemberId> getRegionAwareRaftGroupMembers(
       final PartitioningCfg partitioningCfg) {
-    return partitioningCfg.getRegionAware().getRegions().entrySet().stream()
+    return partitioningCfg.getRegionAware().getRegions().stream()
         .flatMap(
-            e ->
-                IntStream.range(0, e.getValue().getNumberOfBrokers())
-                    .mapToObj(localId -> MemberId.from(e.getKey() + "-" + localId)))
+            regionCfg ->
+                IntStream.range(0, regionCfg.getNumberOfBrokers())
+                    .mapToObj(localId -> MemberId.from(regionCfg.getName() + "-" + localId)))
         .collect(Collectors.toSet());
   }
 

@@ -25,9 +25,18 @@ package io.camunda.zeebe.broker.system.configuration.partitioning;
  */
 public final class RegionCfg {
 
+  private String name;
   private int numberOfReplicas;
   private int numberOfBrokers;
   private int priority;
+
+  public String getName() {
+    return name;
+  }
+
+  public void setName(final String name) {
+    this.name = name;
+  }
 
   public int getNumberOfReplicas() {
     return numberOfReplicas;
@@ -56,7 +65,10 @@ public final class RegionCfg {
   @Override
   public String toString() {
     return "RegionCfg{"
-        + "numberOfReplicas="
+        + "name='"
+        + name
+        + '\''
+        + ", numberOfReplicas="
         + numberOfReplicas
         + ", numberOfBrokers="
         + numberOfBrokers
