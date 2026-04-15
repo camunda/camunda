@@ -246,6 +246,11 @@ public final class DeploymentRecord extends UnifiedRecordValue implements Deploy
         .anyMatch(x -> x.endsWith(".rpa"));
   }
 
+  /**
+   * Returns {@code true} if every metadata entry in this deployment record has its {@code
+   * duplicate} flag set, {@code false} if at least one entry is marked as new or changed. The
+   * duplicate flag is set during metadata creation by the individual resource transformers.
+   */
   public boolean hasDuplicatesOnly() {
     return processesMetadata().stream().allMatch(ProcessMetadata::isDuplicate)
         && decisionRequirementsMetadata().stream()
