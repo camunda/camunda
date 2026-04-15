@@ -22,7 +22,7 @@ jobs:
       DOCKER_IMAGE_TEAM: registry.camunda.cloud/team-optimize/optimize
       DOCKER_IMAGE_DOCKER_HUB: camunda/optimize
     steps:
-    - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+    - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.0.2
     - name: Install common tooling (buildx)  # required on self-hosted runners
       uses: camunda/infra-global-github-actions/common-tooling@main
       with:
@@ -36,12 +36,12 @@ jobs:
       uses: ./.github/actions/git-environment
     - name: "Read Java / Version Info"
       id: "pom-info"
-      uses: YunaBraska/java-info-action@main
+      uses: YunaBraska/java-info-action@575e99f42f2915cc62410c7917fef5558257042c # 3.0.1
       with:
         work-dir: ./optimize
     - name: "Read Parent Pom Info"
       id: "parent-pom-info"
-      uses: YunaBraska/java-info-action@main
+      uses: YunaBraska/java-info-action@575e99f42f2915cc62410c7917fef5558257042c # 3.0.1
       with:
         work-dir: .
     - name: Expose common variables as Env

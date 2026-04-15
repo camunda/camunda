@@ -113,7 +113,7 @@ jobs:
           echo "Action Inputs:"
           echo "${WORKFLOW_INPUTS}"
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           ref: ${{ inputs.branch }}
 
@@ -135,7 +135,7 @@ jobs:
             secret/data/products/distribution/ci APPLE_TEAM_ID;
             secret/data/products/distribution/ci APPLE_COMMON_NAME;
             secret/data/common/jenkins/downloads-camunda-cloud_google_sa_key DOWNLOAD_CENTER_GCLOUD_KEY_BYTES | GCP_CREDENTIALS_NAME;
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6.4.0
         with:
           go-version: ">=1.23.1"
           cache: false # disabling since not working anyways without a cache-dependency-path specified
