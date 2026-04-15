@@ -48,7 +48,11 @@ public abstract class AbstractProcessInstanceFromOperationItemHandler<
 
   @Override
   public List<String> generateIds(final Record<R> record) {
-    return List.of(String.valueOf(record.getValue().getProcessInstanceKey()));
+    // Use a composite ID (processInstanceKey:batchOperationReference) so that each (PI, batchOp)
+    // pair gets its own cached entity. This prevents a second batch operation targeting the same PI
+    // from overwriting the first one's batchOperationId in the shared entity.
+    return List.of(
+        record.getValue().getProcessInstanceKey() + ":" + record.getBatchOperationReference());
   }
 
   @Override
@@ -64,6 +68,9 @@ public abstract class AbstractProcessInstanceFromOperationItemHandler<
   @Override
   public void flush(final ProcessInstanceForListViewEntity entity, final BatchRequest batchRequest)
       throws PersistenceException {
+    // Extract just the processInstanceKey from the composite cache ID
+    // (processInstanceKey:batchOperationReference).
+    final String processInstanceKey = entity.getId().split(":")[0];
     final String script =
         "if (ctx._source.batchOperationIds == null){"
             + "ctx._source.batchOperationIds = new String[]{params.batchOperationId};"
@@ -72,7 +79,7 @@ public abstract class AbstractProcessInstanceFromOperationItemHandler<
             + "}";
     batchRequest.updateWithScript(
         indexName,
-        entity.getId(),
+        processInstanceKey,
         script,
         Map.of("batchOperationId", entity.getBatchOperationIds().getFirst()));
   }
