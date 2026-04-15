@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
@@ -38,6 +39,7 @@ import io.camunda.zeebe.exporter.api.context.ScheduledTask;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import java.time.Duration;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
@@ -521,9 +523,105 @@ class RdbmsExporterTest {
     verify(historyDeletionService).getCurrentDelayBetweenRuns();
   }
 
+  @Test
+  void shouldRequestReplayWhenBrokerAheadOfRdbmsOnOpen() {
+    // given - broker position is 1000, RDBMS position is 900
+    final long brokerPosition = 1000L;
+    final long rdbmsPosition = 900L;
+    createExporterWithRdbmsPosition(brokerPosition, rdbmsPosition);
+    when(controller.requestReplay(anyLong())).thenReturn(true);
+
+    // when
+    exporter.open(controller);
+
+    // then - requestReplay should be called with rdbmsPosition + 1
+    verify(controller).requestReplay(rdbmsPosition + 1);
+  }
+
+  @Test
+  void shouldThrowWhenReplayFailsBecauseLogSegmentsAreGone() {
+    // given - broker position is 1000, RDBMS position is 900, but log segments are gone
+    final long brokerPosition = 1000L;
+    final long rdbmsPosition = 900L;
+    createExporterWithRdbmsPosition(brokerPosition, rdbmsPosition);
+    when(controller.requestReplay(anyLong())).thenReturn(false);
+
+    // when + then - exporter should fail to open because replay is not possible
+    assertThatThrownBy(() -> exporter.open(controller))
+        .isInstanceOf(ExporterException.class)
+        .hasMessageContaining("log segments are no longer available");
+  }
+
+  @Test
+  void shouldNotRequestReplayWhenBrokerAndRdbmsPositionAreEqual() {
+    // given - broker position equals RDBMS position
+    final long position = 1000L;
+    createExporterWithRdbmsPosition(position, position);
+
+    // when
+    exporter.open(controller);
+
+    // then - no replay should be requested
+    verify(controller, never()).requestReplay(Mockito.anyLong());
+  }
+
   // ------------------------------------------------
   // mocks and stubs
   // ------------------------------------------------
+
+  /**
+   * Creates an exporter with an existing RDBMS position already stored, without calling open(). Use
+   * this when you need to control the broker and RDBMS positions independently (e.g., to simulate a
+   * secondary storage that is behind the broker after a restore or failover).
+   */
+  private void createExporterWithRdbmsPosition(
+      final long brokerPosition, final long rdbmsPosition) {
+    final var existingRdbmsPositionModel =
+        new io.camunda.db.rdbms.write.domain.ExporterPositionModel(
+            0,
+            RdbmsExporter.class.getSimpleName(),
+            rdbmsPosition,
+            LocalDateTime.now(),
+            LocalDateTime.now());
+
+    flushTask = mock(ScheduledTask.class);
+    controller = mock(Controller.class);
+    when(controller.getLastExportedRecordPosition()).thenReturn(brokerPosition);
+    when(controller.scheduleCancellableTask(any(), any())).thenReturn(flushTask);
+
+    rdbmsWriters = mock(RdbmsWriters.class);
+    executionQueue = new StubExecutionQueue();
+    positionService = mock(ExporterPositionService.class);
+    when(positionService.findOne(anyInt())).thenReturn(existingRdbmsPositionModel);
+    rdbmsPurger = mock(RdbmsPurger.class);
+    historyCleanupService = mock(HistoryCleanupService.class);
+    when(historyCleanupService.cleanupHistory(anyInt(), any())).thenReturn(Duration.ofSeconds(1));
+    when(historyCleanupService.cleanupUsageMetricsHistory(anyInt(), any()))
+        .thenReturn(Duration.ofSeconds(1));
+    when(historyCleanupService.cleanupJobBatchMetricsHistory(anyInt(), any()))
+        .thenReturn(Duration.ofSeconds(1));
+    historyDeletionService = mock(HistoryDeletionService.class);
+    when(historyDeletionService.deleteHistory(anyInt())).thenReturn(Duration.ofSeconds(1));
+    when(rdbmsWriters.getExporterPositionService()).thenReturn(positionService);
+    when(rdbmsWriters.getExecutionQueue()).thenReturn(executionQueue);
+    when(rdbmsWriters.getRdbmsPurger()).thenReturn(rdbmsPurger);
+    metrics = mock(RdbmsWriterMetrics.class);
+    when(rdbmsWriters.getMetrics()).thenReturn(metrics);
+    schemaManager = mock(RdbmsSchemaManager.class);
+    when(schemaManager.isInitialized()).thenReturn(true);
+    doAnswer((invocation) -> executionQueue.checkQueueForFlush()).when(rdbmsWriters).flush(false);
+
+    exporter =
+        new RdbmsExporter.Builder()
+            .rdbmsWriter(rdbmsWriters)
+            .partitionId(0)
+            .flushInterval(Duration.ofMillis(500))
+            .queueSize(100)
+            .rdbmsSchemaManager(schemaManager)
+            .historyCleanupService(historyCleanupService)
+            .historyDeletionService(historyDeletionService)
+            .build();
+  }
 
   private RdbmsExportHandler mockHandler(final ValueType valueType) {
     return mockHandler(valueType, true);
