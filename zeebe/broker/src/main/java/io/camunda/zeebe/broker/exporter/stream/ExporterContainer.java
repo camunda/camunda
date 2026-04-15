@@ -214,9 +214,8 @@ final class ExporterContainer implements Controller {
     position = replayPosition;
     lastUnacknowledgedPosition = replayPosition;
     lastAcknowledgedPosition = replayPosition;
-    if (!exporterIsSoftPaused) {
-      exportersState.setPosition(getId(), replayPosition);
-    }
+    lastExportedMetadata = null;
+    exportersState.setPosition(getId(), replayPosition);
     return replayControl.requestReplay(replayPosition);
   }
 
