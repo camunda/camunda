@@ -43,8 +43,12 @@ public class ListViewFromChunkItemHandler
 
   @Override
   public List<String> generateIds(final Record<BatchOperationChunkRecordValue> record) {
+    // Use a composite ID (processInstanceKey:batchOperationKey) so that each (PI, batchOp) pair
+    // gets its own cached entity. This prevents a second batch operation targeting the same PI
+    // from overwriting the first one's batchOperationId in the shared entity.
+    final var batchOpKey = record.getValue().getBatchOperationKey();
     return record.getValue().getItems().stream()
-        .map(item -> String.valueOf(item.getProcessInstanceKey()))
+        .map(item -> item.getProcessInstanceKey() + ":" + batchOpKey)
         .toList();
   }
 
@@ -57,12 +61,15 @@ public class ListViewFromChunkItemHandler
   public void updateEntity(
       final Record<BatchOperationChunkRecordValue> record,
       final ProcessInstanceForListViewEntity entity) {
-    entity.setBatchOperationIds(List.of(String.valueOf(record.getBatchOperationReference())));
+    entity.setBatchOperationIds(List.of(String.valueOf(record.getValue().getBatchOperationKey())));
   }
 
   @Override
   public void flush(final ProcessInstanceForListViewEntity entity, final BatchRequest batchRequest)
       throws PersistenceException {
+    // Extract just the processInstanceKey from the composite cache ID
+    // (processInstanceKey:batchOperationKey).
+    final String processInstanceKey = entity.getId().split(":")[0];
     final String script =
         "if (ctx._source.batchOperationIds == null){"
             + "ctx._source.batchOperationIds = new String[]{params.batchOperationId};"
@@ -71,7 +78,7 @@ public class ListViewFromChunkItemHandler
             + "}";
     batchRequest.updateWithScript(
         indexName,
-        entity.getId(),
+        processInstanceKey,
         script,
         Map.of("batchOperationId", entity.getBatchOperationIds().getFirst()));
   }
