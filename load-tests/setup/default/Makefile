@@ -141,13 +141,25 @@ setup-leader-balancer:
 		echo "Leader balancer cronjob already exists"; \
 	fi
 
+# Patch the Keycloak 'optimize' client to allow password-grant authentication.
+# Run this once after the platform is installed but before enabling the Optimize
+# report metric. Keycloak 26 defaults directAccessGrantsEnabled to false; this
+# enables it via the Keycloak Admin REST API so the load tester can authenticate.
+.PHONY: setup-optimize-keycloak
+setup-optimize-keycloak:
+ifeq ($(enable_optimize),true)
+	./setup-optimize-keycloak.sh $(namespace)
+else
+	@echo "Skipping Keycloak optimize client setup (enable_optimize=$(enable_optimize))"
+endif
+
 # Patch the existing starter deployment with Optimize env vars when report metric is enabled
 .PHONY: enable-optimize-report-metric
 enable-optimize-report-metric:
 ifeq ($(enable_optimize_report_metric),true)
 	@echo "Patching deployment with Optimize config in namespace $(namespace)..."
 	@container_name=$$(kubectl get deployment starter -n $(namespace) -o jsonpath='{.spec.template.spec.containers[0].name}'); \
-	kubectl patch deployment starter -n $(namespace) --type='strategic' -p="{\"spec\":{\"template\":{\"spec\":{\"containers\":[{\"name\":\"$$container_name\",\"env\":[{\"name\":\"ENABLE_OPTIMIZE_REPORT_METRIC\",\"value\":\"true\"},{\"name\":\"OPTIMIZE_BASE_URL\",\"value\":\"http://optimize\"},{\"name\":\"OPTIMIZE_KEYCLOAK_URL\",\"value\":\"http://keycloak\"},{\"name\":\"OPTIMIZE_CLIENT_SECRET\",\"valueFrom\":{\"secretKeyRef\":{\"name\":\"camunda-credentials\",\"key\":\"identity-optimize-client-token\"}}},{\"name\":\"OPTIMIZE_PASSWORD\",\"valueFrom\":{\"secretKeyRef\":{\"name\":\"camunda-credentials\",\"key\":\"identity-firstuser-password\"}}}]}]}}}}"
+	kubectl patch deployment starter -n $(namespace) --type='strategic' -p="{\"spec\":{\"template\":{\"spec\":{\"containers\":[{\"name\":\"$$container_name\",\"env\":[{\"name\":\"ENABLE_OPTIMIZE_REPORT_METRIC\",\"value\":\"true\"},{\"name\":\"OPTIMIZE_BASE_URL\",\"value\":\"http://optimize\"},{\"name\":\"OPTIMIZE_KEYCLOAK_URL\",\"value\":\"http://keycloak\"},{\"name\":\"OPTIMIZE_CLIENT_ID\",\"value\":\"optimize-load-tester\"},{\"name\":\"OPTIMIZE_CLIENT_SECRET\",\"valueFrom\":{\"secretKeyRef\":{\"name\":\"camunda-credentials\",\"key\":\"identity-optimize-loadtester-client-token\"}}},{\"name\":\"OPTIMIZE_PASSWORD\",\"valueFrom\":{\"secretKeyRef\":{\"name\":\"camunda-credentials\",\"key\":\"identity-firstuser-password\"}}}]}]}}}}"
 	@echo "Optimize report metric enabled on starter. Pod will restart automatically."
 else
 	@echo "Skipping Optimize report metric configuration (enable_optimize_report_metric=$(enable_optimize_report_metric))"
