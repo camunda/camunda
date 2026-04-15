@@ -1,0 +1,38 @@
+{
+  "mappings": {
+    "dynamic": "strict",
+    "properties": {
+      "id": {
+        "type": "keyword"
+      },
+      "resourceKey": {
+        "type": "long"
+      },
+      "resourceId": {
+        "type": "keyword"
+      },
+      "resourceName": {
+        "type": "keyword"
+      },
+      "version": {
+        "type": "integer"
+      },
+      "versionTag": {
+        "type": "keyword"
+      },
+      "deploymentKey": {
+        "type": "long"
+      },
+      "tenantId": {
+        "type": "keyword"
+      },
+      "checksum": {
+        "type": "binary"
+      },
+      "resourceContent": {
+        "type": "text",
+        "index": false
+      }
+    }
+  }
+}
