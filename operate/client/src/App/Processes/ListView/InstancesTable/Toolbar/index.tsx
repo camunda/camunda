@@ -134,7 +134,7 @@ const Toolbar: React.FC<Props> = observer(({selectedInstancesCount}) => {
 
     const operationMessage = `${pluralSuffix(
       selectedInstancesCount,
-      'Instance',
+      'instance',
     )} selected for ${ACTION_NAMES[modalMode]} operation.`;
 
     const messages = [operationMessage];
@@ -147,7 +147,7 @@ const Toolbar: React.FC<Props> = observer(({selectedInstancesCount}) => {
 
     if (modalMode === 'DELETE_PROCESS_INSTANCE') {
       messages.push(
-        'This action will permanently delete the selected process instances and their history. This cannot be undone.',
+        'This permanently deletes the selected process instances and their history. This cannot be undone.',
       );
     } else if (selectedInstancesCount > runningInstancesCount) {
       messages.push('Finished instances in your selection will be ignored.');
@@ -246,7 +246,7 @@ const Toolbar: React.FC<Props> = observer(({selectedInstancesCount}) => {
       <Modal
         open={modalMode !== null}
         preventCloseOnClickOutside
-        modalHeading="Apply Operation"
+        modalHeading="Apply operation"
         primaryButtonText={
           modalMode === 'DELETE_PROCESS_INSTANCE' ? 'Delete' : 'Apply'
         }
@@ -258,10 +258,6 @@ const Toolbar: React.FC<Props> = observer(({selectedInstancesCount}) => {
         size="md"
       >
         <p>{getBodyText()}</p>
-        <p>
-          Click "{modalMode === 'DELETE_PROCESS_INSTANCE' ? 'Delete' : 'Apply'}"
-          to proceed.
-        </p>
       </Modal>
     </>
   );
