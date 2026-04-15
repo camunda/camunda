@@ -9,7 +9,7 @@ package io.camunda.zeebe.gateway.rest.controller.adapter;
 
 import io.camunda.gateway.mapping.http.RequestMapper;
 import io.camunda.gateway.mapping.http.ResponseMapper;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedDeleteResourceRequestStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.DeleteResourceRequestContract;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.configuration.MultiTenancyConfiguration;
 import io.camunda.service.ResourceServices;
@@ -77,7 +77,7 @@ public class DefaultResourceServiceAdapter implements ResourceServiceAdapter {
   @Override
   public ResponseEntity<Object> deleteResource(
       final Long resourceKey,
-      final GeneratedDeleteResourceRequestStrictContract deleteRequestStrict,
+      final DeleteResourceRequestContract deleteRequestStrict,
       final CamundaAuthentication authentication) {
     return RequestMapper.toResourceDeletion(resourceKey, deleteRequestStrict)
         .fold(

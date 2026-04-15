@@ -11,18 +11,18 @@ import io.camunda.gateway.mapping.http.RequestMapper;
 import io.camunda.gateway.mapping.http.ResponseMapper;
 import io.camunda.gateway.mapping.http.search.SearchQueryRequestMapper;
 import io.camunda.gateway.mapping.http.search.SearchQueryResponseMapper;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedCancelProcessInstanceRequestStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedDeleteProcessInstanceRequestStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedIncidentSearchQueryRequestStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedProcessInstanceCancellationBatchOperationRequestStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedProcessInstanceCreationInstructionStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedProcessInstanceDeletionBatchOperationRequestStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedProcessInstanceIncidentResolutionBatchOperationRequestStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedProcessInstanceMigrationBatchOperationRequestStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedProcessInstanceMigrationInstructionStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedProcessInstanceModificationBatchOperationRequestStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedProcessInstanceModificationInstructionStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedProcessInstanceSearchQueryRequestStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.CancelProcessInstanceRequestContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.DeleteProcessInstanceRequestContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.IncidentSearchQueryRequestContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.ProcessInstanceCancellationBatchOperationRequestContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.ProcessInstanceCreationInstructionContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.ProcessInstanceDeletionBatchOperationRequestContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.ProcessInstanceIncidentResolutionBatchOperationRequestContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.ProcessInstanceMigrationBatchOperationRequestContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.ProcessInstanceMigrationInstructionContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.ProcessInstanceModificationBatchOperationRequestContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.ProcessInstanceModificationInstructionContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.ProcessInstanceSearchQueryRequestContract;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.configuration.MultiTenancyConfiguration;
 import io.camunda.service.ProcessInstanceServices;
@@ -50,8 +50,7 @@ public class DefaultProcessInstanceServiceAdapter implements ProcessInstanceServ
 
   @Override
   public ResponseEntity<Object> createProcessInstance(
-      final GeneratedProcessInstanceCreationInstructionStrictContract
-          processInstanceCreationInstruction,
+      final ProcessInstanceCreationInstructionContract processInstanceCreationInstruction,
       final CamundaAuthentication authentication) {
     return RequestMapper.toCreateProcessInstance(
             processInstanceCreationInstruction, multiTenancyCfg.isChecksEnabled())
@@ -101,8 +100,7 @@ public class DefaultProcessInstanceServiceAdapter implements ProcessInstanceServ
 
   @Override
   public ResponseEntity<Object> searchProcessInstances(
-      final GeneratedProcessInstanceSearchQueryRequestStrictContract
-          processInstanceSearchQueryStrict,
+      final ProcessInstanceSearchQueryRequestContract processInstanceSearchQueryStrict,
       final CamundaAuthentication authentication) {
     return SearchQueryRequestMapper.toProcessInstanceQueryStrict(processInstanceSearchQueryStrict)
         .fold(
@@ -121,7 +119,7 @@ public class DefaultProcessInstanceServiceAdapter implements ProcessInstanceServ
   @Override
   public ResponseEntity<Object> searchProcessInstanceIncidents(
       final Long processInstanceKey,
-      final GeneratedIncidentSearchQueryRequestStrictContract incidentSearchQueryStrict,
+      final IncidentSearchQueryRequestContract incidentSearchQueryStrict,
       final CamundaAuthentication authentication) {
     return SearchQueryRequestMapper.toIncidentQueryStrict(incidentSearchQueryStrict)
         .fold(
@@ -153,7 +151,7 @@ public class DefaultProcessInstanceServiceAdapter implements ProcessInstanceServ
   @Override
   public ResponseEntity<Void> cancelProcessInstance(
       final Long processInstanceKey,
-      final GeneratedCancelProcessInstanceRequestStrictContract cancelProcessInstanceRequestStrict,
+      final CancelProcessInstanceRequestContract cancelProcessInstanceRequestStrict,
       final CamundaAuthentication authentication) {
     return RequestMapper.toCancelProcessInstance(
             processInstanceKey, cancelProcessInstanceRequestStrict)
@@ -166,7 +164,7 @@ public class DefaultProcessInstanceServiceAdapter implements ProcessInstanceServ
 
   @Override
   public ResponseEntity<Object> cancelProcessInstancesBatchOperation(
-      final GeneratedProcessInstanceCancellationBatchOperationRequestStrictContract requestStrict,
+      final ProcessInstanceCancellationBatchOperationRequestContract requestStrict,
       final CamundaAuthentication authentication) {
     return RequestMapper.toRequiredProcessInstanceFilter(requestStrict.filter())
         .fold(
@@ -182,8 +180,7 @@ public class DefaultProcessInstanceServiceAdapter implements ProcessInstanceServ
 
   @Override
   public ResponseEntity<Object> resolveIncidentsBatchOperation(
-      final GeneratedProcessInstanceIncidentResolutionBatchOperationRequestStrictContract
-          requestStrict,
+      final ProcessInstanceIncidentResolutionBatchOperationRequestContract requestStrict,
       final CamundaAuthentication authentication) {
     return RequestMapper.toRequiredProcessInstanceFilter(
             requestStrict != null ? requestStrict.filter() : null)
@@ -200,7 +197,7 @@ public class DefaultProcessInstanceServiceAdapter implements ProcessInstanceServ
 
   @Override
   public ResponseEntity<Object> migrateProcessInstancesBatchOperation(
-      final GeneratedProcessInstanceMigrationBatchOperationRequestStrictContract requestStrict,
+      final ProcessInstanceMigrationBatchOperationRequestContract requestStrict,
       final CamundaAuthentication authentication) {
     return RequestMapper.toProcessInstanceMigrationBatchOperationRequest(requestStrict)
         .fold(
@@ -216,7 +213,7 @@ public class DefaultProcessInstanceServiceAdapter implements ProcessInstanceServ
 
   @Override
   public ResponseEntity<Object> modifyProcessInstancesBatchOperation(
-      final GeneratedProcessInstanceModificationBatchOperationRequestStrictContract requestStrict,
+      final ProcessInstanceModificationBatchOperationRequestContract requestStrict,
       final CamundaAuthentication authentication) {
     return RequestMapper.toProcessInstanceModifyBatchOperationRequest(requestStrict)
         .fold(
@@ -233,7 +230,7 @@ public class DefaultProcessInstanceServiceAdapter implements ProcessInstanceServ
   @Override
   public ResponseEntity<Void> deleteProcessInstance(
       final Long processInstanceKey,
-      final GeneratedDeleteProcessInstanceRequestStrictContract deleteProcessInstanceRequestStrict,
+      final DeleteProcessInstanceRequestContract deleteProcessInstanceRequestStrict,
       final CamundaAuthentication authentication) {
     return RequestExecutor.executeSync(
         () ->
@@ -247,7 +244,7 @@ public class DefaultProcessInstanceServiceAdapter implements ProcessInstanceServ
 
   @Override
   public ResponseEntity<Object> deleteProcessInstancesBatchOperation(
-      final GeneratedProcessInstanceDeletionBatchOperationRequestStrictContract requestStrict,
+      final ProcessInstanceDeletionBatchOperationRequestContract requestStrict,
       final CamundaAuthentication authentication) {
     return RequestMapper.toRequiredProcessInstanceFilter(requestStrict.filter())
         .fold(
@@ -264,8 +261,7 @@ public class DefaultProcessInstanceServiceAdapter implements ProcessInstanceServ
   @Override
   public ResponseEntity<Void> migrateProcessInstance(
       final Long processInstanceKey,
-      final GeneratedProcessInstanceMigrationInstructionStrictContract
-          processInstanceMigrationInstructionStrict,
+      final ProcessInstanceMigrationInstructionContract processInstanceMigrationInstructionStrict,
       final CamundaAuthentication authentication) {
     return RequestMapper.toMigrateProcessInstance(
             processInstanceKey, processInstanceMigrationInstructionStrict)
@@ -281,7 +277,7 @@ public class DefaultProcessInstanceServiceAdapter implements ProcessInstanceServ
   @Override
   public ResponseEntity<Void> modifyProcessInstance(
       final Long processInstanceKey,
-      final GeneratedProcessInstanceModificationInstructionStrictContract
+      final ProcessInstanceModificationInstructionContract
           processInstanceModificationInstructionStrict,
       final CamundaAuthentication authentication) {
     return RequestMapper.toModifyProcessInstance(

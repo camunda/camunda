@@ -15,8 +15,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedRoleCreateRequestStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedRoleUpdateRequestStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.RoleCreateRequestContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.RoleUpdateRequestContract;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.security.validation.IdentifierValidator;
@@ -30,8 +30,8 @@ import io.camunda.service.UserServices;
 import io.camunda.service.exception.ErrorMapper;
 import io.camunda.zeebe.broker.client.api.dto.BrokerRejection;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
+import io.camunda.zeebe.gateway.rest.controller.RoleController;
 import io.camunda.zeebe.gateway.rest.controller.adapter.DefaultRoleServiceAdapter;
-import io.camunda.zeebe.gateway.rest.controller.generated.GeneratedRoleController;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.RoleRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.RoleIntent;
@@ -60,7 +60,7 @@ public class RoleControllerTest {
 
   @Nested
   @Import(DefaultRoleServiceAdapter.class)
-  @WebMvcTest(GeneratedRoleController.class)
+  @WebMvcTest(RoleController.class)
   class DefaultRoleControllerTest extends RestControllerTest {
 
     @MockitoBean private RoleServices roleServices;
@@ -98,7 +98,7 @@ public class RoleControllerTest {
           .uri(ROLE_BASE_URL)
           .accept(MediaType.APPLICATION_JSON)
           .contentType(MediaType.APPLICATION_JSON)
-          .bodyValue(new GeneratedRoleCreateRequestStrictContract(roleId, roleName, description))
+          .bodyValue(new RoleCreateRequestContract(roleId, roleName, description))
           .exchange()
           .expectStatus()
           .isCreated();
@@ -152,7 +152,7 @@ public class RoleControllerTest {
           .uri(ROLE_BASE_URL)
           .accept(MediaType.APPLICATION_JSON)
           .contentType(MediaType.APPLICATION_JSON)
-          .bodyValue(new GeneratedRoleCreateRequestStrictContract(roleId, roleName, null))
+          .bodyValue(new RoleCreateRequestContract(roleId, roleName, null))
           .exchange()
           .expectStatus()
           .isBadRequest()
@@ -185,7 +185,7 @@ public class RoleControllerTest {
           .uri(ROLE_BASE_URL)
           .accept(MediaType.APPLICATION_JSON)
           .contentType(MediaType.APPLICATION_JSON)
-          .bodyValue(new GeneratedRoleCreateRequestStrictContract(roleId, roleName, null))
+          .bodyValue(new RoleCreateRequestContract(roleId, roleName, null))
           .exchange()
           .expectStatus()
           .isBadRequest()
@@ -217,7 +217,7 @@ public class RoleControllerTest {
           .uri(ROLE_BASE_URL)
           .accept(MediaType.APPLICATION_JSON)
           .contentType(MediaType.APPLICATION_JSON)
-          .bodyValue(new GeneratedRoleCreateRequestStrictContract(roleId, "name", null))
+          .bodyValue(new RoleCreateRequestContract(roleId, "name", null))
           .exchange()
           .expectStatus()
           .isBadRequest()
@@ -252,7 +252,7 @@ public class RoleControllerTest {
           .uri(ROLE_BASE_URL)
           .accept(MediaType.APPLICATION_JSON)
           .contentType(MediaType.APPLICATION_JSON)
-          .bodyValue(new GeneratedRoleCreateRequestStrictContract(roleId, "name", null))
+          .bodyValue(new RoleCreateRequestContract(roleId, "name", null))
           .exchange()
           .expectStatus()
           .isBadRequest()
@@ -294,7 +294,7 @@ public class RoleControllerTest {
           .uri("%s/%s".formatted(ROLE_BASE_URL, roleId))
           .accept(MediaType.APPLICATION_JSON)
           .contentType(MediaType.APPLICATION_JSON)
-          .bodyValue(new GeneratedRoleUpdateRequestStrictContract(roleName, description))
+          .bodyValue(new RoleUpdateRequestContract(roleName, description))
           .exchange()
           .expectStatus()
           .isOk()
@@ -328,7 +328,7 @@ public class RoleControllerTest {
           .uri(uri)
           .accept(MediaType.APPLICATION_JSON)
           .contentType(MediaType.APPLICATION_JSON)
-          .bodyValue(new GeneratedRoleUpdateRequestStrictContract(roleName, description))
+          .bodyValue(new RoleUpdateRequestContract(roleName, description))
           .exchange()
           .expectStatus()
           .isBadRequest()
@@ -369,7 +369,7 @@ public class RoleControllerTest {
           .uri(path)
           .accept(MediaType.APPLICATION_JSON)
           .contentType(MediaType.APPLICATION_JSON)
-          .bodyValue(new GeneratedRoleUpdateRequestStrictContract(roleName, description))
+          .bodyValue(new RoleUpdateRequestContract(roleName, description))
           .exchange()
           .expectStatus()
           .isNotFound();
@@ -399,7 +399,7 @@ public class RoleControllerTest {
           .uri(uri)
           .accept(MediaType.APPLICATION_JSON)
           .contentType(MediaType.APPLICATION_JSON)
-          .bodyValue(new GeneratedRoleUpdateRequestStrictContract(roleName, description))
+          .bodyValue(new RoleUpdateRequestContract(roleName, description))
           .exchange()
           .expectStatus()
           .isOk()
@@ -1247,7 +1247,7 @@ public class RoleControllerTest {
 
   @Nested
   @Import(DefaultRoleServiceAdapter.class)
-  @WebMvcTest(GeneratedRoleController.class)
+  @WebMvcTest(RoleController.class)
   class ByogEnabledRoleControllerTest extends RestControllerTest {
 
     @MockitoBean private RoleServices roleServices;

@@ -26,8 +26,8 @@ import io.camunda.service.RoleServices;
 import io.camunda.service.UserServices;
 import io.camunda.service.exception.ErrorMapper;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
+import io.camunda.zeebe.gateway.rest.controller.UserController;
 import io.camunda.zeebe.gateway.rest.controller.adapter.DefaultUserServiceAdapter;
-import io.camunda.zeebe.gateway.rest.controller.generated.GeneratedUserController;
 import io.camunda.zeebe.test.util.Strings;
 import java.util.List;
 import java.util.regex.Pattern;
@@ -45,7 +45,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.json.JsonCompareMode;
 
 @Import(DefaultUserServiceAdapter.class)
-@WebMvcTest(value = GeneratedUserController.class)
+@WebMvcTest(value = UserController.class)
 public class UserQueryControllerTest extends RestControllerTest {
 
   static final String EXPECTED_SEARCH_RESPONSE =

@@ -15,7 +15,7 @@ import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.core.JsonParseException;
 import io.atomix.cluster.messaging.MessagingException.ConnectionClosed;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedUserTaskCompletionRequestStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.UserTaskCompletionRequestContract;
 import io.camunda.search.exception.CamundaSearchException;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.UserTaskServices;
@@ -27,7 +27,6 @@ import io.camunda.zeebe.broker.client.api.dto.BrokerRejection;
 import io.camunda.zeebe.gateway.rest.CamundaProblemDetail;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.gateway.rest.controller.adapter.DefaultUserTaskServiceAdapter;
-import io.camunda.zeebe.gateway.rest.controller.generated.GeneratedUserTaskController;
 import io.camunda.zeebe.msgpack.spec.MsgpackException;
 import io.camunda.zeebe.protocol.record.ErrorCode;
 import io.camunda.zeebe.protocol.record.RejectionType;
@@ -55,7 +54,7 @@ import org.springframework.web.servlet.View;
 import reactor.core.publisher.Mono;
 
 @Import(DefaultUserTaskServiceAdapter.class)
-@WebMvcTest(GeneratedUserTaskController.class)
+@WebMvcTest(UserTaskController.class)
 public class ErrorMapperTest extends RestControllerTest {
 
   private static final String USER_TASKS_BASE_URL = "/v1/user-tasks";
@@ -82,7 +81,7 @@ public class ErrorMapperTest extends RestControllerTest {
                 ErrorMapper.mapBrokerError(
                     new BrokerError(ErrorCode.PROCESS_NOT_FOUND, "Just an error"))));
 
-    final var request = new GeneratedUserTaskCompletionRequestStrictContract(null, null);
+    final var request = new UserTaskCompletionRequestContract(null, null);
     final var expectedBody =
         CamundaProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, "Just an error");
     expectedBody.setTitle("Not Found");
@@ -94,7 +93,7 @@ public class ErrorMapperTest extends RestControllerTest {
         .uri(USER_TASKS_BASE_URL + "/1/completion")
         .accept(MediaType.APPLICATION_JSON)
         .contentType(MediaType.APPLICATION_JSON)
-        .body(Mono.just(request), GeneratedUserTaskCompletionRequestStrictContract.class)
+        .body(Mono.just(request), UserTaskCompletionRequestContract.class)
         .exchange()
         .expectStatus()
         .isNotFound()
@@ -111,7 +110,7 @@ public class ErrorMapperTest extends RestControllerTest {
                 ErrorMapper.mapBrokerError(
                     new BrokerError(ErrorCode.RESOURCE_EXHAUSTED, "Just an error"))));
 
-    final var request = new GeneratedUserTaskCompletionRequestStrictContract(null, null);
+    final var request = new UserTaskCompletionRequestContract(null, null);
     final var expectedBody =
         CamundaProblemDetail.forStatusAndDetail(HttpStatus.SERVICE_UNAVAILABLE, "Just an error");
     expectedBody.setTitle("Service Unavailable");
@@ -123,7 +122,7 @@ public class ErrorMapperTest extends RestControllerTest {
         .uri(USER_TASKS_BASE_URL + "/1/completion")
         .accept(MediaType.APPLICATION_JSON)
         .contentType(MediaType.APPLICATION_JSON)
-        .body(Mono.just(request), GeneratedUserTaskCompletionRequestStrictContract.class)
+        .body(Mono.just(request), UserTaskCompletionRequestContract.class)
         .exchange()
         .expectStatus()
         .isEqualTo(HttpStatus.SERVICE_UNAVAILABLE)
@@ -140,7 +139,7 @@ public class ErrorMapperTest extends RestControllerTest {
                 ErrorMapper.mapBrokerError(
                     new BrokerError(ErrorCode.PARTITION_LEADER_MISMATCH, "Just an error"))));
 
-    final var request = new GeneratedUserTaskCompletionRequestStrictContract(null, null);
+    final var request = new UserTaskCompletionRequestContract(null, null);
     final var expectedBody =
         CamundaProblemDetail.forStatusAndDetail(HttpStatus.SERVICE_UNAVAILABLE, "Just an error");
     expectedBody.setTitle("Service Unavailable");
@@ -152,7 +151,7 @@ public class ErrorMapperTest extends RestControllerTest {
         .uri(USER_TASKS_BASE_URL + "/1/completion")
         .accept(MediaType.APPLICATION_JSON)
         .contentType(MediaType.APPLICATION_JSON)
-        .body(Mono.just(request), GeneratedUserTaskCompletionRequestStrictContract.class)
+        .body(Mono.just(request), UserTaskCompletionRequestContract.class)
         .exchange()
         .expectStatus()
         .isEqualTo(HttpStatus.SERVICE_UNAVAILABLE)
@@ -179,7 +178,7 @@ public class ErrorMapperTest extends RestControllerTest {
             CompletableFuture.failedFuture(
                 ErrorMapper.mapBrokerError(new BrokerError(errorCode, "Just an error"))));
 
-    final var request = new GeneratedUserTaskCompletionRequestStrictContract(null, null);
+    final var request = new UserTaskCompletionRequestContract(null, null);
     final var expectedBody =
         CamundaProblemDetail.forStatusAndDetail(
             HttpStatus.INTERNAL_SERVER_ERROR,
@@ -195,7 +194,7 @@ public class ErrorMapperTest extends RestControllerTest {
         .uri(USER_TASKS_BASE_URL + "/1/completion")
         .accept(MediaType.APPLICATION_JSON)
         .contentType(MediaType.APPLICATION_JSON)
-        .body(Mono.just(request), GeneratedUserTaskCompletionRequestStrictContract.class)
+        .body(Mono.just(request), UserTaskCompletionRequestContract.class)
         .exchange()
         .expectStatus()
         .is5xxServerError()
@@ -294,7 +293,7 @@ public class ErrorMapperTest extends RestControllerTest {
                 ErrorMapper.mapSearchError(
                     new CamundaSearchException(new NullPointerException("Just an error")))));
 
-    final var request = new GeneratedUserTaskCompletionRequestStrictContract(null, null);
+    final var request = new UserTaskCompletionRequestContract(null, null);
     final var expectedBody =
         CamundaProblemDetail.forStatusAndDetail(
             HttpStatus.INTERNAL_SERVER_ERROR,
@@ -308,7 +307,7 @@ public class ErrorMapperTest extends RestControllerTest {
         .uri(USER_TASKS_BASE_URL + "/1/completion")
         .accept(MediaType.APPLICATION_JSON)
         .contentType(MediaType.APPLICATION_JSON)
-        .body(Mono.just(request), GeneratedUserTaskCompletionRequestStrictContract.class)
+        .body(Mono.just(request), UserTaskCompletionRequestContract.class)
         .exchange()
         .expectStatus()
         .isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR)
@@ -350,7 +349,7 @@ public class ErrorMapperTest extends RestControllerTest {
             CompletableFuture.failedFuture(
                 ErrorMapper.mapError(new TimeoutException("Oh noes, timeouts!"))));
 
-    final var request = new GeneratedUserTaskCompletionRequestStrictContract(null, null);
+    final var request = new UserTaskCompletionRequestContract(null, null);
     final var expectedBody =
         CamundaProblemDetail.forStatusAndDetail(
             HttpStatus.GATEWAY_TIMEOUT,
@@ -364,7 +363,7 @@ public class ErrorMapperTest extends RestControllerTest {
         .uri(USER_TASKS_BASE_URL + "/1/completion")
         .accept(MediaType.APPLICATION_JSON)
         .contentType(MediaType.APPLICATION_JSON)
-        .body(Mono.just(request), GeneratedUserTaskCompletionRequestStrictContract.class)
+        .body(Mono.just(request), UserTaskCompletionRequestContract.class)
         .exchange()
         .expectStatus()
         .isEqualTo(HttpStatus.GATEWAY_TIMEOUT)
@@ -382,7 +381,7 @@ public class ErrorMapperTest extends RestControllerTest {
         .thenReturn(
             CompletableFuture.failedFuture(ErrorMapper.mapError(new ConnectionClosed(errorMsg))));
 
-    final var request = new GeneratedUserTaskCompletionRequestStrictContract(null, null);
+    final var request = new UserTaskCompletionRequestContract(null, null);
     final var expectedBody =
         CamundaProblemDetail.forStatusAndDetail(
             HttpStatus.BAD_GATEWAY,
@@ -397,7 +396,7 @@ public class ErrorMapperTest extends RestControllerTest {
         .uri(USER_TASKS_BASE_URL + "/1/completion")
         .accept(MediaType.APPLICATION_JSON)
         .contentType(MediaType.APPLICATION_JSON)
-        .body(Mono.just(request), GeneratedUserTaskCompletionRequestStrictContract.class)
+        .body(Mono.just(request), UserTaskCompletionRequestContract.class)
         .exchange()
         .expectStatus()
         .isEqualTo(HttpStatus.BAD_GATEWAY)
@@ -416,7 +415,7 @@ public class ErrorMapperTest extends RestControllerTest {
                 ErrorMapper.mapError(
                     new ConnectTimeoutException("Oh noes, connection timeouts!"))));
 
-    final var request = new GeneratedUserTaskCompletionRequestStrictContract(null, null);
+    final var request = new UserTaskCompletionRequestContract(null, null);
     final var expectedBody =
         CamundaProblemDetail.forStatusAndDetail(
             HttpStatus.SERVICE_UNAVAILABLE,
@@ -430,7 +429,7 @@ public class ErrorMapperTest extends RestControllerTest {
         .uri(USER_TASKS_BASE_URL + "/1/completion")
         .accept(MediaType.APPLICATION_JSON)
         .contentType(MediaType.APPLICATION_JSON)
-        .body(Mono.just(request), GeneratedUserTaskCompletionRequestStrictContract.class)
+        .body(Mono.just(request), UserTaskCompletionRequestContract.class)
         .exchange()
         .expectStatus()
         .isEqualTo(HttpStatus.SERVICE_UNAVAILABLE)
@@ -448,7 +447,7 @@ public class ErrorMapperTest extends RestControllerTest {
             CompletableFuture.failedFuture(
                 ErrorMapper.mapError(new ConnectException("Oh noes, connection timeouts!"))));
 
-    final var request = new GeneratedUserTaskCompletionRequestStrictContract(null, null);
+    final var request = new UserTaskCompletionRequestContract(null, null);
     final var expectedBody =
         CamundaProblemDetail.forStatusAndDetail(
             HttpStatus.SERVICE_UNAVAILABLE,
@@ -462,7 +461,7 @@ public class ErrorMapperTest extends RestControllerTest {
         .uri(USER_TASKS_BASE_URL + "/1/completion")
         .accept(MediaType.APPLICATION_JSON)
         .contentType(MediaType.APPLICATION_JSON)
-        .body(Mono.just(request), GeneratedUserTaskCompletionRequestStrictContract.class)
+        .body(Mono.just(request), UserTaskCompletionRequestContract.class)
         .exchange()
         .expectStatus()
         .isEqualTo(HttpStatus.SERVICE_UNAVAILABLE)
@@ -480,7 +479,7 @@ public class ErrorMapperTest extends RestControllerTest {
             CompletableFuture.failedFuture(
                 ErrorMapper.mapError(new PartitionNotFoundException(1))));
 
-    final var request = new GeneratedUserTaskCompletionRequestStrictContract(null, null);
+    final var request = new UserTaskCompletionRequestContract(null, null);
     final var expectedBody =
         CamundaProblemDetail.forStatusAndDetail(
             HttpStatus.SERVICE_UNAVAILABLE,
@@ -494,7 +493,7 @@ public class ErrorMapperTest extends RestControllerTest {
         .uri(USER_TASKS_BASE_URL + "/1/completion")
         .accept(MediaType.APPLICATION_JSON)
         .contentType(MediaType.APPLICATION_JSON)
-        .body(Mono.just(request), GeneratedUserTaskCompletionRequestStrictContract.class)
+        .body(Mono.just(request), UserTaskCompletionRequestContract.class)
         .exchange()
         .expectStatus()
         .isEqualTo(HttpStatus.SERVICE_UNAVAILABLE)
@@ -512,7 +511,7 @@ public class ErrorMapperTest extends RestControllerTest {
             CompletableFuture.failedFuture(
                 ErrorMapper.mapError(new MsgpackException("Oh noes, msg parsing!"))));
 
-    final var request = new GeneratedUserTaskCompletionRequestStrictContract(null, null);
+    final var request = new UserTaskCompletionRequestContract(null, null);
     final var expectedBody =
         CamundaProblemDetail.forStatusAndDetail(
             HttpStatus.BAD_REQUEST,
@@ -526,7 +525,7 @@ public class ErrorMapperTest extends RestControllerTest {
         .uri(USER_TASKS_BASE_URL + "/1/completion")
         .accept(MediaType.APPLICATION_JSON)
         .contentType(MediaType.APPLICATION_JSON)
-        .body(Mono.just(request), GeneratedUserTaskCompletionRequestStrictContract.class)
+        .body(Mono.just(request), UserTaskCompletionRequestContract.class)
         .exchange()
         .expectStatus()
         .isBadRequest()
@@ -544,7 +543,7 @@ public class ErrorMapperTest extends RestControllerTest {
             CompletableFuture.failedFuture(
                 ErrorMapper.mapError(new JsonParseException("Oh noes, json parsing!"))));
 
-    final var request = new GeneratedUserTaskCompletionRequestStrictContract(null, null);
+    final var request = new UserTaskCompletionRequestContract(null, null);
     final var expectedBody =
         CamundaProblemDetail.forStatusAndDetail(
             HttpStatus.BAD_REQUEST, "Expected to handle request, but JSON property was invalid");
@@ -557,7 +556,7 @@ public class ErrorMapperTest extends RestControllerTest {
         .uri(USER_TASKS_BASE_URL + "/1/completion")
         .accept(MediaType.APPLICATION_JSON)
         .contentType(MediaType.APPLICATION_JSON)
-        .body(Mono.just(request), GeneratedUserTaskCompletionRequestStrictContract.class)
+        .body(Mono.just(request), UserTaskCompletionRequestContract.class)
         .exchange()
         .expectStatus()
         .isBadRequest()
@@ -575,7 +574,7 @@ public class ErrorMapperTest extends RestControllerTest {
             CompletableFuture.failedFuture(
                 ErrorMapper.mapError(new IllegalArgumentException("Oh noes, illegal arguments!"))));
 
-    final var request = new GeneratedUserTaskCompletionRequestStrictContract(null, null);
+    final var request = new UserTaskCompletionRequestContract(null, null);
     final var expectedBody =
         CamundaProblemDetail.forStatusAndDetail(
             HttpStatus.BAD_REQUEST, "Expected to handle request, but JSON property was invalid");
@@ -588,7 +587,7 @@ public class ErrorMapperTest extends RestControllerTest {
         .uri(USER_TASKS_BASE_URL + "/1/completion")
         .accept(MediaType.APPLICATION_JSON)
         .contentType(MediaType.APPLICATION_JSON)
-        .body(Mono.just(request), GeneratedUserTaskCompletionRequestStrictContract.class)
+        .body(Mono.just(request), UserTaskCompletionRequestContract.class)
         .exchange()
         .expectStatus()
         .isBadRequest()
@@ -606,7 +605,7 @@ public class ErrorMapperTest extends RestControllerTest {
             CompletableFuture.failedFuture(
                 ErrorMapper.mapError(new RequestRetriesExhaustedException())));
 
-    final var request = new GeneratedUserTaskCompletionRequestStrictContract(null, null);
+    final var request = new UserTaskCompletionRequestContract(null, null);
     final var expectedBody =
         CamundaProblemDetail.forStatusAndDetail(
             HttpStatus.SERVICE_UNAVAILABLE,
@@ -620,7 +619,7 @@ public class ErrorMapperTest extends RestControllerTest {
         .uri(USER_TASKS_BASE_URL + "/1/completion")
         .accept(MediaType.APPLICATION_JSON)
         .contentType(MediaType.APPLICATION_JSON)
-        .body(Mono.just(request), GeneratedUserTaskCompletionRequestStrictContract.class)
+        .body(Mono.just(request), UserTaskCompletionRequestContract.class)
         .exchange()
         .expectStatus()
         .isEqualTo(HttpStatus.SERVICE_UNAVAILABLE)
@@ -639,7 +638,7 @@ public class ErrorMapperTest extends RestControllerTest {
                 ErrorMapper.mapBrokerError(
                     new BrokerError(ErrorCode.PARTITION_UNAVAILABLE, "Just an error"))));
 
-    final var request = new GeneratedUserTaskCompletionRequestStrictContract(null, null);
+    final var request = new UserTaskCompletionRequestContract(null, null);
     final var expectedBody =
         CamundaProblemDetail.forStatusAndDetail(HttpStatus.SERVICE_UNAVAILABLE, "Just an error");
     expectedBody.setTitle("Service Unavailable");
@@ -651,7 +650,7 @@ public class ErrorMapperTest extends RestControllerTest {
         .uri(USER_TASKS_BASE_URL + "/1/completion")
         .accept(MediaType.APPLICATION_JSON)
         .contentType(MediaType.APPLICATION_JSON)
-        .body(Mono.just(request), GeneratedUserTaskCompletionRequestStrictContract.class)
+        .body(Mono.just(request), UserTaskCompletionRequestContract.class)
         .exchange()
         .expectStatus()
         .isEqualTo(HttpStatus.SERVICE_UNAVAILABLE)
@@ -668,7 +667,7 @@ public class ErrorMapperTest extends RestControllerTest {
                 ErrorMapper.mapBrokerError(
                     new BrokerError(ErrorCode.MALFORMED_REQUEST, "max size error"))));
 
-    final var request = new GeneratedUserTaskCompletionRequestStrictContract(null, null);
+    final var request = new UserTaskCompletionRequestContract(null, null);
     final var expectedBody =
         CamundaProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, "max size error");
     expectedBody.setTitle("Bad Request");
@@ -680,7 +679,7 @@ public class ErrorMapperTest extends RestControllerTest {
         .uri(USER_TASKS_BASE_URL + "/1/completion")
         .accept(MediaType.APPLICATION_JSON)
         .contentType(MediaType.APPLICATION_JSON)
-        .body(Mono.just(request), GeneratedUserTaskCompletionRequestStrictContract.class)
+        .body(Mono.just(request), UserTaskCompletionRequestContract.class)
         .exchange()
         .expectStatus()
         .isEqualTo(HttpStatus.BAD_REQUEST)

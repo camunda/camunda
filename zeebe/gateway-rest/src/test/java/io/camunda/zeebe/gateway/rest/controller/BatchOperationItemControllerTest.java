@@ -12,7 +12,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedBatchOperationItemStateEnum;
+import io.camunda.gateway.mapping.http.search.contract.generated.BatchOperationItemStateEnum;
 import io.camunda.search.entities.BatchOperationEntity;
 import io.camunda.search.entities.BatchOperationEntity.BatchOperationItemEntity;
 import io.camunda.search.entities.BatchOperationEntity.BatchOperationItemState;
@@ -24,7 +24,6 @@ import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.BatchOperationServices;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.gateway.rest.controller.adapter.DefaultBatchOperationServiceAdapter;
-import io.camunda.zeebe.gateway.rest.controller.generated.GeneratedBatchOperationController;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.stream.Stream;
@@ -39,7 +38,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.json.JsonCompareMode;
 
 @Import(DefaultBatchOperationServiceAdapter.class)
-@WebMvcTest(value = GeneratedBatchOperationController.class)
+@WebMvcTest(value = BatchOperationController.class)
 class BatchOperationItemControllerTest extends RestControllerTest {
 
   @MockitoBean private BatchOperationServices batchOperationServices;
@@ -85,12 +84,12 @@ class BatchOperationItemControllerTest extends RestControllerTest {
                 .stateOperations(ops)
                 .build(),
         List.of(
-            List.of(Operation.eq(String.valueOf(GeneratedBatchOperationItemStateEnum.ACTIVE))),
-            List.of(Operation.neq(String.valueOf(GeneratedBatchOperationItemStateEnum.COMPLETED))),
+            List.of(Operation.eq(String.valueOf(BatchOperationItemStateEnum.ACTIVE))),
+            List.of(Operation.neq(String.valueOf(BatchOperationItemStateEnum.COMPLETED))),
             List.of(
                 Operation.in(
-                    String.valueOf(GeneratedBatchOperationItemStateEnum.COMPLETED),
-                    String.valueOf(GeneratedBatchOperationItemStateEnum.ACTIVE)),
+                    String.valueOf(BatchOperationItemStateEnum.COMPLETED),
+                    String.valueOf(BatchOperationItemStateEnum.ACTIVE)),
                 Operation.like("act"))),
         true);
 

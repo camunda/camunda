@@ -33,7 +33,6 @@ import io.camunda.service.ProcessInstanceServices.ProcessInstanceModifyBatchOper
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceModifyRequest;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.gateway.rest.controller.adapter.DefaultProcessInstanceServiceAdapter;
-import io.camunda.zeebe.gateway.rest.controller.generated.GeneratedProcessInstanceController;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationCreationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.history.HistoryDeletionRecord;
@@ -70,7 +69,7 @@ import org.springframework.test.web.reactive.server.WebTestClient.ResponseSpec;
 
 @ExtendWith(MockitoExtension.class)
 @Import(DefaultProcessInstanceServiceAdapter.class)
-@WebMvcTest(value = GeneratedProcessInstanceController.class)
+@WebMvcTest(value = ProcessInstanceController.class)
 public class ProcessInstanceControllerTest extends RestControllerTest {
 
   static final String EXPECTED_START_RESPONSE =

@@ -19,7 +19,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.document.api.DocumentError.DocumentHashMismatch;
 import io.camunda.document.api.DocumentMetadataModel;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedDocumentMetadataStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.DocumentMetadataContract;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.DocumentServices;
 import io.camunda.service.DocumentServices.DocumentContentResponse;
@@ -28,7 +28,6 @@ import io.camunda.service.DocumentServices.DocumentReferenceResponse;
 import io.camunda.service.exception.ErrorMapper;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.gateway.rest.controller.adapter.DefaultDocumentServiceAdapter;
-import io.camunda.zeebe.gateway.rest.controller.generated.GeneratedDocumentController;
 import io.camunda.zeebe.util.Either;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
@@ -47,7 +46,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.json.JsonCompareMode;
 
 @Import(DefaultDocumentServiceAdapter.class)
-@WebMvcTest(GeneratedDocumentController.class)
+@WebMvcTest(DocumentController.class)
 public class DocumentControllerTest extends RestControllerTest {
 
   static final String DOCUMENTS_BASE_URL = "/v2/documents";
@@ -161,7 +160,7 @@ public class DocumentControllerTest extends RestControllerTest {
                         contentType.toString(), filename, timestamp, 0L, null, null, Map.of()))));
 
     final var metadataToSend =
-        new GeneratedDocumentMetadataStrictContract(
+        new DocumentMetadataContract(
             contentType.toString(), filename, timestamp.toString(), null, null, null, null);
 
     final var multipartBodyBuilder = new MultipartBodyBuilder();
@@ -251,7 +250,7 @@ public class DocumentControllerTest extends RestControllerTest {
         .header(
             "X-Document-Metadata",
             om.writeValueAsString(
-                new GeneratedDocumentMetadataStrictContract(
+                new DocumentMetadataContract(
                     contentType.toString(),
                     filename1,
                     timestamp.toString(),
@@ -264,7 +263,7 @@ public class DocumentControllerTest extends RestControllerTest {
         .header(
             "X-Document-Metadata",
             om.writeValueAsString(
-                new GeneratedDocumentMetadataStrictContract(
+                new DocumentMetadataContract(
                     contentType.toString(),
                     filename2,
                     timestamp.toString(),
@@ -519,7 +518,7 @@ public class DocumentControllerTest extends RestControllerTest {
 
     final var mapper = new ObjectMapper();
     final var meta1 =
-        new GeneratedDocumentMetadataStrictContract(
+        new DocumentMetadataContract(
             contentType.toString(), filename1, null, null, null, null, null);
     // Provide single-element JSON array to simulate mismatch
     multipartBodyBuilder
@@ -574,9 +573,9 @@ public class DocumentControllerTest extends RestControllerTest {
     final var mapper = new ObjectMapper();
     final var metadataList =
         List.of(
-            new GeneratedDocumentMetadataStrictContract(
+            new DocumentMetadataContract(
                 contentType.toString(), filename1, timestamp.toString(), null, null, "123", null),
-            new GeneratedDocumentMetadataStrictContract(
+            new DocumentMetadataContract(
                 contentType.toString(), filename2, timestamp.toString(), null, null, "123", null));
     multipartBodyBuilder
         .part("metadataList", mapper.writeValueAsString(metadataList))
@@ -636,7 +635,7 @@ public class DocumentControllerTest extends RestControllerTest {
         .header(
             "X-Document-Metadata",
             mapper.writeValueAsString(
-                new GeneratedDocumentMetadataStrictContract(
+                new DocumentMetadataContract(
                     contentType.toString(),
                     "IGNORED-" + filename1,
                     null,
@@ -651,7 +650,7 @@ public class DocumentControllerTest extends RestControllerTest {
         .header(
             "X-Document-Metadata",
             mapper.writeValueAsString(
-                new GeneratedDocumentMetadataStrictContract(
+                new DocumentMetadataContract(
                     contentType.toString(),
                     "IGNORED-" + filename2,
                     null,
@@ -663,9 +662,9 @@ public class DocumentControllerTest extends RestControllerTest {
     // Preferred metadataList (processInstanceKey 123, original file names)
     final var metadataList =
         List.of(
-            new GeneratedDocumentMetadataStrictContract(
+            new DocumentMetadataContract(
                 contentType.toString(), filename1, null, null, null, "123", null),
-            new GeneratedDocumentMetadataStrictContract(
+            new DocumentMetadataContract(
                 contentType.toString(), filename2, null, null, null, "123", null));
     multipartBodyBuilder
         .part("metadataList", mapper.writeValueAsString(metadataList))

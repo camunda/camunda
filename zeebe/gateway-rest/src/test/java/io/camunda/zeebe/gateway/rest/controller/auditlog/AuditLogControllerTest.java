@@ -18,10 +18,10 @@ import io.camunda.gateway.mapping.http.converters.AuditLogCategoryConverter;
 import io.camunda.gateway.mapping.http.converters.AuditLogEntityTypeConverter;
 import io.camunda.gateway.mapping.http.converters.AuditLogOperationTypeConverter;
 import io.camunda.gateway.mapping.http.converters.AuditLogResultConverter;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedAuditLogCategoryEnum;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedAuditLogEntityTypeEnum;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedAuditLogOperationTypeEnum;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedAuditLogResultEnum;
+import io.camunda.gateway.mapping.http.search.contract.generated.AuditLogCategoryEnum;
+import io.camunda.gateway.mapping.http.search.contract.generated.AuditLogEntityTypeEnum;
+import io.camunda.gateway.mapping.http.search.contract.generated.AuditLogOperationTypeEnum;
+import io.camunda.gateway.mapping.http.search.contract.generated.AuditLogResultEnum;
 import io.camunda.search.entities.AuditLogEntity;
 import io.camunda.search.entities.AuditLogEntity.AuditLogActorType;
 import io.camunda.search.entities.AuditLogEntity.AuditLogOperationCategory;
@@ -33,8 +33,8 @@ import io.camunda.search.sort.AuditLogSort;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.AuditLogServices;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
+import io.camunda.zeebe.gateway.rest.controller.AuditLogController;
 import io.camunda.zeebe.gateway.rest.controller.adapter.DefaultAuditLogServiceAdapter;
-import io.camunda.zeebe.gateway.rest.controller.generated.GeneratedAuditLogController;
 import java.time.OffsetDateTime;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -46,7 +46,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.json.JsonCompareMode;
 
 @Import(DefaultAuditLogServiceAdapter.class)
-@WebMvcTest(GeneratedAuditLogController.class)
+@WebMvcTest(AuditLogController.class)
 public class AuditLogControllerTest extends RestControllerTest {
 
   static final String AUDIT_LOGS_BASE_URL = "/v2/audit-logs";
@@ -253,16 +253,14 @@ public class AuditLogControllerTest extends RestControllerTest {
             .actorTypes(AuditLogActorType.USER.name())
             .operationTypes(
                 AuditLogOperationTypeConverter.toInternalOperationTypeAsString(
-                    GeneratedAuditLogOperationTypeEnum.CREATE))
+                    AuditLogOperationTypeEnum.CREATE))
             .entityTypes(
                 AuditLogEntityTypeConverter.toInternalEntityTypeAsString(
-                    GeneratedAuditLogEntityTypeEnum.USER))
+                    AuditLogEntityTypeEnum.USER))
             .categories(
                 AuditLogCategoryConverter.toInternalCategoryAsString(
-                    GeneratedAuditLogCategoryEnum.DEPLOYED_RESOURCES))
-            .results(
-                AuditLogResultConverter.toInternalResultAsString(
-                    GeneratedAuditLogResultEnum.SUCCESS))
+                    AuditLogCategoryEnum.DEPLOYED_RESOURCES))
+            .results(AuditLogResultConverter.toInternalResultAsString(AuditLogResultEnum.SUCCESS))
             .build();
     verify(auditLogServices).search(eq(new AuditLogQuery.Builder().filter(filter).build()), any());
   }

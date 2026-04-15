@@ -34,8 +34,8 @@ import io.camunda.service.MappingRuleServices;
 import io.camunda.service.RoleServices;
 import io.camunda.service.exception.ErrorMapper;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
+import io.camunda.zeebe.gateway.rest.controller.GroupController;
 import io.camunda.zeebe.gateway.rest.controller.adapter.DefaultGroupServiceAdapter;
-import io.camunda.zeebe.gateway.rest.controller.generated.GeneratedGroupController;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.test.util.Strings;
 import java.util.List;
@@ -53,7 +53,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.json.JsonCompareMode;
 
 @Import(DefaultGroupServiceAdapter.class)
-@WebMvcTest(value = GeneratedGroupController.class)
+@WebMvcTest(value = GroupController.class)
 public class GroupQueryControllerTest extends RestControllerTest {
 
   static final String EXPECTED_SEARCH_RESPONSE =

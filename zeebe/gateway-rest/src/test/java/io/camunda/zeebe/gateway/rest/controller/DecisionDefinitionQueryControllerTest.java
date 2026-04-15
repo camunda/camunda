@@ -27,7 +27,6 @@ import io.camunda.service.DecisionDefinitionServices;
 import io.camunda.service.exception.ErrorMapper;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.gateway.rest.controller.adapter.DefaultDecisionDefinitionServiceAdapter;
-import io.camunda.zeebe.gateway.rest.controller.generated.GeneratedDecisionDefinitionController;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.function.BiFunction;
@@ -44,7 +43,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.json.JsonCompareMode;
 
 @Import(DefaultDecisionDefinitionServiceAdapter.class)
-@WebMvcTest(value = GeneratedDecisionDefinitionController.class)
+@WebMvcTest(value = DecisionDefinitionController.class)
 public class DecisionDefinitionQueryControllerTest extends RestControllerTest {
 
   static final String EXPECTED_SEARCH_RESPONSE =

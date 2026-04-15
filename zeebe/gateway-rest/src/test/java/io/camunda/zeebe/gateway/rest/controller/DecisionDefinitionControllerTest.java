@@ -20,7 +20,6 @@ import io.camunda.service.DecisionDefinitionServices;
 import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.gateway.rest.controller.adapter.DefaultDecisionDefinitionServiceAdapter;
-import io.camunda.zeebe.gateway.rest.controller.generated.GeneratedDecisionDefinitionController;
 import io.camunda.zeebe.msgpack.spec.MsgPackHelper;
 import io.camunda.zeebe.protocol.impl.record.value.decision.DecisionEvaluationRecord;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
@@ -38,7 +37,7 @@ import org.springframework.test.json.JsonCompareMode;
 import org.springframework.test.web.reactive.server.WebTestClient.ResponseSpec;
 
 @Import(DefaultDecisionDefinitionServiceAdapter.class)
-@WebMvcTest(GeneratedDecisionDefinitionController.class)
+@WebMvcTest(DecisionDefinitionController.class)
 public class DecisionDefinitionControllerTest extends RestControllerTest {
 
   private static final String DECISION_BASE_URL = "/v2/decision-definitions";

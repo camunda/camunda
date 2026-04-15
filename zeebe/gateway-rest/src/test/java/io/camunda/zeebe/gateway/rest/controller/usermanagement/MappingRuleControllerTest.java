@@ -14,15 +14,15 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedMappingRuleCreateRequestStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedMappingRuleUpdateRequestStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.MappingRuleCreateRequestContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.MappingRuleUpdateRequestContract;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.service.MappingRuleServices;
 import io.camunda.service.MappingRuleServices.MappingRuleDTO;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
+import io.camunda.zeebe.gateway.rest.controller.MappingRuleController;
 import io.camunda.zeebe.gateway.rest.controller.adapter.DefaultMappingRuleServiceAdapter;
-import io.camunda.zeebe.gateway.rest.controller.generated.GeneratedMappingRuleController;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.MappingRuleRecord;
 import java.util.concurrent.CompletableFuture;
 import java.util.regex.Pattern;
@@ -37,7 +37,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.json.JsonCompareMode;
 
 @Import(DefaultMappingRuleServiceAdapter.class)
-@WebMvcTest(GeneratedMappingRuleController.class)
+@WebMvcTest(MappingRuleController.class)
 public class MappingRuleControllerTest extends RestControllerTest {
 
   private static final String MAPPING_RULES_PATH = "/v2/mapping-rules";
@@ -62,7 +62,7 @@ public class MappingRuleControllerTest extends RestControllerTest {
     // given
     final var dto = validCreateMappingRuleRuleDTO();
     final var request =
-        new GeneratedMappingRuleCreateRequestStrictContract(
+        new MappingRuleCreateRequestContract(
             dto.claimName(), dto.claimValue(), dto.name(), dto.mappingRuleId());
     final var mappingRecord =
         new MappingRuleRecord()
@@ -113,8 +113,7 @@ public class MappingRuleControllerTest extends RestControllerTest {
   @Test
   void shouldRejectMappingRuleCreationWitBlankId() {
     // given
-    final var request =
-        new GeneratedMappingRuleCreateRequestStrictContract("claim", "claimValue", "name", "");
+    final var request = new MappingRuleCreateRequestContract("claim", "claimValue", "name", "");
 
     // when then
     assertRequestRejectedExceptionally(
@@ -155,8 +154,7 @@ public class MappingRuleControllerTest extends RestControllerTest {
   @Test
   void shouldRejectMappingRuleCreationWitBlankClaimName() {
     // given
-    final var request =
-        new GeneratedMappingRuleCreateRequestStrictContract("", "claimValue", "name", "id");
+    final var request = new MappingRuleCreateRequestContract("", "claimValue", "name", "id");
 
     // when then
     assertRequestRejectedExceptionally(
@@ -196,8 +194,7 @@ public class MappingRuleControllerTest extends RestControllerTest {
   @Test
   void shouldRejectMappingRuleCreationWitBlankClaimValue() {
     // given
-    final var request =
-        new GeneratedMappingRuleCreateRequestStrictContract("claimName", "", "name", "id");
+    final var request = new MappingRuleCreateRequestContract("claimName", "", "name", "id");
 
     // when then
     assertRequestRejectedExceptionally(
@@ -244,8 +241,7 @@ public class MappingRuleControllerTest extends RestControllerTest {
       })
   void shouldRejectMappingRuleCreationWithIllegalCharactersInId(final String id) {
     // given
-    final var request =
-        new GeneratedMappingRuleCreateRequestStrictContract("claimName", "claimValue", "name", id);
+    final var request = new MappingRuleCreateRequestContract("claimName", "claimValue", "name", id);
 
     // when then
     assertRequestRejectedExceptionally(
@@ -266,8 +262,7 @@ public class MappingRuleControllerTest extends RestControllerTest {
   void shouldRejectMappingRuleWithTooLongId() {
     // given
     final var id = "x".repeat(257);
-    final var request =
-        new GeneratedMappingRuleCreateRequestStrictContract("claimName", "claimValue", "name", id);
+    final var request = new MappingRuleCreateRequestContract("claimName", "claimValue", "name", id);
 
     // when then
     assertRequestRejectedExceptionally(
@@ -369,8 +364,7 @@ public class MappingRuleControllerTest extends RestControllerTest {
   @Test
   void shouldRejectMappingRuleUpdateWitBlankClaimName() {
     // given
-    final var request =
-        new GeneratedMappingRuleUpdateRequestStrictContract("", "claimValue", "name");
+    final var request = new MappingRuleUpdateRequestContract("", "claimValue", "name");
 
     // when then
     assertRequestRejectedExceptionally(
@@ -412,8 +406,7 @@ public class MappingRuleControllerTest extends RestControllerTest {
   @Test
   void shouldRejectMappingRuleUpdateWitBlankClaimValue() {
     // given
-    final var request =
-        new GeneratedMappingRuleUpdateRequestStrictContract("claimName", "", "name");
+    final var request = new MappingRuleUpdateRequestContract("claimName", "", "name");
 
     // when then
     assertRequestRejectedExceptionally(

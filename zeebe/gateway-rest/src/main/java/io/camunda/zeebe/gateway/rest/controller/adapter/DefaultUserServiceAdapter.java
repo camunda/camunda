@@ -13,9 +13,9 @@ import io.camunda.gateway.mapping.http.ResponseMapper;
 import io.camunda.gateway.mapping.http.mapper.UserMapper;
 import io.camunda.gateway.mapping.http.search.SearchQueryRequestMapper;
 import io.camunda.gateway.mapping.http.search.SearchQueryResponseMapper;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedUserRequestStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedUserSearchQueryRequestStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedUserUpdateRequestStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.UserRequestContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.UserSearchQueryRequestContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.UserUpdateRequestContract;
 import io.camunda.gateway.mapping.http.validator.UserRequestValidator;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.validation.IdentifierValidator;
@@ -42,8 +42,7 @@ public class DefaultUserServiceAdapter implements UserServiceAdapter {
 
   @Override
   public ResponseEntity<Object> createUser(
-      final GeneratedUserRequestStrictContract userRequestStrict,
-      final CamundaAuthentication authentication) {
+      final UserRequestContract userRequestStrict, final CamundaAuthentication authentication) {
     return userMapper
         .toUserRequest(userRequestStrict)
         .fold(
@@ -57,7 +56,7 @@ public class DefaultUserServiceAdapter implements UserServiceAdapter {
 
   @Override
   public ResponseEntity<Object> searchUsers(
-      final GeneratedUserSearchQueryRequestStrictContract userSearchQueryRequestStrict,
+      final UserSearchQueryRequestContract userSearchQueryRequestStrict,
       final CamundaAuthentication authentication) {
     return SearchQueryRequestMapper.toUserQueryStrict(userSearchQueryRequestStrict)
         .fold(
@@ -87,7 +86,7 @@ public class DefaultUserServiceAdapter implements UserServiceAdapter {
   @Override
   public ResponseEntity<Object> updateUser(
       final String username,
-      final GeneratedUserUpdateRequestStrictContract userUpdateRequestStrict,
+      final UserUpdateRequestContract userUpdateRequestStrict,
       final CamundaAuthentication authentication) {
     return userMapper
         .toUserUpdateRequest(userUpdateRequestStrict, username)

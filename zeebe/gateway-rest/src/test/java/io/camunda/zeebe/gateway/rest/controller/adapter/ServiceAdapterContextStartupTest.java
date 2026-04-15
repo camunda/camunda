@@ -45,8 +45,8 @@ class ServiceAdapterContextStartupTest {
    */
   private static final List<ConditionalController> CONDITIONAL_CONTROLLERS =
       List.of(
-          new ConditionalController("GeneratedAuthenticationController", Profile.class),
-          new ConditionalController("GeneratedGroupController"));
+          new ConditionalController("AuthenticationController", Profile.class),
+          new ConditionalController("GroupController"));
 
   /**
    * For each conditionally-loaded generated controller, its corresponding adapter must carry the

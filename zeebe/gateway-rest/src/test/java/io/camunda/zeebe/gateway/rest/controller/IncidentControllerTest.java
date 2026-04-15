@@ -20,7 +20,6 @@ import io.camunda.service.exception.ErrorMapper;
 import io.camunda.zeebe.broker.client.api.dto.BrokerRejection;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.gateway.rest.controller.adapter.DefaultIncidentServiceAdapter;
-import io.camunda.zeebe.gateway.rest.controller.generated.GeneratedIncidentController;
 import io.camunda.zeebe.protocol.impl.record.value.incident.IncidentRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
@@ -35,7 +34,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.json.JsonCompareMode;
 
 @Import(DefaultIncidentServiceAdapter.class)
-@WebMvcTest(GeneratedIncidentController.class)
+@WebMvcTest(IncidentController.class)
 public class IncidentControllerTest extends RestControllerTest {
 
   static final String INCIDENT_BASE_URL = "/v2/incidents";

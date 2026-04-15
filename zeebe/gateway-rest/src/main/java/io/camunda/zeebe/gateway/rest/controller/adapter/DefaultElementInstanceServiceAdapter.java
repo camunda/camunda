@@ -11,9 +11,9 @@ import static io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper.mapErrorToRes
 
 import io.camunda.gateway.mapping.http.search.SearchQueryRequestMapper;
 import io.camunda.gateway.mapping.http.search.SearchQueryResponseMapper;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedElementInstanceSearchQueryRequestStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedIncidentSearchQueryRequestStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedSetVariableRequestStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.ElementInstanceSearchQueryRequestContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.IncidentSearchQueryRequestContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.SetVariableRequestContract;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.ElementInstanceServices;
 import io.camunda.zeebe.gateway.rest.controller.generated.ElementInstanceServiceAdapter;
@@ -34,8 +34,7 @@ public class DefaultElementInstanceServiceAdapter implements ElementInstanceServ
 
   @Override
   public ResponseEntity<Object> searchElementInstances(
-      final GeneratedElementInstanceSearchQueryRequestStrictContract
-          elementInstanceSearchQueryStrict,
+      final ElementInstanceSearchQueryRequestContract elementInstanceSearchQueryStrict,
       final CamundaAuthentication authentication) {
     return SearchQueryRequestMapper.toElementInstanceQueryStrict(elementInstanceSearchQueryStrict)
         .fold(
@@ -65,7 +64,7 @@ public class DefaultElementInstanceServiceAdapter implements ElementInstanceServ
   @Override
   public ResponseEntity<Void> createElementInstanceVariables(
       final Long elementInstanceKey,
-      final GeneratedSetVariableRequestStrictContract setVariableRequestStrict,
+      final SetVariableRequestContract setVariableRequestStrict,
       final CamundaAuthentication authentication) {
     return RequestExecutor.executeSync(
         () ->
@@ -81,7 +80,7 @@ public class DefaultElementInstanceServiceAdapter implements ElementInstanceServ
   @Override
   public ResponseEntity<Object> searchElementInstanceIncidents(
       final Long elementInstanceKey,
-      final GeneratedIncidentSearchQueryRequestStrictContract incidentSearchQueryStrict,
+      final IncidentSearchQueryRequestContract incidentSearchQueryStrict,
       final CamundaAuthentication authentication) {
     return SearchQueryRequestMapper.toIncidentQueryStrict(incidentSearchQueryStrict)
         .fold(

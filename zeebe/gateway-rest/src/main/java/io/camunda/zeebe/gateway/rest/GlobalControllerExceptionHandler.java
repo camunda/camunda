@@ -113,7 +113,7 @@ public class GlobalControllerExceptionHandler extends ResponseEntityExceptionHan
               ((HttpMessageNotReadableException) ex).getRootCause().getMessage(), field, options);
     } else if (isArrayTypeDeserializationError(ex)) {
       detail = ((HttpMessageNotReadableException) ex).getRootCause().getMessage() + ".";
-    } else if (isStrictContractConstraintViolation(ex)) {
+    } else if (isContractConstraintViolation(ex)) {
       detail = extractConstraintViolationDetail(ex);
     } else {
       detail = defaultDetail;
@@ -207,7 +207,7 @@ public class GlobalControllerExceptionHandler extends ResponseEntityExceptionHan
    * a required field is null (NullPointerException) or a constraint check fails
    * (IllegalArgumentException) during Jackson deserialization of a strict contract record.
    */
-  private boolean isStrictContractConstraintViolation(final Exception ex) {
+  private boolean isContractConstraintViolation(final Exception ex) {
     return ex instanceof HttpMessageNotReadableException
         && ex.getCause() instanceof final ValueInstantiationException vie
         && !vie.getType().isEnumType()

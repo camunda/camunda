@@ -11,8 +11,8 @@ import static io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper.mapErrorToRes
 
 import io.camunda.gateway.mapping.http.search.SearchQueryRequestMapper;
 import io.camunda.gateway.mapping.http.search.SearchQueryResponseMapper;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedCorrelatedMessageSubscriptionSearchQueryRequestStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedMessageSubscriptionSearchQueryRequestStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.CorrelatedMessageSubscriptionSearchQueryRequestContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.MessageSubscriptionSearchQueryRequestContract;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.MessageSubscriptionServices;
 import io.camunda.zeebe.gateway.rest.controller.generated.MessageSubscriptionServiceAdapter;
@@ -32,8 +32,7 @@ public class DefaultMessageSubscriptionServiceAdapter implements MessageSubscrip
 
   @Override
   public ResponseEntity<Object> searchMessageSubscriptions(
-      final GeneratedMessageSubscriptionSearchQueryRequestStrictContract
-          messageSubscriptionSearchQueryStrict,
+      final MessageSubscriptionSearchQueryRequestContract messageSubscriptionSearchQueryStrict,
       final CamundaAuthentication authentication) {
     return SearchQueryRequestMapper.toMessageSubscriptionQueryStrict(
             messageSubscriptionSearchQueryStrict)
@@ -52,7 +51,7 @@ public class DefaultMessageSubscriptionServiceAdapter implements MessageSubscrip
 
   @Override
   public ResponseEntity<Object> searchCorrelatedMessageSubscriptions(
-      final GeneratedCorrelatedMessageSubscriptionSearchQueryRequestStrictContract
+      final CorrelatedMessageSubscriptionSearchQueryRequestContract
           correlatedMessageSubscriptionSearchQueryStrict,
       final CamundaAuthentication authentication) {
     return SearchQueryRequestMapper.toCorrelatedMessageSubscriptionQueryStrict(

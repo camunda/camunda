@@ -9,17 +9,17 @@ package io.camunda.zeebe.gateway.rest.configuration;
 
 import static org.mockito.Mockito.verifyNoInteractions;
 
+import io.camunda.zeebe.gateway.rest.controller.ClusterController;
+import io.camunda.zeebe.gateway.rest.controller.ProcessInstanceController;
 import io.camunda.zeebe.gateway.rest.controller.adapter.DefaultClusterServiceAdapter;
 import io.camunda.zeebe.gateway.rest.controller.adapter.DefaultProcessInstanceServiceAdapter;
-import io.camunda.zeebe.gateway.rest.controller.generated.GeneratedClusterController;
-import io.camunda.zeebe.gateway.rest.controller.generated.GeneratedProcessInstanceController;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
 
 @Import({DefaultClusterServiceAdapter.class, DefaultProcessInstanceServiceAdapter.class})
 @WebMvcTest(
-    value = {GeneratedProcessInstanceController.class, GeneratedClusterController.class},
+    value = {ProcessInstanceController.class, ClusterController.class},
     properties = "camunda.rest.enabled=false")
 public class RestApiDisabledTest extends RestApiConfigurationTest {
 

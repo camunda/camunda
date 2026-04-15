@@ -13,9 +13,9 @@ import io.camunda.gateway.mapping.http.RequestMapper;
 import io.camunda.gateway.mapping.http.ResponseMapper;
 import io.camunda.gateway.mapping.http.search.SearchQueryRequestMapper;
 import io.camunda.gateway.mapping.http.search.SearchQueryResponseMapper;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedDecisionInstanceDeletionBatchOperationRequestStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedDecisionInstanceSearchQueryRequestStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedDeleteDecisionInstanceRequestStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.DecisionInstanceDeletionBatchOperationRequestContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.DecisionInstanceSearchQueryRequestContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.DeleteDecisionInstanceRequestContract;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.DecisionInstanceServices;
 import io.camunda.zeebe.gateway.rest.controller.generated.DecisionInstanceServiceAdapter;
@@ -38,7 +38,7 @@ public class DefaultDecisionInstanceServiceAdapter implements DecisionInstanceSe
 
   @Override
   public ResponseEntity<Object> searchDecisionInstances(
-      final GeneratedDecisionInstanceSearchQueryRequestStrictContract queryStrict,
+      final DecisionInstanceSearchQueryRequestContract queryStrict,
       final CamundaAuthentication authentication) {
     return SearchQueryRequestMapper.toDecisionInstanceQueryStrict(queryStrict)
         .fold(
@@ -69,7 +69,7 @@ public class DefaultDecisionInstanceServiceAdapter implements DecisionInstanceSe
   @Override
   public ResponseEntity<Void> deleteDecisionInstance(
       final Long decisionInstanceKey,
-      final GeneratedDeleteDecisionInstanceRequestStrictContract requestStrict,
+      final DeleteDecisionInstanceRequestContract requestStrict,
       final CamundaAuthentication authentication) {
     return RequestExecutor.executeSync(
         () ->
@@ -81,7 +81,7 @@ public class DefaultDecisionInstanceServiceAdapter implements DecisionInstanceSe
 
   @Override
   public ResponseEntity<Object> deleteDecisionInstancesBatchOperation(
-      final GeneratedDecisionInstanceDeletionBatchOperationRequestStrictContract requestStrict,
+      final DecisionInstanceDeletionBatchOperationRequestContract requestStrict,
       final CamundaAuthentication authentication) {
     return RequestMapper.toRequiredDecisionInstanceFilter(requestStrict.filter())
         .fold(

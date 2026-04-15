@@ -9,7 +9,7 @@ package io.camunda.zeebe.gateway.rest.controller.adapter;
 
 import io.camunda.gateway.mapping.http.RequestMapper;
 import io.camunda.gateway.mapping.http.ResponseMapper;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedExpressionEvaluationRequestStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.ExpressionEvaluationRequestContract;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.configuration.MultiTenancyConfiguration;
 import io.camunda.service.ExpressionServices;
@@ -35,7 +35,7 @@ public class DefaultExpressionServiceAdapter implements ExpressionServiceAdapter
 
   @Override
   public ResponseEntity<Object> evaluateExpression(
-      final GeneratedExpressionEvaluationRequestStrictContract requestStrict,
+      final ExpressionEvaluationRequestContract requestStrict,
       final CamundaAuthentication authentication) {
     return RequestMapper.toExpressionEvaluationRequest(
             requestStrict.expression(),

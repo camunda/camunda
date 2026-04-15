@@ -15,7 +15,6 @@ import io.camunda.service.ManagementServices;
 import io.camunda.service.license.LicenseType;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.gateway.rest.controller.adapter.DefaultLicenseServiceAdapter;
-import io.camunda.zeebe.gateway.rest.controller.generated.GeneratedLicenseController;
 import java.time.OffsetDateTime;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
@@ -25,7 +24,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.json.JsonCompareMode;
 
 @Import(DefaultLicenseServiceAdapter.class)
-@WebMvcTest(value = GeneratedLicenseController.class)
+@WebMvcTest(value = LicenseController.class)
 public class LicenseControllerTest extends RestControllerTest {
 
   @MockitoBean CamundaAuthenticationProvider authenticationProvider;

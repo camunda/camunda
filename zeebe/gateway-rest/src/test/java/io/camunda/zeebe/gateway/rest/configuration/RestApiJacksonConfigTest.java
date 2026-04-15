@@ -14,8 +14,8 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.search.query.ProcessInstanceQuery;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
+import io.camunda.zeebe.gateway.rest.controller.ProcessInstanceController;
 import io.camunda.zeebe.gateway.rest.controller.adapter.DefaultProcessInstanceServiceAdapter;
-import io.camunda.zeebe.gateway.rest.controller.generated.GeneratedProcessInstanceController;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -26,7 +26,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.json.JsonCompareMode;
 
 @Import(DefaultProcessInstanceServiceAdapter.class)
-@WebMvcTest(value = {GeneratedProcessInstanceController.class})
+@WebMvcTest(value = {ProcessInstanceController.class})
 public class RestApiJacksonConfigTest extends RestApiConfigurationTest {
 
   @MockitoBean private CamundaAuthenticationProvider authenticationProvider;

@@ -13,7 +13,7 @@ import static org.mockito.Mockito.when;
 
 import com.jayway.jsonpath.JsonPath;
 import io.camunda.gateway.mapping.http.ResponseMapper;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedJobActivationStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.JobActivationContract;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.security.configuration.MultiTenancyConfiguration;
@@ -32,7 +32,6 @@ import io.camunda.zeebe.gateway.impl.job.RoundRobinActivateJobsHandler;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.gateway.rest.config.GatewayRestConfiguration;
 import io.camunda.zeebe.gateway.rest.controller.adapter.DefaultJobServiceAdapter;
-import io.camunda.zeebe.gateway.rest.controller.generated.GeneratedJobController;
 import io.camunda.zeebe.gateway.rest.controller.util.ResettableJobActivationRequestResponseObserver;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.record.RejectionType;
@@ -58,12 +57,12 @@ import org.springframework.test.json.JsonCompareMode;
 import org.springframework.util.unit.DataSize;
 
 @Import(DefaultJobServiceAdapter.class)
-@WebMvcTest(GeneratedJobController.class)
+@WebMvcTest(JobController.class)
 public class JobControllerRoundRobinTest extends RestControllerTest {
 
   static final String JOBS_BASE_URL = "/v2/jobs";
 
-  @Autowired ActivateJobsHandler<GeneratedJobActivationStrictContract> activateJobsHandler;
+  @Autowired ActivateJobsHandler<JobActivationContract> activateJobsHandler;
   @Autowired StubbedBrokerClient stubbedBrokerClient;
   @MockitoSpyBean ResettableJobActivationRequestResponseObserver responseObserver;
   @MockitoBean MultiTenancyConfiguration multiTenancyCfg;
@@ -409,7 +408,7 @@ public class JobControllerRoundRobinTest extends RestControllerTest {
     }
 
     @Bean
-    public ActivateJobsHandler<GeneratedJobActivationStrictContract> activateJobsHandler(
+    public ActivateJobsHandler<JobActivationContract> activateJobsHandler(
         final BrokerClient brokerClient, final ActorScheduler actorScheduler) {
       final var handler =
           new RoundRobinActivateJobsHandler<>(
@@ -428,9 +427,9 @@ public class JobControllerRoundRobinTest extends RestControllerTest {
     }
 
     @Bean
-    public JobServices<GeneratedJobActivationStrictContract> jobServices(
+    public JobServices<JobActivationContract> jobServices(
         final BrokerClient brokerClient,
-        final ActivateJobsHandler<GeneratedJobActivationStrictContract> activateJobsHandler) {
+        final ActivateJobsHandler<JobActivationContract> activateJobsHandler) {
       return new JobServices<>(
           brokerClient,
           new SecurityContextProvider(),

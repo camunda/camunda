@@ -15,7 +15,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedProcessDefinitionSearchQuerySortRequestStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.ProcessDefinitionSearchQuerySortRequestContract;
 import io.camunda.search.entities.FormEntity;
 import io.camunda.search.entities.ProcessDefinitionEntity;
 import io.camunda.search.entities.ProcessDefinitionInstanceStatisticsEntity;
@@ -35,7 +35,6 @@ import io.camunda.service.ProcessDefinitionServices;
 import io.camunda.service.exception.ErrorMapper;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.gateway.rest.controller.adapter.DefaultProcessDefinitionServiceAdapter;
-import io.camunda.zeebe.gateway.rest.controller.generated.GeneratedProcessDefinitionController;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.BiFunction;
@@ -59,7 +58,7 @@ import org.springframework.test.json.JsonCompareMode;
 
 @ExtendWith(MockitoExtension.class)
 @Import(DefaultProcessDefinitionServiceAdapter.class)
-@WebMvcTest(value = GeneratedProcessDefinitionController.class)
+@WebMvcTest(value = ProcessDefinitionController.class)
 public class ProcessDefinitionQueryControllerTest extends RestControllerTest {
   static final String PROCESS_DEFINITION_URL = "/v2/process-definitions/";
   static final String PROCESS_DEFINITION_SEARCH_URL = PROCESS_DEFINITION_URL + "search";
@@ -986,12 +985,11 @@ public class ProcessDefinitionQueryControllerTest extends RestControllerTest {
 
   @ParameterizedTest
   @EnumSource(
-      value = GeneratedProcessDefinitionSearchQuerySortRequestStrictContract.FieldEnum.class,
+      value = ProcessDefinitionSearchQuerySortRequestContract.FieldEnum.class,
       names = {"PROCESS_DEFINITION_ID", "TENANT_ID"},
       mode = EnumSource.Mode.EXCLUDE)
   void shouldRejectUnsupportedSortFieldWhenIsLatestVersionIsTrue(
-      final GeneratedProcessDefinitionSearchQuerySortRequestStrictContract.FieldEnum
-          unsupportedField) {
+      final ProcessDefinitionSearchQuerySortRequestContract.FieldEnum unsupportedField) {
     // given
     final var request =
         String.format(
@@ -1073,11 +1071,10 @@ public class ProcessDefinitionQueryControllerTest extends RestControllerTest {
 
   @ParameterizedTest
   @EnumSource(
-      value = GeneratedProcessDefinitionSearchQuerySortRequestStrictContract.FieldEnum.class,
+      value = ProcessDefinitionSearchQuerySortRequestContract.FieldEnum.class,
       names = {"PROCESS_DEFINITION_ID", "TENANT_ID"})
   void shouldAllowSupportedSortFieldsWhenIsLatestVersionIsTrue(
-      final GeneratedProcessDefinitionSearchQuerySortRequestStrictContract.FieldEnum
-          supportedField) {
+      final ProcessDefinitionSearchQuerySortRequestContract.FieldEnum supportedField) {
     // given
     final var request =
         String.format(
