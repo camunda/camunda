@@ -57,11 +57,15 @@ public abstract class DatabaseImportJob<OPT extends OptimizeDto> implements Runn
           success = true;
         } catch (final Exception e) {
           logger.error("Error while executing import to database", e);
+          if (Thread.currentThread().isInterrupted()) {
+            break;
+          }
           final long sleepTime = backoffCalculator.calculateSleepTime();
           try {
             Thread.sleep(sleepTime);
           } catch (final InterruptedException exception) {
             Thread.currentThread().interrupt();
+            break;
           }
         }
       } while (!success);
