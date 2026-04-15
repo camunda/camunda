@@ -235,6 +235,7 @@ public class ExporterConfiguration {
     private boolean processInstanceEnabled = true;
     private ProcessInstanceRetentionMode processInstanceRetentionMode =
         ProcessInstanceRetentionMode.PI_HIERARCHY;
+    private boolean archiveByIdEnabled = false;
     private String elsRolloverDateFormat = "date";
     private String rolloverInterval = "1d";
     private String usageMetricsRolloverInterval = "1M";
@@ -251,6 +252,14 @@ public class ExporterConfiguration {
 
     public void setProcessInstanceEnabled(final boolean processInstanceEnabled) {
       this.processInstanceEnabled = processInstanceEnabled;
+    }
+
+    public boolean isArchiveByIdEnabled() {
+      return archiveByIdEnabled;
+    }
+
+    public void setArchiveByIdEnabled(final boolean archiveByIdEnabled) {
+      this.archiveByIdEnabled = archiveByIdEnabled;
     }
 
     public String getElsRolloverDateFormat() {
