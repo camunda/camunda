@@ -74,6 +74,12 @@ final class VersionCompatibilityMatrix {
           // add further incompatible combinations here if needed
           );
 
+  /**
+   * The minimum supported version. Only versions at or above this are included in the {@link
+   * #full()} matrix.
+   */
+  private static final SemanticVersion MINIMUM_SUPPORTED_VERSION = parseVersion("8.6.0");
+
   private final VersionProvider versionProvider;
   private VersionCompatibilityConfig config =
       new VersionCompatibilityConfig() {
@@ -227,7 +233,11 @@ final class VersionCompatibilityMatrix {
   }
 
   public Stream<Arguments> full() {
-    final var versionInfos = discoverVersions().sorted().toList();
+    final var versionInfos =
+        discoverVersions()
+            .filter(info -> info.version().compareTo(MINIMUM_SUPPORTED_VERSION) >= 0)
+            .sorted()
+            .toList();
     final var combinations =
         versionInfos.stream()
             .filter(info -> info.version().minor() > 0)
@@ -373,7 +383,8 @@ final class VersionCompatibilityMatrix {
             () -> new IllegalArgumentException("Invalid semantic version string: " + version));
   }
 
-  private static boolean isCompatible(final SemanticVersion from, final SemanticVersion to) {
+  @VisibleForTesting
+  static boolean isCompatible(final SemanticVersion from, final SemanticVersion to) {
     // Compatible if no incompatible range matches
     return INCOMPATIBLE_UPGRADES.stream()
         .noneMatch(
