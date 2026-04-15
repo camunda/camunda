@@ -7,21 +7,21 @@
  */
 package io.camunda.exporter.rdbms.replication;
 
-import io.camunda.db.rdbms.write.ReplicationLsnProvider;
+import io.camunda.db.rdbms.write.ReplicationLogStatusProvider;
 import io.camunda.exporter.rdbms.ExporterConfiguration.ReplicationConfiguration;
 import io.camunda.zeebe.exporter.api.context.Controller;
 
 public class LsnReplicationControllerFactory implements ReplicationControllerFactory {
 
   private final int partitionId;
-  private final ReplicationLsnProvider replicationLsnProvider;
+  private final ReplicationLogStatusProvider replicationLagProvider;
   private final ReplicationConfiguration replicationConfiguration;
 
   public LsnReplicationControllerFactory(
-      final ReplicationLsnProvider lsnProvider,
+      final ReplicationLogStatusProvider lsnProvider,
       final ReplicationConfiguration replicationConfiguration,
       final int partitionId) {
-    replicationLsnProvider = lsnProvider;
+    replicationLagProvider = lsnProvider;
     this.replicationConfiguration = replicationConfiguration;
     this.partitionId = partitionId;
   }
@@ -29,6 +29,6 @@ public class LsnReplicationControllerFactory implements ReplicationControllerFac
   @Override
   public ReplicationController createReplicationController(final Controller controller) {
     return new LsnReplicationController(
-        controller, replicationLsnProvider, replicationConfiguration, partitionId);
+        controller, replicationLagProvider, replicationConfiguration, partitionId);
   }
 }

@@ -11,16 +11,16 @@ import io.camunda.db.rdbms.sql.ExporterPositionMapper;
 import java.util.List;
 
 /** PostgreSQL implementation using {@code pg_current_wal_lsn()} and {@code pg_stat_replication}. */
-public final class PostgresReplicationLsnProvider implements ReplicationLsnProvider {
+public final class PostgresReplicationLogStatusProvider implements ReplicationLogStatusProvider {
 
   private final ExporterPositionMapper mapper;
 
-  public PostgresReplicationLsnProvider(final ExporterPositionMapper mapper) {
+  public PostgresReplicationLogStatusProvider(final ExporterPositionMapper mapper) {
     this.mapper = mapper;
   }
 
   @Override
-  public long getCurrentLsn() {
+  public long getCurrent() {
     return mapper.findCurrentLsnPostgres();
   }
 

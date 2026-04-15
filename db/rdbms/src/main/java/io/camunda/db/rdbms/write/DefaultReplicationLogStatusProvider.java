@@ -11,31 +11,31 @@ import io.camunda.db.rdbms.sql.ExporterPositionMapper;
 import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import java.util.List;
 
-public class DefaultReplicationLsnProvider implements ReplicationLsnProvider {
+public class DefaultReplicationLogStatusProvider implements ReplicationLogStatusProvider {
 
-  private static final Logger LOG = LoggerFactory.getLogger(DefaultReplicationLsnProvider.class);
-  private ReplicationLsnProvider delegate;
-  private final List<ReplicationLsnProvider> delegates;
+  private static final Logger LOG =
+      LoggerFactory.getLogger(DefaultReplicationLogStatusProvider.class);
+  private ReplicationLogStatusProvider delegate;
+  private final List<ReplicationLogStatusProvider> delegates;
 
-  public DefaultReplicationLsnProvider(final ExporterPositionMapper exporterPositionMapper) {
+  public DefaultReplicationLogStatusProvider(final ExporterPositionMapper exporterPositionMapper) {
     delegates =
         List.of(
-            new PostgresReplicationLsnProvider(exporterPositionMapper),
-            new AuroraReplicationLsnProvider(exporterPositionMapper));
+            new PostgresReplicationLogStatusProvider(exporterPositionMapper),
+            new AuroraReplicationLogStatusProvider(exporterPositionMapper));
     try {
       setupDelegates();
     } catch (final Exception e) {
       LOG.warn("Failed to setup delegates, will retry later", e);
     }
-    LOG.debug("Starting with ReplicationLsnProvider {}", delegate);
+    LOG.debug("Starting with ReplicationLogStatusProvider {}", delegate);
   }
 
   @Override
-  public long getCurrentLsn() {
+  public long getCurrent() {
     trySetupDelegates();
-    return delegate.getCurrentLsn();
+    return delegate.getCurrent();
   }
 
   @Override
@@ -47,7 +47,7 @@ public class DefaultReplicationLsnProvider implements ReplicationLsnProvider {
   private void setupDelegates() {
     for (final var del : delegates) {
       try {
-        del.getCurrentLsn();
+        del.getCurrent();
         delegate = del;
         return;
       } catch (final Exception e) {

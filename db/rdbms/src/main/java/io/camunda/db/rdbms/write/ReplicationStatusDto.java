@@ -9,15 +9,15 @@ package io.camunda.db.rdbms.write;
 
 public class ReplicationStatusDto {
 
-  private long lsn;
+  private long logStatus;
   private String replicaId;
 
-  public long getLsn() {
-    return lsn;
+  public long getLogStatus() {
+    return logStatus;
   }
 
-  public void setLsn(final long lsn) {
-    this.lsn = lsn;
+  public void setLogStatus(final long logStatus) {
+    this.logStatus = logStatus;
   }
 
   public String getReplicaId() {

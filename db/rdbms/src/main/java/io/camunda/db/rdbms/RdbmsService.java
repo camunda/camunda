@@ -48,7 +48,7 @@ import io.camunda.db.rdbms.write.RdbmsWriterConfig;
 import io.camunda.db.rdbms.write.RdbmsWriterConfig.Builder;
 import io.camunda.db.rdbms.write.RdbmsWriterFactory;
 import io.camunda.db.rdbms.write.RdbmsWriters;
-import io.camunda.db.rdbms.write.ReplicationLsnProvider;
+import io.camunda.db.rdbms.write.ReplicationLogStatusProvider;
 import java.util.function.Consumer;
 
 /** A holder for all rdbms services */
@@ -97,7 +97,7 @@ public class RdbmsService {
   private final IncidentProcessInstanceStatisticsByDefinitionDbReader
       incidentProcessInstanceStatisticsByDefinitionDbReader;
   private final GlobalListenerDbReader globalListenerDbReader;
-  private ReplicationLsnProvider replicationLsnProvider;
+  private ReplicationLogStatusProvider replicationLagProvider;
 
   public RdbmsService(
       final RdbmsWriterFactory rdbmsWriterFactory,

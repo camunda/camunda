@@ -14,16 +14,16 @@ import java.util.List;
  * Aurora (MySQL/PostgreSQL) implementation using {@code aurora_global_db_instance_status()} to
  * track durable LSN across global database instances.
  */
-public final class AuroraReplicationLsnProvider implements ReplicationLsnProvider {
+public final class AuroraReplicationLogStatusProvider implements ReplicationLogStatusProvider {
 
   private final ExporterPositionMapper mapper;
 
-  public AuroraReplicationLsnProvider(final ExporterPositionMapper mapper) {
+  public AuroraReplicationLogStatusProvider(final ExporterPositionMapper mapper) {
     this.mapper = mapper;
   }
 
   @Override
-  public long getCurrentLsn() {
+  public long getCurrent() {
     return mapper.findCurrentLsnAurora();
   }
 

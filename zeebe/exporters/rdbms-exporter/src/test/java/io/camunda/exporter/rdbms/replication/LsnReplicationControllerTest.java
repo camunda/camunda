@@ -16,7 +16,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import io.camunda.db.rdbms.write.ReplicationLsnProvider;
+import io.camunda.db.rdbms.write.ReplicationLogStatusProvider;
 import io.camunda.db.rdbms.write.ReplicationStatusDto;
 import io.camunda.exporter.rdbms.ExporterConfiguration.ReplicationConfiguration;
 import io.camunda.zeebe.exporter.api.context.Controller;
@@ -57,7 +57,7 @@ class LsnReplicationControllerTest {
   void shouldAddPendingEntryOnFlush() {
     // given
     final var fixture = new TestFixture();
-    when(fixture.lsnProvider.getCurrentLsn()).thenReturn(100L);
+    when(fixture.lsnProvider.getCurrent()).thenReturn(100L);
 
     // when
     fixture.replicationController.onFlush(42L);
@@ -85,7 +85,7 @@ class LsnReplicationControllerTest {
   void shouldUpdatePositionWhenNewConfirmedPositionIsHigher() {
     // given
     final var fixture = new TestFixture();
-    when(fixture.lsnProvider.getCurrentLsn()).thenReturn(10L);
+    when(fixture.lsnProvider.getCurrent()).thenReturn(10L);
     when(fixture.lsnProvider.getReplicationStatuses())
         .thenReturn(List.of(replicationStatus("replica-1", 10L)));
     fixture.replicationController.onFlush(42L);
@@ -97,7 +97,7 @@ class LsnReplicationControllerTest {
     verify(fixture.controller).updateLastExportedRecordPosition(42L);
 
     // when 2
-    when(fixture.lsnProvider.getCurrentLsn()).thenReturn(20L);
+    when(fixture.lsnProvider.getCurrent()).thenReturn(20L);
     when(fixture.lsnProvider.getReplicationStatuses())
         .thenReturn(List.of(replicationStatus("replica-1", 20L)));
     fixture.replicationController.onFlush(52L);
@@ -111,7 +111,7 @@ class LsnReplicationControllerTest {
   void shouldNotUpdatePositionWhenNewConfirmedPositionIsNotHigher() {
     // given
     final var fixture = new TestFixture();
-    when(fixture.lsnProvider.getCurrentLsn()).thenReturn(10L, 20L);
+    when(fixture.lsnProvider.getCurrent()).thenReturn(10L, 20L);
     when(fixture.lsnProvider.getReplicationStatuses())
         .thenReturn(List.of(replicationStatus("replica-1", 10L)))
         .thenReturn(List.of(replicationStatus("replica-1", 20L)));
@@ -134,7 +134,7 @@ class LsnReplicationControllerTest {
     // given
     final var fixture = new TestFixture();
     fixture.replicationConfiguration.setMinSyncReplicas(2);
-    when(fixture.lsnProvider.getCurrentLsn()).thenReturn(10L);
+    when(fixture.lsnProvider.getCurrent()).thenReturn(10L);
     fixture.replicationController.onFlush(42L);
 
     // when: only one replica caught up
@@ -147,7 +147,8 @@ class LsnReplicationControllerTest {
 
     // when: second replica also caught up
     when(fixture.lsnProvider.getReplicationStatuses())
-        .thenReturn(List.of(replicationStatus("replica-1", 10L), replicationStatus("replica-2", 10L)));
+        .thenReturn(
+            List.of(replicationStatus("replica-1", 10L), replicationStatus("replica-2", 10L)));
     fixture.lastScheduledCheck().run();
 
     // then
@@ -157,7 +158,7 @@ class LsnReplicationControllerTest {
   private static ReplicationStatusDto replicationStatus(final String replicaId, final long lsn) {
     final var status = new ReplicationStatusDto();
     status.setReplicaId(replicaId);
-    status.setLsn(lsn);
+    status.setLogStatus(lsn);
     return status;
   }
 
@@ -165,10 +166,12 @@ class LsnReplicationControllerTest {
     private static final Duration POLLING_INTERVAL = Duration.ofSeconds(5);
 
     private final Controller controller = mock(Controller.class);
-    private final ReplicationLsnProvider lsnProvider = mock(ReplicationLsnProvider.class);
+    private final ReplicationLogStatusProvider lsnProvider =
+        mock(ReplicationLogStatusProvider.class);
     private final ScheduledTask initialScheduledTask = mock(ScheduledTask.class);
     private final List<Runnable> scheduledChecks = new ArrayList<>();
-    private final ReplicationConfiguration replicationConfiguration = new ReplicationConfiguration();
+    private final ReplicationConfiguration replicationConfiguration =
+        new ReplicationConfiguration();
 
     private final LsnReplicationController replicationController;
 
