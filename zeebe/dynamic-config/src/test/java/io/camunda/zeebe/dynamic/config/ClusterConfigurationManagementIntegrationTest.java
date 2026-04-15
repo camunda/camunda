@@ -120,7 +120,7 @@ class ClusterConfigurationManagementIntegrationTest {
 
     final var restartFutures =
         nodes.values().stream()
-            .map(node -> node.start(actorScheduler, Set.of(), getIncorrectPartitionDistribution()))
+            .map(node -> node.start(actorScheduler, clusterMemberIds, getIncorrectPartitionDistribution()))
             .toList();
     restartFutures.forEach(ActorFuture::join);
 

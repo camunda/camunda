@@ -26,6 +26,7 @@ public record StaticConfiguration(
     String clusterId) {
 
   public boolean getIsCoordinator() {
+    //FIXME the coordinator is the first alphabettically, not the first node (0) in the region with highest priority
     return localMemberId.equals(clusterMembers.stream().min(MemberId::compareTo).orElseThrow());
   }
 
