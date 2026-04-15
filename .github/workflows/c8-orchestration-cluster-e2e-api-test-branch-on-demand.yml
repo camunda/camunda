@@ -22,6 +22,12 @@ defaults:
     shell: bash
 
 jobs:
+  utils-get-snapshot-docker-tag:
+    uses: ./.github/workflows/generate-snapshot-docker-tag.yml
+    secrets: inherit
+    permissions:
+      contents: read
+
   validate-branch:
     runs-on: ubuntu-latest
     outputs:
@@ -60,7 +66,7 @@ jobs:
 
   c8-orchestration-cluster-api-tests-es:
     name: C8 Orchestration Cluster API Tests (ES)
-    needs: validate-branch
+    needs: [utils-get-snapshot-docker-tag, validate-branch]
     runs-on: ubuntu-latest
     timeout-minutes: 45
     steps:
@@ -90,7 +96,7 @@ jobs:
             --target app \
             --build-arg BASE=public \
             --build-arg DISTBALL="dist/target/camunda-zeebe-*.tar.gz" \
-            -t "camunda/camunda:SNAPSHOT" \
+            -t "camunda/camunda:${{ needs.utils-get-snapshot-docker-tag.outputs.snapshot_tag != '' && needs.utils-get-snapshot-docker-tag.outputs.snapshot_tag || needs.utils-get-snapshot-docker-tag.outputs.version_tag }}" \
             .
 
       - name: Set NON_STANDALONE variable
