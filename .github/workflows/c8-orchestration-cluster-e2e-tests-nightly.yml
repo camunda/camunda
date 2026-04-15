@@ -1,5 +1,5 @@
 # description: Runs End to End tests on the C8 Orchestration Cluster (ie, Tasklist, Operate). This workflow runs on a schedule
-# test location: /qa/core-application-e2e-test-suite
+# test location: /qa/c8-orchestration-cluster-e2e-test-suite
 # type: CI
 # owner: @camunda/qa-engineering
 ---
@@ -119,9 +119,7 @@ jobs:
 
       - name: Clean install dependencies
         shell: bash
-        run: |
-          rm -rf node_modules package-lock.json
-          npm install
+        run: npm ci
         working-directory: qa/c8-orchestration-cluster-e2e-test-suite
 
       - name: Import Secrets
@@ -563,9 +561,7 @@ jobs:
           cache-dependency-path: qa/c8-orchestration-cluster-e2e-test-suite/package-lock.json
 
       - name: Clean install dependencies
-        run: |
-          rm -rf node_modules package-lock.json
-          npm install
+        run: npm ci
         working-directory: qa/c8-orchestration-cluster-e2e-test-suite
 
       - name: Install Playwright Browsers
@@ -754,9 +750,7 @@ jobs:
 
       - name: Clean install dependencies
         shell: bash
-        run: |
-          rm -rf node_modules package-lock.json
-          npm install
+        run: npm ci
         working-directory: qa/c8-orchestration-cluster-e2e-test-suite
 
       - name: Import Secrets
