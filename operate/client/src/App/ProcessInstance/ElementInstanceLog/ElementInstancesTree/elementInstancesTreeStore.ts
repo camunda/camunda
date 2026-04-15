@@ -382,7 +382,7 @@ class ElementInstancesTreeStore extends NetworkReconnectionHandler {
     this.state.nodes.set(scopeKey, newNodeData);
   };
 
-  reset() {
+  override reset() {
     super.reset();
     this.stopPolling();
 
