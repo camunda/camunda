@@ -466,20 +466,30 @@ jobs:
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           user_description: "team-distributed-systems"
 
+  # Dynamically generate the concurrency group for load test image deployment
+  utils-get-concurrency-group-for-load-test:
+    uses: ./.github/workflows/generate-concurrency-group.yml
+    secrets: inherit
+    permissions:
+      contents: read
+    with:
+      base_group_name: deploy-load-test-images
+
   deploy-load-test-images:
     name: Deploy load test images
     timeout-minutes: 5
-    needs: [ test-summary ]
+    needs: [ test-summary, utils-get-snapshot-docker-tag, utils-get-concurrency-group-for-load-test ]
     runs-on: ubuntu-latest
-    if: github.repository == 'camunda/camunda' && github.ref == 'refs/heads/main'
+    if: github.repository == 'camunda/camunda' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/stable/'))
     concurrency:
-      group: deploy-load-test-images
+      group: ${{ needs.utils-get-concurrency-group-for-load-test.outputs.concurrency_group_name }}
       cancel-in-progress: false
     permissions:
       contents: 'read'
       id-token: 'write'
     env:
       IMAGE_REPOSITORY: registry.camunda.cloud/team-zeebe
+      IMAGE_TAG: ${{ needs.utils-get-snapshot-docker-tag.outputs.snapshot_tag != '' && needs.utils-get-snapshot-docker-tag.outputs.snapshot_tag || needs.utils-get-snapshot-docker-tag.outputs.version_tag }}
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - uses: ./.github/actions/setup-build
@@ -491,9 +501,9 @@ jobs:
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
       - run: ./mvnw -B -D skipTests -D skipChecks -pl load-tests/load-tester -am install
       - name: Build Starter Image
-        run: ./mvnw -pl load-tests/load-tester jib:build -P starter -D image="${{ env.IMAGE_REPOSITORY }}/starter:SNAPSHOT"
+        run: ./mvnw -pl load-tests/load-tester jib:build -P starter -D image="${{ env.IMAGE_REPOSITORY }}/starter:${{ env.IMAGE_TAG }}"
       - name: Build Worker Image
-        run: ./mvnw -pl load-tests/load-tester jib:build -P worker -D image="${{ env.IMAGE_REPOSITORY }}/worker:SNAPSHOT"
+        run: ./mvnw -pl load-tests/load-tester jib:build -P worker -D image="${{ env.IMAGE_REPOSITORY }}/worker:${{ env.IMAGE_TAG }}"
       - name: Observe build status
         if: always()
         continue-on-error: true
