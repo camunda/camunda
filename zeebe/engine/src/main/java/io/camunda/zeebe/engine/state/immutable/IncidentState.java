@@ -27,4 +27,7 @@ public interface IncidentState {
 
   void forExistingProcessIncident(
       long elementInstanceKey, ObjLongConsumer<IncidentRecord> resolver);
+
+  /** Returns the total number of incidents currently stored in the state. */
+  long getIncidentCount();
 }
