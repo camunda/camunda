@@ -9,30 +9,59 @@ package io.camunda.db.rdbms.write;
 
 import io.camunda.db.rdbms.sql.ExporterPositionMapper;
 import java.util.List;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import java.util.List;
 
 public class DefaultReplicationLsnProvider implements ReplicationLsnProvider {
 
-  private final ExporterPositionMapper exporterPositionMapper;
+  private static final Logger LOG = LoggerFactory.getLogger(DefaultReplicationLsnProvider.class);
+  private ReplicationLsnProvider delegate;
+  private final List<ReplicationLsnProvider> delegates;
 
   public DefaultReplicationLsnProvider(final ExporterPositionMapper exporterPositionMapper) {
-    this.exporterPositionMapper = exporterPositionMapper;
+    delegates =
+        List.of(
+            new PostgresReplicationLsnProvider(exporterPositionMapper),
+            new AuroraReplicationLsnProvider(exporterPositionMapper));
+    try {
+      setupDelegates();
+    } catch (final Exception e) {
+      LOG.warn("Failed to setup delegates, will retry later", e);
+    }
+    LOG.debug("Starting with ReplicationLsnProvider {}", delegate);
   }
 
   @Override
   public long getCurrentLsn() {
-    try {
-      return exporterPositionMapper.findCurrentLsnPostgres();
-    } catch (final Exception e) {
-      return exporterPositionMapper.findCurrentLsnAurora();
-    }
+    trySetupDelegates();
+    return delegate.getCurrentLsn();
   }
 
   @Override
   public List<ReplicationStatusDto> getReplicationStatuses() {
-    try {
-      return exporterPositionMapper.getReplicationStatusesPostgres();
-    } catch (final Exception e) {
-      return exporterPositionMapper.getReplicationStatusesAurora();
+    trySetupDelegates();
+    return delegate.getReplicationStatuses();
+  }
+
+  private void setupDelegates() {
+    for (final var del : delegates) {
+      try {
+        del.getCurrentLsn();
+        delegate = del;
+        return;
+      } catch (final Exception e) {
+        LOG.debug("Delegate {} failed, skipping it.", del);
+      }
+    }
+    final var errorMsg = String.format(delegates.toString());
+    LOG.error(errorMsg);
+    throw new IllegalStateException(errorMsg);
+  }
+
+  private void trySetupDelegates() {
+    if (delegate == null) {
+      setupDelegates();
     }
   }
 }
