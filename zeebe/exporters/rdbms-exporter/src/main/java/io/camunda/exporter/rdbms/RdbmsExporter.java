@@ -126,6 +126,10 @@ public final class RdbmsExporter {
     }
     lastFlushedPosition = lastPosition;
 
+    rdbmsWriters
+        .getExporterPositionService()
+        .registerLockPositionHook(partitionId, () -> lastFlushedPosition);
+
     rdbmsWriters.getExecutionQueue().registerPreFlushListener(this::updatePositionInRdbms);
     rdbmsWriters.getExecutionQueue().registerPostFlushListener(this::updatePositionInBroker);
     rdbmsWriters.getExecutionQueue().registerPostFlushListener(this::recordExportingLatency);

@@ -24,6 +24,7 @@ import io.camunda.db.rdbms.RdbmsSchemaManager;
 import io.camunda.db.rdbms.write.RdbmsWriterMetrics;
 import io.camunda.db.rdbms.write.RdbmsWriters;
 import io.camunda.db.rdbms.write.queue.ExecutionQueue;
+import io.camunda.db.rdbms.write.queue.InTransactionHook;
 import io.camunda.db.rdbms.write.queue.PostFlushListener;
 import io.camunda.db.rdbms.write.queue.PreFlushListener;
 import io.camunda.db.rdbms.write.queue.QueueItem;
@@ -167,6 +168,15 @@ class RdbmsExporterTest {
     // then
     assertThat(executionQueue.preFlushListeners).isNotEmpty();
     assertThat(executionQueue.postFlushListeners).isNotEmpty();
+  }
+
+  @Test
+  void shouldRegisterInTransactionHookOnOpen() {
+    // given + when
+    createExporter(b -> b);
+
+    // then - the exporter should register a lock position hook on the position service
+    verify(positionService).registerLockPositionHook(eq(0), any());
   }
 
   @Test
@@ -558,6 +568,7 @@ class RdbmsExporterTest {
 
     final List<PreFlushListener> preFlushListeners = new ArrayList<>();
     final List<PostFlushListener> postFlushListeners = new ArrayList<>();
+    final List<InTransactionHook> inTransactionHooks = new ArrayList<>();
 
     @Override
     public void executeInQueue(final QueueItem entry) {
@@ -572,6 +583,11 @@ class RdbmsExporterTest {
     @Override
     public void registerPostFlushListener(final PostFlushListener listener) {
       postFlushListeners.add(listener);
+    }
+
+    @Override
+    public void registerInTransactionHook(final InTransactionHook hook) {
+      inTransactionHooks.add(hook);
     }
 
     @Override

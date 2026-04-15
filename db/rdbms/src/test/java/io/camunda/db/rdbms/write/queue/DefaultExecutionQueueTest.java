@@ -225,6 +225,91 @@ class DefaultExecutionQueueTest {
   }
 
   @Test
+  public void whenInTransactionHookIsRegisteredItIsCalledDuringFlush() {
+    // given
+    final var item =
+        new QueueItem(
+            ContextType.PROCESS_INSTANCE,
+            WriteStatementType.INSERT,
+            1L,
+            "statement1",
+            "parameter1");
+    executionQueue.executeInQueue(item);
+    final var inTransactionHook = mock(InTransactionHook.class);
+    executionQueue.registerInTransactionHook(inTransactionHook);
+
+    // when
+    executionQueue.flush();
+
+    // then - hook is called with the session before queue items are executed
+    verify(inTransactionHook).onTransactionStart(session);
+    verify(session).update("statement1", "parameter1");
+    verify(session).commit();
+  }
+
+  @Test
+  public void whenInTransactionHookIsNotRegisteredNoHookIsCalledDuringFlush() {
+    // given
+    final var item =
+        new QueueItem(
+            ContextType.PROCESS_INSTANCE,
+            WriteStatementType.INSERT,
+            1L,
+            "statement1",
+            "parameter1");
+    executionQueue.executeInQueue(item);
+
+    // when
+    executionQueue.flush();
+
+    // then - no exception, normal commit
+    verify(session).update("statement1", "parameter1");
+    verify(session).commit();
+  }
+
+  @Test
+  public void whenInTransactionHookThrowsSessionIsRolledBackAndExceptionPropagated() {
+    // given
+    final var item =
+        new QueueItem(
+            ContextType.PROCESS_INSTANCE,
+            WriteStatementType.INSERT,
+            1L,
+            "statement1",
+            "parameter1");
+    executionQueue.executeInQueue(item);
+    final var postFlushListener = mock(PostFlushListener.class);
+    executionQueue.registerPostFlushListener(postFlushListener);
+
+    final var hookException = new IllegalStateException("Position mismatch");
+    final var inTransactionHook = mock(InTransactionHook.class);
+    Mockito.doThrow(hookException).when(inTransactionHook).onTransactionStart(any());
+    executionQueue.registerInTransactionHook(inTransactionHook);
+
+    // when + then
+    assertThatThrownBy(() -> executionQueue.flush()).isEqualTo(hookException);
+
+    verify(session).rollback();
+    verify(session).close();
+    verify(session, never()).commit();
+    verify(postFlushListener, never()).onPostFlush();
+  }
+
+  @Test
+  public void whenQueueIsEmptyInTransactionHookIsNotCalled() {
+    // given
+    final var inTransactionHook = mock(InTransactionHook.class);
+    executionQueue.registerInTransactionHook(inTransactionHook);
+
+    // when
+    executionQueue.flush();
+
+    // then - hook is not called because doFlush() is skipped when queue is empty
+    verify(inTransactionHook, never()).onTransactionStart(any());
+    verifyNoInteractions(sqlSessionFactory);
+  }
+
+  @Test
   public void whenFlushIsCalledFlushListenersAreCalled() {
     final var item1 =
         new QueueItem(
