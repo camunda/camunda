@@ -87,7 +87,9 @@ public final class CommandApiRule extends ExternalResource {
     final var outputAdapter = createClientTransport();
 
     final var broker =
-        getBrokerInfoStream().filter(brokerInfo -> brokerInfo.getNodeId() == nodeId).findFirst();
+        getBrokerInfoStream()
+            .filter(brokerInfo -> String.valueOf(nodeId).equals(brokerInfo.getNodeId()))
+            .findFirst();
 
     if (broker.isPresent()) {
       final var brokerInfo = broker.get();
