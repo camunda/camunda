@@ -62,6 +62,12 @@ final class MultiRegionClusterIT {
   @AutoClose private TestStandaloneBroker brokerEast;
   @AutoClose private TestStandaloneBroker brokerWest;
 
+  // used by shouldFormClusterWithMultipleBrokersPerRegion
+  @AutoClose private TestStandaloneBroker broker0East;
+  @AutoClose private TestStandaloneBroker broker1East;
+  @AutoClose private TestStandaloneBroker broker0West;
+  @AutoClose private TestStandaloneBroker broker1West;
+
   @Test
   void shouldFormClusterAcrossRegions() {
     // given — shared region config listing both regions, one broker each
@@ -109,6 +115,64 @@ final class MultiRegionClusterIT {
   }
 
   /**
+   * Verifies that a region-aware cluster works correctly when each region hosts more than one
+   * broker. This exercises the {@code LiveClusterState} sorted-index key assignment, which must
+   * assign globally unique integer keys to brokers even when two brokers in different regions share
+   * the same local node ID (e.g. {@code "us-east1-0"} and {@code "us-west1-0"} both have local ID
+   * {@code 0}).
+   *
+   * <p>Sets up two regions with two brokers each (4 brokers total, 2 partitions):
+   *
+   * <ul>
+   *   <li>{@code "us-east1-0"}, {@code "us-east1-1"}
+   *   <li>{@code "us-west1-0"}, {@code "us-west1-1"}
+   * </ul>
+   */
+  @Test
+  void shouldFormClusterWithMultipleBrokersPerRegion() {
+    // given — 2 brokers per region, 2 partitions, 1 replica per region per partition
+    final var regionAwareCfg = buildMultiBrokerRegionAwareCfg();
+
+    broker0East = createBroker(0, REGION_EAST, regionAwareCfg, 4, 2, List.of());
+    CompletableFuture.runAsync(() -> broker0East.start());
+
+    final var eastSeedAddress = broker0East.address(TestZeebePort.CLUSTER);
+    broker1East = createBroker(1, REGION_EAST, regionAwareCfg, 4, 2, List.of(eastSeedAddress));
+    broker0West = createBroker(0, REGION_WEST, regionAwareCfg, 4, 2, List.of(eastSeedAddress));
+    broker1West = createBroker(1, REGION_WEST, regionAwareCfg, 4, 2, List.of(eastSeedAddress));
+    CompletableFuture.runAsync(() -> broker1East.start());
+    CompletableFuture.runAsync(() -> broker0West.start());
+    CompletableFuture.runAsync(() -> broker1West.start());
+
+    Awaitility.await()
+        .until(() -> broker1East.isStarted() && broker0West.isStarted() && broker1West.isStarted());
+
+    // when — wait for all 4 brokers to form the cluster and elect leaders for both partitions
+    try (final var client = broker0East.newClientBuilder().build()) {
+      Awaitility.await("cluster of 4 brokers across 2 regions to form")
+          .atMost(Duration.ofSeconds(60))
+          .untilAsserted(
+              () -> {
+                final var topology = client.newTopologyRequest().send().join();
+                assertThat(topology.getBrokers()).hasSize(4);
+                assertThat(topology.getBrokers())
+                    .flatExtracting(BrokerInfo::getPartitions)
+                    .filteredOn(PartitionInfo::isLeader)
+                    .extracting(PartitionInfo::getPartitionId)
+                    .containsExactlyInAnyOrder(1, 2);
+              });
+
+      // then — all four composite member IDs are exposed to clients
+      final var topology = client.newTopologyRequest().execute();
+      assertThat(topology.getBrokers())
+          .extracting(BrokerInfo::getNodeId)
+          .containsExactlyInAnyOrder(
+              REGION_EAST + "-0", REGION_EAST + "-1",
+              REGION_WEST + "-0", REGION_WEST + "-1");
+    }
+  }
+
+  /**
    * Creates a broker configured for region-aware mode.
    *
    * <p>Node IDs are globally unique integers: east uses {@code nodeId=0}, west uses {@code
@@ -123,13 +187,23 @@ final class MultiRegionClusterIT {
       final String region,
       final RegionAwareCfg regionAwareCfg,
       final List<String> contactPoints) {
+    return createBroker(nodeId, region, regionAwareCfg, 2, 1, contactPoints);
+  }
+
+  private static TestStandaloneBroker createBroker(
+      final int nodeId,
+      final String region,
+      final RegionAwareCfg regionAwareCfg,
+      final int clusterSize,
+      final int partitionCount,
+      final List<String> contactPoints) {
     return new TestStandaloneBroker()
         .withUnifiedConfig(
             cfg -> {
               cfg.getCluster().setNodeId(nodeId);
               cfg.getCluster().setRegion(region);
-              cfg.getCluster().setSize(2);
-              cfg.getCluster().setPartitionCount(1);
+              cfg.getCluster().setSize(clusterSize);
+              cfg.getCluster().setPartitionCount(partitionCount);
               cfg.getCluster().setReplicationFactor(2);
               if (!contactPoints.isEmpty()) {
                 cfg.getCluster().setInitialContactPoints(contactPoints);
@@ -154,6 +228,30 @@ final class MultiRegionClusterIT {
 
     final var west = new RegionCfg();
     west.setNumberOfBrokers(1);
+    west.setNumberOfReplicas(1);
+    west.setPriority(500);
+
+    final var regions = new LinkedHashMap<String, RegionCfg>();
+    regions.put(REGION_EAST, east);
+    regions.put(REGION_WEST, west);
+
+    final var cfg = new RegionAwareCfg();
+    cfg.setRegions(regions);
+    return cfg;
+  }
+
+  /**
+   * Builds a {@link RegionAwareCfg} for a 2-broker-per-region topology. Each region contributes 2
+   * brokers and 1 replica per partition, for a total replication factor of 2.
+   */
+  private static RegionAwareCfg buildMultiBrokerRegionAwareCfg() {
+    final var east = new RegionCfg();
+    east.setNumberOfBrokers(2);
+    east.setNumberOfReplicas(1);
+    east.setPriority(1000);
+
+    final var west = new RegionCfg();
+    west.setNumberOfBrokers(2);
     west.setNumberOfReplicas(1);
     west.setPriority(500);
 
