@@ -35,12 +35,12 @@ jobs:
       contents: 'read'
       id-token: 'write'
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           ref: ${{ inputs.branch }}
           fetch-depth: 0
       - name: Authenticate for zeebe image registry
-        uses: google-github-actions/auth@v3
+        uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3.0.0
         id: auth-zeebe
         with:
           token_format: 'access_token'
@@ -48,21 +48,21 @@ jobs:
           service_account: 'zeebe-gh-actions@zeebe-io.iam.gserviceaccount.com'
       - name: Authenticate for saas image registry
         id: auth-saas
-        uses: google-github-actions/auth@v3
+        uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3.0.0
         with:
           token_format: 'access_token'
           workload_identity_provider: 'projects/618877442292/locations/global/workloadIdentityPools/github/providers/camunda'
           service_account: 'github-actions-zeebe-io@camunda-saas-registry.iam.gserviceaccount.com'
       - name: Setup BuildKit
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@4d04d5d9486b7bd6fa91e7baf45bbb4f8b9deedd # v4.0.0
       - name: Login to SaaS image registry
-        uses: docker/login-action@v3
+        uses: docker/login-action@4907a6ddec9925e35a0a9e82d7399ccc52663121 # v4.1.0
         with:
           registry: europe-docker.pkg.dev
           username: oauth2accesstoken
           password: ${{ steps.auth-saas.outputs.access_token }}
       - name: Login to Zeebe image registry
-        uses: docker/login-action@v3
+        uses: docker/login-action@4907a6ddec9925e35a0a9e82d7399ccc52663121 # v4.1.0
         with:
           registry: gcr.io
           username: oauth2accesstoken
@@ -122,7 +122,7 @@ jobs:
         run: ./mvnw -pl load-tests/load-tester jib:build -P worker -D image="gcr.io/zeebe-io/worker:${{ steps.image-tag.outputs.image-tag }}"
       - name: Import Secrets
         id: secrets
-        uses: hashicorp/vault-action@v3.4.0
+        uses: hashicorp/vault-action@4c06c5ccf5c0761b6029f56cfb1dcf5565918a3b # v3.4.0
         with:
           url: ${{ secrets.VAULT_ADDR }}
           method: approle
@@ -133,7 +133,7 @@ jobs:
             secret/data/products/zeebe/ci/zeebe TESTBENCH_PROD_REST_ADDRESS;
 
       - name: Get Auth Token
-        uses: fjogeleit/http-request-action@v2
+        uses: fjogeleit/http-request-action@551353b829c3646756b2ec2b3694f819d7957495 # v2.0.0
         id: authorization
         with:
           url: 'https://login.cloud.camunda.io/oauth/token'

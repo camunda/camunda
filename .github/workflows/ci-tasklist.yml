@@ -71,10 +71,10 @@ jobs:
       run:
         working-directory: tasklist/client
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - name: Print metadata
         uses: ./.github/actions/print-metadata
-      - uses: actions/setup-node@v6
+      - uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
         with:
           node-version: 24
       - run: npm ci
@@ -105,10 +105,10 @@ jobs:
       run:
         working-directory: tasklist/client
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - name: Print metadata
         uses: ./.github/actions/print-metadata
-      - uses: actions/setup-node@v6
+      - uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
         with:
           node-version: 24
       - run: npm ci
@@ -139,10 +139,10 @@ jobs:
       run:
         working-directory: tasklist/client
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - name: Print metadata
         uses: ./.github/actions/print-metadata
-      - uses: actions/setup-node@v6
+      - uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
         with:
           node-version: 24
       - run: npm ci
@@ -173,10 +173,10 @@ jobs:
       run:
         working-directory: tasklist/client
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - name: Print metadata
         uses: ./.github/actions/print-metadata
-      - uses: actions/setup-node@v6
+      - uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
         with:
           node-version: 24
       - run: npm ci
@@ -211,11 +211,11 @@ jobs:
         working-directory: tasklist/client
     steps:
       - name: Check out repository code
-        uses: actions/checkout@v6
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - name: Print metadata
         uses: ./.github/actions/print-metadata
       - name: Setup NodeJS
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
         with:
           node-version: 24
       - name: Install node dependencies
@@ -224,7 +224,7 @@ jobs:
         run: npm run build:visual-regression
       - name: Run Playwright tests
         run: npm run test:visual
-      - uses: actions/upload-artifact@v6
+      - uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
         if: always()
         with:
           name: tasklist-visual-regression-report
@@ -258,11 +258,11 @@ jobs:
         working-directory: tasklist/client
     steps:
       - name: Check out repository code
-        uses: actions/checkout@v6
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - name: Print metadata
         uses: ./.github/actions/print-metadata
       - name: Setup NodeJS
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
         with:
           node-version: 24
       - name: Install node dependencies
@@ -271,7 +271,7 @@ jobs:
         run: npm run build
       - name: Run A11y tests
         run: npm run test:a11y
-      - uses: actions/upload-artifact@v6
+      - uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
         if: always()
         with:
           name: tasklist-a11y-report
@@ -309,7 +309,7 @@ jobs:
         ports:
           - 5000:5000
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - name: Print metadata
         uses: ./.github/actions/print-metadata
       - name: Create build output log file
@@ -391,10 +391,10 @@ jobs:
         ports:
           - 5000:5000
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - name: Print metadata
         uses: ./.github/actions/print-metadata
-      - uses: hadolint/hadolint-action@v3.3.0
+      - uses: hadolint/hadolint-action@2332a7b74a6de0dda2e2221d575162eba76ba5e5 # v3.3.0
         with:
           ignore: DL3018 # redundant when pinning the base image
           dockerfile: tasklist.Dockerfile

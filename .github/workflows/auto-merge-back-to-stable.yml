@@ -33,7 +33,7 @@ jobs:
     
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           fetch-depth: 0
           ref: ${{ github.event.pull_request.head.ref }}
@@ -235,7 +235,7 @@ jobs:
       - name: Report auto-merge result to Monorepo Release Process
         if: always() && env.DRY_RUN != 'true'
         continue-on-error: true
-        uses: camunda-community-hub/camunda-platform-8-github-action@8.3.0
+        uses: camunda-community-hub/camunda-platform-8-github-action@0fe490e4cf6f0cf59a5c86a127c4354b4b1fc3b7 # 8.3.0
         with:
           clientConfig: ${{ steps.secrets.outputs.clientConfig }}
           operation: publishMessage

@@ -33,7 +33,7 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           ref: ${{ inputs.targetBranch }}
       - name: Git User Setup
@@ -42,7 +42,7 @@ jobs:
           git config --global user.name "github-actions[update-identity]@users.noreply.github.com"
       - name: Get current identity version from `./parent/pom.xml`
         id: get-current-identity-version
-        uses: mavrosxristoforos/get-xml-info@1.2.1
+        uses: mavrosxristoforos/get-xml-info@cc0a00b30a53c3adf0ea2cbfd8314cea394fbbad # 2.1.0
         with:
           xml-file: './parent/pom.xml'
           xpath: '//*[local-name()="version.identity"]'
