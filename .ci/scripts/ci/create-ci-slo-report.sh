@@ -16,10 +16,10 @@ health_indicator() {
   if [ "$value" = "N/A" ]; then echo ":question:"; return; fi
   if [ "$direction" = "higher_is_better" ]; then
     awk -v v="$value" -v g="$green" -v y="$yellow" \
-      'BEGIN { if (v+0 >= g+0) print ":green_circle:"; else if (v+0 >= y+0) print ":yellow_circle:"; else print ":orange_circle:" }'
+      'BEGIN { if (v+0 >= g+0) print ":large_green_circle:"; else if (v+0 >= y+0) print ":large_yellow_circle:"; else print ":large_orange_circle:" }'
   else
     awk -v v="$value" -v g="$green" -v y="$yellow" \
-      'BEGIN { if (v+0 <= g+0) print ":green_circle:"; else if (v+0 <= y+0) print ":yellow_circle:"; else print ":orange_circle:" }'
+      'BEGIN { if (v+0 <= g+0) print ":large_green_circle:"; else if (v+0 <= y+0) print ":large_yellow_circle:"; else print ":large_orange_circle:" }'
   fi
 }
 
@@ -227,7 +227,7 @@ RETRY_TREND=$(trend_arrow "$CURRENT_RETRY_RATE" "$PREV_RETRY_RATE")
 
 {
   echo "MESSAGE<<EOF"
-  echo ":bar_chart: *Weekly Monorepo CI SLO Report* for \`main\` (last 7 days vs. prior 7 days)"
+  echo "📊 *Weekly Monorepo CI SLO Report* for \`main\` (last 7 days vs. prior 7 days)"
   echo ""
   echo "${P90_HEALTH} *P90 Unified CI runtime:* ${CURRENT_P90} min ${P90_TREND} (prev: ${PREV_P90} min) | SLO: ≤${P90_RUNTIME_YELLOW} min"
   echo "$TOP3_SLOWEST_JSON" | jq -r '.[] | "  • \(.workflow_job) (p90: \(.p90) min)"'
