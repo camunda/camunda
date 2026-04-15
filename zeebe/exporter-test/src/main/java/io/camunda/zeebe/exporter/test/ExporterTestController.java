@@ -82,6 +82,7 @@ public final class ExporterTestController implements Controller {
   @Override
   public boolean requestReplay(final long fromPosition) {
     this.position.set(fromPosition - 1);
+    exporterMetadata.set(Optional.empty());
     return true;
   }
 
