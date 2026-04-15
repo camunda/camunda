@@ -373,7 +373,7 @@ jobs:
           VERSION: ${{ steps.sanitize.outputs.safe_branch }}
           DATABASE: "RDBMS"
           DB_NAME: ${{ matrix.database.database-name }}
-          INCLUDE_SLACK_REPORTER: true
+          INCLUDE_SLACK_REPORTER: false
           SLACK_BOT_USER_OAUTH_TOKEN: ${{ steps.secrets.outputs.SLACK_CORE_DOMAIN_BOT_TOKEN }}
         run: DATABASE=RDBMS npm run test -- --project=api-tests
         working-directory: qa/c8-orchestration-cluster-e2e-test-suite
