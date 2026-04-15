@@ -11,11 +11,12 @@ import java.util.List;
 
 /**
  * Provides replication log status for tracking async replication state. The primary's current
- * position is captured after each flush to know what has been committed. Replica statuses are polled
- * periodically to determine what each replica has applied.
+ * position is captured after each flush to know what has been committed. Replica statuses are
+ * polled periodically to determine what each replica has applied.
  *
- * <p>The position can represent different metrics depending on the database: a WAL LSN (PostgreSQL),
- * a durable LSN (Aurora), or a timestamp (Azure SQL). Implementations are database-specific.
+ * <p>The position can represent different metrics depending on the database: a WAL LSN
+ * (PostgreSQL), a durable LSN (Aurora), or a timestamp (Azure SQL). Implementations are
+ * database-specific.
  */
 public interface ReplicationLogStatusProvider {
 
