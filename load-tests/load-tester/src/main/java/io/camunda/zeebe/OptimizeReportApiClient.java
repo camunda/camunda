@@ -19,12 +19,7 @@ import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -33,7 +28,6 @@ public class OptimizeReportApiClient implements AutoCloseable {
   private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
   // API paths
-  private static final String API_AUTH_CALLBACK = "/api/authentication/callback";
   private static final String API_DASHBOARD_MANAGEMENT = "/api/dashboard/management";
   private static final String API_DASHBOARD_INSTANT = "/api/dashboard/instant/";
   private static final String API_REPORT_EVALUATE = "/api/report/evaluate";
@@ -52,7 +46,6 @@ public class OptimizeReportApiClient implements AutoCloseable {
   private final String password;
   private final String clientSecret;
 
-  private final Map<String, String> cookieJar = new LinkedHashMap<>();
   private String accessToken;
   private long tokenExpiresAt;
 
@@ -72,72 +65,50 @@ public class OptimizeReportApiClient implements AutoCloseable {
   }
 
   // ---------------------------------------------------------------------------
-  // Authentication (Keycloak Authorization Code Flow)
+  // Authentication (Keycloak Resource Owner Password Grant)
   // ---------------------------------------------------------------------------
 
-  public void authenticateWithAuthorizationCodeFlow() throws Exception {
-    cookieJar.clear();
-
-    // Step 1: Get authorization URL — redirects to login page
-    final String authUrl =
+  public void authenticateWithPasswordGrant() throws Exception {
+    final String tokenUrl =
         String.format(
-            "%s/auth/realms/%s/protocol/openid-connect/auth?client_id=%s&redirect_uri=%s&response_type=code&scope=openid+email",
-            keycloakBaseUrl,
-            realm,
-            URLEncoder.encode(clientId, StandardCharsets.UTF_8),
-            URLEncoder.encode(optimizeBaseUrl + API_AUTH_CALLBACK, StandardCharsets.UTF_8));
+            "%s/auth/realms/%s/protocol/openid-connect/token", keycloakBaseUrl, realm);
 
-    LOG.debug("Getting Keycloak login page");
-    final HttpResponse<String> authResponse =
+    final String formData =
+        "grant_type=password"
+            + "&client_id=" + URLEncoder.encode(clientId, StandardCharsets.UTF_8)
+            + "&client_secret=" + URLEncoder.encode(clientSecret, StandardCharsets.UTF_8)
+            + "&username=" + URLEncoder.encode(username, StandardCharsets.UTF_8)
+            + "&password=" + URLEncoder.encode(password, StandardCharsets.UTF_8)
+            + "&scope=openid";
+
+    final HttpResponse<String> response =
         httpClient.send(
-            HttpRequest.newBuilder().uri(URI.create(authUrl)).GET().build(),
+            HttpRequest.newBuilder()
+                .uri(URI.create(tokenUrl))
+                .header("Content-Type", "application/x-www-form-urlencoded")
+                .POST(HttpRequest.BodyPublishers.ofString(formData))
+                .build(),
             HttpResponse.BodyHandlers.ofString());
-    updateCookies(authResponse);
 
-    // Step 2: Submit login credentials
-    final String loginActionUrl = extractFormAction(authResponse.body());
-    if (loginActionUrl == null) {
-      throw new RuntimeException("Failed to parse Keycloak login page");
-    }
-
-    final String loginFormData =
-        String.format(
-            "username=%s&password=%s",
-            URLEncoder.encode(username, StandardCharsets.UTF_8),
-            URLEncoder.encode(password, StandardCharsets.UTF_8));
-
-    final String fullLoginUrl =
-        loginActionUrl.startsWith("http") ? loginActionUrl : keycloakBaseUrl + loginActionUrl;
-
-    final HttpRequest.Builder loginBuilder =
-        HttpRequest.newBuilder()
-            .uri(URI.create(fullLoginUrl))
-            .header("Content-Type", "application/x-www-form-urlencoded");
-    addCookieHeader(loginBuilder);
-
-    final HttpResponse<String> loginResponse =
-        httpClient.send(
-            loginBuilder.POST(HttpRequest.BodyPublishers.ofString(loginFormData)).build(),
-            HttpResponse.BodyHandlers.ofString());
-    updateCookies(loginResponse);
-
-    // Step 3: Follow redirects to extract authorization code
-    final String authorizationCode = extractAuthorizationCode(loginResponse);
-    if (authorizationCode == null) {
+    if (response.statusCode() != 200) {
       throw new RuntimeException(
-          "Failed to get authorization code. Last status: " + loginResponse.statusCode());
+          String.format(
+              "Password grant token request failed with status %d: %s",
+              response.statusCode(), response.body()));
     }
 
-    // Step 4: Exchange authorization code for access token
-    exchangeCodeForToken(authorizationCode);
-    LOG.debug("Successfully authenticated with Keycloak");
+    final JsonNode jsonNode = OBJECT_MAPPER.readTree(response.body());
+    accessToken = jsonNode.get("access_token").asText();
+    final int expiresIn = jsonNode.get("expires_in").asInt();
+    tokenExpiresAt = System.currentTimeMillis() + (expiresIn * 1000L);
+    LOG.debug("Successfully authenticated via password grant");
   }
 
   public void ensureValidToken() throws Exception {
     if (accessToken == null
         || System.currentTimeMillis() >= tokenExpiresAt - TOKEN_REFRESH_BUFFER_MS) {
       LOG.debug("Token expired or missing, re-authenticating");
-      authenticateWithAuthorizationCodeFlow();
+      authenticateWithPasswordGrant();
     }
   }
 
@@ -391,109 +362,6 @@ public class OptimizeReportApiClient implements AutoCloseable {
     }
 
     return OBJECT_MAPPER.writeValueAsString(root);
-  }
-
-  // ---------------------------------------------------------------------------
-  // Private — Authentication helpers
-  // ---------------------------------------------------------------------------
-
-  private String extractAuthorizationCode(final HttpResponse<String> loginResponse)
-      throws Exception {
-    HttpResponse<String> currentResponse = loginResponse;
-    final Pattern codePattern = Pattern.compile("code=([^&]+)");
-
-    for (int i = 0;
-        i < 10 && (currentResponse.statusCode() == 302 || currentResponse.statusCode() == 303);
-        i++) {
-      final var locationHeader = currentResponse.headers().firstValue("Location");
-      if (locationHeader.isEmpty()) {
-        break;
-      }
-
-      final String location = locationHeader.get();
-      final Matcher codeMatcher = codePattern.matcher(location);
-      if (codeMatcher.find()) {
-        LOG.debug("Got authorization code");
-        return codeMatcher.group(1);
-      }
-
-      final HttpRequest.Builder redirectBuilder =
-          HttpRequest.newBuilder()
-              .uri(URI.create(location.startsWith("http") ? location : keycloakBaseUrl + location))
-              .GET();
-      addCookieHeader(redirectBuilder);
-
-      currentResponse =
-          httpClient.send(redirectBuilder.build(), HttpResponse.BodyHandlers.ofString());
-      updateCookies(currentResponse);
-    }
-
-    return null;
-  }
-
-  private void exchangeCodeForToken(final String authorizationCode) throws Exception {
-    final String tokenUrl =
-        String.format("%s/auth/realms/%s/protocol/openid-connect/token", keycloakBaseUrl, realm);
-
-    final String formData =
-        "grant_type=authorization_code"
-            + "&client_id="
-            + URLEncoder.encode(clientId, StandardCharsets.UTF_8)
-            + "&code="
-            + URLEncoder.encode(authorizationCode, StandardCharsets.UTF_8)
-            + "&redirect_uri="
-            + URLEncoder.encode(optimizeBaseUrl + API_AUTH_CALLBACK, StandardCharsets.UTF_8)
-            + "&client_secret="
-            + URLEncoder.encode(clientSecret, StandardCharsets.UTF_8);
-
-    final HttpResponse<String> response =
-        httpClient.send(
-            HttpRequest.newBuilder()
-                .uri(URI.create(tokenUrl))
-                .header("Content-Type", "application/x-www-form-urlencoded")
-                .POST(HttpRequest.BodyPublishers.ofString(formData))
-                .build(),
-            HttpResponse.BodyHandlers.ofString());
-
-    if (response.statusCode() != 200) {
-      throw new RuntimeException(
-          String.format(
-              "Token exchange failed with status %d: %s", response.statusCode(), response.body()));
-    }
-
-    final JsonNode jsonNode = OBJECT_MAPPER.readTree(response.body());
-    accessToken = jsonNode.get("access_token").asText();
-    final int expiresIn = jsonNode.get("expires_in").asInt();
-    tokenExpiresAt = System.currentTimeMillis() + (expiresIn * 1000L);
-  }
-
-  private String extractFormAction(final String html) {
-    final Pattern pattern = Pattern.compile("action=\"([^\"]+)\"");
-    final Matcher matcher = pattern.matcher(html);
-    return matcher.find() ? matcher.group(1).replace("&amp;", "&") : null;
-  }
-
-  // ---------------------------------------------------------------------------
-  // Private — Cookie management
-  // ---------------------------------------------------------------------------
-
-  private void updateCookies(final HttpResponse<?> response) {
-    for (final String setCookie : response.headers().allValues("Set-Cookie")) {
-      final String[] parts = setCookie.split(";")[0].split("=", 2);
-      cookieJar.put(parts[0], parts.length > 1 ? parts[1] : "");
-    }
-  }
-
-  private void addCookieHeader(final HttpRequest.Builder builder) {
-    if (!cookieJar.isEmpty()) {
-      builder.header("Cookie", cookieHeader());
-    }
-  }
-
-  private String cookieHeader() {
-    return cookieJar.entrySet().stream()
-        .map(e -> e.getKey() + "=" + e.getValue())
-        .collect(Collectors.joining("; "));
   }
 
   // ---------------------------------------------------------------------------
