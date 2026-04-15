@@ -13,8 +13,6 @@ public final class OptimizeCfg {
   private String realm;
   private String clientId;
   private String clientSecret;
-  private String username;
-  private String password;
   private String processDefinitionKey;
   private int evaluationIntervalSeconds = 60; // Default: 1 minute
   private int authRetryMaxAttempts = 30;
@@ -58,22 +56,6 @@ public final class OptimizeCfg {
 
   public void setClientSecret(final String clientSecret) {
     this.clientSecret = clientSecret;
-  }
-
-  public String getUsername() {
-    return username;
-  }
-
-  public void setUsername(final String username) {
-    this.username = username;
-  }
-
-  public String getPassword() {
-    return password;
-  }
-
-  public void setPassword(final String password) {
-    this.password = password;
   }
 
   public int getEvaluationIntervalSeconds() {

@@ -23,8 +23,6 @@ public class OptimizeReportApiClientTest {
     config.setKeycloakUrl("http://localhost:18080");
     config.setRealm("camunda-platform");
     config.setClientId("optimize");
-    config.setUsername("demo");
-    config.setPassword("demo");
     config.setClientSecret("demo-secret");
     return new OptimizeReportApiClient(config);
   }
