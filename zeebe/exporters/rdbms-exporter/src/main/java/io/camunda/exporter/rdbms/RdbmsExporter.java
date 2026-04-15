@@ -13,8 +13,8 @@ import io.camunda.db.rdbms.write.RdbmsWriters;
 import io.camunda.db.rdbms.write.domain.ExporterPositionModel;
 import io.camunda.db.rdbms.write.service.HistoryCleanupService;
 import io.camunda.db.rdbms.write.service.HistoryDeletionService;
-import io.camunda.exporter.rdbms.replication.LsnPositionEntry;
-import io.camunda.exporter.rdbms.replication.ReplicationContext;
+import io.camunda.exporter.rdbms.replication.ReplicationController;
+import io.camunda.exporter.rdbms.replication.ReplicationControllerFactory;
 import io.camunda.exporter.rdbms.tasks.RdbmsBackgroundTaskManager;
 import io.camunda.zeebe.exporter.api.ExporterException;
 import io.camunda.zeebe.exporter.api.context.Controller;
@@ -63,7 +63,8 @@ public final class RdbmsExporter {
   private long oldestRecordTimestampInBatch = -1;
 
   // Async replication support — null when disabled
-  private final ReplicationContext replicationContext;
+  private final ReplicationControllerFactory replicationControllerFactory;
+  private ReplicationController replicationController;
 
   private RdbmsExporter(
       final int partitionId,
@@ -74,7 +75,7 @@ public final class RdbmsExporter {
       final RdbmsSchemaManager rdbmsSchemaManager,
       final HistoryCleanupService historyCleanupService,
       final HistoryDeletionService historyDeletionService,
-      final ReplicationContext replicationContext) {
+      final ReplicationControllerFactory replicationControllerFactory) {
     this.historyCleanupService = historyCleanupService;
     this.rdbmsWriters = rdbmsWriters;
     registeredHandlers = handlers;
@@ -84,7 +85,7 @@ public final class RdbmsExporter {
     this.queueSize = queueSize;
     this.rdbmsSchemaManager = rdbmsSchemaManager;
     this.historyDeletionService = historyDeletionService;
-    this.replicationContext = replicationContext;
+    this.replicationControllerFactory = replicationControllerFactory;
 
     LOG.info(
         "[RDBMS Exporter P{}] RdbmsExporter created with Configuration: flushInterval={}, queueSize={}",
@@ -133,19 +134,18 @@ public final class RdbmsExporter {
     }
     lastFlushedPosition = lastPosition;
 
+    replicationController = replicationControllerFactory.createReplicationController(controller);
     rdbmsWriters.getExecutionQueue().registerPreFlushListener(this::updatePositionInRdbms);
-    if (isAsyncReplicationEnabled()) {
-      rdbmsWriters.getExecutionQueue().registerPostFlushListener(this::captureCurrentLsnAndEnqueue);
-    } else {
-      rdbmsWriters.getExecutionQueue().registerPostFlushListener(this::updatePositionInBroker);
-    }
+    rdbmsWriters
+        .getExecutionQueue()
+        .registerPostFlushListener(() -> replicationController.onFlush(lastPosition));
     rdbmsWriters.getExecutionQueue().registerPostFlushListener(this::recordExportingLatency);
 
     // Start background tasks (history cleanup and deletion) in a separate thread pool,
     // decoupled from the main export thread
     backgroundTaskManager =
         new RdbmsBackgroundTaskManager(
-            partitionId, historyCleanupService, historyDeletionService, LOG, replicationContext);
+            partitionId, historyCleanupService, historyDeletionService, LOG);
     backgroundTaskManager.start();
 
     LOG.info(
@@ -285,35 +285,6 @@ public final class RdbmsExporter {
     controller.updateLastExportedRecordPosition(lastPosition);
   }
 
-  private boolean isAsyncReplicationEnabled() {
-    return replicationContext != null;
-  }
-
-  private void captureCurrentLsnAndEnqueue() {
-    final long currentLsn = replicationContext.lsnProvider().getCurrentLsn();
-    if (!replicationContext
-        .pendingEntries()
-        .offer(new LsnPositionEntry(currentLsn, lastPosition))) {
-      LOG.warn(
-          "[RDBMS Exporter P{}] Replication queue is full, dropping LSN entry (lsn={}, position={})",
-          partitionId,
-          currentLsn,
-          lastPosition);
-    }
-
-    // Check if the background task has confirmed any positions and update the broker
-    final long confirmed = replicationContext.confirmedPosition().get();
-    if (confirmed > lastFlushedPosition) {
-      LOG.info(
-          "[RDBMS Exporter P{}] Replication confirmed position {}. Updating broker position to {}",
-          partitionId,
-          confirmed,
-          confirmed);
-      lastFlushedPosition = confirmed;
-      controller.updateLastExportedRecordPosition(confirmed);
-    }
-  }
-
   private void updatePositionInRdbms() {
     if (lastPosition > exporterRdbmsPosition.lastExportedPosition()) {
       LOG.trace("[RDBMS Exporter P{}] Updating position to {} in rdbms", partitionId, lastPosition);
@@ -402,11 +373,6 @@ public final class RdbmsExporter {
     return registeredHandlers;
   }
 
-  @VisibleForTesting
-  ReplicationContext getReplicationContext() {
-    return replicationContext;
-  }
-
   public static final class Builder {
 
     private int partitionId;
@@ -417,7 +383,7 @@ public final class RdbmsExporter {
     private Map<ValueType, List<RdbmsExportHandler>> handlers = new EnumMap<>(ValueType.class);
     private HistoryCleanupService historyCleanupService;
     private HistoryDeletionService historyDeletionService;
-    private ReplicationContext replicationContext;
+    private ReplicationControllerFactory replicationControllerFactory;
 
     public Builder partitionId(final int value) {
       partitionId = value;
@@ -468,8 +434,9 @@ public final class RdbmsExporter {
       return this;
     }
 
-    public Builder replicationContext(final ReplicationContext value) {
-      replicationContext = value;
+    public Builder replicationControllerFactory(
+        final ReplicationControllerFactory replicationControllerFactory) {
+      this.replicationControllerFactory = replicationControllerFactory;
       return this;
     }
 
@@ -483,7 +450,7 @@ public final class RdbmsExporter {
           rdbmsSchemaManager,
           historyCleanupService,
           historyDeletionService,
-          replicationContext);
+          replicationControllerFactory);
     }
   }
 }

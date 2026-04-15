@@ -7,8 +7,9 @@
  */
 package io.camunda.exporter.rdbms.replication;
 
-/**
- * Pairs a primary database LSN with the Zeebe record position at the time of flush. Both values are
- * monotonically increasing, so a queue of entries preserves natural ordering.
- */
-public record LsnPositionEntry(long lsn, long position) {}
+import io.camunda.zeebe.exporter.api.context.Controller;
+
+public interface ReplicationControllerFactory {
+
+  ReplicationController createReplicationController(Controller controller);
+}

@@ -7,18 +7,14 @@
  */
 package io.camunda.exporter.rdbms.tasks;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import io.camunda.db.rdbms.write.ReplicationLsnProvider;
 import io.camunda.db.rdbms.write.service.HistoryCleanupService;
 import io.camunda.db.rdbms.write.service.HistoryDeletionService;
-import io.camunda.exporter.rdbms.replication.LsnPositionEntry;
-import io.camunda.exporter.rdbms.replication.ReplicationContext;
 import java.time.Duration;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeEach;
@@ -162,61 +158,6 @@ final class RdbmsBackgroundTaskManagerTest {
               () ->
                   Mockito.verify(historyCleanupService, Mockito.atLeastOnce())
                       .cleanupHistory(anyInt(), any()));
-
-      manager.close();
-    }
-  }
-
-  @Nested
-  final class ReplicationMonitorTest {
-
-    @Test
-    void shouldRunReplicationMonitorWhenProviderConfigured() {
-      // given
-      final var lsnProvider = mock(ReplicationLsnProvider.class);
-      when(lsnProvider.getReplicaLsn()).thenReturn(100L);
-
-      final var replicationContext = new ReplicationContext(lsnProvider, Duration.ofMillis(50));
-      replicationContext.pendingEntries().offer(new LsnPositionEntry(100, 1));
-
-      final var manager =
-          new RdbmsBackgroundTaskManager(
-              PARTITION_ID,
-              historyCleanupService,
-              historyDeletionService,
-              LoggerFactory.getLogger(RdbmsBackgroundTaskManagerTest.class),
-              CLOSE_TIMEOUT,
-              replicationContext);
-
-      // when
-      manager.start();
-
-      // then
-      Awaitility.await("ReplicationMonitor should confirm position")
-          .untilAsserted(
-              () -> assertThat(replicationContext.confirmedPosition().get()).isEqualTo(1));
-
-      manager.close();
-    }
-
-    @Test
-    void shouldNotCreateReplicationMonitorWhenProviderIsNull() {
-      // given
-      final var manager =
-          new RdbmsBackgroundTaskManager(
-              PARTITION_ID,
-              historyCleanupService,
-              historyDeletionService,
-              LoggerFactory.getLogger(RdbmsBackgroundTaskManagerTest.class),
-              CLOSE_TIMEOUT);
-
-      // when
-      manager.start();
-
-      // then — should still start and run history tasks without issues
-      Awaitility.await("Background tasks should run")
-          .untilAsserted(
-              () -> Mockito.verify(historyCleanupService).cleanupHistory(anyInt(), any()));
 
       manager.close();
     }
