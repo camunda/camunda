@@ -79,6 +79,12 @@ public final class ExporterTestController implements Controller {
     return exporterMetadata.get();
   }
 
+  @Override
+  public boolean requestReplay(final long fromPosition) {
+    this.position.set(fromPosition - 1);
+    return true;
+  }
+
   /**
    * Clears the list of scheduled tasks and resets the time of the scheduler to 0. NOTE: this call
    * does not cancel scheduled tasks.

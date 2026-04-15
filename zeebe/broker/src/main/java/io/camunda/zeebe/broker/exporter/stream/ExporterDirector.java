@@ -125,7 +125,8 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
                         partitionId,
                         descriptorEntry.getValue(),
                         meterRegistry,
-                        clock))
+                        clock,
+                        this::onReplayRequested))
             .collect(Collectors.toCollection(ArrayList::new));
     metrics = new ExporterMetrics(meterRegistry);
     metrics.initializeExporterState(exporterPhase);
@@ -341,7 +342,13 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
     }
 
     final ExporterContainer container =
-        new ExporterContainer(descriptor, partitionId, initializationInfo, meterRegistry, clock);
+        new ExporterContainer(
+            descriptor,
+            partitionId,
+            initializationInfo,
+            meterRegistry,
+            clock,
+            this::onReplayRequested);
     container.initContainer(actor, metrics, state, exporterPhase);
     try {
       container.configureExporter();
@@ -606,6 +613,51 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
   private void restartActiveExportingMode() {
     logStreamReader = logStream.newLogStreamReader();
     startActiveExportingFrom(-1);
+  }
+
+  /**
+   * Handles a replay request from an exporter container. Seeks the log reader to the first position
+   * to replay ({@code state.getLowestPosition() + 1}) and resumes reading if all exporters are
+   * already opened.
+   *
+   * <p>If called during startup (before all exporters are opened), the seek is still performed now
+   * so that the result can be returned to the caller. {@link #startActiveExportingFrom(long)} will
+   * perform a redundant but harmless seek afterward using {@link
+   * ExportersState#getLowestPosition()}.
+   *
+   * @param requestedPosition the position to which the exporter's state was reset (i.e., {@code
+   *     fromPosition - 1})
+   * @return {@code true} if the seek to the replay position succeeded, {@code false} if the
+   *     required log segments are no longer available
+   */
+  private boolean onReplayRequested(final long requestedPosition) {
+    if (logStreamReader == null) {
+      LOG.warn(
+          "Cannot process replay request at position {}: log stream reader is not available.",
+          requestedPosition);
+      return false;
+    }
+
+    final long newLowestPosition = state.getLowestPosition();
+    final long replayFromPosition = newLowestPosition + 1;
+    LOG.info(
+        "Replay requested: seeking log reader to position {} (lowest exporter position + 1)",
+        replayFromPosition);
+
+    final boolean sought = logStreamReader.seek(replayFromPosition);
+    if (!sought) {
+      LOG.warn(
+          "Could not seek log reader to replay position {}. Log segments may have been deleted.",
+          replayFromPosition);
+      return false;
+    }
+
+    if (allExportersOpened) {
+      inExportingPhase = false;
+      actor.submit(this::readNextEvent);
+    }
+    // If not allExportersOpened, startActiveExportingFrom() will seek again and start reading.
+    return true;
   }
 
   private void startActiveExportingFrom(final long snapshotPosition) {
