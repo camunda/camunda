@@ -11,9 +11,13 @@ import static io.camunda.search.query.SearchQueryBuilders.decisionRequirementsSe
 import static io.camunda.search.query.SearchQueryBuilders.processDefinitionSearchQuery;
 
 import io.camunda.search.clients.DecisionRequirementSearchClient;
+import io.camunda.search.clients.DeployedResourceSearchClient;
 import io.camunda.search.clients.ProcessDefinitionSearchClient;
+import io.camunda.search.entities.DeployedResourceEntity;
+import io.camunda.search.exception.CamundaSearchException;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.security.auth.CamundaAuthentication;
+import io.camunda.service.exception.ErrorMapper;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerDeleteResourceRequest;
@@ -30,6 +34,8 @@ public final class ResourceServices extends ApiServices<ResourceServices> {
 
   private final ProcessDefinitionSearchClient processDefinitionSearchClient;
   private final DecisionRequirementSearchClient decisionRequirementSearchClient;
+  private final DeployedResourceSearchClient deployedResourceSearchClient;
+  private final boolean secondaryStorageEnabled;
 
   public ResourceServices(
       final BrokerClient brokerClient,
@@ -37,7 +43,9 @@ public final class ResourceServices extends ApiServices<ResourceServices> {
       final ApiServicesExecutorProvider executorProvider,
       final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter,
       final ProcessDefinitionSearchClient processDefinitionSearchClient,
-      final DecisionRequirementSearchClient decisionRequirementSearchClient) {
+      final DecisionRequirementSearchClient decisionRequirementSearchClient,
+      final DeployedResourceSearchClient deployedResourceSearchClient,
+      final boolean secondaryStorageEnabled) {
     super(
         brokerClient,
         securityContextProvider,
@@ -45,6 +53,8 @@ public final class ResourceServices extends ApiServices<ResourceServices> {
         brokerRequestAuthorizationConverter);
     this.processDefinitionSearchClient = processDefinitionSearchClient;
     this.decisionRequirementSearchClient = decisionRequirementSearchClient;
+    this.deployedResourceSearchClient = deployedResourceSearchClient;
+    this.secondaryStorageEnabled = secondaryStorageEnabled;
   }
 
   public CompletableFuture<DeploymentRecord> deployResources(
@@ -120,6 +130,50 @@ public final class ResourceServices extends ApiServices<ResourceServices> {
       final ResourceFetchRequest request, final CamundaAuthentication authentication) {
     return sendBrokerRequest(
         new BrokerFetchResourceRequest().setResourceKey(request.resourceKey()), authentication);
+  }
+
+  public CompletableFuture<DeployedResourceEntity> getByKey(
+      final long resourceKey, final CamundaAuthentication authentication) {
+    return fetchDeployedResource(resourceKey, authentication, false);
+  }
+
+  public CompletableFuture<DeployedResourceEntity> getContentByKey(
+      final long resourceKey, final CamundaAuthentication authentication) {
+    return fetchDeployedResource(resourceKey, authentication, true);
+  }
+
+  private CompletableFuture<DeployedResourceEntity> fetchDeployedResource(
+      final long resourceKey,
+      final CamundaAuthentication authentication,
+      final boolean includeContent) {
+    if (secondaryStorageEnabled) {
+      final var securityContext = securityContextProvider.provideSecurityContext(authentication);
+      return CompletableFuture.supplyAsync(
+          () -> {
+            try {
+              final var client = deployedResourceSearchClient.withSecurityContext(securityContext);
+              return includeContent
+                  ? client.getDeployedResource(resourceKey)
+                  : client.getDeployedResourceMetadata(resourceKey);
+            } catch (final CamundaSearchException cse) {
+              throw ErrorMapper.mapSearchError(cse);
+            }
+          },
+          executorProvider.getExecutor());
+    } else {
+      return fetchResource(new ResourceFetchRequest(resourceKey), authentication)
+          .thenApply(
+              record ->
+                  new DeployedResourceEntity(
+                      record.getResourceKey(),
+                      record.getResourceId(),
+                      record.getResourceName(),
+                      record.getVersion(),
+                      record.getVersionTag(),
+                      record.getDeploymentKey(),
+                      record.getTenantId(),
+                      includeContent ? record.getResourceProp() : null));
+    }
   }
 
   public record DeployResourcesRequest(Map<String, byte[]> resources, String tenantId) {}
