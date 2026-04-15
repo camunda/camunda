@@ -15,7 +15,7 @@ permissions:
   contents: read
 
 jobs:
-  api-tests:
+  nightly-api-tests:
     uses: ./.github/workflows/c8-orchestration-cluster-e2e-tests-reusable-api.yml
     with:
       branch: stable/8.8

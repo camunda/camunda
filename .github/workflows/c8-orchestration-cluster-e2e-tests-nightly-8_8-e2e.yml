@@ -15,7 +15,7 @@ permissions:
   contents: read
 
 jobs:
-  e2e-v1:
+  nightly-e2e-v1:
     uses: ./.github/workflows/c8-orchestration-cluster-e2e-tests-reusable-e2e.yml
     with:
       branch: stable/8.8
@@ -26,7 +26,7 @@ jobs:
       observe_job_name: "c8-orchestration-cluster-e2e-nightly-tests/stable-8.8/v1"
     secrets: inherit
 
-  e2e-v2:
+  nightly-e2e-v2:
     uses: ./.github/workflows/c8-orchestration-cluster-e2e-tests-reusable-e2e.yml
     with:
       branch: stable/8.8

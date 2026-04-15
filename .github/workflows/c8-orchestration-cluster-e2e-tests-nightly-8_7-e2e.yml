@@ -15,7 +15,7 @@ permissions:
   contents: read
 
 jobs:
-  e2e-v1:
+  nightly-e2e-v1:
     uses: ./.github/workflows/c8-orchestration-cluster-e2e-tests-reusable-e2e.yml
     with:
       branch: stable/8.7

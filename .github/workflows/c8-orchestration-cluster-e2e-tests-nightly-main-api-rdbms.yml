@@ -15,7 +15,7 @@ permissions:
   contents: read
 
 jobs:
-  api-tests-rdbms:
+  nightly-api-tests-rdbms:
     uses: ./.github/workflows/c8-orchestration-cluster-e2e-tests-reusable-api-rdbms.yml
     with:
       branch: main
