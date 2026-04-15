@@ -31,6 +31,8 @@ public final class LegacyZeebeClientProperties {
 
   public static final String PREFER_REST_OVER_GRPC = "zeebe.client.gateway.preferRestOverGrpc";
 
+  public static final String MAX_HTTP_CONNECTIONS = "zeebe.client.gateway.maxHttpConnections";
+
   public static final String REST_ADDRESS = "zeebe.client.gateway.rest.address";
 
   public static final String GRPC_ADDRESS = "zeebe.client.gateway.grpc.address";

@@ -182,6 +182,11 @@ public class ZeebeClientConfigurationImpl implements ZeebeClientConfiguration {
   }
 
   @Override
+  public int getMaxHttpConnections() {
+    return camundaClientConfiguration.getMaxHttpConnections();
+  }
+
+  @Override
   public String toString() {
     return "ZeebeClientConfigurationImpl{"
         + "camundaClientConfiguration="

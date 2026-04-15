@@ -49,6 +49,11 @@ public final class ClientProperties {
   public static final String PREFER_REST_OVER_GRPC = "zeebe.client.gateway.preferRestOverGrpc";
 
   /**
+   * @see ZeebeClientBuilder#maxHttpConnections(int)
+   */
+  public static final String MAX_HTTP_CONNECTIONS = "zeebe.client.gateway.maxHttpConnections";
+
+  /**
    * @see ZeebeClientBuilder#restAddress(URI)
    */
   public static final String REST_ADDRESS = "zeebe.client.gateway.rest.address";
