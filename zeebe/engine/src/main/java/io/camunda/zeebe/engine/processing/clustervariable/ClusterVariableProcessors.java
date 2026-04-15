@@ -13,6 +13,7 @@ import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCh
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.ClusterVariableState;
+import io.camunda.zeebe.engine.state.immutable.TenantState;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ClusterVariableIntent;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
@@ -22,6 +23,7 @@ public class ClusterVariableProcessors {
       final KeyGenerator keyGenerator,
       final TypedRecordProcessors typedRecordProcessors,
       final ClusterVariableState clusterVariableState,
+      final TenantState tenantState,
       final Writers writers,
       final CommandDistributionBehavior distributionBehavior,
       final AuthorizationCheckBehavior authCheckBehavior,
@@ -29,6 +31,7 @@ public class ClusterVariableProcessors {
     final var clusterVariableRecordValidator =
         new ClusterVariableRecordValidator(
             clusterVariableState,
+            tenantState,
             new ClusterVariableValidationConfiguration(
                 engineConfiguration.getMaxNameFieldLength()));
     typedRecordProcessors.onCommand(
