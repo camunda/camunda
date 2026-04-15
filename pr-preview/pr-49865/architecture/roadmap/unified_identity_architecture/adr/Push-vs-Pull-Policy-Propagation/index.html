@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="generator" content="Docusaurus v3.9.2">
 <title data-rh="true">ADR-0003: Push vs Pull Policy Propagation (Hub ↔ Orchestration Clusters) | Camunda Platform</title><meta data-rh="true" name="viewport" content="width=device-width,initial-scale=1"><meta data-rh="true" name="twitter:card" content="summary_large_image"><meta data-rh="true" property="og:url" content="https://camunda.github.io/camunda/pr-preview/pr-49865/architecture/roadmap/unified_identity_architecture/adr/Push-vs-Pull-Policy-Propagation/"><meta data-rh="true" property="og:locale" content="en"><meta data-rh="true" name="docusaurus_locale" content="en"><meta data-rh="true" name="docsearch:language" content="en"><meta data-rh="true" name="docusaurus_version" content="current"><meta data-rh="true" name="docusaurus_tag" content="docs-default-current"><meta data-rh="true" name="docsearch:version" content="current"><meta data-rh="true" name="docsearch:docusaurus_tag" content="docs-default-current"><meta data-rh="true" property="og:title" content="ADR-0003: Push vs Pull Policy Propagation (Hub ↔ Orchestration Clusters) | Camunda Platform"><meta data-rh="true" name="description" content="Status"><meta data-rh="true" property="og:description" content="Status"><link data-rh="true" rel="icon" href="/camunda/pr-preview/pr-49865/img/black-C.png"><link data-rh="true" rel="canonical" href="https://camunda.github.io/camunda/pr-preview/pr-49865/architecture/roadmap/unified_identity_architecture/adr/Push-vs-Pull-Policy-Propagation/"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/pr-preview/pr-49865/architecture/roadmap/unified_identity_architecture/adr/Push-vs-Pull-Policy-Propagation/" hreflang="en"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/pr-preview/pr-49865/architecture/roadmap/unified_identity_architecture/adr/Push-vs-Pull-Policy-Propagation/" hreflang="x-default"><script data-rh="true" type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"ADR-0003: Push vs Pull Policy Propagation (Hub ↔ Orchestration Clusters)","item":"https://camunda.github.io/camunda/pr-preview/pr-49865/architecture/roadmap/unified_identity_architecture/adr/Push-vs-Pull-Policy-Propagation"}]}</script><link rel="stylesheet" href="/camunda/pr-preview/pr-49865/assets/css/styles.9181a4df.css">
-<script src="/camunda/pr-preview/pr-49865/assets/js/runtime~main.11754ded.js" defer="defer"></script>
-<script src="/camunda/pr-preview/pr-49865/assets/js/main.61551bbf.js" defer="defer"></script>
+<script src="/camunda/pr-preview/pr-49865/assets/js/runtime~main.a841f699.js" defer="defer"></script>
+<script src="/camunda/pr-preview/pr-49865/assets/js/main.5d7d84b5.js" defer="defer"></script>
 </head>
 <body class="navigation-with-keyboard">
 <svg style="display: none;"><defs>
@@ -23,6 +23,13 @@
 <li class="">Pull-based propagation: OCs periodically ask Hub whether there is a new policy and, if so, retrieve the changes needed to catch up.</li>
 </ul>
 <p>This ADR only concerns Hub ↔ OC policy propagation. OC ↔ Engine propagation remains an internal concern of the OC.</p>
+<p>Additional non-functional constraints from current SaaS scale:</p>
+<ul>
+<li class="">Approximately 47k organizations and approximately 43k created clusters must be supported without degrading Hub or OC performance.</li>
+<li class="">Propagation must avoid synchronized load spikes (for example, retry storms or polling herd effects).</li>
+<li class="">Rollout visibility must remain operationally useful at large cluster counts (version, status, error, retry state per OC).</li>
+<li class="">Propagation paths must include overload protection (rate limiting) and failure isolation (circuit breaking).</li>
+</ul>
 <h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="decision">Decision<a href="#decision" class="hash-link" aria-label="Direct link to Decision" title="Direct link to Decision" translate="no">​</a></h2>
 <p>We will:</p>
 <ul>
@@ -68,11 +75,27 @@
 <li class="">“When I change policy in Hub, Hub will push it out to all relevant clusters and tell me if something failed.”</li>
 </ul>
 </li>
+<li class="">Better central rollout visibility at scale:<!-- -->
+<ul>
+<li class="">Hub can expose delivery progress and failure states per OC without adding extra OC reporting paths.</li>
+</ul>
+</li>
 </ul>
 <p>Cons:</p>
 <ul>
 <li class="">Hub must be able to reach OCs over the network in a controlled and secure way.</li>
 <li class="">The dispatcher needs robust retry and error handling to deal with temporary OC unavailability.</li>
+<li class="">Hub must implement dispatcher backpressure controls:<!-- -->
+<ul>
+<li class="">Rate limiting, bounded concurrency, and jittered retries are required to avoid overwhelming OCs.</li>
+</ul>
+</li>
+<li class="">Hub-to-OC delivery clients need circuit breaking to isolate repeatedly failing OCs and prevent cascading impact on overall rollout throughput.</li>
+<li class="">Snapshot-based propagation (without diffs) increases per-call payload size and apply time:<!-- -->
+<ul>
+<li class="">Larger payloads can increase latency per delivery and require stronger timeout, batching, and throughput controls.</li>
+</ul>
+</li>
 </ul>
 <h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="option-b--pull-based-propagation-oc-asks-hub-for-new-versions-and-changes">Option B – Pull-based propagation (OC asks Hub for new versions and changes)<a href="#option-b--pull-based-propagation-oc-asks-hub-for-new-versions-and-changes" class="hash-link" aria-label="Direct link to Option B – Pull-based propagation (OC asks Hub for new versions and changes)" title="Direct link to Option B – Pull-based propagation (OC asks Hub for new versions and changes)" translate="no">​</a></h3>
 <p>Shape:</p>
@@ -112,6 +135,11 @@
 <li class="">If they poll too infrequently, policy rollout can be noticeably delayed.</li>
 </ul>
 </li>
+<li class="">Pull creates continuous background traffic by design:<!-- -->
+<ul>
+<li class="">Even without policy changes, OCs keep polling Hub, consuming network and compute capacity.</li>
+</ul>
+</li>
 <li class="">Central visibility is weaker unless we add extra reporting:<!-- -->
 <ul>
 <li class="">By default, Hub only knows “the latest policy version is N”, not which version each OC is currently running.</li>
@@ -127,6 +155,16 @@
 <li class="">More logic per OC:<!-- -->
 <ul>
 <li class="">Error handling (for example, failures while applying a chain of diffs) must be coordinated across two independent systems.</li>
+</ul>
+</li>
+<li class="">Polling synchronization risk at large OC counts:<!-- -->
+<ul>
+<li class="">Without jitter and staggering, many OCs can poll simultaneously and overload Hub (thundering herd).</li>
+</ul>
+</li>
+<li class="">Pull clients and Hub polling endpoints both require rate limiting and circuit breaking:<!-- -->
+<ul>
+<li class="">OCs should back off when Hub is degraded; Hub should protect itself from abusive or accidental poll bursts.</li>
 </ul>
 </li>
 </ul>
@@ -162,28 +200,47 @@
 <li class="">Keeps propagation aligned with the moment policy is changed, rather than leaving coordination entirely to OCs.</li>
 <li class="">Avoids the steady overhead and complexity of periodic polling from many OCs when policy changes are relatively rare.</li>
 <li class="">Concentrates most of the complexity (ordering, retries, monitoring) on the Hub side, instead of duplicating it in every OC.</li>
+<li class="">Fits current SaaS scale better by preserving central rollout observability while avoiding synchronized poll traffic from many clusters.</li>
+<li class="">Push is event-driven and runs when needed (on policy changes), while pull introduces constant periodic traffic regardless of change volume.</li>
 </ul>
 <h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="consequences">Consequences<a href="#consequences" class="hash-link" aria-label="Direct link to Consequences" title="Direct link to Consequences" translate="no">​</a></h2>
 <ul>
-<li class="">Hub must:<!-- -->
+<li class="">
+<p>Hub must:</p>
 <ul>
 <li class="">Provide a mechanism to record policy changes and schedule them for delivery to OCs.</li>
 <li class="">Maintain versioned policy data per cluster and be able to derive snapshots and diffs.</li>
 <li class="">Track, per OC, which policy version has been acknowledged as applied.</li>
 <li class="">Surface this information via metrics or dashboards so operators can monitor rollout progress.</li>
+<li class="">Enforce dispatcher backpressure controls (bounded concurrency, rate limits, and jittered retries).</li>
+<li class="">Use circuit breaking on outbound Hub-to-OC propagation calls, with bounded retries and backoff.</li>
+<li class="">Keep outbox polling/query paths efficient for large OC counts.</li>
+<li class="">Protect inbound propagation-related endpoints (for example recovery/re-sync requests) with rate limiting.</li>
 </ul>
 </li>
-<li class="">OCs must:<!-- -->
+<li class="">
+<p>OCs must:</p>
 <ul>
 <li class="">Provide a way to accept policy updates from Hub and apply them idempotently.</li>
 <li class="">Track the last applied policy version locally.</li>
 <li class="">Optionally, provide a way to initiate a re-sync (full snapshot) from Hub when local state is known to be inconsistent.</li>
+<li class="">Handle repeated deliveries safely and expose enough status for operational diagnosis.</li>
+<li class="">Respect rate limits and retry hints from Hub (for example 429/503 with backoff semantics) when initiating recovery flows.</li>
 </ul>
 </li>
-<li class="">We do not:<!-- -->
+<li class="">
+<p>We do not:</p>
 <ul>
 <li class="">Implement regular polling from OCs to Hub to discover new policy versions.</li>
 <li class="">Model policy propagation after job polling patterns from Camunda 8 workers; policy changes are much less frequent and benefit from a more centrally visible rollout process.</li>
+</ul>
+</li>
+<li class="">
+<p>Common requirements regardless of propagation style:</p>
+<ul>
+<li class="">Keep apply idempotent by <code>policyVersionId</code>.</li>
+<li class="">Scope propagation to the affected organization/cluster.</li>
+<li class="">Provide operational runbooks for rollout stalls, forced re-sync, and version-gap recovery.</li>
 </ul>
 </li>
 </ul></div><footer class="theme-doc-footer docusaurus-mt-lg"><div class="row margin-top--sm theme-doc-footer-edit-meta-row"><div class="col noPrint_WFHX"><a href="https://github.com/camunda/camunda/tree/main/docs/monorepo-docs/../docs/monorepo-docs/architecture/roadmap/unified_identity_architecture/adr/0003-Push-vs-Pull-Policy-Propagation.md" target="_blank" rel="noopener noreferrer" class="theme-edit-this-page"><svg fill="currentColor" height="20" width="20" viewBox="0 0 40 40" class="iconEdit_Z9Sw" aria-hidden="true"><g><path d="m34.5 11.7l-3 3.1-6.3-6.3 3.1-3q0.5-0.5 1.2-0.5t1.1 0.5l3.9 3.9q0.5 0.4 0.5 1.1t-0.5 1.2z m-29.5 17.1l18.4-18.5 6.3 6.3-18.4 18.4h-6.3v-6.2z"></path></g></svg>Edit this page</a></div><div class="col lastUpdated_JAkA"></div></div></footer></article><nav class="docusaurus-mt-lg pagination-nav" aria-label="Docs pages"><a class="pagination-nav__link pagination-nav__link--prev" href="/camunda/pr-preview/pr-49865/architecture/roadmap/unified_identity_architecture/adr/placement-of-the-security-gateway-framework/"><div class="pagination-nav__sublabel">Previous</div><div class="pagination-nav__label">ADR-0002: Placement of the Security Gateway Framework (embedded vs standalone service)</div></a></nav></div></div><div class="col col--3"><div class="tableOfContents_bqdL thin-scrollbar theme-doc-toc-desktop"><ul class="table-of-contents table-of-contents__left-border"><li><a href="#status" class="table-of-contents__link toc-highlight">Status</a></li><li><a href="#context" class="table-of-contents__link toc-highlight">Context</a></li><li><a href="#decision" class="table-of-contents__link toc-highlight">Decision</a></li><li><a href="#options-considered" class="table-of-contents__link toc-highlight">Options considered</a><ul><li><a href="#option-a--push-based-propagation-from-hub-to-ocs-chosen" class="table-of-contents__link toc-highlight">Option A – Push-based propagation from Hub to OCs (chosen)</a></li><li><a href="#option-b--pull-based-propagation-oc-asks-hub-for-new-versions-and-changes" class="table-of-contents__link toc-highlight">Option B – Pull-based propagation (OC asks Hub for new versions and changes)</a></li><li><a href="#option-c--hybrid-push-as-default-pull-only-for-recovery" class="table-of-contents__link toc-highlight">Option C – Hybrid: push as default, pull only for recovery</a></li></ul></li><li><a href="#decision-outcome" class="table-of-contents__link toc-highlight">Decision outcome</a></li><li><a href="#consequences" class="table-of-contents__link toc-highlight">Consequences</a></li></ul></div></div></div></div></main></div></div></div><footer class="theme-layout-footer footer footer--dark"><div class="container container-fluid"><div class="footer__bottom text--center"><div class="footer__copyright">Copyright © 2026 Camunda.</div></div></div></footer></div>
