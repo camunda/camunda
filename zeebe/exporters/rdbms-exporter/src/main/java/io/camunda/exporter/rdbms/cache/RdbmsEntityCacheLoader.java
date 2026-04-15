@@ -7,7 +7,7 @@
  */
 package io.camunda.exporter.rdbms.cache;
 
-import com.github.benmanes.caffeine.cache.CacheLoader;
+import io.camunda.zeebe.exporter.common.cache.BulkExporterEntityCacheLoader;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -19,7 +19,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public final class RdbmsEntityCacheLoader<K, Entity, CachedEntity, Query>
-    implements CacheLoader<K, CachedEntity> {
+    implements BulkExporterEntityCacheLoader<K, CachedEntity> {
 
   private static final Logger LOG = LoggerFactory.getLogger(RdbmsEntityCacheLoader.class);
 

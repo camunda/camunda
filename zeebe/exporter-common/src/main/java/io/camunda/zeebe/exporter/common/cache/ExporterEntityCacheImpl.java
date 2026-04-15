@@ -11,8 +11,10 @@ import com.github.benmanes.caffeine.cache.CacheLoader;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.LoadingCache;
 import io.camunda.zeebe.util.cache.CaffeineCacheStatsCounter;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 public class ExporterEntityCacheImpl<K, T> implements ExporterEntityCache<K, T> {
 
@@ -26,14 +28,18 @@ public class ExporterEntityCacheImpl<K, T> implements ExporterEntityCache<K, T> 
         Caffeine.newBuilder()
             .maximumSize(maxSize)
             .recordStats(() -> statsCounter)
-            .build(
-                k -> {
-                  try {
-                    return cacheLoader.load(k);
-                  } catch (final Exception e) {
-                    throw new CacheLoaderFailedException(e);
-                  }
-                });
+            .build(wrapCacheLoader(cacheLoader));
+  }
+
+  public ExporterEntityCacheImpl(
+      final long maxSize,
+      final BulkExporterEntityCacheLoader<K, T> cacheLoader,
+      final CaffeineCacheStatsCounter statsCounter) {
+    cache =
+        Caffeine.newBuilder()
+            .maximumSize(maxSize)
+            .recordStats(() -> statsCounter)
+            .build(wrapCacheLoader(cacheLoader));
   }
 
   @Override
@@ -59,5 +65,57 @@ public class ExporterEntityCacheImpl<K, T> implements ExporterEntityCache<K, T> 
   @Override
   public void clear() {
     cache.invalidateAll();
+  }
+
+  private static <K, T> CacheLoader<K, T> wrapCacheLoader(final CacheLoader<K, T> delegate) {
+    return new CacheLoader<>() {
+      @Override
+      public T load(final K key) {
+        return loadValue(delegate, key);
+      }
+
+      @Override
+      public Map<? extends K, ? extends T> loadAll(final Set<? extends K> keys) {
+        final Map<K, T> entries = new HashMap<>();
+        for (final K key : keys) {
+          final var value = load(key);
+          if (value != null) {
+            entries.put(key, value);
+          }
+        }
+        return entries;
+      }
+    };
+  }
+
+  private static <K, T> BulkExporterEntityCacheLoader<K, T> wrapCacheLoader(
+      final BulkExporterEntityCacheLoader<K, T> delegate) {
+    return new BulkExporterEntityCacheLoader<>() {
+      @Override
+      public T load(final K key) {
+        return loadValue(delegate, key);
+      }
+
+      @Override
+      public Map<? extends K, ? extends T> loadAll(final Set<? extends K> keys) {
+        try {
+          return delegate.loadAll(keys);
+        } catch (final CacheLoaderFailedException e) {
+          throw e;
+        } catch (final Exception e) {
+          throw new CacheLoaderFailedException(e);
+        }
+      }
+    };
+  }
+
+  private static <K, T> T loadValue(final CacheLoader<K, T> delegate, final K key) {
+    try {
+      return delegate.load(key);
+    } catch (final CacheLoaderFailedException e) {
+      throw e;
+    } catch (final Exception e) {
+      throw new CacheLoaderFailedException(e);
+    }
   }
 }

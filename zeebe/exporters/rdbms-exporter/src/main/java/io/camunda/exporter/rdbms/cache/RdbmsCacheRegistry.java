@@ -17,6 +17,7 @@ import io.camunda.search.entities.DecisionRequirementsEntity;
 import io.camunda.search.entities.ProcessDefinitionEntity;
 import io.camunda.search.query.DecisionRequirementsQuery;
 import io.camunda.search.query.ProcessDefinitionQuery;
+import io.camunda.zeebe.exporter.common.cache.BulkExporterEntityCacheLoader;
 import io.camunda.zeebe.exporter.common.cache.ExporterEntityCache;
 import io.camunda.zeebe.exporter.common.cache.ExporterEntityCacheImpl;
 import io.camunda.zeebe.exporter.common.cache.batchoperation.CachedBatchOperationEntity;
@@ -99,12 +100,26 @@ public final class RdbmsCacheRegistry {
             new CaffeineCacheStatsCounter(CACHE_METRICS_NAMESPACE, metricsName, meterRegistry)));
   }
 
+  private <K, T> void register(
+      final CacheId cacheId,
+      final long maxSize,
+      final String metricsName,
+      final BulkExporterEntityCacheLoader<K, T> cacheLoader) {
+    caches.put(
+        cacheId,
+        new ExporterEntityCacheImpl<>(
+            maxSize,
+            cacheLoader,
+            new CaffeineCacheStatsCounter(CACHE_METRICS_NAMESPACE, metricsName, meterRegistry)));
+  }
+
   @SuppressWarnings("unchecked")
   private <K, T> ExporterEntityCache<K, T> get(final CacheId cacheId) {
     return (ExporterEntityCache<K, T>) caches.get(cacheId);
   }
 
-  private CacheLoader<Long, CachedProcessEntity> processLoader(final RdbmsService rdbmsService) {
+  private BulkExporterEntityCacheLoader<Long, CachedProcessEntity> processLoader(
+      final RdbmsService rdbmsService) {
     final ProcessDefinitionDbReader reader = rdbmsService.getProcessDefinitionReader();
     return new RdbmsEntityCacheLoader<>(
         "Process",
@@ -119,8 +134,8 @@ public final class RdbmsCacheRegistry {
         RdbmsCacheRegistry::toCachedProcessEntity);
   }
 
-  private CacheLoader<Long, CachedDecisionRequirementsEntity> decisionRequirementsLoader(
-      final RdbmsService rdbmsService) {
+  private BulkExporterEntityCacheLoader<Long, CachedDecisionRequirementsEntity>
+      decisionRequirementsLoader(final RdbmsService rdbmsService) {
     final DecisionRequirementsDbReader reader = rdbmsService.getDecisionRequirementsReader();
     return new RdbmsEntityCacheLoader<>(
         "DecisionRequirements",
