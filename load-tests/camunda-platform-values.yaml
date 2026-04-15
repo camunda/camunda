@@ -152,7 +152,15 @@ orchestration:
             - UPDATE_PROCESS_INSTANCE
             - READ_PROCESS_INSTANCE
             - READ_PROCESS_DEFINITION
-
+        # Grant the orchestration client permission to publish messages
+        # (required by realistic benchmark workers: customer_notification,
+        # dispute_process_request_proof_from_vendor)
+        - ownerType: CLIENT
+          ownerId: orchestration
+          resourceType: MESSAGE
+          resourceId: "*"
+          permissions:
+            - CREATE
   # For simplicity of the deployment, we override the names to camunda
   # This means we will have pods like: camunda-0, camunda-1, camunda-2
   fullnameOverride: camunda
