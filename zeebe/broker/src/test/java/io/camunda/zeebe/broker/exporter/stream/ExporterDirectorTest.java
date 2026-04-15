@@ -51,6 +51,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
@@ -838,6 +839,94 @@ public final class ExporterDirectorTest {
     // then the position will not be updated.
     assertThat(rule.getExportersState().getPosition(EXPORTER_ID_1)).isEqualTo(-1);
     assertThat(rule.getExportersState().getPosition(EXPORTER_ID_2)).isEqualTo(-1);
+  }
+
+  @Test
+  public void shouldReplayRecordsFromRequestedPositionOnward() throws Exception {
+    // given - write and export 4 events
+    rule.startExporterDirector(exporterDescriptors);
+
+    final long eventPosition1 = writeEvent();
+    final long eventPosition2 = writeEvent();
+    final long eventPosition3 = writeEvent();
+    final long eventPosition4 = writeEvent();
+
+    waitUntil(() -> exporters.get(0).getExportedRecords().size() == 4);
+
+    exporters.get(0).getController().updateLastExportedRecordPosition(eventPosition4);
+    exporters.get(1).getController().updateLastExportedRecordPosition(eventPosition4);
+
+    rule.closeExporterDirector();
+    exporters.get(0).getExportedRecords().clear();
+    exporters.get(1).getExportedRecords().clear();
+    final var replayAccepted = new AtomicBoolean(false);
+
+    // Simulate: exporter 0's DB was restored to eventPosition2 — records 3 and 4 are missing
+    exporters
+        .get(0)
+        .onOpen(controller -> replayAccepted.set(controller.requestReplay(eventPosition2 + 1)))
+        .shouldAutoUpdatePosition(true);
+    exporters.get(1).shouldAutoUpdatePosition(true);
+
+    // when
+    rule.startExporterDirector(exporterDescriptors);
+
+    // then - only records 3 and 4 are re-exported; records 1 and 2 must NOT appear
+    Awaitility.await("exporter 0 re-exports exactly the missing records")
+        .atMost(Duration.ofSeconds(10))
+        .until(() -> exporters.get(0).getExportedRecords().size() >= 2);
+
+    assertThat(replayAccepted.get()).isTrue();
+    assertThat(exporters.get(0).getExportedRecords())
+        .extracting(Record::getPosition)
+        .containsExactlyInAnyOrder(eventPosition3, eventPosition4)
+        .doesNotContain(eventPosition1, eventPosition2);
+
+    // exporter 1 should not re-export anything
+    assertThat(exporters.get(1).getExportedRecords()).isEmpty();
+  }
+
+  @Test
+  public void shouldRejectReplayRequestWhenRequestedPositionDoesNotExist() throws Exception {
+    // given - write and export 2 events
+    rule.startExporterDirector(exporterDescriptors);
+
+    final long eventPosition1 = writeEvent();
+    final long eventPosition2 = writeEvent();
+
+    waitUntil(() -> exporters.get(0).getExportedRecords().size() == 2);
+
+    exporters.get(0).getController().updateLastExportedRecordPosition(eventPosition2);
+    exporters.get(1).getController().updateLastExportedRecordPosition(eventPosition2);
+
+    rule.closeExporterDirector();
+    exporters.get(0).getExportedRecords().clear();
+    exporters.get(1).getExportedRecords().clear();
+    final var replayAccepted = new AtomicBoolean(true);
+
+    // Request replay from a position which is not present in the log; seek should fail.
+    exporters
+        .get(0)
+        .onOpen(controller -> replayAccepted.set(controller.requestReplay(eventPosition2 + 1)))
+        .shouldAutoUpdatePosition(true);
+    exporters.get(1).shouldAutoUpdatePosition(true);
+
+    // when
+    rule.startExporterDirector(exporterDescriptors);
+
+    // then
+    Awaitility.await("replay request is rejected")
+        .atMost(Duration.ofSeconds(10))
+        .untilAsserted(() -> assertThat(replayAccepted.get()).isFalse());
+
+    Awaitility.await("no records are replayed after rejected request")
+        .during(Duration.ofSeconds(1))
+        .atMost(Duration.ofSeconds(10))
+        .untilAsserted(
+            () -> {
+              assertThat(exporters.get(0).getExportedRecords()).isEmpty();
+              assertThat(exporters.get(1).getExportedRecords()).isEmpty();
+            });
   }
 
   private long writeEvent() {
