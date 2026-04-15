@@ -11,21 +11,16 @@ import {searchUserTasks} from 'modules/api/v2/userTasks/searchUserTasks';
 import type {QueryUserTasksRequestBody} from '@camunda/camunda-api-zod-schemas/8.10';
 import {queryKeys} from '../queryKeys';
 
-const useGetUserTaskByElementInstance = (
-  elementInstanceKey: string,
+const useSearchUserTasks = (
+  payload: QueryUserTasksRequestBody,
   options: {enabled: boolean} = {enabled: true},
 ) => {
   return useQuery({
-    queryKey: queryKeys.userTasks.getByElementInstance(elementInstanceKey),
+    queryKey: queryKeys.userTasks.queryUserTasks(payload),
     queryFn: async () => {
-      const payload: QueryUserTasksRequestBody = {
-        filter: {elementInstanceKey},
-        page: {limit: 1},
-      };
-
       const {response, error} = await searchUserTasks(payload);
       if (response !== null) {
-        return response.items?.[0] ?? null;
+        return response;
       }
 
       throw error;
@@ -34,4 +29,4 @@ const useGetUserTaskByElementInstance = (
   });
 };
 
-export {useGetUserTaskByElementInstance};
+export {useSearchUserTasks};

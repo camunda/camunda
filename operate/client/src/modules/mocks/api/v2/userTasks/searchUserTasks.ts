@@ -14,7 +14,7 @@ import {
 
 const mockSearchUserTasks = (contextPath = '') =>
   mockPostRequest<QueryUserTasksResponseBody>(
-    contextPath + endpoints.queryUserTasks.getUrl(),
+    `${contextPath}${endpoints.queryUserTasks.getUrl()}`,
   );
 
 export {mockSearchUserTasks};

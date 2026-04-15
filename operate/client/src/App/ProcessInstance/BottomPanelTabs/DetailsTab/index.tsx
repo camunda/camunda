@@ -19,8 +19,9 @@ import {useProcessInstancesSearch} from 'modules/queries/processInstance/useProc
 import {useJobs} from 'modules/queries/jobs/useJobs';
 import {useDecisionInstancesSearch} from 'modules/queries/decisionInstances/useDecisionInstancesSearch';
 import {isCamundaUserTask} from 'modules/bpmn-js/utils/isCamundaUserTask';
-import {useGetUserTaskByElementInstance} from 'modules/queries/userTasks/useGetUserTaskByElementInstance';
+import {useSearchUserTasks} from 'modules/queries/userTasks/useSearchUserTasks';
 import {getClientConfig} from 'modules/utils/getClientConfig';
+import {mergePathname} from 'modules/request/mergePathname';
 import {getExecutionDuration} from './getExecutionDuration';
 import {EmptyMessageContainer, Container, Callout} from './styled';
 import {StructuredList} from 'modules/components/StructuredList';
@@ -32,8 +33,11 @@ const formatTaskLink = (
   userTaskKey: string,
   state: UserTask['state'],
 ) => {
+  const url = new URL(tasklistUrl);
   const filter = state === 'COMPLETED' ? 'completed' : 'all-open';
-  return `${tasklistUrl}/${userTaskKey}?filter=${filter}`;
+  url.pathname = mergePathname(url.pathname, userTaskKey);
+  url.searchParams.set('filter', filter);
+  return url.toString();
 };
 
 const DetailsTab: React.FC = () => {
@@ -95,8 +99,11 @@ const DetailsTab: React.FC = () => {
   const isCamundaTask =
     resolvedElementType === 'USER_TASK' && isCamundaUserTask(businessObject);
 
-  const {data: userTask} = useGetUserTaskByElementInstance(
-    elementInstanceKey ?? '',
+  const {data: userTaskSearchResult} = useSearchUserTasks(
+    {
+      filter: {elementInstanceKey: elementInstanceKey ?? ''},
+      page: {limit: 1},
+    },
     {
       enabled:
         !!elementInstanceKey &&
@@ -104,6 +111,8 @@ const DetailsTab: React.FC = () => {
         !isNil(clientConfig.tasklistUrl),
     },
   );
+
+  const userTask = userTaskSearchResult?.items?.[0] ?? null;
 
   const calledDecisionInstance = decisionInstanceSearchResult?.items?.find(
     (instance) =>
@@ -125,6 +134,15 @@ const DetailsTab: React.FC = () => {
 
     const {startDate, endDate} = resolvedElementInstance;
 
+    const taskLink =
+      !isNil(clientConfig.tasklistUrl) && isCamundaTask && userTask?.userTaskKey
+        ? formatTaskLink(
+            clientConfig.tasklistUrl,
+            userTask.userTaskKey,
+            userTask.state,
+          )
+        : null;
+
     const baseRows: Array<{
       key: string;
       columns: Array<{cellContent: React.ReactNode; width?: string}>;
@@ -136,9 +154,7 @@ const DetailsTab: React.FC = () => {
           {cellContent: elementInstanceKey ?? '-'},
         ],
       },
-      ...(!isNil(clientConfig.tasklistUrl) &&
-      isCamundaTask &&
-      userTask?.userTaskKey
+      ...(taskLink !== null
         ? [
             {
               key: 'open-tasklist',
@@ -147,11 +163,7 @@ const DetailsTab: React.FC = () => {
                 {
                   cellContent: (
                     <a
-                      href={formatTaskLink(
-                        clientConfig.tasklistUrl,
-                        userTask.userTaskKey,
-                        userTask.state,
-                      )}
+                      href={taskLink}
                       target="_blank"
                       rel="noopener noreferrer"
                       onClick={() => {
