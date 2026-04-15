@@ -39,9 +39,9 @@ const Tag: React.FC<
     size={size}
     {...rest}
     className={cn(className, styles.tag, {
-      [styles.assigned]: $isAssigned,
-      [styles.highlighted]: $isHighlighted,
-      [styles.small]: size == 'sm',
+      [styles.assigned!]: $isAssigned,
+      [styles.highlighted!]: $isHighlighted,
+      [styles.small!]: size == 'sm',
     })}
   >
     {children}

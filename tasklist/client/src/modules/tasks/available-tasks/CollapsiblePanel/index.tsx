@@ -306,7 +306,7 @@ const CollapsiblePanel: React.FC = () => {
                   iconDescription={t('taskFilterPanelCustomFilterActions')}
                   size="md"
                   className={cn(styles.overflowMenu, {
-                    [styles.selected]: filter === filterId,
+                    [styles.selected!]: filter === filterId,
                   })}
                   direction="top"
                   flipped

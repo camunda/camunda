@@ -111,7 +111,10 @@ const Variables: React.FC<Props> = ({
         ).reduce(
           (acc, name) => ({
             ...acc,
-            [getVariableFieldName(name)]: tryParseJSON(values[name]),
+            [getVariableFieldName(name)]:
+              values[name] !== undefined
+                ? tryParseJSON(values[name])
+                : undefined,
           }),
           {},
         );
@@ -162,7 +165,7 @@ const Variables: React.FC<Props> = ({
                 type="button"
                 size="sm"
                 onClick={() => {
-                  form.mutators.push('newVariables');
+                  form.mutators.push?.('newVariables');
                 }}
                 renderIcon={Add}
                 disabled={!canCompleteTask}

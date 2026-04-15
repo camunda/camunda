@@ -166,7 +166,7 @@ describe('<Tasks />', () => {
           getQueryTasksResponseMock(
             [
               {
-                ...FIRST_PAGE[0],
+                ...FIRST_PAGE[0]!,
                 state: 'COMPLETED',
               },
               ...FIRST_PAGE.splice(1),

@@ -109,7 +109,8 @@ describe('<AvailableTasks />', () => {
 
     await waitForElementToBeRemoved(screen.queryByTestId('tasks-skeleton'));
 
-    const [firstTask, secondTask] = tasksMocks.tasks;
+    const firstTask = tasksMocks.tasks[0]!;
+    const secondTask = tasksMocks.tasks[1]!;
 
     const withinFirstTask = within(screen.getByTestId('task-0'));
     const withinSecondTask = within(screen.getByTestId('task-1'));

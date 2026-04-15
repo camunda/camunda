@@ -461,8 +461,9 @@ test.describe('tasks page', () => {
     mockGetUserTaskFormRequest,
     mockClientConfigRequest,
   }) => {
+    const firstTenant = MOCK_TENANTS[0]!;
     const NON_FORM_TASK_WITH_TENANT = unassignedTask({
-      tenantId: MOCK_TENANTS[0].tenantId,
+      tenantId: firstTenant.tenantId,
     });
 
     mockQueryUserTasksRequest([NON_FORM_TASK_WITH_TENANT]);

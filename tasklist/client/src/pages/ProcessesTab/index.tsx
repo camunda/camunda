@@ -47,6 +47,7 @@ import {getProcessDisplayName} from 'modules/processes/getProcessDisplayName';
 import type {ProcessDefinition} from '@camunda/camunda-api-zod-schemas/8.10';
 
 import {
+  DEFAULT_START_FORM_OPTION,
   START_FORM_FILTER_OPTIONS,
   type FilterOption,
 } from 'modules/processes/constants';
@@ -135,7 +136,7 @@ const ProcessesTab: React.FC = observer(() => {
           ({searchParamValue}) =>
             searchParamValue === startFormFilterSearchParam,
         )
-      : undefined) ?? START_FORM_FILTER_OPTIONS[0];
+      : undefined) ?? DEFAULT_START_FORM_OPTION;
   const searchParam = searchParams.get('search');
   const {
     data,
