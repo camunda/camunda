@@ -23,8 +23,8 @@ import io.camunda.service.UsageMetricsServices;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.gateway.rest.config.GatewayRestConfiguration;
 import io.camunda.zeebe.gateway.rest.config.GatewayRestConfiguration.JobMetricsConfiguration;
+import io.camunda.zeebe.gateway.rest.controller.SystemController;
 import io.camunda.zeebe.gateway.rest.controller.adapter.DefaultSystemServiceAdapter;
-import io.camunda.zeebe.gateway.rest.controller.generated.GeneratedSystemController;
 import io.camunda.zeebe.util.collection.Tuple;
 import java.time.Duration;
 import java.time.OffsetDateTime;
@@ -39,7 +39,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.json.JsonCompareMode;
 
 @Import(DefaultSystemServiceAdapter.class)
-@WebMvcTest(GeneratedSystemController.class)
+@WebMvcTest(SystemController.class)
 public class SystemControllerTest extends RestControllerTest {
   static final String USAGE_METRICS_URL = "/v2/system/usage-metrics";
   static final String SYSTEM_CONFIGURATION_URL = "/v2/system/configuration";

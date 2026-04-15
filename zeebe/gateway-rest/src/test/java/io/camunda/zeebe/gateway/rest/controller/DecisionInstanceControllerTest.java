@@ -18,7 +18,6 @@ import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.DecisionInstanceServices;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.gateway.rest.controller.adapter.DefaultDecisionInstanceServiceAdapter;
-import io.camunda.zeebe.gateway.rest.controller.generated.GeneratedDecisionInstanceController;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationCreationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.history.HistoryDeletionRecord;
 import io.camunda.zeebe.protocol.record.value.BatchOperationType;
@@ -33,7 +32,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.json.JsonCompareMode;
 
 @Import(DefaultDecisionInstanceServiceAdapter.class)
-@WebMvcTest(value = GeneratedDecisionInstanceController.class)
+@WebMvcTest(value = DecisionInstanceController.class)
 public class DecisionInstanceControllerTest extends RestControllerTest {
 
   static final String DECISION_INSTANCES_BASE_URL = "/v2/decision-instances";

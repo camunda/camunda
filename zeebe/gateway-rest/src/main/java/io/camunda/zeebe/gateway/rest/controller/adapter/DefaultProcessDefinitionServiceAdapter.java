@@ -9,11 +9,11 @@ package io.camunda.zeebe.gateway.rest.controller.adapter;
 
 import io.camunda.gateway.mapping.http.search.SearchQueryRequestMapper;
 import io.camunda.gateway.mapping.http.search.SearchQueryResponseMapper;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedProcessDefinitionElementStatisticsQueryStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedProcessDefinitionInstanceStatisticsQueryStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedProcessDefinitionInstanceVersionStatisticsQuerySearchQueryRequestStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedProcessDefinitionMessageSubscriptionStatisticsQueryStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedProcessDefinitionSearchQueryRequestStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.ProcessDefinitionElementStatisticsQueryContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.ProcessDefinitionInstanceStatisticsQueryContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.ProcessDefinitionInstanceVersionStatisticsQuerySearchQueryRequestContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.ProcessDefinitionMessageSubscriptionStatisticsQueryContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.ProcessDefinitionSearchQueryRequestContract;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.ProcessDefinitionServices;
 import io.camunda.zeebe.gateway.rest.controller.generated.ProcessDefinitionServiceAdapter;
@@ -36,8 +36,7 @@ public class DefaultProcessDefinitionServiceAdapter implements ProcessDefinition
 
   @Override
   public ResponseEntity<Object> searchProcessDefinitions(
-      final GeneratedProcessDefinitionSearchQueryRequestStrictContract
-          processDefinitionSearchQueryStrict,
+      final ProcessDefinitionSearchQueryRequestContract processDefinitionSearchQueryStrict,
       final CamundaAuthentication authentication) {
     return SearchQueryRequestMapper.toProcessDefinitionQueryStrict(
             processDefinitionSearchQueryStrict)
@@ -105,7 +104,7 @@ public class DefaultProcessDefinitionServiceAdapter implements ProcessDefinition
   @Override
   public ResponseEntity<Object> getProcessDefinitionStatistics(
       final Long processDefinitionKey,
-      final GeneratedProcessDefinitionElementStatisticsQueryStrictContract queryStrict,
+      final ProcessDefinitionElementStatisticsQueryContract queryStrict,
       final CamundaAuthentication authentication) {
     return SearchQueryRequestMapper.toProcessDefinitionStatisticsQuery(
             processDefinitionKey, queryStrict)
@@ -125,7 +124,7 @@ public class DefaultProcessDefinitionServiceAdapter implements ProcessDefinition
 
   @Override
   public ResponseEntity<Object> getProcessDefinitionMessageSubscriptionStatistics(
-      final GeneratedProcessDefinitionMessageSubscriptionStatisticsQueryStrictContract queryStrict,
+      final ProcessDefinitionMessageSubscriptionStatisticsQueryContract queryStrict,
       final CamundaAuthentication authentication) {
     return SearchQueryRequestMapper.toProcessDefinitionMessageSubscriptionStatisticsQuery(
             queryStrict)
@@ -147,7 +146,7 @@ public class DefaultProcessDefinitionServiceAdapter implements ProcessDefinition
 
   @Override
   public ResponseEntity<Object> getProcessDefinitionInstanceStatistics(
-      final GeneratedProcessDefinitionInstanceStatisticsQueryStrictContract queryStrict,
+      final ProcessDefinitionInstanceStatisticsQueryContract queryStrict,
       final CamundaAuthentication authentication) {
     return SearchQueryRequestMapper.toProcessDefinitionInstanceStatisticsQuery(queryStrict)
         .fold(
@@ -167,8 +166,7 @@ public class DefaultProcessDefinitionServiceAdapter implements ProcessDefinition
 
   @Override
   public ResponseEntity<Object> getProcessDefinitionInstanceVersionStatistics(
-      final GeneratedProcessDefinitionInstanceVersionStatisticsQuerySearchQueryRequestStrictContract
-          queryStrict,
+      final ProcessDefinitionInstanceVersionStatisticsQuerySearchQueryRequestContract queryStrict,
       final CamundaAuthentication authentication) {
     return SearchQueryRequestMapper.toProcessDefinitionInstanceVersionStatisticsQuery(queryStrict)
         .fold(

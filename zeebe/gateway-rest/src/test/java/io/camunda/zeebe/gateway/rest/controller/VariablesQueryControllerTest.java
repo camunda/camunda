@@ -26,7 +26,6 @@ import io.camunda.service.VariableServices;
 import io.camunda.service.exception.ErrorMapper;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.gateway.rest.controller.adapter.DefaultVariableServiceAdapter;
-import io.camunda.zeebe.gateway.rest.controller.generated.GeneratedVariableController;
 import java.util.List;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
@@ -46,7 +45,7 @@ import org.springframework.test.json.JsonCompareMode;
 
 @ExtendWith(MockitoExtension.class)
 @Import(DefaultVariableServiceAdapter.class)
-@WebMvcTest(value = GeneratedVariableController.class)
+@WebMvcTest(value = VariableController.class)
 public class VariablesQueryControllerTest extends RestControllerTest {
 
   private static final Long VALID_VARIABLE_KEY = 0L;

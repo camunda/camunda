@@ -16,8 +16,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedGroupCreateRequestStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedGroupUpdateRequestStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GroupCreateRequestContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GroupUpdateRequestContract;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.service.GroupServices;
@@ -30,8 +30,8 @@ import io.camunda.service.exception.ErrorMapper;
 import io.camunda.zeebe.broker.client.api.dto.BrokerRejection;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.gateway.rest.config.ApiFiltersConfiguration;
+import io.camunda.zeebe.gateway.rest.controller.GroupController;
 import io.camunda.zeebe.gateway.rest.controller.adapter.DefaultGroupServiceAdapter;
-import io.camunda.zeebe.gateway.rest.controller.generated.GeneratedGroupController;
 import io.camunda.zeebe.protocol.impl.record.value.group.GroupRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.GroupIntent;
@@ -59,7 +59,7 @@ public class GroupControllerTest {
 
   @Nested
   @Import({DefaultGroupServiceAdapter.class, ApiFiltersConfiguration.class})
-  @WebMvcTest(GeneratedGroupController.class)
+  @WebMvcTest(GroupController.class)
   @TestPropertySource(properties = "camunda.security.authentication.oidc.groupsClaim=g1")
   public class CamundaGroupsDisabledTest extends RestControllerTest {
 
@@ -91,7 +91,7 @@ public class GroupControllerTest {
           .uri(GROUP_BASE_URL)
           .accept(MediaType.APPLICATION_JSON)
           .contentType(MediaType.APPLICATION_JSON)
-          .bodyValue(new GeneratedGroupCreateRequestStrictContract(groupId, groupName, description))
+          .bodyValue(new GroupCreateRequestContract(groupId, groupName, description))
           .exchange()
           .expectStatus()
           .isForbidden()
@@ -113,7 +113,7 @@ public class GroupControllerTest {
           .uri(uri)
           .accept(MediaType.APPLICATION_JSON)
           .contentType(MediaType.APPLICATION_JSON)
-          .bodyValue(new GeneratedGroupUpdateRequestStrictContract(groupName, description))
+          .bodyValue(new GroupUpdateRequestContract(groupName, description))
           .exchange()
           .expectStatus()
           .isForbidden()
@@ -216,7 +216,7 @@ public class GroupControllerTest {
 
   @Nested
   @Import(DefaultGroupServiceAdapter.class)
-  @WebMvcTest(GeneratedGroupController.class)
+  @WebMvcTest(GroupController.class)
   @TestPropertySource(properties = "camunda.security.authentication.oidc.groupsClaim=")
   public class CamundaGroupsEnabledTest extends RestControllerTest {
     @MockitoBean private GroupServices groupServices;
@@ -256,7 +256,7 @@ public class GroupControllerTest {
           .uri(GROUP_BASE_URL)
           .accept(MediaType.APPLICATION_JSON)
           .contentType(MediaType.APPLICATION_JSON)
-          .bodyValue(new GeneratedGroupCreateRequestStrictContract(groupId, groupName, description))
+          .bodyValue(new GroupCreateRequestContract(groupId, groupName, description))
           .exchange()
           .expectStatus()
           .isCreated();
@@ -273,7 +273,7 @@ public class GroupControllerTest {
           .uri(GROUP_BASE_URL)
           .accept(MediaType.APPLICATION_JSON)
           .contentType(MediaType.APPLICATION_JSON)
-          .bodyValue(new GeneratedGroupCreateRequestStrictContract("groupId", "", null))
+          .bodyValue(new GroupCreateRequestContract("groupId", "", null))
           .exchange()
           .expectStatus()
           .isBadRequest()
@@ -440,7 +440,7 @@ public class GroupControllerTest {
           .uri("%s/%s".formatted(GROUP_BASE_URL, groupId))
           .accept(MediaType.APPLICATION_JSON)
           .contentType(MediaType.APPLICATION_JSON)
-          .bodyValue(new GeneratedGroupUpdateRequestStrictContract(groupName, description))
+          .bodyValue(new GroupUpdateRequestContract(groupName, description))
           .exchange()
           .expectStatus()
           .isOk()
@@ -483,7 +483,7 @@ public class GroupControllerTest {
           .uri("%s/%s".formatted(GROUP_BASE_URL, groupId))
           .accept(MediaType.APPLICATION_JSON)
           .contentType(MediaType.APPLICATION_JSON)
-          .bodyValue(new GeneratedGroupUpdateRequestStrictContract(groupName, description))
+          .bodyValue(new GroupUpdateRequestContract(groupName, description))
           .exchange()
           .expectStatus()
           .isOk()
@@ -517,7 +517,7 @@ public class GroupControllerTest {
           .uri(uri)
           .accept(MediaType.APPLICATION_JSON)
           .contentType(MediaType.APPLICATION_JSON)
-          .bodyValue(new GeneratedGroupUpdateRequestStrictContract(emptyGroupName, "description"))
+          .bodyValue(new GroupUpdateRequestContract(emptyGroupName, "description"))
           .exchange()
           .expectStatus()
           .isBadRequest()
@@ -555,7 +555,7 @@ public class GroupControllerTest {
           .uri(uri)
           .accept(MediaType.APPLICATION_JSON)
           .contentType(MediaType.APPLICATION_JSON)
-          .bodyValue(new GeneratedGroupUpdateRequestStrictContract(name, description))
+          .bodyValue(new GroupUpdateRequestContract(name, description))
           .exchange()
           .expectStatus()
           .isOk()
@@ -594,7 +594,7 @@ public class GroupControllerTest {
           .uri(path)
           .accept(MediaType.APPLICATION_JSON)
           .contentType(MediaType.APPLICATION_JSON)
-          .bodyValue(new GeneratedGroupUpdateRequestStrictContract(groupName, description))
+          .bodyValue(new GroupUpdateRequestContract(groupName, description))
           .exchange()
           .expectStatus()
           .isNotFound();
@@ -614,7 +614,7 @@ public class GroupControllerTest {
           .uri(path)
           .accept(MediaType.APPLICATION_JSON)
           .contentType(MediaType.APPLICATION_JSON)
-          .bodyValue(new GeneratedGroupUpdateRequestStrictContract("updatedName", "description"))
+          .bodyValue(new GroupUpdateRequestContract("updatedName", "description"))
           .exchange()
           .expectStatus()
           .isBadRequest()

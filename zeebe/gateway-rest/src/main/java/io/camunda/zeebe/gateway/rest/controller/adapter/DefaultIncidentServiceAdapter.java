@@ -11,10 +11,10 @@ import static io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper.mapErrorToRes
 
 import io.camunda.gateway.mapping.http.search.SearchQueryRequestMapper;
 import io.camunda.gateway.mapping.http.search.SearchQueryResponseMapper;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedIncidentProcessInstanceStatisticsByDefinitionQuerySearchQueryRequestStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedIncidentProcessInstanceStatisticsByErrorQueryStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedIncidentResolutionRequestStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedIncidentSearchQueryRequestStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.IncidentProcessInstanceStatisticsByDefinitionQuerySearchQueryRequestContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.IncidentProcessInstanceStatisticsByErrorQueryContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.IncidentResolutionRequestContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.IncidentSearchQueryRequestContract;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.IncidentServices;
 import io.camunda.zeebe.gateway.rest.controller.generated.IncidentServiceAdapter;
@@ -34,7 +34,7 @@ public class DefaultIncidentServiceAdapter implements IncidentServiceAdapter {
 
   @Override
   public ResponseEntity<Object> searchIncidents(
-      final GeneratedIncidentSearchQueryRequestStrictContract incidentSearchQueryStrict,
+      final IncidentSearchQueryRequestContract incidentSearchQueryStrict,
       final CamundaAuthentication authentication) {
     return SearchQueryRequestMapper.toIncidentQueryStrict(incidentSearchQueryStrict)
         .fold(
@@ -64,7 +64,7 @@ public class DefaultIncidentServiceAdapter implements IncidentServiceAdapter {
   @Override
   public ResponseEntity<Void> resolveIncident(
       final Long incidentKey,
-      final GeneratedIncidentResolutionRequestStrictContract incidentResolutionRequestStrict,
+      final IncidentResolutionRequestContract incidentResolutionRequestStrict,
       final CamundaAuthentication authentication) {
     return RequestExecutor.executeSync(
         () ->
@@ -78,7 +78,7 @@ public class DefaultIncidentServiceAdapter implements IncidentServiceAdapter {
 
   @Override
   public ResponseEntity<Object> getProcessInstanceStatisticsByError(
-      final GeneratedIncidentProcessInstanceStatisticsByErrorQueryStrictContract
+      final IncidentProcessInstanceStatisticsByErrorQueryContract
           incidentProcessInstanceStatisticsByErrorQueryStrict,
       final CamundaAuthentication authentication) {
     return SearchQueryRequestMapper.toIncidentProcessInstanceStatisticsByErrorQuery(
@@ -101,8 +101,7 @@ public class DefaultIncidentServiceAdapter implements IncidentServiceAdapter {
 
   @Override
   public ResponseEntity<Object> getProcessInstanceStatisticsByDefinition(
-      final
-      GeneratedIncidentProcessInstanceStatisticsByDefinitionQuerySearchQueryRequestStrictContract
+      final IncidentProcessInstanceStatisticsByDefinitionQuerySearchQueryRequestContract
           incidentProcessInstanceStatisticsByDefinitionQueryStrict,
       final CamundaAuthentication authentication) {
     return SearchQueryRequestMapper.toIncidentProcessInstanceStatisticsByDefinitionQuery(

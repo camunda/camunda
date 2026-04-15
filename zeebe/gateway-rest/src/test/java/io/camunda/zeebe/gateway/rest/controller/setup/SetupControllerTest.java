@@ -14,7 +14,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedUserRequestStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.UserRequestContract;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.security.configuration.SecurityConfiguration;
@@ -24,8 +24,8 @@ import io.camunda.service.UserServices;
 import io.camunda.service.UserServices.UserDTO;
 import io.camunda.zeebe.gateway.rest.CamundaProblemDetail;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
+import io.camunda.zeebe.gateway.rest.controller.SetupController;
 import io.camunda.zeebe.gateway.rest.controller.adapter.DefaultSetupServiceAdapter;
-import io.camunda.zeebe.gateway.rest.controller.generated.GeneratedSetupController;
 import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
 import io.camunda.zeebe.protocol.record.value.DefaultRole;
 import io.camunda.zeebe.protocol.record.value.EntityType;
@@ -47,7 +47,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.json.JsonCompareMode;
 
 @Import(DefaultSetupServiceAdapter.class)
-@WebMvcTest(GeneratedSetupController.class)
+@WebMvcTest(SetupController.class)
 class SetupControllerTest extends RestControllerTest {
   private static final String BASE_PATH = "/v2/setup";
   private static final String USER_PATH = BASE_PATH + "/user";
@@ -195,7 +195,7 @@ class SetupControllerTest extends RestControllerTest {
     // given
     // when then
     assertRequestRejectedExceptionally(
-        new GeneratedUserRequestStrictContract("zabraboof", "", "Foo Bar", "bar@baz.com"),
+        new UserRequestContract("zabraboof", "", "Foo Bar", "bar@baz.com"),
         """
             {
               "type": "about:blank",
@@ -231,7 +231,7 @@ class SetupControllerTest extends RestControllerTest {
     // given
     // when then
     assertRequestRejectedExceptionally(
-        new GeneratedUserRequestStrictContract("", "foo", "Foo Bar", "bar@baz.com"),
+        new UserRequestContract("", "foo", "Foo Bar", "bar@baz.com"),
         """
             {
               "type": "about:blank",
@@ -285,7 +285,7 @@ class SetupControllerTest extends RestControllerTest {
     final var email = "invalid@email.reject";
     // when then
     assertRequestRejectedExceptionally(
-        new GeneratedUserRequestStrictContract("zabraboof", "foo", "Foo Bar", email),
+        new UserRequestContract("zabraboof", "foo", "Foo Bar", email),
         """
             {
               "type": "about:blank",
@@ -304,7 +304,7 @@ class SetupControllerTest extends RestControllerTest {
     final var username = "x".repeat(257);
     // when then
     assertRequestRejectedExceptionally(
-        new GeneratedUserRequestStrictContract("zabraboof", username, "Foo Bar", "bar@baz.com"),
+        new UserRequestContract("zabraboof", username, "Foo Bar", "bar@baz.com"),
         """
             {
               "type": "about:blank",
@@ -328,7 +328,7 @@ class SetupControllerTest extends RestControllerTest {
     // given
     // when then
     assertRequestRejectedExceptionally(
-        new GeneratedUserRequestStrictContract("zabraboof", username, "Foo Bar", "bar@baz.com"),
+        new UserRequestContract("zabraboof", username, "Foo Bar", "bar@baz.com"),
         """
             {
               "type": "about:blank",
@@ -355,8 +355,8 @@ class SetupControllerTest extends RestControllerTest {
     return new UserDTO(username, "Foo Bar", "bar@example.com", "zabraboof");
   }
 
-  private GeneratedUserRequestStrictContract validUserWithPasswordRequest() {
-    return new GeneratedUserRequestStrictContract("zabraboof", "foo", "Foo Bar", "bar@baz.com");
+  private UserRequestContract validUserWithPasswordRequest() {
+    return new UserRequestContract("zabraboof", "foo", "Foo Bar", "bar@baz.com");
   }
 
   private void assertRequestRejectedExceptionally(

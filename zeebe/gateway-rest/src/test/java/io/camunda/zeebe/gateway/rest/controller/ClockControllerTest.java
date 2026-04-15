@@ -13,13 +13,12 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedClockPinRequestStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.ClockPinRequestContract;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.ClockServices;
 import io.camunda.zeebe.gateway.rest.CamundaProblemDetail;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.gateway.rest.controller.adapter.DefaultClockServiceAdapter;
-import io.camunda.zeebe.gateway.rest.controller.generated.GeneratedClockController;
 import io.camunda.zeebe.protocol.impl.record.value.clock.ClockRecord;
 import java.net.URI;
 import java.util.concurrent.CompletableFuture;
@@ -37,7 +36,7 @@ import org.springframework.http.ProblemDetail;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 @Import(DefaultClockServiceAdapter.class)
-@WebMvcTest(GeneratedClockController.class)
+@WebMvcTest(ClockController.class)
 public class ClockControllerTest extends RestControllerTest {
 
   private static final String CLOCK_URL = "/v2/clock";
@@ -58,7 +57,7 @@ public class ClockControllerTest extends RestControllerTest {
   void pinClockShouldReturnNoContent() {
     // given
     final long timestamp = 2693098555055L;
-    final var request = new GeneratedClockPinRequestStrictContract(timestamp);
+    final var request = new ClockPinRequestContract(timestamp);
     final var clockRecord = new ClockRecord().pinAt(timestamp);
 
     when(clockServices.pinClock(eq(timestamp), any()))

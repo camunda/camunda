@@ -33,7 +33,6 @@ import io.camunda.service.UserTaskServices;
 import io.camunda.service.exception.ErrorMapper;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.gateway.rest.controller.adapter.DefaultUserTaskServiceAdapter;
-import io.camunda.zeebe.gateway.rest.controller.generated.GeneratedUserTaskController;
 import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
@@ -55,7 +54,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.json.JsonCompareMode;
 
 @Import(DefaultUserTaskServiceAdapter.class)
-@WebMvcTest(value = GeneratedUserTaskController.class)
+@WebMvcTest(value = UserTaskController.class)
 public class UserTaskQueryControllerTest extends RestControllerTest {
 
   private static final Long VALID_USER_TASK_KEY = 0L;

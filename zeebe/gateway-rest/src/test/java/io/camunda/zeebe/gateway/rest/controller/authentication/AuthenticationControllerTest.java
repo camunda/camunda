@@ -16,8 +16,8 @@ import io.camunda.authentication.service.CamundaUserService;
 import io.camunda.search.entities.TenantEntity;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
+import io.camunda.zeebe.gateway.rest.controller.AuthenticationController;
 import io.camunda.zeebe.gateway.rest.controller.adapter.DefaultAuthenticationServiceAdapter;
-import io.camunda.zeebe.gateway.rest.controller.generated.GeneratedAuthenticationController;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
@@ -29,7 +29,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.json.JsonCompareMode;
 
 @Import(DefaultAuthenticationServiceAdapter.class)
-@WebMvcTest(GeneratedAuthenticationController.class)
+@WebMvcTest(AuthenticationController.class)
 @ActiveProfiles("consolidated-auth")
 public class AuthenticationControllerTest extends RestControllerTest {
 

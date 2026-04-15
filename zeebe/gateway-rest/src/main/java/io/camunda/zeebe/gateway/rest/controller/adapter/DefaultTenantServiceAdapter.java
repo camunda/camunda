@@ -11,14 +11,14 @@ import io.camunda.gateway.mapping.http.ResponseMapper;
 import io.camunda.gateway.mapping.http.mapper.TenantMapper;
 import io.camunda.gateway.mapping.http.search.SearchQueryRequestMapper;
 import io.camunda.gateway.mapping.http.search.SearchQueryResponseMapper;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedMappingRuleSearchQueryRequestStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedRoleSearchQueryRequestStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedTenantClientSearchQueryRequestStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedTenantCreateRequestStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedTenantGroupSearchQueryRequestStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedTenantSearchQueryRequestStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedTenantUpdateRequestStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedTenantUserSearchQueryRequestStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.MappingRuleSearchQueryRequestContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.RoleSearchQueryRequestContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.TenantClientSearchQueryRequestContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.TenantCreateRequestContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.TenantGroupSearchQueryRequestContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.TenantSearchQueryRequestContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.TenantUpdateRequestContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.TenantUserSearchQueryRequestContract;
 import io.camunda.gateway.mapping.http.validator.TenantRequestValidator;
 import io.camunda.search.query.MappingRuleQuery;
 import io.camunda.search.query.RoleQuery;
@@ -59,7 +59,7 @@ public class DefaultTenantServiceAdapter implements TenantServiceAdapter {
 
   @Override
   public ResponseEntity<Object> createTenant(
-      final GeneratedTenantCreateRequestStrictContract tenantCreateRequestStrict,
+      final TenantCreateRequestContract tenantCreateRequestStrict,
       final CamundaAuthentication authentication) {
     return tenantMapper
         .toTenantCreateDto(tenantCreateRequestStrict)
@@ -74,7 +74,7 @@ public class DefaultTenantServiceAdapter implements TenantServiceAdapter {
 
   @Override
   public ResponseEntity<Object> searchTenants(
-      final GeneratedTenantSearchQueryRequestStrictContract tenantSearchQueryRequestStrict,
+      final TenantSearchQueryRequestContract tenantSearchQueryRequestStrict,
       final CamundaAuthentication authentication) {
     return SearchQueryRequestMapper.toTenantQueryStrict(tenantSearchQueryRequestStrict)
         .fold(
@@ -105,7 +105,7 @@ public class DefaultTenantServiceAdapter implements TenantServiceAdapter {
   @Override
   public ResponseEntity<Object> updateTenant(
       final String tenantId,
-      final GeneratedTenantUpdateRequestStrictContract tenantUpdateRequestStrict,
+      final TenantUpdateRequestContract tenantUpdateRequestStrict,
       final CamundaAuthentication authentication) {
     return tenantMapper
         .toTenantUpdateDto(tenantId, tenantUpdateRequestStrict)
@@ -151,7 +151,7 @@ public class DefaultTenantServiceAdapter implements TenantServiceAdapter {
   @Override
   public ResponseEntity<Object> searchUsersForTenant(
       final String tenantId,
-      final GeneratedTenantUserSearchQueryRequestStrictContract tenantUserSearchQueryRequestStrict,
+      final TenantUserSearchQueryRequestContract tenantUserSearchQueryRequestStrict,
       final CamundaAuthentication authentication) {
     return SearchQueryRequestMapper.toTenantUserQueryStrict(tenantUserSearchQueryRequestStrict)
         .fold(
@@ -196,8 +196,7 @@ public class DefaultTenantServiceAdapter implements TenantServiceAdapter {
   @Override
   public ResponseEntity<Object> searchClientsForTenant(
       final String tenantId,
-      final GeneratedTenantClientSearchQueryRequestStrictContract
-          tenantClientSearchQueryRequestStrict,
+      final TenantClientSearchQueryRequestContract tenantClientSearchQueryRequestStrict,
       final CamundaAuthentication authentication) {
     return SearchQueryRequestMapper.toTenantClientQueryStrict(tenantClientSearchQueryRequestStrict)
         .fold(
@@ -242,8 +241,7 @@ public class DefaultTenantServiceAdapter implements TenantServiceAdapter {
   @Override
   public ResponseEntity<Object> searchGroupIdsForTenant(
       final String tenantId,
-      final GeneratedTenantGroupSearchQueryRequestStrictContract
-          tenantGroupSearchQueryRequestStrict,
+      final TenantGroupSearchQueryRequestContract tenantGroupSearchQueryRequestStrict,
       final CamundaAuthentication authentication) {
     return SearchQueryRequestMapper.toTenantGroupQueryStrict(tenantGroupSearchQueryRequestStrict)
         .fold(
@@ -264,7 +262,7 @@ public class DefaultTenantServiceAdapter implements TenantServiceAdapter {
   @Override
   public ResponseEntity<Object> searchRolesForTenant(
       final String tenantId,
-      final GeneratedRoleSearchQueryRequestStrictContract roleSearchQueryRequestStrict,
+      final RoleSearchQueryRequestContract roleSearchQueryRequestStrict,
       final CamundaAuthentication authentication) {
     return SearchQueryRequestMapper.toRoleQueryStrict(roleSearchQueryRequestStrict)
         .fold(
@@ -336,8 +334,7 @@ public class DefaultTenantServiceAdapter implements TenantServiceAdapter {
   @Override
   public ResponseEntity<Object> searchMappingRulesForTenant(
       final String tenantId,
-      final GeneratedMappingRuleSearchQueryRequestStrictContract
-          mappingRuleSearchQueryRequestStrict,
+      final MappingRuleSearchQueryRequestContract mappingRuleSearchQueryRequestStrict,
       final CamundaAuthentication authentication) {
     return SearchQueryRequestMapper.toMappingRuleQueryStrict(mappingRuleSearchQueryRequestStrict)
         .fold(

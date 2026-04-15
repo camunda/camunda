@@ -24,7 +24,6 @@ import io.camunda.zeebe.broker.client.api.dto.BrokerError;
 import io.camunda.zeebe.broker.client.api.dto.BrokerRejection;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.gateway.rest.controller.adapter.DefaultResourceServiceAdapter;
-import io.camunda.zeebe.gateway.rest.controller.generated.GeneratedResourceController;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.ResourceRecord;
 import io.camunda.zeebe.protocol.impl.record.value.resource.ResourceDeletionRecord;
@@ -52,7 +51,7 @@ import org.springframework.test.json.JsonCompareMode;
 
 @ExtendWith(MockitoExtension.class)
 @Import(DefaultResourceServiceAdapter.class)
-@WebMvcTest(GeneratedResourceController.class)
+@WebMvcTest(ResourceController.class)
 public class ResourceControllerTest extends RestControllerTest {
 
   static final String RESOURCES_BASE_URL = "/v2";

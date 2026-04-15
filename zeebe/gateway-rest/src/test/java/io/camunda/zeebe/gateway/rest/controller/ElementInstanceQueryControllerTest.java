@@ -12,9 +12,9 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedElementInstanceStateEnum;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedIncidentErrorTypeEnum;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedIncidentStateEnum;
+import io.camunda.gateway.mapping.http.search.contract.generated.ElementInstanceStateEnum;
+import io.camunda.gateway.mapping.http.search.contract.generated.IncidentErrorTypeEnum;
+import io.camunda.gateway.mapping.http.search.contract.generated.IncidentStateEnum;
 import io.camunda.search.entities.FlowNodeInstanceEntity;
 import io.camunda.search.entities.FlowNodeInstanceEntity.FlowNodeState;
 import io.camunda.search.entities.FlowNodeInstanceEntity.FlowNodeType;
@@ -35,7 +35,6 @@ import io.camunda.service.ElementInstanceServices;
 import io.camunda.service.exception.ErrorMapper;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.gateway.rest.controller.adapter.DefaultElementInstanceServiceAdapter;
-import io.camunda.zeebe.gateway.rest.controller.generated.GeneratedElementInstanceController;
 import java.nio.charset.StandardCharsets;
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -60,7 +59,7 @@ import org.springframework.test.json.JsonCompareMode;
 
 @ExtendWith(MockitoExtension.class)
 @Import(DefaultElementInstanceServiceAdapter.class)
-@WebMvcTest(value = GeneratedElementInstanceController.class)
+@WebMvcTest(value = ElementInstanceController.class)
 public class ElementInstanceQueryControllerTest extends RestControllerTest {
 
   static final String EXPECTED_SEARCH_RESPONSE =
@@ -519,12 +518,12 @@ public class ElementInstanceQueryControllerTest extends RestControllerTest {
         "state",
         ops -> new FlowNodeInstanceFilter.Builder().stateOperations(ops).build(),
         List.of(
-            List.of(Operation.eq(String.valueOf(GeneratedElementInstanceStateEnum.ACTIVE))),
-            List.of(Operation.neq(String.valueOf(GeneratedElementInstanceStateEnum.COMPLETED))),
+            List.of(Operation.eq(String.valueOf(ElementInstanceStateEnum.ACTIVE))),
+            List.of(Operation.neq(String.valueOf(ElementInstanceStateEnum.COMPLETED))),
             List.of(
                 Operation.in(
-                    String.valueOf(GeneratedElementInstanceStateEnum.COMPLETED),
-                    String.valueOf(GeneratedElementInstanceStateEnum.ACTIVE)),
+                    String.valueOf(ElementInstanceStateEnum.COMPLETED),
+                    String.valueOf(ElementInstanceStateEnum.ACTIVE)),
                 Operation.like("act"))),
         true);
     stringOperationTestCases(
@@ -637,18 +636,17 @@ public class ElementInstanceQueryControllerTest extends RestControllerTest {
         "errorType",
         ops -> new IncidentFilter.Builder().errorTypeOperations(ops).build(),
         List.of(
-            List.of(
-                Operation.eq(String.valueOf(GeneratedIncidentErrorTypeEnum.CALLED_DECISION_ERROR))),
-            List.of(Operation.neq(String.valueOf(GeneratedIncidentErrorTypeEnum.FORM_NOT_FOUND))),
+            List.of(Operation.eq(String.valueOf(IncidentErrorTypeEnum.CALLED_DECISION_ERROR))),
+            List.of(Operation.neq(String.valueOf(IncidentErrorTypeEnum.FORM_NOT_FOUND))),
             List.of(
                 Operation.in(
-                    String.valueOf(GeneratedIncidentErrorTypeEnum.CALLED_DECISION_ERROR),
-                    String.valueOf(GeneratedIncidentErrorTypeEnum.FORM_NOT_FOUND)),
+                    String.valueOf(IncidentErrorTypeEnum.CALLED_DECISION_ERROR),
+                    String.valueOf(IncidentErrorTypeEnum.FORM_NOT_FOUND)),
                 Operation.like("ERROR")),
             List.of(
                 Operation.notIn(
-                    String.valueOf(GeneratedIncidentErrorTypeEnum.CALLED_DECISION_ERROR),
-                    String.valueOf(GeneratedIncidentErrorTypeEnum.FORM_NOT_FOUND)),
+                    String.valueOf(IncidentErrorTypeEnum.CALLED_DECISION_ERROR),
+                    String.valueOf(IncidentErrorTypeEnum.FORM_NOT_FOUND)),
                 Operation.like("ERROR"))),
         true);
 
@@ -672,17 +670,17 @@ public class ElementInstanceQueryControllerTest extends RestControllerTest {
         "state",
         ops -> new IncidentFilter.Builder().stateOperations(ops).build(),
         List.of(
-            List.of(Operation.eq(String.valueOf(GeneratedIncidentStateEnum.PENDING))),
-            List.of(Operation.neq(String.valueOf(GeneratedIncidentStateEnum.RESOLVED))),
+            List.of(Operation.eq(String.valueOf(IncidentStateEnum.PENDING))),
+            List.of(Operation.neq(String.valueOf(IncidentStateEnum.RESOLVED))),
             List.of(
                 Operation.in(
-                    String.valueOf(GeneratedIncidentStateEnum.PENDING),
-                    String.valueOf(GeneratedIncidentStateEnum.RESOLVED)),
+                    String.valueOf(IncidentStateEnum.PENDING),
+                    String.valueOf(IncidentStateEnum.RESOLVED)),
                 Operation.like("com")),
             List.of(
                 Operation.notIn(
-                    String.valueOf(GeneratedIncidentStateEnum.PENDING),
-                    String.valueOf(GeneratedIncidentStateEnum.RESOLVED)),
+                    String.valueOf(IncidentStateEnum.PENDING),
+                    String.valueOf(IncidentStateEnum.RESOLVED)),
                 Operation.like("com"))),
         true);
 

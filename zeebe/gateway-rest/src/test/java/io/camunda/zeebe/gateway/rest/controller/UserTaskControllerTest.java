@@ -20,7 +20,6 @@ import io.camunda.service.exception.ErrorMapper;
 import io.camunda.zeebe.broker.client.api.dto.BrokerRejection;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.gateway.rest.controller.adapter.DefaultUserTaskServiceAdapter;
-import io.camunda.zeebe.gateway.rest.controller.generated.GeneratedUserTaskController;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.RejectionType;
@@ -45,7 +44,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.json.JsonCompareMode;
 
 @Import(DefaultUserTaskServiceAdapter.class)
-@WebMvcTest(GeneratedUserTaskController.class)
+@WebMvcTest(UserTaskController.class)
 public class UserTaskControllerTest extends RestControllerTest {
 
   static final CompletableFuture<UserTaskRecord> BROKER_RESPONSE =

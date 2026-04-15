@@ -15,8 +15,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedUserRequestStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedUserUpdateRequestStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.UserRequestContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.UserUpdateRequestContract;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.service.UserServices;
@@ -26,8 +26,8 @@ import io.camunda.zeebe.broker.client.api.dto.BrokerRejection;
 import io.camunda.zeebe.gateway.rest.CamundaProblemDetail;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.gateway.rest.config.ApiFiltersConfiguration;
+import io.camunda.zeebe.gateway.rest.controller.UserController;
 import io.camunda.zeebe.gateway.rest.controller.adapter.DefaultUserServiceAdapter;
-import io.camunda.zeebe.gateway.rest.controller.generated.GeneratedUserController;
 import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.UserIntent;
@@ -55,7 +55,7 @@ public class UserControllerTest {
 
   @Nested
   @Import(DefaultUserServiceAdapter.class)
-  @WebMvcTest(GeneratedUserController.class)
+  @WebMvcTest(UserController.class)
   @TestPropertySource(properties = "camunda.security.authentication.method=basic")
   public class CamundaUsersEnabledTest extends RestControllerTest {
 
@@ -180,7 +180,7 @@ public class UserControllerTest {
       // given
       // when then
       assertRequestRejectedExceptionally(
-          new GeneratedUserRequestStrictContract("zabraboof", "", "Foo Bar", "bar@baz.com"),
+          new UserRequestContract("zabraboof", "", "Foo Bar", "bar@baz.com"),
           """
             {
               "type": "about:blank",
@@ -216,7 +216,7 @@ public class UserControllerTest {
       // given
       // when then
       assertRequestRejectedExceptionally(
-          new GeneratedUserRequestStrictContract("", "foo", "Foo Bar", "bar@baz.com"),
+          new UserRequestContract("", "foo", "Foo Bar", "bar@baz.com"),
           """
             {
               "type": "about:blank",
@@ -270,7 +270,7 @@ public class UserControllerTest {
       final var email = "invalid@email.reject";
       // when then
       assertRequestRejectedExceptionally(
-          new GeneratedUserRequestStrictContract("zabraboof", "foo", "Foo Bar", email),
+          new UserRequestContract("zabraboof", "foo", "Foo Bar", email),
           """
             {
               "type": "about:blank",
@@ -289,7 +289,7 @@ public class UserControllerTest {
       final var username = "x".repeat(257);
       // when then
       assertRequestRejectedExceptionally(
-          new GeneratedUserRequestStrictContract("zabraboof", username, "Foo Bar", "bar@baz.com"),
+          new UserRequestContract("zabraboof", username, "Foo Bar", "bar@baz.com"),
           """
             {
               "type": "about:blank",
@@ -313,7 +313,7 @@ public class UserControllerTest {
       // given
       // when then
       assertRequestRejectedExceptionally(
-          new GeneratedUserRequestStrictContract("zabraboof", username, "Foo Bar", "bar@baz.com"),
+          new UserRequestContract("zabraboof", username, "Foo Bar", "bar@baz.com"),
           """
             {
               "type": "about:blank",
@@ -368,9 +368,7 @@ public class UserControllerTest {
           .uri("%s/%s".formatted(USER_BASE_URL, user.username()))
           .accept(MediaType.APPLICATION_JSON)
           .contentType(MediaType.APPLICATION_JSON)
-          .bodyValue(
-              new GeneratedUserUpdateRequestStrictContract(
-                  user.password(), user.name(), user.email()))
+          .bodyValue(new UserUpdateRequestContract(user.password(), user.name(), user.email()))
           .exchange()
           .expectStatus()
           .isOk();
@@ -382,8 +380,8 @@ public class UserControllerTest {
       return new UserDTO(username, "Foo Bar", "bar@baz.com", "zabraboof");
     }
 
-    private GeneratedUserRequestStrictContract validUserWithPasswordRequest() {
-      return new GeneratedUserRequestStrictContract("zabraboof", "foo", "Foo Bar", "bar@baz.com");
+    private UserRequestContract validUserWithPasswordRequest() {
+      return new UserRequestContract("zabraboof", "foo", "Foo Bar", "bar@baz.com");
     }
 
     private void assertRequestRejectedExceptionally(
@@ -404,7 +402,7 @@ public class UserControllerTest {
 
   @Nested
   @Import({DefaultUserServiceAdapter.class, ApiFiltersConfiguration.class})
-  @WebMvcTest(GeneratedUserController.class)
+  @WebMvcTest(UserController.class)
   @TestPropertySource(properties = "camunda.security.authentication.method=oidc")
   public class CamundaUsersDisabledTest extends RestControllerTest {
 
@@ -454,9 +452,7 @@ public class UserControllerTest {
           .uri(uri)
           .accept(MediaType.APPLICATION_JSON)
           .contentType(MediaType.APPLICATION_JSON)
-          .bodyValue(
-              new GeneratedUserUpdateRequestStrictContract(
-                  user.password(), user.name(), user.email()))
+          .bodyValue(new UserUpdateRequestContract(user.password(), user.name(), user.email()))
           .exchange()
           .expectStatus()
           .isForbidden()

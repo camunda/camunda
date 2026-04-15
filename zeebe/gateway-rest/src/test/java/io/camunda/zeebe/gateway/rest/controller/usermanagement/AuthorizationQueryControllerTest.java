@@ -14,8 +14,8 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedOwnerTypeEnum;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedResourceTypeEnum;
+import io.camunda.gateway.mapping.http.search.contract.generated.OwnerTypeEnum;
+import io.camunda.gateway.mapping.http.search.contract.generated.ResourceTypeEnum;
 import io.camunda.search.entities.AuthorizationEntity;
 import io.camunda.search.exception.CamundaSearchException;
 import io.camunda.search.filter.AuthorizationFilter;
@@ -30,8 +30,8 @@ import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.service.AuthorizationServices;
 import io.camunda.service.exception.ErrorMapper;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
+import io.camunda.zeebe.gateway.rest.controller.AuthorizationController;
 import io.camunda.zeebe.gateway.rest.controller.adapter.DefaultAuthorizationServiceAdapter;
-import io.camunda.zeebe.gateway.rest.controller.generated.GeneratedAuthorizationController;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceMatcher;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import java.util.List;
@@ -49,7 +49,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.json.JsonCompareMode;
 
 @Import({DefaultAuthorizationServiceAdapter.class, SecurityConfiguration.class})
-@WebMvcTest(value = GeneratedAuthorizationController.class)
+@WebMvcTest(value = AuthorizationController.class)
 public class AuthorizationQueryControllerTest extends RestControllerTest {
 
   static final String EXPECTED_SEARCH_RESPONSE =
@@ -101,8 +101,8 @@ public class AuthorizationQueryControllerTest extends RestControllerTest {
                   new AuthorizationEntity(
                       1L,
                       "foo",
-                      GeneratedOwnerTypeEnum.USER.getValue(),
-                      GeneratedResourceTypeEnum.PROCESS_DEFINITION.getValue(),
+                      OwnerTypeEnum.USER.getValue(),
+                      ResourceTypeEnum.PROCESS_DEFINITION.getValue(),
                       AuthorizationResourceMatcher.ID.value(),
                       "2",
                       "",
@@ -110,8 +110,8 @@ public class AuthorizationQueryControllerTest extends RestControllerTest {
                   new AuthorizationEntity(
                       2L,
                       "foo",
-                      GeneratedOwnerTypeEnum.USER.getValue(),
-                      GeneratedResourceTypeEnum.RESOURCE.getValue(),
+                      OwnerTypeEnum.USER.getValue(),
+                      ResourceTypeEnum.RESOURCE.getValue(),
                       AuthorizationResourceMatcher.ANY.value(),
                       "*",
                       null,
@@ -119,8 +119,8 @@ public class AuthorizationQueryControllerTest extends RestControllerTest {
                   new AuthorizationEntity(
                       3L,
                       "foo",
-                      GeneratedOwnerTypeEnum.USER.getValue(),
-                      GeneratedResourceTypeEnum.USER_TASK.getValue(),
+                      OwnerTypeEnum.USER.getValue(),
+                      ResourceTypeEnum.USER_TASK.getValue(),
                       AuthorizationResourceMatcher.PROPERTY.value(),
                       "",
                       "assignee",
@@ -147,8 +147,8 @@ public class AuthorizationQueryControllerTest extends RestControllerTest {
         new AuthorizationEntity(
             100L,
             "ownerId",
-            GeneratedOwnerTypeEnum.USER.getValue(),
-            GeneratedResourceTypeEnum.PROCESS_DEFINITION.getValue(),
+            OwnerTypeEnum.USER.getValue(),
+            ResourceTypeEnum.PROCESS_DEFINITION.getValue(),
             AuthorizationResourceMatcher.ID.value(),
             "resourceId",
             "",

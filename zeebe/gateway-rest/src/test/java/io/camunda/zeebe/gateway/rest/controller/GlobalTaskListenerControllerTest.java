@@ -22,7 +22,6 @@ import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.service.GlobalListenerServices;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.gateway.rest.controller.adapter.DefaultGlobalListenerServiceAdapter;
-import io.camunda.zeebe.gateway.rest.controller.generated.GeneratedGlobalListenerController;
 import io.camunda.zeebe.protocol.impl.record.value.globallistener.GlobalListenerRecord;
 import java.util.List;
 import java.util.regex.Pattern;
@@ -40,7 +39,7 @@ import org.springframework.test.json.JsonCompareMode;
 
 @ExtendWith(MockitoExtension.class)
 @Import(DefaultGlobalListenerServiceAdapter.class)
-@WebMvcTest(value = GeneratedGlobalListenerController.class)
+@WebMvcTest(value = GlobalListenerController.class)
 public class GlobalTaskListenerControllerTest extends RestControllerTest {
 
   static final Pattern ID_PATTERN = Pattern.compile(SecurityConfiguration.DEFAULT_ID_REGEX);

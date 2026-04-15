@@ -13,7 +13,7 @@ import static io.camunda.security.validation.IdentifierValidator.TENANT_ID_MASK;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedTenantCreateRequestStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.TenantCreateRequestContract;
 import io.camunda.gateway.mapping.http.validator.TenantRequestValidator;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.zeebe.protocol.record.value.EntityType;
@@ -37,7 +37,7 @@ public class TenantRequestValidatorTest {
   void shouldPassTenantIdForCreateRequest(final String tenantId) {
     // given
     final var request =
-        GeneratedTenantCreateRequestStrictContract.builder()
+        TenantCreateRequestContract.builder()
             .tenantId(tenantId)
             .name("New tenant")
             .description("A new tenant for testing")
@@ -71,7 +71,7 @@ public class TenantRequestValidatorTest {
     // which means they are caught during Jackson deserialization before the validator runs.
     assertThatThrownBy(
             () ->
-                GeneratedTenantCreateRequestStrictContract.builder()
+                TenantCreateRequestContract.builder()
                     .tenantId(tenantId)
                     .name("New tenant")
                     .description("A new tenant for testing")

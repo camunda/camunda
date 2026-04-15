@@ -16,7 +16,6 @@ import io.camunda.service.ElementInstanceServices;
 import io.camunda.service.ElementInstanceServices.SetVariablesRequest;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.gateway.rest.controller.adapter.DefaultElementInstanceServiceAdapter;
-import io.camunda.zeebe.gateway.rest.controller.generated.GeneratedElementInstanceController;
 import io.camunda.zeebe.protocol.impl.record.value.variable.VariableDocumentRecord;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -35,7 +34,7 @@ import org.springframework.test.json.JsonCompareMode;
 
 @ExtendWith(MockitoExtension.class)
 @Import(DefaultElementInstanceServiceAdapter.class)
-@WebMvcTest(GeneratedElementInstanceController.class)
+@WebMvcTest(ElementInstanceController.class)
 public class ElementInstanceControllerTest extends RestControllerTest {
 
   static final String ELEMENTS_BASE_URL = "/v2/element-instances";

@@ -30,7 +30,6 @@ import io.camunda.service.IncidentServices;
 import io.camunda.service.exception.ErrorMapper;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.gateway.rest.controller.adapter.DefaultIncidentServiceAdapter;
-import io.camunda.zeebe.gateway.rest.controller.generated.GeneratedIncidentController;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.List;
@@ -43,7 +42,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.json.JsonCompareMode;
 
 @Import(DefaultIncidentServiceAdapter.class)
-@WebMvcTest(value = GeneratedIncidentController.class)
+@WebMvcTest(value = IncidentController.class)
 public class IncidentQueryControllerTest extends RestControllerTest {
 
   static final String INCIDENT_URL = "/v2/incidents/";

@@ -481,6 +481,68 @@
     <plugins>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>compile-generator-tool</id>
+            <goals>
+              <goal>compile</goal>
+            </goals>
+            <phase>initialize</phase>
+            <configuration>
+              <compileSourceRoots>
+                <compileSourceRoot>${project.basedir}/src/tools/java</compileSourceRoot>
+              </compileSourceRoots>
+              <outputDirectory>${project.build.directory}/tools-classes</outputDirectory>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>exec-maven-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>run-rest-controllers-generator</id>
+            <goals>
+              <goal>exec</goal>
+            </goals>
+            <phase>generate-sources</phase>
+            <configuration>
+              <executable>${java.home}/bin/java</executable>
+              <arguments>
+                <argument>-cp</argument>
+                <argument>${project.build.directory}/tools-classes</argument>
+                <argument>io.camunda.zeebe.gateway.rest.tools.RestControllersGenerator</argument>
+                <argument>${maven.multiModuleProjectDirectory}</argument>
+              </arguments>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>build-helper-maven-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>add-generated-sources</id>
+            <goals>
+              <goal>add-source</goal>
+            </goals>
+            <phase>generate-sources</phase>
+            <configuration>
+              <sources>
+                <source>${project.build.directory}/generated-sources</source>
+              </sources>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-dependency-plugin</artifactId>
         <configuration>
           <!-- dependencies only used without explicit import reference in compile code -->

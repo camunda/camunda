@@ -19,7 +19,6 @@ import io.camunda.service.ExpressionServices;
 import io.camunda.service.ExpressionServices.ExpressionEvaluationRequest;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.gateway.rest.controller.adapter.DefaultExpressionServiceAdapter;
-import io.camunda.zeebe.gateway.rest.controller.generated.GeneratedExpressionController;
 import io.camunda.zeebe.protocol.impl.record.value.expression.ExpressionRecord;
 import java.util.List;
 import java.util.Map;
@@ -38,7 +37,7 @@ import org.springframework.test.json.JsonCompareMode;
 
 @ExtendWith(MockitoExtension.class)
 @Import(DefaultExpressionServiceAdapter.class)
-@WebMvcTest(value = GeneratedExpressionController.class)
+@WebMvcTest(value = ExpressionController.class)
 public class ExpressionControllerTest extends RestControllerTest {
 
   static final String EXPRESSION_URL = "/v2/expression/evaluation";

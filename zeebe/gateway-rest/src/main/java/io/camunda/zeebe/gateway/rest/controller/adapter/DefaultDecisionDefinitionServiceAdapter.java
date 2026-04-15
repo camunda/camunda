@@ -13,8 +13,8 @@ import io.camunda.gateway.mapping.http.RequestMapper;
 import io.camunda.gateway.mapping.http.ResponseMapper;
 import io.camunda.gateway.mapping.http.search.SearchQueryRequestMapper;
 import io.camunda.gateway.mapping.http.search.SearchQueryResponseMapper;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedDecisionDefinitionSearchQueryRequestStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedDecisionEvaluationInstructionStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.DecisionDefinitionSearchQueryRequestContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.DecisionEvaluationInstructionContract;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.configuration.MultiTenancyConfiguration;
 import io.camunda.service.DecisionDefinitionServices;
@@ -42,7 +42,7 @@ public class DefaultDecisionDefinitionServiceAdapter implements DecisionDefiniti
 
   @Override
   public ResponseEntity<Object> searchDecisionDefinitions(
-      final GeneratedDecisionDefinitionSearchQueryRequestStrictContract queryStrict,
+      final DecisionDefinitionSearchQueryRequestContract queryStrict,
       final CamundaAuthentication authentication) {
     return SearchQueryRequestMapper.toDecisionDefinitionQueryStrict(queryStrict)
         .fold(
@@ -88,7 +88,7 @@ public class DefaultDecisionDefinitionServiceAdapter implements DecisionDefiniti
 
   @Override
   public ResponseEntity<Object> evaluateDecision(
-      final GeneratedDecisionEvaluationInstructionStrictContract request,
+      final DecisionEvaluationInstructionContract request,
       final CamundaAuthentication authentication) {
     return RequestMapper.toEvaluateDecisionRequest(request, multiTenancyCfg.isChecksEnabled())
         .fold(

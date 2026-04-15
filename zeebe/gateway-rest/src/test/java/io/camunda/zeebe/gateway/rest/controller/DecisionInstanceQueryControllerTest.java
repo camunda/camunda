@@ -13,7 +13,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedDecisionInstanceStateEnum;
+import io.camunda.gateway.mapping.http.search.contract.generated.DecisionInstanceStateEnum;
 import io.camunda.search.entities.DecisionInstanceEntity;
 import io.camunda.search.entities.DecisionInstanceEntity.DecisionDefinitionType;
 import io.camunda.search.entities.DecisionInstanceEntity.DecisionInstanceInputEntity;
@@ -32,7 +32,6 @@ import io.camunda.service.exception.ErrorMapper;
 import io.camunda.util.ObjectBuilder;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.gateway.rest.controller.adapter.DefaultDecisionInstanceServiceAdapter;
-import io.camunda.zeebe.gateway.rest.controller.generated.GeneratedDecisionInstanceController;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.function.Function;
@@ -49,7 +48,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.json.JsonCompareMode;
 
 @Import(DefaultDecisionInstanceServiceAdapter.class)
-@WebMvcTest(value = GeneratedDecisionInstanceController.class)
+@WebMvcTest(value = DecisionInstanceController.class)
 public class DecisionInstanceQueryControllerTest extends RestControllerTest {
 
   static final String EXPECTED_SEARCH_RESPONSE =
@@ -489,17 +488,17 @@ public class DecisionInstanceQueryControllerTest extends RestControllerTest {
         "state",
         ops -> new DecisionInstanceFilter.Builder().stateOperations(ops).build(),
         List.of(
-            List.of(Operation.eq(String.valueOf(GeneratedDecisionInstanceStateEnum.EVALUATED))),
-            List.of(Operation.neq(String.valueOf(GeneratedDecisionInstanceStateEnum.EVALUATED))),
+            List.of(Operation.eq(String.valueOf(DecisionInstanceStateEnum.EVALUATED))),
+            List.of(Operation.neq(String.valueOf(DecisionInstanceStateEnum.EVALUATED))),
             List.of(
                 Operation.in(
-                    String.valueOf(GeneratedDecisionInstanceStateEnum.EVALUATED),
-                    String.valueOf(GeneratedDecisionInstanceStateEnum.FAILED)),
+                    String.valueOf(DecisionInstanceStateEnum.EVALUATED),
+                    String.valueOf(DecisionInstanceStateEnum.FAILED)),
                 Operation.like("EVALUATED")),
             List.of(
                 Operation.notIn(
-                    String.valueOf(GeneratedDecisionInstanceStateEnum.EVALUATED),
-                    String.valueOf(GeneratedDecisionInstanceStateEnum.FAILED)),
+                    String.valueOf(DecisionInstanceStateEnum.EVALUATED),
+                    String.valueOf(DecisionInstanceStateEnum.FAILED)),
                 Operation.like("EVALUATED"))),
         true);
 

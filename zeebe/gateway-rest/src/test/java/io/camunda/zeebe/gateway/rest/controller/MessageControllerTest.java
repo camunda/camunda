@@ -21,7 +21,6 @@ import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.gateway.rest.config.GatewayRestConfiguration;
 import io.camunda.zeebe.gateway.rest.controller.adapter.DefaultMessageServiceAdapter;
-import io.camunda.zeebe.gateway.rest.controller.generated.GeneratedMessageController;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageCorrelationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageRecord;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
@@ -43,7 +42,7 @@ import org.springframework.test.web.reactive.server.WebTestClient.ResponseSpec;
 
 @ExtendWith(MockitoExtension.class)
 @Import({DefaultMessageServiceAdapter.class, GatewayRestConfiguration.class})
-@WebMvcTest(GeneratedMessageController.class)
+@WebMvcTest(MessageController.class)
 public class MessageControllerTest extends RestControllerTest {
 
   private static final String MESSAGE_BASE_URL = "/v2/messages";

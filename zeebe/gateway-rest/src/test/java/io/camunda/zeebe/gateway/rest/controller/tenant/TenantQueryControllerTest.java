@@ -35,8 +35,8 @@ import io.camunda.service.TenantServices;
 import io.camunda.service.UserServices;
 import io.camunda.service.exception.ErrorMapper;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
+import io.camunda.zeebe.gateway.rest.controller.TenantController;
 import io.camunda.zeebe.gateway.rest.controller.adapter.DefaultTenantServiceAdapter;
-import io.camunda.zeebe.gateway.rest.controller.generated.GeneratedTenantController;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import java.util.List;
 import java.util.regex.Pattern;
@@ -53,7 +53,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.json.JsonCompareMode;
 
 @Import(DefaultTenantServiceAdapter.class)
-@WebMvcTest(value = GeneratedTenantController.class)
+@WebMvcTest(value = TenantController.class)
 public class TenantQueryControllerTest extends RestControllerTest {
   private static final String TENANT_BASE_URL = "/v2/tenants";
   private static final String SEARCH_TENANT_URL = "%s/search".formatted(TENANT_BASE_URL);

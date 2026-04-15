@@ -16,9 +16,9 @@ import static org.mockito.Mockito.when;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
 
 import io.camunda.gateway.mapping.http.converters.ProcessInstanceStateConverter;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedIncidentErrorTypeEnum;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedIncidentStateEnum;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedProcessInstanceStateEnum;
+import io.camunda.gateway.mapping.http.search.contract.generated.IncidentErrorTypeEnum;
+import io.camunda.gateway.mapping.http.search.contract.generated.IncidentStateEnum;
+import io.camunda.gateway.mapping.http.search.contract.generated.ProcessInstanceStateEnum;
 import io.camunda.search.entities.IncidentEntity;
 import io.camunda.search.entities.IncidentEntity.ErrorType;
 import io.camunda.search.entities.IncidentEntity.IncidentState;
@@ -40,7 +40,6 @@ import io.camunda.service.ProcessInstanceServices;
 import io.camunda.service.exception.ErrorMapper;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.gateway.rest.controller.adapter.DefaultProcessInstanceServiceAdapter;
-import io.camunda.zeebe.gateway.rest.controller.generated.GeneratedProcessInstanceController;
 import java.nio.charset.StandardCharsets;
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -67,7 +66,7 @@ import org.springframework.test.json.JsonCompareMode;
 
 @ExtendWith(MockitoExtension.class)
 @Import(DefaultProcessInstanceServiceAdapter.class)
-@WebMvcTest(value = GeneratedProcessInstanceController.class)
+@WebMvcTest(value = ProcessInstanceController.class)
 public class ProcessInstanceQueryControllerTest extends RestControllerTest {
 
   private static final String PROCESS_INSTANCES_SEARCH_URL = "/v2/process-instances/search";
@@ -812,12 +811,12 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
         "state",
         ops -> new ProcessInstanceFilter.Builder().stateOperations(ops).build(),
         List.of(
-            List.of(Operation.eq(String.valueOf(GeneratedProcessInstanceStateEnum.ACTIVE))),
-            List.of(Operation.neq(String.valueOf(GeneratedProcessInstanceStateEnum.COMPLETED))),
+            List.of(Operation.eq(String.valueOf(ProcessInstanceStateEnum.ACTIVE))),
+            List.of(Operation.neq(String.valueOf(ProcessInstanceStateEnum.COMPLETED))),
             List.of(
                 Operation.in(
-                    String.valueOf(GeneratedProcessInstanceStateEnum.COMPLETED),
-                    String.valueOf(GeneratedProcessInstanceStateEnum.ACTIVE)),
+                    String.valueOf(ProcessInstanceStateEnum.COMPLETED),
+                    String.valueOf(ProcessInstanceStateEnum.ACTIVE)),
                 Operation.like("act"))),
         true);
     stringOperationTestCases(
@@ -875,8 +874,8 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
   }
 
   @ParameterizedTest
-  @EnumSource(GeneratedProcessInstanceStateEnum.class)
-  void shouldSearchProcessInstancesByState(final GeneratedProcessInstanceStateEnum state) {
+  @EnumSource(ProcessInstanceStateEnum.class)
+  void shouldSearchProcessInstancesByState(final ProcessInstanceStateEnum state) {
     // given
     final var request =
         """
@@ -1028,18 +1027,17 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
         "errorType",
         ops -> new IncidentFilter.Builder().errorTypeOperations(ops).build(),
         List.of(
-            List.of(
-                Operation.eq(String.valueOf(GeneratedIncidentErrorTypeEnum.CALLED_DECISION_ERROR))),
-            List.of(Operation.neq(String.valueOf(GeneratedIncidentErrorTypeEnum.FORM_NOT_FOUND))),
+            List.of(Operation.eq(String.valueOf(IncidentErrorTypeEnum.CALLED_DECISION_ERROR))),
+            List.of(Operation.neq(String.valueOf(IncidentErrorTypeEnum.FORM_NOT_FOUND))),
             List.of(
                 Operation.in(
-                    String.valueOf(GeneratedIncidentErrorTypeEnum.CALLED_DECISION_ERROR),
-                    String.valueOf(GeneratedIncidentErrorTypeEnum.FORM_NOT_FOUND)),
+                    String.valueOf(IncidentErrorTypeEnum.CALLED_DECISION_ERROR),
+                    String.valueOf(IncidentErrorTypeEnum.FORM_NOT_FOUND)),
                 Operation.like("ERROR")),
             List.of(
                 Operation.notIn(
-                    String.valueOf(GeneratedIncidentErrorTypeEnum.CALLED_DECISION_ERROR),
-                    String.valueOf(GeneratedIncidentErrorTypeEnum.FORM_NOT_FOUND)),
+                    String.valueOf(IncidentErrorTypeEnum.CALLED_DECISION_ERROR),
+                    String.valueOf(IncidentErrorTypeEnum.FORM_NOT_FOUND)),
                 Operation.like("ERROR"))),
         true);
 
@@ -1063,17 +1061,17 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
         "state",
         ops -> new IncidentFilter.Builder().stateOperations(ops).build(),
         List.of(
-            List.of(Operation.eq(String.valueOf(GeneratedIncidentStateEnum.PENDING))),
-            List.of(Operation.neq(String.valueOf(GeneratedIncidentStateEnum.RESOLVED))),
+            List.of(Operation.eq(String.valueOf(IncidentStateEnum.PENDING))),
+            List.of(Operation.neq(String.valueOf(IncidentStateEnum.RESOLVED))),
             List.of(
                 Operation.in(
-                    String.valueOf(GeneratedIncidentStateEnum.PENDING),
-                    String.valueOf(GeneratedIncidentStateEnum.RESOLVED)),
+                    String.valueOf(IncidentStateEnum.PENDING),
+                    String.valueOf(IncidentStateEnum.RESOLVED)),
                 Operation.like("com")),
             List.of(
                 Operation.notIn(
-                    String.valueOf(GeneratedIncidentStateEnum.PENDING),
-                    String.valueOf(GeneratedIncidentStateEnum.RESOLVED)),
+                    String.valueOf(IncidentStateEnum.PENDING),
+                    String.valueOf(IncidentStateEnum.RESOLVED)),
                 Operation.like("com"))),
         true);
 

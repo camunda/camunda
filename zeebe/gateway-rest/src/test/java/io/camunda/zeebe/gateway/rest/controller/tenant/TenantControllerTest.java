@@ -16,8 +16,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedTenantCreateRequestStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedTenantUpdateRequestStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.TenantCreateRequestContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.TenantUpdateRequestContract;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.security.validation.IdentifierValidator;
@@ -32,8 +32,8 @@ import io.camunda.service.exception.ErrorMapper;
 import io.camunda.zeebe.broker.client.api.dto.BrokerRejection;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.gateway.rest.config.ApiFiltersConfiguration;
+import io.camunda.zeebe.gateway.rest.controller.TenantController;
 import io.camunda.zeebe.gateway.rest.controller.adapter.DefaultTenantServiceAdapter;
-import io.camunda.zeebe.gateway.rest.controller.generated.GeneratedTenantController;
 import io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.TenantIntent;
@@ -74,7 +74,7 @@ public class TenantControllerTest {
 
   @Nested
   @Import(DefaultTenantServiceAdapter.class)
-  @WebMvcTest(GeneratedTenantController.class)
+  @WebMvcTest(TenantController.class)
   public class TenantsApiEnabledTest extends RestControllerTest {
     @MockitoBean private TenantServices tenantServices;
     @MockitoBean private UserServices userServices;
@@ -112,8 +112,7 @@ public class TenantControllerTest {
           .uri(TENANT_BASE_URL)
           .accept(MediaType.APPLICATION_JSON)
           .contentType(MediaType.APPLICATION_JSON)
-          .bodyValue(
-              new GeneratedTenantCreateRequestStrictContract(id, tenantName, tenantDescription))
+          .bodyValue(new TenantCreateRequestContract(id, tenantName, tenantDescription))
           .exchange()
           .expectStatus()
           .isCreated();
@@ -144,9 +143,7 @@ public class TenantControllerTest {
           .uri(TENANT_BASE_URL)
           .accept(MediaType.APPLICATION_JSON)
           .contentType(MediaType.APPLICATION_JSON)
-          .bodyValue(
-              new GeneratedTenantCreateRequestStrictContract(
-                  tenantId, tenantName, tenantDescription))
+          .bodyValue(new TenantCreateRequestContract(tenantId, tenantName, tenantDescription))
           .exchange()
           .expectStatus()
           .isCreated()
@@ -292,7 +289,7 @@ public class TenantControllerTest {
           .uri("%s/%s".formatted(TENANT_BASE_URL, tenantId))
           .accept(MediaType.APPLICATION_JSON)
           .contentType(MediaType.APPLICATION_JSON)
-          .bodyValue(new GeneratedTenantUpdateRequestStrictContract(tenantName, tenantDescription))
+          .bodyValue(new TenantUpdateRequestContract(tenantName, tenantDescription))
           .exchange()
           .expectStatus()
           .isOk()
@@ -368,7 +365,7 @@ public class TenantControllerTest {
           .uri(path)
           .accept(MediaType.APPLICATION_JSON)
           .contentType(MediaType.APPLICATION_JSON)
-          .bodyValue(new GeneratedTenantUpdateRequestStrictContract(tenantName, tenantDescription))
+          .bodyValue(new TenantUpdateRequestContract(tenantName, tenantDescription))
           .exchange()
           .expectStatus()
           .isNotFound();
@@ -622,7 +619,7 @@ public class TenantControllerTest {
 
   @Nested
   @Import(DefaultTenantServiceAdapter.class)
-  @WebMvcTest(GeneratedTenantController.class)
+  @WebMvcTest(TenantController.class)
   public class TenantsApiEnabledAndByogEnabledTest extends RestControllerTest {
     @MockitoBean private TenantServices tenantServices;
     @MockitoBean private UserServices userServices;
@@ -705,7 +702,7 @@ public class TenantControllerTest {
 
   @Nested
   @Import({DefaultTenantServiceAdapter.class, ApiFiltersConfiguration.class})
-  @WebMvcTest(GeneratedTenantController.class)
+  @WebMvcTest(TenantController.class)
   @TestPropertySource(properties = "camunda.security.multiTenancy.apiEnabled=false")
   public class TenantsApiDisabledTest extends RestControllerTest {
     public static final String FORBIDDEN_MESSAGE =

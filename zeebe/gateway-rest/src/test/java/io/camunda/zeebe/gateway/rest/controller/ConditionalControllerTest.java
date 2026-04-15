@@ -22,7 +22,6 @@ import io.camunda.service.exception.ServiceException;
 import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.gateway.rest.controller.adapter.DefaultConditionalServiceAdapter;
-import io.camunda.zeebe.gateway.rest.controller.generated.GeneratedConditionalController;
 import io.camunda.zeebe.protocol.impl.record.value.conditional.ConditionalEvaluationRecord;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Stream;
@@ -43,7 +42,7 @@ import org.springframework.test.json.JsonCompareMode;
 
 @ExtendWith(MockitoExtension.class)
 @Import(DefaultConditionalServiceAdapter.class)
-@WebMvcTest(value = GeneratedConditionalController.class)
+@WebMvcTest(value = ConditionalController.class)
 public class ConditionalControllerTest extends RestControllerTest {
 
   static final String CONDITIONAL_EVALUATION_URL = "/v2/conditionals/evaluation";

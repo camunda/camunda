@@ -21,7 +21,6 @@ import io.camunda.service.AdHocSubProcessActivityServices;
 import io.camunda.service.AdHocSubProcessActivityServices.AdHocSubProcessActivateActivitiesRequest;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.gateway.rest.controller.adapter.DefaultAdHocSubProcessServiceAdapter;
-import io.camunda.zeebe.gateway.rest.controller.generated.GeneratedAdHocSubProcessController;
 import io.camunda.zeebe.protocol.impl.record.value.adhocsubprocess.AdHocSubProcessInstructionRecord;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Stream;
@@ -39,7 +38,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.json.JsonCompareMode;
 
 @Import(DefaultAdHocSubProcessServiceAdapter.class)
-@WebMvcTest(value = GeneratedAdHocSubProcessController.class)
+@WebMvcTest(value = AdHocSubProcessController.class)
 class AdHocSubProcessActivityControllerTest extends RestControllerTest {
   private static final String AD_HOC_ACTIVITIES_URL = "/v2/element-instances/ad-hoc-activities";
   private static final String ACTIVATE_ACTIVITIES_URL =
