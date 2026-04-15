@@ -127,18 +127,18 @@ public class SpringCamundaClientConfigurationTest {
     props.getWorker().getDefaults().setStreamEnabled(true);
 
     final CredentialsProvider creds = credentialsProvider();
-    final ScheduledExecutorService scheduledExecutor = Executors.newScheduledThreadPool(1);
-    final CamundaClientExecutorService executor =
-        new CamundaClientExecutorService(scheduledExecutor, false);
 
-    final SpringCamundaClientConfiguration configuration =
-        configuration(props, jsonMapper(), List.of(), List.of(), executor, creds, null);
+    try (final ScheduledExecutorService scheduledExecutor = Executors.newScheduledThreadPool(1)) {
+      final CamundaClientExecutorService executor =
+          new CamundaClientExecutorService(scheduledExecutor, false);
 
-    // when
-    final CamundaClientBuilder builder = configuration.toBuilder();
-    final CamundaClientConfiguration config = buildConfiguration(builder);
+      final SpringCamundaClientConfiguration configuration =
+          configuration(props, jsonMapper(), List.of(), List.of(), executor, creds, null);
 
-    try {
+      // when
+      final CamundaClientBuilder builder = configuration.toBuilder();
+      final CamundaClientConfiguration config = buildConfiguration(builder);
+
       // then
       assertThat(config.getRestAddress()).isEqualTo(URI.create("http://0.0.0.0:8090"));
       assertThat(config.getGrpcAddress()).isEqualTo(URI.create("http://0.0.0.0:8091"));
@@ -158,9 +158,8 @@ public class SpringCamundaClientConfigurationTest {
       assertThat(config.getDefaultJobWorkerName()).isEqualTo("my-worker");
       assertThat(config.getDefaultJobWorkerStreamEnabled()).isTrue();
       assertThat(config.getCredentialsProvider()).isSameAs(creds);
-      assertThat(config.ownsJobWorkerExecutor()).isFalse();
-    } finally {
-      scheduledExecutor.shutdown();
+      assertThat(config.ownsJobHandlingExecutor()).isFalse();
+      assertThat(config.ownsJobWorkerSchedulingExecutor()).isFalse();
     }
   }
 
