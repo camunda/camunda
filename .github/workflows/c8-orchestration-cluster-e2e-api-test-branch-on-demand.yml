@@ -73,7 +73,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 45
     env:
-      RESOLVED_DOCKER_TAG: ${{ needs.utils-get-snapshot-docker-tag.outputs.snapshot_tag != '' && needs.utils-get-snapshot-docker-tag.outputs.snapshot_tag || needs.utils-get-snapshot-docker-tag.outputs.version_tag }}
+      # Prefer SNAPSHOT on main, otherwise use the branch-specific X.Y-SNAPSHOT tag.
+      RESOLVED_DOCKER_TAG: ${{ needs.utils-get-snapshot-docker-tag.outputs.snapshot_tag || needs.utils-get-snapshot-docker-tag.outputs.version_tag }}
     steps:
       - name: Print input and base branch
         run: |
@@ -116,8 +117,8 @@ jobs:
 
       - name: Start Camunda
         run: |
-          export CAMUNDA_DOCKER_IMAGE="camunda/camunda:${RESOLVED_DOCKER_TAG}"
-          echo "Using CAMUNDA_DOCKER_IMAGE=${CAMUNDA_DOCKER_IMAGE}"
+          export CAMUNDA_DOCKER_TAG="${RESOLVED_DOCKER_TAG}"
+          echo "Using CAMUNDA_DOCKER_TAG=${CAMUNDA_DOCKER_TAG}"
           if [[ "$NON_STANDALONE" == "true" ]]; then
             echo "Using single services for older branches (8.6/8.7)"
             DATABASE=elasticsearch docker compose up -d operate tasklist
