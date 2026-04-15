@@ -81,6 +81,7 @@ final class OpensearchIncidentUpdateRepositoryIT extends IncidentUpdateRepositor
                 httpClientBuilder.disableContentCompression();
                 return httpClientBuilder;
               })
+          .setCompressionEnabled(true)
           .setMapper(new JacksonJsonpMapper())
           .build();
     } catch (final Exception e) {

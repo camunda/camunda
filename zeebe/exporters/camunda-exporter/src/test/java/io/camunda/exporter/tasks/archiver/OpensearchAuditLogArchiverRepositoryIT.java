@@ -453,6 +453,7 @@ final class OpensearchAuditLogArchiverRepositoryIT {
                 httpClientBuilder.disableContentCompression();
                 return httpClientBuilder;
               })
+          .setCompressionEnabled(true)
           .setMapper(new JacksonJsonpMapper())
           .build();
     } catch (final Exception e) {

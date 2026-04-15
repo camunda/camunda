@@ -126,6 +126,8 @@ public final class OpensearchConnector {
           return requestConfigBuilder;
         });
 
+    builder.setCompressionEnabled(true);
+
     builder.setMapper(new JacksonJsonpMapper(objectMapper));
 
     return builder.build();

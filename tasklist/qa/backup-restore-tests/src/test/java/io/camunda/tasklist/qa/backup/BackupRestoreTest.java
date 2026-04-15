@@ -151,6 +151,8 @@ public class BackupRestoreTest {
           return httpClientBuilder;
         });
 
+    builder.setCompressionEnabled(true);
+
     final org.opensearch.client.json.jackson.JacksonJsonpMapper jsonpMapper =
         new org.opensearch.client.json.jackson.JacksonJsonpMapper(CommonUtils.OBJECT_MAPPER);
     builder.setMapper(jsonpMapper);

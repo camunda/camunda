@@ -171,6 +171,8 @@ public class OpenSearchClientBuilder {
           return requestConfigBuilder;
         });
 
+    builder.setCompressionEnabled(true);
+
     if (StringUtils.isNotBlank(configurationService.getOpenSearchConfiguration().getPathPrefix())) {
       builder.setPathPrefix(configurationService.getOpenSearchConfiguration().getPathPrefix());
     }
