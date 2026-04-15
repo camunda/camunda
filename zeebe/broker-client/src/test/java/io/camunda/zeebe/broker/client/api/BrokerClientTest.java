@@ -418,9 +418,12 @@ public final class BrokerClientTest {
           new ClusterMembershipEvent(Type.METADATA_CHANGED, otherBroker.member()));
       Awaitility.await("Broker " + leaderBrokerId + " is leader.")
           .untilAsserted(
-              () ->
-                  assertThat(topologyManager.getTopology().getLeaderForPartition(1))
-                      .isEqualTo(leaderBrokerId));
+              () -> {
+                final var topology = topologyManager.getTopology();
+                final var leaderId = topology.getLeaderForPartition(1);
+                assertThat(topology.getBrokerMemberId(leaderId))
+                    .isEqualTo(String.valueOf(leaderBrokerId));
+              });
 
       response = client.sendRequest(request).join();
     }
