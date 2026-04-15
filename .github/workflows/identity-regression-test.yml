@@ -43,7 +43,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           ref: ${{ inputs.branch }}
           fetch-depth: 0
@@ -60,7 +60,7 @@ jobs:
           ./mvnw -B -T2C -pl dist -am -DskipTests -DskipChecks -Dflatten.skip=true --no-transfer-progress package
 
       - name: Upload Camunda Distribution
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
         with:
           name: camunda-dist
           path: dist/target/camunda-zeebe-*.tar.gz
@@ -122,19 +122,19 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           ref: ${{ inputs.branch }}
           fetch-depth: 0
 
       - name: Set up Java 21
-        uses: actions/setup-java@v5
+        uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654 # v5.2.0
         with:
           distribution: temurin
           java-version: 21
 
       - name: Download Camunda Distribution Artifact
-        uses: actions/download-artifact@v8
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           name: camunda-dist
           path: ./dist/target
@@ -256,7 +256,7 @@ jobs:
 
       - name: Publish Test Report
         if: always()
-        uses: EnricoMi/publish-unit-test-result-action@v2
+        uses: EnricoMi/publish-unit-test-result-action@c950f6fb443cb5af20a377fd0dfaa78838901040 # v2.23.0
         with:
           files: '**/reports/report.xml'
           comment_mode: off

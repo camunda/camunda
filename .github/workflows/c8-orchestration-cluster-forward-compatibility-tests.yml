@@ -38,7 +38,7 @@ jobs:
     outputs:
       matrix: ${{ steps.matrix.outputs.matrix }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
       - name: Generate matrix
         id: matrix
@@ -144,7 +144,7 @@ jobs:
 
       # Checkout test branch at root — provides composite actions, docker-compose config, and tests
       - name: Checkout test branch
-        uses: actions/checkout@v6
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           ref: ${{ matrix.test_branch }}
 
@@ -194,7 +194,7 @@ jobs:
         working-directory: qa/c8-orchestration-cluster-e2e-test-suite/config
 
       - name: Setup Node.js
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
         with:
           node-version: 24
           cache: npm
@@ -255,7 +255,7 @@ jobs:
 
       - name: Upload JSON report to GitHub Actions Artifacts
         if: always()
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
         with:
           name: json-report-forward-compat-server-${{ steps.sanitize.outputs.safe_server }}-tests-${{ steps.sanitize.outputs.safe_test }}
           path: qa/c8-orchestration-cluster-e2e-test-suite/json-report/**
@@ -264,7 +264,7 @@ jobs:
 
       - name: Upload HTML report on failure
         if: failure()
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
         with:
           name: html-report-forward-compat-server-${{ steps.sanitize.outputs.safe_server }}-tests-${{ steps.sanitize.outputs.safe_test }}
           path: qa/c8-orchestration-cluster-e2e-test-suite/html-report
@@ -291,7 +291,7 @@ jobs:
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
       - name: Import Secrets
         id: secrets
@@ -306,7 +306,7 @@ jobs:
             secret/data/products/camunda/ci/github-actions SLACK_CAMUNDA_EX_CI_WEBHOOK;
 
       - name: Notify failure
-        uses: slackapi/slack-github-action@v3.0.1
+        uses: slackapi/slack-github-action@af78098f536edbc4de71162a307590698245be95 # v3.0.1
         if: steps.secrets.outputs.SLACK_CAMUNDA_EX_CI_WEBHOOK != ''
         with:
           webhook: ${{ steps.secrets.outputs.SLACK_CAMUNDA_EX_CI_WEBHOOK }}

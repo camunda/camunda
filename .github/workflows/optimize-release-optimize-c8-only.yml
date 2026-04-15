@@ -52,7 +52,7 @@ jobs:
     strategy:
       fail-fast: true
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
       - name: Log Input Variables
         run: |
@@ -79,7 +79,7 @@ jobs:
 
       - name: Import Secrets
         id: secrets
-        uses: hashicorp/vault-action@v3.4.0
+        uses: hashicorp/vault-action@4c06c5ccf5c0761b6029f56cfb1dcf5565918a3b # v3.4.0
         with:
           url: ${{ secrets.VAULT_ADDR }}
           method: approle
@@ -198,7 +198,7 @@ jobs:
 
       - id: "auth"
         name: "Authenticate to Google Cloud"
-        uses: "google-github-actions/auth@v3"
+        uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3.0.0
         with:
           token_format: "access_token"
           workload_identity_provider: "projects/271764561088/locations/global/workloadIdentityPools/github/providers/camunda"
@@ -212,7 +212,7 @@ jobs:
           password: ${{ steps.auth.outputs.access_token }}
 
       - name: Checkout release branch
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           ref: ${{ env.BRANCH }}
           fetch-depth: 0
@@ -225,7 +225,7 @@ jobs:
 
       - name: "Read Java / Version Info"
         id: "pom-info"
-        uses: YunaBraska/java-info-action@main
+        uses: YunaBraska/java-info-action@575e99f42f2915cc62410c7917fef5558257042c # 3.0.1
         with:
           work-dir: ./optimize
 
@@ -385,7 +385,7 @@ jobs:
         if: ${{ env.IS_RC == 'false' && env.IS_DRY_RUN == 'false' }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        uses: octokit/request-action@v3.0.0
+        uses: octokit/request-action@b91aabaa861c777dcdb14e2387e30eddf04619ae # v3.0.0
         with:
           route: POST /repos/camunda/camunda/releases
           make_latest: false
