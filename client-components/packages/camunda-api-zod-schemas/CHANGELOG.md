@@ -1,5 +1,25 @@
 # Changelog
 
+## v0.0.57
+
+### 🚀 Enhancements
+
+- support $like search on elementName/elementId in element instance API ([#50744](https://github.com/camunda/camunda/issues/50744))
+
+### ❤️ Contributors
+
+- Aleksander Dytko ([@aleksander-dytko](https://github.com/aleksander-dytko))
+
+## v0.0.56
+
+### 🚀 Enhancements
+
+- add process instance batch deletion to schema ([#50581](https://github.com/camunda/camunda/issues/50581))
+
+### ❤️ Contributors
+
+- Patrick Dehn ([@pedesen](https://github.com/pedesen))
+
 ## v0.0.55
 
 ### 🚀 Enhancements

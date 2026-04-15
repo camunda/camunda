@@ -14,6 +14,7 @@ import {
 	getEnumFilterSchema,
 	type Endpoint,
 	advancedDateTimeFilterSchema,
+	advancedStringFilterSchema,
 } from './common';
 import {queryIncidentsRequestBodySchema, queryIncidentsResponseBodySchema} from './incident';
 
@@ -74,8 +75,8 @@ const elementInstanceFilterSchema = z
 		processDefinitionId: z.string(),
 		state: z.union([elementInstanceStateSchema, getEnumFilterSchema(elementInstanceStateSchema)]),
 		type: elementInstanceTypeSchema,
-		elementId: z.string(),
-		elementName: z.string(),
+		elementId: advancedStringFilterSchema,
+		elementName: advancedStringFilterSchema,
 		hasIncident: z.boolean(),
 		tenantId: z.string(),
 		elementInstanceKey: z.string(),

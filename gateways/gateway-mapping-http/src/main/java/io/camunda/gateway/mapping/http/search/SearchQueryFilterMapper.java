@@ -845,8 +845,12 @@ public class SearchQueryFilterMapper {
           .ifPresent(builder::stateOperations);
       Optional.ofNullable(filter.getType())
           .ifPresent(t -> builder.types(FlowNodeType.fromZeebeBpmnElementType(t.getValue())));
-      Optional.ofNullable(filter.getElementId()).ifPresent(builder::flowNodeIds);
-      Optional.ofNullable(filter.getElementName()).ifPresent(builder::flowNodeNames);
+      ofNullable(filter.getElementId())
+          .map(mapToStringOperations())
+          .ifPresent(builder::flowNodeIdOperations);
+      ofNullable(filter.getElementName())
+          .map(mapToStringOperations())
+          .ifPresent(builder::flowNodeNameOperations);
       Optional.ofNullable(filter.getHasIncident()).ifPresent(builder::hasIncident);
       Optional.ofNullable(filter.getIncidentKey())
           .map(mapKeyToLong("incidentKey", validationErrors))

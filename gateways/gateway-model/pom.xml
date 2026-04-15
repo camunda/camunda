@@ -100,6 +100,7 @@
                 <typeMapping>DecisionEvaluationKeyFilterProperty=BasicStringFilterProperty</typeMapping>
                 <typeMapping>DecisionRequirementsKeyFilterProperty=BasicStringFilterProperty</typeMapping>
                 <typeMapping>DeploymentKeyFilterProperty=BasicStringFilterProperty</typeMapping>
+                <typeMapping>ElementIdFilterProperty=StringFilterProperty</typeMapping>
                 <typeMapping>ElementInstanceKeyFilterProperty=BasicStringFilterProperty</typeMapping>
                 <typeMapping>FormKeyFilterProperty=BasicStringFilterProperty</typeMapping>
                 <typeMapping>JobKeyFilterProperty=BasicStringFilterProperty</typeMapping>
@@ -160,6 +161,7 @@
                 <typeMapping>DecisionEvaluationKeyFilterProperty=String</typeMapping>
                 <typeMapping>DecisionRequirementsKeyFilterProperty=String</typeMapping>
                 <typeMapping>DeploymentKeyFilterProperty=String</typeMapping>
+                <typeMapping>ElementIdFilterProperty=String</typeMapping>
                 <typeMapping>ElementInstanceKeyFilterProperty=String</typeMapping>
                 <typeMapping>FormKeyFilterProperty=String</typeMapping>
                 <typeMapping>IntegerFilterProperty=Integer</typeMapping>
