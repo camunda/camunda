@@ -91,6 +91,7 @@ import io.camunda.gateway.protocol.model.MatchedDecisionRuleItem;
 import io.camunda.gateway.protocol.model.MessageSubscriptionResult;
 import io.camunda.gateway.protocol.model.MessageSubscriptionSearchQueryResult;
 import io.camunda.gateway.protocol.model.MessageSubscriptionStateEnum;
+import io.camunda.gateway.protocol.model.MessageSubscriptionTypeEnum;
 import io.camunda.gateway.protocol.model.OwnerTypeEnum;
 import io.camunda.gateway.protocol.model.PermissionTypeEnum;
 import io.camunda.gateway.protocol.model.ProcessDefinitionElementStatisticsQueryResult;
@@ -1056,10 +1057,18 @@ public final class SearchQueryResponseMapper {
         .messageSubscriptionState(
             MessageSubscriptionStateEnum.fromValue(
                 messageSubscription.messageSubscriptionState().name()))
+        .messageSubscriptionType(
+            messageSubscription.messageSubscriptionType() != null
+                ? MessageSubscriptionTypeEnum.fromValue(
+                    messageSubscription.messageSubscriptionType().name())
+                : null)
         .lastUpdatedDate(formatDate(messageSubscription.dateTime()))
         .messageName(messageSubscription.messageName())
         .correlationKey(messageSubscription.correlationKey())
-        .tenantId(messageSubscription.tenantId());
+        .tenantId(messageSubscription.tenantId())
+        .processDefinitionName(messageSubscription.processDefinitionName())
+        .processDefinitionVersion(messageSubscription.processDefinitionVersion())
+        .extensionProperties(messageSubscription.extensionProperties());
   }
 
   private static List<CorrelatedMessageSubscriptionResult> toCorrelatedMessageSubscriptions(

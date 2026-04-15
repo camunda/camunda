@@ -192,6 +192,7 @@
                 <typeMapping>JobListenerEventTypeFilterProperty=io.camunda.gateway.protocol.model.JobListenerEventTypeEnum</typeMapping>
                 <typeMapping>JobStateFilterProperty=io.camunda.gateway.protocol.model.JobStateEnum</typeMapping>
                 <typeMapping>MessageSubscriptionStateFilterProperty=io.camunda.gateway.protocol.model.MessageSubscriptionStateEnum</typeMapping>
+                <typeMapping>MessageSubscriptionTypeFilterProperty=io.camunda.gateway.protocol.model.MessageSubscriptionTypeEnum</typeMapping>
                 <typeMapping>ProcessInstanceStateFilterProperty=io.camunda.gateway.protocol.model.ProcessInstanceStateEnum</typeMapping>
                 <typeMapping>OperationTypeFilterProperty=io.camunda.gateway.protocol.model.AuditLogOperationTypeEnum</typeMapping>
                 <typeMapping>UserTaskStateFilterProperty=io.camunda.gateway.protocol.model.UserTaskStateEnum</typeMapping>
