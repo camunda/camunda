@@ -11,16 +11,15 @@ import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESS
 import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_TOO_MANY_CHARACTERS;
 import static io.camunda.gateway.mapping.http.validator.RequestValidator.validate;
 
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedMessageCorrelationRequestStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedMessagePublicationRequestStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.MessageCorrelationRequestContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.MessagePublicationRequestContract;
 import java.util.Optional;
 import org.springframework.http.ProblemDetail;
 
 public final class MessageRequestValidator {
 
   public static Optional<ProblemDetail> validatePublicationRequest(
-      final GeneratedMessagePublicationRequestStrictContract request,
-      final int maxNameFieldLength) {
+      final MessagePublicationRequestContract request, final int maxNameFieldLength) {
     return validate(
         violations -> {
           if (request.name() == null || request.name().isBlank()) {
@@ -35,8 +34,7 @@ public final class MessageRequestValidator {
   }
 
   public static Optional<ProblemDetail> validateCorrelationRequest(
-      final GeneratedMessageCorrelationRequestStrictContract request,
-      final int maxNameFieldLength) {
+      final MessageCorrelationRequestContract request, final int maxNameFieldLength) {
     return validate(
         violations -> {
           if (request.name() == null || request.name().isBlank()) {

@@ -9,8 +9,8 @@ package io.camunda.gateway.mapping.http.validator;
 
 import static io.camunda.gateway.mapping.http.validator.RequestValidator.validate;
 
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedAuthorizationIdBasedRequestStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedAuthorizationPropertyBasedRequestStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.AuthorizationIdBasedRequestContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.AuthorizationPropertyBasedRequestContract;
 import io.camunda.security.validation.AuthorizationValidator;
 import java.util.Optional;
 import java.util.Set;
@@ -25,7 +25,7 @@ public final class AuthorizationRequestValidator {
   }
 
   public Optional<ProblemDetail> validateIdBasedRequest(
-      final GeneratedAuthorizationIdBasedRequestStrictContract request) {
+      final AuthorizationIdBasedRequestContract request) {
     return validate(
         () ->
             authorizationValidator.validate(
@@ -38,7 +38,7 @@ public final class AuthorizationRequestValidator {
   }
 
   public Optional<ProblemDetail> validatePropertyBasedRequest(
-      final GeneratedAuthorizationPropertyBasedRequestStrictContract request) {
+      final AuthorizationPropertyBasedRequestContract request) {
     return validate(
         () ->
             authorizationValidator.validate(

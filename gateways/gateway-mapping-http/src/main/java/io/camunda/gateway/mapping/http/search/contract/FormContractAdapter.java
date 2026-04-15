@@ -7,9 +7,9 @@
  */
 package io.camunda.gateway.mapping.http.search.contract;
 
-import static io.camunda.gateway.mapping.http.search.contract.generated.GeneratedFormStrictContract.Fields;
+import static io.camunda.gateway.mapping.http.search.contract.generated.FormContract.Fields;
 
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedFormStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.FormContract;
 import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
 import io.camunda.search.entities.FormEntity;
 
@@ -17,8 +17,8 @@ public final class FormContractAdapter {
 
   private FormContractAdapter() {}
 
-  public static GeneratedFormStrictContract adapt(final FormEntity entity) {
-    return GeneratedFormStrictContract.builder()
+  public static FormContract adapt(final FormEntity entity) {
+    return FormContract.builder()
         .tenantId(ContractPolicy.requireNonNull(entity.tenantId(), Fields.TENANT_ID, entity))
         .formId(ContractPolicy.requireNonNull(entity.formId(), Fields.FORM_ID, entity))
         .schema(ContractPolicy.requireNonNull(entity.schema(), Fields.SCHEMA, entity))

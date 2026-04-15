@@ -11,7 +11,7 @@ import static io.camunda.gateway.mapping.http.util.AdvancedSearchFilterUtil.mapT
 import static io.camunda.gateway.mapping.http.util.KeyUtil.mapKeyToLong;
 import static java.util.Optional.ofNullable;
 
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedProcessDefinitionFilterStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.ProcessDefinitionFilterContract;
 import io.camunda.search.filter.FilterBuilders;
 import io.camunda.search.filter.ProcessDefinitionFilter;
 import io.camunda.zeebe.util.Either;
@@ -26,7 +26,7 @@ public final class ProcessDefinitionFilterMapper {
   private ProcessDefinitionFilterMapper() {}
 
   public static Either<List<String>, ProcessDefinitionFilter> toProcessDefinitionFilter(
-      @Nullable final GeneratedProcessDefinitionFilterStrictContract filter) {
+      @Nullable final ProcessDefinitionFilterContract filter) {
     final var builder = FilterBuilders.processDefinition();
     final List<String> validationErrors = new ArrayList<>();
     if (filter != null) {

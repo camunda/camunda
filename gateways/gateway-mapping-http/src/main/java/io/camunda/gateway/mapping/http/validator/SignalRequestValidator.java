@@ -10,14 +10,14 @@ package io.camunda.gateway.mapping.http.validator;
 import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_EMPTY_ATTRIBUTE;
 import static io.camunda.gateway.mapping.http.validator.RequestValidator.validate;
 
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedSignalBroadcastRequestStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.SignalBroadcastRequestContract;
 import java.util.Optional;
 import org.springframework.http.ProblemDetail;
 
 public final class SignalRequestValidator {
 
   public static Optional<ProblemDetail> validateBroadcastRequest(
-      final GeneratedSignalBroadcastRequestStrictContract request) {
+      final SignalBroadcastRequestContract request) {
     return validate(
         violations -> {
           if (request.signalName() == null) {

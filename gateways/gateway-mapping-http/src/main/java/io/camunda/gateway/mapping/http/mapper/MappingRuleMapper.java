@@ -8,8 +8,8 @@
 package io.camunda.gateway.mapping.http.mapper;
 
 import io.camunda.gateway.mapping.http.RequestMapper;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedMappingRuleCreateRequestStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedMappingRuleUpdateRequestStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.MappingRuleCreateRequestContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.MappingRuleUpdateRequestContract;
 import io.camunda.gateway.mapping.http.validator.MappingRuleRequestValidator;
 import io.camunda.service.MappingRuleServices.MappingRuleDTO;
 import io.camunda.zeebe.util.Either;
@@ -24,7 +24,7 @@ public class MappingRuleMapper {
   }
 
   public Either<ProblemDetail, MappingRuleDTO> toMappingRuleCreateRequest(
-      final GeneratedMappingRuleCreateRequestStrictContract request) {
+      final MappingRuleCreateRequestContract request) {
     return RequestMapper.getResult(
         mappingRuleRequestValidator.validateCreateRequest(request),
         () ->
@@ -36,7 +36,7 @@ public class MappingRuleMapper {
   }
 
   public Either<ProblemDetail, MappingRuleDTO> toMappingRuleUpdateRequest(
-      final String mappingRuleId, final GeneratedMappingRuleUpdateRequestStrictContract request) {
+      final String mappingRuleId, final MappingRuleUpdateRequestContract request) {
     return RequestMapper.getResult(
         mappingRuleRequestValidator.validateUpdateRequest(request),
         () ->

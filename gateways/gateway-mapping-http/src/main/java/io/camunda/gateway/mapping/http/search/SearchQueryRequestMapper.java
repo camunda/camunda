@@ -35,60 +35,60 @@ import io.camunda.gateway.mapping.http.search.contract.UserTaskAuditLogFilterMap
 import io.camunda.gateway.mapping.http.search.contract.UserTaskFilterMapper;
 import io.camunda.gateway.mapping.http.search.contract.UserTaskVariableFilterMapper;
 import io.camunda.gateway.mapping.http.search.contract.VariableFilterMapper;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedAuditLogSearchQueryRequestStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedAuthorizationSearchQueryRequestStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedBatchOperationItemFilterMapper;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedBatchOperationItemSearchQueryRequestStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedBatchOperationSearchQueryRequestStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedClusterVariableSearchQueryFilterRequestMapper;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedClusterVariableSearchQueryRequestStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedCorrelatedMessageSubscriptionFilterMapper;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedCorrelatedMessageSubscriptionSearchQueryRequestStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedDecisionDefinitionSearchQueryRequestStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedDecisionInstanceSearchQueryRequestStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedDecisionRequirementsSearchQueryRequestStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedElementInstanceSearchQueryRequestStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedGlobalTaskListenerSearchQueryRequestStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedGroupClientSearchQueryRequestStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedGroupFilterMapper;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedGroupSearchQueryRequestStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedGroupUserSearchQueryRequestStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedIncidentProcessInstanceStatisticsByDefinitionQuerySearchQueryRequestStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedIncidentProcessInstanceStatisticsByErrorQueryStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedIncidentSearchQueryRequestStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedJobErrorStatisticsQueryStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedJobFilterMapper;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedJobSearchQueryRequestStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedJobTimeSeriesStatisticsQueryStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedJobTypeStatisticsQueryStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedJobWorkerStatisticsQueryStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedMappingRuleFilterMapper;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedMappingRuleSearchQueryRequestStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedMessageSubscriptionFilterMapper;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedMessageSubscriptionSearchQueryRequestStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedProcessDefinitionElementStatisticsQueryStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedProcessDefinitionInstanceStatisticsQueryStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedProcessDefinitionInstanceVersionStatisticsQuerySearchQueryRequestStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedProcessDefinitionMessageSubscriptionStatisticsQueryStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedProcessDefinitionSearchQueryRequestStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedProcessInstanceSearchQueryRequestStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedRoleClientSearchQueryRequestStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedRoleFilterMapper;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedRoleGroupSearchQueryRequestStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedRoleSearchQueryRequestStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedRoleUserSearchQueryRequestStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedTenantClientSearchQueryRequestStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedTenantFilterMapper;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedTenantGroupSearchQueryRequestStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedTenantSearchQueryRequestStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedTenantUserSearchQueryRequestStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedUserFilterMapper;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedUserSearchQueryRequestStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedUserTaskAuditLogSearchQueryRequestStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedUserTaskEffectiveVariableSearchQueryRequestStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedUserTaskSearchQueryRequestStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedUserTaskVariableSearchQueryRequestStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedVariableSearchQueryRequestStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.AuditLogSearchQueryRequestContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.AuthorizationSearchQueryRequestContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.BatchOperationItemFilterMapper;
+import io.camunda.gateway.mapping.http.search.contract.generated.BatchOperationItemSearchQueryRequestContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.BatchOperationSearchQueryRequestContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.ClusterVariableSearchQueryFilterRequestMapper;
+import io.camunda.gateway.mapping.http.search.contract.generated.ClusterVariableSearchQueryRequestContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.CorrelatedMessageSubscriptionFilterMapper;
+import io.camunda.gateway.mapping.http.search.contract.generated.CorrelatedMessageSubscriptionSearchQueryRequestContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.DecisionDefinitionSearchQueryRequestContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.DecisionInstanceSearchQueryRequestContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.DecisionRequirementsSearchQueryRequestContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.ElementInstanceSearchQueryRequestContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GlobalTaskListenerSearchQueryRequestContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GroupClientSearchQueryRequestContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GroupFilterMapper;
+import io.camunda.gateway.mapping.http.search.contract.generated.GroupSearchQueryRequestContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GroupUserSearchQueryRequestContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.IncidentProcessInstanceStatisticsByDefinitionQuerySearchQueryRequestContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.IncidentProcessInstanceStatisticsByErrorQueryContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.IncidentSearchQueryRequestContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.JobErrorStatisticsQueryContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.JobFilterMapper;
+import io.camunda.gateway.mapping.http.search.contract.generated.JobSearchQueryRequestContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.JobTimeSeriesStatisticsQueryContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.JobTypeStatisticsQueryContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.JobWorkerStatisticsQueryContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.MappingRuleFilterMapper;
+import io.camunda.gateway.mapping.http.search.contract.generated.MappingRuleSearchQueryRequestContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.MessageSubscriptionFilterMapper;
+import io.camunda.gateway.mapping.http.search.contract.generated.MessageSubscriptionSearchQueryRequestContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.ProcessDefinitionElementStatisticsQueryContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.ProcessDefinitionInstanceStatisticsQueryContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.ProcessDefinitionInstanceVersionStatisticsQuerySearchQueryRequestContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.ProcessDefinitionMessageSubscriptionStatisticsQueryContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.ProcessDefinitionSearchQueryRequestContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.ProcessInstanceSearchQueryRequestContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.RoleClientSearchQueryRequestContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.RoleFilterMapper;
+import io.camunda.gateway.mapping.http.search.contract.generated.RoleGroupSearchQueryRequestContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.RoleSearchQueryRequestContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.RoleUserSearchQueryRequestContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.TenantClientSearchQueryRequestContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.TenantFilterMapper;
+import io.camunda.gateway.mapping.http.search.contract.generated.TenantGroupSearchQueryRequestContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.TenantSearchQueryRequestContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.TenantUserSearchQueryRequestContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.UserFilterMapper;
+import io.camunda.gateway.mapping.http.search.contract.generated.UserSearchQueryRequestContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.UserTaskAuditLogSearchQueryRequestContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.UserTaskEffectiveVariableSearchQueryRequestContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.UserTaskSearchQueryRequestContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.UserTaskVariableSearchQueryRequestContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.VariableSearchQueryRequestContract;
 import io.camunda.gateway.mapping.http.validator.RequestValidator;
 import io.camunda.search.entities.ProcessInstanceEntity.ProcessInstanceState;
 import io.camunda.search.filter.FilterBase;
@@ -192,7 +192,7 @@ public final class SearchQueryRequestMapper {
   }
 
   public static Either<ProblemDetail, VariableQuery> toUserTaskEffectiveVariableQueryStrict(
-      final GeneratedUserTaskEffectiveVariableSearchQueryRequestStrictContract request) {
+      final UserTaskEffectiveVariableSearchQueryRequestContract request) {
     if (request == null) {
       return Either.right(SearchQueryBuilders.variableSearchQuery().build());
     }
@@ -314,7 +314,7 @@ public final class SearchQueryRequestMapper {
   public static Either<ProblemDetail, ProcessDefinitionStatisticsFilter>
       toProcessDefinitionStatisticsQuery(
           final long processDefinitionKey,
-          final GeneratedProcessDefinitionElementStatisticsQueryStrictContract request) {
+          final ProcessDefinitionElementStatisticsQueryContract request) {
     if (request == null) {
       return Either.right(
           new ProcessDefinitionStatisticsFilter.Builder(processDefinitionKey).build());
@@ -333,7 +333,7 @@ public final class SearchQueryRequestMapper {
 
   // Pattern 2: CursorForwardPagination + filter, no sort
   public static Either<ProblemDetail, io.camunda.search.query.JobTypeStatisticsQuery>
-      toJobTypeStatisticsQuery(final GeneratedJobTypeStatisticsQueryStrictContract request) {
+      toJobTypeStatisticsQuery(final JobTypeStatisticsQueryContract request) {
     if (request == null) {
       return Either.right(SearchQueryBuilders.jobTypeStatisticsSearchQuery().build());
     }
@@ -348,7 +348,7 @@ public final class SearchQueryRequestMapper {
   }
 
   public static Either<ProblemDetail, io.camunda.search.query.JobWorkerStatisticsQuery>
-      toJobWorkerStatisticsQuery(final GeneratedJobWorkerStatisticsQueryStrictContract request) {
+      toJobWorkerStatisticsQuery(final JobWorkerStatisticsQueryContract request) {
     if (request == null) {
       return Either.right(SearchQueryBuilders.jobWorkerStatisticsSearchQuery().build());
     }
@@ -364,8 +364,7 @@ public final class SearchQueryRequestMapper {
   }
 
   public static Either<ProblemDetail, io.camunda.search.query.JobTimeSeriesStatisticsQuery>
-      toJobTimeSeriesStatisticsQuery(
-          final GeneratedJobTimeSeriesStatisticsQueryStrictContract request) {
+      toJobTimeSeriesStatisticsQuery(final JobTimeSeriesStatisticsQueryContract request) {
     if (request == null) {
       return Either.right(SearchQueryBuilders.jobTimeSeriesStatisticsSearchQuery().build());
     }
@@ -381,7 +380,7 @@ public final class SearchQueryRequestMapper {
   }
 
   public static Either<ProblemDetail, JobErrorStatisticsQuery> toJobErrorStatisticsQuery(
-      final GeneratedJobErrorStatisticsQueryStrictContract request) {
+      final JobErrorStatisticsQueryContract request) {
     if (request == null) {
       return Either.right(SearchQueryBuilders.jobErrorStatisticsSearchQuery().build());
     }
@@ -399,8 +398,7 @@ public final class SearchQueryRequestMapper {
           ProblemDetail,
           io.camunda.search.query.ProcessDefinitionMessageSubscriptionStatisticsQuery>
       toProcessDefinitionMessageSubscriptionStatisticsQuery(
-          final GeneratedProcessDefinitionMessageSubscriptionStatisticsQueryStrictContract
-              request) {
+          final ProcessDefinitionMessageSubscriptionStatisticsQueryContract request) {
     if (request == null) {
       return Either.right(
           SearchQueryBuilders.processDefinitionMessageSubscriptionStatisticsQuery().build());
@@ -411,7 +409,7 @@ public final class SearchQueryRequestMapper {
             ? toSearchQueryPage(p.limit(), null, p.after(), null)
             : Either.<List<String>, SearchQueryPage>right(null);
     final var filter =
-        GeneratedMessageSubscriptionFilterMapper.toMessageSubscriptionFilter(request.filter());
+        MessageSubscriptionFilterMapper.toMessageSubscriptionFilter(request.filter());
     return buildSearchQuery(
         filter,
         Either.right(null),
@@ -423,7 +421,7 @@ public final class SearchQueryRequestMapper {
   public static Either<
           ProblemDetail, io.camunda.search.query.ProcessDefinitionInstanceStatisticsQuery>
       toProcessDefinitionInstanceStatisticsQuery(
-          final GeneratedProcessDefinitionInstanceStatisticsQueryStrictContract request) {
+          final ProcessDefinitionInstanceStatisticsQueryContract request) {
     final var filter =
         FilterBuilders.processInstance().states(ProcessInstanceState.ACTIVE.name()).build();
     if (request == null) {
@@ -456,9 +454,7 @@ public final class SearchQueryRequestMapper {
   public static Either<
           ProblemDetail, io.camunda.search.query.ProcessDefinitionInstanceVersionStatisticsQuery>
       toProcessDefinitionInstanceVersionStatisticsQuery(
-          final
-          GeneratedProcessDefinitionInstanceVersionStatisticsQuerySearchQueryRequestStrictContract
-              request) {
+          final ProcessDefinitionInstanceVersionStatisticsQuerySearchQueryRequestContract request) {
     if (request == null || request.filter() == null) {
       final var problem =
           RequestValidator.createProblemDetail(
@@ -496,7 +492,7 @@ public final class SearchQueryRequestMapper {
   public static Either<
           ProblemDetail, io.camunda.search.query.IncidentProcessInstanceStatisticsByErrorQuery>
       toIncidentProcessInstanceStatisticsByErrorQuery(
-          final GeneratedIncidentProcessInstanceStatisticsByErrorQueryStrictContract request) {
+          final IncidentProcessInstanceStatisticsByErrorQueryContract request) {
     if (request == null) {
       return Either.right(
           SearchQueryBuilders.incidentProcessInstanceStatisticsByErrorQuery().build());
@@ -528,8 +524,7 @@ public final class SearchQueryRequestMapper {
   public static Either<
           ProblemDetail, io.camunda.search.query.IncidentProcessInstanceStatisticsByDefinitionQuery>
       toIncidentProcessInstanceStatisticsByDefinitionQuery(
-          final
-          GeneratedIncidentProcessInstanceStatisticsByDefinitionQuerySearchQueryRequestStrictContract
+          final IncidentProcessInstanceStatisticsByDefinitionQuerySearchQueryRequestContract
               request) {
     final var p = request.page();
     final var page =
@@ -564,7 +559,7 @@ public final class SearchQueryRequestMapper {
   // -- Strict contract overloads (no protocol model dependency) --
 
   public static Either<ProblemDetail, AuditLogQuery> toAuditLogQueryStrict(
-      final GeneratedAuditLogSearchQueryRequestStrictContract request) {
+      final AuditLogSearchQueryRequestContract request) {
     if (request == null) {
       return Either.right(SearchQueryBuilders.auditLogSearchQuery().build());
     }
@@ -592,7 +587,7 @@ public final class SearchQueryRequestMapper {
   }
 
   public static Either<ProblemDetail, AuthorizationQuery> toAuthorizationQueryStrict(
-      final GeneratedAuthorizationSearchQueryRequestStrictContract request) {
+      final AuthorizationSearchQueryRequestContract request) {
     if (request == null) {
       return Either.right(SearchQueryBuilders.authorizationSearchQuery().build());
     }
@@ -620,7 +615,7 @@ public final class SearchQueryRequestMapper {
   }
 
   public static Either<ProblemDetail, BatchOperationItemQuery> toBatchOperationItemQueryStrict(
-      final GeneratedBatchOperationItemSearchQueryRequestStrictContract request) {
+      final BatchOperationItemSearchQueryRequestContract request) {
     if (request == null) {
       return Either.right(SearchQueryBuilders.batchOperationItemQuery().build());
     }
@@ -643,13 +638,12 @@ public final class SearchQueryRequestMapper {
             sortRequests,
             SortOptionBuilders::batchOperationItem,
             SearchQuerySortRequestMapper::applyBatchOperationItemSortField);
-    final var filter =
-        GeneratedBatchOperationItemFilterMapper.toBatchOperationItemFilter(request.filter());
+    final var filter = BatchOperationItemFilterMapper.toBatchOperationItemFilter(request.filter());
     return buildSearchQuery(filter, sort, page, SearchQueryBuilders::batchOperationItemQuery);
   }
 
   public static Either<ProblemDetail, BatchOperationQuery> toBatchOperationQueryStrict(
-      final GeneratedBatchOperationSearchQueryRequestStrictContract request) {
+      final BatchOperationSearchQueryRequestContract request) {
     if (request == null) {
       return Either.right(SearchQueryBuilders.batchOperationQuery().build());
     }
@@ -677,7 +671,7 @@ public final class SearchQueryRequestMapper {
   }
 
   public static Either<ProblemDetail, ClusterVariableQuery> toClusterVariableQueryStrict(
-      final GeneratedClusterVariableSearchQueryRequestStrictContract request) {
+      final ClusterVariableSearchQueryRequestContract request) {
     if (request == null) {
       return Either.right(SearchQueryBuilders.clusterVariableSearchQuery().build());
     }
@@ -701,14 +695,13 @@ public final class SearchQueryRequestMapper {
             SortOptionBuilders::clusterVariable,
             SearchQuerySortRequestMapper::applyClusterVariableSortField);
     final var filter =
-        GeneratedClusterVariableSearchQueryFilterRequestMapper.toClusterVariableFilter(
-            request.filter());
+        ClusterVariableSearchQueryFilterRequestMapper.toClusterVariableFilter(request.filter());
     return buildSearchQuery(filter, sort, page, SearchQueryBuilders::clusterVariableSearchQuery);
   }
 
   public static Either<ProblemDetail, CorrelatedMessageSubscriptionQuery>
       toCorrelatedMessageSubscriptionQueryStrict(
-          final GeneratedCorrelatedMessageSubscriptionSearchQueryRequestStrictContract request) {
+          final CorrelatedMessageSubscriptionSearchQueryRequestContract request) {
     if (request == null) {
       return Either.right(SearchQueryBuilders.correlatedMessageSubscriptionSearchQuery().build());
     }
@@ -732,14 +725,14 @@ public final class SearchQueryRequestMapper {
             SortOptionBuilders::correlatedMessageSubscription,
             SearchQuerySortRequestMapper::applyCorrelatedMessageSubscriptionSortField);
     final var filter =
-        GeneratedCorrelatedMessageSubscriptionFilterMapper.toCorrelatedMessageSubscriptionFilter(
+        CorrelatedMessageSubscriptionFilterMapper.toCorrelatedMessageSubscriptionFilter(
             request.filter());
     return buildSearchQuery(
         filter, sort, page, SearchQueryBuilders::correlatedMessageSubscriptionSearchQuery);
   }
 
   public static Either<ProblemDetail, DecisionDefinitionQuery> toDecisionDefinitionQueryStrict(
-      final GeneratedDecisionDefinitionSearchQueryRequestStrictContract request) {
+      final DecisionDefinitionSearchQueryRequestContract request) {
     if (request == null) {
       return Either.right(SearchQueryBuilders.decisionDefinitionSearchQuery().build());
     }
@@ -767,7 +760,7 @@ public final class SearchQueryRequestMapper {
   }
 
   public static Either<ProblemDetail, DecisionInstanceQuery> toDecisionInstanceQueryStrict(
-      final GeneratedDecisionInstanceSearchQueryRequestStrictContract request) {
+      final DecisionInstanceSearchQueryRequestContract request) {
     if (request == null) {
       return Either.right(SearchQueryBuilders.decisionInstanceSearchQuery().build());
     }
@@ -795,7 +788,7 @@ public final class SearchQueryRequestMapper {
   }
 
   public static Either<ProblemDetail, DecisionRequirementsQuery> toDecisionRequirementsQueryStrict(
-      final GeneratedDecisionRequirementsSearchQueryRequestStrictContract request) {
+      final DecisionRequirementsSearchQueryRequestContract request) {
     if (request == null) {
       return Either.right(SearchQueryBuilders.decisionRequirementsSearchQuery().build());
     }
@@ -825,7 +818,7 @@ public final class SearchQueryRequestMapper {
   }
 
   public static Either<ProblemDetail, FlowNodeInstanceQuery> toElementInstanceQueryStrict(
-      final GeneratedElementInstanceSearchQueryRequestStrictContract request) {
+      final ElementInstanceSearchQueryRequestContract request) {
     if (request == null) {
       return Either.right(SearchQueryBuilders.flownodeInstanceSearchQuery().build());
     }
@@ -853,7 +846,7 @@ public final class SearchQueryRequestMapper {
   }
 
   public static Either<ProblemDetail, GlobalListenerQuery> toGlobalTaskListenerQueryStrict(
-      final GeneratedGlobalTaskListenerSearchQueryRequestStrictContract request) {
+      final GlobalTaskListenerSearchQueryRequestContract request) {
     if (request == null) {
       return Either.right(SearchQueryBuilders.globalListenerSearchQuery().build());
     }
@@ -881,7 +874,7 @@ public final class SearchQueryRequestMapper {
   }
 
   public static Either<ProblemDetail, GroupMemberQuery> toGroupClientQueryStrict(
-      final GeneratedGroupClientSearchQueryRequestStrictContract request) {
+      final GroupClientSearchQueryRequestContract request) {
     if (request == null) {
       return Either.right(SearchQueryBuilders.groupMemberSearchQuery().build());
     }
@@ -909,7 +902,7 @@ public final class SearchQueryRequestMapper {
   }
 
   public static Either<ProblemDetail, GroupQuery> toGroupQueryStrict(
-      final GeneratedGroupSearchQueryRequestStrictContract request) {
+      final GroupSearchQueryRequestContract request) {
     if (request == null) {
       return Either.right(SearchQueryBuilders.groupSearchQuery().build());
     }
@@ -932,12 +925,12 @@ public final class SearchQueryRequestMapper {
             sortRequests,
             SortOptionBuilders::group,
             SearchQuerySortRequestMapper::applyGroupSortField);
-    final var filter = GeneratedGroupFilterMapper.toGroupFilter(request.filter());
+    final var filter = GroupFilterMapper.toGroupFilter(request.filter());
     return buildSearchQuery(filter, sort, page, SearchQueryBuilders::groupSearchQuery);
   }
 
   public static Either<ProblemDetail, GroupMemberQuery> toGroupUserQueryStrict(
-      final GeneratedGroupUserSearchQueryRequestStrictContract request) {
+      final GroupUserSearchQueryRequestContract request) {
     if (request == null) {
       return Either.right(SearchQueryBuilders.groupMemberSearchQuery().build());
     }
@@ -965,7 +958,7 @@ public final class SearchQueryRequestMapper {
   }
 
   public static Either<ProblemDetail, IncidentQuery> toIncidentQueryStrict(
-      final GeneratedIncidentSearchQueryRequestStrictContract request) {
+      final IncidentSearchQueryRequestContract request) {
     if (request == null) {
       return Either.right(SearchQueryBuilders.incidentSearchQuery().build());
     }
@@ -993,7 +986,7 @@ public final class SearchQueryRequestMapper {
   }
 
   public static Either<ProblemDetail, JobQuery> toJobQueryStrict(
-      final GeneratedJobSearchQueryRequestStrictContract request) {
+      final JobSearchQueryRequestContract request) {
     if (request == null) {
       return Either.right(SearchQueryBuilders.jobSearchQuery().build());
     }
@@ -1014,12 +1007,12 @@ public final class SearchQueryRequestMapper {
     final var sort =
         SearchQuerySortRequestMapper.toSearchQuerySort(
             sortRequests, SortOptionBuilders::job, SearchQuerySortRequestMapper::applyJobSortField);
-    final var filter = GeneratedJobFilterMapper.toJobFilter(request.filter());
+    final var filter = JobFilterMapper.toJobFilter(request.filter());
     return buildSearchQuery(filter, sort, page, SearchQueryBuilders::jobSearchQuery);
   }
 
   public static Either<ProblemDetail, MappingRuleQuery> toMappingRuleQueryStrict(
-      final GeneratedMappingRuleSearchQueryRequestStrictContract request) {
+      final MappingRuleSearchQueryRequestContract request) {
     if (request == null) {
       return Either.right(SearchQueryBuilders.mappingRuleSearchQuery().build());
     }
@@ -1042,12 +1035,12 @@ public final class SearchQueryRequestMapper {
             sortRequests,
             SortOptionBuilders::mappingRule,
             SearchQuerySortRequestMapper::applyMappingRuleSortField);
-    final var filter = GeneratedMappingRuleFilterMapper.toMappingRuleFilter(request.filter());
+    final var filter = MappingRuleFilterMapper.toMappingRuleFilter(request.filter());
     return buildSearchQuery(filter, sort, page, SearchQueryBuilders::mappingRuleSearchQuery);
   }
 
   public static Either<ProblemDetail, MessageSubscriptionQuery> toMessageSubscriptionQueryStrict(
-      final GeneratedMessageSubscriptionSearchQueryRequestStrictContract request) {
+      final MessageSubscriptionSearchQueryRequestContract request) {
     if (request == null) {
       return Either.right(SearchQueryBuilders.messageSubscriptionSearchQuery().build());
     }
@@ -1071,13 +1064,13 @@ public final class SearchQueryRequestMapper {
             SortOptionBuilders::messageSubscription,
             SearchQuerySortRequestMapper::applyMessageSubscriptionSortField);
     final var filter =
-        GeneratedMessageSubscriptionFilterMapper.toMessageSubscriptionFilter(request.filter());
+        MessageSubscriptionFilterMapper.toMessageSubscriptionFilter(request.filter());
     return buildSearchQuery(
         filter, sort, page, SearchQueryBuilders::messageSubscriptionSearchQuery);
   }
 
   public static Either<ProblemDetail, ProcessDefinitionQuery> toProcessDefinitionQueryStrict(
-      final GeneratedProcessDefinitionSearchQueryRequestStrictContract request) {
+      final ProcessDefinitionSearchQueryRequestContract request) {
     if (request == null) {
       return Either.right(SearchQueryBuilders.processDefinitionSearchQuery().build());
     }
@@ -1112,7 +1105,7 @@ public final class SearchQueryRequestMapper {
   }
 
   public static Either<ProblemDetail, ProcessInstanceQuery> toProcessInstanceQueryStrict(
-      final GeneratedProcessInstanceSearchQueryRequestStrictContract request) {
+      final ProcessInstanceSearchQueryRequestContract request) {
     if (request == null) {
       return Either.right(SearchQueryBuilders.processInstanceSearchQuery().build());
     }
@@ -1140,7 +1133,7 @@ public final class SearchQueryRequestMapper {
   }
 
   public static Either<ProblemDetail, RoleMemberQuery> toRoleClientQueryStrict(
-      final GeneratedRoleClientSearchQueryRequestStrictContract request) {
+      final RoleClientSearchQueryRequestContract request) {
     if (request == null) {
       return Either.right(SearchQueryBuilders.roleMemberSearchQuery().build());
     }
@@ -1168,7 +1161,7 @@ public final class SearchQueryRequestMapper {
   }
 
   public static Either<ProblemDetail, RoleMemberQuery> toRoleGroupQueryStrict(
-      final GeneratedRoleGroupSearchQueryRequestStrictContract request) {
+      final RoleGroupSearchQueryRequestContract request) {
     if (request == null) {
       return Either.right(SearchQueryBuilders.roleMemberSearchQuery().build());
     }
@@ -1196,7 +1189,7 @@ public final class SearchQueryRequestMapper {
   }
 
   public static Either<ProblemDetail, RoleQuery> toRoleQueryStrict(
-      final GeneratedRoleSearchQueryRequestStrictContract request) {
+      final RoleSearchQueryRequestContract request) {
     if (request == null) {
       return Either.right(SearchQueryBuilders.roleSearchQuery().build());
     }
@@ -1219,12 +1212,12 @@ public final class SearchQueryRequestMapper {
             sortRequests,
             SortOptionBuilders::role,
             SearchQuerySortRequestMapper::applyRoleSortField);
-    final var filter = GeneratedRoleFilterMapper.toRoleFilter(request.filter());
+    final var filter = RoleFilterMapper.toRoleFilter(request.filter());
     return buildSearchQuery(filter, sort, page, SearchQueryBuilders::roleSearchQuery);
   }
 
   public static Either<ProblemDetail, RoleMemberQuery> toRoleUserQueryStrict(
-      final GeneratedRoleUserSearchQueryRequestStrictContract request) {
+      final RoleUserSearchQueryRequestContract request) {
     if (request == null) {
       return Either.right(SearchQueryBuilders.roleMemberSearchQuery().build());
     }
@@ -1252,7 +1245,7 @@ public final class SearchQueryRequestMapper {
   }
 
   public static Either<ProblemDetail, TenantMemberQuery> toTenantClientQueryStrict(
-      final GeneratedTenantClientSearchQueryRequestStrictContract request) {
+      final TenantClientSearchQueryRequestContract request) {
     if (request == null) {
       return Either.right(SearchQueryBuilders.tenantMemberSearchQuery().build());
     }
@@ -1280,7 +1273,7 @@ public final class SearchQueryRequestMapper {
   }
 
   public static Either<ProblemDetail, TenantMemberQuery> toTenantGroupQueryStrict(
-      final GeneratedTenantGroupSearchQueryRequestStrictContract request) {
+      final TenantGroupSearchQueryRequestContract request) {
     if (request == null) {
       return Either.right(SearchQueryBuilders.tenantMemberSearchQuery().build());
     }
@@ -1308,7 +1301,7 @@ public final class SearchQueryRequestMapper {
   }
 
   public static Either<ProblemDetail, TenantQuery> toTenantQueryStrict(
-      final GeneratedTenantSearchQueryRequestStrictContract request) {
+      final TenantSearchQueryRequestContract request) {
     if (request == null) {
       return Either.right(SearchQueryBuilders.tenantSearchQuery().build());
     }
@@ -1331,12 +1324,12 @@ public final class SearchQueryRequestMapper {
             sortRequests,
             SortOptionBuilders::tenant,
             SearchQuerySortRequestMapper::applyTenantSortField);
-    final var filter = GeneratedTenantFilterMapper.toTenantFilter(request.filter());
+    final var filter = TenantFilterMapper.toTenantFilter(request.filter());
     return buildSearchQuery(filter, sort, page, SearchQueryBuilders::tenantSearchQuery);
   }
 
   public static Either<ProblemDetail, TenantMemberQuery> toTenantUserQueryStrict(
-      final GeneratedTenantUserSearchQueryRequestStrictContract request) {
+      final TenantUserSearchQueryRequestContract request) {
     if (request == null) {
       return Either.right(SearchQueryBuilders.tenantMemberSearchQuery().build());
     }
@@ -1364,7 +1357,7 @@ public final class SearchQueryRequestMapper {
   }
 
   public static Either<ProblemDetail, UserQuery> toUserQueryStrict(
-      final GeneratedUserSearchQueryRequestStrictContract request) {
+      final UserSearchQueryRequestContract request) {
     if (request == null) {
       return Either.right(SearchQueryBuilders.userSearchQuery().build());
     }
@@ -1387,12 +1380,12 @@ public final class SearchQueryRequestMapper {
             sortRequests,
             SortOptionBuilders::user,
             SearchQuerySortRequestMapper::applyUserSortField);
-    final var filter = GeneratedUserFilterMapper.toUserFilter(request.filter());
+    final var filter = UserFilterMapper.toUserFilter(request.filter());
     return buildSearchQuery(filter, sort, page, SearchQueryBuilders::userSearchQuery);
   }
 
   public static Either<ProblemDetail, AuditLogQuery> toUserTaskAuditLogQueryStrict(
-      final GeneratedUserTaskAuditLogSearchQueryRequestStrictContract request) {
+      final UserTaskAuditLogSearchQueryRequestContract request) {
     if (request == null) {
       return Either.right(SearchQueryBuilders.auditLogSearchQuery().build());
     }
@@ -1412,7 +1405,7 @@ public final class SearchQueryRequestMapper {
   }
 
   public static Either<ProblemDetail, UserTaskQuery> toUserTaskQueryStrict(
-      final GeneratedUserTaskSearchQueryRequestStrictContract request) {
+      final UserTaskSearchQueryRequestContract request) {
     if (request == null) {
       return Either.right(SearchQueryBuilders.userTaskSearchQuery().build());
     }
@@ -1440,7 +1433,7 @@ public final class SearchQueryRequestMapper {
   }
 
   public static Either<ProblemDetail, VariableQuery> toUserTaskVariableQueryStrict(
-      final GeneratedUserTaskVariableSearchQueryRequestStrictContract request) {
+      final UserTaskVariableSearchQueryRequestContract request) {
     if (request == null) {
       return Either.right(SearchQueryBuilders.variableSearchQuery().build());
     }
@@ -1468,7 +1461,7 @@ public final class SearchQueryRequestMapper {
   }
 
   public static Either<ProblemDetail, VariableQuery> toVariableQueryStrict(
-      final GeneratedVariableSearchQueryRequestStrictContract request) {
+      final VariableSearchQueryRequestContract request) {
     if (request == null) {
       return Either.right(SearchQueryBuilders.variableSearchQuery().build());
     }
@@ -1496,7 +1489,7 @@ public final class SearchQueryRequestMapper {
   }
 
   private static Either<ProblemDetail, Void> validateIsLatestVersionConstraintsStrict(
-      final GeneratedProcessDefinitionSearchQueryRequestStrictContract request) {
+      final ProcessDefinitionSearchQueryRequestContract request) {
     final var filter = request.filter();
     if (filter == null || filter.isLatestVersion() == null || !filter.isLatestVersion()) {
       return Either.right(null);

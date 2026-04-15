@@ -10,8 +10,8 @@ package io.camunda.gateway.mapping.http.search.contract;
 import static io.camunda.gateway.mapping.http.util.AdvancedSearchFilterUtil.mapToOperations;
 import static java.util.Optional.ofNullable;
 
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedAuditLogActorTypeEnum;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedBatchOperationFilterStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.AuditLogActorTypeEnum;
+import io.camunda.gateway.mapping.http.search.contract.generated.BatchOperationFilterContract;
 import io.camunda.search.filter.BatchOperationFilter;
 import io.camunda.search.filter.FilterBuilders;
 import org.jspecify.annotations.NullMarked;
@@ -23,7 +23,7 @@ public final class BatchOperationFilterMapper {
   private BatchOperationFilterMapper() {}
 
   public static BatchOperationFilter toBatchOperationFilter(
-      @Nullable final GeneratedBatchOperationFilterStrictContract filter) {
+      @Nullable final BatchOperationFilterContract filter) {
     final var builder = FilterBuilders.batchOperation();
     if (filter != null) {
       ofNullable(filter.batchOperationKey())
@@ -36,7 +36,7 @@ public final class BatchOperationFilterMapper {
           .map(mapToOperations(String.class))
           .ifPresent(builder::operationTypeOperations);
       ofNullable(filter.actorType())
-          .map(GeneratedAuditLogActorTypeEnum::getValue)
+          .map(AuditLogActorTypeEnum::getValue)
           .map(String::toUpperCase)
           .ifPresent(builder::actorTypes);
       ofNullable(filter.actorId())

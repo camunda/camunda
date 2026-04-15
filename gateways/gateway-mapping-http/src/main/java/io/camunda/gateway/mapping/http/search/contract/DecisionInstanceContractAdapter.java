@@ -8,15 +8,15 @@
 package io.camunda.gateway.mapping.http.search.contract;
 
 import static io.camunda.gateway.mapping.http.ResponseMapper.formatDate;
-import static io.camunda.gateway.mapping.http.search.contract.generated.GeneratedDecisionInstanceStrictContract.Fields;
+import static io.camunda.gateway.mapping.http.search.contract.generated.DecisionInstanceContract.Fields;
 
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedDecisionDefinitionTypeEnum;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedDecisionInstanceGetQueryStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedDecisionInstanceStateEnum;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedDecisionInstanceStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedEvaluatedDecisionInputItemStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedEvaluatedDecisionOutputItemStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedMatchedDecisionRuleItemStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.DecisionDefinitionTypeEnum;
+import io.camunda.gateway.mapping.http.search.contract.generated.DecisionInstanceContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.DecisionInstanceGetQueryContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.DecisionInstanceStateEnum;
+import io.camunda.gateway.mapping.http.search.contract.generated.EvaluatedDecisionInputItemContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.EvaluatedDecisionOutputItemContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.MatchedDecisionRuleItemContract;
 import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
 import io.camunda.search.entities.DecisionInstanceEntity;
 import io.camunda.search.entities.DecisionInstanceEntity.DecisionDefinitionType;
@@ -37,20 +37,19 @@ public final class DecisionInstanceContractAdapter {
 
   private DecisionInstanceContractAdapter() {}
 
-  public static List<GeneratedDecisionInstanceStrictContract> toSearchProjections(
+  public static List<DecisionInstanceContract> toSearchProjections(
       final List<DecisionInstanceEntity> instances) {
     return instances.stream().map(DecisionInstanceContractAdapter::toSearchProjection).toList();
   }
 
-  public static GeneratedDecisionInstanceStrictContract toSearchProjection(
-      final DecisionInstanceEntity entity) {
-    return toStrictContract(entity);
+  public static DecisionInstanceContract toSearchProjection(final DecisionInstanceEntity entity) {
+    return toContract(entity);
   }
 
-  public static GeneratedDecisionInstanceGetQueryStrictContract toGetProjection(
+  public static DecisionInstanceGetQueryContract toGetProjection(
       final DecisionInstanceEntity entity) {
-    final var sc = toStrictContract(entity);
-    return new GeneratedDecisionInstanceGetQueryStrictContract(
+    final var sc = toContract(entity);
+    return new DecisionInstanceGetQueryContract(
         sc.decisionDefinitionId(),
         sc.decisionDefinitionKey(),
         sc.decisionDefinitionName(),
@@ -72,9 +71,8 @@ public final class DecisionInstanceContractAdapter {
         toMatchedRules(entity.evaluatedOutputs()));
   }
 
-  private static GeneratedDecisionInstanceStrictContract toStrictContract(
-      final DecisionInstanceEntity entity) {
-    return GeneratedDecisionInstanceStrictContract.builder()
+  private static DecisionInstanceContract toContract(final DecisionInstanceEntity entity) {
+    return DecisionInstanceContract.builder()
         .decisionDefinitionId(
             ContractPolicy.requireNonNull(
                 entity.decisionDefinitionId(), Fields.DECISION_DEFINITION_ID, entity))
@@ -117,7 +115,7 @@ public final class DecisionInstanceContractAdapter {
         .build();
   }
 
-  private static List<GeneratedEvaluatedDecisionInputItemStrictContract> toEvaluatedInputs(
+  private static List<EvaluatedDecisionInputItemContract> toEvaluatedInputs(
       final List<DecisionInstanceInputEntity> decisionInstanceInputEntities) {
     if (decisionInstanceInputEntities == null) {
       return List.of();
@@ -125,12 +123,12 @@ public final class DecisionInstanceContractAdapter {
     return decisionInstanceInputEntities.stream()
         .map(
             input ->
-                new GeneratedEvaluatedDecisionInputItemStrictContract(
+                new EvaluatedDecisionInputItemContract(
                     input.inputId(), input.inputName(), input.inputValue()))
         .toList();
   }
 
-  private static List<GeneratedMatchedDecisionRuleItemStrictContract> toMatchedRules(
+  private static List<MatchedDecisionRuleItemContract> toMatchedRules(
       final List<DecisionInstanceOutputEntity> decisionInstanceOutputEntities) {
     if (decisionInstanceOutputEntities == null) {
       return List.of();
@@ -143,13 +141,13 @@ public final class DecisionInstanceContractAdapter {
             entry -> {
               final var ruleIdentifier = entry.getKey();
               final var outputs = entry.getValue();
-              return new GeneratedMatchedDecisionRuleItemStrictContract(
+              return new MatchedDecisionRuleItemContract(
                   ruleIdentifier.ruleId(),
                   ruleIdentifier.ruleIndex(),
                   outputs.stream()
                       .map(
                           output ->
-                              new GeneratedEvaluatedDecisionOutputItemStrictContract(
+                              new EvaluatedDecisionOutputItemContract(
                                   output.outputId(),
                                   output.outputName(),
                                   output.outputValue(),
@@ -160,29 +158,29 @@ public final class DecisionInstanceContractAdapter {
         .toList();
   }
 
-  private static @Nullable GeneratedDecisionInstanceStateEnum toDecisionInstanceStateEnum(
+  private static @Nullable DecisionInstanceStateEnum toDecisionInstanceStateEnum(
       final DecisionInstanceState state) {
     if (state == null) {
       return null;
     }
     return switch (state) {
-      case EVALUATED -> GeneratedDecisionInstanceStateEnum.EVALUATED;
-      case FAILED -> GeneratedDecisionInstanceStateEnum.FAILED;
-      case UNSPECIFIED -> GeneratedDecisionInstanceStateEnum.UNSPECIFIED;
-      default -> GeneratedDecisionInstanceStateEnum.UNKNOWN;
+      case EVALUATED -> DecisionInstanceStateEnum.EVALUATED;
+      case FAILED -> DecisionInstanceStateEnum.FAILED;
+      case UNSPECIFIED -> DecisionInstanceStateEnum.UNSPECIFIED;
+      default -> DecisionInstanceStateEnum.UNKNOWN;
     };
   }
 
-  private static @Nullable GeneratedDecisionDefinitionTypeEnum toDecisionDefinitionTypeEnum(
+  private static @Nullable DecisionDefinitionTypeEnum toDecisionDefinitionTypeEnum(
       final DecisionDefinitionType decisionDefinitionType) {
     if (decisionDefinitionType == null) {
       return null;
     }
     return switch (decisionDefinitionType) {
-      case DECISION_TABLE -> GeneratedDecisionDefinitionTypeEnum.DECISION_TABLE;
-      case LITERAL_EXPRESSION -> GeneratedDecisionDefinitionTypeEnum.LITERAL_EXPRESSION;
-      case UNSPECIFIED -> GeneratedDecisionDefinitionTypeEnum.UNSPECIFIED;
-      default -> GeneratedDecisionDefinitionTypeEnum.UNKNOWN;
+      case DECISION_TABLE -> DecisionDefinitionTypeEnum.DECISION_TABLE;
+      case LITERAL_EXPRESSION -> DecisionDefinitionTypeEnum.LITERAL_EXPRESSION;
+      case UNSPECIFIED -> DecisionDefinitionTypeEnum.UNSPECIFIED;
+      default -> DecisionDefinitionTypeEnum.UNKNOWN;
     };
   }
 

@@ -251,6 +251,24 @@
             <version>${version.nullaway}</version>
           </dependency>
         </dependencies>
+        <executions>
+          <execution>
+            <id>compile-generator-tool</id>
+            <goals>
+              <goal>compile</goal>
+            </goals>
+            <phase>initialize</phase>
+            <configuration>
+              <compileSourceRoots>
+                <compileSourceRoot>${project.basedir}/src/tools/java</compileSourceRoot>
+              </compileSourceRoots>
+              <outputDirectory>${project.build.directory}/tools-classes</outputDirectory>
+              <compilerArgs combine.self="override"/>
+              <annotationProcessorPaths combine.self="override"/>
+              <fork combine.self="override">false</fork>
+            </configuration>
+          </execution>
+        </executions>
       </plugin>
 
       <plugin>
@@ -258,17 +276,38 @@
         <artifactId>exec-maven-plugin</artifactId>
         <executions>
           <execution>
-            <id>generate-contract-mapping-poc</id>
+            <id>run-mapping-contracts-generator</id>
             <goals>
               <goal>exec</goal>
             </goals>
             <phase>generate-sources</phase>
             <configuration>
-              <executable>java</executable>
-              <workingDirectory>${project.basedir}</workingDirectory>
+              <executable>${java.home}/bin/java</executable>
               <arguments>
-                <argument>tools/GenerateContractMappingPoc.java</argument>
+                <argument>-cp</argument>
+                <argument>${project.build.directory}/tools-classes</argument>
+                <argument>io.camunda.gateway.mapping.http.tools.MappingContractsGenerator</argument>
+                <argument>${maven.multiModuleProjectDirectory}</argument>
               </arguments>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>build-helper-maven-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>add-generated-sources</id>
+            <goals>
+              <goal>add-source</goal>
+            </goals>
+            <phase>generate-sources</phase>
+            <configuration>
+              <sources>
+                <source>${project.build.directory}/generated-sources</source>
+              </sources>
             </configuration>
           </execution>
         </executions>

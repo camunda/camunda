@@ -16,7 +16,7 @@ import io.camunda.gateway.mapping.http.converters.AuditLogEntityTypeConverter;
 import io.camunda.gateway.mapping.http.converters.AuditLogOperationTypeConverter;
 import io.camunda.gateway.mapping.http.converters.AuditLogResultConverter;
 import io.camunda.gateway.mapping.http.converters.BatchOperationTypeConverter;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedAuditLogFilterStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.AuditLogFilterContract;
 import io.camunda.search.filter.AuditLogFilter;
 import io.camunda.search.filter.FilterBuilders;
 import java.time.OffsetDateTime;
@@ -28,8 +28,7 @@ public final class AuditLogFilterMapper {
 
   private AuditLogFilterMapper() {}
 
-  public static AuditLogFilter toAuditLogFilter(
-      @Nullable final GeneratedAuditLogFilterStrictContract filter) {
+  public static AuditLogFilter toAuditLogFilter(@Nullable final AuditLogFilterContract filter) {
     if (filter == null) {
       return FilterBuilders.auditLog().build();
     }

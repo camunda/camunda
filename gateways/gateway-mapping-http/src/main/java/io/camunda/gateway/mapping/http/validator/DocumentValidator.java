@@ -11,15 +11,15 @@ import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESS
 import static io.camunda.gateway.mapping.http.validator.RequestValidator.validate;
 import static io.camunda.gateway.mapping.http.validator.RequestValidator.validateDate;
 
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedDocumentLinkRequestStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedDocumentMetadataStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.DocumentLinkRequestContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.DocumentMetadataContract;
 import java.util.Optional;
 import org.springframework.http.ProblemDetail;
 
 public class DocumentValidator {
 
   public static Optional<ProblemDetail> validateDocumentMetadata(
-      final GeneratedDocumentMetadataStrictContract metadata) {
+      final DocumentMetadataContract metadata) {
     if (metadata == null) {
       return Optional.empty();
     }
@@ -40,7 +40,7 @@ public class DocumentValidator {
   }
 
   public static Optional<ProblemDetail> validateDocumentLinkParams(
-      final GeneratedDocumentLinkRequestStrictContract request) {
+      final DocumentLinkRequestContract request) {
     if (request == null) {
       return Optional.empty();
     }

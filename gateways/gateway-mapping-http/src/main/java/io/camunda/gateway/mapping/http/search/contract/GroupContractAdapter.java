@@ -7,9 +7,9 @@
  */
 package io.camunda.gateway.mapping.http.search.contract;
 
-import static io.camunda.gateway.mapping.http.search.contract.generated.GeneratedGroupStrictContract.Fields;
+import static io.camunda.gateway.mapping.http.search.contract.generated.GroupContract.Fields;
 
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedGroupStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GroupContract;
 import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
 import io.camunda.search.entities.GroupEntity;
 import java.util.List;
@@ -18,12 +18,12 @@ public final class GroupContractAdapter {
 
   private GroupContractAdapter() {}
 
-  public static List<GeneratedGroupStrictContract> adapt(final List<GroupEntity> entities) {
+  public static List<GroupContract> adapt(final List<GroupEntity> entities) {
     return entities.stream().map(GroupContractAdapter::adapt).toList();
   }
 
-  public static GeneratedGroupStrictContract adapt(final GroupEntity entity) {
-    return GeneratedGroupStrictContract.builder()
+  public static GroupContract adapt(final GroupEntity entity) {
+    return GroupContract.builder()
         .name(ContractPolicy.requireNonNull(entity.name(), Fields.NAME, entity))
         .groupId(ContractPolicy.requireNonNull(entity.groupId(), Fields.GROUP_ID, entity))
         .description(entity.description())

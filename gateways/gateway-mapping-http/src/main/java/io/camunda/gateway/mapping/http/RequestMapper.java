@@ -30,41 +30,41 @@ import io.camunda.gateway.mapping.http.MappedCommandRequests.UpdateJobRequest;
 import io.camunda.gateway.mapping.http.MappedCommandRequests.UpdateUserTaskRequest;
 import io.camunda.gateway.mapping.http.search.contract.DecisionInstanceFilterMapper;
 import io.camunda.gateway.mapping.http.search.contract.ProcessInstanceFilterMapper;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedAdHocSubProcessActivateActivitiesInstructionStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedCancelProcessInstanceRequestStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedConditionalEvaluationInstructionStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedDecisionEvaluationByIdStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedDecisionEvaluationByKeyStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedDecisionEvaluationInstructionStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedDecisionInstanceFilterStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedDeleteResourceRequestStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedDocumentLinkRequestStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedDocumentMetadataStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedJobActivationRequestStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedJobCompletionRequestStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedJobErrorRequestStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedJobFailRequestStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedJobResultAdHocSubProcessStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedJobResultUserTaskStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedJobStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedJobUpdateRequestStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedMessageCorrelationRequestStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedMessagePublicationRequestStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedModifyProcessInstanceVariableInstructionStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedProcessInstanceCreationInstructionByIdStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedProcessInstanceCreationInstructionByKeyStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedProcessInstanceCreationInstructionStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedProcessInstanceFilterStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedProcessInstanceMigrationBatchOperationRequestStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedProcessInstanceMigrationInstructionStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedProcessInstanceModificationActivateInstructionStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedProcessInstanceModificationBatchOperationRequestStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedProcessInstanceModificationInstructionStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedProcessInstanceModificationMoveInstructionStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedSignalBroadcastRequestStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedUserTaskAssignmentRequestStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedUserTaskCompletionRequestStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedUserTaskUpdateRequestStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.AdHocSubProcessActivateActivitiesInstructionContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.CancelProcessInstanceRequestContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.ConditionalEvaluationInstructionContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.DecisionEvaluationByIdContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.DecisionEvaluationByKeyContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.DecisionEvaluationInstructionContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.DecisionInstanceFilterContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.DeleteResourceRequestContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.DocumentLinkRequestContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.DocumentMetadataContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.JobActivationRequestContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.JobCompletionRequestContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.JobContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.JobErrorRequestContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.JobFailRequestContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.JobResultAdHocSubProcessContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.JobResultUserTaskContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.JobUpdateRequestContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.MessageCorrelationRequestContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.MessagePublicationRequestContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.ModifyProcessInstanceVariableInstructionContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.ProcessInstanceCreationInstructionByIdContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.ProcessInstanceCreationInstructionByKeyContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.ProcessInstanceCreationInstructionContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.ProcessInstanceFilterContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.ProcessInstanceMigrationBatchOperationRequestContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.ProcessInstanceMigrationInstructionContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.ProcessInstanceModificationActivateInstructionContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.ProcessInstanceModificationBatchOperationRequestContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.ProcessInstanceModificationInstructionContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.ProcessInstanceModificationMoveInstructionContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.SignalBroadcastRequestContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.UserTaskAssignmentRequestContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.UserTaskCompletionRequestContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.UserTaskUpdateRequestContract;
 import io.camunda.gateway.mapping.http.util.KeyUtil;
 import io.camunda.gateway.mapping.http.validator.AdHocSubProcessRequestValidator;
 import io.camunda.gateway.mapping.http.validator.ConditionalRequestValidator;
@@ -155,7 +155,7 @@ public class RequestMapper {
       final String documentId,
       final String storeId,
       final Part file,
-      final GeneratedDocumentMetadataStrictContract metadata) {
+      final DocumentMetadataContract metadata) {
     final InputStream inputStream;
     try {
       inputStream = file.getInputStream();
@@ -186,7 +186,7 @@ public class RequestMapper {
       final List<Part> parts,
       final String storeId,
       final ObjectMapper objectMapper,
-      final List<GeneratedDocumentMetadataStrictContract> metadataList) {
+      final List<DocumentMetadataContract> metadataList) {
 
     final boolean hasList = metadataList != null && !metadataList.isEmpty();
     final boolean hasHeaderMetadata =
@@ -233,7 +233,7 @@ public class RequestMapper {
       final List<DocumentCreateRequest> requests = new ArrayList<>(parts.size());
       for (int i = 0; i < parts.size(); i++) {
         final Part part = parts.get(i);
-        final GeneratedDocumentMetadataStrictContract metadata = metadataList.get(i);
+        final DocumentMetadataContract metadata = metadataList.get(i);
         final InputStream inputStream;
         try {
           inputStream = part.getInputStream();
@@ -249,14 +249,13 @@ public class RequestMapper {
     }
 
     // Legacy header-based path (original implementation)
-    final Map<Part, GeneratedDocumentMetadataStrictContract> metadataMap = new HashMap<>();
+    final Map<Part, DocumentMetadataContract> metadataMap = new HashMap<>();
     for (final var part : parts) {
       final var headerValue = part.getHeader("X-Document-Metadata");
       if (headerValue != null) {
         try {
           metadataMap.put(
-              part,
-              objectMapper.readValue(headerValue, GeneratedDocumentMetadataStrictContract.class));
+              part, objectMapper.readValue(headerValue, DocumentMetadataContract.class));
         } catch (final IOException e) {
           throw new RuntimeException(e);
         }
@@ -343,7 +342,7 @@ public class RequestMapper {
   }
 
   private static DocumentMetadataModel toInternalDocumentMetadata(
-      final GeneratedDocumentMetadataStrictContract metadata, final Part file) {
+      final DocumentMetadataContract metadata, final Part file) {
 
     if (metadata == null) {
       return new DocumentMetadataModel(
@@ -383,18 +382,17 @@ public class RequestMapper {
   }
 
   public static Either<ProblemDetail, ProcessInstanceCreateRequest> toCreateProcessInstance(
-      final GeneratedProcessInstanceCreationInstructionStrictContract request,
-      final boolean multiTenancyEnabled) {
+      final ProcessInstanceCreationInstructionContract request, final boolean multiTenancyEnabled) {
     return switch (request) {
-      case GeneratedProcessInstanceCreationInstructionByIdStrictContract req ->
+      case ProcessInstanceCreationInstructionByIdContract req ->
           toCreateProcessInstance(req, multiTenancyEnabled);
-      case GeneratedProcessInstanceCreationInstructionByKeyStrictContract req ->
+      case ProcessInstanceCreationInstructionByKeyContract req ->
           toCreateProcessInstance(req, multiTenancyEnabled);
     };
   }
 
   public static Either<ProblemDetail, ProcessInstanceCreateRequest> toCreateProcessInstance(
-      final GeneratedProcessInstanceCreationInstructionByIdStrictContract request,
+      final ProcessInstanceCreationInstructionByIdContract request,
       final boolean multiTenancyEnabled) {
     final Either<ProblemDetail, String> validationResponse =
         validateTenantId(request.tenantId(), multiTenancyEnabled, "Create Process Instance")
@@ -430,7 +428,7 @@ public class RequestMapper {
   }
 
   public static Either<ProblemDetail, ProcessInstanceCreateRequest> toCreateProcessInstance(
-      final GeneratedProcessInstanceCreationInstructionByKeyStrictContract request,
+      final ProcessInstanceCreationInstructionByKeyContract request,
       final boolean multiTenancyEnabled) {
     final Either<ProblemDetail, String> validationResponse =
         validateTenantId(request.tenantId(), multiTenancyEnabled, "Create Process Instance")
@@ -483,19 +481,17 @@ public class RequestMapper {
   // --- Strict contract overloads for decision evaluation ---
 
   public static Either<ProblemDetail, DecisionEvaluationRequest> toEvaluateDecisionRequest(
-      final GeneratedDecisionEvaluationInstructionStrictContract request,
-      final boolean multiTenancyEnabled) {
+      final DecisionEvaluationInstructionContract request, final boolean multiTenancyEnabled) {
     return switch (request) {
-      case GeneratedDecisionEvaluationByIdStrictContract req ->
+      case DecisionEvaluationByIdContract req ->
           toEvaluateDecisionRequest(req, multiTenancyEnabled);
-      case GeneratedDecisionEvaluationByKeyStrictContract req ->
+      case DecisionEvaluationByKeyContract req ->
           toEvaluateDecisionRequest(req, multiTenancyEnabled);
     };
   }
 
   public static Either<ProblemDetail, DecisionEvaluationRequest> toEvaluateDecisionRequest(
-      final GeneratedDecisionEvaluationByIdStrictContract request,
-      final boolean multiTenancyEnabled) {
+      final DecisionEvaluationByIdContract request, final boolean multiTenancyEnabled) {
     final Either<ProblemDetail, String> validationResponse =
         validateTenantId(request.tenantId(), multiTenancyEnabled, "Evaluate Decision");
     return validationResponse.map(
@@ -505,8 +501,7 @@ public class RequestMapper {
   }
 
   public static Either<ProblemDetail, DecisionEvaluationRequest> toEvaluateDecisionRequest(
-      final GeneratedDecisionEvaluationByKeyStrictContract request,
-      final boolean multiTenancyEnabled) {
+      final DecisionEvaluationByKeyContract request, final boolean multiTenancyEnabled) {
     final Either<ProblemDetail, String> validationResponse =
         validateTenantId(request.tenantId(), multiTenancyEnabled, "Evaluate Decision");
     return validationResponse.map(
@@ -525,7 +520,7 @@ public class RequestMapper {
   // ---- Strict contract methods (direct field access) ----
 
   public static CompleteUserTaskRequest toUserTaskCompletionRequest(
-      final GeneratedUserTaskCompletionRequestStrictContract request, final long userTaskKey) {
+      final UserTaskCompletionRequestContract request, final long userTaskKey) {
     if (request == null) {
       return new CompleteUserTaskRequest(userTaskKey, Map.of(), "");
     }
@@ -534,7 +529,7 @@ public class RequestMapper {
   }
 
   public static Either<ProblemDetail, AssignUserTaskRequest> toUserTaskAssignmentRequest(
-      final GeneratedUserTaskAssignmentRequestStrictContract request, final long userTaskKey) {
+      final UserTaskAssignmentRequestContract request, final long userTaskKey) {
     final String action = request.actionOrDefault();
     final boolean allowOverride = request.allowOverride() == null || request.allowOverride();
     return getResult(
@@ -548,7 +543,7 @@ public class RequestMapper {
   }
 
   public static Either<ProblemDetail, UpdateUserTaskRequest> toUserTaskUpdateRequest(
-      final GeneratedUserTaskUpdateRequestStrictContract request, final long userTaskKey) {
+      final UserTaskUpdateRequestContract request, final long userTaskKey) {
     final var changeset = request != null ? request.changeset() : null;
     return getResult(
         UserTaskRequestValidator.validateUpdateRequest(request),
@@ -579,8 +574,7 @@ public class RequestMapper {
   }
 
   public static Either<ProblemDetail, ActivateJobsRequest> toJobsActivationRequest(
-      final GeneratedJobActivationRequestStrictContract request,
-      final boolean multiTenancyEnabled) {
+      final JobActivationRequestContract request, final boolean multiTenancyEnabled) {
     final var validationError = JobRequestValidator.validateActivationRequest(request);
     if (validationError.isPresent()) {
       return Either.left(validationError.get());
@@ -639,7 +633,7 @@ public class RequestMapper {
   }
 
   public static FailJobRequest toJobFailRequest(
-      final GeneratedJobFailRequestStrictContract request, final long jobKey) {
+      final JobFailRequestContract request, final long jobKey) {
     if (request == null) {
       return new FailJobRequest(jobKey, 0, "", 0L, Map.of());
     }
@@ -652,7 +646,7 @@ public class RequestMapper {
   }
 
   public static Either<ProblemDetail, ErrorJobRequest> toJobErrorRequest(
-      final GeneratedJobErrorRequestStrictContract request, final long jobKey) {
+      final JobErrorRequestContract request, final long jobKey) {
     return getResult(
         JobRequestValidator.validateErrorRequest(request),
         () ->
@@ -664,7 +658,7 @@ public class RequestMapper {
   }
 
   public static CompleteJobRequest toJobCompletionRequest(
-      final GeneratedJobCompletionRequestStrictContract request, final long jobKey) {
+      final JobCompletionRequestContract request, final long jobKey) {
     if (request == null) {
       return new CompleteJobRequest(jobKey, Map.of(), new JobResult());
     }
@@ -681,14 +675,14 @@ public class RequestMapper {
     if (rawResult == null) {
       return new JobResult();
     }
-    final var typed = PROTOCOL_MAPPER.convertValue(rawResult, GeneratedJobStrictContract.class);
+    final var typed = PROTOCOL_MAPPER.convertValue(rawResult, JobContract.class);
     return switch (typed) {
-      case GeneratedJobResultUserTaskStrictContract ut -> toJobResult(ut);
-      case GeneratedJobResultAdHocSubProcessStrictContract ahsp -> toJobResult(ahsp);
+      case JobResultUserTaskContract ut -> toJobResult(ut);
+      case JobResultAdHocSubProcessContract ahsp -> toJobResult(ahsp);
     };
   }
 
-  private static JobResult toJobResult(final GeneratedJobResultUserTaskStrictContract result) {
+  private static JobResult toJobResult(final JobResultUserTaskContract result) {
     final JobResult jobResult = new JobResult();
     jobResult.setType(JobResultType.from(result.type()));
     jobResult.setDenied(result.denied() != null ? result.denied() : false);
@@ -732,8 +726,7 @@ public class RequestMapper {
     return jobResult;
   }
 
-  private static JobResult toJobResult(
-      final GeneratedJobResultAdHocSubProcessStrictContract result) {
+  private static JobResult toJobResult(final JobResultAdHocSubProcessContract result) {
     final JobResult jobResult = new JobResult();
     jobResult
         .setType(JobResultType.from(result.type()))
@@ -757,7 +750,7 @@ public class RequestMapper {
   }
 
   public static Either<ProblemDetail, UpdateJobRequest> toJobUpdateRequest(
-      final GeneratedJobUpdateRequestStrictContract request, final long jobKey) {
+      final JobUpdateRequestContract request, final long jobKey) {
     final var cs = request.changeset();
     return getResult(
         JobRequestValidator.validateUpdateRequest(request),
@@ -769,8 +762,7 @@ public class RequestMapper {
   }
 
   public static Either<ProblemDetail, BroadcastSignalRequest> toBroadcastSignalRequest(
-      final GeneratedSignalBroadcastRequestStrictContract request,
-      final boolean multiTenancyEnabled) {
+      final SignalBroadcastRequestContract request, final boolean multiTenancyEnabled) {
     final Either<ProblemDetail, String> validationResponse =
         validateTenantId(request.tenantId(), multiTenancyEnabled, "Broadcast Signal")
             .flatMap(
@@ -784,7 +776,7 @@ public class RequestMapper {
   }
 
   public static Either<ProblemDetail, ResourceDeletionRequest> toResourceDeletion(
-      final long resourceKey, final GeneratedDeleteResourceRequestStrictContract request) {
+      final long resourceKey, final DeleteResourceRequestContract request) {
     final Long operationReference = request != null ? request.operationReference() : null;
     final boolean deleteHistory = request != null && Boolean.TRUE.equals(request.deleteHistory());
     return Either.right(
@@ -792,7 +784,7 @@ public class RequestMapper {
   }
 
   public static Either<ProblemDetail, DocumentLinkParams> toDocumentLinkParams(
-      final GeneratedDocumentLinkRequestStrictContract request) {
+      final DocumentLinkRequestContract request) {
     if (request == null) {
       return Either.right(new DocumentLinkParams(Duration.ZERO));
     }
@@ -802,14 +794,13 @@ public class RequestMapper {
   }
 
   public static Either<ProblemDetail, ProcessInstanceCancelRequest> toCancelProcessInstance(
-      final long processInstanceKey,
-      final GeneratedCancelProcessInstanceRequestStrictContract request) {
+      final long processInstanceKey, final CancelProcessInstanceRequestContract request) {
     final Long operationReference = request != null ? request.operationReference() : null;
     return Either.right(new ProcessInstanceCancelRequest(processInstanceKey, operationReference));
   }
 
   public static Either<ProblemDetail, io.camunda.search.filter.ProcessInstanceFilter>
-      toRequiredProcessInstanceFilter(final GeneratedProcessInstanceFilterStrictContract request) {
+      toRequiredProcessInstanceFilter(final ProcessInstanceFilterContract request) {
     final var filter = ProcessInstanceFilterMapper.toRequiredProcessInstanceFilter(request);
     if (filter.isLeft()) {
       return Either.left(createProblemDetail(filter.getLeft()).get());
@@ -819,7 +810,7 @@ public class RequestMapper {
 
   public static Either<ProblemDetail, ProcessInstanceMigrateBatchOperationRequest>
       toProcessInstanceMigrationBatchOperationRequest(
-          final GeneratedProcessInstanceMigrationBatchOperationRequestStrictContract request) {
+          final ProcessInstanceMigrationBatchOperationRequestContract request) {
     final var filterResult = toRequiredProcessInstanceFilter(request.filter());
     if (filterResult.isLeft()) {
       return Either.left(filterResult.getLeft());
@@ -857,7 +848,7 @@ public class RequestMapper {
 
   public static Either<ProblemDetail, ProcessInstanceModifyBatchOperationRequest>
       toProcessInstanceModifyBatchOperationRequest(
-          final GeneratedProcessInstanceModificationBatchOperationRequestStrictContract request) {
+          final ProcessInstanceModificationBatchOperationRequestContract request) {
     final var filterResult = toRequiredProcessInstanceFilter(request.filter());
     if (filterResult.isLeft()) {
       return Either.left(filterResult.getLeft());
@@ -885,8 +876,7 @@ public class RequestMapper {
   }
 
   public static Either<ProblemDetail, ProcessInstanceMigrateRequest> toMigrateProcessInstance(
-      final long processInstanceKey,
-      final GeneratedProcessInstanceMigrationInstructionStrictContract request) {
+      final long processInstanceKey, final ProcessInstanceMigrationInstructionContract request) {
     return getResult(
         ProcessInstanceRequestValidator.validateMigrationInstructions(request),
         () ->
@@ -904,8 +894,7 @@ public class RequestMapper {
   }
 
   public static Either<ProblemDetail, ProcessInstanceModifyRequest> toModifyProcessInstance(
-      final long processInstanceKey,
-      final GeneratedProcessInstanceModificationInstructionStrictContract request) {
+      final long processInstanceKey, final ProcessInstanceModificationInstructionContract request) {
     final List<String> violations = new ArrayList<>();
     final var activateInstructions =
         mapActivateInstructionsFromContract(request.activateInstructions());
@@ -926,8 +915,7 @@ public class RequestMapper {
 
   private static List<ProcessInstanceModificationActivateInstruction>
       mapActivateInstructionsFromContract(
-          final List<GeneratedProcessInstanceModificationActivateInstructionStrictContract>
-              instructions) {
+          final List<ProcessInstanceModificationActivateInstructionContract> instructions) {
     if (instructions == null) {
       return List.of();
     }
@@ -949,14 +937,14 @@ public class RequestMapper {
   }
 
   private static ProcessInstanceModificationVariableInstruction mapVariableInstructionFromContract(
-      final GeneratedModifyProcessInstanceVariableInstructionStrictContract variable) {
+      final ModifyProcessInstanceVariableInstructionContract variable) {
     return new ProcessInstanceModificationVariableInstruction()
         .setElementId(variable.scopeId())
         .setVariables(new UnsafeBuffer(MsgPackConverter.convertToMsgPack(variable.variables())));
   }
 
   private static List<ProcessInstanceModificationMoveInstruction> mapMoveInstructionsFromContract(
-      final List<GeneratedProcessInstanceModificationMoveInstructionStrictContract> instructions,
+      final List<ProcessInstanceModificationMoveInstructionContract> instructions,
       final List<String> violations) {
     if (instructions == null) {
       return List.of();
@@ -1046,7 +1034,7 @@ public class RequestMapper {
   }
 
   public static Either<ProblemDetail, PublicationMessageRequest> toMessagePublicationRequest(
-      final GeneratedMessagePublicationRequestStrictContract request,
+      final MessagePublicationRequestContract request,
       final boolean multiTenancyEnabled,
       final int maxNameFieldLength) {
     final Either<ProblemDetail, String> validationResponse =
@@ -1068,7 +1056,7 @@ public class RequestMapper {
   }
 
   public static Either<ProblemDetail, CorrelateMessageRequest> toMessageCorrelationRequest(
-      final GeneratedMessageCorrelationRequestStrictContract request,
+      final MessageCorrelationRequestContract request,
       final boolean multiTenancyEnabled,
       final int maxNameFieldLength) {
     final Either<ProblemDetail, String> validationResponse =
@@ -1085,8 +1073,7 @@ public class RequestMapper {
   }
 
   public static Either<ProblemDetail, EvaluateConditionalRequest> toEvaluateConditionalRequest(
-      final GeneratedConditionalEvaluationInstructionStrictContract request,
-      final boolean multiTenancyEnabled) {
+      final ConditionalEvaluationInstructionContract request, final boolean multiTenancyEnabled) {
     final Either<ProblemDetail, String> validationResponse =
         validateTenantId(request.tenantId(), multiTenancyEnabled, "Evaluate Conditional")
             .flatMap(
@@ -1107,7 +1094,7 @@ public class RequestMapper {
   public static Either<ProblemDetail, AdHocSubProcessActivateActivitiesRequest>
       toAdHocSubProcessActivateActivitiesRequest(
           final String adHocSubProcessInstanceKey,
-          final GeneratedAdHocSubProcessActivateActivitiesInstructionStrictContract request) {
+          final AdHocSubProcessActivateActivitiesInstructionContract request) {
     return getResult(
         AdHocSubProcessRequestValidator.validateActivateActivitiesRequest(request),
         () ->
@@ -1123,7 +1110,7 @@ public class RequestMapper {
   }
 
   public static Either<ProblemDetail, DecisionInstanceFilter> toRequiredDecisionInstanceFilter(
-      final GeneratedDecisionInstanceFilterStrictContract request) {
+      final DecisionInstanceFilterContract request) {
     if (request == null) {
       return Either.left(
           createProblemDetail(List.of(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("filter"))).get());

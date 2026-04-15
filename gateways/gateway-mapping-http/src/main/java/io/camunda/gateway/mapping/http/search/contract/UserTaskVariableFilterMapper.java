@@ -10,7 +10,7 @@ package io.camunda.gateway.mapping.http.search.contract;
 import static io.camunda.gateway.mapping.http.util.AdvancedSearchFilterUtil.mapToOperations;
 import static java.util.Optional.ofNullable;
 
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedUserTaskVariableFilterStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.UserTaskVariableFilterContract;
 import io.camunda.search.filter.FilterBuilders;
 import io.camunda.search.filter.VariableFilter;
 import org.jspecify.annotations.NullMarked;
@@ -22,7 +22,7 @@ public final class UserTaskVariableFilterMapper {
   private UserTaskVariableFilterMapper() {}
 
   public static VariableFilter toUserTaskVariableFilter(
-      @Nullable final GeneratedUserTaskVariableFilterStrictContract filter) {
+      @Nullable final UserTaskVariableFilterContract filter) {
     if (filter == null) {
       return FilterBuilders.variable().build();
     }

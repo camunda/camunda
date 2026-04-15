@@ -7,9 +7,9 @@
  */
 package io.camunda.gateway.mapping.http.search.contract;
 
-import static io.camunda.gateway.mapping.http.search.contract.generated.GeneratedProcessDefinitionStrictContract.Fields;
+import static io.camunda.gateway.mapping.http.search.contract.generated.ProcessDefinitionContract.Fields;
 
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedProcessDefinitionStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.ProcessDefinitionContract;
 import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
 import io.camunda.search.entities.ProcessDefinitionEntity;
 
@@ -26,9 +26,8 @@ public final class ProcessDefinitionContractAdapter {
 
   private ProcessDefinitionContractAdapter() {}
 
-  public static GeneratedProcessDefinitionStrictContract adapt(
-      final ProcessDefinitionEntity entity) {
-    return GeneratedProcessDefinitionStrictContract.builder()
+  public static ProcessDefinitionContract adapt(final ProcessDefinitionEntity entity) {
+    return ProcessDefinitionContract.builder()
         .resourceName(
             ContractPolicy.requireNonNull(entity.resourceName(), Fields.RESOURCE_NAME, entity))
         .version(ContractPolicy.requireNonNull(entity.version(), Fields.VERSION, entity))

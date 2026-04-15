@@ -9,8 +9,8 @@ package io.camunda.gateway.mapping.http.validator;
 
 import static io.camunda.gateway.mapping.http.validator.RequestValidator.validate;
 
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedUserRequestStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedUserUpdateRequestStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.UserRequestContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.UserUpdateRequestContract;
 import io.camunda.security.validation.UserValidator;
 import java.util.Optional;
 import org.springframework.http.ProblemDetail;
@@ -23,16 +23,14 @@ public class UserRequestValidator {
     this.userValidator = userValidator;
   }
 
-  public Optional<ProblemDetail> validateCreateRequest(
-      final GeneratedUserRequestStrictContract request) {
+  public Optional<ProblemDetail> validateCreateRequest(final UserRequestContract request) {
     return validate(
         () ->
             userValidator.validateCreateRequest(
                 request.username(), request.password(), request.name(), request.email()));
   }
 
-  public Optional<ProblemDetail> validateUpdateRequest(
-      final GeneratedUserUpdateRequestStrictContract request) {
+  public Optional<ProblemDetail> validateUpdateRequest(final UserUpdateRequestContract request) {
     return validate(() -> userValidator.validateUpdateRequest(request.name(), request.email()));
   }
 }

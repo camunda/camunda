@@ -9,8 +9,8 @@ package io.camunda.gateway.mapping.http.validator;
 
 import static io.camunda.gateway.mapping.http.validator.RequestValidator.validate;
 
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedRoleCreateRequestStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedRoleUpdateRequestStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.RoleCreateRequestContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.RoleUpdateRequestContract;
 import io.camunda.security.validation.RoleValidator;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import java.util.Optional;
@@ -24,13 +24,12 @@ public final class RoleRequestValidator {
     this.roleValidator = roleValidator;
   }
 
-  public Optional<ProblemDetail> validateCreateRequest(
-      final GeneratedRoleCreateRequestStrictContract request) {
+  public Optional<ProblemDetail> validateCreateRequest(final RoleCreateRequestContract request) {
     return validate(() -> roleValidator.validate(request.roleId(), request.name()));
   }
 
   public Optional<ProblemDetail> validateUpdateRequest(
-      final String roleId, final GeneratedRoleUpdateRequestStrictContract request) {
+      final String roleId, final RoleUpdateRequestContract request) {
     return validate(() -> roleValidator.validate(roleId, request.name()));
   }
 

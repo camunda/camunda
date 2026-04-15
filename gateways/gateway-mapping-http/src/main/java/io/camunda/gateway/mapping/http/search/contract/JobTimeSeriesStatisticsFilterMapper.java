@@ -11,7 +11,7 @@ import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESS
 import static io.camunda.gateway.mapping.http.validator.RequestValidator.validateDate;
 import static io.camunda.gateway.mapping.http.validator.RequestValidator.validateDuration;
 
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedJobTimeSeriesStatisticsFilterStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.JobTimeSeriesStatisticsFilterContract;
 import io.camunda.search.filter.FilterBuilders;
 import io.camunda.search.filter.JobTimeSeriesStatisticsFilter;
 import io.camunda.zeebe.util.Either;
@@ -27,7 +27,7 @@ public final class JobTimeSeriesStatisticsFilterMapper {
   private JobTimeSeriesStatisticsFilterMapper() {}
 
   public static Either<List<String>, JobTimeSeriesStatisticsFilter> toJobTimeSeriesStatisticsFilter(
-      @Nullable final GeneratedJobTimeSeriesStatisticsFilterStrictContract filter) {
+      @Nullable final JobTimeSeriesStatisticsFilterContract filter) {
     final var builder = FilterBuilders.jobTimeSeriesStatistics();
     final List<String> validationErrors = new ArrayList<>();
     if (filter == null) {

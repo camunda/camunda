@@ -8,11 +8,11 @@
 package io.camunda.gateway.mapping.http.search.contract;
 
 import static io.camunda.gateway.mapping.http.ResponseMapper.formatDate;
-import static io.camunda.gateway.mapping.http.search.contract.generated.GeneratedIncidentStrictContract.Fields;
+import static io.camunda.gateway.mapping.http.search.contract.generated.IncidentContract.Fields;
 
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedIncidentErrorTypeEnum;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedIncidentStateEnum;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedIncidentStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.IncidentContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.IncidentErrorTypeEnum;
+import io.camunda.gateway.mapping.http.search.contract.generated.IncidentStateEnum;
 import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
 import io.camunda.search.entities.IncidentEntity;
 import java.util.List;
@@ -21,19 +21,18 @@ public final class IncidentContractAdapter {
 
   private IncidentContractAdapter() {}
 
-  public static List<GeneratedIncidentStrictContract> adapt(final List<IncidentEntity> entities) {
+  public static List<IncidentContract> adapt(final List<IncidentEntity> entities) {
     return entities.stream().map(IncidentContractAdapter::adapt).toList();
   }
 
-  public static GeneratedIncidentStrictContract adapt(final IncidentEntity entity) {
-    return GeneratedIncidentStrictContract.builder()
+  public static IncidentContract adapt(final IncidentEntity entity) {
+    return IncidentContract.builder()
         .processDefinitionId(
             ContractPolicy.requireNonNull(
                 entity.processDefinitionId(), Fields.PROCESS_DEFINITION_ID, entity))
         .errorType(
             ContractPolicy.requireNonNull(
-                ContractPolicy.mapEnum(
-                    entity.errorType(), GeneratedIncidentErrorTypeEnum::fromValue),
+                ContractPolicy.mapEnum(entity.errorType(), IncidentErrorTypeEnum::fromValue),
                 Fields.ERROR_TYPE,
                 entity))
         .errorMessage(
@@ -45,8 +44,8 @@ public final class IncidentContractAdapter {
         .state(
             ContractPolicy.requireNonNull(
                 entity.state() != null
-                    ? GeneratedIncidentStateEnum.fromValue(entity.state().name())
-                    : GeneratedIncidentStateEnum.UNKNOWN,
+                    ? IncidentStateEnum.fromValue(entity.state().name())
+                    : IncidentStateEnum.UNKNOWN,
                 Fields.STATE,
                 entity))
         .tenantId(ContractPolicy.requireNonNull(entity.tenantId(), Fields.TENANT_ID, entity))

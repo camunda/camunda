@@ -7,12 +7,12 @@
  */
 package io.camunda.gateway.mapping.http.search.contract;
 
-import static io.camunda.gateway.mapping.http.search.contract.generated.GeneratedAuthorizationStrictContract.Fields;
+import static io.camunda.gateway.mapping.http.search.contract.generated.AuthorizationContract.Fields;
 
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedAuthorizationStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedOwnerTypeEnum;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedPermissionTypeEnum;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedResourceTypeEnum;
+import io.camunda.gateway.mapping.http.search.contract.generated.AuthorizationContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.OwnerTypeEnum;
+import io.camunda.gateway.mapping.http.search.contract.generated.PermissionTypeEnum;
+import io.camunda.gateway.mapping.http.search.contract.generated.ResourceTypeEnum;
 import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
 import io.camunda.search.entities.AuthorizationEntity;
 import java.util.List;
@@ -22,27 +22,24 @@ public final class AuthorizationContractAdapter {
 
   private AuthorizationContractAdapter() {}
 
-  public static List<GeneratedAuthorizationStrictContract> adapt(
-      final List<AuthorizationEntity> entities) {
+  public static List<AuthorizationContract> adapt(final List<AuthorizationEntity> entities) {
     return entities.stream().map(AuthorizationContractAdapter::adapt).toList();
   }
 
-  public static GeneratedAuthorizationStrictContract adapt(final AuthorizationEntity entity) {
-    return GeneratedAuthorizationStrictContract.builder()
+  public static AuthorizationContract adapt(final AuthorizationEntity entity) {
+    return AuthorizationContract.builder()
         .ownerId(ContractPolicy.requireNonNull(entity.ownerId(), Fields.OWNER_ID, entity))
         .ownerType(
             ContractPolicy.requireNonNull(
-                GeneratedOwnerTypeEnum.fromValue(entity.ownerType()), Fields.OWNER_TYPE, entity))
+                OwnerTypeEnum.fromValue(entity.ownerType()), Fields.OWNER_TYPE, entity))
         .resourceType(
             ContractPolicy.requireNonNull(
-                GeneratedResourceTypeEnum.valueOf(entity.resourceType()),
-                Fields.RESOURCE_TYPE,
-                entity))
+                ResourceTypeEnum.valueOf(entity.resourceType()), Fields.RESOURCE_TYPE, entity))
         .permissionTypes(
             ContractPolicy.requireNonNull(
                 entity.permissionTypes().stream()
                     .map(pt -> pt.name())
-                    .map(GeneratedPermissionTypeEnum::fromValue)
+                    .map(PermissionTypeEnum::fromValue)
                     .toList(),
                 Fields.PERMISSION_TYPES,
                 entity))

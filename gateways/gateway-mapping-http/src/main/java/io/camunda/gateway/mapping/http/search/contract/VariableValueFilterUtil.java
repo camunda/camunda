@@ -11,9 +11,9 @@ import static io.camunda.gateway.mapping.http.util.AdvancedSearchFilterUtil.mapT
 import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_NULL_VARIABLE_NAME;
 import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_NULL_VARIABLE_VALUE;
 
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedAdvancedStringFilterStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedStringFilterPropertyStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedVariableValueFilterPropertyStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.AdvancedStringFilterContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.StringFilterPropertyContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.VariableValueFilterPropertyContract;
 import io.camunda.search.filter.Operation;
 import io.camunda.search.filter.VariableValueFilter;
 import io.camunda.zeebe.util.Either;
@@ -30,8 +30,8 @@ public final class VariableValueFilterUtil {
   private VariableValueFilterUtil() {}
 
   public static Either<List<String>, List<VariableValueFilter>> toStrictVariableValueFilters(
-      final @Nullable List<GeneratedVariableValueFilterPropertyStrictContract> filters) {
-    final List<GeneratedVariableValueFilterPropertyStrictContract> safeFilters =
+      final @Nullable List<VariableValueFilterPropertyContract> filters) {
+    final List<VariableValueFilterPropertyContract> safeFilters =
         filters == null ? List.of() : filters;
     if (CollectionUtils.isEmpty(safeFilters)) {
       return Either.right(List.of());
@@ -58,9 +58,8 @@ public final class VariableValueFilterUtil {
         : Either.left(validationErrors);
   }
 
-  private static boolean isEmptyStrictStringFilter(
-      final GeneratedStringFilterPropertyStrictContract value) {
-    return value instanceof GeneratedAdvancedStringFilterStrictContract adv
+  private static boolean isEmptyStrictStringFilter(final StringFilterPropertyContract value) {
+    return value instanceof AdvancedStringFilterContract adv
         && adv.$eq() == null
         && adv.$neq() == null
         && adv.$exists() == null

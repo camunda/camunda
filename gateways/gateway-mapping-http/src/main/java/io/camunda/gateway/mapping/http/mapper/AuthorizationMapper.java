@@ -8,10 +8,10 @@
 package io.camunda.gateway.mapping.http.mapper;
 
 import io.camunda.gateway.mapping.http.RequestMapper;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedAuthorizationIdBasedRequestStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedAuthorizationPropertyBasedRequestStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedAuthorizationRequestStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedPermissionTypeEnum;
+import io.camunda.gateway.mapping.http.search.contract.generated.AuthorizationIdBasedRequestContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.AuthorizationPropertyBasedRequestContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.AuthorizationRequestContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.PermissionTypeEnum;
 import io.camunda.gateway.mapping.http.validator.AuthorizationRequestValidator;
 import io.camunda.service.AuthorizationServices.CreateAuthorizationRequest;
 import io.camunda.service.AuthorizationServices.UpdateAuthorizationRequest;
@@ -42,17 +42,16 @@ public class AuthorizationMapper {
   }
 
   public Either<ProblemDetail, CreateAuthorizationRequest> toCreateAuthorizationRequest(
-      final GeneratedAuthorizationRequestStrictContract request) {
+      final AuthorizationRequestContract request) {
     return switch (request) {
-      case GeneratedAuthorizationIdBasedRequestStrictContract idReq ->
-          toCreateAuthorizationRequest(idReq);
-      case GeneratedAuthorizationPropertyBasedRequestStrictContract propReq ->
+      case AuthorizationIdBasedRequestContract idReq -> toCreateAuthorizationRequest(idReq);
+      case AuthorizationPropertyBasedRequestContract propReq ->
           toCreateAuthorizationRequest(propReq);
     };
   }
 
   public Either<ProblemDetail, CreateAuthorizationRequest> toCreateAuthorizationRequest(
-      final GeneratedAuthorizationIdBasedRequestStrictContract request) {
+      final AuthorizationIdBasedRequestContract request) {
     return RequestMapper.getResult(
         authorizationRequestValidator.validateIdBasedRequest(request),
         () ->
@@ -67,7 +66,7 @@ public class AuthorizationMapper {
   }
 
   public Either<ProblemDetail, CreateAuthorizationRequest> toCreateAuthorizationRequest(
-      final GeneratedAuthorizationPropertyBasedRequestStrictContract request) {
+      final AuthorizationPropertyBasedRequestContract request) {
     return RequestMapper.getResult(
         authorizationRequestValidator.validatePropertyBasedRequest(request),
         () ->
@@ -82,18 +81,17 @@ public class AuthorizationMapper {
   }
 
   public Either<ProblemDetail, UpdateAuthorizationRequest> toUpdateAuthorizationRequest(
-      final long authorizationKey, final GeneratedAuthorizationRequestStrictContract request) {
+      final long authorizationKey, final AuthorizationRequestContract request) {
     return switch (request) {
-      case GeneratedAuthorizationIdBasedRequestStrictContract idReq ->
+      case AuthorizationIdBasedRequestContract idReq ->
           toUpdateAuthorizationRequest(authorizationKey, idReq);
-      case GeneratedAuthorizationPropertyBasedRequestStrictContract propReq ->
+      case AuthorizationPropertyBasedRequestContract propReq ->
           toUpdateAuthorizationRequest(authorizationKey, propReq);
     };
   }
 
   public Either<ProblemDetail, UpdateAuthorizationRequest> toUpdateAuthorizationRequest(
-      final long authorizationKey,
-      final GeneratedAuthorizationIdBasedRequestStrictContract request) {
+      final long authorizationKey, final AuthorizationIdBasedRequestContract request) {
     return RequestMapper.getResult(
         authorizationRequestValidator.validateIdBasedRequest(request),
         () ->
@@ -109,8 +107,7 @@ public class AuthorizationMapper {
   }
 
   public Either<ProblemDetail, UpdateAuthorizationRequest> toUpdateAuthorizationRequest(
-      final long authorizationKey,
-      final GeneratedAuthorizationPropertyBasedRequestStrictContract request) {
+      final long authorizationKey, final AuthorizationPropertyBasedRequestContract request) {
     return RequestMapper.getResult(
         authorizationRequestValidator.validatePropertyBasedRequest(request),
         () ->
@@ -126,7 +123,7 @@ public class AuthorizationMapper {
   }
 
   private static Set<PermissionType> transformPermissionTypes(
-      final List<GeneratedPermissionTypeEnum> permissionTypes) {
+      final List<PermissionTypeEnum> permissionTypes) {
     return permissionTypes.stream()
         .map(permission -> PermissionType.valueOf(permission.name()))
         .collect(Collectors.toSet());

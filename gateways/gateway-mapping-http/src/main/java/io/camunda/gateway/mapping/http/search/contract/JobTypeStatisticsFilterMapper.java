@@ -11,7 +11,7 @@ import static io.camunda.gateway.mapping.http.util.AdvancedSearchFilterUtil.mapT
 import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_EMPTY_ATTRIBUTE;
 import static io.camunda.gateway.mapping.http.validator.RequestValidator.validateDate;
 
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedJobTypeStatisticsFilterStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.JobTypeStatisticsFilterContract;
 import io.camunda.search.filter.FilterBuilders;
 import io.camunda.search.filter.JobTypeStatisticsFilter;
 import io.camunda.zeebe.util.Either;
@@ -27,7 +27,7 @@ public final class JobTypeStatisticsFilterMapper {
   private JobTypeStatisticsFilterMapper() {}
 
   public static Either<List<String>, JobTypeStatisticsFilter> toJobTypeStatisticsFilter(
-      @Nullable final GeneratedJobTypeStatisticsFilterStrictContract filter) {
+      @Nullable final JobTypeStatisticsFilterContract filter) {
     final var builder = FilterBuilders.jobTypeStatistics();
     final List<String> validationErrors = new ArrayList<>();
     if (filter == null) {

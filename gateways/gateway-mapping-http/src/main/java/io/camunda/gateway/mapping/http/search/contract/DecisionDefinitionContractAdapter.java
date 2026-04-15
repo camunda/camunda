@@ -7,9 +7,9 @@
  */
 package io.camunda.gateway.mapping.http.search.contract;
 
-import static io.camunda.gateway.mapping.http.search.contract.generated.GeneratedDecisionDefinitionStrictContract.Fields;
+import static io.camunda.gateway.mapping.http.search.contract.generated.DecisionDefinitionContract.Fields;
 
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedDecisionDefinitionStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.DecisionDefinitionContract;
 import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
 import io.camunda.search.entities.DecisionDefinitionEntity;
 import java.util.List;
@@ -18,14 +18,13 @@ public final class DecisionDefinitionContractAdapter {
 
   private DecisionDefinitionContractAdapter() {}
 
-  public static List<GeneratedDecisionDefinitionStrictContract> adapt(
+  public static List<DecisionDefinitionContract> adapt(
       final List<DecisionDefinitionEntity> entities) {
     return entities.stream().map(DecisionDefinitionContractAdapter::adapt).toList();
   }
 
-  public static GeneratedDecisionDefinitionStrictContract adapt(
-      final DecisionDefinitionEntity entity) {
-    return GeneratedDecisionDefinitionStrictContract.builder()
+  public static DecisionDefinitionContract adapt(final DecisionDefinitionEntity entity) {
+    return DecisionDefinitionContract.builder()
         .decisionDefinitionId(
             ContractPolicy.requireNonNull(
                 entity.decisionDefinitionId(), Fields.DECISION_DEFINITION_ID, entity))

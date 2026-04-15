@@ -12,7 +12,7 @@ import static java.util.Optional.ofNullable;
 
 import io.camunda.gateway.mapping.http.converters.AuditLogActorTypeConverter;
 import io.camunda.gateway.mapping.http.converters.AuditLogOperationTypeConverter;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedUserTaskAuditLogFilterStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.UserTaskAuditLogFilterContract;
 import io.camunda.search.filter.AuditLogFilter;
 import io.camunda.search.filter.FilterBuilders;
 import java.time.OffsetDateTime;
@@ -25,7 +25,7 @@ public final class UserTaskAuditLogFilterMapper {
   private UserTaskAuditLogFilterMapper() {}
 
   public static AuditLogFilter toUserTaskAuditLogFilter(
-      @Nullable final GeneratedUserTaskAuditLogFilterStrictContract filter) {
+      @Nullable final UserTaskAuditLogFilterContract filter) {
     if (filter == null) {
       return FilterBuilders.auditLog().build();
     }

@@ -8,8 +8,8 @@
 package io.camunda.gateway.mapping.http.mapper;
 
 import io.camunda.gateway.mapping.http.RequestMapper;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedUserRequestStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedUserUpdateRequestStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.UserRequestContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.UserUpdateRequestContract;
 import io.camunda.gateway.mapping.http.validator.UserRequestValidator;
 import io.camunda.service.UserServices.UserDTO;
 import io.camunda.zeebe.util.Either;
@@ -23,15 +23,14 @@ public class UserMapper {
     this.userRequestValidator = userRequestValidator;
   }
 
-  public Either<ProblemDetail, UserDTO> toUserRequest(
-      final GeneratedUserRequestStrictContract request) {
+  public Either<ProblemDetail, UserDTO> toUserRequest(final UserRequestContract request) {
     return RequestMapper.getResult(
         userRequestValidator.validateCreateRequest(request),
         () -> new UserDTO(request.username(), request.name(), request.email(), request.password()));
   }
 
   public Either<ProblemDetail, UserDTO> toUserUpdateRequest(
-      final GeneratedUserUpdateRequestStrictContract request, final String username) {
+      final UserUpdateRequestContract request, final String username) {
     return RequestMapper.getResult(
         userRequestValidator.validateUpdateRequest(request),
         () -> new UserDTO(username, request.name(), request.email(), request.password()));

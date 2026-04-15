@@ -8,10 +8,10 @@
 package io.camunda.gateway.mapping.http.search.contract;
 
 import static io.camunda.gateway.mapping.http.ResponseMapper.formatDate;
-import static io.camunda.gateway.mapping.http.search.contract.generated.GeneratedProcessInstanceStrictContract.Fields;
+import static io.camunda.gateway.mapping.http.search.contract.generated.ProcessInstanceContract.Fields;
 
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedProcessInstanceStateEnum;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedProcessInstanceStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.ProcessInstanceContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.ProcessInstanceStateEnum;
 import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
 import io.camunda.search.entities.ProcessInstanceEntity;
 import io.camunda.search.entities.ProcessInstanceEntity.ProcessInstanceState;
@@ -22,13 +22,12 @@ public final class ProcessInstanceContractAdapter {
 
   private ProcessInstanceContractAdapter() {}
 
-  public static List<GeneratedProcessInstanceStrictContract> adapt(
-      final List<ProcessInstanceEntity> entities) {
+  public static List<ProcessInstanceContract> adapt(final List<ProcessInstanceEntity> entities) {
     return entities.stream().map(ProcessInstanceContractAdapter::adapt).toList();
   }
 
-  public static GeneratedProcessInstanceStrictContract adapt(final ProcessInstanceEntity entity) {
-    return GeneratedProcessInstanceStrictContract.builder()
+  public static ProcessInstanceContract adapt(final ProcessInstanceEntity entity) {
+    return ProcessInstanceContract.builder()
         .processDefinitionId(
             ContractPolicy.requireNonNull(
                 entity.processDefinitionId(), Fields.PROCESS_DEFINITION_ID, entity))
@@ -63,15 +62,15 @@ public final class ProcessInstanceContractAdapter {
    * Maps the internal CANCELED state to the API's TERMINATED state. All other states map directly
    * by name.
    */
-  private static @Nullable GeneratedProcessInstanceStateEnum toProtocolState(
+  private static @Nullable ProcessInstanceStateEnum toProtocolState(
       final ProcessInstanceState value) {
     if (value == null) {
       return null;
     }
     if (value == ProcessInstanceState.CANCELED) {
-      return GeneratedProcessInstanceStateEnum.TERMINATED;
+      return ProcessInstanceStateEnum.TERMINATED;
     }
-    return GeneratedProcessInstanceStateEnum.fromValue(value.name());
+    return ProcessInstanceStateEnum.fromValue(value.name());
   }
 
   private static @Nullable String emptyToNull(final String value) {

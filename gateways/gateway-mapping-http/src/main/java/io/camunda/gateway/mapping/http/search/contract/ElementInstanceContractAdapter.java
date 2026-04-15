@@ -8,10 +8,10 @@
 package io.camunda.gateway.mapping.http.search.contract;
 
 import static io.camunda.gateway.mapping.http.ResponseMapper.formatDate;
-import static io.camunda.gateway.mapping.http.search.contract.generated.GeneratedElementInstanceStrictContract.Fields;
+import static io.camunda.gateway.mapping.http.search.contract.generated.ElementInstanceContract.Fields;
 
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedElementInstanceStateEnum;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedElementInstanceStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.ElementInstanceContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.ElementInstanceStateEnum;
 import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
 import io.camunda.search.entities.FlowNodeInstanceEntity;
 import java.util.List;
@@ -20,13 +20,12 @@ public final class ElementInstanceContractAdapter {
 
   private ElementInstanceContractAdapter() {}
 
-  public static List<GeneratedElementInstanceStrictContract> adapt(
-      final List<FlowNodeInstanceEntity> entities) {
+  public static List<ElementInstanceContract> adapt(final List<FlowNodeInstanceEntity> entities) {
     return entities.stream().map(ElementInstanceContractAdapter::adapt).toList();
   }
 
-  public static GeneratedElementInstanceStrictContract adapt(final FlowNodeInstanceEntity entity) {
-    return GeneratedElementInstanceStrictContract.builder()
+  public static ElementInstanceContract adapt(final FlowNodeInstanceEntity entity) {
+    return ElementInstanceContract.builder()
         .processDefinitionId(
             ContractPolicy.requireNonNull(
                 entity.processDefinitionId(), Fields.PROCESS_DEFINITION_ID, entity))
@@ -41,8 +40,7 @@ public final class ElementInstanceContractAdapter {
                 entity.type() != null ? entity.type().name() : null, Fields.TYPE, entity))
         .state(
             ContractPolicy.requireNonNull(
-                ContractPolicy.mapEnum(
-                    entity.state(), GeneratedElementInstanceStateEnum::fromValue),
+                ContractPolicy.mapEnum(entity.state(), ElementInstanceStateEnum::fromValue),
                 Fields.STATE,
                 entity))
         .hasIncident(

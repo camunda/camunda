@@ -8,10 +8,10 @@
 package io.camunda.gateway.mapping.http.search.contract;
 
 import static io.camunda.gateway.mapping.http.ResponseMapper.formatDate;
-import static io.camunda.gateway.mapping.http.search.contract.generated.GeneratedMessageSubscriptionStrictContract.Fields;
+import static io.camunda.gateway.mapping.http.search.contract.generated.MessageSubscriptionContract.Fields;
 
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedMessageSubscriptionStateEnum;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedMessageSubscriptionStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.MessageSubscriptionContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.MessageSubscriptionStateEnum;
 import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
 import io.camunda.search.entities.MessageSubscriptionEntity;
 import java.util.List;
@@ -20,14 +20,13 @@ public final class MessageSubscriptionContractAdapter {
 
   private MessageSubscriptionContractAdapter() {}
 
-  public static List<GeneratedMessageSubscriptionStrictContract> adapt(
+  public static List<MessageSubscriptionContract> adapt(
       final List<MessageSubscriptionEntity> entities) {
     return entities.stream().map(MessageSubscriptionContractAdapter::adapt).toList();
   }
 
-  public static GeneratedMessageSubscriptionStrictContract adapt(
-      final MessageSubscriptionEntity entity) {
-    return GeneratedMessageSubscriptionStrictContract.builder()
+  public static MessageSubscriptionContract adapt(final MessageSubscriptionEntity entity) {
+    return MessageSubscriptionContract.builder()
         .messageSubscriptionKey(
             ContractPolicy.requireNonNull(
                 entity.messageSubscriptionKey(), Fields.MESSAGE_SUBSCRIPTION_KEY, entity))
@@ -38,8 +37,7 @@ public final class MessageSubscriptionContractAdapter {
         .messageSubscriptionState(
             ContractPolicy.requireNonNull(
                 ContractPolicy.mapEnum(
-                    entity.messageSubscriptionState(),
-                    GeneratedMessageSubscriptionStateEnum::fromValue),
+                    entity.messageSubscriptionState(), MessageSubscriptionStateEnum::fromValue),
                 Fields.MESSAGE_SUBSCRIPTION_STATE,
                 entity))
         .lastUpdatedDate(

@@ -7,9 +7,9 @@
  */
 package io.camunda.gateway.mapping.http.search.contract;
 
-import static io.camunda.gateway.mapping.http.search.contract.generated.GeneratedUserStrictContract.Fields;
+import static io.camunda.gateway.mapping.http.search.contract.generated.UserContract.Fields;
 
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedUserStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.UserContract;
 import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
 import io.camunda.search.entities.UserEntity;
 import java.util.List;
@@ -18,12 +18,12 @@ public final class UserContractAdapter {
 
   private UserContractAdapter() {}
 
-  public static List<GeneratedUserStrictContract> adapt(final List<UserEntity> entities) {
+  public static List<UserContract> adapt(final List<UserEntity> entities) {
     return entities.stream().map(UserContractAdapter::adapt).toList();
   }
 
-  public static GeneratedUserStrictContract adapt(final UserEntity entity) {
-    return GeneratedUserStrictContract.builder()
+  public static UserContract adapt(final UserEntity entity) {
+    return UserContract.builder()
         .username(ContractPolicy.requireNonNull(entity.username(), Fields.USERNAME, entity))
         .name(entity.name())
         .email(entity.email())

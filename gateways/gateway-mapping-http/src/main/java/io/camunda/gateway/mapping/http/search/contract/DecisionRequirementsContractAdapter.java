@@ -7,9 +7,9 @@
  */
 package io.camunda.gateway.mapping.http.search.contract;
 
-import static io.camunda.gateway.mapping.http.search.contract.generated.GeneratedDecisionRequirementsStrictContract.Fields;
+import static io.camunda.gateway.mapping.http.search.contract.generated.DecisionRequirementsContract.Fields;
 
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedDecisionRequirementsStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.DecisionRequirementsContract;
 import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
 import io.camunda.search.entities.DecisionRequirementsEntity;
 import java.util.List;
@@ -18,14 +18,13 @@ public final class DecisionRequirementsContractAdapter {
 
   private DecisionRequirementsContractAdapter() {}
 
-  public static List<GeneratedDecisionRequirementsStrictContract> adapt(
+  public static List<DecisionRequirementsContract> adapt(
       final List<DecisionRequirementsEntity> entities) {
     return entities.stream().map(DecisionRequirementsContractAdapter::adapt).toList();
   }
 
-  public static GeneratedDecisionRequirementsStrictContract adapt(
-      final DecisionRequirementsEntity entity) {
-    return GeneratedDecisionRequirementsStrictContract.builder()
+  public static DecisionRequirementsContract adapt(final DecisionRequirementsEntity entity) {
+    return DecisionRequirementsContract.builder()
         .decisionRequirementsId(
             ContractPolicy.requireNonNull(
                 entity.decisionRequirementsId(), Fields.DECISION_REQUIREMENTS_ID, entity))

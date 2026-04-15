@@ -7,9 +7,9 @@
  */
 package io.camunda.gateway.mapping.http.search.contract;
 
-import static io.camunda.gateway.mapping.http.search.contract.generated.GeneratedProcessInstanceCallHierarchyEntryStrictContract.Fields;
+import static io.camunda.gateway.mapping.http.search.contract.generated.ProcessInstanceCallHierarchyEntryContract.Fields;
 
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedProcessInstanceCallHierarchyEntryStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.ProcessInstanceCallHierarchyEntryContract;
 import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
 import io.camunda.search.entities.ProcessInstanceEntity;
 
@@ -25,14 +25,14 @@ public final class ProcessInstanceCallHierarchyEntryContractAdapter {
 
   private ProcessInstanceCallHierarchyEntryContractAdapter() {}
 
-  public static GeneratedProcessInstanceCallHierarchyEntryStrictContract adapt(
+  public static ProcessInstanceCallHierarchyEntryContract adapt(
       final ProcessInstanceEntity entity) {
     final var processDefinitionNameOrId =
         ContractPolicy.defaultIfNull(
             ContractPolicy.blankToNull(entity.processDefinitionName()),
             entity.processDefinitionId());
 
-    return GeneratedProcessInstanceCallHierarchyEntryStrictContract.builder()
+    return ProcessInstanceCallHierarchyEntryContract.builder()
         .processInstanceKey(
             ContractPolicy.requireNonNull(
                 entity.processInstanceKey(), Fields.PROCESS_INSTANCE_KEY, entity))
