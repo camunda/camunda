@@ -14,17 +14,22 @@ import co.elastic.clients.elasticsearch._types.Conflicts;
 import co.elastic.clients.elasticsearch._types.FieldValue;
 import co.elastic.clients.elasticsearch._types.Slices;
 import co.elastic.clients.elasticsearch._types.SlicesCalculation;
+import co.elastic.clients.elasticsearch._types.SortOptions;
 import co.elastic.clients.elasticsearch._types.SortOrder;
 import co.elastic.clients.elasticsearch._types.Time;
 import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 import co.elastic.clients.elasticsearch._types.query_dsl.QueryBuilders;
 import co.elastic.clients.elasticsearch._types.query_dsl.TermsQuery;
+import co.elastic.clients.elasticsearch.core.BulkRequest;
 import co.elastic.clients.elasticsearch.core.CountRequest;
 import co.elastic.clients.elasticsearch.core.DeleteByQueryRequest;
 import co.elastic.clients.elasticsearch.core.DeleteByQueryResponse;
 import co.elastic.clients.elasticsearch.core.ReindexRequest;
+import co.elastic.clients.elasticsearch.core.ReindexResponse;
 import co.elastic.clients.elasticsearch.core.SearchRequest;
+import co.elastic.clients.elasticsearch.core.SearchRequest.Builder;
 import co.elastic.clients.elasticsearch.core.SearchResponse;
+import co.elastic.clients.elasticsearch.core.bulk.BulkOperation;
 import co.elastic.clients.elasticsearch.core.search.Hit;
 import co.elastic.clients.elasticsearch.indices.PutIndicesSettingsRequest;
 import co.elastic.clients.elasticsearch.indices.PutIndicesSettingsResponse;
@@ -37,6 +42,7 @@ import io.camunda.exporter.config.ExporterConfiguration.HistoryConfiguration.Pro
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
 import io.camunda.exporter.tasks.archiver.ArchiveBatch.BasicArchiveBatch;
 import io.camunda.exporter.tasks.archiver.ArchiveBatch.ProcessInstanceArchiveBatch;
+import io.camunda.exporter.tasks.archiver.ArchiveByIDTaskSupplier.ArchiveDocIdsBatch;
 import io.camunda.exporter.tasks.util.DateOfArchivedDocumentsUtil;
 import io.camunda.exporter.tasks.util.ElasticsearchRepository;
 import io.camunda.search.schema.config.RetentionConfiguration;
@@ -340,6 +346,56 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
   }
 
   @Override
+  public CompletableFuture<Void> moveDocumentsById(
+      final String sourceIndexName,
+      final String destinationIndexName,
+      final Map<String, List<String>> keysByField,
+      final Map<String, String> filters,
+      final Executor executor) {
+
+    final ArchiveByIDTaskSupplier<FieldValue> taskSupplier =
+        new ArchiveByIDTaskSupplier<>(
+            sourceIndexName,
+            destinationIndexName,
+            searchAfter ->
+                getArchiveDocIdsBatch(sourceIndexName, keysByField, filters, searchAfter),
+            this::reindexDocumentsById,
+            this::deleteDocumentsById,
+            executor);
+
+    final var timer = Timer.start();
+    return AsyncRepeatUntil.repeatUntil(
+            taskSupplier::getNextBatch, count -> taskSupplier.isComplete())
+        .thenComposeAsync(docIds -> setIndexLifeCycle(destinationIndexName), executor)
+        .thenApply(
+            ignored -> {
+              logger.debug(
+                  "Successfully completed archiving {} to the {} index, moved {} docs in {}s",
+                  sourceIndexName,
+                  destinationIndexName,
+                  taskSupplier.getTotalArchived(),
+                  taskSupplier.getTotalTimeTakenMs() / 1000);
+
+              metrics.measureArchiveIndexDuration(
+                  sourceIndexName, timer, taskSupplier.getTotalArchived());
+              return ignored;
+            })
+        .whenComplete(
+            (val, err) -> {
+              if (err != null) {
+                logger.error(
+                    "Failed archiving {} to the {} index, moved {} docs so far in {}s, error={}",
+                    sourceIndexName,
+                    destinationIndexName,
+                    taskSupplier.getTotalArchived(),
+                    taskSupplier.getTotalTimeTakenMs() / 1000,
+                    err.getMessage(),
+                    err);
+              }
+            });
+  }
+
+  @Override
   public CompletableFuture<Integer> getCountOfProcessInstancesAwaitingArchival() {
     final var countRequest =
         CountRequest.of(
@@ -350,6 +406,86 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
                             config.getArchivingTimePoint(), partitionId)));
 
     return client.count(countRequest).thenApplyAsync(res -> Math.toIntExact(res.count()));
+  }
+
+  private CompletableFuture<ArchiveDocIdsBatch<FieldValue>> getArchiveDocIdsBatch(
+      final String sourceIndexName,
+      final Map<String, List<String>> keysByField,
+      final Map<String, String> filters,
+      final List<FieldValue> searchAfter) {
+    final Query query = buildFilterQuery(keysByField, filters);
+    final Builder requestBuilder =
+        new SearchRequest.Builder()
+            .index(sourceIndexName)
+            .query(query)
+            .size(config.getReindexBatchSize())
+            .source(s -> s.fetch(false))
+            .sort(SortOptions.of(s -> s.field(f -> f.field("id").order(SortOrder.Asc))));
+
+    if (searchAfter != null && !searchAfter.isEmpty()) {
+      requestBuilder.searchAfter(searchAfter);
+    }
+
+    final var timer = Timer.start();
+    return client
+        .search(requestBuilder.build())
+        .whenCompleteAsync(
+            (response, error) -> metrics.measureArchiveDocIdsSearchDuration(timer), executor)
+        .thenApply(
+            response -> {
+              final List<Hit<Void>> hits = response.hits().hits();
+              if (hits.isEmpty()) {
+                return ArchiveDocIdsBatch.empty();
+              }
+              return ArchiveDocIdsBatch.from(
+                  hits.stream().map(Hit::id).toList(), hits.getLast().sort());
+            });
+  }
+
+  private CompletableFuture<Long> reindexDocumentsById(
+      final String sourceIndexName, final String destinationIndexName, final List<String> docIds) {
+    if (docIds.isEmpty()) {
+      return CompletableFuture.completedFuture(0L);
+    }
+
+    final var query = QueryBuilders.bool(q -> q.filter(b -> b.ids(id -> id.values(docIds))));
+    final var request =
+        new ReindexRequest.Builder()
+            .source(src -> src.index(sourceIndexName).query(query))
+            .dest(dest -> dest.index(destinationIndexName))
+            .conflicts(Conflicts.Proceed)
+            .scroll(REINDEX_SCROLL_TIMEOUT)
+            .slices(AUTO_SLICES)
+            .build();
+
+    final var timer = Timer.start();
+    return client
+        .reindex(request)
+        .thenApplyAsync(ReindexResponse::total)
+        .whenCompleteAsync(
+            (total, error) -> metrics.measureArchiverReindex(total, timer), executor);
+  }
+
+  private CompletableFuture<Long> deleteDocumentsById(
+      final String sourceIndexName, final List<String> docIds) {
+    if (docIds.isEmpty()) {
+      return CompletableFuture.completedFuture(0L);
+    }
+
+    final var operations =
+        docIds.stream()
+            .map(docId -> new BulkOperation.Builder().delete(d -> d.id(docId)).build())
+            .toList();
+
+    final var request =
+        new BulkRequest.Builder().index(sourceIndexName).operations(operations).build();
+
+    final var timer = Timer.start();
+    return client
+        .bulk(request)
+        .thenApplyAsync(response -> (long) response.items().size())
+        .whenCompleteAsync(
+            (idsSize, error) -> metrics.measureArchiverDelete(idsSize, timer), executor);
   }
 
   private Query finishedProcessInstancesQuery(
