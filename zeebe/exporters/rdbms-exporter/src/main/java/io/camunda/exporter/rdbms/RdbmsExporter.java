@@ -106,11 +106,6 @@ public final class RdbmsExporter {
       throw new ExporterException("Schema is not ready for use");
     }
 
-    if (!flushAfterEachRecord()) {
-      currentFlushTask =
-          controller.scheduleCancellableTask(flushInterval, this::flushAndReschedule);
-    }
-
     initializeRdbmsPosition();
     lastPosition = controller.getLastExportedRecordPosition();
     if (exporterRdbmsPosition.lastExportedPosition() > -1) {
@@ -151,6 +146,11 @@ public final class RdbmsExporter {
         .getExecutionQueue()
         .registerPostFlushListener(() -> replicationController.onFlush(lastPosition));
     rdbmsWriters.getExecutionQueue().registerPostFlushListener(this::recordExportingLatency);
+
+    if (!flushAfterEachRecord()) {
+      currentFlushTask =
+          controller.scheduleCancellableTask(flushInterval, this::flushAndReschedule);
+    }
 
     // Start background tasks (history cleanup and deletion) in a separate thread pool,
     // decoupled from the main export thread
