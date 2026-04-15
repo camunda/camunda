@@ -13,18 +13,17 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.camunda.search.entities.DeployedResourceEntity;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.security.configuration.MultiTenancyConfiguration;
 import io.camunda.service.ResourceServices;
 import io.camunda.service.ResourceServices.DeployResourcesRequest;
 import io.camunda.service.ResourceServices.ResourceDeletionRequest;
-import io.camunda.service.ResourceServices.ResourceFetchRequest;
 import io.camunda.service.exception.ErrorMapper;
 import io.camunda.zeebe.broker.client.api.dto.BrokerError;
 import io.camunda.zeebe.broker.client.api.dto.BrokerRejection;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
-import io.camunda.zeebe.protocol.impl.record.value.deployment.ResourceRecord;
 import io.camunda.zeebe.protocol.impl.record.value.resource.ResourceDeletionRecord;
 import io.camunda.zeebe.protocol.record.ErrorCode;
 import io.camunda.zeebe.protocol.record.RejectionType;
@@ -419,16 +418,17 @@ public class ResourceControllerTest extends RestControllerTest {
   @Test
   void shouldGetResource() {
     // given
-    when(resourceServices.fetchResource(eq(new ResourceFetchRequest(1)), any()))
+    when(resourceServices.getByKey(eq(1L), any()))
         .thenReturn(
             CompletableFuture.completedFuture(
-                new ResourceRecord()
-                    .setResourceName("test.rpa")
-                    .setResourceId("test")
-                    .setVersion(2)
-                    .setVersionTag("v2.0")
-                    .setTenantId("tenant-1")
-                    .setResourceKey(1)));
+                new DeployedResourceEntity.Builder()
+                    .resourceName("test.rpa")
+                    .resourceId("test")
+                    .version(2)
+                    .versionTag("v2.0")
+                    .tenantId("tenant-1")
+                    .resourceKey(1L)
+                    .build()));
 
     // when / then
     webClient
@@ -455,7 +455,7 @@ public class ResourceControllerTest extends RestControllerTest {
   @Test
   void getResourceShouldYieldNotFoundWhenResourceNotFound() {
     // given
-    when(resourceServices.fetchResource(eq(new ResourceFetchRequest(1)), any()))
+    when(resourceServices.getByKey(eq(1L), any()))
         .thenReturn(
             CompletableFuture.failedFuture(
                 ErrorMapper.mapBrokerRejection(
@@ -490,7 +490,7 @@ public class ResourceControllerTest extends RestControllerTest {
   @Test
   void getResourceShouldYieldInternalServerErrorForProcessingErrorRejection() {
     // given
-    when(resourceServices.fetchResource(eq(new ResourceFetchRequest(1)), any()))
+    when(resourceServices.getByKey(eq(1L), any()))
         .thenReturn(
             CompletableFuture.failedFuture(
                 ErrorMapper.mapBrokerRejection(
@@ -528,7 +528,7 @@ public class ResourceControllerTest extends RestControllerTest {
   @Test
   void getResourceShouldYieldInternalServerErrorForBrokerError() {
     // given
-    when(resourceServices.fetchResource(eq(new ResourceFetchRequest(1)), any()))
+    when(resourceServices.getByKey(eq(1L), any()))
         .thenReturn(
             CompletableFuture.failedFuture(
                 ErrorMapper.mapBrokerError(
@@ -570,10 +570,11 @@ public class ResourceControllerTest extends RestControllerTest {
           "script": "foo"
         }
         """;
-    when(resourceServices.fetchResource(eq(new ResourceFetchRequest(1)), any()))
+    when(resourceServices.getContentByKey(eq(1L), any()))
         .thenReturn(
             CompletableFuture.completedFuture(
-                new ResourceRecord().setResource(BufferUtil.wrapString(content))));
+                new DeployedResourceEntity(
+                    1L, "test", "test.rpa", 1, null, 100L, "tenant", content)));
 
     // when / then
     webClient
@@ -589,7 +590,7 @@ public class ResourceControllerTest extends RestControllerTest {
   @Test
   void getResourceContentShouldYieldNotFoundWhenResourceNotFound() {
     // given
-    when(resourceServices.fetchResource(eq(new ResourceFetchRequest(1)), any()))
+    when(resourceServices.getContentByKey(eq(1L), any()))
         .thenReturn(
             CompletableFuture.failedFuture(
                 ErrorMapper.mapBrokerRejection(
@@ -624,7 +625,7 @@ public class ResourceControllerTest extends RestControllerTest {
   @Test
   void getResourceContentShouldYieldInternalServerErrorForProcessingErrorRejection() {
     // given
-    when(resourceServices.fetchResource(eq(new ResourceFetchRequest(1)), any()))
+    when(resourceServices.getContentByKey(eq(1L), any()))
         .thenReturn(
             CompletableFuture.failedFuture(
                 ErrorMapper.mapBrokerRejection(
@@ -662,7 +663,7 @@ public class ResourceControllerTest extends RestControllerTest {
   @Test
   void getResourceContentShouldYieldInternalServerErrorForBrokerError() {
     // given
-    when(resourceServices.fetchResource(eq(new ResourceFetchRequest(1)), any()))
+    when(resourceServices.getContentByKey(eq(1L), any()))
         .thenReturn(
             CompletableFuture.failedFuture(
                 ErrorMapper.mapBrokerError(

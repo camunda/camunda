@@ -15,12 +15,10 @@ import io.camunda.security.configuration.MultiTenancyConfiguration;
 import io.camunda.service.ResourceServices;
 import io.camunda.service.ResourceServices.DeployResourcesRequest;
 import io.camunda.service.ResourceServices.ResourceDeletionRequest;
-import io.camunda.service.ResourceServices.ResourceFetchRequest;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaGetMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPostMapping;
 import io.camunda.zeebe.gateway.rest.mapper.RequestExecutor;
 import io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper;
-import io.camunda.zeebe.protocol.impl.record.value.deployment.ResourceRecord;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import org.springframework.http.HttpStatus;
@@ -70,15 +68,19 @@ public class ResourceController {
   @CamundaGetMapping(path = "/resources/{resourceKey}")
   public CompletableFuture<ResponseEntity<Object>> getResource(
       @PathVariable final long resourceKey) {
+    final var authentication = authenticationProvider.getCamundaAuthentication();
     return RequestExecutor.executeServiceMethod(
-        () -> fetchResource(resourceKey), ResponseMapper::toGetResourceResponse, HttpStatus.OK);
+        () -> resourceServices.getByKey(resourceKey, authentication),
+        ResponseMapper::toGetResourceResponse,
+        HttpStatus.OK);
   }
 
   @CamundaGetMapping(path = "/resources/{resourceKey}/content")
   public CompletableFuture<ResponseEntity<Object>> getResourceContent(
       @PathVariable final long resourceKey) {
+    final var authentication = authenticationProvider.getCamundaAuthentication();
     return RequestExecutor.executeServiceMethod(
-        () -> fetchResource(resourceKey),
+        () -> resourceServices.getContentByKey(resourceKey, authentication),
         ResponseMapper::toGetResourceContentResponse,
         HttpStatus.OK);
   }
@@ -98,10 +100,5 @@ public class ResourceController {
         () -> resourceServices.deleteResource(request, authentication),
         ResponseMapper::toDeleteResourceResponse,
         HttpStatus.OK);
-  }
-
-  private CompletableFuture<ResourceRecord> fetchResource(final long resourceKey) {
-    final var authentication = authenticationProvider.getCamundaAuthentication();
-    return resourceServices.fetchResource(new ResourceFetchRequest(resourceKey), authentication);
   }
 }

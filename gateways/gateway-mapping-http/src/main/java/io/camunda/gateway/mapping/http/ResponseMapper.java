@@ -68,6 +68,7 @@ import io.camunda.gateway.protocol.model.TopologyResponse;
 import io.camunda.gateway.protocol.model.UserCreateResult;
 import io.camunda.gateway.protocol.model.UserTaskProperties;
 import io.camunda.gateway.protocol.model.UserUpdateResult;
+import io.camunda.search.entities.DeployedResourceEntity;
 import io.camunda.service.DocumentServices.DocumentContentResponse;
 import io.camunda.service.DocumentServices.DocumentErrorResponse;
 import io.camunda.service.DocumentServices.DocumentReferenceResponse;
@@ -397,8 +398,20 @@ public final class ResponseMapper {
         .resourceKey(String.valueOf(resourceRecord.getResourceKey()));
   }
 
-  public static String toGetResourceContentResponse(final ResourceRecord resourceRecord) {
-    return resourceRecord.getResourceProp();
+  public static ResourceResult toGetResourceResponse(
+      final DeployedResourceEntity deployedResourceEntity) {
+    return new ResourceResult()
+        .resourceName(deployedResourceEntity.resourceName())
+        .version(deployedResourceEntity.version())
+        .versionTag(emptyToNull(deployedResourceEntity.versionTag()))
+        .resourceId(deployedResourceEntity.resourceId())
+        .tenantId(deployedResourceEntity.tenantId())
+        .resourceKey(String.valueOf(deployedResourceEntity.resourceKey()));
+  }
+
+  public static String toGetResourceContentResponse(
+      final DeployedResourceEntity deployedResourceEntity) {
+    return deployedResourceEntity.resourceContent();
   }
 
   public static MessagePublicationResult toMessagePublicationResponse(
