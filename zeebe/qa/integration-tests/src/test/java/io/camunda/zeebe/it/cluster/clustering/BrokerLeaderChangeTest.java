@@ -68,6 +68,6 @@ public final class BrokerLeaderChangeTest {
 
     // then
     assertThat(clusteringRule.getCurrentLeaderForPartition(1).getNodeId())
-        .isEqualTo(firstLeaderNodeId);
+        .isEqualTo(Integer.parseInt(firstLeaderNodeId));
   }
 }
