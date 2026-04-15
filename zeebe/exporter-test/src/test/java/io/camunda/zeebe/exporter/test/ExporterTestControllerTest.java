@@ -46,6 +46,33 @@ final class ExporterTestControllerTest {
   }
 
   @Test
+  void shouldRequestReplayByResettingPosition() {
+    // given
+    controller.updateLastExportedRecordPosition(10);
+
+    // when - request replay from position 5
+    final boolean result = controller.requestReplay(5);
+
+    // then - position should be reset to fromPosition - 1 = 4, and result indicates success
+    assertThat(result).isTrue();
+    assertThat(controller.getPosition()).isEqualTo(4);
+    assertThat(controller.getLastExportedRecordPosition()).isEqualTo(4);
+  }
+
+  @Test
+  void shouldAllowUpdatingPositionForwardAfterReplay() {
+    // given
+    controller.updateLastExportedRecordPosition(10);
+    controller.requestReplay(5);
+
+    // when - export records starting from the replay position
+    controller.updateLastExportedRecordPosition(5);
+
+    // then
+    assertThat(controller.getPosition()).isEqualTo(5);
+  }
+
+  @Test
   void shouldScheduleCancellableTask() {
     // given
     final Runnable task = () -> {};
