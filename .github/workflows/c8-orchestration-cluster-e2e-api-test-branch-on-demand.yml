@@ -58,9 +58,18 @@ jobs:
           echo "Detected base branch: $base"
           echo "base=$base" >> "$GITHUB_OUTPUT"
 
+  utils-get-snapshot-docker-tag:
+    needs: validate-branch
+    uses: ./.github/workflows/generate-snapshot-docker-tag.yml
+    with:
+      target_branch: ${{ needs.validate-branch.outputs.base }}
+    secrets: inherit
+    permissions:
+      contents: read
+
   c8-orchestration-cluster-api-tests-es:
     name: C8 Orchestration Cluster API Tests (ES)
-    needs: validate-branch
+    needs: [validate-branch, utils-get-snapshot-docker-tag]
     runs-on: ubuntu-latest
     timeout-minutes: 45
     steps:
@@ -84,13 +93,16 @@ jobs:
         run: ./mvnw install -Dquickly -T1C
 
       - name: Build Docker image from branch
+        env:
+          RESOLVED_DOCKER_TAG: ${{ needs.utils-get-snapshot-docker-tag.outputs.snapshot_tag != '' && needs.utils-get-snapshot-docker-tag.outputs.snapshot_tag || needs.utils-get-snapshot-docker-tag.outputs.version_tag }}
         run: |
+          echo "Building Docker image with tag: ${RESOLVED_DOCKER_TAG}"
           docker build \
             -f camunda.Dockerfile \
             --target app \
             --build-arg BASE=public \
             --build-arg DISTBALL="dist/target/camunda-zeebe-*.tar.gz" \
-            -t "camunda/camunda:SNAPSHOT" \
+            -t "camunda/camunda:${RESOLVED_DOCKER_TAG}" \
             .
 
       - name: Set NON_STANDALONE variable
@@ -103,7 +115,11 @@ jobs:
           fi
 
       - name: Start Camunda
+        env:
+          RESOLVED_DOCKER_TAG: ${{ needs.utils-get-snapshot-docker-tag.outputs.snapshot_tag != '' && needs.utils-get-snapshot-docker-tag.outputs.snapshot_tag || needs.utils-get-snapshot-docker-tag.outputs.version_tag }}
         run: |
+          export CAMUNDA_DOCKER_IMAGE="camunda/camunda:${RESOLVED_DOCKER_TAG}"
+          echo "Using CAMUNDA_DOCKER_IMAGE=${CAMUNDA_DOCKER_IMAGE}"
           if [[ "$NON_STANDALONE" == "true" ]]; then
             echo "Using single services for older branches (8.6/8.7)"
             DATABASE=elasticsearch docker compose up -d operate tasklist
