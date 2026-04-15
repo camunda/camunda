@@ -8,12 +8,15 @@
 package io.camunda.exporter.rdbms.replication;
 
 import io.camunda.db.rdbms.write.ReplicationLsnProvider;
+import io.camunda.db.rdbms.write.ReplicationStatusDto;
 import io.camunda.exporter.rdbms.ExporterConfiguration.ReplicationConfiguration;
 import io.camunda.zeebe.exporter.api.context.Controller;
 import io.camunda.zeebe.exporter.api.context.ScheduledTask;
+import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -64,11 +67,12 @@ public class LsnReplicationController implements ReplicationController {
 
   private void checkReplication() {
     try {
-      final long replicaLsn = lsnProvider.getReplicaLsn();
+      final var replicationStatuses = lsnProvider.getReplicationStatuses();
 
       LsnPositionEntry entry;
       long newReplicatedPosition = replicatedPosition.get();
-      while ((entry = pendingEntries.peek()) != null && entry.lsn() <= replicaLsn) {
+      while ((entry = pendingEntries.peek()) != null
+          && isConfirmed(entry.lsn(), replicationStatuses)) {
         newReplicatedPosition = entry.position();
         pendingEntries.poll();
       }
@@ -91,6 +95,21 @@ public class LsnReplicationController implements ReplicationController {
       controller.scheduleCancellableTask(
           replicationConfiguration.getPollingInterval(), this::checkReplication);
     }
+  }
+
+  private boolean isConfirmed(final long lsn, final List<ReplicationStatusDto> statuses) {
+    final int minSyncReplicas = replicationConfiguration.getMinSyncReplicas();
+    if (minSyncReplicas == 0) {
+      return true;
+    }
+
+    final long replicasAtOrAboveLsn =
+        statuses.stream()
+            .filter(status -> status.getLsn() >= lsn)
+            .collect(Collectors.toSet())
+            .size();
+
+    return replicasAtOrAboveLsn >= minSyncReplicas;
   }
 
   @Override

@@ -8,6 +8,7 @@
 package io.camunda.db.rdbms.write;
 
 import io.camunda.db.rdbms.sql.ExporterPositionMapper;
+import java.util.List;
 
 /** PostgreSQL implementation using {@code pg_current_wal_lsn()} and {@code pg_stat_replication}. */
 public final class PostgresReplicationLsnProvider implements ReplicationLsnProvider {
@@ -24,7 +25,7 @@ public final class PostgresReplicationLsnProvider implements ReplicationLsnProvi
   }
 
   @Override
-  public long getReplicaLsn() {
-    return mapper.getMinReplicationLsnPostgres();
+  public List<ReplicationStatusDto> getReplicationStatuses() {
+    return mapper.getReplicationStatusesPostgres();
   }
 }

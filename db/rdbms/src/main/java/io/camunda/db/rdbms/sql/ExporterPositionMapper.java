@@ -7,7 +7,9 @@
  */
 package io.camunda.db.rdbms.sql;
 
+import io.camunda.db.rdbms.write.ReplicationStatusDto;
 import io.camunda.db.rdbms.write.domain.ExporterPositionModel;
+import java.util.List;
 
 public interface ExporterPositionMapper {
 
@@ -19,9 +21,9 @@ public interface ExporterPositionMapper {
 
   long findCurrentLsnPostgres();
 
-  long getMinReplicationLsnPostgres();
+  List<ReplicationStatusDto> getReplicationStatusesPostgres();
 
   long findCurrentLsnAurora();
 
-  long getMinReplicationLsnAurora();
+  List<ReplicationStatusDto> getReplicationStatusesAurora();
 }

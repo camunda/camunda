@@ -17,6 +17,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.camunda.db.rdbms.write.ReplicationLsnProvider;
+import io.camunda.db.rdbms.write.ReplicationStatusDto;
 import io.camunda.exporter.rdbms.ExporterConfiguration.ReplicationConfiguration;
 import io.camunda.zeebe.exporter.api.context.Controller;
 import io.camunda.zeebe.exporter.api.context.ScheduledTask;
@@ -69,7 +70,7 @@ class LsnReplicationControllerTest {
   void shouldAlwaysRescheduleTaskOnCheck() {
     // given
     final var fixture = new TestFixture();
-    when(fixture.lsnProvider.getReplicaLsn()).thenThrow(new RuntimeException("boom"));
+    when(fixture.lsnProvider.getReplicationStatuses()).thenThrow(new RuntimeException("boom"));
 
     // when
     fixture.firstScheduledCheck().run();
@@ -85,7 +86,8 @@ class LsnReplicationControllerTest {
     // given
     final var fixture = new TestFixture();
     when(fixture.lsnProvider.getCurrentLsn()).thenReturn(10L);
-    when(fixture.lsnProvider.getReplicaLsn()).thenReturn(10L);
+    when(fixture.lsnProvider.getReplicationStatuses())
+        .thenReturn(List.of(replicationStatus("replica-1", 10L)));
     fixture.replicationController.onFlush(42L);
 
     // when
@@ -96,7 +98,8 @@ class LsnReplicationControllerTest {
 
     // when 2
     when(fixture.lsnProvider.getCurrentLsn()).thenReturn(20L);
-    when(fixture.lsnProvider.getReplicaLsn()).thenReturn(20L);
+    when(fixture.lsnProvider.getReplicationStatuses())
+        .thenReturn(List.of(replicationStatus("replica-1", 20L)));
     fixture.replicationController.onFlush(52L);
 
     fixture.lastScheduledCheck().run();
@@ -109,7 +112,9 @@ class LsnReplicationControllerTest {
     // given
     final var fixture = new TestFixture();
     when(fixture.lsnProvider.getCurrentLsn()).thenReturn(10L, 20L);
-    when(fixture.lsnProvider.getReplicaLsn()).thenReturn(10L, 20L);
+    when(fixture.lsnProvider.getReplicationStatuses())
+        .thenReturn(List.of(replicationStatus("replica-1", 10L)))
+        .thenReturn(List.of(replicationStatus("replica-1", 20L)));
 
     fixture.replicationController.onFlush(42L);
     fixture.firstScheduledCheck().run();
@@ -124,6 +129,38 @@ class LsnReplicationControllerTest {
     verify(fixture.controller, never()).updateLastExportedRecordPosition(20L);
   }
 
+  @Test
+  void shouldWaitForRequiredSyncReplicasBeforeConfirmingPosition() {
+    // given
+    final var fixture = new TestFixture();
+    fixture.replicationConfiguration.setMinSyncReplicas(2);
+    when(fixture.lsnProvider.getCurrentLsn()).thenReturn(10L);
+    fixture.replicationController.onFlush(42L);
+
+    // when: only one replica caught up
+    when(fixture.lsnProvider.getReplicationStatuses())
+        .thenReturn(List.of(replicationStatus("replica-1", 10L)));
+    fixture.firstScheduledCheck().run();
+
+    // then
+    verify(fixture.controller, never()).updateLastExportedRecordPosition(42L);
+
+    // when: second replica also caught up
+    when(fixture.lsnProvider.getReplicationStatuses())
+        .thenReturn(List.of(replicationStatus("replica-1", 10L), replicationStatus("replica-2", 10L)));
+    fixture.lastScheduledCheck().run();
+
+    // then
+    verify(fixture.controller).updateLastExportedRecordPosition(42L);
+  }
+
+  private static ReplicationStatusDto replicationStatus(final String replicaId, final long lsn) {
+    final var status = new ReplicationStatusDto();
+    status.setReplicaId(replicaId);
+    status.setLsn(lsn);
+    return status;
+  }
+
   private static final class TestFixture {
     private static final Duration POLLING_INTERVAL = Duration.ofSeconds(5);
 
@@ -131,13 +168,13 @@ class LsnReplicationControllerTest {
     private final ReplicationLsnProvider lsnProvider = mock(ReplicationLsnProvider.class);
     private final ScheduledTask initialScheduledTask = mock(ScheduledTask.class);
     private final List<Runnable> scheduledChecks = new ArrayList<>();
+    private final ReplicationConfiguration replicationConfiguration = new ReplicationConfiguration();
 
     private final LsnReplicationController replicationController;
 
     private int scheduleInvocations = 0;
 
     private TestFixture() {
-      final var replicationConfiguration = new ReplicationConfiguration();
       replicationConfiguration.setPollingInterval(POLLING_INTERVAL);
 
       when(controller.scheduleCancellableTask(eq(POLLING_INTERVAL), any()))

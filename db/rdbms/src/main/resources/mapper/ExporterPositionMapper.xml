@@ -38,10 +38,12 @@
     SELECT pg_wal_lsn_diff(pg_current_wal_lsn(), '0/0')::bigint last_lsn
   </select>
 
-  <select id="getMinReplicationLsnPostgres" resultType="java.lang.Long">
+  <select id="getReplicationStatusesPostgres" resultType="io.camunda.db.rdbms.write.ReplicationStatusDto">
     SELECT
-      COALESCE(MIN(pg_wal_lsn_diff(replay_lsn, '0/0')), 0)::bigint AS min_replication_lsn
-    FROM pg_stat_replication;
+      COALESCE(pg_wal_lsn_diff(replay_lsn, '0/0'), 0)::bigint AS lsn,
+      pid::text AS replicaId
+    FROM pg_stat_replication
+    WHERE pid IS NOT NULL;
   </select>
 
   <select id="findCurrentLsnAurora" resultType="java.lang.Long">
@@ -50,9 +52,10 @@
     WHERE SESSION_ID = 'MASTER_SESSION_ID';
   </select>
 
-  <select id="getMinReplicationLsnAurora" resultType="java.lang.Long">
+  <select id="getReplicationStatusesAurora" resultType="io.camunda.db.rdbms.write.ReplicationStatusDto">
     SELECT
-      MIN(DURABLE_LSN) AS min_replication_lsn
+      COALESCE(DURABLE_LSN, 0) AS lsn,
+      COALESCE(SERVER_ID, SESSION_ID) AS replicaId
     FROM aurora_global_db_instance_status()
     WHERE SESSION_ID != 'MASTER_SESSION_ID';
   </select>

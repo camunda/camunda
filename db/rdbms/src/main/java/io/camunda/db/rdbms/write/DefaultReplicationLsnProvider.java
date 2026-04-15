@@ -8,6 +8,7 @@
 package io.camunda.db.rdbms.write;
 
 import io.camunda.db.rdbms.sql.ExporterPositionMapper;
+import java.util.List;
 
 public class DefaultReplicationLsnProvider implements ReplicationLsnProvider {
 
@@ -27,11 +28,11 @@ public class DefaultReplicationLsnProvider implements ReplicationLsnProvider {
   }
 
   @Override
-  public long getReplicaLsn() {
+  public List<ReplicationStatusDto> getReplicationStatuses() {
     try {
-      return exporterPositionMapper.getMinReplicationLsnPostgres();
+      return exporterPositionMapper.getReplicationStatusesPostgres();
     } catch (final Exception e) {
-      return exporterPositionMapper.getMinReplicationLsnAurora();
+      return exporterPositionMapper.getReplicationStatusesAurora();
     }
   }
 }

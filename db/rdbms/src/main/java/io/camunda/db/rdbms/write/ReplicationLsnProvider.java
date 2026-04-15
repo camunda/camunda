@@ -7,10 +7,12 @@
  */
 package io.camunda.db.rdbms.write;
 
+import java.util.List;
+
 /**
  * Provides LSN (Log Sequence Number) information for tracking async replication state. The primary
- * LSN is captured after each flush to know what the primary has committed. The replica LSN is
- * polled periodically to know what the replica has applied.
+ * LSN is captured after each flush to know what the primary has committed. Replica statuses are
+ * polled periodically to know what replicas have applied.
  *
  * <p>Implementations are database-specific (Aurora MySQL, Aurora PostgreSQL, standalone
  * PostgreSQL).
@@ -20,6 +22,6 @@ public interface ReplicationLsnProvider {
   /** Returns the primary's current WAL/binlog position after the last commit. */
   long getCurrentLsn();
 
-  /** Returns the replica's last replayed position, queried from the primary. */
-  long getReplicaLsn();
+  /** Returns each replica's last replayed position and stable unique identifier. */
+  List<ReplicationStatusDto> getReplicationStatuses();
 }
