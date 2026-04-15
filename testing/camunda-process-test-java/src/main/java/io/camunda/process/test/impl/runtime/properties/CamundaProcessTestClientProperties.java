@@ -28,8 +28,8 @@ import java.util.Properties;
 /**
  * Resolves the backwards-compatible remote client address properties ({@code
  * remote.client.grpcAddress} and {@code remote.client.restAddress}) and creates a {@link
- * CamundaClientBuilderFactory} that applies all standard {@link ClientProperties} from a {@link
- * Properties} instance.
+ * CamundaClientBuilderFactory} that applies all standard {@link ClientProperties} from the
+ * properties passed to the constructor.
  *
  * <p>The remote address properties are applied as overrides on top of all other properties to
  * preserve backwards compatibility.
@@ -42,10 +42,12 @@ public class CamundaProcessTestClientProperties {
   /** Backwards-compatible property for the remote REST address. */
   public static final String PROPERTY_NAME_REMOTE_REST_ADDRESS = "remote.client.restAddress";
 
+  private final Properties properties;
   private final URI remoteGrpcAddress;
   private final URI remoteRestAddress;
 
   public CamundaProcessTestClientProperties(final Properties properties) {
+    this.properties = properties;
     remoteGrpcAddress =
         getPropertyOrNull(properties, PROPERTY_NAME_REMOTE_GRPC_ADDRESS, URI::create);
     remoteRestAddress =
@@ -54,17 +56,15 @@ public class CamundaProcessTestClientProperties {
 
   /**
    * Creates a {@link CamundaClientBuilderFactory} that applies all standard {@link
-   * ClientProperties} from the given properties, plus backwards-compatible remote address
-   * overrides.
+   * ClientProperties} from the properties passed to the constructor, plus backwards-compatible
+   * remote address overrides.
    *
    * <p>If {@code camunda.client.cloud.clusterId} is set, a cloud client builder is used; otherwise
    * a self-managed builder is used.
    *
-   * @param properties the properties to apply to the builder
    * @return a factory that creates pre-configured {@link CamundaClientBuilder} instances
    */
-  public CamundaClientBuilderFactory createCamundaClientBuilderFactory(
-      final Properties properties) {
+  public CamundaClientBuilderFactory createCamundaClientBuilderFactory() {
     // Pre-compute the remote address overrides once so every factory invocation is lightweight.
     final URI grpcOverride = remoteGrpcAddress;
     final URI restOverride = remoteRestAddress;
@@ -75,6 +75,14 @@ public class CamundaProcessTestClientProperties {
       Optional.ofNullable(restOverride).ifPresent(builder::restAddress);
       return builder;
     };
+  }
+
+  public URI getGrpcAddress() {
+    return remoteGrpcAddress;
+  }
+
+  public URI getRestAddress() {
+    return remoteRestAddress;
   }
 
   private static CamundaClientBuilder createBaseBuilder(final Properties properties) {

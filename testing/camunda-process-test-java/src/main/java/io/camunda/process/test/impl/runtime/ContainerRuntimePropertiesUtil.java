@@ -60,7 +60,6 @@ public final class ContainerRuntimePropertiesUtil {
   private final SemanticSimilarityProperties semanticSimilarityProperties;
   private final CamundaProcessTestClientProperties camundaProcessTestClientProperties;
   private final AssertionProperties assertionProperties;
-  private final Properties properties;
 
   private final CamundaProcessTestRuntimeMode runtimeMode;
   private final boolean multiTenancyEnabled;
@@ -69,8 +68,6 @@ public final class ContainerRuntimePropertiesUtil {
 
   public ContainerRuntimePropertiesUtil(
       final Properties properties, final GitPropertiesUtil gitProperties) {
-
-    this.properties = properties;
 
     final VersionedPropertiesUtil versionedPropsReader = new VersionedPropertiesUtil(gitProperties);
 
@@ -218,11 +215,11 @@ public final class ContainerRuntimePropertiesUtil {
   }
 
   public URI getRemoteClientGrpcAddress() {
-    return remoteRuntimeProperties.getRemoteClientProperties().getGrpcAddress();
+    return camundaProcessTestClientProperties.getGrpcAddress();
   }
 
   public URI getRemoteClientRestAddress() {
-    return remoteRuntimeProperties.getRemoteClientProperties().getRestAddress();
+    return camundaProcessTestClientProperties.getRestAddress();
   }
 
   public Duration getRemoteRuntimeConnectionTimeout() {
@@ -240,7 +237,7 @@ public final class ContainerRuntimePropertiesUtil {
    * addresses from {@code remote.client.grpcAddress} and {@code remote.client.restAddress}.
    */
   public CamundaClientBuilderFactory getCamundaClientBuilderFactory() {
-    return camundaProcessTestClientProperties.createCamundaClientBuilderFactory(properties);
+    return camundaProcessTestClientProperties.createCamundaClientBuilderFactory();
   }
 
   public RemoteRuntimeProperties getRemoteRuntimeProperties() {
