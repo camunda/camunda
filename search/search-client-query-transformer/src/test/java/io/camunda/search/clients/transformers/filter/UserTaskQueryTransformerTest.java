@@ -329,9 +329,9 @@ public class UserTaskQueryTransformerTest extends AbstractTransformerTest {
   }
 
   @Test
-  public void shouldQueryByBpmnProcessId() {
+  public void shouldQueryByProcessDefinitionIds() {
     // given
-    final var filter = FilterBuilders.userTask((f) -> f.bpmnProcessIds("bpmnProcess1"));
+    final var filter = FilterBuilders.userTask((f) -> f.processDefinitionIds("bpmnProcess1"));
 
     // when
     final var searchRequest = transformQuery(filter);

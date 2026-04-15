@@ -181,7 +181,8 @@ public class UserTaskFilterTransformer extends IndexFilterTransformer<UserTaskFi
     return longTerms(KEY, userTaskKeys);
   }
 
-  private List<SearchQuery> getProcessDefinitionIdsQuery(final List<Operation<String>> processDefinitionIds) {
+  private List<SearchQuery> getProcessDefinitionIdsQuery(
+      final List<Operation<String>> processDefinitionIds) {
     // In ElasticSearch, "processDefinitionId" is stored in field "bpmnProcessId"
     return stringOperations(BPMN_PROCESS_ID, processDefinitionIds);
   }

@@ -168,8 +168,7 @@ public record UserTaskFilter(
       return this;
     }
 
-    public Builder processDefinitionIdOperations(
-        final List<Operation<String>> operations) {
+    public Builder processDefinitionIdOperations(final List<Operation<String>> operations) {
       processDefinitionIdOperations = addValuesToList(processDefinitionIdOperations, operations);
       return this;
     }
