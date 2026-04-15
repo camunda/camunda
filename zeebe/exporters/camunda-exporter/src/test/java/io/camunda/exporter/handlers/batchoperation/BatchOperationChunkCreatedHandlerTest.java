@@ -69,9 +69,8 @@ class BatchOperationChunkCreatedHandlerTest {
     // when
     final var idList = underTest.generateIds(record);
 
-    // then - composite ID (batchKey:chunkKey) to avoid entity sharing with CreatedHandler
-    assertThat(idList)
-        .containsExactly(record.getValue().getBatchOperationKey() + ":" + record.getKey());
+    // then - static composite ID (batchKey:chunk) to collapse all chunks into one cached entity
+    assertThat(idList).containsExactly(record.getValue().getBatchOperationKey() + ":chunk");
   }
 
   @Test
@@ -119,7 +118,7 @@ class BatchOperationChunkCreatedHandlerTest {
   @Test
   void shouldUpdateWithScriptOnFlush() throws PersistenceException {
     // given
-    final var entity = new BatchOperationEntity().setId("123:456").setEndDate(null);
+    final var entity = new BatchOperationEntity().setId("123:chunk").setEndDate(null);
     final Record<BatchOperationChunkRecordValue> record = createRecord(1L, 11L);
     underTest.updateEntity(record, entity);
     final var mockRequest = mock(BatchRequest.class);
