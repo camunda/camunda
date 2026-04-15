@@ -77,14 +77,6 @@ public class CamundaProcessTestClientProperties {
     };
   }
 
-  public URI getGrpcAddress() {
-    return remoteGrpcAddress;
-  }
-
-  public URI getRestAddress() {
-    return remoteRestAddress;
-  }
-
   private static CamundaClientBuilder createBaseBuilder(final Properties properties) {
     final String clusterId = properties.getProperty(ClientProperties.CLOUD_CLUSTER_ID);
     if (clusterId != null && !clusterId.isEmpty()) {

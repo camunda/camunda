@@ -211,14 +211,6 @@ public final class ContainerRuntimePropertiesUtil {
     return remoteRuntimeProperties.getConnectorsRestApiAddress();
   }
 
-  public URI getRemoteClientGrpcAddress() {
-    return camundaProcessTestClientProperties.getGrpcAddress();
-  }
-
-  public URI getRemoteClientRestAddress() {
-    return camundaProcessTestClientProperties.getRestAddress();
-  }
-
   public Duration getRemoteRuntimeConnectionTimeout() {
     return remoteRuntimeProperties.getRuntimeConnectionTimeout();
   }
