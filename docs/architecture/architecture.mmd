@@ -1,0 +1,153 @@
+graph TD
+    %% ─────────────────────────────────────────────────────────────
+    %% External actors
+    %% ─────────────────────────────────────────────────────────────
+    WebModeler["Web Modeler\n(external SaaS)"]
+    Connectors["Connectors Runtime\n(external)"]
+    JavaClient["Java Client /\nSpring Boot Starter"]
+    Browser["Browser / End User"]
+    AIAgent["AI Agent /\nMCP Client"]
+
+    %% ─────────────────────────────────────────────────────────────
+    %% Gateway layer
+    %% ─────────────────────────────────────────────────────────────
+    subgraph Gateways["Gateway Layer"]
+        GrpcGW["gRPC Gateway\n(zeebe/gateway-grpc)"]
+        RestGW["REST Gateway\n(zeebe/gateway-rest)"]
+        McpGW["MCP Gateway\n(gateways/gateway-mcp)"]
+    end
+
+    %% ─────────────────────────────────────────────────────────────
+    %% Service / Security layer
+    %% ─────────────────────────────────────────────────────────────
+    subgraph ServiceSec["Service & Security Layer"]
+        SvcLayer["Service Layer\n(camunda/service)"]
+        Security["Security / Auth\n(security + authentication)"]
+    end
+
+    %% ─────────────────────────────────────────────────────────────
+    %% Core engine
+    %% ─────────────────────────────────────────────────────────────
+    subgraph CoreEngine["Process Engine (zeebe/)"]
+        Broker["Broker\n(zeebe/broker)"]
+        Engine["Engine\n(zeebe/engine)"]
+        RocksDB[("RocksDB\npartition state")]
+    end
+
+    %% ─────────────────────────────────────────────────────────────
+    %% Exporters
+    %% ─────────────────────────────────────────────────────────────
+    subgraph Exporters["Exporters"]
+        CamundaExp["Camunda Exporter\n(ES / OpenSearch)"]
+        RdbmsExp["RDBMS Exporter\n(SQL databases)"]
+    end
+
+    %% ─────────────────────────────────────────────────────────────
+    %% Storage backends
+    %% ─────────────────────────────────────────────────────────────
+    subgraph Storage["Storage Backends"]
+        ES[("Elasticsearch /\nOpenSearch")]
+        RDBMS[("RDBMS\nPostgreSQL · MySQL · …")]
+    end
+
+    %% ─────────────────────────────────────────────────────────────
+    %% Web applications
+    %% ─────────────────────────────────────────────────────────────
+    subgraph Webapps["Web Applications"]
+        Operate["Operate\n(process monitoring)"]
+        Tasklist["Tasklist\n(user tasks)"]
+        Optimize["Optimize\n(analytics)"]
+        Identity["Identity\n(user & role mgmt)"]
+    end
+
+    %% ─────────────────────────────────────────────────────────────
+    %% External identity provider
+    %% ─────────────────────────────────────────────────────────────
+    Keycloak["Keycloak\n(external OIDC provider)"]
+
+    %% ═════════════════════════════════════════════════════════════
+    %% Edges — external actors → gateways
+    %% ═════════════════════════════════════════════════════════════
+    WebModeler  -->|"REST (deploy / run)"| RestGW
+    Connectors  -->|"gRPC"| GrpcGW
+    JavaClient  -->|"gRPC"| GrpcGW
+    JavaClient  -->|"REST"| RestGW
+    AIAgent     -->|"HTTP / MCP protocol"| McpGW
+
+    %% ═════════════════════════════════════════════════════════════
+    %% Browser → webapps
+    %% ═════════════════════════════════════════════════════════════
+    Browser -->|"HTTP"| Operate
+    Browser -->|"HTTP"| Tasklist
+    Browser -->|"HTTP"| Identity
+
+    %% ═════════════════════════════════════════════════════════════
+    %% Gateways → service / broker
+    %% ═════════════════════════════════════════════════════════════
+    GrpcGW  -->|"BrokerClient (gRPC)"| Broker
+    RestGW  -->|"BrokerClient (gRPC)"| Broker
+    RestGW  -->|"delegates reads"| SvcLayer
+    McpGW   -->|"calls"| SvcLayer
+
+    %% ═════════════════════════════════════════════════════════════
+    %% Service layer → broker and search
+    %% ═════════════════════════════════════════════════════════════
+    SvcLayer -->|"BrokerClient (gRPC)"| Broker
+    SvcLayer -->|"ES HTTP / JDBC"| ES
+    SvcLayer -->|"JDBC"| RDBMS
+
+    %% ═════════════════════════════════════════════════════════════
+    %% Security / auth
+    %% ═════════════════════════════════════════════════════════════
+    GrpcGW   -->|"validates JWT"| Security
+    RestGW   -->|"validates JWT"| Security
+    McpGW    -->|"validates JWT"| Security
+    Operate  -->|"OAuth2 token"| Security
+    Tasklist -->|"OAuth2 token"| Security
+    Identity -->|"OAuth2 token"| Security
+    Security -->|"OIDC discovery / token"| Keycloak
+
+    %% ═════════════════════════════════════════════════════════════
+    %% Broker internals
+    %% ═════════════════════════════════════════════════════════════
+    Broker -->|"hosts (1 engine / partition)"| Engine
+    Engine -->|"read / write state"| RocksDB
+
+    %% ═════════════════════════════════════════════════════════════
+    %% Export pipeline
+    %% ═════════════════════════════════════════════════════════════
+    Broker -->|"export record"| CamundaExp
+    Broker -->|"export record"| RdbmsExp
+    CamundaExp -->|"ES HTTP bulk index"| ES
+    RdbmsExp   -->|"JDBC insert / update"| RDBMS
+
+    %% ═════════════════════════════════════════════════════════════
+    %% Webapps → storage (reads)
+    %% ═════════════════════════════════════════════════════════════
+    Operate  -->|"ES HTTP (query)"| ES
+    Operate  -->|"gRPC (cancel/modify)"| GrpcGW
+    Tasklist -->|"ES HTTP (query)"| ES
+    Tasklist -->|"gRPC (complete task)"| GrpcGW
+    Optimize -->|"ES HTTP (analytics)"| ES
+    Identity -->|"ES HTTP / JDBC"| ES
+
+    %% ═════════════════════════════════════════════════════════════
+    %% Styling
+    %% ═════════════════════════════════════════════════════════════
+    classDef external   fill:#f5f5f5,stroke:#999,color:#333
+    classDef gateway    fill:#dbe8fc,stroke:#4a90d9,color:#1a3c6b
+    classDef engine     fill:#fce8d8,stroke:#e07020,color:#6b2a00
+    classDef exporter   fill:#e8f4e8,stroke:#3a9a3a,color:#1a4d1a
+    classDef storage    fill:#f0e8fc,stroke:#8040c0,color:#3a0080
+    classDef webapp     fill:#fff8dc,stroke:#c0a000,color:#4d3a00
+    classDef service    fill:#e8f8fc,stroke:#20a0c0,color:#003a4d
+    classDef identity   fill:#fce8f0,stroke:#c02060,color:#4d001a
+
+    class WebModeler,Connectors,JavaClient,Browser,AIAgent external
+    class GrpcGW,RestGW,McpGW gateway
+    class Broker,Engine,RocksDB engine
+    class CamundaExp,RdbmsExp exporter
+    class ES,RDBMS storage
+    class Operate,Tasklist,Optimize webapp
+    class Identity,Keycloak identity
+    class SvcLayer,Security service
