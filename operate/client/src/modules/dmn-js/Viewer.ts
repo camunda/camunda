@@ -77,6 +77,7 @@ class Viewer extends Manager {
         },
       ];
     }
+    return [];
   }
 }
 

@@ -9,11 +9,7 @@
 import {type BusinessObject} from 'bpmn-js/lib/NavigatedViewer';
 
 const getEventType = (businessObject: BusinessObject) => {
-  const firstEventDefinition = businessObject.eventDefinitions?.[0];
-
-  if (firstEventDefinition !== undefined) {
-    return firstEventDefinition.$type;
-  }
+  return businessObject.eventDefinitions?.[0]?.$type;
 };
 
 export {getEventType};

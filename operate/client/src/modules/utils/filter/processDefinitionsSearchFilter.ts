@@ -43,6 +43,7 @@ function mapProcessDefinitionVersion(
       return version;
     }
   }
+  return undefined;
 }
 
 export {parseProcessDefinitionsSearchFilter};

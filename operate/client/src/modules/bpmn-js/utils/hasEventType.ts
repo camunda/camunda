@@ -17,8 +17,6 @@ const hasEventType = ({
   types: EventType[];
 }) => {
   const eventType = getEventType(businessObject);
-  if (eventType !== undefined && types.includes(eventType)) {
-    return true;
-  }
+  return eventType !== undefined && types.includes(eventType);
 };
 export {hasEventType};
