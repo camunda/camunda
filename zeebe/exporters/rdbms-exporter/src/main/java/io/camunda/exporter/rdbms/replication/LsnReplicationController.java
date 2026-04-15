@@ -7,7 +7,7 @@
  */
 package io.camunda.exporter.rdbms.replication;
 
-import io.camunda.db.rdbms.write.ReplicationLsnProvider;
+import io.camunda.db.rdbms.write.ReplicationLogStatusProvider;
 import io.camunda.db.rdbms.write.ReplicationStatusDto;
 import io.camunda.exporter.rdbms.ExporterConfiguration.ReplicationConfiguration;
 import io.camunda.zeebe.exporter.api.context.Controller;
@@ -25,7 +25,7 @@ public class LsnReplicationController implements ReplicationController {
 
   private static final Logger LOG = LoggerFactory.getLogger(LsnReplicationController.class);
 
-  private final ReplicationLsnProvider lsnProvider;
+  private final ReplicationLogStatusProvider lsnProvider;
   private final Controller controller;
   private final ReplicationConfiguration replicationConfiguration;
   private final int partitionId;
@@ -38,7 +38,7 @@ public class LsnReplicationController implements ReplicationController {
 
   public LsnReplicationController(
       final Controller controller,
-      final ReplicationLsnProvider lsnProvider,
+      final ReplicationLogStatusProvider lsnProvider,
       final ReplicationConfiguration replicationConfiguration,
       final int partitionId) {
     this.lsnProvider = lsnProvider;
@@ -55,7 +55,7 @@ public class LsnReplicationController implements ReplicationController {
   @Override
   public void onFlush(final long exporterPosition) {
     flushedPosition.set(exporterPosition);
-    final long currentLsn = lsnProvider.getCurrentLsn();
+    final long currentLsn = lsnProvider.getCurrent();
     if (!pendingEntries.offer(new LsnPositionEntry(exporterPosition, currentLsn))) {
       LOG.warn(
           "[RDBMS Exporter P{}] Replication queue is full, dropping LSN entry (lsn={}, position={})",
@@ -105,7 +105,7 @@ public class LsnReplicationController implements ReplicationController {
 
     final long replicasAtOrAboveLsn =
         statuses.stream()
-            .filter(status -> status.getLsn() >= lsn)
+            .filter(status -> status.getLogStatus() >= lsn)
             .collect(Collectors.toSet())
             .size();
 
