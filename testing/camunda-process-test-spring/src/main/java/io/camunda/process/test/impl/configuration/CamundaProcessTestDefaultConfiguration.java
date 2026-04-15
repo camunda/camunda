@@ -36,8 +36,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.apache.hc.client5.http.async.AsyncExecChainHandler;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
@@ -60,11 +60,23 @@ public class CamundaProcessTestDefaultConfiguration {
         .configure(ACCEPT_EMPTY_ARRAY_AS_NULL_OBJECT, true);
   }
 
-  @Bean(name = "camundaProcessTestScheduledExecutor")
+  @Bean(name = "camundaProcessTestClientScheduledExecutor")
   @ConditionalOnMissingBean(CamundaClientBuilderFactory.class)
   public ScheduledExecutorService camundaProcessTestScheduledExecutor(
       final CamundaClientProperties clientProperties) {
     return Executors.newScheduledThreadPool(clientProperties.getExecutionThreads());
+  }
+
+  @Bean(name = "camundaProcessTestOwnedClientExecutorService")
+  @ConditionalOnMissingBean(CamundaClientBuilderFactory.class)
+  public CamundaClientExecutorService camundaProcessTestOwnedClientExecutorService(
+      @Qualifier("camundaProcessTestClientScheduledExecutor")
+          final ScheduledExecutorService scheduledExecutor) {
+
+    // Use a dedicated executor with ownByCamundaClient=false to prevent closing the shared
+    // executor when a test client is closed. Each test creates and closes its own CamundaClient,
+    // and we reuse this executor across all clients within the test class.
+    return new CamundaClientExecutorService(scheduledExecutor, false);
   }
 
   /**
@@ -87,15 +99,9 @@ public class CamundaProcessTestDefaultConfiguration {
       final JobExceptionHandlerSupplier jobExceptionHandlingSupplier,
       final List<ClientInterceptor> interceptors,
       final List<AsyncExecChainHandler> chainHandlers,
-      final CamundaProcessTestRuntimeConfiguration runtimeConfiguration,
-      @Qualifier("camundaProcessTestScheduledExecutor")
-          final ScheduledExecutorService scheduledExecutor) {
-
-    // Use a dedicated executor with ownByCamundaClient=false to prevent closing the shared
-    // executor when a test client is closed. Each test creates and closes its own CamundaClient,
-    // and we reuse this executor across all clients within the test class.
-    final CamundaClientExecutorService executorService =
-        new CamundaClientExecutorService(scheduledExecutor, false);
+      @Qualifier("camundaProcessTestOwnedClientExecutorService")
+          final CamundaClientExecutorService executorService,
+      final CamundaProcessTestRuntimeConfiguration runtimeConfiguration) {
 
     final SpringCamundaClientConfiguration configuration =
         new SpringCamundaClientConfiguration(
