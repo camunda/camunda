@@ -12,87 +12,51 @@ import io.camunda.configuration.conditions.ConditionalOnSecondaryStorageType;
 import io.camunda.search.clients.DocumentBasedSearchClient;
 import io.camunda.search.clients.SearchClientBasedQueryExecutor;
 import io.camunda.search.clients.cache.ProcessCache;
-import io.camunda.search.clients.reader.AuditLogDocumentReader;
 import io.camunda.search.clients.reader.AuditLogReader;
-import io.camunda.search.clients.reader.AuthorizationDocumentReader;
 import io.camunda.search.clients.reader.AuthorizationReader;
-import io.camunda.search.clients.reader.BatchOperationDocumentReader;
-import io.camunda.search.clients.reader.BatchOperationItemDocumentReader;
 import io.camunda.search.clients.reader.BatchOperationItemReader;
 import io.camunda.search.clients.reader.BatchOperationReader;
-import io.camunda.search.clients.reader.ClusterVariableDocumentReader;
 import io.camunda.search.clients.reader.ClusterVariableReader;
-import io.camunda.search.clients.reader.CorrelatedMessageSubscriptionDocumentReader;
 import io.camunda.search.clients.reader.CorrelatedMessageSubscriptionReader;
-import io.camunda.search.clients.reader.DecisionDefinitionDocumentReader;
 import io.camunda.search.clients.reader.DecisionDefinitionReader;
-import io.camunda.search.clients.reader.DecisionInstanceDocumentReader;
 import io.camunda.search.clients.reader.DecisionInstanceReader;
-import io.camunda.search.clients.reader.DecisionRequirementsDocumentReader;
 import io.camunda.search.clients.reader.DecisionRequirementsReader;
 import io.camunda.search.clients.reader.DeployedResourceDocumentReader;
 import io.camunda.search.clients.reader.DeployedResourceReader;
 import io.camunda.search.clients.reader.FlowNodeInstanceDocumentReader;
 import io.camunda.search.clients.reader.FlowNodeInstanceReader;
-import io.camunda.search.clients.reader.FormDocumentReader;
 import io.camunda.search.clients.reader.FormReader;
-import io.camunda.search.clients.reader.GlobalListenerDocumentReader;
 import io.camunda.search.clients.reader.GlobalListenerReader;
-import io.camunda.search.clients.reader.GroupDocumentReader;
-import io.camunda.search.clients.reader.GroupMemberDocumentReader;
 import io.camunda.search.clients.reader.GroupMemberReader;
 import io.camunda.search.clients.reader.GroupReader;
-import io.camunda.search.clients.reader.IncidentDocumentReader;
-import io.camunda.search.clients.reader.IncidentProcessInstanceStatisticsByDefinitionDocumentReader;
 import io.camunda.search.clients.reader.IncidentProcessInstanceStatisticsByDefinitionReader;
-import io.camunda.search.clients.reader.IncidentProcessInstanceStatisticsByErrorDocumentReader;
 import io.camunda.search.clients.reader.IncidentProcessInstanceStatisticsByErrorReader;
 import io.camunda.search.clients.reader.IncidentReader;
-import io.camunda.search.clients.reader.JobDocumentReader;
-import io.camunda.search.clients.reader.JobMetricsBatchDocumentReader;
 import io.camunda.search.clients.reader.JobMetricsBatchReader;
 import io.camunda.search.clients.reader.JobReader;
-import io.camunda.search.clients.reader.MappingRuleDocumentReader;
 import io.camunda.search.clients.reader.MappingRuleReader;
-import io.camunda.search.clients.reader.MessageSubscriptionDocumentReader;
 import io.camunda.search.clients.reader.MessageSubscriptionReader;
-import io.camunda.search.clients.reader.ProcessDefinitionDocumentReader;
-import io.camunda.search.clients.reader.ProcessDefinitionInstanceStatisticsDocumentReader;
 import io.camunda.search.clients.reader.ProcessDefinitionInstanceStatisticsReader;
-import io.camunda.search.clients.reader.ProcessDefinitionInstanceVersionStatisticsDocumentReader;
 import io.camunda.search.clients.reader.ProcessDefinitionInstanceVersionStatisticsReader;
-import io.camunda.search.clients.reader.ProcessDefinitionMessageSubscriptionStatisticsDocumentReader;
 import io.camunda.search.clients.reader.ProcessDefinitionMessageSubscriptionStatisticsReader;
 import io.camunda.search.clients.reader.ProcessDefinitionReader;
-import io.camunda.search.clients.reader.ProcessDefinitionStatisticsDocumentReader;
 import io.camunda.search.clients.reader.ProcessDefinitionStatisticsReader;
-import io.camunda.search.clients.reader.ProcessInstanceDocumentReader;
 import io.camunda.search.clients.reader.ProcessInstanceReader;
-import io.camunda.search.clients.reader.ProcessInstanceStatisticsDocumentReader;
 import io.camunda.search.clients.reader.ProcessInstanceStatisticsReader;
-import io.camunda.search.clients.reader.RoleDocumentReader;
-import io.camunda.search.clients.reader.RoleMemberDocumentReader;
 import io.camunda.search.clients.reader.RoleMemberReader;
 import io.camunda.search.clients.reader.RoleReader;
-import io.camunda.search.clients.reader.SequenceFlowDocumentReader;
+import io.camunda.search.clients.reader.SearchClientReaders;
 import io.camunda.search.clients.reader.SequenceFlowReader;
-import io.camunda.search.clients.reader.TenantDocumentReader;
-import io.camunda.search.clients.reader.TenantMemberDocumentReader;
 import io.camunda.search.clients.reader.TenantMemberReader;
 import io.camunda.search.clients.reader.TenantReader;
-import io.camunda.search.clients.reader.UsageMetricsDocumentReader;
 import io.camunda.search.clients.reader.UsageMetricsReader;
-import io.camunda.search.clients.reader.UsageMetricsTUDocumentReader;
 import io.camunda.search.clients.reader.UsageMetricsTUReader;
-import io.camunda.search.clients.reader.UserDocumentReader;
 import io.camunda.search.clients.reader.UserReader;
-import io.camunda.search.clients.reader.UserTaskDocumentReader;
 import io.camunda.search.clients.reader.UserTaskReader;
-import io.camunda.search.clients.reader.VariableDocumentReader;
 import io.camunda.search.clients.reader.VariableReader;
-import io.camunda.search.clients.reader.utils.IncidentErrorHashCodeNormalizer;
 import io.camunda.search.clients.transformers.ServiceTransformers;
 import io.camunda.search.connect.configuration.ConnectConfiguration;
+import io.camunda.search.connect.tenant.TenantConnectConfigResolver;
 import io.camunda.webapps.schema.descriptors.IndexDescriptors;
 import io.camunda.webapps.schema.descriptors.index.AuthorizationIndex;
 import io.camunda.webapps.schema.descriptors.index.ClusterVariableIndex;
@@ -125,6 +89,7 @@ import io.camunda.webapps.schema.descriptors.template.UsageMetricTemplate;
 import io.camunda.webapps.schema.descriptors.template.VariableTemplate;
 import io.camunda.zeebe.gateway.rest.config.GatewayRestConfiguration;
 import java.util.Map;
+import java.util.stream.Collectors;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -145,12 +110,15 @@ public class SearchClientReaderConfiguration {
   // TODO: Wire up physical tenant configuration to creation of index descriptors
   @Bean
   public Map<String, IndexDescriptors> physicalTenantScopedIndexDescriptors(
-      final ConnectConfiguration connectConfiguration) {
-    return Map.of(
-        "default",
-        new IndexDescriptors(
-            connectConfiguration.getIndexPrefix(),
-            connectConfiguration.getTypeEnum().isElasticSearch()));
+      final TenantConnectConfigResolver tenantConnectConfigResolver) {
+    return tenantConnectConfigResolver.tenantConfigs().entrySet().stream()
+        .collect(
+            Collectors.toMap(
+                Map.Entry::getKey,
+                entry ->
+                    new IndexDescriptors(
+                        entry.getValue().getIndexPrefix(),
+                        entry.getValue().getTypeEnum().isElasticSearch())));
   }
 
   @Bean
@@ -160,293 +128,221 @@ public class SearchClientReaderConfiguration {
     return new SearchClientBasedQueryExecutor(searchClient, transformers);
   }
 
+  /**
+   * Creates all ES/OS document readers in a single factory call. Individual reader beans below
+   * extract from this record so they can be injected into {@link
+   * SearchClientConfiguration#searchClientReaders}.
+   */
   @Bean
-  public AuthorizationReader authorizationReader(
-      final SearchClientBasedQueryExecutor executor, final IndexDescriptors descriptors) {
-    return new AuthorizationDocumentReader(executor, descriptors.get(AuthorizationIndex.class));
+  public SearchClientReaders documentReaders(
+      final SearchClientBasedQueryExecutor executor,
+      final IndexDescriptors descriptors,
+      final GatewayRestConfiguration config) {
+    final var cacheConfig =
+        new ProcessCache.Configuration(
+            config.getProcessCache().getMaxSize(),
+            config.getProcessCache().getExpirationIdleMillis());
+    return SearchClientReadersFactory.create(executor, descriptors, cacheConfig);
   }
 
   @Bean
-  public IncidentErrorHashCodeNormalizer incidentErrorHashCodeNormalizer(
-      final IncidentReader incidentReader) {
-    return new IncidentErrorHashCodeNormalizer((IncidentDocumentReader) incidentReader);
+  public AuthorizationReader authorizationReader(final SearchClientReaders documentReaders) {
+    return documentReaders.authorizationReader();
   }
 
   @Bean
-  public BatchOperationReader batchOperationReader(
-      final SearchClientBasedQueryExecutor executor, final IndexDescriptors descriptors) {
-    return new BatchOperationDocumentReader(
-        executor, descriptors.get(BatchOperationTemplate.class));
+  public BatchOperationReader batchOperationReader(final SearchClientReaders documentReaders) {
+    return documentReaders.batchOperationReader();
   }
 
   @Bean
   public BatchOperationItemReader batchOperationItemReader(
-      final SearchClientBasedQueryExecutor executor, final IndexDescriptors descriptors) {
-    return new BatchOperationItemDocumentReader(executor, descriptors.get(OperationTemplate.class));
+      final SearchClientReaders documentReaders) {
+    return documentReaders.batchOperationItemReader();
   }
 
   @Bean
   public CorrelatedMessageSubscriptionReader correlatedMessageSubscriptionsReader(
-      final SearchClientBasedQueryExecutor executor, final IndexDescriptors descriptors) {
-    return new CorrelatedMessageSubscriptionDocumentReader(
-        executor, descriptors.get(CorrelatedMessageSubscriptionTemplate.class));
+      final SearchClientReaders documentReaders) {
+    return documentReaders.correlatedMessageSubscriptionReader();
   }
 
   @Bean
   public DecisionDefinitionReader decisionDefinitionReader(
-      final SearchClientBasedQueryExecutor executor, final IndexDescriptors descriptors) {
-    return new DecisionDefinitionDocumentReader(executor, descriptors.get(DecisionIndex.class));
+      final SearchClientReaders documentReaders) {
+    return documentReaders.decisionDefinitionReader();
   }
 
   @Bean
-  public DecisionInstanceReader decisionInstanceReader(
-      final SearchClientBasedQueryExecutor executor, final IndexDescriptors descriptors) {
-    return new DecisionInstanceDocumentReader(
-        executor, descriptors.get(DecisionInstanceTemplate.class));
+  public DecisionInstanceReader decisionInstanceReader(final SearchClientReaders documentReaders) {
+    return documentReaders.decisionInstanceReader();
   }
 
   @Bean
   public DecisionRequirementsReader decisionRequirementsReader(
-      final SearchClientBasedQueryExecutor executor, final IndexDescriptors descriptors) {
-    return new DecisionRequirementsDocumentReader(
-        executor, descriptors.get(DecisionRequirementsIndex.class));
+      final SearchClientReaders documentReaders) {
+    return documentReaders.decisionRequirementsReader();
   }
 
   @Bean
-  public FlowNodeInstanceReader flowNodeInstanceReader(
-      final SearchClientBasedQueryExecutor executor, final IndexDescriptors descriptors) {
-    return new FlowNodeInstanceDocumentReader(
-        executor, descriptors.get(FlowNodeInstanceTemplate.class));
+  public FlowNodeInstanceReader flowNodeInstanceReader(final SearchClientReaders documentReaders) {
+    return documentReaders.flowNodeInstanceReader();
   }
 
   @Bean
-  public FormReader formReader(
-      final SearchClientBasedQueryExecutor executor, final IndexDescriptors descriptors) {
-    return new FormDocumentReader(executor, descriptors.get(FormIndex.class));
+  public FormReader formReader(final SearchClientReaders documentReaders) {
+    return documentReaders.formReader();
   }
 
   @Bean
-  public GroupReader groupReader(
-      final SearchClientBasedQueryExecutor executor,
-      final IndexDescriptors descriptors,
-      final TenantMemberReader tenantMemberReader,
-      final RoleMemberReader roleMemberReader) {
-    return new GroupDocumentReader(
-        executor,
-        descriptors.get(GroupIndex.class),
-        (TenantMemberDocumentReader) tenantMemberReader,
-        (RoleMemberDocumentReader) roleMemberReader);
+  public GroupReader groupReader(final SearchClientReaders documentReaders) {
+    return documentReaders.groupReader();
   }
 
   @Bean
-  public GroupMemberReader groupMemberReader(
-      final SearchClientBasedQueryExecutor executor, final IndexDescriptors descriptors) {
-    return new GroupMemberDocumentReader(executor, descriptors.get(GroupIndex.class));
+  public GroupMemberReader groupMemberReader(final SearchClientReaders documentReaders) {
+    return documentReaders.groupMemberReader();
   }
 
   @Bean
-  public IncidentReader incidentReader(
-      final SearchClientBasedQueryExecutor executor, final IndexDescriptors descriptors) {
-    return new IncidentDocumentReader(executor, descriptors.get(IncidentTemplate.class));
+  public IncidentReader incidentReader(final SearchClientReaders documentReaders) {
+    return documentReaders.incidentReader();
   }
 
   @Bean
-  public JobReader jobReader(
-      final SearchClientBasedQueryExecutor executor, final IndexDescriptors descriptors) {
-    return new JobDocumentReader(executor, descriptors.get(JobTemplate.class));
+  public JobReader jobReader(final SearchClientReaders documentReaders) {
+    return documentReaders.jobReader();
   }
 
   @Bean
-  public JobMetricsBatchReader jobMetricsBatchReader(
-      final SearchClientBasedQueryExecutor executor, final IndexDescriptors descriptors) {
-    return new JobMetricsBatchDocumentReader(
-        executor, descriptors.get(JobMetricsBatchTemplate.class));
+  public JobMetricsBatchReader jobMetricsBatchReader(final SearchClientReaders documentReaders) {
+    return documentReaders.jobMetricsBatchReader();
   }
 
   @Bean
-  public MappingRuleReader mappingRuleReader(
-      final SearchClientBasedQueryExecutor executor,
-      final IndexDescriptors descriptors,
-      final RoleMemberReader roleMemberReader,
-      final TenantMemberReader tenantMemberReader,
-      final GroupMemberReader groupMemberReader) {
-    return new MappingRuleDocumentReader(
-        executor,
-        descriptors.get(MappingRuleIndex.class),
-        (RoleMemberDocumentReader) roleMemberReader,
-        (TenantMemberDocumentReader) tenantMemberReader,
-        (GroupMemberDocumentReader) groupMemberReader);
+  public MappingRuleReader mappingRuleReader(final SearchClientReaders documentReaders) {
+    return documentReaders.mappingRuleReader();
   }
 
   @Bean
   public MessageSubscriptionReader messageSubscriptionReader(
-      final SearchClientBasedQueryExecutor executor, final IndexDescriptors descriptors) {
-    return new MessageSubscriptionDocumentReader(
-        executor, descriptors.get(MessageSubscriptionTemplate.class));
+      final SearchClientReaders documentReaders) {
+    return documentReaders.messageSubscriptionReader();
   }
 
   @Bean
   public ProcessDefinitionMessageSubscriptionStatisticsReader
       processDefinitionMessageSubscriptionStatisticsReader(
-          final SearchClientBasedQueryExecutor executor, final IndexDescriptors descriptors) {
-    return new ProcessDefinitionMessageSubscriptionStatisticsDocumentReader(
-        executor, descriptors.get(MessageSubscriptionTemplate.class));
+          final SearchClientReaders documentReaders) {
+    return documentReaders.processDefinitionMessageSubscriptionStatisticsReader();
   }
 
   @Bean
   public ProcessDefinitionReader processDefinitionReader(
-      final SearchClientBasedQueryExecutor executor, final IndexDescriptors descriptors) {
-    return new ProcessDefinitionDocumentReader(executor, descriptors.get(ProcessIndex.class));
+      final SearchClientReaders documentReaders) {
+    return documentReaders.processDefinitionReader();
   }
 
   @Bean
   public ProcessDefinitionStatisticsReader processDefinitionStatisticsReader(
-      final SearchClientBasedQueryExecutor executor,
-      final IndexDescriptors descriptors,
-      final IncidentErrorHashCodeNormalizer normalizer) {
-    return new ProcessDefinitionStatisticsDocumentReader(
-        executor, descriptors.get(ListViewTemplate.class), normalizer);
+      final SearchClientReaders documentReaders) {
+    return documentReaders.processDefinitionStatisticsReader();
   }
 
   @Bean
   public ProcessDefinitionInstanceStatisticsReader processDefinitionInstanceStatisticsReader(
-      final SearchClientBasedQueryExecutor executor, final IndexDescriptors descriptors) {
-    return new ProcessDefinitionInstanceStatisticsDocumentReader(
-        executor, descriptors.get(ListViewTemplate.class)) {};
+      final SearchClientReaders documentReaders) {
+    return documentReaders.processDefinitionInstanceStatisticsReader();
   }
 
   @Bean
   public ProcessDefinitionInstanceVersionStatisticsReader
-      processDefinitionInstanceVersionStatisticsReader(
-          final SearchClientBasedQueryExecutor executor, final IndexDescriptors descriptors) {
-    return new ProcessDefinitionInstanceVersionStatisticsDocumentReader(
-        executor, descriptors.get(ListViewTemplate.class)) {};
+      processDefinitionInstanceVersionStatisticsReader(final SearchClientReaders documentReaders) {
+    return documentReaders.processDefinitionInstanceVersionStatisticsReader();
   }
 
   @Bean
-  public ProcessInstanceReader processInstanceReader(
-      final SearchClientBasedQueryExecutor executor,
-      final IndexDescriptors descriptors,
-      final IncidentErrorHashCodeNormalizer normalizer) {
-    return new ProcessInstanceDocumentReader(
-        executor, descriptors.get(ListViewTemplate.class), normalizer);
+  public ProcessInstanceReader processInstanceReader(final SearchClientReaders documentReaders) {
+    return documentReaders.processInstanceReader();
   }
 
   @Bean
   public ProcessInstanceStatisticsReader processInstanceStatisticsReader(
-      final SearchClientBasedQueryExecutor executor, final IndexDescriptors descriptors) {
-    return new ProcessInstanceStatisticsDocumentReader(
-        executor, descriptors.get(ListViewTemplate.class));
+      final SearchClientReaders documentReaders) {
+    return documentReaders.processInstanceStatisticsReader();
   }
 
   @Bean
-  public RoleReader roleReader(
-      final SearchClientBasedQueryExecutor executor,
-      final IndexDescriptors descriptors,
-      final TenantMemberReader tenantMemberReader) {
-    return new RoleDocumentReader(
-        executor,
-        descriptors.get(RoleIndex.class),
-        (TenantMemberDocumentReader) tenantMemberReader);
+  public RoleReader roleReader(final SearchClientReaders documentReaders) {
+    return documentReaders.roleReader();
   }
 
   @Bean
-  public RoleMemberReader roleMemberReader(
-      final SearchClientBasedQueryExecutor executor, final IndexDescriptors descriptors) {
-    return new RoleMemberDocumentReader(executor, descriptors.get(RoleIndex.class));
+  public RoleMemberReader roleMemberReader(final SearchClientReaders documentReaders) {
+    return documentReaders.roleMemberReader();
   }
 
   @Bean
-  public SequenceFlowReader sequenceFlowReader(
-      final SearchClientBasedQueryExecutor executor, final IndexDescriptors descriptors) {
-    return new SequenceFlowDocumentReader(executor, descriptors.get(SequenceFlowTemplate.class));
+  public SequenceFlowReader sequenceFlowReader(final SearchClientReaders documentReaders) {
+    return documentReaders.sequenceFlowReader();
   }
 
   @Bean
-  public TenantReader tenantReader(
-      final SearchClientBasedQueryExecutor executor, final IndexDescriptors descriptors) {
-    return new TenantDocumentReader(executor, descriptors.get(TenantIndex.class));
+  public TenantReader tenantReader(final SearchClientReaders documentReaders) {
+    return documentReaders.tenantReader();
   }
 
   @Bean
-  public TenantMemberReader tenantMemberReaderReader(
-      final SearchClientBasedQueryExecutor executor, final IndexDescriptors descriptors) {
-    return new TenantMemberDocumentReader(executor, descriptors.get(TenantIndex.class));
+  public TenantMemberReader tenantMemberReaderReader(final SearchClientReaders documentReaders) {
+    return documentReaders.tenantMemberReader();
   }
 
   @Bean
-  public UsageMetricsReader usageMetricsReader(
-      final SearchClientBasedQueryExecutor executor, final IndexDescriptors descriptors) {
-    return new UsageMetricsDocumentReader(executor, descriptors.get(UsageMetricTemplate.class));
+  public UsageMetricsReader usageMetricsReader(final SearchClientReaders documentReaders) {
+    return documentReaders.usageMetricsReader();
   }
 
   @Bean
-  public UsageMetricsTUReader usageMetricsTUReader(
-      final SearchClientBasedQueryExecutor executor, final IndexDescriptors descriptors) {
-    return new UsageMetricsTUDocumentReader(executor, descriptors.get(UsageMetricTUTemplate.class));
+  public UsageMetricsTUReader usageMetricsTUReader(final SearchClientReaders documentReaders) {
+    return documentReaders.usageMetricsTUReader();
   }
 
   @Bean
-  public UserReader userReader(
-      final SearchClientBasedQueryExecutor executor,
-      final IndexDescriptors descriptors,
-      final RoleMemberReader roleMemberReader,
-      final TenantMemberReader tenantMemberReader,
-      final GroupMemberReader groupMemberReader) {
-    return new UserDocumentReader(
-        executor,
-        descriptors.get(UserIndex.class),
-        (RoleMemberDocumentReader) roleMemberReader,
-        (TenantMemberDocumentReader) tenantMemberReader,
-        (GroupMemberDocumentReader) groupMemberReader);
+  public UserReader userReader(final SearchClientReaders documentReaders) {
+    return documentReaders.userReader();
   }
 
   @Bean
-  public UserTaskReader userTaskReader(
-      final SearchClientBasedQueryExecutor executor, final IndexDescriptors descriptors) {
-    return new UserTaskDocumentReader(executor, descriptors.get(TaskTemplate.class));
+  public UserTaskReader userTaskReader(final SearchClientReaders documentReaders) {
+    return documentReaders.userTaskReader();
   }
 
   @Bean
-  public VariableReader variableReader(
-      final SearchClientBasedQueryExecutor executor, final IndexDescriptors descriptors) {
-    return new VariableDocumentReader(executor, descriptors.get(VariableTemplate.class));
+  public VariableReader variableReader(final SearchClientReaders documentReaders) {
+    return documentReaders.variableReader();
   }
 
   @Bean
-  public ClusterVariableReader clusterVariableReader(
-      final SearchClientBasedQueryExecutor executor, final IndexDescriptors descriptors) {
-    return new ClusterVariableDocumentReader(executor, descriptors.get(ClusterVariableIndex.class));
+  public ClusterVariableReader clusterVariableReader(final SearchClientReaders documentReaders) {
+    return documentReaders.clusterVariableReader();
   }
 
   @Bean
-  public AuditLogReader auditLogReader(
-      final SearchClientBasedQueryExecutor executor, final IndexDescriptors descriptors) {
-    return new AuditLogDocumentReader(executor, descriptors.get(AuditLogTemplate.class));
+  public AuditLogReader auditLogReader(final SearchClientReaders documentReaders) {
+    return documentReaders.auditLogReader();
   }
 
   @Bean
   public IncidentProcessInstanceStatisticsByErrorReader
-      incidentProcessInstanceStatisticsByErrorReader(
-          final SearchClientBasedQueryExecutor executor, final IndexDescriptors descriptors) {
-    return new IncidentProcessInstanceStatisticsByErrorDocumentReader(
-        executor, descriptors.get(IncidentTemplate.class)) {};
+      incidentProcessInstanceStatisticsByErrorReader(final SearchClientReaders documentReaders) {
+    return documentReaders.incidentProcessInstanceStatisticsByErrorReader();
   }
 
   @Bean
   public IncidentProcessInstanceStatisticsByDefinitionReader
       incidentProcessInstanceStatisticsByDefinitionReader(
-          final SearchClientBasedQueryExecutor executor,
-          final IndexDescriptors descriptors,
-          final ProcessCache processCache) {
-    return new IncidentProcessInstanceStatisticsByDefinitionDocumentReader(
-        executor, descriptors.get(IncidentTemplate.class), processCache);
-  }
-
-  @Bean
-  public GlobalListenerReader globalListenerReader(
-      final SearchClientBasedQueryExecutor executor, final IndexDescriptors descriptors) {
-    return new GlobalListenerDocumentReader(executor, descriptors.get(GlobalListenerIndex.class));
+          final SearchClientReaders documentReaders) {
+    return documentReaders.incidentProcessInstanceStatisticsByDefinitionReader();
   }
 
   @Bean
@@ -457,14 +353,7 @@ public class SearchClientReaderConfiguration {
   }
 
   @Bean
-  public ProcessCache searchClientProcessCache(
-      final GatewayRestConfiguration configuration, final SearchClientBasedQueryExecutor executor) {
-
-    final var cacheConfiguration =
-        new ProcessCache.Configuration(
-            configuration.getProcessCache().getMaxSize(),
-            configuration.getProcessCache().getExpirationIdleMillis());
-
-    return new ProcessCache(cacheConfiguration, executor);
+  public GlobalListenerReader globalListenerReader(final SearchClientReaders documentReaders) {
+    return documentReaders.globalListenerReader();
   }
 }

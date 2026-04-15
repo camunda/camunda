@@ -94,7 +94,7 @@ public class SearchClientConfiguration {
 
   @Bean
   @ConditionalOnSecondaryStorageEnabled
-  public CamundaSearchClients searchClients(
+  public CamundaSearchClients camundaSearchClients(
       final SearchClientReaders searchClientReaders,
       final List<ResourceAccessController> resourceAccessControllers) {
     return new CamundaSearchClients(
