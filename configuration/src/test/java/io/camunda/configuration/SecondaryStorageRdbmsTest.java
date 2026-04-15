@@ -66,6 +66,7 @@ public class SecondaryStorageRdbmsTest {
 
   private static final int MAX_PROCESS_CACHE_SIZE = 4711;
   private static final int MAX_BATCH_OPERATIONS_CACHE_SIZE = 4711;
+  private static final boolean ASYNC_REPLICATION_ENABLED = true;
 
   @Nested
   @TestPropertySource(
@@ -105,6 +106,7 @@ public class SecondaryStorageRdbmsTest {
         "camunda.data.secondary-storage.rdbms.exportBatchOperationItemsOnCreation=false",
         "camunda.data.secondary-storage.rdbms.batchOperationItemInsertBlockSize=1234",
         "camunda.data.secondary-storage.rdbms.insert-batching.max-audit-log-insert-batch-size=50",
+        "camunda.data.secondary-storage.rdbms.replication.enabled=" + ASYNC_REPLICATION_ENABLED,
         "camunda.data.secondary-storage.rdbms.max-varchar-field-length=200",
       })
   class WithOnlyUnifiedConfigSet {
@@ -184,6 +186,8 @@ public class SecondaryStorageRdbmsTest {
       assertThat(exporterConfiguration.getBatchOperationItemInsertBlockSize()).isEqualTo(1234);
       assertThat(exporterConfiguration.getInsertBatching().getMaxAuditLogInsertBatchSize())
           .isEqualTo(50);
+      assertThat(exporterConfiguration.getAsyncReplication().isEnabled())
+          .isEqualTo(ASYNC_REPLICATION_ENABLED);
     }
 
     @Test
@@ -225,6 +229,10 @@ public class SecondaryStorageRdbmsTest {
       assertThat(args.get("flushInterval")).isEqualTo(Duration.ofMillis(500));
       assertThat(args.get("exportBatchOperationItemsOnCreation")).isEqualTo(true);
       assertThat(args.get("batchOperationItemInsertBlockSize")).isEqualTo(10000);
+
+      final ExporterConfiguration exporterConfiguration =
+          UnifiedConfigurationHelper.argsToRdbmsExporterConfiguration(args);
+      assertThat(exporterConfiguration.getAsyncReplication().isEnabled()).isFalse();
     }
 
     @Test

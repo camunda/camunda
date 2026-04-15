@@ -963,6 +963,10 @@ public class BrokerBasedPropertiesOverride {
                         .setMaxFlowNodeInsertBatchSize(
                             database.getInsertBatching().getMaxFlowNodeInsertBatchSize());
                   }
+
+                  if (database.getReplication() != null) {
+                    config.getAsyncReplication().setEnabled(database.getReplication().isEnabled());
+                  }
                 })
             .toArgs());
   }
