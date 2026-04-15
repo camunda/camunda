@@ -21,6 +21,8 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.InstantSource;
 import java.util.Collection;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -96,6 +98,7 @@ public class CamundaExporterMetrics implements AutoCloseable {
   private final Counter auditLogsArchived;
 
   private final Timer archiverSearchTimer;
+  private final Timer archiverDocIdsBatchSearchTimer;
   private final Timer archiverDeleteTimer;
   private final Counter archiverDeletedDocs;
   private final Counter archiverReindexedDocs;
@@ -111,6 +114,9 @@ public class CamundaExporterMetrics implements AutoCloseable {
   private final Timer flushDuration;
   private final Counter failedFlush;
   private final Timer recordExportDuration;
+
+  private final Map<String, Timer> timersBySource = new ConcurrentHashMap<>();
+  private final Map<String, Counter> docCountersBySource = new ConcurrentHashMap<>();
 
   private final AtomicReference<Instant> lastFlushTime = new AtomicReference<>(Instant.now());
   private final AtomicInteger processInstancesAwaitingArchival = new AtomicInteger(0);
@@ -208,6 +214,13 @@ public class CamundaExporterMetrics implements AutoCloseable {
             .description(
                 "Duration of how long it takes to run the search request to resolve completed entities, that need to be archived.")
             .tags("type", "search")
+            .publishPercentileHistogram()
+            .register(meterRegistry);
+    archiverDocIdsBatchSearchTimer =
+        Timer.builder(meterName("archiver.request.duration"))
+            .description(
+                "Duration of how long it takes to run the search request to resolve the IDs of documents, that need to be archived.")
+            .tags("type", "search-docid-batch")
             .publishPercentileHistogram()
             .register(meterRegistry);
     archiverDeleteTimer =
@@ -349,6 +362,10 @@ public class CamundaExporterMetrics implements AutoCloseable {
 
   public void measureArchiverSearch(final Timer.Sample sample) {
     sample.stop(archiverSearchTimer);
+  }
+
+  public void measureArchiveDocIdsSearchDuration(final Timer.Sample sample) {
+    sample.stop(archiverDocIdsBatchSearchTimer);
   }
 
   public void recordBulkSize(final int bulkSize) {
@@ -501,6 +518,42 @@ public class CamundaExporterMetrics implements AutoCloseable {
     timer.stop(archivingDuration);
   }
 
+  public void measureArchiveIndexDuration(
+      final String sourceIndex, final Sample sample, final Long count) {
+    // NOTE: We intentionally use get() + putIfAbsent() instead of compute() here.
+    // Using compute() could cause a deadlock because ConcurrentHashMap holds a bucket lock
+    // while executing the remapping function, and register() acquires internal locks in the
+    // CompositeMeterRegistry. See https://github.com/camunda/camunda/issues/33941
+    Timer timer = timersBySource.get(sourceIndex);
+    if (timer == null) {
+      timer =
+          Timer.builder(meterName("archiver.index.duration"))
+              .description("Duration of how long it takes to archive docs from " + sourceIndex)
+              .tag("source", sourceIndex)
+              .publishPercentileHistogram()
+              .register(meterRegistry);
+      final Timer existing = timersBySource.putIfAbsent(sourceIndex, timer);
+      if (existing != null) {
+        timer = existing;
+      }
+    }
+    sample.stop(timer);
+
+    Counter counter = docCountersBySource.get(sourceIndex);
+    if (counter == null) {
+      counter =
+          Counter.builder(meterName("archiver.index.docs"))
+              .tag("source", sourceIndex)
+              .description("Count of how many " + sourceIndex + " documents archived.")
+              .register(meterRegistry);
+      final Counter existing = docCountersBySource.putIfAbsent(sourceIndex, counter);
+      if (existing != null) {
+        counter = existing;
+      }
+    }
+    counter.increment(count == null ? 0 : count);
+  }
+
   @Override
   public void close() {
     // clean up all registered meters
@@ -511,6 +564,7 @@ public class CamundaExporterMetrics implements AutoCloseable {
     meterRegistry.remove(batchOperationsArchived);
     meterRegistry.remove(batchOperationsArchiving);
     meterRegistry.remove(archiverSearchTimer);
+    meterRegistry.remove(archiverDocIdsBatchSearchTimer);
     meterRegistry.remove(archiverDeleteTimer);
     meterRegistry.remove(archiverDeletedDocs);
     meterRegistry.remove(archiverReindexTimer);
@@ -540,6 +594,9 @@ public class CamundaExporterMetrics implements AutoCloseable {
     meterRegistry.remove(auditLogsArchived);
 
     meterRegistry.find(FLUSH_FAILURE_TYPE_METER_NAME).meters().forEach(meterRegistry::remove);
+
+    timersBySource.values().forEach(meterRegistry::remove);
+    docCountersBySource.values().forEach(meterRegistry::remove);
 
     // Remove custom gauges by their names if needed
     removeGaugeIfExists(SINCE_LAST_FLUSH_SECONDS_METER_NAME);

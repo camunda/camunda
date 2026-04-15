@@ -19,6 +19,7 @@ import io.camunda.exporter.config.ExporterConfiguration.HistoryConfiguration.Pro
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
 import io.camunda.exporter.tasks.archiver.ArchiveBatch.BasicArchiveBatch;
 import io.camunda.exporter.tasks.archiver.ArchiveBatch.ProcessInstanceArchiveBatch;
+import io.camunda.exporter.tasks.archiver.ArchiveByIdTaskSupplier.ArchiveDocIdsBatch;
 import io.camunda.exporter.tasks.util.DateOfArchivedDocumentsUtil;
 import io.camunda.exporter.tasks.util.OpensearchRepository;
 import io.camunda.search.schema.config.RetentionConfiguration;
@@ -31,6 +32,7 @@ import io.camunda.webapps.schema.descriptors.template.UsageMetricTUTemplate;
 import io.camunda.webapps.schema.descriptors.template.UsageMetricTemplate;
 import io.camunda.webapps.schema.entities.listview.ProcessInstanceForListViewEntity;
 import io.camunda.zeebe.exporter.api.ExporterException;
+import io.camunda.zeebe.util.VisibleForTesting;
 import io.micrometer.core.instrument.Timer;
 import java.io.IOException;
 import java.time.Duration;
@@ -52,12 +54,17 @@ import org.opensearch.client.opensearch._types.Time;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
 import org.opensearch.client.opensearch._types.query_dsl.QueryBuilders;
 import org.opensearch.client.opensearch._types.query_dsl.TermsQuery;
+import org.opensearch.client.opensearch.core.BulkRequest;
+import org.opensearch.client.opensearch.core.BulkResponse;
 import org.opensearch.client.opensearch.core.CountRequest;
 import org.opensearch.client.opensearch.core.DeleteByQueryRequest;
 import org.opensearch.client.opensearch.core.DeleteByQueryResponse;
 import org.opensearch.client.opensearch.core.ReindexRequest;
+import org.opensearch.client.opensearch.core.ReindexResponse;
 import org.opensearch.client.opensearch.core.SearchRequest;
+import org.opensearch.client.opensearch.core.SearchRequest.Builder;
 import org.opensearch.client.opensearch.core.SearchResponse;
+import org.opensearch.client.opensearch.core.bulk.BulkOperation;
 import org.opensearch.client.opensearch.core.search.Hit;
 import org.opensearch.client.opensearch.generic.OpenSearchGenericClient;
 import org.opensearch.client.opensearch.generic.Requests;
@@ -352,6 +359,57 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
   }
 
   @Override
+  public CompletableFuture<Void> moveDocumentsById(
+      final String sourceIndexName,
+      final String destinationIndexName,
+      final Map<String, List<String>> keysByField,
+      final Map<String, String> filters,
+      final Executor executor) {
+
+    final ArchiveByIdTaskSupplier<FieldValue> taskSupplier =
+        new ArchiveByIdTaskSupplier<>(
+            sourceIndexName,
+            destinationIndexName,
+            searchAfter ->
+                getArchiveDocIdsBatch(sourceIndexName, keysByField, filters, searchAfter),
+            this::reindexDocumentsById,
+            this::deleteDocumentsById,
+            executor,
+            logger);
+
+    final var timer = Timer.start();
+    return AsyncRepeatUntil.repeatUntil(
+            taskSupplier::moveNextBatch, count -> taskSupplier.isComplete())
+        .thenComposeAsync(docIds -> setIndexLifeCycle(destinationIndexName), executor)
+        .thenApply(
+            ignored -> {
+              logger.debug(
+                  "Successfully completed archiving {} to the {} index, moved {} docs in {}s",
+                  sourceIndexName,
+                  destinationIndexName,
+                  taskSupplier.getTotalArchived(),
+                  taskSupplier.getTotalTimeTakenMs() / 1000);
+
+              metrics.measureArchiveIndexDuration(
+                  sourceIndexName, timer, taskSupplier.getTotalArchived());
+              return ignored;
+            })
+        .whenComplete(
+            (val, err) -> {
+              if (err != null) {
+                logger.error(
+                    "Failed archiving {} to the {} index, moved {} docs so far in {}s, error={}",
+                    sourceIndexName,
+                    destinationIndexName,
+                    taskSupplier.getTotalArchived(),
+                    taskSupplier.getTotalTimeTakenMs() / 1000,
+                    err.getMessage(),
+                    err);
+              }
+            });
+  }
+
+  @Override
   public CompletableFuture<Integer> getCountOfProcessInstancesAwaitingArchival() {
     final var countRequest =
         CountRequest.of(
@@ -366,6 +424,116 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
     } catch (final IOException e) {
       return CompletableFuture.failedFuture(e);
     }
+  }
+
+  @VisibleForTesting
+  CompletableFuture<ArchiveDocIdsBatch<FieldValue>> getArchiveDocIdsBatch(
+      final String sourceIndexName,
+      final Map<String, List<String>> keysByField,
+      final Map<String, String> filters,
+      final List<FieldValue> searchAfter) {
+    final Query query = buildFilterQuery(keysByField, filters);
+    final Builder requestBuilder =
+        new Builder()
+            .index(sourceIndexName)
+            .requestCache(false)
+            .allowNoIndices(true)
+            .ignoreUnavailable(true)
+            .query(query)
+            .size(config.getReindexBatchSize())
+            .source(s -> s.fetch(false))
+            .sort(sort -> sort.field(field -> field.field("id").order(SortOrder.Asc)));
+
+    if (searchAfter != null && !searchAfter.isEmpty()) {
+      requestBuilder.searchAfter(searchAfter);
+    }
+
+    final var timer = Timer.start();
+    return sendRequestAsync(() -> client.search(requestBuilder.build(), Object.class))
+        .whenCompleteAsync(
+            (response, error) -> metrics.measureArchiveDocIdsSearchDuration(timer), executor)
+        .thenApply(
+            response -> {
+              final List<Hit<Object>> hits = response.hits().hits();
+              if (hits.isEmpty()) {
+                return ArchiveDocIdsBatch.empty();
+              }
+              return ArchiveDocIdsBatch.from(
+                  hits.stream().map(Hit::id).toList(), hits.getLast().sort());
+            });
+  }
+
+  @VisibleForTesting
+  CompletableFuture<Long> reindexDocumentsById(
+      final String sourceIndexName, final String destinationIndexName, final List<String> docIds) {
+    if (docIds.isEmpty()) {
+      return CompletableFuture.completedFuture(0L);
+    }
+
+    final var query = QueryBuilders.bool().filter(b -> b.ids(id -> id.values(docIds))).build();
+    final var request =
+        new ReindexRequest.Builder()
+            .source(src -> src.index(sourceIndexName).query(query.toQuery()))
+            .dest(dest -> dest.index(destinationIndexName))
+            .conflicts(Conflicts.Proceed)
+            .scroll(REINDEX_SCROLL_TIMEOUT)
+            .slices(AUTO_SLICES)
+            .build();
+
+    final var timer = Timer.start();
+    return sendRequestAsync(() -> client.reindex(request))
+        .thenApplyAsync(
+            response -> {
+              validateReindexResponse(sourceIndexName, response);
+              return response.total();
+            },
+            executor)
+        .whenCompleteAsync(
+            (total, error) -> metrics.measureArchiverReindex(total, timer), executor);
+  }
+
+  private static void validateReindexResponse(
+      final String sourceIndex, final ReindexResponse response) {
+    if (Boolean.TRUE.equals(response.timedOut())) {
+      throw new IllegalStateException("Reindex request from %s timed out".formatted(sourceIndex));
+    }
+    final var failures = response.failures();
+    if (!failures.isEmpty()) {
+      throw new IllegalStateException(
+          "Reindex request from %s index completed with %d failures"
+              .formatted(sourceIndex, failures.size()));
+    }
+  }
+
+  @VisibleForTesting
+  CompletableFuture<Long> deleteDocumentsById(
+      final String sourceIndexName, final List<String> docIds) {
+    if (docIds.isEmpty()) {
+      return CompletableFuture.completedFuture(0L);
+    }
+
+    final var operations =
+        docIds.stream().map(docId -> BulkOperation.of(b -> b.delete(d -> d.id(docId)))).toList();
+
+    final BulkRequest request =
+        BulkRequest.of(b -> b.index(sourceIndexName).operations(operations));
+
+    final var timer = Timer.start();
+    return sendRequestAsync(() -> client.bulk(request))
+        .thenApplyAsync(response -> getDeletedDocCount(sourceIndexName, response), executor)
+        .whenCompleteAsync(
+            (idsSize, error) -> metrics.measureArchiverDelete(idsSize, timer), executor);
+  }
+
+  private long getDeletedDocCount(final String sourceIndex, final BulkResponse response) {
+    if (response.errors()) {
+      final long errorCount =
+          response.items().stream().filter(item -> item.error() != null).count();
+      throw new IllegalStateException(
+          "Deleting reindexed documents from %s index completed with %d failures"
+              .formatted(sourceIndex, errorCount));
+    }
+    return response.items().size();
   }
 
   private SearchRequest createUsageMetricSearchRequest(
