@@ -29,7 +29,7 @@ jobs:
         shell: bash
         run: |
           if [[ "${{ matrix.branch }}" == "stable/8.7" ]]; then
-            echo "Using single services for Camunda 8.6 and 8.7"
+            echo "Using single services for stable/8.7"
             DATABASE=elasticsearch docker compose up -d operate tasklist
           else
             echo "Using standalone camunda container"
