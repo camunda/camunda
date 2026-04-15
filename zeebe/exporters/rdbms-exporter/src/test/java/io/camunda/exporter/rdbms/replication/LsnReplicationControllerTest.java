@@ -155,6 +155,55 @@ class LsnReplicationControllerTest {
     verify(fixture.controller).updateLastExportedRecordPosition(42L);
   }
 
+  @Test
+  void shouldComputeConfirmedLsnFromSecondHighestReplicaWhenThreeReplicasPresent() {
+    // given
+    final var fixture = new TestFixture();
+    fixture.replicationConfiguration.setMinSyncReplicas(2);
+    when(fixture.lsnProvider.getReplicationStatuses())
+        .thenReturn(
+            List.of(
+                replicationStatus("replica-1", 120L),
+                replicationStatus("replica-2", 80L),
+                replicationStatus("replica-3", 50L)));
+
+    // when
+    final long confirmedLsn = fixture.replicationController.computeConfirmedLsn();
+
+    // then
+    assertThat(confirmedLsn).isEqualTo(80L);
+  }
+
+  @Test
+  void shouldComputeConfirmedLsnFromLowerReplicaWhenTwoReplicasPresent() {
+    // given
+    final var fixture = new TestFixture();
+    fixture.replicationConfiguration.setMinSyncReplicas(2);
+    when(fixture.lsnProvider.getReplicationStatuses())
+        .thenReturn(List.of(replicationStatus("replica-1", 120L), replicationStatus("replica-2", 80L)));
+
+    // when
+    final long confirmedLsn = fixture.replicationController.computeConfirmedLsn();
+
+    // then
+    assertThat(confirmedLsn).isEqualTo(80L);
+  }
+
+  @Test
+  void shouldReturnMinusOneWhenNotEnoughReplicasPresentForMinSyncReplicas() {
+    // given
+    final var fixture = new TestFixture();
+    fixture.replicationConfiguration.setMinSyncReplicas(2);
+    when(fixture.lsnProvider.getReplicationStatuses())
+        .thenReturn(List.of(replicationStatus("replica-1", 120L)));
+
+    // when
+    final long confirmedLsn = fixture.replicationController.computeConfirmedLsn();
+
+    // then
+    assertThat(confirmedLsn).isEqualTo(-1L);
+  }
+
   private static ReplicationStatusDto replicationStatus(final String replicaId, final long lsn) {
     final var status = new ReplicationStatusDto();
     status.setReplicaId(replicaId);

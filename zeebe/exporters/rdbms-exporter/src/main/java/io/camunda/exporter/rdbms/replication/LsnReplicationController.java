@@ -12,6 +12,8 @@ import io.camunda.db.rdbms.write.ReplicationStatusDto;
 import io.camunda.exporter.rdbms.ExporterConfiguration.ReplicationConfiguration;
 import io.camunda.zeebe.exporter.api.context.Controller;
 import io.camunda.zeebe.exporter.api.context.ScheduledTask;
+import io.camunda.zeebe.util.VisibleForTesting;
+import java.util.Comparator;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.atomic.AtomicLong;
@@ -99,7 +101,8 @@ public class LsnReplicationController implements ReplicationController {
    * statuses ascending and picks the Nth value — the highest LSN that at least N replicas have
    * reached. Returns {@link Long#MAX_VALUE} when minSyncReplicas is 0.
    */
-  private long computeConfirmedLsn() {
+  @VisibleForTesting
+  long computeConfirmedLsn() {
     final int minSyncReplicas = replicationConfiguration.getMinSyncReplicas();
     if (minSyncReplicas == 0) {
       return Long.MAX_VALUE;
@@ -112,9 +115,9 @@ public class LsnReplicationController implements ReplicationController {
 
     return statuses.stream()
         .map(ReplicationStatusDto::getLogStatus)
-        .sorted()
-        .skip(minSyncReplicas - 1L)
-        .findFirst()
+        .sorted(Comparator.<Long>naturalOrder().reversed())
+        .limit(minSyncReplicas)
+        .min(Comparator.naturalOrder())
         .orElse(-1L);
   }
 
