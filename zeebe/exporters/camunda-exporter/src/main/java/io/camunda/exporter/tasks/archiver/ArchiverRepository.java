@@ -63,16 +63,12 @@ public interface ArchiverRepository extends AutoCloseable {
         .thenComposeAsync(ok -> deleteDocuments(sourceIndexName, idFieldName, ids), executor);
   }
 
-  default CompletableFuture<Void> moveDocumentsById(
+  CompletableFuture<Void> moveDocumentsById(
       final String sourceIndexName,
       final String destinationIndexName,
       final String idFieldName,
       final List<String> ids,
-      final Executor executor) {
-    return reindexDocuments(sourceIndexName, destinationIndexName, idFieldName, ids)
-        .thenComposeAsync(ok -> setIndexLifeCycle(destinationIndexName), executor)
-        .thenComposeAsync(ok -> deleteDocuments(sourceIndexName, idFieldName, ids), executor);
-  }
+      final Executor executor);
 
   CompletableFuture<Integer> getCountOfProcessInstancesAwaitingArchival();
 
@@ -142,6 +138,16 @@ public interface ArchiverRepository extends AutoCloseable {
         final String destinationIndexName,
         final String idFieldName,
         final List<String> processInstanceKeys) {
+      return CompletableFuture.completedFuture(null);
+    }
+
+    @Override
+    public CompletableFuture<Void> moveDocumentsById(
+        final String sourceIndexName,
+        final String destinationIndexName,
+        final String idFieldName,
+        final List<String> ids,
+        final Executor executor){
       return CompletableFuture.completedFuture(null);
     }
 
