@@ -18,6 +18,7 @@ import io.camunda.client.api.response.ProcessInstanceEvent;
 import io.camunda.client.api.search.response.ProcessInstance;
 import io.camunda.client.api.search.response.SearchResponse;
 import io.camunda.client.api.search.sort.ProcessInstanceSort;
+import io.camunda.client.impl.CamundaClientBuilderImpl;
 import io.camunda.zeebe.config.AppCfg;
 import io.camunda.zeebe.config.StarterCfg;
 import io.camunda.zeebe.read.DataReadMeter;
@@ -320,7 +321,17 @@ public class Starter extends App {
   }
 
   private CamundaClient createCamundaClient() {
-    return newClientBuilder().numJobWorkerExecutionThreads(0).build();
+    return newClientBuilder()
+        .numJobWorkerExecutionThreads(0)
+        .maxHttpConnections(maxHttpConnections())
+        .build();
+  }
+
+  private int maxHttpConnections() {
+    // ensure we can create enough concurrent requests to actually
+    // keep up with the rate (with a little extra to spare for other availability checks)
+    final var perSecond = starterCfg.getRatePerSecond();
+    return Math.min(CamundaClientBuilderImpl.DEFAULT_MAX_HTTP_CONNECTIONS, (int) (perSecond + 100));
   }
 
   private void deployProcess(final CamundaClient client, final StarterCfg starterCfg) {
