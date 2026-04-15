@@ -12,14 +12,17 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.github.benmanes.caffeine.cache.CacheLoader;
 import io.camunda.zeebe.util.cache.CaffeineCacheStatsCounter;
-import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 
 class ExporterEntityCacheImplTest {
+
+  private final CaffeineCacheStatsCounter cacheStatsCounter =
+      Mockito.mock(CaffeineCacheStatsCounter.class);
 
   @Test
   void shouldLoadSingleValue() {
@@ -33,7 +36,7 @@ class ExporterEntityCacheImplTest {
                 return "value-" + key;
               }
             },
-            newStatsCounter());
+            cacheStatsCounter);
 
     // when
     final var value = cache.get(1);
@@ -65,7 +68,7 @@ class ExporterEntityCacheImplTest {
                     .collect(java.util.stream.Collectors.toMap(k -> k, k -> "value-" + k));
               }
             },
-            newStatsCounter());
+            cacheStatsCounter);
 
     // when
     final var values = cache.getAll(List.of(1, 2));
@@ -90,7 +93,7 @@ class ExporterEntityCacheImplTest {
                 return "value-" + key;
               }
             },
-            newStatsCounter());
+            cacheStatsCounter);
 
     // when
     final var values = cache.getAll(List.of(1, 2));
@@ -112,7 +115,7 @@ class ExporterEntityCacheImplTest {
                 throw new IllegalStateException("single failure");
               }
             },
-            newStatsCounter());
+            cacheStatsCounter);
 
     // when then
     assertThatThrownBy(() -> cache.get(1))
@@ -139,17 +142,12 @@ class ExporterEntityCacheImplTest {
                 throw new IllegalStateException("bulk failure");
               }
             },
-            newStatsCounter());
+            cacheStatsCounter);
 
     // when then
     assertThatThrownBy(() -> cache.getAll(List.of(1, 2)))
         .isInstanceOf(ExporterEntityCache.CacheLoaderFailedException.class)
         .hasCauseInstanceOf(IllegalStateException.class)
         .hasRootCauseMessage("bulk failure");
-  }
-
-  private static CaffeineCacheStatsCounter newStatsCounter() {
-    return new CaffeineCacheStatsCounter(
-        "camunda.test.exporter.cache", "entity", new SimpleMeterRegistry());
   }
 }
