@@ -61,7 +61,8 @@ public class ProcessDefinitionProvider {
               ProcessDefinitionQuery.of(
                   q ->
                       q.filter(f -> f.processDefinitionKeys(keysList))
-                          .page(p -> p.size(keysList.size()))),
+                          .page(p -> p.size(keysList.size()))
+                          .resultConfig(c -> c.includeXml(true))),
               CamundaAuthentication.anonymous());
 
       if (searchResult.total() < processDefinitionKeys.size()) {

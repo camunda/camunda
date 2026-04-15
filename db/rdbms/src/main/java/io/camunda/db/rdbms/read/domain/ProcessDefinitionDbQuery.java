@@ -10,6 +10,7 @@ package io.camunda.db.rdbms.read.domain;
 import io.camunda.search.entities.ProcessDefinitionEntity;
 import io.camunda.search.filter.FilterBuilders;
 import io.camunda.search.filter.ProcessDefinitionFilter;
+import io.camunda.search.result.ProcessDefinitionQueryResultConfig;
 import io.camunda.util.ObjectBuilder;
 import java.util.List;
 import java.util.Objects;
@@ -20,7 +21,8 @@ public record ProcessDefinitionDbQuery(
     List<String> authorizedResourceIds,
     List<String> authorizedTenantIds,
     DbQuerySorting<ProcessDefinitionEntity> sort,
-    DbQueryPage page) {
+    DbQueryPage page,
+    ProcessDefinitionQueryResultConfig resultConfig) {
 
   public static ProcessDefinitionDbQuery of(
       final Function<Builder, ObjectBuilder<ProcessDefinitionDbQuery>> fn) {
@@ -31,12 +33,15 @@ public record ProcessDefinitionDbQuery(
 
     private static final ProcessDefinitionFilter EMPTY_FILTER =
         FilterBuilders.processDefinition().build();
+    private static final ProcessDefinitionQueryResultConfig DEFAULT_RESULT_CONFIG =
+        ProcessDefinitionQueryResultConfig.of(b -> b);
 
     private ProcessDefinitionFilter filter;
     private List<String> authorizedResourceIds = java.util.Collections.emptyList();
     private List<String> authorizedTenantIds = java.util.Collections.emptyList();
     private DbQuerySorting<ProcessDefinitionEntity> sort;
     private DbQueryPage page;
+    private ProcessDefinitionQueryResultConfig resultConfig;
 
     public ProcessDefinitionDbQuery.Builder filter(final ProcessDefinitionFilter value) {
       filter = value;
@@ -66,6 +71,12 @@ public record ProcessDefinitionDbQuery(
       return this;
     }
 
+    public ProcessDefinitionDbQuery.Builder resultConfig(
+        final ProcessDefinitionQueryResultConfig resultConfig) {
+      this.resultConfig = resultConfig;
+      return this;
+    }
+
     public ProcessDefinitionDbQuery.Builder filter(
         final Function<ProcessDefinitionFilter.Builder, ObjectBuilder<ProcessDefinitionFilter>>
             fn) {
@@ -84,10 +95,11 @@ public record ProcessDefinitionDbQuery(
     public ProcessDefinitionDbQuery build() {
       filter = Objects.requireNonNullElse(filter, EMPTY_FILTER);
       sort = Objects.requireNonNullElse(sort, new DbQuerySorting<>(List.of()));
+      resultConfig = Objects.requireNonNullElse(resultConfig, DEFAULT_RESULT_CONFIG);
       authorizedResourceIds = Objects.requireNonNullElse(authorizedResourceIds, List.of());
       authorizedTenantIds = Objects.requireNonNullElse(authorizedTenantIds, List.of());
       return new ProcessDefinitionDbQuery(
-          filter, authorizedResourceIds, authorizedTenantIds, sort, page);
+          filter, authorizedResourceIds, authorizedTenantIds, sort, page, resultConfig);
     }
   }
 }
