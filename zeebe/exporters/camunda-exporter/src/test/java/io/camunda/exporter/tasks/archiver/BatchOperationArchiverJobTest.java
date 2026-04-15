@@ -45,7 +45,7 @@ final class BatchOperationArchiverJobTest {
   @Test
   void shouldReturnZeroIfNoBatchIdsGiven() {
     // given
-    repository.batch = new ArchiveBatch("2024-01-01", List.of());
+    repository.batches = List.of(new ArchiveBatch("2024-01-01", List.of()));
 
     // when
     final var result = job.archiveNextBatch();
@@ -58,7 +58,7 @@ final class BatchOperationArchiverJobTest {
   @Test
   void shouldMoveBatchOperations() {
     // given
-    repository.batch = new ArchiveBatch("2024-01-01", List.of("1", "2", "3"));
+    repository.batches = List.of(new ArchiveBatch("2024-01-01", List.of("1", "2", "3")));
 
     // when
     final var result = job.archiveNextBatch();
@@ -78,7 +78,7 @@ final class BatchOperationArchiverJobTest {
   @Test
   void shouldRecordBatchOperationsIncrease() {
     // given
-    repository.batch = new ArchiveBatch("2024-01-01", List.of("1", "2", "3"));
+    repository.batches = List.of(new ArchiveBatch("2024-01-01", List.of("1", "2", "3")));
 
     // when
     final var count =

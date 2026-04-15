@@ -19,10 +19,12 @@ import io.camunda.webapps.schema.descriptors.ProcessInstanceDependant;
 import io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate;
 import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
 import io.camunda.webapps.schema.descriptors.template.SequenceFlowTemplate;
+import io.micrometer.core.instrument.Timer;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.Executor;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.LongStream;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
@@ -64,7 +66,7 @@ final class ProcessInstanceArchiverJobTest {
   @Test
   void shouldReturnZeroIfNoBatchIdsGiven() {
     // given
-    repository.batch = new ArchiveBatch("2024-01-01", List.of());
+    repository.batches = List.of(new ArchiveBatch("2024-01-01", List.of()));
 
     // when
     final var result = job.archiveNextBatch();
@@ -77,7 +79,7 @@ final class ProcessInstanceArchiverJobTest {
   @Test
   void shouldMoveDependants() {
     // given
-    repository.batch = new ArchiveBatch("2024-01-01", List.of("1", "2", "3"));
+    repository.batches = List.of(new ArchiveBatch("2024-01-01", List.of("1", "2", "3")));
 
     // when
     final var result = job.archiveNextBatch();
@@ -113,7 +115,7 @@ final class ProcessInstanceArchiverJobTest {
             metrics,
             LOGGER,
             executor);
-    repository.batch = new ArchiveBatch("2024-01-01", List.of("1", "2", "3"));
+    repository.batches = List.of(new ArchiveBatch("2024-01-01", List.of("1", "2", "3")));
 
     // when
     final var result = job.archiveNextBatch();
@@ -129,7 +131,7 @@ final class ProcessInstanceArchiverJobTest {
   @Test
   void shouldMoveProcessInstances() {
     // given
-    repository.batch = new ArchiveBatch("2024-01-01", List.of("1", "2", "3"));
+    repository.batches = List.of(new ArchiveBatch("2024-01-01", List.of("1", "2", "3")));
 
     // when
     final var result = job.archiveNextBatch();
@@ -149,7 +151,7 @@ final class ProcessInstanceArchiverJobTest {
   @Test
   void shouldMoveDependantsBeforeProcessInstances() {
     // given
-    repository.batch = new ArchiveBatch("2024-01-01", List.of("1", "2", "3"));
+    repository.batches = List.of(new ArchiveBatch("2024-01-01", List.of("1", "2", "3")));
 
     // when
     final var result = job.archiveNextBatch();
@@ -167,7 +169,10 @@ final class ProcessInstanceArchiverJobTest {
   @Test
   void shouldRecordProcessInstancesArchived() {
     // given
-    repository.batch = new ArchiveBatch("2024-01-01", List.of("1", "2", "3"));
+    repository.batches =
+        List.of(
+            new ArchiveBatch("2024-01-01", List.of("1", "2", "3")),
+            new ArchiveBatch("2024-01-01", List.of("4", "5", "6")));
 
     // when
     final var count =
@@ -192,9 +197,10 @@ final class ProcessInstanceArchiverJobTest {
   @Test
   void shouldRequestLargeBatchesWhenArchiving() {
     // given
-    repository.batch =
-        new ArchiveBatch(
-            "2024-01-01", LongStream.rangeClosed(1L, 125L).mapToObj(String::valueOf).toList());
+    repository.batches =
+        List.of(
+            new ArchiveBatch(
+                "2024-01-01", LongStream.rangeClosed(1L, 125L).mapToObj(String::valueOf).toList()));
 
     // when
     final var count1 = job.archiveNextBatch().toCompletableFuture().join();
@@ -211,9 +217,10 @@ final class ProcessInstanceArchiverJobTest {
   @Test
   void shouldRequestLargeBatchAndChunkIt() {
     // given
-    repository.batch =
-        new ArchiveBatch(
-            "2024-01-01", LongStream.rangeClosed(1L, 300L).mapToObj(String::valueOf).toList());
+    repository.batches =
+        List.of(
+            new ArchiveBatch(
+                "2024-01-01", LongStream.rangeClosed(1L, 300L).mapToObj(String::valueOf).toList()));
 
     // when
     final var first = job.getNextBatch().toCompletableFuture().join();
@@ -242,9 +249,10 @@ final class ProcessInstanceArchiverJobTest {
   @Test
   void shouldRequestAgainWhenChunksExhausted() {
     // given
-    repository.batch =
-        new ArchiveBatch(
-            "2024-01-01", LongStream.rangeClosed(1L, 200L).mapToObj(String::valueOf).toList());
+    repository.batches =
+        List.of(
+            new ArchiveBatch(
+                "2024-01-01", LongStream.rangeClosed(1L, 200L).mapToObj(String::valueOf).toList()));
 
     // when
     final var first = job.getNextBatch().toCompletableFuture().join();
@@ -265,6 +273,48 @@ final class ProcessInstanceArchiverJobTest {
         .isEqualTo(
             new ArchiveBatch(
                 "2024-01-01", LongStream.rangeClosed(1L, 100L).mapToObj(String::valueOf).toList()));
+
+    verify(repository, times(2)).getProcessInstancesNextBatch(1_000);
+  }
+
+  @Test
+  void shouldSkipAlreadyArchivedProcessInstances() {
+    // given
+    repository.batches = List.of(new ArchiveBatch("2024-01-01", List.of("1", "2", "3", "7", "8")));
+    final var count1 = job.execute().toCompletableFuture().join();
+
+    // 2nd batch has overlapping ids with 1st batch, but also new ones. Should skip the overlapping
+    // ones, but still use the new ones
+    repository.batches = List.of(new ArchiveBatch("2024-01-01", List.of("2", "3", "4", "8", "9")));
+
+    // when
+    final var count2 = job.execute().toCompletableFuture().join();
+
+    // then
+    assertThat(count1).isEqualTo(5);
+    assertThat(count2).isEqualTo(2);
+
+    assertThat(
+            meterRegistry
+                .counter("zeebe.camunda.exporter.archiver.process.instances", "state", "archiving")
+                .count())
+        .isEqualTo(7);
+    assertThat(
+            meterRegistry
+                .counter("zeebe.camunda.exporter.archiver.process.instances", "state", "archived")
+                .count())
+        .isEqualTo(7);
+    assertThat(
+            meterRegistry
+                .counter(
+                    "zeebe.camunda.exporter.archiver.process.instances", "state", "deduplicated")
+                .count())
+        .isEqualTo(3);
+
+    final Timer archiverTimer = meterRegistry.timer("zeebe.camunda.exporter.archiver.duration");
+    // job executed twice, so two recordings expected
+    assertThat(archiverTimer.count()).isEqualTo(2);
+    assertThat(archiverTimer.totalTime(TimeUnit.NANOSECONDS)).isGreaterThan(0);
 
     verify(repository, times(2)).getProcessInstancesNextBatch(1_000);
   }

@@ -32,6 +32,7 @@ public class ProcessInstanceArchiverJob implements ArchiverJob {
   private final CamundaExporterMetrics metrics;
   private final Logger logger;
   private final Executor executor;
+  private final RecentlyArchivedProcessInstances recentlyArchivedProcessInstances;
   private final Queue<ArchiveBatch> pendingBatches =
       new java.util.concurrent.ConcurrentLinkedQueue<>();
 
@@ -50,6 +51,7 @@ public class ProcessInstanceArchiverJob implements ArchiverJob {
     this.metrics = metrics;
     this.logger = logger;
     this.executor = executor;
+    recentlyArchivedProcessInstances = new RecentlyArchivedProcessInstances(largeBatchSize());
   }
 
   @Override
@@ -79,7 +81,10 @@ public class ProcessInstanceArchiverJob implements ArchiverJob {
         .thenApply(
             batch -> {
               if (batch != null) {
-                final var chunks = batch.chunk(config.getRolloverBatchSize());
+                final var deduped = recentlyArchivedProcessInstances.deduplicate(batch);
+                final var duplication = batch.ids().size() - deduped.ids().size();
+                metrics.recordProcessInstancesArchivingDeduplicated(duplication);
+                final var chunks = deduped.chunk(config.getRolloverBatchSize());
                 final var first = chunks.removeFirst();
                 pendingBatches.addAll(chunks);
                 return first;
@@ -98,7 +103,12 @@ public class ProcessInstanceArchiverJob implements ArchiverJob {
               count -> moveProcessInstances(batch.finishDate(), batch.ids()), executor)
           // we want to make sure the rescheduling happens after we update the metrics, so we peek
           // instead of creating an additional pipeline on the interim future
-          .thenApplyAsync(FunctionUtil.peek(metrics::recordProcessInstancesArchived), executor);
+          .thenApplyAsync(FunctionUtil.peek(metrics::recordProcessInstancesArchived), executor)
+          .thenApply(
+              archived -> {
+                recentlyArchivedProcessInstances.markRecentlyArchived(batch);
+                return archived;
+              });
     }
 
     logger.trace("Nothing to archive");
