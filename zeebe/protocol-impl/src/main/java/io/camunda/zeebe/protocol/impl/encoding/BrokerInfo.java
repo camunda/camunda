@@ -8,7 +8,9 @@
 package io.camunda.zeebe.protocol.impl.encoding;
 
 import static io.camunda.zeebe.protocol.record.BrokerInfoEncoder.clusterSizeNullValue;
+import static io.camunda.zeebe.protocol.record.BrokerInfoEncoder.nodeIdNullValue;
 import static io.camunda.zeebe.protocol.record.BrokerInfoEncoder.partitionsCountNullValue;
+import static io.camunda.zeebe.protocol.record.BrokerInfoEncoder.regionHeaderLength;
 import static io.camunda.zeebe.protocol.record.BrokerInfoEncoder.replicationFactorNullValue;
 import static io.camunda.zeebe.protocol.record.BrokerInfoEncoder.versionHeaderLength;
 import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
@@ -70,7 +72,8 @@ public final class BrokerInfo implements BufferReader, BufferWriter {
   private final Map<Integer, Long> partitionLeaderTerms = new HashMap<>();
   private final Map<Integer, PartitionHealthStatus> partitionHealthStatuses = new HashMap<>();
 
-  private String nodeId;
+  private int nodeId;
+  private String region;
   private int partitionsCount;
   private int clusterSize;
   private int replicationFactor;
@@ -80,19 +83,27 @@ public final class BrokerInfo implements BufferReader, BufferWriter {
     reset();
   }
 
-  public BrokerInfo(final String nodeId, final String commandApiAddress) {
+  /**
+   * Constructs a BrokerInfo from a composite node ID string. The composite string may be of the
+   * form {@code "region-localId"} (e.g. {@code "us-east1-0"}) for region-aware clusters, or a plain
+   * integer string for non-region-aware clusters.
+   */
+  public BrokerInfo(final String compositeNodeId, final String commandApiAddress) {
     reset();
-    this.nodeId = nodeId;
+    parseAndSetCompositeNodeId(compositeNodeId);
     setCommandApiAddress(BufferUtil.wrapString(commandApiAddress));
   }
 
   /** Convenience constructor for non-region-aware clusters. */
   public BrokerInfo(final int nodeId, final String commandApiAddress) {
-    this(String.valueOf(nodeId), commandApiAddress);
+    reset();
+    this.nodeId = nodeId;
+    setCommandApiAddress(BufferUtil.wrapString(commandApiAddress));
   }
 
   public BrokerInfo reset() {
-    nodeId = null;
+    nodeId = nodeIdNullValue();
+    region = null;
     partitionsCount = partitionsCountNullValue();
     clusterSize = clusterSizeNullValue();
     replicationFactor = replicationFactorNullValue();
@@ -121,30 +132,56 @@ public final class BrokerInfo implements BufferReader, BufferWriter {
    * string representation of the integer node ID.
    */
   public String getNodeId() {
-    if (nodeId == null) {
+    if (nodeId == nodeIdNullValue()) {
+      throw new IllegalStateException("nodeId is not set");
+    }
+    return (region != null && !region.isEmpty()) ? region + "-" + nodeId : String.valueOf(nodeId);
+  }
+
+  /**
+   * Returns the numeric (local) node ID, which is unique within a region. In region-aware clusters
+   * this is the broker's position within its region (0-indexed). In non-region-aware clusters this
+   * equals the global node ID.
+   */
+  public int getLocalNodeId() {
+    if (nodeId == nodeIdNullValue()) {
       throw new IllegalStateException("nodeId is not set");
     }
     return nodeId;
   }
 
-  public BrokerInfo setNodeId(final String nodeId) {
+  public BrokerInfo setNodeId(final int nodeId) {
     this.nodeId = nodeId;
     return this;
   }
 
-  /** Convenience overload for non-region-aware clusters. */
-  public BrokerInfo setNodeId(final int nodeId) {
-    return setNodeId(String.valueOf(nodeId));
+  /**
+   * Sets the node ID from a composite string. The composite string may be of the form {@code
+   * "region-localId"} (e.g. {@code "us-east1-0"}) for region-aware clusters, or a plain integer
+   * string for non-region-aware clusters. Parses out the region and local node ID.
+   */
+  public BrokerInfo setNodeId(final String compositeNodeId) {
+    parseAndSetCompositeNodeId(compositeNodeId);
+    return this;
   }
 
-  /**
-   * Returns the numeric (local) node ID, which is unique within a region. Parses the trailing
-   * integer from the composite node ID string (e.g. {@code "us-east1-0"} → {@code 0}).
-   */
-  public int getLocalNodeId() {
-    final String id = getNodeId();
-    final int lastDash = id.lastIndexOf('-');
-    return Integer.parseInt(lastDash >= 0 ? id.substring(lastDash + 1) : id);
+  private void parseAndSetCompositeNodeId(final String compositeNodeId) {
+    final int lastDash = compositeNodeId.lastIndexOf('-');
+    if (lastDash > 0) {
+      region = compositeNodeId.substring(0, lastDash);
+      nodeId = Integer.parseInt(compositeNodeId.substring(lastDash + 1));
+    } else {
+      nodeId = Integer.parseInt(compositeNodeId);
+    }
+  }
+
+  public String getRegion() {
+    return region;
+  }
+
+  public BrokerInfo setRegion(final String region) {
+    this.region = region;
+    return this;
   }
 
   public int getPartitionsCount() {
@@ -298,7 +335,7 @@ public final class BrokerInfo implements BufferReader, BufferWriter {
 
     bodyDecoder.wrap(buffer, offset, headerDecoder.blockLength(), headerDecoder.version());
 
-    nodeId = String.valueOf(bodyDecoder.nodeId());
+    nodeId = bodyDecoder.nodeId();
     partitionsCount = bodyDecoder.partitionsCount();
     clusterSize = bodyDecoder.clusterSize();
     replicationFactor = bodyDecoder.replicationFactor();
@@ -344,6 +381,17 @@ public final class BrokerInfo implements BufferReader, BufferWriter {
           partitionHealthDecoder.partitionId(), partitionHealthDecoder.healthStatus());
     }
 
+    // region is sinceVersion=8; returns length=0 for messages encoded with an older schema version
+    final int regionLength = bodyDecoder.regionLength();
+    if (regionLength > 0) {
+      final byte[] regionBytes = new byte[regionLength];
+      bodyDecoder.getRegion(regionBytes, 0, regionLength);
+      region = new String(regionBytes, BASE_64_CHARSET);
+    } else {
+      bodyDecoder.skipRegion();
+      region = null;
+    }
+
     assert bodyDecoder.limit() == frameEnd
         : "Decoder read only to position "
             + bodyDecoder.limit()
@@ -354,6 +402,7 @@ public final class BrokerInfo implements BufferReader, BufferWriter {
 
   @Override
   public int getLength() {
+    final int regionLength = region != null ? region.getBytes(BASE_64_CHARSET).length : 0;
     int length =
         headerEncoder.encodedLength()
             + bodyEncoder.sbeBlockLength()
@@ -362,7 +411,9 @@ public final class BrokerInfo implements BufferReader, BufferWriter {
             + PartitionLeaderTermsEncoder.sbeHeaderSize()
             + PartitionHealthEncoder.sbeHeaderSize()
             + versionHeaderLength()
-            + version.capacity();
+            + version.capacity()
+            + regionHeaderLength()
+            + regionLength;
 
     for (final Entry<DirectBuffer, DirectBuffer> entry : addresses.entrySet()) {
       length +=
@@ -385,7 +436,7 @@ public final class BrokerInfo implements BufferReader, BufferWriter {
   public int write(final MutableDirectBuffer buffer, final int offset) {
     bodyEncoder
         .wrapAndApplyHeader(buffer, offset, headerEncoder)
-        .nodeId(getLocalNodeId())
+        .nodeId(nodeId)
         .partitionsCount(partitionsCount)
         .clusterSize(clusterSize)
         .replicationFactor(replicationFactor);
@@ -435,6 +486,9 @@ public final class BrokerInfo implements BufferReader, BufferWriter {
         partitionHealthEncoder.next().partitionId(entry.getKey()).healthStatus(entry.getValue());
       }
     }
+    final byte[] regionBytes = region != null ? region.getBytes(BASE_64_CHARSET) : new byte[0];
+    bodyEncoder.putRegion(regionBytes, 0, regionBytes.length);
+
     return headerEncoder.encodedLength() + bodyEncoder.encodedLength();
   }
 
@@ -442,17 +496,24 @@ public final class BrokerInfo implements BufferReader, BufferWriter {
     final String property = properties.getProperty(BROKER_INFO_PROPERTY_NAME);
     if (property != null) {
       final BrokerInfo brokerInfo = readFromString(property);
-      // Override the plain numeric nodeId from SBE with the full composite node ID (e.g.
-      // "region-localId") if the broker published one. Falls back to the SBE int for nodes
-      // that predate this field.
-      final String compositeNodeId = properties.getProperty(BROKER_NODE_ID_PROPERTY_NAME);
-      if (compositeNodeId != null) {
-        brokerInfo.nodeId = compositeNodeId;
+      // Backward compat: if the SBE message did not carry a region (nodes still on schema v7),
+      // recover the region from the composite node-ID SWIM gossip property.
+      if (brokerInfo.region == null) {
+        brokerInfo.region =
+            parseRegionFromCompositeNodeId(properties.getProperty(BROKER_NODE_ID_PROPERTY_NAME));
       }
       return brokerInfo;
     } else {
       return null;
     }
+  }
+
+  private static String parseRegionFromCompositeNodeId(final String compositeNodeId) {
+    if (compositeNodeId == null) {
+      return null;
+    }
+    final int lastDash = compositeNodeId.lastIndexOf('-');
+    return lastDash > 0 ? compositeNodeId.substring(0, lastDash) : null;
   }
 
   private static BrokerInfo readFromString(final String property) {
@@ -466,8 +527,10 @@ public final class BrokerInfo implements BufferReader, BufferWriter {
 
   public void writeIntoProperties(final Properties memberProperties) {
     memberProperties.setProperty(BROKER_INFO_PROPERTY_NAME, writeToString());
-    if (nodeId != null) {
-      memberProperties.setProperty(BROKER_NODE_ID_PROPERTY_NAME, nodeId);
+    // Also publish the composite node ID as a plain gossip property so that nodes still running
+    // schema v7 (which cannot decode the SBE region field) can still read the composite member ID.
+    if (nodeId != nodeIdNullValue()) {
+      memberProperties.setProperty(BROKER_NODE_ID_PROPERTY_NAME, getNodeId());
     }
   }
 
@@ -519,8 +582,10 @@ public final class BrokerInfo implements BufferReader, BufferWriter {
   @Override
   public String toString() {
     return "BrokerInfo{"
-        + "nodeId='"
+        + "nodeId="
         + nodeId
+        + ", region='"
+        + region
         + '\''
         + ", partitionsCount="
         + partitionsCount

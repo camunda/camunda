@@ -55,9 +55,10 @@ final class BrokerInfoTest {
     // when
     final var decoded = encodeDecode(brokerInfo);
 
-    // then
-    assertThat(decoded.getNodeId()).isEqualTo(String.valueOf(nodeId));
+    // then — the int node ID round-trips correctly; no region was set
     assertThat(decoded.getLocalNodeId()).isEqualTo(nodeId);
+    assertThat(decoded.getNodeId()).isEqualTo(String.valueOf(nodeId));
+    assertThat(decoded.getRegion()).isNull();
     assertThat(decoded.getPartitionsCount()).isEqualTo(partitionsCount);
     assertThat(decoded.getClusterSize()).isEqualTo(clusterSize);
     assertThat(decoded.getReplicationFactor()).isEqualTo(replicationFactor);
@@ -85,8 +86,8 @@ final class BrokerInfoTest {
     final var decoded = encodeDecode(brokerInfo);
 
     // then
-    assertThat(decoded.getNodeId()).isEqualTo(String.valueOf(nodeId));
     assertThat(decoded.getLocalNodeId()).isEqualTo(nodeId);
+    assertThat(decoded.getNodeId()).isEqualTo(String.valueOf(nodeId));
     assertThat(decoded.getPartitionsCount()).isEqualTo(partitionsCount);
     assertThat(decoded.getClusterSize()).isEqualTo(clusterSize);
     assertThat(decoded.getReplicationFactor()).isEqualTo(replicationFactor);
@@ -116,6 +117,77 @@ final class BrokerInfoTest {
     assertThat(brokerInfo.getAddresses()).isEmpty();
     assertThat(brokerInfo.getPartitionRoles()).isEmpty();
     assertThat(brokerInfo.getPartitionHealthStatuses()).isEmpty();
+  }
+
+  @Test
+  void shouldEncodeDecodeBrokerInfoWithRegion() {
+    // given — a region-aware broker with composite node ID "us-east1-0"
+    final int localNodeId = 0;
+    final String region = "us-east1";
+
+    final BrokerInfo brokerInfo =
+        new BrokerInfo()
+            .setNodeId(localNodeId)
+            .setRegion(region)
+            .setPartitionsCount(3)
+            .setClusterSize(4)
+            .setReplicationFactor(4);
+
+    // when
+    final var decoded = encodeDecode(brokerInfo);
+
+    // then — the composite node ID is composed from region + local node ID
+    assertThat(decoded.getLocalNodeId()).isEqualTo(localNodeId);
+    assertThat(decoded.getRegion()).isEqualTo(region);
+    assertThat(decoded.getNodeId()).isEqualTo(region + "-" + localNodeId);
+  }
+
+  @Test
+  void shouldComposeCompositeNodeIdFromRegionAndLocalId() {
+    // given — two brokers in different regions with the same local node ID (0)
+    final BrokerInfo eastBroker =
+        new BrokerInfo()
+            .setNodeId(0)
+            .setRegion("us-east1")
+            .setPartitionsCount(1)
+            .setClusterSize(2)
+            .setReplicationFactor(1);
+    final BrokerInfo westBroker =
+        new BrokerInfo()
+            .setNodeId(0)
+            .setRegion("us-west1")
+            .setPartitionsCount(1)
+            .setClusterSize(2)
+            .setReplicationFactor(1);
+
+    // when
+    final var decodedEast = encodeDecode(eastBroker);
+    final var decodedWest = encodeDecode(westBroker);
+
+    // then — composite node IDs are globally unique even though local IDs are the same
+    assertThat(decodedEast.getNodeId()).isEqualTo("us-east1-0");
+    assertThat(decodedWest.getNodeId()).isEqualTo("us-west1-0");
+    assertThat(decodedEast.getNodeId()).isNotEqualTo(decodedWest.getNodeId());
+    assertThat(decodedEast.getLocalNodeId()).isEqualTo(decodedWest.getLocalNodeId());
+  }
+
+  @Test
+  void shouldParseCompositeNodeIdViaSetNodeIdString() {
+    // given — composite string set via setNodeId(String)
+    final BrokerInfo brokerInfo =
+        new BrokerInfo()
+            .setNodeId("us-east1-2")
+            .setPartitionsCount(1)
+            .setClusterSize(2)
+            .setReplicationFactor(1);
+
+    // when
+    final var decoded = encodeDecode(brokerInfo);
+
+    // then
+    assertThat(decoded.getNodeId()).isEqualTo("us-east1-2");
+    assertThat(decoded.getLocalNodeId()).isEqualTo(2);
+    assertThat(decoded.getRegion()).isEqualTo("us-east1");
   }
 
   private BrokerInfo encodeDecode(final BrokerInfo brokerInfo) {
