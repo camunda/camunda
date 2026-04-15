@@ -72,6 +72,8 @@ jobs:
     needs: [validate-branch, utils-get-snapshot-docker-tag]
     runs-on: ubuntu-latest
     timeout-minutes: 45
+    env:
+      RESOLVED_DOCKER_TAG: ${{ needs.utils-get-snapshot-docker-tag.outputs.snapshot_tag != '' && needs.utils-get-snapshot-docker-tag.outputs.snapshot_tag || needs.utils-get-snapshot-docker-tag.outputs.version_tag }}
     steps:
       - name: Print input and base branch
         run: |
@@ -93,8 +95,6 @@ jobs:
         run: ./mvnw install -Dquickly -T1C
 
       - name: Build Docker image from branch
-        env:
-          RESOLVED_DOCKER_TAG: ${{ needs.utils-get-snapshot-docker-tag.outputs.snapshot_tag != '' && needs.utils-get-snapshot-docker-tag.outputs.snapshot_tag || needs.utils-get-snapshot-docker-tag.outputs.version_tag }}
         run: |
           echo "Building Docker image with tag: ${RESOLVED_DOCKER_TAG}"
           docker build \
@@ -115,8 +115,6 @@ jobs:
           fi
 
       - name: Start Camunda
-        env:
-          RESOLVED_DOCKER_TAG: ${{ needs.utils-get-snapshot-docker-tag.outputs.snapshot_tag != '' && needs.utils-get-snapshot-docker-tag.outputs.snapshot_tag || needs.utils-get-snapshot-docker-tag.outputs.version_tag }}
         run: |
           export CAMUNDA_DOCKER_IMAGE="camunda/camunda:${RESOLVED_DOCKER_TAG}"
           echo "Using CAMUNDA_DOCKER_IMAGE=${CAMUNDA_DOCKER_IMAGE}"
