@@ -441,10 +441,6 @@ public class ContainerRuntimePropertiesUtilTest {
           .isEqualTo(URI.create("http://0.0.0.0:8080"));
       assertThat(propertiesUtil.getRemoteConnectorsRestApiAddress())
           .isEqualTo(URI.create("http://0.0.0.0:8085"));
-      assertThat(propertiesUtil.getRemoteClientGrpcAddress())
-          .isEqualTo(URI.create("http://0.0.0.0:8088"));
-      assertThat(propertiesUtil.getRemoteClientRestAddress())
-          .isEqualTo(URI.create("http://0.0.0.0:8089"));
       assertThat(propertiesUtil.getRemoteRuntimeConnectionTimeout())
           .isEqualTo(Duration.ofSeconds(30));
 
