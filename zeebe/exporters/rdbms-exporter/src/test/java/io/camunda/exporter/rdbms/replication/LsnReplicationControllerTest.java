@@ -180,7 +180,8 @@ class LsnReplicationControllerTest {
     final var fixture = new TestFixture();
     fixture.replicationConfiguration.setMinSyncReplicas(2);
     when(fixture.lsnProvider.getReplicationStatuses())
-        .thenReturn(List.of(replicationStatus("replica-1", 120L), replicationStatus("replica-2", 80L)));
+        .thenReturn(
+            List.of(replicationStatus("replica-1", 120L), replicationStatus("replica-2", 80L)));
 
     // when
     final long confirmedLsn = fixture.replicationController.computeConfirmedLsn();
