@@ -95,7 +95,10 @@ jobs:
       - name: Build Docker image from branch
         id: docker-tag
         run: |
-          DOCKER_TAG="${{ needs.utils-get-snapshot-docker-tag.outputs.version_tag }}"
+          VERSION_TAG="${{ needs.utils-get-snapshot-docker-tag.outputs.version_tag }}"
+          SNAPSHOT_TAG="${{ needs.utils-get-snapshot-docker-tag.outputs.snapshot_tag }}"
+          # Prefer version_tag for reproducibility; fall back to snapshot_tag if needed
+          DOCKER_TAG="${VERSION_TAG:-${SNAPSHOT_TAG:-local-build}}"
           docker build \
             -f camunda.Dockerfile \
             --target app \
