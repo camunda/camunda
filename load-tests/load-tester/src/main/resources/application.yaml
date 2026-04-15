@@ -21,6 +21,10 @@ camunda:
     grpc-address: ${ZEEBE_GRPC_ADDRESS:http://localhost:26500}
     rest-address: ${ZEEBE_REST_ADDRESS:http://localhost:8080}
     prefer-rest-over-grpc: true
+    # Number of threads for job handler execution. The old HOCON app used 10 threads
+    # (app.worker.threads=10). The starter default is 1, which is too low when
+    # handleJob() blocks with Thread.sleep(completionDelay).
+    execution-threads: ${LOAD_TESTER_WORKER_THREADS:10}
     auth:
       method: ${ZEEBE_AUTH_METHOD:oidc}
       username: ${ZEEBE_AUTH_USERNAME:demo}
@@ -55,7 +59,7 @@ load-tester:
     process-id: ${LOAD_TESTER_STARTER_PROCESS_ID:benchmark}
     rate: ${LOAD_TESTER_STARTER_RATE:300}
     rate-duration: ${LOAD_TESTER_STARTER_RATE_DURATION:1s}
-    threads: 2
+    threads: ${LOAD_TESTER_STARTER_THREADS:2}
     bpmn-xml-path: ${LOAD_TESTER_STARTER_BPMN_XML_PATH:bpmn/one_task.bpmn}
     # Extra BPMN models: set via indexed env vars, e.g.
     # LOAD_TESTER_STARTER_EXTRA_BPMN_MODELS_0_=bpmn/realistic/refundingProcess.bpmn
