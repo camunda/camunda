@@ -1,23 +1,30 @@
 {
   "compilerOptions": {
+    /* Language and Environment */
     "target": "ESNext",
-    "module": "ESNext",
-    "useDefineForClassFields": true,
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
     "skipLibCheck": true,
-
-    /* Bundler mode */
-    "moduleResolution": "bundler",
-    "isolatedModules": true,
-    "moduleDetection": "force",
+    "jsx": "react-jsx",
     "noEmit": true,
-    "verbatimModuleSyntax": true,
 
-    /* Linting */
-    "strict": true,
-    "noUnusedLocals": false,
-    "noUnusedParameters": false,
-    "noFallthroughCasesInSwitch": true,
+    /* Modules and Constraints */
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "moduleDetection": "force",
+    "verbatimModuleSyntax": true,
+    "isolatedModules": true,
     "noUncheckedSideEffectImports": true,
-    "erasableSyntaxOnly": true
+    "erasableSyntaxOnly": true,
+
+    /* Type Checking */
+    "strict": true,
+    "noFallthroughCasesInSwitch": true,
+    "noImplicitOverride": false, // TODO: enable with https://github.com/camunda/camunda/issues/50173
+    "noImplicitReturns": false, // TODO: enable with https://github.com/camunda/camunda/issues/50173
+    "noUnusedLocals": false, // TODO: enable with https://github.com/camunda/camunda/issues/50173
+    "noUnusedParameters": false, // TODO: enable with https://github.com/camunda/camunda/issues/50173
+    "noPropertyAccessFromIndexSignature": false,
+    "noUncheckedIndexedAccess": false, // TODO: enable with https://github.com/camunda/camunda/issues/50173
+    "allowUnreachableCode": false
   }
 }

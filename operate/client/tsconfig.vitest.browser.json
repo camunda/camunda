@@ -1,8 +1,9 @@
 {
-  "extends": "./tsconfig.app.json",
+  "extends": "./tsconfig.base.json",
   "compilerOptions": {
-    "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.vitest.tsbuildinfo",
-    "types": ["vitest/globals", "@vitest/browser/matchers", "node"]
+    "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.vitest.browser.tsbuildinfo",
+    "types": ["vitest/globals", "@vitest/browser/matchers", "node"],
+    "baseUrl": "src"
   },
   "include": [
     "src/**/*",
