@@ -158,8 +158,10 @@ public abstract class AbstractProcessInstanceFromOperationItemHandlerTest<
     // When
     final var idList = underTest.generateIds(record);
 
-    // Then
-    assertThat(idList).containsExactly(String.valueOf(record.getValue().getProcessInstanceKey()));
+    // Then - composite ID (processInstanceKey:batchOperationReference)
+    assertThat(idList)
+        .containsExactly(
+            record.getValue().getProcessInstanceKey() + ":" + record.getBatchOperationReference());
   }
 
   @Test
@@ -178,21 +180,23 @@ public abstract class AbstractProcessInstanceFromOperationItemHandlerTest<
 
   @Test
   void shouldFlushEntity() {
-    // Given
-    final var entity = underTest.createNewEntity("test-id");
-    entity.setBatchOperationIds(List.of("batch-op-1"));
+    // Given - entity uses composite cache ID (processInstanceKey:batchOperationReference)
+    final String processInstanceKey = "42";
+    final String batchOperationKey = "batch-op-1";
+    final var entity = underTest.createNewEntity(processInstanceKey + ":" + batchOperationKey);
+    entity.setBatchOperationIds(List.of(batchOperationKey));
     final var batchRequest = mock(BatchRequest.class);
 
     // When
     underTest.flush(entity, batchRequest);
 
-    // Then
+    // Then - the ES document ID is just the processInstanceKey, extracted from the composite ID
     Mockito.verify(batchRequest)
         .updateWithScript(
             eq(underTest.getIndexName()),
-            eq(entity.getId()),
+            eq(processInstanceKey),
             anyString(),
-            eq(Map.of("batchOperationId", "batch-op-1")));
+            eq(Map.of("batchOperationId", batchOperationKey)));
   }
 
   protected abstract Record<R> createCompletedRecord(final long processInstanceKey);
