@@ -20,8 +20,10 @@ import {useResolveProcessInstancesIncidentsBatchOperation} from 'modules/mutatio
 import {useDeleteProcessInstancesBatchOperation} from 'modules/mutations/processes/useDeleteProcessInstancesBatchOperation';
 import {tracking} from 'modules/tracking';
 import {handleOperationError} from 'modules/utils/notifications';
-import {useBatchOperationMutationRequestBody} from 'modules/hooks/useBatchOperationMutationRequestBody';
-import {useDeleteBatchOperationMutationRequestBody} from 'modules/hooks/useDeleteBatchOperationMutationRequestBody';
+import {
+  useBatchOperationMutationRequestBody,
+  useDeleteBatchOperationMutationRequestBody,
+} from 'modules/hooks/useBatchOperationMutationRequestBody';
 import {useBatchOperationSuccessNotification} from 'modules/hooks/useBatchOperationSuccessNotification';
 import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelection';
 import {IS_DELETE_BATCH_OPERATION_ENABLED} from 'modules/feature-flags';
