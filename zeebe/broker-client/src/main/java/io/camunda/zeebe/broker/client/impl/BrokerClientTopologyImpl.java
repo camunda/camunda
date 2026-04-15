@@ -196,9 +196,7 @@ public record BrokerClientTopologyImpl(
       final List<BrokerInfo> sortedBrokerInfos =
           distributedBrokerInfos.stream()
               .sorted(
-                  Comparator.comparing(
-                      bi -> bi.getNodeId() != null ? bi.getNodeId() : "",
-                      Comparator.naturalOrder()))
+                  Comparator.comparing(BrokerInfo::getNodeId, Comparator.naturalOrder()))
               .toList();
 
       for (int idx = 0; idx < sortedBrokerInfos.size(); idx++) {
