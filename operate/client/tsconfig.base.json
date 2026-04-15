@@ -22,7 +22,7 @@
     "noImplicitOverride": true,
     "noImplicitReturns": false, // TODO: enable with https://github.com/camunda/camunda/issues/50173
     "noUnusedLocals": true,
-    "noUnusedParameters": false, // TODO: enable with https://github.com/camunda/camunda/issues/50173
+    "noUnusedParameters": true,
     "noPropertyAccessFromIndexSignature": false,
     "noUncheckedIndexedAccess": true,
     "allowUnreachableCode": false
