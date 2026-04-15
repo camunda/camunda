@@ -133,8 +133,40 @@ orchestration:
           existingSecretKey: orchestration-security-authentication-oidc-secret
 
     authorizations:
+<<<<<<< HEAD:zeebe/benchmarks/camunda-platform-values.yaml
       enabled: false
 
+=======
+      enabled: true
+    initialization:
+      authorizations:
+        # Grant the orchestration client (load tester) permission to create resources (BPMN/DMN)
+        - ownerType: CLIENT
+          ownerId: orchestration
+          resourceType: RESOURCE
+          resourceId: "*"
+          permissions:
+            - CREATE
+        # Grant the orchestration client permissions to manage and observe process instances
+        - ownerType: CLIENT
+          ownerId: orchestration
+          resourceType: PROCESS_DEFINITION
+          resourceId: "*"
+          permissions:
+            - CREATE_PROCESS_INSTANCE
+            - UPDATE_PROCESS_INSTANCE
+            - READ_PROCESS_INSTANCE
+            - READ_PROCESS_DEFINITION
+        # Grant the orchestration client permission to publish messages
+        # (required by realistic benchmark workers: customer_notification,
+        # dispute_process_request_proof_from_vendor)
+        - ownerType: CLIENT
+          ownerId: orchestration
+          resourceType: MESSAGE
+          resourceId: "*"
+          permissions:
+            - CREATE
+>>>>>>> 047e0994 (fix: add permission for realistic workflow):load-tests/camunda-platform-values.yaml
   # For simplicity of the deployment, we override the names to camunda
   # This means we will have pods like: camunda-0, camunda-1, camunda-2
   fullnameOverride: camunda
