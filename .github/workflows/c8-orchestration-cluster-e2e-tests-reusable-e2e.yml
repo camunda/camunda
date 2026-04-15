@@ -178,6 +178,7 @@ jobs:
           SLACK_BOT_USER_OAUTH_TOKEN: ${{ steps.secrets.outputs.SLACK_CORE_DOMAIN_BOT_TOKEN }}
           VERSION: ${{ inputs.branch }}
           CAMUNDA_TASKLIST_V2_MODE_ENABLED: ${{ inputs.tasklist_mode == 'v2' && 'true' || 'false' }}
+          TEST_ARGS: ${{ inputs.test_args }}
         run: |
           if [[ "${{ inputs.is_standalone }}" == "false" ]]; then
             export CORE_APPLICATION_TASKLIST_URL="http://localhost:8080"
@@ -188,8 +189,8 @@ jobs:
             export ZEEBE_REST_ADDRESS="http://localhost:8080"
           fi
 
-          echo "Running E2E tests with args: ${{ inputs.test_args }}"
-          npm run test -- ${{ inputs.test_args }}
+          echo "Running E2E tests with args: ${TEST_ARGS}"
+          eval npm run test -- ${TEST_ARGS}
         working-directory: qa/c8-orchestration-cluster-e2e-test-suite
 
       - name: Publish test results to TestRail
