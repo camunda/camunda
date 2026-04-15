@@ -31,6 +31,7 @@ export interface ViewFullVariableButtonShowProps extends ViewFullVariableBasePro
   variableValue: string;
   variableKey: string;
   buttonLabel?: string;
+  canEdit?: boolean;
 }
 
 export type ViewFullVariableWrapperProps =

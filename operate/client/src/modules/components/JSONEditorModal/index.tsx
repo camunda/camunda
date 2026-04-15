@@ -9,7 +9,8 @@
 import {lazy, Suspense, useEffect, useRef, useState} from 'react';
 import {observer} from 'mobx-react';
 import {beautifyJSON} from 'modules/utils/editor/beautifyJSON';
-import {Modal} from '@carbon/react';
+import {Button, Modal} from '@carbon/react';
+import {Edit, View} from '@carbon/react/icons';
 import {Toolbar} from './styled';
 import {CopyButton} from '../CopyButton';
 
@@ -34,13 +35,25 @@ type Props = {
   onClose?: () => void;
   onApply?: (value: string | undefined) => void;
   title?: string;
+  editModeTitle?: string;
   readOnly?: boolean;
+  allowModeToggle?: boolean;
 };
 
 const JSONEditorModal: React.FC<Props> = observer(
-  ({value, isVisible, onClose, onApply, title, readOnly = false}) => {
+  ({
+    value,
+    isVisible,
+    onClose,
+    onApply,
+    title,
+    editModeTitle,
+    readOnly = false,
+    allowModeToggle = false,
+  }) => {
     const [editedValue, setEditedValue] = useState(value);
     const [isValid, setIsValid] = useState(true);
+    const [isInEditMode, setIsInEditMode] = useState(!readOnly);
     const editorRef = useRef<EditorFirstParam | null>(null);
 
     useEffect(() => {
@@ -53,6 +66,10 @@ const JSONEditorModal: React.FC<Props> = observer(
     }, [isVisible, value]);
 
     useEffect(() => {
+      setIsInEditMode(!readOnly);
+    }, [readOnly, isVisible]);
+
+    useEffect(() => {
       if (isValid) {
         editorRef.current?.hideMarkers();
       }
@@ -62,10 +79,23 @@ const JSONEditorModal: React.FC<Props> = observer(
       return null;
     }
 
+    const isReadOnly = readOnly && !isInEditMode;
+    const canToggleMode = readOnly && allowModeToggle;
+
+    const toggleEditMode = () => {
+      if (!isInEditMode) {
+        setIsInEditMode(true);
+        return;
+      }
+
+      setIsInEditMode(false);
+      setEditedValue(beautifyJSON(value));
+    };
+
     return (
       <Modal
         open={isVisible}
-        modalHeading={title}
+        modalHeading={isInEditMode && editModeTitle ? editModeTitle : title}
         onRequestClose={() => {
           onClose?.();
         }}
@@ -79,17 +109,28 @@ const JSONEditorModal: React.FC<Props> = observer(
         size="lg"
         primaryButtonText="Apply"
         secondaryButtonText="Cancel"
-        passiveModal={readOnly}
+        passiveModal={isReadOnly}
         preventCloseOnClickOutside
       >
         <Toolbar>
+          {canToggleMode && (
+            <Button
+              kind="ghost"
+              size="sm"
+              renderIcon={!isInEditMode ? Edit : View}
+              iconDescription={`Switch to ${!isInEditMode ? 'edit' : 'view'} mode`}
+              onClick={toggleEditMode}
+            >
+              {!isInEditMode ? 'Edit' : 'View'}
+            </Button>
+          )}
           <CopyButton value={editedValue} />
         </Toolbar>
         <Suspense>
           <JSONEditor
             value={editedValue}
             onChange={setEditedValue}
-            readOnly={readOnly}
+            readOnly={isReadOnly}
             onValidate={setIsValid}
             onMount={(editor) => {
               editorRef.current = editor;
