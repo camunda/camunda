@@ -490,16 +490,21 @@ jobs:
               EXCLUDED_TESTS+=("CamundaSpringProcessMultiTenancyTestListenerIT")
               echo "CPT version $CLIENT_VERSION <= 8.8.11 - excluding CamundaSpringProcessMultiTenancyTestListenerIT"
             fi
-            # For CPT versions < 8.8.20, skip ConnectorProcessTest.
+            # For CPT versions < 8.8.20, skip all connector-related tests.
             # These versions lack the CAMUNDA_CONNECTOR_SECRETPROVIDER_ENVIRONMENT_PREFIX
             # env var (empty prefix) that the SNAPSHOT connectors runtime now requires.
             # Without it, the connector container cannot resolve secrets and the
-            # ConnectorProcessTest fails. The fix was introduced in 8.8.20.
+            # connectors readiness check never completes. The fix was introduced in 8.8.20.
             if (( MAJOR < 8 )) || \
                (( MAJOR == 8 && MINOR < 8 )) || \
                (( MAJOR == 8 && MINOR == 8 && PATCH < 20 )); then
               EXCLUDED_TESTS+=("ConnectorProcessTest")
-              echo "CPT version $CLIENT_VERSION < 8.8.20 - excluding ConnectorProcessTest (missing secret prefix support)"
+              EXCLUDED_TESTS+=("CamundaProcessTestConnectorsIT")
+              EXCLUDED_TESTS+=("CamundaProcessTestExtensionMultiTenancyWithConnectorsIT")
+              EXCLUDED_TESTS+=("CamundaProcessTestExtensionMultiTenancyIT#multiTenancyWithConnectorsEnabled")
+              EXCLUDED_TESTS+=("CamundaSpringProcessTestConnectorsIT")
+              EXCLUDED_TESTS+=("CamundaSpringProcessMultiTenancyTestListenerWithConnectorsIT")
+              echo "CPT version $CLIENT_VERSION < 8.8.20 - excluding connector-related tests (missing secret prefix support)"
             fi
           fi
           # Build the -Dit.test exclusion string from the array
