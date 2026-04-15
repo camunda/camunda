@@ -227,17 +227,12 @@ class VersionCompatibilityMatrixTest {
   }
 
   @Test
-  void shouldIgnoreKnownIncompatibleUpgradeRangeInFullMatrix() {
-    // given
-    // INCOMPATIBLE_UPGRADES encodes (8.5.17 -> 8.6.13), i.e.:
-    //  - from 8.5.[17+] to 8.6.0..8.6.12 is incompatible
-    //  - 8.6.13 is the first compatible patch on 8.6
+  void shouldExcludeVersionsBelowMinimumSupportedFromFullMatrix() {
+    // given — mix of versions below and above the minimum supported version (8.6.0)
     final var versions =
         Stream.concat(
-                // 8.5.16, 8.5.17, 8.5.18
                 IntStream.rangeClosed(16, 18).mapToObj(patch -> "8.5." + patch),
-                // 8.6.0 .. 8.6.13
-                IntStream.rangeClosed(0, 13).mapToObj(patch -> "8.6." + patch))
+                IntStream.rangeClosed(0, 3).mapToObj(patch -> "8.6." + patch))
             .collect(Collectors.toSet());
 
     final VersionCompatibilityMatrix matrix =
@@ -254,25 +249,14 @@ class VersionCompatibilityMatrixTest {
                 })
             .collect(Collectors.toSet());
 
-    // then
-
-    // 1) Upgrades from a lower patch (8.5.16) to all 8.6.x should be present
-    IntStream.rangeClosed(0, 13)
-        .forEach(toPatch -> assertThat(upgradePairs).contains("8.5.16->8.6." + toPatch));
-
-    // 2) All upgrades from 8.5.[17,18] to 8.6.0..8.6.12 must be excluded
-    IntStream.rangeClosed(17, 18)
+    // then — no 8.5.x pairs, only intra-minor 8.6.x pairs
+    IntStream.rangeClosed(16, 18)
         .forEach(
-            fromPatch ->
-                IntStream.rangeClosed(0, 12)
-                    .forEach(
-                        toPatch ->
-                            assertThat(upgradePairs)
-                                .doesNotContain("8.5." + fromPatch + "->8.6." + toPatch)));
+            fromPatch -> assertThat(upgradePairs).noneMatch(p -> p.startsWith("8.5." + fromPatch)));
 
-    // 3) Upgrades from 8.5.[17,18] to the first compatible 8.6 patch (8.6.13) must be allowed
-    IntStream.rangeClosed(17, 18)
-        .forEach(fromPatch -> assertThat(upgradePairs).contains("8.5." + fromPatch + "->8.6.13"));
+    assertThat(upgradePairs).contains("8.6.0->8.6.1");
+    assertThat(upgradePairs).contains("8.6.0->8.6.3");
+    assertThat(upgradePairs).contains("8.6.2->8.6.3");
   }
 
   /**
@@ -614,6 +598,55 @@ class VersionCompatibilityMatrixTest {
       final var discoveredVersions = provider.discoverVersions();
 
       assertThat(discoveredVersions).containsExactlyInAnyOrder(releasedVersion.asLatest());
+    }
+  }
+
+  @Nested
+  class IncompatibleUpgradesTest {
+
+    @Test
+    void shouldRejectUpgradeFromAffectedPatchToIncompatibleTarget() {
+      // INCOMPATIBLE_UPGRADES contains (8.5.17, 8.6.13):
+      //   from 8.5.[17+] to 8.6.[0..12] is incompatible
+      final var from = SemanticVersion.parse("8.5.17").orElseThrow();
+      final var to = SemanticVersion.parse("8.6.12").orElseThrow();
+
+      assertThat(VersionCompatibilityMatrix.isCompatible(from, to)).isFalse();
+    }
+
+    @Test
+    void shouldRejectUpgradeFromLaterPatchToIncompatibleTarget() {
+      final var from = SemanticVersion.parse("8.5.18").orElseThrow();
+      final var to = SemanticVersion.parse("8.6.0").orElseThrow();
+
+      assertThat(VersionCompatibilityMatrix.isCompatible(from, to)).isFalse();
+    }
+
+    @Test
+    void shouldAllowUpgradeFromAffectedPatchToFirstCompatibleTarget() {
+      // 8.6.13 is the first compatible target
+      final var from = SemanticVersion.parse("8.5.17").orElseThrow();
+      final var to = SemanticVersion.parse("8.6.13").orElseThrow();
+
+      assertThat(VersionCompatibilityMatrix.isCompatible(from, to)).isTrue();
+    }
+
+    @Test
+    void shouldAllowUpgradeFromPatchBelowAffectedRange() {
+      // 8.5.16 is below the affected range (starts at 8.5.17)
+      final var from = SemanticVersion.parse("8.5.16").orElseThrow();
+      final var to = SemanticVersion.parse("8.6.0").orElseThrow();
+
+      assertThat(VersionCompatibilityMatrix.isCompatible(from, to)).isTrue();
+    }
+
+    @Test
+    void shouldAllowUpgradeOnUnrelatedMinors() {
+      // 8.7.x -> 8.8.x is not in any incompatible range
+      final var from = SemanticVersion.parse("8.7.0").orElseThrow();
+      final var to = SemanticVersion.parse("8.8.0").orElseThrow();
+
+      assertThat(VersionCompatibilityMatrix.isCompatible(from, to)).isTrue();
     }
   }
 
