@@ -209,3 +209,19 @@ func TestShouldNotSupportDockerFlagOnStop(t *testing.T) {
 	// then
 	assert.Nil(t, stopFlagSet.Lookup("docker"))
 }
+
+func TestShouldParseDisableConnectorsFlagOnStart(t *testing.T) {
+	// given
+	oldArgs := os.Args
+	os.Args = []string{"c8run", "start", "--disable-connectors"}
+	t.Cleanup(func() {
+		os.Args = oldArgs
+	})
+
+	// when
+	settings, _, err := getBaseCommandSettings("start")
+
+	// then
+	require.NoError(t, err)
+	assert.True(t, settings.DisableConnectors)
+}

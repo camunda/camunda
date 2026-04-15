@@ -16,14 +16,19 @@ import (
 
 	"github.com/camunda/camunda/c8run/internal/health"
 	"github.com/camunda/camunda/c8run/internal/overrides"
-	"github.com/camunda/camunda/c8run/internal/processmanagement"
 	"github.com/camunda/camunda/c8run/internal/types"
 	"github.com/rs/zerolog/log"
 )
 
 var evalSymlinks = filepath.EvalSymlinks
 
-func printSystemInformation(javaVersion, javaHome, javaOpts string) {
+type processHandler interface {
+	AttemptToStartProcess(pidPath string, processName string, startProcess func(), healthCheck func() error, stop context.CancelFunc)
+	WritePIDToFile(pidPath string, pid int) error
+	TrackProcessTree(pidPath string, rootPid int)
+}
+
+func printSystemInformation(javaVersion, javaHome, javaOpts string, connectorsEnabled bool) {
 	fmt.Println("")
 	fmt.Println("")
 	fmt.Println("System Version Information")
@@ -37,7 +42,11 @@ func printSystemInformation(javaVersion, javaHome, javaOpts string) {
 	fmt.Printf("  JAVA_OPTS: %s\n", javaOpts)
 	fmt.Println("--------------------------")
 	fmt.Println("Logging Details:")
-	fmt.Println("  Connectors: ./log/connectors.log")
+	if connectorsEnabled {
+		fmt.Println("  Connectors: ./log/connectors.log")
+	} else {
+		fmt.Println("  Connectors: disabled (--disable-connectors)")
+	}
 	fmt.Println("  Camunda: ./log/camunda.log")
 	fmt.Println("--------------------------")
 	fmt.Println("Press Ctrl+C to initiate graceful shutdown.")
@@ -61,7 +70,7 @@ func getJavaVersion(javaBinary string) (string, error) {
 }
 
 type StartupHandler struct {
-	ProcessHandler *processmanagement.ProcessHandler
+	ProcessHandler processHandler
 }
 
 func ensurePortAvailable(port int) error {
@@ -285,7 +294,7 @@ func (s *StartupHandler) StartCommand(wg *sync.WaitGroup, ctx context.Context, s
 		event.Msg("C8Run will use the configured external Elasticsearch instance; no local Elasticsearch process is bundled or managed")
 	}
 
-	printSystemInformation(javaVersion, javaHome, javaOpts)
+	printSystemInformation(javaVersion, javaHome, javaOpts, !settings.DisableConnectors)
 
 	var extraArgs string
 	var slash string
@@ -314,19 +323,7 @@ func (s *StartupHandler) StartCommand(wg *sync.WaitGroup, ctx context.Context, s
 		}
 	}
 
-	s.ProcessHandler.AttemptToStartProcess(processInfo.Connectors.PidPath, "Connectors", func() {
-		connectorsCmd := c8.ConnectorsCmd(ctx, javaBinary, parentDir, processInfo.Connectors.Version, state.Settings.Port)
-		connectorsLogPath := filepath.Join(parentDir, "log", "connectors.log")
-		err := s.startApplication(connectorsCmd, processInfo.Connectors.PidPath, connectorsLogPath, stop)
-		if err != nil {
-			log.Err(err).Msg("Failed to start Connectors process")
-			stop()
-			return
-		}
-	}, func() error {
-		// TODO do a health check on the connectors process
-		return nil
-	}, stop)
+	s.startConnectors(ctx, stop, state, parentDir, javaBinary)
 
 	s.ProcessHandler.AttemptToStartProcess(processInfo.Camunda.PidPath, "Camunda", func() {
 		camundaCmd := c8.CamundaCmd(ctx, processInfo.Camunda.Version, parentDir, extraArgs, javaOpts)
@@ -339,5 +336,27 @@ func (s *StartupHandler) StartCommand(wg *sync.WaitGroup, ctx context.Context, s
 		}
 	}, func() error {
 		return health.QueryCamunda(ctx, c8, "Camunda", settings, 24)
+	}, stop)
+}
+
+func (s *StartupHandler) startConnectors(ctx context.Context, stop context.CancelFunc, state *types.State, parentDir string, javaBinary string) {
+	if state.Settings.DisableConnectors {
+		log.Info().Msg("Skipping bundled connectors startup because --disable-connectors was set")
+		return
+	}
+
+	processInfo := state.ProcessInfo
+	s.ProcessHandler.AttemptToStartProcess(processInfo.Connectors.PidPath, "Connectors", func() {
+		connectorsCmd := state.C8.ConnectorsCmd(ctx, javaBinary, parentDir, processInfo.Connectors.Version, state.Settings.Port)
+		connectorsLogPath := filepath.Join(parentDir, "log", "connectors.log")
+		err := s.startApplication(connectorsCmd, processInfo.Connectors.PidPath, connectorsLogPath, stop)
+		if err != nil {
+			log.Err(err).Msg("Failed to start Connectors process")
+			stop()
+			return
+		}
+	}, func() error {
+		// TODO do a health check on the connectors process
+		return nil
 	}, stop)
 }
