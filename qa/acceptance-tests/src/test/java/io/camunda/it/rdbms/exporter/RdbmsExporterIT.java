@@ -113,6 +113,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -162,6 +163,19 @@ class RdbmsExporterIT {
             Mockito.mock(MeterRegistry.class, Mockito.RETURNS_DEEP_STUBS),
             null));
     exporter.open(controller);
+  }
+
+  /**
+   * Verify, that the exporter position is correct. Makes the search for false tests easier.
+   *
+   * <p>Use always FIXTURES.nextPosition() when creating a record, otherwise other tests will fail!
+   */
+  @AfterEach
+  void tearDown() {
+    final var lastExporterPosition = exporterPositionMapper.findOne(1);
+    if (lastExporterPosition != null) {
+      assertThat(lastExporterPosition.lastExportedPosition()).isEqualTo(FIXTURES.currentPosition());
+    }
   }
 
   @Test
@@ -248,8 +262,8 @@ class RdbmsExporterIT {
         ImmutableRecord.builder()
             .from(RecordFixtures.FACTORY.generateRecord(ValueType.VARIABLE))
             .withIntent(VariableIntent.CREATED)
-            .withPosition(FIXTURES.nextPosition())
             .withTimestamp(System.currentTimeMillis())
+            .withPosition(FIXTURES.nextPosition())
             .build();
 
     // when
@@ -905,6 +919,7 @@ class RdbmsExporterIT {
             .withPosition(FIXTURES.nextPosition())
             .withIntent(ProcessMessageSubscriptionIntent.CREATED)
             .withTimestamp(System.currentTimeMillis())
+            .withPosition(FIXTURES.nextPosition())
             .build();
 
     // when
@@ -930,6 +945,7 @@ class RdbmsExporterIT {
             .withPosition(FIXTURES.nextPosition())
             .withIntent(ProcessMessageSubscriptionIntent.CREATED)
             .withTimestamp(System.currentTimeMillis())
+            .withPosition(FIXTURES.nextPosition())
             .build();
 
     exporter.export(messageSubscriptionRecord);
@@ -941,6 +957,7 @@ class RdbmsExporterIT {
             .withIntent(ProcessMessageSubscriptionIntent.DELETED)
             .withPosition(FIXTURES.nextPosition())
             .withTimestamp(System.currentTimeMillis())
+            .withPosition(FIXTURES.nextPosition())
             .build());
 
     // then
@@ -960,6 +977,7 @@ class RdbmsExporterIT {
             .withPosition(FIXTURES.nextPosition())
             .withIntent(ProcessMessageSubscriptionIntent.CORRELATED)
             .withTimestamp(System.currentTimeMillis())
+            .withPosition(FIXTURES.nextPosition())
             .build();
 
     // when
@@ -1396,6 +1414,7 @@ class RdbmsExporterIT {
             .withPosition(FIXTURES.nextPosition())
             .withIntent(JobIntent.CREATED)
             .withTimestamp(System.currentTimeMillis())
+            .withPosition(FIXTURES.nextPosition())
             .build();
 
     // when
@@ -1546,6 +1565,7 @@ class RdbmsExporterIT {
     return ImmutableRecord.<T>builder()
         .from(record)
         .withBatchOperationReference(batchOperationKey)
+        .withPosition(FIXTURES.nextPosition())
         .build();
   }
 
