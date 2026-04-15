@@ -8,6 +8,9 @@ camunda:
         url: jdbc:postgresql:camunda
         username: camunda
         password: camunda
+        replication:
+          enabled: true
+          min-sync-replicas: 1
 logging:
   level:
-    io.camunda.db.rdbms: DEBUG
+    io.camunda.exporter.rdbms.replication: DEBUG

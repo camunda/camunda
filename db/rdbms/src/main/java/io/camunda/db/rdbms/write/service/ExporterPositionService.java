@@ -8,6 +8,8 @@
 package io.camunda.db.rdbms.write.service;
 
 import io.camunda.db.rdbms.sql.ExporterPositionMapper;
+import io.camunda.db.rdbms.write.DefaultReplicationLogStatusProvider;
+import io.camunda.db.rdbms.write.ReplicationLogStatusProvider;
 import io.camunda.db.rdbms.write.domain.ExporterPositionModel;
 import io.camunda.db.rdbms.write.queue.ContextType;
 import io.camunda.db.rdbms.write.queue.ExecutionQueue;
@@ -18,11 +20,17 @@ public class ExporterPositionService {
 
   private final ExecutionQueue executionQueue;
   private final ExporterPositionMapper exporterPositionMapper;
+  private final ReplicationLogStatusProvider replicationLagProvider;
 
   public ExporterPositionService(
       final ExecutionQueue executionQueue, final ExporterPositionMapper exporterPositionMapper) {
     this.executionQueue = executionQueue;
     this.exporterPositionMapper = exporterPositionMapper;
+    replicationLagProvider = new DefaultReplicationLogStatusProvider(exporterPositionMapper);
+  }
+
+  public ReplicationLogStatusProvider getReplicationLsnProvider() {
+    return replicationLagProvider;
   }
 
   public void create(final ExporterPositionModel variable) {

@@ -56,8 +56,11 @@ import io.camunda.exporter.rdbms.handlers.batchoperation.ProcessInstanceCancella
 import io.camunda.exporter.rdbms.handlers.batchoperation.ProcessInstanceHistoryDeletionBatchOperationExportHandler;
 import io.camunda.exporter.rdbms.handlers.batchoperation.ProcessInstanceMigrationBatchOperationExportHandler;
 import io.camunda.exporter.rdbms.handlers.batchoperation.ProcessInstanceModificationBatchOperationExportHandler;
+import io.camunda.exporter.rdbms.replication.LsnReplicationControllerFactory;
+import io.camunda.exporter.rdbms.replication.NoopReplicationControllerFactory;
 import io.camunda.search.entities.BatchOperationType;
 import io.camunda.zeebe.exporter.api.Exporter;
+import io.camunda.zeebe.exporter.api.ExporterException;
 import io.camunda.zeebe.exporter.api.context.Context;
 import io.camunda.zeebe.exporter.api.context.Controller;
 import io.camunda.zeebe.exporter.common.auditlog.transformers.AuditLogTransformer;
@@ -155,6 +158,20 @@ public class RdbmsExporterWrapper implements Exporter {
             context.clock());
     builder.historyDeletionService(historyDeletionService);
 
+    if (config.getAsyncReplication().isEnabled()) {
+      final var lsnProvider = rdbmsWriters.getExporterPositionService().getReplicationLsnProvider();
+      if (lsnProvider == null) {
+        throw new ExporterException(
+            "Async replication is enabled but no ReplicationLsnProvider is available. "
+                + "Ensure the database supports async replication and the provider is configured.");
+      }
+      builder.replicationControllerFactory(
+          new LsnReplicationControllerFactory(
+              lsnProvider, config.getAsyncReplication(), partitionId));
+    } else {
+      builder.replicationControllerFactory(new NoopReplicationControllerFactory());
+    }
+
     createHandlers(partitionId, rdbmsWriters, builder, config, historyCleanupService);
     createBatchOperationHandlers(rdbmsWriters, builder, historyCleanupService);
 
@@ -168,7 +185,9 @@ public class RdbmsExporterWrapper implements Exporter {
 
   @Override
   public void close() {
-    exporter.close();
+    if (exporter != null) {
+      exporter.close();
+    }
   }
 
   @Override

@@ -476,6 +476,67 @@ class ExporterConfigurationTest {
   }
 
   @Test
+  void shouldAcceptValidAsyncReplicationConfiguration() {
+    // given
+    final var config = new ExporterConfiguration();
+    config.getAsyncReplication().setEnabled(true);
+    config.getAsyncReplication().setPollingInterval(Duration.ofSeconds(15));
+    config.getAsyncReplication().setMinSyncReplicas(0);
+
+    // when + then
+    config.validate(); // should not throw
+  }
+
+  @Test
+  void shouldRejectNegativePollingInterval() {
+    // given
+    final var config = new ExporterConfiguration();
+    config.getAsyncReplication().setEnabled(true);
+    config.getAsyncReplication().setPollingInterval(Duration.ofSeconds(-1));
+
+    // when + then
+    assertThatThrownBy(config::validate)
+        .isInstanceOf(io.camunda.zeebe.exporter.api.ExporterException.class)
+        .hasMessageContaining("asyncReplication.pollingInterval");
+  }
+
+  @Test
+  void shouldRejectZeroPollingInterval() {
+    // given
+    final var config = new ExporterConfiguration();
+    config.getAsyncReplication().setEnabled(true);
+    config.getAsyncReplication().setPollingInterval(Duration.ZERO);
+
+    // when + then
+    assertThatThrownBy(config::validate)
+        .isInstanceOf(io.camunda.zeebe.exporter.api.ExporterException.class)
+        .hasMessageContaining("asyncReplication.pollingInterval");
+  }
+
+  @Test
+  void shouldNotValidatePollingIntervalWhenAsyncReplicationDisabled() {
+    // given
+    final var config = new ExporterConfiguration();
+    config.getAsyncReplication().setEnabled(false);
+    config.getAsyncReplication().setPollingInterval(Duration.ofSeconds(-1));
+
+    // when + then
+    config.validate(); // should not throw because disabled
+  }
+
+  @Test
+  void shouldRejectNegativeMinSyncReplicas() {
+    // given
+    final var config = new ExporterConfiguration();
+    config.getAsyncReplication().setMinSyncReplicas(-1);
+
+    // when + then
+    assertThatThrownBy(config::validate)
+        .isInstanceOf(io.camunda.zeebe.exporter.api.ExporterException.class)
+        .hasMessageContaining("asyncReplication.minSyncReplicas");
+  }
+
+  @Test
   public void shouldFailWithNegativeJobMetricsBatchTTL() {
     final ExporterConfiguration.HistoryConfiguration historyConfiguration =
         new ExporterConfiguration.HistoryConfiguration();

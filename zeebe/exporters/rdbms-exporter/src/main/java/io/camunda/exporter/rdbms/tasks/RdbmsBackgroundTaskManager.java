@@ -17,6 +17,7 @@ import io.camunda.zeebe.exporter.common.tasks.SelfSchedulingTask;
 import io.camunda.zeebe.util.CloseableSilently;
 import java.time.Duration;
 import java.time.OffsetDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import org.slf4j.Logger;
@@ -83,20 +84,23 @@ public final class RdbmsBackgroundTaskManager implements CloseableSilently {
   }
 
   private List<RunnableTask> buildTasks(final ScheduledThreadPoolExecutor executor) {
-    return List.of(
+    final var tasks = new ArrayList<RunnableTask>();
+    tasks.add(
         new SelfSchedulingTask(
             "HistoryCleanup",
             () -> historyCleanupService.cleanupHistory(partitionId, OffsetDateTime.now()),
             () -> historyCleanupService.getCurrentCleanupInterval(partitionId),
             executor,
-            logger),
+            logger));
+    tasks.add(
         new SelfSchedulingTask(
             "UsageMetricsCleanup",
             () ->
                 historyCleanupService.cleanupUsageMetricsHistory(partitionId, OffsetDateTime.now()),
             historyCleanupService::getUsageMetricsHistoryCleanupInterval,
             executor,
-            logger),
+            logger));
+    tasks.add(
         new SelfSchedulingTask(
             "JobBatchMetricsCleanup",
             () ->
@@ -104,12 +108,15 @@ public final class RdbmsBackgroundTaskManager implements CloseableSilently {
                     partitionId, OffsetDateTime.now()),
             historyCleanupService::getJobBatchMetricsHistoryCleanupInterval,
             executor,
-            logger),
+            logger));
+    tasks.add(
         new SelfSchedulingTask(
             "HistoryDeletion",
             () -> historyDeletionService.deleteHistory(partitionId),
             historyDeletionService::getCurrentDelayBetweenRuns,
             executor,
             logger));
+
+    return tasks;
   }
 }

@@ -13,6 +13,8 @@ import io.camunda.db.rdbms.write.RdbmsWriters;
 import io.camunda.db.rdbms.write.domain.ExporterPositionModel;
 import io.camunda.db.rdbms.write.service.HistoryCleanupService;
 import io.camunda.db.rdbms.write.service.HistoryDeletionService;
+import io.camunda.exporter.rdbms.replication.ReplicationController;
+import io.camunda.exporter.rdbms.replication.ReplicationControllerFactory;
 import io.camunda.exporter.rdbms.tasks.RdbmsBackgroundTaskManager;
 import io.camunda.zeebe.exporter.api.ExporterException;
 import io.camunda.zeebe.exporter.api.context.Controller;
@@ -60,6 +62,10 @@ public final class RdbmsExporter {
   // Track the oldest record timestamp in the current batch for exporting latency calculation
   private long oldestRecordTimestampInBatch = -1;
 
+  // Async replication support — null when disabled
+  private final ReplicationControllerFactory replicationControllerFactory;
+  private ReplicationController replicationController;
+
   private RdbmsExporter(
       final int partitionId,
       final Duration flushInterval,
@@ -68,7 +74,8 @@ public final class RdbmsExporter {
       final Map<ValueType, List<RdbmsExportHandler>> handlers,
       final RdbmsSchemaManager rdbmsSchemaManager,
       final HistoryCleanupService historyCleanupService,
-      final HistoryDeletionService historyDeletionService) {
+      final HistoryDeletionService historyDeletionService,
+      final ReplicationControllerFactory replicationControllerFactory) {
     this.historyCleanupService = historyCleanupService;
     this.rdbmsWriters = rdbmsWriters;
     registeredHandlers = handlers;
@@ -78,6 +85,7 @@ public final class RdbmsExporter {
     this.queueSize = queueSize;
     this.rdbmsSchemaManager = rdbmsSchemaManager;
     this.historyDeletionService = historyDeletionService;
+    this.replicationControllerFactory = replicationControllerFactory;
 
     LOG.info(
         "[RDBMS Exporter P{}] RdbmsExporter created with Configuration: flushInterval={}, queueSize={}",
@@ -126,8 +134,11 @@ public final class RdbmsExporter {
     }
     lastFlushedPosition = lastPosition;
 
+    replicationController = replicationControllerFactory.createReplicationController(controller);
     rdbmsWriters.getExecutionQueue().registerPreFlushListener(this::updatePositionInRdbms);
-    rdbmsWriters.getExecutionQueue().registerPostFlushListener(this::updatePositionInBroker);
+    rdbmsWriters
+        .getExecutionQueue()
+        .registerPostFlushListener(() -> replicationController.onFlush(lastPosition));
     rdbmsWriters.getExecutionQueue().registerPostFlushListener(this::recordExportingLatency);
 
     // Start background tasks (history cleanup and deletion) in a separate thread pool,
@@ -372,6 +383,7 @@ public final class RdbmsExporter {
     private Map<ValueType, List<RdbmsExportHandler>> handlers = new EnumMap<>(ValueType.class);
     private HistoryCleanupService historyCleanupService;
     private HistoryDeletionService historyDeletionService;
+    private ReplicationControllerFactory replicationControllerFactory;
 
     public Builder partitionId(final int value) {
       partitionId = value;
@@ -422,6 +434,12 @@ public final class RdbmsExporter {
       return this;
     }
 
+    public Builder replicationControllerFactory(
+        final ReplicationControllerFactory replicationControllerFactory) {
+      this.replicationControllerFactory = replicationControllerFactory;
+      return this;
+    }
+
     public RdbmsExporter build() {
       return new RdbmsExporter(
           partitionId,
@@ -431,7 +449,8 @@ public final class RdbmsExporter {
           handlers,
           rdbmsSchemaManager,
           historyCleanupService,
-          historyDeletionService);
+          historyDeletionService,
+          replicationControllerFactory);
     }
   }
 }
