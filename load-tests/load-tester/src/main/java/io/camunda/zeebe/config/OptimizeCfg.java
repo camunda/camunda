@@ -19,6 +19,7 @@ public final class OptimizeCfg {
   private int evaluationIntervalSeconds = 60; // Default: 1 minute
   private int authRetryMaxAttempts = 30;
   private int authRetryDelaySeconds = 10;
+  private boolean jwtAuthEnabled;
 
   public String getBaseUrl() {
     return baseUrl;
@@ -106,5 +107,13 @@ public final class OptimizeCfg {
 
   public void setAuthRetryDelaySeconds(final int authRetryDelaySeconds) {
     this.authRetryDelaySeconds = authRetryDelaySeconds;
+  }
+
+  public boolean isJwtAuthEnabled() {
+    return jwtAuthEnabled;
+  }
+
+  public void setJwtAuthEnabled(final boolean jwtAuthEnabled) {
+    this.jwtAuthEnabled = jwtAuthEnabled;
   }
 }

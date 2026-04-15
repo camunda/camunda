@@ -64,7 +64,7 @@ public class OptimizeReportStartMeter implements AutoCloseable {
     for (int attempt = 1; attempt <= maxAttempts; attempt++) {
       try {
         LOG.info("Authenticating Optimize with Keycloak (attempt {}/{})", attempt, maxAttempts);
-        optimizeLoadTester.authenticateWithAuthorizationCodeFlow();
+        optimizeLoadTester.authenticate();
         LOG.info("Optimize successfully authenticated");
         return;
       } catch (final Exception e) {

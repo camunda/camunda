@@ -52,6 +52,8 @@ public class OptimizeReportApiClient implements AutoCloseable {
   private final String password;
   private final String clientSecret;
 
+  private final boolean jwtAuthEnabled;
+
   private final Map<String, String> cookieJar = new LinkedHashMap<>();
   private String accessToken;
   private long tokenExpiresAt;
@@ -64,6 +66,7 @@ public class OptimizeReportApiClient implements AutoCloseable {
     username = config.getUsername();
     password = config.getPassword();
     clientSecret = config.getClientSecret();
+    jwtAuthEnabled = config.isJwtAuthEnabled();
     httpClient =
         HttpClient.newBuilder()
             .connectTimeout(Duration.ofSeconds(120))
@@ -133,11 +136,57 @@ public class OptimizeReportApiClient implements AutoCloseable {
     LOG.debug("Successfully authenticated with Keycloak");
   }
 
+  public void authenticateWithPasswordGrant() throws Exception {
+    final String tokenUrl =
+        String.format("%s/auth/realms/%s/protocol/openid-connect/token", keycloakBaseUrl, realm);
+
+    final String formData =
+        "grant_type=password"
+            + "&client_id="
+            + URLEncoder.encode(clientId, StandardCharsets.UTF_8)
+            + "&client_secret="
+            + URLEncoder.encode(clientSecret, StandardCharsets.UTF_8)
+            + "&username="
+            + URLEncoder.encode(username, StandardCharsets.UTF_8)
+            + "&password="
+            + URLEncoder.encode(password, StandardCharsets.UTF_8)
+            + "&scope=openid";
+
+    final HttpResponse<String> response =
+        httpClient.send(
+            HttpRequest.newBuilder()
+                .uri(URI.create(tokenUrl))
+                .header("Content-Type", "application/x-www-form-urlencoded")
+                .POST(HttpRequest.BodyPublishers.ofString(formData))
+                .build(),
+            HttpResponse.BodyHandlers.ofString());
+
+    if (response.statusCode() != 200) {
+      throw new RuntimeException(
+          String.format(
+              "Password grant failed with status %d: %s", response.statusCode(), response.body()));
+    }
+
+    final JsonNode jsonNode = OBJECT_MAPPER.readTree(response.body());
+    accessToken = jsonNode.get("access_token").asText();
+    final int expiresIn = jsonNode.get("expires_in").asInt();
+    tokenExpiresAt = System.currentTimeMillis() + (expiresIn * 1000L);
+    LOG.debug("Successfully authenticated with Keycloak via password grant");
+  }
+
+  public void authenticate() throws Exception {
+    if (jwtAuthEnabled) {
+      authenticateWithPasswordGrant();
+    } else {
+      authenticateWithAuthorizationCodeFlow();
+    }
+  }
+
   public void ensureValidToken() throws Exception {
     if (accessToken == null
         || System.currentTimeMillis() >= tokenExpiresAt - TOKEN_REFRESH_BUFFER_MS) {
       LOG.debug("Token expired or missing, re-authenticating");
-      authenticateWithAuthorizationCodeFlow();
+      authenticate();
     }
   }
 
@@ -241,12 +290,18 @@ public class OptimizeReportApiClient implements AutoCloseable {
   // ---------------------------------------------------------------------------
 
   private HttpRequest.Builder authenticatedRequest(final String apiPath) {
-    return HttpRequest.newBuilder()
-        .uri(URI.create(optimizeBaseUrl + apiPath))
-        .header("Cookie", AUTH_COOKIE_NAME + "=" + accessToken)
-        .header("Content-Type", "application/json")
-        .header("X-Optimize-Client-Timezone", "UTC")
-        .header("X-Optimize-Client-Locale", "en");
+    final HttpRequest.Builder builder =
+        HttpRequest.newBuilder()
+            .uri(URI.create(optimizeBaseUrl + apiPath))
+            .header("Content-Type", "application/json")
+            .header("X-Optimize-Client-Timezone", "UTC")
+            .header("X-Optimize-Client-Locale", "en");
+    if (jwtAuthEnabled) {
+      builder.header("Authorization", "Bearer " + accessToken);
+    } else {
+      builder.header("Cookie", AUTH_COOKIE_NAME + "=" + accessToken);
+    }
+    return builder;
   }
 
   private TimedResponse executeGet(final String apiPath) throws Exception {
