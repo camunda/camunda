@@ -109,12 +109,13 @@ public final class TopologyServices extends ApiServices<TopologyServices> {
     final var brokerAddress = topology.getBrokerAddress(brokerId);
     final var address = Address.from(brokerAddress);
 
+    final var region = topology.getBrokerRegion(brokerId);
     broker
         .nodeId(topology.getBrokerMemberId(brokerId))
         .host(address.host())
         .port(address.port())
         .version(topology.getBrokerVersion(brokerId))
-        .region(topology.getBrokerRegion(brokerId));
+        .region(region != null ? region : "");
   }
 
   private void addPartitionInfoToBrokerInfo(
