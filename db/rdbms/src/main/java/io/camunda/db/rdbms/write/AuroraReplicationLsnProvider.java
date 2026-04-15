@@ -8,6 +8,7 @@
 package io.camunda.db.rdbms.write;
 
 import io.camunda.db.rdbms.sql.ExporterPositionMapper;
+import java.util.List;
 
 /**
  * Aurora (MySQL/PostgreSQL) implementation using {@code aurora_global_db_instance_status()} to
@@ -27,7 +28,7 @@ public final class AuroraReplicationLsnProvider implements ReplicationLsnProvide
   }
 
   @Override
-  public long getReplicaLsn() {
-    return mapper.getMinReplicationLsnAurora();
+  public List<ReplicationStatusDto> getReplicationStatuses() {
+    return mapper.getReplicationStatusesAurora();
   }
 }
