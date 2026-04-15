@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.client.spring.config;
+package io.camunda.client.spring.configuration;
 
 import static org.assertj.core.api.Assertions.*;
 
