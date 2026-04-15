@@ -81,8 +81,6 @@ public class ConfigTest {
     assertThat(optimizeCfg.getRealm()).isEqualTo("camunda-platform");
     assertThat(optimizeCfg.getClientId()).isEqualTo("optimize");
     assertThat(optimizeCfg.getClientSecret()).isEqualTo("demo-optimize-secret");
-    assertThat(optimizeCfg.getUsername()).isEqualTo("demo");
-    assertThat(optimizeCfg.getPassword()).isEqualTo("demo");
     assertThat(optimizeCfg.getEvaluationIntervalSeconds()).isEqualTo(60);
   }
 
@@ -166,8 +164,6 @@ public class ConfigTest {
     assertThat(optimizeCfg.getRealm()).isEqualTo("camunda-platform");
     assertThat(optimizeCfg.getClientId()).isEqualTo("optimize");
     assertThat(optimizeCfg.getClientSecret()).isEqualTo("demo-optimize-secret");
-    assertThat(optimizeCfg.getUsername()).isEqualTo("demo");
-    assertThat(optimizeCfg.getPassword()).isEqualTo("demo");
     assertThat(optimizeCfg.getEvaluationIntervalSeconds()).isEqualTo(60);
   }
 
