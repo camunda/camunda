@@ -17,9 +17,9 @@ package io.camunda.process.test.impl.runtime;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.client.ClientProperties;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.CamundaClientConfiguration;
+import io.camunda.client.ClientProperties;
 import java.net.URI;
 import java.time.Duration;
 import java.util.Properties;
@@ -333,8 +333,7 @@ public class ClientPropertiesConfigurationTest {
   private CamundaClientConfiguration buildClientConfiguration(final Properties properties) {
     final ContainerRuntimePropertiesUtil propertiesUtil =
         new ContainerRuntimePropertiesUtil(properties, emptyGitProperties);
-    final CamundaClient client =
-        propertiesUtil.getCamundaClientBuilderFactory().get().build();
+    final CamundaClient client = propertiesUtil.getCamundaClientBuilderFactory().get().build();
     try {
       return client.getConfiguration();
     } finally {
