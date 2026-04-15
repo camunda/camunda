@@ -192,7 +192,7 @@ public class UserTaskIT {
             .getUserTaskReader()
             .search(
                 new UserTaskQuery(
-                    new UserTaskFilter.Builder().bpmnProcessIds(processDefinitionId).build(),
+                    new UserTaskFilter.Builder().processDefinitionIds(processDefinitionId).build(),
                     UserTaskSort.of(b -> b),
                     SearchQueryPage.of(b -> b.from(0).size(5))));
 
@@ -1114,7 +1114,7 @@ public class UserTaskIT {
             .getUserTaskReader()
             .search(
                 new UserTaskQuery(
-                    new UserTaskFilter.Builder().bpmnProcessIds(processDefinitionId).build(),
+                    new UserTaskFilter.Builder().processDefinitionIds(processDefinitionId).build(),
                     UserTaskSort.of(b -> b),
                     SearchQueryPage.of(b -> b.from(0).size(5))));
 
@@ -1136,7 +1136,7 @@ public class UserTaskIT {
             .getUserTaskReader()
             .search(
                 new UserTaskQuery(
-                    new UserTaskFilter.Builder().bpmnProcessIds(processDefinitionId).build(),
+                    new UserTaskFilter.Builder().processDefinitionIds(processDefinitionId).build(),
                     UserTaskSort.of(b -> b),
                     SearchQueryPage.of(b -> b.from(null).size(null))));
 
