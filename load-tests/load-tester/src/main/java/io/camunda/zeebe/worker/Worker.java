@@ -75,6 +75,14 @@ public class Worker {
                       .forEach(p -> LOGGER.info("{} - {}", p.getPartitionId(), p.getRole()));
                 });
         connected.set(1);
+        LOGGER.info(
+            "Worker config: completionDelay={}, sendMessage={}, messageName={}, "
+                + "correlationKeyVariable={}, payloadPath={}",
+            workerCfg.getCompletionDelay(),
+            workerCfg.isSendMessage(),
+            workerCfg.getMessageName(),
+            workerCfg.getCorrelationKeyVariableName(),
+            workerCfg.getPayloadPath());
         return;
       } catch (final ClientStatusException e) {
         final var statusCode = e.getStatusCode();

@@ -11,58 +11,16 @@ import java.time.Duration;
 
 public class WorkerProperties {
 
-  private String jobType = "benchmark-task";
-  private String workerName = "benchmark-worker";
-  private int threads = 10;
-  private int capacity = 30;
-  private Duration pollingDelay = Duration.ofSeconds(1);
+  // Worker connection properties (jobType, workerName, threads, capacity, pollingDelay,
+  // streamEnabled, timeout) are configured via camunda.client.worker.defaults.* and
+  // auto-applied by the camunda-spring-boot-starter. Only properties consumed directly
+  // by Worker.java are kept here.
+
   private Duration completionDelay = Duration.ofMillis(300);
   private String payloadPath = "bpmn/big_payload.json";
-  private boolean streamEnabled = true;
-  private Duration timeout = Duration.ZERO;
   private boolean sendMessage = false;
   private String messageName = "messageName";
   private String correlationKeyVariableName = "correlationKey-var";
-
-  public String getJobType() {
-    return jobType;
-  }
-
-  public void setJobType(final String jobType) {
-    this.jobType = jobType;
-  }
-
-  public String getWorkerName() {
-    return workerName;
-  }
-
-  public void setWorkerName(final String workerName) {
-    this.workerName = workerName;
-  }
-
-  public int getThreads() {
-    return threads;
-  }
-
-  public void setThreads(final int threads) {
-    this.threads = threads;
-  }
-
-  public int getCapacity() {
-    return capacity;
-  }
-
-  public void setCapacity(final int capacity) {
-    this.capacity = capacity;
-  }
-
-  public Duration getPollingDelay() {
-    return pollingDelay;
-  }
-
-  public void setPollingDelay(final Duration pollingDelay) {
-    this.pollingDelay = pollingDelay;
-  }
 
   public Duration getCompletionDelay() {
     return completionDelay;
@@ -78,22 +36,6 @@ public class WorkerProperties {
 
   public void setPayloadPath(final String payloadPath) {
     this.payloadPath = payloadPath;
-  }
-
-  public boolean isStreamEnabled() {
-    return streamEnabled;
-  }
-
-  public void setStreamEnabled(final boolean streamEnabled) {
-    this.streamEnabled = streamEnabled;
-  }
-
-  public Duration getTimeout() {
-    return timeout;
-  }
-
-  public void setTimeout(final Duration timeout) {
-    this.timeout = timeout;
   }
 
   public boolean isSendMessage() {
