@@ -185,7 +185,9 @@ public class RdbmsExporterWrapper implements Exporter {
 
   @Override
   public void close() {
-    exporter.close();
+    if (exporter != null) {
+      exporter.close();
+    }
   }
 
   @Override
