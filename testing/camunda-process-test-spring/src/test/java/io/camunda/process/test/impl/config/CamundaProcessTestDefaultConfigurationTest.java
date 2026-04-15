@@ -234,7 +234,10 @@ public class CamundaProcessTestDefaultConfigurationTest {
 
   @Configuration
   @Import(CamundaProcessTestDefaultConfiguration.class)
-  @ImportAutoConfiguration({CamundaClientAllAutoConfiguration.class, MetricsDefaultConfiguration.class})
+  @ImportAutoConfiguration({
+    CamundaClientAllAutoConfiguration.class,
+    MetricsDefaultConfiguration.class
+  })
   static class TestConfig {
     @Bean
     public CamundaSpringProcessTestContext enableTestContext() {
