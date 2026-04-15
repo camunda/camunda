@@ -18,6 +18,13 @@ Two main models are on the table:
 
 This ADR only concerns Hub ↔ OC policy propagation. OC ↔ Engine propagation remains an internal concern of the OC.
 
+Additional non-functional constraints from current SaaS scale:
+
+- Approximately 47k organizations and approximately 43k created clusters must be supported without degrading Hub or OC performance.
+- Propagation must avoid synchronized load spikes (for example, retry storms or polling herd effects).
+- Rollout visibility must remain operationally useful at large cluster counts (version, status, error, retry state per OC).
+- Propagation paths must include overload protection (rate limiting) and failure isolation (circuit breaking).
+
 ## Decision
 
 We will:
@@ -52,11 +59,18 @@ Pros:
   - OCs do not waste resources asking Hub for changes when there are none.
 - Simple mental model for operators:
   - “When I change policy in Hub, Hub will push it out to all relevant clusters and tell me if something failed.”
+- Better central rollout visibility at scale:
+  - Hub can expose delivery progress and failure states per OC without adding extra OC reporting paths.
 
 Cons:
 
 - Hub must be able to reach OCs over the network in a controlled and secure way.
 - The dispatcher needs robust retry and error handling to deal with temporary OC unavailability.
+- Hub must implement dispatcher backpressure controls:
+  - Rate limiting, bounded concurrency, and jittered retries are required to avoid overwhelming OCs.
+- Hub-to-OC delivery clients need circuit breaking to isolate repeatedly failing OCs and prevent cascading impact on overall rollout throughput.
+- Snapshot-based propagation (without diffs) increases per-call payload size and apply time:
+  - Larger payloads can increase latency per delivery and require stronger timeout, batching, and throughput controls.
 
 ### Option B – Pull-based propagation (OC asks Hub for new versions and changes)
 
@@ -86,6 +100,8 @@ Cons:
 - Polling trade-offs:
   - If OCs poll too frequently, they increase load on Hub with little benefit when there are no changes.
   - If they poll too infrequently, policy rollout can be noticeably delayed.
+- Pull creates continuous background traffic by design:
+  - Even without policy changes, OCs keep polling Hub, consuming network and compute capacity.
 - Central visibility is weaker unless we add extra reporting:
   - By default, Hub only knows “the latest policy version is N”, not which version each OC is currently running.
   - To regain that information, OCs would need to report their applied version back to Hub, which reintroduces coordination complexity.
@@ -94,6 +110,10 @@ Cons:
   - Investigating “why is OC X still on an old policy?” becomes harder.
 - More logic per OC:
   - Error handling (for example, failures while applying a chain of diffs) must be coordinated across two independent systems.
+- Polling synchronization risk at large OC counts:
+  - Without jitter and staggering, many OCs can poll simultaneously and overload Hub (thundering herd).
+- Pull clients and Hub polling endpoints both require rate limiting and circuit breaking:
+  - OCs should back off when Hub is degraded; Hub should protect itself from abusive or accidental poll bursts.
 
 ### Option C – Hybrid: push as default, pull only for recovery
 
@@ -124,6 +144,8 @@ Rationale:
 - Keeps propagation aligned with the moment policy is changed, rather than leaving coordination entirely to OCs.
 - Avoids the steady overhead and complexity of periodic polling from many OCs when policy changes are relatively rare.
 - Concentrates most of the complexity (ordering, retries, monitoring) on the Hub side, instead of duplicating it in every OC.
+- Fits current SaaS scale better by preserving central rollout observability while avoiding synchronized poll traffic from many clusters.
+- Push is event-driven and runs when needed (on policy changes), while pull introduces constant periodic traffic regardless of change volume.
 
 ## Consequences
 
@@ -132,10 +154,22 @@ Rationale:
   - Maintain versioned policy data per cluster and be able to derive snapshots and diffs.
   - Track, per OC, which policy version has been acknowledged as applied.
   - Surface this information via metrics or dashboards so operators can monitor rollout progress.
+  - Enforce dispatcher backpressure controls (bounded concurrency, rate limits, and jittered retries).
+  - Use circuit breaking on outbound Hub-to-OC propagation calls, with bounded retries and backoff.
+  - Keep outbox polling/query paths efficient for large OC counts.
+  - Protect inbound propagation-related endpoints (for example recovery/re-sync requests) with rate limiting.
 - OCs must:
   - Provide a way to accept policy updates from Hub and apply them idempotently.
   - Track the last applied policy version locally.
   - Optionally, provide a way to initiate a re-sync (full snapshot) from Hub when local state is known to be inconsistent.
+  - Handle repeated deliveries safely and expose enough status for operational diagnosis.
+  - Respect rate limits and retry hints from Hub (for example 429/503 with backoff semantics) when initiating recovery flows.
 - We do not:
   - Implement regular polling from OCs to Hub to discover new policy versions.
   - Model policy propagation after job polling patterns from Camunda 8 workers; policy changes are much less frequent and benefit from a more centrally visible rollout process.
+
+- Common requirements regardless of propagation style:
+  - Keep apply idempotent by `policyVersionId`.
+  - Scope propagation to the affected organization/cluster.
+  - Provide operational runbooks for rollout stalls, forced re-sync, and version-gap recovery.
+
