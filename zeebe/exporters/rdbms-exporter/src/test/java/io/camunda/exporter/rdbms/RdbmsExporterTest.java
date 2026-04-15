@@ -32,6 +32,7 @@ import io.camunda.db.rdbms.write.service.ExporterPositionService;
 import io.camunda.db.rdbms.write.service.HistoryCleanupService;
 import io.camunda.db.rdbms.write.service.HistoryDeletionService;
 import io.camunda.db.rdbms.write.service.RdbmsPurger;
+import io.camunda.exporter.rdbms.replication.NoopReplicationControllerFactory;
 import io.camunda.zeebe.exporter.api.ExporterException;
 import io.camunda.zeebe.exporter.api.context.Controller;
 import io.camunda.zeebe.exporter.api.context.ScheduledTask;
@@ -546,7 +547,8 @@ class RdbmsExporterTest {
             .queueSize(100)
             .rdbmsSchemaManager(schemaManager)
             .historyCleanupService(historyCleanupService)
-            .historyDeletionService(historyDeletionService);
+            .historyDeletionService(historyDeletionService)
+            .replicationControllerFactory(new NoopReplicationControllerFactory());
 
     exporter = builderFunction.apply(builder).build();
     if (openExporter) {
