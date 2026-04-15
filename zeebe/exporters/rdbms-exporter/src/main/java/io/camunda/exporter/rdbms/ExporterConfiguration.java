@@ -627,7 +627,7 @@ public class ExporterConfiguration {
   public static class ReplicationConfiguration {
     public static final Duration DEFAULT_POLLING_INTERVAL = Duration.ofSeconds(15);
 
-    private boolean enabled = true;
+    private boolean enabled = false;
     private Duration pollingInterval = DEFAULT_POLLING_INTERVAL;
     private int minSyncReplicas = 0;
 
