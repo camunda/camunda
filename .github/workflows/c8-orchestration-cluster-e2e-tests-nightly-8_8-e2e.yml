@@ -1,0 +1,36 @@
+# description: Nightly E2E tests for C8 Orchestration Cluster on stable/8.8
+# type: CI
+# owner: @camunda/qa-engineering
+---
+name: "C8 Orchestration Cluster Nightly: 8.8 E2E Tests"
+
+on:
+  schedule:
+    - cron: "0 0 * * *" # Run at midnight UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  e2e-v1:
+    uses: ./.github/workflows/c8-orchestration-cluster-e2e-tests-reusable-e2e.yml
+    with:
+      branch: stable/8.8
+      camunda_docker_image: "camunda/camunda:8.8-SNAPSHOT"
+      is_standalone: true
+      tasklist_mode: v1
+      test_args: "--project=chromium tests/tasklist/ tests/common-flows/"
+      observe_job_name: "c8-orchestration-cluster-e2e-nightly-tests/stable-8.8/v1"
+    secrets: inherit
+
+  e2e-v2:
+    uses: ./.github/workflows/c8-orchestration-cluster-e2e-tests-reusable-e2e.yml
+    with:
+      branch: stable/8.8
+      camunda_docker_image: "camunda/camunda:8.8-SNAPSHOT"
+      is_standalone: true
+      tasklist_mode: v2
+      test_args: '--project=chromium --grep-invert "@v1-only"'
+      observe_job_name: "c8-orchestration-cluster-e2e-nightly-tests/stable-8.8/v2"
+    secrets: inherit

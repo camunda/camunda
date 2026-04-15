@@ -1,0 +1,25 @@
+# description: Nightly E2E tests for C8 Orchestration Cluster on main
+# type: CI
+# owner: @camunda/qa-engineering
+---
+name: "C8 Orchestration Cluster Nightly: main E2E Tests"
+
+on:
+  schedule:
+    - cron: "0 0 * * *" # Run at midnight UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  e2e-v2:
+    uses: ./.github/workflows/c8-orchestration-cluster-e2e-tests-reusable-e2e.yml
+    with:
+      branch: main
+      camunda_docker_image: "camunda/camunda:SNAPSHOT"
+      is_standalone: true
+      tasklist_mode: v2
+      test_args: "--project=chromium"
+      observe_job_name: "c8-orchestration-cluster-e2e-nightly-tests/main/v2"
+    secrets: inherit

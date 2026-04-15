@@ -1,0 +1,23 @@
+# description: Nightly API tests for C8 Orchestration Cluster on main
+# type: CI
+# owner: @camunda/qa-engineering
+---
+name: "C8 Orchestration Cluster Nightly: main API Tests"
+
+on:
+  schedule:
+    - cron: "0 0 * * *" # Run at midnight UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  api-tests:
+    uses: ./.github/workflows/c8-orchestration-cluster-e2e-tests-reusable-api.yml
+    with:
+      branch: main
+      camunda_docker_image: "camunda/camunda:SNAPSHOT"
+      is_standalone: true
+      observe_job_name: "c8-orchestration-cluster-e2e-nightly-api-tests/main"
+    secrets: inherit

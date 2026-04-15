@@ -1,0 +1,21 @@
+# description: Nightly RDBMS API tests for C8 Orchestration Cluster on stable/8.9
+# type: CI
+# owner: @camunda/qa-engineering
+---
+name: "C8 Orchestration Cluster Nightly: 8.9 API Tests (RDBMS)"
+
+on:
+  schedule:
+    - cron: "0 0 * * *" # Run at midnight UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  api-tests-rdbms:
+    uses: ./.github/workflows/c8-orchestration-cluster-e2e-tests-reusable-api-rdbms.yml
+    with:
+      branch: stable/8.9
+      observe_job_name_prefix: "c8-orchestration-cluster-e2e-nightly-api-rdbms-tests"
+    secrets: inherit
