@@ -158,7 +158,7 @@ runs:
   using: composite
   steps:
 
-  - uses: dorny/paths-filter@v3
+  - uses: dorny/paths-filter@fbd0ab8f3e69293af611ebaee6363fc25e6d187d # v4.0.1
     id: filter-common
     with:
       base: ${{ github.event.merge_group.base_ref || '' }}
@@ -212,7 +212,7 @@ runs:
           - '**/*.proto'
           - 'buf.yaml'
 
-  - uses: dorny/paths-filter@v4
+  - uses: dorny/paths-filter@fbd0ab8f3e69293af611ebaee6363fc25e6d187d # v4.0.1
     id: filter-github-actions
     with:
       base: ${{ github.event.merge_group.base_ref || '' }}
@@ -246,7 +246,7 @@ runs:
         echo "ci-relevant=false" >> "$GITHUB_OUTPUT"
       fi
 
-  - uses: dorny/paths-filter@v4
+  - uses: dorny/paths-filter@fbd0ab8f3e69293af611ebaee6363fc25e6d187d # v4.0.1
     id: filter-identity
     with:
       base: ${{ github.event.merge_group.base_ref || '' }}
@@ -255,7 +255,7 @@ runs:
         identity-frontend-change:
           - 'identity/client/**'
 
-  - uses: dorny/paths-filter@v3
+  - uses: dorny/paths-filter@fbd0ab8f3e69293af611ebaee6363fc25e6d187d # v4.0.1
     id: filter-zeebe
     with:
       base: ${{ github.event.merge_group.base_ref || '' }}
@@ -266,7 +266,7 @@ runs:
           - 'clients/**'
           - 'Dockerfile'
 
-  - uses: dorny/paths-filter@v3
+  - uses: dorny/paths-filter@fbd0ab8f3e69293af611ebaee6363fc25e6d187d # v4.0.1
     id: filter-operate
     with:
       base: ${{ github.event.merge_group.base_ref || '' }}
@@ -275,7 +275,7 @@ runs:
         operate-backend-change:
           - 'operate/!(client/**)/**'
 
-  - uses: dorny/paths-filter@v3
+  - uses: dorny/paths-filter@fbd0ab8f3e69293af611ebaee6363fc25e6d187d # v4.0.1
     id: filter-tasklist
     with:
       base: ${{ github.event.merge_group.base_ref || '' }}
@@ -287,7 +287,7 @@ runs:
         tasklist-frontend-change:
           - tasklist/client/**
 
-  - uses: dorny/paths-filter@v3
+  - uses: dorny/paths-filter@fbd0ab8f3e69293af611ebaee6363fc25e6d187d # v4.0.1
     id: filter-optimize
     with:
       base: ${{ github.event.merge_group.base_ref || '' }}
