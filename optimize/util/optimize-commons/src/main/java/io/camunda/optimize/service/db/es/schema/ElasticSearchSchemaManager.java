@@ -34,6 +34,7 @@ import io.camunda.optimize.service.db.es.schema.index.MetadataIndexES;
 import io.camunda.optimize.service.db.es.schema.index.ProcessDefinitionIndexES;
 import io.camunda.optimize.service.db.es.schema.index.ProcessOverviewIndexES;
 import io.camunda.optimize.service.db.es.schema.index.ReportShareIndexES;
+import io.camunda.optimize.service.db.es.schema.index.ReportingMetricsIndexES;
 import io.camunda.optimize.service.db.es.schema.index.SettingsIndexES;
 import io.camunda.optimize.service.db.es.schema.index.TenantIndexES;
 import io.camunda.optimize.service.db.es.schema.index.TerminatedUserSessionIndexES;
@@ -396,6 +397,7 @@ public class ElasticSearchSchemaManager
         new ExternalProcessVariableIndexES(),
         new VariableLabelIndexES(),
         new ProcessOverviewIndexES(),
-        new InstantPreviewDashboardMetadataIndexES());
+        new InstantPreviewDashboardMetadataIndexES(),
+        new ReportingMetricsIndexES());
   }
 }
