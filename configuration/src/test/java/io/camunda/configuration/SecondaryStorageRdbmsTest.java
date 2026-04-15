@@ -67,6 +67,7 @@ public class SecondaryStorageRdbmsTest {
   private static final int MAX_PROCESS_CACHE_SIZE = 4711;
   private static final int MAX_BATCH_OPERATIONS_CACHE_SIZE = 4711;
   private static final boolean ASYNC_REPLICATION_ENABLED = true;
+  private static final int ASYNC_REPLICATION_MIN_SYNC_REPLICAS = 2;
 
   @Nested
   @TestPropertySource(
@@ -107,6 +108,8 @@ public class SecondaryStorageRdbmsTest {
         "camunda.data.secondary-storage.rdbms.batchOperationItemInsertBlockSize=1234",
         "camunda.data.secondary-storage.rdbms.insert-batching.max-audit-log-insert-batch-size=50",
         "camunda.data.secondary-storage.rdbms.replication.enabled=" + ASYNC_REPLICATION_ENABLED,
+        "camunda.data.secondary-storage.rdbms.replication.min-sync-replicas="
+            + ASYNC_REPLICATION_MIN_SYNC_REPLICAS,
         "camunda.data.secondary-storage.rdbms.max-varchar-field-length=200",
       })
   class WithOnlyUnifiedConfigSet {
@@ -188,6 +191,8 @@ public class SecondaryStorageRdbmsTest {
           .isEqualTo(50);
       assertThat(exporterConfiguration.getAsyncReplication().isEnabled())
           .isEqualTo(ASYNC_REPLICATION_ENABLED);
+      assertThat(exporterConfiguration.getAsyncReplication().getMinSyncReplicas())
+          .isEqualTo(ASYNC_REPLICATION_MIN_SYNC_REPLICAS);
     }
 
     @Test
@@ -233,6 +238,7 @@ public class SecondaryStorageRdbmsTest {
       final ExporterConfiguration exporterConfiguration =
           UnifiedConfigurationHelper.argsToRdbmsExporterConfiguration(args);
       assertThat(exporterConfiguration.getAsyncReplication().isEnabled()).isFalse();
+      assertThat(exporterConfiguration.getAsyncReplication().getMinSyncReplicas()).isZero();
     }
 
     @Test

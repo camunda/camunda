@@ -629,6 +629,7 @@ public class ExporterConfiguration {
 
     private boolean enabled = true;
     private Duration pollingInterval = DEFAULT_POLLING_INTERVAL;
+    private int minSyncReplicas = 0;
 
     public boolean isEnabled() {
       return enabled;
@@ -646,6 +647,14 @@ public class ExporterConfiguration {
       this.pollingInterval = pollingInterval;
     }
 
+    public int getMinSyncReplicas() {
+      return minSyncReplicas;
+    }
+
+    public void setMinSyncReplicas(final int minSyncReplicas) {
+      this.minSyncReplicas = minSyncReplicas;
+    }
+
     public List<String> validate() {
       final List<String> errors = new ArrayList<>();
       if (enabled && (pollingInterval.isNegative() || pollingInterval.isZero())) {
@@ -653,6 +662,12 @@ public class ExporterConfiguration {
             String.format(
                 "asyncReplication.pollingInterval must be a positive duration but was %s",
                 pollingInterval));
+      }
+      if (minSyncReplicas < 0) {
+        errors.add(
+            String.format(
+                "asyncReplication.minSyncReplicas must be greater or equal 0 but was %d",
+                minSyncReplicas));
       }
       return errors;
     }

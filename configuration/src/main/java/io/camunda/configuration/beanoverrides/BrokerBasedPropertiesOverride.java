@@ -966,6 +966,9 @@ public class BrokerBasedPropertiesOverride {
 
                   if (database.getReplication() != null) {
                     config.getAsyncReplication().setEnabled(database.getReplication().isEnabled());
+                    config
+                        .getAsyncReplication()
+                        .setMinSyncReplicas(database.getReplication().getMinSyncReplicas());
                   }
                 })
             .toArgs());
