@@ -119,9 +119,15 @@ const InlineJsonEditor: React.FC<Props> = observer(
     }, [onFocus]);
 
     const handleBlur = useCallback(() => {
-      setIsEditing(false);
-      setEditingValue(null);
       onBlur?.();
+      // Monaco's FocusTracker debounces blur via setTimeout(0). Synchronously
+      // calling setIsEditing(false) would dispose the editor before that timer
+      // fires, leaving editorHasFocus=true and blocking keyboard input in other
+      // elements. Deferring here ensures Monaco cleans up first.
+      setTimeout(() => {
+        setIsEditing(false);
+        setEditingValue(null);
+      }, 0);
     }, [onBlur]);
 
     useEffect(() => {
