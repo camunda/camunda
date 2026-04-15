@@ -44,7 +44,7 @@ paths:
 
   /resources/{resourceKey}:
     get:
-      x-eventually-consistent: false
+      x-eventually-consistent: true
       tags:
         - Resource
       operationId: getResource
@@ -79,7 +79,7 @@ paths:
 
   /resources/{resourceKey}/content:
     get:
-      x-eventually-consistent: false
+      x-eventually-consistent: true
       tags:
         - Resource
       operationId: getResourceContent
