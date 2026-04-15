@@ -20,6 +20,18 @@ import {QueryClientProvider} from '@tanstack/react-query';
 import {getMockQueryClient} from 'modules/testing/getMockQueryClient';
 import {DEFAULT_TENANT_ID} from 'modules/multitenancy/constants';
 
+vi.mock('@tanstack/react-virtual', () => ({
+  useVirtualizer: ({count}: {count: number}) => ({
+    getVirtualItems: () =>
+      Array.from({length: count}, (_, index) => ({
+        index,
+        key: index,
+        start: 0,
+      })),
+    getTotalSize: () => 0,
+  }),
+}));
+
 const {getQueryVariablesResponseMock} = variableMocks;
 
 type VariableSearchRequestBody = {
@@ -38,8 +50,8 @@ const getWrapper = () => {
   return Wrapper;
 };
 
-function isRequestingAllVariables(req: VariableSearchRequestBody) {
-  return req.page?.limit === 1000;
+function isFirstPageRequest(req: VariableSearchRequestBody) {
+  return req.page?.limit === 50;
 }
 
 describe('<Variables />', () => {
@@ -99,7 +111,7 @@ describe('<Variables />', () => {
       http.post<never, VariableSearchRequestBody>(
         '/v2/user-tasks/:userTaskKey/effective-variables/search',
         async ({request}) => {
-          if (isRequestingAllVariables(await request.json())) {
+          if (isFirstPageRequest(await request.json())) {
             return HttpResponse.json(
               getQueryVariablesResponseMock(variableMocks.variables),
             );
@@ -144,7 +156,7 @@ describe('<Variables />', () => {
       http.post<never, VariableSearchRequestBody>(
         '/v2/user-tasks/:userTaskKey/effective-variables/search',
         async ({request}) => {
-          if (isRequestingAllVariables(await request.json())) {
+          if (isFirstPageRequest(await request.json())) {
             return HttpResponse.json(getQueryVariablesResponseMock([]));
           }
 
@@ -186,7 +198,7 @@ describe('<Variables />', () => {
       http.post<never, VariableSearchRequestBody>(
         '/v2/user-tasks/:userTaskKey/effective-variables/search',
         async ({request}) => {
-          if (isRequestingAllVariables(await request.json())) {
+          if (isFirstPageRequest(await request.json())) {
             return HttpResponse.json(
               getQueryVariablesResponseMock(variableMocks.variables),
             );
@@ -239,7 +251,7 @@ describe('<Variables />', () => {
       http.post<never, VariableSearchRequestBody>(
         '/v2/user-tasks/:userTaskKey/effective-variables/search',
         async ({request}) => {
-          if (isRequestingAllVariables(await request.json())) {
+          if (isFirstPageRequest(await request.json())) {
             return HttpResponse.json(
               getQueryVariablesResponseMock(variableMocks.variables),
             );
@@ -304,7 +316,7 @@ describe('<Variables />', () => {
       http.post<never, VariableSearchRequestBody>(
         '/v2/user-tasks/:userTaskKey/effective-variables/search',
         async ({request}) => {
-          if (isRequestingAllVariables(await request.json())) {
+          if (isFirstPageRequest(await request.json())) {
             return HttpResponse.json(
               getQueryVariablesResponseMock(variableMocks.variables),
             );
@@ -350,7 +362,7 @@ describe('<Variables />', () => {
       http.post<never, VariableSearchRequestBody>(
         '/v2/user-tasks/:userTaskKey/effective-variables/search',
         async ({request}) => {
-          if (isRequestingAllVariables(await request.json())) {
+          if (isFirstPageRequest(await request.json())) {
             return HttpResponse.json(
               getQueryVariablesResponseMock(variableMocks.variables),
             );
@@ -403,7 +415,7 @@ describe('<Variables />', () => {
       http.post<never, VariableSearchRequestBody>(
         '/v2/user-tasks/:userTaskKey/effective-variables/search',
         async ({request}) => {
-          if (isRequestingAllVariables(await request.json())) {
+          if (isFirstPageRequest(await request.json())) {
             return HttpResponse.json(
               getQueryVariablesResponseMock(variableMocks.variables),
             );
@@ -479,7 +491,7 @@ describe('<Variables />', () => {
       http.post<never, VariableSearchRequestBody>(
         '/v2/user-tasks/:userTaskKey/effective-variables/search',
         async ({request}) => {
-          if (isRequestingAllVariables(await request.json())) {
+          if (isFirstPageRequest(await request.json())) {
             return HttpResponse.json(
               getQueryVariablesResponseMock(variableMocks.variables),
             );
@@ -529,7 +541,7 @@ describe('<Variables />', () => {
       http.post<never, VariableSearchRequestBody>(
         '/v2/user-tasks/:userTaskKey/effective-variables/search',
         async ({request}) => {
-          if (isRequestingAllVariables(await request.json())) {
+          if (isFirstPageRequest(await request.json())) {
             return HttpResponse.json(
               getQueryVariablesResponseMock(variableMocks.variables),
             );
@@ -586,7 +598,7 @@ describe('<Variables />', () => {
       http.post<never, VariableSearchRequestBody>(
         '/v2/user-tasks/:userTaskKey/effective-variables/search',
         async ({request}) => {
-          if (isRequestingAllVariables(await request.json())) {
+          if (isFirstPageRequest(await request.json())) {
             return HttpResponse.json(
               getQueryVariablesResponseMock(variableMocks.variables),
             );
@@ -650,7 +662,7 @@ describe('<Variables />', () => {
       http.post<never, VariableSearchRequestBody>(
         '/v2/user-tasks/:userTaskKey/effective-variables/search',
         async ({request}) => {
-          if (isRequestingAllVariables(await request.json())) {
+          if (isFirstPageRequest(await request.json())) {
             return HttpResponse.json(
               getQueryVariablesResponseMock(variableMocks.variables),
             );
@@ -671,7 +683,7 @@ describe('<Variables />', () => {
       http.post<never, VariableSearchRequestBody>(
         '/v2/user-tasks/:userTaskKey/effective-variables/search',
         async ({request}) => {
-          if (isRequestingAllVariables(await request.json())) {
+          if (isFirstPageRequest(await request.json())) {
             return HttpResponse.json(
               getQueryVariablesResponseMock(variableMocks.variables),
             );
@@ -776,7 +788,7 @@ describe('<Variables />', () => {
       http.post<never, VariableSearchRequestBody>(
         '/v2/user-tasks/:userTaskKey/effective-variables/search',
         async ({request}) => {
-          if (isRequestingAllVariables(await request.json())) {
+          if (isFirstPageRequest(await request.json())) {
             return HttpResponse.json(
               getQueryVariablesResponseMock(variableMocks.variables),
             );
@@ -832,7 +844,7 @@ describe('<Variables />', () => {
       http.post<never, VariableSearchRequestBody>(
         '/v2/user-tasks/:userTaskKey/effective-variables/search',
         async ({request}) => {
-          if (isRequestingAllVariables(await request.json())) {
+          if (isFirstPageRequest(await request.json())) {
             return HttpResponse.json(
               getQueryVariablesResponseMock(variableMocks.variables),
             );
@@ -900,7 +912,7 @@ describe('<Variables />', () => {
       http.post<never, VariableSearchRequestBody>(
         '/v2/user-tasks/:userTaskKey/effective-variables/search',
         async ({request}) => {
-          if (isRequestingAllVariables(await request.json())) {
+          if (isFirstPageRequest(await request.json())) {
             return HttpResponse.json(
               getQueryVariablesResponseMock(variableMocks.variables),
             );
@@ -943,7 +955,7 @@ describe('<Variables />', () => {
       http.post<never, VariableSearchRequestBody>(
         '/v2/user-tasks/:userTaskKey/effective-variables/search',
         async ({request}) => {
-          if (isRequestingAllVariables(await request.json())) {
+          if (isFirstPageRequest(await request.json())) {
             return HttpResponse.json(
               getQueryVariablesResponseMock(variableMocks.variables),
             );
@@ -993,7 +1005,7 @@ describe('<Variables />', () => {
       http.post<never, VariableSearchRequestBody>(
         '/v2/user-tasks/:userTaskKey/effective-variables/search',
         async ({request}) => {
-          if (isRequestingAllVariables(await request.json())) {
+          if (isFirstPageRequest(await request.json())) {
             return HttpResponse.json(
               getQueryVariablesResponseMock(variableMocks.variables),
             );
@@ -1047,7 +1059,7 @@ describe('<Variables />', () => {
       http.post<never, VariableSearchRequestBody>(
         '/v2/user-tasks/:userTaskKey/effective-variables/search',
         async ({request}) => {
-          if (isRequestingAllVariables(await request.json())) {
+          if (isFirstPageRequest(await request.json())) {
             return HttpResponse.json(
               getQueryVariablesResponseMock(variableMocks.variables),
             );
@@ -1090,7 +1102,7 @@ describe('<Variables />', () => {
       http.post<never, VariableSearchRequestBody>(
         '/v2/user-tasks/:userTaskKey/effective-variables/search',
         async ({request}) => {
-          if (isRequestingAllVariables(await request.json())) {
+          if (isFirstPageRequest(await request.json())) {
             return HttpResponse.json(
               getQueryVariablesResponseMock(variableMocks.variables),
             );
@@ -1141,7 +1153,7 @@ describe('<Variables />', () => {
       http.post<never, VariableSearchRequestBody>(
         '/v2/user-tasks/:userTaskKey/effective-variables/search',
         async ({request}) => {
-          if (isRequestingAllVariables(await request.json())) {
+          if (isFirstPageRequest(await request.json())) {
             return HttpResponse.json(
               getQueryVariablesResponseMock(variableMocks.truncatedVariables),
             );
@@ -1222,7 +1234,7 @@ describe('<Variables />', () => {
       http.post<never, VariableSearchRequestBody>(
         '/v2/user-tasks/:userTaskKey/effective-variables/search',
         async ({request}) => {
-          if (isRequestingAllVariables(await request.json())) {
+          if (isFirstPageRequest(await request.json())) {
             return HttpResponse.json(
               getQueryVariablesResponseMock(variableMocks.truncatedVariables),
             );
@@ -1299,7 +1311,7 @@ describe('<Variables />', () => {
       http.post<never, VariableSearchRequestBody>(
         '/v2/user-tasks/:userTaskKey/effective-variables/search',
         async ({request}) => {
-          if (isRequestingAllVariables(await request.json())) {
+          if (isFirstPageRequest(await request.json())) {
             return HttpResponse.json(
               getQueryVariablesResponseMock(variableMocks.truncatedVariables),
             );
@@ -1324,7 +1336,7 @@ describe('<Variables />', () => {
       http.post<never, VariableSearchRequestBody>(
         '/v2/user-tasks/:userTaskKey/effective-variables/search',
         async ({request}) => {
-          if (isRequestingAllVariables(await request.json())) {
+          if (isFirstPageRequest(await request.json())) {
             return HttpResponse.json(
               getQueryVariablesResponseMock(variableMocks.truncatedVariables),
             );
@@ -1375,7 +1387,7 @@ describe('<Variables />', () => {
         http.post<never, VariableSearchRequestBody>(
           '/v2/user-tasks/:userTaskKey/effective-variables/search',
           async ({request}) => {
-            if (isRequestingAllVariables(await request.json())) {
+            if (isFirstPageRequest(await request.json())) {
               return HttpResponse.json(
                 getQueryVariablesResponseMock(variableMocks.variables),
               );
@@ -1490,7 +1502,7 @@ describe('<Variables />', () => {
         http.post<never, VariableSearchRequestBody>(
           '/v2/user-tasks/:userTaskKey/effective-variables/search',
           async ({request}) => {
-            if (isRequestingAllVariables(await request.json())) {
+            if (isFirstPageRequest(await request.json())) {
               return HttpResponse.json(
                 getQueryVariablesResponseMock(variableMocks.variables),
               );
@@ -1554,7 +1566,7 @@ describe('<Variables />', () => {
         http.post<never, VariableSearchRequestBody>(
           '/v2/user-tasks/:userTaskKey/effective-variables/search',
           async ({request}) => {
-            if (isRequestingAllVariables(await request.json())) {
+            if (isFirstPageRequest(await request.json())) {
               return HttpResponse.json(
                 getQueryVariablesResponseMock(variableMocks.variables),
               );
@@ -1646,7 +1658,7 @@ describe('<Variables />', () => {
       http.post<never, VariableSearchRequestBody>(
         '/v2/user-tasks/:userTaskKey/effective-variables/search',
         async ({request}) => {
-          if (isRequestingAllVariables(await request.json())) {
+          if (isFirstPageRequest(await request.json())) {
             return HttpResponse.json(
               getQueryVariablesResponseMock([variableWithDot]),
             );
