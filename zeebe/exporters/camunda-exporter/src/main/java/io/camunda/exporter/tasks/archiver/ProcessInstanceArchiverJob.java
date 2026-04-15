@@ -14,6 +14,7 @@ import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
 import io.camunda.zeebe.util.FunctionUtil;
 import io.camunda.zeebe.util.VisibleForTesting;
 import io.micrometer.core.instrument.Timer;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.CompletableFuture;
@@ -117,29 +118,43 @@ public class ProcessInstanceArchiverJob implements ArchiverJob {
 
   private CompletableFuture<Void> moveDependants(
       final String finishDate, final List<String> processInstanceKeys) {
-    final var movedDocuments =
-        dependants.stream()
-            .map(
-                dependant ->
-                    repository.moveDocuments(
-                        dependant.getFullQualifiedName(),
-                        dependant.getFullQualifiedName() + finishDate,
-                        dependant.getProcessInstanceDependantField(),
-                        processInstanceKeys,
-                        executor))
-            .toArray(CompletableFuture[]::new);
-    return CompletableFuture.allOf(movedDocuments);
+    final List<CompletableFuture<?>> dependentFutures =
+        getProcessDependentArchiveFutures(finishDate, processInstanceKeys);
+    return CompletableFuture.allOf(dependentFutures.toArray(CompletableFuture[]::new));
   }
 
-  private CompletableFuture<Integer> moveProcessInstances(
+  protected CompletableFuture<Integer> moveProcessInstances(
       final String finishDate, final List<String> processInstanceKeys) {
+    return archive(
+        template.getFullQualifiedName(),
+        ListViewTemplate.PROCESS_INSTANCE_KEY,
+        finishDate,
+        processInstanceKeys);
+  }
+
+  protected List<CompletableFuture<?>> getProcessDependentArchiveFutures(
+      final String finishDate, final List<String> processInstanceKeys) {
+    final var futures = new ArrayList<CompletableFuture<?>>();
+
+    for (final var dependant : dependants) {
+      futures.add(
+          archive(
+              dependant.getFullQualifiedName(),
+              dependant.getProcessInstanceDependantField(),
+              finishDate,
+              processInstanceKeys));
+    }
+    return futures;
+  }
+
+  protected CompletableFuture<Integer> archive(
+      final String sourceIdxName,
+      final String idField,
+      final String finishDate,
+      final List<String> processInstanceKeys) {
     return repository
         .moveDocuments(
-            template.getFullQualifiedName(),
-            template.getFullQualifiedName() + finishDate,
-            ListViewTemplate.PROCESS_INSTANCE_KEY,
-            processInstanceKeys,
-            executor)
+            sourceIdxName, sourceIdxName + finishDate, idField, processInstanceKeys, executor)
         .thenApplyAsync(ok -> processInstanceKeys.size(), executor);
   }
 
@@ -154,5 +169,13 @@ public class ProcessInstanceArchiverJob implements ArchiverJob {
   @Override
   public String getCaption() {
     return "Process instances archiver job";
+  }
+
+  public ArchiverRepository getRepository() {
+    return repository;
+  }
+
+  public Executor getExecutor() {
+    return executor;
   }
 }
