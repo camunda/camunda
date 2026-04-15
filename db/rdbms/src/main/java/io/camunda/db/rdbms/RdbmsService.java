@@ -16,6 +16,7 @@ import io.camunda.db.rdbms.read.service.CorrelatedMessageSubscriptionDbReader;
 import io.camunda.db.rdbms.read.service.DecisionDefinitionDbReader;
 import io.camunda.db.rdbms.read.service.DecisionInstanceDbReader;
 import io.camunda.db.rdbms.read.service.DecisionRequirementsDbReader;
+import io.camunda.db.rdbms.read.service.DeployedResourceDbReader;
 import io.camunda.db.rdbms.read.service.FlowNodeInstanceDbReader;
 import io.camunda.db.rdbms.read.service.FormDbReader;
 import io.camunda.db.rdbms.read.service.GlobalListenerDbReader;
@@ -96,6 +97,7 @@ public class RdbmsService {
   private final IncidentProcessInstanceStatisticsByDefinitionDbReader
       incidentProcessInstanceStatisticsByDefinitionDbReader;
   private final GlobalListenerDbReader globalListenerDbReader;
+  private final DeployedResourceDbReader deployedResourceDbReader;
 
   public RdbmsService(
       final RdbmsWriterFactory rdbmsWriterFactory,
@@ -139,7 +141,8 @@ public class RdbmsService {
           incidentProcessInstanceStatisticsByErrorDbReader,
       final IncidentProcessInstanceStatisticsByDefinitionDbReader
           incidentProcessInstanceStatisticsByDefinitionDbReader,
-      final GlobalListenerDbReader globalListenerDbReader) {
+      final GlobalListenerDbReader globalListenerDbReader,
+      final DeployedResourceDbReader deployedResourceDbReader) {
     this.rdbmsWriterFactory = rdbmsWriterFactory;
     this.auditLogReader = auditLogReader;
     this.authorizationReader = authorizationReader;
@@ -182,6 +185,7 @@ public class RdbmsService {
     this.incidentProcessInstanceStatisticsByDefinitionDbReader =
         incidentProcessInstanceStatisticsByDefinitionDbReader;
     this.globalListenerDbReader = globalListenerDbReader;
+    this.deployedResourceDbReader = deployedResourceDbReader;
   }
 
   public AuthorizationDbReader getAuthorizationReader() {
@@ -339,6 +343,10 @@ public class RdbmsService {
 
   public GlobalListenerDbReader getGlobalListenerDbReader() {
     return globalListenerDbReader;
+  }
+
+  public DeployedResourceDbReader getResourceDbReader() {
+    return deployedResourceDbReader;
   }
 
   public RdbmsWriters createWriter(final RdbmsWriterConfig config) {
