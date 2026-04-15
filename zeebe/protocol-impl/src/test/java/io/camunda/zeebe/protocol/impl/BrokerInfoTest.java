@@ -56,7 +56,8 @@ final class BrokerInfoTest {
     final var decoded = encodeDecode(brokerInfo);
 
     // then
-    assertThat(decoded.getNodeId()).isEqualTo(nodeId);
+    assertThat(decoded.getNodeId()).isEqualTo(String.valueOf(nodeId));
+    assertThat(decoded.getLocalNodeId()).isEqualTo(nodeId);
     assertThat(decoded.getPartitionsCount()).isEqualTo(partitionsCount);
     assertThat(decoded.getClusterSize()).isEqualTo(clusterSize);
     assertThat(decoded.getReplicationFactor()).isEqualTo(replicationFactor);
@@ -84,7 +85,8 @@ final class BrokerInfoTest {
     final var decoded = encodeDecode(brokerInfo);
 
     // then
-    assertThat(decoded.getNodeId()).isEqualTo(nodeId);
+    assertThat(decoded.getNodeId()).isEqualTo(String.valueOf(nodeId));
+    assertThat(decoded.getLocalNodeId()).isEqualTo(nodeId);
     assertThat(decoded.getPartitionsCount()).isEqualTo(partitionsCount);
     assertThat(decoded.getClusterSize()).isEqualTo(clusterSize);
     assertThat(decoded.getReplicationFactor()).isEqualTo(replicationFactor);
@@ -94,29 +96,26 @@ final class BrokerInfoTest {
   }
 
   @Test
-  void shouldEncodeDecodeNullValues() {
+  void shouldThrowOnUnsetFields() {
     // given
     final BrokerInfo brokerInfo = new BrokerInfo();
 
-    // when
-    final var decoded = encodeDecode(brokerInfo);
-
     // then
     assertThatIllegalStateException()
-        .isThrownBy(decoded::getNodeId)
+        .isThrownBy(brokerInfo::getNodeId)
         .withMessageContaining("nodeId");
     assertThatIllegalStateException()
-        .isThrownBy(decoded::getPartitionsCount)
+        .isThrownBy(brokerInfo::getPartitionsCount)
         .withMessageContaining("partitionsCount");
     assertThatIllegalStateException()
-        .isThrownBy(decoded::getClusterSize)
+        .isThrownBy(brokerInfo::getClusterSize)
         .withMessageContaining("clusterSize");
     assertThatIllegalStateException()
-        .isThrownBy(decoded::getReplicationFactor)
+        .isThrownBy(brokerInfo::getReplicationFactor)
         .withMessageContaining("replicationFactor");
-    assertThat(decoded.getAddresses()).isEmpty();
-    assertThat(decoded.getPartitionRoles()).isEmpty();
-    assertThat(decoded.getPartitionHealthStatuses()).isEmpty();
+    assertThat(brokerInfo.getAddresses()).isEmpty();
+    assertThat(brokerInfo.getPartitionRoles()).isEmpty();
+    assertThat(brokerInfo.getPartitionHealthStatuses()).isEmpty();
   }
 
   private BrokerInfo encodeDecode(final BrokerInfo brokerInfo) {
