@@ -17,6 +17,7 @@ package io.camunda.process.test.impl.runtime;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.client.CamundaClient;
 import io.camunda.client.CamundaClientConfiguration;
 import io.camunda.process.test.api.CamundaProcessTestRuntimeMode;
 import io.camunda.process.test.impl.runtime.properties.AssertionProperties;
@@ -477,8 +478,11 @@ public class ContainerRuntimePropertiesUtilTest {
               "/containerRuntimePropertiesUtil/", emptyGitProperties);
 
       // then: verify via the client builder factory (which now uses standard ClientProperties)
-      final CamundaClientConfiguration clientBuilder =
-          propertiesUtil.getCamundaClientBuilderFactory().get().build().getConfiguration();
+      final CamundaClientConfiguration clientBuilder;
+      try (final CamundaClient client =
+          propertiesUtil.getCamundaClientBuilderFactory().get().build()) {
+        clientBuilder = client.getConfiguration();
+      }
 
       // The backwards-compatible remote.client.grpcAddress and remote.client.restAddress are used
       assertThat(clientBuilder.getRestAddress()).isEqualTo(URI.create("http://0.0.0.0:8089"));
