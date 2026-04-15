@@ -95,6 +95,39 @@ identityKeycloak:
       effect: NoSchedule
   postgresql:
     fullnameOverride: keycloak-postgresql # we override the names for simplicity of the deployment
+  keycloakConfigCli:
+    enabled: true
+    # Creates a dedicated M2M Keycloak client for the load tester to authenticate
+    # with Optimize via the OAuth2 Resource Owner Password Grant. This avoids
+    # modifying the Identity-managed 'optimize' client (which does not have
+    # directAccessGrantsEnabled and cannot be configured via identity.clients[]).
+    extraEnvVars:
+      - name: IMPORT_VAR_SUBSTITUTION_ENABLED
+        value: "true"
+      - name: OPTIMIZE_LOADTESTER_CLIENT_SECRET
+        valueFrom:
+          secretKeyRef:
+            name: camunda-credentials
+            key: identity-optimize-loadtester-client-token
+    configuration:
+      optimize-loadtester-client.json: |
+        {
+          "realm": "camunda-platform",
+          "clients": [
+            {
+              "clientId": "optimize-load-tester",
+              "name": "Optimize Load Tester",
+              "enabled": true,
+              "secret": "$(OPTIMIZE_LOADTESTER_CLIENT_SECRET)",
+              "publicClient": false,
+              "clientAuthenticatorType": "client-secret",
+              "directAccessGrantsEnabled": true,
+              "serviceAccountsEnabled": false,
+              "standardFlowEnabled": false,
+              "implicitFlowEnabled": false
+            }
+          ]
+        }
 
 connectors:
   enabled: true

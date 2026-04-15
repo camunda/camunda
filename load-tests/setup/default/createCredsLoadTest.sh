@@ -39,6 +39,7 @@ gen_token() { openssl rand -hex 16; }
 # OIDC client secrets (32-char hex strings)
 : "${IDENTITY_ADMIN_CLIENT_TOKEN:=$(gen_token)}"
 : "${IDENTITY_OPTIMIZE_CLIENT_TOKEN:=$(gen_token)}"
+: "${IDENTITY_OPTIMIZE_LOADTESTER_CLIENT_TOKEN:=$(gen_token)}"
 
 echo "Creating camunda-credentials in namespace '$NS'..."
 
@@ -59,6 +60,7 @@ stringData:
   connectors-security-authentication-oidc-secret: "${CONNECTORS_SECRET}"
   identity-admin-client-token: "${IDENTITY_ADMIN_CLIENT_TOKEN}"
   identity-optimize-client-token: "${IDENTITY_OPTIMIZE_CLIENT_TOKEN}"
+  identity-optimize-loadtester-client-token: "${IDENTITY_OPTIMIZE_LOADTESTER_CLIENT_TOKEN}"
 EOF
 
 # Replace __SECRET__ in load-test-values.yaml with the generated orchestration secret 
