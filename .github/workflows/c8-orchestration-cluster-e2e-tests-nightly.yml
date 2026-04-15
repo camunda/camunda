@@ -17,7 +17,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        branch: [stable/8.6, stable/8.7, stable/8.8, stable/8.9, main]
+        branch: [stable/8.7, stable/8.8, stable/8.9, main]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
@@ -28,8 +28,8 @@ jobs:
       - name: Start Camunda
         shell: bash
         run: |
-          if [[ "${{ matrix.branch }}" == "stable/8.6" || "${{ matrix.branch }}" == "stable/8.7" ]]; then
-            echo "Using single services for Camunda 8.6 and 8.7"
+          if [[ "${{ matrix.branch }}" == "stable/8.7" ]]; then
+            echo "Using single services for stable/8.7"
             DATABASE=elasticsearch docker compose up -d operate tasklist
           else
             echo "Using standalone camunda container"
@@ -50,7 +50,7 @@ jobs:
           echo "Checking if services are up..."
           ready=false
           for i in {1..90}; do
-            if [[ "${{ matrix.branch }}" == "stable/8.6" || "${{ matrix.branch }}" == "stable/8.7" ]]; then
+            if [[ "${{ matrix.branch }}" == "stable/8.7" ]]; then
               tasklist_status=$(curl -s -m 5 http://localhost:8080 || echo "Failed")
               operate_status=$(curl -s -m 5 http://localhost:8081 || echo "Failed")
             else
@@ -59,7 +59,7 @@ jobs:
               identity_status=$(curl -s -m 5 http://localhost:8080/identity || echo "Failed")
             fi
 
-            if [[ "${{ matrix.branch }}" == "stable/8.6" || "${{ matrix.branch }}" == "stable/8.7" ]]; then
+            if [[ "${{ matrix.branch }}" == "stable/8.7" ]]; then
               if [[ "$tasklist_status" != "Failed" && "$operate_status" != "Failed" ]]; then
                 echo "Services are ready!"
                 ready=true
@@ -92,7 +92,7 @@ jobs:
         shell: bash
         if: failure()
         run: |
-          if [[ "${{ matrix.branch }}" == "stable/8.6" || "${{ matrix.branch }}" == "stable/8.7" ]]; then
+          if [[ "${{ matrix.branch }}" == "stable/8.7" ]]; then
             docker compose logs tasklist
             docker compose logs operate
           else
@@ -153,7 +153,7 @@ jobs:
           DATABASE: "Elasticsearch"
           CAMUNDA_PROCESSINSTANCECREATION_BUSINESSIDUNIQUENESSENABLED: "true"
         run: |
-          if [[ "${{ matrix.branch }}" == "stable/8.6" || "${{ matrix.branch }}" == "stable/8.7" ]]; then
+          if [[ "${{ matrix.branch }}" == "stable/8.7" ]]; then
             export CORE_APPLICATION_TASKLIST_URL="http://localhost:8080"
             export CORE_APPLICATION_OPERATE_URL="http://localhost:8081"
             export ZEEBE_REST_ADDRESS="http://localhost:8089"
@@ -631,12 +631,10 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        branch: [stable/8.6, stable/8.7, stable/8.8, stable/8.9, main]
+        branch: [stable/8.7, stable/8.8, stable/8.9, main]
         tasklist_mode: [v1, v2]
         exclude:
-          # V2 mode only supported on main branch - exclude V2 for older branches
-          - branch: stable/8.6
-            tasklist_mode: v2
+          # V2 mode is not supported on stable/8.7; stable/8.8, stable/8.9, and main run V2
           - branch: stable/8.7
             tasklist_mode: v2
           # V1 mode removed from main - only V2 tests remain
@@ -651,8 +649,8 @@ jobs:
 
       - name: Start Camunda
         run: |
-          if [[ "${{ matrix.branch }}" == "stable/8.6" || "${{ matrix.branch }}" == "stable/8.7" ]]; then
-            echo "Using single services for Camunda 8.6 and 8.7"
+          if [[ "${{ matrix.branch }}" == "stable/8.7" ]]; then
+            echo "Using single services for Camunda 8.7"
             DATABASE=elasticsearch docker compose up -d operate tasklist
           else
             echo "Using standalone camunda container"
@@ -678,7 +676,7 @@ jobs:
           echo "Checking if services are up..."
           ready=false
           for i in {1..90}; do
-            if [[ "${{ matrix.branch }}" == "stable/8.6" || "${{ matrix.branch }}" == "stable/8.7" ]]; then
+            if [[ "${{ matrix.branch }}" == "stable/8.7" ]]; then
               tasklist_status=$(curl -s -m 5 http://localhost:8080 || echo "Failed")
               operate_status=$(curl -s -m 5 http://localhost:8081 || echo "Failed")
             else
@@ -687,7 +685,7 @@ jobs:
               identity_status=$(curl -s -m 5 http://localhost:8080/identity || echo "Failed")
             fi
 
-            if [[ "${{ matrix.branch }}" == "stable/8.6" || "${{ matrix.branch }}" == "stable/8.7" ]]; then
+            if [[ "${{ matrix.branch }}" == "stable/8.7" ]]; then
               if [[ "$tasklist_status" != "Failed" && "$operate_status" != "Failed" ]]; then
                 echo "Services are ready!"
                 ready=true
@@ -719,7 +717,7 @@ jobs:
       - name: Print Docker logs before failing
         if: failure()
         run: |
-          if [[ "${{ matrix.branch }}" == "stable/8.6" || "${{ matrix.branch }}" == "stable/8.7" ]]; then
+          if [[ "${{ matrix.branch }}" == "stable/8.7" ]]; then
             docker compose logs tasklist
             docker compose logs operate
           else
@@ -778,7 +776,7 @@ jobs:
           VERSION: ${{ matrix.branch }}
           CAMUNDA_TASKLIST_V2_MODE_ENABLED: ${{ matrix.tasklist_mode == 'v2' && 'true' || 'false' }}
         run: |
-          if [[ "${{ matrix.branch }}" == "stable/8.6" || "${{ matrix.branch }}" == "stable/8.7" ]]; then
+          if [[ "${{ matrix.branch }}" == "stable/8.7" ]]; then
             export CORE_APPLICATION_TASKLIST_URL="http://localhost:8080"
             export CORE_APPLICATION_OPERATE_URL="http://localhost:8081"
             export ZEEBE_REST_ADDRESS="http://localhost:8089"
