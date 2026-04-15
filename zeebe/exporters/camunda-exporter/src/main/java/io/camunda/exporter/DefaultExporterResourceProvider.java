@@ -52,6 +52,8 @@ import io.camunda.exporter.handlers.MessageSubscriptionFromProcessMessageSubscri
 import io.camunda.exporter.handlers.MigratedVariableHandler;
 import io.camunda.exporter.handlers.PostImporterQueueFromIncidentHandler;
 import io.camunda.exporter.handlers.ProcessHandler;
+import io.camunda.exporter.handlers.ResourceCreatedHandler;
+import io.camunda.exporter.handlers.ResourceDeletedHandler;
 import io.camunda.exporter.handlers.RoleCreateUpdateHandler;
 import io.camunda.exporter.handlers.RoleDeletedHandler;
 import io.camunda.exporter.handlers.RoleMemberAddedHandler;
@@ -100,6 +102,7 @@ import io.camunda.webapps.schema.descriptors.index.AuthorizationIndex;
 import io.camunda.webapps.schema.descriptors.index.ClusterVariableIndex;
 import io.camunda.webapps.schema.descriptors.index.DecisionIndex;
 import io.camunda.webapps.schema.descriptors.index.DecisionRequirementsIndex;
+import io.camunda.webapps.schema.descriptors.index.DeployedResourceIndex;
 import io.camunda.webapps.schema.descriptors.index.FormIndex;
 import io.camunda.webapps.schema.descriptors.index.GlobalListenerIndex;
 import io.camunda.webapps.schema.descriptors.index.GroupIndex;
@@ -382,7 +385,11 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
             new GlobalListenerCreatedUpdatedHandler(
                 indexDescriptors.get(GlobalListenerIndex.class).getFullQualifiedName()),
             new GlobalListenerDeletedHandler(
-                indexDescriptors.get(GlobalListenerIndex.class).getFullQualifiedName())));
+                indexDescriptors.get(GlobalListenerIndex.class).getFullQualifiedName()),
+            new ResourceCreatedHandler(
+                indexDescriptors.get(DeployedResourceIndex.class).getFullQualifiedName()),
+            new ResourceDeletedHandler(
+                indexDescriptors.get(DeployedResourceIndex.class).getFullQualifiedName())));
 
     if (configuration.getAuditLog().isEnabled()) {
       addAuditLogHandlers(configuration.getAuditLog(), partitionId);
