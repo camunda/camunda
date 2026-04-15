@@ -113,6 +113,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -161,6 +162,19 @@ class RdbmsExporterIT {
             Mockito.mock(MeterRegistry.class, Mockito.RETURNS_DEEP_STUBS),
             null));
     exporter.open(controller);
+  }
+
+  /**
+   * Verify, that the exporter position is correct. Makes the search for false tests easier.
+   *
+   * <p>Use always FIXTURES.nextPosition() when creating a record, otherwise other tests will fail!
+   */
+  @AfterEach
+  void tearDown() {
+    final var lastExporterPosition = exporterPositionMapper.findOne(1);
+    if (lastExporterPosition != null) {
+      assertThat(lastExporterPosition.lastExportedPosition()).isEqualTo(FIXTURES.currentPosition());
+    }
   }
 
   @Test
@@ -247,8 +261,8 @@ class RdbmsExporterIT {
         ImmutableRecord.builder()
             .from(RecordFixtures.FACTORY.generateRecord(ValueType.VARIABLE))
             .withIntent(VariableIntent.CREATED)
-            .withPosition(2L)
             .withTimestamp(System.currentTimeMillis())
+            .withPosition(FIXTURES.nextPosition())
             .build();
 
     // when
@@ -611,11 +625,11 @@ class RdbmsExporterIT {
   @Test
   public void shouldExportRoleAndAddAndDeleteMember() {
     // given
+    final var username = "username";
+    final var userRecord = FIXTURES.getUserRecord(1L, username, UserIntent.CREATED);
     final var roleId = "roleId";
     final var roleRecord = FIXTURES.getRoleRecord(roleId, RoleIntent.CREATED);
     final var recordValue = (RoleRecordValue) roleRecord.getValue();
-    final var username = "username";
-    final var userRecord = FIXTURES.getUserRecord(1L, username, UserIntent.CREATED);
     exporter.export(userRecord);
 
     // when
@@ -908,6 +922,7 @@ class RdbmsExporterIT {
             .from(RecordFixtures.FACTORY.generateRecord(ValueType.PROCESS_MESSAGE_SUBSCRIPTION))
             .withIntent(ProcessMessageSubscriptionIntent.CREATED)
             .withTimestamp(System.currentTimeMillis())
+            .withPosition(FIXTURES.nextPosition())
             .build();
 
     // when
@@ -932,6 +947,7 @@ class RdbmsExporterIT {
             .from(RecordFixtures.FACTORY.generateRecord(ValueType.PROCESS_MESSAGE_SUBSCRIPTION))
             .withIntent(ProcessMessageSubscriptionIntent.CREATED)
             .withTimestamp(System.currentTimeMillis())
+            .withPosition(FIXTURES.nextPosition())
             .build();
 
     exporter.export(messageSubscriptionRecord);
@@ -942,6 +958,7 @@ class RdbmsExporterIT {
             .from(messageSubscriptionRecord)
             .withIntent(ProcessMessageSubscriptionIntent.DELETED)
             .withTimestamp(System.currentTimeMillis())
+            .withPosition(FIXTURES.nextPosition())
             .build());
 
     // then
@@ -960,6 +977,7 @@ class RdbmsExporterIT {
             .from(RecordFixtures.FACTORY.generateRecord(ValueType.PROCESS_MESSAGE_SUBSCRIPTION))
             .withIntent(ProcessMessageSubscriptionIntent.CORRELATED)
             .withTimestamp(System.currentTimeMillis())
+            .withPosition(FIXTURES.nextPosition())
             .build();
 
     // when
@@ -985,7 +1003,7 @@ class RdbmsExporterIT {
         ImmutableRecord.<MessageStartEventSubscriptionRecordValue>builder()
             .from(RecordFixtures.FACTORY.generateRecord(ValueType.MESSAGE_START_EVENT_SUBSCRIPTION))
             .withIntent(MessageStartEventSubscriptionIntent.CORRELATED)
-            .withPosition(2L)
+            .withPosition(FIXTURES.nextPosition())
             .withTimestamp(System.currentTimeMillis())
             .build();
 
@@ -1159,6 +1177,7 @@ class RdbmsExporterIT {
     final var batchOperationCreationRecord =
         ImmutableRecord.<BatchOperationCreationRecordValue>builder()
             .from(record)
+            .withPosition(FIXTURES.nextPosition())
             .withValue(
                 ImmutableBatchOperationCreationRecordValue.builder()
                     .from(record.getValue())
@@ -1225,6 +1244,7 @@ class RdbmsExporterIT {
             .from(record)
             .withIntent(BatchOperationChunkIntent.CREATE)
             .withTimestamp(System.currentTimeMillis())
+            .withPosition(FIXTURES.nextPosition())
             .withBatchOperationReference(batchOperationKey)
             .withValue(
                 ImmutableBatchOperationChunkRecordValue.builder()
@@ -1393,6 +1413,7 @@ class RdbmsExporterIT {
             .from(RecordFixtures.FACTORY.generateRecord(ValueType.JOB))
             .withIntent(JobIntent.CREATED)
             .withTimestamp(System.currentTimeMillis())
+            .withPosition(FIXTURES.nextPosition())
             .build();
 
     // when
@@ -1414,7 +1435,7 @@ class RdbmsExporterIT {
             .withRecordType(RecordType.EVENT)
             .withIntent(ProcessInstanceCreationIntent.CREATED)
             .withAuthorizations(Map.of(Authorization.AUTHORIZED_USERNAME, "user"))
-            .withPosition(1L)
+            .withPosition(FIXTURES.nextPosition())
             .withPartitionId(1)
             .withTimestamp(System.currentTimeMillis())
             .build();
@@ -1520,6 +1541,7 @@ class RdbmsExporterIT {
             .from(record)
             .withIntent(BatchOperationIntent.CREATED)
             .withTimestamp(System.currentTimeMillis())
+            .withPosition(FIXTURES.nextPosition())
             .withValue(
                 ImmutableBatchOperationCreationRecordValue.builder()
                     .from(record.getValue())
@@ -1542,6 +1564,7 @@ class RdbmsExporterIT {
     return ImmutableRecord.<T>builder()
         .from(record)
         .withBatchOperationReference(batchOperationKey)
+        .withPosition(FIXTURES.nextPosition())
         .build();
   }
 
