@@ -173,7 +173,7 @@ public final class DeployedResourceEntity implements ExporterEntity<DeployedReso
 
   @Override
   public String toString() {
-    return "ResourceEntity["
+    return "DeployedResourceEntity["
         + "id='"
         + id
         + '\''

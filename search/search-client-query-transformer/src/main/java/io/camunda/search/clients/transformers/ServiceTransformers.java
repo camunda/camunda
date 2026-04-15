@@ -88,6 +88,7 @@ import io.camunda.search.clients.transformers.entity.CorrelatedMessageSubscripti
 import io.camunda.search.clients.transformers.entity.DecisionDefinitionEntityTransformer;
 import io.camunda.search.clients.transformers.entity.DecisionInstanceEntityTransformer;
 import io.camunda.search.clients.transformers.entity.DecisionRequirementsEntityTransformer;
+import io.camunda.search.clients.transformers.entity.DeployedResourceEntityTransformer;
 import io.camunda.search.clients.transformers.entity.FlowNodeInstanceEntityTransformer;
 import io.camunda.search.clients.transformers.entity.FormEntityTransformer;
 import io.camunda.search.clients.transformers.entity.GlobalListenerEntityTransformer;
@@ -151,6 +152,7 @@ import io.camunda.search.clients.transformers.filter.VariableValueFilterTransfor
 import io.camunda.search.clients.transformers.query.TypedSearchQueryTransformer;
 import io.camunda.search.clients.transformers.result.DecisionInstanceResultConfigTransformer;
 import io.camunda.search.clients.transformers.result.DecisionRequirementsResultConfigTransformer;
+import io.camunda.search.clients.transformers.result.DeployedResourceResultConfigTransformer;
 import io.camunda.search.clients.transformers.result.ProcessDefinitionResultConfigTransformer;
 import io.camunda.search.clients.transformers.result.ProcessInstanceResultConfigTransformer;
 import io.camunda.search.clients.transformers.sort.AuditLogSortTransformer;
@@ -268,6 +270,7 @@ import io.camunda.search.query.UserTaskQuery;
 import io.camunda.search.query.VariableQuery;
 import io.camunda.search.result.DecisionInstanceQueryResultConfig;
 import io.camunda.search.result.DecisionRequirementsQueryResultConfig;
+import io.camunda.search.result.DeployedResourceQueryResultConfig;
 import io.camunda.search.result.ProcessDefinitionQueryResultConfig;
 import io.camunda.search.result.ProcessInstanceQueryResultConfig;
 import io.camunda.search.sort.AuditLogSort;
@@ -347,6 +350,7 @@ import io.camunda.webapps.schema.entities.listview.ProcessInstanceForListViewEnt
 import io.camunda.webapps.schema.entities.messagesubscription.MessageSubscriptionEntity;
 import io.camunda.webapps.schema.entities.operation.BatchOperationEntity;
 import io.camunda.webapps.schema.entities.operation.OperationEntity;
+import io.camunda.webapps.schema.entities.resource.DeployedResourceEntity;
 import io.camunda.webapps.schema.entities.usermanagement.AuthorizationEntity;
 import io.camunda.webapps.schema.entities.usermanagement.GroupEntity;
 import io.camunda.webapps.schema.entities.usermanagement.GroupMemberEntity;
@@ -498,6 +502,7 @@ public final class ServiceTransformers {
     mappers.put(UserEntity.class, new UserEntityTransformer());
     mappers.put(AuditLogEntity.class, new AuditLogEntityTransformer());
     mappers.put(GlobalListenerEntity.class, new GlobalListenerEntityTransformer());
+    mappers.put(DeployedResourceEntity.class, new DeployedResourceEntityTransformer());
 
     // domain field sorting -> database field sorting
     mappers.put(AuthorizationSort.class, new AuthorizationFieldSortingTransformer());
@@ -671,6 +676,8 @@ public final class ServiceTransformers {
         ProcessInstanceQueryResultConfig.class, new ProcessInstanceResultConfigTransformer());
     mappers.put(
         ProcessDefinitionQueryResultConfig.class, new ProcessDefinitionResultConfigTransformer());
+    mappers.put(
+        DeployedResourceQueryResultConfig.class, new DeployedResourceResultConfigTransformer());
 
     // aggregation
     mappers.put(
