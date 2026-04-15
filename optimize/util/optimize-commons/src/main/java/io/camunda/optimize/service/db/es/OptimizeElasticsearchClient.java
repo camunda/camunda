@@ -115,6 +115,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.BiConsumer;
@@ -877,8 +878,25 @@ public class OptimizeElasticsearchClient extends DatabaseClient {
                   bulkResponse.items().stream()
                       .filter(i -> Objects.nonNull(i.error()))
                       .map(
-                          i ->
-                              i.operationType() + " " + i.error().type() + " " + i.error().reason())
+                          i -> {
+                            final String cause =
+                                Optional.ofNullable(i.error().causedBy())
+                                    .map(
+                                        c ->
+                                            c.type()
+                                                + ": "
+                                                + c.reason()
+                                                + (c.causedBy() != null
+                                                    ? " -> " + c.causedBy().reason()
+                                                    : ""))
+                                    .orElse(null);
+                            return i.operationType()
+                                + " "
+                                + i.error().type()
+                                + " "
+                                + i.error().reason()
+                                + (cause != null ? " (caused by: " + cause + ")" : "");
+                          })
                       .collect(Collectors.joining(" , "))));
         }
       } catch (final IOException e) {
