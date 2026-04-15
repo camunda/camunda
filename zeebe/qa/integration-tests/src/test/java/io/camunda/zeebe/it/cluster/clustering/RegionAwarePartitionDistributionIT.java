@@ -26,7 +26,7 @@ import io.camunda.zeebe.broker.system.configuration.partitioning.RegionAwareCfg;
 import io.camunda.zeebe.broker.system.configuration.partitioning.RegionCfg;
 import io.camunda.zeebe.qa.util.cluster.TestCluster;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
-import java.util.LinkedHashMap;
+import java.util.List;
 import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.Test;
 
@@ -97,14 +97,13 @@ final class RegionAwarePartitionDistributionIT {
           cfg.getCluster().setRegion(regionName);
 
           final var regionCfg = new RegionCfg();
+          regionCfg.setName(regionName);
           regionCfg.setNumberOfBrokers(brokerCount);
           regionCfg.setNumberOfReplicas(brokerCount);
           regionCfg.setPriority(1000);
 
           final var regionAwareCfg = new RegionAwareCfg();
-          final var regions = new LinkedHashMap<String, RegionCfg>();
-          regions.put(regionName, regionCfg);
-          regionAwareCfg.setRegions(regions);
+          regionAwareCfg.setRegions(List.of(regionCfg));
 
           final var partitioning = new Partitioning();
           partitioning.setScheme(Partitioning.Scheme.REGION_AWARE);

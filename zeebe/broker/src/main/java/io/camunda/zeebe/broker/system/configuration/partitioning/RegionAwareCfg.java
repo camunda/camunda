@@ -7,20 +7,25 @@
  */
 package io.camunda.zeebe.broker.system.configuration.partitioning;
 
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import java.util.LinkedHashMap;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Top-level configuration for the {@link Scheme#REGION_AWARE} partitioning scheme.
  *
- * <p>Maps region names to their respective {@link RegionCfg}. The insertion order of this map is
- * significant: broker {@link io.atomix.cluster.MemberId}s are assigned sequentially per region in
- * iteration order. For example, given regions {@code us-east1} (2 brokers) then {@code us-west1} (2
- * brokers), the member IDs will be {@code us-east1-0}, {@code us-east1-1}, {@code us-west1-0},
- * {@code us-west1-1}.
+ * <p>Contains a list of {@link RegionCfg} entries, each identified by its {@link RegionCfg#getName()
+ * name}. The list order is significant: broker {@link io.atomix.cluster.MemberId}s are assigned
+ * sequentially per region in iteration order. For example, given regions {@code us-east1} (2
+ * brokers) then {@code us-west1} (2 brokers), the member IDs will be {@code us-east1-0}, {@code
+ * us-east1-1}, {@code us-west1-0}, {@code us-west1-1}.
  *
- * <p>The map <strong>must</strong> be a {@link LinkedHashMap} to preserve YAML insertion order.
- * This is enforced via the {@link JsonDeserialize} annotation.
+ * <p>Using a list (rather than a map keyed by region name) makes it straightforward to override
+ * individual region properties via indexed environment variables, e.g.:
+ *
+ * <pre>
+ * CAMUNDA_CLUSTER_PARTITIONING_REGIONAWARE_REGIONS_0_NAME=us-east1
+ * CAMUNDA_CLUSTER_PARTITIONING_REGIONAWARE_REGIONS_0_NUMBEROFBROKERS=2
+ * </pre>
  *
  * <p>Example YAML configuration:
  *
@@ -34,15 +39,15 @@ import java.util.LinkedHashMap;
  *       scheme: REGION_AWARE
  *       region-aware:
  *         regions:
- *           us-east1:
+ *           - name: us-east1
  *             numberOfBrokers: 2
  *             numberOfReplicas: 2
  *             priority: 1000
- *           us-west1:
+ *           - name: us-west1
  *             numberOfBrokers: 2
  *             numberOfReplicas: 2
  *             priority: 500
- *           euro-east1:
+ *           - name: euro-east1
  *             numberOfBrokers: 1
  *             numberOfReplicas: 1
  *             priority: 10
@@ -50,14 +55,13 @@ import java.util.LinkedHashMap;
  */
 public final class RegionAwareCfg {
 
-  @JsonDeserialize(as = LinkedHashMap.class)
-  private LinkedHashMap<String, RegionCfg> regions = new LinkedHashMap<>();
+  private List<RegionCfg> regions = new ArrayList<>();
 
-  public LinkedHashMap<String, RegionCfg> getRegions() {
+  public List<RegionCfg> getRegions() {
     return regions;
   }
 
-  public void setRegions(final LinkedHashMap<String, RegionCfg> regions) {
+  public void setRegions(final List<RegionCfg> regions) {
     this.regions = regions;
   }
 
