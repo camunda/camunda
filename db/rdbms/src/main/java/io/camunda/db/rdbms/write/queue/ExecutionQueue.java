@@ -37,6 +37,18 @@ public interface ExecutionQueue {
   void registerPostFlushListener(PostFlushListener listener);
 
   /**
+   * Registers a hook to be called at the start of each database transaction, before any queued
+   * items are executed. This allows callers to acquire row-level locks (e.g. via {@code SELECT FOR
+   * UPDATE}) or validate state within the same transaction.<br>
+   * <br>
+   * Note: When multiple hooks are registered, they are called in the order of their registration.
+   * If a hook throws an exception the transaction is rolled back and the exception is propagated.
+   *
+   * @param hook the in-transaction hook to register
+   */
+  void registerInTransactionHook(InTransactionHook hook);
+
+  /**
    * Flushes the queue, executing all enqueued items in a batch.
    *
    * @return the number of flushed items

@@ -16,4 +16,6 @@ public interface ExporterPositionMapper {
   void update(ExporterPositionModel variable);
 
   ExporterPositionModel findOne(int key);
+
+  ExporterPositionModel findOneForUpdate(int partitionId);
 }

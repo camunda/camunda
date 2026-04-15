@@ -13,6 +13,7 @@ import io.camunda.db.rdbms.write.queue.ContextType;
 import io.camunda.db.rdbms.write.queue.ExecutionQueue;
 import io.camunda.db.rdbms.write.queue.QueueItem;
 import io.camunda.db.rdbms.write.queue.WriteStatementType;
+import java.util.function.LongSupplier;
 
 public class ExporterPositionService {
 
@@ -51,5 +52,38 @@ public class ExporterPositionService {
 
   public ExporterPositionModel findOne(final int key) {
     return exporterPositionMapper.findOne(key);
+  }
+
+  /**
+   * Registers a hook that, at the start of every flush transaction, acquires a row-level lock (
+   * {@code SELECT FOR UPDATE}) on the exporter position row for the given partition and validates
+   * that the position stored in the database matches the expected value provided by {@code
+   * expectedPositionSupplier}.
+   *
+   * <p>This prevents two exporter instances for the same partition from writing to the database
+   * concurrently: only one instance can hold the row lock at a time, and any instance whose local
+   * position has diverged from the database will fail fast instead of silently overwriting data.
+   *
+   * @param partitionId the partition whose position row should be locked
+   * @param expectedPositionSupplier supplies the position value that the database is expected to
+   *     hold at the time the transaction begins; evaluated on every flush
+   */
+  public void registerLockPositionHook(
+      final int partitionId, final LongSupplier expectedPositionSupplier) {
+    executionQueue.registerInTransactionHook(
+        session -> {
+          final ExporterPositionMapper mapper = session.getMapper(ExporterPositionMapper.class);
+          final ExporterPositionModel lockedPosition = mapper.findOneForUpdate(partitionId);
+          if (lockedPosition != null) {
+            final long expectedPosition = expectedPositionSupplier.getAsLong();
+            if (lockedPosition.lastExportedPosition() != expectedPosition) {
+              throw new IllegalStateException(
+                  String.format(
+                      "Exporter position mismatch for partition %d: expected %d but found %d. "
+                          + "Another exporter instance may have already exported to this partition.",
+                      partitionId, expectedPosition, lockedPosition.lastExportedPosition()));
+            }
+          }
+        });
   }
 }
