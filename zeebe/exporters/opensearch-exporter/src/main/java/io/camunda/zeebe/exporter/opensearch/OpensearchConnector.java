@@ -179,6 +179,10 @@ public final class OpensearchConnector {
       final OpensearchExporterConfiguration osConfig,
       final HttpRequestInterceptor... interceptors) {
     httpAsyncClientBuilder.disableContentCompression();
+    // Strip Accept-Encoding header to prevent OS <3.5.0 from sending gzip responses
+    // that httpclient5 can't decompress (disableContentCompression removed its decompressor)
+    httpAsyncClientBuilder.addRequestInterceptorLast(
+        (request, entity, context) -> request.removeHeaders("Accept-Encoding"));
     setupAuthentication(httpAsyncClientBuilder, osConfig.getAuthentication());
 
     for (final HttpRequestInterceptor interceptor : interceptors) {

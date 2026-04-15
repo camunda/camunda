@@ -451,6 +451,8 @@ final class OpensearchAuditLogArchiverRepositoryIT {
           .setHttpClientConfigCallback(
               httpClientBuilder -> {
                 httpClientBuilder.disableContentCompression();
+                httpClientBuilder.addRequestInterceptorLast(
+                    (request, entity, context) -> request.removeHeaders("Accept-Encoding"));
                 return httpClientBuilder;
               })
           .setCompressionEnabled(true)
