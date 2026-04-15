@@ -11,8 +11,6 @@ import static io.camunda.zeebe.exporter.common.tasks.BackgroundTaskManager.build
 
 import io.camunda.db.rdbms.write.service.HistoryCleanupService;
 import io.camunda.db.rdbms.write.service.HistoryDeletionService;
-import io.camunda.exporter.rdbms.replication.ReplicationContext;
-import io.camunda.exporter.rdbms.replication.ReplicationMonitor;
 import io.camunda.zeebe.exporter.common.tasks.BackgroundTaskManager;
 import io.camunda.zeebe.exporter.common.tasks.RunnableTask;
 import io.camunda.zeebe.exporter.common.tasks.SelfSchedulingTask;
@@ -40,7 +38,6 @@ public final class RdbmsBackgroundTaskManager implements CloseableSilently {
   private final HistoryDeletionService historyDeletionService;
   private final Logger logger;
   private final Duration closeTimeout;
-  private final ReplicationContext replicationContext;
 
   private BackgroundTaskManager delegate;
 
@@ -48,15 +45,8 @@ public final class RdbmsBackgroundTaskManager implements CloseableSilently {
       final int partitionId,
       final HistoryCleanupService historyCleanupService,
       final HistoryDeletionService historyDeletionService,
-      final Logger logger,
-      final ReplicationContext replicationContext) {
-    this(
-        partitionId,
-        historyCleanupService,
-        historyDeletionService,
-        logger,
-        DEFAULT_CLOSE_TIMEOUT,
-        replicationContext);
+      final Logger logger) {
+    this(partitionId, historyCleanupService, historyDeletionService, logger, DEFAULT_CLOSE_TIMEOUT);
   }
 
   RdbmsBackgroundTaskManager(
@@ -65,22 +55,11 @@ public final class RdbmsBackgroundTaskManager implements CloseableSilently {
       final HistoryDeletionService historyDeletionService,
       final Logger logger,
       final Duration closeTimeout) {
-    this(partitionId, historyCleanupService, historyDeletionService, logger, closeTimeout, null);
-  }
-
-  RdbmsBackgroundTaskManager(
-      final int partitionId,
-      final HistoryCleanupService historyCleanupService,
-      final HistoryDeletionService historyDeletionService,
-      final Logger logger,
-      final Duration closeTimeout,
-      final ReplicationContext replicationContext) {
     this.partitionId = partitionId;
     this.historyCleanupService = historyCleanupService;
     this.historyDeletionService = historyDeletionService;
     this.logger = logger;
     this.closeTimeout = closeTimeout;
-    this.replicationContext = replicationContext;
   }
 
   /**
@@ -137,22 +116,6 @@ public final class RdbmsBackgroundTaskManager implements CloseableSilently {
             historyDeletionService::getCurrentDelayBetweenRuns,
             executor,
             logger));
-
-    if (replicationContext != null) {
-      final var replicationMonitor =
-          new ReplicationMonitor(
-              replicationContext.lsnProvider(),
-              replicationContext.pendingEntries(),
-              replicationContext.confirmedPosition(),
-              replicationContext.pollingInterval());
-      tasks.add(
-          new SelfSchedulingTask(
-              "ReplicationMonitor",
-              replicationMonitor::checkReplication,
-              replicationContext::pollingInterval,
-              executor,
-              logger));
-    }
 
     return tasks;
   }

@@ -43,7 +43,7 @@ public class ExporterConfiguration {
   private CacheConfiguration processCache = new CacheConfiguration();
   private CacheConfiguration decisionRequirementsCache = new CacheConfiguration();
   private CacheConfiguration batchOperationCache = new CacheConfiguration();
-  private AsyncReplicationConfiguration asyncReplication = new AsyncReplicationConfiguration();
+  private ReplicationConfiguration asyncReplication = new ReplicationConfiguration();
 
   public AuditLogConfiguration getAuditLog() {
     return auditLog;
@@ -142,11 +142,11 @@ public class ExporterConfiguration {
     this.insertBatching = insertBatching;
   }
 
-  public AsyncReplicationConfiguration getAsyncReplication() {
+  public ReplicationConfiguration getAsyncReplication() {
     return asyncReplication;
   }
 
-  public void setAsyncReplication(final AsyncReplicationConfiguration asyncReplication) {
+  public void setAsyncReplication(final ReplicationConfiguration asyncReplication) {
     this.asyncReplication = asyncReplication;
   }
 
@@ -624,10 +624,10 @@ public class ExporterConfiguration {
     }
   }
 
-  public static class AsyncReplicationConfiguration {
+  public static class ReplicationConfiguration {
     public static final Duration DEFAULT_POLLING_INTERVAL = Duration.ofSeconds(15);
 
-    private boolean enabled = false;
+    private boolean enabled = true;
     private Duration pollingInterval = DEFAULT_POLLING_INTERVAL;
 
     public boolean isEnabled() {
