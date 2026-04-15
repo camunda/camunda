@@ -12,15 +12,15 @@ import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESS
 import static io.camunda.gateway.mapping.http.validator.RequestValidator.validate;
 import static io.camunda.gateway.mapping.http.validator.RequestValidator.validateDate;
 
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedUserTaskAssignmentRequestStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedUserTaskUpdateRequestStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.UserTaskAssignmentRequestContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.UserTaskUpdateRequestContract;
 import java.util.Optional;
 import org.springframework.http.ProblemDetail;
 
 public final class UserTaskRequestValidator {
 
   public static Optional<ProblemDetail> validateAssignmentRequest(
-      final GeneratedUserTaskAssignmentRequestStrictContract request) {
+      final UserTaskAssignmentRequestContract request) {
     return validate(
         violations -> {
           if (request.assignee() == null || request.assignee().isBlank()) {
@@ -30,7 +30,7 @@ public final class UserTaskRequestValidator {
   }
 
   public static Optional<ProblemDetail> validateUpdateRequest(
-      final GeneratedUserTaskUpdateRequestStrictContract request) {
+      final UserTaskUpdateRequestContract request) {
     final var changeset = request != null ? request.changeset() : null;
     final boolean changesetEmpty =
         changeset == null

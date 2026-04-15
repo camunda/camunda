@@ -15,9 +15,9 @@ import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESS
 import static java.util.Optional.ofNullable;
 
 import io.camunda.gateway.mapping.http.converters.ProcessInstanceStateConverter;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedProcessInstanceFilterFieldsStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedProcessInstanceFilterStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedVariableValueFilterPropertyStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.ProcessInstanceFilterContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.ProcessInstanceFilterFieldsContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.VariableValueFilterPropertyContract;
 import io.camunda.gateway.mapping.http.validator.TagsValidator;
 import io.camunda.search.filter.FilterBuilders;
 import io.camunda.search.filter.ProcessInstanceFilter;
@@ -37,7 +37,7 @@ public final class ProcessInstanceFilterMapper {
   private ProcessInstanceFilterMapper() {}
 
   public static Either<List<String>, ProcessInstanceFilter> toRequiredProcessInstanceFilter(
-      @Nullable final GeneratedProcessInstanceFilterStrictContract filter) {
+      @Nullable final ProcessInstanceFilterContract filter) {
     if (filter == null) {
       return Either.left(List.of(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("filter")));
     }
@@ -52,7 +52,7 @@ public final class ProcessInstanceFilterMapper {
   }
 
   public static Either<List<String>, ProcessInstanceFilter> toProcessInstanceFilter(
-      @Nullable final GeneratedProcessInstanceFilterStrictContract filter) {
+      @Nullable final ProcessInstanceFilterContract filter) {
     final List<String> validationErrors = new ArrayList<>();
 
     final Either<List<String>, Builder> builder = toProcessInstanceFilterFields(filter);
@@ -62,7 +62,7 @@ public final class ProcessInstanceFilterMapper {
 
     if (filter != null) {
       if (filter.$or() != null && !filter.$or().isEmpty()) {
-        for (final GeneratedProcessInstanceFilterFieldsStrictContract or : filter.$or()) {
+        for (final ProcessInstanceFilterFieldsContract or : filter.$or()) {
           final var orBuilder = toProcessInstanceFilterFields(or);
           if (orBuilder.isLeft()) {
             validationErrors.addAll(orBuilder.getLeft());
@@ -79,7 +79,7 @@ public final class ProcessInstanceFilterMapper {
   }
 
   static Either<List<String>, Builder> toProcessInstanceFilterFields(
-      @Nullable final GeneratedProcessInstanceFilterFieldsStrictContract filter) {
+      @Nullable final ProcessInstanceFilterFieldsContract filter) {
     final var builder = FilterBuilders.processInstance();
     final List<String> validationErrors = new ArrayList<>();
     if (filter != null) {
@@ -149,7 +149,7 @@ public final class ProcessInstanceFilterMapper {
   }
 
   static Either<List<String>, Builder> toProcessInstanceFilterFields(
-      @Nullable final GeneratedProcessInstanceFilterStrictContract filter) {
+      @Nullable final ProcessInstanceFilterContract filter) {
     final var builder = FilterBuilders.processInstance();
     final List<String> validationErrors = new ArrayList<>();
     if (filter != null) {
@@ -220,7 +220,7 @@ public final class ProcessInstanceFilterMapper {
 
   private static void applyTagsAndVariables(
       final @Nullable Set<String> tags,
-      final @Nullable List<GeneratedVariableValueFilterPropertyStrictContract> variables,
+      final @Nullable List<VariableValueFilterPropertyContract> variables,
       final Builder builder,
       final List<String> validationErrors) {
     if (!CollectionUtils.isEmpty(tags)) {

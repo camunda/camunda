@@ -9,7 +9,7 @@ package io.camunda.gateway.mapping.http.search.contract;
 
 import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_EMPTY_ATTRIBUTE;
 
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedProcessDefinitionInstanceVersionStatisticsFilterStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.ProcessDefinitionInstanceVersionStatisticsFilterContract;
 import io.camunda.search.filter.FilterBuilders;
 import io.camunda.search.filter.ProcessDefinitionInstanceVersionStatisticsFilter;
 import io.camunda.zeebe.util.Either;
@@ -24,7 +24,7 @@ public final class ProcessDefinitionInstanceVersionStatisticsFilterMapper {
 
   public static Either<List<String>, ProcessDefinitionInstanceVersionStatisticsFilter>
       toProcessDefinitionInstanceVersionStatisticsFilter(
-          final GeneratedProcessDefinitionInstanceVersionStatisticsFilterStrictContract filter) {
+          final ProcessDefinitionInstanceVersionStatisticsFilterContract filter) {
     if (filter == null) {
       return Either.left(List.of(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("filter")));
     }

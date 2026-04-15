@@ -10,7 +10,7 @@ package io.camunda.gateway.mapping.http.search.contract;
 import static io.camunda.gateway.mapping.http.util.AdvancedSearchFilterUtil.mapToOperations;
 import static java.util.Optional.ofNullable;
 
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedElementInstanceFilterStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.ElementInstanceFilterContract;
 import io.camunda.gateway.mapping.http.util.KeyUtil;
 import io.camunda.search.entities.FlowNodeInstanceEntity.FlowNodeType;
 import io.camunda.search.filter.FilterBuilders;
@@ -26,7 +26,7 @@ public final class ElementInstanceFilterMapper {
   private ElementInstanceFilterMapper() {}
 
   public static FlowNodeInstanceFilter toElementInstanceFilter(
-      @Nullable final GeneratedElementInstanceFilterStrictContract filter) {
+      @Nullable final ElementInstanceFilterContract filter) {
     final var builder = FilterBuilders.flowNodeInstance();
     Optional.ofNullable(filter)
         .ifPresent(

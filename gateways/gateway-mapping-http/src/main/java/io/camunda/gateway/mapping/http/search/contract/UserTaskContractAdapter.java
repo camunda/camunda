@@ -8,10 +8,10 @@
 package io.camunda.gateway.mapping.http.search.contract;
 
 import static io.camunda.gateway.mapping.http.ResponseMapper.formatDate;
-import static io.camunda.gateway.mapping.http.search.contract.generated.GeneratedUserTaskStrictContract.Fields;
+import static io.camunda.gateway.mapping.http.search.contract.generated.UserTaskContract.Fields;
 
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedUserTaskStateEnum;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedUserTaskStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.UserTaskContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.UserTaskStateEnum;
 import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
 import io.camunda.search.entities.UserTaskEntity;
 import java.util.List;
@@ -20,15 +20,15 @@ public final class UserTaskContractAdapter {
 
   private UserTaskContractAdapter() {}
 
-  public static List<GeneratedUserTaskStrictContract> adapt(final List<UserTaskEntity> entities) {
+  public static List<UserTaskContract> adapt(final List<UserTaskEntity> entities) {
     return entities.stream().map(UserTaskContractAdapter::adapt).toList();
   }
 
-  public static GeneratedUserTaskStrictContract adapt(final UserTaskEntity entity) {
-    return GeneratedUserTaskStrictContract.builder()
+  public static UserTaskContract adapt(final UserTaskEntity entity) {
+    return UserTaskContract.builder()
         .state(
             ContractPolicy.requireNonNull(
-                ContractPolicy.mapEnum(entity.state(), GeneratedUserTaskStateEnum::fromValue),
+                ContractPolicy.mapEnum(entity.state(), UserTaskStateEnum::fromValue),
                 Fields.STATE,
                 entity))
         .elementId(ContractPolicy.requireNonNull(entity.elementId(), Fields.ELEMENT_ID, entity))

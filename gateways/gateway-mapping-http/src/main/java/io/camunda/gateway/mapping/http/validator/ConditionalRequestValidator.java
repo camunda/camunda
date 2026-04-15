@@ -10,14 +10,14 @@ package io.camunda.gateway.mapping.http.validator;
 import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_EMPTY_ATTRIBUTE;
 import static io.camunda.gateway.mapping.http.validator.RequestValidator.validate;
 
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedConditionalEvaluationInstructionStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.ConditionalEvaluationInstructionContract;
 import java.util.Optional;
 import org.springframework.http.ProblemDetail;
 
 public final class ConditionalRequestValidator {
 
   public static Optional<ProblemDetail> validateEvaluateRequest(
-      final GeneratedConditionalEvaluationInstructionStrictContract request) {
+      final ConditionalEvaluationInstructionContract request) {
     return validate(
         violations -> {
           if (request.variables() == null || request.variables().isEmpty()) {

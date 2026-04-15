@@ -9,10 +9,10 @@ package io.camunda.gateway.mapping.http.util;
 
 import static org.assertj.core.api.Assertions.*;
 
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedAdvancedDateTimeFilterStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedAdvancedIntegerFilterStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedAdvancedStringFilterStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedBasicStringFilterStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.AdvancedDateTimeFilterContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.AdvancedIntegerFilterContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.AdvancedStringFilterContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.BasicStringFilterContract;
 import io.camunda.search.filter.Operation;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
@@ -70,7 +70,7 @@ class AdvancedSearchFilterUtilTest {
 
   // --- Record-based filter constructors ---
 
-  private static GeneratedAdvancedIntegerFilterStrictContract intFilter(
+  private static AdvancedIntegerFilterContract intFilter(
       final List<Operation<Integer>> operations) {
     Integer eq = null, neq = null, gt = null, gte = null, lt = null, lte = null;
     Boolean exists = null;
@@ -89,10 +89,10 @@ class AdvancedSearchFilterUtilTest {
         default -> throw new IllegalArgumentException("Unsupported: " + op.operator());
       }
     }
-    return new GeneratedAdvancedIntegerFilterStrictContract(eq, neq, exists, gt, gte, lt, lte, in);
+    return new AdvancedIntegerFilterContract(eq, neq, exists, gt, gte, lt, lte, in);
   }
 
-  private static GeneratedBasicStringFilterStrictContract basicStringFilter(
+  private static BasicStringFilterContract basicStringFilter(
       final List<Operation<String>> operations) {
     String eq = null, neq = null;
     Boolean exists = null;
@@ -107,10 +107,10 @@ class AdvancedSearchFilterUtilTest {
         default -> throw new IllegalArgumentException("Unsupported: " + op.operator());
       }
     }
-    return new GeneratedBasicStringFilterStrictContract(eq, neq, exists, in, null);
+    return new BasicStringFilterContract(eq, neq, exists, in, null);
   }
 
-  private static GeneratedBasicStringFilterStrictContract basicStringFilterFromLong(
+  private static BasicStringFilterContract basicStringFilterFromLong(
       final List<Operation<Long>> operations) {
     return basicStringFilter(
         operations.stream()
@@ -124,7 +124,7 @@ class AdvancedSearchFilterUtilTest {
             .toList());
   }
 
-  private static GeneratedAdvancedStringFilterStrictContract advancedStringFilter(
+  private static AdvancedStringFilterContract advancedStringFilter(
       final List<Operation<String>> operations) {
     String eq = null, neq = null, like = null;
     Boolean exists = null;
@@ -140,10 +140,10 @@ class AdvancedSearchFilterUtilTest {
         default -> throw new IllegalArgumentException("Unsupported: " + op.operator());
       }
     }
-    return new GeneratedAdvancedStringFilterStrictContract(eq, neq, exists, in, null, like);
+    return new AdvancedStringFilterContract(eq, neq, exists, in, null, like);
   }
 
-  private static GeneratedAdvancedDateTimeFilterStrictContract dateTimeFilter(
+  private static AdvancedDateTimeFilterContract dateTimeFilter(
       final List<Operation<OffsetDateTime>> operations) {
     String eq = null, neq = null, gt = null, gte = null, lt = null, lte = null;
     Boolean exists = null;
@@ -162,7 +162,7 @@ class AdvancedSearchFilterUtilTest {
         default -> throw new IllegalArgumentException("Unsupported: " + op.operator());
       }
     }
-    return new GeneratedAdvancedDateTimeFilterStrictContract(eq, neq, exists, gt, gte, lt, lte, in);
+    return new AdvancedDateTimeFilterContract(eq, neq, exists, gt, gte, lt, lte, in);
   }
 
   private static Stream<Arguments> provideAdvancedFilterParameters() {
@@ -219,8 +219,7 @@ class AdvancedSearchFilterUtilTest {
   public void shouldMapToStringOperations() {
     // given
     final var filter =
-        new GeneratedAdvancedIntegerFilterStrictContract(
-            10, null, null, null, null, null, null, null);
+        new AdvancedIntegerFilterContract(10, null, null, null, null, null, null, null);
     // when
     final var actual = AdvancedSearchFilterUtil.mapToOperations(filter, String.class);
     // then
@@ -231,7 +230,7 @@ class AdvancedSearchFilterUtilTest {
   @Test
   public void shouldMapToLongOperations() {
     // given
-    final var filter = new GeneratedBasicStringFilterStrictContract("10", null, null, null, null);
+    final var filter = new BasicStringFilterContract("10", null, null, null, null);
     // when
     final var actual = AdvancedSearchFilterUtil.mapToOperations(filter, Long.class);
     // then
@@ -243,8 +242,7 @@ class AdvancedSearchFilterUtilTest {
   void shouldThrowExceptionWhenCannotConvert() {
     // given
     final var filter =
-        new GeneratedAdvancedIntegerFilterStrictContract(
-            10, null, null, null, null, null, null, null);
+        new AdvancedIntegerFilterContract(10, null, null, null, null, null, null, null);
 
     // when/then
     assertThatThrownBy(() -> AdvancedSearchFilterUtil.mapToOperations(filter, Boolean.class))
@@ -256,7 +254,7 @@ class AdvancedSearchFilterUtilTest {
   void shouldThrowExceptionWhenDateInvalid() {
     // given
     final var filter =
-        new GeneratedAdvancedDateTimeFilterStrictContract(
+        new AdvancedDateTimeFilterContract(
             "2023-11-11T10:10:10.1010+0100", null, null, null, null, null, null, null);
 
     // when/then
@@ -268,7 +266,7 @@ class AdvancedSearchFilterUtilTest {
   @Test
   void shouldThrowExceptionWhenLongValueInvalid() {
     // given
-    final var filter = new GeneratedBasicStringFilterStrictContract("meow", null, null, null, null);
+    final var filter = new BasicStringFilterContract("meow", null, null, null, null);
 
     // when/then
     assertThatThrownBy(() -> AdvancedSearchFilterUtil.mapToOperations(filter, Long.class))

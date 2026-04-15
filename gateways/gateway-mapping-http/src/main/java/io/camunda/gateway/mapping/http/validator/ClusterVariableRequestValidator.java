@@ -9,8 +9,8 @@ package io.camunda.gateway.mapping.http.validator;
 
 import static io.camunda.gateway.mapping.http.validator.RequestValidator.validate;
 
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedCreateClusterVariableRequestStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedUpdateClusterVariableRequestStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.CreateClusterVariableRequestContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.UpdateClusterVariableRequestContract;
 import io.camunda.security.validation.ClusterVariableValidator;
 import java.util.Optional;
 import org.springframework.http.ProblemDetail;
@@ -24,7 +24,7 @@ public class ClusterVariableRequestValidator {
   }
 
   public Optional<ProblemDetail> validateTenantClusterVariableCreateRequest(
-      final GeneratedCreateClusterVariableRequestStrictContract request, final String tenantId) {
+      final CreateClusterVariableRequestContract request, final String tenantId) {
     return validate(
         () ->
             clusterVariableValidator.validateTenantClusterVariableRequestWithValue(
@@ -32,7 +32,7 @@ public class ClusterVariableRequestValidator {
   }
 
   public Optional<ProblemDetail> validateGlobalClusterVariableCreateRequest(
-      final GeneratedCreateClusterVariableRequestStrictContract request) {
+      final CreateClusterVariableRequestContract request) {
     return validate(
         () ->
             clusterVariableValidator.validateGlobalClusterVariableRequestWithValue(
@@ -50,7 +50,7 @@ public class ClusterVariableRequestValidator {
   }
 
   public Optional<ProblemDetail> validateGlobalClusterVariableUpdateRequest(
-      final String name, final GeneratedUpdateClusterVariableRequestStrictContract request) {
+      final String name, final UpdateClusterVariableRequestContract request) {
     return validate(
         () ->
             clusterVariableValidator.validateGlobalClusterVariableRequestWithValue(
@@ -59,7 +59,7 @@ public class ClusterVariableRequestValidator {
 
   public Optional<ProblemDetail> validateTenantClusterVariableUpdateRequest(
       final String name,
-      final GeneratedUpdateClusterVariableRequestStrictContract request,
+      final UpdateClusterVariableRequestContract request,
       final String tenantId) {
     return validate(
         () ->

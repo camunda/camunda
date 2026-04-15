@@ -9,7 +9,7 @@ package io.camunda.gateway.mapping.http.search.contract;
 
 import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_EMPTY_ATTRIBUTE;
 
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedIncidentProcessInstanceStatisticsByDefinitionFilterStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.IncidentProcessInstanceStatisticsByDefinitionFilterContract;
 import io.camunda.search.entities.IncidentEntity.IncidentState;
 import io.camunda.search.filter.FilterBuilders;
 import io.camunda.search.filter.IncidentProcessInstanceStatisticsByDefinitionFilter;
@@ -24,7 +24,7 @@ public final class IncidentProcessInstanceStatisticsFilterMapper {
 
   public static Either<List<String>, IncidentProcessInstanceStatisticsByDefinitionFilter>
       toIncidentProcessInstanceStatisticsByDefinitionFilter(
-          final GeneratedIncidentProcessInstanceStatisticsByDefinitionFilterStrictContract filter) {
+          final IncidentProcessInstanceStatisticsByDefinitionFilterContract filter) {
     if (filter == null) {
       return Either.left(List.of(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("filter")));
     }

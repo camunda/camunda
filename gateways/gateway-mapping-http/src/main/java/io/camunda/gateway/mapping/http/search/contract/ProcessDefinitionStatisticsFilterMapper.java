@@ -11,9 +11,9 @@ import static io.camunda.gateway.mapping.http.util.AdvancedSearchFilterUtil.mapT
 import static java.util.Optional.ofNullable;
 
 import io.camunda.gateway.mapping.http.converters.ProcessInstanceStateConverter;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedBaseProcessInstanceFilterFieldsStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedProcessDefinitionStatisticsFilterStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedVariableValueFilterPropertyStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.BaseProcessInstanceFilterFieldsContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.ProcessDefinitionStatisticsFilterContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.VariableValueFilterPropertyContract;
 import io.camunda.search.filter.FilterBuilders;
 import io.camunda.search.filter.ProcessDefinitionStatisticsFilter;
 import io.camunda.search.filter.VariableValueFilter;
@@ -33,7 +33,7 @@ public final class ProcessDefinitionStatisticsFilterMapper {
   public static Either<List<String>, ProcessDefinitionStatisticsFilter>
       toProcessDefinitionStatisticsFilter(
           final long processDefinitionKey,
-          @Nullable final GeneratedProcessDefinitionStatisticsFilterStrictContract filter) {
+          @Nullable final ProcessDefinitionStatisticsFilterContract filter) {
     final List<String> validationErrors = new ArrayList<>();
     final var builder = FilterBuilders.processDefinitionStatisticsFilter(processDefinitionKey);
     if (filter != null) {
@@ -57,7 +57,7 @@ public final class ProcessDefinitionStatisticsFilterMapper {
           filter.variables(),
           validationErrors);
       if (filter.$or() != null && !filter.$or().isEmpty()) {
-        for (final GeneratedBaseProcessInstanceFilterFieldsStrictContract or : filter.$or()) {
+        for (final BaseProcessInstanceFilterFieldsContract or : filter.$or()) {
           final var orBuilder =
               FilterBuilders.processDefinitionStatisticsFilter(processDefinitionKey);
           final List<String> orErrors = new ArrayList<>();
@@ -110,7 +110,7 @@ public final class ProcessDefinitionStatisticsFilterMapper {
       final @Nullable Boolean hasElementInstanceIncident,
       final @Nullable Object elementInstanceState,
       final @Nullable Object incidentErrorHashCode,
-      final @Nullable List<GeneratedVariableValueFilterPropertyStrictContract> variables,
+      final @Nullable List<VariableValueFilterPropertyContract> variables,
       final List<String> validationErrors) {
     ofNullable(processInstanceKey)
         .map(mapToOperations(Long.class))

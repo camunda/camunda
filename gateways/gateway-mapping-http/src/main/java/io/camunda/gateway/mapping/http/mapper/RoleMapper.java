@@ -8,8 +8,8 @@
 package io.camunda.gateway.mapping.http.mapper;
 
 import io.camunda.gateway.mapping.http.RequestMapper;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedRoleCreateRequestStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedRoleUpdateRequestStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.RoleCreateRequestContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.RoleUpdateRequestContract;
 import io.camunda.gateway.mapping.http.validator.RoleRequestValidator;
 import io.camunda.service.RoleServices.CreateRoleRequest;
 import io.camunda.service.RoleServices.RoleMemberRequest;
@@ -34,14 +34,14 @@ public class RoleMapper {
   }
 
   public Either<ProblemDetail, CreateRoleRequest> toRoleCreateRequest(
-      final GeneratedRoleCreateRequestStrictContract request) {
+      final RoleCreateRequestContract request) {
     return RequestMapper.getResult(
         roleRequestValidator.validateCreateRequest(request),
         () -> new CreateRoleRequest(request.roleId(), request.name(), request.description()));
   }
 
   public Either<ProblemDetail, UpdateRoleRequest> toRoleUpdateRequest(
-      final GeneratedRoleUpdateRequestStrictContract request, final String roleId) {
+      final RoleUpdateRequestContract request, final String roleId) {
     return RequestMapper.getResult(
         roleRequestValidator.validateUpdateRequest(roleId, request),
         () -> new UpdateRoleRequest(roleId, request.name(), request.description()));

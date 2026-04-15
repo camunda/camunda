@@ -11,7 +11,7 @@ import static io.camunda.gateway.mapping.http.util.AdvancedSearchFilterUtil.mapT
 import static io.camunda.gateway.mapping.http.util.AdvancedSearchFilterUtil.mapToOperations;
 import static java.util.Optional.ofNullable;
 
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedVariableFilterStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.VariableFilterContract;
 import io.camunda.search.filter.FilterBuilders;
 import io.camunda.search.filter.VariableFilter;
 import io.camunda.zeebe.util.Either;
@@ -26,7 +26,7 @@ public final class VariableFilterMapper {
   private VariableFilterMapper() {}
 
   public static Either<List<String>, VariableFilter> toVariableFilter(
-      @Nullable final GeneratedVariableFilterStrictContract filter) {
+      @Nullable final VariableFilterContract filter) {
     if (filter == null) {
       return Either.right(FilterBuilders.variable().build());
     }

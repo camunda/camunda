@@ -17,56 +17,56 @@ import static java.time.temporal.ChronoField.SECOND_OF_MINUTE;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.document.api.DocumentLink;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedActivatedJobStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedAuthorizationCreateStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedBatchOperationCreatedStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedBatchOperationTypeEnum;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedBrokerInfoStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedClusterVariableScopeEnum;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedClusterVariableStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedCreateProcessInstanceStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedDeleteResourceResponseStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedDeploymentDecisionRequirementsStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedDeploymentDecisionStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedDeploymentFormStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedDeploymentMetadataStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedDeploymentProcessStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedDeploymentResourceStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedDeploymentStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedDocumentCreationBatchResponseStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedDocumentCreationFailureDetailStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedDocumentLinkStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedDocumentMetadataResponseStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedDocumentReferenceStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedEvaluateConditionalStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedEvaluateDecisionStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedEvaluatedDecisionInputItemStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedEvaluatedDecisionOutputItemStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedEvaluatedDecisionStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedExpressionEvaluationStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedExpressionEvaluationWarningItemStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedGroupCreateStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedGroupUpdateStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedJobActivationStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedJobKindEnum;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedJobListenerEventTypeEnum;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedMappingRuleCreateStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedMappingRuleUpdateStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedMatchedDecisionRuleItemStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedMessageCorrelationStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedMessagePublicationStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedPartitionStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedProcessInstanceReferenceStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedResourceStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedRoleCreateStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedRoleUpdateStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedSignalBroadcastStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedTenantCreateStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedTenantUpdateStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedTopologyResponseStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedUserCreateStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedUserTaskPropertiesStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedUserUpdateStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.ActivatedJobContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.AuthorizationCreateContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.BatchOperationCreatedContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.BatchOperationTypeEnum;
+import io.camunda.gateway.mapping.http.search.contract.generated.BrokerInfoContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.ClusterVariableContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.ClusterVariableScopeEnum;
+import io.camunda.gateway.mapping.http.search.contract.generated.CreateProcessInstanceContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.DeleteResourceResponseContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.DeploymentContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.DeploymentDecisionContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.DeploymentDecisionRequirementsContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.DeploymentFormContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.DeploymentMetadataContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.DeploymentProcessContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.DeploymentResourceContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.DocumentCreationBatchResponseContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.DocumentCreationFailureDetailContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.DocumentLinkContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.DocumentMetadataResponseContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.DocumentReferenceContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.EvaluateConditionalContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.EvaluateDecisionContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.EvaluatedDecisionContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.EvaluatedDecisionInputItemContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.EvaluatedDecisionOutputItemContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.ExpressionEvaluationContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.ExpressionEvaluationWarningItemContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GroupCreateContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GroupUpdateContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.JobActivationContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.JobKindEnum;
+import io.camunda.gateway.mapping.http.search.contract.generated.JobListenerEventTypeEnum;
+import io.camunda.gateway.mapping.http.search.contract.generated.MappingRuleCreateContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.MappingRuleUpdateContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.MatchedDecisionRuleItemContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.MessageCorrelationContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.MessagePublicationContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.PartitionContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.ProcessInstanceReferenceContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.ResourceContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.RoleCreateContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.RoleUpdateContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.SignalBroadcastContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.TenantCreateContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.TenantUpdateContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.TopologyResponseContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.UserCreateContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.UserTaskPropertiesContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.UserUpdateContract;
 import io.camunda.gateway.mapping.http.util.KeyUtil;
 import io.camunda.service.DocumentServices.DocumentContentResponse;
 import io.camunda.service.DocumentServices.DocumentErrorResponse;
@@ -165,21 +165,20 @@ public final class ResponseMapper {
     return date == null ? null : DATE_RESPONSE_MAPPER.format(date);
   }
 
-  public static JobActivationResult<GeneratedJobActivationStrictContract> toActivateJobsResponse(
+  public static JobActivationResult<JobActivationContract> toActivateJobsResponse(
       final io.camunda.zeebe.gateway.impl.job.JobActivationResponse activationResponse) {
     final Iterator<LongValue> jobKeys = activationResponse.brokerResponse().jobKeys().iterator();
     final Iterator<JobRecord> jobs = activationResponse.brokerResponse().jobs().iterator();
 
     long currentResponseSize = 0L;
 
-    final List<GeneratedActivatedJobStrictContract> sizeExceedingJobs = new ArrayList<>();
-    final List<GeneratedActivatedJobStrictContract> responseJobs = new ArrayList<>();
+    final List<ActivatedJobContract> sizeExceedingJobs = new ArrayList<>();
+    final List<ActivatedJobContract> responseJobs = new ArrayList<>();
 
     while (jobKeys.hasNext() && jobs.hasNext()) {
       final LongValue jobKey = jobKeys.next();
       final JobRecord job = jobs.next();
-      final GeneratedActivatedJobStrictContract activatedJob =
-          toActivatedJob(jobKey.getValue(), job);
+      final ActivatedJobContract activatedJob = toActivatedJob(jobKey.getValue(), job);
 
       // This is the message size of the message from the broker, not the size of the REST message
       final int activatedJobSize = job.getLength();
@@ -191,14 +190,12 @@ public final class ResponseMapper {
       }
     }
 
-    return new RestJobActivationResult(
-        new GeneratedJobActivationStrictContract(responseJobs), sizeExceedingJobs);
+    return new RestJobActivationResult(new JobActivationContract(responseJobs), sizeExceedingJobs);
   }
 
-  static GeneratedActivatedJobStrictContract toActivatedJob(
-      final long jobKey, final JobRecord job) {
+  static ActivatedJobContract toActivatedJob(final long jobKey, final JobRecord job) {
     final long rootProcessInstanceKey = job.getRootProcessInstanceKey();
-    return GeneratedActivatedJobStrictContract.builder()
+    return ActivatedJobContract.builder()
         .type(job.getType())
         .processDefinitionId(job.getBpmnProcessId())
         .processDefinitionVersion(job.getProcessDefinitionVersion())
@@ -213,18 +210,16 @@ public final class ResponseMapper {
         .processInstanceKey(job.getProcessInstanceKey())
         .processDefinitionKey(job.getProcessDefinitionKey())
         .elementInstanceKey(job.getElementInstanceKey())
-        .kind(EnumUtil.convert(job.getJobKind(), GeneratedJobKindEnum.class))
+        .kind(EnumUtil.convert(job.getJobKind(), JobKindEnum.class))
         .listenerEventType(
-            EnumUtil.convert(
-                job.getJobListenerEventType(), GeneratedJobListenerEventTypeEnum.class))
+            EnumUtil.convert(job.getJobListenerEventType(), JobListenerEventTypeEnum.class))
         .tags(job.getTags())
         .userTask(toUserTaskProperties(job))
         .rootProcessInstanceKey(rootProcessInstanceKey > 0 ? rootProcessInstanceKey : null)
         .build();
   }
 
-  private static GeneratedUserTaskPropertiesStrictContract toUserTaskProperties(
-      final JobRecord job) {
+  private static UserTaskPropertiesContract toUserTaskProperties(final JobRecord job) {
     if (job.getJobKind() != TASK_LISTENER || CollectionUtils.isEmpty(job.getCustomHeaders())) {
       return null;
     }
@@ -235,7 +230,7 @@ public final class ResponseMapper {
       return null;
     }
 
-    return new GeneratedUserTaskPropertiesStrictContract(
+    return new UserTaskPropertiesContract(
         action,
         headers.get(Protocol.USER_TASK_ASSIGNEE_HEADER_NAME),
         mapStringToList(headers.get(Protocol.USER_TASK_CANDIDATE_GROUPS_HEADER_NAME)),
@@ -273,9 +268,9 @@ public final class ResponseMapper {
     }
   }
 
-  public static GeneratedMessageCorrelationStrictContract toMessageCorrelationResponse(
+  public static MessageCorrelationContract toMessageCorrelationResponse(
       final MessageCorrelationRecord brokerResponse) {
-    return GeneratedMessageCorrelationStrictContract.builder()
+    return MessageCorrelationContract.builder()
         .tenantId(brokerResponse.getTenantId())
         .messageKey(brokerResponse.getMessageKey())
         .processInstanceKey(brokerResponse.getProcessInstanceKey())
@@ -294,21 +289,19 @@ public final class ResponseMapper {
     }
   }
 
-  public static GeneratedDocumentCreationBatchResponseStrictContract toDocumentReferenceBatch(
+  public static DocumentCreationBatchResponseContract toDocumentReferenceBatch(
       final List<Either<DocumentErrorResponse, DocumentReferenceResponse>> responses) {
-    final var createdDocuments = new ArrayList<GeneratedDocumentReferenceStrictContract>();
-    final var failedDocuments =
-        new ArrayList<GeneratedDocumentCreationFailureDetailStrictContract>();
+    final var createdDocuments = new ArrayList<DocumentReferenceContract>();
+    final var failedDocuments = new ArrayList<DocumentCreationFailureDetailContract>();
     responses.forEach(
         documentResponse ->
             documentResponse.ifRightOrLeft(
                 reference -> createdDocuments.add(toDocumentReference(reference)),
                 error -> failedDocuments.add(toDocumentCreationFailure(error))));
-    return new GeneratedDocumentCreationBatchResponseStrictContract(
-        failedDocuments, createdDocuments);
+    return new DocumentCreationBatchResponseContract(failedDocuments, createdDocuments);
   }
 
-  public static GeneratedDocumentReferenceStrictContract toDocumentReference(
+  public static DocumentReferenceContract toDocumentReference(
       final DocumentReferenceResponse response) {
     final var internalMetadata = response.metadata();
     final var customProperties =
@@ -316,7 +309,7 @@ public final class ResponseMapper {
             ? internalMetadata.customProperties()
             : Map.<String, Object>of();
     final var externalMetadata =
-        GeneratedDocumentMetadataResponseStrictContract.builder()
+        DocumentMetadataResponseContract.builder()
             .contentType(internalMetadata.contentType())
             .fileName(internalMetadata.fileName())
             .size(internalMetadata.size())
@@ -328,7 +321,7 @@ public final class ResponseMapper {
             .processDefinitionId(internalMetadata.processDefinitionId())
             .processInstanceKey(internalMetadata.processInstanceKey())
             .build();
-    return new GeneratedDocumentReferenceStrictContract(
+    return new DocumentReferenceContract(
         "camunda",
         response.storeId(),
         response.documentId(),
@@ -336,10 +329,10 @@ public final class ResponseMapper {
         externalMetadata);
   }
 
-  private static GeneratedDocumentCreationFailureDetailStrictContract toDocumentCreationFailure(
+  private static DocumentCreationFailureDetailContract toDocumentCreationFailure(
       final DocumentErrorResponse error) {
     final var problemDetail = mapDocumentErrorToProblem(error.error());
-    return new GeneratedDocumentCreationFailureDetailStrictContract(
+    return new DocumentCreationFailureDetailContract(
         error.request().metadata().fileName(),
         problemDetail.getStatus(),
         problemDetail.getTitle(),
@@ -352,46 +345,41 @@ public final class ResponseMapper {
     return GatewayErrorMapper.createProblemDetail(status, detail, e.getStatus().name());
   }
 
-  public static GeneratedDocumentLinkStrictContract toDocumentLinkResponse(
-      final DocumentLink documentLink) {
-    return new GeneratedDocumentLinkStrictContract(
-        documentLink.link(), documentLink.expiresAt().toString());
+  public static DocumentLinkContract toDocumentLinkResponse(final DocumentLink documentLink) {
+    return new DocumentLinkContract(documentLink.link(), documentLink.expiresAt().toString());
   }
 
-  public static GeneratedDeploymentStrictContract toDeployResourceResponse(
-      final DeploymentRecord brokerResponse) {
-    final var deployments = new ArrayList<GeneratedDeploymentMetadataStrictContract>();
+  public static DeploymentContract toDeployResourceResponse(final DeploymentRecord brokerResponse) {
+    final var deployments = new ArrayList<DeploymentMetadataContract>();
     addDeployedProcess(deployments, brokerResponse.getProcessesMetadata());
     addDeployedDecision(deployments, brokerResponse.decisionsMetadata());
     addDeployedDecisionRequirements(deployments, brokerResponse.decisionRequirementsMetadata());
     addDeployedForm(deployments, brokerResponse.formMetadata());
     addDeployedResource(deployments, brokerResponse.resourceMetadata());
-    return GeneratedDeploymentStrictContract.builder()
+    return DeploymentContract.builder()
         .deploymentKey(brokerResponse.getDeploymentKey())
         .tenantId(brokerResponse.getTenantId())
         .deployments(deployments)
         .build();
   }
 
-  public static GeneratedDeleteResourceResponseStrictContract toDeleteResourceResponse(
+  public static DeleteResourceResponseContract toDeleteResourceResponse(
       final ResourceDeletionRecord brokerResponse) {
-    GeneratedBatchOperationCreatedStrictContract batchOperation = null;
+    BatchOperationCreatedContract batchOperation = null;
     if (brokerResponse.isDeleteHistory() && brokerResponse.getBatchOperationKey() > 0) {
       batchOperation =
-          new GeneratedBatchOperationCreatedStrictContract(
+          new BatchOperationCreatedContract(
               KeyUtil.keyToString(brokerResponse.getBatchOperationKey()),
-              GeneratedBatchOperationTypeEnum.valueOf(
-                  brokerResponse.getBatchOperationType().name()));
+              BatchOperationTypeEnum.valueOf(brokerResponse.getBatchOperationType().name()));
     }
-    return GeneratedDeleteResourceResponseStrictContract.builder()
+    return DeleteResourceResponseContract.builder()
         .resourceKey(brokerResponse.getResourceKey())
         .batchOperation(batchOperation)
         .build();
   }
 
-  public static GeneratedResourceStrictContract toGetResourceResponse(
-      final ResourceRecord resourceRecord) {
-    return GeneratedResourceStrictContract.builder()
+  public static ResourceContract toGetResourceResponse(final ResourceRecord resourceRecord) {
+    return ResourceContract.builder()
         .resourceName(resourceRecord.getResourceName())
         .version(resourceRecord.getVersion())
         .resourceId(resourceRecord.getResourceId())
@@ -405,25 +393,25 @@ public final class ResponseMapper {
     return resourceRecord.getResourceProp();
   }
 
-  public static GeneratedMessagePublicationStrictContract toMessagePublicationResponse(
+  public static MessagePublicationContract toMessagePublicationResponse(
       final BrokerResponse<MessageRecord> brokerResponse) {
-    return GeneratedMessagePublicationStrictContract.builder()
+    return MessagePublicationContract.builder()
         .tenantId(brokerResponse.getResponse().getTenantId())
         .messageKey(brokerResponse.getKey())
         .build();
   }
 
   private static void addDeployedForm(
-      final List<GeneratedDeploymentMetadataStrictContract> deployments,
+      final List<DeploymentMetadataContract> deployments,
       final ValueArray<FormMetadataRecord> formMetadataRecords) {
     formMetadataRecords.stream()
         .map(
             form ->
-                new GeneratedDeploymentMetadataStrictContract(
+                new DeploymentMetadataContract(
                     null,
                     null,
                     null,
-                    GeneratedDeploymentFormStrictContract.builder()
+                    DeploymentFormContract.builder()
                         .formId(form.getFormId())
                         .version(form.getVersion())
                         .resourceName(form.getResourceName())
@@ -435,17 +423,17 @@ public final class ResponseMapper {
   }
 
   private static void addDeployedResource(
-      final List<GeneratedDeploymentMetadataStrictContract> deployments,
+      final List<DeploymentMetadataContract> deployments,
       final ValueArray<ResourceMetadataRecord> resourceMetadataRecords) {
     resourceMetadataRecords.stream()
         .map(
             resource ->
-                new GeneratedDeploymentMetadataStrictContract(
+                new DeploymentMetadataContract(
                     null,
                     null,
                     null,
                     null,
-                    GeneratedDeploymentResourceStrictContract.builder()
+                    DeploymentResourceContract.builder()
                         .resourceId(resource.getResourceId())
                         .resourceName(resource.getResourceName())
                         .version(resource.getVersion())
@@ -456,15 +444,15 @@ public final class ResponseMapper {
   }
 
   private static void addDeployedDecisionRequirements(
-      final List<GeneratedDeploymentMetadataStrictContract> deployments,
+      final List<DeploymentMetadataContract> deployments,
       final ValueArray<DecisionRequirementsMetadataRecord> decisionRequirementsMetadataRecords) {
     decisionRequirementsMetadataRecords.stream()
         .map(
             decisionRequirement ->
-                new GeneratedDeploymentMetadataStrictContract(
+                new DeploymentMetadataContract(
                     null,
                     null,
-                    GeneratedDeploymentDecisionRequirementsStrictContract.builder()
+                    DeploymentDecisionRequirementsContract.builder()
                         .decisionRequirementsId(decisionRequirement.getDecisionRequirementsId())
                         .decisionRequirementsName(decisionRequirement.getDecisionRequirementsName())
                         .version(decisionRequirement.getDecisionRequirementsVersion())
@@ -478,14 +466,14 @@ public final class ResponseMapper {
   }
 
   private static void addDeployedDecision(
-      final List<GeneratedDeploymentMetadataStrictContract> deployments,
+      final List<DeploymentMetadataContract> deployments,
       final ValueArray<DecisionRecord> decisionRecords) {
     decisionRecords.stream()
         .map(
             decision ->
-                new GeneratedDeploymentMetadataStrictContract(
+                new DeploymentMetadataContract(
                     null,
-                    GeneratedDeploymentDecisionStrictContract.builder()
+                    DeploymentDecisionContract.builder()
                         .decisionDefinitionId(decision.getDecisionId())
                         .version(decision.getVersion())
                         .name(decision.getDecisionName())
@@ -501,13 +489,13 @@ public final class ResponseMapper {
   }
 
   private static void addDeployedProcess(
-      final List<GeneratedDeploymentMetadataStrictContract> deployments,
+      final List<DeploymentMetadataContract> deployments,
       final List<ProcessMetadataValue> processesMetadata) {
     processesMetadata.stream()
         .map(
             process ->
-                new GeneratedDeploymentMetadataStrictContract(
-                    GeneratedDeploymentProcessStrictContract.builder()
+                new DeploymentMetadataContract(
+                    DeploymentProcessContract.builder()
                         .processDefinitionId(process.getBpmnProcessId())
                         .processDefinitionVersion(process.getVersion())
                         .resourceName(process.getResourceName())
@@ -521,7 +509,7 @@ public final class ResponseMapper {
         .forEach(deployments::add);
   }
 
-  public static GeneratedCreateProcessInstanceStrictContract toCreateProcessInstanceResponse(
+  public static CreateProcessInstanceContract toCreateProcessInstanceResponse(
       final ProcessInstanceCreationRecord brokerResponse) {
     return buildCreateProcessInstanceResponse(
         brokerResponse.getProcessDefinitionKey(),
@@ -534,8 +522,8 @@ public final class ResponseMapper {
         brokerResponse.getBusinessId());
   }
 
-  public static GeneratedCreateProcessInstanceStrictContract
-      toCreateProcessInstanceWithResultResponse(final ProcessInstanceResultRecord brokerResponse) {
+  public static CreateProcessInstanceContract toCreateProcessInstanceWithResultResponse(
+      final ProcessInstanceResultRecord brokerResponse) {
     return buildCreateProcessInstanceResponse(
         brokerResponse.getProcessDefinitionKey(),
         brokerResponse.getBpmnProcessId(),
@@ -547,7 +535,7 @@ public final class ResponseMapper {
         brokerResponse.getBusinessId());
   }
 
-  private static GeneratedCreateProcessInstanceStrictContract buildCreateProcessInstanceResponse(
+  private static CreateProcessInstanceContract buildCreateProcessInstanceResponse(
       final Long processDefinitionKey,
       final String bpmnProcessId,
       final Integer version,
@@ -556,7 +544,7 @@ public final class ResponseMapper {
       final Map<String, Object> variables,
       final Set<String> tags,
       final String businessId) {
-    return GeneratedCreateProcessInstanceStrictContract.builder()
+    return CreateProcessInstanceContract.builder()
         .processDefinitionId(bpmnProcessId)
         .processDefinitionVersion(version)
         .tenantId(tenantId)
@@ -568,112 +556,104 @@ public final class ResponseMapper {
         .build();
   }
 
-  public static GeneratedBatchOperationCreatedStrictContract
-      toBatchOperationCreatedWithResultResponse(final BatchOperationCreationRecord brokerResponse) {
-    return new GeneratedBatchOperationCreatedStrictContract(
+  public static BatchOperationCreatedContract toBatchOperationCreatedWithResultResponse(
+      final BatchOperationCreationRecord brokerResponse) {
+    return new BatchOperationCreatedContract(
         KeyUtil.keyToString(brokerResponse.getBatchOperationKey()),
-        GeneratedBatchOperationTypeEnum.valueOf(brokerResponse.getBatchOperationType().name()));
+        BatchOperationTypeEnum.valueOf(brokerResponse.getBatchOperationType().name()));
   }
 
-  public static GeneratedSignalBroadcastStrictContract toSignalBroadcastResponse(
+  public static SignalBroadcastContract toSignalBroadcastResponse(
       final BrokerResponse<SignalRecord> brokerResponse) {
-    return GeneratedSignalBroadcastStrictContract.builder()
+    return SignalBroadcastContract.builder()
         .tenantId(brokerResponse.getResponse().getTenantId())
         .signalKey(brokerResponse.getKey())
         .build();
   }
 
-  public static GeneratedEvaluateConditionalStrictContract toConditionalEvaluationResponse(
+  public static EvaluateConditionalContract toConditionalEvaluationResponse(
       final BrokerResponse<ConditionalEvaluationRecord> brokerResponse) {
     final var response = brokerResponse.getResponse();
     final var processInstances =
         response.getStartedProcessInstances().stream()
             .map(
                 instance ->
-                    GeneratedProcessInstanceReferenceStrictContract.builder()
+                    ProcessInstanceReferenceContract.builder()
                         .processDefinitionKey(instance.getProcessDefinitionKey())
                         .processInstanceKey(instance.getProcessInstanceKey())
                         .build())
             .toList();
 
-    return GeneratedEvaluateConditionalStrictContract.builder()
+    return EvaluateConditionalContract.builder()
         .conditionalEvaluationKey(brokerResponse.getKey())
         .tenantId(response.getTenantId())
         .processInstances(processInstances)
         .build();
   }
 
-  public static GeneratedAuthorizationCreateStrictContract toAuthorizationCreateResponse(
+  public static AuthorizationCreateContract toAuthorizationCreateResponse(
       final AuthorizationRecord authorizationRecord) {
-    return GeneratedAuthorizationCreateStrictContract.builder()
+    return AuthorizationCreateContract.builder()
         .authorizationKey(authorizationRecord.getAuthorizationKey())
         .build();
   }
 
-  public static GeneratedUserCreateStrictContract toUserCreateResponse(
-      final UserRecord userRecord) {
-    return new GeneratedUserCreateStrictContract(
+  public static UserCreateContract toUserCreateResponse(final UserRecord userRecord) {
+    return new UserCreateContract(
         userRecord.getUsername(), userRecord.getName(), userRecord.getEmail());
   }
 
-  public static GeneratedUserUpdateStrictContract toUserUpdateResponse(
-      final UserRecord userRecord) {
-    return new GeneratedUserUpdateStrictContract(
+  public static UserUpdateContract toUserUpdateResponse(final UserRecord userRecord) {
+    return new UserUpdateContract(
         userRecord.getUsername(), userRecord.getName(), userRecord.getEmail());
   }
 
-  public static GeneratedRoleCreateStrictContract toRoleCreateResponse(
-      final RoleRecord roleRecord) {
-    return new GeneratedRoleCreateStrictContract(
+  public static RoleCreateContract toRoleCreateResponse(final RoleRecord roleRecord) {
+    return new RoleCreateContract(
         roleRecord.getRoleId(), roleRecord.getName(), roleRecord.getDescription());
   }
 
-  public static GeneratedRoleUpdateStrictContract toRoleUpdateResponse(
-      final RoleRecord roleRecord) {
-    return new GeneratedRoleUpdateStrictContract(
+  public static RoleUpdateContract toRoleUpdateResponse(final RoleRecord roleRecord) {
+    return new RoleUpdateContract(
         roleRecord.getName(), roleRecord.getDescription(), roleRecord.getRoleId());
   }
 
-  public static GeneratedGroupCreateStrictContract toGroupCreateResponse(
-      final GroupRecord groupRecord) {
-    return new GeneratedGroupCreateStrictContract(
+  public static GroupCreateContract toGroupCreateResponse(final GroupRecord groupRecord) {
+    return new GroupCreateContract(
         groupRecord.getGroupId(), groupRecord.getName(), groupRecord.getDescription());
   }
 
-  public static GeneratedGroupUpdateStrictContract toGroupUpdateResponse(
-      final GroupRecord groupRecord) {
-    return new GeneratedGroupUpdateStrictContract(
+  public static GroupUpdateContract toGroupUpdateResponse(final GroupRecord groupRecord) {
+    return new GroupUpdateContract(
         groupRecord.getGroupId(), groupRecord.getName(), groupRecord.getDescription());
   }
 
-  public static GeneratedTenantCreateStrictContract toTenantCreateResponse(
-      final TenantRecord record) {
-    return new GeneratedTenantCreateStrictContract(
+  public static TenantCreateContract toTenantCreateResponse(final TenantRecord record) {
+    return new TenantCreateContract(
         record.getTenantId(), record.getName(), record.getDescription());
   }
 
-  public static GeneratedTenantUpdateStrictContract toTenantUpdateResponse(
-      final TenantRecord record) {
-    return new GeneratedTenantUpdateStrictContract(
+  public static TenantUpdateContract toTenantUpdateResponse(final TenantRecord record) {
+    return new TenantUpdateContract(
         record.getTenantId(), record.getName(), record.getDescription());
   }
 
-  public static GeneratedMappingRuleCreateStrictContract toMappingRuleCreateResponse(
+  public static MappingRuleCreateContract toMappingRuleCreateResponse(
       final MappingRuleRecord record) {
-    return new GeneratedMappingRuleCreateStrictContract(
+    return new MappingRuleCreateContract(
         record.getClaimName(), record.getClaimValue(), record.getName(), record.getMappingRuleId());
   }
 
-  public static GeneratedMappingRuleUpdateStrictContract toMappingRuleUpdateResponse(
+  public static MappingRuleUpdateContract toMappingRuleUpdateResponse(
       final MappingRuleRecord record) {
-    return new GeneratedMappingRuleUpdateStrictContract(
+    return new MappingRuleUpdateContract(
         record.getClaimName(), record.getClaimValue(), record.getName(), record.getMappingRuleId());
   }
 
-  public static GeneratedEvaluateDecisionStrictContract toEvaluateDecisionResponse(
+  public static EvaluateDecisionContract toEvaluateDecisionResponse(
       final BrokerResponse<DecisionEvaluationRecord> brokerResponse) {
     final var record = brokerResponse.getResponse();
-    return GeneratedEvaluateDecisionStrictContract.builder()
+    return EvaluateDecisionContract.builder()
         .decisionDefinitionId(record.getDecisionId())
         .decisionDefinitionKey(record.getDecisionKey())
         .decisionDefinitionName(record.getDecisionName())
@@ -690,12 +670,12 @@ public final class ResponseMapper {
         .build();
   }
 
-  private static List<GeneratedEvaluatedDecisionStrictContract> buildEvaluatedDecisions(
+  private static List<EvaluatedDecisionContract> buildEvaluatedDecisions(
       final DecisionEvaluationRecord decisionEvaluationRecord) {
     return decisionEvaluationRecord.getEvaluatedDecisions().stream()
         .map(
             evaluatedDecision ->
-                GeneratedEvaluatedDecisionStrictContract.builder()
+                EvaluatedDecisionContract.builder()
                     .decisionDefinitionId(evaluatedDecision.getDecisionId())
                     .decisionDefinitionName(evaluatedDecision.getDecisionName())
                     .decisionDefinitionVersion(evaluatedDecision.getDecisionVersion())
@@ -711,24 +691,24 @@ public final class ResponseMapper {
         .toList();
   }
 
-  private static List<GeneratedMatchedDecisionRuleItemStrictContract> buildMatchedRules(
+  private static List<MatchedDecisionRuleItemContract> buildMatchedRules(
       final List<MatchedRuleValue> matchedRuleValues) {
     return matchedRuleValues.stream()
         .map(
             matchedRuleValue ->
-                new GeneratedMatchedDecisionRuleItemStrictContract(
+                new MatchedDecisionRuleItemContract(
                     matchedRuleValue.getRuleId(),
                     matchedRuleValue.getRuleIndex(),
                     buildEvaluatedOutputs(matchedRuleValue.getEvaluatedOutputs())))
         .toList();
   }
 
-  private static List<GeneratedEvaluatedDecisionOutputItemStrictContract> buildEvaluatedOutputs(
+  private static List<EvaluatedDecisionOutputItemContract> buildEvaluatedOutputs(
       final List<EvaluatedOutputValue> evaluatedOutputs) {
     return evaluatedOutputs.stream()
         .map(
             evaluatedOutput ->
-                new GeneratedEvaluatedDecisionOutputItemStrictContract(
+                new EvaluatedDecisionOutputItemContract(
                     evaluatedOutput.getOutputId(),
                     evaluatedOutput.getOutputName(),
                     evaluatedOutput.getOutputValue(),
@@ -737,42 +717,41 @@ public final class ResponseMapper {
         .toList();
   }
 
-  private static List<GeneratedEvaluatedDecisionInputItemStrictContract> buildEvaluatedInputs(
+  private static List<EvaluatedDecisionInputItemContract> buildEvaluatedInputs(
       final List<EvaluatedInputValue> inputValues) {
     return inputValues.stream()
         .map(
             evaluatedInputValue ->
-                new GeneratedEvaluatedDecisionInputItemStrictContract(
+                new EvaluatedDecisionInputItemContract(
                     evaluatedInputValue.getInputId(),
                     evaluatedInputValue.getInputName(),
                     evaluatedInputValue.getInputValue()))
         .toList();
   }
 
-  public static GeneratedClusterVariableStrictContract toClusterVariableResponse(
+  public static ClusterVariableContract toClusterVariableResponse(
       final ClusterVariableRecord clusterVariableRecord) {
-    return new GeneratedClusterVariableStrictContract(
+    return new ClusterVariableContract(
         clusterVariableRecord.getName(),
         clusterVariableRecord.isTenantScoped()
-            ? GeneratedClusterVariableScopeEnum.TENANT
-            : GeneratedClusterVariableScopeEnum.GLOBAL,
+            ? ClusterVariableScopeEnum.TENANT
+            : ClusterVariableScopeEnum.GLOBAL,
         clusterVariableRecord.isTenantScoped() ? clusterVariableRecord.getTenantId() : null,
         clusterVariableRecord.getValue());
   }
 
-  public static GeneratedExpressionEvaluationStrictContract toExpressionEvaluationResult(
+  public static ExpressionEvaluationContract toExpressionEvaluationResult(
       final ExpressionRecord expressionRecord) {
-    return new GeneratedExpressionEvaluationStrictContract(
+    return new ExpressionEvaluationContract(
         expressionRecord.getExpression(),
         expressionRecord.getResultValue(),
         expressionRecord.getWarnings().stream()
-            .map(GeneratedExpressionEvaluationWarningItemStrictContract::new)
+            .map(ExpressionEvaluationWarningItemContract::new)
             .toList());
   }
 
-  public static GeneratedTopologyResponseStrictContract toTopologyResponse(
-      final Topology topology) {
-    return new GeneratedTopologyResponseStrictContract(
+  public static TopologyResponseContract toTopologyResponse(final Topology topology) {
+    return new TopologyResponseContract(
         topology.brokers().stream().map(ResponseMapper::toBrokerInfo).toList(),
         topology.clusterId(),
         topology.clusterSize(),
@@ -782,8 +761,8 @@ public final class ResponseMapper {
         KeyUtil.keyToString(topology.lastCompletedChangeId()));
   }
 
-  private static GeneratedBrokerInfoStrictContract toBrokerInfo(final Broker broker) {
-    return new GeneratedBrokerInfoStrictContract(
+  private static BrokerInfoContract toBrokerInfo(final Broker broker) {
+    return new BrokerInfoContract(
         broker.nodeId(),
         broker.host(),
         broker.port(),
@@ -791,8 +770,8 @@ public final class ResponseMapper {
         broker.version());
   }
 
-  private static GeneratedPartitionStrictContract toPartition(final Partition partition) {
-    return new GeneratedPartitionStrictContract(
+  private static PartitionContract toPartition(final Partition partition) {
+    return new PartitionContract(
         partition.partitionId(),
         partition.role().name().toLowerCase(),
         partition.health().name().toLowerCase());
@@ -802,15 +781,13 @@ public final class ResponseMapper {
     return value == null || value.isEmpty() ? null : value;
   }
 
-  static class RestJobActivationResult
-      implements JobActivationResult<GeneratedJobActivationStrictContract> {
+  static class RestJobActivationResult implements JobActivationResult<JobActivationContract> {
 
-    private final GeneratedJobActivationStrictContract response;
-    private final List<GeneratedActivatedJobStrictContract> sizeExceedingJobs;
+    private final JobActivationContract response;
+    private final List<ActivatedJobContract> sizeExceedingJobs;
 
     RestJobActivationResult(
-        final GeneratedJobActivationStrictContract response,
-        final List<GeneratedActivatedJobStrictContract> sizeExceedingJobs) {
+        final JobActivationContract response, final List<ActivatedJobContract> sizeExceedingJobs) {
       this.response = response;
       this.sizeExceedingJobs = sizeExceedingJobs;
     }
@@ -828,7 +805,7 @@ public final class ResponseMapper {
     }
 
     @Override
-    public GeneratedJobActivationStrictContract getActivateJobsResponse() {
+    public JobActivationContract getActivateJobsResponse() {
       return response;
     }
 

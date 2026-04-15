@@ -40,38 +40,38 @@ import io.camunda.gateway.mapping.http.search.contract.TenantContractAdapter;
 import io.camunda.gateway.mapping.http.search.contract.UserContractAdapter;
 import io.camunda.gateway.mapping.http.search.contract.UserTaskContractAdapter;
 import io.camunda.gateway.mapping.http.search.contract.VariableContractAdapter;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedCamundaUserStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedDecisionInstanceGetQueryStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedDecisionInstanceStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedGlobalJobStatisticsQueryStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedIncidentProcessInstanceStatisticsByDefinitionQueryResultStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedIncidentProcessInstanceStatisticsByDefinitionStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedIncidentProcessInstanceStatisticsByErrorQueryResultStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedIncidentProcessInstanceStatisticsByErrorStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedJobErrorStatisticsItemStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedJobErrorStatisticsQueryResultStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedJobTimeSeriesStatisticsItemStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedJobTimeSeriesStatisticsQueryResultStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedJobTypeStatisticsItemStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedJobTypeStatisticsQueryResultStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedJobWorkerStatisticsItemStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedJobWorkerStatisticsQueryResultStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedProcessDefinitionElementStatisticsQueryResultStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedProcessDefinitionInstanceStatisticsQueryResultStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedProcessDefinitionInstanceStatisticsStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedProcessDefinitionInstanceVersionStatisticsQueryResultStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedProcessDefinitionInstanceVersionStatisticsStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedProcessDefinitionMessageSubscriptionStatisticsQueryResultStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedProcessDefinitionMessageSubscriptionStatisticsStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedProcessElementStatisticsStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedProcessInstanceElementStatisticsQueryStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedProcessInstanceSequenceFlowStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedProcessInstanceSequenceFlowsQueryStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedSearchQueryPageResponseStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedStatusMetricStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedTenantStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedUsageMetricsResponseItemStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedUsageMetricsResponseStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.CamundaUserContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.DecisionInstanceContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.DecisionInstanceGetQueryContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GlobalJobStatisticsQueryContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.IncidentProcessInstanceStatisticsByDefinitionContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.IncidentProcessInstanceStatisticsByDefinitionQueryResultContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.IncidentProcessInstanceStatisticsByErrorContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.IncidentProcessInstanceStatisticsByErrorQueryResultContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.JobErrorStatisticsItemContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.JobErrorStatisticsQueryResultContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.JobTimeSeriesStatisticsItemContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.JobTimeSeriesStatisticsQueryResultContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.JobTypeStatisticsItemContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.JobTypeStatisticsQueryResultContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.JobWorkerStatisticsItemContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.JobWorkerStatisticsQueryResultContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.ProcessDefinitionElementStatisticsQueryResultContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.ProcessDefinitionInstanceStatisticsContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.ProcessDefinitionInstanceStatisticsQueryResultContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.ProcessDefinitionInstanceVersionStatisticsContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.ProcessDefinitionInstanceVersionStatisticsQueryResultContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.ProcessDefinitionMessageSubscriptionStatisticsContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.ProcessDefinitionMessageSubscriptionStatisticsQueryResultContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.ProcessElementStatisticsContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.ProcessInstanceElementStatisticsQueryContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.ProcessInstanceSequenceFlowContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.ProcessInstanceSequenceFlowsQueryContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.SearchQueryPageResponseContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.StatusMetricContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.TenantContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.UsageMetricsResponseContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.UsageMetricsResponseItemContract;
 import io.camunda.gateway.mapping.http.util.KeyUtil;
 import io.camunda.search.entities.AuditLogEntity;
 import io.camunda.search.entities.AuthorizationEntity;
@@ -132,7 +132,7 @@ public final class SearchQueryResponseMapper {
 
   private SearchQueryResponseMapper() {}
 
-  public static GeneratedUsageMetricsResponseStrictContract toUsageMetricsResponse(
+  public static UsageMetricsResponseContract toUsageMetricsResponse(
       final SearchQueryResult<Tuple<UsageMetricStatisticsEntity, UsageMetricTUStatisticsEntity>>
           result,
       final boolean withTenants) {
@@ -140,7 +140,7 @@ public final class SearchQueryResponseMapper {
     final var statistics = tuple.getLeft();
     final var tuStatistics = tuple.getRight();
 
-    Map<String, GeneratedUsageMetricsResponseItemStrictContract> tenants = Map.of();
+    Map<String, UsageMetricsResponseItemContract> tenants = Map.of();
 
     if (withTenants) {
       final Map<String, UsageMetricStatisticsEntityTenant> tenants1 = statistics.tenants();
@@ -156,7 +156,7 @@ public final class SearchQueryResponseMapper {
                       key -> {
                         final UsageMetricStatisticsEntityTenant stats = tenants1.get(key);
                         final UsageMetricTUStatisticsEntityTenant tuStats = tenants2.get(key);
-                        return new GeneratedUsageMetricsResponseItemStrictContract(
+                        return new UsageMetricsResponseItemContract(
                             stats != null ? stats.rpi() : 0L,
                             stats != null ? stats.edi() : 0L,
                             tuStats != null ? tuStats.tu() : 0L);
@@ -166,7 +166,7 @@ public final class SearchQueryResponseMapper {
       }
     }
 
-    return new GeneratedUsageMetricsResponseStrictContract(
+    return new UsageMetricsResponseContract(
         statistics.totalRpi(),
         statistics.totalEdi(),
         tuStatistics.totalTu(),
@@ -184,22 +184,22 @@ public final class SearchQueryResponseMapper {
             toStrictSearchQueryPage(result)));
   }
 
-  public static GeneratedProcessDefinitionElementStatisticsQueryResultStrictContract
+  public static ProcessDefinitionElementStatisticsQueryResultContract
       toProcessDefinitionElementStatisticsResult(
           final List<ProcessFlowNodeStatisticsEntity> result) {
-    return new GeneratedProcessDefinitionElementStatisticsQueryResultStrictContract(
+    return new ProcessDefinitionElementStatisticsQueryResultContract(
         result.stream().map(SearchQueryResponseMapper::toProcessElementStatisticsResult).toList());
   }
 
-  public static GeneratedProcessInstanceElementStatisticsQueryStrictContract
+  public static ProcessInstanceElementStatisticsQueryContract
       toProcessInstanceElementStatisticsResult(final List<ProcessFlowNodeStatisticsEntity> result) {
-    return new GeneratedProcessInstanceElementStatisticsQueryStrictContract(
+    return new ProcessInstanceElementStatisticsQueryContract(
         result.stream().map(SearchQueryResponseMapper::toProcessElementStatisticsResult).toList());
   }
 
-  private static GeneratedProcessElementStatisticsStrictContract toProcessElementStatisticsResult(
+  private static ProcessElementStatisticsContract toProcessElementStatisticsResult(
       final ProcessFlowNodeStatisticsEntity result) {
-    return new GeneratedProcessElementStatisticsStrictContract(
+    return new ProcessElementStatisticsContract(
         result.flowNodeId(),
         result.active(),
         result.canceled(),
@@ -207,29 +207,29 @@ public final class SearchQueryResponseMapper {
         result.completed());
   }
 
-  public static GeneratedProcessDefinitionInstanceStatisticsQueryResultStrictContract
+  public static ProcessDefinitionInstanceStatisticsQueryResultContract
       toProcessInstanceStatisticsQueryResult(
           final SearchQueryResult<ProcessDefinitionInstanceStatisticsEntity> result) {
-    return new GeneratedProcessDefinitionInstanceStatisticsQueryResultStrictContract(
+    return new ProcessDefinitionInstanceStatisticsQueryResultContract(
         toPage(result),
         result.items().stream()
             .map(SearchQueryResponseMapper::toProcessInstanceStatisticsResult)
             .toList());
   }
 
-  public static GeneratedProcessDefinitionInstanceVersionStatisticsQueryResultStrictContract
+  public static ProcessDefinitionInstanceVersionStatisticsQueryResultContract
       toProcessInstanceVersionStatisticsQueryResult(
           final SearchQueryResult<ProcessDefinitionInstanceVersionStatisticsEntity> result) {
-    return new GeneratedProcessDefinitionInstanceVersionStatisticsQueryResultStrictContract(
+    return new ProcessDefinitionInstanceVersionStatisticsQueryResultContract(
         toPage(result),
         result.items().stream()
             .map(SearchQueryResponseMapper::toProcessInstanceVersionStatisticsResult)
             .toList());
   }
 
-  private static GeneratedProcessDefinitionInstanceStatisticsStrictContract
-      toProcessInstanceStatisticsResult(final ProcessDefinitionInstanceStatisticsEntity result) {
-    return new GeneratedProcessDefinitionInstanceStatisticsStrictContract(
+  private static ProcessDefinitionInstanceStatisticsContract toProcessInstanceStatisticsResult(
+      final ProcessDefinitionInstanceStatisticsEntity result) {
+    return new ProcessDefinitionInstanceStatisticsContract(
         result.processDefinitionId(),
         result.tenantId(),
         result.latestProcessDefinitionName(),
@@ -238,10 +238,10 @@ public final class SearchQueryResponseMapper {
         result.activeInstancesWithIncidentCount());
   }
 
-  private static GeneratedProcessDefinitionInstanceVersionStatisticsStrictContract
+  private static ProcessDefinitionInstanceVersionStatisticsContract
       toProcessInstanceVersionStatisticsResult(
           final ProcessDefinitionInstanceVersionStatisticsEntity result) {
-    return new GeneratedProcessDefinitionInstanceVersionStatisticsStrictContract(
+    return new ProcessDefinitionInstanceVersionStatisticsContract(
         result.processDefinitionId(),
         KeyUtil.keyToString(result.processDefinitionKey()),
         result.processDefinitionName(),
@@ -251,37 +251,37 @@ public final class SearchQueryResponseMapper {
         result.activeInstancesWithoutIncidentCount());
   }
 
-  public static GeneratedIncidentProcessInstanceStatisticsByErrorQueryResultStrictContract
+  public static IncidentProcessInstanceStatisticsByErrorQueryResultContract
       toIncidentProcessInstanceStatisticsByErrorResult(
           final SearchQueryResult<IncidentProcessInstanceStatisticsByErrorEntity> result) {
-    return new GeneratedIncidentProcessInstanceStatisticsByErrorQueryResultStrictContract(
+    return new IncidentProcessInstanceStatisticsByErrorQueryResultContract(
         toPage(result),
         result.items().stream()
             .map(SearchQueryResponseMapper::toIncidentProcessInstanceStatisticsByErrorResult)
             .toList());
   }
 
-  private static GeneratedIncidentProcessInstanceStatisticsByErrorStrictContract
+  private static IncidentProcessInstanceStatisticsByErrorContract
       toIncidentProcessInstanceStatisticsByErrorResult(
           final IncidentProcessInstanceStatisticsByErrorEntity result) {
-    return new GeneratedIncidentProcessInstanceStatisticsByErrorStrictContract(
+    return new IncidentProcessInstanceStatisticsByErrorContract(
         result.errorHashCode(), result.errorMessage(), result.activeInstancesWithErrorCount());
   }
 
-  public static GeneratedIncidentProcessInstanceStatisticsByDefinitionQueryResultStrictContract
+  public static IncidentProcessInstanceStatisticsByDefinitionQueryResultContract
       toIncidentProcessInstanceStatisticsByDefinitionQueryResult(
           final SearchQueryResult<IncidentProcessInstanceStatisticsByDefinitionEntity> result) {
-    return new GeneratedIncidentProcessInstanceStatisticsByDefinitionQueryResultStrictContract(
+    return new IncidentProcessInstanceStatisticsByDefinitionQueryResultContract(
         toPage(result),
         result.items().stream()
             .map(SearchQueryResponseMapper::toIncidentProcessInstanceStatisticsByDefinitionResult)
             .toList());
   }
 
-  private static GeneratedIncidentProcessInstanceStatisticsByDefinitionStrictContract
+  private static IncidentProcessInstanceStatisticsByDefinitionContract
       toIncidentProcessInstanceStatisticsByDefinitionResult(
           final IncidentProcessInstanceStatisticsByDefinitionEntity result) {
-    return new GeneratedIncidentProcessInstanceStatisticsByDefinitionStrictContract(
+    return new IncidentProcessInstanceStatisticsByDefinitionContract(
         result.processDefinitionId(),
         KeyUtil.keyToString(result.processDefinitionKey()),
         result.processDefinitionName(),
@@ -290,17 +290,17 @@ public final class SearchQueryResponseMapper {
         result.activeInstancesWithErrorCount());
   }
 
-  public static GeneratedProcessInstanceSequenceFlowsQueryStrictContract toSequenceFlowsResult(
+  public static ProcessInstanceSequenceFlowsQueryContract toSequenceFlowsResult(
       final List<SequenceFlowEntity> result) {
-    return new GeneratedProcessInstanceSequenceFlowsQueryStrictContract(
+    return new ProcessInstanceSequenceFlowsQueryContract(
         result.stream()
             .map(SearchQueryResponseMapper::toProcessInstanceSequenceFlowResult)
             .toList());
   }
 
-  private static GeneratedProcessInstanceSequenceFlowStrictContract
-      toProcessInstanceSequenceFlowResult(final SequenceFlowEntity result) {
-    return new GeneratedProcessInstanceSequenceFlowStrictContract(
+  private static ProcessInstanceSequenceFlowContract toProcessInstanceSequenceFlowResult(
+      final SequenceFlowEntity result) {
+    return new ProcessInstanceSequenceFlowContract(
         result.sequenceFlowId(),
         KeyUtil.keyToString(result.processInstanceKey()),
         KeyUtil.keyToString(result.rootProcessInstanceKey()),
@@ -568,9 +568,8 @@ public final class SearchQueryResponseMapper {
             toStrictSearchQueryPage(result)));
   }
 
-  private static GeneratedSearchQueryPageResponseStrictContract toPage(
-      final SearchQueryResult<?> result) {
-    return new GeneratedSearchQueryPageResponseStrictContract(
+  private static SearchQueryPageResponseContract toPage(final SearchQueryResult<?> result) {
+    return new SearchQueryPageResponseContract(
         result.total(), result.hasMoreTotalItems(), result.startCursor(), result.endCursor());
   }
 
@@ -658,14 +657,14 @@ public final class SearchQueryResponseMapper {
     return adaptType(UserContractAdapter.adapt(entity));
   }
 
-  public static GeneratedCamundaUserStrictContract toCamundaUser(final CamundaUserDTO camundaUser) {
-    return new GeneratedCamundaUserStrictContract(
+  public static CamundaUserContract toCamundaUser(final CamundaUserDTO camundaUser) {
+    return new CamundaUserContract(
         camundaUser.username(),
         camundaUser.displayName(),
         camundaUser.email(),
         camundaUser.authorizedComponents(),
         camundaUser.tenants().stream()
-            .map(t -> new GeneratedTenantStrictContract(t.name(), t.tenantId(), t.description()))
+            .map(t -> new TenantContract(t.name(), t.tenantId(), t.description()))
             .toList(),
         camundaUser.groups(),
         camundaUser.roles(),
@@ -680,7 +679,7 @@ public final class SearchQueryResponseMapper {
         .collect(toMap(e -> e.getKey().getValue(), Map.Entry::getValue, (v1, v2) -> v1));
   }
 
-  private static List<GeneratedDecisionInstanceStrictContract> toDecisionInstances(
+  private static List<DecisionInstanceContract> toDecisionInstances(
       final List<DecisionInstanceEntity> instances) {
     return DecisionInstanceContractAdapter.toSearchProjections(instances);
   }
@@ -689,7 +688,7 @@ public final class SearchQueryResponseMapper {
     return adaptType(DecisionInstanceContractAdapter.toSearchProjection(entity));
   }
 
-  public static GeneratedDecisionInstanceGetQueryStrictContract toDecisionInstanceGetQueryResponse(
+  public static DecisionInstanceGetQueryContract toDecisionInstanceGetQueryResponse(
       final DecisionInstanceEntity entity) {
     return DecisionInstanceContractAdapter.toGetProjection(entity);
   }
@@ -771,13 +770,13 @@ public final class SearchQueryResponseMapper {
     return adaptType(ProcessInstanceCallHierarchyEntryContractAdapter.adapt(processInstanceEntity));
   }
 
-  private static List<GeneratedProcessDefinitionMessageSubscriptionStatisticsStrictContract>
+  private static List<ProcessDefinitionMessageSubscriptionStatisticsContract>
       toProcessDefinitionMessageSubscriptionStatisticsItems(
           final List<ProcessDefinitionMessageSubscriptionStatisticsEntity> entities) {
     return entities.stream()
         .map(
             e ->
-                new GeneratedProcessDefinitionMessageSubscriptionStatisticsStrictContract(
+                new ProcessDefinitionMessageSubscriptionStatisticsContract(
                     e.processDefinitionId(),
                     e.tenantId(),
                     KeyUtil.keyToString(e.processDefinitionKey()),
@@ -786,52 +785,52 @@ public final class SearchQueryResponseMapper {
         .toList();
   }
 
-  public static GeneratedProcessDefinitionMessageSubscriptionStatisticsQueryResultStrictContract
+  public static ProcessDefinitionMessageSubscriptionStatisticsQueryResultContract
       toProcessDefinitionMessageSubscriptionStatisticsQueryResponse(
           final SearchQueryResult<ProcessDefinitionMessageSubscriptionStatisticsEntity> result) {
-    return new GeneratedProcessDefinitionMessageSubscriptionStatisticsQueryResultStrictContract(
+    return new ProcessDefinitionMessageSubscriptionStatisticsQueryResultContract(
         toPage(result),
         ofNullable(result.items())
             .map(SearchQueryResponseMapper::toProcessDefinitionMessageSubscriptionStatisticsItems)
             .orElseGet(Collections::emptyList));
   }
 
-  public static GeneratedGlobalJobStatisticsQueryStrictContract toGlobalJobStatisticsQueryResult(
+  public static GlobalJobStatisticsQueryContract toGlobalJobStatisticsQueryResult(
       final GlobalJobStatisticsEntity entity) {
     if (entity == null) {
-      return new GeneratedGlobalJobStatisticsQueryStrictContract(
-          new GeneratedStatusMetricStrictContract(0L, null),
-          new GeneratedStatusMetricStrictContract(0L, null),
-          new GeneratedStatusMetricStrictContract(0L, null),
+      return new GlobalJobStatisticsQueryContract(
+          new StatusMetricContract(0L, null),
+          new StatusMetricContract(0L, null),
+          new StatusMetricContract(0L, null),
           false);
     }
 
-    return new GeneratedGlobalJobStatisticsQueryStrictContract(
+    return new GlobalJobStatisticsQueryContract(
         toStatusMetric(entity.created()),
         toStatusMetric(entity.completed()),
         toStatusMetric(entity.failed()),
         entity.isIncomplete());
   }
 
-  public static GeneratedJobTypeStatisticsQueryResultStrictContract toJobTypeStatisticsQueryResult(
+  public static JobTypeStatisticsQueryResultContract toJobTypeStatisticsQueryResult(
       final SearchQueryResult<JobTypeStatisticsEntity> result) {
-    return new GeneratedJobTypeStatisticsQueryResultStrictContract(
+    return new JobTypeStatisticsQueryResultContract(
         toPage(result),
         result.items().stream().map(SearchQueryResponseMapper::toJobTypeStatisticsItem).toList());
   }
 
-  private static GeneratedJobTypeStatisticsItemStrictContract toJobTypeStatisticsItem(
+  private static JobTypeStatisticsItemContract toJobTypeStatisticsItem(
       final JobTypeStatisticsEntity entity) {
     if (entity == null) {
-      return new GeneratedJobTypeStatisticsItemStrictContract(
+      return new JobTypeStatisticsItemContract(
           "",
-          new GeneratedStatusMetricStrictContract(0L, null),
-          new GeneratedStatusMetricStrictContract(0L, null),
-          new GeneratedStatusMetricStrictContract(0L, null),
+          new StatusMetricContract(0L, null),
+          new StatusMetricContract(0L, null),
+          new StatusMetricContract(0L, null),
           0);
     }
 
-    return new GeneratedJobTypeStatisticsItemStrictContract(
+    return new JobTypeStatisticsItemContract(
         entity.jobType(),
         toStatusMetric(entity.created()),
         toStatusMetric(entity.completed()),
@@ -839,81 +838,79 @@ public final class SearchQueryResponseMapper {
         entity.workers());
   }
 
-  public static GeneratedJobWorkerStatisticsQueryResultStrictContract
-      toJobWorkerStatisticsQueryResult(final SearchQueryResult<JobWorkerStatisticsEntity> result) {
-    return new GeneratedJobWorkerStatisticsQueryResultStrictContract(
+  public static JobWorkerStatisticsQueryResultContract toJobWorkerStatisticsQueryResult(
+      final SearchQueryResult<JobWorkerStatisticsEntity> result) {
+    return new JobWorkerStatisticsQueryResultContract(
         toPage(result),
         result.items().stream().map(SearchQueryResponseMapper::toJobWorkerStatisticsItem).toList());
   }
 
-  private static GeneratedJobWorkerStatisticsItemStrictContract toJobWorkerStatisticsItem(
+  private static JobWorkerStatisticsItemContract toJobWorkerStatisticsItem(
       final JobWorkerStatisticsEntity entity) {
     if (entity == null) {
-      return new GeneratedJobWorkerStatisticsItemStrictContract(
+      return new JobWorkerStatisticsItemContract(
           "",
-          new GeneratedStatusMetricStrictContract(0L, null),
-          new GeneratedStatusMetricStrictContract(0L, null),
-          new GeneratedStatusMetricStrictContract(0L, null));
+          new StatusMetricContract(0L, null),
+          new StatusMetricContract(0L, null),
+          new StatusMetricContract(0L, null));
     }
 
-    return new GeneratedJobWorkerStatisticsItemStrictContract(
+    return new JobWorkerStatisticsItemContract(
         entity.worker(),
         toStatusMetric(entity.created()),
         toStatusMetric(entity.completed()),
         toStatusMetric(entity.failed()));
   }
 
-  public static GeneratedJobTimeSeriesStatisticsQueryResultStrictContract
-      toJobTimeSeriesStatisticsQueryResult(
-          final SearchQueryResult<JobTimeSeriesStatisticsEntity> result) {
-    return new GeneratedJobTimeSeriesStatisticsQueryResultStrictContract(
+  public static JobTimeSeriesStatisticsQueryResultContract toJobTimeSeriesStatisticsQueryResult(
+      final SearchQueryResult<JobTimeSeriesStatisticsEntity> result) {
+    return new JobTimeSeriesStatisticsQueryResultContract(
         toPage(result),
         result.items().stream()
             .map(SearchQueryResponseMapper::toJobTimeSeriesStatisticsItem)
             .toList());
   }
 
-  private static GeneratedJobTimeSeriesStatisticsItemStrictContract toJobTimeSeriesStatisticsItem(
+  private static JobTimeSeriesStatisticsItemContract toJobTimeSeriesStatisticsItem(
       final JobTimeSeriesStatisticsEntity entity) {
     if (entity == null) {
-      return new GeneratedJobTimeSeriesStatisticsItemStrictContract(
+      return new JobTimeSeriesStatisticsItemContract(
           "",
-          new GeneratedStatusMetricStrictContract(0L, null),
-          new GeneratedStatusMetricStrictContract(0L, null),
-          new GeneratedStatusMetricStrictContract(0L, null));
+          new StatusMetricContract(0L, null),
+          new StatusMetricContract(0L, null),
+          new StatusMetricContract(0L, null));
     }
 
-    return new GeneratedJobTimeSeriesStatisticsItemStrictContract(
+    return new JobTimeSeriesStatisticsItemContract(
         formatDate(entity.time()),
         toStatusMetric(entity.created()),
         toStatusMetric(entity.completed()),
         toStatusMetric(entity.failed()));
   }
 
-  public static GeneratedJobErrorStatisticsQueryResultStrictContract
-      toJobErrorStatisticsQueryResult(final SearchQueryResult<JobErrorStatisticsEntity> result) {
-    return new GeneratedJobErrorStatisticsQueryResultStrictContract(
+  public static JobErrorStatisticsQueryResultContract toJobErrorStatisticsQueryResult(
+      final SearchQueryResult<JobErrorStatisticsEntity> result) {
+    return new JobErrorStatisticsQueryResultContract(
         toPage(result),
         result.items().stream().map(SearchQueryResponseMapper::toJobErrorStatisticsItem).toList());
   }
 
-  private static GeneratedJobErrorStatisticsItemStrictContract toJobErrorStatisticsItem(
+  private static JobErrorStatisticsItemContract toJobErrorStatisticsItem(
       final JobErrorStatisticsEntity entity) {
     if (entity == null) {
-      return new GeneratedJobErrorStatisticsItemStrictContract("", "", 0);
+      return new JobErrorStatisticsItemContract("", "", 0);
     }
 
-    return new GeneratedJobErrorStatisticsItemStrictContract(
+    return new JobErrorStatisticsItemContract(
         ofNullable(entity.errorCode()).orElse(""), entity.errorMessage(), entity.workers());
   }
 
-  private static GeneratedStatusMetricStrictContract toStatusMetric(
+  private static StatusMetricContract toStatusMetric(
       final GlobalJobStatisticsEntity.StatusMetric metric) {
     if (metric == null) {
-      return new GeneratedStatusMetricStrictContract(0L, null);
+      return new StatusMetricContract(0L, null);
     }
-    return new GeneratedStatusMetricStrictContract(
-        metric.count(), formatDate(metric.lastUpdatedAt()));
+    return new StatusMetricContract(metric.count(), formatDate(metric.lastUpdatedAt()));
   }
 
   public static <T> T toGlobalTaskListenerSearchQueryResponse(

@@ -7,14 +7,14 @@
  */
 package io.camunda.gateway.mapping.http.converters;
 
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedDecisionInstanceStateEnum;
+import io.camunda.gateway.mapping.http.search.contract.generated.DecisionInstanceStateEnum;
 import io.camunda.search.entities.DecisionInstanceEntity;
 
 public class DecisionInstanceStateConverter implements CustomConverter<String> {
 
   @Override
   public boolean canConvert(final Object value) {
-    return (value instanceof GeneratedDecisionInstanceStateEnum);
+    return (value instanceof DecisionInstanceStateEnum);
   }
 
   @Override
@@ -22,7 +22,7 @@ public class DecisionInstanceStateConverter implements CustomConverter<String> {
     if (value == null) {
       return null;
     }
-    if (value instanceof final GeneratedDecisionInstanceStateEnum decisionInstanceStateEnum) {
+    if (value instanceof final DecisionInstanceStateEnum decisionInstanceStateEnum) {
       return toInternalStateAsString(decisionInstanceStateEnum);
     }
     throw new IllegalArgumentException(
@@ -30,18 +30,18 @@ public class DecisionInstanceStateConverter implements CustomConverter<String> {
             .formatted(
                 value,
                 value.getClass().getSimpleName(),
-                GeneratedDecisionInstanceStateEnum.class.getSimpleName()));
+                DecisionInstanceStateEnum.class.getSimpleName()));
   }
 
   public static String toInternalStateAsString(
-      final GeneratedDecisionInstanceStateEnum decisionInstanceStateEnum) {
+      final DecisionInstanceStateEnum decisionInstanceStateEnum) {
     final DecisionInstanceEntity.DecisionInstanceState internalState =
         toInternalState(decisionInstanceStateEnum);
     return (internalState == null) ? null : internalState.name();
   }
 
   public static DecisionInstanceEntity.DecisionInstanceState toInternalState(
-      final GeneratedDecisionInstanceStateEnum decisionInstanceStateEnum) {
+      final DecisionInstanceStateEnum decisionInstanceStateEnum) {
     if (decisionInstanceStateEnum == null) {
       return null;
     }

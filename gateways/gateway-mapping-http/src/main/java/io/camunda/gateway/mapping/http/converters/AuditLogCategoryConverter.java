@@ -7,14 +7,14 @@
  */
 package io.camunda.gateway.mapping.http.converters;
 
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedAuditLogCategoryEnum;
+import io.camunda.gateway.mapping.http.search.contract.generated.AuditLogCategoryEnum;
 import io.camunda.search.entities.AuditLogEntity.AuditLogOperationCategory;
 
 public final class AuditLogCategoryConverter implements CustomConverter<String> {
 
   @Override
   public boolean canConvert(final Object value) {
-    return value instanceof GeneratedAuditLogCategoryEnum || value instanceof String;
+    return value instanceof AuditLogCategoryEnum || value instanceof String;
   }
 
   @Override
@@ -22,28 +22,27 @@ public final class AuditLogCategoryConverter implements CustomConverter<String> 
     if (value == null) {
       return null;
     }
-    if (value instanceof final GeneratedAuditLogCategoryEnum categoryEnum) {
+    if (value instanceof final AuditLogCategoryEnum categoryEnum) {
       return toInternalCategoryAsString(categoryEnum);
     }
     if (value instanceof final String stringValue) {
-      return toInternalCategoryAsString(GeneratedAuditLogCategoryEnum.fromValue(stringValue));
+      return toInternalCategoryAsString(AuditLogCategoryEnum.fromValue(stringValue));
     }
     throw new IllegalArgumentException(
         "Cannot convert value [%s] of type [%s]. Expected type: [%s]"
             .formatted(
                 value,
                 value.getClass().getSimpleName(),
-                GeneratedAuditLogCategoryEnum.class.getSimpleName()));
+                AuditLogCategoryEnum.class.getSimpleName()));
   }
 
-  public static String toInternalCategoryAsString(
-      final GeneratedAuditLogCategoryEnum categoryEnum) {
+  public static String toInternalCategoryAsString(final AuditLogCategoryEnum categoryEnum) {
     final AuditLogOperationCategory internalType = toInternalCategory(categoryEnum);
     return internalType == null ? null : internalType.name();
   }
 
   public static AuditLogOperationCategory toInternalCategory(
-      final GeneratedAuditLogCategoryEnum categoryEnum) {
+      final AuditLogCategoryEnum categoryEnum) {
     if (categoryEnum == null) {
       return null;
     }

@@ -10,8 +10,8 @@ package io.camunda.gateway.mapping.http.validator;
 import static io.camunda.gateway.mapping.http.validator.RequestValidator.validate;
 import static io.camunda.security.validation.ErrorMessages.ERROR_MESSAGE_EMPTY_ATTRIBUTE;
 
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedCreateGlobalTaskListenerRequestStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedUpdateGlobalTaskListenerRequestStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.CreateGlobalTaskListenerRequestContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.UpdateGlobalTaskListenerRequestContract;
 import io.camunda.security.validation.IdentifierValidator;
 import java.util.ArrayList;
 import java.util.List;
@@ -27,7 +27,7 @@ public class GlobalListenerRequestValidator {
   }
 
   public Optional<ProblemDetail> validateCreateRequest(
-      final GeneratedCreateGlobalTaskListenerRequestStrictContract request) {
+      final CreateGlobalTaskListenerRequestContract request) {
     return validate(
         () -> {
           final List<String> violations = new ArrayList<>();
@@ -50,7 +50,7 @@ public class GlobalListenerRequestValidator {
   }
 
   public Optional<ProblemDetail> validateUpdateRequest(
-      final String id, final GeneratedUpdateGlobalTaskListenerRequestStrictContract request) {
+      final String id, final UpdateGlobalTaskListenerRequestContract request) {
     return validate(
         () -> {
           final List<String> violations = new ArrayList<>();

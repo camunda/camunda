@@ -12,7 +12,7 @@ import static io.camunda.gateway.mapping.http.util.AdvancedSearchFilterUtil.mapT
 import static io.camunda.gateway.mapping.http.util.KeyUtil.mapKeyToLong;
 import static java.util.Optional.ofNullable;
 
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedUserTaskFilterStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.UserTaskFilterContract;
 import io.camunda.gateway.mapping.http.validator.TagsValidator;
 import io.camunda.search.filter.FilterBuilders;
 import io.camunda.search.filter.UserTaskFilter;
@@ -31,7 +31,7 @@ public final class UserTaskFilterMapper {
   private UserTaskFilterMapper() {}
 
   public static Either<List<String>, UserTaskFilter> toUserTaskFilter(
-      @Nullable final GeneratedUserTaskFilterStrictContract filter) {
+      @Nullable final UserTaskFilterContract filter) {
     final var builder = FilterBuilders.userTask();
     final List<String> validationErrors = new ArrayList<>();
     if (filter != null) {

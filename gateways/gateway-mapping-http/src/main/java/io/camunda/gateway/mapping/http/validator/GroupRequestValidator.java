@@ -9,8 +9,8 @@ package io.camunda.gateway.mapping.http.validator;
 
 import static io.camunda.gateway.mapping.http.validator.RequestValidator.validate;
 
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedGroupCreateRequestStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedGroupUpdateRequestStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GroupCreateRequestContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GroupUpdateRequestContract;
 import io.camunda.security.validation.GroupValidator;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import java.util.Optional;
@@ -24,13 +24,12 @@ public final class GroupRequestValidator {
     this.groupValidator = groupValidator;
   }
 
-  public Optional<ProblemDetail> validateCreateRequest(
-      final GeneratedGroupCreateRequestStrictContract request) {
+  public Optional<ProblemDetail> validateCreateRequest(final GroupCreateRequestContract request) {
     return validate(() -> groupValidator.validate(request.groupId(), request.name()));
   }
 
   public Optional<ProblemDetail> validateUpdateRequest(
-      final String groupId, final GeneratedGroupUpdateRequestStrictContract request) {
+      final String groupId, final GroupUpdateRequestContract request) {
     return validate(() -> groupValidator.validate(groupId, request.name()));
   }
 

@@ -8,11 +8,11 @@
 package io.camunda.gateway.mapping.http.mapper;
 
 import io.camunda.gateway.mapping.http.RequestMapper;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedCreateGlobalTaskListenerRequestStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedGlobalListenerSourceEnum;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedGlobalTaskListenerEventTypeEnum;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedGlobalTaskListenerStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedUpdateGlobalTaskListenerRequestStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.CreateGlobalTaskListenerRequestContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GlobalListenerSourceEnum;
+import io.camunda.gateway.mapping.http.search.contract.generated.GlobalTaskListenerContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GlobalTaskListenerEventTypeEnum;
+import io.camunda.gateway.mapping.http.search.contract.generated.UpdateGlobalTaskListenerRequestContract;
 import io.camunda.gateway.mapping.http.validator.GlobalListenerRequestValidator;
 import io.camunda.zeebe.protocol.impl.record.value.globallistener.GlobalListenerRecord;
 import io.camunda.zeebe.protocol.record.value.GlobalListenerSource;
@@ -33,7 +33,7 @@ public class GlobalListenerMapper {
   //
 
   public Either<ProblemDetail, GlobalListenerRecord> toGlobalTaskListenerCreateRequest(
-      final GeneratedCreateGlobalTaskListenerRequestStrictContract request) {
+      final CreateGlobalTaskListenerRequestContract request) {
     return RequestMapper.getResult(
         requestValidator.validateCreateRequest(request),
         () -> {
@@ -74,7 +74,7 @@ public class GlobalListenerMapper {
   }
 
   public Either<ProblemDetail, GlobalListenerRecord> toGlobalTaskListenerUpdateRequest(
-      final String id, final GeneratedUpdateGlobalTaskListenerRequestStrictContract request) {
+      final String id, final UpdateGlobalTaskListenerRequestContract request) {
     return RequestMapper.getResult(
         requestValidator.validateUpdateRequest(id, request),
         () -> {
@@ -118,19 +118,18 @@ public class GlobalListenerMapper {
   // Response mapping
   //
 
-  public GeneratedGlobalTaskListenerStrictContract toGlobalListenerResponse(
-      final GlobalListenerRecord record) {
-    return GeneratedGlobalTaskListenerStrictContract.builder()
+  public GlobalTaskListenerContract toGlobalListenerResponse(final GlobalListenerRecord record) {
+    return GlobalTaskListenerContract.builder()
         .type(record.getType())
         .retries(record.getRetries())
         .afterNonGlobal(record.isAfterNonGlobal())
         .priority(record.getPriority())
         .eventTypes(
             record.getEventTypes().stream()
-                .map(GeneratedGlobalTaskListenerEventTypeEnum::fromValue)
+                .map(GlobalTaskListenerEventTypeEnum::fromValue)
                 .toList())
         .id(record.getId())
-        .source(GeneratedGlobalListenerSourceEnum.valueOf(record.getSource().name()))
+        .source(GlobalListenerSourceEnum.valueOf(record.getSource().name()))
         .build();
   }
 }

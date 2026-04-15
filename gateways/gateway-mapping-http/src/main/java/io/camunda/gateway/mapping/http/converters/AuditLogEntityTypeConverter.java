@@ -7,14 +7,14 @@
  */
 package io.camunda.gateway.mapping.http.converters;
 
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedAuditLogEntityTypeEnum;
+import io.camunda.gateway.mapping.http.search.contract.generated.AuditLogEntityTypeEnum;
 import io.camunda.search.entities.AuditLogEntity.AuditLogEntityType;
 
 public final class AuditLogEntityTypeConverter implements CustomConverter<String> {
 
   @Override
   public boolean canConvert(final Object value) {
-    return value instanceof GeneratedAuditLogEntityTypeEnum;
+    return value instanceof AuditLogEntityTypeEnum;
   }
 
   @Override
@@ -22,7 +22,7 @@ public final class AuditLogEntityTypeConverter implements CustomConverter<String
     if (value == null) {
       return null;
     }
-    if (value instanceof final GeneratedAuditLogEntityTypeEnum entityTypeEnum) {
+    if (value instanceof final AuditLogEntityTypeEnum entityTypeEnum) {
       return toInternalEntityTypeAsString(entityTypeEnum);
     }
     throw new IllegalArgumentException(
@@ -30,17 +30,16 @@ public final class AuditLogEntityTypeConverter implements CustomConverter<String
             .formatted(
                 value,
                 value.getClass().getSimpleName(),
-                GeneratedAuditLogEntityTypeEnum.class.getSimpleName()));
+                AuditLogEntityTypeEnum.class.getSimpleName()));
   }
 
-  public static String toInternalEntityTypeAsString(
-      final GeneratedAuditLogEntityTypeEnum entityTypeEnum) {
+  public static String toInternalEntityTypeAsString(final AuditLogEntityTypeEnum entityTypeEnum) {
     final AuditLogEntityType internalType = toInternalEntityType(entityTypeEnum);
     return internalType == null ? null : internalType.name();
   }
 
   public static AuditLogEntityType toInternalEntityType(
-      final GeneratedAuditLogEntityTypeEnum entityTypeEnum) {
+      final AuditLogEntityTypeEnum entityTypeEnum) {
     if (entityTypeEnum == null) {
       return null;
     }

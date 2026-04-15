@@ -9,7 +9,7 @@ package io.camunda.gateway.mapping.http.search.contract;
 
 import static java.util.Optional.ofNullable;
 
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedDecisionRequirementsFilterStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.DecisionRequirementsFilterContract;
 import io.camunda.gateway.mapping.http.util.KeyUtil;
 import io.camunda.search.filter.DecisionRequirementsFilter;
 import io.camunda.search.filter.FilterBuilders;
@@ -22,7 +22,7 @@ public final class DecisionRequirementsFilterMapper {
   private DecisionRequirementsFilterMapper() {}
 
   public static DecisionRequirementsFilter toDecisionRequirementsFilter(
-      @Nullable final GeneratedDecisionRequirementsFilterStrictContract filter) {
+      @Nullable final DecisionRequirementsFilterContract filter) {
     final var builder = FilterBuilders.decisionRequirements();
     if (filter != null) {
       ofNullable(filter.decisionRequirementsKey())

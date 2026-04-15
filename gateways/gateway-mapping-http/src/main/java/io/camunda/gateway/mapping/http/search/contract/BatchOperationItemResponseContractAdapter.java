@@ -8,10 +8,10 @@
 package io.camunda.gateway.mapping.http.search.contract;
 
 import static io.camunda.gateway.mapping.http.ResponseMapper.formatDate;
-import static io.camunda.gateway.mapping.http.search.contract.generated.GeneratedBatchOperationItemResponseStrictContract.Fields;
+import static io.camunda.gateway.mapping.http.search.contract.generated.BatchOperationItemResponseContract.Fields;
 
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedBatchOperationItemResponseStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedBatchOperationTypeEnum;
+import io.camunda.gateway.mapping.http.search.contract.generated.BatchOperationItemResponseContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.BatchOperationTypeEnum;
 import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
 import io.camunda.gateway.mapping.http.util.KeyUtil;
 import io.camunda.search.entities.BatchOperationEntity.BatchOperationItemEntity;
@@ -26,13 +26,11 @@ public final class BatchOperationItemResponseContractAdapter {
 
   private BatchOperationItemResponseContractAdapter() {}
 
-  public static GeneratedBatchOperationItemResponseStrictContract adapt(
-      final BatchOperationItemEntity entity) {
-    return GeneratedBatchOperationItemResponseStrictContract.builder()
+  public static BatchOperationItemResponseContract adapt(final BatchOperationItemEntity entity) {
+    return BatchOperationItemResponseContract.builder()
         .operationType(
             ContractPolicy.requireNonNull(
-                ContractPolicy.mapEnum(
-                    entity.operationType(), GeneratedBatchOperationTypeEnum::fromValue),
+                ContractPolicy.mapEnum(entity.operationType(), BatchOperationTypeEnum::fromValue),
                 Fields.OPERATION_TYPE,
                 entity))
         .batchOperationKey(

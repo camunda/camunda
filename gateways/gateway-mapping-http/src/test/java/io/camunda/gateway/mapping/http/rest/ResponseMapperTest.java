@@ -10,8 +10,8 @@ package io.camunda.gateway.mapping.http.rest;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.gateway.mapping.http.ResponseMapper;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedActivatedJobStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedUserTaskPropertiesStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.ActivatedJobContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.UserTaskPropertiesContract;
 import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
 import io.camunda.zeebe.gateway.impl.job.JobActivationResponse;
 import io.camunda.zeebe.msgpack.spec.MsgPackHelper;
@@ -209,7 +209,7 @@ class ResponseMapperTest {
       final var jobs = result.getActivateJobsResponse().jobs();
       assertThat(jobs)
           .singleElement()
-          .extracting(GeneratedActivatedJobStrictContract::userTask)
+          .extracting(ActivatedJobContract::userTask)
           .satisfies(testCase.assertions);
     }
 
@@ -319,7 +319,7 @@ class ResponseMapperTest {
         String name,
         JobKind jobKind,
         Map<String, String> headers,
-        Consumer<GeneratedUserTaskPropertiesStrictContract> assertions) {
+        Consumer<UserTaskPropertiesContract> assertions) {
 
       @Override
       public String toString() {

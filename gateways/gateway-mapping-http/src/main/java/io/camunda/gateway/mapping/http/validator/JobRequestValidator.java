@@ -12,9 +12,9 @@ import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESS
 import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_INVALID_ATTRIBUTE_VALUE;
 import static io.camunda.gateway.mapping.http.validator.RequestValidator.validate;
 
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedJobActivationRequestStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedJobErrorRequestStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedJobUpdateRequestStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.JobActivationRequestContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.JobErrorRequestContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.JobUpdateRequestContract;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.http.ProblemDetail;
@@ -22,7 +22,7 @@ import org.springframework.http.ProblemDetail;
 public final class JobRequestValidator {
 
   public static Optional<ProblemDetail> validateActivationRequest(
-      final GeneratedJobActivationRequestStrictContract request) {
+      final JobActivationRequestContract request) {
     return validate(
         violations -> {
           if (request.type() == null || request.type().isBlank()) {
@@ -46,7 +46,7 @@ public final class JobRequestValidator {
   }
 
   public static Optional<ProblemDetail> validateErrorRequest(
-      final GeneratedJobErrorRequestStrictContract request) {
+      final JobErrorRequestContract request) {
     return validate(
         violations -> {
           if (request.errorCode() == null || request.errorCode().isBlank()) {
@@ -56,7 +56,7 @@ public final class JobRequestValidator {
   }
 
   public static Optional<ProblemDetail> validateUpdateRequest(
-      final GeneratedJobUpdateRequestStrictContract request) {
+      final JobUpdateRequestContract request) {
     final var cs = request.changeset();
     return validate(
         violations -> {

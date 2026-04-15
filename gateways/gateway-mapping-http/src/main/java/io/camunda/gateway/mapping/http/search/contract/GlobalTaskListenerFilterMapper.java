@@ -10,7 +10,7 @@ package io.camunda.gateway.mapping.http.search.contract;
 import static io.camunda.gateway.mapping.http.util.AdvancedSearchFilterUtil.mapToOperations;
 import static java.util.Optional.ofNullable;
 
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedGlobalTaskListenerSearchQueryFilterRequestStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GlobalTaskListenerSearchQueryFilterRequestContract;
 import io.camunda.search.entities.GlobalListenerType;
 import io.camunda.search.filter.FilterBuilders;
 import io.camunda.search.filter.GlobalListenerFilter;
@@ -23,7 +23,7 @@ public final class GlobalTaskListenerFilterMapper {
   private GlobalTaskListenerFilterMapper() {}
 
   public static GlobalListenerFilter toGlobalTaskListenerFilter(
-      @Nullable final GeneratedGlobalTaskListenerSearchQueryFilterRequestStrictContract filter) {
+      @Nullable final GlobalTaskListenerSearchQueryFilterRequestContract filter) {
     final var builder =
         FilterBuilders.globalListener().listenerTypes(GlobalListenerType.USER_TASK.name());
     if (filter != null) {

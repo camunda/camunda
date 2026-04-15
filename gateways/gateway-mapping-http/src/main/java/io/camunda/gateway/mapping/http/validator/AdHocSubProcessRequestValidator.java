@@ -10,14 +10,14 @@ package io.camunda.gateway.mapping.http.validator;
 import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_EMPTY_ATTRIBUTE;
 import static io.camunda.gateway.mapping.http.validator.RequestValidator.validate;
 
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedAdHocSubProcessActivateActivitiesInstructionStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.AdHocSubProcessActivateActivitiesInstructionContract;
 import java.util.Optional;
 import org.springframework.http.ProblemDetail;
 
 public final class AdHocSubProcessRequestValidator {
 
   public static Optional<ProblemDetail> validateActivateActivitiesRequest(
-      final GeneratedAdHocSubProcessActivateActivitiesInstructionStrictContract request) {
+      final AdHocSubProcessActivateActivitiesInstructionContract request) {
     return validate(
         violations -> {
           if (request.elements() == null || request.elements().isEmpty()) {

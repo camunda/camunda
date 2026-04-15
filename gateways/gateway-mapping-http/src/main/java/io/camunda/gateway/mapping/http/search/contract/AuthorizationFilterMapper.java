@@ -7,7 +7,7 @@
  */
 package io.camunda.gateway.mapping.http.search.contract;
 
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedAuthorizationFilterStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.AuthorizationFilterContract;
 import io.camunda.search.filter.AuthorizationFilter;
 import io.camunda.search.filter.FilterBuilders;
 import java.util.List;
@@ -21,7 +21,7 @@ public final class AuthorizationFilterMapper {
   private AuthorizationFilterMapper() {}
 
   public static @Nullable AuthorizationFilter toAuthorizationFilter(
-      @Nullable final GeneratedAuthorizationFilterStrictContract filter) {
+      @Nullable final AuthorizationFilterContract filter) {
     return Optional.ofNullable(filter)
         .map(
             f ->

@@ -7,14 +7,14 @@
  */
 package io.camunda.gateway.mapping.http.converters;
 
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedProcessInstanceStateEnum;
+import io.camunda.gateway.mapping.http.search.contract.generated.ProcessInstanceStateEnum;
 import io.camunda.search.entities.ProcessInstanceEntity;
 
 public class ProcessInstanceStateConverter implements CustomConverter<String> {
 
   @Override
   public boolean canConvert(final Object value) {
-    return value instanceof GeneratedProcessInstanceStateEnum || value instanceof String;
+    return value instanceof ProcessInstanceStateEnum || value instanceof String;
   }
 
   @Override
@@ -22,12 +22,12 @@ public class ProcessInstanceStateConverter implements CustomConverter<String> {
     if (value == null) {
       return null;
     }
-    if (value instanceof final GeneratedProcessInstanceStateEnum processInstanceStateEnum) {
+    if (value instanceof final ProcessInstanceStateEnum processInstanceStateEnum) {
       return toInternalStateAsString(processInstanceStateEnum);
     }
     if (value instanceof final String stringValue) {
       try {
-        return toInternalStateAsString(GeneratedProcessInstanceStateEnum.valueOf(stringValue));
+        return toInternalStateAsString(ProcessInstanceStateEnum.valueOf(stringValue));
       } catch (final IllegalArgumentException e) {
         // Not a known enum constant (e.g. partial value for $like); pass through as-is.
         return stringValue;
@@ -38,22 +38,22 @@ public class ProcessInstanceStateConverter implements CustomConverter<String> {
             .formatted(
                 value,
                 value.getClass().getSimpleName(),
-                GeneratedProcessInstanceStateEnum.class.getSimpleName()));
+                ProcessInstanceStateEnum.class.getSimpleName()));
   }
 
   public static String toInternalStateAsString(
-      final GeneratedProcessInstanceStateEnum processInstanceStateEnum) {
+      final ProcessInstanceStateEnum processInstanceStateEnum) {
     final ProcessInstanceEntity.ProcessInstanceState internalState =
         toInternalState(processInstanceStateEnum);
     return (internalState == null) ? null : internalState.name();
   }
 
   public static ProcessInstanceEntity.ProcessInstanceState toInternalState(
-      final GeneratedProcessInstanceStateEnum processInstanceStateEnum) {
+      final ProcessInstanceStateEnum processInstanceStateEnum) {
     if (processInstanceStateEnum == null) {
       return null;
     }
-    if (processInstanceStateEnum == GeneratedProcessInstanceStateEnum.TERMINATED) {
+    if (processInstanceStateEnum == ProcessInstanceStateEnum.TERMINATED) {
       return ProcessInstanceEntity.ProcessInstanceState.CANCELED;
     }
 

@@ -9,8 +9,8 @@ package io.camunda.gateway.mapping.http.validator;
 
 import static io.camunda.gateway.mapping.http.validator.RequestValidator.validate;
 
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedMappingRuleCreateRequestStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedMappingRuleUpdateRequestStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.MappingRuleCreateRequestContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.MappingRuleUpdateRequestContract;
 import io.camunda.security.validation.MappingRuleValidator;
 import java.util.Optional;
 import org.springframework.http.ProblemDetail;
@@ -24,7 +24,7 @@ public final class MappingRuleRequestValidator {
   }
 
   public Optional<ProblemDetail> validateCreateRequest(
-      final GeneratedMappingRuleCreateRequestStrictContract request) {
+      final MappingRuleCreateRequestContract request) {
     return validate(
         () ->
             mappingRuleValidator.validateCreateRequest(
@@ -35,7 +35,7 @@ public final class MappingRuleRequestValidator {
   }
 
   public Optional<ProblemDetail> validateUpdateRequest(
-      final GeneratedMappingRuleUpdateRequestStrictContract request) {
+      final MappingRuleUpdateRequestContract request) {
     return validate(
         () ->
             mappingRuleValidator.validateUpdateRequest(

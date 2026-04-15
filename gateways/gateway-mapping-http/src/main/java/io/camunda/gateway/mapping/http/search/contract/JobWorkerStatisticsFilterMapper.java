@@ -10,7 +10,7 @@ package io.camunda.gateway.mapping.http.search.contract;
 import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_EMPTY_ATTRIBUTE;
 import static io.camunda.gateway.mapping.http.validator.RequestValidator.validateDate;
 
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedJobWorkerStatisticsFilterStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.JobWorkerStatisticsFilterContract;
 import io.camunda.search.filter.FilterBuilders;
 import io.camunda.search.filter.JobWorkerStatisticsFilter;
 import io.camunda.zeebe.util.Either;
@@ -26,7 +26,7 @@ public final class JobWorkerStatisticsFilterMapper {
   private JobWorkerStatisticsFilterMapper() {}
 
   public static Either<List<String>, JobWorkerStatisticsFilter> toJobWorkerStatisticsFilter(
-      @Nullable final GeneratedJobWorkerStatisticsFilterStrictContract filter) {
+      @Nullable final JobWorkerStatisticsFilterContract filter) {
     final var builder = FilterBuilders.jobWorkerStatistics();
     final List<String> validationErrors = new ArrayList<>();
     if (filter == null) {

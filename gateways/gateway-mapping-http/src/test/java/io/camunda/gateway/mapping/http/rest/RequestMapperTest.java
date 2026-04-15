@@ -10,9 +10,9 @@ package io.camunda.gateway.mapping.http.rest;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.gateway.mapping.http.RequestMapper;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedDeleteResourceRequestStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedJobActivationRequestStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedTenantFilterEnum;
+import io.camunda.gateway.mapping.http.search.contract.generated.DeleteResourceRequestContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.JobActivationRequestContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.TenantFilterEnum;
 import io.camunda.zeebe.protocol.record.value.TenantFilter;
 import java.util.List;
 import org.junit.jupiter.api.Nested;
@@ -30,8 +30,7 @@ class RequestMapperTest {
 
       // when
       final var result =
-          RequestMapper.toResourceDeletion(
-              resourceKey, (GeneratedDeleteResourceRequestStrictContract) null);
+          RequestMapper.toResourceDeletion(resourceKey, (DeleteResourceRequestContract) null);
 
       // then
       assertThat(result.isRight()).isTrue();
@@ -45,7 +44,7 @@ class RequestMapperTest {
     void shouldMapResourceDeletionWithOperationReference() {
       // given
       final long resourceKey = 67890L;
-      final var deleteRequest = new GeneratedDeleteResourceRequestStrictContract(999L, null);
+      final var deleteRequest = new DeleteResourceRequestContract(999L, null);
 
       // when
       final var result = RequestMapper.toResourceDeletion(resourceKey, deleteRequest);
@@ -62,7 +61,7 @@ class RequestMapperTest {
     void shouldMapResourceDeletionWithDeleteHistory() {
       // given
       final long resourceKey = 11111L;
-      final var deleteRequest = new GeneratedDeleteResourceRequestStrictContract(null, true);
+      final var deleteRequest = new DeleteResourceRequestContract(null, true);
 
       // when
       final var result = RequestMapper.toResourceDeletion(resourceKey, deleteRequest);
@@ -79,7 +78,7 @@ class RequestMapperTest {
     void shouldMapResourceDeletionWithAllFields() {
       // given
       final long resourceKey = 22222L;
-      final var deleteRequest = new GeneratedDeleteResourceRequestStrictContract(555L, true);
+      final var deleteRequest = new DeleteResourceRequestContract(555L, true);
 
       // when
       final var result = RequestMapper.toResourceDeletion(resourceKey, deleteRequest);
@@ -96,7 +95,7 @@ class RequestMapperTest {
     void shouldMapResourceDeletionWithDeleteHistoryFalse() {
       // given
       final long resourceKey = 33333L;
-      final var deleteRequest = new GeneratedDeleteResourceRequestStrictContract(null, false);
+      final var deleteRequest = new DeleteResourceRequestContract(null, false);
 
       // when
       final var result = RequestMapper.toResourceDeletion(resourceKey, deleteRequest);
@@ -116,7 +115,7 @@ class RequestMapperTest {
 
       // when / then
       org.assertj.core.api.Assertions.assertThatThrownBy(
-              () -> new GeneratedDeleteResourceRequestStrictContract(0L, null))
+              () -> new DeleteResourceRequestContract(0L, null))
           .isInstanceOf(IllegalArgumentException.class);
     }
   }
@@ -128,7 +127,7 @@ class RequestMapperTest {
     void shouldMapJobActivationWithProvidedTenantFilterAndTenantIds() {
       // given
       final var request =
-          GeneratedJobActivationRequestStrictContract.builder()
+          JobActivationRequestContract.builder()
               .type("test-job")
               .timeout(5000L)
               .maxJobsToActivate(10)
@@ -151,11 +150,11 @@ class RequestMapperTest {
     void shouldMapJobActivationWithAssignedTenantFilterAndNoTenantIds() {
       // given
       final var request =
-          GeneratedJobActivationRequestStrictContract.builder()
+          JobActivationRequestContract.builder()
               .type("test-job")
               .timeout(3000L)
               .maxJobsToActivate(5)
-              .tenantFilter(GeneratedTenantFilterEnum.ASSIGNED)
+              .tenantFilter(TenantFilterEnum.ASSIGNED)
               .build();
 
       // when
@@ -175,12 +174,12 @@ class RequestMapperTest {
     void shouldIgnoreTenantIdsWhenAssignedTenantFilterIsUsed() {
       // given
       final var request =
-          GeneratedJobActivationRequestStrictContract.builder()
+          JobActivationRequestContract.builder()
               .type("test-job")
               .timeout(3000L)
               .maxJobsToActivate(5)
               .tenantIds(List.of("tenant-a", "tenant-b"))
-              .tenantFilter(GeneratedTenantFilterEnum.ASSIGNED)
+              .tenantFilter(TenantFilterEnum.ASSIGNED)
               .build();
       // when
       final var result = RequestMapper.toJobsActivationRequest(request, true);
@@ -200,7 +199,7 @@ class RequestMapperTest {
     void shouldRejectProvidedFilterWithoutTenantIdsWhenMultiTenancyEnabled() {
       // given
       final var request =
-          GeneratedJobActivationRequestStrictContract.builder()
+          JobActivationRequestContract.builder()
               .type("test-job")
               .timeout(5000L)
               .maxJobsToActivate(10)
@@ -221,7 +220,7 @@ class RequestMapperTest {
     void shouldDefaultToProvidedTenantFilterWhenNotSpecified() {
       // given
       final var request =
-          GeneratedJobActivationRequestStrictContract.builder()
+          JobActivationRequestContract.builder()
               .type("test-job")
               .timeout(5000L)
               .maxJobsToActivate(10)
@@ -244,7 +243,7 @@ class RequestMapperTest {
     void shouldMapJobActivationWithDefaultTenantWhenMultiTenancyDisabled() {
       // given
       final var request =
-          GeneratedJobActivationRequestStrictContract.builder()
+          JobActivationRequestContract.builder()
               .type("test-job")
               .timeout(3000L)
               .maxJobsToActivate(5)
@@ -268,7 +267,7 @@ class RequestMapperTest {
     void shouldRejectNonDefaultTenantIdWhenMultiTenancyDisabled() {
       // given - tenant ID provided when multi-tenancy is disabled
       final var request =
-          GeneratedJobActivationRequestStrictContract.builder()
+          JobActivationRequestContract.builder()
               .type("test-job")
               .timeout(5000L)
               .maxJobsToActivate(10)
@@ -289,7 +288,7 @@ class RequestMapperTest {
     void shouldMapJobActivationWithAllFields() {
       // given
       final var request =
-          GeneratedJobActivationRequestStrictContract.builder()
+          JobActivationRequestContract.builder()
               .type("complex-job")
               .timeout(10000L)
               .maxJobsToActivate(15)
@@ -318,7 +317,7 @@ class RequestMapperTest {
     void shouldRejectJobActivationWithInvalidType() {
       // given - request with empty type
       final var request =
-          GeneratedJobActivationRequestStrictContract.builder()
+          JobActivationRequestContract.builder()
               .type("")
               .timeout(5000L)
               .maxJobsToActivate(10)
@@ -339,7 +338,7 @@ class RequestMapperTest {
     void shouldRejectJobActivationWithInvalidMaxJobsToActivate() {
       // given - request with invalid maxJobsToActivate
       final var request =
-          GeneratedJobActivationRequestStrictContract.builder()
+          JobActivationRequestContract.builder()
               .type("test-job")
               .timeout(5000L)
               .maxJobsToActivate(0)
@@ -360,7 +359,7 @@ class RequestMapperTest {
     void shouldRejectJobActivationWithInvalidTimeout() {
       // given - request with invalid timeout
       final var request =
-          GeneratedJobActivationRequestStrictContract.builder()
+          JobActivationRequestContract.builder()
               .type("test-job")
               .timeout(0L)
               .maxJobsToActivate(10)
@@ -381,7 +380,7 @@ class RequestMapperTest {
     void shouldMapJobActivationWithMultipleTenantIds() {
       // given
       final var request =
-          GeneratedJobActivationRequestStrictContract.builder()
+          JobActivationRequestContract.builder()
               .type("test-job")
               .timeout(5000L)
               .maxJobsToActivate(10)
@@ -402,11 +401,11 @@ class RequestMapperTest {
     void shouldRejectAssignedTenantFilterWhenMultiTenancyDisabled() {
       // given
       final var request =
-          GeneratedJobActivationRequestStrictContract.builder()
+          JobActivationRequestContract.builder()
               .type("test-job")
               .timeout(5000L)
               .maxJobsToActivate(10)
-              .tenantFilter(GeneratedTenantFilterEnum.ASSIGNED)
+              .tenantFilter(TenantFilterEnum.ASSIGNED)
               .build();
 
       // when

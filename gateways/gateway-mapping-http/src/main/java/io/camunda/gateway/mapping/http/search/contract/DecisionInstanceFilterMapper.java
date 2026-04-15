@@ -11,7 +11,7 @@ import static io.camunda.gateway.mapping.http.util.AdvancedSearchFilterUtil.mapT
 import static java.util.Optional.ofNullable;
 
 import io.camunda.gateway.mapping.http.converters.DecisionInstanceStateConverter;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedDecisionInstanceFilterStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.DecisionInstanceFilterContract;
 import io.camunda.gateway.mapping.http.util.KeyUtil;
 import io.camunda.search.entities.DecisionInstanceEntity.DecisionDefinitionType;
 import io.camunda.search.filter.DecisionInstanceFilter;
@@ -26,7 +26,7 @@ public final class DecisionInstanceFilterMapper {
   private DecisionInstanceFilterMapper() {}
 
   public static DecisionInstanceFilter toDecisionInstanceFilter(
-      @Nullable final GeneratedDecisionInstanceFilterStrictContract filter) {
+      @Nullable final DecisionInstanceFilterContract filter) {
     final var builder = FilterBuilders.decisionInstance();
     if (filter != null) {
       ofNullable(filter.decisionEvaluationKey())

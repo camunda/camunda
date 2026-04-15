@@ -7,14 +7,14 @@
  */
 package io.camunda.gateway.mapping.http.converters;
 
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedBatchOperationTypeEnum;
+import io.camunda.gateway.mapping.http.search.contract.generated.BatchOperationTypeEnum;
 import io.camunda.search.entities.BatchOperationType;
 
 public final class BatchOperationTypeConverter implements CustomConverter<String> {
 
   @Override
   public boolean canConvert(final Object value) {
-    return value instanceof GeneratedBatchOperationTypeEnum;
+    return value instanceof BatchOperationTypeEnum;
   }
 
   @Override
@@ -22,7 +22,7 @@ public final class BatchOperationTypeConverter implements CustomConverter<String
     if (value == null) {
       return null;
     }
-    if (value instanceof final GeneratedBatchOperationTypeEnum categoryEnum) {
+    if (value instanceof final BatchOperationTypeEnum categoryEnum) {
       return toInternalBatchOperationTypeAsString(categoryEnum);
     }
     throw new IllegalArgumentException(
@@ -30,17 +30,16 @@ public final class BatchOperationTypeConverter implements CustomConverter<String
             .formatted(
                 value,
                 value.getClass().getSimpleName(),
-                GeneratedBatchOperationTypeEnum.class.getSimpleName()));
+                BatchOperationTypeEnum.class.getSimpleName()));
   }
 
-  public static String toInternalBatchOperationTypeAsString(
-      final GeneratedBatchOperationTypeEnum typeEnum) {
+  public static String toInternalBatchOperationTypeAsString(final BatchOperationTypeEnum typeEnum) {
     final BatchOperationType internalType = toInternalBatchOperationType(typeEnum);
     return internalType == null ? null : internalType.name();
   }
 
   public static BatchOperationType toInternalBatchOperationType(
-      final GeneratedBatchOperationTypeEnum categoryEnum) {
+      final BatchOperationTypeEnum categoryEnum) {
     if (categoryEnum == null) {
       return null;
     }

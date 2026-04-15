@@ -8,8 +8,8 @@
 package io.camunda.gateway.mapping.http.mapper;
 
 import io.camunda.gateway.mapping.http.RequestMapper;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedGroupCreateRequestStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedGroupUpdateRequestStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GroupCreateRequestContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GroupUpdateRequestContract;
 import io.camunda.gateway.mapping.http.validator.GroupRequestValidator;
 import io.camunda.service.GroupServices.GroupDTO;
 import io.camunda.service.GroupServices.GroupMemberDTO;
@@ -33,14 +33,14 @@ public class GroupMapper {
   }
 
   public Either<ProblemDetail, GroupDTO> toGroupCreateRequest(
-      final GeneratedGroupCreateRequestStrictContract request) {
+      final GroupCreateRequestContract request) {
     return RequestMapper.getResult(
         groupRequestValidator.validateCreateRequest(request),
         () -> new GroupDTO(request.groupId(), request.name(), request.description()));
   }
 
   public Either<ProblemDetail, GroupDTO> toGroupUpdateRequest(
-      final GeneratedGroupUpdateRequestStrictContract request, final String groupId) {
+      final GroupUpdateRequestContract request, final String groupId) {
     return RequestMapper.getResult(
         groupRequestValidator.validateUpdateRequest(groupId, request),
         () -> new GroupDTO(groupId, request.name(), request.description()));

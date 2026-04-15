@@ -8,8 +8,8 @@
 package io.camunda.gateway.mapping.http.mapper;
 
 import io.camunda.gateway.mapping.http.RequestMapper;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedTenantCreateRequestStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedTenantUpdateRequestStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.TenantCreateRequestContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.TenantUpdateRequestContract;
 import io.camunda.gateway.mapping.http.validator.TenantRequestValidator;
 import io.camunda.service.TenantServices.TenantMemberRequest;
 import io.camunda.service.TenantServices.TenantRequest;
@@ -33,14 +33,14 @@ public class TenantMapper {
   }
 
   public Either<ProblemDetail, TenantRequest> toTenantCreateDto(
-      final GeneratedTenantCreateRequestStrictContract request) {
+      final TenantCreateRequestContract request) {
     return RequestMapper.getResult(
         tenantRequestValidator.validateCreateRequest(request),
         () -> new TenantRequest(null, request.tenantId(), request.name(), request.description()));
   }
 
   public Either<ProblemDetail, TenantRequest> toTenantUpdateDto(
-      final String tenantId, final GeneratedTenantUpdateRequestStrictContract request) {
+      final String tenantId, final TenantUpdateRequestContract request) {
     return RequestMapper.getResult(
         tenantRequestValidator.validateUpdateRequest(request),
         () -> new TenantRequest(null, tenantId, request.name(), request.description()));
