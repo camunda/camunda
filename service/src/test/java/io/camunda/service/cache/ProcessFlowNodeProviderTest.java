@@ -230,5 +230,6 @@ class ProcessDefinitionProviderTest {
     assertThat(actualQuery.filter().processDefinitionKeys()).hasSize(3);
     assertThat(actualQuery.filter().processDefinitionKeys()).containsOnly(PROC_DEF_KEY, 2L, 3L);
     assertThat(actualQuery.page()).isEqualTo(new SearchQueryPage.Builder().size(3).build());
+    assertThat(actualQuery.resultConfig().includeXml()).isTrue();
   }
 }

@@ -52,7 +52,10 @@ public class RdbmsProcessCacheLoader implements CacheLoader<Long, CachedProcessE
   @Override
   public @NotNull Map<Long, CachedProcessEntity> loadAll(final @NotNull Set<? extends Long> keys) {
     final var query =
-        ProcessDefinitionQuery.of(b -> b.filter(f -> f.processDefinitionKeys(List.copyOf(keys))));
+        ProcessDefinitionQuery.of(
+            b ->
+                b.filter(f -> f.processDefinitionKeys(List.copyOf(keys)))
+                    .resultConfig(c -> c.includeXml(true)));
     final var response = reader.search(query);
     return response.items().stream()
         .collect(

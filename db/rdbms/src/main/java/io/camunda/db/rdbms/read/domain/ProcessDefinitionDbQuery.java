@@ -10,6 +10,7 @@ package io.camunda.db.rdbms.read.domain;
 import io.camunda.search.entities.ProcessDefinitionEntity;
 import io.camunda.search.filter.FilterBuilders;
 import io.camunda.search.filter.ProcessDefinitionFilter;
+import io.camunda.search.result.ProcessDefinitionQueryResultConfig;
 import io.camunda.util.ObjectBuilder;
 import java.util.List;
 import java.util.Objects;
@@ -18,7 +19,8 @@ import java.util.function.Function;
 public record ProcessDefinitionDbQuery(
     ProcessDefinitionFilter filter,
     DbQuerySorting<ProcessDefinitionEntity> sort,
-    DbQueryPage page) {
+    DbQueryPage page,
+    ProcessDefinitionQueryResultConfig resultConfig) {
 
   public static ProcessDefinitionDbQuery of(
       final Function<Builder, ObjectBuilder<ProcessDefinitionDbQuery>> fn) {
@@ -29,10 +31,13 @@ public record ProcessDefinitionDbQuery(
 
     private static final ProcessDefinitionFilter EMPTY_FILTER =
         FilterBuilders.processDefinition().build();
+    private static final ProcessDefinitionQueryResultConfig DEFAULT_RESULT_CONFIG =
+        ProcessDefinitionQueryResultConfig.of(b -> b);
 
     private ProcessDefinitionFilter filter;
     private DbQuerySorting<ProcessDefinitionEntity> sort;
     private DbQueryPage page;
+    private ProcessDefinitionQueryResultConfig resultConfig;
 
     public ProcessDefinitionDbQuery.Builder filter(final ProcessDefinitionFilter value) {
       filter = value;
@@ -47,6 +52,12 @@ public record ProcessDefinitionDbQuery(
 
     public ProcessDefinitionDbQuery.Builder page(final DbQueryPage value) {
       page = value;
+      return this;
+    }
+
+    public ProcessDefinitionDbQuery.Builder resultConfig(
+        final ProcessDefinitionQueryResultConfig resultConfig) {
+      this.resultConfig = resultConfig;
       return this;
     }
 
@@ -68,7 +79,8 @@ public record ProcessDefinitionDbQuery(
     public ProcessDefinitionDbQuery build() {
       filter = Objects.requireNonNullElse(filter, EMPTY_FILTER);
       sort = Objects.requireNonNullElse(sort, new DbQuerySorting<>(List.of()));
-      return new ProcessDefinitionDbQuery(filter, sort, page);
+      resultConfig = Objects.requireNonNullElse(resultConfig, DEFAULT_RESULT_CONFIG);
+      return new ProcessDefinitionDbQuery(filter, sort, page, resultConfig);
     }
   }
 }

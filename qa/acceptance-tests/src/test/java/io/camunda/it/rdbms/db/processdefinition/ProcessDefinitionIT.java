@@ -17,8 +17,6 @@ import io.camunda.db.rdbms.write.RdbmsWriter;
 import io.camunda.it.rdbms.db.fixtures.ProcessDefinitionFixtures;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtension;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
-import io.camunda.search.filter.ProcessDefinitionFilter;
-import io.camunda.search.page.SearchQueryPage;
 import io.camunda.search.query.ProcessDefinitionQuery;
 import io.camunda.search.sort.ProcessDefinitionSort;
 import java.time.OffsetDateTime;
@@ -69,12 +67,11 @@ public class ProcessDefinitionIT {
 
     final var searchResult =
         processDefinitionReader.search(
-            new ProcessDefinitionQuery(
-                new ProcessDefinitionFilter.Builder()
-                    .processDefinitionIds("test-process-unique")
-                    .build(),
-                ProcessDefinitionSort.of(b -> b),
-                SearchQueryPage.of(b -> b.from(0).size(10))));
+            ProcessDefinitionQuery.of(
+                b ->
+                    b.filter(f -> f.processDefinitionIds("test-process-unique"))
+                        .sort(s -> s)
+                        .page(p -> p.from(0).size(10))));
 
     assertThat(searchResult).isNotNull();
     assertThat(searchResult.total()).isEqualTo(1);
@@ -103,12 +100,11 @@ public class ProcessDefinitionIT {
 
     final var searchResult =
         processDefinitionReader.search(
-            new ProcessDefinitionQuery(
-                new ProcessDefinitionFilter.Builder()
-                    .processDefinitionIds(processDefinitionId)
-                    .build(),
-                ProcessDefinitionSort.of(b -> b),
-                SearchQueryPage.of(b -> b.from(0).size(5))));
+            ProcessDefinitionQuery.of(
+                b ->
+                    b.filter(f -> f.processDefinitionIds(processDefinitionId))
+                        .sort(s -> s)
+                        .page(p -> p.from(0).size(5))));
 
     assertThat(searchResult).isNotNull();
     assertThat(searchResult.total()).isEqualTo(20);
@@ -127,10 +123,8 @@ public class ProcessDefinitionIT {
 
     final var searchResult =
         processDefinitionReader.search(
-            new ProcessDefinitionQuery(
-                new ProcessDefinitionFilter.Builder().build(),
-                ProcessDefinitionSort.of(b -> b),
-                SearchQueryPage.of(b -> b.from(null).size(null))));
+            ProcessDefinitionQuery.of(
+                b -> b.filter(f -> f).sort(s -> s).page(p -> p.from(null).size(null))));
 
     assertThat(searchResult).isNotNull();
     assertThat(searchResult.total()).isGreaterThanOrEqualTo(20);
@@ -151,18 +145,19 @@ public class ProcessDefinitionIT {
 
     final var searchResult =
         processDefinitionReader.search(
-            new ProcessDefinitionQuery(
-                new ProcessDefinitionFilter.Builder()
-                    .processDefinitionKeys(processDefinition.processDefinitionKey())
-                    .processDefinitionIds(processDefinition.processDefinitionId())
-                    .names(processDefinition.name())
-                    .resourceNames(processDefinition.resourceName())
-                    .versions(processDefinition.version())
-                    .versionTags(processDefinition.versionTag())
-                    .tenantIds(processDefinition.tenantId())
-                    .build(),
-                ProcessDefinitionSort.of(b -> b),
-                SearchQueryPage.of(b -> b.from(0).size(5))));
+            ProcessDefinitionQuery.of(
+                b ->
+                    b.filter(
+                            f ->
+                                f.processDefinitionKeys(processDefinition.processDefinitionKey())
+                                    .processDefinitionIds(processDefinition.processDefinitionId())
+                                    .names(processDefinition.name())
+                                    .resourceNames(processDefinition.resourceName())
+                                    .versions(processDefinition.version())
+                                    .versionTags(processDefinition.versionTag())
+                                    .tenantIds(processDefinition.tenantId()))
+                        .sort(s -> s)
+                        .page(p -> p.from(0).size(5))));
 
     assertThat(searchResult.total()).isEqualTo(1);
     assertThat(searchResult.items()).hasSize(1);

@@ -30,7 +30,10 @@ public class ProcessDefinitionDocumentReader extends DocumentBasedReader
     return getSearchExecutor()
         .getByQuery(
             ProcessDefinitionQuery.of(
-                b -> b.filter(f -> f.processDefinitionKeys(key)).singleResult()),
+                b ->
+                    b.filter(f -> f.processDefinitionKeys(key))
+                        .resultConfig(c -> c.includeXml(true))
+                        .singleResult()),
             ProcessEntity.class);
   }
 

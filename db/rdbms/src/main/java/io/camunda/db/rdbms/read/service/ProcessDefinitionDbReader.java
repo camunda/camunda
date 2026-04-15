@@ -44,7 +44,11 @@ public class ProcessDefinitionDbReader extends AbstractEntityReader<ProcessDefin
         convertSort(query.sort(), ProcessDefinitionSearchColumn.PROCESS_DEFINITION_KEY);
     final var dbQuery =
         ProcessDefinitionDbQuery.of(
-            b -> b.filter(query.filter()).sort(dbSort).page(convertPaging(dbSort, query.page())));
+            b ->
+                b.filter(query.filter())
+                    .sort(dbSort)
+                    .page(convertPaging(dbSort, query.page()))
+                    .resultConfig(query.resultConfig()));
 
     LOG.trace("[RDBMS DB] Search for process instance with filter {}", dbQuery);
     final var totalHits = processDefinitionMapper.count(dbQuery);
@@ -56,7 +60,9 @@ public class ProcessDefinitionDbReader extends AbstractEntityReader<ProcessDefin
     final var result =
         search(
             ProcessDefinitionQuery.of(
-                b -> b.filter(f -> f.processDefinitionKeys(processDefinitionKey))));
+                b ->
+                    b.filter(f -> f.processDefinitionKeys(processDefinitionKey))
+                        .resultConfig(c -> c.includeXml(true))));
     if (result.items() == null || result.items().isEmpty()) {
       return Optional.empty();
     } else {
