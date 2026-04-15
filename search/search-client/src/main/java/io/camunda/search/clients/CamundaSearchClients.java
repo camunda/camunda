@@ -212,6 +212,11 @@ public class CamundaSearchClients implements SearchClientsProxy {
   }
 
   @Override
+  public SearchClientsProxy withPhysicalTenant(final String physicalTenantId) {
+    return null;
+  }
+
+  @Override
   public CamundaSearchClients withSecurityContext(final SecurityContext securityContext) {
     return new CamundaSearchClients(readers, resourceAccessController, securityContext);
   }

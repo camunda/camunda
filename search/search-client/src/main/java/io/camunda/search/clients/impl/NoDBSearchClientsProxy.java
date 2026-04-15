@@ -390,6 +390,11 @@ public class NoDBSearchClientsProxy implements SearchClientsProxy {
   }
 
   @Override
+  public SearchClientsProxy withPhysicalTenant(final String physicalTenantId) {
+    return this;
+  }
+
+  @Override
   public SearchClientsProxy withSecurityContext(final SecurityContext securityContext) {
     return this;
   }

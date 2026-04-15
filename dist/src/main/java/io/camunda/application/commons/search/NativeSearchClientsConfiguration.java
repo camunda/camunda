@@ -13,6 +13,8 @@ import io.camunda.configuration.conditions.ConditionalOnSecondaryStorageType;
 import io.camunda.search.connect.configuration.ConnectConfiguration;
 import io.camunda.search.connect.es.ElasticsearchConnector;
 import io.camunda.search.connect.os.OpensearchConnector;
+import io.camunda.search.connect.tenant.SearchClients;
+import java.util.Map;
 import org.opensearch.client.opensearch.OpenSearchAsyncClient;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.springframework.context.annotation.Bean;
@@ -40,5 +42,11 @@ public class NativeSearchClientsConfiguration {
   public OpenSearchAsyncClient openSearchAsyncClient(final ConnectConfiguration configuration) {
     final var connector = new OpensearchConnector(configuration);
     return connector.createAsyncClient();
+  }
+
+  // TODO: Wire up physical tenant configuration to creation of search clients
+  @Bean
+  public SearchClients searchClients(final ConnectConfiguration configuration) {
+    return SearchClients.from(Map.of("default", configuration));
   }
 }

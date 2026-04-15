@@ -124,6 +124,7 @@ import io.camunda.webapps.schema.descriptors.template.UsageMetricTUTemplate;
 import io.camunda.webapps.schema.descriptors.template.UsageMetricTemplate;
 import io.camunda.webapps.schema.descriptors.template.VariableTemplate;
 import io.camunda.zeebe.gateway.rest.config.GatewayRestConfiguration;
+import java.util.Map;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -139,6 +140,17 @@ public class SearchClientReaderConfiguration {
     return new IndexDescriptors(
         connectConfiguration.getIndexPrefix(),
         connectConfiguration.getTypeEnum().isElasticSearch());
+  }
+
+  // TODO: Wire up physical tenant configuration to creation of index descriptors
+  @Bean
+  public Map<String, IndexDescriptors> physicalTenantScopedIndexDescriptors(
+      final ConnectConfiguration connectConfiguration) {
+    return Map.of(
+        "default",
+        new IndexDescriptors(
+            connectConfiguration.getIndexPrefix(),
+            connectConfiguration.getTypeEnum().isElasticSearch()));
   }
 
   @Bean
