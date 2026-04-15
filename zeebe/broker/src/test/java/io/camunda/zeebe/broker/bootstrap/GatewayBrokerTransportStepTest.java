@@ -85,7 +85,7 @@ class GatewayBrokerTransportStepTest {
     void shouldStartAndInstallTransport() {
       // when
       final int randomNodeId = new Random().nextInt(10);
-      when(mockBrokerInfo.getNodeId()).thenReturn(randomNodeId);
+      when(mockBrokerInfo.getNodeId()).thenReturn(String.valueOf(randomNodeId));
       sut.startupInternal(testBrokerStartupContext, CONCURRENCY_CONTROL, startupFuture);
       await().until(startupFuture::isDone);
 

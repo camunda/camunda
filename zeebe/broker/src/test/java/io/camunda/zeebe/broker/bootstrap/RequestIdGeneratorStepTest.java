@@ -78,7 +78,7 @@ class RequestIdGeneratorStepTest {
     void shouldStartAndInstallRequestIdGenerator() {
       // when
       final int randomNodeId = new Random().nextInt(10);
-      when(mockBrokerInfo.getNodeId()).thenReturn(randomNodeId);
+      when(mockBrokerInfo.getLocalNodeId()).thenReturn(randomNodeId);
       sut.startup(testBrokerStartupContext);
       await().until(startupFuture::isDone);
 

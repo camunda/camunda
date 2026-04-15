@@ -331,7 +331,7 @@ final class InterPartitionCommandReceiverTest {
 
     final var sender =
         new InterPartitionCommandSenderImpl(communicationService, LEGACY_TOPIC_PREFIX);
-    sender.setCurrentLeader(receiverPartitionId, receiverBrokerId);
+    sender.setCurrentLeader(receiverPartitionId, String.valueOf(receiverBrokerId));
 
     sender.sendCommand(receiverPartitionId, valueType, intent, recordKey, recordValue, authInfo);
 
