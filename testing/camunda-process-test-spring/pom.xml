@@ -109,6 +109,11 @@
       <artifactId>slf4j-api</artifactId>
     </dependency>
 
+    <dependency>
+      <groupId>io.grpc</groupId>
+      <artifactId>grpc-api</artifactId>
+    </dependency>
+
     <!--  test scope  -->
 
     <dependency>
