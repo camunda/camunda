@@ -85,9 +85,6 @@ public class CamundaProcessTestRuntimeDefaults {
   public static final Duration REMOTE_RUNTIME_CONNECTION_TIMEOUT =
       PROPERTIES_UTIL.getRemoteRuntimeConnectionTimeout();
 
-  public static final URI REMOTE_CLIENT_GRPC_ADDRESS = PROPERTIES_UTIL.getRemoteClientGrpcAddress();
-  public static final URI REMOTE_CLIENT_REST_ADDRESS = PROPERTIES_UTIL.getRemoteClientRestAddress();
-
   public static final CamundaClientBuilderFactory CAMUNDA_CLIENT_BUILDER_FACTORY =
       PROPERTIES_UTIL.getCamundaClientBuilderFactory();
 
