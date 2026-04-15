@@ -97,7 +97,7 @@ services:
 
   camunda:
     container_name: camunda
-    image: ${CAMUNDA_DOCKER_IMAGE:-camunda/camunda:${CAMUNDA_DOCKER_TAG:-SNAPSHOT}}
+    image: ${CAMUNDA_DOCKER_IMAGE:-camunda/camunda:SNAPSHOT}
     environment:
       - 'JAVA_TOOL_OPTIONS=-Xms512m -Xmx1g'
       - ZEEBE_BROKER_NETWORK_HOST=camunda

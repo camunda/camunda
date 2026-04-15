@@ -97,14 +97,25 @@ jobs:
 
       - name: Build Docker image from branch
         run: |
+          # Copy the tarball to the repo root so it is reliably included in the
+          # Docker build context (Docker skips empty/excluded directories).
+          tarball=$(find dist/target -maxdepth 1 -name 'camunda-zeebe-*.tar.gz' | head -1)
+          if [ -z "$tarball" ]; then
+            echo "ERROR: No distribution tarball found in dist/target/"
+            ls -la dist/target/ || echo "dist/target/ not found"
+            exit 1
+          fi
+          echo "Found tarball: $tarball"
+          cp "$tarball" ./camunda-dist.tar.gz
           echo "Building Docker image with tag: ${RESOLVED_DOCKER_TAG}"
           docker build \
             -f camunda.Dockerfile \
             --target app \
             --build-arg BASE=public \
-            --build-arg DISTBALL="dist/target/camunda-zeebe-*.tar.gz" \
+            --build-arg DISTBALL="camunda-dist.tar.gz" \
             -t "camunda/camunda:${RESOLVED_DOCKER_TAG}" \
             .
+          rm -f ./camunda-dist.tar.gz
 
       - name: Set NON_STANDALONE variable
         run: |
@@ -117,8 +128,8 @@ jobs:
 
       - name: Start Camunda
         run: |
-          export CAMUNDA_DOCKER_TAG="${RESOLVED_DOCKER_TAG}"
-          echo "Using CAMUNDA_DOCKER_TAG=${CAMUNDA_DOCKER_TAG}"
+          export CAMUNDA_DOCKER_IMAGE="camunda/camunda:${RESOLVED_DOCKER_TAG}"
+          echo "Using CAMUNDA_DOCKER_IMAGE=${CAMUNDA_DOCKER_IMAGE}"
           if [[ "$NON_STANDALONE" == "true" ]]; then
             echo "Using single services for older branches (8.6/8.7)"
             DATABASE=elasticsearch docker compose up -d operate tasklist
