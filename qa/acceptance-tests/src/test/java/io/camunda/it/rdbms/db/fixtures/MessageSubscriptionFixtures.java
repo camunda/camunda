@@ -10,8 +10,11 @@ package io.camunda.it.rdbms.db.fixtures;
 import io.camunda.db.rdbms.write.RdbmsWriters;
 import io.camunda.db.rdbms.write.domain.MessageSubscriptionDbModel;
 import io.camunda.db.rdbms.write.domain.MessageSubscriptionDbModel.Builder;
+import io.camunda.search.entities.MessageSubscriptionEntity.MessageSubscriptionState;
+import io.camunda.search.entities.MessageSubscriptionEntity.MessageSubscriptionType;
 import io.camunda.zeebe.test.util.Strings;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.function.Function;
 
@@ -33,7 +36,12 @@ public final class MessageSubscriptionFixtures extends CommonFixtures {
             .messageSubscriptionKey(nextKey())
             .processDefinitionId("processDefinitionId-" + UUID.randomUUID())
             .processInstanceKey(nextKey())
-            .rootProcessInstanceKey(nextKey());
+            .rootProcessInstanceKey(nextKey())
+            .processDefinitionName("processDefinitionName-" + UUID.randomUUID())
+            .processDefinitionVersion((int) (Math.random() * 50))
+            .messageSubscriptionType(randomEnum(MessageSubscriptionType.class))
+            .messageSubscriptionState(randomEnum(MessageSubscriptionState.class))
+            .extensionProperties(Map.of("key-" + UUID.randomUUID(), "value-" + UUID.randomUUID()));
 
     return builderFunction.apply(builder).build();
   }

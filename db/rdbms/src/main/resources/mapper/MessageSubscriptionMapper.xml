@@ -35,11 +35,15 @@
     FLOW_NODE_ID,
     FLOW_NODE_INSTANCE_KEY,
     MESSAGE_SUBSCRIPTION_STATE,
+    MESSAGE_SUBSCRIPTION_TYPE,
     DATE_TIME,
     MESSAGE_NAME,
     CORRELATION_KEY,
     TENANT_ID,
-    PARTITION_ID
+    PARTITION_ID,
+    PROCESS_DEFINITION_NAME,
+    PROCESS_DEFINITION_VERSION,
+    EXTENSION_PROPERTIES
     FROM ${prefix}MESSAGE_SUBSCRIPTION
 
     <include refid="io.camunda.db.rdbms.sql.MessageSubscriptionMapper.searchAndAuthFilter" />
@@ -137,6 +141,24 @@
         <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
       </foreach>
     </if>
+    <if test="filter.messageSubscriptionTypeOperations != null and !filter.messageSubscriptionTypeOperations.isEmpty()">
+      <foreach collection="filter.messageSubscriptionTypeOperations" item="operation">
+        AND MESSAGE_SUBSCRIPTION_TYPE
+        <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+      </foreach>
+    </if>
+    <if test="filter.processDefinitionNameOperations != null and !filter.processDefinitionNameOperations.isEmpty()">
+      <foreach collection="filter.processDefinitionNameOperations" item="operation">
+        AND PROCESS_DEFINITION_NAME
+        <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+      </foreach>
+    </if>
+    <if test="filter.processDefinitionVersionOperations != null and !filter.processDefinitionVersionOperations.isEmpty()">
+      <foreach collection="filter.processDefinitionVersionOperations" item="operation">
+        AND PROCESS_DEFINITION_VERSION
+        <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+      </foreach>
+    </if>
   </sql>
 
   <resultMap id="searchResultMap" type="io.camunda.db.rdbms.write.domain.MessageSubscriptionDbModel">
@@ -150,11 +172,15 @@
     <result column="FLOW_NODE_ID" property="flowNodeId" javaType="java.lang.String" />
     <result column="FLOW_NODE_INSTANCE_KEY" property="flowNodeInstanceKey" javaType="java.lang.Long" />
     <result column="MESSAGE_SUBSCRIPTION_STATE" property="messageSubscriptionState" javaType="io.camunda.search.entities.MessageSubscriptionEntity$MessageSubscriptionState" />
+    <result column="MESSAGE_SUBSCRIPTION_TYPE" property="messageSubscriptionType" javaType="io.camunda.search.entities.MessageSubscriptionEntity$MessageSubscriptionType" />
     <result column="DATE_TIME" property="dateTime" javaType="java.time.OffsetDateTime" />
     <result column="MESSAGE_NAME" property="messageName" javaType="java.lang.String" />
     <result column="CORRELATION_KEY" property="correlationKey" javaType="java.lang.String" />
     <result column="TENANT_ID" property="tenantId" javaType="java.lang.String" />
     <result column="PARTITION_ID" property="partitionId" javaType="java.lang.Integer" />
+    <result column="PROCESS_DEFINITION_NAME" property="processDefinitionName" javaType="java.lang.String" />
+    <result column="PROCESS_DEFINITION_VERSION" property="processDefinitionVersion" javaType="java.lang.Integer" />
+    <result column="EXTENSION_PROPERTIES" property="serializedExtensionProperties" javaType="java.lang.String" />
   </resultMap>
 
 
@@ -168,11 +194,15 @@
                                                FLOW_NODE_ID,
                                                FLOW_NODE_INSTANCE_KEY,
                                                MESSAGE_SUBSCRIPTION_STATE,
+                                               MESSAGE_SUBSCRIPTION_TYPE,
                                                DATE_TIME,
                                                MESSAGE_NAME,
                                                CORRELATION_KEY,
                                                TENANT_ID,
-                                               PARTITION_ID
+                                               PARTITION_ID,
+                                               PROCESS_DEFINITION_NAME,
+                                               PROCESS_DEFINITION_VERSION,
+                                               EXTENSION_PROPERTIES
     )
     VALUES (
             #{messageSubscriptionKey},
@@ -183,11 +213,15 @@
             #{flowNodeId},
             #{flowNodeInstanceKey},
             #{messageSubscriptionState},
+            #{messageSubscriptionType},
             #{dateTime, jdbcType=TIMESTAMP},
             #{messageName},
             #{correlationKey},
             #{tenantId},
-            #{partitionId}
+            #{partitionId},
+            #{processDefinitionName},
+            #{processDefinitionVersion},
+            #{serializedExtensionProperties}
     )
   </insert>
 
@@ -199,10 +233,14 @@
         FLOW_NODE_ID = #{flowNodeId},
         FLOW_NODE_INSTANCE_KEY = #{flowNodeInstanceKey},
         MESSAGE_SUBSCRIPTION_STATE = #{messageSubscriptionState},
+        MESSAGE_SUBSCRIPTION_TYPE = #{messageSubscriptionType},
         DATE_TIME = #{dateTime, jdbcType=TIMESTAMP},
         MESSAGE_NAME = #{messageName},
         CORRELATION_KEY = #{correlationKey},
-        TENANT_ID = #{tenantId}
+        TENANT_ID = #{tenantId},
+        PROCESS_DEFINITION_NAME = #{processDefinitionName},
+        PROCESS_DEFINITION_VERSION = #{processDefinitionVersion},
+        EXTENSION_PROPERTIES = #{serializedExtensionProperties}
     WHERE MESSAGE_SUBSCRIPTION_KEY = #{messageSubscriptionKey}
   </update>
 
