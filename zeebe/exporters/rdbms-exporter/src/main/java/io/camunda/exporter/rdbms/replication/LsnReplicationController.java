@@ -12,11 +12,9 @@ import io.camunda.db.rdbms.write.ReplicationStatusDto;
 import io.camunda.exporter.rdbms.ExporterConfiguration.ReplicationConfiguration;
 import io.camunda.zeebe.exporter.api.context.Controller;
 import io.camunda.zeebe.exporter.api.context.ScheduledTask;
-import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -67,12 +65,11 @@ public class LsnReplicationController implements ReplicationController {
 
   private void checkReplication() {
     try {
-      final var replicationStatuses = lsnProvider.getReplicationStatuses();
+      final long confirmedLsn = computeConfirmedLsn();
 
       LsnPositionEntry entry;
       long newReplicatedPosition = replicatedPosition.get();
-      while ((entry = pendingEntries.peek()) != null
-          && isConfirmed(entry.lsn(), replicationStatuses)) {
+      while ((entry = pendingEntries.peek()) != null && entry.lsn() <= confirmedLsn) {
         newReplicatedPosition = entry.position();
         pendingEntries.poll();
       }
@@ -97,19 +94,28 @@ public class LsnReplicationController implements ReplicationController {
     }
   }
 
-  private boolean isConfirmed(final long lsn, final List<ReplicationStatusDto> statuses) {
+  /**
+   * Computes the maximum LSN confirmed by at least {@code minSyncReplicas} replicas. Sorts replica
+   * statuses ascending and picks the Nth value — the highest LSN that at least N replicas have
+   * reached. Returns {@link Long#MAX_VALUE} when minSyncReplicas is 0.
+   */
+  private long computeConfirmedLsn() {
     final int minSyncReplicas = replicationConfiguration.getMinSyncReplicas();
     if (minSyncReplicas == 0) {
-      return true;
+      return Long.MAX_VALUE;
     }
 
-    final long replicasAtOrAboveLsn =
-        statuses.stream()
-            .filter(status -> status.getLogStatus() >= lsn)
-            .collect(Collectors.toSet())
-            .size();
+    final var statuses = lsnProvider.getReplicationStatuses();
+    if (statuses.size() < minSyncReplicas) {
+      return -1;
+    }
 
-    return replicasAtOrAboveLsn >= minSyncReplicas;
+    return statuses.stream()
+        .map(ReplicationStatusDto::getLogStatus)
+        .sorted()
+        .skip(minSyncReplicas - 1L)
+        .findFirst()
+        .orElse(-1L);
   }
 
   @Override

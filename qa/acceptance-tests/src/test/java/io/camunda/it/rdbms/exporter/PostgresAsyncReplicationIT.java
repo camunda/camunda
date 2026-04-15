@@ -145,7 +145,10 @@ class PostgresAsyncReplicationIT {
 
     final Map<String, Object> config =
         Map.of(
-            "queueSize", 0, "asyncReplication", Map.of("enabled", true, "pollingInterval", "PT1S"));
+            "queueSize",
+            0,
+            "asyncReplication",
+            Map.of("enabled", true, "pollingInterval", "PT1S", "minSyncReplicas", 1));
 
     exporter.configure(
         new ExporterContext(
@@ -181,6 +184,7 @@ class PostgresAsyncReplicationIT {
         .untilAsserted(
             () -> {
               exporter.export(FIXTURES.getProcessInstanceStartedRecord());
+              controller.runScheduledTasks(Duration.ofSeconds(2));
               assertThat(controller.getPosition()).isGreaterThan(0);
             });
 
@@ -193,9 +197,6 @@ class PostgresAsyncReplicationIT {
       exporter.export(FIXTURES.getProcessInstanceStartedRecord());
     }
 
-    // Wait for the position to stabilize after the pause. The ReplicationMonitor may still
-    // confirm pre-pause LSNs for a few poll cycles. We detect stabilization by checking that
-    // the position hasn't changed across two consecutive polls (3 seconds apart).
     // Wait for position to stabilize: same value across two consecutive polls.
     // We update lastSeen BEFORE the assertion so it persists even when the assertion fails.
     final long[] lastSeen = {-1};
@@ -205,6 +206,7 @@ class PostgresAsyncReplicationIT {
         .untilAsserted(
             () -> {
               exporter.export(FIXTURES.getProcessInstanceStartedRecord());
+              controller.runScheduledTasks(Duration.ofSeconds(2));
               final long previous = lastSeen[0];
               final long current = controller.getPosition();
               lastSeen[0] = current;
@@ -230,6 +232,7 @@ class PostgresAsyncReplicationIT {
         .untilAsserted(
             () -> {
               exporter.export(FIXTURES.getProcessInstanceStartedRecord());
+              controller.runScheduledTasks(Duration.ofSeconds(2));
               assertThat(controller.getPosition()).isEqualTo(positionAfterPauseStabilized);
             });
 
@@ -242,8 +245,8 @@ class PostgresAsyncReplicationIT {
         .pollInterval(Duration.ofMillis(500))
         .untilAsserted(
             () -> {
-              // Export to trigger captureCurrentLsnAndEnqueue → broker update
               exporter.export(FIXTURES.getProcessInstanceStartedRecord());
+              controller.runScheduledTasks(Duration.ofSeconds(2));
               assertThat(controller.getPosition()).isGreaterThan(positionAfterPauseStabilized);
             });
   }
