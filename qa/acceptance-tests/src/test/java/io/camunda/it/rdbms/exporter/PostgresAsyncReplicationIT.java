@@ -60,12 +60,12 @@ import org.testcontainers.containers.wait.strategy.Wait;
     })
 class PostgresAsyncReplicationIT {
 
-  static final Network network = Network.newNetwork();
+  static final Network NETWORK = Network.newNetwork();
 
   @SuppressWarnings("resource")
-  static final GenericContainer<?> primary =
+  static final GenericContainer<?> PRIMARY =
       new GenericContainer<>("bitnamilegacy/postgresql:15")
-          .withNetwork(network)
+          .withNetwork(NETWORK)
           .withNetworkAliases("primary")
           .withEnv("POSTGRESQL_REPLICATION_MODE", "master")
           .withEnv("POSTGRESQL_REPLICATION_USER", "repl_user")
@@ -78,9 +78,9 @@ class PostgresAsyncReplicationIT {
                   .withStartupTimeout(Duration.ofSeconds(60)));
 
   @SuppressWarnings("resource")
-  static final GenericContainer<?> replica =
+  static final GenericContainer<?> REPLICA =
       new GenericContainer<>("bitnamilegacy/postgresql:15")
-          .withNetwork(network)
+          .withNetwork(NETWORK)
           .withEnv("POSTGRESQL_REPLICATION_MODE", "slave")
           .withEnv("POSTGRESQL_MASTER_HOST", "primary")
           .withEnv("POSTGRESQL_REPLICATION_USER", "repl_user")
@@ -94,8 +94,8 @@ class PostgresAsyncReplicationIT {
   private static final RecordFixtures FIXTURES = new RecordFixtures();
 
   static {
-    primary.start();
-    replica.start();
+    PRIMARY.start();
+    REPLICA.start();
     waitForReplication();
   }
 
@@ -118,9 +118,9 @@ class PostgresAsyncReplicationIT {
 
   @AfterAll
   static void stopContainers() {
-    replica.stop();
-    primary.stop();
-    network.close();
+    REPLICA.stop();
+    PRIMARY.stop();
+    NETWORK.close();
   }
 
   @DynamicPropertySource
@@ -129,9 +129,9 @@ class PostgresAsyncReplicationIT {
         "spring.datasource.url",
         () ->
             "jdbc:postgresql://"
-                + primary.getHost()
+                + PRIMARY.getHost()
                 + ":"
-                + primary.getMappedPort(5432)
+                + PRIMARY.getMappedPort(5432)
                 + "/testdb");
     registry.add("spring.datasource.username", () -> "postgres");
     registry.add("spring.datasource.password", () -> "secret");
@@ -271,7 +271,7 @@ class PostgresAsyncReplicationIT {
 
   static void waitForReplication() {
     final String url =
-        "jdbc:postgresql://" + primary.getHost() + ":" + primary.getMappedPort(5432) + "/testdb";
+        "jdbc:postgresql://" + PRIMARY.getHost() + ":" + PRIMARY.getMappedPort(5432) + "/testdb";
     System.out.println("[AsyncReplicationIT] Waiting for replication at " + url);
 
     int attempts = 0;
@@ -329,14 +329,14 @@ class PostgresAsyncReplicationIT {
 
   static Connection primaryConnection() throws Exception {
     return DriverManager.getConnection(
-        "jdbc:postgresql://" + primary.getHost() + ":" + primary.getMappedPort(5432) + "/testdb",
+        "jdbc:postgresql://" + PRIMARY.getHost() + ":" + PRIMARY.getMappedPort(5432) + "/testdb",
         "postgres",
         "secret");
   }
 
   static Connection replicaConnection() throws Exception {
     return DriverManager.getConnection(
-        "jdbc:postgresql://" + replica.getHost() + ":" + replica.getMappedPort(5432) + "/testdb",
+        "jdbc:postgresql://" + REPLICA.getHost() + ":" + REPLICA.getMappedPort(5432) + "/testdb",
         "postgres",
         "secret");
   }
