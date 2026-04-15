@@ -295,7 +295,7 @@ The Security Gateway Framework and unified identity plane must meet the followin
 
 - Performance and scalability
   - Policy evaluation adds minimal per-request overhead for common paths (UI/API calls, worker calls).
-  - Policy propagation is efficient for large numbers of clusters and tenants; diffs are used instead of full snapshots where possible.
+  - Policy propagation is efficient for large numbers of clusters and tenants; in the first iteration Hub always sends full policy payloads and relies on batching/backpressure to keep throughput stable.
 
 - Observability and logging
   - All authentication and authorization decisions are logged with enough context (principal, resource, action, tenant, result, correlation IDs) to trace end-to-end flows.
@@ -637,24 +637,13 @@ Engines only need to know the effective permissions resulting from the policy mo
 
 The Security Gateway Framework uses an outbox pattern to propagate policy changes from Hub (policy SoT) to each Orchestration Cluster in a reliable, observable, and idempotent way. In shared-Hub deployments, this propagation is scoped by organization and cluster.
 
-**Snapshot vs. incremental diff:** Sending a full snapshot on every change would be unnecessarily expensive at scale. The propagation therefore follows a two-phase approach:
+**First iteration propagation contract:** Hub always sends a full policy payload (`POLICY_SNAPSHOT`) for every new `PolicyVersion`.
 
-- **Initial sync (full snapshot):** When an OC connects for the first time (or after a reset), Hub sends a complete `POLICY_SNAPSHOT` — the full current state of tenants, roles, groups, mapping rules, principals, and authorizations for that cluster.
-- **Subsequent updates (incremental diff):** After the initial sync, Hub sends only the changed entities as a `POLICY_DIFF` event. The OC applies the diff on top of its locally cached state. This keeps payloads small and propagation fast.
+- **Initial sync:** OC receives the full policy at the current target version.
+- **Subsequent updates:** OC still receives the full policy for the new target version (no incremental diff payloads in iteration one).
+- **Recovery:** If an OC falls behind, Hub resends a full policy payload for the requested target version.
 
-If an OC falls behind (e.g. due to a gap in its applied version sequence), it can request a full re-sync from Hub to recover a consistent baseline.
-
-**Who decides snapshots, and when?**
-
-- **Decision owner:** Hub (via the Outbox Dispatcher) decides per target OC whether to send `POLICY_DIFF` or `POLICY_SNAPSHOT`.
-- **Snapshot triggers:**
-  - OC has no acknowledged version yet (initial sync).
-  - OC requests re-sync because `base_version` does not match `last_applied_version`.
-  - Operator-triggered/manual re-sync for a specific OC.
-  - Optional periodic checkpoint snapshot (operational safety net, typically low cadence).
-- **How snapshot is built:** Hub reconstructs the current state for the cluster from latest non-deleted revisions per entity/scope and sends it as `POLICY_SNAPSHOT`.
-
-`base_version` means the version an incoming `POLICY_DIFF` is built on top of (expected previous version in OC), not the last snapshot version.
+This keeps OC apply logic simple and deterministic for the first iteration. Diff-based propagation can be introduced later if payload size or throughput requires it.
 
 The outbox pattern we use here is a specific instance of the “Transactional Outbox” architecture pattern.
 
@@ -690,11 +679,11 @@ flowchart TB
   OC2 --> OC2DB
 
 %% Dispatch path
-  Dispatcher -->|"POST POLICY_SNAPSHOT (initial) or POLICY_DIFF (incremental)</br>/identity/policies/apply"| OC1Lib & OC2Lib
+  Dispatcher -->|"POST POLICY_SNAPSHOT (full policy)</br>/identity/policies/apply"| OC1Lib & OC2Lib
 
 %% Apply on OC side
-  OC1Lib -->|"Apply snapshot / diff</br>to local projection"| Engine1
-  OC2Lib -->|"Apply snapshot / diff</br>to local projection"| Engine2
+  OC1Lib -->|"Apply full policy snapshot</br>to local projection"| Engine1
+  OC2Lib -->|"Apply full policy snapshot</br>to local projection"| Engine2
 ```
 
 #### 5.3.2 Detailed outbox flow
@@ -713,10 +702,8 @@ flowchart TB
 
     WritePolicy & WriteOutbox --> Commit["Commit TX"]
     Commit --> Poll["Outbox Dispatcher polls</br>PENDING events"]
-    Poll --> Decide["Determine payload type"]
-    Decide -->|"first sync / resync"| Snapshot["Build POLICY_SNAPSHOT"]
-    Decide -->|"normal update"| Diff["Build POLICY_DIFF</br>(full changed entities)"]
-    Snapshot & Diff --> Send["POST /identity/policies/apply"]
+    Poll --> Snapshot["Build POLICY_SNAPSHOT"]
+    Snapshot --> Send["POST /identity/policies/apply"]
     Ack["(Response from OC) ACK with last_applied_version"] --> Delivered["Mark OutboxEvent DELIVERED"]
     Failed["(Response from OC) Mark OutboxEvent FAILED</br>attempts++ / next_attempt_at"] --> Poll
   end
@@ -724,13 +711,9 @@ flowchart TB
   subgraph OC_SCOPE["OC scope"]
     direction TB
     OCApply["Security Gateway Framework applies payload"]
-    VersionCheck{"base_version matches</br>last_applied_version?"}
     UpdateStorage["Update OC secondary storage</br>tables (tenants, roles, authz, etc.)"]
-    ResyncReq["Reject + request resync"]
 
-    OCApply --> VersionCheck
-    VersionCheck -->|"yes"| UpdateStorage
-    VersionCheck -->|"no"| ResyncReq
+    OCApply --> UpdateStorage
   end
 
   Send --> OCApply
@@ -738,38 +721,36 @@ flowchart TB
 
 - Hub Security Gateway Framework
   - Accepts policy changes via UI/API.
-  - Writes a delivery-neutral `PolicyVersion` and a corresponding `OutboxEvent` (`POLICY_SNAPSHOT` or `POLICY_DIFF`, status = PENDING) in the same transaction.
-  - Tracks per-OC `last_acked_version` via `OcSyncState` to decide whether to send a diff or fall back to a full snapshot.
+  - Writes a delivery-neutral `PolicyVersion` and a corresponding `OutboxEvent` (`POLICY_SNAPSHOT`, status = PENDING) in the same transaction.
+  - Tracks per-OC `last_acked_version` via `OcSyncState` for delivery progress and retries.
 - Outbox Dispatcher
   - Periodically selects due PENDING events.
-  - Loads the corresponding `PolicyVersion` and either prepares the full snapshot or computes the diff against the OC's last acknowledged version.
-    - The diff contains only the changed entities. (But the full entity, not just updated fields)
-  - Calls each OC's public admin endpoint (e.g. `POST /identity/policies/apply`) with the snapshot or diff payload.
+  - Loads the corresponding `PolicyVersion` and builds a full snapshot payload for that target version.
+  - Calls each OC's public admin endpoint (e.g. `POST /identity/policies/apply`) with the full snapshot payload.
   - Updates `OutboxEvent.status` to DELIVERED or FAILED and manages retries via `attempts` and `next_attempt_at`.
   - On successful delivery, updates `OcSyncState.last_acked_version` for the target OC.
 - OC Security Gateway Framework
   - Tracks `last_applied_version` locally in secondary storage.
-  - For `POLICY_SNAPSHOT`: replaces the entire local policy projection in secondary storage tables and updates `last_applied_version`.
-  - For `POLICY_DIFF`: applies the delta on top of existing secondary storage state; rejects and requests a re-sync if the diff's `base_version` does not match `last_applied_version`.
+  - For each incoming payload (`POLICY_SNAPSHOT`): replaces the entire local policy projection in secondary storage tables and updates `last_applied_version`.
   - All updates to secondary storage happen in a single transaction to ensure consistency.
   - Treats every apply as idempotent per `policyVersionId`.
   - Returns an ACK (including `last_applied_version`) to the dispatcher.
 
-This pattern decouples policy authoring (Hub) from policy enforcement (OCs), ensures at-least-once delivery, keeps incremental payloads small, and provides clear observability hooks (per-cluster status, last error, retry attempts) for identity operations.
+This pattern decouples policy authoring (Hub) from policy enforcement (OCs), ensures at-least-once delivery, and provides clear observability hooks (per-cluster status, last error, retry attempts) for identity operations.
 
 #### 5.3.3 Linking `PolicyVersion` with the policy data model
 
 At a high level, Hub persists policy propagation in three layers:
 
-- `PolicyVersion` is the organization + cluster-scoped commit marker in Hub (`version_number`, `base_version`).
+- `PolicyVersion` is the organization + cluster-scoped commit marker in Hub (`version_number`).
 - `EntityRevision` stores immutable payload snapshots per changed entity (or tombstones for deletes) and is linked to the policy version where it was introduced.
-- `PolicyVersionChange` is the ordered index that links one `PolicyVersion` to the changed entity revisions in apply order.
+- `PolicyVersionChange` is an optional ordered index that can link one `PolicyVersion` to changed entity revisions for future incremental propagation.
 
-In practice, each policy update writes a new `PolicyVersion`, writes one or more `EntityRevision` rows for changed entities, and writes matching `PolicyVersionChange` rows. Each `EntityRevision.payload` contains only the single referenced entity JSON. `EntityRevision` is tied to policy in two ways: directly via `introduced_in_policy_version`, and indirectly via `PolicyVersionChange.entity_revision_id` + `PolicyVersionChange.policy_version_id`. From these helper tables, Hub can deterministically build either a full snapshot (latest revisions up to target version) or an incremental diff (ordered changes of target version).
+In practice, each policy update writes a new `PolicyVersion` and writes one or more `EntityRevision` rows for changed entities. Each `EntityRevision.payload` contains only the single referenced entity JSON. For first-iteration propagation, Hub builds outbound payloads as a full snapshot (latest non-deleted revisions up to the target version). `PolicyVersionChange` may still be persisted for auditability and for a later diff-based optimization, but OCs do not require it for apply.
 
-To keep snapshots and incremental updates consistent, `PolicyVersion` should be treated as an **organization + cluster-scoped commit in Hub** over the unified policy model (and as cluster-scoped from the receiving OC's point of view).
+To keep snapshots and any future incremental updates consistent, `PolicyVersion` should be treated as an **organization + cluster-scoped commit in Hub** over the unified policy model (and as cluster-scoped from the receiving OC's point of view).
 
-**How payload resources are calculated**
+**How payload resources are calculated (iteration one)**
 
 - **For `POLICY_SNAPSHOT` (full state at target version `V`)**
   - Start from all `EntityRevision` rows with `introduced_in_policy_version <= V` for the target cluster.
@@ -779,19 +760,11 @@ To keep snapshots and incremental updates consistent, `PolicyVersion` should be 
   - Emit the remaining payloads as the full snapshot resource set.
   - Result: exactly the effective current policy state for that OC at version `V`.
 
-- **For `POLICY_DIFF` (increment from base `B` to target `V`)**
-  - Read ordered `PolicyVersionChange` rows for `policy_version_id = V`.
-  - Join each change to its `EntityRevision` via `entity_revision_id`.
-  - For `UPSERT`, include the full resource payload from the joined revision.
-  - For `DELETE`, include a tombstone-style change entry (entity identity + scope + operation), no full object required.
-  - Preserve `sequence_no` order in the payload.
-  - Result: only the resources changed in version `V`, applied on top of base version `B`.
-
 Operational note:
 
-- Hub chooses snapshot vs diff per target OC using `OcSyncState.last_acked_version`.
-- If `last_acked_version` is `null` or incompatible with diff preconditions, Hub sends snapshot.
-- Otherwise, Hub sends diff.
+- Hub always emits `POLICY_SNAPSHOT` in iteration one, independent of `OcSyncState.last_acked_version`.
+- `OcSyncState.last_acked_version` remains important for progress tracking, retries, and monitoring rollout status per OC.
+- A future iteration may introduce `POLICY_DIFF` as an optimization if payload sizing and operational metrics justify it.
 
 #### 5.3.4 Model for Policy Linking
 
@@ -810,7 +783,7 @@ OutboxEvent
   organization_id
   oc_id              -- target OC for this delivery attempt
   policy_version_id
-  event_type         -- POLICY_SNAPSHOT | POLICY_DIFF
+  event_type         -- POLICY_SNAPSHOT (iteration one; extensible)
   status             -- 'PENDING' | 'DELIVERED' | 'FAILED'
   attempts
   next_attempt_at
@@ -820,7 +793,7 @@ PolicyVersion
   organization_id
   cluster_id
   version_number
-  base_version
+  base_version       -- optional; reserved for possible future diff-based propagation
 
 EntityRevision
   id
@@ -847,21 +820,20 @@ PolicyVersionChange
 - `OutboxEvent`
   - One row per policy delivery attempt to a specific cluster.
   - In shared-Hub deployments, includes the organization boundary and concrete target OC to make routing and operations explicit.
-  - `event_type` distinguishes `POLICY_SNAPSHOT` (initial / re-sync) from `POLICY_DIFF` (incremental).
+  - `event_type` is `POLICY_SNAPSHOT`.
   - Drives asynchronous delivery and retry without coupling Hub writes to OC availability.
 - `OcSyncState`
   - One row per target OC.
   - Scoped by organization in shared-Hub deployments.
   - Tracks `last_acked_version`: the last `PolicyVersion` successfully delivered and acknowledged.
-  - Read by the Outbox Dispatcher to decide snapshot vs diff per OC.
-  - `null` `last_acked_version` triggers a full `POLICY_SNAPSHOT` on next dispatch.
+  - Read by the Outbox Dispatcher to track delivery progress and retries per OC.
 - `PolicyVersion`
   - One row per cluster and version of the desired policy.
   - Represents the canonical policy commit for a cluster within one organization boundary.
 - `PolicyVersionChange`
   - Ordered list of changed entities for one `PolicyVersion`.
   - Contains `entity_type`, `entity_id`, `operation`, and scope (`scope_type`, `scope_id`).
-  - Used to build `POLICY_DIFF` payloads.
+  - Optional in iteration one; can support future incremental (`POLICY_DIFF`) payloads.
 - `EntityRevision`
   - Immutable revision payload per changed entity.
   - Stores one referenced entity JSON payload per row or delete tombstones (`is_deleted`).
@@ -955,14 +927,13 @@ The outbox-based propagation provides the following consistency characteristics:
     - Failed `OutboxEvent`s are retried according to `attempts` and `next_attempt_at`.
   - Idempotent apply on the OC side:
     - Each `PolicyVersion` is applied at most once per OC; replays with the same `policyVersionId` are ignored.
+- Full snapshots as the default contract
+  - Every apply payload reconstructs the full desired state up to a target version.
+  - Applying a snapshot overwrites the local projection and resets the OC back to a known-good baseline.
 - Ordering
   - Within a single OC:
     - `PolicyVersion.version_number` is strictly increasing.
-    - A `POLICY_DIFF` for version `V` is only accepted if its `base_version` matches the OC’s `last_applied_version`.
-  - If an OC falls behind or misses one or more versions, it rejects the diff and requests a fresh snapshot.
-- Snapshots as a safety net
-  - Hub can at any time fall back to sending a `POLICY_SNAPSHOT` that reconstructs the full desired state up to a target version.
-  - Applying a snapshot overwrites the local projection and resets the OC back to a known-good baseline.
+    - OCs accept newer `POLICY_SNAPSHOT` versions and ignore already-applied versions by `policyVersionId`.
 
 ---
 
@@ -981,16 +952,16 @@ The following simplified rows show selected database rows for the same entities 
 | id | organization_id | oc_id | policy_version_id | event_type | status | attempts | next_attempt_at |
 |---|---|---|---|---|---|---:|---|
 | `evt-1` | `org-acme` | `oc-a` | `pv-1` | `POLICY_SNAPSHOT` | `DELIVERED` | 1 | `null` |
-| `evt-2` | `org-acme` | `oc-a` | `pv-2` | `POLICY_DIFF` | `DELIVERED` | 1 | `null` |
-| `evt-3` | `org-acme` | `oc-a` | `pv-3` | `POLICY_DIFF` | `DELIVERED` | 1 | `null` |
+| `evt-2` | `org-acme` | `oc-a` | `pv-2` | `POLICY_SNAPSHOT` | `DELIVERED` | 1 | `null` |
+| `evt-3` | `org-acme` | `oc-a` | `pv-3` | `POLICY_SNAPSHOT` | `DELIVERED` | 1 | `null` |
 
 **PolicyVersion**
 
 | id | organization_id | cluster_id | version_number | base_version |
 |---|---|---|---:|---:|
 | `pv-1` | `org-acme` | `oc-a` | 1 | `null` |
-| `pv-2` | `org-acme` | `oc-a` | 2 | 1 |
-| `pv-3` | `org-acme` | `oc-a` | 3 | 2 |
+| `pv-2` | `org-acme` | `oc-a` | 2 | `null` |
+| `pv-3` | `org-acme` | `oc-a` | 3 | `null` |
 
 **EntityRevision**
 
@@ -1016,7 +987,7 @@ The following simplified rows show selected database rows for the same entities 
 
 ### 5.3.7 Example policy versions (initial + 2 updates)
 
-The following examples show one initial policy and two incremental updates for the same cluster.
+The following examples show one initial policy and two subsequent updates for the same cluster, all as full snapshots.
 
 #### Example A: Initial policy (`PolicyVersion = 1`, `POLICY_SNAPSHOT`)
 
@@ -1045,7 +1016,7 @@ The following examples show one initial policy and two incremental updates for t
 }
 ```
 
-#### Example B: Update 1 (`PolicyVersion = 2`, `POLICY_DIFF`)
+#### Example B: Update 1 (`PolicyVersion = 2`, `POLICY_SNAPSHOT`)
 
 Change: add support role and support task authorization.
 
@@ -1054,79 +1025,34 @@ Change: add support role and support task authorization.
   "organizationId": "org-acme",
   "clusterId": "oc-a",
   "policyVersion": 2,
-  "baseVersion": 1,
-  "kind": "POLICY_DIFF",
-  "changes": [
+  "kind": "POLICY_SNAPSHOT",
+  "tenants": [
+    {"id": "default"}
+  ],
+  "roles": [
+    {"id": "role-cluster-admin", "permissions": ["MANAGE_CLUSTER_SETTINGS", "MANAGE_USERS"]},
+    {"id": "role-support-agent", "permissions": ["READ_PROCESS_INSTANCE", "READ_TASK", "UPDATE_TASK"]}
+  ],
+  "authorizations": [
     {
-      "entityType": "ROLE",
-      "entityId": "role-support-agent",
-      "operation": "UPSERT",
-      "scope": {
-        "scopeType": "ALL"
-      },
-      "value": {
-        "id": "role-support-agent",
-        "permissions": ["READ_PROCESS_INSTANCE", "READ_TASK", "UPDATE_TASK"]
-      }
+      "id": "authz-cluster-admin-api",
+      "ownerType": "ROLE",
+      "ownerId": "role-cluster-admin",
+      "resourceType": "CLUSTER_API",
+      "resourceId": "*",
+      "permissions": ["MANAGE_CLUSTER_SETTINGS", "MANAGE_USERS"]
     },
     {
-      "entityType": "AUTHORIZATION",
-      "entityId": "authz-support-task",
-      "operation": "UPSERT",
-      "scope": {
-        "scopeType": "ALL"
-      },
-      "value": {
-        "id": "authz-support-task",
-        "ownerType": "ROLE",
-        "ownerId": "role-support-agent",
-        "resourceType": "USER_TASK",
-        "resourceId": "*",
-        "permissions": ["READ_TASK", "UPDATE_TASK"]
-      }
+      "id": "authz-support-task",
+      "ownerType": "ROLE",
+      "ownerId": "role-support-agent",
+      "resourceType": "USER_TASK",
+      "resourceId": "*",
+      "permissions": ["READ_TASK", "UPDATE_TASK"]
     }
   ]
 }
 ```
-
-#### Example C: Update 2 (`PolicyVersion = 3`, `POLICY_DIFF`)
-
-Change: add one engine-scoped authorization for support role on `engine-2`.
-
-```json
-{
-  "organizationId": "org-acme",
-  "clusterId": "oc-a",
-  "policyVersion": 3,
-  "baseVersion": 2,
-  "kind": "POLICY_DIFF",
-  "changes": [
-    {
-      "entityType": "AUTHORIZATION",
-      "entityId": "authz-engine2-support",
-      "operation": "UPSERT",
-      "scope": {
-        "scopeType": "ENGINE",
-        "scopeId": "engine-2"
-      },
-      "value": {
-        "id": "authz-engine2-support",
-        "ownerType": "ROLE",
-        "ownerId": "role-support-agent",
-        "resourceType": "PROCESS_INSTANCE",
-        "resourceId": "*",
-        "permissions": ["READ_PROCESS_INSTANCE"]
-      }
-    }
-  ]
-}
-```
-
-These examples illustrate the expected apply behavior:
-
-- OC at version `1` can apply diff `2` directly.
-- OC at version `2` can apply diff `3` directly.
-- OC at version `1` cannot apply diff `3` without first applying version `2` (or requesting a snapshot).
 
 ---
 
@@ -1202,7 +1128,7 @@ graph LR
 | `AuthorizationService` | Evaluate whether the current principal is allowed to access a Hub or OC resource. Resolves the effective permission set from token/session context, roles, groups, mapping rules, and scoped authorizations. | `HUB`, `OC_MANAGED`, `OC_STANDALONE` | Spring Security filter chain, method-security interceptor, API authorization middleware |
 | `TenantService` | Resolve and validate the active tenant context for the current request. Provides tenant-aware policy lookup and ensures tenant scoping is applied consistently before authorization decisions are made. | `HUB`, `OC_MANAGED`, `OC_STANDALONE` | Request filter, tenant resolver, REST controller support |
 | `PolicyService` | Handle policy authoring and policy read operations in the local source-of-truth runtime. Validates and persists changes to tenants, roles, groups, mapping rules, principals, and authorizations. | `HUB`, `OC_STANDALONE` | Admin REST controller, Admin UI backend |
-| `PolicyApplyService` | Accept and apply externally produced policy payloads (`POLICY_SNAPSHOT`, `POLICY_DIFF`) to the local projection. Performs version checks, idempotency handling, and apply orchestration. | `OC_MANAGED` | `POST /identity/policies/apply` controller |
+| `PolicyApplyService` | Accept and apply externally produced policy payloads (`POLICY_SNAPSHOT`) to the local projection. Performs version checks, idempotency handling, and apply orchestration. | `OC_MANAGED` | `POST /identity/policies/apply` controller |
 | `ClusterRegistrationService` | Accept cluster registration and update notifications from the host application. The host calls this port when a new cluster is discovered or an existing cluster's metadata changes (name, organization scope, etc.). | `HUB` | Hub adapter triggered by provisioning events, configuration, or any other host-side discovery mechanism |
 
 **Outbound port responsibilities and example usage by profile:**
@@ -1259,7 +1185,7 @@ flowchart LR
     AuthN["AuthN pipeline<br>(IdpPort → token validation<br>+ session management)"]
     AuthZ["AuthZ evaluator<br>(scope-aware RBAC/ABAC<br>for Hub or cluster resources)"]
     Domain["Unified policy domain<br>(Tenant/Role/Group/MappingRule/Principal/Authz)"]
-    Apply["Snapshot/Diff apply engine<br>(idempotent, version-checked)"]
+    Apply["Policy apply engine<br>(full snapshot in iteration one;<br>idempotent, version-checked)"]
 
     SpringSec --> AuthN
   end
@@ -1495,11 +1421,10 @@ This section illustrates selected runtime flows as concrete user journeys, focus
   - Writes a new `PolicyVersion` and associated `EntityRevision` and `PolicyVersionChange` rows.
   - Writes one or more `OutboxEvent`s in status `PENDING` for the affected OCs.
 5. Outbox Dispatcher picks up the new events:
-  - Decides between `POLICY_SNAPSHOT` and `POLICY_DIFF` per OC based on `OcSyncState.last_acked_version`.
+  - Builds a full `POLICY_SNAPSHOT` for the target `PolicyVersion`.
   - Posts the payload to `/identity/policies/apply` on each target OC.
 6. OC Security Gateway Framework:
-  - Validates `base_version` against its `last_applied_version`.
-  - Applies the snapshot or diff to its local projection and updates `last_applied_version`.
+  - Applies the full policy snapshot to its local projection and updates `last_applied_version`.
   - Propagates engine-scoped changes to engines via the engine command path / Security Engine Framework.
 
 From the admin’s perspective, all policy changes are made centrally in Hub; the OC and engines converge asynchronously.
@@ -1526,8 +1451,8 @@ sequenceDiagram
   HubUI->>HubSGF: Submit policy updates
   HubSGF->>HubDB: Persist policy + PolicyVersion + revisions + outbox events
   Outbox->>HubDB: Read pending events
-  Outbox->>OCSGF: POST /identity/policies/apply (snapshot or diff)
-  OCSGF->>OCSGF: Validate base_version and apply projection
+  Outbox->>OCSGF: POST /identity/policies/apply (full snapshot)
+  OCSGF->>OCSGF: Apply snapshot projection
   OCSGF->>Engine: Propagate engine-scoped changes
 ```
 
@@ -1785,7 +1710,7 @@ This unified architecture builds on existing identity arc42 docs and ADRs for OC
 
 This section contains detailed Architectural Decision Records (ADRs) for the Security Gateway Framework. Each ADR documents a specific decision, the context, alternatives considered, and consequences.
 
-- [ADR-0001: Link PolicyVersion with policy data via versioned change sets](adr/0001-policy-version-change-sets.md)
+- [ADR-0001: PolicyVersion commits and full-policy propagation](adr/0001-policy-version-change-sets.md)
 - [ADR-0002: Placement of the Security Gateway Framework (embedded vs standalone service)](adr/0002-placement-of-the-security-gateway-framework.md)
 - [ADR-0003: Push vs Pull Policy Propagation (Hub ↔ Orchestration Clusters)](adr/0003-Push-vs-Pull-Policy-Propagation.md)
 - [ADR-0004: Identity data persistence in the Orchestration Cluster (Open)](adr/0004-oc-identity-data-persistence-and-engine-command-scope.md)

@@ -2,7 +2,7 @@
 status: Proposed
 ---
 
-# ADR-0001: Link PolicyVersion with policy data via versioned change sets
+# ADR-0001: PolicyVersion commits with full-policy propagation (iteration one)
 
 ## Status
 
@@ -17,31 +17,33 @@ Proposed
 
 ## Decision (Option 1)
 
-- Use `PolicyVersion` as a delivery-neutral organization + cluster-scoped commit in Hub (`version_number`, `base_version`).
-- Store snapshot vs diff only on `OutboxEvent.event_type`.
+- Use `PolicyVersion` as a delivery-neutral organization + cluster-scoped commit in Hub (`version_number`).
+- In iteration one, always propagate full policy payloads (`POLICY_SNAPSHOT`) to OCs for every new `PolicyVersion`.
 - Keep stable entity IDs.
 - Persist full-entity revisions (`EntityRevision`) for each change (including tombstones for deletes).
-- Link ordered changes via `PolicyVersionChange`.
-- Build `POLICY_DIFF` from the target version's change rows.
 - Build `POLICY_SNAPSHOT` from latest non-deleted revisions per entity/scope up to a target version.
+- Keep `PolicyVersionChange`/`base_version` optional and reserved for a potential later diff optimization, not required for first-iteration apply.
 
 ## Alternatives Considered
 
-### Option 2 – Event sourcing style (full-resource events)
+### Option 2 – Incremental diff propagation
+
+- Pros: smaller payloads and less repeated apply work on OC side for small policy changes.
+- Cons: higher complexity in dispatcher/apply flow (`base_version` chains, gap handling, re-sync behavior, and diff reconstruction).
+- Not chosen for iteration one to keep delivery and OC apply deterministic and low risk.
+- Can be introduced in a later iteration as an optimization if payload size/throughput metrics justify it.
+
+### Option 3 – Event sourcing style (full-resource events)
 
 - Pros: strong audit trail and replay capabilities.
 - Cons: higher complexity and operational overhead.
 - Not chosen because replay/history is not a core requirement.
 
-### Option 3 – Full materialized snapshot per version
-
-- Pros: simplest read/bootstrap behavior.
-- Cons: high write/storage amplification due to full duplication each version, and high network traffic when full resources are repeatedly posted to OCs.
-- Not chosen because it is unnecessary for frequent incremental updates.
 
 ## Consequences
 
-- Efficient incremental propagation for the common case (existing OCs).
-- Idempotent apply behavior with straightforward gap handling.
-- No patch/merge ambiguity because each change carries a full resource payload.
+- OC apply path is simpler: replace projection with full snapshot per `PolicyVersion` and keep idempotency by `policyVersionId`.
+- No patch/merge ambiguity and no base-version mismatch handling in iteration one.
+- Higher payload size and potentially higher network/DB write load; rollout needs payload limits, batching, and observability.
+- Diff-based propagation remains a deliberate future optimization that can be added if operational metrics justify it.
 

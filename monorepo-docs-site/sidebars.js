@@ -96,7 +96,6 @@ const sidebars = {
           label: 'Roadmap',
           items: [
             'architecture/roadmap/unified_identity_architecture/unified_identity_architecture',
-            'architecture/roadmap/unified_identity_architecture/migration_path',
             {
               type: 'category',
               label: 'ADRs',
@@ -104,7 +103,6 @@ const sidebars = {
                 'architecture/roadmap/unified_identity_architecture/adr/policy-version-change-sets',
                 'architecture/roadmap/unified_identity_architecture/adr/placement-of-the-security-gateway-framework',
                 'architecture/roadmap/unified_identity_architecture/adr/Push-vs-Pull-Policy-Propagation',
-                'architecture/roadmap/unified_identity_architecture/adr/oc-identity-data-persistence-and-engine-command-scope',
               ],
             },
           ],
