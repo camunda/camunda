@@ -481,6 +481,7 @@ class ExporterConfigurationTest {
     final var config = new ExporterConfiguration();
     config.getAsyncReplication().setEnabled(true);
     config.getAsyncReplication().setPollingInterval(Duration.ofSeconds(15));
+    config.getAsyncReplication().setMinSyncReplicas(0);
 
     // when + then
     config.validate(); // should not throw
@@ -521,6 +522,18 @@ class ExporterConfigurationTest {
 
     // when + then
     config.validate(); // should not throw because disabled
+  }
+
+  @Test
+  void shouldRejectNegativeMinSyncReplicas() {
+    // given
+    final var config = new ExporterConfiguration();
+    config.getAsyncReplication().setMinSyncReplicas(-1);
+
+    // when + then
+    assertThatThrownBy(config::validate)
+        .isInstanceOf(io.camunda.zeebe.exporter.api.ExporterException.class)
+        .hasMessageContaining("asyncReplication.minSyncReplicas");
   }
 
   @Test
