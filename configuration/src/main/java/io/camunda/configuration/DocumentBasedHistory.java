@@ -25,6 +25,7 @@ public class DocumentBasedHistory {
   private static final String DEFAULT_HISTORY_ELS_ROLLOVER_DATE_FORMAT = "date";
   private static final String DEFAULT_HISTORY_ROLLOVER_INTERVAL = "1d";
   private static final int DEFAULT_HISTORY_ROLLOVER_BATCH_SIZE = 100;
+  private static final int DEFAULT_HISTORY_REINDEX_BATCH_SIZE = 1000;
   private static final String DEFAULT_HISTORY_WAIT_PERIOD_BEFORE_ARCHIVING = "1h";
   private static final Map<String, String> LEGACY_BROKER_PROPERTIES =
       Map.of(
@@ -61,6 +62,9 @@ public class DocumentBasedHistory {
 
   /** Maximum number of process instances per archiving batch */
   private int rolloverBatchSize = DEFAULT_HISTORY_ROLLOVER_BATCH_SIZE;
+
+  /** Maximum number of docs reindexed/deleted in a batch */
+  private int reindexBatchSize = DEFAULT_HISTORY_REINDEX_BATCH_SIZE;
 
   /**
    * Grace period before archiving completed processes. Processes finished within this window are
@@ -157,6 +161,14 @@ public class DocumentBasedHistory {
 
   public void setRolloverBatchSize(final int rolloverBatchSize) {
     this.rolloverBatchSize = rolloverBatchSize;
+  }
+
+  public int getReindexBatchSize() {
+    return reindexBatchSize;
+  }
+
+  public void setReindexBatchSize(final int reindexBatchSize) {
+    this.reindexBatchSize = reindexBatchSize;
   }
 
   public String getWaitPeriodBeforeArchiving() {
