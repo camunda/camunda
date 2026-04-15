@@ -180,7 +180,10 @@ public class UserTaskFilterImpl
 
   @Override
   public UserTaskFilter bpmnProcessId(final String bpmnProcessId) {
-    filter.processDefinitionId(bpmnProcessId);
+    final Consumer<StringProperty> fn = b -> b.eq(bpmnProcessId);
+    final StringProperty property = new StringPropertyImpl();
+    fn.accept(property);
+    filter.setProcessDefinitionId(provideSearchRequestProperty(property));
     return this;
   }
 
