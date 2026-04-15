@@ -104,34 +104,24 @@ public class CamundaProcessTestDefaultConfiguration {
             executorService,
             camundaClientCredentialsProvider);
 
-    // Pre-compute remote address overrides once so every factory invocation is lightweight.
     final CamundaClientProperties remoteClientProperties =
         runtimeConfiguration.getRemote().getClient();
-    final URI remoteGrpcAddress =
-        isExplicitlyConfigured(
-                remoteClientProperties.getGrpcAddress(),
-                CamundaClientBuilderImpl.DEFAULT_GRPC_ADDRESS)
-            ? remoteClientProperties.getGrpcAddress()
-            : null;
-    final URI remoteRestAddress =
-        isExplicitlyConfigured(
-                remoteClientProperties.getRestAddress(),
-                CamundaClientBuilderImpl.DEFAULT_REST_ADDRESS)
-            ? remoteClientProperties.getRestAddress()
-            : null;
+    final Optional<URI> remoteGrpcAddress =
+        Optional.ofNullable(remoteClientProperties.getGrpcAddress())
+            .filter(address -> !address.equals(CamundaClientBuilderImpl.DEFAULT_GRPC_ADDRESS));
+
+    final Optional<URI> remoteRestAddress =
+        Optional.ofNullable(remoteClientProperties.getRestAddress())
+            .filter(address -> !address.equals(CamundaClientBuilderImpl.DEFAULT_REST_ADDRESS));
 
     return () -> {
       final CamundaClientBuilder builder = configuration.toBuilder();
       // Backwards compatibility: apply remote client addresses only when explicitly configured
       // (i.e. different from the default addresses of CamundaClientProperties).
       // This matches the previously supported camunda.process-test.remote.client.* properties.
-      Optional.ofNullable(remoteGrpcAddress).ifPresent(builder::grpcAddress);
-      Optional.ofNullable(remoteRestAddress).ifPresent(builder::restAddress);
+      remoteGrpcAddress.ifPresent(builder::grpcAddress);
+      remoteRestAddress.ifPresent(builder::restAddress);
       return builder;
     };
-  }
-
-  private static boolean isExplicitlyConfigured(final URI address, final URI defaultAddress) {
-    return address != null && !address.equals(defaultAddress);
   }
 }
