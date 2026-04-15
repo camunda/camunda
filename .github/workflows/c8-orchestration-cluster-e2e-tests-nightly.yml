@@ -634,7 +634,7 @@ jobs:
         branch: [stable/8.7, stable/8.8, stable/8.9, main]
         tasklist_mode: [v1, v2]
         exclude:
-          # V2 mode only supported on main branch - exclude V2 for older branches
+          # V2 mode is not supported on stable/8.7; stable/8.8, stable/8.9, and main run V2
           - branch: stable/8.7
             tasklist_mode: v2
           # V1 mode removed from main - only V2 tests remain
@@ -650,7 +650,7 @@ jobs:
       - name: Start Camunda
         run: |
           if [[ "${{ matrix.branch }}" == "stable/8.7" ]]; then
-            echo "Using single services for Camunda 8.6 and 8.7"
+            echo "Using single services for Camunda 8.7"
             DATABASE=elasticsearch docker compose up -d operate tasklist
           else
             echo "Using standalone camunda container"
