@@ -152,12 +152,14 @@ public class Starter extends App {
             Executors.newScheduledThreadPool(1),
             config.getMonitorDataAvailabilityInterval(),
             (listOfStartedInstances) -> {
+              final var limit = 100;
+              final var instanceIds = listOfStartedInstances.stream().limit(limit).toList();
               final CamundaFuture<SearchResponse<ProcessInstance>> send =
                   client
                       .newProcessInstanceSearchRequest()
-                      .filter((f) -> f.processInstanceKey(key -> key.in(listOfStartedInstances)))
+                      .filter((f) -> f.processInstanceKey(key -> key.in(instanceIds)))
                       .sort(ProcessInstanceSort::startDate)
-                      .page(p -> p.limit(100))
+                      .page(p -> p.limit(limit))
                       .send();
 
               return send.thenApply(
