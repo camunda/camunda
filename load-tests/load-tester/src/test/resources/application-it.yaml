@@ -6,5 +6,9 @@ camunda:
       method: none
     zeebe:
       enabled: true
+      # Use gRPC for job activation in ITs. The REST API added new fields (e.g. tenantFilter)
+      # that older SNAPSHOT Docker images do not understand, causing 400 Bad Request.
+      # gRPC/protobuf is forward-compatible and silently ignores unknown fields.
+      prefer-rest-over-grpc: false
       defaults:
         type: benchmark-task

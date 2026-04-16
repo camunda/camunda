@@ -38,9 +38,9 @@ import org.testcontainers.junit.jupiter.Testcontainers;
  * which flush immediately (PT0S), making process instances queryable almost instantly.
  *
  * <p>The starter runs for {@code duration-limit} seconds (blocking Spring Boot startup). During
- * that time, it creates instances and the {@link io.camunda.zeebe.ProcessInstanceStartMeter}
- * periodically checks if they are queryable. By the time this test method executes, the data
- * availability latency metric should have recordings.
+ * that time, it creates instances and the {@link
+ * io.camunda.zeebe.metrics.ProcessInstanceStartMeter} periodically checks if they are queryable. By
+ * the time this test method executes, the data availability latency metric should have recordings.
  */
 @Testcontainers
 @SpringBootTest(

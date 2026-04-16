@@ -169,10 +169,14 @@ public class Worker {
         Thread.sleep(sleepTime);
       } else {
         LOGGER.debug(
-            "Skip sleep. Elapsed time {} is larger then {} completion delay.",
+            "Skip sleep. Elapsed time {} is larger than {} completion delay.",
             elapsedTime,
             completionDelay);
       }
+    } catch (final InterruptedException e) {
+      Thread.currentThread().interrupt();
+      THROTTLED_LOGGER.error(
+          "Interrupted during completion delay sleep of {} ms", completionDelay, e);
     } catch (final Exception e) {
       THROTTLED_LOGGER.error("Exception on sleep with completion delay {}", completionDelay, e);
     }

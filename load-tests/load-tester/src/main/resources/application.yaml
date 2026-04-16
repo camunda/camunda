@@ -11,6 +11,14 @@ management:
     port: ${server.port}
   endpoints:
     web:
+      # Match the old HOCON app's paths so Prometheus ServiceMonitors
+      # (and Grafana dashboards) that scrape `/metrics` keep working
+      # without a Helm chart change. Without this, metrics are at
+      # /actuator/prometheus and the Helm-managed scraper gets an empty
+      # response, so worker/starter panels show no data.
+      base-path: /
+      path-mapping:
+        prometheus: metrics
       exposure:
         include: health,prometheus
 
@@ -73,7 +81,7 @@ load-tester:
   # are configured via camunda.client.zeebe.defaults.* above.
   worker:
     completion-delay: ${LOAD_TESTER_WORKER_COMPLETION_DELAY:300ms}
-    payload-path: ${LOAD_TESTER_WORKER_PAYLOAD_PATH:bpmn/typical_payload.json}
+    payload-path: ${LOAD_TESTER_WORKER_PAYLOAD_PATH:bpmn/big_payload.json}
     send-message: ${LOAD_TESTER_WORKER_SEND_MESSAGE:false}
     message-name: ${LOAD_TESTER_WORKER_MESSAGE_NAME:messageName}
     correlation-key-variable-name: ${LOAD_TESTER_WORKER_CORRELATION_KEY_VARIABLE_NAME:correlationKey-var}
