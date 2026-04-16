@@ -247,3 +247,4 @@ class InstancesSelection {
 }
 
 export const processInstancesSelectionStore = new InstancesSelection();
+export const decisionInstancesSelectionStore = new InstancesSelection();
