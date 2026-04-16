@@ -30,19 +30,4 @@ public interface CamundaAuthenticationProvider {
   default CamundaAuthentication getAnonymousCamundaAuthentication() {
     return CamundaAuthentication.anonymous();
   }
-
-  /**
-   * Returns the current {@link CamundaAuthentication} if available, falling back to anonymous
-   * authentication if the security context is empty or no converter can handle the current
-   * authentication type. This is used by generated controllers that uniformly resolve
-   * authentication for all endpoints, including unprotected ones where the security context
-   * contains no authentication.
-   */
-  default CamundaAuthentication getAnonymousIfUnavailable() {
-    try {
-      return getCamundaAuthentication();
-    } catch (final Exception e) {
-      return getAnonymousCamundaAuthentication();
-    }
-  }
 }

@@ -374,8 +374,6 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
   void setupServices() throws IOException {
     when(authenticationProvider.getCamundaAuthentication())
         .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
-    when(authenticationProvider.getAnonymousIfUnavailable())
-        .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
 
     // Mock the behavior of userTaskServices for a valid key
     when(userTaskServices.getByKey(eq(VALID_USER_TASK_KEY), any()))

@@ -81,8 +81,6 @@ public class DecisionDefinitionControllerTest extends RestControllerTest {
   void setupServices() {
     when(authenticationProvider.getCamundaAuthentication())
         .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
-    when(authenticationProvider.getAnonymousIfUnavailable())
-        .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
   }
 
   @Test
@@ -90,8 +88,6 @@ public class DecisionDefinitionControllerTest extends RestControllerTest {
     // given
     when(multiTenancyCfg.isChecksEnabled()).thenReturn(true);
     when(authenticationProvider.getCamundaAuthentication())
-        .thenReturn(AUTHENTICATION_WITH_NON_DEFAULT_TENANT);
-    when(authenticationProvider.getAnonymousIfUnavailable())
         .thenReturn(AUTHENTICATION_WITH_NON_DEFAULT_TENANT);
     when(decisionServices.evaluateDecision(anyString(), anyLong(), anyMap(), anyString(), any()))
         .thenReturn((buildResponse("tenantId")));
@@ -165,8 +161,6 @@ public class DecisionDefinitionControllerTest extends RestControllerTest {
     // given
     when(multiTenancyCfg.isChecksEnabled()).thenReturn(true);
     when(authenticationProvider.getCamundaAuthentication())
-        .thenReturn(AUTHENTICATION_WITH_NON_DEFAULT_TENANT);
-    when(authenticationProvider.getAnonymousIfUnavailable())
         .thenReturn(AUTHENTICATION_WITH_NON_DEFAULT_TENANT);
     when(decisionServices.evaluateDecision(anyString(), anyLong(), anyMap(), anyString(), any()))
         .thenReturn((buildResponse("tenantId")));

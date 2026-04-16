@@ -1838,7 +1838,7 @@ package %s;
 
     // Resolve authentication context once per request.
     sb.append("    final var authentication =\n");
-    sb.append("        authenticationProvider.getAnonymousIfUnavailable();\n");
+    sb.append("        authenticationProvider.getCamundaAuthentication();\n");
 
     // Body: delegate directly to service adapter
     String adapterArgs =

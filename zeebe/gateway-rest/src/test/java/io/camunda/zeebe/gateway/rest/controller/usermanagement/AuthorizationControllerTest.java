@@ -28,8 +28,8 @@ import io.camunda.service.AuthorizationServices;
 import io.camunda.service.AuthorizationServices.CreateAuthorizationRequest;
 import io.camunda.service.AuthorizationServices.UpdateAuthorizationRequest;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
-import io.camunda.zeebe.gateway.rest.controller.adapter.DefaultAuthorizationServiceAdapter;
 import io.camunda.zeebe.gateway.rest.controller.AuthorizationController;
+import io.camunda.zeebe.gateway.rest.controller.adapter.DefaultAuthorizationServiceAdapter;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceMatcher;
@@ -64,8 +64,6 @@ public class AuthorizationControllerTest extends RestControllerTest {
   void setup() {
     when(authenticationProvider.getCamundaAuthentication())
         .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
-    when(authenticationProvider.getAnonymousIfUnavailable())
-        .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
   }
 
   @ParameterizedTest
@@ -90,8 +88,7 @@ public class AuthorizationControllerTest extends RestControllerTest {
         .expectStatus()
         .isCreated()
         .expectBody(AuthorizationCreate.class)
-        .isEqualTo(
-            new AuthorizationCreate().authorizationKey(String.valueOf(authorizationKey)));
+        .isEqualTo(new AuthorizationCreate().authorizationKey(String.valueOf(authorizationKey)));
 
     final var captor = ArgumentCaptor.forClass(CreateAuthorizationRequest.class);
     verify(authorizationServices).createAuthorization(captor.capture(), any());

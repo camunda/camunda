@@ -102,8 +102,6 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
   void setupServices() {
     when(authenticationProvider.getCamundaAuthentication())
         .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
-    when(authenticationProvider.getAnonymousIfUnavailable())
-        .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
   }
 
   @Test
@@ -118,8 +116,6 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
             .setTenantId("tenantId");
 
     when(authenticationProvider.getCamundaAuthentication())
-        .thenReturn(AUTHENTICATION_WITH_NON_DEFAULT_TENANT);
-    when(authenticationProvider.getAnonymousIfUnavailable())
         .thenReturn(AUTHENTICATION_WITH_NON_DEFAULT_TENANT);
     when(processInstanceServices.createProcessInstance(
             any(ProcessInstanceCreateRequest.class), any()))
@@ -222,8 +218,6 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
 
     when(authenticationProvider.getCamundaAuthentication())
         .thenReturn(AUTHENTICATION_WITH_NON_DEFAULT_TENANT);
-    when(authenticationProvider.getAnonymousIfUnavailable())
-        .thenReturn(AUTHENTICATION_WITH_NON_DEFAULT_TENANT);
     when(processInstanceServices.createProcessInstance(
             any(ProcessInstanceCreateRequest.class), any()))
         .thenReturn(CompletableFuture.completedFuture(mockResponse));
@@ -272,8 +266,6 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
             .setTenantId("tenantId");
 
     when(authenticationProvider.getCamundaAuthentication())
-        .thenReturn(AUTHENTICATION_WITH_NON_DEFAULT_TENANT);
-    when(authenticationProvider.getAnonymousIfUnavailable())
         .thenReturn(AUTHENTICATION_WITH_NON_DEFAULT_TENANT);
     when(processInstanceServices.createProcessInstance(
             any(ProcessInstanceCreateRequest.class), any()))
@@ -528,8 +520,6 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
 
     when(authenticationProvider.getCamundaAuthentication())
         .thenReturn(AUTHENTICATION_WITH_NON_DEFAULT_TENANT);
-    when(authenticationProvider.getAnonymousIfUnavailable())
-        .thenReturn(AUTHENTICATION_WITH_NON_DEFAULT_TENANT);
     when(processInstanceServices.createProcessInstanceWithResult(
             any(ProcessInstanceCreateRequest.class), any()))
         .thenReturn(CompletableFuture.completedFuture(mockResponse));
@@ -579,8 +569,6 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
             .setTenantId("tenantId");
 
     when(authenticationProvider.getCamundaAuthentication())
-        .thenReturn(AUTHENTICATION_WITH_NON_DEFAULT_TENANT);
-    when(authenticationProvider.getAnonymousIfUnavailable())
         .thenReturn(AUTHENTICATION_WITH_NON_DEFAULT_TENANT);
     when(processInstanceServices.createProcessInstanceWithResult(
             any(ProcessInstanceCreateRequest.class), any()))
@@ -633,8 +621,6 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
 
     when(authenticationProvider.getCamundaAuthentication())
         .thenReturn(AUTHENTICATION_WITH_NON_DEFAULT_TENANT);
-    when(authenticationProvider.getAnonymousIfUnavailable())
-        .thenReturn(AUTHENTICATION_WITH_NON_DEFAULT_TENANT);
     when(processInstanceServices.createProcessInstanceWithResult(
             any(ProcessInstanceCreateRequest.class), any()))
         .thenReturn(CompletableFuture.completedFuture(mockResponse));
@@ -684,8 +670,6 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
             .setTenantId("tenantId");
 
     when(authenticationProvider.getCamundaAuthentication())
-        .thenReturn(AUTHENTICATION_WITH_NON_DEFAULT_TENANT);
-    when(authenticationProvider.getAnonymousIfUnavailable())
         .thenReturn(AUTHENTICATION_WITH_NON_DEFAULT_TENANT);
     when(processInstanceServices.createProcessInstanceWithResult(
             any(ProcessInstanceCreateRequest.class), any()))
