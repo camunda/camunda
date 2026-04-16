@@ -182,37 +182,14 @@ while IFS= read -r repo_name; do
       ] | join("\n"))
     ')
 
-    # Resolve author avatar for section accessory
-    author_login=$(echo "$group" | jq -r '.original_pr_author // "unknown"')
-    author_name=$(echo "$group" | jq -r '.original_pr_author_name // ""')
-    map_entry=$(jq -c --arg login "$author_login" --arg name "$author_name" \
-      '(.[$login] // .[$name] // null) | if type == "string" then {slack_id: .} else . end' \
-      "$TMPDIR_WORK/slack_user_map.json" 2>/dev/null || echo 'null')
-    avatar_url=$(echo "$map_entry" | jq -r '.avatar_url // .image_48 // empty' 2>/dev/null || true)
-    if [[ -z "$avatar_url" && "$author_login" != app/* && "$author_login" != "unknown" ]]; then
-      avatar_url="https://github.com/${author_login}.png?size=24"
-    fi
-
     if [[ "$USE_GROUP_DIVIDERS" == "true" ]]; then
-      if [[ -n "$avatar_url" ]]; then
-        jq -c --arg text "$section_text" --arg avatar "$avatar_url" --arg alt "${author_name:-$author_login}" \
-          '. + [{type: "divider"}, {type: "section", text: {type: "mrkdwn", text: $text}, accessory: {type: "image", image_url: $avatar, alt_text: $alt}}]' \
-          "$TMPDIR_WORK/blocks.json" > "$TMPDIR_WORK/blocks_tmp.json" && mv "$TMPDIR_WORK/blocks_tmp.json" "$TMPDIR_WORK/blocks.json"
-      else
-        jq -c --arg text "$section_text" \
-          '. + [{type: "divider"}, {type: "section", text: {type: "mrkdwn", text: $text}}]' \
-          "$TMPDIR_WORK/blocks.json" > "$TMPDIR_WORK/blocks_tmp.json" && mv "$TMPDIR_WORK/blocks_tmp.json" "$TMPDIR_WORK/blocks.json"
-      fi
+      jq -c --arg text "$section_text" \
+        '. + [{type: "divider"}, {type: "section", text: {type: "mrkdwn", text: $text}}]' \
+        "$TMPDIR_WORK/blocks.json" > "$TMPDIR_WORK/blocks_tmp.json" && mv "$TMPDIR_WORK/blocks_tmp.json" "$TMPDIR_WORK/blocks.json"
     else
-      if [[ -n "$avatar_url" ]]; then
-        jq -c --arg text "$section_text" --arg avatar "$avatar_url" --arg alt "${author_name:-$author_login}" \
-          '. + [{type: "section", text: {type: "mrkdwn", text: ("── ── ── ── ──\n" + $text)}, accessory: {type: "image", image_url: $avatar, alt_text: $alt}}]' \
-          "$TMPDIR_WORK/blocks.json" > "$TMPDIR_WORK/blocks_tmp.json" && mv "$TMPDIR_WORK/blocks_tmp.json" "$TMPDIR_WORK/blocks.json"
-      else
-        jq -c --arg text "$section_text" \
-          '. + [{type: "section", text: {type: "mrkdwn", text: ("── ── ── ── ──\n" + $text)}}]' \
-          "$TMPDIR_WORK/blocks.json" > "$TMPDIR_WORK/blocks_tmp.json" && mv "$TMPDIR_WORK/blocks_tmp.json" "$TMPDIR_WORK/blocks.json"
-      fi
+      jq -c --arg text "$section_text" \
+        '. + [{type: "section", text: {type: "mrkdwn", text: ("── ── ── ── ──\n" + $text)}}]' \
+        "$TMPDIR_WORK/blocks.json" > "$TMPDIR_WORK/blocks_tmp.json" && mv "$TMPDIR_WORK/blocks_tmp.json" "$TMPDIR_WORK/blocks.json"
     fi
   done
   fi
