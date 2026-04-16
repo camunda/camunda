@@ -279,7 +279,9 @@ QA Release Manager: can help with questions around steps the QA team performs.
 
 _Caveat: Not all steps with "QA" in the name mean that the QA team is actually involved, so check twice_
 
-Zeebe Release Manager: can help with Zeebe-specific questions and tasks.
+Zeebe Medic: can help with Zeebe-specific questions and tasks.
+
+Core Features Medic: can help with questions and tasks related to Operate, Tasklist, and other core features.
 
 ## Backporting Guidelines
 
