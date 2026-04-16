@@ -1,0 +1,211 @@
+# description: AI agent that runs E2E tests, fixes failures using Claude, and opens a PR. Can be triggered manually or on pull_request.
+# test location: /qa/c8-orchestration-cluster-e2e-test-suite
+# type: CI
+# owner: @camunda/qa-engineering
+---
+name: E2E Fix Agent
+
+on:
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: "Branch to run tests against"
+        required: false
+        default: "main"
+      project:
+        description: "Playwright project to run (chromium, api-tests, firefox)"
+        required: false
+        default: "chromium"
+  pull_request:
+    types: [opened, synchronize]
+    paths:
+      - 'qa/c8-orchestration-cluster-e2e-test-suite/**'
+      - 'operate/**'
+      - 'tasklist/**'
+      - 'identity/**'
+
+permissions:
+  contents: write
+  pull-requests: write
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  e2e-fix-agent:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    env:
+      TARGET_BRANCH: ${{ github.event.inputs.branch || github.head_ref || 'main' }}
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          ref: ${{ env.TARGET_BRANCH }}
+
+      - name: Set CAMUNDA_DOCKER_IMAGE
+        run: |
+          branch="$TARGET_BRANCH"
+          if [[ "$branch" == "main" ]]; then
+            echo "CAMUNDA_DOCKER_IMAGE=camunda/camunda:SNAPSHOT" >> "$GITHUB_ENV"
+          elif [[ "$branch" == stable/* ]]; then
+            minor="${branch#stable/}"
+            echo "CAMUNDA_DOCKER_IMAGE=camunda/camunda:${minor}-SNAPSHOT" >> "$GITHUB_ENV"
+          fi
+
+      - name: Start Camunda
+        working-directory: qa/c8-orchestration-cluster-e2e-test-suite/config
+        run: |
+          branch="$TARGET_BRANCH"
+          if [[ "$branch" == "stable/8.7" ]]; then
+            echo "Using single services for stable/8.7"
+            DATABASE=elasticsearch docker compose up -d operate tasklist
+          else
+            echo "Using standalone camunda container"
+            echo "Starting Camunda with NON_STANDALONE:$NON_STANDALONE, database:$DATABASE"
+            DATABASE=elasticsearch docker compose up -d camunda
+          fi
+
+      - name: List running Docker containers
+        working-directory: qa/c8-orchestration-cluster-e2e-test-suite/config
+        run: docker ps -a
+
+      - name: Wait for services to be ready
+        id: wait-for-services
+        working-directory: qa/c8-orchestration-cluster-e2e-test-suite/config
+        run: |
+          branch="$TARGET_BRANCH"
+          echo "Checking if services are up..."
+          ready=false
+          for i in {1..90}; do
+            if [[ "$branch" == "stable/8.7" ]]; then
+              tasklist_status=$(curl -s -m 5 http://localhost:8080 || echo "Failed")
+              operate_status=$(curl -s -m 5 http://localhost:8081 || echo "Failed")
+            else
+              tasklist_status=$(curl -s -m 5 http://localhost:8080/tasklist || echo "Failed")
+              operate_status=$(curl -s -m 5 http://localhost:8080/operate || echo "Failed")
+              identity_status=$(curl -s -m 5 http://localhost:8080/identity || echo "Failed")
+            fi
+
+            if [[ "$branch" == "stable/8.7" ]]; then
+              if [[ "$tasklist_status" != "Failed" && "$operate_status" != "Failed" ]]; then
+                echo "Services are ready!"
+                ready=true
+                break
+              fi
+            else
+              if [[ "$tasklist_status" != "Failed" && "$operate_status" != "Failed" && "$identity_status" != "Failed" ]]; then
+                echo "Services are ready!"
+                ready=true
+                break
+              fi
+            fi
+
+            echo "Waiting for services... ($i/90)"
+            echo "Response from Tasklist: $tasklist_status"
+            echo "Response from Operate: $operate_status"
+            [[ -n "$identity_status" ]] && echo "Response from Identity: $identity_status"
+            sleep 10
+          done
+
+          if [ "$ready" = true ]; then
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "Services failed to start in time."
+            exit 1
+          fi
+
+      - name: Print Docker logs before failing
+        if: failure()
+        working-directory: qa/c8-orchestration-cluster-e2e-test-suite/config
+        run: |
+          branch="$TARGET_BRANCH"
+          if [[ "$branch" == "stable/8.7" ]]; then
+            docker compose logs tasklist
+            docker compose logs operate
+          else
+            docker compose logs camunda
+          fi
+
+      - name: Setup Node.js
+        uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: qa/c8-orchestration-cluster-e2e-test-suite/package-lock.json
+
+      - name: Clean install dependencies
+        working-directory: qa/c8-orchestration-cluster-e2e-test-suite
+        run: rm -rf node_modules package-lock.json && npm install
+
+      - name: Install Playwright Browsers
+        working-directory: qa/c8-orchestration-cluster-e2e-test-suite
+        run: npx playwright install --with-deps chromium
+
+      - name: Run E2E fix agent
+        uses: anthropics/claude-code-action/base-action@v1
+        env:
+          CLAUDE_WORKING_DIR: ${{ github.workspace }}/qa/c8-orchestration-cluster-e2e-test-suite
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          LOCAL_TEST: "false"
+          CORE_APPLICATION_URL: "http://localhost:8080"
+          ZEEBE_REST_ADDRESS: "http://localhost:8080"
+          CAMUNDA_AUTH_STRATEGY: "BASIC"
+          CAMUNDA_BASIC_AUTH_USERNAME: "demo"
+          CAMUNDA_BASIC_AUTH_PASSWORD: "demo"
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          claude_args: |
+            --allowedTools Edit,Read,Write,Bash
+            --max-turns 40
+          prompt: |
+            You are an expert in Playwright TypeScript e2e tests for Camunda 8.
+
+            The Camunda backend is already running at http://localhost:8080 (credentials: demo/demo).
+            Your working directory is: qa/c8-orchestration-cluster-e2e-test-suite
+
+            ## Your task
+
+            1. Run the Playwright tests:
+               ```
+               npm run test -- --project=${{ github.event.inputs.project || 'chromium' }} --reporter=json 2>&1 || true
+               ```
+
+            2. Read the results from `json-report/results.json`.
+
+            3. If ALL tests pass → stop immediately. Do NOT create a branch or PR.
+
+            4. If there are failures, for each failing test:
+               - Read the test file carefully
+               - Read the relevant page objects from `pages/` directory (they follow the Page Object Model pattern)
+               - Understand the error message and stack trace
+               - Fix the test code. Rules:
+                 * Follow the existing Page Object Model pattern
+                 * Do NOT use `test.skip()` or comment out failing assertions
+                 * Do NOT change test intent or what is being tested
+                 * If a locator is stale, find the correct one by reading the page object
+                 * If the failure is clearly due to an application code change (not the test), add a `// TODO: app change required - <reason>` comment and move to the next test
+
+            5. After fixing all failing tests, re-run:
+               ```
+               npm run test -- --project=${{ github.event.inputs.project || 'chromium' }} --reporter=json 2>&1 || true
+               ```
+
+            6. Read `json-report/results.json` again. Repeat fix+run loop until either:
+               - All tests pass, OR
+               - You have iterated 5 times
+
+            7. If you made any code changes:
+               - Create a new git branch named `fix/e2e-agent-${{ github.run_id }}`
+               - Commit all changed files with message: `test: fix failing e2e tests (automated by claude)`
+               - Push the branch
+               - Open a Pull Request against `main` with:
+                 * Title: `test: fix failing e2e tests (automated)`
+                 * Body: list the fixed test files and a short summary of what was changed
+
+            ## Important constraints
+            - Only modify files under `tests/`, `pages/`, `utils/` directories
+            - Do NOT modify `playwright.config.ts`, `package.json`, or any config files
+            - Do NOT modify Java/application source files
+            - Always use `git status` before committing to confirm what changed
