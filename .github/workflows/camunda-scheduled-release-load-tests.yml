@@ -1,4 +1,4 @@
-# description: Orchestrates daily release load tests across all active stable branches and main.
+# description: Orchestrates weekday release load tests across all active stable branches and main.
 #              Each branch has a hardcoded release tag. Patch releases do NOT require updates —
 #              only new minor versions or deprecated branches need changes.
 # calls: camunda-release-load-test.yaml (one call per branch),
@@ -9,7 +9,7 @@
 name: Scheduled Camunda Release Load Tests
 on:
   schedule:
-    - cron: '0 4 * * *' # every day at 04:00 UTC
+    - cron: '0 2 * * 1-5' # every weekday (Mon-Fri) at 02:00 UTC
   workflow_dispatch: {}
 
 defaults:

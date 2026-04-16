@@ -38,7 +38,7 @@ All automated load tests flow through `camunda-load-test.yml`, which builds imag
 ```mermaid
 graph TD
     subgraph "Scheduled Triggers"
-        SCHEDULED["camunda-scheduled-release-<br/>load-tests.yml<br/><i>Daily 04:00 UTC</i>"]
+        SCHEDULED["camunda-scheduled-release-<br/>load-tests.yml<br/><i>Weekdays 02:00 UTC</i>"]
         DAILY["camunda-daily-load-tests.yml<br/><i>Weekdays 02:00 UTC</i>"]
         WEEKLY["camunda-weekly-load-tests.yml<br/><i>Monday 01:00 UTC</i>"]
         ROLLING["zeebe-update-long-running-<br/>migrating-benchmark.yaml<br/><i>Monday 00:00 UTC</i>"]
@@ -85,12 +85,12 @@ graph TD
 
 ### Schedule
 
-|       Time       |                       Workflow                       | Frequency |
-|------------------|------------------------------------------------------|-----------|
-| 00:00 UTC Monday | `zeebe-update-long-running-migrating-benchmark.yaml` | Weekly    |
-| 01:00 UTC Monday | `camunda-weekly-load-tests.yml`                      | Weekly    |
-| 04:00 UTC        | `camunda-scheduled-release-load-tests.yml`           | Daily     |
-| 04:00 UTC        | `camunda-daily-load-tests.yml`                       | Daily     |
-| 04:00 UTC        | `camunda-load-test-clean-up.yml`                     | Daily     |
+|       Time        |                       Workflow                       | Frequency |
+|-------------------|------------------------------------------------------|-----------|
+| 00:00 UTC Monday  | `zeebe-update-long-running-migrating-benchmark.yaml` | Weekly    |
+| 01:00 UTC Monday  | `camunda-weekly-load-tests.yml`                      | Weekly    |
+| 02:00 UTC Mon-Fri | `camunda-scheduled-release-load-tests.yml`           | Weekdays  |
+| 02:00 UTC Mon-Fri | `camunda-daily-load-tests.yml`                       | Weekdays  |
+| 04:00 UTC         | `camunda-load-test-clean-up.yml`                     | Daily     |
 
 For detailed inputs, triggers, and job definitions, see each workflow's header comments in [`.github/workflows/`](../.github/workflows/). For branch-specific path differences, see [directory structure history](docs/directory-structure.md).
