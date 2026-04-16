@@ -80,6 +80,8 @@ optimize:
         historyCleanup:
           cronTrigger: '0 1 * * *'
           ttl: 'P1D'
+          processDataCleanup:
+            enabled: true
   tolerations:
     - key: nodepool
       operator: Equal
