@@ -9,8 +9,12 @@ package io.camunda.zeebe.engine.processing.deployment.model.validation;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.zeebe.engine.processing.deployment.transform.BpmnElementsWithDeploymentBinding;
 import io.camunda.zeebe.engine.processing.deployment.transform.DeploymentResourceContext;
 import io.camunda.zeebe.engine.processing.deployment.transform.ValidationConfig;
+import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.model.bpmn.instance.Process;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeBindingType;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.List;
@@ -21,7 +25,6 @@ class DeploymentValidatorTest {
 
   private static final int MAX_ID_LENGTH = 256;
   private static final int MAX_NAME_LENGTH = 256;
-
   private static final DirectBuffer DUMMY_CHECKSUM = BufferUtil.wrapString("checksum");
 
   private final DeploymentValidator validator =
@@ -30,8 +33,6 @@ class DeploymentValidatorTest {
               .withMaxIdFieldLength(MAX_ID_LENGTH)
               .withMaxNameFieldLength(MAX_NAME_LENGTH)
               .build());
-
-  // --- validateResources ---
 
   @Test
   void shouldRejectEmptyDeployment() {
@@ -104,11 +105,24 @@ class DeploymentValidatorTest {
 
     // then
     assertThat(result.isLeft()).isTrue();
-    final var message = result.getLeft().getMessage();
-    assertThat(message).contains(longName1).contains(longName2);
+    assertThat(result.getLeft().getMessage()).contains(longName1).contains(longName2);
   }
 
-  // --- validateMetadata: duplicate process IDs ---
+  @Test
+  void shouldIncludeErrorPrefixForResourceNameErrors() {
+    // given
+    final var deployment = new DeploymentRecord();
+    final var longName = "a".repeat(MAX_NAME_LENGTH + 1) + ".bpmn";
+    deployment.resources().add().setResourceName(longName);
+
+    // when
+    final var result = validator.validateResources(deployment);
+
+    // then
+    assertThat(result.isLeft()).isTrue();
+    assertThat(result.getLeft().getMessage())
+        .startsWith("Expected to deploy new resources, but encountered the following errors:");
+  }
 
   @Test
   void shouldRejectDuplicateProcessIds() {
@@ -138,7 +152,7 @@ class DeploymentValidatorTest {
     // then
     assertThat(result.isLeft()).isTrue();
     assertThat(result.getLeft().getMessage())
-        .contains("Duplicated process id")
+        .contains("Duplicated process id 'process1'")
         .contains("file1.bpmn")
         .contains("file2.bpmn");
   }
@@ -172,7 +186,105 @@ class DeploymentValidatorTest {
     assertThat(result.isRight()).isTrue();
   }
 
-  // --- validateMetadata: duplicate form IDs ---
+  @Test
+  void shouldRejectDuplicateDecisionRequirementsIds() {
+    // given
+    final var deployment = new DeploymentRecord();
+    deployment
+        .decisionRequirementsMetadata()
+        .add()
+        .setDecisionRequirementsId("drg1")
+        .setResourceName("decisions1.dmn")
+        .setDecisionRequirementsVersion(1)
+        .setDecisionRequirementsKey(1)
+        .setChecksum(DUMMY_CHECKSUM);
+    deployment
+        .decisionRequirementsMetadata()
+        .add()
+        .setDecisionRequirementsId("drg1")
+        .setResourceName("decisions2.dmn")
+        .setDecisionRequirementsVersion(1)
+        .setDecisionRequirementsKey(2)
+        .setChecksum(DUMMY_CHECKSUM);
+
+    // when
+    final var result =
+        validator.validateMetadata(deployment, List.of(DeploymentResourceContext.NONE));
+
+    // then
+    assertThat(result.isLeft()).isTrue();
+    assertThat(result.getLeft().getMessage())
+        .contains("duplicated id 'drg1'")
+        .contains("decisions1.dmn")
+        .contains("decisions2.dmn");
+  }
+
+  @Test
+  void shouldAcceptUniqueDecisionRequirementsIds() {
+    // given
+    final var deployment = new DeploymentRecord();
+    deployment
+        .decisionRequirementsMetadata()
+        .add()
+        .setDecisionRequirementsId("drg1")
+        .setResourceName("decisions1.dmn")
+        .setDecisionRequirementsVersion(1)
+        .setDecisionRequirementsKey(1)
+        .setChecksum(DUMMY_CHECKSUM);
+    deployment
+        .decisionRequirementsMetadata()
+        .add()
+        .setDecisionRequirementsId("drg2")
+        .setResourceName("decisions2.dmn")
+        .setDecisionRequirementsVersion(1)
+        .setDecisionRequirementsKey(2)
+        .setChecksum(DUMMY_CHECKSUM);
+
+    // when
+    final var result =
+        validator.validateMetadata(deployment, List.of(DeploymentResourceContext.NONE));
+
+    // then
+    assertThat(result.isRight()).isTrue();
+  }
+
+  @Test
+  void shouldRejectDuplicateDecisionIds() {
+    // given
+    final var deployment = new DeploymentRecord();
+    deployment
+        .decisionRequirementsMetadata()
+        .add()
+        .setDecisionRequirementsId("drg1")
+        .setResourceName("decisions.dmn")
+        .setDecisionRequirementsVersion(1)
+        .setDecisionRequirementsKey(1)
+        .setChecksum(DUMMY_CHECKSUM);
+    deployment
+        .decisionsMetadata()
+        .add()
+        .setDecisionId("decision1")
+        .setDecisionRequirementsKey(1)
+        .setVersion(1)
+        .setDecisionKey(10);
+    deployment
+        .decisionsMetadata()
+        .add()
+        .setDecisionId("decision1")
+        .setDecisionRequirementsKey(1)
+        .setVersion(1)
+        .setDecisionKey(11);
+
+    // when
+    final var result =
+        validator.validateMetadata(deployment, List.of(DeploymentResourceContext.NONE));
+
+    // then
+    assertThat(result.isLeft()).isTrue();
+    assertThat(result.getLeft().getMessage())
+        .contains("duplicated id 'decision1'")
+        .contains("decisions.dmn");
+  }
 
   @Test
   void shouldRejectDuplicateFormIds() {
@@ -207,7 +319,34 @@ class DeploymentValidatorTest {
         .contains("form1-copy.form");
   }
 
-  // --- validateMetadata: duplicate resource IDs ---
+  @Test
+  void shouldAcceptUniqueFormIds() {
+    // given
+    final var deployment = new DeploymentRecord();
+    deployment
+        .formMetadata()
+        .add()
+        .setFormId("form1")
+        .setResourceName("form1.form")
+        .setVersion(1)
+        .setFormKey(1)
+        .setChecksum(DUMMY_CHECKSUM);
+    deployment
+        .formMetadata()
+        .add()
+        .setFormId("form2")
+        .setResourceName("form2.form")
+        .setVersion(1)
+        .setFormKey(2)
+        .setChecksum(DUMMY_CHECKSUM);
+
+    // when
+    final var result =
+        validator.validateMetadata(deployment, List.of(DeploymentResourceContext.NONE));
+
+    // then
+    assertThat(result.isRight()).isTrue();
+  }
 
   @Test
   void shouldRejectDuplicateResourceIds() {
@@ -270,79 +409,9 @@ class DeploymentValidatorTest {
     assertThat(result.isRight()).isTrue();
   }
 
-  // --- validateMetadata: duplicate DRG IDs ---
-
-  @Test
-  void shouldRejectDuplicateDecisionRequirementsIds() {
-    // given
-    final var deployment = new DeploymentRecord();
-    deployment
-        .decisionRequirementsMetadata()
-        .add()
-        .setDecisionRequirementsId("drg1")
-        .setResourceName("decisions1.dmn")
-        .setDecisionRequirementsVersion(1)
-        .setDecisionRequirementsKey(1)
-        .setChecksum(DUMMY_CHECKSUM);
-    deployment
-        .decisionRequirementsMetadata()
-        .add()
-        .setDecisionRequirementsId("drg1")
-        .setResourceName("decisions2.dmn")
-        .setDecisionRequirementsVersion(1)
-        .setDecisionRequirementsKey(2)
-        .setChecksum(DUMMY_CHECKSUM);
-
-    // when
-    final var result =
-        validator.validateMetadata(deployment, List.of(DeploymentResourceContext.NONE));
-
-    // then
-    assertThat(result.isLeft()).isTrue();
-    assertThat(result.getLeft().getMessage())
-        .contains("duplicated id 'drg1'")
-        .contains("decisions1.dmn")
-        .contains("decisions2.dmn");
-  }
-
-  // --- error message formatting ---
-
-  @Test
-  void shouldPrefixErrorMessageCorrectly() {
-    // given
-    final var deployment = new DeploymentRecord();
-
-    // when
-    final var result = validator.validateResources(deployment);
-
-    // then
-    assertThat(result.isLeft()).isTrue();
-    // Empty deployment error doesn't use the prefix (it's a standalone message)
-    assertThat(result.getLeft().getMessage())
-        .startsWith("Expected to deploy at least one resource");
-  }
-
-  @Test
-  void shouldIncludeErrorPrefixForResourceNameErrors() {
-    // given
-    final var deployment = new DeploymentRecord();
-    final var longName = "a".repeat(MAX_NAME_LENGTH + 1) + ".bpmn";
-    deployment.resources().add().setResourceName(longName);
-
-    // when
-    final var result = validator.validateResources(deployment);
-
-    // then
-    assertThat(result.isLeft()).isTrue();
-    assertThat(result.getLeft().getMessage())
-        .startsWith("Expected to deploy new resources, but encountered the following errors:");
-  }
-
-  // --- validateMetadata with empty contexts ---
-
   @Test
   void shouldAcceptEmptyDeploymentMetadata() {
-    // given - no metadata at all (no processes, no decisions, no forms, no resources)
+    // given
     final var deployment = new DeploymentRecord();
 
     // when
@@ -350,5 +419,152 @@ class DeploymentValidatorTest {
 
     // then
     assertThat(result.isRight()).isTrue();
+  }
+
+  @Test
+  void shouldAcceptDeploymentBindingWhenNoBpmnContexts() {
+    // given
+    final var deployment = new DeploymentRecord();
+    deployment
+        .resourceMetadata()
+        .add()
+        .setResourceId("script.txt")
+        .setResourceName("script.txt")
+        .setVersion(1)
+        .setResourceKey(1)
+        .setChecksum(DUMMY_CHECKSUM);
+
+    // when
+    final var result =
+        validator.validateMetadata(deployment, List.of(DeploymentResourceContext.NONE));
+
+    // then
+    assertThat(result.isRight()).isTrue();
+  }
+
+  @Test
+  void shouldRejectMissingCalledProcessWithDeploymentBinding() {
+    // given
+    final var deployment = new DeploymentRecord();
+    final var elements = bpmnContextWithCallActivity("child-process");
+
+    // when
+    final var result = validator.validateMetadata(deployment, List.of(elements));
+
+    // then
+    assertThat(result.isLeft()).isTrue();
+    assertThat(result.getLeft().getMessage())
+        .contains("Expected to find process with id 'child-process'");
+  }
+
+  @Test
+  void shouldAcceptCalledProcessPresentInDeployment() {
+    // given
+    final var deployment = new DeploymentRecord();
+    deployment
+        .processesMetadata()
+        .add()
+        .setBpmnProcessId("child-process")
+        .setResourceName("child.bpmn")
+        .setChecksum(DUMMY_CHECKSUM)
+        .setVersion(1)
+        .setKey(1);
+    final var elements = bpmnContextWithCallActivity("child-process");
+
+    // when
+    final var result = validator.validateMetadata(deployment, List.of(elements));
+
+    // then
+    assertThat(result.isRight()).isTrue();
+  }
+
+  @Test
+  void shouldRejectMissingLinkedResourceWithDeploymentBinding() {
+    // given
+    final var deployment = new DeploymentRecord();
+    final var elements = bpmnContextWithLinkedResource("my-script.txt");
+
+    // when
+    final var result = validator.validateMetadata(deployment, List.of(elements));
+
+    // then
+    assertThat(result.isLeft()).isTrue();
+    assertThat(result.getLeft().getMessage())
+        .contains("Expected to find resource with id 'my-script.txt'");
+  }
+
+  @Test
+  void shouldAcceptLinkedResourcePresentInDeployment() {
+    // given
+    final var deployment = new DeploymentRecord();
+    deployment
+        .resourceMetadata()
+        .add()
+        .setResourceId("my-script.txt")
+        .setResourceName("my-script.txt")
+        .setVersion(1)
+        .setResourceKey(1)
+        .setChecksum(DUMMY_CHECKSUM);
+    final var elements = bpmnContextWithLinkedResource("my-script.txt");
+
+    // when
+    final var result = validator.validateMetadata(deployment, List.of(elements));
+
+    // then
+    assertThat(result.isRight()).isTrue();
+  }
+
+  @Test
+  void shouldIncludeResourceNameInBindingError() {
+    // given
+    final var deployment = new DeploymentRecord();
+    final var elements = bpmnContextWithCallActivity("missing-process");
+
+    // when
+    final var result = validator.validateMetadata(deployment, List.of(elements));
+
+    // then
+    assertThat(result.isLeft()).isTrue();
+    assertThat(result.getLeft().getMessage()).contains("'test-process.bpmn'");
+  }
+
+  private BpmnElementsWithDeploymentBinding bpmnContextWithCallActivity(
+      final String calledProcessId) {
+    final var model =
+        Bpmn.createExecutableProcess("parent")
+            .startEvent()
+            .callActivity(
+                "call",
+                c ->
+                    c.zeebeProcessId(calledProcessId).zeebeBindingType(ZeebeBindingType.deployment))
+            .endEvent()
+            .done();
+    final var elements = new BpmnElementsWithDeploymentBinding("test-process.bpmn");
+    model.getDefinitions().getChildElementsByType(Process.class).stream()
+        .filter(Process::isExecutable)
+        .forEach(elements::addFromProcess);
+    return elements;
+  }
+
+  private BpmnElementsWithDeploymentBinding bpmnContextWithLinkedResource(final String resourceId) {
+    final var model =
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .serviceTask(
+                "task",
+                t ->
+                    t.zeebeLinkedResources(
+                            l ->
+                                l.resourceId(resourceId)
+                                    .resourceType("Script")
+                                    .bindingType(ZeebeBindingType.deployment))
+                        .zeebeJobType("demo"))
+            .endEvent()
+            .done();
+    final var elements = new BpmnElementsWithDeploymentBinding("test-process.bpmn");
+    model.getDefinitions().getChildElementsByType(Process.class).stream()
+        .filter(Process::isExecutable)
+        .forEach(elements::addFromProcess);
+    return elements;
   }
 }

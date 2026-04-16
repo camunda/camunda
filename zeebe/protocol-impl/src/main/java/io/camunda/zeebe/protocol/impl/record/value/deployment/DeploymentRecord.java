@@ -267,6 +267,7 @@ public final class DeploymentRecord extends UnifiedRecordValue implements Deploy
    * @param decision the decision metadata to look up
    * @return the resource name of the parent DRG, or {@code null} if not found
    */
+  @JsonIgnore
   public String getResourceNameForDecision(final DecisionRecordValue decision) {
     for (final var drg : decisionRequirementsMetadataProp) {
       if (drg.getDecisionRequirementsKey() == decision.getDecisionRequirementsKey()) {

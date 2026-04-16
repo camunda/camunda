@@ -170,7 +170,7 @@ public class DeploymentRejectionTest {
         .hasRejectionType(RejectionType.INVALID_ARGUMENT)
         .hasRejectionReason(
             "Expected to deploy new resources, but encountered the following errors:\n"
-                + "Duplicated process id in resources 'p2.bpmn' and 'p3.bpmn'");
+                + "Duplicated process id 'process2' in resources 'p2.bpmn' and 'p3.bpmn'");
   }
 
   @Test
