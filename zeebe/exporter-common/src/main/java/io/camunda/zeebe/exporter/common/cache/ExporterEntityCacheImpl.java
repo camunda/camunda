@@ -57,6 +57,16 @@ public class ExporterEntityCacheImpl<K, T> implements ExporterEntityCache<K, T> 
   }
 
   private static <K, T> CacheLoader<K, T> wrapCacheLoader(final CacheLoader<K, T> delegate) {
+    if (delegate instanceof BulkExporterEntityCacheLoader<?, ?>) {
+      @SuppressWarnings("unchecked")
+      final var bulkDelegate = (BulkExporterEntityCacheLoader<K, T>) delegate;
+      return wrapBulkCacheLoader(bulkDelegate);
+    }
+
+    return wrapSingleCacheLoader(delegate);
+  }
+
+  private static <K, T> CacheLoader<K, T> wrapSingleCacheLoader(final CacheLoader<K, T> delegate) {
     return new CacheLoader<>() {
       @Override
       public T load(final K key) {
@@ -65,12 +75,6 @@ public class ExporterEntityCacheImpl<K, T> implements ExporterEntityCache<K, T> 
 
       @Override
       public Map<? extends K, ? extends T> loadAll(final Set<? extends K> keys) {
-        if (delegate instanceof BulkExporterEntityCacheLoader<?, ?>) {
-          @SuppressWarnings("unchecked")
-          final var bulkDelegate = (BulkExporterEntityCacheLoader<K, T>) delegate;
-          return loadAllValues(bulkDelegate, keys);
-        }
-
         final Map<K, T> entries = new HashMap<>();
         for (final K key : keys) {
           final var value = load(key);
@@ -79,6 +83,21 @@ public class ExporterEntityCacheImpl<K, T> implements ExporterEntityCache<K, T> 
           }
         }
         return entries;
+      }
+    };
+  }
+
+  private static <K, T> CacheLoader<K, T> wrapBulkCacheLoader(
+      final BulkExporterEntityCacheLoader<K, T> delegate) {
+    return new CacheLoader<>() {
+      @Override
+      public T load(final K key) {
+        return loadValue(delegate, key);
+      }
+
+      @Override
+      public Map<? extends K, ? extends T> loadAll(final Set<? extends K> keys) {
+        return loadAllValues(delegate, keys);
       }
     };
   }

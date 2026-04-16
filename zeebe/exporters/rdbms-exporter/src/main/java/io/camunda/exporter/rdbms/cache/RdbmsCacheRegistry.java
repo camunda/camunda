@@ -26,7 +26,6 @@ import io.camunda.zeebe.exporter.common.cache.process.CachedProcessEntity;
 import io.camunda.zeebe.exporter.common.utils.ProcessCacheUtil;
 import io.camunda.zeebe.util.cache.CaffeineCacheStatsCounter;
 import io.micrometer.core.instrument.MeterRegistry;
-import java.util.EnumMap;
 import java.util.List;
 
 /**
@@ -37,72 +36,61 @@ import java.util.List;
  * accessor.
  */
 public final class RdbmsCacheRegistry {
-
-  private enum CacheId {
-    PROCESS,
-    DECISION_REQUIREMENTS,
-    BATCH_OPERATION
-  }
-
   private static final String CACHE_METRICS_NAMESPACE = "camunda.rdbms.exporter.cache";
 
-  private final EnumMap<CacheId, ExporterEntityCache<?, ?>> caches = new EnumMap<>(CacheId.class);
-  private final MeterRegistry meterRegistry;
+  private final ExporterEntityCache<Long, CachedProcessEntity> processCache;
+  private final ExporterEntityCache<Long, CachedDecisionRequirementsEntity>
+      decisionRequirementsCache;
+  private final ExporterEntityCache<String, CachedBatchOperationEntity> batchOperationCache;
 
   public RdbmsCacheRegistry(
       final ExporterConfiguration config,
       final RdbmsService rdbmsService,
       final MeterRegistry meterRegistry) {
-    this.meterRegistry = meterRegistry;
-
-    register(
-        CacheId.PROCESS,
-        config.getProcessCache().getMaxSize(),
-        "process",
-        processLoader(rdbmsService));
-    register(
-        CacheId.DECISION_REQUIREMENTS,
-        config.getDecisionRequirementsCache().getMaxSize(),
-        "decisionRequirements",
-        decisionRequirementsLoader(rdbmsService));
-    register(
-        CacheId.BATCH_OPERATION,
-        config.getBatchOperationCache().getMaxSize(),
-        "batchOperation",
-        batchOperationLoader(rdbmsService));
+    processCache =
+        createCache(
+            config.getProcessCache().getMaxSize(),
+            "process",
+            processLoader(rdbmsService),
+            meterRegistry);
+    decisionRequirementsCache =
+        createCache(
+            config.getDecisionRequirementsCache().getMaxSize(),
+            "decisionRequirements",
+            decisionRequirementsLoader(rdbmsService),
+            meterRegistry);
+    batchOperationCache =
+        createCache(
+            config.getBatchOperationCache().getMaxSize(),
+            "batchOperation",
+            batchOperationLoader(rdbmsService),
+            meterRegistry);
   }
 
   /** Returns the cache for process definitions and derived process diagram metadata. */
   public ExporterEntityCache<Long, CachedProcessEntity> processCache() {
-    return get(CacheId.PROCESS);
+    return processCache;
   }
 
   /** Returns the cache for decision requirements definitions. */
   public ExporterEntityCache<Long, CachedDecisionRequirementsEntity> decisionRequirementsCache() {
-    return get(CacheId.DECISION_REQUIREMENTS);
+    return decisionRequirementsCache;
   }
 
   /** Returns the cache for batch operation metadata. */
   public ExporterEntityCache<String, CachedBatchOperationEntity> batchOperationCache() {
-    return get(CacheId.BATCH_OPERATION);
+    return batchOperationCache;
   }
 
-  private <K, T> void register(
-      final CacheId cacheId,
+  private <K, T> ExporterEntityCache<K, T> createCache(
       final long maxSize,
       final String metricsName,
-      final CacheLoader<K, T> cacheLoader) {
-    caches.put(
-        cacheId,
-        new ExporterEntityCacheImpl<>(
-            maxSize,
-            cacheLoader,
-            new CaffeineCacheStatsCounter(CACHE_METRICS_NAMESPACE, metricsName, meterRegistry)));
-  }
-
-  @SuppressWarnings("unchecked")
-  private <K, T> ExporterEntityCache<K, T> get(final CacheId cacheId) {
-    return (ExporterEntityCache<K, T>) caches.get(cacheId);
+      final CacheLoader<K, T> cacheLoader,
+      final MeterRegistry meterRegistry) {
+    return new ExporterEntityCacheImpl<>(
+        maxSize,
+        cacheLoader,
+        new CaffeineCacheStatsCounter(CACHE_METRICS_NAMESPACE, metricsName, meterRegistry));
   }
 
   private BulkExporterEntityCacheLoader<Long, CachedProcessEntity> processLoader(

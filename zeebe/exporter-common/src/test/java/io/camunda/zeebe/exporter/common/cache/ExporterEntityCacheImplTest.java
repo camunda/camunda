@@ -12,17 +12,17 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.github.benmanes.caffeine.cache.CacheLoader;
 import io.camunda.zeebe.util.cache.CaffeineCacheStatsCounter;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
 
 class ExporterEntityCacheImplTest {
 
   private final CaffeineCacheStatsCounter cacheStatsCounter =
-      Mockito.mock(CaffeineCacheStatsCounter.class);
+      new CaffeineCacheStatsCounter("test", "exporter-entity-cache", new SimpleMeterRegistry());
 
   @Test
   void shouldLoadSingleValue() {
