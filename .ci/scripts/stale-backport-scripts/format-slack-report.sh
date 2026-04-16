@@ -146,28 +146,18 @@ while IFS= read -r repo_name; do
       def slack_entry_for(login; name):
         ($smap[login] // null) // (if name then $smap[name] // null else null end);
       def slack_id_for(login; name): (slack_entry_for(login; name) | .slack_id // null);
-      # Author display: for bot-authored PRs show bot name + approvers; otherwise <@USLACKID>, @RealName, or GitHub username
-      (
-        if (.original_pr_author // "") | test("^app/") then
-          # Bot-authored PR: show bot name and tag approvers
-          ("🤖 \(.original_pr_author)" +
-          (if (.original_pr_approver_names // []) | length > 0 then
-            ", reviewed by " + ([.original_pr_approver_names[] |
-              if slack_id_for(.username; .name) then "<@\(slack_id_for(.username; .name))>"
-              elif .name then "@\(.name)"
-              else "@\(.username)" end
-            ] | join(", "))
-          else
-            ""
-          end))
-        elif slack_id_for(.original_pr_author; .original_pr_author_name) then
-          "<@\(slack_id_for(.original_pr_author; .original_pr_author_name))>"
-        elif .original_pr_author_name then
-          "@\(.original_pr_author_name)"
-        else
-          .original_pr_author // "unknown"
-        end
-      ) as $author_display |
+
+      # For bot-authored PRs, show bot name + tagged approvers inline
+      (if (.original_pr_author // "") | test("^app/") then
+        "🤖 \(.original_pr_author)" +
+        (if (.original_pr_approver_names // []) | length > 0 then
+          ", reviewed by " + ([.original_pr_approver_names[] |
+            if slack_id_for(.username; .name) then "<@\(slack_id_for(.username; .name))>"
+            elif .name then "@\(.name)"
+            else "@\(.username)" end
+          ] | join(", "))
+        else "" end)
+      else "" end) as $bot_info |
 
       # Header with original PR
       "*Original PR:* " +
@@ -175,7 +165,7 @@ while IFS= read -r repo_name; do
         ":pull-request-merged: <\(.original_pr_url)|#\(.original_pr_number // "?")> \(.original_pr_title // "Unknown" | if length > 60 then .[:57] + "..." else . end)"
       else
         ":pull-request-merged: #\(.original_pr_number // "?") — \(.original_pr_title // "Unknown" | if length > 60 then .[:57] + "..." else . end)"
-      end) + "  · \($author_display)\n" +
+      end) + (if $bot_info != "" then "  · \($bot_info)" else "" end) + "\n" +
       "*Stale backports:*\n" +
       ([.backport_prs[] |
         (if .age_days > 0 then "\(.age_days)d \(.age_hours % 24)h" else "\(.age_hours)h \((.age_minutes // 0) % 60)m" end) as $age |
@@ -185,16 +175,25 @@ while IFS= read -r repo_name; do
       ] | join("\n"))
     ')
 
-    # Resolve author avatar: Slack avatar from map > GitHub avatar > none
+    # Resolve author info for context block: avatar + Slack mention
     author_login=$(echo "$group" | jq -r '.original_pr_author // "unknown"')
     author_name=$(echo "$group" | jq -r '.original_pr_author_name // ""')
-    avatar_url=$(jq -r --arg login "$author_login" --arg name "$author_name" '
-      (.[$login] // .[$name] // null) |
-      if type == "object" then (.avatar_url // .image_48 // empty)
-      else empty end
-    ' "$TMPDIR_WORK/slack_user_map.json" 2>/dev/null || true)
+    map_entry=$(jq -c --arg login "$author_login" --arg name "$author_name" \
+      '(.[$login] // .[$name] // null) | if type == "string" then {slack_id: .} else . end' \
+      "$TMPDIR_WORK/slack_user_map.json" 2>/dev/null || echo 'null')
+    slack_id=$(echo "$map_entry" | jq -r '.slack_id // empty' 2>/dev/null || true)
+    avatar_url=$(echo "$map_entry" | jq -r '.avatar_url // .image_48 // empty' 2>/dev/null || true)
     if [[ -z "$avatar_url" && "$author_login" != app/* && "$author_login" != "unknown" ]]; then
       avatar_url="https://github.com/${author_login}.png?size=24"
+    fi
+
+    # Build author mention text for context block
+    if [[ -n "$slack_id" ]]; then
+      author_mention="<@${slack_id}>"
+    elif [[ -n "$author_name" ]]; then
+      author_mention="@${author_name}"
+    else
+      author_mention="${author_login}"
     fi
 
     if [[ "$USE_GROUP_DIVIDERS" == "true" ]]; then
@@ -207,11 +206,14 @@ while IFS= read -r repo_name; do
         "$TMPDIR_WORK/blocks.json" > "$TMPDIR_WORK/blocks_tmp.json" && mv "$TMPDIR_WORK/blocks_tmp.json" "$TMPDIR_WORK/blocks.json"
     fi
 
-    # Add author avatar as a small context block below the section
+    # Add context block with avatar + author mention
     if [[ -n "$avatar_url" ]]; then
-      display_label="${author_name:-$author_login}"
-      jq -c --arg avatar "$avatar_url" --arg label "$display_label" \
-        '. + [{type: "context", elements: [{type: "image", image_url: $avatar, alt_text: $label}, {type: "mrkdwn", text: $label}]}]' \
+      jq -c --arg avatar "$avatar_url" --arg mention "$author_mention" --arg alt "${author_name:-$author_login}" \
+        '. + [{type: "context", elements: [{type: "image", image_url: $avatar, alt_text: $alt}, {type: "mrkdwn", text: $mention}]}]' \
+        "$TMPDIR_WORK/blocks.json" > "$TMPDIR_WORK/blocks_tmp.json" && mv "$TMPDIR_WORK/blocks_tmp.json" "$TMPDIR_WORK/blocks.json"
+    else
+      jq -c --arg mention "$author_mention" \
+        '. + [{type: "context", elements: [{type: "mrkdwn", text: $mention}]}]' \
         "$TMPDIR_WORK/blocks.json" > "$TMPDIR_WORK/blocks_tmp.json" && mv "$TMPDIR_WORK/blocks_tmp.json" "$TMPDIR_WORK/blocks.json"
     fi
   done
