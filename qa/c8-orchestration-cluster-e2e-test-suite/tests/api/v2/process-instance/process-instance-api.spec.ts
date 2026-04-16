@@ -294,7 +294,7 @@ test.describe.parallel('Process instance Tests', () => {
     });
     await assertStatusCode(res, 404);
     const json = await res.json();
-    expect(json.title).toBe('Not Found');
+    expect(json.title).toBe('NOT_FOUND');
     expect(json.detail).toBe(
       "Command 'CREATE' rejected with code 'NOT_FOUND': Expected to find process definition with process ID 'invalid_process_definition_id', but none found",
     );

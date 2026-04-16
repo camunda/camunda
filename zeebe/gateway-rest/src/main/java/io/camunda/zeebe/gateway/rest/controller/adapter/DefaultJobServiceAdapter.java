@@ -12,6 +12,7 @@ import static io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper.mapErrorToRes
 import io.camunda.gateway.mapping.http.RequestMapper;
 import io.camunda.gateway.mapping.http.search.SearchQueryRequestMapper;
 import io.camunda.gateway.mapping.http.search.SearchQueryResponseMapper;
+import io.camunda.gateway.protocol.model.CamundaProblemDetail;
 import io.camunda.gateway.protocol.model.JobActivation;
 import io.camunda.gateway.protocol.model.JobActivationRequest;
 import io.camunda.gateway.protocol.model.JobCompletionRequest;
@@ -26,7 +27,6 @@ import io.camunda.gateway.protocol.model.JobWorkerStatisticsQuery;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.configuration.MultiTenancyConfiguration;
 import io.camunda.service.JobServices;
-import io.camunda.zeebe.gateway.rest.CamundaProblemDetail;
 import io.camunda.zeebe.gateway.rest.config.GatewayRestConfiguration;
 import io.camunda.zeebe.gateway.rest.controller.ResponseObserverProvider;
 import io.camunda.zeebe.gateway.rest.controller.generated.JobServiceAdapter;
@@ -96,17 +96,9 @@ public class DefaultJobServiceAdapter implements JobServiceAdapter {
       final CamundaAuthentication authentication) {
     return requireJobMetricsEnabled("/v2/jobs/statistics/global")
         .flatMap(
-            ok -> {
-              if (from == null || to == null) {
-                final var problem =
-                    CamundaProblemDetail.forStatusAndDetail(
-                        HttpStatus.BAD_REQUEST,
-                        "Both 'from' and 'to' query parameters are required.");
-                return Either.left(problem);
-              }
-              return SearchQueryRequestMapper.toGlobalJobStatisticsQuery(
-                  OffsetDateTime.parse(from), OffsetDateTime.parse(to), jobType);
-            })
+            ok ->
+                SearchQueryRequestMapper.toGlobalJobStatisticsQuery(
+                    OffsetDateTime.parse(from), OffsetDateTime.parse(to), jobType))
         .fold(
             RestErrorMapper::mapProblemToResponse,
             query -> {
@@ -280,6 +272,7 @@ public class DefaultJobServiceAdapter implements JobServiceAdapter {
       final var problemDetail =
           CamundaProblemDetail.forStatusAndDetail(
               HttpStatus.FORBIDDEN, "Job metrics feature is disabled");
+      problemDetail.setTitle("FORBIDDEN");
       problemDetail.setInstance(URI.create(requestUri));
       return Either.left(problemDetail);
     }

@@ -252,7 +252,7 @@ test.describe.serial('Global Task Listener API Tests - Search and Sort', () => {
       },
     });
 
-    await assertBadRequest(res, /field|sort/i, 'Bad Request');
+    await assertBadRequest(res, /field|sort/i, 'INVALID_ARGUMENT');
   });
 
   test('Search Global Task Listeners - unauthorized', async ({request}) => {

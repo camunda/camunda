@@ -35,15 +35,7 @@ public class KeyUtil {
   }
 
   public static Long keyToLong(final String key) {
-    if (key == null) {
-      return null;
-    }
-    try {
-      return Long.parseLong(key);
-    } catch (final NumberFormatException e) {
-      throw new IllegalArgumentException(
-          "The provided value '%s' is not a valid key.".formatted(key), e);
-    }
+    return key != null ? Long.parseLong(key) : null;
   }
 
   public static String keyToString(final Long value) {
@@ -53,7 +45,7 @@ public class KeyUtil {
   public static Optional<Long> tryParseLong(final String key) {
     try {
       return Optional.ofNullable(keyToLong(key));
-    } catch (final IllegalArgumentException e) {
+    } catch (final NumberFormatException e) {
       return Optional.empty();
     }
   }

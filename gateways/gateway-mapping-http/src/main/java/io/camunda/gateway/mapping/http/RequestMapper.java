@@ -40,6 +40,7 @@ import io.camunda.gateway.mapping.http.validator.ProcessInstanceRequestValidator
 import io.camunda.gateway.mapping.http.validator.SignalRequestValidator;
 import io.camunda.gateway.mapping.http.validator.UserTaskRequestValidator;
 import io.camunda.gateway.protocol.model.AdHocSubProcessActivateActivitiesInstruction;
+import io.camunda.gateway.protocol.model.CamundaProblemDetail;
 import io.camunda.gateway.protocol.model.CancelProcessInstanceRequest;
 import io.camunda.gateway.protocol.model.ConditionalEvaluationInstruction;
 import io.camunda.gateway.protocol.model.DecisionEvaluationById;
@@ -90,7 +91,6 @@ import io.camunda.service.ProcessInstanceServices.ProcessInstanceModifyBatchOper
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceModifyRequest;
 import io.camunda.service.ResourceServices.DeployResourcesRequest;
 import io.camunda.service.ResourceServices.ResourceDeletionRequest;
-import io.camunda.zeebe.gateway.rest.CamundaProblemDetail;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobResult;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobResultActivateElement;

@@ -15,6 +15,7 @@ import com.fasterxml.jackson.databind.exc.InvalidTypeIdException;
 import com.fasterxml.jackson.databind.exc.MismatchedInputException;
 import com.fasterxml.jackson.databind.exc.ValueInstantiationException;
 import io.camunda.gateway.mapping.http.GatewayErrorMapper;
+import io.camunda.gateway.protocol.model.CamundaProblemDetail;
 import io.camunda.service.exception.ServiceException;
 import io.camunda.zeebe.gateway.rest.exception.DeserializationException;
 import io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper;
@@ -89,11 +90,6 @@ public class GlobalControllerExceptionHandler extends ResponseEntityExceptionHan
     } else if (isFilterPropertyEnumError(ex)) {
       // Filter property enum validation — deserializer already formatted the full message.
       detail = ((InvalidFormatException) ex.getCause()).getOriginalMessage();
-    } else if (isInvalidFormatError(ex)) {
-      // Long key filter property validation — deserializer already formatted the full message.
-      // Must be checked before isMismatchedInputError because InvalidFormatException extends
-      // MismatchedInputException.
-      detail = ((InvalidFormatException) ex.getCause()).getOriginalMessage();
     } else if (isMismatchedInputError(ex)) {
       final var mismatchedInputException = (MismatchedInputException) ex.getCause();
       final var path =
@@ -122,11 +118,6 @@ public class GlobalControllerExceptionHandler extends ResponseEntityExceptionHan
     final var problemDetail =
         super.createProblemDetail(
             ex, status, detail, detailMessageCode, detailMessageArguments, request);
-
-    // Per RFC 9457 §4.2.1, when type is "about:blank" the title SHOULD be the HTTP
-    // status phrase: "Bad Request" for 400. Spring's default already provides this,
-    // so we do not override the title. All 400 responses use "Bad Request" uniformly;
-    // the detail message carries the semantically rich error guidance.
 
     return CamundaProblemDetail.wrap(problemDetail);
   }
@@ -175,20 +166,6 @@ public class GlobalControllerExceptionHandler extends ResponseEntityExceptionHan
         && ex.getCause() instanceof final InvalidFormatException ife
         && ife.getMessage() != null
         && ife.getMessage().startsWith("Unexpected value '");
-  }
-
-  /**
-   * Detects InvalidFormatException from Jackson when a Long key filter property value cannot be
-   * parsed as a Long (e.g., string "meow" for a key field). This is thrown by the generated Long
-   * key filter property deserializers which validate String values with Long.parseLong(). Only
-   * matches when the target type is Long, to avoid catching other InvalidFormatException cases
-   * (e.g., number-for-string type mismatches) which should keep the default "Bad Request".
-   */
-  private boolean isInvalidFormatError(final Exception ex) {
-    return ex instanceof HttpMessageNotReadableException
-        && ex.getCause() instanceof final InvalidFormatException ife
-        && ife.getTargetType() == Long.class
-        && !isFilterPropertyEnumError(ex);
   }
 
   private boolean isUnknownEnumError(final Exception ex) {
@@ -247,21 +224,8 @@ public class GlobalControllerExceptionHandler extends ResponseEntityExceptionHan
   @ExceptionHandler(Exception.class)
   public ResponseEntity<ProblemDetail> handleAllExceptions(
       final Exception ex, final HttpServletRequest request) {
-    final ProblemDetail problemDetail;
-    if (ex instanceof IllegalArgumentException) {
-      // Client errors: IllegalArgumentException carries semantic messages from validators
-      // (e.g. KeyUtil.keyToLong, AdvancedSearchFilterUtil). Surface the message as-is.
-      problemDetail =
-          CamundaProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());
-    } else {
-      // Unexpected server errors: do not leak internal exception messages.
-      Loggers.REST_LOGGER.error(
-          "Expected to handle REST request, but an unexpected error occurred", ex);
-      problemDetail =
-          CamundaProblemDetail.forStatusAndDetail(
-              HttpStatus.INTERNAL_SERVER_ERROR,
-              "Unexpected error occurred during the request processing.");
-    }
+    final ProblemDetail problemDetail =
+        CamundaProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());
     problemDetail.setInstance(URI.create(request.getRequestURI()));
     return RestErrorMapper.mapProblemToResponse(problemDetail);
   }

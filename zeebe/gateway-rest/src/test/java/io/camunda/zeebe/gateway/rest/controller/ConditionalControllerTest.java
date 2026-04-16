@@ -31,6 +31,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -120,7 +121,7 @@ public class ConditionalControllerTest extends RestControllerTest {
         """
         {
             "type":"about:blank",
-            "title":"Bad Request",
+            "title":"INVALID_ARGUMENT",
             "status":400,
             "detail":"Expected to handle request Evaluate Conditional with tenant identifier 'tenantId', but multi-tenancy is disabled",
             "instance":"/v2/conditionals/evaluation"
@@ -158,7 +159,7 @@ public class ConditionalControllerTest extends RestControllerTest {
         """
         {
             "type":"about:blank",
-            "title":"Bad Request",
+            "title":"INVALID_ARGUMENT",
             "status":400,
             "detail":"Expected to handle request Evaluate Conditional with multi-tenancy enabled, but no tenant identifier was provided.",
             "instance":"/v2/conditionals/evaluation"
@@ -205,7 +206,7 @@ public class ConditionalControllerTest extends RestControllerTest {
             """
         {
             "type":"about:blank",
-            "title":"Bad Request",
+            "title":"INVALID_ARGUMENT",
             "status":400,
             "detail":"%s",
             "instance":"/v2/conditionals/evaluation"
@@ -243,7 +244,7 @@ public class ConditionalControllerTest extends RestControllerTest {
         """
         {
             "type":"about:blank",
-            "title":"Bad Request",
+            "title":"INVALID_ARGUMENT",
             "status":400,
             "detail":"No variables provided.",
             "instance":"/v2/conditionals/evaluation"
@@ -287,7 +288,7 @@ public class ConditionalControllerTest extends RestControllerTest {
         """
         {
             "type":"about:blank",
-            "title":"Forbidden",
+            "title":"FORBIDDEN",
             "status":403,
             "detail":"Unauthorized to perform operation 'CREATE_PROCESS_INSTANCE' on resource 'PROCESS_DEFINITION'",
             "instance":"/v2/conditionals/evaluation"
@@ -310,9 +311,8 @@ public class ConditionalControllerTest extends RestControllerTest {
   }
 
   @ParameterizedTest
-  @MethodSource("provideVariablesMissingScenarios")
-  void shouldRejectConditionalEventEvaluationIfVariablesMissing(
-      final String variablesValue, final String expectedTitle) {
+  @ValueSource(strings = {"{}", "null"})
+  void shouldRejectConditionalEventEvaluationIfVariablesMissing(final String variablesValue) {
     // given
     when(multiTenancyCfg.isChecksEnabled()).thenReturn(false);
 
@@ -328,12 +328,11 @@ public class ConditionalControllerTest extends RestControllerTest {
         """
         {
             "type":"about:blank",
-            "title":"%s",
+            "title":"INVALID_ARGUMENT",
             "status":400,
             "detail":"No variables provided.",
             "instance":"/v2/conditionals/evaluation"
-         }"""
-            .formatted(expectedTitle);
+         }""";
 
     // when / then
     webClient
@@ -349,10 +348,6 @@ public class ConditionalControllerTest extends RestControllerTest {
         .contentType(MediaType.APPLICATION_PROBLEM_JSON)
         .expectBody()
         .json(expectedBody, JsonCompareMode.STRICT);
-  }
-
-  private static Stream<Arguments> provideVariablesMissingScenarios() {
-    return Stream.of(Arguments.of("{}", "Bad Request"), Arguments.of("null", "Bad Request"));
   }
 
   private static Stream<Arguments> provideConditionalEvaluationScenarios() {

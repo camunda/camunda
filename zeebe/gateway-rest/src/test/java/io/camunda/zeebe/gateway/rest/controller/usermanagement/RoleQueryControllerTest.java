@@ -119,7 +119,7 @@ public class RoleQueryControllerTest extends RestControllerTest {
             """
             {
               "type": "about:blank",
-              "title": "Not Found",
+              "title": "NOT_FOUND",
               "status": 404,
               "detail": "role not found",
               "instance": "%s"

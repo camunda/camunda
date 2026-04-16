@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.gateway.rest.controller.usermanagement;
 
+import static io.camunda.zeebe.protocol.record.RejectionType.INVALID_ARGUMENT;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -17,6 +18,7 @@ import io.camunda.gateway.protocol.model.AuthorizationCreate;
 import io.camunda.gateway.protocol.model.AuthorizationIdBasedRequest;
 import io.camunda.gateway.protocol.model.AuthorizationPropertyBasedRequest;
 import io.camunda.gateway.protocol.model.AuthorizationRequest;
+import io.camunda.gateway.protocol.model.CamundaProblemDetail;
 import io.camunda.gateway.protocol.model.OwnerTypeEnum;
 import io.camunda.gateway.protocol.model.PermissionTypeEnum;
 import io.camunda.gateway.protocol.model.ResourceTypeEnum;
@@ -25,10 +27,9 @@ import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.service.AuthorizationServices;
 import io.camunda.service.AuthorizationServices.CreateAuthorizationRequest;
 import io.camunda.service.AuthorizationServices.UpdateAuthorizationRequest;
-import io.camunda.zeebe.gateway.rest.CamundaProblemDetail;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
-import io.camunda.zeebe.gateway.rest.controller.AuthorizationController;
 import io.camunda.zeebe.gateway.rest.controller.adapter.DefaultAuthorizationServiceAdapter;
+import io.camunda.zeebe.gateway.rest.controller.AuthorizationController;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceMatcher;
@@ -89,7 +90,8 @@ public class AuthorizationControllerTest extends RestControllerTest {
         .expectStatus()
         .isCreated()
         .expectBody(AuthorizationCreate.class)
-        .isEqualTo(new AuthorizationCreate().authorizationKey(String.valueOf(authorizationKey)));
+        .isEqualTo(
+            new AuthorizationCreate().authorizationKey(String.valueOf(authorizationKey)));
 
     final var captor = ArgumentCaptor.forClass(CreateAuthorizationRequest.class);
     verify(authorizationServices).createAuthorization(captor.capture(), any());
@@ -100,9 +102,9 @@ public class AuthorizationControllerTest extends RestControllerTest {
   @ParameterizedTest
   @MethodSource("provideInvalidAuthorizationRequests")
   public void createAuthorizationShouldReturnBadRequest(
-      final Object request, final String errorMessage, final String expectedTitle) {
+      final AuthorizationRequest request, final String errorMessage) {
     final var expectedBody = CamundaProblemDetail.forStatus(HttpStatus.BAD_REQUEST);
-    expectedBody.setTitle(expectedTitle);
+    expectedBody.setTitle(INVALID_ARGUMENT.name());
     expectedBody.setInstance(URI.create("/v2/authorizations"));
     expectedBody.setDetail(errorMessage);
 
@@ -133,7 +135,7 @@ public class AuthorizationControllerTest extends RestControllerTest {
             }""";
 
     final var expectedBody = CamundaProblemDetail.forStatus(HttpStatus.BAD_REQUEST);
-    expectedBody.setTitle("Bad Request");
+    expectedBody.setTitle(INVALID_ARGUMENT.name());
     expectedBody.setInstance(URI.create("/v2/authorizations"));
     expectedBody.setDetail("No ownerId provided.");
 
@@ -236,9 +238,9 @@ public class AuthorizationControllerTest extends RestControllerTest {
   @ParameterizedTest
   @MethodSource("provideInvalidAuthorizationRequests")
   public void updateAuthorizationShouldReturnBadRequest(
-      final Object request, final String errorMessage, final String expectedTitle) {
+      final AuthorizationRequest request, final String errorMessage) {
     final var expectedBody = CamundaProblemDetail.forStatus(HttpStatus.BAD_REQUEST);
-    expectedBody.setTitle(expectedTitle);
+    expectedBody.setTitle(INVALID_ARGUMENT.name());
     expectedBody.setInstance(URI.create("/v2/authorizations/1"));
     expectedBody.setDetail(errorMessage);
 
@@ -269,7 +271,7 @@ public class AuthorizationControllerTest extends RestControllerTest {
             }""";
 
     final var expectedBody = CamundaProblemDetail.forStatus(HttpStatus.BAD_REQUEST);
-    expectedBody.setTitle("Bad Request");
+    expectedBody.setTitle(INVALID_ARGUMENT.name());
     expectedBody.setInstance(URI.create("/v2/authorizations/2"));
     expectedBody.setDetail("No ownerId provided.");
 
@@ -359,8 +361,8 @@ public class AuthorizationControllerTest extends RestControllerTest {
             new AuthorizationPropertyBasedRequest()
                 .ownerId("ownerId")
                 .ownerType(OwnerTypeEnum.USER)
-                .resourcePropertyName("assignee")
                 .resourceType(ResourceTypeEnum.USER_TASK)
+                .resourcePropertyName("assignee")
                 .permissionTypes(permissionEnums),
             new CreateAuthorizationRequest(
                 "ownerId",
@@ -416,8 +418,8 @@ public class AuthorizationControllerTest extends RestControllerTest {
             new AuthorizationPropertyBasedRequest()
                 .ownerId("ownerId")
                 .ownerType(OwnerTypeEnum.USER)
-                .resourcePropertyName("assignee")
                 .resourceType(ResourceTypeEnum.USER_TASK)
+                .resourcePropertyName("assignee")
                 .permissionTypes(permissionEnums),
             new UpdateAuthorizationRequest(
                 300,
@@ -436,9 +438,12 @@ public class AuthorizationControllerTest extends RestControllerTest {
     return Stream.of(
         // AuthorizationIdBasedRequest tests
         Arguments.of(
-            "{\"ownerType\":\"USER\",\"resourceId\":\"resourceId\",\"resourceType\":\"RESOURCE\",\"permissionTypes\":[\"CREATE\"]}",
-            "No ownerId provided.",
-            "Bad Request"),
+            new AuthorizationIdBasedRequest()
+                .ownerType(OwnerTypeEnum.USER)
+                .resourceId("resourceId")
+                .resourceType(ResourceTypeEnum.RESOURCE)
+                .permissionTypes(permissions),
+            "No ownerId provided."),
         Arguments.of(
             new AuthorizationIdBasedRequest()
                 .ownerId("")
@@ -446,12 +451,14 @@ public class AuthorizationControllerTest extends RestControllerTest {
                 .resourceId("resourceId")
                 .resourceType(ResourceTypeEnum.RESOURCE)
                 .permissionTypes(permissions),
-            "No ownerId provided.",
-            "Bad Request"),
+            "No ownerId provided."),
         Arguments.of(
-            "{\"ownerId\":\"ownerId\",\"resourceId\":\"resourceId\",\"resourceType\":\"RESOURCE\",\"permissionTypes\":[\"CREATE\"]}",
-            "No ownerType provided.",
-            "Bad Request"),
+            new AuthorizationIdBasedRequest()
+                .ownerId("ownerId")
+                .resourceId("resourceId")
+                .resourceType(ResourceTypeEnum.RESOURCE)
+                .permissionTypes(permissions),
+            "No ownerType provided."),
         Arguments.of(
             new AuthorizationIdBasedRequest()
                 .ownerId("ownerId")
@@ -459,16 +466,21 @@ public class AuthorizationControllerTest extends RestControllerTest {
                 .resourceId("")
                 .resourceType(ResourceTypeEnum.RESOURCE)
                 .permissionTypes(permissions),
-            "Either resourceId or resourcePropertyName must be provided.",
-            "Bad Request"),
+            "Either resourceId or resourcePropertyName must be provided."),
         Arguments.of(
-            "{\"ownerId\":\"ownerId\",\"ownerType\":\"USER\",\"resourceId\":\"resourceId\",\"permissionTypes\":[\"CREATE\"]}",
-            "No resourceType provided.",
-            "Bad Request"),
+            new AuthorizationIdBasedRequest()
+                .ownerId("ownerId")
+                .ownerType(OwnerTypeEnum.USER)
+                .resourceId("resourceId")
+                .permissionTypes(permissions),
+            "No resourceType provided."),
         Arguments.of(
-            "{\"ownerId\":\"ownerId\",\"ownerType\":\"USER\",\"resourceId\":\"resourceId\",\"resourceType\":\"RESOURCE\"}",
-            "No permissionTypes provided.",
-            "Bad Request"),
+            new AuthorizationIdBasedRequest()
+                .ownerId("ownerId")
+                .ownerType(OwnerTypeEnum.USER)
+                .resourceId("resourceId")
+                .resourceType(ResourceTypeEnum.RESOURCE),
+            "No permissionTypes provided."),
         Arguments.of(
             new AuthorizationIdBasedRequest()
                 .ownerId("ownerId")
@@ -476,8 +488,7 @@ public class AuthorizationControllerTest extends RestControllerTest {
                 .resourceId("resourceId")
                 .resourceType(ResourceTypeEnum.RESOURCE)
                 .permissionTypes(List.of()),
-            "No permissionTypes provided.",
-            "Bad Request"),
+            "No permissionTypes provided."),
         Arguments.of(
             new AuthorizationIdBasedRequest()
                 .ownerId("ownerId")
@@ -486,8 +497,7 @@ public class AuthorizationControllerTest extends RestControllerTest {
                 .resourceType(ResourceTypeEnum.RESOURCE)
                 .permissionTypes(permissions),
             "The provided resourceId contains illegal characters. It must match the pattern '%s'."
-                .formatted(SecurityConfiguration.DEFAULT_ID_REGEX),
-            "Bad Request"),
+                .formatted(SecurityConfiguration.DEFAULT_ID_REGEX)),
         Arguments.of(
             new AuthorizationIdBasedRequest()
                 .ownerId("ownerId!!")
@@ -496,13 +506,15 @@ public class AuthorizationControllerTest extends RestControllerTest {
                 .resourceType(ResourceTypeEnum.RESOURCE)
                 .permissionTypes(permissions),
             "The provided ownerId contains illegal characters. It must match the pattern '%s'."
-                .formatted(SecurityConfiguration.DEFAULT_ID_REGEX),
-            "Bad Request"),
+                .formatted(SecurityConfiguration.DEFAULT_ID_REGEX)),
         // AuthorizationPropertyBasedRequest tests
         Arguments.of(
-            "{\"ownerType\":\"USER\",\"resourcePropertyName\":\"resourcePropertyName\",\"resourceType\":\"RESOURCE\",\"permissionTypes\":[\"CREATE\"]}",
-            "No ownerId provided.",
-            "Bad Request"),
+            new AuthorizationPropertyBasedRequest()
+                .ownerType(OwnerTypeEnum.USER)
+                .resourcePropertyName("resourcePropertyName")
+                .resourceType(ResourceTypeEnum.RESOURCE)
+                .permissionTypes(permissions),
+            "No ownerId provided."),
         Arguments.of(
             new AuthorizationPropertyBasedRequest()
                 .ownerId("")
@@ -510,20 +522,28 @@ public class AuthorizationControllerTest extends RestControllerTest {
                 .resourcePropertyName("resourcePropertyName")
                 .resourceType(ResourceTypeEnum.RESOURCE)
                 .permissionTypes(permissions),
-            "No ownerId provided.",
-            "Bad Request"),
+            "No ownerId provided."),
         Arguments.of(
-            "{\"ownerId\":\"ownerId\",\"resourcePropertyName\":\"resourcePropertyName\",\"resourceType\":\"RESOURCE\",\"permissionTypes\":[\"CREATE\"]}",
-            "No ownerType provided.",
-            "Bad Request"),
+            new AuthorizationPropertyBasedRequest()
+                .ownerId("ownerId")
+                .resourcePropertyName("resourcePropertyName")
+                .resourceType(ResourceTypeEnum.RESOURCE)
+                .permissionTypes(permissions),
+            "No ownerType provided."),
         Arguments.of(
-            "{\"ownerId\":\"ownerId\",\"ownerType\":\"USER\",\"resourcePropertyName\":\"resourcePropertyName\",\"permissionTypes\":[\"CREATE\"]}",
-            "No resourceType provided.",
-            "Bad Request"),
+            new AuthorizationPropertyBasedRequest()
+                .ownerId("ownerId")
+                .ownerType(OwnerTypeEnum.USER)
+                .resourcePropertyName("resourcePropertyName")
+                .permissionTypes(permissions),
+            "No resourceType provided."),
         Arguments.of(
-            "{\"ownerId\":\"ownerId\",\"ownerType\":\"USER\",\"resourcePropertyName\":\"resourcePropertyName\",\"resourceType\":\"RESOURCE\"}",
-            "No permissionTypes provided.",
-            "Bad Request"),
+            new AuthorizationPropertyBasedRequest()
+                .ownerId("ownerId")
+                .ownerType(OwnerTypeEnum.USER)
+                .resourcePropertyName("resourcePropertyName")
+                .resourceType(ResourceTypeEnum.RESOURCE),
+            "No permissionTypes provided."),
         Arguments.of(
             new AuthorizationPropertyBasedRequest()
                 .ownerId("ownerId")
@@ -531,8 +551,7 @@ public class AuthorizationControllerTest extends RestControllerTest {
                 .resourcePropertyName("resourcePropertyName")
                 .resourceType(ResourceTypeEnum.RESOURCE)
                 .permissionTypes(List.of()),
-            "No permissionTypes provided.",
-            "Bad Request"),
+            "No permissionTypes provided."),
         Arguments.of(
             new AuthorizationPropertyBasedRequest()
                 .ownerId("ownerId!!")
@@ -541,8 +560,7 @@ public class AuthorizationControllerTest extends RestControllerTest {
                 .resourceType(ResourceTypeEnum.RESOURCE)
                 .permissionTypes(permissions),
             "The provided ownerId contains illegal characters. It must match the pattern '%s'."
-                .formatted(SecurityConfiguration.DEFAULT_ID_REGEX),
-            "Bad Request"),
+                .formatted(SecurityConfiguration.DEFAULT_ID_REGEX)),
         Arguments.of(
             new AuthorizationPropertyBasedRequest()
                 .ownerId("ownerId")
@@ -550,8 +568,7 @@ public class AuthorizationControllerTest extends RestControllerTest {
                 .resourcePropertyName("")
                 .resourceType(ResourceTypeEnum.RESOURCE)
                 .permissionTypes(permissions),
-            "Either resourceId or resourcePropertyName must be provided.",
-            "Bad Request"),
+            "Either resourceId or resourcePropertyName must be provided."),
         Arguments.of(
             new AuthorizationPropertyBasedRequest()
                 .ownerId("ownerId")
@@ -560,7 +577,6 @@ public class AuthorizationControllerTest extends RestControllerTest {
                 .resourceType(ResourceTypeEnum.RESOURCE)
                 .permissionTypes(permissions),
             "The provided resourcePropertyName contains illegal characters. It must match the pattern '%s'."
-                .formatted(SecurityConfiguration.DEFAULT_ID_REGEX),
-            "Bad Request"));
+                .formatted(SecurityConfiguration.DEFAULT_ID_REGEX)));
   }
 }

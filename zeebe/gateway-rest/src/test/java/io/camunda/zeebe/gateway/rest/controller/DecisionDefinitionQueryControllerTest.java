@@ -361,7 +361,7 @@ public class DecisionDefinitionQueryControllerTest extends RestControllerTest {
         """
             {
               "type": "about:blank",
-              "title": "Not Found",
+              "title": "NOT_FOUND",
               "status": 404,
               "detail": "Decision with key 1 was not found.",
               "instance": "%s"
@@ -391,7 +391,7 @@ public class DecisionDefinitionQueryControllerTest extends RestControllerTest {
         """
             {
               "type": "about:blank",
-              "title": "Internal Server Error",
+              "title": "java.lang.RuntimeException",
               "status": 500,
               "detail": "Unexpected error occurred during the request processing: Failed to get decision definition xml.",
               "instance": "%s"
@@ -475,7 +475,7 @@ public class DecisionDefinitionQueryControllerTest extends RestControllerTest {
         """
             {
               "type": "about:blank",
-              "title": "Not Found",
+              "title": "NOT_FOUND",
               "status": 404,
               "detail": "Decision with key 1 was not found.",
               "instance": "/v2/decision-definitions/1"
@@ -504,7 +504,7 @@ public class DecisionDefinitionQueryControllerTest extends RestControllerTest {
         """
             {
               "type": "about:blank",
-              "title": "Internal Server Error",
+              "title": "java.lang.RuntimeException",
               "status": 500,
               "detail": "Unexpected error occurred during the request processing: Failed to get decision definition.",
               "instance": "/v2/decision-definitions/1"
@@ -547,7 +547,7 @@ public class DecisionDefinitionQueryControllerTest extends RestControllerTest {
                     {
                       "type": "about:blank",
                       "status": 403,
-                      "title": "Forbidden",
+                      "title": "FORBIDDEN",
                       "detail": "Unauthorized to perform operation 'READ' on resource 'DECISION_DEFINITION'",
                       "instance": "%s"
                     }

@@ -203,7 +203,7 @@ public class ProcessDefinitionQueryControllerTest extends RestControllerTest {
                     {
                       "type": "about:blank",
                       "status": 404,
-                      "title": "Not Found",
+                      "title": "NOT_FOUND",
                       "detail": "Process definition with key 17 not found",
                       "instance": "/v2/process-definitions/17"
                     }
@@ -260,7 +260,7 @@ public class ProcessDefinitionQueryControllerTest extends RestControllerTest {
                     {
                       "type": "about:blank",
                       "status": 403,
-                      "title": "Forbidden",
+                      "title": "FORBIDDEN",
                       "detail": "Unauthorized to perform operation 'READ' on resource 'PROCESS_DEFINITION'",
                       "instance": "%s"
                     }
@@ -454,7 +454,7 @@ public class ProcessDefinitionQueryControllerTest extends RestControllerTest {
             """
             {
               "type": "about:blank",
-              "title": "Not Found",
+              "title": "NOT_FOUND",
               "status": 404,
               "detail": "Process definition with key 999 not found",
               "instance": "/v2/process-definitions/999/form"
@@ -480,7 +480,7 @@ public class ProcessDefinitionQueryControllerTest extends RestControllerTest {
             """
             {
               "type": "about:blank",
-              "title": "Internal Server Error",
+              "title": "java.lang.RuntimeException",
               "status": 500,
               "detail": "Unexpected error occurred during the request processing: Unexpected error",
               "instance": "/v2/process-definitions/1/form"
@@ -799,7 +799,7 @@ public class ProcessDefinitionQueryControllerTest extends RestControllerTest {
             """
                 {
                   "type": "about:blank",
-                  "title": "Bad Request",
+                  "title": "INVALID_ARGUMENT",
                   "status": 400,
                   "detail": "No filter provided.",
                   "instance": "%s"
@@ -837,7 +837,7 @@ public class ProcessDefinitionQueryControllerTest extends RestControllerTest {
             """
                 {
                   "type": "about:blank",
-                  "title": "Bad Request",
+                  "title": "INVALID_ARGUMENT",
                   "status": 400,
                   "detail": "No processDefinitionId provided.",
                   "instance": "%s"
@@ -875,7 +875,7 @@ public class ProcessDefinitionQueryControllerTest extends RestControllerTest {
             """
                 {
                   "type": "about:blank",
-                  "title": "Bad Request",
+                  "title": "INVALID_ARGUMENT",
                   "status": 400,
                   "detail": "The value for page.limit is '-1' but must be a non-negative number.",
                   "instance": "%s"
@@ -917,7 +917,7 @@ public class ProcessDefinitionQueryControllerTest extends RestControllerTest {
             """
                 {
                   "type": "about:blank",
-                  "title": "Bad Request",
+                  "title": "INVALID_ARGUMENT",
                   "status": 400,
                   "detail": "When using isLatestVersion filter, pagination is limited to forward pagination using 'after' and 'limit'. The field 'before' is not supported.",
                   "instance": "%s"
@@ -959,7 +959,7 @@ public class ProcessDefinitionQueryControllerTest extends RestControllerTest {
             """
                 {
                   "type": "about:blank",
-                  "title": "Bad Request",
+                  "title": "INVALID_ARGUMENT",
                   "status": 400,
                   "detail": "When using isLatestVersion filter, pagination is limited to forward pagination using 'after' and 'limit'. The field 'from' is not supported.",
                   "instance": "%s"
@@ -1011,7 +1011,7 @@ public class ProcessDefinitionQueryControllerTest extends RestControllerTest {
             """
                 {
                   "type": "about:blank",
-                  "title": "Bad Request",
+                  "title": "INVALID_ARGUMENT",
                   "status": 400,
                   "detail": "When using isLatestVersion filter, sorting is limited to 'processDefinitionId' and 'tenantId' fields only. The field '%s' is not supported.",
                   "instance": "%s"

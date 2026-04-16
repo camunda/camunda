@@ -123,7 +123,7 @@ export async function assertForbiddenRequest(
   await assertStatusCode(response, 403);
   const json = await response.json();
   assertRequiredFields(json, ['detail', 'title']);
-  expect(json.title).toBe('Forbidden');
+  expect(json.title).toBe('FORBIDDEN');
   expect(json.detail).toContain(detail);
 }
 
@@ -134,7 +134,7 @@ export async function assertConflictRequest(
   await assertStatusCode(response, 409);
   const json = await response.json();
   assertRequiredFields(json, ['title', 'detail']);
-  expect(json.title).toBe('Conflict');
+  expect(json.title).toBe('ALREADY_EXISTS');
   if (detail) {
     expect(json.detail).toContain(detail);
   }
@@ -147,7 +147,7 @@ export async function assertInvalidState(
   await assertStatusCode(response, expectedStatusCode);
   const json = await response.json();
   assertRequiredFields(json, ['detail', 'title']);
-  expect(json.title).toBe('Conflict');
+  expect(json.title).toBe('INVALID_STATE');
 }
 export async function assertNotFoundRequest(
   response: APIResponse,
@@ -156,7 +156,7 @@ export async function assertNotFoundRequest(
   await assertStatusCode(response, 404);
   const json = await response.json();
   assertRequiredFields(json, ['detail', 'title']);
-  expect(json.title).toBe('Not Found');
+  expect(json.title).toBe('NOT_FOUND');
   expect(json.detail).toContain(detail);
 }
 
@@ -168,7 +168,7 @@ export async function assertInvalidArgument(
   await assertStatusCode(response, expectedStatusCode);
   const json = await response.json();
   assertRequiredFields(json, ['detail', 'title']);
-  expect(json.title).toBe('Bad Request');
+  expect(json.title).toBe('INVALID_ARGUMENT');
   expect(json.detail).toContain(detail);
 }
 

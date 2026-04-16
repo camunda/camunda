@@ -524,7 +524,7 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
             """
                         {
                           "type": "about:blank",
-                          "title": "Bad Request",
+                          "title": "INVALID_ARGUMENT",
                           "status": 400,
                           "detail": "Variable value must not be null.",
                           "instance": "%s"
@@ -567,7 +567,7 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
             """
                         {
                           "type": "about:blank",
-                          "title": "Bad Request",
+                          "title": "INVALID_ARGUMENT",
                           "status": 400,
                           "detail": "No value provided.",
                           "instance": "%s"
@@ -611,7 +611,7 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
             """
                         {
                           "type": "about:blank",
-                          "title": "Bad Request",
+                          "title": "INVALID_ARGUMENT",
                           "status": 400,
                           "detail": "Variable value must not be null.",
                           "instance": "%s"
@@ -654,7 +654,7 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
             """
                         {
                           "type": "about:blank",
-                          "title": "Bad Request",
+                          "title": "INVALID_ARGUMENT",
                           "status": 400,
                           "detail": "No value provided.",
                           "instance": "%s"
@@ -779,7 +779,7 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
             """
                         {
                           "type": "about:blank",
-                          "title": "Bad Request",
+                          "title": "INVALID_ARGUMENT",
                           "status": 400,
                           "detail": "Sort field must not be null.",
                           "instance": "%s"
@@ -819,7 +819,7 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
             """
                         {
                           "type": "about:blank",
-                          "title": "Bad Request",
+                          "title": "INVALID_ARGUMENT",
                           "status": 400,
                           "detail": "Only one of [from, after, before] is allowed.",
                           "instance": "%s"
@@ -877,7 +877,7 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
                                     {
                                       "type": "about:blank",
                                       "status": 404,
-                                      "title": "Not Found",
+                                      "title": "NOT_FOUND",
                                       "detail": "User Task with key 999 not found",
                                       "instance": "%s"
                                     }
@@ -920,7 +920,7 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
         """
                 {
                   "type": "about:blank",
-                  "title": "Not Found",
+                  "title": "NOT_FOUND",
                   "status": 404,
                   "detail": "User Task with key 999 not found",
                   "instance": "%s"
@@ -956,7 +956,7 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
             """
                                 {
                                   "type": "about:blank",
-                                  "title": "Internal Server Error",
+                                  "title": "java.lang.RuntimeException",
                                   "status": 500,
                                   "detail": "Unexpected error occurred during the request processing: Unexpected error",
                                   "instance": "/v2/user-tasks/0/form"

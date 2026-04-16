@@ -7,16 +7,17 @@
  */
 package io.camunda.zeebe.gateway.rest.controller;
 
+import static io.camunda.zeebe.protocol.record.RejectionType.INVALID_ARGUMENT;
 import static org.junit.jupiter.params.provider.Arguments.of;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.camunda.gateway.protocol.model.CamundaProblemDetail;
 import io.camunda.gateway.protocol.model.ClockPinRequest;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.ClockServices;
-import io.camunda.zeebe.gateway.rest.CamundaProblemDetail;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.gateway.rest.controller.adapter.DefaultClockServiceAdapter;
 import io.camunda.zeebe.protocol.impl.record.value.clock.ClockRecord;
@@ -87,7 +88,7 @@ public class ClockControllerTest extends RestControllerTest {
       final String invalidRequestJson, final String expectedError) {
     // given
     final var expectedBody = CamundaProblemDetail.forStatus(HttpStatus.BAD_REQUEST);
-    expectedBody.setTitle("Bad Request");
+    expectedBody.setTitle(INVALID_ARGUMENT.name());
     expectedBody.setInstance(URI.create(CLOCK_URL));
     expectedBody.setDetail(expectedError);
 

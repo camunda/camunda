@@ -251,7 +251,7 @@ test.describe.parallel('Search Variables API Tests', () => {
       await assertBadRequest(
         res,
         'Sort field must not be null.',
-        'Bad Request',
+        'INVALID_ARGUMENT',
       );
     }).toPass(defaultAssertionOptions);
   });

@@ -86,7 +86,7 @@ test.describe.parallel('Groups API Tests', () => {
       headers: jsonHeaders(),
       data: invalidRequest,
     });
-    await assertBadRequest(res, `No groupId provided`, 'Bad Request');
+    await assertBadRequest(res, `No groupId provided`, 'INVALID_ARGUMENT');
   });
 
   test('Search Groups By Name', async ({request}) => {
@@ -299,7 +299,7 @@ test.describe.parallel('Groups API Tests', () => {
       headers: jsonHeaders(),
       data: invalid,
     });
-    await assertBadRequest(res, `No name provided`, 'Bad Request');
+    await assertBadRequest(res, `No name provided`, 'INVALID_ARGUMENT');
   });
 
   test('Update Group Not Found', async ({request}) => {

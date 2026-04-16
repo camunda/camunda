@@ -142,7 +142,7 @@ public class UserQueryControllerTest extends RestControllerTest {
             """
             {
               "type": "about:blank",
-              "title": "Not Found",
+              "title": "NOT_FOUND",
               "status": 404,
               "detail": "user not found",
               "instance": "%s"
@@ -314,7 +314,7 @@ public class UserQueryControllerTest extends RestControllerTest {
                 """
                     {
                       "type": "about:blank",
-                      "title": "Bad Request",
+                      "title": "INVALID_ARGUMENT",
                       "status": 400,
                       "detail": "Sort field must not be null.",
                       "instance": "%s"
@@ -333,7 +333,7 @@ public class UserQueryControllerTest extends RestControllerTest {
                 """
                     {
                       "type": "about:blank",
-                      "title": "Bad Request",
+                      "title": "INVALID_ARGUMENT",
                       "status": 400,
                       "detail": "Only one of [from, after, before] is allowed.",
                       "instance": "%s"

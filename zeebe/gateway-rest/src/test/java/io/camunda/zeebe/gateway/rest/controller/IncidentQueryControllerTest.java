@@ -400,7 +400,7 @@ public class IncidentQueryControllerTest extends RestControllerTest {
             """
                   {
                       "type":"about:blank",
-                      "title":"Not Found",
+                      "title":"NOT_FOUND",
                       "status":404,
                       "instance":"/v2/incidents/5"
                   }
@@ -604,7 +604,7 @@ public class IncidentQueryControllerTest extends RestControllerTest {
             """
                 {
                   "type": "about:blank",
-                  "title": "Bad Request",
+                  "title": "INVALID_ARGUMENT",
                   "status": 400,
                   "detail": "No filter provided.",
                   "instance": "%s"
@@ -642,7 +642,7 @@ public class IncidentQueryControllerTest extends RestControllerTest {
             """
                 {
                   "type": "about:blank",
-                  "title": "Bad Request",
+                  "title": "INVALID_ARGUMENT",
                   "status": 400,
                   "detail": "No errorHashCode provided.",
                   "instance": "%s"

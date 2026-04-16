@@ -154,7 +154,7 @@ test.describe.parallel('Global Task Listener API Tests - Update', () => {
       },
     );
 
-    await assertBadRequest(res, /type/i, 'Bad Request');
+    await assertBadRequest(res, /type/i, 'INVALID_ARGUMENT');
   });
 
   test('Update Global Task Listener - missing required eventTypes field', async ({
@@ -171,7 +171,7 @@ test.describe.parallel('Global Task Listener API Tests - Update', () => {
       },
     );
 
-    await assertBadRequest(res, /eventTypes/i, 'Bad Request');
+    await assertBadRequest(res, /eventTypes/i, 'INVALID_ARGUMENT');
   });
 
   test('Update Global Task Listener - invalid eventType value', async ({
