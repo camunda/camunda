@@ -184,7 +184,8 @@
     {
       "description": "Skip lucene minor and patch in stable branches to avoid breaking changes.",
       "matchBaseBranches": [
-        "/^stable\\/8\\.[6-8]/"
+        "/^stable\\/8\\.[6-8]/",
+        "stable/optimize-8.7"
       ],
       "matchManagers": [
         "maven"
