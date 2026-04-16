@@ -108,6 +108,7 @@ class ConfigTest {
     }
   }
 
+  @Nested
   @SpringBootTest(
       classes = ConfigTest.TestConfig.class,
       properties = {
@@ -115,7 +116,7 @@ class ConfigTest {
         "load-tester.starter.extra-bpmn-models[0]=bpmn/realistic/refundingProcess.bpmn",
         "load-tester.starter.extra-bpmn-models[1]=bpmn/realistic/determineFraudRatingConfidence.dmn",
       })
-  static class ExtraBpmnModelsFromPropertiesTest {
+  class ExtraBpmnModelsFromPropertiesTest {
     @Autowired private LoadTesterProperties properties;
 
     @Test

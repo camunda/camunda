@@ -77,7 +77,7 @@ load-tester:
   # are configured via camunda.client.worker.defaults.* above.
   worker:
     completion-delay: ${LOAD_TESTER_WORKER_COMPLETION_DELAY:300ms}
-    payload-path: ${LOAD_TESTER_WORKER_PAYLOAD_PATH:bpmn/typical_payload.json}
+    payload-path: ${LOAD_TESTER_WORKER_PAYLOAD_PATH:bpmn/big_payload.json}
     send-message: ${LOAD_TESTER_WORKER_SEND_MESSAGE:false}
     message-name: ${LOAD_TESTER_WORKER_MESSAGE_NAME:messageName}
     correlation-key-variable-name: ${LOAD_TESTER_WORKER_CORRELATION_KEY_VARIABLE_NAME:correlationKey-var}

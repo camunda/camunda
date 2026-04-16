@@ -688,7 +688,7 @@ cannot express this conditional, so the timeout is hardcoded to `1800ms` (300ms 
 | `camunda-spring-boot-starter` | Auto-configures `CamundaClient`, `@JobWorker`, Spring properties |
 | `spring-boot-starter-actuator` | Health checks, Prometheus metrics endpoint |
 | `spring-boot-starter-web` | Embedded HTTP server for Actuator |
-| `camunda-process-test-spring` (test) | `CamundaContainer` for integration tests |
+| `camunda-process-test-java` (test) | `CamundaContainer` for integration tests |
 | `spring-boot-starter-test` (test) | JUnit 5 + Spring test utilities |
 
 ---
