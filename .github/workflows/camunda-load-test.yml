@@ -16,26 +16,16 @@ name: Camunda load test
 on:
   workflow_dispatch:
     inputs:
+      name:
+        description: 'Name of the load test (used as the Kubernetes namespace)'
+        required: true
       ref:
-        description: 'Specifies the ref (e.g. branch name, commit sha or tag) from which the docker image is built and used to run the load test against'
+        description: 'Git ref (branch, tag or commit SHA) to build and test against'
         default: 'stable/8.7'
         type: string
         required: false
-      name:
-        description: 'Specifies the name of the load test'
-        required: true
-      ttl:
-        description: 'Specifies after how many days the load test namespace should be deleted'
-        type: number
-        default: 1
-        required: false
-      reuse-tag:
-        description: 'Reuse Tag: Pre-built image tag from the internal registry (registry.camunda.cloud). Skips the docker image build step. Cannot be used together with orchestration-tag.'
-        type: string
-        default: ""
-        required: false
       scenario:
-        description: 'Choose the variant of workload to use for the load test.'
+        description: 'Workload scenario to run'
         required: false
         type: choice
         options:
@@ -44,16 +34,27 @@ on:
           - typical
           - max
         default: max
+      secondary-storage-type:
+        description: 'Secondary database backend for Camunda Platform'
+        type: choice
+        options:
+        - elasticsearch
+        default: elasticsearch
+      reuse-tag:
+        description: 'Pre-built image tag from the internal registry (registry.camunda.cloud). Skips the build step. ⚠ Cannot be used with orchestration-tag.'
+        type: string
+        default: ""
+        required: false
       load-test-load:
-        description: 'Specifies which load test components to deploy. For example, `starter` can be assigned with the rate at which they start instances. Allows arbitrary helm arguments, like --set starter.rate=100. This is ignored when scenario is not "custom".'
+        description: '── Configuration ── Helm args for workload components (e.g. --set starter.rate=100). Ignored when scenario is not "custom".'
         required: false
       platform-helm-values:
-        description: 'Allows to specify additional values/configurations for the Camunda platform Helm chart, which will be deployed. For example, the Orchestration cluster `resources` can be modified. Allows arbitrary helm arguments, like --set orchestration.resources.limits.memory=2Gi'
+        description: 'Additional Helm values for the Camunda platform chart (e.g. --set orchestration.resources.limits.memory=2Gi)'
         type: string
         default: ""
         required: false
       stable-vms:
-        description: 'Deploy to non-spot VMs'
+        description: '── Flags ── Deploy to non-spot VMs (more stable, higher cost)'
         type: boolean
         required: false
         default: false
@@ -68,28 +69,32 @@ on:
         required: false
         default: true
       build-frontend:
-        description: 'Build the frontend as part of the load test image build'
+        description: 'Build frontend assets as part of the load test image build'
         type: boolean
         required: false
         default: false
-      secondary-storage-type:
-        description: 'Specifies the type of the secondary database used by Camunda Platform, can be "elasticsearch"'
-        type: choice
-        options:
-        - elasticsearch
-        default: elasticsearch
+      perform-read-benchmarks:
+        description: 'Run continuous read benchmarks on secondary storage (may affect exporter performance)'
+        type: boolean
+        required: false
+        default: false
+      ttl:
+        description: '── Lifecycle & advanced ── Days before the namespace is auto-deleted'
+        type: number
+        default: 1
+        required: false
       orchestration-tag:
-        description: 'Orchestration Tag: Docker image tag for official Camunda images from Docker Hub (docker.io/camunda/camunda). When set, official Docker Hub images are used instead of building from source. Cannot be used together with reuse-tag.'
+        description: 'Official Docker Hub image tag (docker.io/camunda/camunda). Uses Docker Hub instead of building. ⚠ Cannot be used with reuse-tag.'
         type: string
         default: ""
         required: false
       optimize-tag:
-        description: 'Optimize Tag: Docker image tag for Optimize from Docker Hub (docker.io/camunda/optimize). When set, overrides the optimize image regardless of build mode. If not set, custom builds use the built image from the internal registry; official images use Helm chart defaults.'
+        description: 'Override Optimize image tag (docker.io/camunda/optimize). Overrides build mode defaults.'
         type: string
         default: ""
         required: false
       identity-tag:
-        description: 'Identity Tag: Docker image tag for Identity from Docker Hub (docker.io/camunda/identity). If not set, defaults to the Helm chart default image.'
+        description: 'Override Identity image tag (docker.io/camunda/identity). Defaults to Helm chart default.'
         type: string
         default: ""
         required: false
@@ -104,7 +109,7 @@ on:
         default: ""
         required: false
       connectors-tag:
-        description: 'Connectors Tag: Docker image tag for Connectors from Docker Hub (docker.io/camunda/connectors). If not set, defaults to the Helm chart default image.'
+        description: 'Override Connectors image tag (docker.io/camunda/connectors). Defaults to Helm chart default.'
         type: string
         default: ""
         required: false
@@ -227,18 +232,29 @@ jobs:
     steps:
       - name: Show summary
         run: |-
-          INPUTS=$(cat <<EOF | jq . --sort-keys
-          ${{ toJSON(inputs) }}
-          EOF
-          )
-          cat >> "$GITHUB_STEP_SUMMARY" <<EOF
-          # Load test configuration
+          cat >> "$GITHUB_STEP_SUMMARY" <<'EOF'
+          ## Load test: `${{ env.NAMESPACE }}`
 
-          A load test was created with the following inputs:
+          > 📊 **[Open Grafana Dashboard](https://dashboard.benchmark.camunda.cloud/d/zeebe-dashboard/zeebe?var-namespace=${{ env.NAMESPACE }})**
 
-          \`\`\`json
-          $INPUTS
-          \`\`\`
+          | Input | Value |
+          |-------|-------|
+          | Name | `${{ inputs.name }}` |
+          | Ref | `${{ inputs.ref }}` |
+          | Scenario | `${{ inputs.scenario }}` |
+          | Secondary storage | `${{ inputs.secondary-storage-type }}` |
+          | Reuse tag | ${{ inputs.reuse-tag || '—' }} |
+          | Orchestration tag | ${{ inputs.orchestration-tag || '—' }} |
+          | Load test load | ${{ inputs.load-test-load || '—' }} |
+          | Platform helm values | ${{ inputs.platform-helm-values || '—' }} |
+          | TTL (days) | `${{ inputs.ttl }}` |
+          | Stable VMs | `${{ inputs.stable-vms }}` |
+          | Enable Optimize | `${{ inputs.enable-optimize }}` |
+          | Build frontend | `${{ inputs.build-frontend }}` |
+          | Perform read benchmarks | `${{ inputs.perform-read-benchmarks }}` |
+          | Optimize tag | ${{ inputs.optimize-tag || '—' }} |
+          | Identity tag | ${{ inputs.identity-tag || '—' }} |
+          | Connectors tag | ${{ inputs.connectors-tag || '—' }} |
           EOF
 
   calculate-image-tag:
