@@ -13,6 +13,7 @@ import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.ActorControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.testing.ControlledActorSchedulerExtension;
+import io.camunda.zeebe.util.exception.RecoverableException;
 import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -20,6 +21,7 @@ import java.util.concurrent.LinkedTransferQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -217,6 +219,115 @@ final class RetryStrategyTest {
       final var actor = new ControllableActor();
       final var strategy = provider.apply(actor.getActor());
       return new TestCase<>(actor, strategy);
+    }
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {"endless", "recoverable"})
+  void shouldFailWhenMaxRetriesExceededOnFalseReturn(final LimitedTestCase<?> test) {
+    // given
+    schedulerRule.submitActor(test.actor);
+
+    // when
+    test.actor.run(
+        () -> resultFuture = test.strategy.runWithRetry(() -> false)); // always returns false
+    schedulerRule.workUntilDone();
+
+    // then
+    assertThat(resultFuture)
+        .failsWithin(Duration.ZERO)
+        .withThrowableOfType(ExecutionException.class)
+        .withCauseInstanceOf(MaxRetryReachedException.class)
+        .withMessageContaining("Max retry count of 5 reached");
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {"endless", "recoverable"})
+  void shouldSucceedBeforeMaxRetriesOnFalseReturn(final LimitedTestCase<?> test) {
+    // given
+    final var count = new AtomicInteger(0);
+    schedulerRule.submitActor(test.actor);
+
+    // when - succeed on attempt 3 (before limit of 5)
+    test.actor.run(
+        () -> resultFuture = test.strategy.runWithRetry(() -> count.incrementAndGet() == 3));
+    schedulerRule.workUntilDone();
+
+    // then
+    assertThat(count.get()).isEqualTo(3);
+    assertThat(resultFuture).succeedsWithin(Duration.ZERO).isEqualTo(true);
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {"endless"})
+  void shouldFailWhenMaxRetriesExceededOnException(final LimitedTestCase<?> test) {
+    // given
+    schedulerRule.submitActor(test.actor);
+
+    // when
+    test.actor.run(
+        () ->
+            resultFuture =
+                test.strategy.runWithRetry(
+                    () -> {
+                      throw new RuntimeException("always fails");
+                    }));
+    schedulerRule.workUntilDone();
+
+    // then
+    assertThat(resultFuture)
+        .failsWithin(Duration.ZERO)
+        .withThrowableOfType(ExecutionException.class)
+        .withCauseInstanceOf(MaxRetryReachedException.class)
+        .withMessageContaining("Max retry count of 5 reached");
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {"recoverable"})
+  void shouldFailWhenMaxRetriesExceededOnRecoverableException(final LimitedTestCase<?> test) {
+    // given
+    schedulerRule.submitActor(test.actor);
+
+    // when
+    test.actor.run(
+        () ->
+            resultFuture =
+                test.strategy.runWithRetry(
+                    () -> {
+                      throw new RecoverableException("always recoverable");
+                    }));
+    schedulerRule.workUntilDone();
+
+    // then
+    assertThat(resultFuture)
+        .failsWithin(Duration.ZERO)
+        .withThrowableOfType(ExecutionException.class)
+        .withCauseInstanceOf(MaxRetryReachedException.class)
+        .withMessageContaining("Max retry count of 5 reached");
+  }
+
+  /**
+   * LimitedTestCase creates retry strategies with a fixed maxRetries=5 for testing the max retry
+   * limit functionality.
+   */
+  private record LimitedTestCase<T extends RetryStrategy>(ControllableActor actor, T strategy) {
+
+    @SuppressWarnings("unused")
+    static LimitedTestCase<?> of(final String type) {
+      return switch (type.toLowerCase()) {
+        case "endless" -> LimitedTestCase.of(EndlessRetryStrategy::new);
+        case "recoverable" -> LimitedTestCase.of(RecoverableRetryStrategy::new);
+        default ->
+            throw new IllegalArgumentException(
+                "Expected one of ['endless', 'recoverable'], but got " + type);
+      };
+    }
+
+    private static <T extends RetryStrategy> LimitedTestCase<T> of(
+        final BiFunction<ActorControl, Integer, T> provider) {
+      final var actor = new ControllableActor();
+      final var strategy = provider.apply(actor.getActor(), 5);
+      return new LimitedTestCase<>(actor, strategy);
     }
   }
 

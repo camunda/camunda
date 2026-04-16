@@ -29,8 +29,13 @@ public final class RecoverableRetryStrategy implements RetryStrategy {
   private BooleanSupplier terminateCondition;
 
   public RecoverableRetryStrategy(final ActorControl actor) {
+    this(actor, ActorRetryMechanism.UNLIMITED);
+  }
+
+  public RecoverableRetryStrategy(final ActorControl actor, final int maxRetries) {
     this.actor = actor;
     retryMechanism = new ActorRetryMechanism();
+    retryMechanism.setMaxRetries(maxRetries);
   }
 
   @Override
@@ -59,6 +64,9 @@ public final class RecoverableRetryStrategy implements RetryStrategy {
       }
     } catch (final RecoverableException ex) {
       if (!terminateCondition.getAsBoolean()) {
+        if (retryMechanism.incrementAndCheckLimit()) {
+          return;
+        }
         throttledLog.warn("Caught recoverable exception, will retry: {}", ex.getMessage(), ex);
         actor.run(this::run);
         actor.yieldThread();
