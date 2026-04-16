@@ -8,13 +8,13 @@
 package io.camunda.zeebe.broker.partitioning.startup;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import io.atomix.cluster.MemberId;
 import io.atomix.primitive.partition.PartitionMetadata;
 import io.camunda.zeebe.broker.partitioning.topology.ClusterConfigurationService;
+import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.dynamic.config.state.MemberState;
@@ -45,7 +45,8 @@ class PartitionsPerBrokerResolutionTest {
       when(configService.getMemberPartitions(MEMBER_ID)).thenReturn(List.of(partition1, partition2));
 
       // when
-      final int result = ZeebePartitionFactory.getPartitionsPerBroker(configService, MEMBER_ID);
+      final int result =
+          ZeebePartitionFactory.getPartitionsPerBroker(configService, MEMBER_ID, null);
 
       // then
       assertThat(result).isEqualTo(2);
@@ -60,23 +61,33 @@ class PartitionsPerBrokerResolutionTest {
       when(configService.getJoiningMemberPartitionCount(MEMBER_ID)).thenReturn(1);
 
       // when
-      final int result = ZeebePartitionFactory.getPartitionsPerBroker(configService, MEMBER_ID);
+      final int result =
+          ZeebePartitionFactory.getPartitionsPerBroker(configService, MEMBER_ID, null);
 
       // then
       assertThat(result).isEqualTo(1);
     }
 
     @Test
-    void shouldThrowWhenBrokerHasNeitherActiveNorJoiningPartitions() {
-      // given
+    void shouldEstimateFromConfigWhenBrokerHasNeitherActiveNorJoiningPartitions() {
+      // given — broker is joining its first partition but the cluster config hasn't been updated
+      // yet (e.g. join called before the dynamic config reflects the JOINING state).
+      // 3 partitions × RF 2 across 3 brokers → ceil(6/3) = 2 partitions per broker.
       final var configService = mock(ClusterConfigurationService.class);
       when(configService.getMemberPartitions(MEMBER_ID)).thenReturn(List.of());
       when(configService.getJoiningMemberPartitionCount(MEMBER_ID)).thenReturn(0);
 
-      // when / then
-      assertThatThrownBy(() -> ZeebePartitionFactory.getPartitionsPerBroker(configService, MEMBER_ID))
-          .isInstanceOf(IllegalStateException.class)
-          .hasMessageContaining(MEMBER_ID.id());
+      final var brokerCfg = new BrokerCfg();
+      brokerCfg.getCluster().setPartitionsCount(3);
+      brokerCfg.getCluster().setReplicationFactor(2);
+      brokerCfg.getCluster().setClusterSize(3);
+
+      // when
+      final int result =
+          ZeebePartitionFactory.getPartitionsPerBroker(configService, MEMBER_ID, brokerCfg);
+
+      // then — ceil(3 * 2 / 3) = 2
+      assertThat(result).isEqualTo(2);
     }
   }
 
