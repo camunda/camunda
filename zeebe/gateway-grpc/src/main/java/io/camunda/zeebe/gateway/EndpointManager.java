@@ -126,7 +126,7 @@ public final class EndpointManager {
 
     final String region = topology.getBrokerRegion(brokerId);
     brokerInfo
-        .setNodeId(topology.getBrokerMemberId(brokerId))
+        .setMemberId(topology.getBrokerMemberId(brokerId))
         .setHost(address.host())
         .setPort(address.port())
         .setVersion(topology.getBrokerVersion(brokerId))

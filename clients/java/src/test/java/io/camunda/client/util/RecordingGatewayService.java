@@ -156,7 +156,7 @@ public final class RecordingGatewayService extends GatewayImplBase {
       final String version,
       final Partition... partitions) {
     return BrokerInfo.newBuilder()
-        .setNodeId(nodeId)
+        .setMemberId(nodeId)
         .setHost(host)
         .setPort(port)
         .setVersion(version)
