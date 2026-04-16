@@ -41,7 +41,7 @@ saas:
     # Saas.credentials.clientId to define the clientId to connect
     clientId: "orchestration"
     # Saas.credentials.clientSecret to define the clientSecret to connect
-    clientSecret: "__SECRET__"
+    clientSecret: "vxyP1FaMBrHKEVFTXer2"
     # Saas.credentials.zeebeRestAddress to define the rest address of the cluster (including port)
     zeebeRestAddress: "http://camunda-gateway:8080"
     # SaaS.credentials.authServer to define the authentication server to retrieve JWT tokens
