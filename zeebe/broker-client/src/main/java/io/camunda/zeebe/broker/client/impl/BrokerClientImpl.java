@@ -155,7 +155,11 @@ public final class BrokerClientImpl implements BrokerClient {
     try {
       r.run();
     } catch (final Exception e) {
-      LOG.error("Exception when closing client. Ignoring", e);
+      if (e instanceof InterruptedException) {
+        LOG.debug("Interrupted while closing client. Continuing shutdown", e);
+      } else {
+        LOG.error("Exception when closing client. Ignoring", e);
+      }
     }
   }
 }
