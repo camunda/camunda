@@ -81,8 +81,10 @@ public class ResourceController {
     final var authentication = authenticationProvider.getCamundaAuthentication();
     return RequestExecutor.executeServiceMethod(
         () -> resourceServices.getContentByKey(resourceKey, authentication),
-        ResponseMapper::toGetResourceContentResponse,
-        HttpStatus.OK);
+        entity ->
+            ResponseEntity.ok()
+                .contentType(MediaType.APPLICATION_OCTET_STREAM)
+                .body(ResponseMapper.toGetResourceContentResponse(entity)));
   }
 
   private CompletableFuture<ResponseEntity<Object>> deployResources(
