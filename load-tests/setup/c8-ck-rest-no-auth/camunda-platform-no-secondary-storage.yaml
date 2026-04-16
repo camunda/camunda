@@ -1,0 +1,102 @@
+# Values for Camunda Platform Chart.
+# https://github.com/camunda/camunda-platform-helm
+#
+# This file is used to override the default values of the chart.
+# The values are optimized for running the load tests with a Camunda cluster on GKE.
+#
+# This is a YAML-formatted file.
+
+########################################################################################
+################################################### Global cluster configuration
+########################################################################################
+global:
+  # Our default is ELASTICSEARCH
+  # We need to explicitly enable ELS as per default this is disabled now
+  # THIS GETS OVERRIDDEN IN THE OTHER VALUES FILES, e.g. for OpenSearch and RDBMS
+  elasticsearch:
+    enabled: false
+  # Disable global ingress
+  ingress:
+    enabled: false
+  image:
+    # Image.repository defines the repository from which to fetch the docker images
+    repository: "registry.camunda.cloud/team-zeebe"
+    # Image.tag defines the tag / version which should be used in the chart
+    tag: SNAPSHOT
+    ## @param global.image.pullPolicy defines the image pull policy which should be used https://kubernetes.io/docs/concepts/containers/images/#image-pull-policy
+    pullPolicy: Always
+    ## @param global.image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
+    pullSecrets:
+      - name: harbor-registry
+  # By default, we run without Identity
+  identity:
+    auth:
+      enabled: false
+
+identity:
+  enabled: false
+
+identityKeycloak:
+  enabled: false
+
+optimize:
+  enabled: false
+
+connectors:
+  enabled: false
+
+webModeler:
+  enabled: false
+
+postgresql:
+  enabled: false
+
+########################################################################################
+################################################### Orchestration cluster configuration
+########################################################################################
+orchestration:
+  exporters:
+    camunda:
+      enabled: false
+  # We need to explicitly set the secondary storage type to ELS
+  # THIS GETS OVERRIDDEN IN THE OTHER VALUES FILES, e.g. for OpenSearch and RDBMS
+  data:
+    secondaryStorage:
+      type: none
+  # We set extra configuration to configure additional settings for Camunda application, that are part
+  # of the orchestration cluster.
+  # This allows adding configurations without the need of overwriting all environment variables from the Platform chart.
+  extraConfiguration:
+    - file: application.yml
+      content: |
+        # Enable execution metrics exporter to be able to see the execution metrics, like process instance and job completion times
+        zeebe.broker.executionMetricsExporterEnabled: "true"
+        camunda.flags.jfr.metrics: "true"
+        # Define when the broker should start to reject requests when the disk is almost full, for both processing and replication.
+        zeebe.broker.data.disk.freeSpace.processing: "3GB"
+        zeebe.broker.data.disk.freeSpace.replication: "2GB"
+        # We want to have this for long running load tests, to detect consistency issues early on and to have the foreign key checks enabled for better data integrity.
+        # Like endurance / soak tests  but not for our maximum stress tests, where we want to push the system to the limits and consistency checks might cause too much overhead.
+        zeebe.broker.experimental.consistencyChecks.enablePreconditions: "true"
+        zeebe.broker.experimental.consistencyChecks.enableForeignKeyChecks: "true"
+        # Configure a rate limit for all writes, so that we can visualize flow control metrics.
+        zeebe.broker.flowControl.write.enabled: "true"
+        zeebe.broker.flowControl.write.limit: 10000
+        zeebe.broker.flowControl.write.throttling.enabled: "true"
+        # RocksDB memory limit setting, limits the overall RocksDB memory usage
+        # ZEEBE_BROKER_EXPERIMENTAL_ROCKSDB_MEMORYLIMIT
+        zeebe.broker.experimental.rocksdb.memoryLimit: "64MB"
+    # This file is loaded after application.yml (higher priority). It is empty by default,
+    # but can be overridden via --set-file for specific scenarios (e.g. max) to change settings
+    # like disabling consistency checks without duplicating the full application.yml content.
+    - file: application-override.yml
+      content: "# no overrides"
+  history:
+    retention:
+      enabled: false
+
+########################################################################################
+################################################### Elasticsearch cluster configuration
+########################################################################################
+elasticsearch:
+  enabled: false

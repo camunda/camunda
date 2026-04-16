@@ -1,0 +1,350 @@
+# Values for Camunda Platform Chart.
+# https://github.com/camunda/camunda-platform-helm
+#
+# This file is used to override the default values of the chart.
+# The values are optimized for running the load tests with a Camunda cluster on GKE.
+#
+# This is a YAML-formatted file.
+# Per default we run with the Orchestration Cluster, Optimize, Connectors, Elasticsearch as secondary
+# storage and Identity Keycloak as identity provider with OIDC authentication, but you can easily
+# switch to other configurations by changing the values in this file or by overriding them via the
+# command line when installing the chart.
+
+########################################################################################
+################################################### Global cluster configuration
+########################################################################################
+global:
+  # Our default is ELASTICSEARCH
+  # We need to explicitly enable ELS as per default this is disabled now
+  # THIS GETS OVERRIDDEN IN THE OTHER VALUES FILES, e.g. for OpenSearch and RDBMS
+  elasticsearch:
+    enabled: true
+  # Disable global ingress
+  ingress:
+    enabled: false
+  image:
+    # Image.repository defines the repository from which to fetch the docker images
+    repository: "registry.camunda.cloud/team-zeebe"
+    # Image.tag defines the tag / version which should be used in the chart
+    tag: SNAPSHOT
+    ## @param global.image.pullPolicy defines the image pull policy which should be used https://kubernetes.io/docs/concepts/containers/images/#image-pull-policy
+    pullPolicy: Always
+    ## @param global.image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
+    pullSecrets:
+      - name: harbor-registry
+
+  # Default node configuration for all the components, unless specific
+  # reconfigured.
+  nodeSelector:
+    component: benchmark-n2-standard-4
+    topology.kubernetes.io/zone: europe-west1-d
+
+  # Identity authentication is enabled for Optimize
+  identity:
+    auth:
+      enabled: true
+      optimize:
+        clientId: optimize
+        secret:
+          existingSecret: camunda-credentials
+          existingSecretKey: identity-optimize-client-token
+  security:
+    authentication:
+      type: oidc
+
+identity:
+  enabled: true
+  fullnameOverride: identity # we override the names for simplicity of the deployment
+  firstUser:
+    secret:
+      existingSecret: camunda-credentials
+      existingSecretKey: identity-firstuser-password
+  tolerations:
+    - key: nodepool
+      operator: Equal
+      value: n2-standard-4
+      effect: NoSchedule
+
+optimize:
+  enabled: true
+  fullnameOverride: optimize # we override the names for simplicity of the deployment
+  extraConfiguration:
+    - file: application.yml
+      content: |
+        historyCleanup:
+          cronTrigger: '0 1 * * *'
+          ttl: 'P1D'
+          processDataCleanup:
+            enabled: true
+  tolerations:
+    - key: nodepool
+      operator: Equal
+      value: n2-standard-4
+      effect: NoSchedule
+
+identityKeycloak:
+  enabled: true
+  fullnameOverride: keycloak # we override the names for simplicity of the deployment
+  nodeSelector:
+    component: benchmark-n2-standard-4
+    topology.kubernetes.io/zone: europe-west1-d
+  tolerations:
+    - key: nodepool
+      operator: Equal
+      value: n2-standard-4
+      effect: NoSchedule
+  postgresql:
+    fullnameOverride: keycloak-postgresql # we override the names for simplicity of the deployment
+
+connectors:
+  enabled: true
+  fullnameOverride: connectors # we override the names for simplicity of the deployment
+  security:
+    authentication:
+      method: oidc
+      oidc:
+        secret:
+          existingSecret: camunda-credentials
+          existingSecretKey: connectors-security-authentication-oidc-secret
+  tolerations:
+    - key: nodepool
+      operator: Equal
+      value: n2-standard-4
+      effect: NoSchedule
+
+webModeler:
+  enabled: false
+
+postgresql:
+  enabled: false
+
+########################################################################################
+################################################### Orchestration cluster configuration
+########################################################################################
+orchestration:
+  security:
+    authentication:
+      method: oidc
+      unprotectedApi: false
+      oidc:
+        secret:
+          ## @param orchestration.security.authentication.oidc.secret.existingSecret can be used to reference an existing Kubernetes Secret containing the client secret.
+          existingSecret: camunda-credentials
+          ## @param orchestration.security.authentication.oidc.secret.existingSecretKey defines the key within the existing secret object.
+          existingSecretKey: orchestration-security-authentication-oidc-secret
+
+    authorizations:
+      enabled: false
+    initialization:
+      authorizations:
+        # Grant the orchestration client (load tester) permission to create resources (BPMN/DMN)
+        - ownerType: CLIENT
+          ownerId: orchestration
+          resourceType: RESOURCE
+          resourceId: "*"
+          permissions:
+            - CREATE
+        # Grant the orchestration client permissions to manage and observe process instances
+        - ownerType: CLIENT
+          ownerId: orchestration
+          resourceType: PROCESS_DEFINITION
+          resourceId: "*"
+          permissions:
+            - CREATE_PROCESS_INSTANCE
+            - UPDATE_PROCESS_INSTANCE
+            - READ_PROCESS_INSTANCE
+            - READ_PROCESS_DEFINITION
+        # Grant the orchestration client permission to publish messages
+        # (required by realistic benchmark workers: customer_notification,
+        # dispute_process_request_proof_from_vendor)
+        - ownerType: CLIENT
+          ownerId: orchestration
+          resourceType: MESSAGE
+          resourceId: "*"
+          permissions:
+            - CREATE
+  # For simplicity of the deployment, we override the names to camunda
+  # This means we will have pods like: camunda-0, camunda-1, camunda-2
+  fullnameOverride: camunda
+  image:
+    registry: docker.io
+    repository: camunda/camunda
+    tag: "SNAPSHOT"
+  ## @param core.clusterSize defines the amount of brokers (=replicas), which are deployed via helm
+  clusterSize: "3"
+  ## @param core.partitionCount defines how many partitions are set up in the cluster
+  partitionCount: "3"
+  ## @param core.replicationFactor defines how each partition is replicated, the value defines the number of nodes
+  replicationFactor: "3"
+  ## @param core.cpuThreadCount defines how many threads can be used for the processing on each broker pod
+  cpuThreadCount: "3"
+  ## @param core.ioThreadCount defines how many threads can be used for the exporting on each broker pod
+  ioThreadCount: "3"
+  # Resources of the orchestration cluster
+  resources:
+    requests:
+      cpu: 3000m
+      memory: 2Gi
+    limits:
+      cpu: 3000m
+      memory: 2Gi
+
+  tolerations:
+    - key: nodepool
+      operator: Equal
+      value: n2-standard-4
+      effect: NoSchedule
+
+  ## @param core.pvcSize defines the persistent volume claim size, which is used by each broker pod https://kubernetes.io/docs/concepts/storage/persistent-volumes/#persistentvolumeclaims
+  pvcSize: "64Gi"
+  ## @param core.pvcStorageClassName can be used to set the storage class name which should be used by the persistent volume claim.
+  # It is recommended to use a storage class, which is backed with a SSD. Set to "-" to disable use of default storage class.
+  pvcStorageClassName: benchmark-ssd-zonal-v1
+  # @extra core.containerSecurityContext defines the security options the container should be run with
+  containerSecurityContext:
+    ## @param core.containerSecurityContext.allowPrivilegeEscalation
+    allowPrivilegeEscalation: true
+    ## @param core.containerSecurityContext.privileged
+    privileged: true
+    ## @param core.containerSecurityContext.runAsNonRoot
+    runAsNonRoot: true
+    ## @param core.containerSecurityContext.runAsUser
+    runAsUser: 1000
+    capabilities:
+      add: ["NET_ADMIN"]
+  javaOpts: >-
+    -XX:MaxRAMPercentage=25.0
+    -XX:+ExitOnOutOfMemoryError
+    -XX:+HeapDumpOnOutOfMemoryError
+    -XX:HeapDumpPath=/usr/local/camunda/data
+    -XX:ErrorFile=/usr/local/camunda/data/zeebe_error%p.log
+    -XX:NativeMemoryTracking=summary
+    -Xlog:gc*:file=/usr/local/camunda/data/gc.log:time:filecount=7,filesize=8M
+
+  # We need to explicitly set the secondary storage type to ELS
+  # THIS GETS OVERRIDDEN IN THE OTHER VALUES FILES, e.g. for OpenSearch and RDBMS
+  data:
+    secondaryStorage:
+      type: elasticsearch
+  # We set extra configuration to configure additional settings for Camunda application, that are part
+  # of the orchestration cluster.
+  # This allows adding configurations without the need of overwriting all environment variables from the Platform chart.
+  extraConfiguration:
+    - file: application.yml
+      content: |
+        # Enable execution metrics exporter to be able to see the execution metrics, like process instance and job completion times
+        zeebe.broker.executionMetricsExporterEnabled: "true"
+        camunda.flags.jfr.metrics: "true"
+        # Define when the broker should start to reject requests when the disk is almost full, for both processing and replication.
+        zeebe.broker.data.disk.freeSpace.processing: "3GB"
+        zeebe.broker.data.disk.freeSpace.replication: "2GB"
+        # We want to have this for long running load tests, to detect consistency issues early on and to have the foreign key checks enabled for better data integrity.
+        # Like endurance / soak tests  but not for our maximum stress tests, where we want to push the system to the limits and consistency checks might cause too much overhead.
+        zeebe.broker.experimental.consistencyChecks.enablePreconditions: "true"
+        zeebe.broker.experimental.consistencyChecks.enableForeignKeyChecks: "true"
+        # Configure index suffix with hour pattern, so we create every hour a new index
+        # such that ILM can clean it up quickly
+        # We need to configure it for the ES exporter AND the CamundaExporter
+        zeebe.broker.exporters.camundaexporter.args.history.elsRolloverDateFormat: "yyyy-MM-dd-HH"
+        zeebe.broker.exporters.camundaexporter.args.history.rolloverInterval: "1h"
+        zeebe.broker.exporters.camundaexporter.args.history.rolloverBatchSize: 300
+        zeebe.broker.exporters.camundaexporter.args.history.waitPeriodBeforeArchiving: "1m"
+        # Configure a rate limit for all writes, so that we can visualize flow control metrics.
+        zeebe.broker.flowControl.write.enabled: "true"
+        zeebe.broker.flowControl.write.limit: 10000
+        zeebe.broker.flowControl.write.throttling.enabled: "true"
+        # RocksDB memory limit setting, limits the overall RocksDB memory usage
+        # ZEEBE_BROKER_EXPERIMENTAL_ROCKSDB_MEMORYLIMIT
+        zeebe.broker.experimental.rocksdb.memoryLimit: "64MB"
+    # This file is loaded after application.yml (higher priority). It is empty by default,
+    # but can be overridden via --set-file for specific scenarios (e.g. max) to change settings
+    # like disabling consistency checks without duplicating the full application.yml content.
+    - file: application-override.yml
+      content: "# no overrides"
+
+  # Zeebe config
+  extraVolumes:
+    - name: logs
+      emptyDir: {}
+  ## @param core.extraVolumeMounts can be used to mount extra volumes for the broker pods, useful for additional exporters
+  extraVolumeMounts:
+    - name: logs
+      mountPath: /usr/local/camunda/logs
+  # Retention for the ES Exporter indices - legacy Zeebe indices
+  retention:
+    enabled: true
+    minimumAge: 1d
+  # Retention for the Camunda Exporter
+  history:
+    retention:
+      ## @param core.history.retention.enabled if true, the ILM Policy is created and applied to the index templates.
+      enabled: true
+      ## @param core.history.retention.minimumAge defines how old the data must be, before the data is deleted as a duration.
+      minimumAge: 1d
+      policyName: "camunda-retention-policy"
+  # @param core.env can be used to set extra environment variables in each broker container
+  env:
+    # Enable JSON logging for google cloud stackdriver
+    - name: ZEEBE_LOG_APPENDER
+      value: Stackdriver
+    - name: ZEEBE_LOG_STACKDRIVER_SERVICENAME
+      value: zeebe
+    - name: ZEEBE_LOG_STACKDRIVER_SERVICEVERSION
+      valueFrom:
+        fieldRef:
+          fieldPath: metadata.namespace
+    - name: ATOMIX_LOG_LEVEL
+      value: INFO
+    - name: ZEEBE_LOG_LEVEL
+      value: DEBUG
+    # To be able to load a separate/additional configuration
+    # See https://github.com/camunda/camunda-platform-helm/issues/2197
+    - name: SPRING_CONFIG_ADDITIONALLOCATION
+      # application-override.yml is listed second so it has higher priority and can override application.yml.
+      # Marked optional so Spring does not fail when this file is not mounted (e.g. RDBMS / no-secondary-storage scenarios).
+      value: "/usr/local/camunda/config/application.yml,optional:/usr/local/camunda/config/application-override.yml"
+
+# Change these settings to configure a different way to collect metrics
+prometheusServiceMonitor:
+  enabled: true
+  labels:
+    release: monitoring
+  scrapeInterval: 30s
+
+########################################################################################
+################################################### Elasticsearch cluster configuration
+########################################################################################
+elasticsearch:
+  enabled: true
+  clusterName: "elasticsearch"
+  master:
+    fullnameOverride: elastic
+    nameOverride: elastic
+    ## @param elasticsearch.master.replicaCount defines number of master-elegible replicas to deploy
+    replicaCount: 3
+    pdb:
+      minAvailable: 2
+    ## @param elasticsearch.master.heapSize
+    heapSize: 3g
+    persistence:
+      ## @param elasticsearch.master.persistence.size
+      size: 512Gi
+      storageClass: benchmark-ssd-zonal-v1
+      accessModes: ["ReadWriteOnce"]
+    resources:
+      requests:
+        cpu: 7000m
+        memory: 8Gi
+      limits:
+        cpu: 7000m
+        memory: 8Gi
+    nodeSelector:
+      component: benchmark-n2-standard-8
+      topology.kubernetes.io/zone: europe-west1-d
+    tolerations:
+      - key: nodepool
+        operator: Equal
+        value: n2-standard-8
+        effect: NoSchedule
+  extraConfig:
+    logger.org.elasticsearch.deprecation: "OFF"
