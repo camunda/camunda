@@ -11,7 +11,8 @@ import {assertStatusCode, buildUrl, jsonHeaders} from '../../../../utils/http';
 import {deploy} from '../../../../utils/zeebeClient';
 import {createProcessInstanceAndRetrieveTimeStamp} from '@requestHelpers';
 
-test.describe('Reset Clock API Tests', () => {
+//Skipped due to bug 49858: https://github.com/camunda/camunda/issues/49858
+test.describe.skip('Reset Clock API Tests', () => {
   const timestamp = Date.parse('2025-01-01T00:00:00Z');
   let processDefinitionId: string;
 
