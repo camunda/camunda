@@ -176,6 +176,16 @@ orchestration:
             - UPDATE_PROCESS_INSTANCE
             - READ_PROCESS_INSTANCE
             - READ_PROCESS_DEFINITION
+        # Grant the orchestration client permission to evaluate decisions
+        # (required by realistic benchmark: bankDisputeHandling BPMN evaluates
+        # the determine-fraud-rating DMN via a business rule task)
+        - ownerType: CLIENT
+          ownerId: orchestration
+          resourceType: DECISION_DEFINITION
+          resourceId: "*"
+          permissions:
+            - CREATE_DECISION_INSTANCE
+            - READ_DECISION_DEFINITION
         # Grant the orchestration client permission to publish messages
         # (required by realistic benchmark workers: customer_notification,
         # dispute_process_request_proof_from_vendor)
