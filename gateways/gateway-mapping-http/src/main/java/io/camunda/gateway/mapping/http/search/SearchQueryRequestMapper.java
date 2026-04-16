@@ -134,6 +134,7 @@ import io.camunda.zeebe.util.Either;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Function;
 import java.util.function.Supplier;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.http.ProblemDetail;
@@ -144,6 +145,23 @@ public final class SearchQueryRequestMapper {
 
   private static OffsetDateTime toOffsetDateTime(final String text) {
     return StringUtils.isEmpty(text) ? null : OffsetDateTime.parse(text);
+  }
+
+  /**
+   * Converts a list of generated sort DTOs into {@link SearchQuerySortRequest}s. All generated sort
+   * DTOs follow the same shape ({@code getField().getValue()} and {@code getOrder().getValue()})
+   * but share no common interface, so the accessors are passed as functions.
+   */
+  private static <S> List<SearchQuerySortRequest> toSortRequests(
+      final List<S> sort,
+      final Function<S, String> fieldExtractor,
+      final Function<S, String> orderExtractor) {
+    if (sort == null) {
+      return List.of();
+    }
+    return sort.stream()
+        .map(s -> new SearchQuerySortRequest(fieldExtractor.apply(s), orderExtractor.apply(s)))
+        .toList();
   }
 
   public static Either<ProblemDetail, UsageMetricsQuery> toUsageMetricsQuery(
@@ -200,15 +218,10 @@ public final class SearchQueryRequestMapper {
     }
     final var page = toSearchQueryPage(request.getPage());
     final var sortRequests =
-        request.getSort() != null
-            ? request.getSort().stream()
-                .map(
-                    s ->
-                        new SearchQuerySortRequest(
-                            s.getField().getValue(),
-                            s.getOrder() != null ? s.getOrder().getValue() : null))
-                .toList()
-            : java.util.List.<SearchQuerySortRequest>of();
+        toSortRequests(
+            request.getSort(),
+            s -> s.getField().getValue(),
+            s -> s.getOrder() != null ? s.getOrder().getValue() : null);
     final var sort =
         SearchQuerySortRequestMapper.toSearchQuerySort(
             sortRequests,
@@ -432,15 +445,10 @@ public final class SearchQueryRequestMapper {
     }
     final var page = toSearchQueryPage(request.getPage());
     final var sortRequests =
-        request.getSort() != null
-            ? request.getSort().stream()
-                .map(
-                    s ->
-                        new SearchQuerySortRequest(
-                            s.getField().getValue(),
-                            s.getOrder() != null ? s.getOrder().getValue() : null))
-                .toList()
-            : java.util.List.<SearchQuerySortRequest>of();
+        toSortRequests(
+            request.getSort(),
+            s -> s.getField().getValue(),
+            s -> s.getOrder() != null ? s.getOrder().getValue() : null);
     final var sort =
         SearchQuerySortRequestMapper.toSearchQuerySort(
             sortRequests,
@@ -464,15 +472,10 @@ public final class SearchQueryRequestMapper {
     }
     final var page = toSearchQueryPage(request.getPage());
     final var sortRequests =
-        request.getSort() != null
-            ? request.getSort().stream()
-                .map(
-                    s ->
-                        new SearchQuerySortRequest(
-                            s.getField().getValue(),
-                            s.getOrder() != null ? s.getOrder().getValue() : null))
-                .toList()
-            : java.util.List.<SearchQuerySortRequest>of();
+        toSortRequests(
+            request.getSort(),
+            s -> s.getField().getValue(),
+            s -> s.getOrder() != null ? s.getOrder().getValue() : null);
     final var sort =
         SearchQuerySortRequestMapper.toSearchQuerySort(
             sortRequests,
@@ -495,15 +498,10 @@ public final class SearchQueryRequestMapper {
     }
     final var page = toSearchQueryPage(request.getPage());
     final var sortRequests =
-        request.getSort() != null
-            ? request.getSort().stream()
-                .map(
-                    s ->
-                        new SearchQuerySortRequest(
-                            s.getField().getValue(),
-                            s.getOrder() != null ? s.getOrder().getValue() : null))
-                .toList()
-            : java.util.List.<SearchQuerySortRequest>of();
+        toSortRequests(
+            request.getSort(),
+            s -> s.getField().getValue(),
+            s -> s.getOrder() != null ? s.getOrder().getValue() : null);
     final var sort =
         SearchQuerySortRequestMapper.toSearchQuerySort(
             sortRequests,
@@ -520,15 +518,10 @@ public final class SearchQueryRequestMapper {
           final IncidentProcessInstanceStatisticsByDefinitionQuery request) {
     final var page = toSearchQueryPage(request.getPage());
     final var sortRequests =
-        request.getSort() != null
-            ? request.getSort().stream()
-                .map(
-                    s ->
-                        new SearchQuerySortRequest(
-                            s.getField().getValue(),
-                            s.getOrder() != null ? s.getOrder().getValue() : null))
-                .toList()
-            : java.util.List.<SearchQuerySortRequest>of();
+        toSortRequests(
+            request.getSort(),
+            s -> s.getField().getValue(),
+            s -> s.getOrder() != null ? s.getOrder().getValue() : null);
     final var sort =
         SearchQuerySortRequestMapper.toSearchQuerySort(
             sortRequests,
@@ -554,15 +547,10 @@ public final class SearchQueryRequestMapper {
     }
     final var page = toSearchQueryPage(request.getPage());
     final var sortRequests =
-        request.getSort() != null
-            ? request.getSort().stream()
-                .map(
-                    s ->
-                        new SearchQuerySortRequest(
-                            s.getField().getValue(),
-                            s.getOrder() != null ? s.getOrder().getValue() : null))
-                .toList()
-            : java.util.List.<SearchQuerySortRequest>of();
+        toSortRequests(
+            request.getSort(),
+            s -> s.getField().getValue(),
+            s -> s.getOrder() != null ? s.getOrder().getValue() : null);
     final var sort =
         SearchQuerySortRequestMapper.toSearchQuerySort(
             sortRequests,
@@ -579,15 +567,10 @@ public final class SearchQueryRequestMapper {
     }
     final var page = toSearchQueryPage(request.getPage());
     final var sortRequests =
-        request.getSort() != null
-            ? request.getSort().stream()
-                .map(
-                    s ->
-                        new SearchQuerySortRequest(
-                            s.getField().getValue(),
-                            s.getOrder() != null ? s.getOrder().getValue() : null))
-                .toList()
-            : java.util.List.<SearchQuerySortRequest>of();
+        toSortRequests(
+            request.getSort(),
+            s -> s.getField().getValue(),
+            s -> s.getOrder() != null ? s.getOrder().getValue() : null);
     final var sort =
         SearchQuerySortRequestMapper.toSearchQuerySort(
             sortRequests,
@@ -604,15 +587,10 @@ public final class SearchQueryRequestMapper {
     }
     final var page = toSearchQueryPage(request.getPage());
     final var sortRequests =
-        request.getSort() != null
-            ? request.getSort().stream()
-                .map(
-                    s ->
-                        new SearchQuerySortRequest(
-                            s.getField().getValue(),
-                            s.getOrder() != null ? s.getOrder().getValue() : null))
-                .toList()
-            : java.util.List.<SearchQuerySortRequest>of();
+        toSortRequests(
+            request.getSort(),
+            s -> s.getField().getValue(),
+            s -> s.getOrder() != null ? s.getOrder().getValue() : null);
     final var sort =
         SearchQuerySortRequestMapper.toSearchQuerySort(
             sortRequests,
@@ -630,15 +608,10 @@ public final class SearchQueryRequestMapper {
     }
     final var page = toSearchQueryPage(request.getPage());
     final var sortRequests =
-        request.getSort() != null
-            ? request.getSort().stream()
-                .map(
-                    s ->
-                        new SearchQuerySortRequest(
-                            s.getField().getValue(),
-                            s.getOrder() != null ? s.getOrder().getValue() : null))
-                .toList()
-            : java.util.List.<SearchQuerySortRequest>of();
+        toSortRequests(
+            request.getSort(),
+            s -> s.getField().getValue(),
+            s -> s.getOrder() != null ? s.getOrder().getValue() : null);
     final var sort =
         SearchQuerySortRequestMapper.toSearchQuerySort(
             sortRequests,
@@ -655,15 +628,10 @@ public final class SearchQueryRequestMapper {
     }
     final var page = toSearchQueryPage(request.getPage());
     final var sortRequests =
-        request.getSort() != null
-            ? request.getSort().stream()
-                .map(
-                    s ->
-                        new SearchQuerySortRequest(
-                            s.getField().getValue(),
-                            s.getOrder() != null ? s.getOrder().getValue() : null))
-                .toList()
-            : java.util.List.<SearchQuerySortRequest>of();
+        toSortRequests(
+            request.getSort(),
+            s -> s.getField().getValue(),
+            s -> s.getOrder() != null ? s.getOrder().getValue() : null);
     final var sort =
         SearchQuerySortRequestMapper.toSearchQuerySort(
             sortRequests,
@@ -682,15 +650,10 @@ public final class SearchQueryRequestMapper {
     }
     final var page = toSearchQueryPage(request.getPage());
     final var sortRequests =
-        request.getSort() != null
-            ? request.getSort().stream()
-                .map(
-                    s ->
-                        new SearchQuerySortRequest(
-                            s.getField().getValue(),
-                            s.getOrder() != null ? s.getOrder().getValue() : null))
-                .toList()
-            : java.util.List.<SearchQuerySortRequest>of();
+        toSortRequests(
+            request.getSort(),
+            s -> s.getField().getValue(),
+            s -> s.getOrder() != null ? s.getOrder().getValue() : null);
     final var sort =
         SearchQuerySortRequestMapper.toSearchQuerySort(
             sortRequests,
@@ -710,15 +673,10 @@ public final class SearchQueryRequestMapper {
     }
     final var page = toSearchQueryPage(request.getPage());
     final var sortRequests =
-        request.getSort() != null
-            ? request.getSort().stream()
-                .map(
-                    s ->
-                        new SearchQuerySortRequest(
-                            s.getField().getValue(),
-                            s.getOrder() != null ? s.getOrder().getValue() : null))
-                .toList()
-            : java.util.List.<SearchQuerySortRequest>of();
+        toSortRequests(
+            request.getSort(),
+            s -> s.getField().getValue(),
+            s -> s.getOrder() != null ? s.getOrder().getValue() : null);
     final var sort =
         SearchQuerySortRequestMapper.toSearchQuerySort(
             sortRequests,
@@ -736,15 +694,10 @@ public final class SearchQueryRequestMapper {
     }
     final var page = toSearchQueryPage(request.getPage());
     final var sortRequests =
-        request.getSort() != null
-            ? request.getSort().stream()
-                .map(
-                    s ->
-                        new SearchQuerySortRequest(
-                            s.getField().getValue(),
-                            s.getOrder() != null ? s.getOrder().getValue() : null))
-                .toList()
-            : java.util.List.<SearchQuerySortRequest>of();
+        toSortRequests(
+            request.getSort(),
+            s -> s.getField().getValue(),
+            s -> s.getOrder() != null ? s.getOrder().getValue() : null);
     final var sort =
         SearchQuerySortRequestMapper.toSearchQuerySort(
             sortRequests,
@@ -761,15 +714,10 @@ public final class SearchQueryRequestMapper {
     }
     final var page = toSearchQueryPage(request.getPage());
     final var sortRequests =
-        request.getSort() != null
-            ? request.getSort().stream()
-                .map(
-                    s ->
-                        new SearchQuerySortRequest(
-                            s.getField().getValue(),
-                            s.getOrder() != null ? s.getOrder().getValue() : null))
-                .toList()
-            : java.util.List.<SearchQuerySortRequest>of();
+        toSortRequests(
+            request.getSort(),
+            s -> s.getField().getValue(),
+            s -> s.getOrder() != null ? s.getOrder().getValue() : null);
     final var sort =
         SearchQuerySortRequestMapper.toSearchQuerySort(
             sortRequests,
@@ -788,15 +736,10 @@ public final class SearchQueryRequestMapper {
     }
     final var page = toSearchQueryPage(request.getPage());
     final var sortRequests =
-        request.getSort() != null
-            ? request.getSort().stream()
-                .map(
-                    s ->
-                        new SearchQuerySortRequest(
-                            s.getField().getValue(),
-                            s.getOrder() != null ? s.getOrder().getValue() : null))
-                .toList()
-            : java.util.List.<SearchQuerySortRequest>of();
+        toSortRequests(
+            request.getSort(),
+            s -> s.getField().getValue(),
+            s -> s.getOrder() != null ? s.getOrder().getValue() : null);
     final var sort =
         SearchQuerySortRequestMapper.toSearchQuerySort(
             sortRequests,
@@ -813,15 +756,10 @@ public final class SearchQueryRequestMapper {
     }
     final var page = toSearchQueryPage(request.getPage());
     final var sortRequests =
-        request.getSort() != null
-            ? request.getSort().stream()
-                .map(
-                    s ->
-                        new SearchQuerySortRequest(
-                            s.getField().getValue(),
-                            s.getOrder() != null ? s.getOrder().getValue() : null))
-                .toList()
-            : java.util.List.<SearchQuerySortRequest>of();
+        toSortRequests(
+            request.getSort(),
+            s -> s.getField().getValue(),
+            s -> s.getOrder() != null ? s.getOrder().getValue() : null);
     final var sort =
         SearchQuerySortRequestMapper.toSearchQuerySort(
             sortRequests,
@@ -839,15 +777,10 @@ public final class SearchQueryRequestMapper {
     }
     final var page = toSearchQueryPage(request.getPage());
     final var sortRequests =
-        request.getSort() != null
-            ? request.getSort().stream()
-                .map(
-                    s ->
-                        new SearchQuerySortRequest(
-                            s.getField().getValue(),
-                            s.getOrder() != null ? s.getOrder().getValue() : null))
-                .toList()
-            : java.util.List.<SearchQuerySortRequest>of();
+        toSortRequests(
+            request.getSort(),
+            s -> s.getField().getValue(),
+            s -> s.getOrder() != null ? s.getOrder().getValue() : null);
     final var sort =
         SearchQuerySortRequestMapper.toSearchQuerySort(
             sortRequests,
@@ -864,15 +797,10 @@ public final class SearchQueryRequestMapper {
     }
     final var page = toSearchQueryPage(request.getPage());
     final var sortRequests =
-        request.getSort() != null
-            ? request.getSort().stream()
-                .map(
-                    s ->
-                        new SearchQuerySortRequest(
-                            s.getField().getValue(),
-                            s.getOrder() != null ? s.getOrder().getValue() : null))
-                .toList()
-            : java.util.List.<SearchQuerySortRequest>of();
+        toSortRequests(
+            request.getSort(),
+            s -> s.getField().getValue(),
+            s -> s.getOrder() != null ? s.getOrder().getValue() : null);
     final var sort =
         SearchQuerySortRequestMapper.toSearchQuerySort(
             sortRequests,
@@ -889,15 +817,10 @@ public final class SearchQueryRequestMapper {
     }
     final var page = toSearchQueryPage(request.getPage());
     final var sortRequests =
-        request.getSort() != null
-            ? request.getSort().stream()
-                .map(
-                    s ->
-                        new SearchQuerySortRequest(
-                            s.getField().getValue(),
-                            s.getOrder() != null ? s.getOrder().getValue() : null))
-                .toList()
-            : java.util.List.<SearchQuerySortRequest>of();
+        toSortRequests(
+            request.getSort(),
+            s -> s.getField().getValue(),
+            s -> s.getOrder() != null ? s.getOrder().getValue() : null);
     final var sort =
         SearchQuerySortRequestMapper.toSearchQuerySort(
             sortRequests,
@@ -914,15 +837,10 @@ public final class SearchQueryRequestMapper {
     }
     final var page = toSearchQueryPage(request.getPage());
     final var sortRequests =
-        request.getSort() != null
-            ? request.getSort().stream()
-                .map(
-                    s ->
-                        new SearchQuerySortRequest(
-                            s.getField().getValue(),
-                            s.getOrder() != null ? s.getOrder().getValue() : null))
-                .toList()
-            : java.util.List.<SearchQuerySortRequest>of();
+        toSortRequests(
+            request.getSort(),
+            s -> s.getField().getValue(),
+            s -> s.getOrder() != null ? s.getOrder().getValue() : null);
     final var sort =
         SearchQuerySortRequestMapper.toSearchQuerySort(
             sortRequests,
@@ -938,15 +856,10 @@ public final class SearchQueryRequestMapper {
     }
     final var page = toSearchQueryPage(request.getPage());
     final var sortRequests =
-        request.getSort() != null
-            ? request.getSort().stream()
-                .map(
-                    s ->
-                        new SearchQuerySortRequest(
-                            s.getField().getValue(),
-                            s.getOrder() != null ? s.getOrder().getValue() : null))
-                .toList()
-            : java.util.List.<SearchQuerySortRequest>of();
+        toSortRequests(
+            request.getSort(),
+            s -> s.getField().getValue(),
+            s -> s.getOrder() != null ? s.getOrder().getValue() : null);
     final var sort =
         SearchQuerySortRequestMapper.toSearchQuerySort(
             sortRequests, SortOptionBuilders::job, SearchQuerySortRequestMapper::applyJobSortField);
@@ -961,15 +874,10 @@ public final class SearchQueryRequestMapper {
     }
     final var page = toSearchQueryPage(request.getPage());
     final var sortRequests =
-        request.getSort() != null
-            ? request.getSort().stream()
-                .map(
-                    s ->
-                        new SearchQuerySortRequest(
-                            s.getField().getValue(),
-                            s.getOrder() != null ? s.getOrder().getValue() : null))
-                .toList()
-            : java.util.List.<SearchQuerySortRequest>of();
+        toSortRequests(
+            request.getSort(),
+            s -> s.getField().getValue(),
+            s -> s.getOrder() != null ? s.getOrder().getValue() : null);
     final var sort =
         SearchQuerySortRequestMapper.toSearchQuerySort(
             sortRequests,
@@ -986,15 +894,10 @@ public final class SearchQueryRequestMapper {
     }
     final var page = toSearchQueryPage(request.getPage());
     final var sortRequests =
-        request.getSort() != null
-            ? request.getSort().stream()
-                .map(
-                    s ->
-                        new SearchQuerySortRequest(
-                            s.getField().getValue(),
-                            s.getOrder() != null ? s.getOrder().getValue() : null))
-                .toList()
-            : java.util.List.<SearchQuerySortRequest>of();
+        toSortRequests(
+            request.getSort(),
+            s -> s.getField().getValue(),
+            s -> s.getOrder() != null ? s.getOrder().getValue() : null);
     final var sort =
         SearchQuerySortRequestMapper.toSearchQuerySort(
             sortRequests,
@@ -1020,15 +923,10 @@ public final class SearchQueryRequestMapper {
 
     final var page = toSearchQueryPage(request.getPage());
     final var sortRequests =
-        request.getSort() != null
-            ? request.getSort().stream()
-                .map(
-                    s ->
-                        new SearchQuerySortRequest(
-                            s.getField().getValue(),
-                            s.getOrder() != null ? s.getOrder().getValue() : null))
-                .toList()
-            : java.util.List.<SearchQuerySortRequest>of();
+        toSortRequests(
+            request.getSort(),
+            s -> s.getField().getValue(),
+            s -> s.getOrder() != null ? s.getOrder().getValue() : null);
     final var sort =
         SearchQuerySortRequestMapper.toSearchQuerySort(
             sortRequests,
@@ -1045,15 +943,10 @@ public final class SearchQueryRequestMapper {
     }
     final var page = toSearchQueryPage(request.getPage());
     final var sortRequests =
-        request.getSort() != null
-            ? request.getSort().stream()
-                .map(
-                    s ->
-                        new SearchQuerySortRequest(
-                            s.getField().getValue(),
-                            s.getOrder() != null ? s.getOrder().getValue() : null))
-                .toList()
-            : java.util.List.<SearchQuerySortRequest>of();
+        toSortRequests(
+            request.getSort(),
+            s -> s.getField().getValue(),
+            s -> s.getOrder() != null ? s.getOrder().getValue() : null);
     final var sort =
         SearchQuerySortRequestMapper.toSearchQuerySort(
             sortRequests,
@@ -1070,15 +963,10 @@ public final class SearchQueryRequestMapper {
     }
     final var page = toSearchQueryPage(request.getPage());
     final var sortRequests =
-        request.getSort() != null
-            ? request.getSort().stream()
-                .map(
-                    s ->
-                        new SearchQuerySortRequest(
-                            s.getField().getValue(),
-                            s.getOrder() != null ? s.getOrder().getValue() : null))
-                .toList()
-            : java.util.List.<SearchQuerySortRequest>of();
+        toSortRequests(
+            request.getSort(),
+            s -> s.getField().getValue(),
+            s -> s.getOrder() != null ? s.getOrder().getValue() : null);
     final var sort =
         SearchQuerySortRequestMapper.toSearchQuerySort(
             sortRequests,
@@ -1095,15 +983,10 @@ public final class SearchQueryRequestMapper {
     }
     final var page = toSearchQueryPage(request.getPage());
     final var sortRequests =
-        request.getSort() != null
-            ? request.getSort().stream()
-                .map(
-                    s ->
-                        new SearchQuerySortRequest(
-                            s.getField().getValue(),
-                            s.getOrder() != null ? s.getOrder().getValue() : null))
-                .toList()
-            : java.util.List.<SearchQuerySortRequest>of();
+        toSortRequests(
+            request.getSort(),
+            s -> s.getField().getValue(),
+            s -> s.getOrder() != null ? s.getOrder().getValue() : null);
     final var sort =
         SearchQuerySortRequestMapper.toSearchQuerySort(
             sortRequests,
@@ -1120,15 +1003,10 @@ public final class SearchQueryRequestMapper {
     }
     final var page = toSearchQueryPage(request.getPage());
     final var sortRequests =
-        request.getSort() != null
-            ? request.getSort().stream()
-                .map(
-                    s ->
-                        new SearchQuerySortRequest(
-                            s.getField().getValue(),
-                            s.getOrder() != null ? s.getOrder().getValue() : null))
-                .toList()
-            : java.util.List.<SearchQuerySortRequest>of();
+        toSortRequests(
+            request.getSort(),
+            s -> s.getField().getValue(),
+            s -> s.getOrder() != null ? s.getOrder().getValue() : null);
     final var sort =
         SearchQuerySortRequestMapper.toSearchQuerySort(
             sortRequests,
@@ -1145,15 +1023,10 @@ public final class SearchQueryRequestMapper {
     }
     final var page = toSearchQueryPage(request.getPage());
     final var sortRequests =
-        request.getSort() != null
-            ? request.getSort().stream()
-                .map(
-                    s ->
-                        new SearchQuerySortRequest(
-                            s.getField().getValue(),
-                            s.getOrder() != null ? s.getOrder().getValue() : null))
-                .toList()
-            : java.util.List.<SearchQuerySortRequest>of();
+        toSortRequests(
+            request.getSort(),
+            s -> s.getField().getValue(),
+            s -> s.getOrder() != null ? s.getOrder().getValue() : null);
     final var sort =
         SearchQuerySortRequestMapper.toSearchQuerySort(
             sortRequests,
@@ -1170,15 +1043,10 @@ public final class SearchQueryRequestMapper {
     }
     final var page = toSearchQueryPage(request.getPage());
     final var sortRequests =
-        request.getSort() != null
-            ? request.getSort().stream()
-                .map(
-                    s ->
-                        new SearchQuerySortRequest(
-                            s.getField().getValue(),
-                            s.getOrder() != null ? s.getOrder().getValue() : null))
-                .toList()
-            : java.util.List.<SearchQuerySortRequest>of();
+        toSortRequests(
+            request.getSort(),
+            s -> s.getField().getValue(),
+            s -> s.getOrder() != null ? s.getOrder().getValue() : null);
     final var sort =
         SearchQuerySortRequestMapper.toSearchQuerySort(
             sortRequests,
@@ -1195,15 +1063,10 @@ public final class SearchQueryRequestMapper {
     }
     final var page = toSearchQueryPage(request.getPage());
     final var sortRequests =
-        request.getSort() != null
-            ? request.getSort().stream()
-                .map(
-                    s ->
-                        new SearchQuerySortRequest(
-                            s.getField().getValue(),
-                            s.getOrder() != null ? s.getOrder().getValue() : null))
-                .toList()
-            : java.util.List.<SearchQuerySortRequest>of();
+        toSortRequests(
+            request.getSort(),
+            s -> s.getField().getValue(),
+            s -> s.getOrder() != null ? s.getOrder().getValue() : null);
     final var sort =
         SearchQuerySortRequestMapper.toSearchQuerySort(
             sortRequests,
@@ -1220,15 +1083,10 @@ public final class SearchQueryRequestMapper {
     }
     final var page = toSearchQueryPage(request.getPage());
     final var sortRequests =
-        request.getSort() != null
-            ? request.getSort().stream()
-                .map(
-                    s ->
-                        new SearchQuerySortRequest(
-                            s.getField().getValue(),
-                            s.getOrder() != null ? s.getOrder().getValue() : null))
-                .toList()
-            : java.util.List.<SearchQuerySortRequest>of();
+        toSortRequests(
+            request.getSort(),
+            s -> s.getField().getValue(),
+            s -> s.getOrder() != null ? s.getOrder().getValue() : null);
     final var sort =
         SearchQuerySortRequestMapper.toSearchQuerySort(
             sortRequests,
@@ -1245,15 +1103,10 @@ public final class SearchQueryRequestMapper {
     }
     final var page = toSearchQueryPage(request.getPage());
     final var sortRequests =
-        request.getSort() != null
-            ? request.getSort().stream()
-                .map(
-                    s ->
-                        new SearchQuerySortRequest(
-                            s.getField().getValue(),
-                            s.getOrder() != null ? s.getOrder().getValue() : null))
-                .toList()
-            : java.util.List.<SearchQuerySortRequest>of();
+        toSortRequests(
+            request.getSort(),
+            s -> s.getField().getValue(),
+            s -> s.getOrder() != null ? s.getOrder().getValue() : null);
     final var sort =
         SearchQuerySortRequestMapper.toSearchQuerySort(
             sortRequests,
@@ -1270,15 +1123,10 @@ public final class SearchQueryRequestMapper {
     }
     final var page = toSearchQueryPage(request.getPage());
     final var sortRequests =
-        request.getSort() != null
-            ? request.getSort().stream()
-                .map(
-                    s ->
-                        new SearchQuerySortRequest(
-                            s.getField().getValue(),
-                            s.getOrder() != null ? s.getOrder().getValue() : null))
-                .toList()
-            : java.util.List.<SearchQuerySortRequest>of();
+        toSortRequests(
+            request.getSort(),
+            s -> s.getField().getValue(),
+            s -> s.getOrder() != null ? s.getOrder().getValue() : null);
     final var sort =
         SearchQuerySortRequestMapper.toSearchQuerySort(
             sortRequests,
@@ -1311,15 +1159,10 @@ public final class SearchQueryRequestMapper {
     }
     final var page = toSearchQueryPage(request.getPage());
     final var sortRequests =
-        request.getSort() != null
-            ? request.getSort().stream()
-                .map(
-                    s ->
-                        new SearchQuerySortRequest(
-                            s.getField().getValue(),
-                            s.getOrder() != null ? s.getOrder().getValue() : null))
-                .toList()
-            : java.util.List.<SearchQuerySortRequest>of();
+        toSortRequests(
+            request.getSort(),
+            s -> s.getField().getValue(),
+            s -> s.getOrder() != null ? s.getOrder().getValue() : null);
     final var sort =
         SearchQuerySortRequestMapper.toSearchQuerySort(
             sortRequests,
@@ -1336,15 +1179,10 @@ public final class SearchQueryRequestMapper {
     }
     final var page = toSearchQueryPage(request.getPage());
     final var sortRequests =
-        request.getSort() != null
-            ? request.getSort().stream()
-                .map(
-                    s ->
-                        new SearchQuerySortRequest(
-                            s.getField().getValue(),
-                            s.getOrder() != null ? s.getOrder().getValue() : null))
-                .toList()
-            : java.util.List.<SearchQuerySortRequest>of();
+        toSortRequests(
+            request.getSort(),
+            s -> s.getField().getValue(),
+            s -> s.getOrder() != null ? s.getOrder().getValue() : null);
     final var sort =
         SearchQuerySortRequestMapper.toSearchQuerySort(
             sortRequests,
@@ -1361,15 +1199,10 @@ public final class SearchQueryRequestMapper {
     }
     final var page = toSearchQueryPage(request.getPage());
     final var sortRequests =
-        request.getSort() != null
-            ? request.getSort().stream()
-                .map(
-                    s ->
-                        new SearchQuerySortRequest(
-                            s.getField().getValue(),
-                            s.getOrder() != null ? s.getOrder().getValue() : null))
-                .toList()
-            : java.util.List.<SearchQuerySortRequest>of();
+        toSortRequests(
+            request.getSort(),
+            s -> s.getField().getValue(),
+            s -> s.getOrder() != null ? s.getOrder().getValue() : null);
     final var sort =
         SearchQuerySortRequestMapper.toSearchQuerySort(
             sortRequests,
