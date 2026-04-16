@@ -1,4 +1,4 @@
-# description: AI agent that runs E2E tests, fixes failures using Claude, and opens a PR. Can be triggered manually or on pull_request.
+# description: AI agent triggered on pull_request that runs E2E tests, fixes failures using Claude, and pushes fixes to the same PR branch.
 # test location: /qa/c8-orchestration-cluster-e2e-test-suite
 # type: CI
 # owner: @camunda/qa-engineering
@@ -6,16 +6,6 @@
 name: E2E Fix Agent
 
 on:
-  workflow_dispatch:
-    inputs:
-      branch:
-        description: "Branch to run tests against"
-        required: false
-        default: "main"
-      project:
-        description: "Playwright project to run (chromium, api-tests, firefox)"
-        required: false
-        default: "chromium"
   pull_request:
     types: [opened, synchronize]
     paths:
@@ -37,12 +27,13 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 90
     env:
-      TARGET_BRANCH: ${{ github.event.inputs.branch || github.head_ref || 'main' }}
+      TARGET_BRANCH: ${{ github.head_ref || 'main' }}
     steps:
       - name: Checkout Code
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
-          ref: ${{ env.TARGET_BRANCH }}
+          ref: ${{ github.head_ref }}
+          fetch-depth: 0
 
       - name: Set CAMUNDA_DOCKER_IMAGE
         run: |
@@ -165,31 +156,47 @@ jobs:
             The Camunda backend is already running at http://localhost:8080 (credentials: demo/demo).
             Your working directory is: qa/c8-orchestration-cluster-e2e-test-suite
 
+            ## Context: what changed in this PR
+
+            This agent was triggered by a pull request on branch `${{ github.head_ref }}`.
+            The PR introduces the following changes (diff against base branch `${{ github.base_ref }}`):
+
+            ```
+            git diff ${{ github.event.pull_request.base.sha }}...${{ github.event.pull_request.head.sha }} -- . ':(exclude)*.lock' ':(exclude)package-lock.json'
+            ```
+
+            Run that command first to understand what changed in the codebase before analysing test failures.
+
             ## Your task
 
             1. Run the Playwright tests:
                ```
-               npm run test -- --project=${{ github.event.inputs.project || 'chromium' }} --reporter=json 2>&1 || true
+               npm run test -- --project=chromium --reporter=json 2>&1 || true
                ```
 
             2. Read the results from `json-report/results.json`.
 
-            3. If ALL tests pass → stop immediately. Do NOT create a branch or PR.
+            3. If ALL tests pass → stop immediately. Do NOT commit or push anything.
 
-            4. If there are failures, for each failing test:
+            4. If there are failures, use the PR diff (from step above) as context to understand WHY tests are failing:
+               - Did a selector/locator change in the UI? → update the page object or test
+               - Did an API response shape change? → update the test assertion
+               - Is the app behaviour genuinely broken (bug)? → add a `// TODO: app bug - <reason>` comment and move on
+               
+               For each failing test:
                - Read the test file carefully
-               - Read the relevant page objects from `pages/` directory (they follow the Page Object Model pattern)
-               - Understand the error message and stack trace
-               - Fix the test code. Rules:
+               - Read the relevant page objects from `pages/` directory (Page Object Model pattern)
+               - Fix the test code following these rules:
                  * Follow the existing Page Object Model pattern
                  * Do NOT use `test.skip()` or comment out failing assertions
                  * Do NOT change test intent or what is being tested
-                 * If a locator is stale, find the correct one by reading the page object
-                 * If the failure is clearly due to an application code change (not the test), add a `// TODO: app change required - <reason>` comment and move to the next test
+                 * Only modify files under `tests/`, `pages/`, `utils/` directories
+                 * Do NOT modify `playwright.config.ts`, `package.json`, or any config files
+                 * Do NOT modify Java/application source files
 
             5. After fixing all failing tests, re-run:
                ```
-               npm run test -- --project=${{ github.event.inputs.project || 'chromium' }} --reporter=json 2>&1 || true
+               npm run test -- --project=chromium --reporter=json 2>&1 || true
                ```
 
             6. Read `json-report/results.json` again. Repeat fix+run loop until either:
@@ -197,15 +204,11 @@ jobs:
                - You have iterated 5 times
 
             7. If you made any code changes:
-               - Create a new git branch named `fix/e2e-agent-${{ github.run_id }}`
-               - Commit all changed files with message: `test: fix failing e2e tests (automated by claude)`
-               - Push the branch
-               - Open a Pull Request against `main` with:
-                 * Title: `test: fix failing e2e tests (automated)`
-                 * Body: list the fixed test files and a short summary of what was changed
-
-            ## Important constraints
-            - Only modify files under `tests/`, `pages/`, `utils/` directories
-            - Do NOT modify `playwright.config.ts`, `package.json`, or any config files
-            - Do NOT modify Java/application source files
-            - Always use `git status` before committing to confirm what changed
+               - Run `git status` to confirm which files changed
+               - Stage only files under `tests/`, `pages/`, `utils/`
+               - Commit with message: `test: fix failing e2e tests (automated by claude) [skip ci]`
+               - Push to the **current branch** (`${{ github.head_ref }}`):
+                 ```
+                 git push origin HEAD:${{ github.head_ref }}
+                 ```
+               - Do NOT create a new branch. Do NOT open a new PR. The fixes go on this PR's branch.
