@@ -111,8 +111,8 @@ public class RecordFixtures {
     return POSITION.get();
   }
 
-  public void resetPosition() {
-    POSITION.set(0L);
+  public void resetPosition(final long position) {
+    POSITION.set(position);
   }
 
   public ImmutableRecord<RecordValue> getProcessInstanceStartedRecord() {

@@ -11,11 +11,13 @@ import static io.camunda.it.rdbms.db.fixtures.CommonFixtures.nextKey;
 import static io.camunda.it.rdbms.exporter.RecordFixtures.NO_PARENT_EXISTS_KEY;
 import static java.time.ZoneOffset.UTC;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.db.rdbms.LiquibaseSchemaManager;
 import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.db.rdbms.config.VendorDatabaseProperties;
 import io.camunda.db.rdbms.sql.ExporterPositionMapper;
+import io.camunda.db.rdbms.write.domain.ExporterPositionModel;
 import io.camunda.exporter.rdbms.RdbmsExporterWrapper;
 import io.camunda.search.entities.AuditLogEntity.AuditLogEntityType;
 import io.camunda.search.entities.AuditLogEntity.AuditLogOperationCategory;
@@ -117,6 +119,8 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -1505,6 +1509,43 @@ class RdbmsExporterIT {
     final var rdbmsPosition = exporterPositionMapper.findOne(2);
     assertThat(rdbmsPosition).isNotNull();
     assertThat(rdbmsPosition.lastExportedPosition()).isEqualTo(42L);
+  }
+
+  @ParameterizedTest
+  @ValueSource(longs = {-2L, 2L})
+  public void shouldThrowWhenRdbmsPositionIsLowerThanExpected(final long positionDifference) {
+    // given
+    for (int i = 0; i <= 5; i++) {
+      final var processInstanceRecord = FIXTURES.getProcessInstanceStartedRecord();
+      exporter.export(processInstanceRecord);
+    }
+
+    // when
+    final long currentPosition = FIXTURES.currentPosition();
+    final long tamperedPosition = FIXTURES.currentPosition() + positionDifference;
+
+    tamperExporterPosition(tamperedPosition);
+    final var processInstanceRecord = FIXTURES.getProcessInstanceStartedRecord();
+    assertThatThrownBy(() -> exporter.export(processInstanceRecord))
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessageContaining("Exporter position mismatch for partition 1")
+        .hasMessageContaining("expected " + currentPosition)
+        .hasMessageContaining("but found " + tamperedPosition);
+
+    // cleanup because the H2 is shared
+    FIXTURES.resetPosition(currentPosition);
+    tamperExporterPosition(currentPosition);
+  }
+
+  private void tamperExporterPosition(final long tamperedPosition) {
+    final var position = exporterPositionMapper.findOne(1);
+    exporterPositionMapper.update(
+        new ExporterPositionModel(
+            position.partitionId(),
+            position.exporter(),
+            tamperedPosition,
+            position.created(),
+            position.lastUpdated()));
   }
 
   private static void verifyRootProcessInstanceKey(
