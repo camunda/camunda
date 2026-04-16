@@ -393,7 +393,7 @@ def main() -> None:
             "**What to do:**",
             "1. Check if the flaky test is caused by your changes and fix it",
             "2. If the test is unrelated to your changes:",
-            "   - Contact the monorepo devops (#top-monorepo-ci) to triage and discuss the next steps",
+            "   - Contact the Monorepo DevOps team (#ask-monorepo-devops) to triage and discuss the next steps",
             "   - Create an issue with the `kind/flake` label documenting the test, job, and a link to this CI run",
             "   - Add the `ci:flaky-test-bypass` label to this PR to skip the gate and unblock merging",
             "   - Re-run CI after adding the label",
