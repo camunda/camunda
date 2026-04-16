@@ -61,9 +61,9 @@ public class UserTaskFilterTransformer extends IndexFilterTransformer<UserTaskFi
     ofNullable(getUserTaskKeysQuery(filter.userTaskKeys())).ifPresent(queries::add);
     queries.addAll(getProcessInstanceKeyQuery(filter.processInstanceKeyOperations()));
     queries.addAll(getProcessDefinitionKeyQuery(filter.processDefinitionKeyOperations()));
+    queries.addAll(getProcessDefinitionIdsQuery(filter.processDefinitionIdOperations()));
     ofNullable(getElementIdQuery(filter.elementIds())).ifPresent(queries::add);
     queries.addAll(getNameQuery(filter.nameOperations()));
-    queries.addAll(getProcessDefinitionIdsQuery(filter.processDefinitionIdOperations()));
     queries.addAll(getCandidateUsersQuery(filter.candidateUserOperations()));
     queries.addAll(getCandidateGroupsQuery(filter.candidateGroupOperations()));
     queries.addAll(getAssigneesQuery(filter.assigneeOperations()));
@@ -183,12 +183,6 @@ public class UserTaskFilterTransformer extends IndexFilterTransformer<UserTaskFi
     return longTerms(KEY, userTaskKeys);
   }
 
-  private List<SearchQuery> getProcessDefinitionIdsQuery(
-      final List<Operation<String>> processDefinitionIds) {
-    // In ElasticSearch, "processDefinitionId" is stored in field "bpmnProcessId"
-    return stringOperations(BPMN_PROCESS_ID, processDefinitionIds);
-  }
-
   private List<SearchQuery> getCandidateUsersQuery(final List<Operation<String>> candidateUsers) {
     return stringOperations(CANDIDATE_USERS, candidateUsers);
   }
@@ -230,6 +224,12 @@ public class UserTaskFilterTransformer extends IndexFilterTransformer<UserTaskFi
 
   private List<SearchQuery> getTenantQuery(final List<Operation<String>> tenant) {
     return stringOperations(TENANT_ID, tenant);
+  }
+
+  private List<SearchQuery> getProcessDefinitionIdsQuery(
+      final List<Operation<String>> processDefinitionIds) {
+    // In ElasticSearch, "processDefinitionId" is stored in field "bpmnProcessId"
+    return stringOperations(BPMN_PROCESS_ID, processDefinitionIds);
   }
 
   private SearchQuery getElementInstanceKeyQuery(final List<Long> elementInstanceKeys) {
