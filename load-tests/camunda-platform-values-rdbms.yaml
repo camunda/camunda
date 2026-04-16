@@ -26,7 +26,7 @@ orchestration:
     secondaryStorage:
       type: rdbms
       rdbms:
-        url: jdbc:postgresql://postgresql-primary:5432/camunda
+        url: jdbc:postgresql://postgres-postgresql-primary:5432/camunda
         username: camunda
         secret:
           inlineSecret: camunda
