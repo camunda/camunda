@@ -287,7 +287,7 @@ On the Java controller side, query endpoints that read from the secondary storag
 - If a spec operation has `x-eventually-consistent: true`, the corresponding controller method should have `@RequiresSecondaryStorage`.
 - If you add `@RequiresSecondaryStorage` to a controller method, set `x-eventually-consistent: true` on the matching spec operation.
 
-A mismatch means SDK consumers get incorrect consistency guarantees. See §2.15 for more details on controller–spec alignment.
+A mismatch means SDK consumers get incorrect consistency guarantees. See §2.16 for more details on controller–spec alignment.
 
 ### 2.6 Component reuse and schema organisation
 
@@ -647,7 +647,7 @@ Rules enforced by the `valid-deprecated-enum-members` Spectral rule:
 - No duplicate names.
 - No extra keys beyond `name` and `deprecatedInVersion`.
 
-### 2.13 Polymorphic union types (`x-polymorphic-schema`)
+### 2.14 Polymorphic union types (`x-polymorphic-schema`)
 
 When a request body accepts **mutually exclusive** sets of properties — e.g., identify a process by `processDefinitionId` **or** by `processDefinitionKey`, but never both — model this as a `oneOf` composition and annotate the wrapper schema with `x-polymorphic-schema: true`.
 
@@ -757,11 +757,11 @@ Omit the discriminator when:
 | `AuthorizationPatchInstruction`                   | `authorizations.yaml`       | (permission variants)                                                          |
 | `SearchQueryPageRequest`                          | `search-models.yaml`        | `LimitPagination`, `OffsetPagination`, `CursorForward...`, `CursorBackward...` |
 
-### 2.14 Security schemes
+### 2.15 Security schemes
 
 Ensure that `securitySchemes` in the OpenAPI YAML mirrors the security schemes defined in `OpenApiResourceConfig.java`. Any changes to the security config must be reflected in both places for SDK generators to produce correct authentication boilerplate.
 
-### 2.15 Controller–spec alignment and the `@Hidden` annotation
+### 2.16 Controller–spec alignment and the `@Hidden` annotation
 
 Every public endpoint in a REST controller **must** have a corresponding path/operation in the OpenAPI spec. Conversely, every spec operation must be backed by a controller method.
 
