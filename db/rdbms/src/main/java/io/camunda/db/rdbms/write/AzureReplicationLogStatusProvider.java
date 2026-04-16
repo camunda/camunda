@@ -7,13 +7,13 @@
  */
 package io.camunda.db.rdbms.write;
 
-import java.time.Duration;
 import java.util.List;
 
 /**
  * Azure SQL implementation. Azure does not expose an LSN equivalent usable for replica progress
- * tracking, so this provider only supports the replication lag (in seconds) reported by
- * Azure-specific DMVs (e.g. {@code sys.dm_geo_replication_link_status}).
+ * tracking, so this provider is expected to report per-replica lag (in milliseconds) on each
+ * {@link ReplicationStatusDto} via Azure-specific DMVs (e.g. {@code
+ * sys.dm_geo_replication_link_status}).
  */
 public final class AzureReplicationLogStatusProvider implements ReplicationLogStatusProvider {
 
@@ -25,13 +25,8 @@ public final class AzureReplicationLogStatusProvider implements ReplicationLogSt
 
   @Override
   public List<ReplicationStatusDto> getReplicationStatuses() {
-    // Azure does not expose per-replica LSN progress.
+    // TODO: implement via Azure-specific query (e.g. sys.dm_geo_replication_link_status),
+    //  returning one row per replica with replicationLagMs populated.
     return List.of();
-  }
-
-  @Override
-  public Duration getReplicationLag() {
-    // TODO: implement via Azure-specific query (e.g. sys.dm_geo_replication_link_status)
-    return Duration.ZERO;
   }
 }

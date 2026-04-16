@@ -11,6 +11,7 @@ public class ReplicationStatusDto {
 
   private long logStatus;
   private String replicaId;
+  private long replicationLagMs;
 
   public long getLogStatus() {
     return logStatus;
@@ -26,5 +27,13 @@ public class ReplicationStatusDto {
 
   public void setReplicaId(final String replicaId) {
     this.replicaId = replicaId;
+  }
+
+  public long getReplicationLagMs() {
+    return replicationLagMs;
+  }
+
+  public void setReplicationLagMs(final long replicationLagMs) {
+    this.replicationLagMs = replicationLagMs;
   }
 }

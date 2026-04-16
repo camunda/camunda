@@ -11,7 +11,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.mockingDetails;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -264,13 +263,12 @@ class LsnReplicationControllerTest {
     fixture.replicationConfiguration.setMaxLag(Duration.ofMinutes(5));
     fixture.replicationConfiguration.setPauseOnMaxLagExceeded(false);
     when(fixture.lsnProvider.getCurrent()).thenReturn(10L);
-    // replica never catches up via LSN
+    // replica never catches up via LSN and reports a lag larger than maxLag
     when(fixture.lsnProvider.getReplicationStatuses())
-        .thenReturn(List.of(replicationStatus("replica-1", 5L)));
+        .thenReturn(List.of(replicationStatus("replica-1", 5L, Duration.ofMinutes(6).toMillis())));
     fixture.replicationController.onFlush(42L);
 
-    // when: DB reports a lag larger than maxLag
-    when(fixture.lsnProvider.getReplicationLag()).thenReturn(Duration.ofMinutes(6));
+    // when
     fixture.firstScheduledCheck().run();
 
     // then: position confirmed due to DB-reported lag exceeding maxLag
@@ -286,12 +284,12 @@ class LsnReplicationControllerTest {
     fixture.replicationConfiguration.setMaxLag(Duration.ofMinutes(5));
     // pauseOnMaxLagExceeded is true by default
     when(fixture.lsnProvider.getCurrent()).thenReturn(10L);
+    // replica reports a lag larger than maxLag
     when(fixture.lsnProvider.getReplicationStatuses())
-        .thenReturn(List.of(replicationStatus("replica-1", 5L)));
+        .thenReturn(List.of(replicationStatus("replica-1", 5L, Duration.ofMinutes(6).toMillis())));
     fixture.replicationController.onFlush(42L);
 
-    // when: DB reports a lag larger than maxLag
-    when(fixture.lsnProvider.getReplicationLag()).thenReturn(Duration.ofMinutes(6));
+    // when
     fixture.firstScheduledCheck().run();
 
     // then: position NOT confirmed — we pause instead of force-confirming
@@ -306,21 +304,131 @@ class LsnReplicationControllerTest {
     fixture.replicationConfiguration.setMinSyncReplicas(1);
     fixture.replicationConfiguration.setMaxLag(Duration.ofMinutes(5));
     when(fixture.lsnProvider.getCurrent()).thenReturn(10L);
+    // when: replica reports a lag larger than maxLag — controller pauses
     when(fixture.lsnProvider.getReplicationStatuses())
-        .thenReturn(List.of(replicationStatus("replica-1", 5L)));
+        .thenReturn(List.of(replicationStatus("replica-1", 5L, Duration.ofMinutes(6).toMillis())));
     fixture.replicationController.onFlush(42L);
-
-    // when: DB reports a lag larger than maxLag — controller pauses
-    when(fixture.lsnProvider.getReplicationLag()).thenReturn(Duration.ofMinutes(6));
     fixture.firstScheduledCheck().run();
     assertThat(fixture.replicationController.isPaused()).isTrue();
 
-    // when: DB lag drops below maxLag
-    when(fixture.lsnProvider.getReplicationLag()).thenReturn(Duration.ofMinutes(2));
+    // when: replica's lag drops below maxLag
+    when(fixture.lsnProvider.getReplicationStatuses())
+        .thenReturn(List.of(replicationStatus("replica-1", 5L, Duration.ofMinutes(2).toMillis())));
     fixture.lastScheduledCheck().run();
 
     // then: controller unpauses
     assertThat(fixture.replicationController.isPaused()).isFalse();
+  }
+
+  @Test
+  void shouldNotPauseWhenSlowestReplicaIsOutsideQuorum() {
+    // given: minSyncReplicas=2, three replicas where only one is slow — the quorum can still
+    // be satisfied by the two fast ones, so effective lag should be the 2nd-smallest lag.
+    final var fixture = new TestFixture();
+    fixture.replicationConfiguration.setMinSyncReplicas(2);
+    fixture.replicationConfiguration.setMaxLag(Duration.ofMinutes(5));
+    when(fixture.lsnProvider.getCurrent()).thenReturn(10L);
+    when(fixture.lsnProvider.getReplicationStatuses())
+        .thenReturn(
+            List.of(
+                replicationStatus("fast-1", 10L, Duration.ofSeconds(1).toMillis()),
+                replicationStatus("fast-2", 10L, Duration.ofSeconds(2).toMillis()),
+                replicationStatus("slow", 10L, Duration.ofMinutes(30).toMillis())));
+    fixture.replicationController.onFlush(42L);
+
+    // when
+    fixture.firstScheduledCheck().run();
+
+    // then: quorum met by the two fast replicas, effective lag = 2s < maxLag, no pause
+    assertThat(fixture.replicationController.isPaused()).isFalse();
+    verify(fixture.controller).updateLastExportedRecordPosition(42L);
+  }
+
+  @Test
+  void shouldPauseWhenQuorumReplicaLagExceedsMaxLag() {
+    // given: minSyncReplicas=2, three replicas where two are slow enough that the
+    // quorum-lag (2nd smallest) exceeds maxLag.
+    final var fixture = new TestFixture();
+    fixture.replicationConfiguration.setMinSyncReplicas(2);
+    fixture.replicationConfiguration.setMaxLag(Duration.ofMinutes(5));
+    when(fixture.lsnProvider.getCurrent()).thenReturn(10L);
+    when(fixture.lsnProvider.getReplicationStatuses())
+        .thenReturn(
+            List.of(
+                replicationStatus("fast", 10L, Duration.ofSeconds(1).toMillis()),
+                replicationStatus("slow-1", 10L, Duration.ofMinutes(10).toMillis()),
+                replicationStatus("slow-2", 10L, Duration.ofMinutes(20).toMillis())));
+    fixture.replicationController.onFlush(42L);
+
+    // when
+    fixture.firstScheduledCheck().run();
+
+    // then: 2nd smallest lag = 10min > 5min maxLag, pause triggers
+    assertThat(fixture.replicationController.isPaused()).isTrue();
+  }
+
+  @Test
+  void shouldPauseWhenConnectedReplicasBelowMinSyncReplicasEvenIfDbReportedLagIsZero() {
+    // given
+    final var fixture = new TestFixture();
+    fixture.replicationConfiguration.setMinSyncReplicas(1);
+    fixture.replicationConfiguration.setMaxLag(Duration.ofMinutes(5));
+    when(fixture.lsnProvider.getCurrent()).thenReturn(10L);
+    // no replicas connected — in Postgres pg_stat_replication is empty, so there are no
+    // rows at all and the effective lag computed by the controller is 0. The quorum check
+    // must still force a pause.
+    when(fixture.lsnProvider.getReplicationStatuses()).thenReturn(List.of());
+    fixture.replicationController.onFlush(42L);
+
+    // when
+    fixture.firstScheduledCheck().run();
+
+    // then: paused even though the computed effective lag is zero
+    assertThat(fixture.replicationController.isPaused()).isTrue();
+    verify(fixture.controller, never()).updateLastExportedRecordPosition(42L);
+  }
+
+  @Test
+  void shouldResumeWhenEnoughReplicasReconnect() {
+    // given
+    final var fixture = new TestFixture();
+    fixture.replicationConfiguration.setMinSyncReplicas(1);
+    fixture.replicationConfiguration.setMaxLag(Duration.ofMinutes(5));
+    when(fixture.lsnProvider.getCurrent()).thenReturn(10L);
+    when(fixture.lsnProvider.getReplicationStatuses()).thenReturn(List.of());
+    fixture.replicationController.onFlush(42L);
+
+    // when: first tick — no replicas, controller pauses
+    fixture.firstScheduledCheck().run();
+    assertThat(fixture.replicationController.isPaused()).isTrue();
+
+    // when: replica reconnects and is caught up
+    when(fixture.lsnProvider.getReplicationStatuses())
+        .thenReturn(List.of(replicationStatus("replica-1", 10L)));
+    fixture.lastScheduledCheck().run();
+
+    // then: controller unpauses
+    assertThat(fixture.replicationController.isPaused()).isFalse();
+  }
+
+  @Test
+  void shouldNotPauseWhenQuorumViolatedAndPauseDisabled() {
+    // given
+    final var fixture = new TestFixture();
+    fixture.replicationConfiguration.setMinSyncReplicas(1);
+    fixture.replicationConfiguration.setMaxLag(Duration.ofMinutes(5));
+    fixture.replicationConfiguration.setPauseOnMaxLagExceeded(false);
+    when(fixture.lsnProvider.getCurrent()).thenReturn(10L);
+    when(fixture.lsnProvider.getReplicationStatuses()).thenReturn(List.of());
+    fixture.replicationController.onFlush(42L);
+
+    // when
+    fixture.firstScheduledCheck().run();
+
+    // then: quorum violated but pause is disabled — no pause, clock-based cutoff still
+    // applies so the entry just sits in the queue until maxLag elapses.
+    assertThat(fixture.replicationController.isPaused()).isFalse();
+    verify(fixture.controller, never()).updateLastExportedRecordPosition(42L);
   }
 
   @Test
@@ -330,12 +438,12 @@ class LsnReplicationControllerTest {
     fixture.replicationConfiguration.setMinSyncReplicas(1);
     fixture.replicationConfiguration.setMaxLag(Duration.ofMinutes(5));
     when(fixture.lsnProvider.getCurrent()).thenReturn(10L);
+    // replica reports a lag smaller than maxLag
     when(fixture.lsnProvider.getReplicationStatuses())
-        .thenReturn(List.of(replicationStatus("replica-1", 5L)));
+        .thenReturn(List.of(replicationStatus("replica-1", 5L, Duration.ofMinutes(3).toMillis())));
     fixture.replicationController.onFlush(42L);
 
-    // when: DB reports a lag smaller than maxLag
-    when(fixture.lsnProvider.getReplicationLag()).thenReturn(Duration.ofMinutes(3));
+    // when
     fixture.firstScheduledCheck().run();
 
     // then: position not confirmed
@@ -390,9 +498,15 @@ class LsnReplicationControllerTest {
   }
 
   private static ReplicationStatusDto replicationStatus(final String replicaId, final long lsn) {
+    return replicationStatus(replicaId, lsn, 0L);
+  }
+
+  private static ReplicationStatusDto replicationStatus(
+      final String replicaId, final long lsn, final long lagMs) {
     final var status = new ReplicationStatusDto();
     status.setReplicaId(replicaId);
     status.setLogStatus(lsn);
+    status.setReplicationLagMs(lagMs);
     return status;
   }
 
@@ -418,11 +532,6 @@ class LsnReplicationControllerTest {
     private TestFixture(final ReplicationLogStatusProvider provider) {
       lsnProvider = provider;
       replicationConfiguration.setPollingInterval(POLLING_INTERVAL);
-
-      // Default DB-reported lag to zero so existing tests behave as before.
-      if (mockingDetails(lsnProvider).isMock()) {
-        when(lsnProvider.getReplicationLag()).thenReturn(Duration.ZERO);
-      }
 
       when(controller.scheduleCancellableTask(eq(POLLING_INTERVAL), any()))
           .thenAnswer(

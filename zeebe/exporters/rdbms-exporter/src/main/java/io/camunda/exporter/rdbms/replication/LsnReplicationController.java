@@ -16,6 +16,7 @@ import io.camunda.zeebe.util.VisibleForTesting;
 import java.time.Duration;
 import java.time.InstantSource;
 import java.util.Comparator;
+import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -79,13 +80,25 @@ public class LsnReplicationController implements ReplicationController {
 
   private void checkReplication() {
     try {
-      final long confirmedLsn = computeConfirmedLsn();
+      final int minSyncReplicas = replicationConfiguration.getMinSyncReplicas();
+      final var statuses = lsnProvider.getReplicationStatuses();
+      final int connectedReplicas = statuses.size();
+      // When fewer replicas are connected than required, the DB-reported lag is not
+      // trustworthy — e.g. Postgres's pg_stat_replication is empty when no replicas are
+      // connected, so replay_lag yields no rows even though nothing is being replicated.
+      // Aurora exhibits the same behaviour on a non-global cluster. Treat this as a pause
+      // condition so the exporter stops accepting records instead of silently running
+      // with broken replication.
+      final boolean quorumViolated = connectedReplicas < minSyncReplicas;
+
+      final long confirmedLsn = computeConfirmedLsn(statuses);
       final Duration maxLag = replicationConfiguration.getMaxLag();
-      final Duration dbReportedLag = lsnProvider.getReplicationLag();
+      final Duration dbReportedLag = computeEffectiveLag(statuses, minSyncReplicas);
       final boolean dbLagExceeded = dbReportedLag.compareTo(maxLag) > 0;
       final boolean pauseOnMaxLag = replicationConfiguration.isPauseOnMaxLagExceeded();
-      final boolean shouldPause = pauseOnMaxLag && dbLagExceeded;
-      updatePausedState(shouldPause, dbReportedLag, maxLag);
+      final boolean shouldPause = pauseOnMaxLag && (dbLagExceeded || quorumViolated);
+      updatePausedState(
+          shouldPause, dbReportedLag, maxLag, quorumViolated, connectedReplicas, minSyncReplicas);
       final long now = clock.millis();
       final long lagCutoff = now - maxLag.toMillis();
 
@@ -147,18 +160,33 @@ public class LsnReplicationController implements ReplicationController {
   }
 
   private void updatePausedState(
-      final boolean shouldPause, final Duration dbReportedLag, final Duration maxLag) {
+      final boolean shouldPause,
+      final Duration dbReportedLag,
+      final Duration maxLag,
+      final boolean quorumViolated,
+      final int connectedReplicas,
+      final int minSyncReplicas) {
     final boolean wasPaused = paused.getAndSet(shouldPause);
     if (shouldPause && !wasPaused) {
-      LOG.warn(
-          "[RDBMS Exporter P{}] Pausing exporter: DB-reported replication lag ({}) exceeded maxLag ({})",
-          partitionId,
-          dbReportedLag,
-          maxLag);
+      if (quorumViolated) {
+        LOG.warn(
+            "[RDBMS Exporter P{}] Pausing exporter: only {} replica(s) connected, minSyncReplicas={} — replication quorum not met",
+            partitionId,
+            connectedReplicas,
+            minSyncReplicas);
+      } else {
+        LOG.warn(
+            "[RDBMS Exporter P{}] Pausing exporter: DB-reported replication lag ({}) exceeded maxLag ({})",
+            partitionId,
+            dbReportedLag,
+            maxLag);
+      }
     } else if (!shouldPause && wasPaused) {
       LOG.info(
-          "[RDBMS Exporter P{}] Resuming exporter: DB-reported replication lag ({}) dropped below maxLag ({})",
+          "[RDBMS Exporter P{}] Resuming exporter: replication quorum met ({}/{} replicas) and DB-reported lag ({}) within maxLag ({})",
           partitionId,
+          connectedReplicas,
+          minSyncReplicas,
           dbReportedLag,
           maxLag);
     }
@@ -174,6 +202,10 @@ public class LsnReplicationController implements ReplicationController {
    */
   @VisibleForTesting
   long computeConfirmedLsn() {
+    return computeConfirmedLsn(lsnProvider.getReplicationStatuses());
+  }
+
+  private long computeConfirmedLsn(final List<ReplicationStatusDto> statuses) {
     if (lsnProvider.getCurrent() < 0) {
       return Long.MIN_VALUE;
     }
@@ -183,7 +215,6 @@ public class LsnReplicationController implements ReplicationController {
       return Long.MAX_VALUE;
     }
 
-    final var statuses = lsnProvider.getReplicationStatuses();
     if (statuses.size() < minSyncReplicas) {
       return -1;
     }
@@ -194,6 +225,29 @@ public class LsnReplicationController implements ReplicationController {
         .limit(minSyncReplicas)
         .min(Comparator.naturalOrder())
         .orElse(-1L);
+  }
+
+  /**
+   * Computes the effective replication lag for quorum evaluation. Sorts per-replica lags ascending
+   * and picks the Nth value — the worst lag among the best {@code minSyncReplicas} replicas, i.e.
+   * the lag at which the quorum is still satisfied. Returns {@link Duration#ZERO} when the quorum
+   * cannot be evaluated (minSyncReplicas is 0 or not enough replicas are connected) — quorum
+   * violations are handled separately as a pause condition in {@link #checkReplication}.
+   */
+  @VisibleForTesting
+  Duration computeEffectiveLag(
+      final List<ReplicationStatusDto> statuses, final int minSyncReplicas) {
+    if (minSyncReplicas <= 0 || statuses.size() < minSyncReplicas) {
+      return Duration.ZERO;
+    }
+    final long quorumLagMs =
+        statuses.stream()
+            .mapToLong(ReplicationStatusDto::getReplicationLagMs)
+            .sorted()
+            .skip(minSyncReplicas - 1L)
+            .findFirst()
+            .orElse(0L);
+    return Duration.ofMillis(quorumLagMs);
   }
 
   @Override
