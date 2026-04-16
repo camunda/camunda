@@ -49,7 +49,7 @@ jobs:
           branch="$TARGET_BRANCH"
           if [[ "$branch" == "main" ]]; then
             echo "CAMUNDA_DOCKER_IMAGE=camunda/camunda:SNAPSHOT" >> "$GITHUB_ENV"
-          elif [[ "$branch" == stable/* ]]; then
+          elif [[ "$branch" == "stable/"* ]]; then
             minor="${branch#stable/}"
             echo "CAMUNDA_DOCKER_IMAGE=camunda/camunda:${minor}-SNAPSHOT" >> "$GITHUB_ENV"
           fi
