@@ -23,6 +23,7 @@ import static io.camunda.webapps.schema.descriptors.template.MessageSubscription
 import static io.camunda.webapps.schema.descriptors.template.MessageSubscriptionTemplate.KEY;
 import static io.camunda.webapps.schema.descriptors.template.MessageSubscriptionTemplate.MESSAGE_NAME;
 import static io.camunda.webapps.schema.descriptors.template.MessageSubscriptionTemplate.MESSAGE_SUBSCRIPTION_STATE;
+import static io.camunda.webapps.schema.descriptors.template.MessageSubscriptionTemplate.MESSAGE_SUBSCRIPTION_TYPE;
 import static io.camunda.webapps.schema.descriptors.template.MessageSubscriptionTemplate.METADATA;
 import static io.camunda.webapps.schema.descriptors.template.MessageSubscriptionTemplate.PROCESS_KEY;
 
@@ -83,6 +84,7 @@ public abstract class AbstractEventHandler<R extends RecordValue>
     jsonMap.put(KEY, entity.getKey());
     jsonMap.put(EVENT_SOURCE_TYPE, entity.getEventSourceType());
     jsonMap.put(MESSAGE_SUBSCRIPTION_STATE, entity.getEventType());
+    jsonMap.put(MESSAGE_SUBSCRIPTION_TYPE, entity.getMessageSubscriptionType());
     jsonMap.put(DATE_TIME, entity.getDateTime());
     jsonMap.put(PROCESS_KEY, entity.getProcessDefinitionKey());
     jsonMap.put(BPMN_PROCESS_ID, entity.getBpmnProcessId());

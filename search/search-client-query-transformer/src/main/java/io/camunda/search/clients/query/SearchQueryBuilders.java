@@ -432,6 +432,11 @@ public final class SearchQueryBuilders {
 
   public static <C extends List<Operation<String>>> List<SearchQuery> stringOperations(
       final String field, final C operations) {
+    return stringOperations(field, operations, Function.identity());
+  }
+
+  public static <C extends List<Operation<String>>> List<SearchQuery> stringOperations(
+      final String field, final C operations, final Function<String, String> customValueConverter) {
     if (operations == null || operations.isEmpty()) {
       return List.of();
     } else {
@@ -440,12 +445,16 @@ public final class SearchQueryBuilders {
           op -> {
             searchQueries.add(
                 switch (op.operator()) {
-                  case EQUALS -> term(field, op.value());
-                  case NOT_EQUALS -> mustNot(term(field, op.value()));
+                  case EQUALS -> term(field, customValueConverter.apply(op.value()));
+                  case NOT_EQUALS -> mustNot(term(field, customValueConverter.apply(op.value())));
                   case EXISTS -> exists(field);
                   case NOT_EXISTS -> mustNot(exists(field));
-                  case IN -> stringTerms(field, op.values());
-                  case NOT_IN -> mustNot(stringTerms(field, op.values()));
+                  case IN ->
+                      stringTerms(field, op.values().stream().map(customValueConverter).toList());
+                  case NOT_IN ->
+                      mustNot(
+                          stringTerms(
+                              field, op.values().stream().map(customValueConverter).toList()));
                   case LIKE -> wildcardQuery(field, op.value());
                   default -> throw unexpectedOperation("String", op.operator());
                 });

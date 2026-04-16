@@ -13,6 +13,7 @@ import io.camunda.webapps.schema.entities.PartitionedEntity;
 import io.camunda.webapps.schema.entities.SinceVersion;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import java.time.OffsetDateTime;
+import java.util.Map;
 import java.util.Objects;
 
 public class MessageSubscriptionEntity
@@ -52,6 +53,18 @@ public class MessageSubscriptionEntity
    * @deprecated since 8.9
    */
   @BeforeVersion880 @Deprecated private EventSourceType eventSourceType;
+
+  @SinceVersion(value = "8.10.0", requireDefault = false)
+  private String processDefinitionName;
+
+  @SinceVersion(value = "8.10.0", requireDefault = false)
+  private Integer processDefinitionVersion;
+
+  @SinceVersion(value = "8.10.0", requireDefault = false)
+  private Map<String, String> extensionProperties;
+
+  @SinceVersion(value = "8.10.0", requireDefault = false)
+  private String messageSubscriptionType;
 
   /**
    * @deprecated since 8.9
@@ -200,6 +213,45 @@ public class MessageSubscriptionEntity
     return this;
   }
 
+  public String getProcessDefinitionName() {
+    return processDefinitionName;
+  }
+
+  public MessageSubscriptionEntity setProcessDefinitionName(final String processDefinitionName) {
+    this.processDefinitionName = processDefinitionName;
+    return this;
+  }
+
+  public Integer getProcessDefinitionVersion() {
+    return processDefinitionVersion;
+  }
+
+  public MessageSubscriptionEntity setProcessDefinitionVersion(
+      final Integer processDefinitionVersion) {
+    this.processDefinitionVersion = processDefinitionVersion;
+    return this;
+  }
+
+  public Map<String, String> getExtensionProperties() {
+    return extensionProperties;
+  }
+
+  public MessageSubscriptionEntity setExtensionProperties(
+      final Map<String, String> extensionProperties) {
+    this.extensionProperties = extensionProperties;
+    return this;
+  }
+
+  public String getMessageSubscriptionType() {
+    return messageSubscriptionType;
+  }
+
+  public MessageSubscriptionEntity setMessageSubscriptionType(
+      final String messageSubscriptionType) {
+    this.messageSubscriptionType = messageSubscriptionType;
+    return this;
+  }
+
   /**
    * @deprecated since 8.9
    */
@@ -288,7 +340,11 @@ public class MessageSubscriptionEntity
         positionIncident,
         positionProcessMessageSubscription,
         positionJob,
-        rootProcessInstanceKey);
+        rootProcessInstanceKey,
+        processDefinitionName,
+        processDefinitionVersion,
+        extensionProperties,
+        messageSubscriptionType);
   }
 
   @Override
@@ -318,6 +374,10 @@ public class MessageSubscriptionEntity
         && Objects.equals(
             positionProcessMessageSubscription, that.positionProcessMessageSubscription)
         && Objects.equals(positionJob, that.positionJob)
-        && Objects.equals(rootProcessInstanceKey, that.rootProcessInstanceKey);
+        && Objects.equals(rootProcessInstanceKey, that.rootProcessInstanceKey)
+        && Objects.equals(processDefinitionName, that.processDefinitionName)
+        && Objects.equals(processDefinitionVersion, that.processDefinitionVersion)
+        && Objects.equals(extensionProperties, that.extensionProperties)
+        && Objects.equals(messageSubscriptionType, that.messageSubscriptionType);
   }
 }
