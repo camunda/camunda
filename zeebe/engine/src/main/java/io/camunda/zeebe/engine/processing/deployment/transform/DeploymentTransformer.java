@@ -94,24 +94,16 @@ public final class DeploymentTransformer {
   }
 
   public Either<Failure, Void> transform(final DeploymentRecord deploymentEvent) {
-    // Step 1: Validate structural properties of all resources (non-empty, name length)
     return validator
         .validateResources(deploymentEvent)
-        // Step 2: Parse each resource and build metadata
         .flatMap(ok -> buildMetadata(deploymentEvent))
-        // Step 3+4: Validate cross-resource constraints (duplicate IDs, deployment bindings)
         .flatMap(contexts -> validator.validateMetadata(deploymentEvent, contexts))
-        // Step 5: Write the actual resources/deployment to state
-        .map(
-            ok -> {
-              writeResourceRecords(deploymentEvent);
-              return null;
-            });
+        .flatMap(ok -> writeResourceRecords(deploymentEvent));
   }
 
   /**
-   * Step 2: Iterates over all resources and builds metadata for each. This step validates each
-   * resource individually and adds its metadata to the deployment record.
+   * Iterates over all resources and builds metadata for each. Validates each resource individually
+   * and adds its metadata to the deployment record.
    *
    * @param deploymentEvent the deployment record
    * @return Either.right with the list of contexts produced by each transformer, or Either.left
@@ -141,15 +133,12 @@ public final class DeploymentTransformer {
   }
 
   /**
-   * Step 5: Writes the actual resource records to state. This is called after all validation has
-   * passed. Skips writing if the deployment contains only duplicates (versioning invariant).
-   *
-   * @param deploymentEvent the deployment record with metadata
+   * Writes the actual resource records to state. This is called after all validation has passed.
+   * Skips writing if the deployment contains only duplicates (versioning invariant).
    */
-  private void writeResourceRecords(final DeploymentRecord deploymentEvent) {
-    // Check if all resources are duplicates - if so, skip writing entirely (versioning invariant)
+  private Either<Failure, Void> writeResourceRecords(final DeploymentRecord deploymentEvent) {
     if (deploymentEvent.hasDuplicatesOnly()) {
-      return;
+      return Either.right(null);
     }
 
     final var errors = new DeploymentErrorCollector();
@@ -163,10 +152,7 @@ public final class DeploymentTransformer {
       }
     }
 
-    if (errors.hasErrors()) {
-      // Note: In practice, this should never happen as validation already passed
-      throw new IllegalStateException(errors.formatMessage());
-    }
+    return errors.toEither();
   }
 
   private DeploymentResourceTransformer getResourceTransformer(final DeploymentResource resource) {
