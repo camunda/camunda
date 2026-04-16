@@ -5,10 +5,8 @@
 name: "C8 Orchestration Cluster Nightly: 8.7 API Tests (ES)"
 
 on:
-  pull_request:
-    types: [opened, edited, synchronize]
-  # schedule:
-  #   - cron: "0 0 * * *" # Run at midnight UTC
+  schedule:
+    - cron: "0 0 * * *" # Run at midnight UTC
   workflow_dispatch:
 
 permissions:
