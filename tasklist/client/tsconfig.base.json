@@ -18,8 +18,6 @@
     "noUncheckedSideEffectImports": true,
     "erasableSyntaxOnly": true,
     "resolveJsonModule": true,
-    "baseUrl": "src",
-    "types": ["vitest/globals"],
 
     /* Type Checking */
     "strict": true,
