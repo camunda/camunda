@@ -7,6 +7,9 @@ image:
   # Set your specific exporter version here
   tag: "v1.10.0"
 
+log:
+  format: json
+
 serviceMonitor:
   ## If true, a ServiceMonitor CRD is created for a prometheus operator
   ## https://github.com/coreos/prometheus-operator
