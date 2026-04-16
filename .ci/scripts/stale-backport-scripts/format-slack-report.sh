@@ -194,29 +194,25 @@ while IFS= read -r repo_name; do
       else empty end
     ' "$TMPDIR_WORK/slack_user_map.json" 2>/dev/null || true)
     if [[ -z "$avatar_url" && "$author_login" != app/* && "$author_login" != "unknown" ]]; then
-      avatar_url="https://github.com/${author_login}.png?size=48"
+      avatar_url="https://github.com/${author_login}.png?size=24"
     fi
 
     if [[ "$USE_GROUP_DIVIDERS" == "true" ]]; then
-      if [[ -n "$avatar_url" ]]; then
-        jq -c --arg text "$section_text" --arg avatar "$avatar_url" \
-          '. + [{type: "divider"}, {type: "section", text: {type: "mrkdwn", text: $text}, accessory: {type: "image", image_url: $avatar, alt_text: "author"}}]' \
-          "$TMPDIR_WORK/blocks.json" > "$TMPDIR_WORK/blocks_tmp.json" && mv "$TMPDIR_WORK/blocks_tmp.json" "$TMPDIR_WORK/blocks.json"
-      else
-        jq -c --arg text "$section_text" \
-          '. + [{type: "divider"}, {type: "section", text: {type: "mrkdwn", text: $text}}]' \
-          "$TMPDIR_WORK/blocks.json" > "$TMPDIR_WORK/blocks_tmp.json" && mv "$TMPDIR_WORK/blocks_tmp.json" "$TMPDIR_WORK/blocks.json"
-      fi
+      jq -c --arg text "$section_text" \
+        '. + [{type: "divider"}, {type: "section", text: {type: "mrkdwn", text: $text}}]' \
+        "$TMPDIR_WORK/blocks.json" > "$TMPDIR_WORK/blocks_tmp.json" && mv "$TMPDIR_WORK/blocks_tmp.json" "$TMPDIR_WORK/blocks.json"
     else
-      if [[ -n "$avatar_url" ]]; then
-        jq -c --arg text "$section_text" --arg avatar "$avatar_url" \
-          '. + [{type: "section", text: {type: "mrkdwn", text: ("── ── ── ── ──\n" + $text)}, accessory: {type: "image", image_url: $avatar, alt_text: "author"}}]' \
-          "$TMPDIR_WORK/blocks.json" > "$TMPDIR_WORK/blocks_tmp.json" && mv "$TMPDIR_WORK/blocks_tmp.json" "$TMPDIR_WORK/blocks.json"
-      else
-        jq -c --arg text "$section_text" \
-          '. + [{type: "section", text: {type: "mrkdwn", text: ("── ── ── ── ──\n" + $text)}}]' \
-          "$TMPDIR_WORK/blocks.json" > "$TMPDIR_WORK/blocks_tmp.json" && mv "$TMPDIR_WORK/blocks_tmp.json" "$TMPDIR_WORK/blocks.json"
-      fi
+      jq -c --arg text "$section_text" \
+        '. + [{type: "section", text: {type: "mrkdwn", text: ("── ── ── ── ──\n" + $text)}}]' \
+        "$TMPDIR_WORK/blocks.json" > "$TMPDIR_WORK/blocks_tmp.json" && mv "$TMPDIR_WORK/blocks_tmp.json" "$TMPDIR_WORK/blocks.json"
+    fi
+
+    # Add author avatar as a small context block below the section
+    if [[ -n "$avatar_url" ]]; then
+      display_label="${author_name:-$author_login}"
+      jq -c --arg avatar "$avatar_url" --arg label "$display_label" \
+        '. + [{type: "context", elements: [{type: "image", image_url: $avatar, alt_text: $label}, {type: "mrkdwn", text: $label}]}]' \
+        "$TMPDIR_WORK/blocks.json" > "$TMPDIR_WORK/blocks_tmp.json" && mv "$TMPDIR_WORK/blocks_tmp.json" "$TMPDIR_WORK/blocks.json"
     fi
   done
   fi
@@ -224,12 +220,13 @@ done < "$TMPDIR_WORK/repo_list.txt"
 
 # Legend + footer
 # Slack enforces a hard limit of 50 blocks per message. Trim excess content blocks first.
-# With group dividers: pre-verified to fit in 50, no truncation notice slot needed (limit=47).
-# Without group dividers: reserve 1 slot for the truncation notice section (limit=46).
+# Each PR group uses 1-2 blocks (section + optional context for avatar), plus dividers if enabled.
+# With group dividers: limit=45 (conservative for avatar context blocks).
+# Without group dividers: limit=44 (reserve slots for truncation notice + footer).
 if [[ "$USE_GROUP_DIVIDERS" == "true" ]]; then
-  CONTENT_LIMIT=47
+  CONTENT_LIMIT=45
 else
-  CONTENT_LIMIT=46
+  CONTENT_LIMIT=44
 fi
 content_count=$(jq 'length' "$TMPDIR_WORK/blocks.json")
 if [[ "$content_count" -gt "$CONTENT_LIMIT" ]]; then
