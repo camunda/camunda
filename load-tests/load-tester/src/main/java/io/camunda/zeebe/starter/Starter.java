@@ -350,6 +350,10 @@ public class Starter implements CommandLineRunner {
   }
 
   private DeployResourceCommandStep2 constructDeploymentCommand() {
+    LOG.info(
+        "Deploying main resource: {}, extra resources: {}",
+        starterCfg.getBpmnXmlPath(),
+        starterCfg.getExtraBpmnModels());
     final var deployCmd =
         client.newDeployResourceCommand().addResourceFromClasspath(starterCfg.getBpmnXmlPath());
 

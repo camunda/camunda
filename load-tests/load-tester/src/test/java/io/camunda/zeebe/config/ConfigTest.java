@@ -107,4 +107,23 @@ class ConfigTest {
       assertThat(workerCfg.getCorrelationKeyVariableName()).isEqualTo("var");
     }
   }
+
+  @SpringBootTest(
+      classes = ConfigTest.TestConfig.class,
+      properties = {
+        "camunda.client.enabled=false",
+        "load-tester.starter.extra-bpmn-models[0]=bpmn/realistic/refundingProcess.bpmn",
+        "load-tester.starter.extra-bpmn-models[1]=bpmn/realistic/determineFraudRatingConfidence.dmn",
+      })
+  static class ExtraBpmnModelsFromPropertiesTest {
+    @Autowired private LoadTesterProperties properties;
+
+    @Test
+    void shouldBindExtraBpmnModelsFromProperties() {
+      assertThat(properties.getStarter().getExtraBpmnModels())
+          .containsExactly(
+              "bpmn/realistic/refundingProcess.bpmn",
+              "bpmn/realistic/determineFraudRatingConfidence.dmn");
+    }
+  }
 }

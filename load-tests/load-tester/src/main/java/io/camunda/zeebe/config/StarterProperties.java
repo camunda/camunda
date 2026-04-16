@@ -8,6 +8,7 @@
 package io.camunda.zeebe.config;
 
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.List;
 
 public class StarterProperties {
@@ -71,6 +72,23 @@ public class StarterProperties {
   }
 
   public List<String> getExtraBpmnModels() {
+    if (extraBpmnModels.isEmpty()) {
+      // Workaround: Spring Boot's relaxed binding cannot map indexed env vars like
+      // LOAD_TESTER_STARTER_EXTRA_BPMN_MODELS_0_ to load-tester.starter.extra-bpmn-models[0]
+      // because the underscore in LOAD_TESTER is ambiguous (could be load.tester or load-tester).
+      // Fall back to reading the indexed env vars directly.
+      final List<String> fromEnv = new ArrayList<>();
+      for (int i = 0; ; i++) {
+        final String val = System.getenv("LOAD_TESTER_STARTER_EXTRA_BPMN_MODELS_" + i + "_");
+        if (val == null || val.isBlank()) {
+          break;
+        }
+        fromEnv.add(val);
+      }
+      if (!fromEnv.isEmpty()) {
+        extraBpmnModels = fromEnv;
+      }
+    }
     return extraBpmnModels;
   }
 
