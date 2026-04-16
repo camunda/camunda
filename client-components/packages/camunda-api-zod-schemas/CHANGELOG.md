@@ -1,5 +1,16 @@
 # Changelog
 
+## v0.0.58
+
+### 🚀 Enhancements
+
+- Support $like on all enum advanced filters
+- Add decision instance batch deletion endpoint ([#51063](https://github.com/camunda/camunda/issues/51063))
+
+### ❤️ Contributors
+
+- Patrick Dehn ([@pedesen](https://github.com/pedesen))
+
 ## v0.0.57
 
 ### 🚀 Enhancements
