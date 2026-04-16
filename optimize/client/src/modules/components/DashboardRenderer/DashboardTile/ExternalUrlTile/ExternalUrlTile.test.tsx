@@ -43,7 +43,7 @@ it('should sandbox the iframe to prevent form submission and restrict capabiliti
 
   const iframe = node.find('iframe');
 
-  expect(iframe).toHaveProp('sandbox', 'allow-scripts allow-same-origin');
+  expect(iframe).toHaveProp('sandbox', 'allow-scripts');
   expect(iframe).toHaveProp('referrerPolicy', 'no-referrer');
 });
 
