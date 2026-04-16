@@ -202,7 +202,7 @@ public final class SearchUserTaskTest extends ClientRestTest {
 
     // then
     final UserTaskSearchQuery request = gatewayService.getLastRequest(UserTaskSearchQuery.class);
-    assertThat(request.getFilter().getProcessDefinitionKey()).isEqualTo("123");
+    assertThat(request.getFilter().getProcessDefinitionKey().get$Eq()).isEqualTo("123");
   }
 
   @Test

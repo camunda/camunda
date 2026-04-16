@@ -278,10 +278,11 @@
           separator=", ">#{value}
         </foreach>
       </if>
-      <if test="filter.processDefinitionKeys != null and !filter.processDefinitionKeys.isEmpty()">
-        AND ut.PROCESS_DEFINITION_KEY IN
-        <foreach close=")" collection="filter.processDefinitionKeys" item="value" open="("
-          separator=", ">#{value}
+      <if
+        test="filter.processDefinitionKeyOperations != null and !filter.processDefinitionKeyOperations.isEmpty()">
+        <foreach collection="filter.processDefinitionKeyOperations" item="operation">
+          AND PROCESS_DEFINITION_KEY
+          <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
         </foreach>
       </if>
       <if

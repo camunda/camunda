@@ -13,13 +13,16 @@ import static io.camunda.search.clients.query.SearchQueryBuilders.exists;
 import static io.camunda.search.clients.query.SearchQueryBuilders.hasChildQuery;
 import static io.camunda.search.clients.query.SearchQueryBuilders.hasParentQuery;
 import static io.camunda.search.clients.query.SearchQueryBuilders.intOperations;
+import static io.camunda.search.clients.query.SearchQueryBuilders.longOperations;
 import static io.camunda.search.clients.query.SearchQueryBuilders.longTerms;
 import static io.camunda.search.clients.query.SearchQueryBuilders.matchNone;
 import static io.camunda.search.clients.query.SearchQueryBuilders.or;
 import static io.camunda.search.clients.query.SearchQueryBuilders.stringOperations;
 import static io.camunda.search.clients.query.SearchQueryBuilders.stringTerms;
 import static io.camunda.search.clients.query.SearchQueryBuilders.term;
+import static io.camunda.webapps.schema.descriptors.template.JobTemplate.PROCESS_DEFINITION_KEY;
 import static io.camunda.webapps.schema.descriptors.template.TaskTemplate.*;
+import static java.util.Optional.of;
 import static java.util.Optional.ofNullable;
 
 import io.camunda.search.clients.query.SearchQuery;
@@ -59,8 +62,7 @@ public class UserTaskFilterTransformer extends IndexFilterTransformer<UserTaskFi
     final var queries = new ArrayList<SearchQuery>();
     ofNullable(getUserTaskKeysQuery(filter.userTaskKeys())).ifPresent(queries::add);
     ofNullable(getProcessInstanceKeysQuery(filter.processInstanceKeys())).ifPresent(queries::add);
-    ofNullable(getProcessDefinitionKeyQuery(filter.processDefinitionKeys()))
-        .ifPresent(queries::add);
+    queries.addAll(getProcessDefinitionKeyQuery(filter.processDefinitionKeyOperations()));
     ofNullable(getElementIdQuery(filter.elementIds())).ifPresent(queries::add);
     queries.addAll(getNameQuery(filter.nameOperations()));
     queries.addAll(getProcessDefinitionIdsQuery(filter.processDefinitionIdOperations()));
@@ -172,9 +174,10 @@ public class UserTaskFilterTransformer extends IndexFilterTransformer<UserTaskFi
     return longTerms(PROCESS_INSTANCE_ID, processInstanceKeys);
   }
 
-  private SearchQuery getProcessDefinitionKeyQuery(final List<Long> processDefinitionIds) {
+  private List<SearchQuery> getProcessDefinitionKeyQuery(
+      final List<Operation<Long>> processDefinitionKeys) {
     // In ElasticSearch, "processDefinitionKey" is stored in field "processDefinitionId"
-    return longTerms(PROCESS_DEFINITION_ID, processDefinitionIds);
+    return longOperations(PROCESS_DEFINITION_ID, processDefinitionKeys);
   }
 
   private SearchQuery getUserTaskKeysQuery(final List<Long> userTaskKeys) {

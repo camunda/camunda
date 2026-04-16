@@ -18,10 +18,12 @@ package io.camunda.client.impl.search.filter;
 import io.camunda.client.api.search.enums.UserTaskState;
 import io.camunda.client.api.search.filter.UserTaskFilter;
 import io.camunda.client.api.search.filter.VariableValueFilter;
+import io.camunda.client.api.search.filter.builder.BasicStringProperty;
 import io.camunda.client.api.search.filter.builder.DateTimeProperty;
 import io.camunda.client.api.search.filter.builder.IntegerProperty;
 import io.camunda.client.api.search.filter.builder.StringProperty;
 import io.camunda.client.api.search.filter.builder.UserTaskStateProperty;
+import io.camunda.client.impl.search.filter.builder.BasicStringPropertyImpl;
 import io.camunda.client.impl.search.filter.builder.DateTimePropertyImpl;
 import io.camunda.client.impl.search.filter.builder.IntegerPropertyImpl;
 import io.camunda.client.impl.search.filter.builder.StringPropertyImpl;
@@ -155,7 +157,10 @@ public class UserTaskFilterImpl
 
   @Override
   public UserTaskFilter processDefinitionKey(final Long processDefinitionKey) {
-    filter.setProcessDefinitionKey(ParseUtil.keyToString(processDefinitionKey));
+    final Consumer<BasicStringProperty> fn = b -> b.eq(ParseUtil.keyToString(processDefinitionKey));
+    final BasicStringProperty property = new BasicStringPropertyImpl();
+    fn.accept(property);
+    filter.setProcessDefinitionKey(provideSearchRequestProperty(property));
     return this;
   }
 

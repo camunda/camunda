@@ -11,7 +11,6 @@ import static io.camunda.util.CollectionUtil.addValuesToList;
 import static io.camunda.util.CollectionUtil.collectValues;
 import static io.camunda.util.CollectionUtil.collectValuesAsList;
 
-import io.camunda.search.filter.ProcessInstanceFilter.Builder;
 import io.camunda.util.FilterUtil;
 import io.camunda.util.ObjectBuilder;
 import java.time.OffsetDateTime;
@@ -28,7 +27,7 @@ public record UserTaskFilter(
     List<Operation<Integer>> priorityOperations,
     List<Operation<String>> stateOperations,
     List<Long> processInstanceKeys,
-    List<Long> processDefinitionKeys,
+    List<Operation<Long>> processDefinitionKeyOperations,
     List<Operation<String>> processDefinitionIdOperations,
     List<Operation<String>> candidateUserOperations,
     List<Operation<String>> candidateGroupOperations,
@@ -53,7 +52,7 @@ public record UserTaskFilter(
     private List<Operation<Integer>> priorityOperations;
     private List<Operation<String>> stateOperations;
     private List<Long> processInstanceKeys;
-    private List<Long> processDefinitionKeys;
+    private List<Operation<Long>> processDefinitionKeyOperations;
     private List<Operation<String>> processDefinitionIdOperations;
     private List<Operation<String>> candidateUserOperations;
     private List<Operation<String>> candidateGroupOperations;
@@ -159,13 +158,19 @@ public record UserTaskFilter(
       return this;
     }
 
-    public Builder processDefinitionKeys(final Long... values) {
-      return processDefinitionKeys(collectValuesAsList(values));
+    public Builder processDefinitionKeyOperations(final List<Operation<Long>> operations) {
+      processDefinitionKeyOperations = addValuesToList(processDefinitionKeyOperations, operations);
+      return this;
     }
 
-    public Builder processDefinitionKeys(final List<Long> values) {
-      processDefinitionKeys = addValuesToList(processDefinitionKeys, values);
-      return this;
+    @SafeVarargs
+    public final Builder processDefinitionKeyOperations(
+        final Operation<Long> operation, final Operation<Long>... operations) {
+      return processDefinitionKeyOperations(collectValues(operation, operations));
+    }
+
+    public Builder processDefinitionKeys(final Long value, final Long... values) {
+      return processDefinitionKeyOperations(FilterUtil.mapDefaultToOperation(value, values));
     }
 
     public Builder processDefinitionIdOperations(final List<Operation<String>> operations) {
@@ -311,7 +316,7 @@ public record UserTaskFilter(
           Objects.requireNonNullElse(priorityOperations, Collections.emptyList()),
           Objects.requireNonNullElse(stateOperations, Collections.emptyList()),
           Objects.requireNonNullElse(processInstanceKeys, Collections.emptyList()),
-          Objects.requireNonNullElse(processDefinitionKeys, Collections.emptyList()),
+          Objects.requireNonNullElse(processDefinitionKeyOperations, Collections.emptyList()),
           Objects.requireNonNullElse(processDefinitionIdOperations, Collections.emptyList()),
           Objects.requireNonNullElse(candidateUserOperations, Collections.emptyList()),
           Objects.requireNonNullElse(candidateGroupOperations, Collections.emptyList()),

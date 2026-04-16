@@ -377,7 +377,9 @@ public class SimpleSearchQueryMapper {
           .map(SimpleSearchQueryMapper::mapVariableValueFilterProperties)
           .ifPresent(filterModel::localVariables);
       ofNullable(filter.getUserTaskKey()).ifPresent(filterModel::userTaskKey);
-      ofNullable(filter.getProcessDefinitionKey()).ifPresent(filterModel::processDefinitionKey);
+      ofNullable(filter.getProcessDefinitionKey())
+          .map(SimpleSearchQueryMapper::getBasicStringFilter)
+          .ifPresent(filterModel::processDefinitionKey);
       ofNullable(filter.getProcessInstanceKey()).ifPresent(filterModel::processInstanceKey);
       ofNullable(filter.getElementInstanceKey()).ifPresent(filterModel::elementInstanceKey);
       ofNullable(filter.getTags()).ifPresent(filterModel::tags);
