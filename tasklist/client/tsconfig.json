@@ -1,36 +1,9 @@
 {
-  "compilerOptions": {
-    /* Language and Environment */
-    "target": "ES2022",
-    "lib": ["ES2022", "DOM", "DOM.Iterable"],
-    "skipLibCheck": true,
-    "jsx": "react-jsx",
-    "allowJs": false,
-    "noEmit": true,
-    "plugins": [{"name": "typescript-plugin-css-modules"}],
-
-    /* Modules and Constraints */
-    "module": "preserve",
-    "moduleResolution": "Bundler",
-    "moduleDetection": "force",
-    "verbatimModuleSyntax": true,
-    "isolatedModules": true,
-    "noUncheckedSideEffectImports": true,
-    "erasableSyntaxOnly": true,
-    "resolveJsonModule": true,
-    "baseUrl": "src",
-    "types": ["vitest/globals"],
-
-    /* Type Checking */
-    "strict": true,
-    "noFallthroughCasesInSwitch": true,
-    "noImplicitOverride": true,
-    "noImplicitReturns": true,
-    "noUnusedLocals": true,
-    "noUnusedParameters": true,
-    "noPropertyAccessFromIndexSignature": false,
-    "noUncheckedIndexedAccess": true,
-    "allowUnreachableCode": false,
-  },
-  "include": ["src", "./vite.config.ts"]
+  "files": [],
+  "references": [
+    {"path": "./tsconfig.app.json"},
+    {"path": "./tsconfig.node.json"},
+    {"path": "./tsconfig.vitest.json"},
+    {"path": "./e2e/tsconfig.json"}
+  ]
 }

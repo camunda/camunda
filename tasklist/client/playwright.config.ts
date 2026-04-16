@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {devices, PlaywrightTestConfig} from '@playwright/test';
+import {devices, type PlaywrightTestConfig} from '@playwright/test';
 import playwrightPkg from '@playwright/test/package.json' with {type: 'json'};
 
 const BASE_URL = 'http://localhost:3003/tasklist/';
