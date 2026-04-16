@@ -39,7 +39,7 @@ All automated load tests flow through `camunda-load-test.yml`, which builds imag
 graph TD
     subgraph "Scheduled Triggers"
         SCHEDULED["camunda-scheduled-release-<br/>load-tests.yml<br/><i>Daily 04:00 UTC</i>"]
-        DAILY["camunda-daily-load-tests.yml<br/><i>Daily 04:00 UTC</i>"]
+        DAILY["camunda-daily-load-tests.yml<br/><i>Weekdays 02:00 UTC</i>"]
         WEEKLY["camunda-weekly-load-tests.yml<br/><i>Monday 01:00 UTC</i>"]
         ROLLING["zeebe-update-long-running-<br/>migrating-benchmark.yaml<br/><i>Monday 00:00 UTC</i>"]
         CLEANUP["camunda-load-test-clean-up.yml<br/><i>Daily 04:00 UTC</i>"]
