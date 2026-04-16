@@ -9,14 +9,14 @@ package io.camunda.zeebe.scheduler.retry;
 
 public final class RetryLimitExceededException extends RuntimeException {
 
-  private final int retryCount;
+  private final int retryLimit;
 
-  public RetryLimitExceededException(final int retryCount, final Throwable cause) {
-    super("Retry limit of " + retryCount + " exceeded", cause);
-    this.retryCount = retryCount;
+  public RetryLimitExceededException(final int retryLimit, final Throwable cause) {
+    super("Retry limit of " + retryLimit + " exceeded", cause);
+    this.retryLimit = retryLimit;
   }
 
-  public int getRetryCount() {
-    return retryCount;
+  public int getRetryLimit() {
+    return retryLimit;
   }
 }
