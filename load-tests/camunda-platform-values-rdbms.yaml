@@ -66,6 +66,7 @@ orchestration:
         ##
         camunda.data.secondary-storage.rdbms.replication.enabled: true
         camunda.data.secondary-storage.rdbms.replication.min-sync-replicas: 1
+        camunda.data.secondary-storage.rdbms.replication.max-lag: PT2M
     # This file is loaded after application.yml (higher priority). It is empty by default,
     # but can be overridden via --set-file for specific scenarios (e.g. max) to change settings
     # like disabling consistency checks without duplicating the full application.yml content.
