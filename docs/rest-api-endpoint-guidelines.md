@@ -600,109 +600,30 @@ MyResourceFilter:
 ### 2.12 Upgrading an existing filter field to advanced search
 
 When an **existing** search filter field needs to be upgraded from a plain string to support advanced
-operators (e.g., adding `$like` to `elementId`), you cannot simply swap the type to
-`StringFilterProperty`. This would change the codegen output and break generated SDKs (see the
-compatibility table in §2.8). Instead, create a **dedicated filter property type** that preserves
+operators (e.g., adding `$like` to `elementId`), do not swap the type to `StringFilterProperty`
+directly. This would change the codegen output and break generated SDKs (see the compatibility table
+in §2.8). Instead, create a **dedicated filter property type** in `identifiers.yaml` that preserves
 the original identifier type.
 
-This pattern was established in [#50744](https://github.com/camunda/camunda/pull/50744) when adding
-`$like` support to `elementId` and `elementName` on the element instance search endpoint.
+**Do not use `StringFilterProperty` directly** for existing fields because it loses identifier
+metadata (`example`, `format`, `x-semantic-type`) and causes codegen type conflicts in the gateway
+model.
 
-#### Step-by-step
+#### Checklist
 
-**1. Define a dedicated filter type in `identifiers.yaml`:**
+1. **`identifiers.yaml`** - Define a `<Type>FilterProperty` as a `oneOf` of the original identifier
+   (plain string, backward compatible) and a new `Advanced<Type>Filter` object. The advanced filter
+   references the original identifier in each operator field.
+2. **Endpoint spec** - Reference the new filter type instead of the original identifier.
+3. **`gateways/gateway-model/pom.xml`** - Add type mappings for both profiles: advanced
+   (`=StringFilterProperty`) and simple (`=String`).
+4. **Java client** - Add `Consumer<StringProperty>` overload. Keep the existing `String` method,
+   delegating to `b -> b.eq(value)`.
+5. **Search domain** - Change `List<String>` to `List<Operation<String>>` in the filter record.
+   Keep convenience methods that wrap in `EQUALS`. Update the transformer from `stringTerms()` to
+   `stringOperations()`. Update RDBMS MyBatis mapper to use `operationCondition`.
 
-Create a `oneOf` that accepts either the original identifier as a plain string (backward compatible)
-or a new advanced filter object. The advanced filter references the original identifier in each
-operator field to preserve validation, examples, and `x-semantic-type` metadata.
-
-```yaml
-# identifiers.yaml
-ElementIdFilterProperty:
-  description: ElementId property with full advanced search capabilities.
-  oneOf:
-    - type: string
-      title: Exact match
-      description: Matches the value exactly.
-      allOf:
-        - $ref: '#/components/schemas/ElementId'
-    - $ref: '#/components/schemas/AdvancedElementIdFilter'
-
-AdvancedElementIdFilter:
-  title: Advanced filter
-  description: Advanced ElementId filter.
-  type: object
-  properties:
-    $eq:
-      description: Checks for equality with the provided value.
-      allOf:
-        - $ref: '#/components/schemas/ElementId'
-    $neq:
-      description: Checks for inequality with the provided value.
-      allOf:
-        - $ref: '#/components/schemas/ElementId'
-    $exists:
-      description: Checks if the current property exists.
-      type: boolean
-    $in:
-      description: Checks if the property matches any of the provided values.
-      type: array
-      items:
-        $ref: '#/components/schemas/ElementId'
-    $notIn:
-      description: Checks if the property matches none of the provided values.
-      type: array
-      items:
-        $ref: '#/components/schemas/ElementId'
-    $like:
-      $ref: 'filters.yaml#/components/schemas/LikeFilter'
-```
-
-**2. Reference the new filter type in the endpoint spec:**
-
-```yaml
-# element-instances.yaml (filter section)
-elementId:
-  description: The element ID for this element instance.
-  allOf:
-    - $ref: 'identifiers.yaml#/components/schemas/ElementIdFilterProperty'
-```
-
-**3. Add codegen type mappings in `gateways/gateway-model/pom.xml`:**
-
-Both generator profiles need a mapping for the new type:
-
-```xml
-<!-- Advanced profile (uses real filter types) -->
-<typeMapping>ElementIdFilterProperty=StringFilterProperty</typeMapping>
-
-<!-- Simple profile (maps to String for backward compatibility) -->
-<typeMapping>ElementIdFilterProperty=String</typeMapping>
-```
-
-**4. Update the Java client:**
-
-- Add an overloaded method with `Consumer<StringProperty>` for the advanced form.
-- Keep the existing `String` method for backward compatibility, delegating to `b -> b.eq(value)`.
-- Add the type mapping in the client `pom.xml` if needed.
-
-**5. Update the search domain filter and transformer:**
-
-- Change `List<String>` fields to `List<Operation<String>>` in the filter record.
-- Keep convenience methods (e.g., `flowNodeIds(String, String...)`) that wrap in `EQUALS`.
-- Update the transformer from `stringTerms()` to `stringOperations()`.
-- Update the RDBMS MyBatis mapper to use `operationCondition` instead of `IN` clauses.
-
-#### Why not use `StringFilterProperty` directly?
-
-Using `StringFilterProperty` directly (as you would for a **new** field) causes two problems for
-**existing** fields:
-
-1. **Loses identifier metadata.** The original type's `example`, `format`, and `x-semantic-type`
-   are not carried over, so SDK generators produce less informative types.
-2. **Codegen type conflicts.** The `oneOf` in `StringFilterProperty` generates an interface
-   (gateway model) that requires custom deserializer registration. A dedicated type gets its own
-   codegen mapping, avoiding this issue.
+For a complete reference implementation, see [#50744](https://github.com/camunda/camunda/pull/50744).
 
 ### 2.13 Deprecated enum members
 
