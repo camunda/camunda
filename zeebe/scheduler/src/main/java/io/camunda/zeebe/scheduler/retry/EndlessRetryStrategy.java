@@ -25,8 +25,13 @@ public final class EndlessRetryStrategy implements RetryStrategy {
   private BooleanSupplier terminateCondition;
 
   public EndlessRetryStrategy(final ActorControl actor) {
+    this(actor, ActorRetryMechanism.UNLIMITED);
+  }
+
+  public EndlessRetryStrategy(final ActorControl actor, final int maxRetries) {
     this.actor = actor;
     retryMechanism = new ActorRetryMechanism();
+    retryMechanism.setMaxRetries(maxRetries);
   }
 
   @Override
@@ -57,6 +62,9 @@ public final class EndlessRetryStrategy implements RetryStrategy {
       if (terminateCondition.getAsBoolean()) {
         currentFuture.complete(false);
       } else {
+        if (retryMechanism.incrementAndCheckLimit()) {
+          return;
+        }
         actor.run(this::run);
         actor.yieldThread();
         LOG.error(
