@@ -75,8 +75,8 @@ const onProcessInstanceTabTransition = ({
   return (
     currentProcessInstance !== null &&
     nextProcessInstance !== null &&
-    currentProcessInstance.params.processInstanceId ===
-      nextProcessInstance.params.processInstanceId
+    currentProcessInstance.params['processInstanceId'] ===
+      nextProcessInstance.params['processInstanceId']
   );
 };
 
