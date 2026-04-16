@@ -11,7 +11,6 @@
   </Appenders>
   <Loggers>
     <Logger name="io.camunda.zeebe.client.job.poller" level="off" />
-    <Logger name="io.camunda.tasklist.qa.util.ZeebeTestUtil" level="info" />
 
     <Root level="info">
       <AppenderRef ref="Console"/>
