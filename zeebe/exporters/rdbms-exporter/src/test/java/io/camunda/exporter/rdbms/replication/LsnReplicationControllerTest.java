@@ -368,37 +368,22 @@ class LsnReplicationControllerTest {
   }
 
   @Test
-  void shouldPauseWhenConnectedReplicasBelowMinSyncReplicasEvenIfDbReportedLagIsZero() {
-    // given
-    final var fixture = new TestFixture();
-    fixture.replicationConfiguration.setMinSyncReplicas(1);
-    fixture.replicationConfiguration.setMaxLag(Duration.ofMinutes(5));
-    when(fixture.lsnProvider.getCurrent()).thenReturn(10L);
-    // no replicas connected — in Postgres pg_stat_replication is empty, so there are no
-    // rows at all and the effective lag computed by the controller is 0. The quorum check
-    // must still force a pause.
-    when(fixture.lsnProvider.getReplicationStatuses()).thenReturn(List.of());
-    fixture.replicationController.onFlush(42L);
-
-    // when
-    fixture.firstScheduledCheck().run();
-
-    // then: paused even though the computed effective lag is zero
-    assertThat(fixture.replicationController.isPaused()).isTrue();
-    verify(fixture.controller, never()).updateLastExportedRecordPosition(42L);
-  }
-
-  @Test
   void shouldResumeWhenEnoughReplicasReconnect() {
     // given
     final var fixture = new TestFixture();
     fixture.replicationConfiguration.setMinSyncReplicas(1);
-    fixture.replicationConfiguration.setMaxLag(Duration.ofMinutes(5));
+    fixture.replicationConfiguration.setMaxLag(Duration.ofSeconds(5));
     when(fixture.lsnProvider.getCurrent()).thenReturn(10L);
     when(fixture.lsnProvider.getReplicationStatuses()).thenReturn(List.of());
     fixture.replicationController.onFlush(42L);
 
     // when: first tick — no replicas, controller pauses
+    // create 5 pending entries with enqueue time differences of 100ms
+    fixture.replicationController.onFlush(41L);
+    fixture.clock.advance(Duration.ofSeconds(3));
+    fixture.replicationController.onFlush(42L);
+    fixture.clock.advance(Duration.ofSeconds(6));
+
     fixture.firstScheduledCheck().run();
     assertThat(fixture.replicationController.isPaused()).isTrue();
 
@@ -429,6 +414,68 @@ class LsnReplicationControllerTest {
     // applies so the entry just sits in the queue until maxLag elapses.
     assertThat(fixture.replicationController.isPaused()).isFalse();
     verify(fixture.controller, never()).updateLastExportedRecordPosition(42L);
+  }
+
+  @Test
+  void shouldNotPauseWhenOnlyOneReplicaIsReportedAndPendingEntriesAreFresh() {
+    // given
+    final var fixture = new TestFixture();
+    fixture.replicationConfiguration.setMinSyncReplicas(2);
+    fixture.replicationConfiguration.setMaxLag(Duration.ofMinutes(1));
+    fixture.replicationConfiguration.setPauseOnMaxLagExceeded(true);
+    when(fixture.lsnProvider.getCurrent()).thenReturn(10L);
+    when(fixture.lsnProvider.getReplicationStatuses())
+        .thenReturn(List.of(replicationStatus("replica-1", 10L, 0L)));
+
+    // create 5 pending entries with enqueue time differences of 100ms
+    fixture.replicationController.onFlush(41L);
+    fixture.clock.advance(Duration.ofMillis(100));
+    fixture.replicationController.onFlush(42L);
+    fixture.clock.advance(Duration.ofMillis(100));
+    fixture.replicationController.onFlush(43L);
+    fixture.clock.advance(Duration.ofMillis(100));
+    fixture.replicationController.onFlush(44L);
+    fixture.clock.advance(Duration.ofMillis(100));
+    fixture.replicationController.onFlush(45L);
+    // oldest pending entry is 500ms old at check time
+    fixture.clock.advance(Duration.ofMillis(100));
+
+    // when
+    fixture.firstScheduledCheck().run();
+
+    // then
+    assertThat(fixture.replicationController.isPaused()).isFalse();
+  }
+
+  @Test
+  void shouldPauseWhenOnlyOneReplicaIsReportedAndPendingEntriesAreTooOld() {
+    // given
+    final var fixture = new TestFixture();
+    fixture.replicationConfiguration.setMinSyncReplicas(2);
+    fixture.replicationConfiguration.setMaxLag(Duration.ofMillis(1000));
+    fixture.replicationConfiguration.setPauseOnMaxLagExceeded(true);
+    when(fixture.lsnProvider.getCurrent()).thenReturn(10L);
+    when(fixture.lsnProvider.getReplicationStatuses())
+        .thenReturn(List.of(replicationStatus("replica-1", 10L, 0L)));
+
+    // create 5 pending entries with enqueue time differences of 100ms
+    fixture.replicationController.onFlush(41L);
+    fixture.clock.advance(Duration.ofMillis(500));
+    fixture.replicationController.onFlush(42L);
+    fixture.clock.advance(Duration.ofMillis(500));
+    fixture.replicationController.onFlush(43L);
+    fixture.clock.advance(Duration.ofMillis(500));
+    fixture.replicationController.onFlush(44L);
+    fixture.clock.advance(Duration.ofMillis(500));
+    fixture.replicationController.onFlush(45L);
+    // oldest pending entry is 2500ms old at check time
+    fixture.clock.advance(Duration.ofMillis(500));
+
+    // when
+    fixture.firstScheduledCheck().run();
+
+    // then
+    assertThat(fixture.replicationController.isPaused()).isTrue();
   }
 
   @Test
