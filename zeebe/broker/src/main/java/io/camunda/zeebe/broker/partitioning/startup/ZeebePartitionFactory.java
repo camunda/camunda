@@ -82,10 +82,13 @@ import java.io.UncheckedIOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public final class ZeebePartitionFactory {
 
   public static final String DEFAULT_RUNTIME_DIRECTORY = "runtime";
+  private static final Logger LOGGER = LoggerFactory.getLogger(ZeebePartitionFactory.class);
   private static final List<StartupStep<PartitionStartupContext>> STARTUP_STEPS = List.of();
   private final ActorSchedulingService actorSchedulingService;
   private final BrokerCfg brokerCfg;
@@ -174,7 +177,7 @@ public final class ZeebePartitionFactory {
             () -> MicrometerUtil.wrap(partitionMeterRegistry, PartitionKeyNames.tags(partitionId)),
             sharedRocksDbResources,
             getPartitionsPerBroker(
-                clusterConfigurationService, membershipService.getLocalMember().id()));
+                clusterConfigurationService, membershipService.getLocalMember().id(), brokerCfg));
     final StateController stateController =
         createStateController(raftPartition, zeebeFactory, snapshotStore, snapshotStore);
 
@@ -226,17 +229,19 @@ public final class ZeebePartitionFactory {
 
     final var localMemberId = clusterServices.getMembershipService().getLocalMember().id();
     final int partitionsPerBroker =
-        getPartitionsPerBroker(clusterConfigurationService, localMemberId);
+        getPartitionsPerBroker(clusterConfigurationService, localMemberId, brokerCfg);
     sharedRocksDbResources.allocate(
         RocksDbSharedCache.getSharedCacheSize(brokerCfg, brokerMeterRegistry, partitionsPerBroker));
   }
 
   /**
    * Determines the number of partitions this broker is responsible for. Attempts to get the actual
-   * partition count from the cluster topology.
+   * partition count from the cluster topology, with a static-config estimate as last resort.
    */
   static int getPartitionsPerBroker(
-      final ClusterConfigurationService clusterConfigurationService, final MemberId localMemberId) {
+      final ClusterConfigurationService clusterConfigurationService,
+      final MemberId localMemberId,
+      final BrokerCfg brokerCfg) {
     final long partitionCount =
         clusterConfigurationService.getMemberPartitions(localMemberId).size();
     if (partitionCount > 0) {
@@ -245,16 +250,30 @@ public final class ZeebePartitionFactory {
 
     // Fall back to counting JOINING partitions — this happens during scale-up when a broker is
     // being asked to join a partition for the first time, and the partition distribution does not
-    // include the partitions that are  in JOINING.
+    // include the partitions that are in JOINING state yet.
     final int joiningPartitionCount =
         clusterConfigurationService.getJoiningMemberPartitionCount(localMemberId);
     if (joiningPartitionCount > 0) {
       return joiningPartitionCount;
     }
 
-    throw new IllegalStateException(
-        "Local broker with member id %s is not assigned to any partition in the topology."
-            .formatted(localMemberId));
+    // Last-resort fallback: the cluster configuration hasn't been updated yet (e.g. join called
+    // before the dynamic config reflects the JOINING state). Estimate the per-broker partition count
+    // from the static cluster config so the RocksDB cache is sized appropriately.
+    final var clusterCfg = brokerCfg.getCluster();
+    final int estimate =
+        (int)
+            Math.ceil(
+                (double) clusterCfg.getPartitionsCount()
+                    * clusterCfg.getReplicationFactor()
+                    / clusterCfg.getClusterSize());
+    LOGGER.warn(
+        "Could not determine partition count for broker {} from topology; "
+            + "falling back to static config estimate of {} partition(s) for RocksDB cache sizing. "
+            + "This is expected when joining a partition before the cluster configuration is updated.",
+        localMemberId,
+        estimate);
+    return estimate;
   }
 
   private List<PartitionTransitionStep> generateTransitionSteps() {
