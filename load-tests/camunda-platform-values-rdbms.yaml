@@ -26,7 +26,7 @@ orchestration:
     secondaryStorage:
       type: rdbms
       rdbms:
-        url: jdbc:postgresql://postgres-postgresql:5432/camunda
+        url: jdbc:postgresql://postgresql-primary:5432/camunda
         username: camunda
         secret:
           inlineSecret: camunda
@@ -61,6 +61,11 @@ orchestration:
         camunda.data.secondary-storage.rdbms.history.default-history-ttl: PT1H
         camunda.data.secondary-storage.rdbms.history.min-history-cleanup-interval: PT1S
         camunda.data.secondary-storage.rdbms.history.max-history-cleanup-interval: PT1M
+        ##
+        ## replication config
+        ##
+        camunda.data.secondary-storage.rdbms.replication.enabled: true
+        camunda.data.secondary-storage.rdbms.replication.min-sync-replicas: 1
     # This file is loaded after application.yml (higher priority). It is empty by default,
     # but can be overridden via --set-file for specific scenarios (e.g. max) to change settings
     # like disabling consistency checks without duplicating the full application.yml content.
@@ -84,29 +89,36 @@ image:
   repository: camunda-benchmark/dockerhub/bitnami/postgresql
   tag: latest
 
+architecture: replication
+
 postgresqlSharedPreloadLibraries: pg_stat_statements
 
 primary:
+  initdb:
+    scripts:
+      01-grant-pg-read-all-stats.sql: |
+        GRANT pg_read_all_stats TO camunda;
+
   resources:
     requests:
-      memory: 4Gi
+      memory: 8Gi
       cpu: 3000m
     limits:
       cpu: 3000m
-      memory: 6Gi
+      memory: 12Gi
 
   nodeSelector:
-    component: benchmark-n2-standard-4
+    component: benchmark-n2-standard-8
     topology.kubernetes.io/zone: __AVAILABILITY_ZONE__
 
   tolerations:
     - key: nodepool
       operator: Equal
-      value: n2-standard-4
+      value: n2-standard-8
       effect: NoSchedule
 
   persistence:
-    size: 128Gi
+    size: 512Gi
     storageClass: benchmark-ssd-zonal-v1
 
   extendedConfiguration: |-
@@ -137,6 +149,31 @@ primary:
     pg_stat_statements.max = 10000
     track_io_timing = on
     track_functions = all
+
+readReplicas:
+  replicaCount: 2
+
+  resources:
+    requests:
+      memory: 8Gi
+      cpu: 3000m
+    limits:
+      cpu: 3000m
+      memory: 12Gi
+
+  nodeSelector:
+    component: benchmark-n2-standard-8
+    topology.kubernetes.io/zone: __AVAILABILITY_ZONE__
+
+  tolerations:
+    - key: nodepool
+      operator: Equal
+      value: n2-standard-8
+      effect: NoSchedule
+
+  persistence:
+    size: 512Gi
+    storageClass: "benchmark-ssd-zonal-v1"
 
 ########################################################################################
 ################################################### Elasticsearch cluster configuration
