@@ -88,22 +88,14 @@ public class LsnReplicationController implements ReplicationController {
       final int minSyncReplicas = replicationConfiguration.getMinSyncReplicas();
       final var statuses = lsnProvider.getReplicationStatuses();
       final int connectedReplicas = statuses.size();
-      // When fewer replicas are connected than required, the DB-reported lag is not
-      // trustworthy — e.g. Postgres's pg_stat_replication is empty when no replicas are
-      // connected, so replay_lag yields no rows even though nothing is being replicated.
-      // Aurora exhibits the same behaviour on a non-global cluster. Treat this as a pause
-      // condition so the exporter stops accepting records instead of silently running
-      // with broken replication.
-      final boolean quorumViolated = connectedReplicas < minSyncReplicas;
 
       final long confirmedLsn = computeConfirmedLsn(statuses);
       final Duration maxLag = replicationConfiguration.getMaxLag();
       final Duration dbReportedLag = computeEffectiveLag(statuses, minSyncReplicas);
       final boolean dbLagExceeded = dbReportedLag.compareTo(maxLag) > 0;
       final boolean pauseOnMaxLag = replicationConfiguration.isPauseOnMaxLagExceeded();
-      final boolean shouldPause = pauseOnMaxLag && (dbLagExceeded || quorumViolated);
-      updatePausedState(
-          shouldPause, dbReportedLag, maxLag, quorumViolated, connectedReplicas, minSyncReplicas);
+      final boolean shouldPause = pauseOnMaxLag && dbLagExceeded;
+      updatePausedState(shouldPause, dbReportedLag, maxLag, connectedReplicas, minSyncReplicas);
       final long now = clock.millis();
       final long lagCutoff = now - maxLag.toMillis();
 
@@ -163,24 +155,15 @@ public class LsnReplicationController implements ReplicationController {
       final boolean shouldPause,
       final Duration dbReportedLag,
       final Duration maxLag,
-      final boolean quorumViolated,
       final int connectedReplicas,
       final int minSyncReplicas) {
     final boolean wasPaused = paused.getAndSet(shouldPause);
     if (shouldPause && !wasPaused) {
-      if (quorumViolated) {
-        LOG.warn(
-            "[RDBMS Exporter P{}] Pausing exporter: only {} replica(s) connected, minSyncReplicas={} — replication quorum not met",
-            partitionId,
-            connectedReplicas,
-            minSyncReplicas);
-      } else {
-        LOG.warn(
-            "[RDBMS Exporter P{}] Pausing exporter: DB-reported replication lag ({}) exceeded maxLag ({})",
-            partitionId,
-            dbReportedLag,
-            maxLag);
-      }
+      LOG.warn(
+          "[RDBMS Exporter P{}] Pausing exporter: DB-reported replication lag ({}) exceeded maxLag ({})",
+          partitionId,
+          dbReportedLag,
+          maxLag);
     } else if (!shouldPause && wasPaused) {
       LOG.info(
           "[RDBMS Exporter P{}] Resuming exporter: replication quorum met ({}/{} replicas) and DB-reported lag ({}) within maxLag ({})",
