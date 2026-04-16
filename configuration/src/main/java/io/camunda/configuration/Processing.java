@@ -28,6 +28,8 @@ public class Processing {
   private static final boolean DEFAULT_ENABLE_STRAIGHTTHROUGH_PROCESSING_LOOP_DETECTOR = true;
   private static final boolean DEFAULT_ENABLE_MESSAGE_BODY_ON_EXPIRED = false;
 
+  private static final int DEFAULT_MAX_RECOVERABLE_RETRIES = 100;
+
   private static final Set<String> LEGACY_MAX_COMMANDS_IN_BATCH_PROPERTIES =
       Set.of("zeebe.broker.processingCfg.maxCommandsInBatch");
   private static final Set<String> LEGACY_ENABLE_ASYNC_SCHEDULED_TASKS_PROPERTIES =
@@ -166,6 +168,13 @@ public class Processing {
    * default value is false, meaning message bodies will not be appended unless explicitly enabled.
    */
   private boolean enableMessageBodyOnExpired = DEFAULT_ENABLE_MESSAGE_BODY_ON_EXPIRED;
+
+  /**
+   * Sets the maximum number of recoverable retries for state update and replay operations. When the
+   * limit is reached, the operation fails and the partition restarts. Must be a positive integer.
+   * Default is 100.
+   */
+  private int maxRecoverableRetries = DEFAULT_MAX_RECOVERABLE_RETRIES;
 
   public Integer getMaxCommandsInBatch() {
     return UnifiedConfigurationHelper.validateLegacyConfiguration(
@@ -317,6 +326,14 @@ public class Processing {
 
   public void setEnableMessageBodyOnExpired(final boolean enableMessageBodyOnExpired) {
     this.enableMessageBodyOnExpired = enableMessageBodyOnExpired;
+  }
+
+  public int getMaxRecoverableRetries() {
+    return maxRecoverableRetries;
+  }
+
+  public void setMaxRecoverableRetries(final int maxRecoverableRetries) {
+    this.maxRecoverableRetries = maxRecoverableRetries;
   }
 
   public FlowControl getFlowControl() {

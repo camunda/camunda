@@ -118,7 +118,6 @@ public final class ProcessingStateMachine {
   private static final String NOTIFY_SKIPPED_LISTENER_ERROR_MESSAGE =
       "Expected to invoke skipped listener for record '{} {}' successfully, but exception was thrown.";
   private static final Duration PROCESSING_RETRY_DELAY = Duration.ofMillis(250);
-  private static final int MAX_UPDATE_STATE_RETRIES = 10_000;
   private static final String ERROR_MESSAGE_HANDLING_PROCESSING_ERROR_FAILED =
       "Expected to process command '{} {}' successfully on stream processor, but caught unexpected exception. Failed to handle the exception gracefully.";
   private final RecordMetadataBlock recordTypeDecoder = new RecordMetadataBlock();
@@ -187,7 +186,8 @@ public final class ProcessingStateMachine {
 
     writeRetryStrategy = new AbortableRetryStrategy(actor);
     sideEffectsRetryStrategy = new AbortableRetryStrategy(actor);
-    updateStateRetryStrategy = new RecoverableRetryStrategy(actor, MAX_UPDATE_STATE_RETRIES);
+    updateStateRetryStrategy =
+        new RecoverableRetryStrategy(actor, context.getMaxRecoverableRetries());
     this.shouldProcessNext = shouldProcessNext;
 
     final int partitionId = context.getLogStream().getPartitionId();
