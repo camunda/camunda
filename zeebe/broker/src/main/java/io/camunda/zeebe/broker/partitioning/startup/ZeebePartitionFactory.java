@@ -17,6 +17,7 @@ import io.camunda.zeebe.broker.PartitionRaftListener;
 import io.camunda.zeebe.broker.clustering.ClusterServices;
 import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
 import io.camunda.zeebe.broker.logstreams.state.StatePositionSupplier;
+import io.camunda.zeebe.broker.partitioning.RocksDbSharedCache;
 import io.camunda.zeebe.broker.partitioning.topology.ClusterConfigurationService;
 import io.camunda.zeebe.broker.partitioning.topology.TopologyManagerImpl;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
@@ -260,7 +261,8 @@ public final class ZeebePartitionFactory {
     }
 
     // Last-resort fallback: the cluster configuration hasn't been updated yet (e.g. join called
-    // before the dynamic config reflects the JOINING state). Estimate the per-broker partition count
+    // before the dynamic config reflects the JOINING state). Estimate the per-broker partition
+    // count
     // from the static cluster config so the RocksDB cache is sized appropriately.
     final var clusterCfg = brokerCfg.getCluster();
     final int estimate =

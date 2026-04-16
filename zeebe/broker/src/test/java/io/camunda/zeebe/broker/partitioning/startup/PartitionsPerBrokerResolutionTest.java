@@ -42,7 +42,8 @@ class PartitionsPerBrokerResolutionTest {
       final var configService = mock(ClusterConfigurationService.class);
       final var partition1 = mock(PartitionMetadata.class);
       final var partition2 = mock(PartitionMetadata.class);
-      when(configService.getMemberPartitions(MEMBER_ID)).thenReturn(List.of(partition1, partition2));
+      when(configService.getMemberPartitions(MEMBER_ID))
+          .thenReturn(List.of(partition1, partition2));
 
       // when
       final int result =
@@ -134,9 +135,7 @@ class PartitionsPerBrokerResolutionTest {
                   MemberState.initializeAsActive(
                       Map.of(
                           1, PartitionState.active(1, DynamicPartitionConfig.init()),
-                          2,
-                              PartitionState.active(1, DynamicPartitionConfig.init())
-                                  .toLeaving())));
+                          2, PartitionState.active(1, DynamicPartitionConfig.init()).toLeaving())));
       final var service = serviceWithConfig(config);
 
       // when
