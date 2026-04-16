@@ -330,66 +330,8 @@ jobs:
             validate_image "camunda/connectors:${CONNECTORS_TAG}" || exit 1
           fi
 
-  calculate-scenario-config:
-    name: Calculate Scenario Configuration
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    permissions: { }
-    outputs:
-      load-test-load: ${{ steps.config.outputs.load-test-load }}
-      platform-additional-config: ${{ steps.config.outputs.platform-additional-config }}
-    steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-        with:
-          ref: ${{ inputs.ref }}
-      - name: Calculate configuration based on scenario
-        id: config
-        run: |
-          scenario="${{ inputs.scenario }}"
-
-          # Default to max scenario if not provided
-          if [[ -z "$scenario" ]]; then
-            scenario="max"
-          fi
-
-          case "$scenario" in
-            latency)
-              echo "load-test-load=--set starter.rate=1 --set workers.worker.replicas=1" >> "$GITHUB_OUTPUT"
-              echo "platform-additional-config=" >> "$GITHUB_OUTPUT"
-              ;;
-            realistic)
-              echo "load-test-load=-f https://raw.githubusercontent.com/camunda/camunda-load-tests-helm/refs/heads/main/charts/camunda-load-tests/values-realistic-benchmark.yaml" >> "$GITHUB_OUTPUT"
-              echo "platform-additional-config=" >> "$GITHUB_OUTPUT"
-              ;;
-            typical)
-              # Output typical configuration directly to avoid quote escaping issues
-              echo "load-test-load=--set starter.rate=50 --set workers.worker.replicas=6 --set starter.bpmnXmlPath=bpmn/typical_process.bpmn" >> "$GITHUB_OUTPUT"
-              echo "platform-additional-config=" >> "$GITHUB_OUTPUT"
-              ;;
-            max)
-              echo "load-test-load=--set starter.rate=300" >> "$GITHUB_OUTPUT"
-              # For the max stress scenario, disable the experimental consistency checks to avoid overhead.
-              # We inject the overrides via --set-file into extraConfiguration (application-override.yml),
-              # which is loaded after (and thus takes priority over) the base application.yml.
-              echo "platform-additional-config=--set-file 'zeebe.extraConfiguration.application-override\.yml=./camunda-platform-override-values.yaml'" >> "$GITHUB_OUTPUT"
-              ;;
-            *)
-              echo "Error: Unknown scenario '$scenario'"
-              exit 1
-              ;;
-          esac
-      - name: Observe build status
-        if: always()
-        continue-on-error: true
-        uses: ./.github/actions/observe-build-status
-        with:
-          build_status: ${{ job.status }}
-          secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
-
   build-platform-images:
-    name: Build platform Docker images
+    name: Build Camunda
     needs: calculate-image-tag
     if: ${{ inputs.reuse-tag == '' && inputs.orchestration-tag == '' }}
     runs-on: ubuntu-latest
@@ -576,7 +518,6 @@ jobs:
     name: Deploy cluster under test
     needs:
       - calculate-image-tag
-      - calculate-scenario-config
       - build-platform-images
       - build-load-test-images
       - build-optimize-image
@@ -632,8 +573,7 @@ jobs:
                             --set global.image.repository=${{ env.IMAGE_REPOSITORY }} \
                             --set global.image.pullSecrets[0].name=harbor-registry"
 
-          # Append scenario load-test-load configuration and custom inputs
-          load_test_config="$load_test_config ${{ needs.calculate-scenario-config.outputs.load-test-load }}"
+          # Append custom load test inputs
           load_test_config="$load_test_config ${{ inputs.load-test-load }}"
 
           # Resolve image registry/repository: Docker Hub when orchestration-tag is set, internal registry otherwise
@@ -714,12 +654,8 @@ jobs:
             additional_platform_config+=" ${{ inputs.platform-helm-values }}"
           fi
 
-          # Append scenario-specific platform configuration if present (e.g. max scenario disables consistency checks)
-          if [[ -n "${{ needs.calculate-scenario-config.outputs.platform-additional-config }}" ]]; then
-            additional_platform_config+=" ${{ needs.calculate-scenario-config.outputs.platform-additional-config }}"
-          fi
-
           make ${{ inputs.stable-vms && 'install-stable' || 'install' }} \
+            scenario=${{ inputs.scenario }} \
             secondary_storage=${{ inputs.secondary-storage-type }} \
             enable_optimize=${{ inputs.enable-optimize }} \
             enable_webapps=${{ inputs.enable-webapps }} \
