@@ -12,8 +12,8 @@ import static io.camunda.gateway.mapping.http.ResponseMapper.formatDate;
 import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
 import io.camunda.gateway.mapping.http.util.KeyUtil;
 import io.camunda.gateway.protocol.model.DecisionDefinitionTypeEnum;
-import io.camunda.gateway.protocol.model.DecisionInstance;
-import io.camunda.gateway.protocol.model.DecisionInstanceGetQuery;
+import io.camunda.gateway.protocol.model.DecisionInstanceGetQueryResult;
+import io.camunda.gateway.protocol.model.DecisionInstanceResult;
 import io.camunda.gateway.protocol.model.DecisionInstanceStateEnum;
 import io.camunda.gateway.protocol.model.EvaluatedDecisionInputItem;
 import io.camunda.gateway.protocol.model.EvaluatedDecisionOutputItem;
@@ -37,18 +37,19 @@ public final class DecisionInstanceContractAdapter {
 
   private DecisionInstanceContractAdapter() {}
 
-  public static List<DecisionInstance> toSearchProjections(
+  public static List<DecisionInstanceResult> toSearchProjections(
       final List<DecisionInstanceEntity> instances) {
     return instances.stream().map(DecisionInstanceContractAdapter::toSearchProjection).toList();
   }
 
-  public static DecisionInstance toSearchProjection(final DecisionInstanceEntity entity) {
+  public static DecisionInstanceResult toSearchProjection(final DecisionInstanceEntity entity) {
     return toContract(entity);
   }
 
-  public static DecisionInstanceGetQuery toGetProjection(final DecisionInstanceEntity entity) {
+  public static DecisionInstanceGetQueryResult toGetProjection(
+      final DecisionInstanceEntity entity) {
     final var sc = toContract(entity);
-    return new DecisionInstanceGetQuery()
+    return new DecisionInstanceGetQueryResult()
         .decisionDefinitionId(sc.getDecisionDefinitionId())
         .decisionDefinitionKey(sc.getDecisionDefinitionKey())
         .decisionDefinitionName(sc.getDecisionDefinitionName())
@@ -70,8 +71,8 @@ public final class DecisionInstanceContractAdapter {
         .matchedRules(toMatchedRules(entity.evaluatedOutputs()));
   }
 
-  private static DecisionInstance toContract(final DecisionInstanceEntity entity) {
-    return new DecisionInstance()
+  private static DecisionInstanceResult toContract(final DecisionInstanceEntity entity) {
+    return new DecisionInstanceResult()
         .decisionDefinitionId(
             ContractPolicy.requireNonNull(
                 entity.decisionDefinitionId(), "decisionDefinitionId", entity))

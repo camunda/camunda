@@ -12,7 +12,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import io.camunda.gateway.protocol.model.JobActivation;
+import io.camunda.gateway.protocol.model.JobActivationResult;
 import io.camunda.search.entities.JobEntity;
 import io.camunda.search.entities.JobEntity.JobKind;
 import io.camunda.search.entities.JobEntity.JobState;
@@ -118,7 +118,7 @@ public class JobQueryControllerTest extends RestControllerTest {
           .startCursor("123base64")
           .endCursor("456base64")
           .build();
-  @MockitoBean JobServices<JobActivation> jobServices;
+  @MockitoBean JobServices<JobActivationResult> jobServices;
   @MockitoBean MultiTenancyConfiguration multiTenancyCfg;
   @MockitoBean ResponseObserverProvider responseObserverProvider;
   @MockitoBean CamundaAuthenticationProvider authenticationProvider;

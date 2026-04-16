@@ -9,7 +9,7 @@ package io.camunda.gateway.mapping.http.search.contract;
 
 import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
 import io.camunda.gateway.mapping.http.util.KeyUtil;
-import io.camunda.gateway.protocol.model.DecisionRequirements;
+import io.camunda.gateway.protocol.model.DecisionRequirementsResult;
 import io.camunda.search.entities.DecisionRequirementsEntity;
 import java.util.List;
 
@@ -17,12 +17,13 @@ public final class DecisionRequirementsContractAdapter {
 
   private DecisionRequirementsContractAdapter() {}
 
-  public static List<DecisionRequirements> adapt(final List<DecisionRequirementsEntity> entities) {
+  public static List<DecisionRequirementsResult> adapt(
+      final List<DecisionRequirementsEntity> entities) {
     return entities.stream().map(DecisionRequirementsContractAdapter::adapt).toList();
   }
 
-  public static DecisionRequirements adapt(final DecisionRequirementsEntity entity) {
-    return new DecisionRequirements()
+  public static DecisionRequirementsResult adapt(final DecisionRequirementsEntity entity) {
+    return new DecisionRequirementsResult()
         .decisionRequirementsId(
             ContractPolicy.requireNonNull(
                 entity.decisionRequirementsId(), "decisionRequirementsId", entity))

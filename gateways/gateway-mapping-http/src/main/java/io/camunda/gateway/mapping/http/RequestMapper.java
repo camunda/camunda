@@ -49,7 +49,6 @@ import io.camunda.gateway.protocol.model.DecisionEvaluationInstruction;
 import io.camunda.gateway.protocol.model.DeleteResourceRequest;
 import io.camunda.gateway.protocol.model.DocumentLinkRequest;
 import io.camunda.gateway.protocol.model.DocumentMetadata;
-import io.camunda.gateway.protocol.model.Job;
 import io.camunda.gateway.protocol.model.JobActivationRequest;
 import io.camunda.gateway.protocol.model.JobCompletionRequest;
 import io.camunda.gateway.protocol.model.JobErrorRequest;
@@ -697,7 +696,8 @@ public class RequestMapper {
     if (rawResult == null) {
       return new JobResult();
     }
-    final var typed = PROTOCOL_MAPPER.convertValue(rawResult, Job.class);
+    final var typed =
+        PROTOCOL_MAPPER.convertValue(rawResult, io.camunda.gateway.protocol.model.JobResult.class);
     return switch (typed) {
       case JobResultUserTask ut -> toJobResult(ut);
       case JobResultAdHocSubProcess ahsp -> toJobResult(ahsp);

@@ -11,7 +11,7 @@ import static io.camunda.gateway.mapping.http.ResponseMapper.formatDate;
 
 import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
 import io.camunda.gateway.mapping.http.util.KeyUtil;
-import io.camunda.gateway.protocol.model.CorrelatedMessageSubscription;
+import io.camunda.gateway.protocol.model.CorrelatedMessageSubscriptionResult;
 import io.camunda.search.entities.CorrelatedMessageSubscriptionEntity;
 import java.util.List;
 
@@ -19,14 +19,14 @@ public final class CorrelatedMessageSubscriptionContractAdapter {
 
   private CorrelatedMessageSubscriptionContractAdapter() {}
 
-  public static List<CorrelatedMessageSubscription> adapt(
+  public static List<CorrelatedMessageSubscriptionResult> adapt(
       final List<CorrelatedMessageSubscriptionEntity> entities) {
     return entities.stream().map(CorrelatedMessageSubscriptionContractAdapter::adapt).toList();
   }
 
-  public static CorrelatedMessageSubscription adapt(
+  public static CorrelatedMessageSubscriptionResult adapt(
       final CorrelatedMessageSubscriptionEntity entity) {
-    return new CorrelatedMessageSubscription()
+    return new CorrelatedMessageSubscriptionResult()
         .correlationTime(
             ContractPolicy.requireNonNull(
                 formatDate(entity.correlationTime()), "correlationTime", entity))

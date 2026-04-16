@@ -41,14 +41,14 @@ import io.camunda.gateway.mapping.http.search.contract.UserContractAdapter;
 import io.camunda.gateway.mapping.http.search.contract.UserTaskContractAdapter;
 import io.camunda.gateway.mapping.http.search.contract.VariableContractAdapter;
 import io.camunda.gateway.mapping.http.util.KeyUtil;
-import io.camunda.gateway.protocol.model.CamundaUser;
-import io.camunda.gateway.protocol.model.DecisionInstance;
-import io.camunda.gateway.protocol.model.DecisionInstanceGetQuery;
-import io.camunda.gateway.protocol.model.GlobalJobStatisticsQuery;
-import io.camunda.gateway.protocol.model.IncidentProcessInstanceStatisticsByDefinition;
+import io.camunda.gateway.protocol.model.CamundaUserResult;
+import io.camunda.gateway.protocol.model.DecisionInstanceGetQueryResult;
+import io.camunda.gateway.protocol.model.DecisionInstanceResult;
+import io.camunda.gateway.protocol.model.GlobalJobStatisticsQueryResult;
 import io.camunda.gateway.protocol.model.IncidentProcessInstanceStatisticsByDefinitionQueryResult;
-import io.camunda.gateway.protocol.model.IncidentProcessInstanceStatisticsByError;
+import io.camunda.gateway.protocol.model.IncidentProcessInstanceStatisticsByDefinitionResult;
 import io.camunda.gateway.protocol.model.IncidentProcessInstanceStatisticsByErrorQueryResult;
+import io.camunda.gateway.protocol.model.IncidentProcessInstanceStatisticsByErrorResult;
 import io.camunda.gateway.protocol.model.JobErrorStatisticsItem;
 import io.camunda.gateway.protocol.model.JobErrorStatisticsQueryResult;
 import io.camunda.gateway.protocol.model.JobTimeSeriesStatisticsItem;
@@ -58,19 +58,19 @@ import io.camunda.gateway.protocol.model.JobTypeStatisticsQueryResult;
 import io.camunda.gateway.protocol.model.JobWorkerStatisticsItem;
 import io.camunda.gateway.protocol.model.JobWorkerStatisticsQueryResult;
 import io.camunda.gateway.protocol.model.ProcessDefinitionElementStatisticsQueryResult;
-import io.camunda.gateway.protocol.model.ProcessDefinitionInstanceStatistics;
 import io.camunda.gateway.protocol.model.ProcessDefinitionInstanceStatisticsQueryResult;
-import io.camunda.gateway.protocol.model.ProcessDefinitionInstanceVersionStatistics;
+import io.camunda.gateway.protocol.model.ProcessDefinitionInstanceStatisticsResult;
 import io.camunda.gateway.protocol.model.ProcessDefinitionInstanceVersionStatisticsQueryResult;
-import io.camunda.gateway.protocol.model.ProcessDefinitionMessageSubscriptionStatistics;
+import io.camunda.gateway.protocol.model.ProcessDefinitionInstanceVersionStatisticsResult;
 import io.camunda.gateway.protocol.model.ProcessDefinitionMessageSubscriptionStatisticsQueryResult;
-import io.camunda.gateway.protocol.model.ProcessElementStatistics;
-import io.camunda.gateway.protocol.model.ProcessInstanceElementStatisticsQuery;
-import io.camunda.gateway.protocol.model.ProcessInstanceSequenceFlow;
-import io.camunda.gateway.protocol.model.ProcessInstanceSequenceFlowsQuery;
+import io.camunda.gateway.protocol.model.ProcessDefinitionMessageSubscriptionStatisticsResult;
+import io.camunda.gateway.protocol.model.ProcessElementStatisticsResult;
+import io.camunda.gateway.protocol.model.ProcessInstanceElementStatisticsQueryResult;
+import io.camunda.gateway.protocol.model.ProcessInstanceSequenceFlowResult;
+import io.camunda.gateway.protocol.model.ProcessInstanceSequenceFlowsQueryResult;
 import io.camunda.gateway.protocol.model.SearchQueryPageResponse;
 import io.camunda.gateway.protocol.model.StatusMetric;
-import io.camunda.gateway.protocol.model.Tenant;
+import io.camunda.gateway.protocol.model.TenantResult;
 import io.camunda.gateway.protocol.model.UsageMetricsResponse;
 import io.camunda.gateway.protocol.model.UsageMetricsResponseItem;
 import io.camunda.search.entities.AuditLogEntity;
@@ -194,18 +194,18 @@ public final class SearchQueryResponseMapper {
                 .toList());
   }
 
-  public static ProcessInstanceElementStatisticsQuery toProcessInstanceElementStatisticsResult(
-      final List<ProcessFlowNodeStatisticsEntity> result) {
-    return new ProcessInstanceElementStatisticsQuery()
+  public static ProcessInstanceElementStatisticsQueryResult
+      toProcessInstanceElementStatisticsResult(final List<ProcessFlowNodeStatisticsEntity> result) {
+    return new ProcessInstanceElementStatisticsQueryResult()
         .items(
             result.stream()
                 .map(SearchQueryResponseMapper::toProcessElementStatisticsResult)
                 .toList());
   }
 
-  private static ProcessElementStatistics toProcessElementStatisticsResult(
+  private static ProcessElementStatisticsResult toProcessElementStatisticsResult(
       final ProcessFlowNodeStatisticsEntity result) {
-    return new ProcessElementStatistics()
+    return new ProcessElementStatisticsResult()
         .elementId(result.flowNodeId())
         .active(result.active())
         .canceled(result.canceled())
@@ -235,9 +235,9 @@ public final class SearchQueryResponseMapper {
                 .toList());
   }
 
-  private static ProcessDefinitionInstanceStatistics toProcessInstanceStatisticsResult(
+  private static ProcessDefinitionInstanceStatisticsResult toProcessInstanceStatisticsResult(
       final ProcessDefinitionInstanceStatisticsEntity result) {
-    return new ProcessDefinitionInstanceStatistics()
+    return new ProcessDefinitionInstanceStatisticsResult()
         .processDefinitionId(result.processDefinitionId())
         .tenantId(result.tenantId())
         .latestProcessDefinitionName(result.latestProcessDefinitionName())
@@ -246,10 +246,10 @@ public final class SearchQueryResponseMapper {
         .activeInstancesWithIncidentCount(result.activeInstancesWithIncidentCount());
   }
 
-  private static ProcessDefinitionInstanceVersionStatistics
+  private static ProcessDefinitionInstanceVersionStatisticsResult
       toProcessInstanceVersionStatisticsResult(
           final ProcessDefinitionInstanceVersionStatisticsEntity result) {
-    return new ProcessDefinitionInstanceVersionStatistics()
+    return new ProcessDefinitionInstanceVersionStatisticsResult()
         .processDefinitionId(result.processDefinitionId())
         .processDefinitionKey(KeyUtil.keyToString(result.processDefinitionKey()))
         .processDefinitionName(result.processDefinitionName())
@@ -270,10 +270,10 @@ public final class SearchQueryResponseMapper {
                 .toList());
   }
 
-  private static IncidentProcessInstanceStatisticsByError
+  private static IncidentProcessInstanceStatisticsByErrorResult
       toIncidentProcessInstanceStatisticsByErrorResult(
           final IncidentProcessInstanceStatisticsByErrorEntity result) {
-    return new IncidentProcessInstanceStatisticsByError()
+    return new IncidentProcessInstanceStatisticsByErrorResult()
         .errorHashCode(result.errorHashCode())
         .errorMessage(result.errorMessage())
         .activeInstancesWithErrorCount(result.activeInstancesWithErrorCount());
@@ -292,10 +292,10 @@ public final class SearchQueryResponseMapper {
                 .toList());
   }
 
-  private static IncidentProcessInstanceStatisticsByDefinition
+  private static IncidentProcessInstanceStatisticsByDefinitionResult
       toIncidentProcessInstanceStatisticsByDefinitionResult(
           final IncidentProcessInstanceStatisticsByDefinitionEntity result) {
-    return new IncidentProcessInstanceStatisticsByDefinition()
+    return new IncidentProcessInstanceStatisticsByDefinitionResult()
         .processDefinitionId(result.processDefinitionId())
         .processDefinitionKey(KeyUtil.keyToString(result.processDefinitionKey()))
         .processDefinitionName(result.processDefinitionName())
@@ -304,18 +304,18 @@ public final class SearchQueryResponseMapper {
         .activeInstancesWithErrorCount(result.activeInstancesWithErrorCount());
   }
 
-  public static ProcessInstanceSequenceFlowsQuery toSequenceFlowsResult(
+  public static ProcessInstanceSequenceFlowsQueryResult toSequenceFlowsResult(
       final List<SequenceFlowEntity> result) {
-    return new ProcessInstanceSequenceFlowsQuery()
+    return new ProcessInstanceSequenceFlowsQueryResult()
         .items(
             result.stream()
                 .map(SearchQueryResponseMapper::toProcessInstanceSequenceFlowResult)
                 .toList());
   }
 
-  private static ProcessInstanceSequenceFlow toProcessInstanceSequenceFlowResult(
+  private static ProcessInstanceSequenceFlowResult toProcessInstanceSequenceFlowResult(
       final SequenceFlowEntity result) {
-    return new ProcessInstanceSequenceFlow()
+    return new ProcessInstanceSequenceFlowResult()
         .sequenceFlowId(result.sequenceFlowId())
         .processInstanceKey(KeyUtil.keyToString(result.processInstanceKey()))
         .rootProcessInstanceKey(KeyUtil.keyToString(result.rootProcessInstanceKey()))
@@ -675,8 +675,8 @@ public final class SearchQueryResponseMapper {
     return adaptType(UserContractAdapter.adapt(entity));
   }
 
-  public static CamundaUser toCamundaUser(final CamundaUserDTO camundaUser) {
-    return new CamundaUser()
+  public static CamundaUserResult toCamundaUser(final CamundaUserDTO camundaUser) {
+    return new CamundaUserResult()
         .username(camundaUser.username())
         .displayName(camundaUser.displayName())
         .email(camundaUser.email())
@@ -685,7 +685,7 @@ public final class SearchQueryResponseMapper {
             camundaUser.tenants().stream()
                 .map(
                     t ->
-                        new Tenant()
+                        new TenantResult()
                             .name(t.name())
                             .tenantId(t.tenantId())
                             .description(t.description()))
@@ -703,7 +703,7 @@ public final class SearchQueryResponseMapper {
         .collect(toMap(e -> e.getKey().getValue(), Map.Entry::getValue, (v1, v2) -> v1));
   }
 
-  private static List<DecisionInstance> toDecisionInstances(
+  private static List<DecisionInstanceResult> toDecisionInstances(
       final List<DecisionInstanceEntity> instances) {
     return DecisionInstanceContractAdapter.toSearchProjections(instances);
   }
@@ -712,7 +712,7 @@ public final class SearchQueryResponseMapper {
     return adaptType(DecisionInstanceContractAdapter.toSearchProjection(entity));
   }
 
-  public static DecisionInstanceGetQuery toDecisionInstanceGetQueryResponse(
+  public static DecisionInstanceGetQueryResult toDecisionInstanceGetQueryResponse(
       final DecisionInstanceEntity entity) {
     return DecisionInstanceContractAdapter.toGetProjection(entity);
   }
@@ -794,13 +794,13 @@ public final class SearchQueryResponseMapper {
     return adaptType(ProcessInstanceCallHierarchyEntryContractAdapter.adapt(processInstanceEntity));
   }
 
-  private static List<ProcessDefinitionMessageSubscriptionStatistics>
+  private static List<ProcessDefinitionMessageSubscriptionStatisticsResult>
       toProcessDefinitionMessageSubscriptionStatisticsItems(
           final List<ProcessDefinitionMessageSubscriptionStatisticsEntity> entities) {
     return entities.stream()
         .map(
             e ->
-                new ProcessDefinitionMessageSubscriptionStatistics()
+                new ProcessDefinitionMessageSubscriptionStatisticsResult()
                     .processDefinitionId(e.processDefinitionId())
                     .tenantId(e.tenantId())
                     .processDefinitionKey(KeyUtil.keyToString(e.processDefinitionKey()))
@@ -823,17 +823,17 @@ public final class SearchQueryResponseMapper {
                 .orElseGet(Collections::emptyList));
   }
 
-  public static GlobalJobStatisticsQuery toGlobalJobStatisticsQueryResult(
+  public static GlobalJobStatisticsQueryResult toGlobalJobStatisticsQueryResult(
       final GlobalJobStatisticsEntity entity) {
     if (entity == null) {
-      return new GlobalJobStatisticsQuery()
+      return new GlobalJobStatisticsQueryResult()
           .created(new StatusMetric().count(0L).lastUpdatedAt(null))
           .completed(new StatusMetric().count(0L).lastUpdatedAt(null))
           .failed(new StatusMetric().count(0L).lastUpdatedAt(null))
           .isIncomplete(false);
     }
 
-    return new GlobalJobStatisticsQuery()
+    return new GlobalJobStatisticsQueryResult()
         .created(toStatusMetric(entity.created()))
         .completed(toStatusMetric(entity.completed()))
         .failed(toStatusMetric(entity.failed()))

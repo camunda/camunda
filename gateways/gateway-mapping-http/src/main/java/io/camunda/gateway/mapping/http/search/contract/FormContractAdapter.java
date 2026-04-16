@@ -9,15 +9,15 @@ package io.camunda.gateway.mapping.http.search.contract;
 
 import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
 import io.camunda.gateway.mapping.http.util.KeyUtil;
-import io.camunda.gateway.protocol.model.Form;
+import io.camunda.gateway.protocol.model.FormResult;
 import io.camunda.search.entities.FormEntity;
 
 public final class FormContractAdapter {
 
   private FormContractAdapter() {}
 
-  public static Form adapt(final FormEntity entity) {
-    return new Form()
+  public static FormResult adapt(final FormEntity entity) {
+    return new FormResult()
         .tenantId(ContractPolicy.requireNonNull(entity.tenantId(), "tenantId", entity))
         .formId(ContractPolicy.requireNonNull(entity.formId(), "formId", entity))
         .schema(ContractPolicy.requireNonNull(entity.schema(), "schema", entity))

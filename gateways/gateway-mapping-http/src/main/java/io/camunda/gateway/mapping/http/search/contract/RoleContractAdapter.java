@@ -8,7 +8,7 @@
 package io.camunda.gateway.mapping.http.search.contract;
 
 import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
-import io.camunda.gateway.protocol.model.Role;
+import io.camunda.gateway.protocol.model.RoleResult;
 import io.camunda.search.entities.RoleEntity;
 import java.util.List;
 
@@ -16,12 +16,12 @@ public final class RoleContractAdapter {
 
   private RoleContractAdapter() {}
 
-  public static List<Role> adapt(final List<RoleEntity> entities) {
+  public static List<RoleResult> adapt(final List<RoleEntity> entities) {
     return entities.stream().map(RoleContractAdapter::adapt).toList();
   }
 
-  public static Role adapt(final RoleEntity entity) {
-    return new Role()
+  public static RoleResult adapt(final RoleEntity entity) {
+    return new RoleResult()
         .name(ContractPolicy.requireNonNull(entity.name(), "name", entity))
         .roleId(ContractPolicy.requireNonNull(entity.roleId(), "roleId", entity))
         .description(entity.description());

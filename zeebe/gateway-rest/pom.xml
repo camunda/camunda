@@ -516,6 +516,7 @@
                 <argument>${project.build.directory}/tools-classes</argument>
                 <argument>io.camunda.zeebe.gateway.rest.tools.RestControllersGenerator</argument>
                 <argument>${maven.multiModuleProjectDirectory}</argument>
+                <argument>${license.header.file}</argument>
               </arguments>
             </configuration>
           </execution>

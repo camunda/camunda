@@ -11,7 +11,7 @@ import static io.camunda.gateway.mapping.http.ResponseMapper.formatDate;
 
 import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
 import io.camunda.gateway.mapping.http.util.KeyUtil;
-import io.camunda.gateway.protocol.model.MessageSubscription;
+import io.camunda.gateway.protocol.model.MessageSubscriptionResult;
 import io.camunda.gateway.protocol.model.MessageSubscriptionStateEnum;
 import io.camunda.search.entities.MessageSubscriptionEntity;
 import java.util.List;
@@ -20,12 +20,13 @@ public final class MessageSubscriptionContractAdapter {
 
   private MessageSubscriptionContractAdapter() {}
 
-  public static List<MessageSubscription> adapt(final List<MessageSubscriptionEntity> entities) {
+  public static List<MessageSubscriptionResult> adapt(
+      final List<MessageSubscriptionEntity> entities) {
     return entities.stream().map(MessageSubscriptionContractAdapter::adapt).toList();
   }
 
-  public static MessageSubscription adapt(final MessageSubscriptionEntity entity) {
-    return new MessageSubscription()
+  public static MessageSubscriptionResult adapt(final MessageSubscriptionEntity entity) {
+    return new MessageSubscriptionResult()
         .messageSubscriptionKey(
             ContractPolicy.requireNonNull(
                 KeyUtil.keyToString(entity.messageSubscriptionKey()),

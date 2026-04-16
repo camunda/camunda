@@ -9,8 +9,8 @@ package io.camunda.gateway.mapping.http.search.contract;
 
 import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
 import io.camunda.gateway.mapping.http.util.KeyUtil;
-import io.camunda.gateway.protocol.model.Variable;
-import io.camunda.gateway.protocol.model.VariableSearch;
+import io.camunda.gateway.protocol.model.VariableResult;
+import io.camunda.gateway.protocol.model.VariableSearchResult;
 import io.camunda.search.entities.VariableEntity;
 import java.util.List;
 
@@ -25,16 +25,16 @@ public final class VariableContractAdapter {
 
   private VariableContractAdapter() {}
 
-  public static List<VariableSearch> toSearchProjections(
+  public static List<VariableSearchResult> toSearchProjections(
       final List<VariableEntity> variableEntities, final boolean truncateValues) {
     return variableEntities.stream()
         .map(entity -> toSearchProjection(entity, truncateValues))
         .toList();
   }
 
-  public static VariableSearch toSearchProjection(
+  public static VariableSearchResult toSearchProjection(
       final VariableEntity entity, final boolean truncateValues) {
-    return new VariableSearch()
+    return new VariableSearchResult()
         .name(ContractPolicy.requireNonNull(entity.name(), "name", entity))
         .tenantId(ContractPolicy.requireNonNull(entity.tenantId(), "tenantId", entity))
         .variableKey(
@@ -60,8 +60,8 @@ public final class VariableContractAdapter {
         .rootProcessInstanceKey(KeyUtil.keyToString(entity.rootProcessInstanceKey()));
   }
 
-  public static Variable toItemProjection(final VariableEntity entity) {
-    return new Variable()
+  public static VariableResult toItemProjection(final VariableEntity entity) {
+    return new VariableResult()
         .name(ContractPolicy.requireNonNull(entity.name(), "name", entity))
         .tenantId(ContractPolicy.requireNonNull(entity.tenantId(), "tenantId", entity))
         .variableKey(

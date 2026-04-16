@@ -18,7 +18,7 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.gateway.mapping.http.search.contract.StrictSearchQueryResult;
 import io.camunda.gateway.mcp.OperationalToolsTest;
-import io.camunda.gateway.protocol.model.ProcessInstance;
+import io.camunda.gateway.protocol.model.ProcessInstanceResult;
 import io.camunda.gateway.protocol.model.ProcessInstanceStateEnum;
 import io.camunda.search.entities.ProcessInstanceEntity;
 import io.camunda.search.entities.ProcessInstanceEntity.ProcessInstanceState;
@@ -105,7 +105,7 @@ class ProcessInstanceToolsTest extends OperationalToolsTest {
   @Captor private ArgumentCaptor<ProcessInstanceQuery> queryCaptor;
   @Captor private ArgumentCaptor<ProcessInstanceCreateRequest> createRequestCaptor;
 
-  private void assertExampleProcessInstance(final ProcessInstance processInstance) {
+  private void assertExampleProcessInstance(final ProcessInstanceResult processInstance) {
     assertThat(processInstance.getProcessInstanceKey()).isEqualTo("123");
     assertThat(processInstance.getProcessDefinitionId()).isEqualTo("demoProcess");
     assertThat(processInstance.getProcessDefinitionName()).isEqualTo("Demo Process");
@@ -143,7 +143,7 @@ class ProcessInstanceToolsTest extends OperationalToolsTest {
       assertThat(result.structuredContent()).isNotNull();
 
       final var processInstance =
-          objectMapper.convertValue(result.structuredContent(), ProcessInstance.class);
+          objectMapper.convertValue(result.structuredContent(), ProcessInstanceResult.class);
       assertExampleProcessInstance(processInstance);
 
       verify(processInstanceServices).getByKey(eq(123L), any());
@@ -286,14 +286,14 @@ class ProcessInstanceToolsTest extends OperationalToolsTest {
       assertThat(result.structuredContent()).isNotNull();
 
       @SuppressWarnings("unchecked")
-      final StrictSearchQueryResult<ProcessInstance> searchResult =
-          (StrictSearchQueryResult<ProcessInstance>)
+      final StrictSearchQueryResult<ProcessInstanceResult> searchResult =
+          (StrictSearchQueryResult<ProcessInstanceResult>)
               objectMapper.convertValue(
                   result.structuredContent(),
                   objectMapper
                       .getTypeFactory()
                       .constructParametricType(
-                          StrictSearchQueryResult.class, ProcessInstance.class));
+                          StrictSearchQueryResult.class, ProcessInstanceResult.class));
       assertThat(searchResult.page().totalItems()).isEqualTo(1L);
       assertThat(searchResult.page().hasMoreTotalItems()).isFalse();
       assertThat(searchResult.page().startCursor()).isEqualTo("f");
@@ -517,7 +517,7 @@ class ProcessInstanceToolsTest extends OperationalToolsTest {
       final var actualResult =
           objectMapper.convertValue(
               result.structuredContent(),
-              io.camunda.gateway.protocol.model.CreateProcessInstance.class);
+              io.camunda.gateway.protocol.model.CreateProcessInstanceResult.class);
       assertThat(actualResult.getProcessDefinitionKey()).isEqualTo("123");
       assertThat(actualResult.getProcessDefinitionId()).isEqualTo("testProcessId");
       assertThat(actualResult.getProcessDefinitionVersion()).isEqualTo(-1);
@@ -579,7 +579,7 @@ class ProcessInstanceToolsTest extends OperationalToolsTest {
       final var actualResult =
           objectMapper.convertValue(
               result.structuredContent(),
-              io.camunda.gateway.protocol.model.CreateProcessInstance.class);
+              io.camunda.gateway.protocol.model.CreateProcessInstanceResult.class);
       assertThat(actualResult.getProcessDefinitionKey()).isEqualTo("123");
       assertThat(actualResult.getProcessDefinitionId()).isEqualTo("testProcessId");
       assertThat(actualResult.getProcessDefinitionVersion()).isEqualTo(7);
@@ -644,7 +644,7 @@ class ProcessInstanceToolsTest extends OperationalToolsTest {
       final var actualResult =
           objectMapper.convertValue(
               result.structuredContent(),
-              io.camunda.gateway.protocol.model.CreateProcessInstance.class);
+              io.camunda.gateway.protocol.model.CreateProcessInstanceResult.class);
       assertThat(actualResult.getProcessDefinitionKey()).isEqualTo("123");
       assertThat(actualResult.getProcessDefinitionId()).isEqualTo("testProcessId");
       assertThat(actualResult.getProcessDefinitionVersion()).isEqualTo(7);
@@ -710,7 +710,7 @@ class ProcessInstanceToolsTest extends OperationalToolsTest {
       final var actualResult =
           objectMapper.convertValue(
               result.structuredContent(),
-              io.camunda.gateway.protocol.model.CreateProcessInstance.class);
+              io.camunda.gateway.protocol.model.CreateProcessInstanceResult.class);
       assertThat(actualResult.getProcessDefinitionKey()).isEqualTo("123");
       assertThat(actualResult.getProcessDefinitionId()).isEqualTo("testProcessId");
       assertThat(actualResult.getProcessDefinitionVersion()).isEqualTo(7);
@@ -845,7 +845,7 @@ class ProcessInstanceToolsTest extends OperationalToolsTest {
       final var actualResult =
           objectMapper.convertValue(
               result.structuredContent(),
-              io.camunda.gateway.protocol.model.CreateProcessInstance.class);
+              io.camunda.gateway.protocol.model.CreateProcessInstanceResult.class);
       assertThat(actualResult.getProcessDefinitionKey()).isEqualTo("123");
       assertThat(actualResult.getProcessDefinitionId()).isEqualTo("testProcessId");
       assertThat(actualResult.getProcessDefinitionVersion()).isEqualTo(-1);
@@ -909,7 +909,7 @@ class ProcessInstanceToolsTest extends OperationalToolsTest {
       final var actualResult =
           objectMapper.convertValue(
               result.structuredContent(),
-              io.camunda.gateway.protocol.model.CreateProcessInstance.class);
+              io.camunda.gateway.protocol.model.CreateProcessInstanceResult.class);
       assertThat(actualResult.getProcessDefinitionKey()).isEqualTo("123");
       assertThat(actualResult.getProcessDefinitionId()).isEqualTo("testProcessId");
       assertThat(actualResult.getProcessDefinitionVersion()).isEqualTo(7);
@@ -1017,7 +1017,7 @@ class ProcessInstanceToolsTest extends OperationalToolsTest {
       final var actualResult =
           objectMapper.convertValue(
               result.structuredContent(),
-              io.camunda.gateway.protocol.model.CreateProcessInstance.class);
+              io.camunda.gateway.protocol.model.CreateProcessInstanceResult.class);
       assertThat(actualResult.getProcessInstanceKey()).isEqualTo("456");
       assertThat(actualResult.getBusinessId()).isEqualTo(businessId);
 

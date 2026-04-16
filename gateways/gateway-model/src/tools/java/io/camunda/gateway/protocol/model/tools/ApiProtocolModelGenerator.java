@@ -33,9 +33,9 @@ import org.jboss.forge.roaster.model.source.MethodSource;
 /**
  * Java source-file generator for contract mapping POC.
  *
- * <p>Run via: ApiProtocolModelGenerator <repo-root>
+ * <p>Run via: MappingContractsGenerator <repo-root>
  */
-public class ApiProtocolModelGenerator {
+public class MappingContractsGenerator {
 
   private static final String TARGET_PACKAGE = "io.camunda.gateway.protocol.model";
   /** Schema names for which a strict contract DTO has been generated (populated at startup). */
@@ -92,7 +92,7 @@ public class ApiProtocolModelGenerator {
     }
     final var contractSchemas =
         allSchemas.values().stream()
-            .filter(ApiProtocolModelGenerator::isContractSchema)
+            .filter(MappingContractsGenerator::isContractSchema)
             .sorted(Comparator.comparing(SchemaDef::schemaName))
             .toList();
 
@@ -125,7 +125,7 @@ public class ApiProtocolModelGenerator {
           && !"SearchQueryPageRequest".equals(schema.schemaName())
           && !contractDtoNames.contains(dtoClassName(schema.schemaName()))) {
         final var branchNames = schema.node().oneOfRefs().stream()
-            .map(ApiProtocolModelGenerator::refToSchemaName)
+            .map(MappingContractsGenerator::refToSchemaName)
             .toList();
         final var allBranchesHaveContracts = branchNames.stream()
             .allMatch(AVAILABLE_STRICT_CONTRACTS::contains);
@@ -234,7 +234,7 @@ public class ApiProtocolModelGenerator {
       } else {
         // Regular polymorphic schema: generate standard sealed interface.
         final var branchDtoClasses = branchNames.stream()
-            .map(ApiProtocolModelGenerator::dtoClassName)
+            .map(MappingContractsGenerator::dtoClassName)
             .toList();
         for (var branchName : branchNames) {
           branchToSealedInterface.put(branchName, sealedName);
@@ -853,7 +853,7 @@ public class ApiProtocolModelGenerator {
     iface.addImport("com.fasterxml.jackson.annotation.JsonSubTypes");
     iface.addImport("com.fasterxml.jackson.annotation.JsonTypeInfo");
     iface.addAnnotation("jakarta.annotation.Generated")
-        .setStringValue("value", "io.camunda.gateway.protocol.model.tools.ApiProtocolModelGenerator");
+        .setStringValue("value", "io.camunda.gateway.protocol.model.tools.MappingContractsGenerator");
 
     // Roaster doesn't handle nested @JsonSubTypes.Type annotations or sealed interfaces.
     // Build the @JsonTypeInfo + @JsonSubTypes + sealed permits via string patching.
@@ -886,7 +886,7 @@ public class ApiProtocolModelGenerator {
     iface.addAnnotation("com.fasterxml.jackson.databind.annotation.JsonDeserialize")
         .setLiteralValue("using", deserializerName + ".class");
     iface.addAnnotation("jakarta.annotation.Generated")
-        .setStringValue("value", "io.camunda.gateway.protocol.model.tools.ApiProtocolModelGenerator");
+        .setStringValue("value", "io.camunda.gateway.protocol.model.tools.MappingContractsGenerator");
 
     // Roaster doesn't support sealed interfaces natively; patch the output.
     final var permits = String.join(",\n        ", branchDtoClasses);
@@ -940,7 +940,7 @@ public class ApiProtocolModelGenerator {
     javaClass.addImport("com.fasterxml.jackson.databind.exc.ValueInstantiationException");
     javaClass.addImport("java.io.IOException");
     javaClass.addAnnotation("jakarta.annotation.Generated")
-        .setStringValue("value", "io.camunda.gateway.protocol.model.tools.ApiProtocolModelGenerator");
+        .setStringValue("value", "io.camunda.gateway.protocol.model.tools.MappingContractsGenerator");
 
     final var method = javaClass.addMethod()
         .setName("deserialize")
@@ -971,7 +971,7 @@ public class ApiProtocolModelGenerator {
     iface.addAnnotation("com.fasterxml.jackson.databind.annotation.JsonDeserialize")
         .setLiteralValue("using", deserializerName + ".class");
     iface.addAnnotation("jakarta.annotation.Generated")
-        .setStringValue("value", "io.camunda.gateway.protocol.model.tools.ApiProtocolModelGenerator");
+        .setStringValue("value", "io.camunda.gateway.protocol.model.tools.MappingContractsGenerator");
 
     // Roaster doesn't support sealed interfaces natively; patch the output.
     var source = iface.toString();
@@ -1001,7 +1001,7 @@ import org.jspecify.annotations.NullMarked;
  */
 @NullMarked
 @JsonDeserialize(using = JsonDeserializer.None.class)
-@Generated(value = "io.camunda.gateway.protocol.model.tools.ApiProtocolModelGenerator")
+@Generated(value = "io.camunda.gateway.protocol.model.tools.MappingContractsGenerator")
 public record %s(%s value) implements %s {
 }
 """
@@ -1087,7 +1087,7 @@ public record %s(%s value) implements %s {
       javaClass.addImport("java.util.Set");
     }
     javaClass.addAnnotation("jakarta.annotation.Generated")
-        .setStringValue("value", "io.camunda.gateway.protocol.model.tools.ApiProtocolModelGenerator");
+        .setStringValue("value", "io.camunda.gateway.protocol.model.tools.MappingContractsGenerator");
 
     // Add VALID_VALUES constant for enum-typed filter properties.
     if (enumSchemaName != null) {
@@ -1134,7 +1134,7 @@ public record %s(%s value) implements %s {
     javaEnum.setPackage(TARGET_PACKAGE);
     javaEnum.setName(className);
     javaEnum.addAnnotation("jakarta.annotation.Generated")
-        .setStringValue("value", "io.camunda.gateway.protocol.model.tools.ApiProtocolModelGenerator");
+        .setStringValue("value", "io.camunda.gateway.protocol.model.tools.MappingContractsGenerator");
 
     // Add enum constants with value parameter
     for (var v : enumValues) {
@@ -1369,7 +1369,7 @@ public record %s(%s value) implements %s {
       javaClass.addInterface(sealedParent);
     }
     javaClass.addAnnotation("jakarta.annotation.Generated")
-        .setStringValue("value", "io.camunda.gateway.protocol.model.tools.ApiProtocolModelGenerator");
+        .setStringValue("value", "io.camunda.gateway.protocol.model.tools.MappingContractsGenerator");
 
     // Add explicit imports for collection types used in field types so Roaster resolves them.
     for (var f : fields) {
@@ -3179,7 +3179,7 @@ public record %s(%s value) implements %s {
         .setLiteralValue("value", "com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL");
     javaClass.addAnnotation("org.jspecify.annotations.NullMarked");
     javaClass.addAnnotation("jakarta.annotation.Generated")
-        .setStringValue("value", "io.camunda.gateway.protocol.model.tools.ApiProtocolModelGenerator");
+        .setStringValue("value", "io.camunda.gateway.protocol.model.tools.MappingContractsGenerator");
 
     // Fields: limit, from, after, before
     record PageField(String name, String type) {}
@@ -3214,7 +3214,7 @@ public record %s(%s value) implements %s {
         .setLiteralValue("value", "com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL");
     javaClass.addAnnotation("org.jspecify.annotations.NullMarked");
     javaClass.addAnnotation("jakarta.annotation.Generated")
-        .setStringValue("value", "io.camunda.gateway.protocol.model.tools.ApiProtocolModelGenerator");
+        .setStringValue("value", "io.camunda.gateway.protocol.model.tools.MappingContractsGenerator");
 
     javaClass.addField().setName("limit").setType("Integer").setPrivate()
         .addAnnotation("org.jspecify.annotations.Nullable");
@@ -3242,7 +3242,7 @@ public record %s(%s value) implements %s {
         .setLiteralValue("value", "com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL");
     javaClass.addAnnotation("org.jspecify.annotations.NullMarked");
     javaClass.addAnnotation("jakarta.annotation.Generated")
-        .setStringValue("value", "io.camunda.gateway.protocol.model.tools.ApiProtocolModelGenerator");
+        .setStringValue("value", "io.camunda.gateway.protocol.model.tools.MappingContractsGenerator");
 
     final var pageType = paginationType == PaginationType.OFFSET_ONLY
         ? "OffsetPagination" : "SearchQueryPageRequest";
@@ -3505,7 +3505,7 @@ public record %s(%s value) implements %s {
       javaClass.addImport("java.time.OffsetDateTime");
     }
     javaClass.addAnnotation("jakarta.annotation.Generated")
-        .setStringValue("value", "ApiProtocolModelGenerator");
+        .setStringValue("value", "MappingContractsGenerator");
 
     // Private constructor
     javaClass.addMethod().setConstructor(true).setPrivate().setBody("");

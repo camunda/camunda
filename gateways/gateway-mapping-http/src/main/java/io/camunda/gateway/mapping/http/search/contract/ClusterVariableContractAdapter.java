@@ -8,9 +8,9 @@
 package io.camunda.gateway.mapping.http.search.contract;
 
 import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
-import io.camunda.gateway.protocol.model.ClusterVariable;
+import io.camunda.gateway.protocol.model.ClusterVariableResult;
 import io.camunda.gateway.protocol.model.ClusterVariableScopeEnum;
-import io.camunda.gateway.protocol.model.ClusterVariableSearch;
+import io.camunda.gateway.protocol.model.ClusterVariableSearchResult;
 import io.camunda.search.entities.ClusterVariableEntity;
 import java.util.List;
 
@@ -25,16 +25,16 @@ public final class ClusterVariableContractAdapter {
 
   private ClusterVariableContractAdapter() {}
 
-  public static List<ClusterVariableSearch> toSearchProjections(
+  public static List<ClusterVariableSearchResult> toSearchProjections(
       final List<ClusterVariableEntity> clusterVariableEntities, final boolean truncateValues) {
     return clusterVariableEntities.stream()
         .map(entity -> toSearchProjection(entity, truncateValues))
         .toList();
   }
 
-  public static ClusterVariableSearch toSearchProjection(
+  public static ClusterVariableSearchResult toSearchProjection(
       final ClusterVariableEntity entity, final boolean truncateValues) {
-    return new ClusterVariableSearch()
+    return new ClusterVariableSearchResult()
         .name(ContractPolicy.requireNonNull(entity.name(), "name", entity))
         .scope(
             ContractPolicy.requireNonNull(
@@ -55,8 +55,8 @@ public final class ClusterVariableContractAdapter {
         .tenantId(entity.tenantId());
   }
 
-  public static ClusterVariable toItemProjection(final ClusterVariableEntity entity) {
-    return new ClusterVariable()
+  public static ClusterVariableResult toItemProjection(final ClusterVariableEntity entity) {
+    return new ClusterVariableResult()
         .name(ContractPolicy.requireNonNull(entity.name(), "name", entity))
         .scope(
             ContractPolicy.requireNonNull(

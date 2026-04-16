@@ -10,7 +10,7 @@ package io.camunda.gateway.mapping.http.rest;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.gateway.mapping.http.ResponseMapper;
-import io.camunda.gateway.protocol.model.ActivatedJob;
+import io.camunda.gateway.protocol.model.ActivatedJobResult;
 import io.camunda.gateway.protocol.model.UserTaskProperties;
 import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
 import io.camunda.zeebe.gateway.impl.job.JobActivationResponse;
@@ -209,7 +209,7 @@ class ResponseMapperTest {
       final var jobs = result.getActivateJobsResponse().getJobs();
       assertThat(jobs)
           .singleElement()
-          .extracting(ActivatedJob::getUserTask)
+          .extracting(ActivatedJobResult::getUserTask)
           .satisfies(testCase.assertions);
     }
 

@@ -10,7 +10,7 @@ package io.camunda.application.commons.job;
 import io.camunda.application.commons.condition.ConditionalOnAnyHttpGatewayEnabled;
 import io.camunda.gateway.mapping.http.GatewayErrorMapper;
 import io.camunda.gateway.mapping.http.ResponseMapper;
-import io.camunda.gateway.protocol.model.JobActivation;
+import io.camunda.gateway.protocol.model.JobActivationResult;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyListener;
 import io.camunda.zeebe.gateway.impl.configuration.LongPollingCfg;
@@ -57,9 +57,9 @@ public class HttpJobHandlerConfiguration {
   }
 
   @Bean
-  public ActivateJobsHandler<JobActivation> activateJobsHandler() {
+  public ActivateJobsHandler<JobActivationResult> activateJobsHandler() {
     final var handler = buildActivateJobsHandler(brokerClient);
-    final var future = new CompletableFuture<ActivateJobsHandler<JobActivation>>();
+    final var future = new CompletableFuture<ActivateJobsHandler<JobActivationResult>>();
     final var actor =
         Actor.newActor()
             .name(config.actorName())
@@ -69,7 +69,7 @@ public class HttpJobHandlerConfiguration {
     return handler;
   }
 
-  private ActivateJobsHandler<JobActivation> buildActivateJobsHandler(
+  private ActivateJobsHandler<JobActivationResult> buildActivateJobsHandler(
       final BrokerClient brokerClient) {
     if (config.longPolling().isEnabled()) {
       return buildLongPollingHandler(brokerClient);
@@ -82,10 +82,10 @@ public class HttpJobHandlerConfiguration {
     }
   }
 
-  private LongPollingActivateJobsHandler<JobActivation> buildLongPollingHandler(
+  private LongPollingActivateJobsHandler<JobActivationResult> buildLongPollingHandler(
       final BrokerClient brokerClient) {
     final var handler =
-        LongPollingActivateJobsHandler.<JobActivation>newBuilder()
+        LongPollingActivateJobsHandler.<JobActivationResult>newBuilder()
             .setBrokerClient(brokerClient)
             .setMaxMessageSize(config.maxMessageSize().toBytes())
             .setLongPollingTimeout(config.longPolling().getTimeout())

@@ -9,8 +9,8 @@ package io.camunda.gateway.mapping.http.search.contract;
 
 import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
 import io.camunda.gateway.protocol.model.GlobalListenerSourceEnum;
-import io.camunda.gateway.protocol.model.GlobalTaskListener;
 import io.camunda.gateway.protocol.model.GlobalTaskListenerEventTypeEnum;
+import io.camunda.gateway.protocol.model.GlobalTaskListenerResult;
 import io.camunda.search.entities.GlobalListenerEntity;
 import java.util.List;
 
@@ -18,12 +18,12 @@ public final class GlobalTaskListenerContractAdapter {
 
   private GlobalTaskListenerContractAdapter() {}
 
-  public static List<GlobalTaskListener> adapt(final List<GlobalListenerEntity> entities) {
+  public static List<GlobalTaskListenerResult> adapt(final List<GlobalListenerEntity> entities) {
     return entities.stream().map(GlobalTaskListenerContractAdapter::adapt).toList();
   }
 
-  public static GlobalTaskListener adapt(final GlobalListenerEntity entity) {
-    return new GlobalTaskListener()
+  public static GlobalTaskListenerResult adapt(final GlobalListenerEntity entity) {
+    return new GlobalTaskListenerResult()
         .type(ContractPolicy.requireNonNull(entity.type(), "type", entity))
         .retries(ContractPolicy.requireNonNull(entity.retries(), "retries", entity))
         .afterNonGlobal(

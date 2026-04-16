@@ -11,8 +11,8 @@ import io.camunda.gateway.mapping.http.RequestMapper;
 import io.camunda.gateway.mapping.http.validator.GlobalListenerRequestValidator;
 import io.camunda.gateway.protocol.model.CreateGlobalTaskListenerRequest;
 import io.camunda.gateway.protocol.model.GlobalListenerSourceEnum;
-import io.camunda.gateway.protocol.model.GlobalTaskListener;
 import io.camunda.gateway.protocol.model.GlobalTaskListenerEventTypeEnum;
+import io.camunda.gateway.protocol.model.GlobalTaskListenerResult;
 import io.camunda.gateway.protocol.model.UpdateGlobalTaskListenerRequest;
 import io.camunda.zeebe.protocol.impl.record.value.globallistener.GlobalListenerRecord;
 import io.camunda.zeebe.protocol.record.value.GlobalListenerSource;
@@ -118,8 +118,8 @@ public class GlobalListenerMapper {
   // Response mapping
   //
 
-  public GlobalTaskListener toGlobalListenerResponse(final GlobalListenerRecord record) {
-    return new GlobalTaskListener()
+  public GlobalTaskListenerResult toGlobalListenerResponse(final GlobalListenerRecord record) {
+    return new GlobalTaskListenerResult()
         .type(record.getType())
         .retries(record.getRetries())
         .afterNonGlobal(record.isAfterNonGlobal())

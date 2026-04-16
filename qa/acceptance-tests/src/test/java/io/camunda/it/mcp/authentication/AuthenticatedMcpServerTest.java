@@ -121,12 +121,12 @@ abstract class AuthenticatedMcpServerTest extends McpServerAuthenticationTest {
         objectMapper
             .getTypeFactory()
             .constructCollectionType(
-                List.class, io.camunda.gateway.protocol.model.ProcessDefinition.class);
-    final List<io.camunda.gateway.protocol.model.ProcessDefinition> items =
+                List.class, io.camunda.gateway.protocol.model.ProcessDefinitionResult.class);
+    final List<io.camunda.gateway.protocol.model.ProcessDefinitionResult> items =
         objectMapper.convertValue(searchQueryResult.get("items"), listType);
 
     return items.stream()
-        .map(io.camunda.gateway.protocol.model.ProcessDefinition::getProcessDefinitionId)
+        .map(io.camunda.gateway.protocol.model.ProcessDefinitionResult::getProcessDefinitionId)
         .collect(Collectors.toSet());
   }
 

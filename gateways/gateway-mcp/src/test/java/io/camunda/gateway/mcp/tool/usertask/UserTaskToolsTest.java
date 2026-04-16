@@ -20,9 +20,9 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.gateway.mapping.http.search.contract.StrictSearchQueryResult;
 import io.camunda.gateway.mcp.OperationalToolsTest;
-import io.camunda.gateway.protocol.model.UserTask;
+import io.camunda.gateway.protocol.model.UserTaskResult;
 import io.camunda.gateway.protocol.model.UserTaskStateEnum;
-import io.camunda.gateway.protocol.model.VariableSearch;
+import io.camunda.gateway.protocol.model.VariableSearchResult;
 import io.camunda.search.entities.UserTaskEntity;
 import io.camunda.search.entities.UserTaskEntity.UserTaskState;
 import io.camunda.search.entities.VariableEntity;
@@ -136,7 +136,7 @@ class UserTaskToolsTest extends OperationalToolsTest {
   @Captor private ArgumentCaptor<UserTaskQuery> userTaskQueryCaptor;
   @Captor private ArgumentCaptor<VariableQuery> variableQueryCaptor;
 
-  private void assertExampleUserTask(final UserTask userTask) {
+  private void assertExampleUserTask(final UserTaskResult userTask) {
     assertThat(userTask.getUserTaskKey()).isEqualTo("5");
     assertThat(userTask.getName()).isEqualTo("Task Name");
     assertThat(userTask.getState()).isEqualTo(UserTaskStateEnum.CREATED);
@@ -158,7 +158,7 @@ class UserTaskToolsTest extends OperationalToolsTest {
     assertThat(userTask.getProcessName()).isEqualTo("Process Name");
   }
 
-  private void assertExampleVariable(final VariableSearch variable) {
+  private void assertExampleVariable(final VariableSearchResult variable) {
     assertThat(variable.getVariableKey()).isEqualTo("10");
     assertThat(variable.getName()).isEqualTo("varName");
     assertThat(variable.getScopeKey()).isEqualTo("101");
@@ -186,7 +186,8 @@ class UserTaskToolsTest extends OperationalToolsTest {
       assertThat(result.isError()).isFalse();
       assertThat(result.structuredContent()).isNotNull();
 
-      final var userTask = objectMapper.convertValue(result.structuredContent(), UserTask.class);
+      final var userTask =
+          objectMapper.convertValue(result.structuredContent(), UserTaskResult.class);
       assertExampleUserTask(userTask);
 
       verify(userTaskServices).getByKey(eq(5L), any());
@@ -316,13 +317,14 @@ class UserTaskToolsTest extends OperationalToolsTest {
       assertThat(result.structuredContent()).isNotNull();
 
       @SuppressWarnings("unchecked")
-      final StrictSearchQueryResult<UserTask> searchResult =
-          (StrictSearchQueryResult<UserTask>)
+      final StrictSearchQueryResult<UserTaskResult> searchResult =
+          (StrictSearchQueryResult<UserTaskResult>)
               objectMapper.convertValue(
                   result.structuredContent(),
                   objectMapper
                       .getTypeFactory()
-                      .constructParametricType(StrictSearchQueryResult.class, UserTask.class));
+                      .constructParametricType(
+                          StrictSearchQueryResult.class, UserTaskResult.class));
       assertThat(searchResult.page().totalItems()).isEqualTo(1L);
       assertThat(searchResult.page().hasMoreTotalItems()).isFalse();
       assertThat(searchResult.page().startCursor()).isEqualTo("f");
@@ -879,14 +881,14 @@ class UserTaskToolsTest extends OperationalToolsTest {
       assertThat(result.structuredContent()).isNotNull();
 
       @SuppressWarnings("unchecked")
-      final StrictSearchQueryResult<VariableSearch> searchResult =
-          (StrictSearchQueryResult<VariableSearch>)
+      final StrictSearchQueryResult<VariableSearchResult> searchResult =
+          (StrictSearchQueryResult<VariableSearchResult>)
               objectMapper.convertValue(
                   result.structuredContent(),
                   objectMapper
                       .getTypeFactory()
                       .constructParametricType(
-                          StrictSearchQueryResult.class, VariableSearch.class));
+                          StrictSearchQueryResult.class, VariableSearchResult.class));
       assertThat(searchResult.page().totalItems()).isEqualTo(1L);
       assertThat(searchResult.page().hasMoreTotalItems()).isFalse();
       assertThat(searchResult.items())
@@ -925,14 +927,14 @@ class UserTaskToolsTest extends OperationalToolsTest {
       assertThat(result.structuredContent()).isNotNull();
 
       @SuppressWarnings("unchecked")
-      final StrictSearchQueryResult<VariableSearch> searchResult =
-          (StrictSearchQueryResult<VariableSearch>)
+      final StrictSearchQueryResult<VariableSearchResult> searchResult =
+          (StrictSearchQueryResult<VariableSearchResult>)
               objectMapper.convertValue(
                   result.structuredContent(),
                   objectMapper
                       .getTypeFactory()
                       .constructParametricType(
-                          StrictSearchQueryResult.class, VariableSearch.class));
+                          StrictSearchQueryResult.class, VariableSearchResult.class));
       assertThat(searchResult.items())
           .hasSize(1)
           .first()

@@ -107,7 +107,7 @@
             </goals>
             <phase>generate-sources</phase>
             <configuration>
-              <mainClass>io.camunda.gateway.protocol.model.tools.ApiProtocolModelGenerator</mainClass>
+              <mainClass>io.camunda.gateway.protocol.model.tools.MappingContractsGenerator</mainClass>
               <includePluginDependencies>true</includePluginDependencies>
               <additionalClasspathElements>
                 <additionalClasspathElement>${project.build.directory}/tools-classes</additionalClasspathElement>

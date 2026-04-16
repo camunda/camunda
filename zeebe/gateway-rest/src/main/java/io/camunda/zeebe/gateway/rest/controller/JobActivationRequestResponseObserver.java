@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.gateway.rest.controller;
 
-import io.camunda.gateway.protocol.model.JobActivation;
+import io.camunda.gateway.protocol.model.JobActivationResult;
 import io.camunda.service.exception.ErrorMapper;
 import io.camunda.zeebe.gateway.impl.job.ResponseObserver;
 import io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper;
@@ -15,8 +15,8 @@ import java.util.ArrayList;
 import java.util.concurrent.CompletableFuture;
 import org.springframework.http.ResponseEntity;
 
-public class JobActivationRequestResponseObserver implements ResponseObserver<JobActivation> {
-  protected final ArrayList<io.camunda.gateway.protocol.model.ActivatedJob> accumulatedJobs =
+public class JobActivationRequestResponseObserver implements ResponseObserver<JobActivationResult> {
+  protected final ArrayList<io.camunda.gateway.protocol.model.ActivatedJobResult> accumulatedJobs =
       new ArrayList<>();
   protected CompletableFuture<ResponseEntity<Object>> result;
 
@@ -29,11 +29,11 @@ public class JobActivationRequestResponseObserver implements ResponseObserver<Jo
 
   @Override
   public void onCompleted() {
-    result.complete(ResponseEntity.ok(new JobActivation().jobs(accumulatedJobs)));
+    result.complete(ResponseEntity.ok(new JobActivationResult().jobs(accumulatedJobs)));
   }
 
   @Override
-  public void onNext(final JobActivation element) {
+  public void onNext(final JobActivationResult element) {
     if (element.getJobs() != null && !element.getJobs().isEmpty()) {
       accumulatedJobs.addAll(element.getJobs());
     }

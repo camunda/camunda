@@ -13,8 +13,8 @@ import io.camunda.gateway.mapping.http.RequestMapper;
 import io.camunda.gateway.mapping.http.search.SearchQueryRequestMapper;
 import io.camunda.gateway.mapping.http.search.SearchQueryResponseMapper;
 import io.camunda.gateway.protocol.model.CamundaProblemDetail;
-import io.camunda.gateway.protocol.model.JobActivation;
 import io.camunda.gateway.protocol.model.JobActivationRequest;
+import io.camunda.gateway.protocol.model.JobActivationResult;
 import io.camunda.gateway.protocol.model.JobCompletionRequest;
 import io.camunda.gateway.protocol.model.JobErrorRequest;
 import io.camunda.gateway.protocol.model.JobErrorStatisticsQuery;
@@ -44,13 +44,13 @@ import org.springframework.stereotype.Component;
 @Component
 public class DefaultJobServiceAdapter implements JobServiceAdapter {
 
-  private final JobServices<JobActivation> jobServices;
+  private final JobServices<JobActivationResult> jobServices;
   private final GatewayRestConfiguration gatewayRestConfiguration;
   private final ResponseObserverProvider responseObserverProvider;
   private final MultiTenancyConfiguration multiTenancyCfg;
 
   public DefaultJobServiceAdapter(
-      final JobServices<JobActivation> jobServices,
+      final JobServices<JobActivationResult> jobServices,
       final GatewayRestConfiguration gatewayRestConfiguration,
       final ResponseObserverProvider responseObserverProvider,
       final MultiTenancyConfiguration multiTenancyCfg) {

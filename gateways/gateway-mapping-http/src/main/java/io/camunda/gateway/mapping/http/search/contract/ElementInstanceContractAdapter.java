@@ -11,7 +11,7 @@ import static io.camunda.gateway.mapping.http.ResponseMapper.formatDate;
 
 import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
 import io.camunda.gateway.mapping.http.util.KeyUtil;
-import io.camunda.gateway.protocol.model.ElementInstance;
+import io.camunda.gateway.protocol.model.ElementInstanceResult;
 import io.camunda.gateway.protocol.model.ElementInstanceStateEnum;
 import io.camunda.search.entities.FlowNodeInstanceEntity;
 import java.util.List;
@@ -20,12 +20,12 @@ public final class ElementInstanceContractAdapter {
 
   private ElementInstanceContractAdapter() {}
 
-  public static List<ElementInstance> adapt(final List<FlowNodeInstanceEntity> entities) {
+  public static List<ElementInstanceResult> adapt(final List<FlowNodeInstanceEntity> entities) {
     return entities.stream().map(ElementInstanceContractAdapter::adapt).toList();
   }
 
-  public static ElementInstance adapt(final FlowNodeInstanceEntity entity) {
-    return new ElementInstance()
+  public static ElementInstanceResult adapt(final FlowNodeInstanceEntity entity) {
+    return new ElementInstanceResult()
         .processDefinitionId(
             ContractPolicy.requireNonNull(
                 entity.processDefinitionId(), "processDefinitionId", entity))

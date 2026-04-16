@@ -18,54 +18,53 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.document.api.DocumentLink;
 import io.camunda.gateway.mapping.http.util.KeyUtil;
-import io.camunda.gateway.protocol.model.ActivatedJob;
-import io.camunda.gateway.protocol.model.AuthorizationCreate;
-import io.camunda.gateway.protocol.model.BatchOperationCreated;
+import io.camunda.gateway.protocol.model.ActivatedJobResult;
+import io.camunda.gateway.protocol.model.AuthorizationCreateResult;
+import io.camunda.gateway.protocol.model.BatchOperationCreatedResult;
 import io.camunda.gateway.protocol.model.BatchOperationTypeEnum;
 import io.camunda.gateway.protocol.model.BrokerInfo;
-import io.camunda.gateway.protocol.model.ClusterVariable;
+import io.camunda.gateway.protocol.model.ClusterVariableResult;
 import io.camunda.gateway.protocol.model.ClusterVariableScopeEnum;
-import io.camunda.gateway.protocol.model.CreateProcessInstance;
+import io.camunda.gateway.protocol.model.CreateProcessInstanceResult;
 import io.camunda.gateway.protocol.model.DeleteResourceResponse;
-import io.camunda.gateway.protocol.model.Deployment;
-import io.camunda.gateway.protocol.model.DeploymentDecision;
-import io.camunda.gateway.protocol.model.DeploymentDecisionRequirements;
-import io.camunda.gateway.protocol.model.DeploymentForm;
-import io.camunda.gateway.protocol.model.DeploymentMetadata;
-import io.camunda.gateway.protocol.model.DeploymentProcess;
-import io.camunda.gateway.protocol.model.DeploymentResource;
+import io.camunda.gateway.protocol.model.DeploymentDecisionRequirementsResult;
+import io.camunda.gateway.protocol.model.DeploymentDecisionResult;
+import io.camunda.gateway.protocol.model.DeploymentFormResult;
+import io.camunda.gateway.protocol.model.DeploymentMetadataResult;
+import io.camunda.gateway.protocol.model.DeploymentProcessResult;
+import io.camunda.gateway.protocol.model.DeploymentResourceResult;
+import io.camunda.gateway.protocol.model.DeploymentResult;
 import io.camunda.gateway.protocol.model.DocumentCreationBatchResponse;
 import io.camunda.gateway.protocol.model.DocumentCreationFailureDetail;
 import io.camunda.gateway.protocol.model.DocumentMetadataResponse;
 import io.camunda.gateway.protocol.model.DocumentReference;
-import io.camunda.gateway.protocol.model.EvaluateConditional;
-import io.camunda.gateway.protocol.model.EvaluateDecision;
-import io.camunda.gateway.protocol.model.EvaluatedDecision;
+import io.camunda.gateway.protocol.model.EvaluateConditionalResult;
+import io.camunda.gateway.protocol.model.EvaluateDecisionResult;
 import io.camunda.gateway.protocol.model.EvaluatedDecisionInputItem;
 import io.camunda.gateway.protocol.model.EvaluatedDecisionOutputItem;
-import io.camunda.gateway.protocol.model.ExpressionEvaluation;
+import io.camunda.gateway.protocol.model.EvaluatedDecisionResult;
+import io.camunda.gateway.protocol.model.ExpressionEvaluationResult;
 import io.camunda.gateway.protocol.model.ExpressionEvaluationWarningItem;
-import io.camunda.gateway.protocol.model.GroupCreate;
-import io.camunda.gateway.protocol.model.GroupUpdate;
-import io.camunda.gateway.protocol.model.JobActivation;
+import io.camunda.gateway.protocol.model.GroupCreateResult;
+import io.camunda.gateway.protocol.model.GroupUpdateResult;
 import io.camunda.gateway.protocol.model.JobKindEnum;
 import io.camunda.gateway.protocol.model.JobListenerEventTypeEnum;
-import io.camunda.gateway.protocol.model.MappingRuleCreate;
-import io.camunda.gateway.protocol.model.MappingRuleUpdate;
+import io.camunda.gateway.protocol.model.MappingRuleCreateResult;
+import io.camunda.gateway.protocol.model.MappingRuleUpdateResult;
 import io.camunda.gateway.protocol.model.MatchedDecisionRuleItem;
-import io.camunda.gateway.protocol.model.MessageCorrelation;
-import io.camunda.gateway.protocol.model.MessagePublication;
+import io.camunda.gateway.protocol.model.MessageCorrelationResult;
+import io.camunda.gateway.protocol.model.MessagePublicationResult;
 import io.camunda.gateway.protocol.model.ProcessInstanceReference;
-import io.camunda.gateway.protocol.model.Resource;
-import io.camunda.gateway.protocol.model.RoleCreate;
-import io.camunda.gateway.protocol.model.RoleUpdate;
-import io.camunda.gateway.protocol.model.SignalBroadcast;
-import io.camunda.gateway.protocol.model.TenantCreate;
-import io.camunda.gateway.protocol.model.TenantUpdate;
+import io.camunda.gateway.protocol.model.ResourceResult;
+import io.camunda.gateway.protocol.model.RoleCreateResult;
+import io.camunda.gateway.protocol.model.RoleUpdateResult;
+import io.camunda.gateway.protocol.model.SignalBroadcastResult;
+import io.camunda.gateway.protocol.model.TenantCreateResult;
+import io.camunda.gateway.protocol.model.TenantUpdateResult;
 import io.camunda.gateway.protocol.model.TopologyResponse;
-import io.camunda.gateway.protocol.model.UserCreate;
+import io.camunda.gateway.protocol.model.UserCreateResult;
 import io.camunda.gateway.protocol.model.UserTaskProperties;
-import io.camunda.gateway.protocol.model.UserUpdate;
+import io.camunda.gateway.protocol.model.UserUpdateResult;
 import io.camunda.service.DocumentServices.DocumentContentResponse;
 import io.camunda.service.DocumentServices.DocumentErrorResponse;
 import io.camunda.service.DocumentServices.DocumentReferenceResponse;
@@ -163,20 +162,21 @@ public final class ResponseMapper {
     return date == null ? null : DATE_RESPONSE_MAPPER.format(date);
   }
 
-  public static JobActivationResult<JobActivation> toActivateJobsResponse(
-      final io.camunda.zeebe.gateway.impl.job.JobActivationResponse activationResponse) {
+  public static JobActivationResult<io.camunda.gateway.protocol.model.JobActivationResult>
+      toActivateJobsResponse(
+          final io.camunda.zeebe.gateway.impl.job.JobActivationResponse activationResponse) {
     final Iterator<LongValue> jobKeys = activationResponse.brokerResponse().jobKeys().iterator();
     final Iterator<JobRecord> jobs = activationResponse.brokerResponse().jobs().iterator();
 
     long currentResponseSize = 0L;
 
-    final List<ActivatedJob> sizeExceedingJobs = new ArrayList<>();
-    final List<ActivatedJob> responseJobs = new ArrayList<>();
+    final List<ActivatedJobResult> sizeExceedingJobs = new ArrayList<>();
+    final List<ActivatedJobResult> responseJobs = new ArrayList<>();
 
     while (jobKeys.hasNext() && jobs.hasNext()) {
       final LongValue jobKey = jobKeys.next();
       final JobRecord job = jobs.next();
-      final ActivatedJob activatedJob = toActivatedJob(jobKey.getValue(), job);
+      final ActivatedJobResult activatedJob = toActivatedJob(jobKey.getValue(), job);
 
       // This is the message size of the message from the broker, not the size of the REST message
       final int activatedJobSize = job.getLength();
@@ -188,12 +188,14 @@ public final class ResponseMapper {
       }
     }
 
-    return new RestJobActivationResult(new JobActivation().jobs(responseJobs), sizeExceedingJobs);
+    return new RestJobActivationResult(
+        new io.camunda.gateway.protocol.model.JobActivationResult().jobs(responseJobs),
+        sizeExceedingJobs);
   }
 
-  static ActivatedJob toActivatedJob(final long jobKey, final JobRecord job) {
+  static ActivatedJobResult toActivatedJob(final long jobKey, final JobRecord job) {
     final long rootProcessInstanceKey = job.getRootProcessInstanceKey();
-    return new ActivatedJob()
+    return new ActivatedJobResult()
         .type(job.getType())
         .processDefinitionId(job.getBpmnProcessId())
         .processDefinitionVersion(job.getProcessDefinitionVersion())
@@ -269,9 +271,9 @@ public final class ResponseMapper {
     }
   }
 
-  public static MessageCorrelation toMessageCorrelationResponse(
+  public static MessageCorrelationResult toMessageCorrelationResponse(
       final MessageCorrelationRecord brokerResponse) {
-    return new MessageCorrelation()
+    return new MessageCorrelationResult()
         .tenantId(brokerResponse.getTenantId())
         .messageKey(KeyUtil.keyToString(brokerResponse.getMessageKey()))
         .processInstanceKey(KeyUtil.keyToString(brokerResponse.getProcessInstanceKey()));
@@ -352,14 +354,14 @@ public final class ResponseMapper {
         .expiresAt(documentLink.expiresAt().toString());
   }
 
-  public static Deployment toDeployResourceResponse(final DeploymentRecord brokerResponse) {
-    final var deployments = new ArrayList<DeploymentMetadata>();
+  public static DeploymentResult toDeployResourceResponse(final DeploymentRecord brokerResponse) {
+    final var deployments = new ArrayList<DeploymentMetadataResult>();
     addDeployedProcess(deployments, brokerResponse.getProcessesMetadata());
     addDeployedDecision(deployments, brokerResponse.decisionsMetadata());
     addDeployedDecisionRequirements(deployments, brokerResponse.decisionRequirementsMetadata());
     addDeployedForm(deployments, brokerResponse.formMetadata());
     addDeployedResource(deployments, brokerResponse.resourceMetadata());
-    return new Deployment()
+    return new DeploymentResult()
         .deploymentKey(KeyUtil.keyToString(brokerResponse.getDeploymentKey()))
         .tenantId(brokerResponse.getTenantId())
         .deployments(deployments);
@@ -367,10 +369,10 @@ public final class ResponseMapper {
 
   public static DeleteResourceResponse toDeleteResourceResponse(
       final ResourceDeletionRecord brokerResponse) {
-    BatchOperationCreated batchOperation = null;
+    BatchOperationCreatedResult batchOperation = null;
     if (brokerResponse.isDeleteHistory() && brokerResponse.getBatchOperationKey() > 0) {
       batchOperation =
-          new BatchOperationCreated()
+          new BatchOperationCreatedResult()
               .batchOperationKey(KeyUtil.keyToString(brokerResponse.getBatchOperationKey()))
               .batchOperationType(
                   BatchOperationTypeEnum.valueOf(brokerResponse.getBatchOperationType().name()));
@@ -380,8 +382,8 @@ public final class ResponseMapper {
         .batchOperation(batchOperation);
   }
 
-  public static Resource toGetResourceResponse(final ResourceRecord resourceRecord) {
-    return new Resource()
+  public static ResourceResult toGetResourceResponse(final ResourceRecord resourceRecord) {
+    return new ResourceResult()
         .resourceName(resourceRecord.getResourceName())
         .version(resourceRecord.getVersion())
         .resourceId(resourceRecord.getResourceId())
@@ -394,22 +396,22 @@ public final class ResponseMapper {
     return resourceRecord.getResourceProp();
   }
 
-  public static MessagePublication toMessagePublicationResponse(
+  public static MessagePublicationResult toMessagePublicationResponse(
       final BrokerResponse<MessageRecord> brokerResponse) {
-    return new MessagePublication()
+    return new MessagePublicationResult()
         .tenantId(brokerResponse.getResponse().getTenantId())
         .messageKey(KeyUtil.keyToString(brokerResponse.getKey()));
   }
 
   private static void addDeployedForm(
-      final List<DeploymentMetadata> deployments,
+      final List<DeploymentMetadataResult> deployments,
       final ValueArray<FormMetadataRecord> formMetadataRecords) {
     formMetadataRecords.stream()
         .map(
             form ->
-                new DeploymentMetadata()
+                new DeploymentMetadataResult()
                     .form(
-                        new DeploymentForm()
+                        new DeploymentFormResult()
                             .formId(form.getFormId())
                             .version(form.getVersion())
                             .resourceName(form.getResourceName())
@@ -419,14 +421,14 @@ public final class ResponseMapper {
   }
 
   private static void addDeployedResource(
-      final List<DeploymentMetadata> deployments,
+      final List<DeploymentMetadataResult> deployments,
       final ValueArray<ResourceMetadataRecord> resourceMetadataRecords) {
     resourceMetadataRecords.stream()
         .map(
             resource ->
-                new DeploymentMetadata()
+                new DeploymentMetadataResult()
                     .resource(
-                        new DeploymentResource()
+                        new DeploymentResourceResult()
                             .resourceId(resource.getResourceId())
                             .resourceName(resource.getResourceName())
                             .version(resource.getVersion())
@@ -436,14 +438,14 @@ public final class ResponseMapper {
   }
 
   private static void addDeployedDecisionRequirements(
-      final List<DeploymentMetadata> deployments,
+      final List<DeploymentMetadataResult> deployments,
       final ValueArray<DecisionRequirementsMetadataRecord> decisionRequirementsMetadataRecords) {
     decisionRequirementsMetadataRecords.stream()
         .map(
             decisionRequirement ->
-                new DeploymentMetadata()
+                new DeploymentMetadataResult()
                     .decisionRequirements(
-                        new DeploymentDecisionRequirements()
+                        new DeploymentDecisionRequirementsResult()
                             .decisionRequirementsId(decisionRequirement.getDecisionRequirementsId())
                             .decisionRequirementsName(
                                 decisionRequirement.getDecisionRequirementsName())
@@ -457,14 +459,14 @@ public final class ResponseMapper {
   }
 
   private static void addDeployedDecision(
-      final List<DeploymentMetadata> deployments,
+      final List<DeploymentMetadataResult> deployments,
       final ValueArray<DecisionRecord> decisionRecords) {
     decisionRecords.stream()
         .map(
             decision ->
-                new DeploymentMetadata()
+                new DeploymentMetadataResult()
                     .decisionDefinition(
-                        new DeploymentDecision()
+                        new DeploymentDecisionResult()
                             .decisionDefinitionId(decision.getDecisionId())
                             .version(decision.getVersion())
                             .name(decision.getDecisionName())
@@ -477,14 +479,14 @@ public final class ResponseMapper {
   }
 
   private static void addDeployedProcess(
-      final List<DeploymentMetadata> deployments,
+      final List<DeploymentMetadataResult> deployments,
       final List<ProcessMetadataValue> processesMetadata) {
     processesMetadata.stream()
         .map(
             process ->
-                new DeploymentMetadata()
+                new DeploymentMetadataResult()
                     .processDefinition(
-                        new DeploymentProcess()
+                        new DeploymentProcessResult()
                             .processDefinitionId(process.getBpmnProcessId())
                             .processDefinitionVersion(process.getVersion())
                             .resourceName(process.getResourceName())
@@ -494,7 +496,7 @@ public final class ResponseMapper {
         .forEach(deployments::add);
   }
 
-  public static CreateProcessInstance toCreateProcessInstanceResponse(
+  public static CreateProcessInstanceResult toCreateProcessInstanceResponse(
       final ProcessInstanceCreationRecord brokerResponse) {
     return buildCreateProcessInstanceResponse(
         brokerResponse.getProcessDefinitionKey(),
@@ -507,7 +509,7 @@ public final class ResponseMapper {
         brokerResponse.getBusinessId());
   }
 
-  public static CreateProcessInstance toCreateProcessInstanceWithResultResponse(
+  public static CreateProcessInstanceResult toCreateProcessInstanceWithResultResponse(
       final ProcessInstanceResultRecord brokerResponse) {
     return buildCreateProcessInstanceResponse(
         brokerResponse.getProcessDefinitionKey(),
@@ -520,7 +522,7 @@ public final class ResponseMapper {
         brokerResponse.getBusinessId());
   }
 
-  private static CreateProcessInstance buildCreateProcessInstanceResponse(
+  private static CreateProcessInstanceResult buildCreateProcessInstanceResponse(
       final Long processDefinitionKey,
       final String bpmnProcessId,
       final Integer version,
@@ -529,7 +531,7 @@ public final class ResponseMapper {
       final Map<String, Object> variables,
       final Set<String> tags,
       final String businessId) {
-    return new CreateProcessInstance()
+    return new CreateProcessInstanceResult()
         .processDefinitionId(bpmnProcessId)
         .processDefinitionVersion(version)
         .tenantId(tenantId)
@@ -540,22 +542,22 @@ public final class ResponseMapper {
         .businessId(emptyToNull(businessId));
   }
 
-  public static BatchOperationCreated toBatchOperationCreatedWithResultResponse(
+  public static BatchOperationCreatedResult toBatchOperationCreatedWithResultResponse(
       final BatchOperationCreationRecord brokerResponse) {
-    return new BatchOperationCreated()
+    return new BatchOperationCreatedResult()
         .batchOperationKey(KeyUtil.keyToString(brokerResponse.getBatchOperationKey()))
         .batchOperationType(
             BatchOperationTypeEnum.valueOf(brokerResponse.getBatchOperationType().name()));
   }
 
-  public static SignalBroadcast toSignalBroadcastResponse(
+  public static SignalBroadcastResult toSignalBroadcastResponse(
       final BrokerResponse<SignalRecord> brokerResponse) {
-    return new SignalBroadcast()
+    return new SignalBroadcastResult()
         .tenantId(brokerResponse.getResponse().getTenantId())
         .signalKey(KeyUtil.keyToString(brokerResponse.getKey()));
   }
 
-  public static EvaluateConditional toConditionalEvaluationResponse(
+  public static EvaluateConditionalResult toConditionalEvaluationResponse(
       final BrokerResponse<ConditionalEvaluationRecord> brokerResponse) {
     final var response = brokerResponse.getResponse();
     final var processInstances =
@@ -568,94 +570,96 @@ public final class ResponseMapper {
                         .processInstanceKey(KeyUtil.keyToString(instance.getProcessInstanceKey())))
             .toList();
 
-    return new EvaluateConditional()
+    return new EvaluateConditionalResult()
         .conditionalEvaluationKey(KeyUtil.keyToString(brokerResponse.getKey()))
         .tenantId(response.getTenantId())
         .processInstances(processInstances);
   }
 
-  public static AuthorizationCreate toAuthorizationCreateResponse(
+  public static AuthorizationCreateResult toAuthorizationCreateResponse(
       final AuthorizationRecord authorizationRecord) {
-    return new AuthorizationCreate()
+    return new AuthorizationCreateResult()
         .authorizationKey(KeyUtil.keyToString(authorizationRecord.getAuthorizationKey()));
   }
 
-  public static UserCreate toUserCreateResponse(final UserRecord userRecord) {
-    return new UserCreate()
+  public static UserCreateResult toUserCreateResponse(final UserRecord userRecord) {
+    return new UserCreateResult()
         .username(userRecord.getUsername())
         .name(userRecord.getName())
         .email(userRecord.getEmail());
   }
 
-  public static UserUpdate toUserUpdateResponse(final UserRecord userRecord) {
-    return new UserUpdate()
+  public static UserUpdateResult toUserUpdateResponse(final UserRecord userRecord) {
+    return new UserUpdateResult()
         .username(userRecord.getUsername())
         .name(userRecord.getName())
         .email(userRecord.getEmail());
   }
 
-  public static RoleCreate toRoleCreateResponse(final RoleRecord roleRecord) {
-    return new RoleCreate()
+  public static RoleCreateResult toRoleCreateResponse(final RoleRecord roleRecord) {
+    return new RoleCreateResult()
         .roleId(roleRecord.getRoleId())
         .name(roleRecord.getName())
         .description(roleRecord.getDescription());
   }
 
-  public static RoleUpdate toRoleUpdateResponse(final RoleRecord roleRecord) {
-    return new RoleUpdate()
+  public static RoleUpdateResult toRoleUpdateResponse(final RoleRecord roleRecord) {
+    return new RoleUpdateResult()
         .name(roleRecord.getName())
         .description(roleRecord.getDescription())
         .roleId(roleRecord.getRoleId());
   }
 
-  public static GroupCreate toGroupCreateResponse(final GroupRecord groupRecord) {
-    return new GroupCreate()
+  public static GroupCreateResult toGroupCreateResponse(final GroupRecord groupRecord) {
+    return new GroupCreateResult()
         .groupId(groupRecord.getGroupId())
         .name(groupRecord.getName())
         .description(groupRecord.getDescription());
   }
 
-  public static GroupUpdate toGroupUpdateResponse(final GroupRecord groupRecord) {
-    return new GroupUpdate()
+  public static GroupUpdateResult toGroupUpdateResponse(final GroupRecord groupRecord) {
+    return new GroupUpdateResult()
         .groupId(groupRecord.getGroupId())
         .name(groupRecord.getName())
         .description(groupRecord.getDescription());
   }
 
-  public static TenantCreate toTenantCreateResponse(final TenantRecord record) {
-    return new TenantCreate()
+  public static TenantCreateResult toTenantCreateResponse(final TenantRecord record) {
+    return new TenantCreateResult()
         .tenantId(record.getTenantId())
         .name(record.getName())
         .description(record.getDescription());
   }
 
-  public static TenantUpdate toTenantUpdateResponse(final TenantRecord record) {
-    return new TenantUpdate()
+  public static TenantUpdateResult toTenantUpdateResponse(final TenantRecord record) {
+    return new TenantUpdateResult()
         .tenantId(record.getTenantId())
         .name(record.getName())
         .description(record.getDescription());
   }
 
-  public static MappingRuleCreate toMappingRuleCreateResponse(final MappingRuleRecord record) {
-    return new MappingRuleCreate()
+  public static MappingRuleCreateResult toMappingRuleCreateResponse(
+      final MappingRuleRecord record) {
+    return new MappingRuleCreateResult()
         .claimName(record.getClaimName())
         .claimValue(record.getClaimValue())
         .name(record.getName())
         .mappingRuleId(record.getMappingRuleId());
   }
 
-  public static MappingRuleUpdate toMappingRuleUpdateResponse(final MappingRuleRecord record) {
-    return new MappingRuleUpdate()
+  public static MappingRuleUpdateResult toMappingRuleUpdateResponse(
+      final MappingRuleRecord record) {
+    return new MappingRuleUpdateResult()
         .claimName(record.getClaimName())
         .claimValue(record.getClaimValue())
         .name(record.getName())
         .mappingRuleId(record.getMappingRuleId());
   }
 
-  public static EvaluateDecision toEvaluateDecisionResponse(
+  public static EvaluateDecisionResult toEvaluateDecisionResponse(
       final BrokerResponse<DecisionEvaluationRecord> brokerResponse) {
     final var record = brokerResponse.getResponse();
-    return new EvaluateDecision()
+    return new EvaluateDecisionResult()
         .decisionDefinitionId(record.getDecisionId())
         .decisionDefinitionKey(KeyUtil.keyToString(record.getDecisionKey()))
         .decisionDefinitionName(record.getDecisionName())
@@ -671,12 +675,12 @@ public final class ResponseMapper {
         .failureMessage(emptyToNull(record.getEvaluationFailureMessage()));
   }
 
-  private static List<EvaluatedDecision> buildEvaluatedDecisions(
+  private static List<EvaluatedDecisionResult> buildEvaluatedDecisions(
       final DecisionEvaluationRecord decisionEvaluationRecord) {
     return decisionEvaluationRecord.getEvaluatedDecisions().stream()
         .map(
             evaluatedDecision ->
-                new EvaluatedDecision()
+                new EvaluatedDecisionResult()
                     .decisionDefinitionId(evaluatedDecision.getDecisionId())
                     .decisionDefinitionName(evaluatedDecision.getDecisionName())
                     .decisionDefinitionVersion(evaluatedDecision.getDecisionVersion())
@@ -728,9 +732,9 @@ public final class ResponseMapper {
         .toList();
   }
 
-  public static ClusterVariable toClusterVariableResponse(
+  public static ClusterVariableResult toClusterVariableResponse(
       final ClusterVariableRecord clusterVariableRecord) {
-    return new ClusterVariable()
+    return new ClusterVariableResult()
         .name(clusterVariableRecord.getName())
         .scope(
             clusterVariableRecord.isTenantScoped()
@@ -741,9 +745,9 @@ public final class ResponseMapper {
         .value(clusterVariableRecord.getValue());
   }
 
-  public static ExpressionEvaluation toExpressionEvaluationResult(
+  public static ExpressionEvaluationResult toExpressionEvaluationResult(
       final ExpressionRecord expressionRecord) {
-    return new ExpressionEvaluation()
+    return new ExpressionEvaluationResult()
         .expression(expressionRecord.getExpression())
         .result(expressionRecord.getResultValue())
         .warnings(
@@ -784,14 +788,15 @@ public final class ResponseMapper {
     return value == null || value.isEmpty() ? null : value;
   }
 
-  static class RestJobActivationResult implements JobActivationResult<JobActivation> {
+  static class RestJobActivationResult
+      implements JobActivationResult<io.camunda.gateway.protocol.model.JobActivationResult> {
 
-    private final JobActivation response;
-    private final List<io.camunda.gateway.protocol.model.ActivatedJob> sizeExceedingJobs;
+    private final io.camunda.gateway.protocol.model.JobActivationResult response;
+    private final List<io.camunda.gateway.protocol.model.ActivatedJobResult> sizeExceedingJobs;
 
     RestJobActivationResult(
-        final JobActivation response,
-        final List<io.camunda.gateway.protocol.model.ActivatedJob> sizeExceedingJobs) {
+        final io.camunda.gateway.protocol.model.JobActivationResult response,
+        final List<io.camunda.gateway.protocol.model.ActivatedJobResult> sizeExceedingJobs) {
       this.response = response;
       this.sizeExceedingJobs = sizeExceedingJobs;
     }
@@ -812,7 +817,7 @@ public final class ResponseMapper {
     }
 
     @Override
-    public JobActivation getActivateJobsResponse() {
+    public io.camunda.gateway.protocol.model.JobActivationResult getActivateJobsResponse() {
       return response;
     }
 

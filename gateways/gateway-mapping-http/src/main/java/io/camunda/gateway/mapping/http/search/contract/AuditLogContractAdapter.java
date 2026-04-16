@@ -11,11 +11,11 @@ import static io.camunda.gateway.mapping.http.ResponseMapper.formatDate;
 
 import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
 import io.camunda.gateway.mapping.http.util.KeyUtil;
-import io.camunda.gateway.protocol.model.AuditLog;
 import io.camunda.gateway.protocol.model.AuditLogActorTypeEnum;
 import io.camunda.gateway.protocol.model.AuditLogCategoryEnum;
 import io.camunda.gateway.protocol.model.AuditLogEntityTypeEnum;
 import io.camunda.gateway.protocol.model.AuditLogOperationTypeEnum;
+import io.camunda.gateway.protocol.model.AuditLogResult;
 import io.camunda.gateway.protocol.model.AuditLogResultEnum;
 import io.camunda.gateway.protocol.model.BatchOperationTypeEnum;
 import io.camunda.search.entities.AuditLogEntity;
@@ -25,12 +25,12 @@ public final class AuditLogContractAdapter {
 
   private AuditLogContractAdapter() {}
 
-  public static List<AuditLog> adapt(final List<AuditLogEntity> entities) {
+  public static List<AuditLogResult> adapt(final List<AuditLogEntity> entities) {
     return entities.stream().map(AuditLogContractAdapter::adapt).toList();
   }
 
-  public static AuditLog adapt(final AuditLogEntity entity) {
-    return new AuditLog()
+  public static AuditLogResult adapt(final AuditLogEntity entity) {
+    return new AuditLogResult()
         .auditLogKey(ContractPolicy.requireNonNull(entity.auditLogKey(), "auditLogKey", entity))
         .entityKey(ContractPolicy.requireNonNull(entity.entityKey(), "entityKey", entity))
         .entityType(

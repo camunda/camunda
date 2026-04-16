@@ -9,7 +9,7 @@ package io.camunda.gateway.mapping.http.search.contract;
 
 import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
 import io.camunda.gateway.mapping.http.util.KeyUtil;
-import io.camunda.gateway.protocol.model.Authorization;
+import io.camunda.gateway.protocol.model.AuthorizationResult;
 import io.camunda.gateway.protocol.model.OwnerTypeEnum;
 import io.camunda.gateway.protocol.model.PermissionTypeEnum;
 import io.camunda.gateway.protocol.model.ResourceTypeEnum;
@@ -21,12 +21,12 @@ public final class AuthorizationContractAdapter {
 
   private AuthorizationContractAdapter() {}
 
-  public static List<Authorization> adapt(final List<AuthorizationEntity> entities) {
+  public static List<AuthorizationResult> adapt(final List<AuthorizationEntity> entities) {
     return entities.stream().map(AuthorizationContractAdapter::adapt).toList();
   }
 
-  public static Authorization adapt(final AuthorizationEntity entity) {
-    return new Authorization()
+  public static AuthorizationResult adapt(final AuthorizationEntity entity) {
+    return new AuthorizationResult()
         .ownerId(ContractPolicy.requireNonNull(entity.ownerId(), "ownerId", entity))
         .ownerType(
             ContractPolicy.requireNonNull(

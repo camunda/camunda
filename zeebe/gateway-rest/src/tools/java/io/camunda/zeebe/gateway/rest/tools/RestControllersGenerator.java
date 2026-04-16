@@ -48,6 +48,7 @@ public class RestControllersGenerator {
 
   public static void main(String[] args) throws Exception {
     final var repoRoot = Path.of(args[0]);
+    final var licenseHeaderFile = Path.of(args[1]);
     final var specDir =
         repoRoot.resolve("zeebe/gateway-protocol/src/main/proto/v2").normalize();
     final var controllerOutBase = repoRoot.resolve("zeebe/gateway-rest/target/generated-sources");
@@ -55,6 +56,9 @@ public class RestControllersGenerator {
     if (!Files.isDirectory(specDir)) {
       throw new IllegalStateException("OpenAPI spec directory does not exist: " + specDir);
     }
+
+    final var licenseText = Files.readString(licenseHeaderFile, StandardCharsets.UTF_8);
+    final var licenseComment = formatLicenseComment(licenseText);
 
     // Load schemas to populate AVAILABLE_STRICT_CONTRACTS and SEARCH_REQUEST_DTO_MAP
     // (needed for resolveSchemaType used in controller generation)
@@ -120,12 +124,14 @@ public class RestControllersGenerator {
     int adapterCount = 0;
     for (var ctrl : universalEntries) {
       final var controllerFile = controllerDir.resolve(ctrl.className() + ".java");
-      Files.writeString(controllerFile, renderUniversalController(ctrl), StandardCharsets.UTF_8);
+      Files.writeString(
+          controllerFile, renderUniversalController(ctrl, licenseComment), StandardCharsets.UTF_8);
       System.out.println("generated (controller): " + controllerFile);
       universalCount++;
 
       final var adapterFile = adapterDir.resolve(ctrl.tagPascal() + "ServiceAdapter.java");
-      Files.writeString(adapterFile, renderServiceAdapterInterface(ctrl), StandardCharsets.UTF_8);
+      Files.writeString(
+          adapterFile, renderServiceAdapterInterface(ctrl, licenseComment), StandardCharsets.UTF_8);
       System.out.println("generated (adapter): " + adapterFile);
       adapterCount++;
     }
@@ -1599,23 +1605,11 @@ public class RestControllersGenerator {
   }
 
   /** Renders a universal controller that delegates ALL methods to the service adapter. */
-  private static String renderUniversalController(UniversalControllerEntry ctrl) {
+  private static String renderUniversalController(
+      UniversalControllerEntry ctrl, String licenseComment) {
     final var sb = new StringBuilder();
-    sb.append(
-        """
-/*
- * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
- * one or more contributor license agreements. See the NOTICE file distributed
- * with this work for additional information regarding copyright ownership.
- * Licensed under the Camunda License 1.0. You may not use this file
- * except in compliance with the Camunda License 1.0.
- *
- * GENERATED FILE - DO NOT EDIT.
- */
-package %s;
-
-"""
-            .formatted(CONTROLLER_PACKAGE));
+    sb.append(licenseComment).append("\n");
+    sb.append("package ").append(CONTROLLER_PACKAGE).append(";\n\n");
 
     // Collect imports
     final var imports = new LinkedHashSet<String>();
@@ -1855,23 +1849,11 @@ package %s;
   }
 
   /** Renders a ServiceAdapter interface with methods for all operations. */
-  private static String renderServiceAdapterInterface(UniversalControllerEntry ctrl) {
+  private static String renderServiceAdapterInterface(
+      UniversalControllerEntry ctrl, String licenseComment) {
     final var sb = new StringBuilder();
-    sb.append(
-        """
-/*
- * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
- * one or more contributor license agreements. See the NOTICE file distributed
- * with this work for additional information regarding copyright ownership.
- * Licensed under the Camunda License 1.0. You may not use this file
- * except in compliance with the Camunda License 1.0.
- *
- * GENERATED FILE - DO NOT EDIT.
- */
-package %s;
-
-"""
-            .formatted(ADAPTER_PACKAGE));
+    sb.append(licenseComment).append("\n");
+    sb.append("package ").append(ADAPTER_PACKAGE).append(";\n\n");
 
     final var imports = new LinkedHashSet<String>();
     imports.add("jakarta.annotation.Generated");
@@ -1986,6 +1968,16 @@ package %s;
       return trimmed.substring(1, trimmed.length() - 1);
     }
     return trimmed;
+  }
+
+  private static String formatLicenseComment(String licenseText) {
+    final var lines = licenseText.strip().split("\n");
+    final var sb = new StringBuilder("/*\n");
+    for (var line : lines) {
+      sb.append(" * ").append(line).append("\n");
+    }
+    sb.append(" */");
+    return sb.toString();
   }
 
   // ---------------------------------------------------------------------------

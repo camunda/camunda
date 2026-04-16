@@ -11,8 +11,8 @@ import static io.camunda.gateway.mapping.http.ResponseMapper.formatDate;
 
 import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
 import io.camunda.gateway.mapping.http.util.KeyUtil;
-import io.camunda.gateway.protocol.model.Incident;
 import io.camunda.gateway.protocol.model.IncidentErrorTypeEnum;
+import io.camunda.gateway.protocol.model.IncidentResult;
 import io.camunda.gateway.protocol.model.IncidentStateEnum;
 import io.camunda.search.entities.IncidentEntity;
 import java.util.List;
@@ -21,12 +21,12 @@ public final class IncidentContractAdapter {
 
   private IncidentContractAdapter() {}
 
-  public static List<Incident> adapt(final List<IncidentEntity> entities) {
+  public static List<IncidentResult> adapt(final List<IncidentEntity> entities) {
     return entities.stream().map(IncidentContractAdapter::adapt).toList();
   }
 
-  public static Incident adapt(final IncidentEntity entity) {
-    return new Incident()
+  public static IncidentResult adapt(final IncidentEntity entity) {
+    return new IncidentResult()
         .processDefinitionId(
             ContractPolicy.requireNonNull(
                 entity.processDefinitionId(), "processDefinitionId", entity))

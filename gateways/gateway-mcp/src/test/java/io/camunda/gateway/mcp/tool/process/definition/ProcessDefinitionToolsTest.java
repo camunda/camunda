@@ -17,7 +17,7 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.gateway.mapping.http.search.contract.StrictSearchQueryResult;
 import io.camunda.gateway.mcp.OperationalToolsTest;
-import io.camunda.gateway.protocol.model.ProcessDefinition;
+import io.camunda.gateway.protocol.model.ProcessDefinitionResult;
 import io.camunda.search.entities.ProcessDefinitionEntity;
 import io.camunda.search.filter.Operation;
 import io.camunda.search.filter.Operator;
@@ -79,7 +79,8 @@ class ProcessDefinitionToolsTest extends OperationalToolsTest {
   @Autowired private JsonMapper objectMapper;
   @Captor private ArgumentCaptor<ProcessDefinitionQuery> queryCaptor;
 
-  private void assertExampleProcessDefinitionResult(final ProcessDefinition processDefinition) {
+  private void assertExampleProcessDefinitionResult(
+      final ProcessDefinitionResult processDefinition) {
     assertThat(processDefinition.getProcessDefinitionKey()).isEqualTo("5");
     assertThat(processDefinition.getName()).isEqualTo("Complex Process");
     assertThat(processDefinition.getProcessDefinitionId()).isEqualTo("complexProcess");
@@ -111,7 +112,7 @@ class ProcessDefinitionToolsTest extends OperationalToolsTest {
       assertThat(result.structuredContent()).isNotNull();
 
       final var processDefinition =
-          objectMapper.convertValue(result.structuredContent(), ProcessDefinition.class);
+          objectMapper.convertValue(result.structuredContent(), ProcessDefinitionResult.class);
       assertExampleProcessDefinitionResult(processDefinition);
 
       assertTextContentFallback(result);
@@ -213,14 +214,14 @@ class ProcessDefinitionToolsTest extends OperationalToolsTest {
       assertThat(result.structuredContent()).isNotNull();
 
       @SuppressWarnings("unchecked")
-      final StrictSearchQueryResult<ProcessDefinition> response =
-          (StrictSearchQueryResult<ProcessDefinition>)
+      final StrictSearchQueryResult<ProcessDefinitionResult> response =
+          (StrictSearchQueryResult<ProcessDefinitionResult>)
               objectMapper.convertValue(
                   result.structuredContent(),
                   objectMapper
                       .getTypeFactory()
                       .constructParametricType(
-                          StrictSearchQueryResult.class, ProcessDefinition.class));
+                          StrictSearchQueryResult.class, ProcessDefinitionResult.class));
       assertThat(response.page().totalItems()).isEqualTo(1L);
       assertThat(response.page().hasMoreTotalItems()).isFalse();
       assertThat(response.page().startCursor()).isEqualTo("f");

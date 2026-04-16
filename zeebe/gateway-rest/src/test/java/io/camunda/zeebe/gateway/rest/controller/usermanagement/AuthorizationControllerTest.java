@@ -14,7 +14,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import io.camunda.gateway.protocol.model.AuthorizationCreate;
+import io.camunda.gateway.protocol.model.AuthorizationCreateResult;
 import io.camunda.gateway.protocol.model.AuthorizationIdBasedRequest;
 import io.camunda.gateway.protocol.model.AuthorizationPropertyBasedRequest;
 import io.camunda.gateway.protocol.model.AuthorizationRequest;
@@ -87,8 +87,9 @@ public class AuthorizationControllerTest extends RestControllerTest {
         .exchange()
         .expectStatus()
         .isCreated()
-        .expectBody(AuthorizationCreate.class)
-        .isEqualTo(new AuthorizationCreate().authorizationKey(String.valueOf(authorizationKey)));
+        .expectBody(AuthorizationCreateResult.class)
+        .isEqualTo(
+            new AuthorizationCreateResult().authorizationKey(String.valueOf(authorizationKey)));
 
     final var captor = ArgumentCaptor.forClass(CreateAuthorizationRequest.class);
     verify(authorizationServices).createAuthorization(captor.capture(), any());

@@ -13,7 +13,7 @@ import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
 import io.camunda.gateway.mapping.http.util.KeyUtil;
 import io.camunda.gateway.protocol.model.JobKindEnum;
 import io.camunda.gateway.protocol.model.JobListenerEventTypeEnum;
-import io.camunda.gateway.protocol.model.JobSearch;
+import io.camunda.gateway.protocol.model.JobSearchResult;
 import io.camunda.gateway.protocol.model.JobStateEnum;
 import io.camunda.search.entities.JobEntity;
 import java.util.List;
@@ -22,12 +22,12 @@ public final class JobContractAdapter {
 
   private JobContractAdapter() {}
 
-  public static List<JobSearch> adapt(final List<JobEntity> entities) {
+  public static List<JobSearchResult> adapt(final List<JobEntity> entities) {
     return entities.stream().map(JobContractAdapter::adapt).toList();
   }
 
-  public static JobSearch adapt(final JobEntity entity) {
-    return new JobSearch()
+  public static JobSearchResult adapt(final JobEntity entity) {
+    return new JobSearchResult()
         .customHeaders(
             ContractPolicy.requireNonNull(entity.customHeaders(), "customHeaders", entity))
         .elementInstanceKey(

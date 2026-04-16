@@ -11,7 +11,7 @@ import static io.camunda.gateway.mapping.http.ResponseMapper.formatDate;
 
 import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
 import io.camunda.gateway.mapping.http.util.KeyUtil;
-import io.camunda.gateway.protocol.model.UserTask;
+import io.camunda.gateway.protocol.model.UserTaskResult;
 import io.camunda.gateway.protocol.model.UserTaskStateEnum;
 import io.camunda.search.entities.UserTaskEntity;
 import java.util.List;
@@ -20,12 +20,12 @@ public final class UserTaskContractAdapter {
 
   private UserTaskContractAdapter() {}
 
-  public static List<UserTask> adapt(final List<UserTaskEntity> entities) {
+  public static List<UserTaskResult> adapt(final List<UserTaskEntity> entities) {
     return entities.stream().map(UserTaskContractAdapter::adapt).toList();
   }
 
-  public static UserTask adapt(final UserTaskEntity entity) {
-    return new UserTask()
+  public static UserTaskResult adapt(final UserTaskEntity entity) {
+    return new UserTaskResult()
         .state(
             ContractPolicy.requireNonNull(
                 ContractPolicy.mapEnum(entity.state(), UserTaskStateEnum::fromValue),

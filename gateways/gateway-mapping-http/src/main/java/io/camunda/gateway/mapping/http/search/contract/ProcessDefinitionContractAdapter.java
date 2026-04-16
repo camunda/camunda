@@ -9,11 +9,11 @@ package io.camunda.gateway.mapping.http.search.contract;
 
 import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
 import io.camunda.gateway.mapping.http.util.KeyUtil;
-import io.camunda.gateway.protocol.model.ProcessDefinition;
+import io.camunda.gateway.protocol.model.ProcessDefinitionResult;
 import io.camunda.search.entities.ProcessDefinitionEntity;
 
 /**
- * Contract adaptation layer for ProcessDefinition.
+ * Contract adaptation layer for ProcessDefinitionResult.
  *
  * <p>POC demonstration #1 for reviewers: keep business policy in a hand-written adapter while the
  * generated strict contract encapsulates deterministic coercion/validation.
@@ -25,8 +25,8 @@ public final class ProcessDefinitionContractAdapter {
 
   private ProcessDefinitionContractAdapter() {}
 
-  public static ProcessDefinition adapt(final ProcessDefinitionEntity entity) {
-    return new ProcessDefinition()
+  public static ProcessDefinitionResult adapt(final ProcessDefinitionEntity entity) {
+    return new ProcessDefinitionResult()
         .resourceName(ContractPolicy.requireNonNull(entity.resourceName(), "resourceName", entity))
         .version(ContractPolicy.requireNonNull(entity.version(), "version", entity))
         .processDefinitionId(
