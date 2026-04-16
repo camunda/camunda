@@ -37,7 +37,7 @@ export default class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBo
       return (
         <ErrorPage
           noLink
-          text={`An application error occured.
+          text={`An application error occurred.
 Refresh your browser or close it and sign in again.`}
         >
           <pre>{typeof error === 'object' ? error.message : error}</pre>
