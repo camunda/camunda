@@ -57,4 +57,29 @@ export const BUSINESS_VALUE_FIXTURE: BusinessValueSummary = {
     {month: '2025-12', valueCreated: 35_600, baselineCostSaved: 24_600, llmCost: 7_800},
     {month: '2026-01', valueCreated: 38_500, baselineCostSaved: 26_300, llmCost: 4_500},
   ],
+  topAgentTasks: [
+    {
+      agentName: 'Risk Analysis Agent',
+      invocationCount: 850_000,
+      totalCost: 8_000,
+      tokenUsage: 5_200_000,
+    },
+    {
+      agentName: 'Document Classification',
+      invocationCount: 620_000,
+      totalCost: 6_000,
+      tokenUsage: 3_800_000,
+    },
+    {
+      agentName: 'Fraud Detection',
+      invocationCount: 530_000,
+      totalCost: 5_000,
+      tokenUsage: 3_100_000,
+    },
+  ],
+  costByModel: [
+    {modelName: 'GPT-4', totalCost: 11_000, tokenUsage: 7_000_000, invocationCount: 800_000},
+    {modelName: 'Claude', totalCost: 6_000, tokenUsage: 5_500_000, invocationCount: 600_000},
+    {modelName: 'Gemini', totalCost: 3_000, tokenUsage: 4_500_000, invocationCount: 700_000},
+  ],
 };

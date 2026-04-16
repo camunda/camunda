@@ -1,0 +1,240 @@
+@use '@carbon/react/scss/spacing' as *;
+@use '@carbon/react/scss/type' as *;
+@use '@carbon/react/scss/colors' as *;
+@use '@carbon/react/scss/theme' as *;
+@use '@carbon/react/scss/breakpoint' as *;
+
+.BusinessValue {
+  padding-block: $spacing-06;
+  overflow-x: hidden;
+  max-width: 100%;
+
+  .businessValueDashboard {
+    font-size: 24px;
+    line-height: 32px;
+    font-weight: normal;
+    color: $text-primary;
+    margin-bottom: $spacing-06;
+  }
+
+  // ── Rows ──
+  .kpiRow {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: $spacing-05;
+    margin-bottom: $spacing-05;
+    min-width: 0;
+
+    @include breakpoint(md) {
+      grid-template-columns: repeat(3, 1fr);
+    }
+
+    @include breakpoint(lg) {
+      grid-template-columns: repeat(6, 1fr);
+    }
+  }
+
+  .chartRow {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: $spacing-05;
+    margin-bottom: $spacing-05;
+    min-width: 0;
+
+    @include breakpoint(md) {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+
+  .fullRow {
+    margin-bottom: $spacing-05;
+  }
+
+  // ── Tile (mirrors DashboardRenderer .grid-entry) ──
+  .tile {
+    background-color: var(--white, #{$layer-01});
+    border: 1px solid var(--silver-darken-80, #{$border-subtle-01});
+    border-radius: 4px;
+    display: flex;
+    flex-direction: column;
+    padding: $spacing-03;
+    min-width: 0;
+    overflow: hidden;
+  }
+
+  .tileTitle {
+    font-size: 14px;
+    line-height: 18px;
+    color: $text-secondary;
+    padding: $spacing-02 $spacing-03;
+    min-height: 36px;
+    display: flex;
+    align-items: center;
+  }
+
+  // ── KPI number tiles (like Number visualization) ──
+  .kpiTile {
+    min-height: 120px;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+
+    .tileTitle {
+      justify-content: center;
+    }
+  }
+
+  .tileNumber {
+    font-weight: bold;
+    font-size: 28px;
+    line-height: 36px;
+    color: $text-primary;
+    padding: $spacing-03;
+
+    @include breakpoint(md) {
+      font-size: 36px;
+      line-height: 44px;
+    }
+  }
+
+  // ── Chart tiles ──
+  .chartTile {
+    min-height: 300px;
+  }
+
+  .tileContent {
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+    min-width: 0;
+    overflow: hidden;
+  }
+
+  // ── Placeholder (for sections not yet implemented) ──
+  .placeholder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-grow: 1;
+    color: $text-placeholder;
+    @include type-style('body-compact-01');
+    border: 1px dashed $border-subtle-01;
+    border-radius: 4px;
+    margin: $spacing-03;
+  }
+
+  // ── AI Metrics ──
+  .aiLayout {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: $spacing-05;
+    padding: $spacing-05;
+    flex-grow: 1;
+    min-width: 0;
+
+    @include breakpoint(md) {
+      grid-template-columns: 1fr 1fr;
+      grid-template-rows: auto 1fr;
+    }
+  }
+
+  .aiMetrics {
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-05;
+  }
+
+  .aiMetricsLeft {
+    @include breakpoint(md) {
+      grid-column: 1;
+      grid-row: 1;
+    }
+  }
+
+  .aiMetricsRight {
+    @include breakpoint(md) {
+      grid-column: 2;
+      grid-row: 2;
+    }
+  }
+
+  .aiChartSection {
+    display: flex;
+    flex-direction: column;
+    min-height: 180px;
+  }
+
+  .aiChartCostByModel {
+    @include breakpoint(md) {
+      grid-column: 2;
+      grid-row: 1;
+    }
+  }
+
+  .aiChartAgentTasks {
+    @include breakpoint(md) {
+      grid-column: 1;
+      grid-row: 2;
+    }
+  }
+
+  .aiMetric {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    padding: $spacing-05;
+    background-color: var(--silver-base-97, #{$layer-02});
+    border-radius: 4px;
+  }
+
+  .aiMetricLabel {
+    @include type-style('label-01');
+    color: $text-secondary;
+    margin-bottom: $spacing-03;
+  }
+
+  .aiMetricValue {
+    font-weight: bold;
+    font-size: 24px;
+    line-height: 32px;
+    color: $text-primary;
+    margin-bottom: $spacing-02;
+
+    @include breakpoint(md) {
+      font-size: 28px;
+      line-height: 36px;
+    }
+  }
+
+  .aiMetricSub {
+    @include type-style('helper-text-01');
+    color: $text-helper;
+  }
+
+  .aiSectionLabel {
+    @include type-style('label-01');
+    color: $text-secondary;
+    margin-bottom: $spacing-03;
+  }
+
+  .processChartsRow {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: $spacing-05;
+    padding: $spacing-05;
+    border-top: 1px solid $border-subtle-01;
+    margin-top: $spacing-05;
+    min-width: 0;
+
+    @include breakpoint(md) {
+      grid-template-columns: 1fr 1fr;
+    }
+  }
+
+  .processChartSection {
+    display: flex;
+    flex-direction: column;
+    min-height: 180px;
+  }
+}

@@ -39,10 +39,26 @@ export interface TrendEntry {
   llmCost: number;
 }
 
+export interface AgentTask {
+  agentName: string;
+  invocationCount: number;
+  totalCost: number;
+  tokenUsage: number;
+}
+
+export interface ModelCost {
+  modelName: string;
+  totalCost: number;
+  tokenUsage: number;
+  invocationCount: number;
+}
+
 export interface BusinessValueSummary {
   kpis: BusinessValueKpi;
   topProcesses: TopProcess[];
   trend: TrendEntry[];
+  topAgentTasks: AgentTask[];
+  costByModel: ModelCost[];
 }
 
 export interface BusinessValueFilter {

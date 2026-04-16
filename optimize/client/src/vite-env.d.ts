@@ -15,7 +15,8 @@ declare module '*.bmp';
 declare module '*.tiff';
 declare module '*.ico';
 declare module '*.avif';
-
+declare module '*.scss';
+declare module '*.css';
 declare module '*.svg' {
   const content: React.FC<React.SVGProps<SVGElement>>;
   export default content;
