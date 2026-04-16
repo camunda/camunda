@@ -203,9 +203,9 @@ jobs:
         id: github-token
         uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@main
         with:
-          github-app-id-vault-key: MONOREPO_RELEASE_APP_ID
+          github-app-id-vault-key: MONOREPO_DEVOPS_AUTOMATION_APP_ID
           github-app-id-vault-path: secret/data/products/camunda/ci/camunda
-          github-app-private-key-vault-key: MONOREPO_RELEASE_APP_PRIVATE_KEY
+          github-app-private-key-vault-key: MONOREPO_DEVOPS_AUTOMATION_APP_PRIVATE_KEY
           github-app-private-key-vault-path: secret/data/products/camunda/ci/camunda
           vault-auth-method: approle
           vault-auth-role-id: ${{ secrets.VAULT_ROLE_ID }}
