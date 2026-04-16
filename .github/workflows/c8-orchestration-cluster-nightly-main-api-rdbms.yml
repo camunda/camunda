@@ -7,10 +7,8 @@
 name: C8 Orchestration Cluster Nightly main - API Tests (RDBMS)
 
 on:
-  pull_request:
-    types: [opened, edited, synchronize]  # Triggers on PR open, new commits on PR and when the PR description is edited
-  # schedule:
-  #   - cron: "30 1 * * *"
+  schedule:
+    - cron: "30 1 * * *"
   workflow_dispatch: {}
 
 permissions:

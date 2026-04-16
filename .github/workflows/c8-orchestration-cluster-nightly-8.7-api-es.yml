@@ -6,10 +6,8 @@
 name: C8 Orchestration Cluster Nightly 8.7 - API Tests (ES)
 
 on:
-  pull_request:
-    types: [opened, edited, synchronize]  # Triggers on PR open, new commits on PR and when the PR description is edited
-  # schedule:
-  #   - cron: "0 0 * * *"
+  schedule:
+    - cron: "0 0 * * *"
   workflow_dispatch: {}
 
 permissions:
