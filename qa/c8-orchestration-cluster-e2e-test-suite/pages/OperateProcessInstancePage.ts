@@ -331,7 +331,7 @@ class OperateProcessInstancePage {
           {name: 'Open'},
         ),
         valueErrorMessage: this.variableValueCellLocator(name).locator(
-          '[id="value-error-msg"]',
+          '.cds--form-requirement',
         ),
         jsonEditorModal: {
           header: this.page.getByRole('dialog').getByRole('heading'),

@@ -37,7 +37,8 @@ export class OperateProcessInstanceViewModificationModePage {
   readonly noVariablesText: Locator;
   readonly newVariableByIndex: (index: number) => {
     name: Locator;
-    value: Locator;
+    readModeValue: Locator;
+    writeModeValue: Locator;
     jsonEditorButton: Locator;
     deleteButton: Locator;
     jsonEditorModal: {
@@ -51,7 +52,8 @@ export class OperateProcessInstanceViewModificationModePage {
   };
   readonly editableExistingVariableByName: (name: string) => {
     name: Locator;
-    value: Locator;
+    readModeValue: Locator;
+    writeModeValue: Locator;
     jsonEditorButton: Locator;
     jsonEditorModal: {
       header: Locator;
@@ -146,15 +148,18 @@ export class OperateProcessInstanceViewModificationModePage {
       name: this.page
         .getByTestId(`variable-newVariables[${index}]`)
         .locator(`[id="newVariables[${index}].name"]`),
-      value: this.page
+      readModeValue: this.page
         .getByTestId(`variable-newVariables[${index}]`)
-        .locator(`[id="newVariables[${index}].value"]`),
+        .getByTestId('new-variable-value-readonly'),
+      writeModeValue: this.page
+        .getByTestId(`variable-newVariables[${index}]`)
+        .getByTestId('new-variable-value'),
       jsonEditorButton: this.page
         .getByTestId(`variable-newVariables[${index}]`)
-        .getByRole('button', {name: 'Open variable'}),
+        .getByRole('button', {name: 'Open'}),
       deleteButton: this.page
         .getByTestId(`variable-newVariables[${index}]`)
-        .getByRole('button', {name: 'Delete Variable'}),
+        .getByRole('button', {name: 'Delete'}),
       jsonEditorModal: {
         header: this.page.getByRole('dialog').getByText('Edit a new Variable'),
         cancelButton: this.page
@@ -172,7 +177,7 @@ export class OperateProcessInstanceViewModificationModePage {
         .getByTestId(`variable-newVariables[${index}]`)
         .getByRole('cell')
         .nth(1)
-        .locator(`[id="newVariables[${index}].value-error-msg"]`),
+        .locator(`.cds--form-requirement`),
       nameErrorMessage: this.page
         .getByTestId(`variable-newVariables[${index}]`)
         .getByRole('cell')
@@ -182,12 +187,15 @@ export class OperateProcessInstanceViewModificationModePage {
 
     this.editableExistingVariableByName = (name: string) => ({
       name: this.page.getByTestId(`variable-${name}`).getByTitle(name),
-      value: this.page
+      readModeValue: this.page
+        .getByTestId(`variable-${name}`)
+        .getByTestId('edit-variable-value'),
+      writeModeValue: this.page
         .getByTestId(`variable-${name}`)
         .getByTestId('edit-variable-value'),
       jsonEditorButton: this.page
         .getByTestId(`variable-${name}`)
-        .getByRole('button', {name: 'Open variable'}),
+        .getByRole('button', {name: 'Open'}),
       jsonEditorModal: {
         header: this.page
           .getByRole('dialog')
@@ -472,7 +480,7 @@ export class OperateProcessInstanceViewModificationModePage {
   getNewVariableValueFieldSelector = (variableIndex: string) => {
     return this.page
       .getByTestId(`variable-newVariables[${variableIndex}]`)
-      .locator(`[id="newVariables[${variableIndex}].value"]`);
+      .getByTestId('new-variable-value');
   };
 
   getEditVariableFieldSelector(variableName: string) {
@@ -549,7 +557,10 @@ export class OperateProcessInstanceViewModificationModePage {
     await this.getNewVariableNameFieldSelector(variableIndex).type(name);
     await this.page.keyboard.press('Tab');
 
-    await this.getNewVariableValueFieldSelector(variableIndex).type(value);
+    await expect(
+      this.getNewVariableValueFieldSelector(variableIndex).getByRole('code'),
+    ).toBeVisible();
+    await this.page.keyboard.insertText(value);
     await this.page.keyboard.press('Tab');
   }
 
@@ -592,7 +603,9 @@ export class OperateProcessInstanceViewModificationModePage {
   }
 
   async editNewVariableJSONInModal(variableIndex: number, json: string) {
-    await this.newVariableByIndex(variableIndex).value.clear();
+    await this.page.keyboard.press('Control+A');
+    await this.page.keyboard.press('Backspace');
+
     await this.newVariableByIndex(variableIndex).jsonEditorButton.click();
     const jsonEditorModal =
       this.newVariableByIndex(variableIndex).jsonEditorModal;
@@ -605,7 +618,12 @@ export class OperateProcessInstanceViewModificationModePage {
   }
 
   async editExistingVariableJSONInModal(variableName: string, json: string) {
-    await this.editableExistingVariableByName(variableName).value.clear();
+    await this.editableExistingVariableByName(
+      variableName,
+    ).readModeValue.click();
+    await this.page.keyboard.press('Control+A');
+    await this.page.keyboard.press('Backspace');
+
     await this.editableExistingVariableByName(
       variableName,
     ).jsonEditorButton.click();
@@ -616,7 +634,9 @@ export class OperateProcessInstanceViewModificationModePage {
     await expect(jsonEditorModal.inputField).toBeEnabled();
     await this.fillMonacoEditor(jsonEditorModal.inputField, json);
     await jsonEditorModal.applyButton.click();
-    await this.editableExistingVariableByName(variableName).value.click();
+    await this.editableExistingVariableByName(
+      variableName,
+    ).writeModeValue.click();
     await this.page.keyboard.press('Tab');
   }
 

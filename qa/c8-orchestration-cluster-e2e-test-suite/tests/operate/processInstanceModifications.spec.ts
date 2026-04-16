@@ -13,6 +13,10 @@ import {captureScreenshot, captureFailureVideo} from '@setup';
 import {navigateToApp, hideHelperModals} from '@pages/UtilitiesPage';
 import {sleep} from 'utils/sleep';
 import {waitForAssertion} from 'utils/waitForAssertion';
+import {
+  expectJsonEqual,
+  getInlineJSONEditor,
+} from '../../utils/inlineJsonEditor';
 
 type ProcessInstance = {
   processInstanceKey: string;
@@ -451,7 +455,9 @@ test.describe.skip('Process Instance Modifications', () => {
     await test.step('Update variable value in JSON editor modal window and verify results', async () => {
       await operateProcessInstanceViewModificationModePage
         .newVariableByIndex(1)
-        .value.fill('meow');
+        .readModeValue.click();
+      await page.keyboard.insertText('meow');
+
       await operateProcessInstanceViewModificationModePage.checkNewVariableErrorMessageText(
         1,
         'Value has to be JSON',
@@ -466,8 +472,8 @@ test.describe.skip('Process Instance Modifications', () => {
         assertion: async () => {
           await expect(
             operateProcessInstanceViewModificationModePage.newVariableByIndex(1)
-              .value,
-          ).toHaveValue(JSON.stringify(validJSONValue1));
+              .writeModeValue,
+          ).toHaveText(JSON.stringify(validJSONValue1, null, 2));
         },
         onFailure: async () => {},
       });
@@ -493,7 +499,7 @@ test.describe.skip('Process Instance Modifications', () => {
         operateProcessInstanceViewModificationModePage.getEditVariableFieldSelector(
           'testVariableString',
         ),
-      ).toHaveValue(JSON.stringify(validJSONValue2));
+      ).toContainText(JSON.stringify(validJSONValue2, null, 2));
 
       await expect(
         operateProcessInstanceViewModificationModePage.lastAddedModificationText,
@@ -577,11 +583,11 @@ test.describe.skip('Process Instance Modifications', () => {
         operateProcessInstancePage.existingVariableByName('testLocalVariable')
           .name,
       ).toBeVisible();
-      expect(
-        await operateProcessInstancePage
-          .existingVariableByName('testEmptyVariable')
-          .value.innerText(),
-      ).toContain(JSON.stringify(validJSONValue1));
+      await expectJsonEqual(
+        operateProcessInstancePage.existingVariableByName('testEmptyVariable')
+          .value,
+        validJSONValue1,
+      );
     });
 
     await test.step('Check that the edited variables are visible on process level and have correct values', async () => {
@@ -598,11 +604,11 @@ test.describe.skip('Process Instance Modifications', () => {
           .existingVariableByName('testNewMeowVariable')
           .value.innerText(),
       ).toContain('7');
-      expect(
-        await operateProcessInstancePage
-          .existingVariableByName('testVariableString')
-          .value.innerText(),
-      ).toContain(JSON.stringify(validJSONValue2));
+      await expectJsonEqual(
+        operateProcessInstancePage.existingVariableByName('testVariableString')
+          .value,
+        validJSONValue2,
+      );
     });
 
     await test.step("Check that an existing variable can't be deleted:", async () => {
@@ -619,6 +625,11 @@ test.describe.skip('Process Instance Modifications', () => {
       await expect(
         operateProcessInstancePage.saveVariableButton,
       ).toBeDisabled();
+      await getInlineJSONEditor(
+        page,
+        operateProcessInstancePage.existingVariableByName('testVariableNumber')
+          .value,
+      ).editReadModeValue.click();
       await operateProcessInstancePage.fillVariableValueInput('1');
       await expect(operateProcessInstancePage.saveVariableButton).toBeEnabled();
       await operateProcessInstancePage.saveVariableButton.click();
@@ -783,7 +794,7 @@ test.describe.skip('Process Instance Modifications', () => {
         operateProcessInstancePage.getNewVariableValueFieldSelector(
           'newVariables[0]',
         ),
-      ).toHaveValue('1');
+      ).toHaveText('1');
     });
 
     await test.step('Undo again and verify new variable field removed', async () => {
