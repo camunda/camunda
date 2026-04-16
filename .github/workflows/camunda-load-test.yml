@@ -57,7 +57,7 @@ on:
         default: ""
         required: false
       stable-vms:
-        description: '── Flags ─────────────────────────── Deploy to non-spot VMs (more stable, higher cost)'
+        description: 'Deploy to non-spot VMs (more stable, higher cost)'
         type: boolean
         required: false
         default: false
