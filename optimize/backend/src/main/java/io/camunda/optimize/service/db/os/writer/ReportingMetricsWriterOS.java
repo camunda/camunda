@@ -41,16 +41,19 @@ public class ReportingMetricsWriterOS implements ReportingMetricsWriter {
     LOG.debug("Creating reporting-metrics imports for {} documents.", metricsDocuments.size());
     return metricsDocuments.stream()
         .map(
-            doc ->
-                ImportRequestDto.builder()
-                    .importName("reporting metrics")
-                    .type(RequestType.UPDATE)
-                    .id(doc.getProcessInstanceKey())
-                    .indexName(REPORTING_METRICS_INDEX_NAME)
-                    .source(doc)
-                    .scriptData(ReportingMetricsWriterSupport.buildScriptData(doc, objectMapper))
-                    .retryNumberOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT)
-                    .build())
+            doc -> {
+              final ImportRequestDto request =
+                  ImportRequestDto.builder()
+                      .importName("reporting metrics")
+                      .type(RequestType.UPDATE)
+                      .id(doc.getProcessInstanceKey())
+                      .indexName(REPORTING_METRICS_INDEX_NAME)
+                      .source(doc)
+                      .scriptData(ReportingMetricsWriterSupport.buildScriptData(doc, objectMapper))
+                      .retryNumberOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT)
+                      .build();
+              return request;
+            })
         .collect(Collectors.toList());
   }
 }
