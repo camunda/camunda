@@ -22,13 +22,13 @@ import java.util.stream.IntStream;
 
 public final class TestBrokerClusterState implements BrokerClusterState {
 
-  private final Map<Integer, String> brokerAddresses = new HashMap<>();
-  private final Map<Integer, Tuple<Integer, Long>> partitionLeaders = new HashMap<>();
+  private final Map<String, String> brokerAddresses = new HashMap<>();
+  private final Map<Integer, Tuple<String, Long>> partitionLeaders = new HashMap<>();
   private final Set<Integer> partitions = new HashSet<>();
-  private final Map<Tuple<Integer, Integer>, PartitionHealthStatus> brokerPartitionHealthStatus =
+  private final Map<Tuple<String, Integer>, PartitionHealthStatus> brokerPartitionHealthStatus =
       new HashMap<>();
-  private final Map<Integer, Set<Integer>> inactivePartitionsToNodeIds = new HashMap<>();
-  private final Map<Integer, Set<Integer>> followerPartitionToNodeIds = new HashMap<>();
+  private final Map<Integer, Set<String>> inactivePartitionsToNodeIds = new HashMap<>();
+  private final Map<Integer, Set<String>> followerPartitionToNodeIds = new HashMap<>();
   private String clusterId = "";
 
   public TestBrokerClusterState() {
@@ -40,7 +40,7 @@ public final class TestBrokerClusterState implements BrokerClusterState {
         .forEach(
             pId -> {
               partitions.add(pId);
-              partitionLeaders.put(pId, Tuple.of(NODE_ID_NULL, 0L));
+              partitionLeaders.put(pId, Tuple.of(null, 0L));
               inactivePartitionsToNodeIds.put(pId, new HashSet<>());
               followerPartitionToNodeIds.put(pId, new HashSet<>());
             });
@@ -67,25 +67,25 @@ public final class TestBrokerClusterState implements BrokerClusterState {
   }
 
   @Override
-  public int getLeaderForPartition(final int partition) {
+  public String getLeaderForPartition(final int partition) {
     if (!partitionLeaders.containsKey(partition)) {
-      return NODE_ID_NULL;
+      return null;
     }
     return partitionLeaders.get(partition).getLeft();
   }
 
   @Override
-  public Set<Integer> getFollowersForPartition(final int partition) {
+  public Set<String> getFollowersForPartition(final int partition) {
     return followerPartitionToNodeIds.getOrDefault(partition, Set.of());
   }
 
   @Override
-  public Set<Integer> getInactiveNodesForPartition(final int partition) {
+  public Set<String> getInactiveNodesForPartition(final int partition) {
     return inactivePartitionsToNodeIds.getOrDefault(partition, Set.of());
   }
 
   @Override
-  public int getRandomBroker() {
+  public String getRandomBroker() {
     throw new UnsupportedOperationException();
   }
 
@@ -95,24 +95,29 @@ public final class TestBrokerClusterState implements BrokerClusterState {
   }
 
   @Override
-  public List<Integer> getBrokers() {
+  public List<String> getBrokers() {
     return new ArrayList<>(brokerAddresses.keySet());
   }
 
   @Override
-  public String getBrokerAddress(final int brokerId) {
-    return brokerAddresses.get(brokerId);
+  public String getBrokerAddress(final String memberId) {
+    return brokerAddresses.get(memberId);
   }
 
   @Override
-  public String getBrokerVersion(final int brokerId) {
+  public String getBrokerVersion(final String memberId) {
     return "1.0.0"; // Default version for testing purposes;
   }
 
   @Override
-  public PartitionHealthStatus getPartitionHealth(final int brokerId, final int partition) {
+  public String getBrokerRegion(final String memberId) {
+    return null;
+  }
+
+  @Override
+  public PartitionHealthStatus getPartitionHealth(final String memberId, final int partition) {
     return brokerPartitionHealthStatus.getOrDefault(
-        Tuple.of(brokerId, partition), PartitionHealthStatus.UNHEALTHY);
+        Tuple.of(memberId, partition), PartitionHealthStatus.UNHEALTHY);
   }
 
   @Override
@@ -130,11 +135,11 @@ public final class TestBrokerClusterState implements BrokerClusterState {
   }
 
   public void addBroker(final int nodeId, final String address) {
-    brokerAddresses.put(nodeId, address);
+    brokerAddresses.put(Integer.toString(nodeId), address);
   }
 
   public void setPartitionLeader(final int partitionId, final int leaderId, final long term) {
-    partitionLeaders.put(partitionId, Tuple.of(leaderId, term));
+    partitionLeaders.put(partitionId, Tuple.of(Integer.toString(leaderId), term));
   }
 
   public void addPartition(final int partitionId) {
@@ -143,10 +148,12 @@ public final class TestBrokerClusterState implements BrokerClusterState {
 
   public void setPartitionHealthStatus(
       final int nodeId, final int partitionId, final PartitionHealthStatus partitionHealthStatus) {
-    brokerPartitionHealthStatus.put(Tuple.of(nodeId, partitionId), partitionHealthStatus);
+    brokerPartitionHealthStatus.put(
+        Tuple.of(Integer.toString(nodeId), partitionId), partitionHealthStatus);
   }
 
   public void addPartitionInactive(final int partitionId, final int nodeId) {
+    final var memberId = Integer.toString(nodeId);
     addPartition(partitionId);
     inactivePartitionsToNodeIds.compute(
         partitionId,
@@ -154,7 +161,7 @@ public final class TestBrokerClusterState implements BrokerClusterState {
           if (value == null) {
             value = new HashSet<>();
           }
-          value.add(nodeId);
+          value.add(memberId);
           return value;
         });
     followerPartitionToNodeIds.compute(
@@ -163,7 +170,7 @@ public final class TestBrokerClusterState implements BrokerClusterState {
           if (value == null) {
             return null;
           }
-          value.remove(nodeId); // Ensure the node is not counted as a follower
+          value.remove(memberId); // Ensure the node is not counted as a follower
           return value;
         });
 
@@ -173,13 +180,14 @@ public final class TestBrokerClusterState implements BrokerClusterState {
   }
 
   public void addFollowerPartition(final int partitionId, final int nodeId) {
+    final var memberId = Integer.toString(nodeId);
     followerPartitionToNodeIds.compute(
         partitionId,
         (key, value) -> {
           if (value == null) {
             value = new HashSet<>();
           }
-          value.add(nodeId);
+          value.add(memberId);
           return value;
         });
   }

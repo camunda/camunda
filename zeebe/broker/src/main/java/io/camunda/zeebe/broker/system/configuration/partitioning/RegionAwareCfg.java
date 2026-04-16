@@ -13,11 +13,11 @@ import java.util.List;
 /**
  * Top-level configuration for the {@link Scheme#REGION_AWARE} partitioning scheme.
  *
- * <p>Contains a list of {@link RegionCfg} entries, each identified by its {@link RegionCfg#getName()
- * name}. The list order is significant: broker {@link io.atomix.cluster.MemberId}s are assigned
- * sequentially per region in iteration order. For example, given regions {@code us-east1} (2
- * brokers) then {@code us-west1} (2 brokers), the member IDs will be {@code us-east1-0}, {@code
- * us-east1-1}, {@code us-west1-0}, {@code us-west1-1}.
+ * <p>Contains a list of {@link RegionCfg} entries, each identified by its {@link
+ * RegionCfg#getName() name}. The list order is significant: broker {@link
+ * io.atomix.cluster.MemberId}s are assigned sequentially per region in iteration order. For
+ * example, given regions {@code us-east1} (2 brokers) then {@code us-west1} (2 brokers), the member
+ * IDs will be {@code us-east1-0}, {@code us-east1-1}, {@code us-west1-0}, {@code us-west1-1}.
  *
  * <p>Using a list (rather than a map keyed by region name) makes it straightforward to override
  * individual region properties via indexed environment variables, e.g.:

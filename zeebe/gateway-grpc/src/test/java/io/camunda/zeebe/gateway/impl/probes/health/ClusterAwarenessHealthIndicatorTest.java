@@ -47,7 +47,7 @@ public class ClusterAwarenessHealthIndicatorTest {
   public void shouldReportUpIfListOfBrokersIsNotEmpty() {
     // given
     final BrokerClusterState mockClusterState = mock(BrokerClusterState.class);
-    when(mockClusterState.getBrokers()).thenReturn(List.of(1));
+    when(mockClusterState.getBrokers()).thenReturn(List.of("1"));
 
     final Supplier<Optional<BrokerClusterState>> stateSupplier =
         () -> Optional.of(mockClusterState);

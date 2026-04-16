@@ -173,8 +173,7 @@ public final class ClusterCfg implements ConfigurationEntry {
       }
       if (cfg.getNumberOfBrokers() < 1 || cfg.getNumberOfReplicas() < 1) {
         throw new IllegalArgumentException(
-            String.format(
-                "Region '%s' must have at least 1 broker and 1 replica.", cfg.getName()));
+            String.format("Region '%s' must have at least 1 broker and 1 replica.", cfg.getName()));
       }
     }
   }

@@ -9,7 +9,6 @@ package io.camunda.zeebe.broker.client.impl;
 
 import static io.camunda.zeebe.protocol.Protocol.START_PARTITION_ID;
 
-import io.camunda.zeebe.broker.client.api.BrokerClusterState;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
 import java.util.Iterator;
 import java.util.PrimitiveIterator.OfInt;
@@ -36,7 +35,7 @@ public final class PartitionIdIterator implements Iterator<Integer> {
 
   private boolean hasLeader(final BrokerTopologyManager topologyManager, final int p) {
     final var topology = topologyManager.getTopology();
-    return topology != null && topology.getLeaderForPartition(p) != BrokerClusterState.NODE_ID_NULL;
+    return topology != null && topology.getLeaderForPartition(p) != null;
   }
 
   @Override

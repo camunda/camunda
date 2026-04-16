@@ -49,7 +49,7 @@ public class LivenessPartitionLeaderAwarenessHealthIndicatorAutoConfigurationTes
     // given
     final BrokerClusterState mockClusterState = mock(BrokerClusterState.class);
     when(mockClusterState.getPartitions()).thenReturn(List.of(1));
-    when(mockClusterState.getLeaderForPartition(1)).thenReturn(42);
+    when(mockClusterState.getLeaderForPartition(1)).thenReturn("42");
 
     final Supplier<Optional<BrokerClusterState>> stateSupplier =
         () -> Optional.of(mockClusterState);

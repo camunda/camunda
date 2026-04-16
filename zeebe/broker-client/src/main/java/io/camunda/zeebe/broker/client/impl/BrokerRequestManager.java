@@ -32,8 +32,8 @@ import java.time.Duration;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeoutException;
+import java.util.function.Function;
 import java.util.function.Supplier;
-import java.util.function.ToIntFunction;
 import org.agrona.DirectBuffer;
 
 final class BrokerRequestManager extends Actor {
@@ -254,8 +254,7 @@ final class BrokerRequestManager extends Actor {
 
     final var inactiveNodes = topology.getInactiveNodesForPartition(partitionId);
     final var someNodesInactive = inactiveNodes != null && !inactiveNodes.isEmpty();
-    final var noPartitionLeader =
-        topology.getLeaderForPartition(partitionId) == BrokerClusterState.NODE_ID_NULL;
+    final var noPartitionLeader = topology.getLeaderForPartition(partitionId) == null;
     if (someNodesInactive && noPartitionLeader) {
       throw new PartitionInactiveException(partitionId);
     }
@@ -298,7 +297,7 @@ final class BrokerRequestManager extends Actor {
 
   private class BrokerAddressProvider implements Supplier<String> {
 
-    private final ToIntFunction<BrokerClusterState> nodeIdSelector;
+    private final Function<BrokerClusterState, String> memberIdSelector;
 
     BrokerAddressProvider() {
       this(BrokerClusterState::getRandomBroker);
@@ -308,18 +307,21 @@ final class BrokerRequestManager extends Actor {
       this(state -> state.getLeaderForPartition(partitionId));
     }
 
-    BrokerAddressProvider(final ToIntFunction<BrokerClusterState> nodeIdSelector) {
-      this.nodeIdSelector = nodeIdSelector;
+    BrokerAddressProvider(final Function<BrokerClusterState, String> memberIdSelector) {
+      this.memberIdSelector = memberIdSelector;
     }
 
     @Override
     public String get() {
       final BrokerClusterState topology = topologyManager.getTopology();
-      if (topology != null) {
-        return topology.getBrokerAddress(nodeIdSelector.applyAsInt(topology));
-      } else {
+      if (topology == null) {
         return null;
       }
+      final String memberId = memberIdSelector.apply(topology);
+      if (memberId == null) {
+        return null;
+      }
+      return topology.getBrokerAddress(memberId);
     }
   }
 }

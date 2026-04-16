@@ -12,6 +12,7 @@ import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.encoding.AdminRequest;
 import io.camunda.zeebe.protocol.impl.encoding.AdminResponse;
+import io.camunda.zeebe.protocol.impl.encoding.MemberIds;
 import io.camunda.zeebe.protocol.management.AdminRequestEncoder;
 import io.camunda.zeebe.protocol.management.AdminRequestType;
 import io.camunda.zeebe.protocol.management.AdminResponseEncoder;
@@ -24,6 +25,13 @@ import org.agrona.MutableDirectBuffer;
 public class BrokerAdminRequest extends BrokerRequest<AdminResponse> {
   private final AdminRequest request = new AdminRequest();
   private final AdminResponse response = new AdminResponse();
+
+  /**
+   * Region of the target broker, stored alongside the local node id to reconstruct the composite
+   * member id when the gateway needs to route the request. Not part of the SBE wire format since
+   * the broker does not consume it.
+   */
+  private String region;
 
   public BrokerAdminRequest() {
     super(AdminResponseEncoder.SCHEMA_ID, AdminResponseEncoder.TEMPLATE_ID);
@@ -62,17 +70,23 @@ public class BrokerAdminRequest extends BrokerRequest<AdminResponse> {
   }
 
   @Override
-  public Optional<Integer> getBrokerId() {
-    final var brokerId = request.getBrokerId();
-    if (brokerId != AdminRequestEncoder.brokerIdNullValue()) {
-      return Optional.of(brokerId);
-    } else {
+  public Optional<String> getBrokerId() {
+    final var localNodeId = request.getBrokerId();
+    if (localNodeId == AdminRequestEncoder.brokerIdNullValue()) {
       return Optional.empty();
     }
+    return Optional.of(MemberIds.compose(region, localNodeId));
   }
 
-  public void setBrokerId(final int brokerId) {
-    request.setBrokerId(brokerId);
+  /**
+   * Sets the target broker by its composite member id. The member id is parsed into its region and
+   * local node id parts via {@link MemberIds}; only the local node id is carried on the wire while
+   * the region is retained in memory for gateway-side routing.
+   */
+  public void setMemberId(final String memberId) {
+    final MemberIds.Parsed parsed = MemberIds.parse(memberId);
+    region = parsed.region();
+    request.setBrokerId(parsed.localNodeId());
   }
 
   @Override

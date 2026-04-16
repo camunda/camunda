@@ -38,7 +38,7 @@ public abstract class BrokerRequest<T> implements ClientRequest {
     this.templateId = templateId;
   }
 
-  public Optional<Integer> getBrokerId() {
+  public Optional<String> getBrokerId() {
     return Optional.empty();
   }
 

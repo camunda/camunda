@@ -31,11 +31,13 @@ final class TestTopologyManager implements BrokerTopologyManager {
   }
 
   TestTopologyManager addPartition(final int id, final int leaderId) {
-    if (leaderId != BrokerClusterState.NODE_ID_NULL) {
-      topology.addBrokerIfAbsent(leaderId);
-      topology.setPartitionLeader(id, leaderId);
-    }
+    topology.addBrokerIfAbsent(leaderId);
+    topology.setPartitionLeader(id, leaderId);
+    topology.addPartitionIfAbsent(id);
+    return this;
+  }
 
+  TestTopologyManager addPartitionWithoutLeader(final int id) {
     topology.addPartitionIfAbsent(id);
     return this;
   }
@@ -72,8 +74,8 @@ final class TestTopologyManager implements BrokerTopologyManager {
 
   private static final class TestBrokerClusterState implements BrokerClusterState {
 
-    private final List<Integer> brokers = new ArrayList<>();
-    private final Map<Integer, Integer> partitionLeaders = new HashMap<>();
+    private final List<String> brokers = new ArrayList<>();
+    private final Map<Integer, String> partitionLeaders = new HashMap<>();
     private final List<Integer> partitions = new ArrayList<>();
 
     @Override
@@ -97,23 +99,23 @@ final class TestTopologyManager implements BrokerTopologyManager {
     }
 
     @Override
-    public int getLeaderForPartition(final int partition) {
-      return partitionLeaders.getOrDefault(partition, BrokerClusterState.NODE_ID_NULL);
+    public String getLeaderForPartition(final int partition) {
+      return partitionLeaders.get(partition);
     }
 
     @Override
-    public Set<Integer> getFollowersForPartition(final int partition) {
+    public Set<String> getFollowersForPartition(final int partition) {
       return Set.of();
     }
 
     @Override
-    public Set<Integer> getInactiveNodesForPartition(final int partition) {
+    public Set<String> getInactiveNodesForPartition(final int partition) {
       return Set.of();
     }
 
     @Override
-    public int getRandomBroker() {
-      return 0;
+    public String getRandomBroker() {
+      return brokers.isEmpty() ? null : brokers.getFirst();
     }
 
     @Override
@@ -122,22 +124,27 @@ final class TestTopologyManager implements BrokerTopologyManager {
     }
 
     @Override
-    public List<Integer> getBrokers() {
+    public List<String> getBrokers() {
       return brokers;
     }
 
     @Override
-    public String getBrokerAddress(final int brokerId) {
+    public String getBrokerAddress(final String memberId) {
       return "";
     }
 
     @Override
-    public String getBrokerVersion(final int brokerId) {
+    public String getBrokerVersion(final String memberId) {
       return "";
     }
 
     @Override
-    public PartitionHealthStatus getPartitionHealth(final int brokerId, final int partition) {
+    public String getBrokerRegion(final String memberId) {
+      return null;
+    }
+
+    @Override
+    public PartitionHealthStatus getPartitionHealth(final String memberId, final int partition) {
       return null;
     }
 
@@ -152,11 +159,11 @@ final class TestTopologyManager implements BrokerTopologyManager {
     }
 
     public void addBrokerIfAbsent(final int leaderId) {
-      brokers.add(leaderId);
+      brokers.add(Integer.toString(leaderId));
     }
 
     public void setPartitionLeader(final int id, final int leaderId) {
-      partitionLeaders.put(id, leaderId);
+      partitionLeaders.put(id, Integer.toString(leaderId));
     }
 
     public void addPartitionIfAbsent(final int id) {

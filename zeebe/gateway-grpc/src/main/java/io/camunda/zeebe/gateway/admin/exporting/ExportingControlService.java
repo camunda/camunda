@@ -12,11 +12,11 @@ import io.camunda.zeebe.broker.client.api.BrokerClusterState;
 import io.camunda.zeebe.gateway.admin.BrokerAdminRequest;
 import io.camunda.zeebe.gateway.admin.IncompleteTopologyException;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
-import org.agrona.collections.IntHashSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -71,17 +71,19 @@ public class ExportingControlService implements ExportingControlApi {
     final var inactive =
         Optional.ofNullable(topology.getInactiveNodesForPartition(partitionId)).orElseGet(Set::of);
 
-    final var members = new IntHashSet(topology.getReplicationFactor());
-    members.add(leader);
+    final var members = new HashSet<String>(topology.getReplicationFactor());
+    if (leader != null) {
+      members.add(leader);
+    }
     members.addAll(followers);
     members.addAll(inactive);
 
     final var requests =
         members.stream()
             .map(
-                brokerId -> {
+                memberId -> {
                   final var request = new BrokerAdminRequest();
-                  request.setBrokerId(brokerId);
+                  request.setMemberId(memberId);
                   request.setPartitionId(partitionId);
                   configureRequest.accept(request);
                   return brokerClient.sendRequest(request);
@@ -104,22 +106,20 @@ public class ExportingControlService implements ExportingControlApi {
     for (final var partition : partitions) {
       final var leaderId = topology.getLeaderForPartition(partition);
 
-      if (leaderId == BrokerClusterState.UNKNOWN_NODE_ID
-          || leaderId == BrokerClusterState.NODE_ID_NULL) {
+      if (leaderId == null) {
         throw new IncompleteTopologyException(
-            "Leader %s of partition %s is not known, current topology: %s"
-                .formatted(leaderId, partition, topology));
+            "Leader of partition %s is not known, current topology: %s"
+                .formatted(partition, topology));
       }
 
       final var followers =
           Optional.ofNullable(topology.getFollowersForPartition(partition))
               .orElse(Collections.emptySet());
       for (final var follower : followers) {
-        if (follower == BrokerClusterState.UNKNOWN_NODE_ID
-            || follower == BrokerClusterState.NODE_ID_NULL) {
+        if (follower == null) {
           throw new IncompleteTopologyException(
-              "Follower %s of partition %s is not known, current topology: %s"
-                  .formatted(follower, partition, topology));
+              "Follower of partition %s is not known, current topology: %s"
+                  .formatted(partition, topology));
         }
       }
 

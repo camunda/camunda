@@ -15,13 +15,13 @@ import io.camunda.zeebe.broker.system.configuration.FlowControlCfg;
 import io.camunda.zeebe.gateway.admin.BrokerAdminRequest;
 import io.camunda.zeebe.logstreams.impl.flowcontrol.LimitSerializer;
 import io.camunda.zeebe.shared.management.FlowControlEndpoint.FlowControlService;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
-import org.agrona.collections.IntHashSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -88,9 +88,9 @@ public class FlowControlServiceImpl implements FlowControlService {
     final var requests =
         members.stream()
             .map(
-                brokerId -> {
+                memberId -> {
                   final var request = new BrokerAdminRequest();
-                  request.setBrokerId(brokerId);
+                  request.setMemberId(memberId);
                   request.setPartitionId(partitionId);
                   configureRequest.accept(request);
                   return client.sendRequest(request);
@@ -101,9 +101,9 @@ public class FlowControlServiceImpl implements FlowControlService {
 
   private CompletableFuture<FlowControlStatus> fetchFlowConfigOnPartition(
       final BrokerClusterState topology, final Integer partitionId) {
-    final var brokerId = topology.getLeaderForPartition(partitionId);
+    final var memberId = topology.getLeaderForPartition(partitionId);
     final var request = new BrokerAdminRequest();
-    request.setBrokerId(brokerId);
+    request.setMemberId(memberId);
     request.setPartitionId(partitionId);
     request.getFLowControlConfiguration();
 
@@ -115,15 +115,17 @@ public class FlowControlServiceImpl implements FlowControlService {
                     partitionId, LimitSerializer.deserialize(response.getResponse().getPayload())));
   }
 
-  private IntHashSet getMembers(final BrokerClusterState topology, final Integer partitionId) {
+  private Set<String> getMembers(final BrokerClusterState topology, final Integer partitionId) {
     final var leader = topology.getLeaderForPartition(partitionId);
     final var followers =
         Optional.ofNullable(topology.getFollowersForPartition(partitionId)).orElseGet(Set::of);
     final var inactive =
         Optional.ofNullable(topology.getInactiveNodesForPartition(partitionId)).orElseGet(Set::of);
 
-    final var members = new IntHashSet(topology.getReplicationFactor());
-    members.add(leader);
+    final var members = new HashSet<String>(topology.getReplicationFactor());
+    if (leader != null) {
+      members.add(leader);
+    }
     members.addAll(followers);
     members.addAll(inactive);
     return members;

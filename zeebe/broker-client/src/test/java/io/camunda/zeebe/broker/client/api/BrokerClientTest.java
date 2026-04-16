@@ -112,9 +112,7 @@ public final class BrokerClientTest {
     topologyManager.event(new ClusterMembershipEvent(Type.MEMBER_ADDED, broker.member()));
     Awaitility.await("Topology is updated")
         .untilAsserted(
-            () ->
-                assertThat(topologyManager.getTopology().getLeaderForPartition(1))
-                    .isNotEqualTo(BrokerClusterState.NODE_ID_NULL));
+            () -> assertThat(topologyManager.getTopology().getLeaderForPartition(1)).isNotNull());
 
     client =
         new BrokerClientImpl(
@@ -418,12 +416,9 @@ public final class BrokerClientTest {
           new ClusterMembershipEvent(Type.METADATA_CHANGED, otherBroker.member()));
       Awaitility.await("Broker " + leaderBrokerId + " is leader.")
           .untilAsserted(
-              () -> {
-                final var topology = topologyManager.getTopology();
-                final var leaderId = topology.getLeaderForPartition(1);
-                assertThat(topology.getBrokerMemberId(leaderId))
-                    .isEqualTo(String.valueOf(leaderBrokerId));
-              });
+              () ->
+                  assertThat(topologyManager.getTopology().getLeaderForPartition(1))
+                      .isEqualTo(String.valueOf(leaderBrokerId)));
 
       response = client.sendRequest(request).join();
     }
@@ -536,7 +531,9 @@ public final class BrokerClientTest {
         topologyManager.event(new ClusterMembershipEvent(Type.MEMBER_ADDED, otherBroker.member()));
         Awaitility.await("Topology is updated")
             .untilAsserted(
-                () -> assertThat(topologyManager.getTopology().getLeaderForPartition(1)).isOne());
+                () ->
+                    assertThat(topologyManager.getTopology().getLeaderForPartition(1))
+                        .isEqualTo("1"));
 
         // when
         response = client.sendRequest(request).join();
@@ -565,7 +562,9 @@ public final class BrokerClientTest {
         topologyManager.event(new ClusterMembershipEvent(Type.MEMBER_ADDED, otherBroker.member()));
         Awaitility.await("Topology is updated")
             .untilAsserted(
-                () -> assertThat(topologyManager.getTopology().getLeaderForPartition(2)).isOne());
+                () ->
+                    assertThat(topologyManager.getTopology().getLeaderForPartition(2))
+                        .isEqualTo("1"));
 
         // when
         response = client.sendRequest(request).join();
@@ -586,7 +585,9 @@ public final class BrokerClientTest {
         topologyManager.event(new ClusterMembershipEvent(Type.MEMBER_ADDED, otherBroker.member()));
         Awaitility.await("Topology is updated")
             .untilAsserted(
-                () -> assertThat(topologyManager.getTopology().getLeaderForPartition(2)).isOne());
+                () ->
+                    assertThat(topologyManager.getTopology().getLeaderForPartition(2))
+                        .isEqualTo("1"));
 
         // when
         response = client.sendRequest(request).join();

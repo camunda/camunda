@@ -105,21 +105,21 @@ public final class TopologyServices extends ApiServices<TopologyServices> {
   }
 
   private void addBrokerInfo(
-      final Broker.Builder broker, final Integer brokerId, final BrokerClusterState topology) {
-    final var brokerAddress = topology.getBrokerAddress(brokerId);
+      final Broker.Builder broker, final String memberId, final BrokerClusterState topology) {
+    final var brokerAddress = topology.getBrokerAddress(memberId);
     final var address = Address.from(brokerAddress);
 
-    final var region = topology.getBrokerRegion(brokerId);
+    final var region = topology.getBrokerRegion(memberId);
     broker
-        .nodeId(topology.getBrokerMemberId(brokerId))
+        .nodeId(memberId)
         .host(address.host())
         .port(address.port())
-        .version(topology.getBrokerVersion(brokerId))
+        .version(topology.getBrokerVersion(memberId))
         .region(region != null ? region : "");
   }
 
   private void addPartitionInfoToBrokerInfo(
-      final Broker.Builder broker, final Integer brokerId, final BrokerClusterState topology) {
+      final Broker.Builder broker, final String memberId, final BrokerClusterState topology) {
     topology
         .getPartitions()
         .forEach(
@@ -127,12 +127,12 @@ public final class TopologyServices extends ApiServices<TopologyServices> {
               final var partition = Partition.Builder.create();
 
               partition.partitionId(partitionId);
-              final var isRoleSet = setRole(brokerId, partitionId, topology, partition);
+              final var isRoleSet = setRole(memberId, partitionId, topology, partition);
               if (!isRoleSet) {
                 return;
               }
 
-              final var status = topology.getPartitionHealth(brokerId, partitionId);
+              final var status = topology.getPartitionHealth(memberId, partitionId);
               switch (status) {
                 case HEALTHY -> partition.health(Health.HEALTHY);
                 case UNHEALTHY -> partition.health(Health.UNHEALTHY);
@@ -145,7 +145,7 @@ public final class TopologyServices extends ApiServices<TopologyServices> {
   }
 
   private boolean setRole(
-      final Integer brokerId,
+      final String memberId,
       final Integer partitionId,
       final BrokerClusterState topology,
       final Partition.Builder partition) {
@@ -153,11 +153,11 @@ public final class TopologyServices extends ApiServices<TopologyServices> {
     final var partitionFollowers = topology.getFollowersForPartition(partitionId);
     final var partitionInactives = topology.getInactiveNodesForPartition(partitionId);
 
-    if (partitionLeader == brokerId) {
+    if (memberId.equals(partitionLeader)) {
       partition.role(Role.LEADER);
-    } else if (partitionFollowers != null && partitionFollowers.contains(brokerId)) {
+    } else if (partitionFollowers != null && partitionFollowers.contains(memberId)) {
       partition.role(Role.FOLLOWER);
-    } else if (partitionInactives != null && partitionInactives.contains(brokerId)) {
+    } else if (partitionInactives != null && partitionInactives.contains(memberId)) {
       partition.role(Role.INACTIVE);
     } else {
       return false;

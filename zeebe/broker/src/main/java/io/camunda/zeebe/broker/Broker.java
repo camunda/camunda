@@ -146,7 +146,9 @@ public final class Broker implements AutoCloseable {
     final String region = clusterCfg.getRegion();
     final int numericId = clusterCfg.getNodeId();
     final String nodeIdStr =
-        (region != null && !region.isBlank()) ? region + "-" + numericId : String.valueOf(numericId);
+        (region != null && !region.isBlank())
+            ? region + "-" + numericId
+            : String.valueOf(numericId);
 
     final BrokerInfo result =
         new BrokerInfo(

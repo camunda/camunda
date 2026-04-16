@@ -61,8 +61,8 @@ public class TopologyServiceTest {
     // given
     final int partitionId1 = 1;
     final int partitionId2 = 2;
-    final int leaderId1 = 1;
-    final int leaderId2 = 2;
+    final String leaderId1 = "1";
+    final String leaderId2 = "2";
 
     when(clusterState.getPartitions()).thenReturn(List.of(partitionId1, partitionId2));
     when(clusterState.getLeaderForPartition(partitionId1)).thenReturn(leaderId1);
@@ -95,8 +95,8 @@ public class TopologyServiceTest {
     // given
     final int partitionId1 = 1;
     final int partitionId2 = 2;
-    final int leaderId1 = 1;
-    final int leaderId2 = 2;
+    final String leaderId1 = "1";
+    final String leaderId2 = "2";
 
     when(clusterState.getPartitions()).thenReturn(List.of(partitionId1, partitionId2));
     when(clusterState.getLeaderForPartition(partitionId1)).thenReturn(leaderId1);
@@ -157,9 +157,9 @@ public class TopologyServiceTest {
     final int partitionId1 = 1;
     final int partitionId2 = 2;
     final int partitionId3 = 3;
-    final int leaderId1 = 1;
-    final int leaderId2 = 2;
-    final int leaderId3 = 3;
+    final String leaderId1 = "1";
+    final String leaderId2 = "2";
+    final String leaderId3 = "3";
 
     when(clusterState.getPartitions())
         .thenReturn(List.of(partitionId1, partitionId2, partitionId3));
@@ -278,23 +278,23 @@ public class TopologyServiceTest {
     }
 
     @Override
-    public int getLeaderForPartition(final int partition) {
-      return 0;
+    public String getLeaderForPartition(final int partition) {
+      return "0";
     }
 
     @Override
-    public Set<Integer> getFollowersForPartition(final int partition) {
-      return Set.of(1);
+    public Set<String> getFollowersForPartition(final int partition) {
+      return Set.of("1");
     }
 
     @Override
-    public Set<Integer> getInactiveNodesForPartition(final int partition) {
-      return Set.of(2);
+    public Set<String> getInactiveNodesForPartition(final int partition) {
+      return Set.of("2");
     }
 
     @Override
-    public int getRandomBroker() {
-      return ThreadLocalRandom.current().nextInt(0, 3);
+    public String getRandomBroker() {
+      return Integer.toString(ThreadLocalRandom.current().nextInt(0, 3));
     }
 
     @Override
@@ -303,29 +303,34 @@ public class TopologyServiceTest {
     }
 
     @Override
-    public List<Integer> getBrokers() {
-      return List.of(0, 1, 2);
+    public List<String> getBrokers() {
+      return List.of("0", "1", "2");
     }
 
     @Override
-    public String getBrokerAddress(final int brokerId) {
-      return "localhost:" + (26501 + brokerId);
+    public String getBrokerAddress(final String memberId) {
+      return "localhost:" + (26501 + Integer.parseInt(memberId));
     }
 
     @Override
-    public String getBrokerVersion(final int brokerId) {
+    public String getBrokerVersion(final String memberId) {
       return version;
     }
 
     @Override
-    public PartitionHealthStatus getPartitionHealth(final int brokerId, final int partition) {
+    public String getBrokerRegion(final String memberId) {
+      return null;
+    }
+
+    @Override
+    public PartitionHealthStatus getPartitionHealth(final String memberId, final int partition) {
       if (partition != 1) {
         return PartitionHealthStatus.NULL_VAL;
       }
 
-      return switch (brokerId) {
-        case 0, 1 -> PartitionHealthStatus.HEALTHY;
-        case 2 -> PartitionHealthStatus.UNHEALTHY;
+      return switch (memberId) {
+        case "0", "1" -> PartitionHealthStatus.HEALTHY;
+        case "2" -> PartitionHealthStatus.UNHEALTHY;
         default -> PartitionHealthStatus.NULL_VAL;
       };
     }

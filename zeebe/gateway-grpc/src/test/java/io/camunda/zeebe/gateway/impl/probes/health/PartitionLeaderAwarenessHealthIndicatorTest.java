@@ -48,8 +48,8 @@ public class PartitionLeaderAwarenessHealthIndicatorTest {
     // given
     final BrokerClusterState mockClusterState = mock(BrokerClusterState.class);
     when(mockClusterState.getPartitions()).thenReturn(List.of(1, 2));
-    when(mockClusterState.getLeaderForPartition(1)).thenReturn(BrokerClusterState.NODE_ID_NULL);
-    when(mockClusterState.getLeaderForPartition(2)).thenReturn(42);
+    when(mockClusterState.getLeaderForPartition(1)).thenReturn(null);
+    when(mockClusterState.getLeaderForPartition(2)).thenReturn("42");
 
     final Supplier<Optional<BrokerClusterState>> stateSupplier =
         () -> Optional.of(mockClusterState);
@@ -86,8 +86,8 @@ public class PartitionLeaderAwarenessHealthIndicatorTest {
     // given
     final BrokerClusterState mockClusterState = mock(BrokerClusterState.class);
     when(mockClusterState.getPartitions()).thenReturn(List.of(1, 2));
-    when(mockClusterState.getLeaderForPartition(1)).thenReturn(BrokerClusterState.NODE_ID_NULL);
-    when(mockClusterState.getLeaderForPartition(2)).thenReturn(BrokerClusterState.NODE_ID_NULL);
+    when(mockClusterState.getLeaderForPartition(1)).thenReturn(null);
+    when(mockClusterState.getLeaderForPartition(2)).thenReturn(null);
 
     final Supplier<Optional<BrokerClusterState>> stateSupplier =
         () -> Optional.of(mockClusterState);

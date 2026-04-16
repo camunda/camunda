@@ -354,7 +354,9 @@ final class RollingUpdateTest {
         .as("the topology contains the updated broker")
         .hasBrokerSatisfying(
             brokerInfo -> {
-              assertThat(brokerInfo.getNodeId()).as("the broker's node ID").isEqualTo(String.valueOf(brokerId));
+              assertThat(brokerInfo.getNodeId())
+                  .as("the broker's node ID")
+                  .isEqualTo(String.valueOf(brokerId));
               assertThat(brokerInfo.getVersion())
                   .as("the broker's version")
                   .isEqualTo(

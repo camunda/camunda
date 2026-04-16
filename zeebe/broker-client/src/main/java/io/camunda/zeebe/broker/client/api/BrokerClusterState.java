@@ -13,9 +13,11 @@ import java.util.Set;
 
 public interface BrokerClusterState {
 
-  int UNKNOWN_NODE_ID = -1;
-  int NODE_ID_NULL = UNKNOWN_NODE_ID - 1;
-  int PARTITION_ID_NULL = NODE_ID_NULL - 1;
+  /**
+   * Sentinel for partition-id methods when no partition can be determined. Kept as an int because
+   * partition ids remain integer across the cluster.
+   */
+  int PARTITION_ID_NULL = -1;
 
   boolean isInitialized();
 
@@ -25,44 +27,34 @@ public interface BrokerClusterState {
 
   int getReplicationFactor();
 
-  int getLeaderForPartition(int partition);
-
-  Set<Integer> getFollowersForPartition(int partition);
-
-  Set<Integer> getInactiveNodesForPartition(int partition);
-
   /**
-   * @return the node id of a random broker or {@link BrokerClusterState#UNKNOWN_NODE_ID} if no
-   *     brokers are known
+   * Returns the member id of the current leader for the given partition, or {@code null} if no
+   * leader is known.
    */
-  int getRandomBroker();
+  String getLeaderForPartition(int partition);
+
+  Set<String> getFollowersForPartition(int partition);
+
+  Set<String> getInactiveNodesForPartition(int partition);
+
+  /** Returns the member id of a random broker, or {@code null} if no brokers are known. */
+  String getRandomBroker();
 
   List<Integer> getPartitions();
 
-  List<Integer> getBrokers();
+  List<String> getBrokers();
 
-  String getBrokerAddress(int brokerId);
+  String getBrokerAddress(String memberId);
 
-  String getBrokerVersion(int brokerId);
+  String getBrokerVersion(String memberId);
 
   /**
    * Returns the region the broker belongs to, or {@code null} if not configured (non-region-aware
    * clusters).
    */
-  default String getBrokerRegion(final int brokerId) {
-    return null;
-  }
+  String getBrokerRegion(String memberId);
 
-  /**
-   * Returns the composite member ID for the broker. In region-aware clusters this is {@code
-   * region-nodeId} (e.g. {@code us-east1-0}). In non-region-aware clusters this falls back to the
-   * string representation of the integer node ID.
-   */
-  default String getBrokerMemberId(final int brokerId) {
-    return String.valueOf(brokerId);
-  }
-
-  PartitionHealthStatus getPartitionHealth(int brokerId, int partition);
+  PartitionHealthStatus getPartitionHealth(String memberId, int partition);
 
   long getLastCompletedChangeId();
 
