@@ -242,9 +242,10 @@ class DefaultExecutionQueueTest {
     executionQueue.flush();
 
     // then - hook is called with the session before queue items are executed
-    verify(inTransactionHook).onTransactionStart(session);
-    verify(session).update("statement1", "parameter1");
-    verify(session).commit();
+    final var inOrder = Mockito.inOrder(inTransactionHook, session);
+    inOrder.verify(inTransactionHook).onTransactionStart(session);
+    inOrder.verify(session).update("statement1", "parameter1");
+    inOrder.verify(session).commit();
   }
 
   @Test

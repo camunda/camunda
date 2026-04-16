@@ -1513,7 +1513,7 @@ class RdbmsExporterIT {
 
   @ParameterizedTest
   @ValueSource(longs = {-2L, 2L})
-  public void shouldThrowWhenRdbmsPositionIsLowerThanExpected(final long positionDifference) {
+  public void shouldThrowWhenRdbmsPositionDiffersFromExpected(final long positionDifference) {
     // given
     for (int i = 0; i <= 5; i++) {
       final var processInstanceRecord = FIXTURES.getProcessInstanceStartedRecord();
