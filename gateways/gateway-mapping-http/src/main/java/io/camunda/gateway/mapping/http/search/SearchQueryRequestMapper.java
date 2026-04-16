@@ -52,6 +52,7 @@ import io.camunda.gateway.protocol.model.BatchOperationItemSearchQuery;
 import io.camunda.gateway.protocol.model.BatchOperationSearchQuery;
 import io.camunda.gateway.protocol.model.ClusterVariableSearchQueryRequest;
 import io.camunda.gateway.protocol.model.CorrelatedMessageSubscriptionSearchQuery;
+import io.camunda.gateway.protocol.model.CursorForwardPagination;
 import io.camunda.gateway.protocol.model.DecisionDefinitionSearchQuery;
 import io.camunda.gateway.protocol.model.DecisionInstanceSearchQuery;
 import io.camunda.gateway.protocol.model.DecisionRequirementsSearchQuery;
@@ -69,6 +70,7 @@ import io.camunda.gateway.protocol.model.JobTypeStatisticsQuery;
 import io.camunda.gateway.protocol.model.JobWorkerStatisticsQuery;
 import io.camunda.gateway.protocol.model.MappingRuleSearchQueryRequest;
 import io.camunda.gateway.protocol.model.MessageSubscriptionSearchQuery;
+import io.camunda.gateway.protocol.model.OffsetPagination;
 import io.camunda.gateway.protocol.model.ProcessDefinitionElementStatisticsQuery;
 import io.camunda.gateway.protocol.model.ProcessDefinitionInstanceStatisticsQuery;
 import io.camunda.gateway.protocol.model.ProcessDefinitionInstanceVersionStatisticsQuery;
@@ -79,6 +81,7 @@ import io.camunda.gateway.protocol.model.RoleClientSearchQueryRequest;
 import io.camunda.gateway.protocol.model.RoleGroupSearchQueryRequest;
 import io.camunda.gateway.protocol.model.RoleSearchQueryRequest;
 import io.camunda.gateway.protocol.model.RoleUserSearchQueryRequest;
+import io.camunda.gateway.protocol.model.SearchQueryPageRequest;
 import io.camunda.gateway.protocol.model.TenantClientSearchQueryRequest;
 import io.camunda.gateway.protocol.model.TenantGroupSearchQueryRequest;
 import io.camunda.gateway.protocol.model.TenantSearchQueryRequest;
@@ -195,11 +198,7 @@ public final class SearchQueryRequestMapper {
     if (request == null) {
       return Either.right(SearchQueryBuilders.variableSearchQuery().build());
     }
-    final var p = request.getPage();
-    final var page =
-        p != null
-            ? toSearchQueryPage(p.getLimit(), p.getFrom(), null, null)
-            : toSearchQueryPage(null, null, null, null);
+    final var page = toSearchQueryPage(request.getPage());
     final var sortRequests =
         request.getSort() != null
             ? request.getSort().stream()
@@ -223,6 +222,29 @@ public final class SearchQueryRequestMapper {
    * Overload that accepts flat page fields (no polymorphic subtypes). Determines pagination type
    * from which fields are non-null.
    */
+  static Either<List<String>, SearchQueryPage> toSearchQueryPage(
+      final SearchQueryPageRequest page) {
+    if (page == null) {
+      return Either.right(null);
+    }
+    return toSearchQueryPage(page.getLimit(), page.getFrom(), page.getAfter(), page.getBefore());
+  }
+
+  static Either<List<String>, SearchQueryPage> toSearchQueryPage(final OffsetPagination page) {
+    if (page == null) {
+      return Either.right(null);
+    }
+    return toSearchQueryPage(page.getLimit(), page.getFrom(), null, null);
+  }
+
+  static Either<List<String>, SearchQueryPage> toSearchQueryPage(
+      final CursorForwardPagination page) {
+    if (page == null) {
+      return Either.right(null);
+    }
+    return toSearchQueryPage(page.getLimit(), null, page.getAfter(), null);
+  }
+
   static Either<List<String>, SearchQueryPage> toSearchQueryPage(
       final Integer limit, final Integer from, final String after, final String before) {
     if (limit == null && from == null && after == null && before == null) {
@@ -336,11 +358,7 @@ public final class SearchQueryRequestMapper {
     if (request == null) {
       return Either.right(SearchQueryBuilders.jobTypeStatisticsSearchQuery().build());
     }
-    final var p = request.getPage();
-    final var page =
-        p != null
-            ? toSearchQueryPage(p.getLimit(), null, p.getAfter(), null)
-            : Either.<List<String>, SearchQueryPage>right(null);
+    final var page = toSearchQueryPage(request.getPage());
     final var filter = JobTypeStatisticsFilterMapper.toJobTypeStatisticsFilter(request.getFilter());
     return buildSearchQuery(
         filter, Either.right(null), page, SearchQueryBuilders::jobTypeStatisticsSearchQuery);
@@ -351,11 +369,7 @@ public final class SearchQueryRequestMapper {
     if (request == null) {
       return Either.right(SearchQueryBuilders.jobWorkerStatisticsSearchQuery().build());
     }
-    final var p = request.getPage();
-    final var page =
-        p != null
-            ? toSearchQueryPage(p.getLimit(), null, p.getAfter(), null)
-            : Either.<List<String>, SearchQueryPage>right(null);
+    final var page = toSearchQueryPage(request.getPage());
     final var filter =
         JobWorkerStatisticsFilterMapper.toJobWorkerStatisticsFilter(request.getFilter());
     return buildSearchQuery(
@@ -367,11 +381,7 @@ public final class SearchQueryRequestMapper {
     if (request == null) {
       return Either.right(SearchQueryBuilders.jobTimeSeriesStatisticsSearchQuery().build());
     }
-    final var p = request.getPage();
-    final var page =
-        p != null
-            ? toSearchQueryPage(p.getLimit(), null, p.getAfter(), null)
-            : Either.<List<String>, SearchQueryPage>right(null);
+    final var page = toSearchQueryPage(request.getPage());
     final var filter =
         JobTimeSeriesStatisticsFilterMapper.toJobTimeSeriesStatisticsFilter(request.getFilter());
     return buildSearchQuery(
@@ -383,11 +393,7 @@ public final class SearchQueryRequestMapper {
     if (request == null) {
       return Either.right(SearchQueryBuilders.jobErrorStatisticsSearchQuery().build());
     }
-    final var p = request.getPage();
-    final var page =
-        p != null
-            ? toSearchQueryPage(p.getLimit(), null, p.getAfter(), null)
-            : Either.<List<String>, SearchQueryPage>right(null);
+    final var page = toSearchQueryPage(request.getPage());
     final var filter =
         JobErrorStatisticsFilterMapper.toJobErrorStatisticsFilter(request.getFilter());
     return buildSearchQuery(
@@ -403,11 +409,7 @@ public final class SearchQueryRequestMapper {
       return Either.right(
           SearchQueryBuilders.processDefinitionMessageSubscriptionStatisticsQuery().build());
     }
-    final var p = request.getPage();
-    final var page =
-        p != null
-            ? toSearchQueryPage(p.getLimit(), null, p.getAfter(), null)
-            : Either.<List<String>, SearchQueryPage>right(null);
+    final var page = toSearchQueryPage(request.getPage());
     final var filter =
         MessageSubscriptionFilterMapper.toMessageSubscriptionFilter(request.getFilter());
     return buildSearchQuery(
@@ -428,11 +430,7 @@ public final class SearchQueryRequestMapper {
       return Either.right(
           SearchQueryBuilders.processDefinitionInstanceStatisticsQuery().filter(filter).build());
     }
-    final var p = request.getPage();
-    final var page =
-        p != null
-            ? toSearchQueryPage(p.getLimit(), p.getFrom(), null, null)
-            : Either.<List<String>, SearchQueryPage>right(null);
+    final var page = toSearchQueryPage(request.getPage());
     final var sortRequests =
         request.getSort() != null
             ? request.getSort().stream()
@@ -464,11 +462,7 @@ public final class SearchQueryRequestMapper {
         return Either.left(problem.get());
       }
     }
-    final var p = request.getPage();
-    final var page =
-        p != null
-            ? toSearchQueryPage(p.getLimit(), p.getFrom(), null, null)
-            : Either.<List<String>, SearchQueryPage>right(null);
+    final var page = toSearchQueryPage(request.getPage());
     final var sortRequests =
         request.getSort() != null
             ? request.getSort().stream()
@@ -499,11 +493,7 @@ public final class SearchQueryRequestMapper {
       return Either.right(
           SearchQueryBuilders.incidentProcessInstanceStatisticsByErrorQuery().build());
     }
-    final var p = request.getPage();
-    final var page =
-        p != null
-            ? toSearchQueryPage(p.getLimit(), p.getFrom(), null, null)
-            : Either.<List<String>, SearchQueryPage>right(null);
+    final var page = toSearchQueryPage(request.getPage());
     final var sortRequests =
         request.getSort() != null
             ? request.getSort().stream()
@@ -528,11 +518,7 @@ public final class SearchQueryRequestMapper {
           ProblemDetail, io.camunda.search.query.IncidentProcessInstanceStatisticsByDefinitionQuery>
       toIncidentProcessInstanceStatisticsByDefinitionQuery(
           final IncidentProcessInstanceStatisticsByDefinitionQuery request) {
-    final var p = request.getPage();
-    final var page =
-        p != null
-            ? toSearchQueryPage(p.getLimit(), p.getFrom(), null, null)
-            : Either.<List<String>, SearchQueryPage>right(null);
+    final var page = toSearchQueryPage(request.getPage());
     final var sortRequests =
         request.getSort() != null
             ? request.getSort().stream()
@@ -566,11 +552,7 @@ public final class SearchQueryRequestMapper {
     if (request == null) {
       return Either.right(SearchQueryBuilders.auditLogSearchQuery().build());
     }
-    final var p = request.getPage();
-    final var page =
-        p != null
-            ? toSearchQueryPage(p.getLimit(), p.getFrom(), p.getAfter(), p.getBefore())
-            : toSearchQueryPage(null, null, null, null);
+    final var page = toSearchQueryPage(request.getPage());
     final var sortRequests =
         request.getSort() != null
             ? request.getSort().stream()
@@ -595,11 +577,7 @@ public final class SearchQueryRequestMapper {
     if (request == null) {
       return Either.right(SearchQueryBuilders.authorizationSearchQuery().build());
     }
-    final var p = request.getPage();
-    final var page =
-        p != null
-            ? toSearchQueryPage(p.getLimit(), p.getFrom(), p.getAfter(), p.getBefore())
-            : toSearchQueryPage(null, null, null, null);
+    final var page = toSearchQueryPage(request.getPage());
     final var sortRequests =
         request.getSort() != null
             ? request.getSort().stream()
@@ -624,11 +602,7 @@ public final class SearchQueryRequestMapper {
     if (request == null) {
       return Either.right(SearchQueryBuilders.batchOperationItemQuery().build());
     }
-    final var p = request.getPage();
-    final var page =
-        p != null
-            ? toSearchQueryPage(p.getLimit(), p.getFrom(), p.getAfter(), p.getBefore())
-            : toSearchQueryPage(null, null, null, null);
+    final var page = toSearchQueryPage(request.getPage());
     final var sortRequests =
         request.getSort() != null
             ? request.getSort().stream()
@@ -654,11 +628,7 @@ public final class SearchQueryRequestMapper {
     if (request == null) {
       return Either.right(SearchQueryBuilders.batchOperationQuery().build());
     }
-    final var p = request.getPage();
-    final var page =
-        p != null
-            ? toSearchQueryPage(p.getLimit(), p.getFrom(), p.getAfter(), p.getBefore())
-            : toSearchQueryPage(null, null, null, null);
+    final var page = toSearchQueryPage(request.getPage());
     final var sortRequests =
         request.getSort() != null
             ? request.getSort().stream()
@@ -683,11 +653,7 @@ public final class SearchQueryRequestMapper {
     if (request == null) {
       return Either.right(SearchQueryBuilders.clusterVariableSearchQuery().build());
     }
-    final var p = request.getPage();
-    final var page =
-        p != null
-            ? toSearchQueryPage(p.getLimit(), p.getFrom(), p.getAfter(), p.getBefore())
-            : toSearchQueryPage(null, null, null, null);
+    final var page = toSearchQueryPage(request.getPage());
     final var sortRequests =
         request.getSort() != null
             ? request.getSort().stream()
@@ -714,11 +680,7 @@ public final class SearchQueryRequestMapper {
     if (request == null) {
       return Either.right(SearchQueryBuilders.correlatedMessageSubscriptionSearchQuery().build());
     }
-    final var p = request.getPage();
-    final var page =
-        p != null
-            ? toSearchQueryPage(p.getLimit(), p.getFrom(), p.getAfter(), p.getBefore())
-            : toSearchQueryPage(null, null, null, null);
+    final var page = toSearchQueryPage(request.getPage());
     final var sortRequests =
         request.getSort() != null
             ? request.getSort().stream()
@@ -746,11 +708,7 @@ public final class SearchQueryRequestMapper {
     if (request == null) {
       return Either.right(SearchQueryBuilders.decisionDefinitionSearchQuery().build());
     }
-    final var p = request.getPage();
-    final var page =
-        p != null
-            ? toSearchQueryPage(p.getLimit(), p.getFrom(), p.getAfter(), p.getBefore())
-            : toSearchQueryPage(null, null, null, null);
+    final var page = toSearchQueryPage(request.getPage());
     final var sortRequests =
         request.getSort() != null
             ? request.getSort().stream()
@@ -776,11 +734,7 @@ public final class SearchQueryRequestMapper {
     if (request == null) {
       return Either.right(SearchQueryBuilders.decisionInstanceSearchQuery().build());
     }
-    final var p = request.getPage();
-    final var page =
-        p != null
-            ? toSearchQueryPage(p.getLimit(), p.getFrom(), p.getAfter(), p.getBefore())
-            : toSearchQueryPage(null, null, null, null);
+    final var page = toSearchQueryPage(request.getPage());
     final var sortRequests =
         request.getSort() != null
             ? request.getSort().stream()
@@ -805,11 +759,7 @@ public final class SearchQueryRequestMapper {
     if (request == null) {
       return Either.right(SearchQueryBuilders.decisionRequirementsSearchQuery().build());
     }
-    final var p = request.getPage();
-    final var page =
-        p != null
-            ? toSearchQueryPage(p.getLimit(), p.getFrom(), p.getAfter(), p.getBefore())
-            : toSearchQueryPage(null, null, null, null);
+    final var page = toSearchQueryPage(request.getPage());
     final var sortRequests =
         request.getSort() != null
             ? request.getSort().stream()
@@ -836,11 +786,7 @@ public final class SearchQueryRequestMapper {
     if (request == null) {
       return Either.right(SearchQueryBuilders.flownodeInstanceSearchQuery().build());
     }
-    final var p = request.getPage();
-    final var page =
-        p != null
-            ? toSearchQueryPage(p.getLimit(), p.getFrom(), p.getAfter(), p.getBefore())
-            : toSearchQueryPage(null, null, null, null);
+    final var page = toSearchQueryPage(request.getPage());
     final var sortRequests =
         request.getSort() != null
             ? request.getSort().stream()
@@ -865,11 +811,7 @@ public final class SearchQueryRequestMapper {
     if (request == null) {
       return Either.right(SearchQueryBuilders.globalListenerSearchQuery().build());
     }
-    final var p = request.getPage();
-    final var page =
-        p != null
-            ? toSearchQueryPage(p.getLimit(), p.getFrom(), p.getAfter(), p.getBefore())
-            : toSearchQueryPage(null, null, null, null);
+    final var page = toSearchQueryPage(request.getPage());
     final var sortRequests =
         request.getSort() != null
             ? request.getSort().stream()
@@ -895,11 +837,7 @@ public final class SearchQueryRequestMapper {
     if (request == null) {
       return Either.right(SearchQueryBuilders.groupMemberSearchQuery().build());
     }
-    final var p = request.getPage();
-    final var page =
-        p != null
-            ? toSearchQueryPage(p.getLimit(), p.getFrom(), p.getAfter(), p.getBefore())
-            : toSearchQueryPage(null, null, null, null);
+    final var page = toSearchQueryPage(request.getPage());
     final var sortRequests =
         request.getSort() != null
             ? request.getSort().stream()
@@ -924,11 +862,7 @@ public final class SearchQueryRequestMapper {
     if (request == null) {
       return Either.right(SearchQueryBuilders.groupSearchQuery().build());
     }
-    final var p = request.getPage();
-    final var page =
-        p != null
-            ? toSearchQueryPage(p.getLimit(), p.getFrom(), p.getAfter(), p.getBefore())
-            : toSearchQueryPage(null, null, null, null);
+    final var page = toSearchQueryPage(request.getPage());
     final var sortRequests =
         request.getSort() != null
             ? request.getSort().stream()
@@ -953,11 +887,7 @@ public final class SearchQueryRequestMapper {
     if (request == null) {
       return Either.right(SearchQueryBuilders.groupMemberSearchQuery().build());
     }
-    final var p = request.getPage();
-    final var page =
-        p != null
-            ? toSearchQueryPage(p.getLimit(), p.getFrom(), p.getAfter(), p.getBefore())
-            : toSearchQueryPage(null, null, null, null);
+    final var page = toSearchQueryPage(request.getPage());
     final var sortRequests =
         request.getSort() != null
             ? request.getSort().stream()
@@ -982,11 +912,7 @@ public final class SearchQueryRequestMapper {
     if (request == null) {
       return Either.right(SearchQueryBuilders.incidentSearchQuery().build());
     }
-    final var p = request.getPage();
-    final var page =
-        p != null
-            ? toSearchQueryPage(p.getLimit(), p.getFrom(), p.getAfter(), p.getBefore())
-            : toSearchQueryPage(null, null, null, null);
+    final var page = toSearchQueryPage(request.getPage());
     final var sortRequests =
         request.getSort() != null
             ? request.getSort().stream()
@@ -1010,11 +936,7 @@ public final class SearchQueryRequestMapper {
     if (request == null) {
       return Either.right(SearchQueryBuilders.jobSearchQuery().build());
     }
-    final var p = request.getPage();
-    final var page =
-        p != null
-            ? toSearchQueryPage(p.getLimit(), p.getFrom(), p.getAfter(), p.getBefore())
-            : toSearchQueryPage(null, null, null, null);
+    final var page = toSearchQueryPage(request.getPage());
     final var sortRequests =
         request.getSort() != null
             ? request.getSort().stream()
@@ -1037,11 +959,7 @@ public final class SearchQueryRequestMapper {
     if (request == null) {
       return Either.right(SearchQueryBuilders.mappingRuleSearchQuery().build());
     }
-    final var p = request.getPage();
-    final var page =
-        p != null
-            ? toSearchQueryPage(p.getLimit(), p.getFrom(), p.getAfter(), p.getBefore())
-            : toSearchQueryPage(null, null, null, null);
+    final var page = toSearchQueryPage(request.getPage());
     final var sortRequests =
         request.getSort() != null
             ? request.getSort().stream()
@@ -1066,11 +984,7 @@ public final class SearchQueryRequestMapper {
     if (request == null) {
       return Either.right(SearchQueryBuilders.messageSubscriptionSearchQuery().build());
     }
-    final var p = request.getPage();
-    final var page =
-        p != null
-            ? toSearchQueryPage(p.getLimit(), p.getFrom(), p.getAfter(), p.getBefore())
-            : toSearchQueryPage(null, null, null, null);
+    final var page = toSearchQueryPage(request.getPage());
     final var sortRequests =
         request.getSort() != null
             ? request.getSort().stream()
@@ -1104,11 +1018,7 @@ public final class SearchQueryRequestMapper {
       return Either.left(isLatestVersionValidation.getLeft());
     }
 
-    final var p = request.getPage();
-    final var page =
-        p != null
-            ? toSearchQueryPage(p.getLimit(), p.getFrom(), p.getAfter(), p.getBefore())
-            : toSearchQueryPage(null, null, null, null);
+    final var page = toSearchQueryPage(request.getPage());
     final var sortRequests =
         request.getSort() != null
             ? request.getSort().stream()
@@ -1133,11 +1043,7 @@ public final class SearchQueryRequestMapper {
     if (request == null) {
       return Either.right(SearchQueryBuilders.processInstanceSearchQuery().build());
     }
-    final var p = request.getPage();
-    final var page =
-        p != null
-            ? toSearchQueryPage(p.getLimit(), p.getFrom(), p.getAfter(), p.getBefore())
-            : toSearchQueryPage(null, null, null, null);
+    final var page = toSearchQueryPage(request.getPage());
     final var sortRequests =
         request.getSort() != null
             ? request.getSort().stream()
@@ -1162,11 +1068,7 @@ public final class SearchQueryRequestMapper {
     if (request == null) {
       return Either.right(SearchQueryBuilders.roleMemberSearchQuery().build());
     }
-    final var p = request.getPage();
-    final var page =
-        p != null
-            ? toSearchQueryPage(p.getLimit(), p.getFrom(), p.getAfter(), p.getBefore())
-            : toSearchQueryPage(null, null, null, null);
+    final var page = toSearchQueryPage(request.getPage());
     final var sortRequests =
         request.getSort() != null
             ? request.getSort().stream()
@@ -1191,11 +1093,7 @@ public final class SearchQueryRequestMapper {
     if (request == null) {
       return Either.right(SearchQueryBuilders.roleMemberSearchQuery().build());
     }
-    final var p = request.getPage();
-    final var page =
-        p != null
-            ? toSearchQueryPage(p.getLimit(), p.getFrom(), p.getAfter(), p.getBefore())
-            : toSearchQueryPage(null, null, null, null);
+    final var page = toSearchQueryPage(request.getPage());
     final var sortRequests =
         request.getSort() != null
             ? request.getSort().stream()
@@ -1220,11 +1118,7 @@ public final class SearchQueryRequestMapper {
     if (request == null) {
       return Either.right(SearchQueryBuilders.roleSearchQuery().build());
     }
-    final var p = request.getPage();
-    final var page =
-        p != null
-            ? toSearchQueryPage(p.getLimit(), p.getFrom(), p.getAfter(), p.getBefore())
-            : toSearchQueryPage(null, null, null, null);
+    final var page = toSearchQueryPage(request.getPage());
     final var sortRequests =
         request.getSort() != null
             ? request.getSort().stream()
@@ -1249,11 +1143,7 @@ public final class SearchQueryRequestMapper {
     if (request == null) {
       return Either.right(SearchQueryBuilders.roleMemberSearchQuery().build());
     }
-    final var p = request.getPage();
-    final var page =
-        p != null
-            ? toSearchQueryPage(p.getLimit(), p.getFrom(), p.getAfter(), p.getBefore())
-            : toSearchQueryPage(null, null, null, null);
+    final var page = toSearchQueryPage(request.getPage());
     final var sortRequests =
         request.getSort() != null
             ? request.getSort().stream()
@@ -1278,11 +1168,7 @@ public final class SearchQueryRequestMapper {
     if (request == null) {
       return Either.right(SearchQueryBuilders.tenantMemberSearchQuery().build());
     }
-    final var p = request.getPage();
-    final var page =
-        p != null
-            ? toSearchQueryPage(p.getLimit(), p.getFrom(), p.getAfter(), p.getBefore())
-            : toSearchQueryPage(null, null, null, null);
+    final var page = toSearchQueryPage(request.getPage());
     final var sortRequests =
         request.getSort() != null
             ? request.getSort().stream()
@@ -1307,11 +1193,7 @@ public final class SearchQueryRequestMapper {
     if (request == null) {
       return Either.right(SearchQueryBuilders.tenantMemberSearchQuery().build());
     }
-    final var p = request.getPage();
-    final var page =
-        p != null
-            ? toSearchQueryPage(p.getLimit(), p.getFrom(), p.getAfter(), p.getBefore())
-            : toSearchQueryPage(null, null, null, null);
+    final var page = toSearchQueryPage(request.getPage());
     final var sortRequests =
         request.getSort() != null
             ? request.getSort().stream()
@@ -1336,11 +1218,7 @@ public final class SearchQueryRequestMapper {
     if (request == null) {
       return Either.right(SearchQueryBuilders.tenantSearchQuery().build());
     }
-    final var p = request.getPage();
-    final var page =
-        p != null
-            ? toSearchQueryPage(p.getLimit(), p.getFrom(), p.getAfter(), p.getBefore())
-            : toSearchQueryPage(null, null, null, null);
+    final var page = toSearchQueryPage(request.getPage());
     final var sortRequests =
         request.getSort() != null
             ? request.getSort().stream()
@@ -1365,11 +1243,7 @@ public final class SearchQueryRequestMapper {
     if (request == null) {
       return Either.right(SearchQueryBuilders.tenantMemberSearchQuery().build());
     }
-    final var p = request.getPage();
-    final var page =
-        p != null
-            ? toSearchQueryPage(p.getLimit(), p.getFrom(), p.getAfter(), p.getBefore())
-            : toSearchQueryPage(null, null, null, null);
+    final var page = toSearchQueryPage(request.getPage());
     final var sortRequests =
         request.getSort() != null
             ? request.getSort().stream()
@@ -1394,11 +1268,7 @@ public final class SearchQueryRequestMapper {
     if (request == null) {
       return Either.right(SearchQueryBuilders.userSearchQuery().build());
     }
-    final var p = request.getPage();
-    final var page =
-        p != null
-            ? toSearchQueryPage(p.getLimit(), p.getFrom(), p.getAfter(), p.getBefore())
-            : toSearchQueryPage(null, null, null, null);
+    final var page = toSearchQueryPage(request.getPage());
     final var sortRequests =
         request.getSort() != null
             ? request.getSort().stream()
@@ -1423,11 +1293,7 @@ public final class SearchQueryRequestMapper {
     if (request == null) {
       return Either.right(SearchQueryBuilders.auditLogSearchQuery().build());
     }
-    final var p = request.getPage();
-    final var page =
-        p != null
-            ? toSearchQueryPage(p.getLimit(), p.getFrom(), p.getAfter(), p.getBefore())
-            : toSearchQueryPage(null, null, null, null);
+    final var page = toSearchQueryPage(request.getPage());
     final var sortRequests = java.util.List.<SearchQuerySortRequest>of();
     final var sort =
         SearchQuerySortRequestMapper.toSearchQuerySort(
@@ -1443,11 +1309,7 @@ public final class SearchQueryRequestMapper {
     if (request == null) {
       return Either.right(SearchQueryBuilders.userTaskSearchQuery().build());
     }
-    final var p = request.getPage();
-    final var page =
-        p != null
-            ? toSearchQueryPage(p.getLimit(), p.getFrom(), p.getAfter(), p.getBefore())
-            : toSearchQueryPage(null, null, null, null);
+    final var page = toSearchQueryPage(request.getPage());
     final var sortRequests =
         request.getSort() != null
             ? request.getSort().stream()
@@ -1472,11 +1334,7 @@ public final class SearchQueryRequestMapper {
     if (request == null) {
       return Either.right(SearchQueryBuilders.variableSearchQuery().build());
     }
-    final var p = request.getPage();
-    final var page =
-        p != null
-            ? toSearchQueryPage(p.getLimit(), p.getFrom(), p.getAfter(), p.getBefore())
-            : toSearchQueryPage(null, null, null, null);
+    final var page = toSearchQueryPage(request.getPage());
     final var sortRequests =
         request.getSort() != null
             ? request.getSort().stream()
@@ -1501,11 +1359,7 @@ public final class SearchQueryRequestMapper {
     if (request == null) {
       return Either.right(SearchQueryBuilders.variableSearchQuery().build());
     }
-    final var p = request.getPage();
-    final var page =
-        p != null
-            ? toSearchQueryPage(p.getLimit(), p.getFrom(), p.getAfter(), p.getBefore())
-            : toSearchQueryPage(null, null, null, null);
+    final var page = toSearchQueryPage(request.getPage());
     final var sortRequests =
         request.getSort() != null
             ? request.getSort().stream()
