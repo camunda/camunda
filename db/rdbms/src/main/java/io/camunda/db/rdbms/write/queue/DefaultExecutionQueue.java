@@ -44,6 +44,7 @@ public class DefaultExecutionQueue implements ExecutionQueue {
   private final SqlSessionFactory sessionFactory;
   private final List<PreFlushListener> preFlushListeners = new ArrayList<>();
   private final List<PostFlushListener> postFlushListeners = new ArrayList<>();
+  private final List<InTransactionHook> inTransactionHooks = new ArrayList<>();
 
   private final LinkedList<QueueItem> queue = new LinkedList<>();
 
@@ -95,6 +96,11 @@ public class DefaultExecutionQueue implements ExecutionQueue {
   @Override
   public void registerPostFlushListener(final PostFlushListener listener) {
     postFlushListeners.add(listener);
+  }
+
+  @Override
+  public void registerInTransactionHook(final InTransactionHook hook) {
+    inTransactionHooks.add(hook);
   }
 
   /**
@@ -235,6 +241,13 @@ public class DefaultExecutionQueue implements ExecutionQueue {
     final var optimizedItems = optimizeQueueOrder(queue);
 
     try {
+      if (!inTransactionHooks.isEmpty()) {
+        LOG.trace("[RDBMS ExecutionQueue, Partition {}] Call in-transaction hooks", partitionId);
+        for (final InTransactionHook hook : inTransactionHooks) {
+          hook.onTransactionStart(session);
+        }
+      }
+
       for (final var entry : optimizedItems) {
         LOG.trace("[RDBMS ExecutionQueue, Partition {}] Executing entry: {}", partitionId, entry);
         session.update(entry.statementId(), entry.parameter());
