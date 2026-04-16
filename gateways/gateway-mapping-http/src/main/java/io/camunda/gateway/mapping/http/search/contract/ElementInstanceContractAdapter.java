@@ -8,11 +8,11 @@
 package io.camunda.gateway.mapping.http.search.contract;
 
 import static io.camunda.gateway.mapping.http.ResponseMapper.formatDate;
-import static io.camunda.gateway.mapping.http.search.contract.generated.ElementInstanceContract.Fields;
 
-import io.camunda.gateway.mapping.http.search.contract.generated.ElementInstanceContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.ElementInstanceStateEnum;
 import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
+import io.camunda.gateway.mapping.http.util.KeyUtil;
+import io.camunda.gateway.protocol.model.ElementInstance;
+import io.camunda.gateway.protocol.model.ElementInstanceStateEnum;
 import io.camunda.search.entities.FlowNodeInstanceEntity;
 import java.util.List;
 
@@ -20,44 +20,40 @@ public final class ElementInstanceContractAdapter {
 
   private ElementInstanceContractAdapter() {}
 
-  public static List<ElementInstanceContract> adapt(final List<FlowNodeInstanceEntity> entities) {
+  public static List<ElementInstance> adapt(final List<FlowNodeInstanceEntity> entities) {
     return entities.stream().map(ElementInstanceContractAdapter::adapt).toList();
   }
 
-  public static ElementInstanceContract adapt(final FlowNodeInstanceEntity entity) {
-    return ElementInstanceContract.builder()
+  public static ElementInstance adapt(final FlowNodeInstanceEntity entity) {
+    return new ElementInstance()
         .processDefinitionId(
             ContractPolicy.requireNonNull(
-                entity.processDefinitionId(), Fields.PROCESS_DEFINITION_ID, entity))
+                entity.processDefinitionId(), "processDefinitionId", entity))
         .startDate(
-            ContractPolicy.requireNonNull(
-                formatDate(entity.startDate()), Fields.START_DATE, entity))
-        .elementId(ContractPolicy.requireNonNull(entity.flowNodeId(), Fields.ELEMENT_ID, entity))
-        .elementName(
-            ContractPolicy.requireNonNull(entity.flowNodeName(), Fields.ELEMENT_NAME, entity))
+            ContractPolicy.requireNonNull(formatDate(entity.startDate()), "startDate", entity))
+        .elementId(ContractPolicy.requireNonNull(entity.flowNodeId(), "elementId", entity))
+        .elementName(ContractPolicy.requireNonNull(entity.flowNodeName(), "elementName", entity))
         .type(
             ContractPolicy.requireNonNull(
-                entity.type() != null ? entity.type().name() : null, Fields.TYPE, entity))
+                entity.type() != null ? entity.type().name() : null, "type", entity))
         .state(
             ContractPolicy.requireNonNull(
                 ContractPolicy.mapEnum(entity.state(), ElementInstanceStateEnum::fromValue),
-                Fields.STATE,
+                "state",
                 entity))
-        .hasIncident(
-            ContractPolicy.requireNonNull(entity.hasIncident(), Fields.HAS_INCIDENT, entity))
-        .tenantId(ContractPolicy.requireNonNull(entity.tenantId(), Fields.TENANT_ID, entity))
+        .hasIncident(ContractPolicy.requireNonNull(entity.hasIncident(), "hasIncident", entity))
+        .tenantId(ContractPolicy.requireNonNull(entity.tenantId(), "tenantId", entity))
         .elementInstanceKey(
             ContractPolicy.requireNonNull(
-                entity.flowNodeInstanceKey(), Fields.ELEMENT_INSTANCE_KEY, entity))
+                KeyUtil.keyToString(entity.flowNodeInstanceKey()), "elementInstanceKey", entity))
         .processInstanceKey(
             ContractPolicy.requireNonNull(
-                entity.processInstanceKey(), Fields.PROCESS_INSTANCE_KEY, entity))
+                KeyUtil.keyToString(entity.processInstanceKey()), "processInstanceKey", entity))
         .processDefinitionKey(
             ContractPolicy.requireNonNull(
-                entity.processDefinitionKey(), Fields.PROCESS_DEFINITION_KEY, entity))
+                KeyUtil.keyToString(entity.processDefinitionKey()), "processDefinitionKey", entity))
         .endDate(formatDate(entity.endDate()))
-        .rootProcessInstanceKey(entity.rootProcessInstanceKey())
-        .incidentKey(entity.incidentKey())
-        .build();
+        .rootProcessInstanceKey(KeyUtil.keyToString(entity.rootProcessInstanceKey()))
+        .incidentKey(KeyUtil.keyToString(entity.incidentKey()));
   }
 }

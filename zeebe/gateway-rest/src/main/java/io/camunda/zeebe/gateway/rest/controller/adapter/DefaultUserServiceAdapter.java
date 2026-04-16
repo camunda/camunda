@@ -13,10 +13,10 @@ import io.camunda.gateway.mapping.http.ResponseMapper;
 import io.camunda.gateway.mapping.http.mapper.UserMapper;
 import io.camunda.gateway.mapping.http.search.SearchQueryRequestMapper;
 import io.camunda.gateway.mapping.http.search.SearchQueryResponseMapper;
-import io.camunda.gateway.mapping.http.search.contract.generated.UserRequestContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.UserSearchQueryRequestContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.UserUpdateRequestContract;
 import io.camunda.gateway.mapping.http.validator.UserRequestValidator;
+import io.camunda.gateway.protocol.model.UserRequest;
+import io.camunda.gateway.protocol.model.UserSearchQueryRequest;
+import io.camunda.gateway.protocol.model.UserUpdateRequest;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.validation.IdentifierValidator;
 import io.camunda.security.validation.UserValidator;
@@ -42,7 +42,7 @@ public class DefaultUserServiceAdapter implements UserServiceAdapter {
 
   @Override
   public ResponseEntity<Object> createUser(
-      final UserRequestContract userRequestStrict, final CamundaAuthentication authentication) {
+      final UserRequest userRequestStrict, final CamundaAuthentication authentication) {
     return userMapper
         .toUserRequest(userRequestStrict)
         .fold(
@@ -56,7 +56,7 @@ public class DefaultUserServiceAdapter implements UserServiceAdapter {
 
   @Override
   public ResponseEntity<Object> searchUsers(
-      final UserSearchQueryRequestContract userSearchQueryRequestStrict,
+      final UserSearchQueryRequest userSearchQueryRequestStrict,
       final CamundaAuthentication authentication) {
     return SearchQueryRequestMapper.toUserQueryStrict(userSearchQueryRequestStrict)
         .fold(
@@ -86,7 +86,7 @@ public class DefaultUserServiceAdapter implements UserServiceAdapter {
   @Override
   public ResponseEntity<Object> updateUser(
       final String username,
-      final UserUpdateRequestContract userUpdateRequestStrict,
+      final UserUpdateRequest userUpdateRequestStrict,
       final CamundaAuthentication authentication) {
     return userMapper
         .toUserUpdateRequest(userUpdateRequestStrict, username)

@@ -8,9 +8,9 @@
 package io.camunda.gateway.mapping.http.mapper;
 
 import io.camunda.gateway.mapping.http.RequestMapper;
-import io.camunda.gateway.mapping.http.search.contract.generated.TenantCreateRequestContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.TenantUpdateRequestContract;
 import io.camunda.gateway.mapping.http.validator.TenantRequestValidator;
+import io.camunda.gateway.protocol.model.TenantCreateRequest;
+import io.camunda.gateway.protocol.model.TenantUpdateRequest;
 import io.camunda.service.TenantServices.TenantMemberRequest;
 import io.camunda.service.TenantServices.TenantRequest;
 import io.camunda.zeebe.protocol.record.value.EntityType;
@@ -32,17 +32,18 @@ public class TenantMapper {
         () -> new TenantMemberRequest(tenantId, memberId, entityType));
   }
 
-  public Either<ProblemDetail, TenantRequest> toTenantCreateDto(
-      final TenantCreateRequestContract request) {
+  public Either<ProblemDetail, TenantRequest> toTenantCreateDto(final TenantCreateRequest request) {
     return RequestMapper.getResult(
         tenantRequestValidator.validateCreateRequest(request),
-        () -> new TenantRequest(null, request.tenantId(), request.name(), request.description()));
+        () ->
+            new TenantRequest(
+                null, request.getTenantId(), request.getName(), request.getDescription()));
   }
 
   public Either<ProblemDetail, TenantRequest> toTenantUpdateDto(
-      final String tenantId, final TenantUpdateRequestContract request) {
+      final String tenantId, final TenantUpdateRequest request) {
     return RequestMapper.getResult(
         tenantRequestValidator.validateUpdateRequest(request),
-        () -> new TenantRequest(null, tenantId, request.name(), request.description()));
+        () -> new TenantRequest(null, tenantId, request.getName(), request.getDescription()));
   }
 }

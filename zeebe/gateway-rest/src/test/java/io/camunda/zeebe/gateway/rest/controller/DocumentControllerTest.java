@@ -19,7 +19,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.document.api.DocumentError.DocumentHashMismatch;
 import io.camunda.document.api.DocumentMetadataModel;
-import io.camunda.gateway.mapping.http.search.contract.generated.DocumentMetadataContract;
+import io.camunda.gateway.protocol.model.DocumentMetadata;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.DocumentServices;
 import io.camunda.service.DocumentServices.DocumentContentResponse;
@@ -160,8 +160,10 @@ public class DocumentControllerTest extends RestControllerTest {
                         contentType.toString(), filename, timestamp, 0L, null, null, Map.of()))));
 
     final var metadataToSend =
-        new DocumentMetadataContract(
-            contentType.toString(), filename, timestamp.toString(), null, null, null, null);
+        new DocumentMetadata()
+            .contentType(contentType.toString())
+            .fileName(filename)
+            .expiresAt(timestamp.toString());
 
     final var multipartBodyBuilder = new MultipartBodyBuilder();
     multipartBodyBuilder.part("file", content).contentType(contentType).filename(filename);
@@ -250,27 +252,21 @@ public class DocumentControllerTest extends RestControllerTest {
         .header(
             "X-Document-Metadata",
             om.writeValueAsString(
-                new DocumentMetadataContract(
-                    contentType.toString(),
-                    filename1,
-                    timestamp.toString(),
-                    null,
-                    null,
-                    "123",
-                    null)));
+                new DocumentMetadata()
+                    .contentType(contentType.toString())
+                    .fileName(filename1)
+                    .expiresAt(timestamp.toString())
+                    .processInstanceKey("123")));
     multipartBodyBuilder
         .part("files", content2)
         .header(
             "X-Document-Metadata",
             om.writeValueAsString(
-                new DocumentMetadataContract(
-                    contentType.toString(),
-                    filename2,
-                    timestamp.toString(),
-                    null,
-                    null,
-                    "123",
-                    null)));
+                new DocumentMetadata()
+                    .contentType(contentType.toString())
+                    .fileName(filename2)
+                    .expiresAt(timestamp.toString())
+                    .processInstanceKey("123")));
 
     // when/then
     webClient
@@ -518,8 +514,7 @@ public class DocumentControllerTest extends RestControllerTest {
 
     final var mapper = new ObjectMapper();
     final var meta1 =
-        new DocumentMetadataContract(
-            contentType.toString(), filename1, null, null, null, null, null);
+        new DocumentMetadata().contentType(contentType.toString()).fileName(filename1);
     // Provide single-element JSON array to simulate mismatch
     multipartBodyBuilder
         .part("metadataList", mapper.writeValueAsString(List.of(meta1)))
@@ -573,10 +568,16 @@ public class DocumentControllerTest extends RestControllerTest {
     final var mapper = new ObjectMapper();
     final var metadataList =
         List.of(
-            new DocumentMetadataContract(
-                contentType.toString(), filename1, timestamp.toString(), null, null, "123", null),
-            new DocumentMetadataContract(
-                contentType.toString(), filename2, timestamp.toString(), null, null, "123", null));
+            new DocumentMetadata()
+                .contentType(contentType.toString())
+                .fileName(filename1)
+                .expiresAt(timestamp.toString())
+                .processInstanceKey("123"),
+            new DocumentMetadata()
+                .contentType(contentType.toString())
+                .fileName(filename2)
+                .expiresAt(timestamp.toString())
+                .processInstanceKey("123"));
     multipartBodyBuilder
         .part("metadataList", mapper.writeValueAsString(metadataList))
         .contentType(MediaType.APPLICATION_JSON);
@@ -635,14 +636,10 @@ public class DocumentControllerTest extends RestControllerTest {
         .header(
             "X-Document-Metadata",
             mapper.writeValueAsString(
-                new DocumentMetadataContract(
-                    contentType.toString(),
-                    "IGNORED-" + filename1,
-                    null,
-                    null,
-                    null,
-                    "999",
-                    null)));
+                new DocumentMetadata()
+                    .contentType(contentType.toString())
+                    .fileName("IGNORED-" + filename1)
+                    .processInstanceKey("999")));
     multipartBodyBuilder
         .part("files", content2)
         .filename(filename2)
@@ -650,22 +647,22 @@ public class DocumentControllerTest extends RestControllerTest {
         .header(
             "X-Document-Metadata",
             mapper.writeValueAsString(
-                new DocumentMetadataContract(
-                    contentType.toString(),
-                    "IGNORED-" + filename2,
-                    null,
-                    null,
-                    null,
-                    "999",
-                    null)));
+                new DocumentMetadata()
+                    .contentType(contentType.toString())
+                    .fileName("IGNORED-" + filename2)
+                    .processInstanceKey("999")));
 
     // Preferred metadataList (processInstanceKey 123, original file names)
     final var metadataList =
         List.of(
-            new DocumentMetadataContract(
-                contentType.toString(), filename1, null, null, null, "123", null),
-            new DocumentMetadataContract(
-                contentType.toString(), filename2, null, null, null, "123", null));
+            new DocumentMetadata()
+                .contentType(contentType.toString())
+                .fileName(filename1)
+                .processInstanceKey("123"),
+            new DocumentMetadata()
+                .contentType(contentType.toString())
+                .fileName(filename2)
+                .processInstanceKey("123"));
     multipartBodyBuilder
         .part("metadataList", mapper.writeValueAsString(metadataList))
         .contentType(MediaType.APPLICATION_JSON);

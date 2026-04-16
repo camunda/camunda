@@ -11,9 +11,8 @@ import static io.camunda.gateway.mapping.http.util.AdvancedSearchFilterUtil.mapT
 import static java.util.Optional.ofNullable;
 
 import io.camunda.gateway.mapping.http.converters.ProcessInstanceStateConverter;
-import io.camunda.gateway.mapping.http.search.contract.generated.BaseProcessInstanceFilterFieldsContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.ProcessDefinitionStatisticsFilterContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.VariableValueFilterPropertyContract;
+import io.camunda.gateway.protocol.model.BaseProcessInstanceFilterFields;
+import io.camunda.gateway.protocol.model.VariableValueFilterProperty;
 import io.camunda.search.filter.FilterBuilders;
 import io.camunda.search.filter.ProcessDefinitionStatisticsFilter;
 import io.camunda.search.filter.VariableValueFilter;
@@ -33,52 +32,52 @@ public final class ProcessDefinitionStatisticsFilterMapper {
   public static Either<List<String>, ProcessDefinitionStatisticsFilter>
       toProcessDefinitionStatisticsFilter(
           final long processDefinitionKey,
-          @Nullable final ProcessDefinitionStatisticsFilterContract filter) {
+          final io.camunda.gateway.protocol.model.ProcessDefinitionStatisticsFilter filter) {
     final List<String> validationErrors = new ArrayList<>();
     final var builder = FilterBuilders.processDefinitionStatisticsFilter(processDefinitionKey);
     if (filter != null) {
       applyBaseProcessInstanceFilterFields(
           builder,
-          filter.processInstanceKey(),
-          filter.parentProcessInstanceKey(),
-          filter.parentElementInstanceKey(),
-          filter.startDate(),
-          filter.endDate(),
-          filter.state(),
-          filter.hasIncident(),
-          filter.tenantId(),
-          filter.batchOperationId(),
-          filter.errorMessage(),
-          filter.hasRetriesLeft(),
-          filter.elementId(),
-          filter.hasElementInstanceIncident(),
-          filter.elementInstanceState(),
-          filter.incidentErrorHashCode(),
-          filter.variables(),
+          filter.getProcessInstanceKey(),
+          filter.getParentProcessInstanceKey(),
+          filter.getParentElementInstanceKey(),
+          filter.getStartDate(),
+          filter.getEndDate(),
+          filter.getState(),
+          filter.getHasIncident(),
+          filter.getTenantId(),
+          filter.getBatchOperationId(),
+          filter.getErrorMessage(),
+          filter.getHasRetriesLeft(),
+          filter.getElementId(),
+          filter.getHasElementInstanceIncident(),
+          filter.getElementInstanceState(),
+          filter.getIncidentErrorHashCode(),
+          filter.getVariables(),
           validationErrors);
-      if (filter.$or() != null && !filter.$or().isEmpty()) {
-        for (final BaseProcessInstanceFilterFieldsContract or : filter.$or()) {
+      if (filter.get$or() != null && !filter.get$or().isEmpty()) {
+        for (final BaseProcessInstanceFilterFields or : filter.get$or()) {
           final var orBuilder =
               FilterBuilders.processDefinitionStatisticsFilter(processDefinitionKey);
           final List<String> orErrors = new ArrayList<>();
           applyBaseProcessInstanceFilterFields(
               orBuilder,
-              or.processInstanceKey(),
-              or.parentProcessInstanceKey(),
-              or.parentElementInstanceKey(),
-              or.startDate(),
-              or.endDate(),
-              or.state(),
-              or.hasIncident(),
-              or.tenantId(),
-              or.batchOperationId(),
-              or.errorMessage(),
-              or.hasRetriesLeft(),
-              or.elementId(),
-              or.hasElementInstanceIncident(),
-              or.elementInstanceState(),
-              or.incidentErrorHashCode(),
-              or.variables(),
+              or.getProcessInstanceKey(),
+              or.getParentProcessInstanceKey(),
+              or.getParentElementInstanceKey(),
+              or.getStartDate(),
+              or.getEndDate(),
+              or.getState(),
+              or.getHasIncident(),
+              or.getTenantId(),
+              or.getBatchOperationId(),
+              or.getErrorMessage(),
+              or.getHasRetriesLeft(),
+              or.getElementId(),
+              or.getHasElementInstanceIncident(),
+              or.getElementInstanceState(),
+              or.getIncidentErrorHashCode(),
+              or.getVariables(),
               orErrors);
           if (!orErrors.isEmpty()) {
             validationErrors.addAll(orErrors);
@@ -110,7 +109,7 @@ public final class ProcessDefinitionStatisticsFilterMapper {
       final @Nullable Boolean hasElementInstanceIncident,
       final @Nullable Object elementInstanceState,
       final @Nullable Object incidentErrorHashCode,
-      final @Nullable List<VariableValueFilterPropertyContract> variables,
+      final @Nullable List<VariableValueFilterProperty> variables,
       final List<String> validationErrors) {
     ofNullable(processInstanceKey)
         .map(mapToOperations(Long.class))

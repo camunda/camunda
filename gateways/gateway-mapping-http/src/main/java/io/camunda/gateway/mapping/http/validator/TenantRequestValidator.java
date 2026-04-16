@@ -9,8 +9,8 @@ package io.camunda.gateway.mapping.http.validator;
 
 import static io.camunda.gateway.mapping.http.validator.RequestValidator.validate;
 
-import io.camunda.gateway.mapping.http.search.contract.generated.TenantCreateRequestContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.TenantUpdateRequestContract;
+import io.camunda.gateway.protocol.model.TenantCreateRequest;
+import io.camunda.gateway.protocol.model.TenantUpdateRequest;
 import io.camunda.security.validation.TenantValidator;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import java.util.Optional;
@@ -24,12 +24,12 @@ public final class TenantRequestValidator {
     this.tenantValidator = tenantValidator;
   }
 
-  public Optional<ProblemDetail> validateCreateRequest(final TenantCreateRequestContract request) {
-    return validate(() -> tenantValidator.validateCreate(request.tenantId(), request.name()));
+  public Optional<ProblemDetail> validateCreateRequest(final TenantCreateRequest request) {
+    return validate(() -> tenantValidator.validateCreate(request.getTenantId(), request.getName()));
   }
 
-  public Optional<ProblemDetail> validateUpdateRequest(final TenantUpdateRequestContract request) {
-    return validate(() -> tenantValidator.validateUpdate(request.name()));
+  public Optional<ProblemDetail> validateUpdateRequest(final TenantUpdateRequest request) {
+    return validate(() -> tenantValidator.validateUpdate(request.getName()));
   }
 
   public Optional<ProblemDetail> validateMemberRequest(

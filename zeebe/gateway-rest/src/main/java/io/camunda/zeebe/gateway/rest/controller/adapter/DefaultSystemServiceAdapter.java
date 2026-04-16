@@ -11,8 +11,8 @@ import static io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper.mapErrorToRes
 
 import io.camunda.gateway.mapping.http.search.SearchQueryRequestMapper;
 import io.camunda.gateway.mapping.http.search.SearchQueryResponseMapper;
-import io.camunda.gateway.mapping.http.search.contract.generated.JobMetricsConfigurationResponseContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.SystemConfigurationResponseContract;
+import io.camunda.gateway.protocol.model.JobMetricsConfigurationResponse;
+import io.camunda.gateway.protocol.model.SystemConfigurationResponse;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.UsageMetricsServices;
 import io.camunda.zeebe.gateway.rest.config.GatewayRestConfiguration;
@@ -62,14 +62,14 @@ public class DefaultSystemServiceAdapter implements SystemServiceAdapter {
   public ResponseEntity<Object> getSystemConfiguration(final CamundaAuthentication authentication) {
     final JobMetricsConfiguration jobMetricsCfg = gatewayRestConfiguration.getJobMetrics();
     final var jobMetricsResponse =
-        new JobMetricsConfigurationResponseContract(
-            jobMetricsCfg.isEnabled(),
-            jobMetricsCfg.getExportInterval().toString(),
-            jobMetricsCfg.getMaxWorkerNameLength(),
-            jobMetricsCfg.getMaxJobTypeLength(),
-            jobMetricsCfg.getMaxTenantIdLength(),
-            jobMetricsCfg.getMaxUniqueKeys());
-    final var response = new SystemConfigurationResponseContract(jobMetricsResponse);
+        new JobMetricsConfigurationResponse()
+            .enabled(jobMetricsCfg.isEnabled())
+            .exportInterval(jobMetricsCfg.getExportInterval().toString())
+            .maxWorkerNameLength(jobMetricsCfg.getMaxWorkerNameLength())
+            .maxJobTypeLength(jobMetricsCfg.getMaxJobTypeLength())
+            .maxTenantIdLength(jobMetricsCfg.getMaxTenantIdLength())
+            .maxUniqueKeys(jobMetricsCfg.getMaxUniqueKeys());
+    final var response = new SystemConfigurationResponse().jobMetrics(jobMetricsResponse);
     return ResponseEntity.ok(response);
   }
 }

@@ -11,12 +11,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.awaitility.Awaitility.await;
 
+import com.fasterxml.jackson.databind.JavaType;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.search.enums.PermissionType;
 import io.camunda.client.api.search.enums.ResourceType;
 import io.camunda.client.api.search.response.ProcessDefinition;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedProcessDefinitionSearchQueryStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedProcessDefinitionStrictContract;
 import io.camunda.it.util.TestHelper;
 import io.camunda.qa.util.auth.Authenticated;
 import io.camunda.qa.util.auth.Permissions;
@@ -115,12 +114,19 @@ abstract class AuthenticatedMcpServerTest extends McpServerAuthenticationTest {
         .isFalse();
     assertThat(result.structuredContent()).isNotNull();
 
-    final var searchQueryResult =
-        objectMapper.convertValue(
-            result.structuredContent(), GeneratedProcessDefinitionSearchQueryStrictContract.class);
+    @SuppressWarnings("unchecked")
+    final Map<String, Object> searchQueryResult =
+        objectMapper.convertValue(result.structuredContent(), Map.class);
+    final JavaType listType =
+        objectMapper
+            .getTypeFactory()
+            .constructCollectionType(
+                List.class, io.camunda.gateway.protocol.model.ProcessDefinition.class);
+    final List<io.camunda.gateway.protocol.model.ProcessDefinition> items =
+        objectMapper.convertValue(searchQueryResult.get("items"), listType);
 
-    return searchQueryResult.items().stream()
-        .map(GeneratedProcessDefinitionStrictContract::processDefinitionId)
+    return items.stream()
+        .map(io.camunda.gateway.protocol.model.ProcessDefinition::getProcessDefinitionId)
         .collect(Collectors.toSet());
   }
 

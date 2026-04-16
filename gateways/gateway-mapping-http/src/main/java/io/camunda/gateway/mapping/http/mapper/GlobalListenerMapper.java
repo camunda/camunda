@@ -8,12 +8,12 @@
 package io.camunda.gateway.mapping.http.mapper;
 
 import io.camunda.gateway.mapping.http.RequestMapper;
-import io.camunda.gateway.mapping.http.search.contract.generated.CreateGlobalTaskListenerRequestContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GlobalListenerSourceEnum;
-import io.camunda.gateway.mapping.http.search.contract.generated.GlobalTaskListenerContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GlobalTaskListenerEventTypeEnum;
-import io.camunda.gateway.mapping.http.search.contract.generated.UpdateGlobalTaskListenerRequestContract;
 import io.camunda.gateway.mapping.http.validator.GlobalListenerRequestValidator;
+import io.camunda.gateway.protocol.model.CreateGlobalTaskListenerRequest;
+import io.camunda.gateway.protocol.model.GlobalListenerSourceEnum;
+import io.camunda.gateway.protocol.model.GlobalTaskListener;
+import io.camunda.gateway.protocol.model.GlobalTaskListenerEventTypeEnum;
+import io.camunda.gateway.protocol.model.UpdateGlobalTaskListenerRequest;
 import io.camunda.zeebe.protocol.impl.record.value.globallistener.GlobalListenerRecord;
 import io.camunda.zeebe.protocol.record.value.GlobalListenerSource;
 import io.camunda.zeebe.protocol.record.value.GlobalListenerType;
@@ -33,29 +33,29 @@ public class GlobalListenerMapper {
   //
 
   public Either<ProblemDetail, GlobalListenerRecord> toGlobalTaskListenerCreateRequest(
-      final CreateGlobalTaskListenerRequestContract request) {
+      final CreateGlobalTaskListenerRequest request) {
     return RequestMapper.getResult(
         requestValidator.validateCreateRequest(request),
         () -> {
           final var record = new GlobalListenerRecord();
-          if (request.type() != null) {
-            record.setType(request.type());
+          if (request.getType() != null) {
+            record.setType(request.getType());
           }
-          if (request.retries() != null) {
-            record.setRetries(request.retries());
+          if (request.getRetries() != null) {
+            record.setRetries(request.getRetries());
           }
-          if (request.afterNonGlobal() != null) {
-            record.setAfterNonGlobal(request.afterNonGlobal());
+          if (request.getAfterNonGlobal() != null) {
+            record.setAfterNonGlobal(request.getAfterNonGlobal());
           }
-          if (request.priority() != null) {
-            record.setPriority(request.priority());
+          if (request.getPriority() != null) {
+            record.setPriority(request.getPriority());
           }
           record.setSource(GlobalListenerSource.API);
-          if (request.eventTypes() != null) {
-            record.setEventTypes(request.eventTypes().stream().map(e -> e.getValue()).toList());
+          if (request.getEventTypes() != null) {
+            record.setEventTypes(request.getEventTypes().stream().map(e -> e.getValue()).toList());
           }
           record.setListenerType(GlobalListenerType.USER_TASK);
-          record.setId(request.id());
+          record.setId(request.getId());
           return record;
         });
   }
@@ -74,26 +74,26 @@ public class GlobalListenerMapper {
   }
 
   public Either<ProblemDetail, GlobalListenerRecord> toGlobalTaskListenerUpdateRequest(
-      final String id, final UpdateGlobalTaskListenerRequestContract request) {
+      final String id, final UpdateGlobalTaskListenerRequest request) {
     return RequestMapper.getResult(
         requestValidator.validateUpdateRequest(id, request),
         () -> {
           final var record = new GlobalListenerRecord();
-          if (request.type() != null) {
-            record.setType(request.type());
+          if (request.getType() != null) {
+            record.setType(request.getType());
           }
-          if (request.retries() != null) {
-            record.setRetries(request.retries());
+          if (request.getRetries() != null) {
+            record.setRetries(request.getRetries());
           }
-          if (request.afterNonGlobal() != null) {
-            record.setAfterNonGlobal(request.afterNonGlobal());
+          if (request.getAfterNonGlobal() != null) {
+            record.setAfterNonGlobal(request.getAfterNonGlobal());
           }
-          if (request.priority() != null) {
-            record.setPriority(request.priority());
+          if (request.getPriority() != null) {
+            record.setPriority(request.getPriority());
           }
           record.setSource(GlobalListenerSource.API);
-          if (request.eventTypes() != null) {
-            record.setEventTypes(request.eventTypes().stream().map(e -> e.getValue()).toList());
+          if (request.getEventTypes() != null) {
+            record.setEventTypes(request.getEventTypes().stream().map(e -> e.getValue()).toList());
           }
           record.setListenerType(GlobalListenerType.USER_TASK);
           record.setId(id);
@@ -118,8 +118,8 @@ public class GlobalListenerMapper {
   // Response mapping
   //
 
-  public GlobalTaskListenerContract toGlobalListenerResponse(final GlobalListenerRecord record) {
-    return GlobalTaskListenerContract.builder()
+  public GlobalTaskListener toGlobalListenerResponse(final GlobalListenerRecord record) {
+    return new GlobalTaskListener()
         .type(record.getType())
         .retries(record.getRetries())
         .afterNonGlobal(record.isAfterNonGlobal())
@@ -129,7 +129,6 @@ public class GlobalListenerMapper {
                 .map(GlobalTaskListenerEventTypeEnum::fromValue)
                 .toList())
         .id(record.getId())
-        .source(GlobalListenerSourceEnum.valueOf(record.getSource().name()))
-        .build();
+        .source(GlobalListenerSourceEnum.valueOf(record.getSource().name()));
   }
 }

@@ -10,12 +10,10 @@ package io.camunda.gateway.mapping.http.search.contract;
 import static io.camunda.gateway.mapping.http.util.AdvancedSearchFilterUtil.mapToOperations;
 import static java.util.Optional.ofNullable;
 
-import io.camunda.gateway.mapping.http.search.contract.generated.AuditLogActorTypeEnum;
-import io.camunda.gateway.mapping.http.search.contract.generated.BatchOperationFilterContract;
+import io.camunda.gateway.protocol.model.AuditLogActorTypeEnum;
 import io.camunda.search.filter.BatchOperationFilter;
 import io.camunda.search.filter.FilterBuilders;
 import org.jspecify.annotations.NullMarked;
-import org.jspecify.annotations.Nullable;
 
 @NullMarked
 public final class BatchOperationFilterMapper {
@@ -23,23 +21,23 @@ public final class BatchOperationFilterMapper {
   private BatchOperationFilterMapper() {}
 
   public static BatchOperationFilter toBatchOperationFilter(
-      @Nullable final BatchOperationFilterContract filter) {
+      final io.camunda.gateway.protocol.model.BatchOperationFilter filter) {
     final var builder = FilterBuilders.batchOperation();
     if (filter != null) {
-      ofNullable(filter.batchOperationKey())
+      ofNullable(filter.getBatchOperationKey())
           .map(mapToOperations(String.class))
           .ifPresent(builder::batchOperationKeyOperations);
-      ofNullable(filter.state())
+      ofNullable(filter.getState())
           .map(mapToOperations(String.class))
           .ifPresent(builder::stateOperations);
-      ofNullable(filter.operationType())
+      ofNullable(filter.getOperationType())
           .map(mapToOperations(String.class))
           .ifPresent(builder::operationTypeOperations);
-      ofNullable(filter.actorType())
+      ofNullable(filter.getActorType())
           .map(AuditLogActorTypeEnum::getValue)
           .map(String::toUpperCase)
           .ifPresent(builder::actorTypes);
-      ofNullable(filter.actorId())
+      ofNullable(filter.getActorId())
           .map(mapToOperations(String.class))
           .ifPresent(builder::actorIdOperations);
     }

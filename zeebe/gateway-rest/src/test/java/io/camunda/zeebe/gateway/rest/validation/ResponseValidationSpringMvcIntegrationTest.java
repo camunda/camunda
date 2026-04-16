@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.gateway.rest.validation;
 
-import io.camunda.gateway.mapping.http.search.contract.generated.LicenseResponseContract;
+import io.camunda.gateway.protocol.model.LicenseResponse;
 import io.camunda.zeebe.gateway.rest.RestTest;
 import jakarta.validation.constraints.NotNull;
 import org.junit.jupiter.api.Nested;
@@ -45,8 +45,12 @@ class ResponseValidationSpringMvcIntegrationTest {
   static class TestResponseValidationController {
 
     @GetMapping("/v2/test/response-validation/valid")
-    public LicenseResponseContract validResponse() {
-      return new LicenseResponseContract(true, "saas", true, "2025-12-31T23:59:59Z");
+    public LicenseResponse validResponse() {
+      return new LicenseResponse()
+          .validLicense(true)
+          .licenseType("saas")
+          .isCommercial(true)
+          .expiresAt("2025-12-31T23:59:59Z");
     }
 
     @GetMapping("/v2/test/response-validation/invalid")

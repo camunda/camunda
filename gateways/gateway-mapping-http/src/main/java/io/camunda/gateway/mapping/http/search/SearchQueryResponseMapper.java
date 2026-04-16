@@ -40,39 +40,39 @@ import io.camunda.gateway.mapping.http.search.contract.TenantContractAdapter;
 import io.camunda.gateway.mapping.http.search.contract.UserContractAdapter;
 import io.camunda.gateway.mapping.http.search.contract.UserTaskContractAdapter;
 import io.camunda.gateway.mapping.http.search.contract.VariableContractAdapter;
-import io.camunda.gateway.mapping.http.search.contract.generated.CamundaUserContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.DecisionInstanceContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.DecisionInstanceGetQueryContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GlobalJobStatisticsQueryContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.IncidentProcessInstanceStatisticsByDefinitionContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.IncidentProcessInstanceStatisticsByDefinitionQueryResultContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.IncidentProcessInstanceStatisticsByErrorContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.IncidentProcessInstanceStatisticsByErrorQueryResultContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.JobErrorStatisticsItemContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.JobErrorStatisticsQueryResultContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.JobTimeSeriesStatisticsItemContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.JobTimeSeriesStatisticsQueryResultContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.JobTypeStatisticsItemContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.JobTypeStatisticsQueryResultContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.JobWorkerStatisticsItemContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.JobWorkerStatisticsQueryResultContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.ProcessDefinitionElementStatisticsQueryResultContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.ProcessDefinitionInstanceStatisticsContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.ProcessDefinitionInstanceStatisticsQueryResultContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.ProcessDefinitionInstanceVersionStatisticsContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.ProcessDefinitionInstanceVersionStatisticsQueryResultContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.ProcessDefinitionMessageSubscriptionStatisticsContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.ProcessDefinitionMessageSubscriptionStatisticsQueryResultContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.ProcessElementStatisticsContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.ProcessInstanceElementStatisticsQueryContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.ProcessInstanceSequenceFlowContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.ProcessInstanceSequenceFlowsQueryContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.SearchQueryPageResponseContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.StatusMetricContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.TenantContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.UsageMetricsResponseContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.UsageMetricsResponseItemContract;
 import io.camunda.gateway.mapping.http.util.KeyUtil;
+import io.camunda.gateway.protocol.model.CamundaUser;
+import io.camunda.gateway.protocol.model.DecisionInstance;
+import io.camunda.gateway.protocol.model.DecisionInstanceGetQuery;
+import io.camunda.gateway.protocol.model.GlobalJobStatisticsQuery;
+import io.camunda.gateway.protocol.model.IncidentProcessInstanceStatisticsByDefinition;
+import io.camunda.gateway.protocol.model.IncidentProcessInstanceStatisticsByDefinitionQueryResult;
+import io.camunda.gateway.protocol.model.IncidentProcessInstanceStatisticsByError;
+import io.camunda.gateway.protocol.model.IncidentProcessInstanceStatisticsByErrorQueryResult;
+import io.camunda.gateway.protocol.model.JobErrorStatisticsItem;
+import io.camunda.gateway.protocol.model.JobErrorStatisticsQueryResult;
+import io.camunda.gateway.protocol.model.JobTimeSeriesStatisticsItem;
+import io.camunda.gateway.protocol.model.JobTimeSeriesStatisticsQueryResult;
+import io.camunda.gateway.protocol.model.JobTypeStatisticsItem;
+import io.camunda.gateway.protocol.model.JobTypeStatisticsQueryResult;
+import io.camunda.gateway.protocol.model.JobWorkerStatisticsItem;
+import io.camunda.gateway.protocol.model.JobWorkerStatisticsQueryResult;
+import io.camunda.gateway.protocol.model.ProcessDefinitionElementStatisticsQueryResult;
+import io.camunda.gateway.protocol.model.ProcessDefinitionInstanceStatistics;
+import io.camunda.gateway.protocol.model.ProcessDefinitionInstanceStatisticsQueryResult;
+import io.camunda.gateway.protocol.model.ProcessDefinitionInstanceVersionStatistics;
+import io.camunda.gateway.protocol.model.ProcessDefinitionInstanceVersionStatisticsQueryResult;
+import io.camunda.gateway.protocol.model.ProcessDefinitionMessageSubscriptionStatistics;
+import io.camunda.gateway.protocol.model.ProcessDefinitionMessageSubscriptionStatisticsQueryResult;
+import io.camunda.gateway.protocol.model.ProcessElementStatistics;
+import io.camunda.gateway.protocol.model.ProcessInstanceElementStatisticsQuery;
+import io.camunda.gateway.protocol.model.ProcessInstanceSequenceFlow;
+import io.camunda.gateway.protocol.model.ProcessInstanceSequenceFlowsQuery;
+import io.camunda.gateway.protocol.model.SearchQueryPageResponse;
+import io.camunda.gateway.protocol.model.StatusMetric;
+import io.camunda.gateway.protocol.model.Tenant;
+import io.camunda.gateway.protocol.model.UsageMetricsResponse;
+import io.camunda.gateway.protocol.model.UsageMetricsResponseItem;
 import io.camunda.search.entities.AuditLogEntity;
 import io.camunda.search.entities.AuthorizationEntity;
 import io.camunda.search.entities.BatchOperationEntity;
@@ -132,7 +132,7 @@ public final class SearchQueryResponseMapper {
 
   private SearchQueryResponseMapper() {}
 
-  public static UsageMetricsResponseContract toUsageMetricsResponse(
+  public static UsageMetricsResponse toUsageMetricsResponse(
       final SearchQueryResult<Tuple<UsageMetricStatisticsEntity, UsageMetricTUStatisticsEntity>>
           result,
       final boolean withTenants) {
@@ -140,7 +140,7 @@ public final class SearchQueryResponseMapper {
     final var statistics = tuple.getLeft();
     final var tuStatistics = tuple.getRight();
 
-    Map<String, UsageMetricsResponseItemContract> tenants = Map.of();
+    Map<String, UsageMetricsResponseItem> tenants = Map.of();
 
     if (withTenants) {
       final Map<String, UsageMetricStatisticsEntityTenant> tenants1 = statistics.tenants();
@@ -156,22 +156,22 @@ public final class SearchQueryResponseMapper {
                       key -> {
                         final UsageMetricStatisticsEntityTenant stats = tenants1.get(key);
                         final UsageMetricTUStatisticsEntityTenant tuStats = tenants2.get(key);
-                        return new UsageMetricsResponseItemContract(
-                            stats != null ? stats.rpi() : 0L,
-                            stats != null ? stats.edi() : 0L,
-                            tuStats != null ? tuStats.tu() : 0L);
+                        return new UsageMetricsResponseItem()
+                            .processInstances(stats != null ? stats.rpi() : 0L)
+                            .decisionInstances(stats != null ? stats.edi() : 0L)
+                            .assignees(tuStats != null ? tuStats.tu() : 0L);
                       }));
       if (!mergedTenants.isEmpty()) {
         tenants = mergedTenants;
       }
     }
 
-    return new UsageMetricsResponseContract(
-        statistics.totalRpi(),
-        statistics.totalEdi(),
-        tuStatistics.totalTu(),
-        statistics.at(),
-        tenants);
+    return new UsageMetricsResponse()
+        .processInstances(statistics.totalRpi())
+        .decisionInstances(statistics.totalEdi())
+        .assignees(tuStatistics.totalTu())
+        .activeTenants(statistics.at())
+        .tenants(tenants);
   }
 
   public static <T> T toProcessDefinitionSearchQueryResponse(
@@ -184,130 +184,145 @@ public final class SearchQueryResponseMapper {
             toStrictSearchQueryPage(result)));
   }
 
-  public static ProcessDefinitionElementStatisticsQueryResultContract
+  public static ProcessDefinitionElementStatisticsQueryResult
       toProcessDefinitionElementStatisticsResult(
           final List<ProcessFlowNodeStatisticsEntity> result) {
-    return new ProcessDefinitionElementStatisticsQueryResultContract(
-        result.stream().map(SearchQueryResponseMapper::toProcessElementStatisticsResult).toList());
+    return new ProcessDefinitionElementStatisticsQueryResult()
+        .items(
+            result.stream()
+                .map(SearchQueryResponseMapper::toProcessElementStatisticsResult)
+                .toList());
   }
 
-  public static ProcessInstanceElementStatisticsQueryContract
-      toProcessInstanceElementStatisticsResult(final List<ProcessFlowNodeStatisticsEntity> result) {
-    return new ProcessInstanceElementStatisticsQueryContract(
-        result.stream().map(SearchQueryResponseMapper::toProcessElementStatisticsResult).toList());
+  public static ProcessInstanceElementStatisticsQuery toProcessInstanceElementStatisticsResult(
+      final List<ProcessFlowNodeStatisticsEntity> result) {
+    return new ProcessInstanceElementStatisticsQuery()
+        .items(
+            result.stream()
+                .map(SearchQueryResponseMapper::toProcessElementStatisticsResult)
+                .toList());
   }
 
-  private static ProcessElementStatisticsContract toProcessElementStatisticsResult(
+  private static ProcessElementStatistics toProcessElementStatisticsResult(
       final ProcessFlowNodeStatisticsEntity result) {
-    return new ProcessElementStatisticsContract(
-        result.flowNodeId(),
-        result.active(),
-        result.canceled(),
-        result.incidents(),
-        result.completed());
+    return new ProcessElementStatistics()
+        .elementId(result.flowNodeId())
+        .active(result.active())
+        .canceled(result.canceled())
+        .incidents(result.incidents())
+        .completed(result.completed());
   }
 
-  public static ProcessDefinitionInstanceStatisticsQueryResultContract
+  public static ProcessDefinitionInstanceStatisticsQueryResult
       toProcessInstanceStatisticsQueryResult(
           final SearchQueryResult<ProcessDefinitionInstanceStatisticsEntity> result) {
-    return new ProcessDefinitionInstanceStatisticsQueryResultContract(
-        toPage(result),
-        result.items().stream()
-            .map(SearchQueryResponseMapper::toProcessInstanceStatisticsResult)
-            .toList());
+    return new ProcessDefinitionInstanceStatisticsQueryResult()
+        .page(toPage(result))
+        .items(
+            result.items().stream()
+                .map(SearchQueryResponseMapper::toProcessInstanceStatisticsResult)
+                .toList());
   }
 
-  public static ProcessDefinitionInstanceVersionStatisticsQueryResultContract
+  public static ProcessDefinitionInstanceVersionStatisticsQueryResult
       toProcessInstanceVersionStatisticsQueryResult(
           final SearchQueryResult<ProcessDefinitionInstanceVersionStatisticsEntity> result) {
-    return new ProcessDefinitionInstanceVersionStatisticsQueryResultContract(
-        toPage(result),
-        result.items().stream()
-            .map(SearchQueryResponseMapper::toProcessInstanceVersionStatisticsResult)
-            .toList());
+    return new ProcessDefinitionInstanceVersionStatisticsQueryResult()
+        .page(toPage(result))
+        .items(
+            result.items().stream()
+                .map(SearchQueryResponseMapper::toProcessInstanceVersionStatisticsResult)
+                .toList());
   }
 
-  private static ProcessDefinitionInstanceStatisticsContract toProcessInstanceStatisticsResult(
+  private static ProcessDefinitionInstanceStatistics toProcessInstanceStatisticsResult(
       final ProcessDefinitionInstanceStatisticsEntity result) {
-    return new ProcessDefinitionInstanceStatisticsContract(
-        result.processDefinitionId(),
-        result.tenantId(),
-        result.latestProcessDefinitionName(),
-        result.hasMultipleVersions(),
-        result.activeInstancesWithoutIncidentCount(),
-        result.activeInstancesWithIncidentCount());
+    return new ProcessDefinitionInstanceStatistics()
+        .processDefinitionId(result.processDefinitionId())
+        .tenantId(result.tenantId())
+        .latestProcessDefinitionName(result.latestProcessDefinitionName())
+        .hasMultipleVersions(result.hasMultipleVersions())
+        .activeInstancesWithoutIncidentCount(result.activeInstancesWithoutIncidentCount())
+        .activeInstancesWithIncidentCount(result.activeInstancesWithIncidentCount());
   }
 
-  private static ProcessDefinitionInstanceVersionStatisticsContract
+  private static ProcessDefinitionInstanceVersionStatistics
       toProcessInstanceVersionStatisticsResult(
           final ProcessDefinitionInstanceVersionStatisticsEntity result) {
-    return new ProcessDefinitionInstanceVersionStatisticsContract(
-        result.processDefinitionId(),
-        KeyUtil.keyToString(result.processDefinitionKey()),
-        result.processDefinitionName(),
-        result.tenantId(),
-        result.processDefinitionVersion(),
-        result.activeInstancesWithIncidentCount(),
-        result.activeInstancesWithoutIncidentCount());
+    return new ProcessDefinitionInstanceVersionStatistics()
+        .processDefinitionId(result.processDefinitionId())
+        .processDefinitionKey(KeyUtil.keyToString(result.processDefinitionKey()))
+        .processDefinitionName(result.processDefinitionName())
+        .tenantId(result.tenantId())
+        .processDefinitionVersion(result.processDefinitionVersion())
+        .activeInstancesWithIncidentCount(result.activeInstancesWithIncidentCount())
+        .activeInstancesWithoutIncidentCount(result.activeInstancesWithoutIncidentCount());
   }
 
-  public static IncidentProcessInstanceStatisticsByErrorQueryResultContract
+  public static IncidentProcessInstanceStatisticsByErrorQueryResult
       toIncidentProcessInstanceStatisticsByErrorResult(
           final SearchQueryResult<IncidentProcessInstanceStatisticsByErrorEntity> result) {
-    return new IncidentProcessInstanceStatisticsByErrorQueryResultContract(
-        toPage(result),
-        result.items().stream()
-            .map(SearchQueryResponseMapper::toIncidentProcessInstanceStatisticsByErrorResult)
-            .toList());
+    return new IncidentProcessInstanceStatisticsByErrorQueryResult()
+        .page(toPage(result))
+        .items(
+            result.items().stream()
+                .map(SearchQueryResponseMapper::toIncidentProcessInstanceStatisticsByErrorResult)
+                .toList());
   }
 
-  private static IncidentProcessInstanceStatisticsByErrorContract
+  private static IncidentProcessInstanceStatisticsByError
       toIncidentProcessInstanceStatisticsByErrorResult(
           final IncidentProcessInstanceStatisticsByErrorEntity result) {
-    return new IncidentProcessInstanceStatisticsByErrorContract(
-        result.errorHashCode(), result.errorMessage(), result.activeInstancesWithErrorCount());
+    return new IncidentProcessInstanceStatisticsByError()
+        .errorHashCode(result.errorHashCode())
+        .errorMessage(result.errorMessage())
+        .activeInstancesWithErrorCount(result.activeInstancesWithErrorCount());
   }
 
-  public static IncidentProcessInstanceStatisticsByDefinitionQueryResultContract
+  public static IncidentProcessInstanceStatisticsByDefinitionQueryResult
       toIncidentProcessInstanceStatisticsByDefinitionQueryResult(
           final SearchQueryResult<IncidentProcessInstanceStatisticsByDefinitionEntity> result) {
-    return new IncidentProcessInstanceStatisticsByDefinitionQueryResultContract(
-        toPage(result),
-        result.items().stream()
-            .map(SearchQueryResponseMapper::toIncidentProcessInstanceStatisticsByDefinitionResult)
-            .toList());
+    return new IncidentProcessInstanceStatisticsByDefinitionQueryResult()
+        .page(toPage(result))
+        .items(
+            result.items().stream()
+                .map(
+                    SearchQueryResponseMapper
+                        ::toIncidentProcessInstanceStatisticsByDefinitionResult)
+                .toList());
   }
 
-  private static IncidentProcessInstanceStatisticsByDefinitionContract
+  private static IncidentProcessInstanceStatisticsByDefinition
       toIncidentProcessInstanceStatisticsByDefinitionResult(
           final IncidentProcessInstanceStatisticsByDefinitionEntity result) {
-    return new IncidentProcessInstanceStatisticsByDefinitionContract(
-        result.processDefinitionId(),
-        KeyUtil.keyToString(result.processDefinitionKey()),
-        result.processDefinitionName(),
-        result.processDefinitionVersion(),
-        result.tenantId(),
-        result.activeInstancesWithErrorCount());
+    return new IncidentProcessInstanceStatisticsByDefinition()
+        .processDefinitionId(result.processDefinitionId())
+        .processDefinitionKey(KeyUtil.keyToString(result.processDefinitionKey()))
+        .processDefinitionName(result.processDefinitionName())
+        .processDefinitionVersion(result.processDefinitionVersion())
+        .tenantId(result.tenantId())
+        .activeInstancesWithErrorCount(result.activeInstancesWithErrorCount());
   }
 
-  public static ProcessInstanceSequenceFlowsQueryContract toSequenceFlowsResult(
+  public static ProcessInstanceSequenceFlowsQuery toSequenceFlowsResult(
       final List<SequenceFlowEntity> result) {
-    return new ProcessInstanceSequenceFlowsQueryContract(
-        result.stream()
-            .map(SearchQueryResponseMapper::toProcessInstanceSequenceFlowResult)
-            .toList());
+    return new ProcessInstanceSequenceFlowsQuery()
+        .items(
+            result.stream()
+                .map(SearchQueryResponseMapper::toProcessInstanceSequenceFlowResult)
+                .toList());
   }
 
-  private static ProcessInstanceSequenceFlowContract toProcessInstanceSequenceFlowResult(
+  private static ProcessInstanceSequenceFlow toProcessInstanceSequenceFlowResult(
       final SequenceFlowEntity result) {
-    return new ProcessInstanceSequenceFlowContract(
-        result.sequenceFlowId(),
-        KeyUtil.keyToString(result.processInstanceKey()),
-        KeyUtil.keyToString(result.rootProcessInstanceKey()),
-        KeyUtil.keyToString(result.processDefinitionKey()),
-        result.processDefinitionId(),
-        result.flowNodeId(),
-        result.tenantId());
+    return new ProcessInstanceSequenceFlow()
+        .sequenceFlowId(result.sequenceFlowId())
+        .processInstanceKey(KeyUtil.keyToString(result.processInstanceKey()))
+        .rootProcessInstanceKey(KeyUtil.keyToString(result.rootProcessInstanceKey()))
+        .processDefinitionKey(KeyUtil.keyToString(result.processDefinitionKey()))
+        .processDefinitionId(result.processDefinitionId())
+        .elementId(result.flowNodeId())
+        .tenantId(result.tenantId());
   }
 
   public static <T> T toProcessInstanceSearchQueryResponse(
@@ -568,9 +583,12 @@ public final class SearchQueryResponseMapper {
             toStrictSearchQueryPage(result)));
   }
 
-  private static SearchQueryPageResponseContract toPage(final SearchQueryResult<?> result) {
-    return new SearchQueryPageResponseContract(
-        result.total(), result.hasMoreTotalItems(), result.startCursor(), result.endCursor());
+  private static SearchQueryPageResponse toPage(final SearchQueryResult<?> result) {
+    return new SearchQueryPageResponse()
+        .totalItems(result.total())
+        .hasMoreTotalItems(result.hasMoreTotalItems())
+        .startCursor(result.startCursor())
+        .endCursor(result.endCursor());
   }
 
   private static StrictSearchQueryPage toStrictSearchQueryPage(final SearchQueryResult<?> result) {
@@ -657,20 +675,26 @@ public final class SearchQueryResponseMapper {
     return adaptType(UserContractAdapter.adapt(entity));
   }
 
-  public static CamundaUserContract toCamundaUser(final CamundaUserDTO camundaUser) {
-    return new CamundaUserContract(
-        camundaUser.username(),
-        camundaUser.displayName(),
-        camundaUser.email(),
-        camundaUser.authorizedComponents(),
-        camundaUser.tenants().stream()
-            .map(t -> new TenantContract(t.name(), t.tenantId(), t.description()))
-            .toList(),
-        camundaUser.groups(),
-        camundaUser.roles(),
-        camundaUser.salesPlanType(),
-        toCamundaUserResultC8Links(camundaUser.c8Links()),
-        camundaUser.canLogout());
+  public static CamundaUser toCamundaUser(final CamundaUserDTO camundaUser) {
+    return new CamundaUser()
+        .username(camundaUser.username())
+        .displayName(camundaUser.displayName())
+        .email(camundaUser.email())
+        .authorizedComponents(camundaUser.authorizedComponents())
+        .tenants(
+            camundaUser.tenants().stream()
+                .map(
+                    t ->
+                        new Tenant()
+                            .name(t.name())
+                            .tenantId(t.tenantId())
+                            .description(t.description()))
+                .toList())
+        .groups(camundaUser.groups())
+        .roles(camundaUser.roles())
+        .salesPlanType(camundaUser.salesPlanType())
+        .c8Links(toCamundaUserResultC8Links(camundaUser.c8Links()))
+        .canLogout(camundaUser.canLogout());
   }
 
   private static Map<String, String> toCamundaUserResultC8Links(
@@ -679,7 +703,7 @@ public final class SearchQueryResponseMapper {
         .collect(toMap(e -> e.getKey().getValue(), Map.Entry::getValue, (v1, v2) -> v1));
   }
 
-  private static List<DecisionInstanceContract> toDecisionInstances(
+  private static List<DecisionInstance> toDecisionInstances(
       final List<DecisionInstanceEntity> instances) {
     return DecisionInstanceContractAdapter.toSearchProjections(instances);
   }
@@ -688,7 +712,7 @@ public final class SearchQueryResponseMapper {
     return adaptType(DecisionInstanceContractAdapter.toSearchProjection(entity));
   }
 
-  public static DecisionInstanceGetQueryContract toDecisionInstanceGetQueryResponse(
+  public static DecisionInstanceGetQuery toDecisionInstanceGetQueryResponse(
       final DecisionInstanceEntity entity) {
     return DecisionInstanceContractAdapter.toGetProjection(entity);
   }
@@ -770,147 +794,164 @@ public final class SearchQueryResponseMapper {
     return adaptType(ProcessInstanceCallHierarchyEntryContractAdapter.adapt(processInstanceEntity));
   }
 
-  private static List<ProcessDefinitionMessageSubscriptionStatisticsContract>
+  private static List<ProcessDefinitionMessageSubscriptionStatistics>
       toProcessDefinitionMessageSubscriptionStatisticsItems(
           final List<ProcessDefinitionMessageSubscriptionStatisticsEntity> entities) {
     return entities.stream()
         .map(
             e ->
-                new ProcessDefinitionMessageSubscriptionStatisticsContract(
-                    e.processDefinitionId(),
-                    e.tenantId(),
-                    KeyUtil.keyToString(e.processDefinitionKey()),
-                    e.processInstancesWithActiveSubscriptions(),
-                    e.activeSubscriptions()))
+                new ProcessDefinitionMessageSubscriptionStatistics()
+                    .processDefinitionId(e.processDefinitionId())
+                    .tenantId(e.tenantId())
+                    .processDefinitionKey(KeyUtil.keyToString(e.processDefinitionKey()))
+                    .processInstancesWithActiveSubscriptions(
+                        e.processInstancesWithActiveSubscriptions())
+                    .activeSubscriptions(e.activeSubscriptions()))
         .toList();
   }
 
-  public static ProcessDefinitionMessageSubscriptionStatisticsQueryResultContract
+  public static ProcessDefinitionMessageSubscriptionStatisticsQueryResult
       toProcessDefinitionMessageSubscriptionStatisticsQueryResponse(
           final SearchQueryResult<ProcessDefinitionMessageSubscriptionStatisticsEntity> result) {
-    return new ProcessDefinitionMessageSubscriptionStatisticsQueryResultContract(
-        toPage(result),
-        ofNullable(result.items())
-            .map(SearchQueryResponseMapper::toProcessDefinitionMessageSubscriptionStatisticsItems)
-            .orElseGet(Collections::emptyList));
+    return new ProcessDefinitionMessageSubscriptionStatisticsQueryResult()
+        .page(toPage(result))
+        .items(
+            ofNullable(result.items())
+                .map(
+                    SearchQueryResponseMapper
+                        ::toProcessDefinitionMessageSubscriptionStatisticsItems)
+                .orElseGet(Collections::emptyList));
   }
 
-  public static GlobalJobStatisticsQueryContract toGlobalJobStatisticsQueryResult(
+  public static GlobalJobStatisticsQuery toGlobalJobStatisticsQueryResult(
       final GlobalJobStatisticsEntity entity) {
     if (entity == null) {
-      return new GlobalJobStatisticsQueryContract(
-          new StatusMetricContract(0L, null),
-          new StatusMetricContract(0L, null),
-          new StatusMetricContract(0L, null),
-          false);
+      return new GlobalJobStatisticsQuery()
+          .created(new StatusMetric().count(0L).lastUpdatedAt(null))
+          .completed(new StatusMetric().count(0L).lastUpdatedAt(null))
+          .failed(new StatusMetric().count(0L).lastUpdatedAt(null))
+          .isIncomplete(false);
     }
 
-    return new GlobalJobStatisticsQueryContract(
-        toStatusMetric(entity.created()),
-        toStatusMetric(entity.completed()),
-        toStatusMetric(entity.failed()),
-        entity.isIncomplete());
+    return new GlobalJobStatisticsQuery()
+        .created(toStatusMetric(entity.created()))
+        .completed(toStatusMetric(entity.completed()))
+        .failed(toStatusMetric(entity.failed()))
+        .isIncomplete(entity.isIncomplete());
   }
 
-  public static JobTypeStatisticsQueryResultContract toJobTypeStatisticsQueryResult(
+  public static JobTypeStatisticsQueryResult toJobTypeStatisticsQueryResult(
       final SearchQueryResult<JobTypeStatisticsEntity> result) {
-    return new JobTypeStatisticsQueryResultContract(
-        toPage(result),
-        result.items().stream().map(SearchQueryResponseMapper::toJobTypeStatisticsItem).toList());
+    return new JobTypeStatisticsQueryResult()
+        .page(toPage(result))
+        .items(
+            result.items().stream()
+                .map(SearchQueryResponseMapper::toJobTypeStatisticsItem)
+                .toList());
   }
 
-  private static JobTypeStatisticsItemContract toJobTypeStatisticsItem(
+  private static JobTypeStatisticsItem toJobTypeStatisticsItem(
       final JobTypeStatisticsEntity entity) {
     if (entity == null) {
-      return new JobTypeStatisticsItemContract(
-          "",
-          new StatusMetricContract(0L, null),
-          new StatusMetricContract(0L, null),
-          new StatusMetricContract(0L, null),
-          0);
+      return new JobTypeStatisticsItem()
+          .jobType("")
+          .created(new StatusMetric().count(0L).lastUpdatedAt(null))
+          .completed(new StatusMetric().count(0L).lastUpdatedAt(null))
+          .failed(new StatusMetric().count(0L).lastUpdatedAt(null))
+          .workers(0);
     }
 
-    return new JobTypeStatisticsItemContract(
-        entity.jobType(),
-        toStatusMetric(entity.created()),
-        toStatusMetric(entity.completed()),
-        toStatusMetric(entity.failed()),
-        entity.workers());
+    return new JobTypeStatisticsItem()
+        .jobType(entity.jobType())
+        .created(toStatusMetric(entity.created()))
+        .completed(toStatusMetric(entity.completed()))
+        .failed(toStatusMetric(entity.failed()))
+        .workers(entity.workers());
   }
 
-  public static JobWorkerStatisticsQueryResultContract toJobWorkerStatisticsQueryResult(
+  public static JobWorkerStatisticsQueryResult toJobWorkerStatisticsQueryResult(
       final SearchQueryResult<JobWorkerStatisticsEntity> result) {
-    return new JobWorkerStatisticsQueryResultContract(
-        toPage(result),
-        result.items().stream().map(SearchQueryResponseMapper::toJobWorkerStatisticsItem).toList());
+    return new JobWorkerStatisticsQueryResult()
+        .page(toPage(result))
+        .items(
+            result.items().stream()
+                .map(SearchQueryResponseMapper::toJobWorkerStatisticsItem)
+                .toList());
   }
 
-  private static JobWorkerStatisticsItemContract toJobWorkerStatisticsItem(
+  private static JobWorkerStatisticsItem toJobWorkerStatisticsItem(
       final JobWorkerStatisticsEntity entity) {
     if (entity == null) {
-      return new JobWorkerStatisticsItemContract(
-          "",
-          new StatusMetricContract(0L, null),
-          new StatusMetricContract(0L, null),
-          new StatusMetricContract(0L, null));
+      return new JobWorkerStatisticsItem()
+          .worker("")
+          .created(new StatusMetric().count(0L).lastUpdatedAt(null))
+          .completed(new StatusMetric().count(0L).lastUpdatedAt(null))
+          .failed(new StatusMetric().count(0L).lastUpdatedAt(null));
     }
 
-    return new JobWorkerStatisticsItemContract(
-        entity.worker(),
-        toStatusMetric(entity.created()),
-        toStatusMetric(entity.completed()),
-        toStatusMetric(entity.failed()));
+    return new JobWorkerStatisticsItem()
+        .worker(entity.worker())
+        .created(toStatusMetric(entity.created()))
+        .completed(toStatusMetric(entity.completed()))
+        .failed(toStatusMetric(entity.failed()));
   }
 
-  public static JobTimeSeriesStatisticsQueryResultContract toJobTimeSeriesStatisticsQueryResult(
+  public static JobTimeSeriesStatisticsQueryResult toJobTimeSeriesStatisticsQueryResult(
       final SearchQueryResult<JobTimeSeriesStatisticsEntity> result) {
-    return new JobTimeSeriesStatisticsQueryResultContract(
-        toPage(result),
-        result.items().stream()
-            .map(SearchQueryResponseMapper::toJobTimeSeriesStatisticsItem)
-            .toList());
+    return new JobTimeSeriesStatisticsQueryResult()
+        .page(toPage(result))
+        .items(
+            result.items().stream()
+                .map(SearchQueryResponseMapper::toJobTimeSeriesStatisticsItem)
+                .toList());
   }
 
-  private static JobTimeSeriesStatisticsItemContract toJobTimeSeriesStatisticsItem(
+  private static JobTimeSeriesStatisticsItem toJobTimeSeriesStatisticsItem(
       final JobTimeSeriesStatisticsEntity entity) {
     if (entity == null) {
-      return new JobTimeSeriesStatisticsItemContract(
-          "",
-          new StatusMetricContract(0L, null),
-          new StatusMetricContract(0L, null),
-          new StatusMetricContract(0L, null));
+      return new JobTimeSeriesStatisticsItem()
+          .time("")
+          .created(new StatusMetric().count(0L).lastUpdatedAt(null))
+          .completed(new StatusMetric().count(0L).lastUpdatedAt(null))
+          .failed(new StatusMetric().count(0L).lastUpdatedAt(null));
     }
 
-    return new JobTimeSeriesStatisticsItemContract(
-        formatDate(entity.time()),
-        toStatusMetric(entity.created()),
-        toStatusMetric(entity.completed()),
-        toStatusMetric(entity.failed()));
+    return new JobTimeSeriesStatisticsItem()
+        .time(formatDate(entity.time()))
+        .created(toStatusMetric(entity.created()))
+        .completed(toStatusMetric(entity.completed()))
+        .failed(toStatusMetric(entity.failed()));
   }
 
-  public static JobErrorStatisticsQueryResultContract toJobErrorStatisticsQueryResult(
+  public static JobErrorStatisticsQueryResult toJobErrorStatisticsQueryResult(
       final SearchQueryResult<JobErrorStatisticsEntity> result) {
-    return new JobErrorStatisticsQueryResultContract(
-        toPage(result),
-        result.items().stream().map(SearchQueryResponseMapper::toJobErrorStatisticsItem).toList());
+    return new JobErrorStatisticsQueryResult()
+        .page(toPage(result))
+        .items(
+            result.items().stream()
+                .map(SearchQueryResponseMapper::toJobErrorStatisticsItem)
+                .toList());
   }
 
-  private static JobErrorStatisticsItemContract toJobErrorStatisticsItem(
+  private static JobErrorStatisticsItem toJobErrorStatisticsItem(
       final JobErrorStatisticsEntity entity) {
     if (entity == null) {
-      return new JobErrorStatisticsItemContract("", "", 0);
+      return new JobErrorStatisticsItem().errorCode("").errorMessage("").workers(0);
     }
 
-    return new JobErrorStatisticsItemContract(
-        ofNullable(entity.errorCode()).orElse(""), entity.errorMessage(), entity.workers());
+    return new JobErrorStatisticsItem()
+        .errorCode(ofNullable(entity.errorCode()).orElse(""))
+        .errorMessage(entity.errorMessage())
+        .workers(entity.workers());
   }
 
-  private static StatusMetricContract toStatusMetric(
-      final GlobalJobStatisticsEntity.StatusMetric metric) {
+  private static StatusMetric toStatusMetric(final GlobalJobStatisticsEntity.StatusMetric metric) {
     if (metric == null) {
-      return new StatusMetricContract(0L, null);
+      return new StatusMetric().count(0L).lastUpdatedAt(null);
     }
-    return new StatusMetricContract(metric.count(), formatDate(metric.lastUpdatedAt()));
+    return new StatusMetric()
+        .count(metric.count())
+        .lastUpdatedAt(formatDate(metric.lastUpdatedAt()));
   }
 
   public static <T> T toGlobalTaskListenerSearchQueryResponse(

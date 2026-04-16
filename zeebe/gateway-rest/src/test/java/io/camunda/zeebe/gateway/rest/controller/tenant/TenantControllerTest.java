@@ -16,8 +16,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
-import io.camunda.gateway.mapping.http.search.contract.generated.TenantCreateRequestContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.TenantUpdateRequestContract;
+import io.camunda.gateway.protocol.model.TenantCreateRequest;
+import io.camunda.gateway.protocol.model.TenantUpdateRequest;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.security.validation.IdentifierValidator;
@@ -112,7 +112,11 @@ public class TenantControllerTest {
           .uri(TENANT_BASE_URL)
           .accept(MediaType.APPLICATION_JSON)
           .contentType(MediaType.APPLICATION_JSON)
-          .bodyValue(new TenantCreateRequestContract(id, tenantName, tenantDescription))
+          .bodyValue(
+              new TenantCreateRequest()
+                  .tenantId(id)
+                  .name(tenantName)
+                  .description(tenantDescription))
           .exchange()
           .expectStatus()
           .isCreated();
@@ -143,7 +147,11 @@ public class TenantControllerTest {
           .uri(TENANT_BASE_URL)
           .accept(MediaType.APPLICATION_JSON)
           .contentType(MediaType.APPLICATION_JSON)
-          .bodyValue(new TenantCreateRequestContract(tenantId, tenantName, tenantDescription))
+          .bodyValue(
+              new TenantCreateRequest()
+                  .tenantId(tenantId)
+                  .name(tenantName)
+                  .description(tenantDescription))
           .exchange()
           .expectStatus()
           .isCreated()
@@ -289,7 +297,7 @@ public class TenantControllerTest {
           .uri("%s/%s".formatted(TENANT_BASE_URL, tenantId))
           .accept(MediaType.APPLICATION_JSON)
           .contentType(MediaType.APPLICATION_JSON)
-          .bodyValue(new TenantUpdateRequestContract(tenantName, tenantDescription))
+          .bodyValue(new TenantUpdateRequest().name(tenantName).description(tenantDescription))
           .exchange()
           .expectStatus()
           .isOk()
@@ -365,7 +373,7 @@ public class TenantControllerTest {
           .uri(path)
           .accept(MediaType.APPLICATION_JSON)
           .contentType(MediaType.APPLICATION_JSON)
-          .bodyValue(new TenantUpdateRequestContract(tenantName, tenantDescription))
+          .bodyValue(new TenantUpdateRequest().name(tenantName).description(tenantDescription))
           .exchange()
           .expectStatus()
           .isNotFound();

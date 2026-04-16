@@ -11,9 +11,9 @@ import static io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper.mapErrorToRes
 
 import io.camunda.gateway.mapping.http.search.SearchQueryRequestMapper;
 import io.camunda.gateway.mapping.http.search.SearchQueryResponseMapper;
-import io.camunda.gateway.mapping.http.search.contract.generated.ElementInstanceSearchQueryRequestContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.IncidentSearchQueryRequestContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.SetVariableRequestContract;
+import io.camunda.gateway.protocol.model.ElementInstanceSearchQuery;
+import io.camunda.gateway.protocol.model.IncidentSearchQuery;
+import io.camunda.gateway.protocol.model.SetVariableRequest;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.ElementInstanceServices;
 import io.camunda.zeebe.gateway.rest.controller.generated.ElementInstanceServiceAdapter;
@@ -34,7 +34,7 @@ public class DefaultElementInstanceServiceAdapter implements ElementInstanceServ
 
   @Override
   public ResponseEntity<Object> searchElementInstances(
-      final ElementInstanceSearchQueryRequestContract elementInstanceSearchQueryStrict,
+      final ElementInstanceSearchQuery elementInstanceSearchQueryStrict,
       final CamundaAuthentication authentication) {
     return SearchQueryRequestMapper.toElementInstanceQueryStrict(elementInstanceSearchQueryStrict)
         .fold(
@@ -64,23 +64,23 @@ public class DefaultElementInstanceServiceAdapter implements ElementInstanceServ
   @Override
   public ResponseEntity<Void> createElementInstanceVariables(
       final Long elementInstanceKey,
-      final SetVariableRequestContract setVariableRequestStrict,
+      final SetVariableRequest setVariableRequestStrict,
       final CamundaAuthentication authentication) {
     return RequestExecutor.executeSync(
         () ->
             elementInstanceServices.setVariables(
                 new ElementInstanceServices.SetVariablesRequest(
                     elementInstanceKey,
-                    setVariableRequestStrict.variables(),
-                    setVariableRequestStrict.local(),
-                    setVariableRequestStrict.operationReference()),
+                    setVariableRequestStrict.getVariables(),
+                    setVariableRequestStrict.getLocal(),
+                    setVariableRequestStrict.getOperationReference()),
                 authentication));
   }
 
   @Override
   public ResponseEntity<Object> searchElementInstanceIncidents(
       final Long elementInstanceKey,
-      final IncidentSearchQueryRequestContract incidentSearchQueryStrict,
+      final IncidentSearchQuery incidentSearchQueryStrict,
       final CamundaAuthentication authentication) {
     return SearchQueryRequestMapper.toIncidentQueryStrict(incidentSearchQueryStrict)
         .fold(

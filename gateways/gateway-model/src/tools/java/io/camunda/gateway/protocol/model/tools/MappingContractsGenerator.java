@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.gateway.mapping.http.tools;
+package io.camunda.gateway.protocol.model.tools;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -31,8 +31,7 @@ import java.util.stream.Stream;
  */
 public class MappingContractsGenerator {
 
-  private static final String TARGET_PACKAGE = "io.camunda.gateway.mapping.http.search.contract.generated";
-  private static final String SEARCH_PACKAGE = "io.camunda.gateway.mapping.http.search";
+  private static final String TARGET_PACKAGE = "io.camunda.gateway.protocol.model";
   /** Schema names for which a strict contract DTO has been generated (populated at startup). */
   private static final Set<String> AVAILABLE_STRICT_CONTRACTS = new LinkedHashSet<>();
 
@@ -54,7 +53,7 @@ public class MappingContractsGenerator {
   public static void main(String[] args) throws Exception {
     final var repoRoot = Path.of(args[0]);
     final var specDir = repoRoot.resolve("zeebe/gateway-protocol/src/main/proto/v2").normalize();
-    final var outBase = repoRoot.resolve("gateways/gateway-mapping-http/target/generated-sources");
+    final var outBase = repoRoot.resolve("gateways/gateway-model/target/generated-sources");
 
     if (!Files.isDirectory(specDir)) {
       throw new IllegalStateException("OpenAPI spec directory does not exist: " + specDir);
@@ -182,8 +181,8 @@ public class MappingContractsGenerator {
         // Filter property schema: generate wrapper record + deserializer + upgraded sealed interface.
         filterPropertySchemas.put(parentSchemaName, parentSchema);
         final var advancedFilterDtoClass = dtoClassName(branchNames.getFirst());
-        final var wrapperName = sealedName.replace("Contract", "PlainValueContract");
-        final var deserializerName = sealedName.replace("Contract", "Deserializer");
+        final var wrapperName = sealedName + "PlainValue";
+        final var deserializerName = sealedName + "Deserializer";
         final var primitiveJavaType = filterPropertyPrimitiveJavaType(parentSchema.node());
         final var isLongKey = isLongKeyFilterProperty(parentSchemaName);
         final var enumSchemaName = resolveFilterPropertyEnumSchema(
@@ -270,7 +269,7 @@ public class MappingContractsGenerator {
 
         if (hasDiscriminators) {
           // Generate custom deserializer with helpful error messages.
-          final var deserializerName = sealedName.replace("Contract", "Deserializer");
+          final var deserializerName = sealedName + "Deserializer";
           final var deserializerFile = packagePath.resolve(deserializerName + ".java");
           Files.writeString(
               deserializerFile,
@@ -330,11 +329,11 @@ public class MappingContractsGenerator {
     final var searchQuerySchemas = discoverSearchQuerySchemas(allSchemas);
     System.out.println(searchQuerySchemas.size() + " search query request schemas discovered from spec.");
 
-    final var flatPageFile = packagePath.resolve("SearchQueryPageRequestContract.java");
+    final var flatPageFile = packagePath.resolve("SearchQueryPageRequest.java");
     Files.writeString(flatPageFile, renderFlatPageRequestDto(), StandardCharsets.UTF_8);
     System.out.println("generated: " + repoRoot.relativize(flatPageFile));
 
-    final var offsetPageFile = packagePath.resolve("OffsetPaginationContract.java");
+    final var offsetPageFile = packagePath.resolve("OffsetPagination.java");
     Files.writeString(offsetPageFile, renderOffsetPaginationDto(), StandardCharsets.UTF_8);
     System.out.println("generated: " + repoRoot.relativize(offsetPageFile));
 
@@ -356,38 +355,10 @@ public class MappingContractsGenerator {
     }
     System.out.println(searchRequestDtoCount + " search query request DTOs generated.");
 
-    // Phase 3.7: Generate filter mappers for search query entities.
-    // For each search query with a filter schema, generate a mapper that converts
-    // the generated strict-contract filter DTO to the domain filter object.
-    //
-    // Only entities whose domain filter builders follow the Operations convention
-    // (filter property → builder::fieldOperations) are generated here. Entities
-    // with naming mismatches, old-style list builders, or custom validation needs
-    // are handled by hand-written validator/mapper files (Phase 2 of slice 5).
-    int filterMapperCount = 0;
-    for (var sqe : searchQuerySchemas) {
-      if (sqe.filterSchemaName() == null) continue;
-      if (FILTER_MAPPER_SKIP.contains(sqe.filterSchemaName())) continue;
-
-      final var filterSchema = findSchemaByName(allSchemas, sqe.filterSchemaName());
-      if (filterSchema == null) {
-        System.err.println("WARNING: filter schema '" + sqe.filterSchemaName()
-            + "' not found, skipping filter mapper generation");
-        continue;
-      }
-
-      final var filterFields = toContractFields(filterSchema, allSchemas);
-      final var filterDtoClass = dtoClassName(sqe.filterSchemaName());
-      final var mapperClassName = sqe.filterSchemaName() + "Mapper";
-      final var mapperFile = packagePath.resolve(mapperClassName + ".java");
-      Files.writeString(mapperFile, renderFilterMapper(
-          mapperClassName, sqe, filterSchema, filterDtoClass, filterFields, allSchemas),
-          StandardCharsets.UTF_8);
-      System.out.println("generated: " + repoRoot.relativize(mapperFile));
-      filterMapperCount++;
-    }
-    System.out.println(filterMapperCount + " filter mapper(s) generated.");
-    System.out.println(FILTER_MAPPER_SKIP.size() + " filter mapper(s) skipped (need hand-written mappers).");
+    // Phase 3.7: Filter mapper generation is disabled in gateway-model.
+    // Filter mappers depend on gateway-mapping-http internals (AdvancedSearchFilterUtil,
+    // domain filter builders) and belong in the mapping layer, not the model layer.
+    // They are generated by a separate generator or hand-written in gateway-mapping-http.
 
   }
 
@@ -599,7 +570,7 @@ public class MappingContractsGenerator {
       PaginationType paginationType) {
 
     String requestDtoName() {
-      return entityName + "SearchQueryRequestContract";
+      return schemaName;
     }
   }
 
@@ -816,7 +787,7 @@ import jakarta.annotation.Generated;
 @JsonSubTypes({
 %s
 })
-@Generated(value = "io.camunda.gateway.mapping.http.tools.MappingContractsGenerator")
+@Generated(value = "io.camunda.gateway.protocol.model.tools.MappingContractsGenerator")
 public sealed interface %s permits
         %s {
 }
@@ -851,7 +822,7 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import jakarta.annotation.Generated;
 
 @JsonDeserialize(using = %s.class)
-@Generated(value = "io.camunda.gateway.mapping.http.tools.MappingContractsGenerator")
+@Generated(value = "io.camunda.gateway.protocol.model.tools.MappingContractsGenerator")
 public sealed interface %s permits
         %s {
 }
@@ -911,7 +882,7 @@ import com.fasterxml.jackson.databind.exc.ValueInstantiationException;
 import jakarta.annotation.Generated;
 import java.io.IOException;
 
-@Generated(value = "io.camunda.gateway.mapping.http.tools.MappingContractsGenerator")
+@Generated(value = "io.camunda.gateway.protocol.model.tools.MappingContractsGenerator")
 public final class %s extends JsonDeserializer<%s> {
 
   @Override
@@ -953,7 +924,7 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import jakarta.annotation.Generated;
 
 @JsonDeserialize(using = %s.class)
-@Generated(value = "io.camunda.gateway.mapping.http.tools.MappingContractsGenerator")
+@Generated(value = "io.camunda.gateway.protocol.model.tools.MappingContractsGenerator")
 public sealed interface %s permits
         %s,
         %s {
@@ -991,7 +962,7 @@ import org.jspecify.annotations.NullMarked;
  */
 @NullMarked
 @JsonDeserialize(using = JsonDeserializer.None.class)
-@Generated(value = "io.camunda.gateway.mapping.http.tools.MappingContractsGenerator")
+@Generated(value = "io.camunda.gateway.protocol.model.tools.MappingContractsGenerator")
 public record %s(%s value) implements %s {
 }
 """
@@ -1082,7 +1053,7 @@ import com.fasterxml.jackson.databind.exc.InvalidFormatException;
 import jakarta.annotation.Generated;
 import java.io.IOException;
 %s
-@Generated(value = "io.camunda.gateway.mapping.http.tools.MappingContractsGenerator")
+@Generated(value = "io.camunda.gateway.protocol.model.tools.MappingContractsGenerator")
 public final class %s extends JsonDeserializer<%s> {
 %s
   @Override
@@ -1137,7 +1108,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
 import jakarta.annotation.Generated;
 
-@Generated(value = "io.camunda.gateway.mapping.http.tools.MappingContractsGenerator")
+@Generated(value = "io.camunda.gateway.protocol.model.tools.MappingContractsGenerator")
 public enum %s {
 
 %s;
@@ -1243,9 +1214,9 @@ public enum %s {
     // SearchQuery collisions (e.g. FooSearchQuery/FooSearchQueryResult) are handled
     // separately by SEARCH_REQUEST_DTO_MAP and always strip "Result".
     if (schemaName.endsWith("Result") && !RETAINED_RESULT_SCHEMAS.contains(schemaName)) {
-      return schemaName.substring(0, schemaName.length() - 6) + "Contract";
+      return schemaName.substring(0, schemaName.length() - 6);
     }
-    return schemaName + "Contract";
+    return schemaName;
   }
 
   private static void cleanupPreviouslyGeneratedFiles(Path packagePath) throws IOException {
@@ -1354,14 +1325,9 @@ public enum %s {
       String sourceFile, String schemaName, String dtoClass, List<ContractField> fields,
       String sealedParent, boolean emitConstraints) {
     final boolean hasNullable = fields.stream().anyMatch(MappingContractsGenerator::isNullAssignableField) || !fields.isEmpty();
-    final boolean hasRequiredNonNullable = fields.stream().anyMatch(f -> f.required() && !f.nullable());
-    final var coercionFields = fields.stream().filter(ContractField::requiresCoercion).toList();
-    final boolean hasLongKeyCoercion = !coercionFields.isEmpty();
-    final boolean hasListCoercion = fields.stream().anyMatch(ContractField::hasStrictListType);
     final boolean hasListType = fields.stream().anyMatch(f -> f.javaType().contains("java.util.List"));
     final boolean hasSetType = fields.stream().anyMatch(f -> f.javaType().contains("java.util.Set"));
     final boolean hasMapType = fields.stream().anyMatch(f -> f.javaType().contains("java.util.Map"));
-    final boolean hasJsonProperty = fields.stream().anyMatch(f -> !f.name().equals(f.identifier()));
     final boolean hasInlineEnumValues = fields.stream().anyMatch(f -> !f.inlineEnumValues().isEmpty());
     final boolean hasSchema = fields.stream().anyMatch(f -> f.description() != null || f.defaultValue() != null);
     final String imports =
@@ -1375,227 +1341,87 @@ public enum %s {
             ? "import com.fasterxml.jackson.databind.JsonDeserializer;\n"
                 + "import com.fasterxml.jackson.databind.annotation.JsonDeserialize;\n"
             : "")
-        + "import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;\n"
-        + (hasLongKeyCoercion ? "import io.camunda.gateway.mapping.http.util.KeyUtil;\n" : "")
         + (hasSchema ? "import io.swagger.v3.oas.annotations.media.Schema;\n" : "")
         + "import jakarta.annotation.Generated;\n"
         + (hasListType ? "import java.util.List;\n" : "")
         + (hasSetType ? "import java.util.Set;\n" : "")
         + (hasMapType ? "import java.util.Map;\n" : "")
-        + (hasListCoercion || hasRequiredNonNullable ? "import java.util.ArrayList;\n" : "")
         + "import org.jspecify.annotations.NullMarked;\n"
         + (hasNullable ? "import org.jspecify.annotations.Nullable;\n" : "");
 
-    final String renderedFields =
+    // --- Render private fields ---
+    final String renderedPrivateFields =
         fields.stream()
             .map(
                 f -> {
-                    final var schemaParts = new ArrayList<String>();
-                    if (f.description() != null) {
-                      schemaParts.add("description = \"" + escapeJavaString(f.description()) + "\"");
-                    }
-                    if (f.defaultValue() != null) {
-                      schemaParts.add("defaultValue = \"" + escapeJavaString(f.defaultValue()) + "\"");
-                    }
-                    final var schemaAnnotation = schemaParts.isEmpty() ? ""
-                        : "@Schema(" + String.join(", ", schemaParts) + ") ";
-                    final var jsonProp = "@JsonProperty(\"" + f.name() + "\") ";
-                    final var fieldType = f.effectiveJavaType();
-                    return "    "
-                        + schemaAnnotation
-                        + jsonProp
-                      + (isNullAssignableField(f) ? annotateNullable(fieldType) : fieldType)
+                    final var fieldType = simplifyCollectionTypeName(f.effectiveJavaType());
+                    return "  private "
+                        + (isNullAssignableField(f) ? "@Nullable " : "")
+                        + fieldType
                         + " "
-                        + f.identifier();
+                        + f.identifier()
+                        + ";";
                 })
-            .collect(Collectors.joining(",\n"));
+            .collect(Collectors.joining("\n"));
 
-    final boolean hasConstraints = fields.stream().anyMatch(f -> f.constraints().hasAny());
-    final String constructorBody;
-    {
-      final var checks = new ArrayList<String>();
+    // --- Render fluent setter + getter + setter per field ---
+    final var fieldMethods = new StringBuilder();
+    for (var f : fields) {
+      final var fieldType = simplifyCollectionTypeName(f.effectiveJavaType());
+      final var nullable = isNullAssignableField(f);
+      final var getterName = "get" + capitalizeIdentifier(f.identifier());
+      final var setterName = "set" + capitalizeIdentifier(f.identifier());
 
-      // Null checks for required non-nullable fields — aggregate all missing fields.
-      final var requiredNonNullFields = fields.stream()
-          .filter(f -> f.required() && !f.nullable())
-          .toList();
-      if (!requiredNonNullFields.isEmpty()) {
-        checks.add("    var missingFields = new ArrayList<String>();");
-        for (var f : requiredNonNullFields) {
-          final var message = schemaName.contains("SortRequest") && "field".equals(f.name())
-              ? "Sort field must not be null."
-              : "No " + f.name() + " provided.";
-          checks.add(
-              "    if (" + f.identifier() + " == null) missingFields.add(\"" + message + "\");");
-        }
-        checks.add(
-            "    if (!missingFields.isEmpty()) throw new IllegalArgumentException(String.join(\" \", missingFields));");
+      // Fluent setter
+      fieldMethods.append("\n  public ").append(dtoClass).append(" ")
+          .append(f.identifier()).append("(")
+          .append(nullable ? "@Nullable " : "")
+          .append(fieldType).append(" ").append(f.identifier()).append(") {\n");
+      fieldMethods.append("    this.").append(f.identifier()).append(" = ").append(f.identifier()).append(";\n");
+      fieldMethods.append("    return this;\n");
+      fieldMethods.append("  }\n");
+
+      // Getter with @Schema and @JsonProperty
+      final var schemaParts = new ArrayList<String>();
+      schemaParts.add("name = \"" + f.name() + "\"");
+      if (f.description() != null) {
+        schemaParts.add("description = \"" + escapeJavaString(f.description()) + "\"");
       }
-
-      // Spec-derived constraint checks (only for request schemas, not response DTOs).
-      if (emitConstraints) {
-        for (var f : fields) {
-        final var c = f.constraints();
-        if (!c.hasAny()) continue;
-        final var id = f.identifier();
-        final var name = f.name();
-        final var guard = f.nullable() ? "if (" + id + " != null) " : "";
-
-        if (c.minLength() != null && "String".equals(f.javaType())) {
-          if (c.minLength() == 1) {
-            checks.add(
-                "    " + guard + "if (" + id + ".isBlank()) throw new IllegalArgumentException(\""
-                    + name + " must not be blank\");");
-          } else {
-            checks.add(
-                "    " + guard + "if (" + id + ".length() < " + c.minLength()
-                    + ") throw new IllegalArgumentException(\""
-                    + name + " must have at least " + c.minLength() + " characters\");");
-          }
-        }
-        if (c.maxLength() != null && "String".equals(f.javaType())) {
-          checks.add(
-              "    " + guard + "if (" + id + ".length() > " + c.maxLength()
-                  + ") throw new IllegalArgumentException(\""
-                  + "The provided " + name + " exceeds the limit of " + c.maxLength() + " characters.\");");
-        }
-        if (c.pattern() != null && "String".equals(f.javaType())) {
-          final var escaped = c.pattern().replace("\\", "\\\\").replace("\"", "\\\"");
-          checks.add(
-              "    " + guard + "if (!" + id + ".matches(\"" + escaped
-                  + "\")) throw new IllegalArgumentException(\""
-                  + "The provided " + name + " contains illegal characters."
-                  + " It must match the pattern '" + escaped + "'.\");");
-        }
-        if (c.minimum() != null
-            && ("Long".equals(f.javaType()) || "Integer".equals(f.javaType()))) {
-          final var suffix = "Long".equals(f.javaType()) || c.minimum() > Integer.MAX_VALUE ? "L" : "";
-          final var mustBe = c.minimum() == 0 ? "not negative" : c.minimum() == 1 ? "> 0" : "at least " + c.minimum();
-          checks.add(
-              "    " + guard + "if (" + id + " < " + c.minimum() + suffix
-                  + ") throw new IllegalArgumentException("
-                  + "\"The value for " + name + " is '\" + " + id + " + \"' but must be "
-                  + mustBe + ".\");");
-        }
-        if (c.maximum() != null
-            && ("Long".equals(f.javaType()) || "Integer".equals(f.javaType()))) {
-          final var suffix = "Long".equals(f.javaType()) || c.maximum() > Integer.MAX_VALUE ? "L" : "";
-          checks.add(
-              "    " + guard + "if (" + id + " > " + c.maximum() + suffix
-                  + ") throw new IllegalArgumentException("
-                  + "\"The value for " + name + " is '\" + " + id + " + \"' but must be "
-                  + "at most " + c.maximum() + ".\");");
-        }
-        if (c.minItems() != null && f.javaType().startsWith("java.util.List")) {
-          checks.add(
-              "    " + guard + "if (" + id + ".size() < " + c.minItems()
-                  + ") throw new IllegalArgumentException(\""
-                  + name + " must have at least " + c.minItems() + " items\");");
-        }
-        if (c.maxItems() != null
-            && (f.javaType().startsWith("java.util.List")
-                || f.javaType().startsWith("java.util.Set"))) {
-          checks.add(
-              "    " + guard + "if (" + id + ".size() > " + c.maxItems()
-                  + ") throw new IllegalArgumentException(\""
-                  + name + " must have at most " + c.maxItems() + " items\");");
-        }
-        }
+      if (f.defaultValue() != null) {
+        schemaParts.add("defaultValue = \"" + escapeJavaString(f.defaultValue()) + "\"");
       }
+      final var schemaAnnotation = "@Schema(" + String.join(", ", schemaParts) + ")";
 
-      // Apply spec-declared defaults for nullable fields that were not provided.
-      for (var f : fields) {
-        if (f.defaultValue() != null && f.nullable()) {
-          final var literal = toJavaDefaultLiteral(f.defaultValue(), f.javaType());
-          if (literal != null) {
-            checks.add(
-                "    if (" + f.identifier() + " == null) " + f.identifier() + " = " + literal + ";");
-          }
-        }
-      }
+      fieldMethods.append("\n  ").append(schemaAnnotation).append("\n");
+      fieldMethods.append("  @JsonProperty(\"").append(f.name()).append("\")\n");
+      fieldMethods.append("  public ")
+          .append(nullable ? "@Nullable " : "")
+          .append(fieldType).append(" ").append(getterName).append("() {\n");
+      fieldMethods.append("    return ").append(f.identifier()).append(";\n");
+      fieldMethods.append("  }\n");
 
-      // Coerce null List/Set fields to empty collections. The old protocol POJOs initialized
-      // all list fields to new ArrayList<>(), so null was never serialized. With
-      // @JsonInclude(ALWAYS), a null list would serialize as JSON null instead of [].
-      // Skip required+non-nullable fields (those throw on null above) and nullable fields
-      // (null carries semantic meaning, e.g. "don't change" in Changeset).
-      for (var f : fields) {
-        if (f.required() && !f.nullable()) continue;
-        if (f.nullable()) continue;
-        if (f.javaType().startsWith("java.util.List")) {
-          checks.add(
-              "    if (" + f.identifier() + " == null) " + f.identifier()
-                  + " = java.util.List.of();");
-        } else if (f.javaType().startsWith("java.util.Set")) {
-          checks.add(
-              "    if (" + f.identifier() + " == null) " + f.identifier()
-                  + " = java.util.Set.of();");
-        }
-      }
-
-      constructorBody = String.join("\n", checks);
+      // Setter with @JsonProperty
+      fieldMethods.append("\n  @JsonProperty(\"").append(f.name()).append("\")\n");
+      fieldMethods.append("  public void ").append(setterName).append("(")
+          .append(nullable ? "@Nullable " : "")
+          .append(fieldType).append(" ").append(f.identifier()).append(") {\n");
+      fieldMethods.append("    this.").append(f.identifier()).append(" = ").append(f.identifier()).append(";\n");
+      fieldMethods.append("  }\n");
     }
 
-    final String fieldReferences = renderFieldReferences(schemaName, fields);
-
-    final String coercionHelpers =
-        coercionFields.stream()
-        .map(
-          field ->
-            field.longKeyCoercion()
-              ? renderLongKeyCoercionHelper(field)
-              : renderStructuralCoercionHelper(field))
-            .collect(Collectors.joining("\n\n"));
-    // For request schemas, generate typed long accessors for LongKey fields so callers
-    // can use e.g. request.processDefinitionKeyAsLong() instead of Long.parseLong().
-    final String longKeyAccessors = emitConstraints ? renderLongKeyAccessors(fields) : "";
-    // For request schemas, generate xxxOrDefault() accessors for nullable fields so callers
-    // can use e.g. request.variablesOrDefault() instead of request.variables() != null ? ... : Map.of().
-    final String orDefaultAccessors = emitConstraints ? renderOrDefaultAccessors(fields) : "";
-    final String builderCode = renderBuilder(schemaName, dtoClass, fields);
-
-    final String recordBody;
-    if (constructorBody.isBlank()
-      && fieldReferences.isBlank()
-        && coercionHelpers.isBlank()
-        && longKeyAccessors.isBlank()
-        && orDefaultAccessors.isBlank()
-        && builderCode.isBlank()
-        && !hasInlineEnumValues) {
-      recordBody = "";
-    } else {
-      final var sections = new ArrayList<String>();
-      if (!constructorBody.isBlank()) {
-        sections.add("  public " + dtoClass + " {\n" + constructorBody + "\n  }");
+    // Render nested enums for fields with inline enum values
+    final var nestedEnums = new StringBuilder();
+    for (var f : fields) {
+      if (!f.inlineEnumValues().isEmpty()) {
+        nestedEnums.append("\n").append(renderNestedEnum(f.effectiveJavaType(), f.inlineEnumValues())).append("\n");
       }
-      if (!coercionHelpers.isBlank()) {
-        sections.add(coercionHelpers);
-      }
-      if (!longKeyAccessors.isBlank()) {
-        sections.add(longKeyAccessors);
-      }
-      if (!orDefaultAccessors.isBlank()) {
-        sections.add(orDefaultAccessors);
-      }
-      if (!builderCode.isBlank()) {
-        sections.add(builderCode);
-      }
-      if (!fieldReferences.isBlank()) {
-        sections.add(fieldReferences);
-      }
-      // Render nested enums for fields with inline enum values
-      for (var f : fields) {
-        if (!f.inlineEnumValues().isEmpty()) {
-          sections.add(renderNestedEnum(f.effectiveJavaType(), f.inlineEnumValues()));
-        }
-      }
-      recordBody = "\n" + String.join("\n\n", sections) + "\n";
     }
 
     final String implementsClause = sealedParent != null ? " implements " + sealedParent : "";
-    // When a record implements a sealed interface with @JsonDeserialize, Jackson inherits
+    final String finalModifier = sealedParent != null ? "final " : "";
+    // When a class implements a sealed interface with @JsonDeserialize, Jackson inherits
     // the custom deserializer. Adding @JsonDeserialize(using = None.class) on the concrete
-    // record prevents this inheritance, which would otherwise cause infinite recursion.
+    // class prevents this inheritance, which would otherwise cause infinite recursion.
     final String jsonDeserializeAnnotation =
         sealedParent != null ? "\n@JsonDeserialize(using = JsonDeserializer.None.class)" : "";
 
@@ -1614,12 +1440,17 @@ package %s;
 
 %s
 
-@JsonInclude(JsonInclude.Include.ALWAYS)
+@JsonInclude(JsonInclude.Include.NON_NULL)
 @NullMarked%s
-@Generated(value = "io.camunda.gateway.mapping.http.tools.MappingContractsGenerator")
-public record %s(
+@Generated(value = "io.camunda.gateway.protocol.model.tools.MappingContractsGenerator")
+public %sclass %s%s {
+
 %s
-)%s {
+
+  public %s() {
+    super();
+  }
+%s
 %s
 }
 """
@@ -1629,10 +1460,13 @@ public record %s(
       TARGET_PACKAGE,
       imports,
       jsonDeserializeAnnotation,
+      finalModifier,
       dtoClass,
-        renderedFields,
       implementsClause,
-      recordBody);
+      renderedPrivateFields,
+      dtoClass,
+      fieldMethods.toString(),
+      nestedEnums.toString());
   }
 
   private static String renderFieldReferences(
@@ -3343,19 +3177,74 @@ public record %s(
 package %s;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.annotation.Generated;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @NullMarked
-@Generated(value = "io.camunda.gateway.mapping.http.tools.MappingContractsGenerator")
-public record SearchQueryPageRequestContract(
-    @Nullable Integer limit,
-    @Nullable Integer from,
-    @Nullable String after,
-    @Nullable String before
-) {}
+@Generated(value = "io.camunda.gateway.protocol.model.tools.MappingContractsGenerator")
+public class SearchQueryPageRequest {
+
+  private @Nullable Integer limit;
+  private @Nullable Integer from;
+  private @Nullable String after;
+  private @Nullable String before;
+
+  public SearchQueryPageRequest() {
+    super();
+  }
+
+  public SearchQueryPageRequest limit(@Nullable Integer limit) {
+    this.limit = limit;
+    return this;
+  }
+
+  @Schema(name = "limit")
+  @JsonProperty("limit")
+  public @Nullable Integer getLimit() { return limit; }
+
+  @JsonProperty("limit")
+  public void setLimit(@Nullable Integer limit) { this.limit = limit; }
+
+  public SearchQueryPageRequest from(@Nullable Integer from) {
+    this.from = from;
+    return this;
+  }
+
+  @Schema(name = "from")
+  @JsonProperty("from")
+  public @Nullable Integer getFrom() { return from; }
+
+  @JsonProperty("from")
+  public void setFrom(@Nullable Integer from) { this.from = from; }
+
+  public SearchQueryPageRequest after(@Nullable String after) {
+    this.after = after;
+    return this;
+  }
+
+  @Schema(name = "after")
+  @JsonProperty("after")
+  public @Nullable String getAfter() { return after; }
+
+  @JsonProperty("after")
+  public void setAfter(@Nullable String after) { this.after = after; }
+
+  public SearchQueryPageRequest before(@Nullable String before) {
+    this.before = before;
+    return this;
+  }
+
+  @Schema(name = "before")
+  @JsonProperty("before")
+  public @Nullable String getBefore() { return before; }
+
+  @JsonProperty("before")
+  public void setBefore(@Nullable String before) { this.before = before; }
+}
 """.formatted(TARGET_PACKAGE);
   }
 
@@ -3373,17 +3262,48 @@ public record SearchQueryPageRequestContract(
 package %s;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.annotation.Generated;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @NullMarked
-@Generated(value = "io.camunda.gateway.mapping.http.tools.MappingContractsGenerator")
-public record OffsetPaginationContract(
-    @Nullable Integer limit,
-    @Nullable Integer from
-) {}
+@Generated(value = "io.camunda.gateway.protocol.model.tools.MappingContractsGenerator")
+public class OffsetPagination {
+
+  private @Nullable Integer limit;
+  private @Nullable Integer from;
+
+  public OffsetPagination() {
+    super();
+  }
+
+  public OffsetPagination limit(@Nullable Integer limit) {
+    this.limit = limit;
+    return this;
+  }
+
+  @Schema(name = "limit")
+  @JsonProperty("limit")
+  public @Nullable Integer getLimit() { return limit; }
+
+  @JsonProperty("limit")
+  public void setLimit(@Nullable Integer limit) { this.limit = limit; }
+
+  public OffsetPagination from(@Nullable Integer from) {
+    this.from = from;
+    return this;
+  }
+
+  @Schema(name = "from")
+  @JsonProperty("from")
+  public @Nullable Integer getFrom() { return from; }
+
+  @JsonProperty("from")
+  public void setFrom(@Nullable Integer from) { this.from = from; }
+}
 """.formatted(TARGET_PACKAGE);
   }
 
@@ -3400,8 +3320,24 @@ public record OffsetPaginationContract(
     }
 
     final var pageType = paginationType == PaginationType.OFFSET_ONLY
-        ? "OffsetPaginationContract"
-        : "SearchQueryPageRequestContract";
+        ? "OffsetPagination"
+        : "SearchQueryPageRequest";
+
+    final var sortType = sortContractClass != null
+        ? "List<" + sortContractClass + ">"
+        : "List<Object>";
+
+    final String filterSimple;
+    final String filterType;
+    if (filterContractClass != null) {
+      filterSimple = filterContractClass.contains(".")
+          ? filterContractClass.substring(filterContractClass.lastIndexOf('.') + 1)
+          : filterContractClass;
+      filterType = filterSimple;
+    } else {
+      filterSimple = null;
+      filterType = "Object";
+    }
 
     sb.append("""
 /*
@@ -3416,6 +3352,8 @@ public record OffsetPaginationContract(
 package %s;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.annotation.Generated;
 import java.util.List;
 import org.jspecify.annotations.NullMarked;
@@ -3423,28 +3361,44 @@ import org.jspecify.annotations.Nullable;%s
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @NullMarked
-@Generated(value = "io.camunda.gateway.mapping.http.tools.MappingContractsGenerator")
-public record %s(
-    @Nullable %s page,
-""".formatted(TARGET_PACKAGE, filterImport, className, pageType));
+@Generated(value = "io.camunda.gateway.protocol.model.tools.MappingContractsGenerator")
+public class %s {
 
-    if (sortContractClass != null) {
-      sb.append("    @Nullable List<").append(sortContractClass).append("> sort,\n");
-    } else {
-      sb.append("    @Nullable List<Object> sort,\n");
-    }
+  private @Nullable %s page;
+  private @Nullable %s sort;
+  private @Nullable %s filter;
 
-    if (filterContractClass != null) {
-      // filterContractClass is an FQN — extract simple name for the field type
-      var filterSimple = filterContractClass.contains(".")
-          ? filterContractClass.substring(filterContractClass.lastIndexOf('.') + 1)
-          : filterContractClass;
-      sb.append("    @Nullable ").append(filterSimple).append(" filter\n");
-    } else {
-      sb.append("    @Nullable Object filter\n");
-    }
+  public %s() {
+    super();
+  }
 
-    sb.append(") {}\n");
+""".formatted(TARGET_PACKAGE, filterImport, className, pageType, sortType, filterType, className));
+
+    // page field
+    sb.append("  public ").append(className).append(" page(@Nullable ").append(pageType).append(" page) {\n");
+    sb.append("    this.page = page;\n    return this;\n  }\n\n");
+    sb.append("  @Schema(name = \"page\")\n  @JsonProperty(\"page\")\n");
+    sb.append("  public @Nullable ").append(pageType).append(" getPage() { return page; }\n\n");
+    sb.append("  @JsonProperty(\"page\")\n");
+    sb.append("  public void setPage(@Nullable ").append(pageType).append(" page) { this.page = page; }\n\n");
+
+    // sort field
+    sb.append("  public ").append(className).append(" sort(@Nullable ").append(sortType).append(" sort) {\n");
+    sb.append("    this.sort = sort;\n    return this;\n  }\n\n");
+    sb.append("  @Schema(name = \"sort\")\n  @JsonProperty(\"sort\")\n");
+    sb.append("  public @Nullable ").append(sortType).append(" getSort() { return sort; }\n\n");
+    sb.append("  @JsonProperty(\"sort\")\n");
+    sb.append("  public void setSort(@Nullable ").append(sortType).append(" sort) { this.sort = sort; }\n\n");
+
+    // filter field
+    sb.append("  public ").append(className).append(" filter(@Nullable ").append(filterType).append(" filter) {\n");
+    sb.append("    this.filter = filter;\n    return this;\n  }\n\n");
+    sb.append("  @Schema(name = \"filter\")\n  @JsonProperty(\"filter\")\n");
+    sb.append("  public @Nullable ").append(filterType).append(" getFilter() { return filter; }\n\n");
+    sb.append("  @JsonProperty(\"filter\")\n");
+    sb.append("  public void setFilter(@Nullable ").append(filterType).append(" filter) { this.filter = filter; }\n");
+
+    sb.append("}\n");
     return sb.toString();
   }
 
@@ -3639,13 +3593,13 @@ public record %s(
             ? override.opType() : detectedType;
         if (opType.contains("OffsetDateTime")) needsOffsetDateTime = true;
         fieldMappings.add(
-            "    ofNullable(filter." + id + "())"
+            "    ofNullable(filter.get" + capitalizeIdentifier(id) + "())"
                 + ".map(mapToOperations(" + simpleTypeName(opType) + ".class))"
                 + ".ifPresent(builder::" + builderBase + "Operations);");
       } else if ("Boolean".equals(f.javaType())) {
         // Boolean field → direct
         fieldMappings.add(
-            "    ofNullable(filter." + id + "()).ifPresent(builder::" + builderBase + ");");
+            "    ofNullable(filter.get" + capitalizeIdentifier(id) + "()).ifPresent(builder::" + builderBase + ");");
       } else if (typeInfo != null
           && (typeInfo.strictObjectType() || typeInfo.strictListType())) {
         // Complex nested type (e.g., $or, variables) — requires hand-written validator
@@ -3659,7 +3613,7 @@ public record %s(
       } else {
         // Simple scalar (String, Integer, etc.) — direct value
         fieldMappings.add(
-            "    ofNullable(filter." + id + "()).ifPresent(builder::" + builderBase + ");");
+            "    ofNullable(filter.get" + capitalizeIdentifier(id) + "()).ifPresent(builder::" + builderBase + ");");
       }
     }
 
@@ -3673,7 +3627,7 @@ public record %s(
     sb.append("package ").append(TARGET_PACKAGE).append(";\n\n");
 
     // Imports
-    sb.append("import static io.camunda.gateway.mapping.http.util.AdvancedSearchFilterUtil.mapToOperations;\n");
+    sb.append("import static io.camunda.gateway.protocol.model.AdvancedSearchFilterUtil.mapToOperations;\n");
     sb.append("import static java.util.Optional.ofNullable;\n\n");
     sb.append("import ").append(domainFilterFqn).append(";\n");
     sb.append("import io.camunda.search.filter.FilterBuilders;\n");
@@ -3681,12 +3635,10 @@ public record %s(
     if (needsOffsetDateTime) {
       sb.append("import java.time.OffsetDateTime;\n");
     }
-    sb.append("import org.jspecify.annotations.NullMarked;\n");
     sb.append("import org.jspecify.annotations.Nullable;\n\n");
 
     // Class
     sb.append("@Generated(value = \"MappingContractsGenerator\")\n");
-    sb.append("@NullMarked\n");
     sb.append("public final class ").append(mapperClassName).append(" {\n\n");
     sb.append("  private ").append(mapperClassName).append("() {}\n\n");
 

@@ -16,16 +16,16 @@ import static io.camunda.gateway.mcp.tool.ToolDescriptions.VARIABLE_VALUE_RETURN
 import io.camunda.gateway.mapping.http.GatewayErrorMapper;
 import io.camunda.gateway.mapping.http.search.SearchQueryRequestMapper;
 import io.camunda.gateway.mapping.http.search.SearchQueryResponseMapper;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedStringFilterPropertyPlainValueStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedStringFilterPropertyStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedVariableFilterStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedVariableKeyFilterPropertyPlainValueStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedVariableSearchQueryRequestStrictContract;
 import io.camunda.gateway.mcp.config.tool.CamundaMcpTool;
 import io.camunda.gateway.mcp.config.tool.McpToolParamsUnwrapped;
 import io.camunda.gateway.mcp.mapper.CallToolResultMapper;
 import io.camunda.gateway.mcp.model.McpVariableFilter;
 import io.camunda.gateway.mcp.model.McpVariableSearchQuery;
+import io.camunda.gateway.protocol.model.StringFilterProperty;
+import io.camunda.gateway.protocol.model.StringFilterPropertyPlainValue;
+import io.camunda.gateway.protocol.model.VariableFilter;
+import io.camunda.gateway.protocol.model.VariableKeyFilterPropertyPlainValue;
+import io.camunda.gateway.protocol.model.VariableSearchQuery;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.VariableServices;
 import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
@@ -59,7 +59,7 @@ public class VariableTools {
   public CallToolResult searchVariables(
       @McpToolParamsUnwrapped @Valid final McpVariableSearchQuery query) {
     try {
-      final var strictRequest = toStrictContract(query);
+      final var strictRequest = toStrict(query);
       final var variableSearchQuery = SearchQueryRequestMapper.toVariableQueryStrict(strictRequest);
       if (variableSearchQuery.isLeft()) {
         return CallToolResultMapper.mapProblemToResult(variableSearchQuery.getLeft());
@@ -101,37 +101,38 @@ public class VariableTools {
 
   // -- Facade → Strict contract conversion --
 
-  private static GeneratedVariableSearchQueryRequestStrictContract toStrictContract(
-      final McpVariableSearchQuery query) {
-    return new GeneratedVariableSearchQueryRequestStrictContract(
-        query.page(), query.sort(), toStrictFilter(query.filter()));
+  private static VariableSearchQuery toStrict(final McpVariableSearchQuery query) {
+    return new VariableSearchQuery()
+        .page(query.page())
+        .sort(query.sort())
+        .filter(toStrictFilter(query.filter()));
   }
 
-  private static GeneratedVariableFilterStrictContract toStrictFilter(
-      final McpVariableFilter filter) {
+  private static VariableFilter toStrictFilter(final McpVariableFilter filter) {
     if (filter == null) {
       return null;
     }
-    return new GeneratedVariableFilterStrictContract(
-        wrapString(filter.name()),
-        wrapString(filter.value()),
-        null, // tenantId — not exposed in MCP
-        filter.isTruncated(),
-        filter.variableKey() != null
-            ? new GeneratedVariableKeyFilterPropertyPlainValueStrictContract(filter.variableKey())
-            : null,
-        filter.scopeKey() != null
-            ? new io.camunda.gateway.mapping.http.search.contract.generated
-                .GeneratedScopeKeyFilterPropertyPlainValueStrictContract(filter.scopeKey())
-            : null,
-        filter.processInstanceKey() != null
-            ? new io.camunda.gateway.mapping.http.search.contract.generated
-                .GeneratedProcessInstanceKeyFilterPropertyPlainValueStrictContract(
-                filter.processInstanceKey())
-            : null);
+    return new VariableFilter()
+        .name(wrapString(filter.name()))
+        .value(wrapString(filter.value()))
+        .isTruncated(filter.isTruncated())
+        .variableKey(
+            filter.variableKey() != null
+                ? new VariableKeyFilterPropertyPlainValue(filter.variableKey())
+                : null)
+        .scopeKey(
+            filter.scopeKey() != null
+                ? new io.camunda.gateway.protocol.model.ScopeKeyFilterPropertyPlainValue(
+                    filter.scopeKey())
+                : null)
+        .processInstanceKey(
+            filter.processInstanceKey() != null
+                ? new io.camunda.gateway.protocol.model.ProcessInstanceKeyFilterPropertyPlainValue(
+                    filter.processInstanceKey())
+                : null);
   }
 
-  private static GeneratedStringFilterPropertyStrictContract wrapString(final String value) {
-    return value != null ? new GeneratedStringFilterPropertyPlainValueStrictContract(value) : null;
+  private static StringFilterProperty wrapString(final String value) {
+    return value != null ? new StringFilterPropertyPlainValue(value) : null;
   }
 }

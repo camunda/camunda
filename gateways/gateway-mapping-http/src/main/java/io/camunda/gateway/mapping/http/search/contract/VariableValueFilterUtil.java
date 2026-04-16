@@ -11,9 +11,9 @@ import static io.camunda.gateway.mapping.http.util.AdvancedSearchFilterUtil.mapT
 import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_NULL_VARIABLE_NAME;
 import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_NULL_VARIABLE_VALUE;
 
-import io.camunda.gateway.mapping.http.search.contract.generated.AdvancedStringFilterContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.StringFilterPropertyContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.VariableValueFilterPropertyContract;
+import io.camunda.gateway.protocol.model.AdvancedStringFilter;
+import io.camunda.gateway.protocol.model.StringFilterProperty;
+import io.camunda.gateway.protocol.model.VariableValueFilterProperty;
 import io.camunda.search.filter.Operation;
 import io.camunda.search.filter.VariableValueFilter;
 import io.camunda.zeebe.util.Either;
@@ -30,9 +30,8 @@ public final class VariableValueFilterUtil {
   private VariableValueFilterUtil() {}
 
   public static Either<List<String>, List<VariableValueFilter>> toStrictVariableValueFilters(
-      final @Nullable List<VariableValueFilterPropertyContract> filters) {
-    final List<VariableValueFilterPropertyContract> safeFilters =
-        filters == null ? List.of() : filters;
+      final @Nullable List<VariableValueFilterProperty> filters) {
+    final List<VariableValueFilterProperty> safeFilters = filters == null ? List.of() : filters;
     if (CollectionUtils.isEmpty(safeFilters)) {
       return Either.right(List.of());
     }
@@ -42,14 +41,15 @@ public final class VariableValueFilterUtil {
         safeFilters.stream()
             .flatMap(
                 filter -> {
-                  if (filter.name() == null) {
+                  if (filter.getName() == null) {
                     validationErrors.add(ERROR_MESSAGE_NULL_VARIABLE_NAME);
                   }
-                  if (filter.value() == null || isEmptyStrictStringFilter(filter.value())) {
+                  if (filter.getValue() == null || isEmptyStrictStringFilter(filter.getValue())) {
                     validationErrors.add(ERROR_MESSAGE_NULL_VARIABLE_VALUE);
                   }
                   return validationErrors.isEmpty()
-                      ? toVariableValueFiltersFromObject(filter.name(), filter.value()).stream()
+                      ? toVariableValueFiltersFromObject(filter.getName(), filter.getValue())
+                          .stream()
                       : Stream.empty();
                 })
             .toList();
@@ -58,14 +58,14 @@ public final class VariableValueFilterUtil {
         : Either.left(validationErrors);
   }
 
-  private static boolean isEmptyStrictStringFilter(final StringFilterPropertyContract value) {
-    return value instanceof AdvancedStringFilterContract adv
-        && adv.$eq() == null
-        && adv.$neq() == null
-        && adv.$exists() == null
-        && adv.$in() == null
-        && adv.$notIn() == null
-        && adv.$like() == null;
+  private static boolean isEmptyStrictStringFilter(final StringFilterProperty value) {
+    return value instanceof AdvancedStringFilter adv
+        && adv.get$eq() == null
+        && adv.get$neq() == null
+        && adv.get$exists() == null
+        && adv.get$in() == null
+        && adv.get$notIn() == null
+        && adv.get$like() == null;
   }
 
   private static List<VariableValueFilter> toVariableValueFiltersFromObject(

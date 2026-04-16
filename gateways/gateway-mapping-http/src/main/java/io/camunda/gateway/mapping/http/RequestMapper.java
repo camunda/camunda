@@ -30,41 +30,6 @@ import io.camunda.gateway.mapping.http.MappedCommandRequests.UpdateJobRequest;
 import io.camunda.gateway.mapping.http.MappedCommandRequests.UpdateUserTaskRequest;
 import io.camunda.gateway.mapping.http.search.contract.DecisionInstanceFilterMapper;
 import io.camunda.gateway.mapping.http.search.contract.ProcessInstanceFilterMapper;
-import io.camunda.gateway.mapping.http.search.contract.generated.AdHocSubProcessActivateActivitiesInstructionContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.CancelProcessInstanceRequestContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.ConditionalEvaluationInstructionContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.DecisionEvaluationByIdContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.DecisionEvaluationByKeyContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.DecisionEvaluationInstructionContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.DecisionInstanceFilterContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.DeleteResourceRequestContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.DocumentLinkRequestContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.DocumentMetadataContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.JobActivationRequestContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.JobCompletionRequestContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.JobContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.JobErrorRequestContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.JobFailRequestContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.JobResultAdHocSubProcessContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.JobResultUserTaskContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.JobUpdateRequestContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.MessageCorrelationRequestContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.MessagePublicationRequestContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.ModifyProcessInstanceVariableInstructionContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.ProcessInstanceCreationInstructionByIdContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.ProcessInstanceCreationInstructionByKeyContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.ProcessInstanceCreationInstructionContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.ProcessInstanceFilterContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.ProcessInstanceMigrationBatchOperationRequestContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.ProcessInstanceMigrationInstructionContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.ProcessInstanceModificationActivateInstructionContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.ProcessInstanceModificationBatchOperationRequestContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.ProcessInstanceModificationInstructionContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.ProcessInstanceModificationMoveInstructionContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.SignalBroadcastRequestContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.UserTaskAssignmentRequestContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.UserTaskCompletionRequestContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.UserTaskUpdateRequestContract;
 import io.camunda.gateway.mapping.http.util.KeyUtil;
 import io.camunda.gateway.mapping.http.validator.AdHocSubProcessRequestValidator;
 import io.camunda.gateway.mapping.http.validator.ConditionalRequestValidator;
@@ -74,6 +39,38 @@ import io.camunda.gateway.mapping.http.validator.MessageRequestValidator;
 import io.camunda.gateway.mapping.http.validator.ProcessInstanceRequestValidator;
 import io.camunda.gateway.mapping.http.validator.SignalRequestValidator;
 import io.camunda.gateway.mapping.http.validator.UserTaskRequestValidator;
+import io.camunda.gateway.protocol.model.AdHocSubProcessActivateActivitiesInstruction;
+import io.camunda.gateway.protocol.model.CancelProcessInstanceRequest;
+import io.camunda.gateway.protocol.model.ConditionalEvaluationInstruction;
+import io.camunda.gateway.protocol.model.DecisionEvaluationById;
+import io.camunda.gateway.protocol.model.DecisionEvaluationByKey;
+import io.camunda.gateway.protocol.model.DecisionEvaluationInstruction;
+import io.camunda.gateway.protocol.model.DeleteResourceRequest;
+import io.camunda.gateway.protocol.model.DocumentLinkRequest;
+import io.camunda.gateway.protocol.model.DocumentMetadata;
+import io.camunda.gateway.protocol.model.Job;
+import io.camunda.gateway.protocol.model.JobActivationRequest;
+import io.camunda.gateway.protocol.model.JobCompletionRequest;
+import io.camunda.gateway.protocol.model.JobErrorRequest;
+import io.camunda.gateway.protocol.model.JobFailRequest;
+import io.camunda.gateway.protocol.model.JobResultAdHocSubProcess;
+import io.camunda.gateway.protocol.model.JobResultUserTask;
+import io.camunda.gateway.protocol.model.JobUpdateRequest;
+import io.camunda.gateway.protocol.model.MessageCorrelationRequest;
+import io.camunda.gateway.protocol.model.MessagePublicationRequest;
+import io.camunda.gateway.protocol.model.ModifyProcessInstanceVariableInstruction;
+import io.camunda.gateway.protocol.model.ProcessInstanceCreationInstruction;
+import io.camunda.gateway.protocol.model.ProcessInstanceCreationInstructionById;
+import io.camunda.gateway.protocol.model.ProcessInstanceCreationInstructionByKey;
+import io.camunda.gateway.protocol.model.ProcessInstanceFilter;
+import io.camunda.gateway.protocol.model.ProcessInstanceMigrationBatchOperationRequest;
+import io.camunda.gateway.protocol.model.ProcessInstanceMigrationInstruction;
+import io.camunda.gateway.protocol.model.ProcessInstanceModificationBatchOperationRequest;
+import io.camunda.gateway.protocol.model.ProcessInstanceModificationInstruction;
+import io.camunda.gateway.protocol.model.SignalBroadcastRequest;
+import io.camunda.gateway.protocol.model.UserTaskAssignmentRequest;
+import io.camunda.gateway.protocol.model.UserTaskCompletionRequest;
+import io.camunda.gateway.protocol.model.UserTaskUpdateRequest;
 import io.camunda.search.filter.DecisionInstanceFilter;
 import io.camunda.service.AdHocSubProcessActivityServices.AdHocSubProcessActivateActivitiesRequest;
 import io.camunda.service.AdHocSubProcessActivityServices.AdHocSubProcessActivateActivitiesRequest.AdHocSubProcessActivateActivityReference;
@@ -155,7 +152,7 @@ public class RequestMapper {
       final String documentId,
       final String storeId,
       final Part file,
-      final DocumentMetadataContract metadata) {
+      final DocumentMetadata metadata) {
     final InputStream inputStream;
     try {
       inputStream = file.getInputStream();
@@ -186,7 +183,7 @@ public class RequestMapper {
       final List<Part> parts,
       final String storeId,
       final ObjectMapper objectMapper,
-      final List<DocumentMetadataContract> metadataList) {
+      final List<DocumentMetadata> metadataList) {
 
     final boolean hasList = metadataList != null && !metadataList.isEmpty();
     final boolean hasHeaderMetadata =
@@ -233,7 +230,7 @@ public class RequestMapper {
       final List<DocumentCreateRequest> requests = new ArrayList<>(parts.size());
       for (int i = 0; i < parts.size(); i++) {
         final Part part = parts.get(i);
-        final DocumentMetadataContract metadata = metadataList.get(i);
+        final DocumentMetadata metadata = metadataList.get(i);
         final InputStream inputStream;
         try {
           inputStream = part.getInputStream();
@@ -249,13 +246,12 @@ public class RequestMapper {
     }
 
     // Legacy header-based path (original implementation)
-    final Map<Part, DocumentMetadataContract> metadataMap = new HashMap<>();
+    final Map<Part, DocumentMetadata> metadataMap = new HashMap<>();
     for (final var part : parts) {
       final var headerValue = part.getHeader("X-Document-Metadata");
       if (headerValue != null) {
         try {
-          metadataMap.put(
-              part, objectMapper.readValue(headerValue, DocumentMetadataContract.class));
+          metadataMap.put(part, objectMapper.readValue(headerValue, DocumentMetadata.class));
         } catch (final IOException e) {
           throw new RuntimeException(e);
         }
@@ -342,7 +338,7 @@ public class RequestMapper {
   }
 
   private static DocumentMetadataModel toInternalDocumentMetadata(
-      final DocumentMetadataContract metadata, final Part file) {
+      final DocumentMetadata metadata, final Part file) {
 
     if (metadata == null) {
       return new DocumentMetadataModel(
@@ -355,24 +351,24 @@ public class RequestMapper {
           Map.of());
     }
     final OffsetDateTime expiresAt;
-    if (metadata.expiresAt() == null || metadata.expiresAt().isBlank()) {
+    if (metadata.getExpiresAt() == null || metadata.getExpiresAt().isBlank()) {
       expiresAt = null;
     } else {
-      expiresAt = OffsetDateTime.parse(metadata.expiresAt());
+      expiresAt = OffsetDateTime.parse(metadata.getExpiresAt());
     }
     final var fileName =
-        Optional.ofNullable(metadata.fileName()).orElse(file.getSubmittedFileName());
+        Optional.ofNullable(metadata.getFileName()).orElse(file.getSubmittedFileName());
     final var contentType =
-        Optional.ofNullable(metadata.contentType()).orElse(file.getContentType());
+        Optional.ofNullable(metadata.getContentType()).orElse(file.getContentType());
 
     return new DocumentMetadataModel(
         contentType,
         fileName,
         expiresAt,
         file.getSize(),
-        metadata.processDefinitionId(),
-        KeyUtil.keyToLong(metadata.processInstanceKey()),
-        metadata.customProperties());
+        metadata.getProcessDefinitionId(),
+        KeyUtil.keyToLong(metadata.getProcessInstanceKey()),
+        metadata.getCustomProperties());
   }
 
   private static ProblemDetail createInternalErrorProblemDetail(
@@ -382,23 +378,22 @@ public class RequestMapper {
   }
 
   public static Either<ProblemDetail, ProcessInstanceCreateRequest> toCreateProcessInstance(
-      final ProcessInstanceCreationInstructionContract request, final boolean multiTenancyEnabled) {
+      final ProcessInstanceCreationInstruction request, final boolean multiTenancyEnabled) {
     return switch (request) {
-      case ProcessInstanceCreationInstructionByIdContract req ->
+      case ProcessInstanceCreationInstructionById req ->
           toCreateProcessInstance(req, multiTenancyEnabled);
-      case ProcessInstanceCreationInstructionByKeyContract req ->
+      case ProcessInstanceCreationInstructionByKey req ->
           toCreateProcessInstance(req, multiTenancyEnabled);
     };
   }
 
   public static Either<ProblemDetail, ProcessInstanceCreateRequest> toCreateProcessInstance(
-      final ProcessInstanceCreationInstructionByIdContract request,
-      final boolean multiTenancyEnabled) {
+      final ProcessInstanceCreationInstructionById request, final boolean multiTenancyEnabled) {
     final Either<ProblemDetail, String> validationResponse =
-        validateTenantId(request.tenantId(), multiTenancyEnabled, "Create Process Instance")
+        validateTenantId(request.getTenantId(), multiTenancyEnabled, "Create Process Instance")
             .flatMap(
                 tenant ->
-                    validateCreateProcessInstanceTags(request.tags())
+                    validateCreateProcessInstanceTags(request.getTags())
                         .map(Either::<ProblemDetail, String>left)
                         .orElseGet(() -> Either.right(tenant)));
 
@@ -406,59 +401,74 @@ public class RequestMapper {
         tenantId ->
             new ProcessInstanceCreateRequest(
                 -1L,
-                request.processDefinitionId(),
-                request.processDefinitionVersion() != null
-                    ? request.processDefinitionVersion()
+                request.getProcessDefinitionId(),
+                request.getProcessDefinitionVersion() != null
+                    ? request.getProcessDefinitionVersion()
                     : -1,
-                request.variablesOrDefault(),
+                (request.getVariables() != null ? request.getVariables() : Map.of()),
                 tenantId,
-                request.awaitCompletion(),
-                request.requestTimeout(),
-                request.operationReference(),
-                request.startInstructionsOrDefault().stream()
-                    .map(
-                        si ->
-                            new ProcessInstanceCreationStartInstruction()
-                                .setElementId(si.elementId()))
-                    .toList(),
-                mapStrictRuntimeInstructions(request.runtimeInstructions()),
-                request.fetchVariablesOrDefault(),
-                request.tags(),
-                request.businessId()));
+                request.getAwaitCompletion(),
+                request.getRequestTimeout(),
+                request.getOperationReference(),
+                (request.getStartInstructions() != null
+                        ? request.getStartInstructions()
+                        : List
+                            .<io.camunda.gateway.protocol.model
+                                    .ProcessInstanceCreationStartInstruction>
+                                of())
+                    .stream()
+                        .map(
+                            (io.camunda.gateway.protocol.model
+                                        .ProcessInstanceCreationStartInstruction
+                                    si) ->
+                                new ProcessInstanceCreationStartInstruction()
+                                    .setElementId(si.getElementId()))
+                        .toList(),
+                mapStrictRuntimeInstructions(request.getRuntimeInstructions()),
+                (request.getFetchVariables() != null ? request.getFetchVariables() : List.of()),
+                request.getTags(),
+                request.getBusinessId()));
   }
 
   public static Either<ProblemDetail, ProcessInstanceCreateRequest> toCreateProcessInstance(
-      final ProcessInstanceCreationInstructionByKeyContract request,
-      final boolean multiTenancyEnabled) {
+      final ProcessInstanceCreationInstructionByKey request, final boolean multiTenancyEnabled) {
     final Either<ProblemDetail, String> validationResponse =
-        validateTenantId(request.tenantId(), multiTenancyEnabled, "Create Process Instance")
+        validateTenantId(request.getTenantId(), multiTenancyEnabled, "Create Process Instance")
             .flatMap(
                 tenant ->
-                    validateCreateProcessInstanceTags(request.tags())
+                    validateCreateProcessInstanceTags(request.getTags())
                         .map(Either::<ProblemDetail, String>left)
                         .orElseGet(() -> Either.right(tenant)));
 
     return validationResponse.map(
         tenantId ->
             new ProcessInstanceCreateRequest(
-                request.processDefinitionKeyAsLong(),
+                KeyUtil.keyToLong(request.getProcessDefinitionKey()),
                 "",
                 -1,
-                request.variablesOrDefault(),
+                (request.getVariables() != null ? request.getVariables() : Map.of()),
                 tenantId,
-                request.awaitCompletion(),
-                request.requestTimeout(),
-                request.operationReference(),
-                request.startInstructionsOrDefault().stream()
-                    .map(
-                        si ->
-                            new ProcessInstanceCreationStartInstruction()
-                                .setElementId(si.elementId()))
-                    .toList(),
-                mapStrictRuntimeInstructions(request.runtimeInstructions()),
-                request.fetchVariablesOrDefault(),
-                request.tags(),
-                request.businessId()));
+                request.getAwaitCompletion(),
+                request.getRequestTimeout(),
+                request.getOperationReference(),
+                (request.getStartInstructions() != null
+                        ? request.getStartInstructions()
+                        : List
+                            .<io.camunda.gateway.protocol.model
+                                    .ProcessInstanceCreationStartInstruction>
+                                of())
+                    .stream()
+                        .map(
+                            (io.camunda.gateway.protocol.model
+                                        .ProcessInstanceCreationStartInstruction
+                                    si) ->
+                                new ProcessInstanceCreationStartInstruction()
+                                    .setElementId(si.getElementId()))
+                        .toList(),
+                mapStrictRuntimeInstructions(request.getRuntimeInstructions()),
+                (request.getFetchVariables() != null ? request.getFetchVariables() : List.of()),
+                request.getTags(),
+                request.getBusinessId()));
   }
 
   @SuppressWarnings("unchecked")
@@ -481,33 +491,37 @@ public class RequestMapper {
   // --- Strict contract overloads for decision evaluation ---
 
   public static Either<ProblemDetail, DecisionEvaluationRequest> toEvaluateDecisionRequest(
-      final DecisionEvaluationInstructionContract request, final boolean multiTenancyEnabled) {
+      final DecisionEvaluationInstruction request, final boolean multiTenancyEnabled) {
     return switch (request) {
-      case DecisionEvaluationByIdContract req ->
-          toEvaluateDecisionRequest(req, multiTenancyEnabled);
-      case DecisionEvaluationByKeyContract req ->
-          toEvaluateDecisionRequest(req, multiTenancyEnabled);
+      case DecisionEvaluationById req -> toEvaluateDecisionRequest(req, multiTenancyEnabled);
+      case DecisionEvaluationByKey req -> toEvaluateDecisionRequest(req, multiTenancyEnabled);
     };
   }
 
   public static Either<ProblemDetail, DecisionEvaluationRequest> toEvaluateDecisionRequest(
-      final DecisionEvaluationByIdContract request, final boolean multiTenancyEnabled) {
+      final DecisionEvaluationById request, final boolean multiTenancyEnabled) {
     final Either<ProblemDetail, String> validationResponse =
-        validateTenantId(request.tenantId(), multiTenancyEnabled, "Evaluate Decision");
+        validateTenantId(request.getTenantId(), multiTenancyEnabled, "Evaluate Decision");
     return validationResponse.map(
         tenantId ->
             new DecisionEvaluationRequest(
-                request.decisionDefinitionId(), -1L, request.variablesOrDefault(), tenantId));
+                request.getDecisionDefinitionId(),
+                -1L,
+                (request.getVariables() != null ? request.getVariables() : Map.of()),
+                tenantId));
   }
 
   public static Either<ProblemDetail, DecisionEvaluationRequest> toEvaluateDecisionRequest(
-      final DecisionEvaluationByKeyContract request, final boolean multiTenancyEnabled) {
+      final DecisionEvaluationByKey request, final boolean multiTenancyEnabled) {
     final Either<ProblemDetail, String> validationResponse =
-        validateTenantId(request.tenantId(), multiTenancyEnabled, "Evaluate Decision");
+        validateTenantId(request.getTenantId(), multiTenancyEnabled, "Evaluate Decision");
     return validationResponse.map(
         tenantId ->
             new DecisionEvaluationRequest(
-                "", request.decisionDefinitionKeyAsLong(), request.variablesOrDefault(), tenantId));
+                "",
+                KeyUtil.keyToLong(request.getDecisionDefinitionKey()),
+                (request.getVariables() != null ? request.getVariables() : Map.of()),
+                tenantId));
   }
 
   private static Long getAncestorKey(final String ancestorElementInstanceKey) {
@@ -520,71 +534,77 @@ public class RequestMapper {
   // ---- Strict contract methods (direct field access) ----
 
   public static CompleteUserTaskRequest toUserTaskCompletionRequest(
-      final UserTaskCompletionRequestContract request, final long userTaskKey) {
+      final UserTaskCompletionRequest request, final long userTaskKey) {
     if (request == null) {
       return new CompleteUserTaskRequest(userTaskKey, Map.of(), "");
     }
     return new CompleteUserTaskRequest(
-        userTaskKey, request.variablesOrDefault(), request.actionOrDefault());
+        userTaskKey,
+        (request.getVariables() != null ? request.getVariables() : Map.of()),
+        (request.getAction() != null ? request.getAction() : ""));
   }
 
   public static Either<ProblemDetail, AssignUserTaskRequest> toUserTaskAssignmentRequest(
-      final UserTaskAssignmentRequestContract request, final long userTaskKey) {
-    final String action = request.actionOrDefault();
-    final boolean allowOverride = request.allowOverride() == null || request.allowOverride();
+      final UserTaskAssignmentRequest request, final long userTaskKey) {
+    final String action = (request.getAction() != null ? request.getAction() : "");
+    final boolean allowOverride = request.getAllowOverride() == null || request.getAllowOverride();
     return getResult(
         UserTaskRequestValidator.validateAssignmentRequest(request),
         () ->
             new AssignUserTaskRequest(
                 userTaskKey,
-                request.assignee(),
+                request.getAssignee(),
                 action.isBlank() ? "assign" : action,
                 allowOverride));
   }
 
   public static Either<ProblemDetail, UpdateUserTaskRequest> toUserTaskUpdateRequest(
-      final UserTaskUpdateRequestContract request, final long userTaskKey) {
-    final var changeset = request != null ? request.changeset() : null;
+      final UserTaskUpdateRequest request, final long userTaskKey) {
+    final var changeset = request != null ? request.getChangeset() : null;
     return getResult(
         UserTaskRequestValidator.validateUpdateRequest(request),
         () -> {
           final var record = new UserTaskRecord();
           if (changeset != null) {
-            if (changeset.candidateGroups() != null) {
+            if (changeset.getCandidateGroups() != null) {
               record
-                  .setCandidateGroupsList(changeset.candidateGroups())
+                  .setCandidateGroupsList(changeset.getCandidateGroups())
                   .setCandidateGroupsChanged();
             }
-            if (changeset.candidateUsers() != null) {
-              record.setCandidateUsersList(changeset.candidateUsers()).setCandidateUsersChanged();
+            if (changeset.getCandidateUsers() != null) {
+              record
+                  .setCandidateUsersList(changeset.getCandidateUsers())
+                  .setCandidateUsersChanged();
             }
-            if (changeset.dueDate() != null) {
-              record.setDueDate(changeset.dueDate()).setDueDateChanged();
+            if (changeset.getDueDate() != null) {
+              record.setDueDate(changeset.getDueDate()).setDueDateChanged();
             }
-            if (changeset.followUpDate() != null) {
-              record.setFollowUpDate(changeset.followUpDate()).setFollowUpDateChanged();
+            if (changeset.getFollowUpDate() != null) {
+              record.setFollowUpDate(changeset.getFollowUpDate()).setFollowUpDateChanged();
             }
-            if (changeset.priority() != null) {
-              record.setPriority(changeset.priority()).setPriorityChanged();
+            if (changeset.getPriority() != null) {
+              record.setPriority(changeset.getPriority()).setPriorityChanged();
             }
           }
           return new UpdateUserTaskRequest(
-              userTaskKey, record, request == null ? "" : request.actionOrDefault());
+              userTaskKey,
+              record,
+              request == null ? "" : (request.getAction() != null ? request.getAction() : ""));
         });
   }
 
   public static Either<ProblemDetail, ActivateJobsRequest> toJobsActivationRequest(
-      final JobActivationRequestContract request, final boolean multiTenancyEnabled) {
+      final JobActivationRequest request, final boolean multiTenancyEnabled) {
     final var validationError = JobRequestValidator.validateActivationRequest(request);
     if (validationError.isPresent()) {
       return Either.left(validationError.get());
     }
 
     final TenantFilter tenantFilter;
-    if (request.tenantFilter() == null) {
+    if (request.getTenantFilter() == null) {
       tenantFilter = TenantFilter.PROVIDED;
     } else {
-      final String filterValue = request.tenantFilter().getValue();
+      final String filterValue = request.getTenantFilter().getValue();
       tenantFilter =
           switch (filterValue) {
             case "ASSIGNED" -> TenantFilter.ASSIGNED;
@@ -603,17 +623,18 @@ public class RequestMapper {
       }
       return Either.right(
           new ActivateJobsRequest(
-              request.type(),
-              request.maxJobsToActivate(),
+              request.getType(),
+              request.getMaxJobsToActivate(),
               Collections.emptyList(),
               tenantFilter,
-              request.timeout(),
-              request.workerOrDefault(),
-              request.fetchVariableOrDefault(),
-              request.requestTimeoutOrDefault()));
+              request.getTimeout(),
+              (request.getWorker() != null ? request.getWorker() : ""),
+              (request.getFetchVariable() != null ? request.getFetchVariable() : List.of()),
+              (request.getRequestTimeout() != null ? request.getRequestTimeout() : 0L)));
     }
 
-    final List<String> providedTenantIds = request.tenantIdsOrDefault();
+    final List<String> providedTenantIds =
+        (request.getTenantIds() != null ? request.getTenantIds() : List.of());
     final Either<ProblemDetail, List<String>> tenantIdsResult =
         validateTenantIds(providedTenantIds, multiTenancyEnabled, "Activate Jobs");
     if (tenantIdsResult.isLeft()) {
@@ -622,48 +643,49 @@ public class RequestMapper {
 
     return Either.right(
         new ActivateJobsRequest(
-            request.type(),
-            request.maxJobsToActivate(),
+            request.getType(),
+            request.getMaxJobsToActivate(),
             tenantIdsResult.get(),
             tenantFilter,
-            request.timeout(),
-            request.workerOrDefault(),
-            request.fetchVariableOrDefault(),
-            request.requestTimeoutOrDefault()));
+            request.getTimeout(),
+            (request.getWorker() != null ? request.getWorker() : ""),
+            (request.getFetchVariable() != null ? request.getFetchVariable() : List.of()),
+            (request.getRequestTimeout() != null ? request.getRequestTimeout() : 0L)));
   }
 
-  public static FailJobRequest toJobFailRequest(
-      final JobFailRequestContract request, final long jobKey) {
+  public static FailJobRequest toJobFailRequest(final JobFailRequest request, final long jobKey) {
     if (request == null) {
       return new FailJobRequest(jobKey, 0, "", 0L, Map.of());
     }
     return new FailJobRequest(
         jobKey,
-        request.retries(),
-        request.errorMessageOrDefault(),
-        request.retryBackOff(),
-        request.variablesOrDefault());
+        request.getRetries(),
+        (request.getErrorMessage() != null ? request.getErrorMessage() : ""),
+        request.getRetryBackOff(),
+        (request.getVariables() != null ? request.getVariables() : Map.of()));
   }
 
   public static Either<ProblemDetail, ErrorJobRequest> toJobErrorRequest(
-      final JobErrorRequestContract request, final long jobKey) {
+      final JobErrorRequest request, final long jobKey) {
     return getResult(
         JobRequestValidator.validateErrorRequest(request),
         () ->
             new ErrorJobRequest(
                 jobKey,
-                request.errorCode(),
-                request.errorMessageOrDefault(),
-                request.variablesOrDefault()));
+                request.getErrorCode(),
+                (request.getErrorMessage() != null ? request.getErrorMessage() : ""),
+                (request.getVariables() != null ? request.getVariables() : Map.of())));
   }
 
   public static CompleteJobRequest toJobCompletionRequest(
-      final JobCompletionRequestContract request, final long jobKey) {
+      final JobCompletionRequest request, final long jobKey) {
     if (request == null) {
       return new CompleteJobRequest(jobKey, Map.of(), new JobResult());
     }
     return new CompleteJobRequest(
-        jobKey, request.variablesOrDefault(), toJobResult(request.result()));
+        jobKey,
+        (request.getVariables() != null ? request.getVariables() : Map.of()),
+        toJobResult(request.getResult()));
   }
 
   /**
@@ -675,20 +697,20 @@ public class RequestMapper {
     if (rawResult == null) {
       return new JobResult();
     }
-    final var typed = PROTOCOL_MAPPER.convertValue(rawResult, JobContract.class);
+    final var typed = PROTOCOL_MAPPER.convertValue(rawResult, Job.class);
     return switch (typed) {
-      case JobResultUserTaskContract ut -> toJobResult(ut);
-      case JobResultAdHocSubProcessContract ahsp -> toJobResult(ahsp);
+      case JobResultUserTask ut -> toJobResult(ut);
+      case JobResultAdHocSubProcess ahsp -> toJobResult(ahsp);
     };
   }
 
-  private static JobResult toJobResult(final JobResultUserTaskContract result) {
+  private static JobResult toJobResult(final JobResultUserTask result) {
     final JobResult jobResult = new JobResult();
-    jobResult.setType(JobResultType.from(result.type()));
-    jobResult.setDenied(result.denied() != null ? result.denied() : false);
-    jobResult.setDeniedReason(result.deniedReasonOrDefault());
+    jobResult.setType(JobResultType.from(result.getType()));
+    jobResult.setDenied(result.getDenied() != null ? result.getDenied() : false);
+    jobResult.setDeniedReason((result.getDeniedReason() != null ? result.getDeniedReason() : ""));
 
-    final var corrections = result.corrections();
+    final var corrections = result.getCorrections();
     if (corrections == null) {
       return jobResult;
     }
@@ -696,28 +718,28 @@ public class RequestMapper {
     final JobResultCorrections domainCorrections = new JobResultCorrections();
     final List<String> correctedAttributes = new ArrayList<>();
 
-    if (corrections.assignee() != null) {
-      domainCorrections.setAssignee(corrections.assignee());
+    if (corrections.getAssignee() != null) {
+      domainCorrections.setAssignee(corrections.getAssignee());
       correctedAttributes.add(UserTaskRecord.ASSIGNEE);
     }
-    if (corrections.dueDate() != null) {
-      domainCorrections.setDueDate(corrections.dueDate());
+    if (corrections.getDueDate() != null) {
+      domainCorrections.setDueDate(corrections.getDueDate());
       correctedAttributes.add(UserTaskRecord.DUE_DATE);
     }
-    if (corrections.followUpDate() != null) {
-      domainCorrections.setFollowUpDate(corrections.followUpDate());
+    if (corrections.getFollowUpDate() != null) {
+      domainCorrections.setFollowUpDate(corrections.getFollowUpDate());
       correctedAttributes.add(UserTaskRecord.FOLLOW_UP_DATE);
     }
-    if (corrections.candidateUsers() != null) {
-      domainCorrections.setCandidateUsersList(corrections.candidateUsers());
+    if (corrections.getCandidateUsers() != null) {
+      domainCorrections.setCandidateUsersList(corrections.getCandidateUsers());
       correctedAttributes.add(UserTaskRecord.CANDIDATE_USERS);
     }
-    if (corrections.candidateGroups() != null) {
-      domainCorrections.setCandidateGroupsList(corrections.candidateGroups());
+    if (corrections.getCandidateGroups() != null) {
+      domainCorrections.setCandidateGroupsList(corrections.getCandidateGroups());
       correctedAttributes.add(UserTaskRecord.CANDIDATE_GROUPS);
     }
-    if (corrections.priority() != null) {
-      domainCorrections.setPriority(corrections.priority());
+    if (corrections.getPriority() != null) {
+      domainCorrections.setPriority(corrections.getPriority());
       correctedAttributes.add(UserTaskRecord.PRIORITY);
     }
 
@@ -726,21 +748,21 @@ public class RequestMapper {
     return jobResult;
   }
 
-  private static JobResult toJobResult(final JobResultAdHocSubProcessContract result) {
+  private static JobResult toJobResult(final JobResultAdHocSubProcess result) {
     final JobResult jobResult = new JobResult();
     jobResult
-        .setType(JobResultType.from(result.type()))
-        .setCompletionConditionFulfilled(result.isCompletionConditionFulfilled())
-        .setCancelRemainingInstances(result.isCancelRemainingInstances());
-    if (result.activateElements() != null) {
-      result.activateElements().stream()
+        .setType(JobResultType.from(result.getType()))
+        .setCompletionConditionFulfilled(result.getIsCompletionConditionFulfilled())
+        .setCancelRemainingInstances(result.getIsCancelRemainingInstances());
+    if (result.getActivateElements() != null) {
+      result.getActivateElements().stream()
           .map(
               element -> {
                 final var activateElement =
-                    new JobResultActivateElement().setElementId(element.elementId());
-                if (element.variables() != null) {
+                    new JobResultActivateElement().setElementId(element.getElementId());
+                if (element.getVariables() != null) {
                   activateElement.setVariables(
-                      new UnsafeBuffer(MsgPackConverter.convertToMsgPack(element.variables())));
+                      new UnsafeBuffer(MsgPackConverter.convertToMsgPack(element.getVariables())));
                 }
                 return activateElement;
               })
@@ -750,21 +772,21 @@ public class RequestMapper {
   }
 
   public static Either<ProblemDetail, UpdateJobRequest> toJobUpdateRequest(
-      final JobUpdateRequestContract request, final long jobKey) {
-    final var cs = request.changeset();
+      final JobUpdateRequest request, final long jobKey) {
+    final var cs = request.getChangeset();
     return getResult(
         JobRequestValidator.validateUpdateRequest(request),
         () ->
             new UpdateJobRequest(
                 jobKey,
-                request.operationReference(),
-                new UpdateJobChangeset(cs.retries(), cs.timeout())));
+                request.getOperationReference(),
+                new UpdateJobChangeset(cs.getRetries(), cs.getTimeout())));
   }
 
   public static Either<ProblemDetail, BroadcastSignalRequest> toBroadcastSignalRequest(
-      final SignalBroadcastRequestContract request, final boolean multiTenancyEnabled) {
+      final SignalBroadcastRequest request, final boolean multiTenancyEnabled) {
     final Either<ProblemDetail, String> validationResponse =
-        validateTenantId(request.tenantId(), multiTenancyEnabled, "Broadcast Signal")
+        validateTenantId(request.getTenantId(), multiTenancyEnabled, "Broadcast Signal")
             .flatMap(
                 tenantId ->
                     SignalRequestValidator.validateBroadcastRequest(request)
@@ -772,35 +794,36 @@ public class RequestMapper {
                         .orElseGet(() -> Either.right(tenantId)));
     return validationResponse.map(
         tenantId ->
-            new BroadcastSignalRequest(request.signalName(), request.variables(), tenantId));
+            new BroadcastSignalRequest(request.getSignalName(), request.getVariables(), tenantId));
   }
 
   public static Either<ProblemDetail, ResourceDeletionRequest> toResourceDeletion(
-      final long resourceKey, final DeleteResourceRequestContract request) {
-    final Long operationReference = request != null ? request.operationReference() : null;
-    final boolean deleteHistory = request != null && Boolean.TRUE.equals(request.deleteHistory());
+      final long resourceKey, final DeleteResourceRequest request) {
+    final Long operationReference = request != null ? request.getOperationReference() : null;
+    final boolean deleteHistory =
+        request != null && Boolean.TRUE.equals(request.getDeleteHistory());
     return Either.right(
         new ResourceDeletionRequest(resourceKey, operationReference, deleteHistory));
   }
 
   public static Either<ProblemDetail, DocumentLinkParams> toDocumentLinkParams(
-      final DocumentLinkRequestContract request) {
+      final DocumentLinkRequest request) {
     if (request == null) {
       return Either.right(new DocumentLinkParams(Duration.ZERO));
     }
     return getResult(
         DocumentValidator.validateDocumentLinkParams(request),
-        () -> new DocumentLinkParams(Duration.ofMillis(request.timeToLive())));
+        () -> new DocumentLinkParams(Duration.ofMillis(request.getTimeToLive())));
   }
 
   public static Either<ProblemDetail, ProcessInstanceCancelRequest> toCancelProcessInstance(
-      final long processInstanceKey, final CancelProcessInstanceRequestContract request) {
-    final Long operationReference = request != null ? request.operationReference() : null;
+      final long processInstanceKey, final CancelProcessInstanceRequest request) {
+    final Long operationReference = request != null ? request.getOperationReference() : null;
     return Either.right(new ProcessInstanceCancelRequest(processInstanceKey, operationReference));
   }
 
   public static Either<ProblemDetail, io.camunda.search.filter.ProcessInstanceFilter>
-      toRequiredProcessInstanceFilter(final ProcessInstanceFilterContract request) {
+      toRequiredProcessInstanceFilter(final ProcessInstanceFilter request) {
     final var filter = ProcessInstanceFilterMapper.toRequiredProcessInstanceFilter(request);
     if (filter.isLeft()) {
       return Either.left(createProblemDetail(filter.getLeft()).get());
@@ -810,23 +833,23 @@ public class RequestMapper {
 
   public static Either<ProblemDetail, ProcessInstanceMigrateBatchOperationRequest>
       toProcessInstanceMigrationBatchOperationRequest(
-          final ProcessInstanceMigrationBatchOperationRequestContract request) {
-    final var filterResult = toRequiredProcessInstanceFilter(request.filter());
+          final ProcessInstanceMigrationBatchOperationRequest request) {
+    final var filterResult = toRequiredProcessInstanceFilter(request.getFilter());
     if (filterResult.isLeft()) {
       return Either.left(filterResult.getLeft());
     }
 
-    final var migPlan = request.migrationPlan();
+    final var migPlan = request.getMigrationPlan();
     final List<String> violations = new ArrayList<>();
     if (migPlan == null) {
       violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("migrationPlan"));
       return Either.left(createProblemDetail(violations).get());
     }
-    if (migPlan.targetProcessDefinitionKey() == null
-        || migPlan.targetProcessDefinitionKey().isBlank()) {
+    if (migPlan.getTargetProcessDefinitionKey() == null
+        || migPlan.getTargetProcessDefinitionKey().isBlank()) {
       violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("targetProcessDefinitionKey"));
     }
-    if (migPlan.mappingInstructions() == null || migPlan.mappingInstructions().isEmpty()) {
+    if (migPlan.getMappingInstructions() == null || migPlan.getMappingInstructions().isEmpty()) {
       violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("mappingInstructions"));
     }
     if (!violations.isEmpty()) {
@@ -836,26 +859,26 @@ public class RequestMapper {
     return Either.right(
         new ProcessInstanceMigrateBatchOperationRequest(
             filterResult.get(),
-            KeyUtil.keyToLong(migPlan.targetProcessDefinitionKey()),
-            migPlan.mappingInstructions().stream()
+            KeyUtil.keyToLong(migPlan.getTargetProcessDefinitionKey()),
+            migPlan.getMappingInstructions().stream()
                 .map(
                     mi ->
                         new ProcessInstanceMigrationMappingInstruction()
-                            .setSourceElementId(mi.sourceElementId())
-                            .setTargetElementId(mi.targetElementId()))
+                            .setSourceElementId(mi.getSourceElementId())
+                            .setTargetElementId(mi.getTargetElementId()))
                 .toList()));
   }
 
   public static Either<ProblemDetail, ProcessInstanceModifyBatchOperationRequest>
       toProcessInstanceModifyBatchOperationRequest(
-          final ProcessInstanceModificationBatchOperationRequestContract request) {
-    final var filterResult = toRequiredProcessInstanceFilter(request.filter());
+          final ProcessInstanceModificationBatchOperationRequest request) {
+    final var filterResult = toRequiredProcessInstanceFilter(request.getFilter());
     if (filterResult.isLeft()) {
       return Either.left(filterResult.getLeft());
     }
 
     final List<String> violations = new ArrayList<>();
-    if (request.moveInstructions() == null || request.moveInstructions().isEmpty()) {
+    if (request.getMoveInstructions() == null || request.getMoveInstructions().isEmpty()) {
       violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("moveInstructions"));
     }
     if (!violations.isEmpty()) {
@@ -865,43 +888,41 @@ public class RequestMapper {
     return Either.right(
         new ProcessInstanceModifyBatchOperationRequest(
             filterResult.get(),
-            request.moveInstructions().stream()
+            request.getMoveInstructions().stream()
                 .map(
                     mi ->
                         new ProcessInstanceModificationMoveInstruction()
-                            .setSourceElementId(mi.sourceElementId())
-                            .setTargetElementId(mi.targetElementId())
+                            .setSourceElementId(mi.getSourceElementId())
+                            .setTargetElementId(mi.getTargetElementId())
                             .setInferAncestorScopeFromSourceHierarchy(true))
                 .toList()));
   }
 
   public static Either<ProblemDetail, ProcessInstanceMigrateRequest> toMigrateProcessInstance(
-      final long processInstanceKey, final ProcessInstanceMigrationInstructionContract request) {
+      final long processInstanceKey, final ProcessInstanceMigrationInstruction request) {
     return getResult(
         ProcessInstanceRequestValidator.validateMigrationInstructions(request),
         () ->
             new ProcessInstanceMigrateRequest(
                 processInstanceKey,
-                request.targetProcessDefinitionKeyAsLong(),
-                request.mappingInstructions().stream()
+                KeyUtil.keyToLong(request.getTargetProcessDefinitionKey()),
+                request.getMappingInstructions().stream()
                     .map(
                         mi ->
                             new ProcessInstanceMigrationMappingInstruction()
-                                .setSourceElementId(mi.sourceElementId())
-                                .setTargetElementId(mi.targetElementId()))
+                                .setSourceElementId(mi.getSourceElementId())
+                                .setTargetElementId(mi.getTargetElementId()))
                     .toList(),
-                request.operationReference()));
+                request.getOperationReference()));
   }
 
   public static Either<ProblemDetail, ProcessInstanceModifyRequest> toModifyProcessInstance(
-      final long processInstanceKey, final ProcessInstanceModificationInstructionContract request) {
+      final long processInstanceKey, final ProcessInstanceModificationInstruction request) {
     final List<String> violations = new ArrayList<>();
-    final var activateInstructions =
-        mapActivateInstructionsFromContract(request.activateInstructions());
-    final var moveInstructions =
-        mapMoveInstructionsFromContract(request.moveInstructions(), violations);
+    final var activateInstructions = mapActivateInstructionsFrom(request.getActivateInstructions());
+    final var moveInstructions = mapMoveInstructionsFrom(request.getMoveInstructions(), violations);
     final var terminateInstructions =
-        mapTerminateInstructionsFromContract(request.terminateInstructions(), violations);
+        mapTerminateInstructionsFrom(request.getTerminateInstructions(), violations);
     return getResult(
         createProblemDetail(violations),
         () ->
@@ -910,12 +931,12 @@ public class RequestMapper {
                 activateInstructions,
                 moveInstructions,
                 terminateInstructions,
-                request.operationReference()));
+                request.getOperationReference()));
   }
 
-  private static List<ProcessInstanceModificationActivateInstruction>
-      mapActivateInstructionsFromContract(
-          final List<ProcessInstanceModificationActivateInstructionContract> instructions) {
+  private static List<ProcessInstanceModificationActivateInstruction> mapActivateInstructionsFrom(
+      final List<io.camunda.gateway.protocol.model.ProcessInstanceModificationActivateInstruction>
+          instructions) {
     if (instructions == null) {
       return List.of();
     }
@@ -924,11 +945,11 @@ public class RequestMapper {
             instruction -> {
               final var mapped = new ProcessInstanceModificationActivateInstruction();
               mapped
-                  .setElementId(instruction.elementId())
-                  .setAncestorScopeKey(getAncestorKey(instruction.ancestorElementInstanceKey()));
-              if (instruction.variableInstructions() != null) {
-                instruction.variableInstructions().stream()
-                    .map(RequestMapper::mapVariableInstructionFromContract)
+                  .setElementId(instruction.getElementId())
+                  .setAncestorScopeKey(getAncestorKey(instruction.getAncestorElementInstanceKey()));
+              if (instruction.getVariableInstructions() != null) {
+                instruction.getVariableInstructions().stream()
+                    .map(RequestMapper::mapVariableInstructionFrom)
                     .forEach(mapped::addVariableInstruction);
               }
               return mapped;
@@ -936,15 +957,16 @@ public class RequestMapper {
         .toList();
   }
 
-  private static ProcessInstanceModificationVariableInstruction mapVariableInstructionFromContract(
-      final ModifyProcessInstanceVariableInstructionContract variable) {
+  private static ProcessInstanceModificationVariableInstruction mapVariableInstructionFrom(
+      final ModifyProcessInstanceVariableInstruction variable) {
     return new ProcessInstanceModificationVariableInstruction()
-        .setElementId(variable.scopeId())
-        .setVariables(new UnsafeBuffer(MsgPackConverter.convertToMsgPack(variable.variables())));
+        .setElementId(variable.getScopeId())
+        .setVariables(new UnsafeBuffer(MsgPackConverter.convertToMsgPack(variable.getVariables())));
   }
 
-  private static List<ProcessInstanceModificationMoveInstruction> mapMoveInstructionsFromContract(
-      final List<ProcessInstanceModificationMoveInstructionContract> instructions,
+  private static List<ProcessInstanceModificationMoveInstruction> mapMoveInstructionsFrom(
+      final List<io.camunda.gateway.protocol.model.ProcessInstanceModificationMoveInstruction>
+          instructions,
       final List<String> violations) {
     if (instructions == null) {
       return List.of();
@@ -954,8 +976,8 @@ public class RequestMapper {
             instruction -> {
               final var mapped =
                   new ProcessInstanceModificationMoveInstruction()
-                      .setTargetElementId(instruction.targetElementId());
-              if (instruction.sourceElementInstruction() instanceof final Map<?, ?> sourceMap) {
+                      .setTargetElementId(instruction.getTargetElementId());
+              if (instruction.getSourceElementInstruction() instanceof final Map<?, ?> sourceMap) {
                 if (sourceMap.containsKey("sourceElementId")) {
                   mapped.setSourceElementId(String.valueOf(sourceMap.get("sourceElementId")));
                 } else if (sourceMap.containsKey("sourceElementInstanceKey")) {
@@ -963,11 +985,10 @@ public class RequestMapper {
                       KeyUtil.keyToLong(String.valueOf(sourceMap.get("sourceElementInstanceKey"))));
                 }
               }
-              mapAncestorScopeFromContract(
-                  instruction.ancestorScopeInstruction(), mapped, violations);
-              if (instruction.variableInstructions() != null) {
-                instruction.variableInstructions().stream()
-                    .map(RequestMapper::mapVariableInstructionFromContract)
+              mapAncestorScopeFrom(instruction.getAncestorScopeInstruction(), mapped, violations);
+              if (instruction.getVariableInstructions() != null) {
+                instruction.getVariableInstructions().stream()
+                    .map(RequestMapper::mapVariableInstructionFrom)
                     .forEach(mapped::addVariableInstruction);
               }
               return mapped;
@@ -975,7 +996,7 @@ public class RequestMapper {
         .toList();
   }
 
-  private static void mapAncestorScopeFromContract(
+  private static void mapAncestorScopeFrom(
       final Object ancestorScope,
       final ProcessInstanceModificationMoveInstruction mapped,
       final List<String> violations) {
@@ -1004,9 +1025,8 @@ public class RequestMapper {
     }
   }
 
-  private static List<ProcessInstanceModificationTerminateInstruction>
-      mapTerminateInstructionsFromContract(
-          final List<Object> instructions, final List<String> violations) {
+  private static List<ProcessInstanceModificationTerminateInstruction> mapTerminateInstructionsFrom(
+      final List<Object> instructions, final List<String> violations) {
     if (instructions == null) {
       return List.of();
     }
@@ -1034,11 +1054,11 @@ public class RequestMapper {
   }
 
   public static Either<ProblemDetail, PublicationMessageRequest> toMessagePublicationRequest(
-      final MessagePublicationRequestContract request,
+      final MessagePublicationRequest request,
       final boolean multiTenancyEnabled,
       final int maxNameFieldLength) {
     final Either<ProblemDetail, String> validationResponse =
-        validateTenantId(request.tenantId(), multiTenancyEnabled, "Publish Message")
+        validateTenantId(request.getTenantId(), multiTenancyEnabled, "Publish Message")
             .flatMap(
                 tenantId ->
                     MessageRequestValidator.validatePublicationRequest(request, maxNameFieldLength)
@@ -1047,20 +1067,20 @@ public class RequestMapper {
     return validationResponse.map(
         tenantId ->
             new PublicationMessageRequest(
-                request.name(),
-                request.correlationKey(),
-                request.timeToLive(),
-                request.messageIdOrDefault(),
-                request.variablesOrDefault(),
+                request.getName(),
+                request.getCorrelationKey(),
+                request.getTimeToLive(),
+                (request.getMessageId() != null ? request.getMessageId() : ""),
+                (request.getVariables() != null ? request.getVariables() : Map.of()),
                 tenantId));
   }
 
   public static Either<ProblemDetail, CorrelateMessageRequest> toMessageCorrelationRequest(
-      final MessageCorrelationRequestContract request,
+      final MessageCorrelationRequest request,
       final boolean multiTenancyEnabled,
       final int maxNameFieldLength) {
     final Either<ProblemDetail, String> validationResponse =
-        validateTenantId(request.tenantId(), multiTenancyEnabled, "Correlate Message")
+        validateTenantId(request.getTenantId(), multiTenancyEnabled, "Correlate Message")
             .flatMap(
                 tenantId ->
                     MessageRequestValidator.validateCorrelationRequest(request, maxNameFieldLength)
@@ -1069,13 +1089,13 @@ public class RequestMapper {
     return validationResponse.map(
         tenantId ->
             new CorrelateMessageRequest(
-                request.name(), request.correlationKey(), request.variables(), tenantId));
+                request.getName(), request.getCorrelationKey(), request.getVariables(), tenantId));
   }
 
   public static Either<ProblemDetail, EvaluateConditionalRequest> toEvaluateConditionalRequest(
-      final ConditionalEvaluationInstructionContract request, final boolean multiTenancyEnabled) {
+      final ConditionalEvaluationInstruction request, final boolean multiTenancyEnabled) {
     final Either<ProblemDetail, String> validationResponse =
-        validateTenantId(request.tenantId(), multiTenancyEnabled, "Evaluate Conditional")
+        validateTenantId(request.getTenantId(), multiTenancyEnabled, "Evaluate Conditional")
             .flatMap(
                 tenantId ->
                     ConditionalRequestValidator.validateEvaluateRequest(request)
@@ -1085,32 +1105,36 @@ public class RequestMapper {
         tenantId ->
             new EvaluateConditionalRequest(
                 tenantId,
-                request.processDefinitionKeyAsLong() != null
-                    ? request.processDefinitionKeyAsLong()
+                KeyUtil.keyToLong(request.getProcessDefinitionKey()) != null
+                    ? KeyUtil.keyToLong(request.getProcessDefinitionKey())
                     : -1L,
-                request.variables()));
+                request.getVariables()));
   }
 
   public static Either<ProblemDetail, AdHocSubProcessActivateActivitiesRequest>
       toAdHocSubProcessActivateActivitiesRequest(
           final String adHocSubProcessInstanceKey,
-          final AdHocSubProcessActivateActivitiesInstructionContract request) {
+          final AdHocSubProcessActivateActivitiesInstruction request) {
     return getResult(
         AdHocSubProcessRequestValidator.validateActivateActivitiesRequest(request),
         () ->
             new AdHocSubProcessActivateActivitiesRequest(
                 Long.parseLong(adHocSubProcessInstanceKey),
-                request.elements().stream()
+                request.getElements().stream()
                     .map(
                         element ->
                             new AdHocSubProcessActivateActivityReference(
-                                element.elementId(), element.variablesOrDefault()))
+                                element.getElementId(),
+                                (element.getVariables() != null
+                                    ? element.getVariables()
+                                    : Map.of())))
                     .toList(),
-                request.cancelRemainingInstances() != null && request.cancelRemainingInstances()));
+                request.getCancelRemainingInstances() != null
+                    && request.getCancelRemainingInstances()));
   }
 
   public static Either<ProblemDetail, DecisionInstanceFilter> toRequiredDecisionInstanceFilter(
-      final DecisionInstanceFilterContract request) {
+      final io.camunda.gateway.protocol.model.DecisionInstanceFilter request) {
     if (request == null) {
       return Either.left(
           createProblemDetail(List.of(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("filter"))).get());

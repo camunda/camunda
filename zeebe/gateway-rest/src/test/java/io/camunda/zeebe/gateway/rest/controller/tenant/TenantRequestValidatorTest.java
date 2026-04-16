@@ -13,8 +13,8 @@ import static io.camunda.security.validation.IdentifierValidator.TENANT_ID_MASK;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import io.camunda.gateway.mapping.http.search.contract.generated.TenantCreateRequestContract;
 import io.camunda.gateway.mapping.http.validator.TenantRequestValidator;
+import io.camunda.gateway.protocol.model.TenantCreateRequest;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import java.util.regex.Pattern;
@@ -37,12 +37,10 @@ public class TenantRequestValidatorTest {
   void shouldPassTenantIdForCreateRequest(final String tenantId) {
     // given
     final var request =
-        TenantCreateRequestContract.builder()
+        new TenantCreateRequest()
             .tenantId(tenantId)
             .name("New tenant")
-            .description("A new tenant for testing")
-            .build();
-
+            .description("A new tenant for testing");
     // when
     final var validationResult = VALIDATOR.validateCreateRequest(request);
 
@@ -71,11 +69,10 @@ public class TenantRequestValidatorTest {
     // which means they are caught during Jackson deserialization before the validator runs.
     assertThatThrownBy(
             () ->
-                TenantCreateRequestContract.builder()
+                new TenantCreateRequest()
                     .tenantId(tenantId)
                     .name("New tenant")
-                    .description("A new tenant for testing")
-                    .build())
+                    .description("A new tenant for testing"))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessage(expectedMessage);
   }

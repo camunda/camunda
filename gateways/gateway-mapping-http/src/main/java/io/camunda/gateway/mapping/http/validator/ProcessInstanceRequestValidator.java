@@ -11,7 +11,7 @@ import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESS
 import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_EMPTY_ATTRIBUTE;
 import static io.camunda.gateway.mapping.http.validator.RequestValidator.validate;
 
-import io.camunda.gateway.mapping.http.search.contract.generated.ProcessInstanceMigrationInstructionContract;
+import io.camunda.gateway.protocol.model.ProcessInstanceMigrationInstruction;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -27,19 +27,20 @@ public class ProcessInstanceRequestValidator {
   }
 
   public static Optional<ProblemDetail> validateMigrationInstructions(
-      final ProcessInstanceMigrationInstructionContract request) {
+      final ProcessInstanceMigrationInstruction request) {
     return validate(
         violations -> {
-          if (request.mappingInstructions() == null || request.mappingInstructions().isEmpty()) {
+          if (request.getMappingInstructions() == null
+              || request.getMappingInstructions().isEmpty()) {
             violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("mappingInstructions"));
           } else {
             final boolean allValid =
-                request.mappingInstructions().stream()
+                request.getMappingInstructions().stream()
                     .allMatch(
                         mi ->
-                            (mi.sourceElementId() != null && !mi.sourceElementId().isEmpty())
-                                && (mi.targetElementId() != null
-                                    && !mi.targetElementId().isEmpty()));
+                            (mi.getSourceElementId() != null && !mi.getSourceElementId().isEmpty())
+                                && (mi.getTargetElementId() != null
+                                    && !mi.getTargetElementId().isEmpty()));
             if (!allValid) {
               violations.add(
                   ERROR_MESSAGE_ALL_REQUIRED_FIELD.formatted(

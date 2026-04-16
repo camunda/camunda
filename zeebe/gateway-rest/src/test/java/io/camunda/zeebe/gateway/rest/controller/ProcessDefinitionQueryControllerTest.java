@@ -15,7 +15,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import io.camunda.gateway.mapping.http.search.contract.generated.ProcessDefinitionSearchQuerySortRequestContract;
+import io.camunda.gateway.protocol.model.ProcessDefinitionSearchQuerySortRequest;
 import io.camunda.search.entities.FormEntity;
 import io.camunda.search.entities.ProcessDefinitionEntity;
 import io.camunda.search.entities.ProcessDefinitionInstanceStatisticsEntity;
@@ -985,11 +985,11 @@ public class ProcessDefinitionQueryControllerTest extends RestControllerTest {
 
   @ParameterizedTest
   @EnumSource(
-      value = ProcessDefinitionSearchQuerySortRequestContract.FieldEnum.class,
+      value = ProcessDefinitionSearchQuerySortRequest.FieldEnum.class,
       names = {"PROCESS_DEFINITION_ID", "TENANT_ID"},
       mode = EnumSource.Mode.EXCLUDE)
   void shouldRejectUnsupportedSortFieldWhenIsLatestVersionIsTrue(
-      final ProcessDefinitionSearchQuerySortRequestContract.FieldEnum unsupportedField) {
+      final ProcessDefinitionSearchQuerySortRequest.FieldEnum unsupportedField) {
     // given
     final var request =
         String.format(
@@ -1071,10 +1071,10 @@ public class ProcessDefinitionQueryControllerTest extends RestControllerTest {
 
   @ParameterizedTest
   @EnumSource(
-      value = ProcessDefinitionSearchQuerySortRequestContract.FieldEnum.class,
+      value = ProcessDefinitionSearchQuerySortRequest.FieldEnum.class,
       names = {"PROCESS_DEFINITION_ID", "TENANT_ID"})
   void shouldAllowSupportedSortFieldsWhenIsLatestVersionIsTrue(
-      final ProcessDefinitionSearchQuerySortRequestContract.FieldEnum supportedField) {
+      final ProcessDefinitionSearchQuerySortRequest.FieldEnum supportedField) {
     // given
     final var request =
         String.format(

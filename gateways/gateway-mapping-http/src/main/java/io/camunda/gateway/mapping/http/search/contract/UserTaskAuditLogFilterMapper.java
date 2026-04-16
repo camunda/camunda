@@ -12,7 +12,7 @@ import static java.util.Optional.ofNullable;
 
 import io.camunda.gateway.mapping.http.converters.AuditLogActorTypeConverter;
 import io.camunda.gateway.mapping.http.converters.AuditLogOperationTypeConverter;
-import io.camunda.gateway.mapping.http.search.contract.generated.UserTaskAuditLogFilterContract;
+import io.camunda.gateway.protocol.model.UserTaskAuditLogFilter;
 import io.camunda.search.filter.AuditLogFilter;
 import io.camunda.search.filter.FilterBuilders;
 import java.time.OffsetDateTime;
@@ -25,24 +25,24 @@ public final class UserTaskAuditLogFilterMapper {
   private UserTaskAuditLogFilterMapper() {}
 
   public static AuditLogFilter toUserTaskAuditLogFilter(
-      @Nullable final UserTaskAuditLogFilterContract filter) {
+      @Nullable final UserTaskAuditLogFilter filter) {
     if (filter == null) {
       return FilterBuilders.auditLog().build();
     }
     final var builder = FilterBuilders.auditLog();
-    ofNullable(filter.operationType())
+    ofNullable(filter.getOperationType())
         .map(mapToOperations(String.class, new AuditLogOperationTypeConverter()))
         .ifPresent(builder::operationTypeOperations);
-    ofNullable(filter.result())
+    ofNullable(filter.getResult())
         .map(mapToOperations(String.class))
         .ifPresent(builder::resultOperations);
-    ofNullable(filter.timestamp())
+    ofNullable(filter.getTimestamp())
         .map(mapToOperations(OffsetDateTime.class))
         .ifPresent(builder::timestampOperations);
-    ofNullable(filter.actorId())
+    ofNullable(filter.getActorId())
         .map(mapToOperations(String.class))
         .ifPresent(builder::actorIdOperations);
-    ofNullable(filter.actorType())
+    ofNullable(filter.getActorType())
         .map(mapToOperations(String.class, new AuditLogActorTypeConverter()))
         .ifPresent(builder::actorTypeOperations);
     return builder.build();

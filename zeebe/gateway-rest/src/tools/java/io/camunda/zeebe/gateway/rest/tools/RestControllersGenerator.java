@@ -31,9 +31,9 @@ public class RestControllersGenerator {
   /** Package for service adapter interfaces (new types, no conflict). */
   private static final String ADAPTER_PACKAGE =
       "io.camunda.zeebe.gateway.rest.controller.generated";
-  /** DTO package in gateway-mapping-http (for FQN resolution in controller params). */
+  /** DTO package in gateway-model (for FQN resolution in controller params). */
   private static final String TARGET_PACKAGE =
-      "io.camunda.gateway.mapping.http.search.contract.generated";
+      "io.camunda.gateway.protocol.model";
 
   private static final String SEARCH_PACKAGE = "io.camunda.gateway.mapping.http.search";
 
@@ -655,7 +655,7 @@ public class RestControllersGenerator {
       PaginationType paginationType) {
 
     String requestDtoName() {
-      return entityName + "SearchQueryRequestContract";
+      return schemaName;
     }
   }
 
@@ -785,7 +785,8 @@ public class RestControllersGenerator {
       return "org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody";
     if (raw.equals("MultipartFile")) return "org.springframework.web.multipart.MultipartFile";
     if (raw.equals("Resource")) return "org.springframework.core.io.Resource";
-    if (raw.endsWith("Contract")) return TARGET_PACKAGE + "." + raw;
+    if (AVAILABLE_STRICT_CONTRACTS.contains(raw) || SEARCH_REQUEST_DTO_MAP.containsValue(raw))
+      return TARGET_PACKAGE + "." + raw;
     if (raw.endsWith("Enum")) return TARGET_PACKAGE + "." + raw;
     return null; // unknown — caller may need to add manually
   }
@@ -811,10 +812,7 @@ public class RestControllersGenerator {
    * MappingContractsGenerator.
    */
   private static String dtoClassName(String schemaName) {
-    if (schemaName.endsWith("Result") && !RETAINED_RESULT_SCHEMAS.contains(schemaName)) {
-      return schemaName.substring(0, schemaName.length() - 6) + "Contract";
-    }
-    return schemaName + "Contract";
+    return schemaName;
   }
 
   /**
@@ -1473,13 +1471,14 @@ public class RestControllersGenerator {
     if (isBinary && isArray) return "List<Part>";
     if (isBinary) return "Part";
     if (refSchema != null) {
-      String resolved = resolveSchemaType(refSchema);
-      // If the resolved type equals the original schema name, it is not a known
-      // strict-contract type — it is a scalar alias (e.g. TenantId → type: string).
-      if (resolved.equals(refSchema)) {
-        resolved = "String";
+      // Check whether the referenced schema is a known DTO type (contract or search request).
+      if (AVAILABLE_STRICT_CONTRACTS.contains(refSchema)
+          || SEARCH_REQUEST_DTO_MAP.containsKey(refSchema)) {
+        String resolved = resolveSchemaType(refSchema);
+        return isArray ? "List<" + resolved + ">" : resolved;
       }
-      return isArray ? "List<" + resolved + ">" : resolved;
+      // Not a known DTO — treat as scalar alias (e.g. TenantId → type: string).
+      return isArray ? "List<String>" : "String";
     }
     if (simpleType != null) return simpleType;
     return "String"; // fallback

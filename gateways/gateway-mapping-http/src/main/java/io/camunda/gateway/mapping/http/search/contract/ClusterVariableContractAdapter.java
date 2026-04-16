@@ -7,10 +7,10 @@
  */
 package io.camunda.gateway.mapping.http.search.contract;
 
-import io.camunda.gateway.mapping.http.search.contract.generated.ClusterVariableContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.ClusterVariableScopeEnum;
-import io.camunda.gateway.mapping.http.search.contract.generated.ClusterVariableSearchContract;
 import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
+import io.camunda.gateway.protocol.model.ClusterVariable;
+import io.camunda.gateway.protocol.model.ClusterVariableScopeEnum;
+import io.camunda.gateway.protocol.model.ClusterVariableSearch;
 import io.camunda.search.entities.ClusterVariableEntity;
 import java.util.List;
 
@@ -25,23 +25,21 @@ public final class ClusterVariableContractAdapter {
 
   private ClusterVariableContractAdapter() {}
 
-  public static List<ClusterVariableSearchContract> toSearchProjections(
+  public static List<ClusterVariableSearch> toSearchProjections(
       final List<ClusterVariableEntity> clusterVariableEntities, final boolean truncateValues) {
     return clusterVariableEntities.stream()
         .map(entity -> toSearchProjection(entity, truncateValues))
         .toList();
   }
 
-  public static ClusterVariableSearchContract toSearchProjection(
+  public static ClusterVariableSearch toSearchProjection(
       final ClusterVariableEntity entity, final boolean truncateValues) {
-    return ClusterVariableSearchContract.builder()
-        .name(
-            ContractPolicy.requireNonNull(
-                entity.name(), ClusterVariableSearchContract.Fields.NAME, entity))
+    return new ClusterVariableSearch()
+        .name(ContractPolicy.requireNonNull(entity.name(), "name", entity))
         .scope(
             ContractPolicy.requireNonNull(
                 ContractPolicy.mapEnum(entity.scope(), ClusterVariableScopeEnum::fromValue),
-                ClusterVariableSearchContract.Fields.SCOPE,
+                "scope",
                 entity))
         .value(
             ContractPolicy.requireNonNull(
@@ -49,34 +47,28 @@ public final class ClusterVariableContractAdapter {
                     ? ContractPolicy.resolvePreviewValue(
                         entity.value(), entity.fullValue(), entity.isPreview())
                     : entity.value(),
-                ClusterVariableSearchContract.Fields.VALUE,
+                "value",
                 entity))
         .isTruncated(
             ContractPolicy.requireNonNull(
-                truncateValues && entity.isPreview(),
-                ClusterVariableSearchContract.Fields.IS_TRUNCATED,
-                entity))
-        .tenantId(entity.tenantId())
-        .build();
+                truncateValues && entity.isPreview(), "isTruncated", entity))
+        .tenantId(entity.tenantId());
   }
 
-  public static ClusterVariableContract toItemProjection(final ClusterVariableEntity entity) {
-    return ClusterVariableContract.builder()
-        .name(
-            ContractPolicy.requireNonNull(
-                entity.name(), ClusterVariableContract.Fields.NAME, entity))
+  public static ClusterVariable toItemProjection(final ClusterVariableEntity entity) {
+    return new ClusterVariable()
+        .name(ContractPolicy.requireNonNull(entity.name(), "name", entity))
         .scope(
             ContractPolicy.requireNonNull(
                 ContractPolicy.mapEnum(entity.scope(), ClusterVariableScopeEnum::fromValue),
-                ClusterVariableContract.Fields.SCOPE,
+                "scope",
                 entity))
         .value(
             ContractPolicy.requireNonNull(
                 ContractPolicy.resolvePreviewValue(
                     entity.value(), entity.fullValue(), entity.isPreview()),
-                ClusterVariableContract.Fields.VALUE,
+                "value",
                 entity))
-        .tenantId(entity.tenantId())
-        .build();
+        .tenantId(entity.tenantId());
   }
 }

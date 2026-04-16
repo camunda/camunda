@@ -8,11 +8,11 @@
 package io.camunda.gateway.mapping.http.search.contract;
 
 import static io.camunda.gateway.mapping.http.ResponseMapper.formatDate;
-import static io.camunda.gateway.mapping.http.search.contract.generated.MessageSubscriptionContract.Fields;
 
-import io.camunda.gateway.mapping.http.search.contract.generated.MessageSubscriptionContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.MessageSubscriptionStateEnum;
 import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
+import io.camunda.gateway.mapping.http.util.KeyUtil;
+import io.camunda.gateway.protocol.model.MessageSubscription;
+import io.camunda.gateway.protocol.model.MessageSubscriptionStateEnum;
 import io.camunda.search.entities.MessageSubscriptionEntity;
 import java.util.List;
 
@@ -20,37 +20,35 @@ public final class MessageSubscriptionContractAdapter {
 
   private MessageSubscriptionContractAdapter() {}
 
-  public static List<MessageSubscriptionContract> adapt(
-      final List<MessageSubscriptionEntity> entities) {
+  public static List<MessageSubscription> adapt(final List<MessageSubscriptionEntity> entities) {
     return entities.stream().map(MessageSubscriptionContractAdapter::adapt).toList();
   }
 
-  public static MessageSubscriptionContract adapt(final MessageSubscriptionEntity entity) {
-    return MessageSubscriptionContract.builder()
+  public static MessageSubscription adapt(final MessageSubscriptionEntity entity) {
+    return new MessageSubscription()
         .messageSubscriptionKey(
             ContractPolicy.requireNonNull(
-                entity.messageSubscriptionKey(), Fields.MESSAGE_SUBSCRIPTION_KEY, entity))
+                KeyUtil.keyToString(entity.messageSubscriptionKey()),
+                "messageSubscriptionKey",
+                entity))
         .processDefinitionId(
             ContractPolicy.requireNonNull(
-                entity.processDefinitionId(), Fields.PROCESS_DEFINITION_ID, entity))
-        .elementId(ContractPolicy.requireNonNull(entity.flowNodeId(), Fields.ELEMENT_ID, entity))
+                entity.processDefinitionId(), "processDefinitionId", entity))
+        .elementId(ContractPolicy.requireNonNull(entity.flowNodeId(), "elementId", entity))
         .messageSubscriptionState(
             ContractPolicy.requireNonNull(
                 ContractPolicy.mapEnum(
                     entity.messageSubscriptionState(), MessageSubscriptionStateEnum::fromValue),
-                Fields.MESSAGE_SUBSCRIPTION_STATE,
+                "messageSubscriptionState",
                 entity))
         .lastUpdatedDate(
-            ContractPolicy.requireNonNull(
-                formatDate(entity.dateTime()), Fields.LAST_UPDATED_DATE, entity))
-        .messageName(
-            ContractPolicy.requireNonNull(entity.messageName(), Fields.MESSAGE_NAME, entity))
-        .tenantId(ContractPolicy.requireNonNull(entity.tenantId(), Fields.TENANT_ID, entity))
-        .processDefinitionKey(entity.processDefinitionKey())
-        .processInstanceKey(entity.processInstanceKey())
-        .rootProcessInstanceKey(entity.rootProcessInstanceKey())
-        .elementInstanceKey(entity.flowNodeInstanceKey())
-        .correlationKey(entity.correlationKey())
-        .build();
+            ContractPolicy.requireNonNull(formatDate(entity.dateTime()), "lastUpdatedDate", entity))
+        .messageName(ContractPolicy.requireNonNull(entity.messageName(), "messageName", entity))
+        .tenantId(ContractPolicy.requireNonNull(entity.tenantId(), "tenantId", entity))
+        .processDefinitionKey(KeyUtil.keyToString(entity.processDefinitionKey()))
+        .processInstanceKey(KeyUtil.keyToString(entity.processInstanceKey()))
+        .rootProcessInstanceKey(KeyUtil.keyToString(entity.rootProcessInstanceKey()))
+        .elementInstanceKey(KeyUtil.keyToString(entity.flowNodeInstanceKey()))
+        .correlationKey(entity.correlationKey());
   }
 }

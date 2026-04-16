@@ -7,7 +7,7 @@
  */
 package io.camunda.gateway.mapping.http.converters;
 
-import io.camunda.gateway.mapping.http.search.contract.generated.AuditLogEntityTypeEnum;
+import io.camunda.gateway.protocol.model.AuditLogEntityTypeEnum;
 import io.camunda.search.entities.AuditLogEntity.AuditLogEntityType;
 
 public final class AuditLogEntityTypeConverter implements CustomConverter<String> {

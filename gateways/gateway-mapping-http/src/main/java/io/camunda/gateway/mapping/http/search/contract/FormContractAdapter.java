@@ -7,23 +7,23 @@
  */
 package io.camunda.gateway.mapping.http.search.contract;
 
-import static io.camunda.gateway.mapping.http.search.contract.generated.FormContract.Fields;
-
-import io.camunda.gateway.mapping.http.search.contract.generated.FormContract;
 import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
+import io.camunda.gateway.mapping.http.util.KeyUtil;
+import io.camunda.gateway.protocol.model.Form;
 import io.camunda.search.entities.FormEntity;
 
 public final class FormContractAdapter {
 
   private FormContractAdapter() {}
 
-  public static FormContract adapt(final FormEntity entity) {
-    return FormContract.builder()
-        .tenantId(ContractPolicy.requireNonNull(entity.tenantId(), Fields.TENANT_ID, entity))
-        .formId(ContractPolicy.requireNonNull(entity.formId(), Fields.FORM_ID, entity))
-        .schema(ContractPolicy.requireNonNull(entity.schema(), Fields.SCHEMA, entity))
-        .version(ContractPolicy.requireNonNull(entity.version(), Fields.VERSION, entity))
-        .formKey(ContractPolicy.requireNonNull(entity.formKey(), Fields.FORM_KEY, entity))
-        .build();
+  public static Form adapt(final FormEntity entity) {
+    return new Form()
+        .tenantId(ContractPolicy.requireNonNull(entity.tenantId(), "tenantId", entity))
+        .formId(ContractPolicy.requireNonNull(entity.formId(), "formId", entity))
+        .schema(ContractPolicy.requireNonNull(entity.schema(), "schema", entity))
+        .version(ContractPolicy.requireNonNull(entity.version(), "version", entity))
+        .formKey(
+            ContractPolicy.requireNonNull(
+                KeyUtil.keyToString(entity.formKey()), "formKey", entity));
   }
 }

@@ -11,7 +11,6 @@ import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESS
 import static io.camunda.gateway.mapping.http.validator.RequestValidator.validateDate;
 import static io.camunda.gateway.mapping.http.validator.RequestValidator.validateDuration;
 
-import io.camunda.gateway.mapping.http.search.contract.generated.JobTimeSeriesStatisticsFilterContract;
 import io.camunda.search.filter.FilterBuilders;
 import io.camunda.search.filter.JobTimeSeriesStatisticsFilter;
 import io.camunda.zeebe.util.Either;
@@ -19,7 +18,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import org.jspecify.annotations.NullMarked;
-import org.jspecify.annotations.Nullable;
 
 @NullMarked
 public final class JobTimeSeriesStatisticsFilterMapper {
@@ -27,23 +25,23 @@ public final class JobTimeSeriesStatisticsFilterMapper {
   private JobTimeSeriesStatisticsFilterMapper() {}
 
   public static Either<List<String>, JobTimeSeriesStatisticsFilter> toJobTimeSeriesStatisticsFilter(
-      @Nullable final JobTimeSeriesStatisticsFilterContract filter) {
+      final io.camunda.gateway.protocol.model.JobTimeSeriesStatisticsFilter filter) {
     final var builder = FilterBuilders.jobTimeSeriesStatistics();
     final List<String> validationErrors = new ArrayList<>();
     if (filter == null) {
       validationErrors.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("filter"));
       return Either.left(validationErrors);
     }
-    final var from = validateDate(filter.from(), "from", validationErrors);
+    final var from = validateDate(filter.getFrom(), "from", validationErrors);
     Optional.ofNullable(from).ifPresent(builder::from);
-    final var to = validateDate(filter.to(), "to", validationErrors);
+    final var to = validateDate(filter.getTo(), "to", validationErrors);
     Optional.ofNullable(to).ifPresent(builder::to);
-    if (filter.jobType() == null || filter.jobType().isBlank()) {
+    if (filter.getJobType() == null || filter.getJobType().isBlank()) {
       validationErrors.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("jobType"));
     } else {
-      builder.jobType(filter.jobType());
+      builder.jobType(filter.getJobType());
     }
-    final var resolution = validateDuration(filter.resolution(), "resolution", validationErrors);
+    final var resolution = validateDuration(filter.getResolution(), "resolution", validationErrors);
     Optional.ofNullable(resolution).ifPresent(builder::resolution);
     return validationErrors.isEmpty()
         ? Either.right(builder.build())

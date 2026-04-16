@@ -8,12 +8,12 @@
 package io.camunda.gateway.mapping.http.search.contract;
 
 import static io.camunda.gateway.mapping.http.ResponseMapper.formatDate;
-import static io.camunda.gateway.mapping.http.search.contract.generated.IncidentContract.Fields;
 
-import io.camunda.gateway.mapping.http.search.contract.generated.IncidentContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.IncidentErrorTypeEnum;
-import io.camunda.gateway.mapping.http.search.contract.generated.IncidentStateEnum;
 import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
+import io.camunda.gateway.mapping.http.util.KeyUtil;
+import io.camunda.gateway.protocol.model.Incident;
+import io.camunda.gateway.protocol.model.IncidentErrorTypeEnum;
+import io.camunda.gateway.protocol.model.IncidentStateEnum;
 import io.camunda.search.entities.IncidentEntity;
 import java.util.List;
 
@@ -21,47 +21,46 @@ public final class IncidentContractAdapter {
 
   private IncidentContractAdapter() {}
 
-  public static List<IncidentContract> adapt(final List<IncidentEntity> entities) {
+  public static List<Incident> adapt(final List<IncidentEntity> entities) {
     return entities.stream().map(IncidentContractAdapter::adapt).toList();
   }
 
-  public static IncidentContract adapt(final IncidentEntity entity) {
-    return IncidentContract.builder()
+  public static Incident adapt(final IncidentEntity entity) {
+    return new Incident()
         .processDefinitionId(
             ContractPolicy.requireNonNull(
-                entity.processDefinitionId(), Fields.PROCESS_DEFINITION_ID, entity))
+                entity.processDefinitionId(), "processDefinitionId", entity))
         .errorType(
             ContractPolicy.requireNonNull(
                 ContractPolicy.mapEnum(entity.errorType(), IncidentErrorTypeEnum::fromValue),
-                Fields.ERROR_TYPE,
+                "errorType",
                 entity))
-        .errorMessage(
-            ContractPolicy.requireNonNull(entity.errorMessage(), Fields.ERROR_MESSAGE, entity))
-        .elementId(ContractPolicy.requireNonNull(entity.flowNodeId(), Fields.ELEMENT_ID, entity))
+        .errorMessage(ContractPolicy.requireNonNull(entity.errorMessage(), "errorMessage", entity))
+        .elementId(ContractPolicy.requireNonNull(entity.flowNodeId(), "elementId", entity))
         .creationTime(
             ContractPolicy.requireNonNull(
-                formatDate(entity.creationTime()), Fields.CREATION_TIME, entity))
+                formatDate(entity.creationTime()), "creationTime", entity))
         .state(
             ContractPolicy.requireNonNull(
                 entity.state() != null
                     ? IncidentStateEnum.fromValue(entity.state().name())
                     : IncidentStateEnum.UNKNOWN,
-                Fields.STATE,
+                "state",
                 entity))
-        .tenantId(ContractPolicy.requireNonNull(entity.tenantId(), Fields.TENANT_ID, entity))
+        .tenantId(ContractPolicy.requireNonNull(entity.tenantId(), "tenantId", entity))
         .incidentKey(
-            ContractPolicy.requireNonNull(entity.incidentKey(), Fields.INCIDENT_KEY, entity))
+            ContractPolicy.requireNonNull(
+                KeyUtil.keyToString(entity.incidentKey()), "incidentKey", entity))
         .processDefinitionKey(
             ContractPolicy.requireNonNull(
-                entity.processDefinitionKey(), Fields.PROCESS_DEFINITION_KEY, entity))
+                KeyUtil.keyToString(entity.processDefinitionKey()), "processDefinitionKey", entity))
         .processInstanceKey(
             ContractPolicy.requireNonNull(
-                entity.processInstanceKey(), Fields.PROCESS_INSTANCE_KEY, entity))
+                KeyUtil.keyToString(entity.processInstanceKey()), "processInstanceKey", entity))
         .elementInstanceKey(
             ContractPolicy.requireNonNull(
-                entity.flowNodeInstanceKey(), Fields.ELEMENT_INSTANCE_KEY, entity))
-        .rootProcessInstanceKey(entity.rootProcessInstanceKey())
-        .jobKey(entity.jobKey())
-        .build();
+                KeyUtil.keyToString(entity.flowNodeInstanceKey()), "elementInstanceKey", entity))
+        .rootProcessInstanceKey(KeyUtil.keyToString(entity.rootProcessInstanceKey()))
+        .jobKey(KeyUtil.keyToString(entity.jobKey()));
   }
 }

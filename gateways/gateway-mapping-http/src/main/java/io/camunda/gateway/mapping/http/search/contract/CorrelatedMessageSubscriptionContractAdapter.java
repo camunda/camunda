@@ -8,10 +8,10 @@
 package io.camunda.gateway.mapping.http.search.contract;
 
 import static io.camunda.gateway.mapping.http.ResponseMapper.formatDate;
-import static io.camunda.gateway.mapping.http.search.contract.generated.CorrelatedMessageSubscriptionContract.Fields;
 
-import io.camunda.gateway.mapping.http.search.contract.generated.CorrelatedMessageSubscriptionContract;
 import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
+import io.camunda.gateway.mapping.http.util.KeyUtil;
+import io.camunda.gateway.protocol.model.CorrelatedMessageSubscription;
 import io.camunda.search.entities.CorrelatedMessageSubscriptionEntity;
 import java.util.List;
 
@@ -19,39 +19,38 @@ public final class CorrelatedMessageSubscriptionContractAdapter {
 
   private CorrelatedMessageSubscriptionContractAdapter() {}
 
-  public static List<CorrelatedMessageSubscriptionContract> adapt(
+  public static List<CorrelatedMessageSubscription> adapt(
       final List<CorrelatedMessageSubscriptionEntity> entities) {
     return entities.stream().map(CorrelatedMessageSubscriptionContractAdapter::adapt).toList();
   }
 
-  public static CorrelatedMessageSubscriptionContract adapt(
+  public static CorrelatedMessageSubscription adapt(
       final CorrelatedMessageSubscriptionEntity entity) {
-    return CorrelatedMessageSubscriptionContract.builder()
+    return new CorrelatedMessageSubscription()
         .correlationTime(
             ContractPolicy.requireNonNull(
-                formatDate(entity.correlationTime()), Fields.CORRELATION_TIME, entity))
-        .elementId(ContractPolicy.requireNonNull(entity.flowNodeId(), Fields.ELEMENT_ID, entity))
-        .messageKey(ContractPolicy.requireNonNull(entity.messageKey(), Fields.MESSAGE_KEY, entity))
-        .messageName(
-            ContractPolicy.requireNonNull(entity.messageName(), Fields.MESSAGE_NAME, entity))
-        .partitionId(
-            ContractPolicy.requireNonNull(entity.partitionId(), Fields.PARTITION_ID, entity))
+                formatDate(entity.correlationTime()), "correlationTime", entity))
+        .elementId(ContractPolicy.requireNonNull(entity.flowNodeId(), "elementId", entity))
+        .messageKey(
+            ContractPolicy.requireNonNull(
+                KeyUtil.keyToString(entity.messageKey()), "messageKey", entity))
+        .messageName(ContractPolicy.requireNonNull(entity.messageName(), "messageName", entity))
+        .partitionId(ContractPolicy.requireNonNull(entity.partitionId(), "partitionId", entity))
         .processDefinitionId(
             ContractPolicy.requireNonNull(
-                entity.processDefinitionId(), Fields.PROCESS_DEFINITION_ID, entity))
+                entity.processDefinitionId(), "processDefinitionId", entity))
         .processDefinitionKey(
             ContractPolicy.requireNonNull(
-                entity.processDefinitionKey(), Fields.PROCESS_DEFINITION_KEY, entity))
+                KeyUtil.keyToString(entity.processDefinitionKey()), "processDefinitionKey", entity))
         .processInstanceKey(
             ContractPolicy.requireNonNull(
-                entity.processInstanceKey(), Fields.PROCESS_INSTANCE_KEY, entity))
+                KeyUtil.keyToString(entity.processInstanceKey()), "processInstanceKey", entity))
         .subscriptionKey(
             ContractPolicy.requireNonNull(
-                entity.subscriptionKey(), Fields.SUBSCRIPTION_KEY, entity))
-        .tenantId(ContractPolicy.requireNonNull(entity.tenantId(), Fields.TENANT_ID, entity))
+                KeyUtil.keyToString(entity.subscriptionKey()), "subscriptionKey", entity))
+        .tenantId(ContractPolicy.requireNonNull(entity.tenantId(), "tenantId", entity))
         .correlationKey(entity.correlationKey())
-        .elementInstanceKey(entity.flowNodeInstanceKey())
-        .rootProcessInstanceKey(entity.rootProcessInstanceKey())
-        .build();
+        .elementInstanceKey(KeyUtil.keyToString(entity.flowNodeInstanceKey()))
+        .rootProcessInstanceKey(KeyUtil.keyToString(entity.rootProcessInstanceKey()));
   }
 }

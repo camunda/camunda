@@ -15,8 +15,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
-import io.camunda.gateway.mapping.http.search.contract.generated.UserRequestContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.UserUpdateRequestContract;
+import io.camunda.gateway.protocol.model.UserRequest;
+import io.camunda.gateway.protocol.model.UserUpdateRequest;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.service.UserServices;
@@ -180,7 +180,7 @@ public class UserControllerTest {
       // given
       // when then
       assertRequestRejectedExceptionally(
-          new UserRequestContract("zabraboof", "", "Foo Bar", "bar@baz.com"),
+          new UserRequest().password("zabraboof").username("").name("Foo Bar").email("bar@baz.com"),
           """
             {
               "type": "about:blank",
@@ -216,7 +216,7 @@ public class UserControllerTest {
       // given
       // when then
       assertRequestRejectedExceptionally(
-          new UserRequestContract("", "foo", "Foo Bar", "bar@baz.com"),
+          new UserRequest().password("").username("foo").name("Foo Bar").email("bar@baz.com"),
           """
             {
               "type": "about:blank",
@@ -270,7 +270,7 @@ public class UserControllerTest {
       final var email = "invalid@email.reject";
       // when then
       assertRequestRejectedExceptionally(
-          new UserRequestContract("zabraboof", "foo", "Foo Bar", email),
+          new UserRequest().password("zabraboof").username("foo").name("Foo Bar").email(email),
           """
             {
               "type": "about:blank",
@@ -289,7 +289,11 @@ public class UserControllerTest {
       final var username = "x".repeat(257);
       // when then
       assertRequestRejectedExceptionally(
-          new UserRequestContract("zabraboof", username, "Foo Bar", "bar@baz.com"),
+          new UserRequest()
+              .password("zabraboof")
+              .username(username)
+              .name("Foo Bar")
+              .email("bar@baz.com"),
           """
             {
               "type": "about:blank",
@@ -313,7 +317,11 @@ public class UserControllerTest {
       // given
       // when then
       assertRequestRejectedExceptionally(
-          new UserRequestContract("zabraboof", username, "Foo Bar", "bar@baz.com"),
+          new UserRequest()
+              .password("zabraboof")
+              .username(username)
+              .name("Foo Bar")
+              .email("bar@baz.com"),
           """
             {
               "type": "about:blank",
@@ -368,7 +376,11 @@ public class UserControllerTest {
           .uri("%s/%s".formatted(USER_BASE_URL, user.username()))
           .accept(MediaType.APPLICATION_JSON)
           .contentType(MediaType.APPLICATION_JSON)
-          .bodyValue(new UserUpdateRequestContract(user.password(), user.name(), user.email()))
+          .bodyValue(
+              new UserUpdateRequest()
+                  .password(user.password())
+                  .name(user.name())
+                  .email(user.email()))
           .exchange()
           .expectStatus()
           .isOk();
@@ -380,8 +392,12 @@ public class UserControllerTest {
       return new UserDTO(username, "Foo Bar", "bar@baz.com", "zabraboof");
     }
 
-    private UserRequestContract validUserWithPasswordRequest() {
-      return new UserRequestContract("zabraboof", "foo", "Foo Bar", "bar@baz.com");
+    private UserRequest validUserWithPasswordRequest() {
+      return new UserRequest()
+          .password("zabraboof")
+          .username("foo")
+          .name("Foo Bar")
+          .email("bar@baz.com");
     }
 
     private void assertRequestRejectedExceptionally(
@@ -452,7 +468,11 @@ public class UserControllerTest {
           .uri(uri)
           .accept(MediaType.APPLICATION_JSON)
           .contentType(MediaType.APPLICATION_JSON)
-          .bodyValue(new UserUpdateRequestContract(user.password(), user.name(), user.email()))
+          .bodyValue(
+              new UserUpdateRequest()
+                  .password(user.password())
+                  .name(user.name())
+                  .email(user.email()))
           .exchange()
           .expectStatus()
           .isForbidden()

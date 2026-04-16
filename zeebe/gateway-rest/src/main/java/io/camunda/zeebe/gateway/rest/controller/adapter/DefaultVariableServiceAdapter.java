@@ -11,7 +11,7 @@ import static io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper.mapErrorToRes
 
 import io.camunda.gateway.mapping.http.search.SearchQueryRequestMapper;
 import io.camunda.gateway.mapping.http.search.SearchQueryResponseMapper;
-import io.camunda.gateway.mapping.http.search.contract.generated.VariableSearchQueryRequestContract;
+import io.camunda.gateway.protocol.model.VariableSearchQuery;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.VariableServices;
 import io.camunda.zeebe.gateway.rest.controller.generated.VariableServiceAdapter;
@@ -31,7 +31,7 @@ public class DefaultVariableServiceAdapter implements VariableServiceAdapter {
   @Override
   public ResponseEntity<Object> searchVariables(
       final Boolean truncateValues,
-      final VariableSearchQueryRequestContract queryStrict,
+      final VariableSearchQuery queryStrict,
       final CamundaAuthentication authentication) {
     final boolean truncate = truncateValues == null || truncateValues;
     return SearchQueryRequestMapper.toVariableQueryStrict(queryStrict)

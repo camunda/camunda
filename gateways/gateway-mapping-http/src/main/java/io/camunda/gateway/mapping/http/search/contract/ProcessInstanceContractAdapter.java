@@ -8,11 +8,11 @@
 package io.camunda.gateway.mapping.http.search.contract;
 
 import static io.camunda.gateway.mapping.http.ResponseMapper.formatDate;
-import static io.camunda.gateway.mapping.http.search.contract.generated.ProcessInstanceContract.Fields;
 
-import io.camunda.gateway.mapping.http.search.contract.generated.ProcessInstanceContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.ProcessInstanceStateEnum;
 import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
+import io.camunda.gateway.mapping.http.util.KeyUtil;
+import io.camunda.gateway.protocol.model.ProcessInstance;
+import io.camunda.gateway.protocol.model.ProcessInstanceStateEnum;
 import io.camunda.search.entities.ProcessInstanceEntity;
 import io.camunda.search.entities.ProcessInstanceEntity.ProcessInstanceState;
 import java.util.List;
@@ -22,40 +22,37 @@ public final class ProcessInstanceContractAdapter {
 
   private ProcessInstanceContractAdapter() {}
 
-  public static List<ProcessInstanceContract> adapt(final List<ProcessInstanceEntity> entities) {
+  public static List<ProcessInstance> adapt(final List<ProcessInstanceEntity> entities) {
     return entities.stream().map(ProcessInstanceContractAdapter::adapt).toList();
   }
 
-  public static ProcessInstanceContract adapt(final ProcessInstanceEntity entity) {
-    return ProcessInstanceContract.builder()
+  public static ProcessInstance adapt(final ProcessInstanceEntity entity) {
+    return new ProcessInstance()
         .processDefinitionId(
             ContractPolicy.requireNonNull(
-                entity.processDefinitionId(), Fields.PROCESS_DEFINITION_ID, entity))
+                entity.processDefinitionId(), "processDefinitionId", entity))
         .processDefinitionVersion(
             ContractPolicy.requireNonNull(
-                entity.processDefinitionVersion(), Fields.PROCESS_DEFINITION_VERSION, entity))
+                entity.processDefinitionVersion(), "processDefinitionVersion", entity))
         .startDate(
-            ContractPolicy.requireNonNull(
-                formatDate(entity.startDate()), Fields.START_DATE, entity))
-        .state(ContractPolicy.requireNonNull(toProtocolState(entity.state()), Fields.STATE, entity))
-        .hasIncident(
-            ContractPolicy.requireNonNull(entity.hasIncident(), Fields.HAS_INCIDENT, entity))
-        .tenantId(ContractPolicy.requireNonNull(entity.tenantId(), Fields.TENANT_ID, entity))
+            ContractPolicy.requireNonNull(formatDate(entity.startDate()), "startDate", entity))
+        .state(ContractPolicy.requireNonNull(toProtocolState(entity.state()), "state", entity))
+        .hasIncident(ContractPolicy.requireNonNull(entity.hasIncident(), "hasIncident", entity))
+        .tenantId(ContractPolicy.requireNonNull(entity.tenantId(), "tenantId", entity))
         .processInstanceKey(
             ContractPolicy.requireNonNull(
-                entity.processInstanceKey(), Fields.PROCESS_INSTANCE_KEY, entity))
+                KeyUtil.keyToString(entity.processInstanceKey()), "processInstanceKey", entity))
         .processDefinitionKey(
             ContractPolicy.requireNonNull(
-                entity.processDefinitionKey(), Fields.PROCESS_DEFINITION_KEY, entity))
-        .tags(ContractPolicy.requireNonNull(entity.tags(), Fields.TAGS, entity))
+                KeyUtil.keyToString(entity.processDefinitionKey()), "processDefinitionKey", entity))
+        .tags(ContractPolicy.requireNonNull(entity.tags(), "tags", entity))
         .processDefinitionName(entity.processDefinitionName())
         .processDefinitionVersionTag(entity.processDefinitionVersionTag())
         .endDate(formatDate(entity.endDate()))
-        .parentProcessInstanceKey(entity.parentProcessInstanceKey())
-        .parentElementInstanceKey(entity.parentFlowNodeInstanceKey())
-        .rootProcessInstanceKey(entity.rootProcessInstanceKey())
-        .businessId(emptyToNull(entity.businessId()))
-        .build();
+        .parentProcessInstanceKey(KeyUtil.keyToString(entity.parentProcessInstanceKey()))
+        .parentElementInstanceKey(KeyUtil.keyToString(entity.parentFlowNodeInstanceKey()))
+        .rootProcessInstanceKey(KeyUtil.keyToString(entity.rootProcessInstanceKey()))
+        .businessId(emptyToNull(entity.businessId()));
   }
 
   /**

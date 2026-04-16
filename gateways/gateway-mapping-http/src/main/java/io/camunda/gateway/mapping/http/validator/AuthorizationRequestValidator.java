@@ -9,8 +9,8 @@ package io.camunda.gateway.mapping.http.validator;
 
 import static io.camunda.gateway.mapping.http.validator.RequestValidator.validate;
 
-import io.camunda.gateway.mapping.http.search.contract.generated.AuthorizationIdBasedRequestContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.AuthorizationPropertyBasedRequestContract;
+import io.camunda.gateway.protocol.model.AuthorizationIdBasedRequest;
+import io.camunda.gateway.protocol.model.AuthorizationPropertyBasedRequest;
 import io.camunda.security.validation.AuthorizationValidator;
 import java.util.Optional;
 import java.util.Set;
@@ -24,29 +24,28 @@ public final class AuthorizationRequestValidator {
     this.authorizationValidator = authorizationValidator;
   }
 
-  public Optional<ProblemDetail> validateIdBasedRequest(
-      final AuthorizationIdBasedRequestContract request) {
+  public Optional<ProblemDetail> validateIdBasedRequest(final AuthorizationIdBasedRequest request) {
     return validate(
         () ->
             authorizationValidator.validate(
-                request.ownerId(),
-                request.ownerType(),
-                request.resourceType(),
-                request.resourceId(),
+                request.getOwnerId(),
+                request.getOwnerType(),
+                request.getResourceType(),
+                request.getResourceId(),
                 null,
-                Set.copyOf(request.permissionTypes())));
+                Set.copyOf(request.getPermissionTypes())));
   }
 
   public Optional<ProblemDetail> validatePropertyBasedRequest(
-      final AuthorizationPropertyBasedRequestContract request) {
+      final AuthorizationPropertyBasedRequest request) {
     return validate(
         () ->
             authorizationValidator.validate(
-                request.ownerId(),
-                request.ownerType(),
-                request.resourceType(),
+                request.getOwnerId(),
+                request.getOwnerType(),
+                request.getResourceType(),
                 null,
-                request.resourcePropertyName(),
-                Set.copyOf(request.permissionTypes())));
+                request.getResourcePropertyName(),
+                Set.copyOf(request.getPermissionTypes())));
   }
 }

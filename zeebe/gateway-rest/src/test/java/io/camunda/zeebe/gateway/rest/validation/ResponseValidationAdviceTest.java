@@ -12,7 +12,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import io.camunda.gateway.mapping.http.search.contract.generated.LicenseResponseContract;
+import io.camunda.gateway.protocol.model.LicenseResponse;
 import jakarta.validation.Validation;
 import jakarta.validation.Validator;
 import jakarta.validation.ValidatorFactory;
@@ -119,7 +119,11 @@ class ResponseValidationAdviceTest {
     void shouldPassThroughValidDto() {
       // given — all required fields set
       final var validResponse =
-          new LicenseResponseContract(true, "saas", true, "2025-12-31T23:59:59Z");
+          new LicenseResponse()
+              .validLicense(true)
+              .licenseType("saas")
+              .isCommercial(true)
+              .expiresAt("2025-12-31T23:59:59Z");
 
       // when
       final Object result = callBeforeBodyWrite(validResponse);

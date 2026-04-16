@@ -10,7 +10,7 @@ package io.camunda.gateway.mcp.model;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedProcessInstanceStateEnum;
+import io.camunda.gateway.protocol.model.ProcessInstanceStateEnum;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.media.Schema.RequiredMode;
 import java.util.List;
@@ -34,7 +34,7 @@ public record McpProcessInstanceFilter(
     @JsonProperty
         @JsonPropertyDescription("Filter by process instance state.")
         @Schema(requiredMode = RequiredMode.NOT_REQUIRED, defaultValue = "##default")
-        GeneratedProcessInstanceStateEnum state,
+        ProcessInstanceStateEnum state,
     @JsonProperty
         @JsonPropertyDescription("Filter by whether the process instance has an incident.")
         @Schema(requiredMode = RequiredMode.NOT_REQUIRED, defaultValue = "##default")

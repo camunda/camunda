@@ -11,14 +11,12 @@ import static io.camunda.gateway.mapping.http.util.AdvancedSearchFilterUtil.mapT
 import static java.util.Optional.ofNullable;
 
 import io.camunda.gateway.mapping.http.converters.DecisionInstanceStateConverter;
-import io.camunda.gateway.mapping.http.search.contract.generated.DecisionInstanceFilterContract;
 import io.camunda.gateway.mapping.http.util.KeyUtil;
 import io.camunda.search.entities.DecisionInstanceEntity.DecisionDefinitionType;
 import io.camunda.search.filter.DecisionInstanceFilter;
 import io.camunda.search.filter.FilterBuilders;
 import java.time.OffsetDateTime;
 import org.jspecify.annotations.NullMarked;
-import org.jspecify.annotations.Nullable;
 
 @NullMarked
 public final class DecisionInstanceFilterMapper {
@@ -26,47 +24,48 @@ public final class DecisionInstanceFilterMapper {
   private DecisionInstanceFilterMapper() {}
 
   public static DecisionInstanceFilter toDecisionInstanceFilter(
-      @Nullable final DecisionInstanceFilterContract filter) {
+      final io.camunda.gateway.protocol.model.DecisionInstanceFilter filter) {
     final var builder = FilterBuilders.decisionInstance();
     if (filter != null) {
-      ofNullable(filter.decisionEvaluationKey())
+      ofNullable(filter.getDecisionEvaluationKey())
           .map(KeyUtil::keyToLong)
           .ifPresent(builder::decisionInstanceKeys);
-      ofNullable(filter.decisionEvaluationInstanceKey())
+      ofNullable(filter.getDecisionEvaluationInstanceKey())
           .map(mapToOperations(String.class))
           .ifPresent(builder::decisionInstanceIdOperations);
-      ofNullable(filter.state())
+      ofNullable(filter.getState())
           .map(mapToOperations(String.class, new DecisionInstanceStateConverter()))
           .ifPresent(builder::stateOperations);
-      ofNullable(filter.evaluationFailure()).ifPresent(builder::evaluationFailures);
-      ofNullable(filter.evaluationDate())
+      ofNullable(filter.getEvaluationFailure()).ifPresent(builder::evaluationFailures);
+      ofNullable(filter.getEvaluationDate())
           .map(mapToOperations(OffsetDateTime.class))
           .ifPresent(builder::evaluationDateOperations);
-      ofNullable(filter.processDefinitionKey())
+      ofNullable(filter.getProcessDefinitionKey())
           .map(KeyUtil::keyToLong)
           .ifPresent(builder::processDefinitionKeys);
-      ofNullable(filter.processInstanceKey())
+      ofNullable(filter.getProcessInstanceKey())
           .map(KeyUtil::keyToLong)
           .ifPresent(builder::processInstanceKeys);
-      ofNullable(filter.elementInstanceKey())
+      ofNullable(filter.getElementInstanceKey())
           .map(mapToOperations(Long.class))
           .ifPresent(builder::flowNodeInstanceKeyOperations);
-      ofNullable(filter.decisionDefinitionKey())
+      ofNullable(filter.getDecisionDefinitionKey())
           .map(mapToOperations(Long.class))
           .ifPresent(builder::decisionDefinitionKeyOperations);
-      ofNullable(filter.decisionDefinitionId()).ifPresent(builder::decisionDefinitionIds);
-      ofNullable(filter.decisionDefinitionName()).ifPresent(builder::decisionDefinitionNames);
-      ofNullable(filter.decisionDefinitionVersion()).ifPresent(builder::decisionDefinitionVersions);
-      ofNullable(filter.decisionDefinitionType())
+      ofNullable(filter.getDecisionDefinitionId()).ifPresent(builder::decisionDefinitionIds);
+      ofNullable(filter.getDecisionDefinitionName()).ifPresent(builder::decisionDefinitionNames);
+      ofNullable(filter.getDecisionDefinitionVersion())
+          .ifPresent(builder::decisionDefinitionVersions);
+      ofNullable(filter.getDecisionDefinitionType())
           .map(t -> Enum.valueOf(DecisionDefinitionType.class, t.name()))
           .ifPresent(builder::decisionTypes);
-      ofNullable(filter.rootDecisionDefinitionKey())
+      ofNullable(filter.getRootDecisionDefinitionKey())
           .map(mapToOperations(Long.class))
           .ifPresent(builder::rootDecisionDefinitionKeyOperations);
-      ofNullable(filter.decisionRequirementsKey())
+      ofNullable(filter.getDecisionRequirementsKey())
           .map(mapToOperations(Long.class))
           .ifPresent(builder::decisionRequirementsKeyOperations);
-      ofNullable(filter.tenantId()).ifPresent(builder::tenantIds);
+      ofNullable(filter.getTenantId()).ifPresent(builder::tenantIds);
     }
     return builder.build();
   }

@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.gateway.rest.controller.adapter;
 
-import io.camunda.gateway.mapping.http.search.contract.generated.LicenseResponseContract;
+import io.camunda.gateway.protocol.model.LicenseResponse;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.ManagementServices;
 import io.camunda.zeebe.gateway.rest.controller.generated.LicenseServiceAdapter;
@@ -35,11 +35,11 @@ public class DefaultLicenseServiceAdapter implements LicenseServiceAdapter {
   public ResponseEntity<Object> getLicense(final CamundaAuthentication authentication) {
     final OffsetDateTime expirationDate = managementServices.getCamundaLicenseExpiresAt();
     final var response =
-        new LicenseResponseContract(
-            managementServices.isCamundaLicenseValid(),
-            managementServices.getCamundaLicenseType().getName(),
-            managementServices.isCommercialCamundaLicense(),
-            expirationDate == null ? null : DATE_TIME_FORMATTER.format(expirationDate));
+        new LicenseResponse()
+            .validLicense(managementServices.isCamundaLicenseValid())
+            .licenseType(managementServices.getCamundaLicenseType().getName())
+            .isCommercial(managementServices.isCommercialCamundaLicense())
+            .expiresAt(expirationDate == null ? null : DATE_TIME_FORMATTER.format(expirationDate));
     return ResponseEntity.ok(response);
   }
 }

@@ -9,7 +9,7 @@ package io.camunda.zeebe.gateway.rest.controller.adapter;
 
 import io.camunda.gateway.mapping.http.RequestMapper;
 import io.camunda.gateway.mapping.http.ResponseMapper;
-import io.camunda.gateway.mapping.http.search.contract.generated.SignalBroadcastRequestContract;
+import io.camunda.gateway.protocol.model.SignalBroadcastRequest;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.configuration.MultiTenancyConfiguration;
 import io.camunda.service.SignalServices;
@@ -34,8 +34,7 @@ public class DefaultSignalServiceAdapter implements SignalServiceAdapter {
 
   @Override
   public ResponseEntity<Object> broadcastSignal(
-      final SignalBroadcastRequestContract requestStrict,
-      final CamundaAuthentication authentication) {
+      final SignalBroadcastRequest requestStrict, final CamundaAuthentication authentication) {
     return RequestMapper.toBroadcastSignalRequest(requestStrict, multiTenancyCfg.isChecksEnabled())
         .fold(
             RestErrorMapper::mapProblemToResponse,

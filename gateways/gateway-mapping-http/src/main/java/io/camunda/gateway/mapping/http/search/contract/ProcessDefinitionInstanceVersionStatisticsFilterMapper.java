@@ -9,7 +9,6 @@ package io.camunda.gateway.mapping.http.search.contract;
 
 import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_EMPTY_ATTRIBUTE;
 
-import io.camunda.gateway.mapping.http.search.contract.generated.ProcessDefinitionInstanceVersionStatisticsFilterContract;
 import io.camunda.search.filter.FilterBuilders;
 import io.camunda.search.filter.ProcessDefinitionInstanceVersionStatisticsFilter;
 import io.camunda.zeebe.util.Either;
@@ -24,17 +23,18 @@ public final class ProcessDefinitionInstanceVersionStatisticsFilterMapper {
 
   public static Either<List<String>, ProcessDefinitionInstanceVersionStatisticsFilter>
       toProcessDefinitionInstanceVersionStatisticsFilter(
-          final ProcessDefinitionInstanceVersionStatisticsFilterContract filter) {
+          final io.camunda.gateway.protocol.model.ProcessDefinitionInstanceVersionStatisticsFilter
+              filter) {
     if (filter == null) {
       return Either.left(List.of(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("filter")));
     }
-    if (filter.processDefinitionId() == null || filter.processDefinitionId().isBlank()) {
+    if (filter.getProcessDefinitionId() == null || filter.getProcessDefinitionId().isBlank()) {
       return Either.left(
           List.of(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("filter.processDefinitionId")));
     }
     final var builder = FilterBuilders.processDefinitionInstanceVersionStatistics();
-    builder.processDefinitionId(filter.processDefinitionId());
-    Optional.ofNullable(filter.tenantId()).map(Object::toString).ifPresent(builder::tenantId);
+    builder.processDefinitionId(filter.getProcessDefinitionId());
+    Optional.ofNullable(filter.getTenantId()).map(Object::toString).ifPresent(builder::tenantId);
     return Either.right(builder.build());
   }
 }

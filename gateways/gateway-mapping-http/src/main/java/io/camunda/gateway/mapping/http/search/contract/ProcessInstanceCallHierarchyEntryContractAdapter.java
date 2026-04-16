@@ -7,10 +7,9 @@
  */
 package io.camunda.gateway.mapping.http.search.contract;
 
-import static io.camunda.gateway.mapping.http.search.contract.generated.ProcessInstanceCallHierarchyEntryContract.Fields;
-
-import io.camunda.gateway.mapping.http.search.contract.generated.ProcessInstanceCallHierarchyEntryContract;
 import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
+import io.camunda.gateway.mapping.http.util.KeyUtil;
+import io.camunda.gateway.protocol.model.ProcessInstanceCallHierarchyEntry;
 import io.camunda.search.entities.ProcessInstanceEntity;
 
 /**
@@ -25,23 +24,21 @@ public final class ProcessInstanceCallHierarchyEntryContractAdapter {
 
   private ProcessInstanceCallHierarchyEntryContractAdapter() {}
 
-  public static ProcessInstanceCallHierarchyEntryContract adapt(
-      final ProcessInstanceEntity entity) {
+  public static ProcessInstanceCallHierarchyEntry adapt(final ProcessInstanceEntity entity) {
     final var processDefinitionNameOrId =
         ContractPolicy.defaultIfNull(
             ContractPolicy.blankToNull(entity.processDefinitionName()),
             entity.processDefinitionId());
 
-    return ProcessInstanceCallHierarchyEntryContract.builder()
+    return new ProcessInstanceCallHierarchyEntry()
         .processInstanceKey(
             ContractPolicy.requireNonNull(
-                entity.processInstanceKey(), Fields.PROCESS_INSTANCE_KEY, entity))
+                KeyUtil.keyToString(entity.processInstanceKey()), "processInstanceKey", entity))
         .processDefinitionKey(
             ContractPolicy.requireNonNull(
-                entity.processDefinitionKey(), Fields.PROCESS_DEFINITION_KEY, entity))
+                KeyUtil.keyToString(entity.processDefinitionKey()), "processDefinitionKey", entity))
         .processDefinitionName(
             ContractPolicy.requireNonNull(
-                processDefinitionNameOrId, Fields.PROCESS_DEFINITION_NAME, entity))
-        .build();
+                processDefinitionNameOrId, "processDefinitionName", entity));
   }
 }

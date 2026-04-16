@@ -11,7 +11,7 @@ import static io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper.mapErrorToRes
 
 import io.camunda.gateway.mapping.http.search.SearchQueryRequestMapper;
 import io.camunda.gateway.mapping.http.search.SearchQueryResponseMapper;
-import io.camunda.gateway.mapping.http.search.contract.generated.DecisionRequirementsSearchQueryRequestContract;
+import io.camunda.gateway.protocol.model.DecisionRequirementsSearchQuery;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.DecisionRequirementsServices;
 import io.camunda.zeebe.gateway.rest.controller.generated.DecisionRequirementsServiceAdapter;
@@ -34,7 +34,7 @@ public class DefaultDecisionRequirementsServiceAdapter
 
   @Override
   public ResponseEntity<Object> searchDecisionRequirements(
-      final DecisionRequirementsSearchQueryRequestContract queryStrict,
+      final DecisionRequirementsSearchQuery queryStrict,
       final CamundaAuthentication authentication) {
     return SearchQueryRequestMapper.toDecisionRequirementsQueryStrict(queryStrict)
         .fold(

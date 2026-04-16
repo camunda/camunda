@@ -11,7 +11,6 @@ import static io.camunda.gateway.mapping.http.util.AdvancedSearchFilterUtil.mapT
 import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_EMPTY_ATTRIBUTE;
 import static io.camunda.gateway.mapping.http.validator.RequestValidator.validateDate;
 
-import io.camunda.gateway.mapping.http.search.contract.generated.JobErrorStatisticsFilterContract;
 import io.camunda.search.filter.FilterBuilders;
 import io.camunda.search.filter.JobErrorStatisticsFilter;
 import io.camunda.zeebe.util.Either;
@@ -19,7 +18,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import org.jspecify.annotations.NullMarked;
-import org.jspecify.annotations.Nullable;
 
 @NullMarked
 public final class JobErrorStatisticsFilterMapper {
@@ -27,26 +25,26 @@ public final class JobErrorStatisticsFilterMapper {
   private JobErrorStatisticsFilterMapper() {}
 
   public static Either<List<String>, JobErrorStatisticsFilter> toJobErrorStatisticsFilter(
-      @Nullable final JobErrorStatisticsFilterContract filter) {
+      final io.camunda.gateway.protocol.model.JobErrorStatisticsFilter filter) {
     final var builder = FilterBuilders.jobErrorStatistics();
     final List<String> validationErrors = new ArrayList<>();
     if (filter == null) {
       validationErrors.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("filter"));
       return Either.<List<String>, JobErrorStatisticsFilter>left(validationErrors);
     }
-    final var from = validateDate(filter.from(), "from", validationErrors);
+    final var from = validateDate(filter.getFrom(), "from", validationErrors);
     Optional.ofNullable(from).ifPresent(builder::from);
-    final var to = validateDate(filter.to(), "to", validationErrors);
+    final var to = validateDate(filter.getTo(), "to", validationErrors);
     Optional.ofNullable(to).ifPresent(builder::to);
-    if (filter.jobType() == null || filter.jobType().isBlank()) {
+    if (filter.getJobType() == null || filter.getJobType().isBlank()) {
       validationErrors.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("jobType"));
     } else {
-      builder.jobType(filter.jobType());
+      builder.jobType(filter.getJobType());
     }
-    Optional.ofNullable(filter.errorCode())
+    Optional.ofNullable(filter.getErrorCode())
         .map(mapToOperations(String.class))
         .ifPresent(builder::errorCodeOperations);
-    Optional.ofNullable(filter.errorMessage())
+    Optional.ofNullable(filter.getErrorMessage())
         .map(mapToOperations(String.class))
         .ifPresent(builder::errorMessageOperations);
     return validationErrors.isEmpty()

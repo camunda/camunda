@@ -16,108 +16,107 @@ import io.camunda.gateway.mapping.http.converters.AuditLogEntityTypeConverter;
 import io.camunda.gateway.mapping.http.converters.AuditLogOperationTypeConverter;
 import io.camunda.gateway.mapping.http.converters.AuditLogResultConverter;
 import io.camunda.gateway.mapping.http.converters.BatchOperationTypeConverter;
-import io.camunda.gateway.mapping.http.search.contract.generated.AuditLogFilterContract;
 import io.camunda.search.filter.AuditLogFilter;
 import io.camunda.search.filter.FilterBuilders;
 import java.time.OffsetDateTime;
 import org.jspecify.annotations.NullMarked;
-import org.jspecify.annotations.Nullable;
 
 @NullMarked
 public final class AuditLogFilterMapper {
 
   private AuditLogFilterMapper() {}
 
-  public static AuditLogFilter toAuditLogFilter(@Nullable final AuditLogFilterContract filter) {
+  public static AuditLogFilter toAuditLogFilter(
+      final io.camunda.gateway.protocol.model.AuditLogFilter filter) {
     if (filter == null) {
       return FilterBuilders.auditLog().build();
     }
     final var builder = FilterBuilders.auditLog();
-    ofNullable(filter.auditLogKey())
+    ofNullable(filter.getAuditLogKey())
         .map(mapToOperations(String.class))
         .ifPresent(builder::auditLogKeyOperations);
-    ofNullable(filter.processDefinitionKey())
+    ofNullable(filter.getProcessDefinitionKey())
         .map(mapToOperations(Long.class))
         .ifPresent(builder::processDefinitionKeyOperations);
-    ofNullable(filter.processInstanceKey())
+    ofNullable(filter.getProcessInstanceKey())
         .map(mapToOperations(Long.class))
         .ifPresent(builder::processInstanceKeyOperations);
-    ofNullable(filter.elementInstanceKey())
+    ofNullable(filter.getElementInstanceKey())
         .map(mapToOperations(Long.class))
         .ifPresent(builder::elementInstanceKeyOperations);
-    ofNullable(filter.operationType())
+    ofNullable(filter.getOperationType())
         .map(mapToOperations(String.class, new AuditLogOperationTypeConverter()))
         .ifPresent(builder::operationTypeOperations);
-    ofNullable(filter.result())
+    ofNullable(filter.getResult())
         .map(mapToOperations(String.class, new AuditLogResultConverter()))
         .ifPresent(builder::resultOperations);
-    ofNullable(filter.timestamp())
+    ofNullable(filter.getTimestamp())
         .map(mapToOperations(OffsetDateTime.class))
         .ifPresent(builder::timestampOperations);
-    ofNullable(filter.actorId())
+    ofNullable(filter.getActorId())
         .map(mapToOperations(String.class))
         .ifPresent(builder::actorIdOperations);
-    ofNullable(filter.actorType())
+    ofNullable(filter.getActorType())
         .map(mapToOperations(String.class, new AuditLogActorTypeConverter()))
         .ifPresent(builder::actorTypeOperations);
-    ofNullable(filter.agentElementId())
+    ofNullable(filter.getAgentElementId())
         .map(mapToOperations(String.class))
         .ifPresent(builder::agentElementIdOperations);
-    ofNullable(filter.entityType())
+    ofNullable(filter.getEntityType())
         .map(mapToOperations(String.class, new AuditLogEntityTypeConverter()))
         .ifPresent(builder::entityTypeOperations);
-    ofNullable(filter.entityKey())
+    ofNullable(filter.getEntityKey())
         .map(mapToOperations(String.class))
         .ifPresent(builder::entityKeyOperations);
-    ofNullable(filter.tenantId())
+    ofNullable(filter.getTenantId())
         .map(mapToOperations(String.class))
         .ifPresent(builder::tenantIdOperations);
-    ofNullable(filter.category())
+    ofNullable(filter.getCategory())
         .map(mapToOperations(String.class, new AuditLogCategoryConverter()))
         .ifPresent(builder::categoryOperations);
-    ofNullable(filter.deploymentKey())
+    ofNullable(filter.getDeploymentKey())
         .map(mapToOperations(Long.class))
         .ifPresent(builder::deploymentKeyOperations);
-    ofNullable(filter.formKey())
+    ofNullable(filter.getFormKey())
         .map(mapToOperations(Long.class))
         .ifPresent(builder::formKeyOperations);
-    ofNullable(filter.resourceKey())
+    ofNullable(filter.getResourceKey())
         .map(mapToOperations(Long.class))
         .ifPresent(builder::resourceKeyOperations);
-    ofNullable(filter.batchOperationType())
+    ofNullable(filter.getBatchOperationType())
         .map(mapToOperations(String.class, new BatchOperationTypeConverter()))
         .ifPresent(builder::batchOperationTypeOperations);
-    ofNullable(filter.processDefinitionId())
+    ofNullable(filter.getProcessDefinitionId())
         .map(mapToOperations(String.class))
         .ifPresent(builder::processDefinitionIdOperations);
-    ofNullable(filter.jobKey())
+    ofNullable(filter.getJobKey())
         .map(mapToOperations(Long.class))
         .ifPresent(builder::jobKeyOperations);
-    ofNullable(filter.userTaskKey())
+    ofNullable(filter.getUserTaskKey())
         .map(mapToOperations(Long.class))
         .ifPresent(builder::userTaskKeyOperations);
-    ofNullable(filter.decisionRequirementsId())
+    ofNullable(filter.getDecisionRequirementsId())
         .map(mapToOperations(String.class))
         .ifPresent(builder::decisionRequirementsIdOperations);
-    ofNullable(filter.decisionRequirementsKey())
+    ofNullable(filter.getDecisionRequirementsKey())
         .map(mapToOperations(Long.class))
         .ifPresent(builder::decisionRequirementsKeyOperations);
-    ofNullable(filter.decisionDefinitionId())
+    ofNullable(filter.getDecisionDefinitionId())
         .map(mapToOperations(String.class))
         .ifPresent(builder::decisionDefinitionIdOperations);
-    ofNullable(filter.decisionDefinitionKey())
+    ofNullable(filter.getDecisionDefinitionKey())
         .map(mapToOperations(Long.class))
         .ifPresent(builder::decisionDefinitionKeyOperations);
-    ofNullable(filter.decisionEvaluationKey())
+    ofNullable(filter.getDecisionEvaluationKey())
         .map(mapToOperations(Long.class))
         .ifPresent(builder::decisionEvaluationKeyOperations);
-    ofNullable(filter.relatedEntityKey())
+    ofNullable(filter.getRelatedEntityKey())
         .map(mapToOperations(String.class))
         .ifPresent(builder::relatedEntityKeyOperations);
-    ofNullable(filter.relatedEntityType())
+    ofNullable(filter.getRelatedEntityType())
         .map(mapToOperations(String.class, new AuditLogEntityTypeConverter()))
         .ifPresent(builder::relatedEntityTypeOperations);
-    ofNullable(filter.entityDescription())
+    ofNullable(filter.getEntityDescription())
         .map(mapToOperations(String.class))
         .ifPresent(builder::entityDescriptionOperations);
     return builder.build();

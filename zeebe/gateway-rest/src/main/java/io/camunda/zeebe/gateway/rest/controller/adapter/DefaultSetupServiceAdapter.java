@@ -10,8 +10,8 @@ package io.camunda.zeebe.gateway.rest.controller.adapter;
 import io.camunda.gateway.mapping.http.GatewayErrorMapper;
 import io.camunda.gateway.mapping.http.ResponseMapper;
 import io.camunda.gateway.mapping.http.mapper.UserMapper;
-import io.camunda.gateway.mapping.http.search.contract.generated.UserRequestContract;
 import io.camunda.gateway.mapping.http.validator.UserRequestValidator;
+import io.camunda.gateway.protocol.model.UserRequest;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.security.configuration.SecurityConfiguration;
@@ -61,7 +61,7 @@ public class DefaultSetupServiceAdapter implements SetupServiceAdapter {
 
   @Override
   public ResponseEntity<Object> createAdminUser(
-      final UserRequestContract requestStrict, final CamundaAuthentication authentication) {
+      final UserRequest requestStrict, final CamundaAuthentication authentication) {
     if (securityConfiguration.getAuthentication().getMethod() != AuthenticationMethod.BASIC) {
       final var exception =
           new ServiceException(WRONG_AUTHENTICATION_METHOD_ERROR_MESSAGE, Status.FORBIDDEN);

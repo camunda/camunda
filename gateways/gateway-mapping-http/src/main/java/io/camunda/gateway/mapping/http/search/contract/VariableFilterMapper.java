@@ -11,14 +11,12 @@ import static io.camunda.gateway.mapping.http.util.AdvancedSearchFilterUtil.mapT
 import static io.camunda.gateway.mapping.http.util.AdvancedSearchFilterUtil.mapToOperations;
 import static java.util.Optional.ofNullable;
 
-import io.camunda.gateway.mapping.http.search.contract.generated.VariableFilterContract;
 import io.camunda.search.filter.FilterBuilders;
 import io.camunda.search.filter.VariableFilter;
 import io.camunda.zeebe.util.Either;
 import java.util.ArrayList;
 import java.util.List;
 import org.jspecify.annotations.NullMarked;
-import org.jspecify.annotations.Nullable;
 
 @NullMarked
 public final class VariableFilterMapper {
@@ -26,25 +24,27 @@ public final class VariableFilterMapper {
   private VariableFilterMapper() {}
 
   public static Either<List<String>, VariableFilter> toVariableFilter(
-      @Nullable final VariableFilterContract filter) {
+      final io.camunda.gateway.protocol.model.VariableFilter filter) {
     if (filter == null) {
       return Either.right(FilterBuilders.variable().build());
     }
     final var builder = FilterBuilders.variable();
     final List<String> validationErrors = new ArrayList<>();
-    ofNullable(filter.processInstanceKey())
+    ofNullable(filter.getProcessInstanceKey())
         .map(mapToKeyOperations("processInstanceKey", validationErrors))
         .ifPresent(builder::processInstanceKeyOperations);
-    ofNullable(filter.scopeKey())
+    ofNullable(filter.getScopeKey())
         .map(mapToKeyOperations("scopeKey", validationErrors))
         .ifPresent(builder::scopeKeyOperations);
-    ofNullable(filter.variableKey())
+    ofNullable(filter.getVariableKey())
         .map(mapToKeyOperations("variableKey", validationErrors))
         .ifPresent(builder::variableKeyOperations);
-    ofNullable(filter.tenantId()).ifPresent(builder::tenantIds);
-    ofNullable(filter.isTruncated()).ifPresent(builder::isTruncated);
-    ofNullable(filter.name()).map(mapToOperations(String.class)).ifPresent(builder::nameOperations);
-    ofNullable(filter.value())
+    ofNullable(filter.getTenantId()).ifPresent(builder::tenantIds);
+    ofNullable(filter.getIsTruncated()).ifPresent(builder::isTruncated);
+    ofNullable(filter.getName())
+        .map(mapToOperations(String.class))
+        .ifPresent(builder::nameOperations);
+    ofNullable(filter.getValue())
         .map(mapToOperations(String.class))
         .ifPresent(builder::valueOperations);
     return validationErrors.isEmpty()

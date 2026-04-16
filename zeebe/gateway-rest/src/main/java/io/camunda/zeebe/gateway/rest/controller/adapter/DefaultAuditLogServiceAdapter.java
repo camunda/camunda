@@ -11,7 +11,7 @@ import static io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper.mapErrorToRes
 
 import io.camunda.gateway.mapping.http.search.SearchQueryRequestMapper;
 import io.camunda.gateway.mapping.http.search.SearchQueryResponseMapper;
-import io.camunda.gateway.mapping.http.search.contract.generated.AuditLogSearchQueryRequestContract;
+import io.camunda.gateway.protocol.model.AuditLogSearchQueryRequest;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.AuditLogServices;
 import io.camunda.zeebe.gateway.rest.controller.generated.AuditLogServiceAdapter;
@@ -30,7 +30,7 @@ public class DefaultAuditLogServiceAdapter implements AuditLogServiceAdapter {
 
   @Override
   public ResponseEntity<Object> searchAuditLogs(
-      final AuditLogSearchQueryRequestContract auditLogSearchQueryRequestStrict,
+      final AuditLogSearchQueryRequest auditLogSearchQueryRequestStrict,
       final CamundaAuthentication authentication) {
     return SearchQueryRequestMapper.toAuditLogQueryStrict(auditLogSearchQueryRequestStrict)
         .fold(

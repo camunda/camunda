@@ -8,9 +8,9 @@
 package io.camunda.gateway.mapping.http.mapper;
 
 import io.camunda.gateway.mapping.http.RequestMapper;
-import io.camunda.gateway.mapping.http.search.contract.generated.RoleCreateRequestContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.RoleUpdateRequestContract;
 import io.camunda.gateway.mapping.http.validator.RoleRequestValidator;
+import io.camunda.gateway.protocol.model.RoleCreateRequest;
+import io.camunda.gateway.protocol.model.RoleUpdateRequest;
 import io.camunda.service.RoleServices.CreateRoleRequest;
 import io.camunda.service.RoleServices.RoleMemberRequest;
 import io.camunda.service.RoleServices.UpdateRoleRequest;
@@ -34,16 +34,18 @@ public class RoleMapper {
   }
 
   public Either<ProblemDetail, CreateRoleRequest> toRoleCreateRequest(
-      final RoleCreateRequestContract request) {
+      final RoleCreateRequest request) {
     return RequestMapper.getResult(
         roleRequestValidator.validateCreateRequest(request),
-        () -> new CreateRoleRequest(request.roleId(), request.name(), request.description()));
+        () ->
+            new CreateRoleRequest(
+                request.getRoleId(), request.getName(), request.getDescription()));
   }
 
   public Either<ProblemDetail, UpdateRoleRequest> toRoleUpdateRequest(
-      final RoleUpdateRequestContract request, final String roleId) {
+      final RoleUpdateRequest request, final String roleId) {
     return RequestMapper.getResult(
         roleRequestValidator.validateUpdateRequest(roleId, request),
-        () -> new UpdateRoleRequest(roleId, request.name(), request.description()));
+        () -> new UpdateRoleRequest(roleId, request.getName(), request.getDescription()));
   }
 }

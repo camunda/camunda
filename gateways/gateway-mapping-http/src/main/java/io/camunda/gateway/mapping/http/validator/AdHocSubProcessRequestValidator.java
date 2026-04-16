@@ -10,21 +10,21 @@ package io.camunda.gateway.mapping.http.validator;
 import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_EMPTY_ATTRIBUTE;
 import static io.camunda.gateway.mapping.http.validator.RequestValidator.validate;
 
-import io.camunda.gateway.mapping.http.search.contract.generated.AdHocSubProcessActivateActivitiesInstructionContract;
+import io.camunda.gateway.protocol.model.AdHocSubProcessActivateActivitiesInstruction;
 import java.util.Optional;
 import org.springframework.http.ProblemDetail;
 
 public final class AdHocSubProcessRequestValidator {
 
   public static Optional<ProblemDetail> validateActivateActivitiesRequest(
-      final AdHocSubProcessActivateActivitiesInstructionContract request) {
+      final AdHocSubProcessActivateActivitiesInstruction request) {
     return validate(
         violations -> {
-          if (request.elements() == null || request.elements().isEmpty()) {
+          if (request.getElements() == null || request.getElements().isEmpty()) {
             violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("elements"));
           } else {
-            for (int i = 0; i < request.elements().size(); i++) {
-              final var elementId = request.elements().get(i).elementId();
+            for (int i = 0; i < request.getElements().size(); i++) {
+              final var elementId = request.getElements().get(i).getElementId();
               if (elementId == null || elementId.isBlank()) {
                 violations.add(
                     ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("elements[%d].elementId".formatted(i)));

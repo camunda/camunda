@@ -8,9 +8,9 @@
 package io.camunda.gateway.mapping.http.mapper;
 
 import io.camunda.gateway.mapping.http.RequestMapper;
-import io.camunda.gateway.mapping.http.search.contract.generated.UserRequestContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.UserUpdateRequestContract;
 import io.camunda.gateway.mapping.http.validator.UserRequestValidator;
+import io.camunda.gateway.protocol.model.UserRequest;
+import io.camunda.gateway.protocol.model.UserUpdateRequest;
 import io.camunda.service.UserServices.UserDTO;
 import io.camunda.zeebe.util.Either;
 import org.springframework.http.ProblemDetail;
@@ -23,16 +23,21 @@ public class UserMapper {
     this.userRequestValidator = userRequestValidator;
   }
 
-  public Either<ProblemDetail, UserDTO> toUserRequest(final UserRequestContract request) {
+  public Either<ProblemDetail, UserDTO> toUserRequest(final UserRequest request) {
     return RequestMapper.getResult(
         userRequestValidator.validateCreateRequest(request),
-        () -> new UserDTO(request.username(), request.name(), request.email(), request.password()));
+        () ->
+            new UserDTO(
+                request.getUsername(),
+                request.getName(),
+                request.getEmail(),
+                request.getPassword()));
   }
 
   public Either<ProblemDetail, UserDTO> toUserUpdateRequest(
-      final UserUpdateRequestContract request, final String username) {
+      final UserUpdateRequest request, final String username) {
     return RequestMapper.getResult(
         userRequestValidator.validateUpdateRequest(request),
-        () -> new UserDTO(username, request.name(), request.email(), request.password()));
+        () -> new UserDTO(username, request.getName(), request.getEmail(), request.getPassword()));
   }
 }

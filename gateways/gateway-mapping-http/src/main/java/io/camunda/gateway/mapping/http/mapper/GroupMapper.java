@@ -8,9 +8,9 @@
 package io.camunda.gateway.mapping.http.mapper;
 
 import io.camunda.gateway.mapping.http.RequestMapper;
-import io.camunda.gateway.mapping.http.search.contract.generated.GroupCreateRequestContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GroupUpdateRequestContract;
 import io.camunda.gateway.mapping.http.validator.GroupRequestValidator;
+import io.camunda.gateway.protocol.model.GroupCreateRequest;
+import io.camunda.gateway.protocol.model.GroupUpdateRequest;
 import io.camunda.service.GroupServices.GroupDTO;
 import io.camunda.service.GroupServices.GroupMemberDTO;
 import io.camunda.zeebe.protocol.record.value.EntityType;
@@ -32,17 +32,16 @@ public class GroupMapper {
         () -> new GroupMemberDTO(groupId, memberId, entityType));
   }
 
-  public Either<ProblemDetail, GroupDTO> toGroupCreateRequest(
-      final GroupCreateRequestContract request) {
+  public Either<ProblemDetail, GroupDTO> toGroupCreateRequest(final GroupCreateRequest request) {
     return RequestMapper.getResult(
         groupRequestValidator.validateCreateRequest(request),
-        () -> new GroupDTO(request.groupId(), request.name(), request.description()));
+        () -> new GroupDTO(request.getGroupId(), request.getName(), request.getDescription()));
   }
 
   public Either<ProblemDetail, GroupDTO> toGroupUpdateRequest(
-      final GroupUpdateRequestContract request, final String groupId) {
+      final GroupUpdateRequest request, final String groupId) {
     return RequestMapper.getResult(
         groupRequestValidator.validateUpdateRequest(groupId, request),
-        () -> new GroupDTO(groupId, request.name(), request.description()));
+        () -> new GroupDTO(groupId, request.getName(), request.getDescription()));
   }
 }

@@ -8,13 +8,13 @@
 package io.camunda.gateway.mapping.http.search.contract;
 
 import static io.camunda.gateway.mapping.http.ResponseMapper.formatDate;
-import static io.camunda.gateway.mapping.http.search.contract.generated.JobSearchContract.Fields;
 
-import io.camunda.gateway.mapping.http.search.contract.generated.JobKindEnum;
-import io.camunda.gateway.mapping.http.search.contract.generated.JobListenerEventTypeEnum;
-import io.camunda.gateway.mapping.http.search.contract.generated.JobSearchContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.JobStateEnum;
 import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
+import io.camunda.gateway.mapping.http.util.KeyUtil;
+import io.camunda.gateway.protocol.model.JobKindEnum;
+import io.camunda.gateway.protocol.model.JobListenerEventTypeEnum;
+import io.camunda.gateway.protocol.model.JobSearch;
+import io.camunda.gateway.protocol.model.JobStateEnum;
 import io.camunda.search.entities.JobEntity;
 import java.util.List;
 
@@ -22,48 +22,47 @@ public final class JobContractAdapter {
 
   private JobContractAdapter() {}
 
-  public static List<JobSearchContract> adapt(final List<JobEntity> entities) {
+  public static List<JobSearch> adapt(final List<JobEntity> entities) {
     return entities.stream().map(JobContractAdapter::adapt).toList();
   }
 
-  public static JobSearchContract adapt(final JobEntity entity) {
-    return JobSearchContract.builder()
+  public static JobSearch adapt(final JobEntity entity) {
+    return new JobSearch()
         .customHeaders(
-            ContractPolicy.requireNonNull(entity.customHeaders(), Fields.CUSTOM_HEADERS, entity))
+            ContractPolicy.requireNonNull(entity.customHeaders(), "customHeaders", entity))
         .elementInstanceKey(
             ContractPolicy.requireNonNull(
-                entity.elementInstanceKey(), Fields.ELEMENT_INSTANCE_KEY, entity))
+                KeyUtil.keyToString(entity.elementInstanceKey()), "elementInstanceKey", entity))
         .hasFailedWithRetriesLeft(
             ContractPolicy.requireNonNull(
-                entity.hasFailedWithRetriesLeft(), Fields.HAS_FAILED_WITH_RETRIES_LEFT, entity))
-        .jobKey(ContractPolicy.requireNonNull(entity.jobKey(), Fields.JOB_KEY, entity))
+                entity.hasFailedWithRetriesLeft(), "hasFailedWithRetriesLeft", entity))
+        .jobKey(
+            ContractPolicy.requireNonNull(KeyUtil.keyToString(entity.jobKey()), "jobKey", entity))
         .kind(
             ContractPolicy.requireNonNull(
-                ContractPolicy.mapEnum(entity.kind(), JobKindEnum::fromValue), Fields.KIND, entity))
+                ContractPolicy.mapEnum(entity.kind(), JobKindEnum::fromValue), "kind", entity))
         .listenerEventType(
             ContractPolicy.requireNonNull(
                 ContractPolicy.mapEnum(
                     entity.listenerEventType(), JobListenerEventTypeEnum::fromValue),
-                Fields.LISTENER_EVENT_TYPE,
+                "listenerEventType",
                 entity))
         .processDefinitionId(
             ContractPolicy.requireNonNull(
-                entity.processDefinitionId(), Fields.PROCESS_DEFINITION_ID, entity))
+                entity.processDefinitionId(), "processDefinitionId", entity))
         .processDefinitionKey(
             ContractPolicy.requireNonNull(
-                entity.processDefinitionKey(), Fields.PROCESS_DEFINITION_KEY, entity))
+                KeyUtil.keyToString(entity.processDefinitionKey()), "processDefinitionKey", entity))
         .processInstanceKey(
             ContractPolicy.requireNonNull(
-                entity.processInstanceKey(), Fields.PROCESS_INSTANCE_KEY, entity))
-        .retries(ContractPolicy.requireNonNull(entity.retries(), Fields.RETRIES, entity))
+                KeyUtil.keyToString(entity.processInstanceKey()), "processInstanceKey", entity))
+        .retries(ContractPolicy.requireNonNull(entity.retries(), "retries", entity))
         .state(
             ContractPolicy.requireNonNull(
-                ContractPolicy.mapEnum(entity.state(), JobStateEnum::fromValue),
-                Fields.STATE,
-                entity))
-        .tenantId(ContractPolicy.requireNonNull(entity.tenantId(), Fields.TENANT_ID, entity))
-        .type(ContractPolicy.requireNonNull(entity.type(), Fields.TYPE, entity))
-        .worker(ContractPolicy.requireNonNull(entity.worker(), Fields.WORKER, entity))
+                ContractPolicy.mapEnum(entity.state(), JobStateEnum::fromValue), "state", entity))
+        .tenantId(ContractPolicy.requireNonNull(entity.tenantId(), "tenantId", entity))
+        .type(ContractPolicy.requireNonNull(entity.type(), "type", entity))
+        .worker(ContractPolicy.requireNonNull(entity.worker(), "worker", entity))
         .deadline(formatDate(entity.deadline()))
         .deniedReason(entity.deniedReason())
         .elementId(entity.elementId())
@@ -71,9 +70,8 @@ public final class JobContractAdapter {
         .errorCode(entity.errorCode())
         .errorMessage(entity.errorMessage())
         .isDenied(entity.isDenied())
-        .rootProcessInstanceKey(entity.rootProcessInstanceKey())
+        .rootProcessInstanceKey(KeyUtil.keyToString(entity.rootProcessInstanceKey()))
         .creationTime(formatDate(entity.creationTime()))
-        .lastUpdateTime(formatDate(entity.lastUpdateTime()))
-        .build();
+        .lastUpdateTime(formatDate(entity.lastUpdateTime()));
   }
 }

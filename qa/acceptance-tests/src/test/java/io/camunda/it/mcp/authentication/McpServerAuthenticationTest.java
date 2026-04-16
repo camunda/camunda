@@ -10,7 +10,7 @@ package io.camunda.it.mcp.authentication;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedTopologyResponseStrictContract;
+import io.camunda.gateway.protocol.model.TopologyResponse;
 import io.camunda.it.mcp.McpServerTest;
 import io.camunda.zeebe.util.VersionUtil;
 import io.modelcontextprotocol.client.McpSyncClient;
@@ -107,11 +107,10 @@ abstract class McpServerAuthenticationTest extends McpServerTest {
       assertThat(result.structuredContent()).isNotNull();
 
       final var topology =
-          objectMapper.convertValue(
-              result.structuredContent(), GeneratedTopologyResponseStrictContract.class);
-      assertThat(topology.clusterSize()).isEqualTo(1);
-      assertThat(topology.brokers()).hasSize(1);
-      assertThat(topology.brokers().getFirst().nodeId().toString())
+          objectMapper.convertValue(result.structuredContent(), TopologyResponse.class);
+      assertThat(topology.getClusterSize()).isEqualTo(1);
+      assertThat(topology.getBrokers()).hasSize(1);
+      assertThat(topology.getBrokers().getFirst().getNodeId().toString())
           .isEqualTo(testInstance().nodeId().id());
     }
   }

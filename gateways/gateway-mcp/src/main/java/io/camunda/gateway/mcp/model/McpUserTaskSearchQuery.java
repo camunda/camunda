@@ -10,8 +10,8 @@ package io.camunda.gateway.mcp.model;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedSearchQueryPageRequestStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedUserTaskSearchQuerySortRequestStrictContract;
+import io.camunda.gateway.protocol.model.SearchQueryPageRequest;
+import io.camunda.gateway.protocol.model.UserTaskSearchQuerySortRequest;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.media.Schema.RequiredMode;
 import java.util.List;
@@ -29,8 +29,8 @@ public record McpUserTaskSearchQuery(
     @JsonProperty
         @JsonPropertyDescription("Pagination criteria.")
         @Schema(requiredMode = RequiredMode.NOT_REQUIRED, defaultValue = "##default")
-        GeneratedSearchQueryPageRequestStrictContract page,
+        SearchQueryPageRequest page,
     @JsonProperty
         @JsonPropertyDescription("Sort field criteria.")
         @Schema(requiredMode = RequiredMode.NOT_REQUIRED, defaultValue = "##default")
-        List<GeneratedUserTaskSearchQuerySortRequestStrictContract> sort) {}
+        List<UserTaskSearchQuerySortRequest> sort) {}

@@ -46,6 +46,11 @@ public final class ContractPolicy {
     return requiredNonNull(value, field, sourceEntity);
   }
 
+  public static <T> T requireNonNull(
+      final @Nullable T value, final String fieldName, final Object sourceEntity) {
+    return requiredNonNull(value, fieldName, fieldName, sourceEntity);
+  }
+
   public static <T> T requiredNonNull(
       final @Nullable T value,
       final String contractName,

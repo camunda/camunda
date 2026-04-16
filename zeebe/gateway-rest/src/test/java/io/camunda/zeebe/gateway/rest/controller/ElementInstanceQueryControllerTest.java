@@ -12,9 +12,9 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import io.camunda.gateway.mapping.http.search.contract.generated.ElementInstanceStateEnum;
-import io.camunda.gateway.mapping.http.search.contract.generated.IncidentErrorTypeEnum;
-import io.camunda.gateway.mapping.http.search.contract.generated.IncidentStateEnum;
+import io.camunda.gateway.protocol.model.ElementInstanceStateEnum;
+import io.camunda.gateway.protocol.model.IncidentErrorTypeEnum;
+import io.camunda.gateway.protocol.model.IncidentStateEnum;
 import io.camunda.search.entities.FlowNodeInstanceEntity;
 import io.camunda.search.entities.FlowNodeInstanceEntity.FlowNodeState;
 import io.camunda.search.entities.FlowNodeInstanceEntity.FlowNodeType;

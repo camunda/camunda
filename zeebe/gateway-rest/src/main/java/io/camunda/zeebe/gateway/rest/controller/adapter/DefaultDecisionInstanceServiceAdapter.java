@@ -13,9 +13,9 @@ import io.camunda.gateway.mapping.http.RequestMapper;
 import io.camunda.gateway.mapping.http.ResponseMapper;
 import io.camunda.gateway.mapping.http.search.SearchQueryRequestMapper;
 import io.camunda.gateway.mapping.http.search.SearchQueryResponseMapper;
-import io.camunda.gateway.mapping.http.search.contract.generated.DecisionInstanceDeletionBatchOperationRequestContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.DecisionInstanceSearchQueryRequestContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.DeleteDecisionInstanceRequestContract;
+import io.camunda.gateway.protocol.model.DecisionInstanceDeletionBatchOperationRequest;
+import io.camunda.gateway.protocol.model.DecisionInstanceSearchQuery;
+import io.camunda.gateway.protocol.model.DeleteDecisionInstanceRequest;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.DecisionInstanceServices;
 import io.camunda.zeebe.gateway.rest.controller.generated.DecisionInstanceServiceAdapter;
@@ -38,8 +38,7 @@ public class DefaultDecisionInstanceServiceAdapter implements DecisionInstanceSe
 
   @Override
   public ResponseEntity<Object> searchDecisionInstances(
-      final DecisionInstanceSearchQueryRequestContract queryStrict,
-      final CamundaAuthentication authentication) {
+      final DecisionInstanceSearchQuery queryStrict, final CamundaAuthentication authentication) {
     return SearchQueryRequestMapper.toDecisionInstanceQueryStrict(queryStrict)
         .fold(
             RestErrorMapper::mapProblemToResponse,
@@ -69,21 +68,21 @@ public class DefaultDecisionInstanceServiceAdapter implements DecisionInstanceSe
   @Override
   public ResponseEntity<Void> deleteDecisionInstance(
       final Long decisionInstanceKey,
-      final DeleteDecisionInstanceRequestContract requestStrict,
+      final DeleteDecisionInstanceRequest requestStrict,
       final CamundaAuthentication authentication) {
     return RequestExecutor.executeSync(
         () ->
             decisionInstanceServices.deleteDecisionInstance(
                 decisionInstanceKey,
-                Objects.nonNull(requestStrict) ? requestStrict.operationReference() : null,
+                Objects.nonNull(requestStrict) ? requestStrict.getOperationReference() : null,
                 authentication));
   }
 
   @Override
   public ResponseEntity<Object> deleteDecisionInstancesBatchOperation(
-      final DecisionInstanceDeletionBatchOperationRequestContract requestStrict,
+      final DecisionInstanceDeletionBatchOperationRequest requestStrict,
       final CamundaAuthentication authentication) {
-    return RequestMapper.toRequiredDecisionInstanceFilter(requestStrict.filter())
+    return RequestMapper.toRequiredDecisionInstanceFilter(requestStrict.getFilter())
         .fold(
             RestErrorMapper::mapProblemToResponse,
             filter ->
