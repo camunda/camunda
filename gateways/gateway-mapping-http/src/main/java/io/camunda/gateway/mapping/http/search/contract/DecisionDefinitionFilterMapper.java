@@ -9,12 +9,10 @@ package io.camunda.gateway.mapping.http.search.contract;
 
 import static java.util.Optional.ofNullable;
 
-import io.camunda.gateway.mapping.http.search.contract.generated.DecisionDefinitionFilterContract;
 import io.camunda.gateway.mapping.http.util.KeyUtil;
 import io.camunda.search.filter.DecisionDefinitionFilter;
 import io.camunda.search.filter.FilterBuilders;
 import org.jspecify.annotations.NullMarked;
-import org.jspecify.annotations.Nullable;
 
 @NullMarked
 public final class DecisionDefinitionFilterMapper {
@@ -22,24 +20,25 @@ public final class DecisionDefinitionFilterMapper {
   private DecisionDefinitionFilterMapper() {}
 
   public static DecisionDefinitionFilter toDecisionDefinitionFilter(
-      @Nullable final DecisionDefinitionFilterContract filter) {
+      final io.camunda.gateway.protocol.model.DecisionDefinitionFilter filter) {
     final var builder = FilterBuilders.decisionDefinition();
     if (filter != null) {
-      ofNullable(filter.decisionDefinitionKey())
+      ofNullable(filter.getDecisionDefinitionKey())
           .map(KeyUtil::keyToLong)
           .ifPresent(builder::decisionDefinitionKeys);
-      ofNullable(filter.decisionDefinitionId()).ifPresent(builder::decisionDefinitionIds);
-      ofNullable(filter.name()).ifPresent(builder::names);
-      ofNullable(filter.isLatestVersion()).ifPresent(builder::isLatestVersion);
-      ofNullable(filter.version()).ifPresent(builder::versions);
-      ofNullable(filter.decisionRequirementsId()).ifPresent(builder::decisionRequirementsIds);
-      ofNullable(filter.decisionRequirementsKey())
+      ofNullable(filter.getDecisionDefinitionId()).ifPresent(builder::decisionDefinitionIds);
+      ofNullable(filter.getName()).ifPresent(builder::names);
+      ofNullable(filter.getIsLatestVersion()).ifPresent(builder::isLatestVersion);
+      ofNullable(filter.getVersion()).ifPresent(builder::versions);
+      ofNullable(filter.getDecisionRequirementsId()).ifPresent(builder::decisionRequirementsIds);
+      ofNullable(filter.getDecisionRequirementsKey())
           .map(KeyUtil::keyToLong)
           .ifPresent(builder::decisionRequirementsKeys);
-      ofNullable(filter.decisionRequirementsName()).ifPresent(builder::decisionRequirementsNames);
-      ofNullable(filter.decisionRequirementsVersion())
+      ofNullable(filter.getDecisionRequirementsName())
+          .ifPresent(builder::decisionRequirementsNames);
+      ofNullable(filter.getDecisionRequirementsVersion())
           .ifPresent(builder::decisionRequirementsVersions);
-      ofNullable(filter.tenantId()).ifPresent(builder::tenantIds);
+      ofNullable(filter.getTenantId()).ifPresent(builder::tenantIds);
     }
     return builder.build();
   }

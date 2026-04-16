@@ -11,8 +11,8 @@ import static io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper.mapErrorToRes
 
 import io.camunda.gateway.mapping.http.search.SearchQueryRequestMapper;
 import io.camunda.gateway.mapping.http.search.SearchQueryResponseMapper;
-import io.camunda.gateway.mapping.http.search.contract.generated.BatchOperationItemSearchQueryRequestContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.BatchOperationSearchQueryRequestContract;
+import io.camunda.gateway.protocol.model.BatchOperationItemSearchQuery;
+import io.camunda.gateway.protocol.model.BatchOperationSearchQuery;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.BatchOperationServices;
 import io.camunda.zeebe.gateway.rest.controller.generated.BatchOperationServiceAdapter;
@@ -43,7 +43,7 @@ public class DefaultBatchOperationServiceAdapter implements BatchOperationServic
 
   @Override
   public ResponseEntity<Object> searchBatchOperations(
-      final BatchOperationSearchQueryRequestContract batchOperationSearchQueryStrict,
+      final BatchOperationSearchQuery batchOperationSearchQueryStrict,
       final CamundaAuthentication authentication) {
     return SearchQueryRequestMapper.toBatchOperationQueryStrict(batchOperationSearchQueryStrict)
         .fold(
@@ -82,7 +82,7 @@ public class DefaultBatchOperationServiceAdapter implements BatchOperationServic
 
   @Override
   public ResponseEntity<Object> searchBatchOperationItems(
-      final BatchOperationItemSearchQueryRequestContract batchOperationItemSearchQueryStrict,
+      final BatchOperationItemSearchQuery batchOperationItemSearchQueryStrict,
       final CamundaAuthentication authentication) {
     return SearchQueryRequestMapper.toBatchOperationItemQueryStrict(
             batchOperationItemSearchQueryStrict)

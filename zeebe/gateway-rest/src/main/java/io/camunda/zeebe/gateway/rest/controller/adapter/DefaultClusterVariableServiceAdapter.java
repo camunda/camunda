@@ -11,10 +11,10 @@ import io.camunda.gateway.mapping.http.ResponseMapper;
 import io.camunda.gateway.mapping.http.mapper.ClusterVariableMapper;
 import io.camunda.gateway.mapping.http.search.SearchQueryRequestMapper;
 import io.camunda.gateway.mapping.http.search.SearchQueryResponseMapper;
-import io.camunda.gateway.mapping.http.search.contract.generated.ClusterVariableSearchQueryRequestContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.CreateClusterVariableRequestContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.UpdateClusterVariableRequestContract;
 import io.camunda.gateway.mapping.http.validator.ClusterVariableRequestValidator;
+import io.camunda.gateway.protocol.model.ClusterVariableSearchQueryRequest;
+import io.camunda.gateway.protocol.model.CreateClusterVariableRequest;
+import io.camunda.gateway.protocol.model.UpdateClusterVariableRequest;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.validation.ClusterVariableValidator;
 import io.camunda.security.validation.IdentifierValidator;
@@ -43,7 +43,7 @@ public class DefaultClusterVariableServiceAdapter implements ClusterVariableServ
 
   @Override
   public ResponseEntity<Object> createGlobalClusterVariable(
-      final CreateClusterVariableRequestContract createClusterVariableRequestStrict,
+      final CreateClusterVariableRequest createClusterVariableRequestStrict,
       final CamundaAuthentication authentication) {
     return clusterVariableMapper
         .toGlobalClusterVariableCreateRequest(createClusterVariableRequestStrict)
@@ -61,7 +61,7 @@ public class DefaultClusterVariableServiceAdapter implements ClusterVariableServ
   @Override
   public ResponseEntity<Object> createTenantClusterVariable(
       final String tenantId,
-      final CreateClusterVariableRequestContract createClusterVariableRequestStrict,
+      final CreateClusterVariableRequest createClusterVariableRequestStrict,
       final CamundaAuthentication authentication) {
     return clusterVariableMapper
         .toTenantClusterVariableCreateRequest(createClusterVariableRequestStrict, tenantId)
@@ -79,11 +79,10 @@ public class DefaultClusterVariableServiceAdapter implements ClusterVariableServ
   @Override
   public ResponseEntity<Object> searchClusterVariables(
       final Boolean truncateValues,
-      final ClusterVariableSearchQueryRequestContract clusterVariableSearchQueryRequestStrict,
+      final ClusterVariableSearchQueryRequest clusterVariableSearchQueryStrict,
       final CamundaAuthentication authentication) {
     final boolean truncate = truncateValues == null || truncateValues;
-    return SearchQueryRequestMapper.toClusterVariableQueryStrict(
-            clusterVariableSearchQueryRequestStrict)
+    return SearchQueryRequestMapper.toClusterVariableQueryStrict(clusterVariableSearchQueryStrict)
         .fold(
             RestErrorMapper::mapProblemToResponse,
             query -> {
@@ -121,7 +120,7 @@ public class DefaultClusterVariableServiceAdapter implements ClusterVariableServ
   @Override
   public ResponseEntity<Object> updateGlobalClusterVariable(
       final String name,
-      final UpdateClusterVariableRequestContract updateClusterVariableRequestStrict,
+      final UpdateClusterVariableRequest updateClusterVariableRequestStrict,
       final CamundaAuthentication authentication) {
     return clusterVariableMapper
         .toGlobalClusterVariableUpdateRequest(name, updateClusterVariableRequestStrict)
@@ -174,7 +173,7 @@ public class DefaultClusterVariableServiceAdapter implements ClusterVariableServ
   public ResponseEntity<Object> updateTenantClusterVariable(
       final String tenantId,
       final String name,
-      final UpdateClusterVariableRequestContract updateClusterVariableRequestStrict,
+      final UpdateClusterVariableRequest updateClusterVariableRequestStrict,
       final CamundaAuthentication authentication) {
     return clusterVariableMapper
         .toTenantClusterVariableUpdateRequest(name, updateClusterVariableRequestStrict, tenantId)

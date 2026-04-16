@@ -7,10 +7,10 @@
  */
 package io.camunda.gateway.mapping.http.search.contract;
 
-import io.camunda.gateway.mapping.http.search.contract.generated.VariableContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.VariableSearchContract;
 import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
 import io.camunda.gateway.mapping.http.util.KeyUtil;
+import io.camunda.gateway.protocol.model.Variable;
+import io.camunda.gateway.protocol.model.VariableSearch;
 import io.camunda.search.entities.VariableEntity;
 import java.util.List;
 
@@ -25,80 +25,60 @@ public final class VariableContractAdapter {
 
   private VariableContractAdapter() {}
 
-  public static List<VariableSearchContract> toSearchProjections(
+  public static List<VariableSearch> toSearchProjections(
       final List<VariableEntity> variableEntities, final boolean truncateValues) {
     return variableEntities.stream()
         .map(entity -> toSearchProjection(entity, truncateValues))
         .toList();
   }
 
-  public static VariableSearchContract toSearchProjection(
+  public static VariableSearch toSearchProjection(
       final VariableEntity entity, final boolean truncateValues) {
-    return VariableSearchContract.builder()
-        .name(
-            ContractPolicy.requireNonNull(
-                entity.name(), VariableSearchContract.Fields.NAME, entity))
-        .tenantId(
-            ContractPolicy.requireNonNull(
-                entity.tenantId(), VariableSearchContract.Fields.TENANT_ID, entity))
+    return new VariableSearch()
+        .name(ContractPolicy.requireNonNull(entity.name(), "name", entity))
+        .tenantId(ContractPolicy.requireNonNull(entity.tenantId(), "tenantId", entity))
         .variableKey(
             ContractPolicy.requireNonNull(
-                KeyUtil.keyToString(entity.variableKey()),
-                VariableSearchContract.Fields.VARIABLE_KEY,
-                entity))
+                KeyUtil.keyToString(entity.variableKey()), "variableKey", entity))
         .scopeKey(
             ContractPolicy.requireNonNull(
-                KeyUtil.keyToString(entity.scopeKey()),
-                VariableSearchContract.Fields.SCOPE_KEY,
-                entity))
+                KeyUtil.keyToString(entity.scopeKey()), "scopeKey", entity))
         .processInstanceKey(
             ContractPolicy.requireNonNull(
-                KeyUtil.keyToString(entity.processInstanceKey()),
-                VariableSearchContract.Fields.PROCESS_INSTANCE_KEY,
-                entity))
+                KeyUtil.keyToString(entity.processInstanceKey()), "processInstanceKey", entity))
         .value(
             ContractPolicy.requireNonNull(
                 !truncateValues
                     ? ContractPolicy.resolvePreviewValue(
                         entity.value(), entity.fullValue(), entity.isPreview())
                     : entity.value(),
-                VariableSearchContract.Fields.VALUE,
+                "value",
                 entity))
         .isTruncated(
             ContractPolicy.requireNonNull(
-                truncateValues && entity.isPreview(),
-                VariableSearchContract.Fields.IS_TRUNCATED,
-                entity))
-        .rootProcessInstanceKey(entity.rootProcessInstanceKey())
-        .build();
+                truncateValues && entity.isPreview(), "isTruncated", entity))
+        .rootProcessInstanceKey(KeyUtil.keyToString(entity.rootProcessInstanceKey()));
   }
 
-  public static VariableContract toItemProjection(final VariableEntity entity) {
-    return VariableContract.builder()
-        .name(ContractPolicy.requireNonNull(entity.name(), VariableContract.Fields.NAME, entity))
-        .tenantId(
-            ContractPolicy.requireNonNull(
-                entity.tenantId(), VariableContract.Fields.TENANT_ID, entity))
+  public static Variable toItemProjection(final VariableEntity entity) {
+    return new Variable()
+        .name(ContractPolicy.requireNonNull(entity.name(), "name", entity))
+        .tenantId(ContractPolicy.requireNonNull(entity.tenantId(), "tenantId", entity))
         .variableKey(
             ContractPolicy.requireNonNull(
-                KeyUtil.keyToString(entity.variableKey()),
-                VariableContract.Fields.VARIABLE_KEY,
-                entity))
+                KeyUtil.keyToString(entity.variableKey()), "variableKey", entity))
         .scopeKey(
             ContractPolicy.requireNonNull(
-                KeyUtil.keyToString(entity.scopeKey()), VariableContract.Fields.SCOPE_KEY, entity))
+                KeyUtil.keyToString(entity.scopeKey()), "scopeKey", entity))
         .processInstanceKey(
             ContractPolicy.requireNonNull(
-                KeyUtil.keyToString(entity.processInstanceKey()),
-                VariableContract.Fields.PROCESS_INSTANCE_KEY,
-                entity))
+                KeyUtil.keyToString(entity.processInstanceKey()), "processInstanceKey", entity))
         .value(
             ContractPolicy.requireNonNull(
                 ContractPolicy.resolvePreviewValue(
                     entity.value(), entity.fullValue(), entity.isPreview()),
-                VariableContract.Fields.VALUE,
+                "value",
                 entity))
-        .rootProcessInstanceKey(entity.rootProcessInstanceKey())
-        .build();
+        .rootProcessInstanceKey(KeyUtil.keyToString(entity.rootProcessInstanceKey()));
   }
 }

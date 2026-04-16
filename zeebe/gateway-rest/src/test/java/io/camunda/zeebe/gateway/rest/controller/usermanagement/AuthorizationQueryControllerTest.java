@@ -14,8 +14,8 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import io.camunda.gateway.mapping.http.search.contract.generated.OwnerTypeEnum;
-import io.camunda.gateway.mapping.http.search.contract.generated.ResourceTypeEnum;
+import io.camunda.gateway.protocol.model.OwnerTypeEnum;
+import io.camunda.gateway.protocol.model.ResourceTypeEnum;
 import io.camunda.search.entities.AuthorizationEntity;
 import io.camunda.search.exception.CamundaSearchException;
 import io.camunda.search.filter.AuthorizationFilter;

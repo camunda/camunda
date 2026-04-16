@@ -7,7 +7,7 @@
  */
 package io.camunda.gateway.mapping.http.converters;
 
-import io.camunda.gateway.mapping.http.search.contract.generated.DecisionInstanceStateEnum;
+import io.camunda.gateway.protocol.model.DecisionInstanceStateEnum;
 import io.camunda.search.entities.DecisionInstanceEntity;
 
 public class DecisionInstanceStateConverter implements CustomConverter<String> {

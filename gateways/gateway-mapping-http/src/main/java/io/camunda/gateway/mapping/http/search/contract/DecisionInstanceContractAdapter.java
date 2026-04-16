@@ -8,16 +8,16 @@
 package io.camunda.gateway.mapping.http.search.contract;
 
 import static io.camunda.gateway.mapping.http.ResponseMapper.formatDate;
-import static io.camunda.gateway.mapping.http.search.contract.generated.DecisionInstanceContract.Fields;
 
-import io.camunda.gateway.mapping.http.search.contract.generated.DecisionDefinitionTypeEnum;
-import io.camunda.gateway.mapping.http.search.contract.generated.DecisionInstanceContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.DecisionInstanceGetQueryContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.DecisionInstanceStateEnum;
-import io.camunda.gateway.mapping.http.search.contract.generated.EvaluatedDecisionInputItemContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.EvaluatedDecisionOutputItemContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.MatchedDecisionRuleItemContract;
 import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
+import io.camunda.gateway.mapping.http.util.KeyUtil;
+import io.camunda.gateway.protocol.model.DecisionDefinitionTypeEnum;
+import io.camunda.gateway.protocol.model.DecisionInstance;
+import io.camunda.gateway.protocol.model.DecisionInstanceGetQuery;
+import io.camunda.gateway.protocol.model.DecisionInstanceStateEnum;
+import io.camunda.gateway.protocol.model.EvaluatedDecisionInputItem;
+import io.camunda.gateway.protocol.model.EvaluatedDecisionOutputItem;
+import io.camunda.gateway.protocol.model.MatchedDecisionRuleItem;
 import io.camunda.search.entities.DecisionInstanceEntity;
 import io.camunda.search.entities.DecisionInstanceEntity.DecisionDefinitionType;
 import io.camunda.search.entities.DecisionInstanceEntity.DecisionInstanceInputEntity;
@@ -37,85 +37,87 @@ public final class DecisionInstanceContractAdapter {
 
   private DecisionInstanceContractAdapter() {}
 
-  public static List<DecisionInstanceContract> toSearchProjections(
+  public static List<DecisionInstance> toSearchProjections(
       final List<DecisionInstanceEntity> instances) {
     return instances.stream().map(DecisionInstanceContractAdapter::toSearchProjection).toList();
   }
 
-  public static DecisionInstanceContract toSearchProjection(final DecisionInstanceEntity entity) {
+  public static DecisionInstance toSearchProjection(final DecisionInstanceEntity entity) {
     return toContract(entity);
   }
 
-  public static DecisionInstanceGetQueryContract toGetProjection(
-      final DecisionInstanceEntity entity) {
+  public static DecisionInstanceGetQuery toGetProjection(final DecisionInstanceEntity entity) {
     final var sc = toContract(entity);
-    return new DecisionInstanceGetQueryContract(
-        sc.decisionDefinitionId(),
-        sc.decisionDefinitionKey(),
-        sc.decisionDefinitionName(),
-        sc.decisionDefinitionType(),
-        sc.decisionDefinitionVersion(),
-        sc.decisionEvaluationInstanceKey(),
-        sc.decisionEvaluationKey(),
-        sc.elementInstanceKey(),
-        sc.evaluationDate(),
-        sc.evaluationFailure(),
-        sc.processDefinitionKey(),
-        sc.processInstanceKey(),
-        sc.result(),
-        sc.rootDecisionDefinitionKey(),
-        sc.rootProcessInstanceKey(),
-        sc.state(),
-        sc.tenantId(),
-        toEvaluatedInputs(entity.evaluatedInputs()),
-        toMatchedRules(entity.evaluatedOutputs()));
+    return new DecisionInstanceGetQuery()
+        .decisionDefinitionId(sc.getDecisionDefinitionId())
+        .decisionDefinitionKey(sc.getDecisionDefinitionKey())
+        .decisionDefinitionName(sc.getDecisionDefinitionName())
+        .decisionDefinitionType(sc.getDecisionDefinitionType())
+        .decisionDefinitionVersion(sc.getDecisionDefinitionVersion())
+        .decisionEvaluationInstanceKey(sc.getDecisionEvaluationInstanceKey())
+        .decisionEvaluationKey(sc.getDecisionEvaluationKey())
+        .elementInstanceKey(sc.getElementInstanceKey())
+        .evaluationDate(sc.getEvaluationDate())
+        .evaluationFailure(sc.getEvaluationFailure())
+        .processDefinitionKey(sc.getProcessDefinitionKey())
+        .processInstanceKey(sc.getProcessInstanceKey())
+        .result(sc.getResult())
+        .rootDecisionDefinitionKey(sc.getRootDecisionDefinitionKey())
+        .rootProcessInstanceKey(sc.getRootProcessInstanceKey())
+        .state(sc.getState())
+        .tenantId(sc.getTenantId())
+        .evaluatedInputs(toEvaluatedInputs(entity.evaluatedInputs()))
+        .matchedRules(toMatchedRules(entity.evaluatedOutputs()));
   }
 
-  private static DecisionInstanceContract toContract(final DecisionInstanceEntity entity) {
-    return DecisionInstanceContract.builder()
+  private static DecisionInstance toContract(final DecisionInstanceEntity entity) {
+    return new DecisionInstance()
         .decisionDefinitionId(
             ContractPolicy.requireNonNull(
-                entity.decisionDefinitionId(), Fields.DECISION_DEFINITION_ID, entity))
+                entity.decisionDefinitionId(), "decisionDefinitionId", entity))
         .decisionDefinitionKey(
             ContractPolicy.requireNonNull(
-                entity.decisionDefinitionKey(), Fields.DECISION_DEFINITION_KEY, entity))
+                KeyUtil.keyToString(entity.decisionDefinitionKey()),
+                "decisionDefinitionKey",
+                entity))
         .decisionDefinitionName(
             ContractPolicy.requireNonNull(
-                entity.decisionDefinitionName(), Fields.DECISION_DEFINITION_NAME, entity))
+                entity.decisionDefinitionName(), "decisionDefinitionName", entity))
         .decisionDefinitionType(
             ContractPolicy.requireNonNull(
                 toDecisionDefinitionTypeEnum(entity.decisionDefinitionType()),
-                Fields.DECISION_DEFINITION_TYPE,
+                "decisionDefinitionType",
                 entity))
         .decisionDefinitionVersion(
             ContractPolicy.requireNonNull(
-                entity.decisionDefinitionVersion(), Fields.DECISION_DEFINITION_VERSION, entity))
+                entity.decisionDefinitionVersion(), "decisionDefinitionVersion", entity))
         .decisionEvaluationInstanceKey(
             ContractPolicy.requireNonNull(
-                entity.decisionInstanceId(), Fields.DECISION_EVALUATION_INSTANCE_KEY, entity))
+                entity.decisionInstanceId(), "decisionEvaluationInstanceKey", entity))
         .decisionEvaluationKey(
             ContractPolicy.requireNonNull(
-                entity.decisionInstanceKey(), Fields.DECISION_EVALUATION_KEY, entity))
+                KeyUtil.keyToString(entity.decisionInstanceKey()), "decisionEvaluationKey", entity))
         .evaluationDate(
             ContractPolicy.requireNonNull(
-                formatDate(entity.evaluationDate()), Fields.EVALUATION_DATE, entity))
-        .result(ContractPolicy.requireNonNull(entity.result(), Fields.RESULT, entity))
+                formatDate(entity.evaluationDate()), "evaluationDate", entity))
+        .result(ContractPolicy.requireNonNull(entity.result(), "result", entity))
         .rootDecisionDefinitionKey(
             ContractPolicy.requireNonNull(
-                entity.rootDecisionDefinitionKey(), Fields.ROOT_DECISION_DEFINITION_KEY, entity))
+                KeyUtil.keyToString(entity.rootDecisionDefinitionKey()),
+                "rootDecisionDefinitionKey",
+                entity))
         .state(
             ContractPolicy.requireNonNull(
-                toDecisionInstanceStateEnum(entity.state()), Fields.STATE, entity))
-        .tenantId(ContractPolicy.requireNonNull(entity.tenantId(), Fields.TENANT_ID, entity))
-        .elementInstanceKey(entity.flowNodeInstanceKey())
+                toDecisionInstanceStateEnum(entity.state()), "state", entity))
+        .tenantId(ContractPolicy.requireNonNull(entity.tenantId(), "tenantId", entity))
+        .elementInstanceKey(KeyUtil.keyToString(entity.flowNodeInstanceKey()))
         .evaluationFailure(entity.evaluationFailure())
-        .processDefinitionKey(entity.processDefinitionKey())
-        .processInstanceKey(entity.processInstanceKey())
-        .rootProcessInstanceKey(entity.rootProcessInstanceKey())
-        .build();
+        .processDefinitionKey(KeyUtil.keyToString(entity.processDefinitionKey()))
+        .processInstanceKey(KeyUtil.keyToString(entity.processInstanceKey()))
+        .rootProcessInstanceKey(KeyUtil.keyToString(entity.rootProcessInstanceKey()));
   }
 
-  private static List<EvaluatedDecisionInputItemContract> toEvaluatedInputs(
+  private static List<EvaluatedDecisionInputItem> toEvaluatedInputs(
       final List<DecisionInstanceInputEntity> decisionInstanceInputEntities) {
     if (decisionInstanceInputEntities == null) {
       return List.of();
@@ -123,12 +125,14 @@ public final class DecisionInstanceContractAdapter {
     return decisionInstanceInputEntities.stream()
         .map(
             input ->
-                new EvaluatedDecisionInputItemContract(
-                    input.inputId(), input.inputName(), input.inputValue()))
+                new EvaluatedDecisionInputItem()
+                    .inputId(input.inputId())
+                    .inputName(input.inputName())
+                    .inputValue(input.inputValue()))
         .toList();
   }
 
-  private static List<MatchedDecisionRuleItemContract> toMatchedRules(
+  private static List<MatchedDecisionRuleItem> toMatchedRules(
       final List<DecisionInstanceOutputEntity> decisionInstanceOutputEntities) {
     if (decisionInstanceOutputEntities == null) {
       return List.of();
@@ -141,19 +145,18 @@ public final class DecisionInstanceContractAdapter {
             entry -> {
               final var ruleIdentifier = entry.getKey();
               final var outputs = entry.getValue();
-              return new MatchedDecisionRuleItemContract(
-                  ruleIdentifier.ruleId(),
-                  ruleIdentifier.ruleIndex(),
-                  outputs.stream()
-                      .map(
-                          output ->
-                              new EvaluatedDecisionOutputItemContract(
-                                  output.outputId(),
-                                  output.outputName(),
-                                  output.outputValue(),
-                                  null,
-                                  null))
-                      .toList());
+              return new MatchedDecisionRuleItem()
+                  .ruleId(ruleIdentifier.ruleId())
+                  .ruleIndex(ruleIdentifier.ruleIndex())
+                  .evaluatedOutputs(
+                      outputs.stream()
+                          .map(
+                              output ->
+                                  new EvaluatedDecisionOutputItem()
+                                      .outputId(output.outputId())
+                                      .outputName(output.outputName())
+                                      .outputValue(output.outputValue()))
+                          .toList());
             })
         .toList();
   }

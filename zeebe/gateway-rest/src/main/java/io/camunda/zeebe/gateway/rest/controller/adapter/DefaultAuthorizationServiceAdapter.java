@@ -13,9 +13,9 @@ import io.camunda.gateway.mapping.http.ResponseMapper;
 import io.camunda.gateway.mapping.http.mapper.AuthorizationMapper;
 import io.camunda.gateway.mapping.http.search.SearchQueryRequestMapper;
 import io.camunda.gateway.mapping.http.search.SearchQueryResponseMapper;
-import io.camunda.gateway.mapping.http.search.contract.generated.AuthorizationRequestContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.AuthorizationSearchQueryRequestContract;
 import io.camunda.gateway.mapping.http.validator.AuthorizationRequestValidator;
+import io.camunda.gateway.protocol.model.AuthorizationRequest;
+import io.camunda.gateway.protocol.model.AuthorizationSearchQuery;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.validation.AuthorizationValidator;
 import io.camunda.security.validation.IdentifierValidator;
@@ -44,8 +44,7 @@ public class DefaultAuthorizationServiceAdapter implements AuthorizationServiceA
 
   @Override
   public ResponseEntity<Object> createAuthorization(
-      final AuthorizationRequestContract authorizationRequest,
-      final CamundaAuthentication authentication) {
+      final AuthorizationRequest authorizationRequest, final CamundaAuthentication authentication) {
     return authorizationMapper
         .toCreateAuthorizationRequest(authorizationRequest)
         .fold(
@@ -60,7 +59,7 @@ public class DefaultAuthorizationServiceAdapter implements AuthorizationServiceA
   @Override
   public ResponseEntity<Void> updateAuthorization(
       final Long authorizationKey,
-      final AuthorizationRequestContract authorizationRequest,
+      final AuthorizationRequest authorizationRequest,
       final CamundaAuthentication authentication) {
     return authorizationMapper
         .toUpdateAuthorizationRequest(authorizationKey, authorizationRequest)
@@ -91,7 +90,7 @@ public class DefaultAuthorizationServiceAdapter implements AuthorizationServiceA
 
   @Override
   public ResponseEntity<Object> searchAuthorizations(
-      final AuthorizationSearchQueryRequestContract authorizationSearchQueryStrict,
+      final AuthorizationSearchQuery authorizationSearchQueryStrict,
       final CamundaAuthentication authentication) {
     return SearchQueryRequestMapper.toAuthorizationQueryStrict(authorizationSearchQueryStrict)
         .fold(

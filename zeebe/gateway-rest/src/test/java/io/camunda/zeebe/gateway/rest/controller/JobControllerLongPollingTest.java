@@ -14,7 +14,7 @@ import static org.mockito.Mockito.when;
 import com.jayway.jsonpath.JsonPath;
 import io.camunda.gateway.mapping.http.GatewayErrorMapper;
 import io.camunda.gateway.mapping.http.ResponseMapper;
-import io.camunda.gateway.mapping.http.search.contract.generated.JobActivationContract;
+import io.camunda.gateway.protocol.model.JobActivation;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.security.configuration.MultiTenancyConfiguration;
@@ -65,7 +65,7 @@ public class JobControllerLongPollingTest extends RestControllerTest {
 
   static final String JOBS_BASE_URL = "/v2/jobs";
 
-  @Autowired ActivateJobsHandler<JobActivationContract> activateJobsHandler;
+  @Autowired ActivateJobsHandler<JobActivation> activateJobsHandler;
   @Autowired StubbedBrokerClient stubbedBrokerClient;
   @MockitoSpyBean ResettableJobActivationRequestResponseObserver responseObserver;
   @MockitoBean MultiTenancyConfiguration multiTenancyCfg;
@@ -414,10 +414,10 @@ public class JobControllerLongPollingTest extends RestControllerTest {
     }
 
     @Bean
-    public ActivateJobsHandler<JobActivationContract> activateJobsHandler(
+    public ActivateJobsHandler<JobActivation> activateJobsHandler(
         final BrokerClient brokerClient, final ActorScheduler actorScheduler) {
       final var handler =
-          LongPollingActivateJobsHandler.<JobActivationContract>newBuilder()
+          LongPollingActivateJobsHandler.<JobActivation>newBuilder()
               .setBrokerClient(brokerClient)
               .setMaxMessageSize(DataSize.ofMegabytes(4L).toBytes())
               .setActivationResultMapper(ResponseMapper::toActivateJobsResponse)
@@ -438,9 +438,9 @@ public class JobControllerLongPollingTest extends RestControllerTest {
     }
 
     @Bean
-    public JobServices<JobActivationContract> jobServices(
+    public JobServices<JobActivation> jobServices(
         final BrokerClient brokerClient,
-        final ActivateJobsHandler<JobActivationContract> activateJobsHandler) {
+        final ActivateJobsHandler<JobActivation> activateJobsHandler) {
       return new JobServices<>(
           brokerClient,
           new SecurityContextProvider(),

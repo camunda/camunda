@@ -11,14 +11,14 @@ import io.camunda.gateway.mapping.http.ResponseMapper;
 import io.camunda.gateway.mapping.http.mapper.RoleMapper;
 import io.camunda.gateway.mapping.http.search.SearchQueryRequestMapper;
 import io.camunda.gateway.mapping.http.search.SearchQueryResponseMapper;
-import io.camunda.gateway.mapping.http.search.contract.generated.MappingRuleSearchQueryRequestContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.RoleClientSearchQueryRequestContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.RoleCreateRequestContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.RoleGroupSearchQueryRequestContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.RoleSearchQueryRequestContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.RoleUpdateRequestContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.RoleUserSearchQueryRequestContract;
 import io.camunda.gateway.mapping.http.validator.RoleRequestValidator;
+import io.camunda.gateway.protocol.model.MappingRuleSearchQueryRequest;
+import io.camunda.gateway.protocol.model.RoleClientSearchQueryRequest;
+import io.camunda.gateway.protocol.model.RoleCreateRequest;
+import io.camunda.gateway.protocol.model.RoleGroupSearchQueryRequest;
+import io.camunda.gateway.protocol.model.RoleSearchQueryRequest;
+import io.camunda.gateway.protocol.model.RoleUpdateRequest;
+import io.camunda.gateway.protocol.model.RoleUserSearchQueryRequest;
 import io.camunda.search.query.MappingRuleQuery;
 import io.camunda.search.query.RoleMemberQuery;
 import io.camunda.security.auth.CamundaAuthentication;
@@ -52,8 +52,7 @@ public class DefaultRoleServiceAdapter implements RoleServiceAdapter {
 
   @Override
   public ResponseEntity<Object> createRole(
-      final RoleCreateRequestContract roleCreateRequestStrict,
-      final CamundaAuthentication authentication) {
+      final RoleCreateRequest roleCreateRequestStrict, final CamundaAuthentication authentication) {
     return roleMapper
         .toRoleCreateRequest(roleCreateRequestStrict)
         .fold(
@@ -67,7 +66,7 @@ public class DefaultRoleServiceAdapter implements RoleServiceAdapter {
 
   @Override
   public ResponseEntity<Object> searchRoles(
-      final RoleSearchQueryRequestContract roleSearchQueryRequestStrict,
+      final RoleSearchQueryRequest roleSearchQueryRequestStrict,
       final CamundaAuthentication authentication) {
     return SearchQueryRequestMapper.toRoleQueryStrict(roleSearchQueryRequestStrict)
         .fold(
@@ -97,7 +96,7 @@ public class DefaultRoleServiceAdapter implements RoleServiceAdapter {
   @Override
   public ResponseEntity<Object> updateRole(
       final String roleId,
-      final RoleUpdateRequestContract roleUpdateRequestStrict,
+      final RoleUpdateRequest roleUpdateRequestStrict,
       final CamundaAuthentication authentication) {
     return roleMapper
         .toRoleUpdateRequest(roleUpdateRequestStrict, roleId)
@@ -142,7 +141,7 @@ public class DefaultRoleServiceAdapter implements RoleServiceAdapter {
   @Override
   public ResponseEntity<Object> searchUsersForRole(
       final String roleId,
-      final RoleUserSearchQueryRequestContract roleUserSearchQueryRequestStrict,
+      final RoleUserSearchQueryRequest roleUserSearchQueryRequestStrict,
       final CamundaAuthentication authentication) {
     return SearchQueryRequestMapper.toRoleUserQueryStrict(roleUserSearchQueryRequestStrict)
         .fold(
@@ -186,7 +185,7 @@ public class DefaultRoleServiceAdapter implements RoleServiceAdapter {
   @Override
   public ResponseEntity<Object> searchClientsForRole(
       final String roleId,
-      final RoleClientSearchQueryRequestContract roleClientSearchQueryRequestStrict,
+      final RoleClientSearchQueryRequest roleClientSearchQueryRequestStrict,
       final CamundaAuthentication authentication) {
     return SearchQueryRequestMapper.toRoleClientQueryStrict(roleClientSearchQueryRequestStrict)
         .fold(
@@ -230,7 +229,7 @@ public class DefaultRoleServiceAdapter implements RoleServiceAdapter {
   @Override
   public ResponseEntity<Object> searchGroupsForRole(
       final String roleId,
-      final RoleGroupSearchQueryRequestContract roleGroupSearchQueryRequestStrict,
+      final RoleGroupSearchQueryRequest roleGroupSearchQueryRequestStrict,
       final CamundaAuthentication authentication) {
     return SearchQueryRequestMapper.toRoleGroupQueryStrict(roleGroupSearchQueryRequestStrict)
         .fold(
@@ -274,7 +273,7 @@ public class DefaultRoleServiceAdapter implements RoleServiceAdapter {
   @Override
   public ResponseEntity<Object> searchMappingRulesForRole(
       final String roleId,
-      final MappingRuleSearchQueryRequestContract mappingRuleSearchQueryRequestStrict,
+      final MappingRuleSearchQueryRequest mappingRuleSearchQueryRequestStrict,
       final CamundaAuthentication authentication) {
     return SearchQueryRequestMapper.toMappingRuleQueryStrict(mappingRuleSearchQueryRequestStrict)
         .fold(

@@ -7,10 +7,9 @@
  */
 package io.camunda.gateway.mapping.http.search.contract;
 
-import static io.camunda.gateway.mapping.http.search.contract.generated.ProcessDefinitionContract.Fields;
-
-import io.camunda.gateway.mapping.http.search.contract.generated.ProcessDefinitionContract;
 import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
+import io.camunda.gateway.mapping.http.util.KeyUtil;
+import io.camunda.gateway.protocol.model.ProcessDefinition;
 import io.camunda.search.entities.ProcessDefinitionEntity;
 
 /**
@@ -26,23 +25,21 @@ public final class ProcessDefinitionContractAdapter {
 
   private ProcessDefinitionContractAdapter() {}
 
-  public static ProcessDefinitionContract adapt(final ProcessDefinitionEntity entity) {
-    return ProcessDefinitionContract.builder()
-        .resourceName(
-            ContractPolicy.requireNonNull(entity.resourceName(), Fields.RESOURCE_NAME, entity))
-        .version(ContractPolicy.requireNonNull(entity.version(), Fields.VERSION, entity))
+  public static ProcessDefinition adapt(final ProcessDefinitionEntity entity) {
+    return new ProcessDefinition()
+        .resourceName(ContractPolicy.requireNonNull(entity.resourceName(), "resourceName", entity))
+        .version(ContractPolicy.requireNonNull(entity.version(), "version", entity))
         .processDefinitionId(
             ContractPolicy.requireNonNull(
-                entity.processDefinitionId(), Fields.PROCESS_DEFINITION_ID, entity))
-        .tenantId(ContractPolicy.requireNonNull(entity.tenantId(), Fields.TENANT_ID, entity))
+                entity.processDefinitionId(), "processDefinitionId", entity))
+        .tenantId(ContractPolicy.requireNonNull(entity.tenantId(), "tenantId", entity))
         .processDefinitionKey(
             ContractPolicy.requireNonNull(
-                entity.processDefinitionKey(), Fields.PROCESS_DEFINITION_KEY, entity))
+                KeyUtil.keyToString(entity.processDefinitionKey()), "processDefinitionKey", entity))
         .hasStartForm(
             ContractPolicy.requireNonNull(
-                ContractPolicy.isNotBlank(entity.formId()), Fields.HAS_START_FORM, entity))
+                ContractPolicy.isNotBlank(entity.formId()), "hasStartForm", entity))
         .name(entity.name()) // required + nullable in contract
-        .versionTag(entity.versionTag()) // required + nullable in contract
-        .build();
+        .versionTag(entity.versionTag()); // required + nullable in contract
   }
 }

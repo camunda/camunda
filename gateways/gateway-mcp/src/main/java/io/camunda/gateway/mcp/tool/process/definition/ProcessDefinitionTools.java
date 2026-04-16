@@ -15,15 +15,15 @@ import static io.camunda.gateway.mcp.tool.ToolDescriptions.PROCESS_DEFINITION_KE
 import io.camunda.gateway.mapping.http.GatewayErrorMapper;
 import io.camunda.gateway.mapping.http.search.SearchQueryRequestMapper;
 import io.camunda.gateway.mapping.http.search.SearchQueryResponseMapper;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedProcessDefinitionFilterStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedProcessDefinitionSearchQueryRequestStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedStringFilterPropertyPlainValueStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedStringFilterPropertyStrictContract;
 import io.camunda.gateway.mcp.config.tool.CamundaMcpTool;
 import io.camunda.gateway.mcp.config.tool.McpToolParamsUnwrapped;
 import io.camunda.gateway.mcp.mapper.CallToolResultMapper;
 import io.camunda.gateway.mcp.model.McpProcessDefinitionFilter;
 import io.camunda.gateway.mcp.model.McpProcessDefinitionSearchQuery;
+import io.camunda.gateway.protocol.model.ProcessDefinitionFilter;
+import io.camunda.gateway.protocol.model.ProcessDefinitionSearchQuery;
+import io.camunda.gateway.protocol.model.StringFilterProperty;
+import io.camunda.gateway.protocol.model.StringFilterPropertyPlainValue;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.ProcessDefinitionServices;
 import io.camunda.service.exception.ServiceException;
@@ -58,7 +58,7 @@ public class ProcessDefinitionTools {
   public CallToolResult searchProcessDefinitions(
       @McpToolParamsUnwrapped @Valid final McpProcessDefinitionSearchQuery query) {
     try {
-      final var strictRequest = toStrictContract(query);
+      final var strictRequest = toStrict(query);
       final var processDefinitionQuery =
           SearchQueryRequestMapper.toProcessDefinitionQueryStrict(strictRequest);
       if (processDefinitionQuery.isLeft()) {
@@ -124,30 +124,30 @@ public class ProcessDefinitionTools {
 
   // -- Facade → Strict contract conversion --
 
-  private static GeneratedProcessDefinitionSearchQueryRequestStrictContract toStrictContract(
+  private static ProcessDefinitionSearchQuery toStrict(
       final McpProcessDefinitionSearchQuery query) {
-    return new GeneratedProcessDefinitionSearchQueryRequestStrictContract(
-        query.page(), query.sort(), toStrictFilter(query.filter()));
+    return new ProcessDefinitionSearchQuery()
+        .page(query.page())
+        .sort(query.sort())
+        .filter(toStrictFilter(query.filter()));
   }
 
-  private static GeneratedProcessDefinitionFilterStrictContract toStrictFilter(
-      final McpProcessDefinitionFilter filter) {
+  private static ProcessDefinitionFilter toStrictFilter(final McpProcessDefinitionFilter filter) {
     if (filter == null) {
       return null;
     }
-    return new GeneratedProcessDefinitionFilterStrictContract(
-        wrapString(filter.name()),
-        filter.isLatestVersion(),
-        filter.resourceName(),
-        filter.version(),
-        filter.versionTag(),
-        wrapString(filter.processDefinitionId()),
-        null, // tenantId — not exposed in MCP
-        filter.processDefinitionKey(),
-        filter.hasStartForm());
+    return new ProcessDefinitionFilter()
+        .name(wrapString(filter.name()))
+        .isLatestVersion(filter.isLatestVersion())
+        .resourceName(filter.resourceName())
+        .version(filter.version())
+        .versionTag(filter.versionTag())
+        .processDefinitionId(wrapString(filter.processDefinitionId()))
+        .processDefinitionKey(filter.processDefinitionKey())
+        .hasStartForm(filter.hasStartForm());
   }
 
-  private static GeneratedStringFilterPropertyStrictContract wrapString(final String value) {
-    return value != null ? new GeneratedStringFilterPropertyPlainValueStrictContract(value) : null;
+  private static StringFilterProperty wrapString(final String value) {
+    return value != null ? new StringFilterPropertyPlainValue(value) : null;
   }
 }

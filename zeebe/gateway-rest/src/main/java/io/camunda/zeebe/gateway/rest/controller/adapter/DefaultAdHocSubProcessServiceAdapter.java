@@ -8,7 +8,7 @@
 package io.camunda.zeebe.gateway.rest.controller.adapter;
 
 import io.camunda.gateway.mapping.http.RequestMapper;
-import io.camunda.gateway.mapping.http.search.contract.generated.AdHocSubProcessActivateActivitiesInstructionContract;
+import io.camunda.gateway.protocol.model.AdHocSubProcessActivateActivitiesInstruction;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.AdHocSubProcessActivityServices;
 import io.camunda.zeebe.gateway.rest.controller.generated.AdHocSubProcessServiceAdapter;
@@ -30,7 +30,7 @@ public class DefaultAdHocSubProcessServiceAdapter implements AdHocSubProcessServ
   @Override
   public ResponseEntity<Void> activateAdHocSubProcessActivities(
       final Long adHocSubProcessInstanceKey,
-      final AdHocSubProcessActivateActivitiesInstructionContract requestStrict,
+      final AdHocSubProcessActivateActivitiesInstruction requestStrict,
       final CamundaAuthentication authentication) {
     return RequestMapper.toAdHocSubProcessActivateActivitiesRequest(
             String.valueOf(adHocSubProcessInstanceKey), requestStrict)

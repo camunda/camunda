@@ -16,19 +16,6 @@ import io.camunda.gateway.mapping.http.RequestMapper;
 import io.camunda.gateway.mapping.http.ResponseMapper;
 import io.camunda.gateway.mapping.http.search.SearchQueryRequestMapper;
 import io.camunda.gateway.mapping.http.search.SearchQueryResponseMapper;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedAdvancedDateTimeFilterStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedIntegerFilterPropertyPlainValueStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedProcessDefinitionKeyFilterPropertyPlainValueStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedProcessInstanceCreationInstructionByIdStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedProcessInstanceCreationInstructionByKeyStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedProcessInstanceCreationInstructionStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedProcessInstanceFilterStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedProcessInstanceKeyFilterPropertyPlainValueStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedProcessInstanceSearchQueryRequestStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedProcessInstanceStateFilterPropertyPlainValueStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedStringFilterPropertyPlainValueStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedStringFilterPropertyStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedVariableValueFilterPropertyStrictContract;
 import io.camunda.gateway.mcp.config.tool.CamundaMcpTool;
 import io.camunda.gateway.mcp.config.tool.McpToolParamsUnwrapped;
 import io.camunda.gateway.mcp.mapper.CallToolResultMapper;
@@ -37,6 +24,19 @@ import io.camunda.gateway.mcp.model.McpProcessInstanceCreation;
 import io.camunda.gateway.mcp.model.McpProcessInstanceFilter;
 import io.camunda.gateway.mcp.model.McpProcessInstanceSearchQuery;
 import io.camunda.gateway.mcp.model.McpVariableValue;
+import io.camunda.gateway.protocol.model.AdvancedDateTimeFilter;
+import io.camunda.gateway.protocol.model.IntegerFilterPropertyPlainValue;
+import io.camunda.gateway.protocol.model.ProcessDefinitionKeyFilterPropertyPlainValue;
+import io.camunda.gateway.protocol.model.ProcessInstanceCreationInstruction;
+import io.camunda.gateway.protocol.model.ProcessInstanceCreationInstructionById;
+import io.camunda.gateway.protocol.model.ProcessInstanceCreationInstructionByKey;
+import io.camunda.gateway.protocol.model.ProcessInstanceFilter;
+import io.camunda.gateway.protocol.model.ProcessInstanceKeyFilterPropertyPlainValue;
+import io.camunda.gateway.protocol.model.ProcessInstanceSearchQuery;
+import io.camunda.gateway.protocol.model.ProcessInstanceStateFilterPropertyPlainValue;
+import io.camunda.gateway.protocol.model.StringFilterProperty;
+import io.camunda.gateway.protocol.model.StringFilterPropertyPlainValue;
+import io.camunda.gateway.protocol.model.VariableValueFilterProperty;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.security.configuration.MultiTenancyConfiguration;
 import io.camunda.service.ProcessInstanceServices;
@@ -74,7 +74,7 @@ public class ProcessInstanceTools {
   public CallToolResult searchProcessInstances(
       @McpToolParamsUnwrapped @Valid final McpProcessInstanceSearchQuery query) {
     try {
-      final var strictRequest = toStrictContract(query);
+      final var strictRequest = toStrict(query);
       final var processInstanceQuery =
           SearchQueryRequestMapper.toProcessInstanceQueryStrict(strictRequest);
       if (processInstanceQuery.isLeft()) {
@@ -161,90 +161,65 @@ public class ProcessInstanceTools {
 
   // -- Facade → Strict contract conversion --
 
-  private static GeneratedProcessInstanceSearchQueryRequestStrictContract toStrictContract(
-      final McpProcessInstanceSearchQuery query) {
-    return new GeneratedProcessInstanceSearchQueryRequestStrictContract(
-        query.page(), query.sort(), toStrictFilter(query.filter()));
+  private static ProcessInstanceSearchQuery toStrict(final McpProcessInstanceSearchQuery query) {
+    return new ProcessInstanceSearchQuery()
+        .page(query.page())
+        .sort(query.sort())
+        .filter(toStrictFilter(query.filter()));
   }
 
-  private static GeneratedProcessInstanceFilterStrictContract toStrictFilter(
-      final McpProcessInstanceFilter filter) {
+  private static ProcessInstanceFilter toStrictFilter(final McpProcessInstanceFilter filter) {
     if (filter == null) {
       return null;
     }
-    return new GeneratedProcessInstanceFilterStrictContract(
-        toStrictDateRange(filter.startDate()),
-        toStrictDateRange(filter.endDate()),
-        filter.state() != null
-            ? new GeneratedProcessInstanceStateFilterPropertyPlainValueStrictContract(
-                filter.state().getValue())
-            : null,
-        filter.hasIncident(),
-        null, // tenantId — not exposed in MCP
-        toStrictVariableValueFilters(filter.variables()),
-        filter.processInstanceKey() != null
-            ? new GeneratedProcessInstanceKeyFilterPropertyPlainValueStrictContract(
-                filter.processInstanceKey())
-            : null,
-        null, // parentProcessInstanceKey — not exposed in MCP
-        null, // parentElementInstanceKey — not exposed in MCP
-        null, // batchOperationId — not exposed in MCP
-        null, // batchOperationKey — not exposed in MCP
-        null, // errorMessage — not exposed in MCP
-        null, // hasRetriesLeft — not exposed in MCP
-        null, // elementInstanceState — not exposed in MCP
-        null, // elementId — not exposed in MCP
-        null, // hasElementInstanceIncident — not exposed in MCP
-        null, // incidentErrorHashCode — not exposed in MCP
-        filter.tags(),
-        wrapString(filter.businessId()),
-        wrapString(filter.processDefinitionId()),
-        wrapString(filter.processDefinitionName()),
-        filter.processDefinitionVersion() != null
-            ? new GeneratedIntegerFilterPropertyPlainValueStrictContract(
-                filter.processDefinitionVersion())
-            : null,
-        null, // processDefinitionVersionTag — not exposed in MCP
-        filter.processDefinitionKey() != null
-            ? new GeneratedProcessDefinitionKeyFilterPropertyPlainValueStrictContract(
-                filter.processDefinitionKey())
-            : null,
-        null // $or — not exposed in MCP
-        );
+    return new ProcessInstanceFilter()
+        .startDate(toStrictDateRange(filter.startDate()))
+        .endDate(toStrictDateRange(filter.endDate()))
+        .state(
+            filter.state() != null
+                ? new ProcessInstanceStateFilterPropertyPlainValue(filter.state().getValue())
+                : null)
+        .hasIncident(filter.hasIncident())
+        .variables(toStrictVariableValueFilters(filter.variables()))
+        .processInstanceKey(
+            filter.processInstanceKey() != null
+                ? new ProcessInstanceKeyFilterPropertyPlainValue(filter.processInstanceKey())
+                : null)
+        .tags(filter.tags())
+        .businessId(wrapString(filter.businessId()))
+        .processDefinitionId(wrapString(filter.processDefinitionId()))
+        .processDefinitionName(wrapString(filter.processDefinitionName()))
+        .processDefinitionVersion(
+            filter.processDefinitionVersion() != null
+                ? new IntegerFilterPropertyPlainValue(filter.processDefinitionVersion())
+                : null)
+        .processDefinitionKey(
+            filter.processDefinitionKey() != null
+                ? new ProcessDefinitionKeyFilterPropertyPlainValue(filter.processDefinitionKey())
+                : null);
   }
 
-  private static List<GeneratedVariableValueFilterPropertyStrictContract>
-      toStrictVariableValueFilters(final List<McpVariableValue> variables) {
+  private static List<VariableValueFilterProperty> toStrictVariableValueFilters(
+      final List<McpVariableValue> variables) {
     if (variables == null || variables.isEmpty()) {
       return null;
     }
     return variables.stream()
-        .map(
-            v ->
-                new GeneratedVariableValueFilterPropertyStrictContract(
-                    v.name(), wrapString(v.value())))
+        .map(v -> new VariableValueFilterProperty().name(v.name()).value(wrapString(v.value())))
         .toList();
   }
 
-  private static GeneratedStringFilterPropertyStrictContract wrapString(final String value) {
-    return value != null ? new GeneratedStringFilterPropertyPlainValueStrictContract(value) : null;
+  private static StringFilterProperty wrapString(final String value) {
+    return value != null ? new StringFilterPropertyPlainValue(value) : null;
   }
 
-  private static GeneratedAdvancedDateTimeFilterStrictContract toStrictDateRange(
-      final McpDateRange dateRange) {
+  private static AdvancedDateTimeFilter toStrictDateRange(final McpDateRange dateRange) {
     if (dateRange == null) {
       return null;
     }
-    return new GeneratedAdvancedDateTimeFilterStrictContract(
-        null, // $eq
-        null, // $neq
-        null, // $exists
-        null, // $gt
-        dateRange.from(), // $gte (from is inclusive)
-        dateRange.to(), // $lt (to is exclusive)
-        null, // $lte
-        null // $in
-        );
+    return new AdvancedDateTimeFilter()
+        .$gte(dateRange.from()) // from is inclusive
+        .$lt(dateRange.to()); // to is exclusive
   }
 
   // -- Process instance creation: validation + facade → strict contract conversion --
@@ -271,36 +246,30 @@ public class ProcessInstanceTools {
     return null;
   }
 
-  private static GeneratedProcessInstanceCreationInstructionStrictContract
-      toStrictCreationInstruction(final McpProcessInstanceCreation instruction) {
+  private static ProcessInstanceCreationInstruction toStrictCreationInstruction(
+      final McpProcessInstanceCreation instruction) {
     final var defId = instruction.processDefinitionId();
     if (defId != null && !defId.isBlank()) {
-      return new GeneratedProcessInstanceCreationInstructionByIdStrictContract(
-          defId,
-          instruction.processDefinitionVersion(),
-          instruction.variables(),
-          instruction.tenantId(),
-          null, // operationReference — not exposed in MCP
-          null, // startInstructions — not exposed in MCP
-          null, // runtimeInstructions — not exposed in MCP
-          instruction.awaitCompletion(),
-          instruction.fetchVariables(),
-          instruction.requestTimeout(),
-          instruction.tags(),
-          instruction.businessId());
+      return new ProcessInstanceCreationInstructionById()
+          .processDefinitionId(defId)
+          .processDefinitionVersion(instruction.processDefinitionVersion())
+          .variables(instruction.variables())
+          .tenantId(instruction.tenantId())
+          .awaitCompletion(instruction.awaitCompletion())
+          .fetchVariables(instruction.fetchVariables())
+          .requestTimeout(instruction.requestTimeout())
+          .tags(instruction.tags())
+          .businessId(instruction.businessId());
     }
-    return new GeneratedProcessInstanceCreationInstructionByKeyStrictContract(
-        instruction.processDefinitionKey(),
-        instruction.processDefinitionVersion(),
-        instruction.variables(),
-        null, // startInstructions — not exposed in MCP
-        null, // runtimeInstructions — not exposed in MCP
-        instruction.tenantId(),
-        null, // operationReference — not exposed in MCP
-        instruction.awaitCompletion(),
-        instruction.requestTimeout(),
-        instruction.fetchVariables(),
-        instruction.tags(),
-        instruction.businessId());
+    return new ProcessInstanceCreationInstructionByKey()
+        .processDefinitionKey(instruction.processDefinitionKey())
+        .processDefinitionVersion(instruction.processDefinitionVersion())
+        .variables(instruction.variables())
+        .tenantId(instruction.tenantId())
+        .awaitCompletion(instruction.awaitCompletion())
+        .requestTimeout(instruction.requestTimeout())
+        .fetchVariables(instruction.fetchVariables())
+        .tags(instruction.tags())
+        .businessId(instruction.businessId());
   }
 }

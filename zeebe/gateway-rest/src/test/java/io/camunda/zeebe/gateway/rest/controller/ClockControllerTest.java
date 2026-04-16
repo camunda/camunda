@@ -13,7 +13,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import io.camunda.gateway.mapping.http.search.contract.generated.ClockPinRequestContract;
+import io.camunda.gateway.protocol.model.ClockPinRequest;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.ClockServices;
 import io.camunda.zeebe.gateway.rest.CamundaProblemDetail;
@@ -57,7 +57,7 @@ public class ClockControllerTest extends RestControllerTest {
   void pinClockShouldReturnNoContent() {
     // given
     final long timestamp = 2693098555055L;
-    final var request = new ClockPinRequestContract(timestamp);
+    final var request = new ClockPinRequest().timestamp(timestamp);
     final var clockRecord = new ClockRecord().pinAt(timestamp);
 
     when(clockServices.pinClock(eq(timestamp), any()))

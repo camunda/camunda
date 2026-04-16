@@ -13,8 +13,8 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import io.camunda.gateway.mapping.http.search.contract.generated.BatchOperationStateEnum;
-import io.camunda.gateway.mapping.http.search.contract.generated.BatchOperationTypeEnum;
+import io.camunda.gateway.protocol.model.BatchOperationStateEnum;
+import io.camunda.gateway.protocol.model.BatchOperationTypeEnum;
 import io.camunda.search.entities.AuditLogEntity.AuditLogActorType;
 import io.camunda.search.entities.BatchOperationEntity;
 import io.camunda.search.entities.BatchOperationEntity.BatchOperationErrorEntity;

@@ -12,17 +12,17 @@ import static io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper.mapErrorToRes
 import io.camunda.gateway.mapping.http.RequestMapper;
 import io.camunda.gateway.mapping.http.search.SearchQueryRequestMapper;
 import io.camunda.gateway.mapping.http.search.SearchQueryResponseMapper;
-import io.camunda.gateway.mapping.http.search.contract.generated.JobActivationContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.JobActivationRequestContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.JobCompletionRequestContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.JobErrorRequestContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.JobErrorStatisticsQueryContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.JobFailRequestContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.JobSearchQueryRequestContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.JobTimeSeriesStatisticsQueryContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.JobTypeStatisticsQueryContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.JobUpdateRequestContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.JobWorkerStatisticsQueryContract;
+import io.camunda.gateway.protocol.model.JobActivation;
+import io.camunda.gateway.protocol.model.JobActivationRequest;
+import io.camunda.gateway.protocol.model.JobCompletionRequest;
+import io.camunda.gateway.protocol.model.JobErrorRequest;
+import io.camunda.gateway.protocol.model.JobErrorStatisticsQuery;
+import io.camunda.gateway.protocol.model.JobFailRequest;
+import io.camunda.gateway.protocol.model.JobSearchQuery;
+import io.camunda.gateway.protocol.model.JobTimeSeriesStatisticsQuery;
+import io.camunda.gateway.protocol.model.JobTypeStatisticsQuery;
+import io.camunda.gateway.protocol.model.JobUpdateRequest;
+import io.camunda.gateway.protocol.model.JobWorkerStatisticsQuery;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.configuration.MultiTenancyConfiguration;
 import io.camunda.service.JobServices;
@@ -44,13 +44,13 @@ import org.springframework.stereotype.Component;
 @Component
 public class DefaultJobServiceAdapter implements JobServiceAdapter {
 
-  private final JobServices<JobActivationContract> jobServices;
+  private final JobServices<JobActivation> jobServices;
   private final GatewayRestConfiguration gatewayRestConfiguration;
   private final ResponseObserverProvider responseObserverProvider;
   private final MultiTenancyConfiguration multiTenancyCfg;
 
   public DefaultJobServiceAdapter(
-      final JobServices<JobActivationContract> jobServices,
+      final JobServices<JobActivation> jobServices,
       final GatewayRestConfiguration gatewayRestConfiguration,
       final ResponseObserverProvider responseObserverProvider,
       final MultiTenancyConfiguration multiTenancyCfg) {
@@ -63,7 +63,7 @@ public class DefaultJobServiceAdapter implements JobServiceAdapter {
   @SuppressWarnings("unchecked")
   @Override
   public ResponseEntity<Object> activateJobs(
-      final JobActivationRequestContract jobActivationRequestStrict,
+      final JobActivationRequest jobActivationRequestStrict,
       final CamundaAuthentication authentication) {
     return RequestMapper.toJobsActivationRequest(
             jobActivationRequestStrict, multiTenancyCfg.isChecksEnabled())
@@ -122,8 +122,7 @@ public class DefaultJobServiceAdapter implements JobServiceAdapter {
 
   @Override
   public ResponseEntity<Object> getJobTypeStatistics(
-      final JobTypeStatisticsQueryContract requestStrict,
-      final CamundaAuthentication authentication) {
+      final JobTypeStatisticsQuery requestStrict, final CamundaAuthentication authentication) {
     return requireJobMetricsEnabled("/v2/jobs/statistics/by-types")
         .flatMap(ok -> SearchQueryRequestMapper.toJobTypeStatisticsQuery(requestStrict))
         .fold(
@@ -141,8 +140,7 @@ public class DefaultJobServiceAdapter implements JobServiceAdapter {
 
   @Override
   public ResponseEntity<Object> getJobWorkerStatistics(
-      final JobWorkerStatisticsQueryContract requestStrict,
-      final CamundaAuthentication authentication) {
+      final JobWorkerStatisticsQuery requestStrict, final CamundaAuthentication authentication) {
     return requireJobMetricsEnabled("/v2/jobs/statistics/by-workers")
         .flatMap(ok -> SearchQueryRequestMapper.toJobWorkerStatisticsQuery(requestStrict))
         .fold(
@@ -160,7 +158,7 @@ public class DefaultJobServiceAdapter implements JobServiceAdapter {
 
   @Override
   public ResponseEntity<Object> getJobTimeSeriesStatistics(
-      final JobTimeSeriesStatisticsQueryContract requestStrict,
+      final JobTimeSeriesStatisticsQuery requestStrict,
       final CamundaAuthentication authentication) {
     return requireJobMetricsEnabled("/v2/jobs/statistics/time-series")
         .flatMap(ok -> SearchQueryRequestMapper.toJobTimeSeriesStatisticsQuery(requestStrict))
@@ -179,8 +177,7 @@ public class DefaultJobServiceAdapter implements JobServiceAdapter {
 
   @Override
   public ResponseEntity<Object> getJobErrorStatistics(
-      final JobErrorStatisticsQueryContract requestStrict,
-      final CamundaAuthentication authentication) {
+      final JobErrorStatisticsQuery requestStrict, final CamundaAuthentication authentication) {
     return SearchQueryRequestMapper.toJobErrorStatisticsQuery(requestStrict)
         .fold(
             RestErrorMapper::mapProblemToResponse,
@@ -197,8 +194,7 @@ public class DefaultJobServiceAdapter implements JobServiceAdapter {
 
   @Override
   public ResponseEntity<Object> searchJobs(
-      final JobSearchQueryRequestContract requestStrict,
-      final CamundaAuthentication authentication) {
+      final JobSearchQuery requestStrict, final CamundaAuthentication authentication) {
     return SearchQueryRequestMapper.toJobQueryStrict(requestStrict)
         .fold(
             RestErrorMapper::mapProblemToResponse,
@@ -216,7 +212,7 @@ public class DefaultJobServiceAdapter implements JobServiceAdapter {
   @Override
   public ResponseEntity<Void> failJob(
       final Long jobKey,
-      final JobFailRequestContract failRequestStrict,
+      final JobFailRequest failRequestStrict,
       final CamundaAuthentication authentication) {
     final var mapped = RequestMapper.toJobFailRequest(failRequestStrict, jobKey);
     return RequestExecutor.executeSync(
@@ -233,7 +229,7 @@ public class DefaultJobServiceAdapter implements JobServiceAdapter {
   @Override
   public ResponseEntity<Void> throwJobError(
       final Long jobKey,
-      final JobErrorRequestContract errorRequestStrict,
+      final JobErrorRequest errorRequestStrict,
       final CamundaAuthentication authentication) {
     return RequestMapper.toJobErrorRequest(errorRequestStrict, jobKey)
         .fold(
@@ -252,7 +248,7 @@ public class DefaultJobServiceAdapter implements JobServiceAdapter {
   @Override
   public ResponseEntity<Void> completeJob(
       final Long jobKey,
-      final JobCompletionRequestContract completionRequestStrict,
+      final JobCompletionRequest completionRequestStrict,
       final CamundaAuthentication authentication) {
     final var mapped = RequestMapper.toJobCompletionRequest(completionRequestStrict, jobKey);
     return RequestExecutor.executeSync(
@@ -264,7 +260,7 @@ public class DefaultJobServiceAdapter implements JobServiceAdapter {
   @Override
   public ResponseEntity<Void> updateJob(
       final Long jobKey,
-      final JobUpdateRequestContract updateRequestStrict,
+      final JobUpdateRequest updateRequestStrict,
       final CamundaAuthentication authentication) {
     return RequestMapper.toJobUpdateRequest(updateRequestStrict, jobKey)
         .fold(

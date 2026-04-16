@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.gateway.rest.controller.adapter;
 
-import io.camunda.gateway.mapping.http.search.contract.generated.ClockPinRequestContract;
+import io.camunda.gateway.protocol.model.ClockPinRequest;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.ClockServices;
 import io.camunda.zeebe.gateway.rest.controller.generated.ClockServiceAdapter;
@@ -26,10 +26,9 @@ public class DefaultClockServiceAdapter implements ClockServiceAdapter {
 
   @Override
   public ResponseEntity<Void> pinClock(
-      final ClockPinRequestContract clockPinRequestStrict,
-      final CamundaAuthentication authentication) {
+      final ClockPinRequest clockPinRequestStrict, final CamundaAuthentication authentication) {
     return RequestExecutor.executeSync(
-        () -> clockServices.pinClock(clockPinRequestStrict.timestamp(), authentication));
+        () -> clockServices.pinClock(clockPinRequestStrict.getTimestamp(), authentication));
   }
 
   @Override

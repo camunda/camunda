@@ -8,11 +8,11 @@
 package io.camunda.gateway.mapping.http.mapper;
 
 import io.camunda.gateway.mapping.http.RequestMapper;
-import io.camunda.gateway.mapping.http.search.contract.generated.AuthorizationIdBasedRequestContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.AuthorizationPropertyBasedRequestContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.AuthorizationRequestContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.PermissionTypeEnum;
 import io.camunda.gateway.mapping.http.validator.AuthorizationRequestValidator;
+import io.camunda.gateway.protocol.model.AuthorizationIdBasedRequest;
+import io.camunda.gateway.protocol.model.AuthorizationPropertyBasedRequest;
+import io.camunda.gateway.protocol.model.AuthorizationRequest;
+import io.camunda.gateway.protocol.model.PermissionTypeEnum;
 import io.camunda.service.AuthorizationServices.CreateAuthorizationRequest;
 import io.camunda.service.AuthorizationServices.UpdateAuthorizationRequest;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
@@ -42,84 +42,83 @@ public class AuthorizationMapper {
   }
 
   public Either<ProblemDetail, CreateAuthorizationRequest> toCreateAuthorizationRequest(
-      final AuthorizationRequestContract request) {
+      final AuthorizationRequest request) {
     return switch (request) {
-      case AuthorizationIdBasedRequestContract idReq -> toCreateAuthorizationRequest(idReq);
-      case AuthorizationPropertyBasedRequestContract propReq ->
-          toCreateAuthorizationRequest(propReq);
+      case AuthorizationIdBasedRequest idReq -> toCreateAuthorizationRequest(idReq);
+      case AuthorizationPropertyBasedRequest propReq -> toCreateAuthorizationRequest(propReq);
     };
   }
 
   public Either<ProblemDetail, CreateAuthorizationRequest> toCreateAuthorizationRequest(
-      final AuthorizationIdBasedRequestContract request) {
+      final AuthorizationIdBasedRequest request) {
     return RequestMapper.getResult(
         authorizationRequestValidator.validateIdBasedRequest(request),
         () ->
             new CreateAuthorizationRequest(
-                request.ownerId(),
-                AuthorizationOwnerType.valueOf(request.ownerType().name()),
-                resolveIdBasedResourceMatcher(request.resourceId()),
-                request.resourceId(),
+                request.getOwnerId(),
+                AuthorizationOwnerType.valueOf(request.getOwnerType().name()),
+                resolveIdBasedResourceMatcher(request.getResourceId()),
+                request.getResourceId(),
                 "",
-                AuthorizationResourceType.valueOf(request.resourceType().name()),
-                transformPermissionTypes(request.permissionTypes())));
+                AuthorizationResourceType.valueOf(request.getResourceType().name()),
+                transformPermissionTypes(request.getPermissionTypes())));
   }
 
   public Either<ProblemDetail, CreateAuthorizationRequest> toCreateAuthorizationRequest(
-      final AuthorizationPropertyBasedRequestContract request) {
+      final AuthorizationPropertyBasedRequest request) {
     return RequestMapper.getResult(
         authorizationRequestValidator.validatePropertyBasedRequest(request),
         () ->
             new CreateAuthorizationRequest(
-                request.ownerId(),
-                AuthorizationOwnerType.valueOf(request.ownerType().name()),
+                request.getOwnerId(),
+                AuthorizationOwnerType.valueOf(request.getOwnerType().name()),
                 AuthorizationResourceMatcher.PROPERTY,
                 "",
-                request.resourcePropertyName(),
-                AuthorizationResourceType.valueOf(request.resourceType().name()),
-                transformPermissionTypes(request.permissionTypes())));
+                request.getResourcePropertyName(),
+                AuthorizationResourceType.valueOf(request.getResourceType().name()),
+                transformPermissionTypes(request.getPermissionTypes())));
   }
 
   public Either<ProblemDetail, UpdateAuthorizationRequest> toUpdateAuthorizationRequest(
-      final long authorizationKey, final AuthorizationRequestContract request) {
+      final long authorizationKey, final AuthorizationRequest request) {
     return switch (request) {
-      case AuthorizationIdBasedRequestContract idReq ->
+      case AuthorizationIdBasedRequest idReq ->
           toUpdateAuthorizationRequest(authorizationKey, idReq);
-      case AuthorizationPropertyBasedRequestContract propReq ->
+      case AuthorizationPropertyBasedRequest propReq ->
           toUpdateAuthorizationRequest(authorizationKey, propReq);
     };
   }
 
   public Either<ProblemDetail, UpdateAuthorizationRequest> toUpdateAuthorizationRequest(
-      final long authorizationKey, final AuthorizationIdBasedRequestContract request) {
+      final long authorizationKey, final AuthorizationIdBasedRequest request) {
     return RequestMapper.getResult(
         authorizationRequestValidator.validateIdBasedRequest(request),
         () ->
             new UpdateAuthorizationRequest(
                 authorizationKey,
-                request.ownerId(),
-                AuthorizationOwnerType.valueOf(request.ownerType().name()),
-                resolveIdBasedResourceMatcher(request.resourceId()),
-                request.resourceId(),
+                request.getOwnerId(),
+                AuthorizationOwnerType.valueOf(request.getOwnerType().name()),
+                resolveIdBasedResourceMatcher(request.getResourceId()),
+                request.getResourceId(),
                 "",
-                AuthorizationResourceType.valueOf(request.resourceType().name()),
-                transformPermissionTypes(request.permissionTypes())));
+                AuthorizationResourceType.valueOf(request.getResourceType().name()),
+                transformPermissionTypes(request.getPermissionTypes())));
   }
 
   public Either<ProblemDetail, UpdateAuthorizationRequest> toUpdateAuthorizationRequest(
-      final long authorizationKey, final AuthorizationPropertyBasedRequestContract request) {
+      final long authorizationKey, final AuthorizationPropertyBasedRequest request) {
     return RequestMapper.getResult(
         authorizationRequestValidator.validatePropertyBasedRequest(request),
         () ->
             new UpdateAuthorizationRequest(
                 authorizationKey,
-                request.ownerId(),
-                AuthorizationOwnerType.valueOf(request.ownerType().name()),
+                request.getOwnerId(),
+                AuthorizationOwnerType.valueOf(request.getOwnerType().name()),
                 AuthorizationResourceMatcher.PROPERTY,
                 "",
-                request.resourcePropertyName(),
-                AuthorizationResourceType.valueOf(request.resourceType().name()),
-                transformPermissionTypes(request.permissionTypes())));
+                request.getResourcePropertyName(),
+                AuthorizationResourceType.valueOf(request.getResourceType().name()),
+                transformPermissionTypes(request.getPermissionTypes())));
   }
 
   private static Set<PermissionType> transformPermissionTypes(

@@ -10,7 +10,7 @@ package io.camunda.gateway.mapping.http.search.contract;
 import static io.camunda.gateway.mapping.http.util.AdvancedSearchFilterUtil.mapToOperations;
 import static java.util.Optional.ofNullable;
 
-import io.camunda.gateway.mapping.http.search.contract.generated.GlobalTaskListenerSearchQueryFilterRequestContract;
+import io.camunda.gateway.protocol.model.GlobalTaskListenerSearchQueryFilterRequest;
 import io.camunda.search.entities.GlobalListenerType;
 import io.camunda.search.filter.FilterBuilders;
 import io.camunda.search.filter.GlobalListenerFilter;
@@ -23,27 +23,27 @@ public final class GlobalTaskListenerFilterMapper {
   private GlobalTaskListenerFilterMapper() {}
 
   public static GlobalListenerFilter toGlobalTaskListenerFilter(
-      @Nullable final GlobalTaskListenerSearchQueryFilterRequestContract filter) {
+      @Nullable final GlobalTaskListenerSearchQueryFilterRequest filter) {
     final var builder =
         FilterBuilders.globalListener().listenerTypes(GlobalListenerType.USER_TASK.name());
     if (filter != null) {
-      ofNullable(filter.id())
+      ofNullable(filter.getId())
           .map(mapToOperations(String.class))
           .ifPresent(builder::listenerIdOperations);
-      ofNullable(filter.type())
+      ofNullable(filter.getType())
           .map(mapToOperations(String.class))
           .ifPresent(builder::typeOperations);
-      ofNullable(filter.retries())
+      ofNullable(filter.getRetries())
           .map(mapToOperations(Integer.class))
           .ifPresent(builder::retriesOperations);
-      ofNullable(filter.eventTypes())
+      ofNullable(filter.getEventTypes())
           .map(mapToOperations(String.class))
           .ifPresent(builder::eventTypeOperations);
-      ofNullable(filter.afterNonGlobal()).ifPresent(builder::afterNonGlobal);
-      ofNullable(filter.priority())
+      ofNullable(filter.getAfterNonGlobal()).ifPresent(builder::afterNonGlobal);
+      ofNullable(filter.getPriority())
           .map(mapToOperations(Integer.class))
           .ifPresent(builder::priorityOperations);
-      ofNullable(filter.source())
+      ofNullable(filter.getSource())
           .map(mapToOperations(String.class))
           .ifPresent(builder::sourceOperations);
     }

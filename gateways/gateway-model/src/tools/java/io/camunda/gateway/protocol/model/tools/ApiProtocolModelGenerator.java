@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.gateway.mapping.http.tools;
+package io.camunda.gateway.protocol.model.tools;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -23,16 +23,21 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import org.jboss.forge.roaster.Roaster;
+import org.jboss.forge.roaster.model.source.FieldSource;
+import org.jboss.forge.roaster.model.source.JavaClassSource;
+import org.jboss.forge.roaster.model.source.JavaEnumSource;
+import org.jboss.forge.roaster.model.source.JavaInterfaceSource;
+import org.jboss.forge.roaster.model.source.MethodSource;
 
 /**
  * Java source-file generator for contract mapping POC.
  *
- * <p>Run via: MappingContractsGenerator <repo-root>
+ * <p>Run via: ApiProtocolModelGenerator <repo-root>
  */
-public class MappingContractsGenerator {
+public class ApiProtocolModelGenerator {
 
-  private static final String TARGET_PACKAGE = "io.camunda.gateway.mapping.http.search.contract.generated";
-  private static final String SEARCH_PACKAGE = "io.camunda.gateway.mapping.http.search";
+  private static final String TARGET_PACKAGE = "io.camunda.gateway.protocol.model";
   /** Schema names for which a strict contract DTO has been generated (populated at startup). */
   private static final Set<String> AVAILABLE_STRICT_CONTRACTS = new LinkedHashSet<>();
 
@@ -54,11 +59,15 @@ public class MappingContractsGenerator {
   public static void main(String[] args) throws Exception {
     final var repoRoot = Path.of(args[0]);
     final var specDir = repoRoot.resolve("zeebe/gateway-protocol/src/main/proto/v2").normalize();
-    final var outBase = repoRoot.resolve("gateways/gateway-mapping-http/target/generated-sources");
+    final var outBase = repoRoot.resolve("gateways/gateway-model/target/generated-sources");
 
     if (!Files.isDirectory(specDir)) {
       throw new IllegalStateException("OpenAPI spec directory does not exist: " + specDir);
     }
+
+    final var licenseHeaderFile = Path.of(args[1]);
+    final var licenseText = Files.readString(licenseHeaderFile, StandardCharsets.UTF_8);
+    final var licenseComment = formatLicenseComment(licenseText);
 
     final var allSchemas = loadSchemas(specDir);
     final var responseOnlySchemas = discoverResponseOnlySchemas(specDir, allSchemas);
@@ -83,7 +92,7 @@ public class MappingContractsGenerator {
     }
     final var contractSchemas =
         allSchemas.values().stream()
-            .filter(MappingContractsGenerator::isContractSchema)
+            .filter(ApiProtocolModelGenerator::isContractSchema)
             .sorted(Comparator.comparing(SchemaDef::schemaName))
             .toList();
 
@@ -116,7 +125,7 @@ public class MappingContractsGenerator {
           && !"SearchQueryPageRequest".equals(schema.schemaName())
           && !contractDtoNames.contains(dtoClassName(schema.schemaName()))) {
         final var branchNames = schema.node().oneOfRefs().stream()
-            .map(MappingContractsGenerator::refToSchemaName)
+            .map(ApiProtocolModelGenerator::refToSchemaName)
             .toList();
         final var allBranchesHaveContracts = branchNames.stream()
             .allMatch(AVAILABLE_STRICT_CONTRACTS::contains);
@@ -153,7 +162,7 @@ public class MappingContractsGenerator {
         final var enumFile = packagePath.resolve(strictEnumClassName(schema.schemaName()) + ".java");
         Files.writeString(
             enumFile,
-            renderStrictEnum(schema.fileName(), schema.schemaName(), schema.node().enumValues()),
+            renderStrictEnum(licenseComment, schema.fileName(), schema.schemaName(), schema.node().enumValues()),
             StandardCharsets.UTF_8);
         System.out.println("generated enum: " + repoRoot.relativize(enumFile));
         enumCount++;
@@ -182,8 +191,8 @@ public class MappingContractsGenerator {
         // Filter property schema: generate wrapper record + deserializer + upgraded sealed interface.
         filterPropertySchemas.put(parentSchemaName, parentSchema);
         final var advancedFilterDtoClass = dtoClassName(branchNames.getFirst());
-        final var wrapperName = sealedName.replace("Contract", "PlainValueContract");
-        final var deserializerName = sealedName.replace("Contract", "Deserializer");
+        final var wrapperName = sealedName + "PlainValue";
+        final var deserializerName = sealedName + "Deserializer";
         final var primitiveJavaType = filterPropertyPrimitiveJavaType(parentSchema.node());
         final var isLongKey = isLongKeyFilterProperty(parentSchemaName);
         final var enumSchemaName = resolveFilterPropertyEnumSchema(
@@ -197,7 +206,7 @@ public class MappingContractsGenerator {
         Files.writeString(
             wrapperFile,
             renderFilterPlainValueWrapper(
-                parentSchema.fileName(), parentSchemaName, sealedName, wrapperName,
+                licenseComment, parentSchema.fileName(), parentSchemaName, sealedName, wrapperName,
                 primitiveJavaType),
             StandardCharsets.UTF_8);
         System.out.println("generated filter wrapper: " + repoRoot.relativize(wrapperFile));
@@ -207,7 +216,7 @@ public class MappingContractsGenerator {
         Files.writeString(
             deserializerFile,
             renderFilterPropertyDeserializer(
-                parentSchema.fileName(), parentSchemaName, sealedName, wrapperName,
+                licenseComment, parentSchema.fileName(), parentSchemaName, sealedName, wrapperName,
                 advancedFilterDtoClass, deserializerName, primitiveJavaType, isLongKey,
                 enumSchemaName, allSchemas),
             StandardCharsets.UTF_8);
@@ -218,14 +227,14 @@ public class MappingContractsGenerator {
         Files.writeString(
             sealedFile,
             renderFilterPropertySealedInterface(
-                parentSchema.fileName(), parentSchemaName, sealedName,
+                licenseComment, parentSchema.fileName(), parentSchemaName, sealedName,
                 advancedFilterDtoClass, wrapperName, deserializerName),
             StandardCharsets.UTF_8);
         System.out.println("generated filter sealed interface: " + repoRoot.relativize(sealedFile));
       } else {
         // Regular polymorphic schema: generate standard sealed interface.
         final var branchDtoClasses = branchNames.stream()
-            .map(MappingContractsGenerator::dtoClassName)
+            .map(ApiProtocolModelGenerator::dtoClassName)
             .toList();
         for (var branchName : branchNames) {
           branchToSealedInterface.put(branchName, sealedName);
@@ -270,12 +279,12 @@ public class MappingContractsGenerator {
 
         if (hasDiscriminators) {
           // Generate custom deserializer with helpful error messages.
-          final var deserializerName = sealedName.replace("Contract", "Deserializer");
+          final var deserializerName = sealedName + "Deserializer";
           final var deserializerFile = packagePath.resolve(deserializerName + ".java");
           Files.writeString(
               deserializerFile,
               renderPolymorphicDeserializer(
-                  parentSchema.fileName(), parentSchemaName, sealedName,
+                  licenseComment, parentSchema.fileName(), parentSchemaName, sealedName,
                   deserializerName, branchDiscriminators),
               StandardCharsets.UTF_8);
           System.out.println("generated polymorphic deserializer: " + repoRoot.relativize(deserializerFile));
@@ -284,7 +293,7 @@ public class MappingContractsGenerator {
           Files.writeString(
               sealedFile,
               renderPolymorphicSealedInterfaceWithDeserializer(
-                  parentSchema.fileName(), parentSchemaName, branchDtoClasses, deserializerName),
+                  licenseComment, parentSchema.fileName(), parentSchemaName, branchDtoClasses, deserializerName),
               StandardCharsets.UTF_8);
           System.out.println("generated sealed interface: " + repoRoot.relativize(sealedFile));
         } else {
@@ -293,7 +302,7 @@ public class MappingContractsGenerator {
           Files.writeString(
               sealedFile,
               renderPolymorphicSealedInterface(
-                  parentSchema.fileName(), parentSchemaName, branchDtoClasses),
+                  licenseComment, parentSchema.fileName(), parentSchemaName, branchDtoClasses),
               StandardCharsets.UTF_8);
           System.out.println("generated sealed interface: " + repoRoot.relativize(sealedFile));
         }
@@ -313,6 +322,7 @@ public class MappingContractsGenerator {
       Files.writeString(
           dtoFile,
           renderStrictDto(
+              licenseComment,
               plan.schema().fileName(),
               plan.schema().schemaName(),
               plan.dtoClass(),
@@ -330,12 +340,12 @@ public class MappingContractsGenerator {
     final var searchQuerySchemas = discoverSearchQuerySchemas(allSchemas);
     System.out.println(searchQuerySchemas.size() + " search query request schemas discovered from spec.");
 
-    final var flatPageFile = packagePath.resolve("SearchQueryPageRequestContract.java");
-    Files.writeString(flatPageFile, renderFlatPageRequestDto(), StandardCharsets.UTF_8);
+    final var flatPageFile = packagePath.resolve("SearchQueryPageRequest.java");
+    Files.writeString(flatPageFile, renderFlatPageRequestDto(licenseComment), StandardCharsets.UTF_8);
     System.out.println("generated: " + repoRoot.relativize(flatPageFile));
 
-    final var offsetPageFile = packagePath.resolve("OffsetPaginationContract.java");
-    Files.writeString(offsetPageFile, renderOffsetPaginationDto(), StandardCharsets.UTF_8);
+    final var offsetPageFile = packagePath.resolve("OffsetPagination.java");
+    Files.writeString(offsetPageFile, renderOffsetPaginationDto(licenseComment), StandardCharsets.UTF_8);
     System.out.println("generated: " + repoRoot.relativize(offsetPageFile));
 
     int searchRequestDtoCount = 0;
@@ -347,7 +357,7 @@ public class MappingContractsGenerator {
           ? TARGET_PACKAGE + "." + dtoClassName(sqe.filterSchemaName()) : null;
       final var requestDtoFile = packagePath.resolve(requestDtoName + ".java");
       Files.writeString(requestDtoFile, renderSearchQueryRequestDto(
-          requestDtoName, sortContractClass, filterContractFqn, sqe.paginationType()), StandardCharsets.UTF_8);
+          licenseComment, requestDtoName, sortContractClass, filterContractFqn, sqe.paginationType()), StandardCharsets.UTF_8);
       System.out.println("generated: " + repoRoot.relativize(requestDtoFile));
 
       // Populate the override map so resolveSchemaType() routes this schema to the request DTO.
@@ -356,38 +366,10 @@ public class MappingContractsGenerator {
     }
     System.out.println(searchRequestDtoCount + " search query request DTOs generated.");
 
-    // Phase 3.7: Generate filter mappers for search query entities.
-    // For each search query with a filter schema, generate a mapper that converts
-    // the generated strict-contract filter DTO to the domain filter object.
-    //
-    // Only entities whose domain filter builders follow the Operations convention
-    // (filter property → builder::fieldOperations) are generated here. Entities
-    // with naming mismatches, old-style list builders, or custom validation needs
-    // are handled by hand-written validator/mapper files (Phase 2 of slice 5).
-    int filterMapperCount = 0;
-    for (var sqe : searchQuerySchemas) {
-      if (sqe.filterSchemaName() == null) continue;
-      if (FILTER_MAPPER_SKIP.contains(sqe.filterSchemaName())) continue;
-
-      final var filterSchema = findSchemaByName(allSchemas, sqe.filterSchemaName());
-      if (filterSchema == null) {
-        System.err.println("WARNING: filter schema '" + sqe.filterSchemaName()
-            + "' not found, skipping filter mapper generation");
-        continue;
-      }
-
-      final var filterFields = toContractFields(filterSchema, allSchemas);
-      final var filterDtoClass = dtoClassName(sqe.filterSchemaName());
-      final var mapperClassName = sqe.filterSchemaName() + "Mapper";
-      final var mapperFile = packagePath.resolve(mapperClassName + ".java");
-      Files.writeString(mapperFile, renderFilterMapper(
-          mapperClassName, sqe, filterSchema, filterDtoClass, filterFields, allSchemas),
-          StandardCharsets.UTF_8);
-      System.out.println("generated: " + repoRoot.relativize(mapperFile));
-      filterMapperCount++;
-    }
-    System.out.println(filterMapperCount + " filter mapper(s) generated.");
-    System.out.println(FILTER_MAPPER_SKIP.size() + " filter mapper(s) skipped (need hand-written mappers).");
+    // Phase 3.7: Filter mapper generation is disabled in gateway-model.
+    // Filter mappers depend on gateway-mapping-http internals (AdvancedSearchFilterUtil,
+    // domain filter builders) and belong in the mapping layer, not the model layer.
+    // They are generated by a separate generator or hand-written in gateway-mapping-http.
 
   }
 
@@ -599,7 +581,7 @@ public class MappingContractsGenerator {
       PaginationType paginationType) {
 
     String requestDtoName() {
-      return entityName + "SearchQueryRequestContract";
+      return schemaName;
     }
   }
 
@@ -787,41 +769,106 @@ public class MappingContractsGenerator {
     return lastSlash >= 0 ? ref.substring(lastSlash + 1) : ref;
   }
 
+  /**
+   * Adds fluent setter, getter (@Schema + @JsonProperty), and setter (@JsonProperty)
+   * for a nullable field on a Roaster JavaClassSource.
+   */
+  private static void addNullableFluentSetterGetterSetter(
+      JavaClassSource javaClass, String className, String fieldName, String fieldType) {
+    // Fluent setter
+    var fluent = javaClass.addMethod()
+        .setName(fieldName)
+        .setReturnType(className)
+        .setPublic()
+        .setBody("this." + fieldName + " = " + fieldName + ";\nreturn this;");
+    fluent.addParameter(fieldType, fieldName).addAnnotation("org.jspecify.annotations.Nullable");
+
+    // Getter
+    var getter = javaClass.addMethod()
+        .setName("get" + capitalizeIdentifier(fieldName))
+        .setReturnType("@Nullable " + fieldType)
+        .setPublic()
+        .setBody("return " + fieldName + ";");
+    getter.addAnnotation("io.swagger.v3.oas.annotations.media.Schema")
+        .setStringValue("name", fieldName);
+    getter.addAnnotation("com.fasterxml.jackson.annotation.JsonProperty")
+        .setStringValue(fieldName);
+
+    // Setter
+    var setter = javaClass.addMethod()
+        .setName("set" + capitalizeIdentifier(fieldName))
+        .setReturnTypeVoid()
+        .setPublic()
+        .setBody("this." + fieldName + " = " + fieldName + ";");
+    setter.addParameter(fieldType, fieldName).addAnnotation("org.jspecify.annotations.Nullable");
+    setter.addAnnotation("com.fasterxml.jackson.annotation.JsonProperty")
+        .setStringValue(fieldName);
+  }
+
+  /**
+   * Patches getter return types to add @Nullable annotation. Roaster cannot emit type-use
+   * annotations on return types, so we do a string replacement after generating.
+   */
+  private static String patchNullableGetterReturnTypes(
+      String source, List<String> fieldNames, List<String> fieldTypes) {
+    var result = source;
+    for (int i = 0; i < fieldNames.size(); i++) {
+      final var getterName = "get" + capitalizeIdentifier(fieldNames.get(i));
+      final var fieldType = fieldTypes.get(i);
+      result = result.replace(
+          "public " + fieldType + " " + getterName + "()",
+          "public @Nullable " + fieldType + " " + getterName + "()");
+    }
+    return result;
+  }
+
+  /** Formats the license text as a Java block comment. */
+  private static String formatLicenseComment(String licenseText) {
+    final var lines = licenseText.strip().split("\n");
+    final var sb = new StringBuilder("/*\n");
+    for (var line : lines) {
+      sb.append(" * ").append(line).append("\n");
+    }
+    sb.append(" */");
+    return sb.toString();
+  }
+
+  /**
+   * Formats the license comment with a source location appended.
+   */
+  private static String licenseWithSource(String licenseComment, String sourceFile, String schemaName) {
+    // Insert source line before the closing " */"
+    return licenseComment.substring(0, licenseComment.length() - 3)
+        + " * Source: zeebe/gateway-protocol/src/main/proto/v2/" + sourceFile
+        + "#/components/schemas/" + schemaName + "\n */";
+  }
+
   /** Generates a sealed interface for a polymorphic oneOf schema. */
   private static String renderPolymorphicSealedInterface(
-      String sourceFile, String schemaName, List<String> branchDtoClasses) {
+      String licenseComment, String sourceFile, String schemaName, List<String> branchDtoClasses) {
     final var sealedName = dtoClassName(schemaName);
-    final var permits = String.join(",\n        ", branchDtoClasses);
+    JavaInterfaceSource iface = Roaster.create(JavaInterfaceSource.class);
+    iface.setPackage(TARGET_PACKAGE);
+    iface.setName(sealedName);
+    iface.addImport("com.fasterxml.jackson.annotation.JsonSubTypes");
+    iface.addImport("com.fasterxml.jackson.annotation.JsonTypeInfo");
+    iface.addAnnotation("jakarta.annotation.Generated")
+        .setStringValue("value", "io.camunda.gateway.protocol.model.tools.ApiProtocolModelGenerator");
+
+    // Roaster doesn't handle nested @JsonSubTypes.Type annotations or sealed interfaces.
+    // Build the @JsonTypeInfo + @JsonSubTypes + sealed permits via string patching.
     final var subtypes = branchDtoClasses.stream()
         .map(cls -> "    @JsonSubTypes.Type(" + cls + ".class)")
         .collect(Collectors.joining(",\n"));
-    return """
-/*
- * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
- * one or more contributor license agreements. See the NOTICE file distributed
- * with this work for additional information regarding copyright ownership.
- * Licensed under the Camunda License 1.0. You may not use this file
- * except in compliance with the Camunda License 1.0.
- *
- * GENERATED FILE - DO NOT EDIT.
- * Source: zeebe/gateway-protocol/src/main/proto/v2/%s#/components/schemas/%s
- */
-package %s;
-
-import com.fasterxml.jackson.annotation.JsonSubTypes;
-import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import jakarta.annotation.Generated;
-
-@JsonTypeInfo(use = JsonTypeInfo.Id.DEDUCTION)
-@JsonSubTypes({
-%s
-})
-@Generated(value = "io.camunda.gateway.mapping.http.tools.MappingContractsGenerator")
-public sealed interface %s permits
-        %s {
-}
-"""
-    .formatted(sourceFile, schemaName, TARGET_PACKAGE, subtypes, sealedName, permits);
+    final var permits = String.join(",\n        ", branchDtoClasses);
+    var source = iface.toString();
+    source = source.replace(
+        "@Generated",
+        "@JsonTypeInfo(use = JsonTypeInfo.Id.DEDUCTION)\n@JsonSubTypes({\n" + subtypes + "\n})\n@Generated");
+    source = source.replace(
+        "public interface " + sealedName,
+        "public sealed interface " + sealedName + " permits\n        " + permits);
+    return licenseWithSource(licenseComment, sourceFile, schemaName) + "\n" + source;
   }
 
   /**
@@ -830,33 +877,24 @@ public sealed interface %s permits
    * we can provide better error messages.
    */
   private static String renderPolymorphicSealedInterfaceWithDeserializer(
-      String sourceFile, String schemaName, List<String> branchDtoClasses,
+      String licenseComment, String sourceFile, String schemaName, List<String> branchDtoClasses,
       String deserializerName) {
     final var sealedName = dtoClassName(schemaName);
+    JavaInterfaceSource iface = Roaster.create(JavaInterfaceSource.class);
+    iface.setPackage(TARGET_PACKAGE);
+    iface.setName(sealedName);
+    iface.addAnnotation("com.fasterxml.jackson.databind.annotation.JsonDeserialize")
+        .setLiteralValue("using", deserializerName + ".class");
+    iface.addAnnotation("jakarta.annotation.Generated")
+        .setStringValue("value", "io.camunda.gateway.protocol.model.tools.ApiProtocolModelGenerator");
+
+    // Roaster doesn't support sealed interfaces natively; patch the output.
     final var permits = String.join(",\n        ", branchDtoClasses);
-    return """
-/*
- * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
- * one or more contributor license agreements. See the NOTICE file distributed
- * with this work for additional information regarding copyright ownership.
- * Licensed under the Camunda License 1.0. You may not use this file
- * except in compliance with the Camunda License 1.0.
- *
- * GENERATED FILE - DO NOT EDIT.
- * Source: zeebe/gateway-protocol/src/main/proto/v2/%s#/components/schemas/%s
- */
-package %s;
-
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import jakarta.annotation.Generated;
-
-@JsonDeserialize(using = %s.class)
-@Generated(value = "io.camunda.gateway.mapping.http.tools.MappingContractsGenerator")
-public sealed interface %s permits
-        %s {
-}
-"""
-    .formatted(sourceFile, schemaName, TARGET_PACKAGE, deserializerName, sealedName, permits);
+    var source = iface.toString();
+    source = source.replace(
+        "public interface " + sealedName,
+        "public sealed interface " + sealedName + " permits\n        " + permits);
+    return licenseWithSource(licenseComment, sourceFile, schemaName) + "\n" + source;
   }
 
   /**
@@ -865,7 +903,7 @@ public sealed interface %s permits
    * and produces a helpful error message when no branch matches.
    */
   private static String renderPolymorphicDeserializer(
-      String sourceFile, String schemaName, String sealedName,
+      String licenseComment, String sourceFile, String schemaName, String sealedName,
       String deserializerName, List<PolymorphicBranch> branches) {
 
     // Build the dispatching logic: for each branch, check if its unique field is present.
@@ -890,94 +928,66 @@ public sealed interface %s permits
     final var fieldList = allUniqueFields.stream()
         .collect(Collectors.joining(", "));
 
-    return """
-/*
- * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
- * one or more contributor license agreements. See the NOTICE file distributed
- * with this work for additional information regarding copyright ownership.
- * Licensed under the Camunda License 1.0. You may not use this file
- * except in compliance with the Camunda License 1.0.
- *
- * GENERATED FILE - DO NOT EDIT.
- * Source: zeebe/gateway-protocol/src/main/proto/v2/%s#/components/schemas/%s
- */
-package %s;
+    JavaClassSource javaClass = Roaster.create(JavaClassSource.class);
+    javaClass.setPackage(TARGET_PACKAGE);
+    javaClass.setName(deserializerName);
+    javaClass.setFinal(true);
+    javaClass.setSuperType("JsonDeserializer<" + sealedName + ">");
+    javaClass.addImport("com.fasterxml.jackson.core.JsonParser");
+    javaClass.addImport("com.fasterxml.jackson.databind.DeserializationContext");
+    javaClass.addImport("com.fasterxml.jackson.databind.JsonDeserializer");
+    javaClass.addImport("com.fasterxml.jackson.databind.JsonNode");
+    javaClass.addImport("com.fasterxml.jackson.databind.exc.ValueInstantiationException");
+    javaClass.addImport("java.io.IOException");
+    javaClass.addAnnotation("jakarta.annotation.Generated")
+        .setStringValue("value", "io.camunda.gateway.protocol.model.tools.ApiProtocolModelGenerator");
 
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.JsonDeserializer;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.exc.ValueInstantiationException;
-import jakarta.annotation.Generated;
-import java.io.IOException;
+    final var method = javaClass.addMethod()
+        .setName("deserialize")
+        .setReturnType(sealedName)
+        .setPublic()
+        .setBody(
+            "final JsonNode node = p.readValueAsTree();\n"
+            + branchCases
+            + "throw ValueInstantiationException.from(p,\n"
+            + "    \"At least one of [" + fieldList + "] is required\",\n"
+            + "    ctxt.constructType(" + sealedName + ".class),\n"
+            + "    new IllegalArgumentException(\"At least one of [" + fieldList + "] is required\"));");
+    method.addAnnotation(Override.class);
+    method.addParameter("JsonParser", "p").setFinal(true);
+    method.addParameter("DeserializationContext", "ctxt").setFinal(true);
+    method.addThrows("IOException");
 
-@Generated(value = "io.camunda.gateway.mapping.http.tools.MappingContractsGenerator")
-public final class %s extends JsonDeserializer<%s> {
-
-  @Override
-  public %s deserialize(final JsonParser p, final DeserializationContext ctxt)
-      throws IOException {
-    final JsonNode node = p.readValueAsTree();
-%s
-    throw ValueInstantiationException.from(p,
-        "At least one of [%s] is required",
-        ctxt.constructType(%s.class),
-        new IllegalArgumentException("At least one of [%s] is required"));
-  }
-}
-"""
-    .formatted(sourceFile, schemaName, TARGET_PACKAGE,
-        deserializerName, sealedName, sealedName,
-        branchCases.toString(),
-        fieldList, sealedName, fieldList);
+    return licenseWithSource(licenseComment, sourceFile, schemaName) + "\n" + javaClass.toString();
   }
 
   /** Generates a sealed interface for a filter property oneOf with @JsonDeserialize. */
   private static String renderFilterPropertySealedInterface(
-      String sourceFile, String schemaName, String sealedName,
+      String licenseComment, String sourceFile, String schemaName, String sealedName,
       String advancedFilterDtoClass, String wrapperName, String deserializerName) {
-    return """
-/*
- * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
- * one or more contributor license agreements. See the NOTICE file distributed
- * with this work for additional information regarding copyright ownership.
- * Licensed under the Camunda License 1.0. You may not use this file
- * except in compliance with the Camunda License 1.0.
- *
- * GENERATED FILE - DO NOT EDIT.
- * Source: zeebe/gateway-protocol/src/main/proto/v2/%s#/components/schemas/%s
- */
-package %s;
+    JavaInterfaceSource iface = Roaster.create(JavaInterfaceSource.class);
+    iface.setPackage(TARGET_PACKAGE);
+    iface.setName(sealedName);
+    iface.addAnnotation("com.fasterxml.jackson.databind.annotation.JsonDeserialize")
+        .setLiteralValue("using", deserializerName + ".class");
+    iface.addAnnotation("jakarta.annotation.Generated")
+        .setStringValue("value", "io.camunda.gateway.protocol.model.tools.ApiProtocolModelGenerator");
 
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import jakarta.annotation.Generated;
-
-@JsonDeserialize(using = %s.class)
-@Generated(value = "io.camunda.gateway.mapping.http.tools.MappingContractsGenerator")
-public sealed interface %s permits
-        %s,
-        %s {
-}
-"""
-    .formatted(sourceFile, schemaName, TARGET_PACKAGE, deserializerName,
-        sealedName, advancedFilterDtoClass, wrapperName);
+    // Roaster doesn't support sealed interfaces natively; patch the output.
+    var source = iface.toString();
+    source = source.replace(
+        "public interface " + sealedName,
+        "public sealed interface " + sealedName + " permits\n        "
+            + advancedFilterDtoClass + ",\n        " + wrapperName);
+    return licenseWithSource(licenseComment, sourceFile, schemaName) + "\n" + source;
   }
 
   /** Generates a plain-value wrapper record for the inline primitive branch of a filter property. */
   private static String renderFilterPlainValueWrapper(
-      String sourceFile, String schemaName, String sealedName,
+      String licenseComment, String sourceFile, String schemaName, String sealedName,
       String wrapperName, String primitiveJavaType) {
     return """
-/*
- * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
- * one or more contributor license agreements. See the NOTICE file distributed
- * with this work for additional information regarding copyright ownership.
- * Licensed under the Camunda License 1.0. You may not use this file
- * except in compliance with the Camunda License 1.0.
- *
- * GENERATED FILE - DO NOT EDIT.
- * Source: zeebe/gateway-protocol/src/main/proto/v2/%s#/components/schemas/%s
- */
+%s
 package %s;
 
 import com.fasterxml.jackson.databind.JsonDeserializer;
@@ -991,17 +1001,18 @@ import org.jspecify.annotations.NullMarked;
  */
 @NullMarked
 @JsonDeserialize(using = JsonDeserializer.None.class)
-@Generated(value = "io.camunda.gateway.mapping.http.tools.MappingContractsGenerator")
+@Generated(value = "io.camunda.gateway.protocol.model.tools.ApiProtocolModelGenerator")
 public record %s(%s value) implements %s {
 }
 """
-    .formatted(sourceFile, schemaName, TARGET_PACKAGE, schemaName, wrapperName,
+    .formatted(licenseWithSource(licenseComment, sourceFile, schemaName),
+        TARGET_PACKAGE, schemaName, wrapperName,
         primitiveJavaType, sealedName);
   }
 
   /** Generates a custom Jackson deserializer for a filter property sealed interface. */
   private static String renderFilterPropertyDeserializer(
-      String sourceFile, String schemaName, String sealedName, String wrapperName,
+      String licenseComment, String sourceFile, String schemaName, String sealedName, String wrapperName,
       String advancedFilterDtoClass, String deserializerName,
       String primitiveJavaType, boolean isLongKey,
       String enumSchemaName, Map<SchemaKey, SchemaDef> allSchemas) {
@@ -1062,47 +1073,50 @@ public record %s(%s value) implements %s {
         .formatted(wrapperName);
     }
 
-    return """
-/*
- * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
- * one or more contributor license agreements. See the NOTICE file distributed
- * with this work for additional information regarding copyright ownership.
- * Licensed under the Camunda License 1.0. You may not use this file
- * except in compliance with the Camunda License 1.0.
- *
- * GENERATED FILE - DO NOT EDIT.
- * Source: zeebe/gateway-protocol/src/main/proto/v2/%s#/components/schemas/%s
- */
-package %s;
+    JavaClassSource javaClass = Roaster.create(JavaClassSource.class);
+    javaClass.setPackage(TARGET_PACKAGE);
+    javaClass.setName(deserializerName);
+    javaClass.setFinal(true);
+    javaClass.setSuperType("JsonDeserializer<" + sealedName + ">");
+    javaClass.addImport("com.fasterxml.jackson.core.JsonParser");
+    javaClass.addImport("com.fasterxml.jackson.databind.DeserializationContext");
+    javaClass.addImport("com.fasterxml.jackson.databind.JsonDeserializer");
+    javaClass.addImport("com.fasterxml.jackson.databind.exc.InvalidFormatException");
+    javaClass.addImport("java.io.IOException");
+    if (enumSchemaName != null) {
+      javaClass.addImport("java.util.Set");
+    }
+    javaClass.addAnnotation("jakarta.annotation.Generated")
+        .setStringValue("value", "io.camunda.gateway.protocol.model.tools.ApiProtocolModelGenerator");
 
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.JsonDeserializer;
-import com.fasterxml.jackson.databind.exc.InvalidFormatException;
-import jakarta.annotation.Generated;
-import java.io.IOException;
-%s
-@Generated(value = "io.camunda.gateway.mapping.http.tools.MappingContractsGenerator")
-public final class %s extends JsonDeserializer<%s> {
-%s
-  @Override
-  public %s deserialize(final JsonParser p, final DeserializationContext ctxt)
-      throws IOException {
-    return switch (p.currentToken()) {
-%s
-      case START_OBJECT -> ctxt.readValue(p, %s.class);
-      default -> throw InvalidFormatException.from(p,
-          "Request property cannot be parsed", p.getText(), %s.class);
-    };
-  }
-}
-"""
-    .formatted(sourceFile, schemaName, TARGET_PACKAGE,
-        enumSchemaName != null ? "import java.util.Set;\n" : "",
-        deserializerName, sealedName,
-        enumSchemaName != null ? "\n  private static final Set<String> VALID_VALUES = Set.of(" + enumSetStr + ");\n" : "",
-        sealedName,
-        plainValueCase, advancedFilterDtoClass, primitiveJavaType);
+    // Add VALID_VALUES constant for enum-typed filter properties.
+    if (enumSchemaName != null) {
+      javaClass.addField()
+          .setName("VALID_VALUES")
+          .setType("Set<String>")
+          .setPrivate()
+          .setStatic(true)
+          .setFinal(true)
+          .setLiteralInitializer("Set.of(" + enumSetStr + ")");
+    }
+
+    final var method = javaClass.addMethod()
+        .setName("deserialize")
+        .setReturnType(sealedName)
+        .setPublic()
+        .setBody(
+            "return switch (p.currentToken()) {\n"
+            + plainValueCase + "\n"
+            + "  case START_OBJECT -> ctxt.readValue(p, " + advancedFilterDtoClass + ".class);\n"
+            + "  default -> throw InvalidFormatException.from(p,\n"
+            + "      \"Request property cannot be parsed\", p.getText(), " + primitiveJavaType + ".class);\n"
+            + "};");
+    method.addAnnotation(Override.class);
+    method.addParameter("JsonParser", "p").setFinal(true);
+    method.addParameter("DeserializationContext", "ctxt").setFinal(true);
+    method.addThrows("IOException");
+
+    return licenseWithSource(licenseComment, sourceFile, schemaName) + "\n" + javaClass.toString();
   }
 
   private static boolean isEnumSchema(SchemaDef schema) {
@@ -1114,71 +1128,63 @@ public final class %s extends JsonDeserializer<%s> {
   }
 
   private static String renderStrictEnum(
-      String sourceFile, String schemaName, List<String> enumValues) {
+      String licenseComment, String sourceFile, String schemaName, List<String> enumValues) {
     final var className = strictEnumClassName(schemaName);
-    final var constants =
-        enumValues.stream()
-            .map(v -> "  " + v + "(\"" + v + "\")")
-            .collect(Collectors.joining(",\n\n"));
-    return """
-/*
- * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
- * one or more contributor license agreements. See the NOTICE file distributed
- * with this work for additional information regarding copyright ownership.
- * Licensed under the Camunda License 1.0. You may not use this file
- * except in compliance with the Camunda License 1.0.
- *
- * GENERATED FILE - DO NOT EDIT.
- * Source: zeebe/gateway-protocol/src/main/proto/v2/%s#/components/schemas/%s
- */
-package %s;
+    JavaEnumSource javaEnum = Roaster.create(JavaEnumSource.class);
+    javaEnum.setPackage(TARGET_PACKAGE);
+    javaEnum.setName(className);
+    javaEnum.addAnnotation("jakarta.annotation.Generated")
+        .setStringValue("value", "io.camunda.gateway.protocol.model.tools.ApiProtocolModelGenerator");
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonValue;
-import jakarta.annotation.Generated;
-
-@Generated(value = "io.camunda.gateway.mapping.http.tools.MappingContractsGenerator")
-public enum %s {
-
-%s;
-
-  private final String value;
-
-  %s(String value) {
-    this.value = value;
-  }
-
-  @JsonValue
-  public String getValue() {
-    return value;
-  }
-
-  @Override
-  public String toString() {
-    return String.valueOf(value);
-  }
-
-  @JsonCreator
-  public static %s fromValue(String value) {
-    for (%s b : %s.values()) {
-      if (b.value.equalsIgnoreCase(value)) {
-        return b;
-      }
+    // Add enum constants with value parameter
+    for (var v : enumValues) {
+      javaEnum.addEnumConstant(v).setConstructorArguments("\"" + v + "\"");
     }
-    throw new IllegalArgumentException("Unexpected value '" + value + "'");
-  }
-}
-"""
-        .formatted(
-            sourceFile,
-            schemaName,
-            TARGET_PACKAGE,
-            className,
-            constants,
-            className,
-            className,
-            className,
-            className);
+
+    // Private value field
+    javaEnum.addField().setName("value").setType("String").setPrivate().setFinal(true);
+
+    // Constructor
+    // Roaster doesn't have a direct addConstructor with body for enums, so we add a method-like block
+    // We'll use the raw body approach
+    var constructor = javaEnum.addMethod()
+        .setConstructor(true)
+        .setBody("this.value = value;");
+    constructor.addParameter("String", "value");
+
+    // getValue with @JsonValue
+    javaEnum.addMethod()
+        .setName("getValue")
+        .setReturnType("String")
+        .setPublic()
+        .setBody("return value;")
+        .addAnnotation("com.fasterxml.jackson.annotation.JsonValue");
+
+    // toString
+    javaEnum.addMethod()
+        .setName("toString")
+        .setReturnType("String")
+        .setPublic()
+        .setBody("return String.valueOf(value);")
+        .addAnnotation(Override.class);
+
+    // fromValue with @JsonCreator
+    var fromValue = javaEnum.addMethod()
+        .setName("fromValue")
+        .setReturnType(className)
+        .setPublic()
+        .setStatic(true)
+        .setBody(
+            "for (" + className + " b : " + className + ".values()) {\n"
+                + "  if (b.value.equalsIgnoreCase(value)) {\n"
+                + "    return b;\n"
+                + "  }\n"
+                + "}\n"
+                + "throw new IllegalArgumentException(\"Unexpected value '\" + value + \"'\");");
+    fromValue.addParameter("String", "value");
+    fromValue.addAnnotation("com.fasterxml.jackson.annotation.JsonCreator");
+
+    return licenseWithSource(licenseComment, sourceFile, schemaName) + "\n" + javaEnum.toString();
   }
 
   /**
@@ -1239,13 +1245,8 @@ public enum %s {
   }
 
   private static String dtoClassName(String schemaName) {
-    // Strip "Result" suffix UNLESS it would collide with an existing schema.
-    // SearchQuery collisions (e.g. FooSearchQuery/FooSearchQueryResult) are handled
-    // separately by SEARCH_REQUEST_DTO_MAP and always strip "Result".
-    if (schemaName.endsWith("Result") && !RETAINED_RESULT_SCHEMAS.contains(schemaName)) {
-      return schemaName.substring(0, schemaName.length() - 6) + "Contract";
-    }
-    return schemaName + "Contract";
+    // Use bare schema name — matches the OpenAPI codegen naming in protocol.model.
+    return schemaName;
   }
 
   private static void cleanupPreviouslyGeneratedFiles(Path packagePath) throws IOException {
@@ -1351,288 +1352,128 @@ public enum %s {
   }
 
   private static String renderStrictDto(
-      String sourceFile, String schemaName, String dtoClass, List<ContractField> fields,
-      String sealedParent, boolean emitConstraints) {
-    final boolean hasNullable = fields.stream().anyMatch(MappingContractsGenerator::isNullAssignableField) || !fields.isEmpty();
-    final boolean hasRequiredNonNullable = fields.stream().anyMatch(f -> f.required() && !f.nullable());
-    final var coercionFields = fields.stream().filter(ContractField::requiresCoercion).toList();
-    final boolean hasLongKeyCoercion = !coercionFields.isEmpty();
-    final boolean hasListCoercion = fields.stream().anyMatch(ContractField::hasStrictListType);
-    final boolean hasListType = fields.stream().anyMatch(f -> f.javaType().contains("java.util.List"));
-    final boolean hasSetType = fields.stream().anyMatch(f -> f.javaType().contains("java.util.Set"));
-    final boolean hasMapType = fields.stream().anyMatch(f -> f.javaType().contains("java.util.Map"));
-    final boolean hasJsonProperty = fields.stream().anyMatch(f -> !f.name().equals(f.identifier()));
-    final boolean hasInlineEnumValues = fields.stream().anyMatch(f -> !f.inlineEnumValues().isEmpty());
-    final boolean hasSchema = fields.stream().anyMatch(f -> f.description() != null || f.defaultValue() != null);
-    final String imports =
-      "import com.fasterxml.jackson.annotation.JsonInclude;\n"
-        + (hasInlineEnumValues
-            ? "import com.fasterxml.jackson.annotation.JsonCreator;\n"
-                + "import com.fasterxml.jackson.annotation.JsonValue;\n"
-            : "")
-        + "import com.fasterxml.jackson.annotation.JsonProperty;\n"
-        + (sealedParent != null
-            ? "import com.fasterxml.jackson.databind.JsonDeserializer;\n"
-                + "import com.fasterxml.jackson.databind.annotation.JsonDeserialize;\n"
-            : "")
-        + "import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;\n"
-        + (hasLongKeyCoercion ? "import io.camunda.gateway.mapping.http.util.KeyUtil;\n" : "")
-        + (hasSchema ? "import io.swagger.v3.oas.annotations.media.Schema;\n" : "")
-        + "import jakarta.annotation.Generated;\n"
-        + (hasListType ? "import java.util.List;\n" : "")
-        + (hasSetType ? "import java.util.Set;\n" : "")
-        + (hasMapType ? "import java.util.Map;\n" : "")
-        + (hasListCoercion || hasRequiredNonNullable ? "import java.util.ArrayList;\n" : "")
-        + "import org.jspecify.annotations.NullMarked;\n"
-        + (hasNullable ? "import org.jspecify.annotations.Nullable;\n" : "");
+      String licenseComment, String sourceFile, String schemaName, String dtoClass,
+      List<ContractField> fields, String sealedParent, boolean emitConstraints) {
+    JavaClassSource javaClass = Roaster.create(JavaClassSource.class);
+    javaClass.setPackage(TARGET_PACKAGE);
+    javaClass.setName(dtoClass);
 
-    final String renderedFields =
-        fields.stream()
-            .map(
-                f -> {
-                    final var schemaParts = new ArrayList<String>();
-                    if (f.description() != null) {
-                      schemaParts.add("description = \"" + escapeJavaString(f.description()) + "\"");
-                    }
-                    if (f.defaultValue() != null) {
-                      schemaParts.add("defaultValue = \"" + escapeJavaString(f.defaultValue()) + "\"");
-                    }
-                    final var schemaAnnotation = schemaParts.isEmpty() ? ""
-                        : "@Schema(" + String.join(", ", schemaParts) + ") ";
-                    final var jsonProp = "@JsonProperty(\"" + f.name() + "\") ";
-                    final var fieldType = f.effectiveJavaType();
-                    return "    "
-                        + schemaAnnotation
-                        + jsonProp
-                      + (isNullAssignableField(f) ? annotateNullable(fieldType) : fieldType)
-                        + " "
-                        + f.identifier();
-                })
-            .collect(Collectors.joining(",\n"));
+    // Class-level annotations
+    javaClass.addAnnotation("com.fasterxml.jackson.annotation.JsonInclude")
+        .setLiteralValue("value", "com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL");
+    javaClass.addAnnotation("org.jspecify.annotations.NullMarked");
+    if (sealedParent != null) {
+      javaClass.addAnnotation("com.fasterxml.jackson.databind.annotation.JsonDeserialize")
+          .setLiteralValue("using", "com.fasterxml.jackson.databind.JsonDeserializer.None.class");
+      javaClass.setFinal(true);
+      javaClass.addInterface(sealedParent);
+    }
+    javaClass.addAnnotation("jakarta.annotation.Generated")
+        .setStringValue("value", "io.camunda.gateway.protocol.model.tools.ApiProtocolModelGenerator");
 
-    final boolean hasConstraints = fields.stream().anyMatch(f -> f.constraints().hasAny());
-    final String constructorBody;
-    {
-      final var checks = new ArrayList<String>();
-
-      // Null checks for required non-nullable fields — aggregate all missing fields.
-      final var requiredNonNullFields = fields.stream()
-          .filter(f -> f.required() && !f.nullable())
-          .toList();
-      if (!requiredNonNullFields.isEmpty()) {
-        checks.add("    var missingFields = new ArrayList<String>();");
-        for (var f : requiredNonNullFields) {
-          final var message = schemaName.contains("SortRequest") && "field".equals(f.name())
-              ? "Sort field must not be null."
-              : "No " + f.name() + " provided.";
-          checks.add(
-              "    if (" + f.identifier() + " == null) missingFields.add(\"" + message + "\");");
-        }
-        checks.add(
-            "    if (!missingFields.isEmpty()) throw new IllegalArgumentException(String.join(\" \", missingFields));");
-      }
-
-      // Spec-derived constraint checks (only for request schemas, not response DTOs).
-      if (emitConstraints) {
-        for (var f : fields) {
-        final var c = f.constraints();
-        if (!c.hasAny()) continue;
-        final var id = f.identifier();
-        final var name = f.name();
-        final var guard = f.nullable() ? "if (" + id + " != null) " : "";
-
-        if (c.minLength() != null && "String".equals(f.javaType())) {
-          if (c.minLength() == 1) {
-            checks.add(
-                "    " + guard + "if (" + id + ".isBlank()) throw new IllegalArgumentException(\""
-                    + name + " must not be blank\");");
-          } else {
-            checks.add(
-                "    " + guard + "if (" + id + ".length() < " + c.minLength()
-                    + ") throw new IllegalArgumentException(\""
-                    + name + " must have at least " + c.minLength() + " characters\");");
-          }
-        }
-        if (c.maxLength() != null && "String".equals(f.javaType())) {
-          checks.add(
-              "    " + guard + "if (" + id + ".length() > " + c.maxLength()
-                  + ") throw new IllegalArgumentException(\""
-                  + "The provided " + name + " exceeds the limit of " + c.maxLength() + " characters.\");");
-        }
-        if (c.pattern() != null && "String".equals(f.javaType())) {
-          final var escaped = c.pattern().replace("\\", "\\\\").replace("\"", "\\\"");
-          checks.add(
-              "    " + guard + "if (!" + id + ".matches(\"" + escaped
-                  + "\")) throw new IllegalArgumentException(\""
-                  + "The provided " + name + " contains illegal characters."
-                  + " It must match the pattern '" + escaped + "'.\");");
-        }
-        if (c.minimum() != null
-            && ("Long".equals(f.javaType()) || "Integer".equals(f.javaType()))) {
-          final var suffix = "Long".equals(f.javaType()) || c.minimum() > Integer.MAX_VALUE ? "L" : "";
-          final var mustBe = c.minimum() == 0 ? "not negative" : c.minimum() == 1 ? "> 0" : "at least " + c.minimum();
-          checks.add(
-              "    " + guard + "if (" + id + " < " + c.minimum() + suffix
-                  + ") throw new IllegalArgumentException("
-                  + "\"The value for " + name + " is '\" + " + id + " + \"' but must be "
-                  + mustBe + ".\");");
-        }
-        if (c.maximum() != null
-            && ("Long".equals(f.javaType()) || "Integer".equals(f.javaType()))) {
-          final var suffix = "Long".equals(f.javaType()) || c.maximum() > Integer.MAX_VALUE ? "L" : "";
-          checks.add(
-              "    " + guard + "if (" + id + " > " + c.maximum() + suffix
-                  + ") throw new IllegalArgumentException("
-                  + "\"The value for " + name + " is '\" + " + id + " + \"' but must be "
-                  + "at most " + c.maximum() + ".\");");
-        }
-        if (c.minItems() != null && f.javaType().startsWith("java.util.List")) {
-          checks.add(
-              "    " + guard + "if (" + id + ".size() < " + c.minItems()
-                  + ") throw new IllegalArgumentException(\""
-                  + name + " must have at least " + c.minItems() + " items\");");
-        }
-        if (c.maxItems() != null
-            && (f.javaType().startsWith("java.util.List")
-                || f.javaType().startsWith("java.util.Set"))) {
-          checks.add(
-              "    " + guard + "if (" + id + ".size() > " + c.maxItems()
-                  + ") throw new IllegalArgumentException(\""
-                  + name + " must have at most " + c.maxItems() + " items\");");
-        }
-        }
-      }
-
-      // Apply spec-declared defaults for nullable fields that were not provided.
-      for (var f : fields) {
-        if (f.defaultValue() != null && f.nullable()) {
-          final var literal = toJavaDefaultLiteral(f.defaultValue(), f.javaType());
-          if (literal != null) {
-            checks.add(
-                "    if (" + f.identifier() + " == null) " + f.identifier() + " = " + literal + ";");
-          }
-        }
-      }
-
-      // Coerce null List/Set fields to empty collections. The old protocol POJOs initialized
-      // all list fields to new ArrayList<>(), so null was never serialized. With
-      // @JsonInclude(ALWAYS), a null list would serialize as JSON null instead of [].
-      // Skip required+non-nullable fields (those throw on null above) and nullable fields
-      // (null carries semantic meaning, e.g. "don't change" in Changeset).
-      for (var f : fields) {
-        if (f.required() && !f.nullable()) continue;
-        if (f.nullable()) continue;
-        if (f.javaType().startsWith("java.util.List")) {
-          checks.add(
-              "    if (" + f.identifier() + " == null) " + f.identifier()
-                  + " = java.util.List.of();");
-        } else if (f.javaType().startsWith("java.util.Set")) {
-          checks.add(
-              "    if (" + f.identifier() + " == null) " + f.identifier()
-                  + " = java.util.Set.of();");
-        }
-      }
-
-      constructorBody = String.join("\n", checks);
+    // Add explicit imports for collection types used in field types so Roaster resolves them.
+    for (var f : fields) {
+      final var ft = f.effectiveJavaType();
+      if (ft.contains("java.util.List")) javaClass.addImport("java.util.List");
+      if (ft.contains("java.util.Set")) javaClass.addImport("java.util.Set");
+      if (ft.contains("java.util.Map")) javaClass.addImport("java.util.Map");
     }
 
-    final String fieldReferences = renderFieldReferences(schemaName, fields);
-
-    final String coercionHelpers =
-        coercionFields.stream()
-        .map(
-          field ->
-            field.longKeyCoercion()
-              ? renderLongKeyCoercionHelper(field)
-              : renderStructuralCoercionHelper(field))
-            .collect(Collectors.joining("\n\n"));
-    // For request schemas, generate typed long accessors for LongKey fields so callers
-    // can use e.g. request.processDefinitionKeyAsLong() instead of Long.parseLong().
-    final String longKeyAccessors = emitConstraints ? renderLongKeyAccessors(fields) : "";
-    // For request schemas, generate xxxOrDefault() accessors for nullable fields so callers
-    // can use e.g. request.variablesOrDefault() instead of request.variables() != null ? ... : Map.of().
-    final String orDefaultAccessors = emitConstraints ? renderOrDefaultAccessors(fields) : "";
-    final String builderCode = renderBuilder(schemaName, dtoClass, fields);
-
-    final String recordBody;
-    if (constructorBody.isBlank()
-      && fieldReferences.isBlank()
-        && coercionHelpers.isBlank()
-        && longKeyAccessors.isBlank()
-        && orDefaultAccessors.isBlank()
-        && builderCode.isBlank()
-        && !hasInlineEnumValues) {
-      recordBody = "";
-    } else {
-      final var sections = new ArrayList<String>();
-      if (!constructorBody.isBlank()) {
-        sections.add("  public " + dtoClass + " {\n" + constructorBody + "\n  }");
+    // Private fields
+    for (var f : fields) {
+      final var fieldType = simplifyCollectionTypeName(f.effectiveJavaType());
+      FieldSource<JavaClassSource> field = javaClass.addField()
+          .setName(f.identifier())
+          .setType(fieldType)
+          .setPrivate();
+      if (isNullAssignableField(f)) {
+        field.addAnnotation("org.jspecify.annotations.Nullable");
       }
-      if (!coercionHelpers.isBlank()) {
-        sections.add(coercionHelpers);
-      }
-      if (!longKeyAccessors.isBlank()) {
-        sections.add(longKeyAccessors);
-      }
-      if (!orDefaultAccessors.isBlank()) {
-        sections.add(orDefaultAccessors);
-      }
-      if (!builderCode.isBlank()) {
-        sections.add(builderCode);
-      }
-      if (!fieldReferences.isBlank()) {
-        sections.add(fieldReferences);
-      }
-      // Render nested enums for fields with inline enum values
-      for (var f : fields) {
-        if (!f.inlineEnumValues().isEmpty()) {
-          sections.add(renderNestedEnum(f.effectiveJavaType(), f.inlineEnumValues()));
-        }
-      }
-      recordBody = "\n" + String.join("\n\n", sections) + "\n";
     }
 
-    final String implementsClause = sealedParent != null ? " implements " + sealedParent : "";
-    // When a record implements a sealed interface with @JsonDeserialize, Jackson inherits
-    // the custom deserializer. Adding @JsonDeserialize(using = None.class) on the concrete
-    // record prevents this inheritance, which would otherwise cause infinite recursion.
-    final String jsonDeserializeAnnotation =
-        sealedParent != null ? "\n@JsonDeserialize(using = JsonDeserializer.None.class)" : "";
+    // No-arg constructor
+    javaClass.addMethod()
+        .setConstructor(true)
+        .setPublic()
+        .setBody("super();");
 
-    return """
-/*
- * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
- * one or more contributor license agreements. See the NOTICE file distributed
- * with this work for additional information regarding copyright ownership.
- * Licensed under the Camunda License 1.0. You may not use this file
- * except in compliance with the Camunda License 1.0.
- *
- * GENERATED FILE - DO NOT EDIT.
- * Source: zeebe/gateway-protocol/src/main/proto/v2/%s#/components/schemas/%s
- */
-package %s;
+    // Per-field: fluent setter, getter, setter
+    for (var f : fields) {
+      // Use short name for method signatures since imports are added above.
+      final var fieldType = simplifyCollectionTypeName(f.effectiveJavaType());
+      final var nullable = isNullAssignableField(f);
+      final var getterName = "get" + capitalizeIdentifier(f.identifier());
+      final var setterName = "set" + capitalizeIdentifier(f.identifier());
 
-%s
+      // Fluent setter
+      var fluent = javaClass.addMethod()
+          .setName(f.identifier())
+          .setReturnType(dtoClass)
+          .setPublic()
+          .setBody("this." + f.identifier() + " = " + f.identifier() + ";\nreturn this;");
+      var fluentParam = fluent.addParameter(fieldType, f.identifier());
+      if (nullable) {
+        fluentParam.addAnnotation("org.jspecify.annotations.Nullable");
+      }
 
-@JsonInclude(JsonInclude.Include.ALWAYS)
-@NullMarked%s
-@Generated(value = "io.camunda.gateway.mapping.http.tools.MappingContractsGenerator")
-public record %s(
-%s
-)%s {
-%s
-}
-"""
-    .formatted(
-      sourceFile,
-      schemaName,
-      TARGET_PACKAGE,
-      imports,
-      jsonDeserializeAnnotation,
-      dtoClass,
-        renderedFields,
-      implementsClause,
-      recordBody);
+      // Getter with @Schema and @JsonProperty
+      var getter = javaClass.addMethod()
+          .setName(getterName)
+          .setReturnType((nullable ? "@Nullable " : "") + fieldType)
+          .setPublic()
+          .setBody("return " + f.identifier() + ";");
+      var schemaAnn = getter.addAnnotation("io.swagger.v3.oas.annotations.media.Schema");
+      schemaAnn.setStringValue("name", f.name());
+      if (f.description() != null) {
+        schemaAnn.setStringValue("description", f.description());
+      }
+      if (f.defaultValue() != null) {
+        schemaAnn.setStringValue("defaultValue", f.defaultValue());
+      }
+      getter.addAnnotation("com.fasterxml.jackson.annotation.JsonProperty")
+          .setStringValue(f.name());
+
+      // Setter with @JsonProperty
+      var setter = javaClass.addMethod()
+          .setName(setterName)
+          .setReturnTypeVoid()
+          .setPublic()
+          .setBody("this." + f.identifier() + " = " + f.identifier() + ";");
+      var setterParam = setter.addParameter(fieldType, f.identifier());
+      if (nullable) {
+        setterParam.addAnnotation("org.jspecify.annotations.Nullable");
+      }
+      setter.addAnnotation("com.fasterxml.jackson.annotation.JsonProperty")
+          .setStringValue(f.name());
+    }
+
+    // Render nested enums for fields with inline enum values
+    boolean hasNestedEnums = false;
+    for (var f : fields) {
+      if (!f.inlineEnumValues().isEmpty()) {
+        // Roaster doesn't handle nested enums in classes well, so add as raw nested type
+        javaClass.addNestedType(renderNestedEnum(f.effectiveJavaType(), f.inlineEnumValues()));
+        hasNestedEnums = true;
+      }
+    }
+    if (hasNestedEnums) {
+      javaClass.addImport("com.fasterxml.jackson.annotation.JsonCreator");
+      javaClass.addImport("com.fasterxml.jackson.annotation.JsonValue");
+    }
+
+    // Post-process: Roaster cannot emit @Nullable on return types (type-use annotations).
+    // Patch getters for nullable fields to add @Nullable on the return type.
+    var source = javaClass.toString();
+    for (var f : fields) {
+      if (isNullAssignableField(f)) {
+        final var getterName = "get" + capitalizeIdentifier(f.identifier());
+        final var fieldType = simplifyCollectionTypeName(f.effectiveJavaType());
+        source = source.replace(
+            "public " + fieldType + " " + getterName + "()",
+            "public @Nullable " + fieldType + " " + getterName + "()");
+      }
+    }
+    return licenseWithSource(licenseComment, sourceFile, schemaName) + "\n" + source;
   }
 
   private static String renderFieldReferences(
@@ -3329,123 +3170,111 @@ public record %s(
       "UpdateClusterVariableRequest.value", "Object"
   );
 
-  private static String renderFlatPageRequestDto() {
-    return """
-/*
- * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
- * one or more contributor license agreements. See the NOTICE file distributed
- * with this work for additional information regarding copyright ownership.
- * Licensed under the Camunda License 1.0. You may not use this file
- * except in compliance with the Camunda License 1.0.
- *
- * GENERATED FILE - DO NOT EDIT.
- */
-package %s;
+  private static String renderFlatPageRequestDto(String licenseComment) {
+    final var className = "SearchQueryPageRequest";
+    JavaClassSource javaClass = Roaster.create(JavaClassSource.class);
+    javaClass.setPackage(TARGET_PACKAGE);
+    javaClass.setName(className);
+    javaClass.addAnnotation("com.fasterxml.jackson.annotation.JsonInclude")
+        .setLiteralValue("value", "com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL");
+    javaClass.addAnnotation("org.jspecify.annotations.NullMarked");
+    javaClass.addAnnotation("jakarta.annotation.Generated")
+        .setStringValue("value", "io.camunda.gateway.protocol.model.tools.ApiProtocolModelGenerator");
 
-import com.fasterxml.jackson.annotation.JsonInclude;
-import jakarta.annotation.Generated;
-import org.jspecify.annotations.NullMarked;
-import org.jspecify.annotations.Nullable;
+    // Fields: limit, from, after, before
+    record PageField(String name, String type) {}
+    final var pageFields = List.of(
+        new PageField("limit", "Integer"),
+        new PageField("from", "Integer"),
+        new PageField("after", "String"),
+        new PageField("before", "String"));
 
-@JsonInclude(JsonInclude.Include.NON_NULL)
-@NullMarked
-@Generated(value = "io.camunda.gateway.mapping.http.tools.MappingContractsGenerator")
-public record SearchQueryPageRequestContract(
-    @Nullable Integer limit,
-    @Nullable Integer from,
-    @Nullable String after,
-    @Nullable String before
-) {}
-""".formatted(TARGET_PACKAGE);
+    for (var pf : pageFields) {
+      javaClass.addField().setName(pf.name()).setType(pf.type()).setPrivate()
+          .addAnnotation("org.jspecify.annotations.Nullable");
+    }
+
+    javaClass.addMethod().setConstructor(true).setPublic().setBody("super();");
+
+    for (var pf : pageFields) {
+      addNullableFluentSetterGetterSetter(javaClass, className, pf.name(), pf.type());
+    }
+
+    return licenseComment + "\n" + patchNullableGetterReturnTypes(javaClass.toString(),
+        List.of("limit", "from", "after", "before"),
+        List.of("Integer", "Integer", "String", "String"));
   }
 
-  private static String renderOffsetPaginationDto() {
-    return """
-/*
- * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
- * one or more contributor license agreements. See the NOTICE file distributed
- * with this work for additional information regarding copyright ownership.
- * Licensed under the Camunda License 1.0. You may not use this file
- * except in compliance with the Camunda License 1.0.
- *
- * GENERATED FILE - DO NOT EDIT.
- */
-package %s;
+  private static String renderOffsetPaginationDto(String licenseComment) {
+    final var className = "OffsetPagination";
+    JavaClassSource javaClass = Roaster.create(JavaClassSource.class);
+    javaClass.setPackage(TARGET_PACKAGE);
+    javaClass.setName(className);
+    javaClass.addAnnotation("com.fasterxml.jackson.annotation.JsonInclude")
+        .setLiteralValue("value", "com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL");
+    javaClass.addAnnotation("org.jspecify.annotations.NullMarked");
+    javaClass.addAnnotation("jakarta.annotation.Generated")
+        .setStringValue("value", "io.camunda.gateway.protocol.model.tools.ApiProtocolModelGenerator");
 
-import com.fasterxml.jackson.annotation.JsonInclude;
-import jakarta.annotation.Generated;
-import org.jspecify.annotations.NullMarked;
-import org.jspecify.annotations.Nullable;
+    javaClass.addField().setName("limit").setType("Integer").setPrivate()
+        .addAnnotation("org.jspecify.annotations.Nullable");
+    javaClass.addField().setName("from").setType("Integer").setPrivate()
+        .addAnnotation("org.jspecify.annotations.Nullable");
 
-@JsonInclude(JsonInclude.Include.NON_NULL)
-@NullMarked
-@Generated(value = "io.camunda.gateway.mapping.http.tools.MappingContractsGenerator")
-public record OffsetPaginationContract(
-    @Nullable Integer limit,
-    @Nullable Integer from
-) {}
-""".formatted(TARGET_PACKAGE);
+    javaClass.addMethod().setConstructor(true).setPublic().setBody("super();");
+
+    addNullableFluentSetterGetterSetter(javaClass, className, "limit", "Integer");
+    addNullableFluentSetterGetterSetter(javaClass, className, "from", "Integer");
+
+    return licenseComment + "\n" + patchNullableGetterReturnTypes(javaClass.toString(),
+        List.of("limit", "from"),
+        List.of("Integer", "Integer"));
   }
 
 
   private static String renderSearchQueryRequestDto(
-      String className, String sortContractClass, String filterContractClass,
-      PaginationType paginationType) {
-    var sb = new StringBuilder();
-
-    // Build import block
-    var filterImport = "";
-    if (filterContractClass != null && filterContractClass.contains(".")) {
-      filterImport = "\nimport " + filterContractClass + ";";
-    }
+      String licenseComment, String className, String sortContractClass,
+      String filterContractClass, PaginationType paginationType) {
+    JavaClassSource javaClass = Roaster.create(JavaClassSource.class);
+    javaClass.setPackage(TARGET_PACKAGE);
+    javaClass.setName(className);
+    javaClass.addAnnotation("com.fasterxml.jackson.annotation.JsonInclude")
+        .setLiteralValue("value", "com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL");
+    javaClass.addAnnotation("org.jspecify.annotations.NullMarked");
+    javaClass.addAnnotation("jakarta.annotation.Generated")
+        .setStringValue("value", "io.camunda.gateway.protocol.model.tools.ApiProtocolModelGenerator");
 
     final var pageType = paginationType == PaginationType.OFFSET_ONLY
-        ? "OffsetPaginationContract"
-        : "SearchQueryPageRequestContract";
-
-    sb.append("""
-/*
- * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
- * one or more contributor license agreements. See the NOTICE file distributed
- * with this work for additional information regarding copyright ownership.
- * Licensed under the Camunda License 1.0. You may not use this file
- * except in compliance with the Camunda License 1.0.
- *
- * GENERATED FILE - DO NOT EDIT.
- */
-package %s;
-
-import com.fasterxml.jackson.annotation.JsonInclude;
-import jakarta.annotation.Generated;
-import java.util.List;
-import org.jspecify.annotations.NullMarked;
-import org.jspecify.annotations.Nullable;%s
-
-@JsonInclude(JsonInclude.Include.NON_NULL)
-@NullMarked
-@Generated(value = "io.camunda.gateway.mapping.http.tools.MappingContractsGenerator")
-public record %s(
-    @Nullable %s page,
-""".formatted(TARGET_PACKAGE, filterImport, className, pageType));
-
-    if (sortContractClass != null) {
-      sb.append("    @Nullable List<").append(sortContractClass).append("> sort,\n");
-    } else {
-      sb.append("    @Nullable List<Object> sort,\n");
-    }
-
+        ? "OffsetPagination" : "SearchQueryPageRequest";
+    final var sortType = sortContractClass != null
+        ? "List<" + sortContractClass + ">" : "List<Object>";
+    javaClass.addImport("java.util.List");
+    final String filterType;
     if (filterContractClass != null) {
-      // filterContractClass is an FQN — extract simple name for the field type
-      var filterSimple = filterContractClass.contains(".")
+      filterType = filterContractClass.contains(".")
           ? filterContractClass.substring(filterContractClass.lastIndexOf('.') + 1)
           : filterContractClass;
-      sb.append("    @Nullable ").append(filterSimple).append(" filter\n");
     } else {
-      sb.append("    @Nullable Object filter\n");
+      filterType = "Object";
     }
 
-    sb.append(") {}\n");
-    return sb.toString();
+    // Fields
+    javaClass.addField().setName("page").setType(pageType).setPrivate()
+        .addAnnotation("org.jspecify.annotations.Nullable");
+    javaClass.addField().setName("sort").setType(sortType).setPrivate()
+        .addAnnotation("org.jspecify.annotations.Nullable");
+    javaClass.addField().setName("filter").setType(filterType).setPrivate()
+        .addAnnotation("org.jspecify.annotations.Nullable");
+
+    javaClass.addMethod().setConstructor(true).setPublic().setBody("super();");
+
+    addNullableFluentSetterGetterSetter(javaClass, className, "page", pageType);
+    addNullableFluentSetterGetterSetter(javaClass, className, "sort", sortType);
+    addNullableFluentSetterGetterSetter(javaClass, className, "filter", filterType);
+
+    return licenseComment + "\n" + patchNullableGetterReturnTypes(javaClass.toString(),
+        List.of("page", "sort", "filter"),
+        List.of(pageType, sortType, filterType));
   }
 
   private static String simpleClassName(String className) {
@@ -3597,6 +3426,7 @@ public record %s(
    * handled by hand-written validators for entities that need custom mapping logic.
    */
   private static String renderFilterMapper(
+      String licenseComment,
       String mapperClassName,
       SearchQuerySchemaEntry sqe,
       SchemaDef filterSchema,
@@ -3639,72 +3469,69 @@ public record %s(
             ? override.opType() : detectedType;
         if (opType.contains("OffsetDateTime")) needsOffsetDateTime = true;
         fieldMappings.add(
-            "    ofNullable(filter." + id + "())"
+            "    ofNullable(filter.get" + capitalizeIdentifier(id) + "())"
                 + ".map(mapToOperations(" + simpleTypeName(opType) + ".class))"
                 + ".ifPresent(builder::" + builderBase + "Operations);");
       } else if ("Boolean".equals(f.javaType())) {
         // Boolean field → direct
         fieldMappings.add(
-            "    ofNullable(filter." + id + "()).ifPresent(builder::" + builderBase + ");");
+            "    ofNullable(filter.get" + capitalizeIdentifier(id) + "()).ifPresent(builder::" + builderBase + ");");
       } else if (typeInfo != null
           && (typeInfo.strictObjectType() || typeInfo.strictListType())) {
-        // Complex nested type (e.g., $or, variables) — requires hand-written validator
-        fieldMappings.add(
-            "    // TODO: " + id + " — complex type, requires validator");
+        // Complex nested type (e.g., $or, variables) — skipped, requires hand-written mapper
+        continue;
       } else if (f.javaType().startsWith("java.util.List")
           || f.javaType().startsWith("java.util.Set")) {
-        // Collection type — requires hand-written validator
-        fieldMappings.add(
-            "    // TODO: " + id + " — collection type, requires validator");
+        // Collection type — skipped, requires hand-written mapper
+        continue;
       } else {
         // Simple scalar (String, Integer, etc.) — direct value
         fieldMappings.add(
-            "    ofNullable(filter." + id + "()).ifPresent(builder::" + builderBase + ");");
+            "    ofNullable(filter.get" + capitalizeIdentifier(id) + "()).ifPresent(builder::" + builderBase + ");");
       }
     }
 
-    // Render the class
-    final var sb = new StringBuilder();
-    sb.append("/*\n * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under\n");
-    sb.append(" * one or more contributor license agreements. See the NOTICE file distributed\n");
-    sb.append(" * with this work for additional information regarding copyright ownership.\n");
-    sb.append(" * Licensed under the Camunda License 1.0. You may not use this file\n");
-    sb.append(" * except in compliance with the Camunda License 1.0.\n */\n");
-    sb.append("package ").append(TARGET_PACKAGE).append(";\n\n");
-
-    // Imports
-    sb.append("import static io.camunda.gateway.mapping.http.util.AdvancedSearchFilterUtil.mapToOperations;\n");
-    sb.append("import static java.util.Optional.ofNullable;\n\n");
-    sb.append("import ").append(domainFilterFqn).append(";\n");
-    sb.append("import io.camunda.search.filter.FilterBuilders;\n");
-    sb.append("import jakarta.annotation.Generated;\n");
+    // Render the class using Roaster
+    JavaClassSource javaClass = Roaster.create(JavaClassSource.class);
+    javaClass.setPackage(TARGET_PACKAGE);
+    javaClass.setName(mapperClassName);
+    javaClass.setFinal(true);
+    javaClass.addImport("io.camunda.gateway.protocol.model.AdvancedSearchFilterUtil.mapToOperations")
+        .setStatic(true);
+    javaClass.addImport("java.util.Optional.ofNullable").setStatic(true);
+    javaClass.addImport(domainFilterFqn);
+    javaClass.addImport("io.camunda.search.filter.FilterBuilders");
     if (needsOffsetDateTime) {
-      sb.append("import java.time.OffsetDateTime;\n");
+      javaClass.addImport("java.time.OffsetDateTime");
     }
-    sb.append("import org.jspecify.annotations.NullMarked;\n");
-    sb.append("import org.jspecify.annotations.Nullable;\n\n");
+    javaClass.addAnnotation("jakarta.annotation.Generated")
+        .setStringValue("value", "ApiProtocolModelGenerator");
 
-    // Class
-    sb.append("@Generated(value = \"MappingContractsGenerator\")\n");
-    sb.append("@NullMarked\n");
-    sb.append("public final class ").append(mapperClassName).append(" {\n\n");
-    sb.append("  private ").append(mapperClassName).append("() {}\n\n");
+    // Private constructor
+    javaClass.addMethod().setConstructor(true).setPrivate().setBody("");
 
     // Mapper method
-    sb.append("  public static ").append(domainFilterName).append(" ").append(methodName).append("(\n");
-    sb.append("      @Nullable final ").append(filterDtoClass).append(" filter) {\n");
-    sb.append("    if (filter == null) {\n");
-    sb.append("      return FilterBuilders.").append(builderFactoryMethod).append("().build();\n");
-    sb.append("    }\n");
-    sb.append("    final var builder = FilterBuilders.").append(builderFactoryMethod).append("();\n");
+    final var bodyLines = new StringBuilder();
+    bodyLines.append("if (filter == null) {\n");
+    bodyLines.append("  return FilterBuilders.").append(builderFactoryMethod).append("().build();\n");
+    bodyLines.append("}\n");
+    bodyLines.append("final var builder = FilterBuilders.").append(builderFactoryMethod).append("();\n");
     for (var mapping : fieldMappings) {
-      sb.append(mapping).append("\n");
+      bodyLines.append(mapping.strip()).append("\n");
     }
-    sb.append("    return builder.build();\n");
-    sb.append("  }\n");
-    sb.append("}\n");
+    bodyLines.append("return builder.build();");
 
-    return sb.toString();
+    final var method = javaClass.addMethod()
+        .setName(methodName)
+        .setReturnType(domainFilterName)
+        .setPublic()
+        .setStatic(true)
+        .setBody(bodyLines.toString());
+    method.addParameter(filterDtoClass, "filter")
+        .setFinal(true)
+        .addAnnotation("org.jspecify.annotations.Nullable");
+
+    return licenseComment + "\n" + javaClass.toString();
   }
 
   /** Returns the simple (unqualified) class name from a potentially qualified type name. */

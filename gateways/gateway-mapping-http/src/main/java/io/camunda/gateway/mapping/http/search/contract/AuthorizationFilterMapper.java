@@ -7,7 +7,6 @@
  */
 package io.camunda.gateway.mapping.http.search.contract;
 
-import io.camunda.gateway.mapping.http.search.contract.generated.AuthorizationFilterContract;
 import io.camunda.search.filter.AuthorizationFilter;
 import io.camunda.search.filter.FilterBuilders;
 import java.util.List;
@@ -21,17 +20,20 @@ public final class AuthorizationFilterMapper {
   private AuthorizationFilterMapper() {}
 
   public static @Nullable AuthorizationFilter toAuthorizationFilter(
-      @Nullable final AuthorizationFilterContract filter) {
+      final io.camunda.gateway.protocol.model.AuthorizationFilter filter) {
     return Optional.ofNullable(filter)
         .map(
             f ->
                 FilterBuilders.authorization()
-                    .ownerIds(f.ownerId())
-                    .ownerType(f.ownerType() == null ? null : f.ownerType().getValue())
-                    .resourceIds(f.resourceIds() != null ? f.resourceIds() : List.of())
+                    .ownerIds(f.getOwnerId())
+                    .ownerType(f.getOwnerType() == null ? null : f.getOwnerType().getValue())
+                    .resourceIds(f.getResourceIds() != null ? f.getResourceIds() : List.of())
                     .resourcePropertyNames(
-                        f.resourcePropertyNames() != null ? f.resourcePropertyNames() : List.of())
-                    .resourceType(f.resourceType() == null ? null : f.resourceType().getValue())
+                        f.getResourcePropertyNames() != null
+                            ? f.getResourcePropertyNames()
+                            : List.of())
+                    .resourceType(
+                        f.getResourceType() == null ? null : f.getResourceType().getValue())
                     .build())
         .orElse(null);
   }

@@ -11,22 +11,22 @@ import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESS
 import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_TOO_MANY_CHARACTERS;
 import static io.camunda.gateway.mapping.http.validator.RequestValidator.validate;
 
-import io.camunda.gateway.mapping.http.search.contract.generated.MessageCorrelationRequestContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.MessagePublicationRequestContract;
+import io.camunda.gateway.protocol.model.MessageCorrelationRequest;
+import io.camunda.gateway.protocol.model.MessagePublicationRequest;
 import java.util.Optional;
 import org.springframework.http.ProblemDetail;
 
 public final class MessageRequestValidator {
 
   public static Optional<ProblemDetail> validatePublicationRequest(
-      final MessagePublicationRequestContract request, final int maxNameFieldLength) {
+      final MessagePublicationRequest request, final int maxNameFieldLength) {
     return validate(
         violations -> {
-          if (request.name() == null || request.name().isBlank()) {
+          if (request.getName() == null || request.getName().isBlank()) {
             violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("name"));
           }
-          if (request.correlationKey() != null
-              && request.correlationKey().length() > maxNameFieldLength) {
+          if (request.getCorrelationKey() != null
+              && request.getCorrelationKey().length() > maxNameFieldLength) {
             violations.add(
                 ERROR_MESSAGE_TOO_MANY_CHARACTERS.formatted("correlationKey", maxNameFieldLength));
           }
@@ -34,14 +34,14 @@ public final class MessageRequestValidator {
   }
 
   public static Optional<ProblemDetail> validateCorrelationRequest(
-      final MessageCorrelationRequestContract request, final int maxNameFieldLength) {
+      final MessageCorrelationRequest request, final int maxNameFieldLength) {
     return validate(
         violations -> {
-          if (request.name() == null || request.name().isBlank()) {
+          if (request.getName() == null || request.getName().isBlank()) {
             violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("messageName"));
           }
-          if (request.correlationKey() != null
-              && request.correlationKey().length() > maxNameFieldLength) {
+          if (request.getCorrelationKey() != null
+              && request.getCorrelationKey().length() > maxNameFieldLength) {
             violations.add(
                 ERROR_MESSAGE_TOO_MANY_CHARACTERS.formatted("correlationKey", maxNameFieldLength));
           }

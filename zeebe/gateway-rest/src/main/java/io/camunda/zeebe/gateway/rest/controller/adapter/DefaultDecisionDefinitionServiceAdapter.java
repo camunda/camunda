@@ -13,8 +13,8 @@ import io.camunda.gateway.mapping.http.RequestMapper;
 import io.camunda.gateway.mapping.http.ResponseMapper;
 import io.camunda.gateway.mapping.http.search.SearchQueryRequestMapper;
 import io.camunda.gateway.mapping.http.search.SearchQueryResponseMapper;
-import io.camunda.gateway.mapping.http.search.contract.generated.DecisionDefinitionSearchQueryRequestContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.DecisionEvaluationInstructionContract;
+import io.camunda.gateway.protocol.model.DecisionDefinitionSearchQuery;
+import io.camunda.gateway.protocol.model.DecisionEvaluationInstruction;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.configuration.MultiTenancyConfiguration;
 import io.camunda.service.DecisionDefinitionServices;
@@ -42,8 +42,7 @@ public class DefaultDecisionDefinitionServiceAdapter implements DecisionDefiniti
 
   @Override
   public ResponseEntity<Object> searchDecisionDefinitions(
-      final DecisionDefinitionSearchQueryRequestContract queryStrict,
-      final CamundaAuthentication authentication) {
+      final DecisionDefinitionSearchQuery queryStrict, final CamundaAuthentication authentication) {
     return SearchQueryRequestMapper.toDecisionDefinitionQueryStrict(queryStrict)
         .fold(
             RestErrorMapper::mapProblemToResponse,
@@ -88,8 +87,7 @@ public class DefaultDecisionDefinitionServiceAdapter implements DecisionDefiniti
 
   @Override
   public ResponseEntity<Object> evaluateDecision(
-      final DecisionEvaluationInstructionContract request,
-      final CamundaAuthentication authentication) {
+      final DecisionEvaluationInstruction request, final CamundaAuthentication authentication) {
     return RequestMapper.toEvaluateDecisionRequest(request, multiTenancyCfg.isChecksEnabled())
         .fold(
             RestErrorMapper::mapProblemToResponse,

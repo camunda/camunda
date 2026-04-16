@@ -10,8 +10,8 @@ package io.camunda.zeebe.gateway.rest.controller.adapter;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.gateway.mapping.http.RequestMapper;
 import io.camunda.gateway.mapping.http.ResponseMapper;
-import io.camunda.gateway.mapping.http.search.contract.generated.DocumentLinkRequestContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.DocumentMetadataContract;
+import io.camunda.gateway.protocol.model.DocumentLinkRequest;
+import io.camunda.gateway.protocol.model.DocumentMetadata;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.DocumentServices;
 import io.camunda.zeebe.gateway.rest.controller.generated.DocumentServiceAdapter;
@@ -41,7 +41,7 @@ public class DefaultDocumentServiceAdapter implements DocumentServiceAdapter {
       final String storeId,
       final String documentId,
       final Part file,
-      final DocumentMetadataContract metadataStrict,
+      final DocumentMetadata metadataStrict,
       final CamundaAuthentication authentication) {
     return RequestMapper.toDocumentCreateRequest(documentId, storeId, file, metadataStrict)
         .fold(
@@ -57,7 +57,7 @@ public class DefaultDocumentServiceAdapter implements DocumentServiceAdapter {
   public ResponseEntity<Object> createDocuments(
       final String storeId,
       final List<Part> files,
-      final List<DocumentMetadataContract> metadataListStrict,
+      final List<DocumentMetadata> metadataListStrict,
       final CamundaAuthentication authentication) {
     return RequestMapper.toDocumentCreateRequestBatch(
             files, storeId, objectMapper, metadataListStrict)
@@ -102,7 +102,7 @@ public class DefaultDocumentServiceAdapter implements DocumentServiceAdapter {
       final String documentId,
       final String storeId,
       final String contentHash,
-      final DocumentLinkRequestContract linkRequestStrict,
+      final DocumentLinkRequest linkRequestStrict,
       final CamundaAuthentication authentication) {
     return RequestMapper.toDocumentLinkParams(linkRequestStrict)
         .fold(

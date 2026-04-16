@@ -12,10 +12,10 @@ import static io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper.mapErrorToRes
 import io.camunda.gateway.mapping.http.mapper.GlobalListenerMapper;
 import io.camunda.gateway.mapping.http.search.SearchQueryRequestMapper;
 import io.camunda.gateway.mapping.http.search.SearchQueryResponseMapper;
-import io.camunda.gateway.mapping.http.search.contract.generated.CreateGlobalTaskListenerRequestContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GlobalTaskListenerSearchQueryRequestContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.UpdateGlobalTaskListenerRequestContract;
 import io.camunda.gateway.mapping.http.validator.GlobalListenerRequestValidator;
+import io.camunda.gateway.protocol.model.CreateGlobalTaskListenerRequest;
+import io.camunda.gateway.protocol.model.GlobalTaskListenerSearchQueryRequest;
+import io.camunda.gateway.protocol.model.UpdateGlobalTaskListenerRequest;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.validation.IdentifierValidator;
 import io.camunda.service.GlobalListenerServices;
@@ -42,7 +42,7 @@ public class DefaultGlobalListenerServiceAdapter implements GlobalListenerServic
 
   @Override
   public ResponseEntity<Object> createGlobalTaskListener(
-      final CreateGlobalTaskListenerRequestContract requestStrict,
+      final CreateGlobalTaskListenerRequest requestStrict,
       final CamundaAuthentication authentication) {
     return globalListenerMapper
         .toGlobalTaskListenerCreateRequest(requestStrict)
@@ -76,7 +76,7 @@ public class DefaultGlobalListenerServiceAdapter implements GlobalListenerServic
   @Override
   public ResponseEntity<Object> updateGlobalTaskListener(
       final String id,
-      final UpdateGlobalTaskListenerRequestContract requestStrict,
+      final UpdateGlobalTaskListenerRequest requestStrict,
       final CamundaAuthentication authentication) {
     return globalListenerMapper
         .toGlobalTaskListenerUpdateRequest(id, requestStrict)
@@ -103,7 +103,7 @@ public class DefaultGlobalListenerServiceAdapter implements GlobalListenerServic
 
   @Override
   public ResponseEntity<Object> searchGlobalTaskListeners(
-      final GlobalTaskListenerSearchQueryRequestContract requestStrict,
+      final GlobalTaskListenerSearchQueryRequest requestStrict,
       final CamundaAuthentication authentication) {
     return SearchQueryRequestMapper.toGlobalTaskListenerQueryStrict(requestStrict)
         .fold(

@@ -17,10 +17,9 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.camunda.gateway.mapping.http.search.contract.StrictSearchQueryResult;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedCreateProcessInstanceStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedProcessInstanceStateEnum;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedProcessInstanceStrictContract;
 import io.camunda.gateway.mcp.OperationalToolsTest;
+import io.camunda.gateway.protocol.model.ProcessInstance;
+import io.camunda.gateway.protocol.model.ProcessInstanceStateEnum;
 import io.camunda.search.entities.ProcessInstanceEntity;
 import io.camunda.search.entities.ProcessInstanceEntity.ProcessInstanceState;
 import io.camunda.search.filter.Operation;
@@ -106,22 +105,21 @@ class ProcessInstanceToolsTest extends OperationalToolsTest {
   @Captor private ArgumentCaptor<ProcessInstanceQuery> queryCaptor;
   @Captor private ArgumentCaptor<ProcessInstanceCreateRequest> createRequestCaptor;
 
-  private void assertExampleProcessInstance(
-      final GeneratedProcessInstanceStrictContract processInstance) {
-    assertThat(processInstance.processInstanceKey()).isEqualTo("123");
-    assertThat(processInstance.processDefinitionId()).isEqualTo("demoProcess");
-    assertThat(processInstance.processDefinitionName()).isEqualTo("Demo Process");
-    assertThat(processInstance.processDefinitionVersion()).isEqualTo(5);
-    assertThat(processInstance.processDefinitionVersionTag()).isEqualTo("v5");
-    assertThat(processInstance.processDefinitionKey()).isEqualTo("789");
-    assertThat(processInstance.parentProcessInstanceKey()).isEqualTo("333");
-    assertThat(processInstance.parentElementInstanceKey()).isEqualTo("777");
-    assertThat(processInstance.startDate()).isEqualTo("2024-01-01T00:00:00.000Z");
-    assertThat(processInstance.endDate()).isNull();
-    assertThat(processInstance.state()).isEqualTo(GeneratedProcessInstanceStateEnum.ACTIVE);
-    assertThat(processInstance.hasIncident()).isFalse();
-    assertThat(processInstance.tenantId()).isEqualTo("tenant");
-    assertThat(processInstance.tags()).containsExactlyInAnyOrder("tag1", "tag2");
+  private void assertExampleProcessInstance(final ProcessInstance processInstance) {
+    assertThat(processInstance.getProcessInstanceKey()).isEqualTo("123");
+    assertThat(processInstance.getProcessDefinitionId()).isEqualTo("demoProcess");
+    assertThat(processInstance.getProcessDefinitionName()).isEqualTo("Demo Process");
+    assertThat(processInstance.getProcessDefinitionVersion()).isEqualTo(5);
+    assertThat(processInstance.getProcessDefinitionVersionTag()).isEqualTo("v5");
+    assertThat(processInstance.getProcessDefinitionKey()).isEqualTo("789");
+    assertThat(processInstance.getParentProcessInstanceKey()).isEqualTo("333");
+    assertThat(processInstance.getParentElementInstanceKey()).isEqualTo("777");
+    assertThat(processInstance.getStartDate()).isEqualTo("2024-01-01T00:00:00.000Z");
+    assertThat(processInstance.getEndDate()).isNull();
+    assertThat(processInstance.getState()).isEqualTo(ProcessInstanceStateEnum.ACTIVE);
+    assertThat(processInstance.getHasIncident()).isFalse();
+    assertThat(processInstance.getTenantId()).isEqualTo("tenant");
+    assertThat(processInstance.getTags()).containsExactlyInAnyOrder("tag1", "tag2");
   }
 
   @Nested
@@ -145,8 +143,7 @@ class ProcessInstanceToolsTest extends OperationalToolsTest {
       assertThat(result.structuredContent()).isNotNull();
 
       final var processInstance =
-          objectMapper.convertValue(
-              result.structuredContent(), GeneratedProcessInstanceStrictContract.class);
+          objectMapper.convertValue(result.structuredContent(), ProcessInstance.class);
       assertExampleProcessInstance(processInstance);
 
       verify(processInstanceServices).getByKey(eq(123L), any());
@@ -289,15 +286,14 @@ class ProcessInstanceToolsTest extends OperationalToolsTest {
       assertThat(result.structuredContent()).isNotNull();
 
       @SuppressWarnings("unchecked")
-      final StrictSearchQueryResult<GeneratedProcessInstanceStrictContract> searchResult =
-          (StrictSearchQueryResult<GeneratedProcessInstanceStrictContract>)
+      final StrictSearchQueryResult<ProcessInstance> searchResult =
+          (StrictSearchQueryResult<ProcessInstance>)
               objectMapper.convertValue(
                   result.structuredContent(),
                   objectMapper
                       .getTypeFactory()
                       .constructParametricType(
-                          StrictSearchQueryResult.class,
-                          GeneratedProcessInstanceStrictContract.class));
+                          StrictSearchQueryResult.class, ProcessInstance.class));
       assertThat(searchResult.page().totalItems()).isEqualTo(1L);
       assertThat(searchResult.page().hasMoreTotalItems()).isFalse();
       assertThat(searchResult.page().startCursor()).isEqualTo("f");
@@ -520,14 +516,15 @@ class ProcessInstanceToolsTest extends OperationalToolsTest {
 
       final var actualResult =
           objectMapper.convertValue(
-              result.structuredContent(), GeneratedCreateProcessInstanceStrictContract.class);
-      assertThat(actualResult.processDefinitionKey()).isEqualTo("123");
-      assertThat(actualResult.processDefinitionId()).isEqualTo("testProcessId");
-      assertThat(actualResult.processDefinitionVersion()).isEqualTo(-1);
-      assertThat(actualResult.processInstanceKey()).isEqualTo("456");
-      assertThat(actualResult.tenantId()).isEqualTo("<default>");
-      assertThat(actualResult.variables()).isEmpty();
-      assertThat(actualResult.tags()).isEmpty();
+              result.structuredContent(),
+              io.camunda.gateway.protocol.model.CreateProcessInstance.class);
+      assertThat(actualResult.getProcessDefinitionKey()).isEqualTo("123");
+      assertThat(actualResult.getProcessDefinitionId()).isEqualTo("testProcessId");
+      assertThat(actualResult.getProcessDefinitionVersion()).isEqualTo(-1);
+      assertThat(actualResult.getProcessInstanceKey()).isEqualTo("456");
+      assertThat(actualResult.getTenantId()).isEqualTo("<default>");
+      assertThat(actualResult.getVariables()).isEmpty();
+      assertThat(actualResult.getTags()).isEmpty();
 
       assertTextContentFallback(result);
     }
@@ -581,14 +578,15 @@ class ProcessInstanceToolsTest extends OperationalToolsTest {
 
       final var actualResult =
           objectMapper.convertValue(
-              result.structuredContent(), GeneratedCreateProcessInstanceStrictContract.class);
-      assertThat(actualResult.processDefinitionKey()).isEqualTo("123");
-      assertThat(actualResult.processDefinitionId()).isEqualTo("testProcessId");
-      assertThat(actualResult.processDefinitionVersion()).isEqualTo(7);
-      assertThat(actualResult.processInstanceKey()).isEqualTo("456");
-      assertThat(actualResult.tenantId()).isEqualTo("<default>");
-      assertThat(actualResult.variables()).isEmpty();
-      assertThat(actualResult.tags()).containsExactly("mcp-tool:abc");
+              result.structuredContent(),
+              io.camunda.gateway.protocol.model.CreateProcessInstance.class);
+      assertThat(actualResult.getProcessDefinitionKey()).isEqualTo("123");
+      assertThat(actualResult.getProcessDefinitionId()).isEqualTo("testProcessId");
+      assertThat(actualResult.getProcessDefinitionVersion()).isEqualTo(7);
+      assertThat(actualResult.getProcessInstanceKey()).isEqualTo("456");
+      assertThat(actualResult.getTenantId()).isEqualTo("<default>");
+      assertThat(actualResult.getVariables()).isEmpty();
+      assertThat(actualResult.getTags()).containsExactly("mcp-tool:abc");
 
       assertTextContentFallback(result);
     }
@@ -645,15 +643,16 @@ class ProcessInstanceToolsTest extends OperationalToolsTest {
 
       final var actualResult =
           objectMapper.convertValue(
-              result.structuredContent(), GeneratedCreateProcessInstanceStrictContract.class);
-      assertThat(actualResult.processDefinitionKey()).isEqualTo("123");
-      assertThat(actualResult.processDefinitionId()).isEqualTo("testProcessId");
-      assertThat(actualResult.processDefinitionVersion()).isEqualTo(7);
-      assertThat(actualResult.processInstanceKey()).isEqualTo("456");
-      assertThat(actualResult.tenantId()).isEqualTo("<default>");
-      assertThat(actualResult.variables())
+              result.structuredContent(),
+              io.camunda.gateway.protocol.model.CreateProcessInstance.class);
+      assertThat(actualResult.getProcessDefinitionKey()).isEqualTo("123");
+      assertThat(actualResult.getProcessDefinitionId()).isEqualTo("testProcessId");
+      assertThat(actualResult.getProcessDefinitionVersion()).isEqualTo(7);
+      assertThat(actualResult.getProcessInstanceKey()).isEqualTo("456");
+      assertThat(actualResult.getTenantId()).isEqualTo("<default>");
+      assertThat(actualResult.getVariables())
           .containsExactly(entry("foo", "bar"), entry("nested", Map.of("x", 1)));
-      assertThat(actualResult.tags()).containsExactly("mcp-tool:abc");
+      assertThat(actualResult.getTags()).containsExactly("mcp-tool:abc");
 
       assertTextContentFallback(result);
     }
@@ -710,15 +709,16 @@ class ProcessInstanceToolsTest extends OperationalToolsTest {
 
       final var actualResult =
           objectMapper.convertValue(
-              result.structuredContent(), GeneratedCreateProcessInstanceStrictContract.class);
-      assertThat(actualResult.processDefinitionKey()).isEqualTo("123");
-      assertThat(actualResult.processDefinitionId()).isEqualTo("testProcessId");
-      assertThat(actualResult.processDefinitionVersion()).isEqualTo(7);
-      assertThat(actualResult.processInstanceKey()).isEqualTo("456");
-      assertThat(actualResult.tenantId()).isEqualTo("<default>");
-      assertThat(actualResult.variables())
+              result.structuredContent(),
+              io.camunda.gateway.protocol.model.CreateProcessInstance.class);
+      assertThat(actualResult.getProcessDefinitionKey()).isEqualTo("123");
+      assertThat(actualResult.getProcessDefinitionId()).isEqualTo("testProcessId");
+      assertThat(actualResult.getProcessDefinitionVersion()).isEqualTo(7);
+      assertThat(actualResult.getProcessInstanceKey()).isEqualTo("456");
+      assertThat(actualResult.getTenantId()).isEqualTo("<default>");
+      assertThat(actualResult.getVariables())
           .containsExactly(entry("foo", "bar"), entry("nested", Map.of("x", 1)));
-      assertThat(actualResult.tags()).containsExactly("mcp-tool:abc");
+      assertThat(actualResult.getTags()).containsExactly("mcp-tool:abc");
 
       assertTextContentFallback(result);
     }
@@ -844,14 +844,15 @@ class ProcessInstanceToolsTest extends OperationalToolsTest {
 
       final var actualResult =
           objectMapper.convertValue(
-              result.structuredContent(), GeneratedCreateProcessInstanceStrictContract.class);
-      assertThat(actualResult.processDefinitionKey()).isEqualTo("123");
-      assertThat(actualResult.processDefinitionId()).isEqualTo("testProcessId");
-      assertThat(actualResult.processDefinitionVersion()).isEqualTo(-1);
-      assertThat(actualResult.processInstanceKey()).isEqualTo("456");
-      assertThat(actualResult.tenantId()).isEqualTo("tenant-a");
-      assertThat(actualResult.variables()).isEmpty();
-      assertThat(actualResult.tags()).isEmpty();
+              result.structuredContent(),
+              io.camunda.gateway.protocol.model.CreateProcessInstance.class);
+      assertThat(actualResult.getProcessDefinitionKey()).isEqualTo("123");
+      assertThat(actualResult.getProcessDefinitionId()).isEqualTo("testProcessId");
+      assertThat(actualResult.getProcessDefinitionVersion()).isEqualTo(-1);
+      assertThat(actualResult.getProcessInstanceKey()).isEqualTo("456");
+      assertThat(actualResult.getTenantId()).isEqualTo("tenant-a");
+      assertThat(actualResult.getVariables()).isEmpty();
+      assertThat(actualResult.getTags()).isEmpty();
 
       assertTextContentFallback(result);
     }
@@ -907,14 +908,15 @@ class ProcessInstanceToolsTest extends OperationalToolsTest {
 
       final var actualResult =
           objectMapper.convertValue(
-              result.structuredContent(), GeneratedCreateProcessInstanceStrictContract.class);
-      assertThat(actualResult.processDefinitionKey()).isEqualTo("123");
-      assertThat(actualResult.processDefinitionId()).isEqualTo("testProcessId");
-      assertThat(actualResult.processDefinitionVersion()).isEqualTo(7);
-      assertThat(actualResult.processInstanceKey()).isEqualTo("456");
-      assertThat(actualResult.tenantId()).isEqualTo("tenant-a");
-      assertThat(actualResult.variables()).isEmpty();
-      assertThat(actualResult.tags()).containsExactly("mcp-tool:abc");
+              result.structuredContent(),
+              io.camunda.gateway.protocol.model.CreateProcessInstance.class);
+      assertThat(actualResult.getProcessDefinitionKey()).isEqualTo("123");
+      assertThat(actualResult.getProcessDefinitionId()).isEqualTo("testProcessId");
+      assertThat(actualResult.getProcessDefinitionVersion()).isEqualTo(7);
+      assertThat(actualResult.getProcessInstanceKey()).isEqualTo("456");
+      assertThat(actualResult.getTenantId()).isEqualTo("tenant-a");
+      assertThat(actualResult.getVariables()).isEmpty();
+      assertThat(actualResult.getTags()).containsExactly("mcp-tool:abc");
 
       assertTextContentFallback(result);
     }
@@ -1014,9 +1016,10 @@ class ProcessInstanceToolsTest extends OperationalToolsTest {
 
       final var actualResult =
           objectMapper.convertValue(
-              result.structuredContent(), GeneratedCreateProcessInstanceStrictContract.class);
-      assertThat(actualResult.processInstanceKey()).isEqualTo("456");
-      assertThat(actualResult.businessId()).isEqualTo(businessId);
+              result.structuredContent(),
+              io.camunda.gateway.protocol.model.CreateProcessInstance.class);
+      assertThat(actualResult.getProcessInstanceKey()).isEqualTo("456");
+      assertThat(actualResult.getBusinessId()).isEqualTo(businessId);
 
       assertTextContentFallback(result);
     }

@@ -24,25 +24,14 @@
   </properties>
 
   <dependencies>
-    <!-- required for OpenAPI model generation -->
     <dependency>
-      <groupId>org.springframework</groupId>
-      <artifactId>spring-core</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>org.springframework</groupId>
-      <artifactId>spring-context</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>org.springframework</groupId>
-      <artifactId>spring-web</artifactId>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-annotations</artifactId>
     </dependency>
 
     <dependency>
       <groupId>com.fasterxml.jackson.core</groupId>
-      <artifactId>jackson-annotations</artifactId>
+      <artifactId>jackson-core</artifactId>
     </dependency>
 
     <dependency>
@@ -51,8 +40,8 @@
     </dependency>
 
     <dependency>
-      <groupId>jakarta.validation</groupId>
-      <artifactId>jakarta.validation-api</artifactId>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-web</artifactId>
     </dependency>
 
     <dependency>
@@ -69,104 +58,88 @@
       <groupId>org.jspecify</groupId>
       <artifactId>jspecify</artifactId>
     </dependency>
+
+    <dependency>
+      <groupId>org.jboss.forge.roaster</groupId>
+      <artifactId>roaster-api</artifactId>
+      <version>2.31.0.Final</version>
+      <scope>provided</scope>
+    </dependency>
   </dependencies>
 
   <build>
     <plugins>
       <plugin>
-        <groupId>org.openapitools</groupId>
-        <artifactId>openapi-generator-maven-plugin</artifactId>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-compiler-plugin</artifactId>
         <executions>
           <execution>
-            <id>advanced</id>
+            <id>compile-generator-tool</id>
             <goals>
-              <goal>generate</goal>
+              <goal>compile</goal>
             </goals>
+            <phase>initialize</phase>
             <configuration>
-              <!-- https://github.com/OpenAPITools/openapi-generator/tree/master/modules/openapi-generator-maven-plugin -->
-              <!-- https://github.com/OpenAPITools/openapi-generator/blob/master/docs/generators/java.md -->
-              <generatorName>spring</generatorName>
-              <templateDirectory>${project.basedir}/src/main/resources/templates/java-spring/advanced</templateDirectory>
-              <inputSpec>${openapi.dir}/rest-api.yaml</inputSpec>
-              <modelPackage>io.camunda.gateway.protocol.model</modelPackage>
-              <typeMappings>
-                <!-- map OffsetDateTime to String to avoid timezone issues and do validation manually -->
-                <typeMapping>OffsetDateTime=String</typeMapping>
-                <!-- map complex String schemas to String -->
-                <typeMapping>ProcessInstanceModificationActivateInstructionAncestorElementInstanceKey=String</typeMapping>
-                <typeMapping>DecisionEvaluationKey=String</typeMapping>
-                <typeMapping>ResourceKey=String</typeMapping>
-                <typeMapping>ScopeKey=String</typeMapping>
-                <typeMapping>ElementInstanceKey=String</typeMapping>
-                <!-- map specific filter properties to basic filter types -->
-                <typeMapping>AuditLogEntityKeyFilterProperty=BasicStringFilterProperty</typeMapping>
-                <typeMapping>AuditLogKeyFilterProperty=BasicStringFilterProperty</typeMapping>
-                <typeMapping>DecisionDefinitionKeyFilterProperty=BasicStringFilterProperty</typeMapping>
-                <typeMapping>DecisionEvaluationInstanceKeyFilterProperty=BasicStringFilterProperty</typeMapping>
-                <typeMapping>DecisionEvaluationKeyFilterProperty=BasicStringFilterProperty</typeMapping>
-                <typeMapping>DecisionRequirementsKeyFilterProperty=BasicStringFilterProperty</typeMapping>
-                <typeMapping>DeploymentKeyFilterProperty=BasicStringFilterProperty</typeMapping>
-                <typeMapping>ElementInstanceKeyFilterProperty=BasicStringFilterProperty</typeMapping>
-                <typeMapping>FormKeyFilterProperty=BasicStringFilterProperty</typeMapping>
-                <typeMapping>JobKeyFilterProperty=BasicStringFilterProperty</typeMapping>
-                <typeMapping>MessageSubscriptionKeyFilterProperty=BasicStringFilterProperty</typeMapping>
-                <typeMapping>ProcessDefinitionKeyFilterProperty=BasicStringFilterProperty</typeMapping>
-                <typeMapping>ProcessInstanceKeyFilterProperty=BasicStringFilterProperty</typeMapping>
-                <typeMapping>ResourceKeyFilterProperty=BasicStringFilterProperty</typeMapping>
-                <typeMapping>ScopeKeyFilterProperty=BasicStringFilterProperty</typeMapping>
-                <typeMapping>VariableKeyFilterProperty=BasicStringFilterProperty</typeMapping>
-              </typeMappings>
-              <schemaMappings>
-                <!-- map key types used in path parameters to String -->
-                <schemaMapping>LongKey=String</schemaMapping>
-                <schemaMapping>AuditLogKey=String</schemaMapping>
-                <schemaMapping>AuthorizationKey=String</schemaMapping>
-                <schemaMapping>BatchOperationKey=String</schemaMapping>
-                <schemaMapping>DecisionDefinitionKey=String</schemaMapping>
-                <schemaMapping>DecisionEvaluationInstanceKey=String</schemaMapping>
-                <schemaMapping>DecisionEvaluationKey=String</schemaMapping>
-                <schemaMapping>DecisionInstanceKey=String</schemaMapping>
-                <schemaMapping>DecisionRequirementsKey=String</schemaMapping>
-                <schemaMapping>ElementInstanceKey=String</schemaMapping>
-                <schemaMapping>FormKey=String</schemaMapping>
-                <schemaMapping>IncidentKey=String</schemaMapping>
-                <schemaMapping>JobKey=String</schemaMapping>
-                <schemaMapping>ProcessDefinitionKey=String</schemaMapping>
-                <schemaMapping>ProcessInstanceKey=String</schemaMapping>
-                <schemaMapping>ResourceKey=String</schemaMapping>
-                <schemaMapping>ScopeKey=String</schemaMapping>
-                <schemaMapping>UserTaskKey=String</schemaMapping>
-                <schemaMapping>VariableKey=String</schemaMapping>
-              </schemaMappings>
-              <generateApis>true</generateApis>
-              <generateSupportingFiles>false</generateSupportingFiles>
-              <generateModels>true</generateModels>
-              <generateModelDocumentation>false</generateModelDocumentation>
-              <generateModelTests>false</generateModelTests>
-              <!-- validate the spec on every generation -->
-              <skipValidateSpec>false</skipValidateSpec>
-              <!-- only write files whose content changed to avoid spurious recompilation -->
-              <minimalUpdate>true</minimalUpdate>
-              <openapiNormalizer>REF_AS_PARENT_IN_ALLOF=true</openapiNormalizer>
-              <apiPackage>io.camunda.gateway.protocol.api</apiPackage>
-              <configOptions>
-                <additionalModelTypeAnnotations>@com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.ALWAYS)</additionalModelTypeAnnotations>
-                <serializationLibrary>jackson</serializationLibrary>
-                <library>spring-boot</library>
-                <jdk8>true</jdk8>
-                <openApiNullable>false</openApiNullable>
-                <useEnumCaseInsensitive>true</useEnumCaseInsensitive>
-                <interfaceOnly>true</interfaceOnly>
-                <useTags>true</useTags>
-                <useBeanValidation>true</useBeanValidation>
-                <skipDefaultInterface>true</skipDefaultInterface>
-                <hideGenerationTimestamp>true</hideGenerationTimestamp>
-              </configOptions>
+              <compileSourceRoots>
+                <compileSourceRoot>${project.basedir}/src/tools/java</compileSourceRoot>
+              </compileSourceRoots>
+              <outputDirectory>${project.build.directory}/tools-classes</outputDirectory>
             </configuration>
           </execution>
-
         </executions>
       </plugin>
+
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>exec-maven-plugin</artifactId>
+        <dependencies>
+          <dependency>
+            <groupId>org.jboss.forge.roaster</groupId>
+            <artifactId>roaster-jdt</artifactId>
+            <version>2.31.0.Final</version>
+          </dependency>
+        </dependencies>
+        <executions>
+          <execution>
+            <id>run-mapping-contracts-generator</id>
+            <goals>
+              <goal>java</goal>
+            </goals>
+            <phase>generate-sources</phase>
+            <configuration>
+              <mainClass>io.camunda.gateway.protocol.model.tools.ApiProtocolModelGenerator</mainClass>
+              <includePluginDependencies>true</includePluginDependencies>
+              <additionalClasspathElements>
+                <additionalClasspathElement>${project.build.directory}/tools-classes</additionalClasspathElement>
+              </additionalClasspathElements>
+              <arguments>
+                <argument>${maven.multiModuleProjectDirectory}</argument>
+                <argument>${license.header.file}</argument>
+              </arguments>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>build-helper-maven-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>add-generated-sources</id>
+            <goals>
+              <goal>add-source</goal>
+            </goals>
+            <phase>generate-sources</phase>
+            <configuration>
+              <sources>
+                <source>${project.build.directory}/generated-sources</source>
+              </sources>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-dependency-plugin</artifactId>

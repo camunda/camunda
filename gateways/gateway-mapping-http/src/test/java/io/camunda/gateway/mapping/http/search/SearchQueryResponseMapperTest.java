@@ -11,22 +11,22 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.gateway.mapping.http.search.contract.StrictSearchQueryResult;
-import io.camunda.gateway.mapping.http.search.contract.generated.AuditLogContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.BatchOperationItemResponseContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.BatchOperationResponseContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.BatchOperationTypeEnum;
-import io.camunda.gateway.mapping.http.search.contract.generated.CorrelatedMessageSubscriptionContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.DecisionInstanceContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.ElementInstanceContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.IncidentContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.IncidentStateEnum;
-import io.camunda.gateway.mapping.http.search.contract.generated.JobSearchContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.MessageSubscriptionContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.ProcessDefinitionContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.ProcessInstanceCallHierarchyEntryContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.ProcessInstanceContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.UserTaskContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.VariableContract;
+import io.camunda.gateway.protocol.model.AuditLog;
+import io.camunda.gateway.protocol.model.BatchOperationItemResponse;
+import io.camunda.gateway.protocol.model.BatchOperationResponse;
+import io.camunda.gateway.protocol.model.BatchOperationTypeEnum;
+import io.camunda.gateway.protocol.model.CorrelatedMessageSubscription;
+import io.camunda.gateway.protocol.model.DecisionInstance;
+import io.camunda.gateway.protocol.model.ElementInstance;
+import io.camunda.gateway.protocol.model.Incident;
+import io.camunda.gateway.protocol.model.IncidentStateEnum;
+import io.camunda.gateway.protocol.model.JobSearch;
+import io.camunda.gateway.protocol.model.MessageSubscription;
+import io.camunda.gateway.protocol.model.ProcessDefinition;
+import io.camunda.gateway.protocol.model.ProcessInstance;
+import io.camunda.gateway.protocol.model.ProcessInstanceCallHierarchyEntry;
+import io.camunda.gateway.protocol.model.UserTask;
+import io.camunda.gateway.protocol.model.Variable;
 import io.camunda.search.entities.AuditLogEntity;
 import io.camunda.search.entities.AuditLogEntity.AuditLogActorType;
 import io.camunda.search.entities.AuditLogEntity.AuditLogEntityType;
@@ -82,17 +82,16 @@ class SearchQueryResponseMapperTest {
             "tenant-a",
             null);
 
-    final ProcessDefinitionContract response =
-        SearchQueryResponseMapper.toProcessDefinition(entity);
+    final ProcessDefinition response = SearchQueryResponseMapper.toProcessDefinition(entity);
 
-    assertThat(response.processDefinitionKey()).isEqualTo("2251799813685001");
-    assertThat(response.name()).isEqualTo("Demo Process");
-    assertThat(response.resourceName()).isEqualTo("demo.bpmn");
-    assertThat(response.version()).isEqualTo(1);
-    assertThat(response.versionTag()).isNull();
-    assertThat(response.processDefinitionId()).isEqualTo("demo-process");
-    assertThat(response.tenantId()).isEqualTo("tenant-a");
-    assertThat(response.hasStartForm()).isFalse();
+    assertThat(response.getProcessDefinitionKey()).isEqualTo("2251799813685001");
+    assertThat(response.getName()).isEqualTo("Demo Process");
+    assertThat(response.getResourceName()).isEqualTo("demo.bpmn");
+    assertThat(response.getVersion()).isEqualTo(1);
+    assertThat(response.getVersionTag()).isNull();
+    assertThat(response.getProcessDefinitionId()).isEqualTo("demo-process");
+    assertThat(response.getTenantId()).isEqualTo("tenant-a");
+    assertThat(response.getHasStartForm()).isFalse();
   }
 
   @Test
@@ -129,18 +128,19 @@ class SearchQueryResponseMapperTest {
             "errorMessage");
 
     // when
-    final BatchOperationItemResponseContract response =
+    final BatchOperationItemResponse response =
         SearchQueryResponseMapper.toBatchOperationItem(item);
 
     // then
-    assertThat(response.batchOperationKey()).isEqualTo("batchOperationKey");
-    assertThat(response.operationType()).isEqualTo(BatchOperationTypeEnum.MIGRATE_PROCESS_INSTANCE);
-    assertThat(response.itemKey()).isEqualTo("1234");
-    assertThat(response.processInstanceKey()).isEqualTo("4321");
-    assertThat(response.rootProcessInstanceKey()).isEqualTo("4320");
-    assertThat(response.state()).isEqualTo("COMPLETED");
-    assertThat(response.processedDate()).isEqualTo("2025-01-15T11:53:00.000Z");
-    assertThat(response.errorMessage()).isEqualTo("errorMessage");
+    assertThat(response.getBatchOperationKey()).isEqualTo("batchOperationKey");
+    assertThat(response.getOperationType())
+        .isEqualTo(BatchOperationTypeEnum.MIGRATE_PROCESS_INSTANCE);
+    assertThat(response.getItemKey()).isEqualTo("1234");
+    assertThat(response.getProcessInstanceKey()).isEqualTo("4321");
+    assertThat(response.getRootProcessInstanceKey()).isEqualTo("4320");
+    assertThat(response.getState()).isEqualTo("COMPLETED");
+    assertThat(response.getProcessedDate()).isEqualTo("2025-01-15T11:53:00.000Z");
+    assertThat(response.getErrorMessage()).isEqualTo("errorMessage");
   }
 
   @Test
@@ -159,10 +159,9 @@ class SearchQueryResponseMapperTest {
             9,
             null);
 
-    final BatchOperationResponseContract response =
-        SearchQueryResponseMapper.toBatchOperation(entity);
+    final BatchOperationResponse response = SearchQueryResponseMapper.toBatchOperation(entity);
 
-    assertThat(response.errors()).isNotNull().isEmpty();
+    assertThat(response.getErrors()).isNotNull().isEmpty();
   }
 
   @Test
@@ -200,13 +199,13 @@ class SearchQueryResponseMapperTest {
             null); // errorMessage (optional)
 
     // when
-    final BatchOperationItemResponseContract response =
+    final BatchOperationItemResponse response =
         SearchQueryResponseMapper.toBatchOperationItem(item);
 
     // then
-    assertThat(response.rootProcessInstanceKey()).isNull();
-    assertThat(response.processedDate()).isNull();
-    assertThat(response.errorMessage()).isNull();
+    assertThat(response.getRootProcessInstanceKey()).isNull();
+    assertThat(response.getProcessedDate()).isNull();
+    assertThat(response.getErrorMessage()).isNull();
   }
 
   @Test
@@ -232,10 +231,10 @@ class SearchQueryResponseMapperTest {
             null); // businessId
 
     // when
-    final ProcessInstanceContract response = SearchQueryResponseMapper.toProcessInstance(entity);
+    final ProcessInstance response = SearchQueryResponseMapper.toProcessInstance(entity);
 
     // then
-    assertThat(response.rootProcessInstanceKey()).isEqualTo("999");
+    assertThat(response.getRootProcessInstanceKey()).isEqualTo("999");
   }
 
   @Test
@@ -259,10 +258,10 @@ class SearchQueryResponseMapperTest {
             null,
             null);
 
-    final ProcessInstanceCallHierarchyEntryContract response =
+    final ProcessInstanceCallHierarchyEntry response =
         SearchQueryResponseMapper.toProcessInstanceCallHierarchyEntry(entity);
 
-    assertThat(response.processDefinitionName()).isEqualTo("demo-process");
+    assertThat(response.getProcessDefinitionName()).isEqualTo("demo-process");
   }
 
   @Test
@@ -288,10 +287,10 @@ class SearchQueryResponseMapperTest {
             null); // businessId
 
     // when
-    final ProcessInstanceContract response = SearchQueryResponseMapper.toProcessInstance(entity);
+    final ProcessInstance response = SearchQueryResponseMapper.toProcessInstance(entity);
 
     // then
-    assertThat(response.rootProcessInstanceKey()).isNull();
+    assertThat(response.getRootProcessInstanceKey()).isNull();
   }
 
   @Test
@@ -325,10 +324,10 @@ class SearchQueryResponseMapperTest {
             null); // tags
 
     // when
-    final UserTaskContract response = SearchQueryResponseMapper.toUserTask(entity);
+    final UserTask response = SearchQueryResponseMapper.toUserTask(entity);
 
     // then
-    assertThat(response.rootProcessInstanceKey()).isEqualTo("999");
+    assertThat(response.getRootProcessInstanceKey()).isEqualTo("999");
   }
 
   @Test
@@ -351,10 +350,10 @@ class SearchQueryResponseMapperTest {
             "tenant"); // tenantId
 
     // when
-    final IncidentContract response = SearchQueryResponseMapper.toIncident(entity);
+    final Incident response = SearchQueryResponseMapper.toIncident(entity);
 
     // then
-    assertThat(response.rootProcessInstanceKey()).isEqualTo("999");
+    assertThat(response.getRootProcessInstanceKey()).isEqualTo("999");
   }
 
   @Test
@@ -377,10 +376,10 @@ class SearchQueryResponseMapperTest {
             "tenant"); // tenantId
 
     // when
-    final IncidentContract response = SearchQueryResponseMapper.toIncident(entity);
+    final Incident response = SearchQueryResponseMapper.toIncident(entity);
 
     // then
-    assertThat(response.state()).isEqualTo(IncidentStateEnum.UNKNOWN);
+    assertThat(response.getState()).isEqualTo(IncidentStateEnum.UNKNOWN);
   }
 
   @Test
@@ -406,10 +405,10 @@ class SearchQueryResponseMapperTest {
             null); // level
 
     // when
-    final ElementInstanceContract response = SearchQueryResponseMapper.toElementInstance(entity);
+    final ElementInstance response = SearchQueryResponseMapper.toElementInstance(entity);
 
     // then
-    assertThat(response.rootProcessInstanceKey()).isEqualTo("999");
+    assertThat(response.getRootProcessInstanceKey()).isEqualTo("999");
   }
 
   @Test
@@ -436,10 +435,10 @@ class SearchQueryResponseMapperTest {
             .build();
 
     // when
-    final DecisionInstanceContract response = SearchQueryResponseMapper.toDecisionInstance(entity);
+    final DecisionInstance response = SearchQueryResponseMapper.toDecisionInstance(entity);
 
     // then
-    assertThat(response.rootProcessInstanceKey()).isEqualTo("999");
+    assertThat(response.getRootProcessInstanceKey()).isEqualTo("999");
   }
 
   @Test
@@ -459,10 +458,10 @@ class SearchQueryResponseMapperTest {
             "tenant"); // tenantId
 
     // when
-    final VariableContract response = SearchQueryResponseMapper.toVariableItem(entity);
+    final Variable response = SearchQueryResponseMapper.toVariableItem(entity);
 
     // then
-    assertThat(response.rootProcessInstanceKey()).isEqualTo("999");
+    assertThat(response.getRootProcessInstanceKey()).isEqualTo("999");
   }
 
   @Test
@@ -489,12 +488,12 @@ class SearchQueryResponseMapperTest {
             .build();
 
     // when
-    final StrictSearchQueryResult<JobSearchContract> jobs =
+    final StrictSearchQueryResult<JobSearch> jobs =
         SearchQueryResponseMapper.toJobSearchQueryResponse(
             new SearchQueryResult<JobEntity>(1, false, List.of(entity), null, null));
 
     // then
-    assertThat(jobs.items().getFirst().rootProcessInstanceKey()).isEqualTo("999");
+    assertThat(jobs.items().getFirst().getRootProcessInstanceKey()).isEqualTo("999");
   }
 
   @Test
@@ -519,12 +518,12 @@ class SearchQueryResponseMapperTest {
             .build();
 
     // when
-    final StrictSearchQueryResult<JobSearchContract> jobs =
+    final StrictSearchQueryResult<JobSearch> jobs =
         SearchQueryResponseMapper.toJobSearchQueryResponse(
             new SearchQueryResult<JobEntity>(1, false, List.of(entity), null, null));
 
     // then
-    assertThat(jobs.items().getFirst().rootProcessInstanceKey()).isNull();
+    assertThat(jobs.items().getFirst().getRootProcessInstanceKey()).isNull();
   }
 
   @Test
@@ -547,13 +546,13 @@ class SearchQueryResponseMapperTest {
             .build();
 
     // when
-    final StrictSearchQueryResult<MessageSubscriptionContract> subscriptions =
+    final StrictSearchQueryResult<MessageSubscription> subscriptions =
         SearchQueryResponseMapper.toMessageSubscriptionSearchQueryResponse(
             new SearchQueryResult<MessageSubscriptionEntity>(
                 1, false, List.of(entity), null, null));
 
     // then
-    assertThat(subscriptions.items().getFirst().rootProcessInstanceKey()).isEqualTo("999");
+    assertThat(subscriptions.items().getFirst().getRootProcessInstanceKey()).isEqualTo("999");
   }
 
   @Test
@@ -573,13 +572,13 @@ class SearchQueryResponseMapperTest {
             .build();
 
     // when
-    final StrictSearchQueryResult<MessageSubscriptionContract> subscriptions =
+    final StrictSearchQueryResult<MessageSubscription> subscriptions =
         SearchQueryResponseMapper.toMessageSubscriptionSearchQueryResponse(
             new SearchQueryResult<MessageSubscriptionEntity>(
                 1, false, List.of(entity), null, null));
 
     // then
-    assertThat(subscriptions.items().getFirst().rootProcessInstanceKey()).isNull();
+    assertThat(subscriptions.items().getFirst().getRootProcessInstanceKey()).isNull();
   }
 
   @Test
@@ -603,13 +602,13 @@ class SearchQueryResponseMapperTest {
             .build();
 
     // when
-    final StrictSearchQueryResult<CorrelatedMessageSubscriptionContract> subscriptions =
+    final StrictSearchQueryResult<CorrelatedMessageSubscription> subscriptions =
         SearchQueryResponseMapper.toCorrelatedMessageSubscriptionSearchQueryResponse(
             new SearchQueryResult<CorrelatedMessageSubscriptionEntity>(
                 1, false, List.of(entity), null, null));
 
     // then
-    assertThat(subscriptions.items().getFirst().rootProcessInstanceKey()).isEqualTo("999");
+    assertThat(subscriptions.items().getFirst().getRootProcessInstanceKey()).isEqualTo("999");
   }
 
   @Test
@@ -632,13 +631,13 @@ class SearchQueryResponseMapperTest {
             .build();
 
     // when
-    final StrictSearchQueryResult<CorrelatedMessageSubscriptionContract> subscriptions =
+    final StrictSearchQueryResult<CorrelatedMessageSubscription> subscriptions =
         SearchQueryResponseMapper.toCorrelatedMessageSubscriptionSearchQueryResponse(
             new SearchQueryResult<CorrelatedMessageSubscriptionEntity>(
                 1, false, List.of(entity), null, null));
 
     // then
-    assertThat(subscriptions.items().getFirst().rootProcessInstanceKey()).isNull();
+    assertThat(subscriptions.items().getFirst().getRootProcessInstanceKey()).isNull();
   }
 
   @Test
@@ -659,7 +658,7 @@ class SearchQueryResponseMapperTest {
     final var sequenceFlows = SearchQueryResponseMapper.toSequenceFlowsResult(List.of(entity));
 
     // then
-    assertThat(sequenceFlows.items().getFirst().rootProcessInstanceKey()).isEqualTo("999");
+    assertThat(sequenceFlows.getItems().getFirst().getRootProcessInstanceKey()).isEqualTo("999");
   }
 
   @Test
@@ -684,10 +683,10 @@ class SearchQueryResponseMapperTest {
             .build();
 
     // when
-    final AuditLogContract response = SearchQueryResponseMapper.toAuditLog(entity);
+    final AuditLog response = SearchQueryResponseMapper.toAuditLog(entity);
 
     // then
-    assertThat(response.rootProcessInstanceKey()).isEqualTo("999");
+    assertThat(response.getRootProcessInstanceKey()).isEqualTo("999");
   }
 
   @Test
@@ -707,10 +706,10 @@ class SearchQueryResponseMapperTest {
             .build();
 
     // when
-    final AuditLogContract response = SearchQueryResponseMapper.toAuditLog(entity);
+    final AuditLog response = SearchQueryResponseMapper.toAuditLog(entity);
 
     // then
-    assertThat(response.rootProcessInstanceKey()).isNull();
+    assertThat(response.getRootProcessInstanceKey()).isNull();
   }
 
   @Test
@@ -744,10 +743,10 @@ class SearchQueryResponseMapperTest {
             null); // tags
 
     // when
-    final UserTaskContract response = SearchQueryResponseMapper.toUserTask(entity);
+    final UserTask response = SearchQueryResponseMapper.toUserTask(entity);
 
     // then
-    assertThat(response.rootProcessInstanceKey()).isNull();
+    assertThat(response.getRootProcessInstanceKey()).isNull();
   }
 
   @Test
@@ -770,10 +769,10 @@ class SearchQueryResponseMapperTest {
             "tenant"); // tenantId
 
     // when
-    final IncidentContract response = SearchQueryResponseMapper.toIncident(entity);
+    final Incident response = SearchQueryResponseMapper.toIncident(entity);
 
     // then
-    assertThat(response.rootProcessInstanceKey()).isNull();
+    assertThat(response.getRootProcessInstanceKey()).isNull();
   }
 
   @Test
@@ -799,10 +798,10 @@ class SearchQueryResponseMapperTest {
             null); // level
 
     // when
-    final ElementInstanceContract response = SearchQueryResponseMapper.toElementInstance(entity);
+    final ElementInstance response = SearchQueryResponseMapper.toElementInstance(entity);
 
     // then
-    assertThat(response.rootProcessInstanceKey()).isNull();
+    assertThat(response.getRootProcessInstanceKey()).isNull();
   }
 
   @Test
@@ -829,10 +828,10 @@ class SearchQueryResponseMapperTest {
             .build();
 
     // when
-    final DecisionInstanceContract response = SearchQueryResponseMapper.toDecisionInstance(entity);
+    final DecisionInstance response = SearchQueryResponseMapper.toDecisionInstance(entity);
 
     // then
-    assertThat(response.rootProcessInstanceKey()).isNull();
+    assertThat(response.getRootProcessInstanceKey()).isNull();
   }
 
   @Test
@@ -852,9 +851,9 @@ class SearchQueryResponseMapperTest {
             "tenant"); // tenantId
 
     // when
-    final VariableContract response = SearchQueryResponseMapper.toVariableItem(entity);
+    final Variable response = SearchQueryResponseMapper.toVariableItem(entity);
 
     // then
-    assertThat(response.rootProcessInstanceKey()).isNull();
+    assertThat(response.getRootProcessInstanceKey()).isNull();
   }
 }

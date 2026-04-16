@@ -8,12 +8,11 @@
 package io.camunda.gateway.mapping.http.search.contract;
 
 import static io.camunda.gateway.mapping.http.ResponseMapper.formatDate;
-import static io.camunda.gateway.mapping.http.search.contract.generated.BatchOperationItemResponseContract.Fields;
 
-import io.camunda.gateway.mapping.http.search.contract.generated.BatchOperationItemResponseContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.BatchOperationTypeEnum;
 import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
 import io.camunda.gateway.mapping.http.util.KeyUtil;
+import io.camunda.gateway.protocol.model.BatchOperationItemResponse;
+import io.camunda.gateway.protocol.model.BatchOperationTypeEnum;
 import io.camunda.search.entities.BatchOperationEntity.BatchOperationItemEntity;
 
 /**
@@ -26,28 +25,25 @@ public final class BatchOperationItemResponseContractAdapter {
 
   private BatchOperationItemResponseContractAdapter() {}
 
-  public static BatchOperationItemResponseContract adapt(final BatchOperationItemEntity entity) {
-    return BatchOperationItemResponseContract.builder()
+  public static BatchOperationItemResponse adapt(final BatchOperationItemEntity entity) {
+    return new BatchOperationItemResponse()
         .operationType(
             ContractPolicy.requireNonNull(
                 ContractPolicy.mapEnum(entity.operationType(), BatchOperationTypeEnum::fromValue),
-                Fields.OPERATION_TYPE,
+                "operationType",
                 entity))
         .batchOperationKey(
-            ContractPolicy.requireNonNull(
-                entity.batchOperationKey(), Fields.BATCH_OPERATION_KEY, entity))
+            ContractPolicy.requireNonNull(entity.batchOperationKey(), "batchOperationKey", entity))
         .itemKey(
-            ContractPolicy.requireNonNull(
-                KeyUtil.keyToString(entity.itemKey()), Fields.ITEM_KEY, entity))
+            ContractPolicy.requireNonNull(KeyUtil.keyToString(entity.itemKey()), "itemKey", entity))
         .processInstanceKey(
             ContractPolicy.requireNonNull(
-                entity.processInstanceKey(), Fields.PROCESS_INSTANCE_KEY, entity))
+                KeyUtil.keyToString(entity.processInstanceKey()), "processInstanceKey", entity))
         .state(
             ContractPolicy.requireNonNull(
-                entity.state() != null ? entity.state().name() : null, Fields.STATE, entity))
-        .rootProcessInstanceKey(entity.rootProcessInstanceKey())
+                entity.state() != null ? entity.state().name() : null, "state", entity))
+        .rootProcessInstanceKey(KeyUtil.keyToString(entity.rootProcessInstanceKey()))
         .processedDate(formatDate(entity.processedDate()))
-        .errorMessage(entity.errorMessage())
-        .build();
+        .errorMessage(entity.errorMessage());
   }
 }

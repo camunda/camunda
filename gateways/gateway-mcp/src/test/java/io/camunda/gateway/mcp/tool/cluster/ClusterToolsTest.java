@@ -11,10 +11,10 @@ import static io.camunda.gateway.mcp.tool.CallToolResultAssertions.assertTextCon
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedBrokerInfoStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedPartitionStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedTopologyResponseStrictContract;
 import io.camunda.gateway.mcp.OperationalToolsTest;
+import io.camunda.gateway.protocol.model.BrokerInfo;
+import io.camunda.gateway.protocol.model.Partition;
+import io.camunda.gateway.protocol.model.TopologyResponse;
 import io.camunda.service.TopologyServices;
 import io.camunda.service.TopologyServices.Broker;
 import io.camunda.service.TopologyServices.ClusterStatus;
@@ -103,32 +103,45 @@ class ClusterToolsTest extends OperationalToolsTest {
       // given
       final var version = VersionUtil.getVersion();
       final var expectedResponse =
-          new GeneratedTopologyResponseStrictContract(
-              List.of(
-                  new GeneratedBrokerInfoStrictContract(
-                      0,
-                      "localhost",
-                      26501,
-                      List.of(new GeneratedPartitionStrictContract(1, "leader", "healthy")),
-                      version),
-                  new GeneratedBrokerInfoStrictContract(
-                      1,
-                      "localhost",
-                      26502,
-                      List.of(new GeneratedPartitionStrictContract(1, "follower", "healthy")),
-                      version),
-                  new GeneratedBrokerInfoStrictContract(
-                      2,
-                      "localhost",
-                      26503,
-                      List.of(new GeneratedPartitionStrictContract(1, "inactive", "unhealthy")),
-                      version)),
-              "cluster-id",
-              3,
-              1,
-              3,
-              version,
-              "1");
+          new TopologyResponse()
+              .brokers(
+                  List.of(
+                      new BrokerInfo()
+                          .nodeId(0)
+                          .host("localhost")
+                          .port(26501)
+                          .partitions(
+                              List.of(
+                                  new Partition().partitionId(1).role("leader").health("healthy")))
+                          .version(version),
+                      new BrokerInfo()
+                          .nodeId(1)
+                          .host("localhost")
+                          .port(26502)
+                          .partitions(
+                              List.of(
+                                  new Partition()
+                                      .partitionId(1)
+                                      .role("follower")
+                                      .health("healthy")))
+                          .version(version),
+                      new BrokerInfo()
+                          .nodeId(2)
+                          .host("localhost")
+                          .port(26503)
+                          .partitions(
+                              List.of(
+                                  new Partition()
+                                      .partitionId(1)
+                                      .role("inactive")
+                                      .health("unhealthy")))
+                          .version(version)))
+              .clusterId("cluster-id")
+              .clusterSize(3)
+              .partitionsCount(1)
+              .replicationFactor(3)
+              .gatewayVersion(version)
+              .lastCompletedChangeId("1");
       final var topologyResponse =
           new Topology(
               List.of(
@@ -169,8 +182,7 @@ class ClusterToolsTest extends OperationalToolsTest {
       assertThat(result.structuredContent()).isNotNull();
 
       final var topology =
-          objectMapper.convertValue(
-              result.structuredContent(), GeneratedTopologyResponseStrictContract.class);
+          objectMapper.convertValue(result.structuredContent(), TopologyResponse.class);
       assertThat(topology).usingRecursiveComparison().isEqualTo(expectedResponse);
     }
 

@@ -7,7 +7,7 @@
  */
 package io.camunda.gateway.mapping.http.converters;
 
-import io.camunda.gateway.mapping.http.search.contract.generated.BatchOperationTypeEnum;
+import io.camunda.gateway.protocol.model.BatchOperationTypeEnum;
 import io.camunda.search.entities.BatchOperationType;
 
 public final class BatchOperationTypeConverter implements CustomConverter<String> {

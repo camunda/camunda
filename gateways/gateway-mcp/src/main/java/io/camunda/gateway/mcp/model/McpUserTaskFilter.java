@@ -10,7 +10,7 @@ package io.camunda.gateway.mcp.model;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedUserTaskStateEnum;
+import io.camunda.gateway.protocol.model.UserTaskStateEnum;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.media.Schema.RequiredMode;
 import java.util.List;
@@ -25,7 +25,7 @@ public record McpUserTaskFilter(
     @JsonProperty
         @JsonPropertyDescription("Filter by user task state.")
         @Schema(requiredMode = RequiredMode.NOT_REQUIRED, defaultValue = "##default")
-        GeneratedUserTaskStateEnum state,
+        UserTaskStateEnum state,
     @JsonProperty
         @JsonPropertyDescription("Filter by assignee.")
         @Schema(requiredMode = RequiredMode.NOT_REQUIRED, defaultValue = "##default")

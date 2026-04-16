@@ -22,19 +22,6 @@ import io.camunda.gateway.mapping.http.GatewayErrorMapper;
 import io.camunda.gateway.mapping.http.RequestMapper;
 import io.camunda.gateway.mapping.http.search.SearchQueryRequestMapper;
 import io.camunda.gateway.mapping.http.search.SearchQueryResponseMapper;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedAdvancedDateTimeFilterStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedIntegerFilterPropertyPlainValueStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedOffsetPaginationStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedStringFilterPropertyPlainValueStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedStringFilterPropertyStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedUserTaskAssignmentRequestStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedUserTaskEffectiveVariableSearchQueryRequestStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedUserTaskFilterStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedUserTaskSearchQueryRequestStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedUserTaskStateFilterPropertyPlainValueStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedUserTaskVariableFilterStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedUserTaskVariableSearchQuerySortRequestStrictContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedVariableValueFilterPropertyStrictContract;
 import io.camunda.gateway.mcp.config.tool.CamundaMcpTool;
 import io.camunda.gateway.mcp.config.tool.McpToolParamsUnwrapped;
 import io.camunda.gateway.mcp.mapper.CallToolResultMapper;
@@ -44,6 +31,19 @@ import io.camunda.gateway.mcp.model.McpUserTaskFilter;
 import io.camunda.gateway.mcp.model.McpUserTaskSearchQuery;
 import io.camunda.gateway.mcp.model.McpUserTaskVariableFilterParam;
 import io.camunda.gateway.mcp.model.McpVariableValue;
+import io.camunda.gateway.protocol.model.AdvancedDateTimeFilter;
+import io.camunda.gateway.protocol.model.IntegerFilterPropertyPlainValue;
+import io.camunda.gateway.protocol.model.OffsetPagination;
+import io.camunda.gateway.protocol.model.StringFilterProperty;
+import io.camunda.gateway.protocol.model.StringFilterPropertyPlainValue;
+import io.camunda.gateway.protocol.model.UserTaskAssignmentRequest;
+import io.camunda.gateway.protocol.model.UserTaskEffectiveVariableSearchQueryRequest;
+import io.camunda.gateway.protocol.model.UserTaskFilter;
+import io.camunda.gateway.protocol.model.UserTaskSearchQuery;
+import io.camunda.gateway.protocol.model.UserTaskStateFilterPropertyPlainValue;
+import io.camunda.gateway.protocol.model.UserTaskVariableFilter;
+import io.camunda.gateway.protocol.model.UserTaskVariableSearchQuerySortRequest;
+import io.camunda.gateway.protocol.model.VariableValueFilterProperty;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.UserTaskServices;
 import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
@@ -78,7 +78,7 @@ public class UserTaskTools {
   public CallToolResult searchUserTasks(
       @McpToolParamsUnwrapped @Valid final McpUserTaskSearchQuery query) {
     try {
-      final var strictRequest = toStrictContract(query);
+      final var strictRequest = toStrict(query);
       final var userTaskSearchQuery = SearchQueryRequestMapper.toUserTaskQueryStrict(strictRequest);
 
       if (userTaskSearchQuery.isLeft()) {
@@ -137,10 +137,10 @@ public class UserTaskTools {
       } else {
         // merge assignee root param with potential assignment options
         final var request =
-            new GeneratedUserTaskAssignmentRequestStrictContract(
-                assignee,
-                assignmentOptions != null ? assignmentOptions.allowOverride() : null,
-                assignmentOptions != null ? assignmentOptions.action() : null);
+            new UserTaskAssignmentRequest()
+                .assignee(assignee)
+                .allowOverride(assignmentOptions != null ? assignmentOptions.allowOverride() : null)
+                .action(assignmentOptions != null ? assignmentOptions.action() : null);
         return performAssignment(userTaskKey, request);
       }
     } catch (final Exception e) {
@@ -149,7 +149,7 @@ public class UserTaskTools {
   }
 
   private CallToolResult performAssignment(
-      final Long userTaskKey, final GeneratedUserTaskAssignmentRequestStrictContract request) {
+      final Long userTaskKey, final UserTaskAssignmentRequest request) {
     final var mappedRequest = RequestMapper.toUserTaskAssignmentRequest(request, userTaskKey);
     if (mappedRequest.isLeft()) {
       return CallToolResultMapper.mapProblemToResult(mappedRequest.getLeft());
@@ -194,15 +194,16 @@ public class UserTaskTools {
       @McpToolParam(description = FILTER_DESCRIPTION, required = false)
           final McpUserTaskVariableFilterParam filter,
       @McpToolParam(description = SORT_DESCRIPTION, required = false)
-          final List<GeneratedUserTaskVariableSearchQuerySortRequestStrictContract> sort,
-      @McpToolParam(description = PAGE_DESCRIPTION, required = false)
-          final GeneratedOffsetPaginationStrictContract page,
+          final List<UserTaskVariableSearchQuerySortRequest> sort,
+      @McpToolParam(description = PAGE_DESCRIPTION, required = false) final OffsetPagination page,
       @McpToolParam(description = TRUNCATE_VARIABLES_DESCRIPTION, required = false)
           final Boolean truncateValues) {
     try {
       final var strictRequest =
-          new GeneratedUserTaskEffectiveVariableSearchQueryRequestStrictContract(
-              page, sort, toStrictVariableFilter(filter));
+          new UserTaskEffectiveVariableSearchQueryRequest()
+              .page(page)
+              .sort(sort)
+              .filter(toStrictVariableFilter(filter));
       final var variableSearchQuery =
           SearchQueryRequestMapper.toUserTaskEffectiveVariableQueryStrict(strictRequest);
 
@@ -225,86 +226,73 @@ public class UserTaskTools {
 
   // -- Facade → Strict contract conversion --
 
-  private static GeneratedUserTaskSearchQueryRequestStrictContract toStrictContract(
-      final McpUserTaskSearchQuery query) {
-    return new GeneratedUserTaskSearchQueryRequestStrictContract(
-        query.page(), query.sort(), toStrictFilter(query.filter()));
+  private static UserTaskSearchQuery toStrict(final McpUserTaskSearchQuery query) {
+    return new UserTaskSearchQuery()
+        .page(query.page())
+        .sort(query.sort())
+        .filter(toStrictFilter(query.filter()));
   }
 
-  private static GeneratedUserTaskFilterStrictContract toStrictFilter(
-      final McpUserTaskFilter filter) {
+  private static UserTaskFilter toStrictFilter(final McpUserTaskFilter filter) {
     if (filter == null) {
       return null;
     }
-    return new GeneratedUserTaskFilterStrictContract(
-        filter.state() != null
-            ? new GeneratedUserTaskStateFilterPropertyPlainValueStrictContract(
-                filter.state().getValue())
-            : null,
-        wrapString(filter.assignee()),
-        filter.priority() != null
-            ? new GeneratedIntegerFilterPropertyPlainValueStrictContract(filter.priority())
-            : null,
-        filter.elementId(),
-        wrapString(filter.name()),
-        null, // candidateGroup — not exposed in MCP
-        null, // candidateUser — not exposed in MCP
-        null, // tenantId — not exposed in MCP
-        filter.processDefinitionId(),
-        toStrictDateRange(filter.creationDate()),
-        toStrictDateRange(filter.completionDate()),
-        toStrictDateRange(filter.followUpDate()),
-        toStrictDateRange(filter.dueDate()),
-        toStrictVariableValueFilters(filter.processInstanceVariables()),
-        toStrictVariableValueFilters(filter.localVariables()),
-        filter.userTaskKey(),
-        filter.processDefinitionKey(),
-        filter.processInstanceKey(),
-        filter.elementInstanceKey(),
-        filter.tags());
+    return new UserTaskFilter()
+        .state(
+            filter.state() != null
+                ? new UserTaskStateFilterPropertyPlainValue(filter.state().getValue())
+                : null)
+        .assignee(wrapString(filter.assignee()))
+        .priority(
+            filter.priority() != null
+                ? new IntegerFilterPropertyPlainValue(filter.priority())
+                : null)
+        .elementId(filter.elementId())
+        .name(wrapString(filter.name()))
+        .processDefinitionId(filter.processDefinitionId())
+        .creationDate(toStrictDateRange(filter.creationDate()))
+        .completionDate(toStrictDateRange(filter.completionDate()))
+        .followUpDate(toStrictDateRange(filter.followUpDate()))
+        .dueDate(toStrictDateRange(filter.dueDate()))
+        .processInstanceVariables(toStrictVariableValueFilters(filter.processInstanceVariables()))
+        .localVariables(toStrictVariableValueFilters(filter.localVariables()))
+        .userTaskKey(filter.userTaskKey())
+        .processDefinitionKey(filter.processDefinitionKey())
+        .processInstanceKey(filter.processInstanceKey())
+        .elementInstanceKey(filter.elementInstanceKey())
+        .tags(filter.tags());
   }
 
-  private static List<GeneratedVariableValueFilterPropertyStrictContract>
-      toStrictVariableValueFilters(final List<McpVariableValue> variables) {
+  private static List<VariableValueFilterProperty> toStrictVariableValueFilters(
+      final List<McpVariableValue> variables) {
     if (variables == null || variables.isEmpty()) {
       return null;
     }
     return variables.stream()
-        .map(
-            v ->
-                new GeneratedVariableValueFilterPropertyStrictContract(
-                    v.name(), wrapString(v.value())))
+        .map(v -> new VariableValueFilterProperty().name(v.name()).value(wrapString(v.value())))
         .toList();
   }
 
-  private static GeneratedStringFilterPropertyStrictContract wrapString(final String value) {
-    return value != null ? new GeneratedStringFilterPropertyPlainValueStrictContract(value) : null;
+  private static StringFilterProperty wrapString(final String value) {
+    return value != null ? new StringFilterPropertyPlainValue(value) : null;
   }
 
-  private static GeneratedAdvancedDateTimeFilterStrictContract toStrictDateRange(
-      final McpDateRange dateRange) {
+  private static AdvancedDateTimeFilter toStrictDateRange(final McpDateRange dateRange) {
     if (dateRange == null) {
       return null;
     }
-    return new GeneratedAdvancedDateTimeFilterStrictContract(
-        null, // $eq
-        null, // $neq
-        null, // $exists
-        null, // $gt
-        dateRange.from(), // $gte (from is inclusive)
-        dateRange.to(), // $lt (to is exclusive)
-        null, // $lte
-        null // $in
-        );
+    return new AdvancedDateTimeFilter()
+        .$gte(dateRange.from()) // from is inclusive
+        .$lt(dateRange.to()); // to is exclusive
   }
 
   // -- Variable search: facade → strict contract conversion --
 
-  private static GeneratedUserTaskVariableFilterStrictContract toStrictVariableFilter(
+  private static UserTaskVariableFilter toStrictVariableFilter(
       final McpUserTaskVariableFilterParam filter) {
     if (filter == null) {
       return null;
     }
-    return new GeneratedUserTaskVariableFilterStrictContract(wrapString(filter.name()));
+    return new UserTaskVariableFilter().name(wrapString(filter.name()));
   }
 }

@@ -10,8 +10,8 @@ package io.camunda.gateway.mcp.model;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedIncidentErrorTypeEnum;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedIncidentStateEnum;
+import io.camunda.gateway.protocol.model.IncidentErrorTypeEnum;
+import io.camunda.gateway.protocol.model.IncidentStateEnum;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.media.Schema.RequiredMode;
 
@@ -33,7 +33,7 @@ public record McpIncidentFilter(
     @JsonProperty
         @JsonPropertyDescription("Incident error type with a defined set of values.")
         @Schema(requiredMode = RequiredMode.NOT_REQUIRED, defaultValue = "##default")
-        GeneratedIncidentErrorTypeEnum errorType,
+        IncidentErrorTypeEnum errorType,
     @JsonProperty
         @JsonPropertyDescription("The process definition ID associated to this incident.")
         @Schema(requiredMode = RequiredMode.NOT_REQUIRED, defaultValue = "##default")
@@ -49,4 +49,4 @@ public record McpIncidentFilter(
     @JsonProperty
         @JsonPropertyDescription("State of this incident with a defined set of values.")
         @Schema(requiredMode = RequiredMode.NOT_REQUIRED, defaultValue = "##default")
-        GeneratedIncidentStateEnum state) {}
+        IncidentStateEnum state) {}

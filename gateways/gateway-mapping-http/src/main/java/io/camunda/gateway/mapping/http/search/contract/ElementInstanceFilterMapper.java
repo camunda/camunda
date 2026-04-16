@@ -10,8 +10,8 @@ package io.camunda.gateway.mapping.http.search.contract;
 import static io.camunda.gateway.mapping.http.util.AdvancedSearchFilterUtil.mapToOperations;
 import static java.util.Optional.ofNullable;
 
-import io.camunda.gateway.mapping.http.search.contract.generated.ElementInstanceFilterContract;
 import io.camunda.gateway.mapping.http.util.KeyUtil;
+import io.camunda.gateway.protocol.model.ElementInstanceFilter;
 import io.camunda.search.entities.FlowNodeInstanceEntity.FlowNodeType;
 import io.camunda.search.filter.FilterBuilders;
 import io.camunda.search.filter.FlowNodeInstanceFilter;
@@ -26,38 +26,44 @@ public final class ElementInstanceFilterMapper {
   private ElementInstanceFilterMapper() {}
 
   public static FlowNodeInstanceFilter toElementInstanceFilter(
-      @Nullable final ElementInstanceFilterContract filter) {
+      @Nullable final ElementInstanceFilter filter) {
     final var builder = FilterBuilders.flowNodeInstance();
     Optional.ofNullable(filter)
         .ifPresent(
             f -> {
-              ofNullable(f.elementInstanceKey())
+              ofNullable(f.getElementInstanceKey())
                   .map(KeyUtil::keyToLong)
                   .ifPresent(builder::flowNodeInstanceKeys);
-              ofNullable(f.processInstanceKey())
+              ofNullable(f.getProcessInstanceKey())
                   .map(KeyUtil::keyToLong)
                   .ifPresent(builder::processInstanceKeys);
-              ofNullable(f.processDefinitionKey())
+              ofNullable(f.getProcessDefinitionKey())
                   .map(KeyUtil::keyToLong)
                   .ifPresent(builder::processDefinitionKeys);
-              ofNullable(f.processDefinitionId()).ifPresent(builder::processDefinitionIds);
-              ofNullable(f.state())
+              ofNullable(f.getProcessDefinitionId()).ifPresent(builder::processDefinitionIds);
+              ofNullable(f.getState())
                   .map(mapToOperations(String.class))
                   .ifPresent(builder::stateOperations);
-              ofNullable(f.type())
+              ofNullable(f.getType())
                   .ifPresent(t -> builder.types(FlowNodeType.fromZeebeBpmnElementType(t)));
-              ofNullable(f.elementId()).ifPresent(builder::flowNodeIds);
-              ofNullable(f.elementName()).ifPresent(builder::flowNodeNames);
-              ofNullable(f.hasIncident()).ifPresent(builder::hasIncident);
-              ofNullable(f.incidentKey()).map(KeyUtil::keyToLong).ifPresent(builder::incidentKeys);
-              ofNullable(f.tenantId()).ifPresent(builder::tenantIds);
-              ofNullable(f.startDate())
+              ofNullable(f.getElementId())
+                  .map(mapToOperations(String.class))
+                  .ifPresent(builder::flowNodeIdOperations);
+              ofNullable(f.getElementName())
+                  .map(mapToOperations(String.class))
+                  .ifPresent(builder::flowNodeNameOperations);
+              ofNullable(f.getHasIncident()).ifPresent(builder::hasIncident);
+              ofNullable(f.getIncidentKey())
+                  .map(KeyUtil::keyToLong)
+                  .ifPresent(builder::incidentKeys);
+              ofNullable(f.getTenantId()).ifPresent(builder::tenantIds);
+              ofNullable(f.getStartDate())
                   .map(mapToOperations(OffsetDateTime.class))
                   .ifPresent(builder::startDateOperations);
-              ofNullable(f.endDate())
+              ofNullable(f.getEndDate())
                   .map(mapToOperations(OffsetDateTime.class))
                   .ifPresent(builder::endDateOperations);
-              ofNullable(f.elementInstanceScopeKey())
+              ofNullable(f.getElementInstanceScopeKey())
                   .map(KeyUtil::keyToLong)
                   .ifPresent(builder::elementInstanceScopeKeys);
             });

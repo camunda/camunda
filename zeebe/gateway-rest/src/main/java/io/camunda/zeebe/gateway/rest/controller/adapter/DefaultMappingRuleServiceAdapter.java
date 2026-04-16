@@ -13,10 +13,10 @@ import io.camunda.gateway.mapping.http.ResponseMapper;
 import io.camunda.gateway.mapping.http.mapper.MappingRuleMapper;
 import io.camunda.gateway.mapping.http.search.SearchQueryRequestMapper;
 import io.camunda.gateway.mapping.http.search.SearchQueryResponseMapper;
-import io.camunda.gateway.mapping.http.search.contract.generated.MappingRuleCreateRequestContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.MappingRuleSearchQueryRequestContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.MappingRuleUpdateRequestContract;
 import io.camunda.gateway.mapping.http.validator.MappingRuleRequestValidator;
+import io.camunda.gateway.protocol.model.MappingRuleCreateRequest;
+import io.camunda.gateway.protocol.model.MappingRuleSearchQueryRequest;
+import io.camunda.gateway.protocol.model.MappingRuleUpdateRequest;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.validation.IdentifierValidator;
 import io.camunda.security.validation.MappingRuleValidator;
@@ -45,7 +45,7 @@ public class DefaultMappingRuleServiceAdapter implements MappingRuleServiceAdapt
 
   @Override
   public ResponseEntity<Object> createMappingRule(
-      final MappingRuleCreateRequestContract mappingRuleCreateRequestStrict,
+      final MappingRuleCreateRequest mappingRuleCreateRequestStrict,
       final CamundaAuthentication authentication) {
     return mappingRuleMapper
         .toMappingRuleCreateRequest(mappingRuleCreateRequestStrict)
@@ -61,7 +61,7 @@ public class DefaultMappingRuleServiceAdapter implements MappingRuleServiceAdapt
   @Override
   public ResponseEntity<Object> updateMappingRule(
       final String mappingRuleId,
-      final MappingRuleUpdateRequestContract mappingRuleUpdateRequestStrict,
+      final MappingRuleUpdateRequest mappingRuleUpdateRequestStrict,
       final CamundaAuthentication authentication) {
     return mappingRuleMapper
         .toMappingRuleUpdateRequest(mappingRuleId, mappingRuleUpdateRequestStrict)
@@ -94,7 +94,7 @@ public class DefaultMappingRuleServiceAdapter implements MappingRuleServiceAdapt
 
   @Override
   public ResponseEntity<Object> searchMappingRule(
-      final MappingRuleSearchQueryRequestContract mappingRuleSearchQueryRequestStrict,
+      final MappingRuleSearchQueryRequest mappingRuleSearchQueryRequestStrict,
       final CamundaAuthentication authentication) {
     return SearchQueryRequestMapper.toMappingRuleQueryStrict(mappingRuleSearchQueryRequestStrict)
         .fold(

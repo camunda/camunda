@@ -20,10 +20,10 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.camunda.gateway.mapping.http.search.contract.StrictSearchQueryResult;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedIncidentErrorTypeEnum;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedIncidentStateEnum;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedIncidentStrictContract;
 import io.camunda.gateway.mcp.OperationalToolsTest;
+import io.camunda.gateway.protocol.model.Incident;
+import io.camunda.gateway.protocol.model.IncidentErrorTypeEnum;
+import io.camunda.gateway.protocol.model.IncidentStateEnum;
 import io.camunda.search.entities.IncidentEntity;
 import io.camunda.search.entities.IncidentEntity.ErrorType;
 import io.camunda.search.entities.IncidentEntity.IncidentState;
@@ -98,19 +98,19 @@ class IncidentToolsTest extends OperationalToolsTest {
   @Autowired private JsonMapper objectMapper;
   @Captor private ArgumentCaptor<IncidentQuery> queryCaptor;
 
-  private void assertExampleIncident(final GeneratedIncidentStrictContract incident) {
-    assertThat(incident.incidentKey()).isEqualTo("5");
-    assertThat(incident.processDefinitionKey()).isEqualTo("23");
-    assertThat(incident.processDefinitionId()).isEqualTo("complexProcess");
-    assertThat(incident.processInstanceKey()).isEqualTo("42");
-    assertThat(incident.errorType()).isEqualTo(GeneratedIncidentErrorTypeEnum.JOB_NO_RETRIES);
-    assertThat(incident.errorMessage()).isEqualTo("No retries left.");
-    assertThat(incident.elementId()).isEqualTo("elementId");
-    assertThat(incident.elementInstanceKey()).isEqualTo("17");
-    assertThat(incident.creationTime()).isEqualTo("2024-05-23T23:05:00.000Z");
-    assertThat(incident.state()).isEqualTo(GeneratedIncidentStateEnum.ACTIVE);
-    assertThat(incident.jobKey()).isEqualTo("101");
-    assertThat(incident.tenantId()).isEqualTo("tenantId");
+  private void assertExampleIncident(final Incident incident) {
+    assertThat(incident.getIncidentKey()).isEqualTo("5");
+    assertThat(incident.getProcessDefinitionKey()).isEqualTo("23");
+    assertThat(incident.getProcessDefinitionId()).isEqualTo("complexProcess");
+    assertThat(incident.getProcessInstanceKey()).isEqualTo("42");
+    assertThat(incident.getErrorType()).isEqualTo(IncidentErrorTypeEnum.JOB_NO_RETRIES);
+    assertThat(incident.getErrorMessage()).isEqualTo("No retries left.");
+    assertThat(incident.getElementId()).isEqualTo("elementId");
+    assertThat(incident.getElementInstanceKey()).isEqualTo("17");
+    assertThat(incident.getCreationTime()).isEqualTo("2024-05-23T23:05:00.000Z");
+    assertThat(incident.getState()).isEqualTo(IncidentStateEnum.ACTIVE);
+    assertThat(incident.getJobKey()).isEqualTo("101");
+    assertThat(incident.getTenantId()).isEqualTo("tenantId");
   }
 
   @Nested
@@ -133,9 +133,7 @@ class IncidentToolsTest extends OperationalToolsTest {
       assertThat(result.isError()).isFalse();
       assertThat(result.structuredContent()).isNotNull();
 
-      final var incident =
-          objectMapper.convertValue(
-              result.structuredContent(), GeneratedIncidentStrictContract.class);
+      final var incident = objectMapper.convertValue(result.structuredContent(), Incident.class);
       assertExampleIncident(incident);
 
       verify(incidentServices).getByKey(eq(5L), any());
@@ -301,14 +299,13 @@ class IncidentToolsTest extends OperationalToolsTest {
       assertThat(result.structuredContent()).isNotNull();
 
       @SuppressWarnings("unchecked")
-      final StrictSearchQueryResult<GeneratedIncidentStrictContract> searchResult =
-          (StrictSearchQueryResult<GeneratedIncidentStrictContract>)
+      final StrictSearchQueryResult<Incident> searchResult =
+          (StrictSearchQueryResult<Incident>)
               objectMapper.convertValue(
                   result.structuredContent(),
                   objectMapper
                       .getTypeFactory()
-                      .constructParametricType(
-                          StrictSearchQueryResult.class, GeneratedIncidentStrictContract.class));
+                      .constructParametricType(StrictSearchQueryResult.class, Incident.class));
       assertThat(searchResult.page().totalItems()).isEqualTo(1L);
       assertThat(searchResult.page().hasMoreTotalItems()).isFalse();
       assertThat(searchResult.page().startCursor()).isEqualTo("f");

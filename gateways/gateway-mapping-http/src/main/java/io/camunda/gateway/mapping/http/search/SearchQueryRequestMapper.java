@@ -15,81 +15,80 @@ import static io.camunda.gateway.mapping.http.validator.RequestValidator.validat
 import io.camunda.gateway.mapping.http.search.contract.AuditLogFilterMapper;
 import io.camunda.gateway.mapping.http.search.contract.AuthorizationFilterMapper;
 import io.camunda.gateway.mapping.http.search.contract.BatchOperationFilterMapper;
+import io.camunda.gateway.mapping.http.search.contract.BatchOperationItemFilterMapper;
+import io.camunda.gateway.mapping.http.search.contract.ClusterVariableSearchQueryFilterRequestMapper;
+import io.camunda.gateway.mapping.http.search.contract.CorrelatedMessageSubscriptionFilterMapper;
 import io.camunda.gateway.mapping.http.search.contract.DecisionDefinitionFilterMapper;
 import io.camunda.gateway.mapping.http.search.contract.DecisionInstanceFilterMapper;
 import io.camunda.gateway.mapping.http.search.contract.DecisionRequirementsFilterMapper;
 import io.camunda.gateway.mapping.http.search.contract.ElementInstanceFilterMapper;
 import io.camunda.gateway.mapping.http.search.contract.GlobalJobStatisticsFilterMapper;
 import io.camunda.gateway.mapping.http.search.contract.GlobalTaskListenerFilterMapper;
+import io.camunda.gateway.mapping.http.search.contract.GroupFilterMapper;
 import io.camunda.gateway.mapping.http.search.contract.IncidentFilterMapper;
 import io.camunda.gateway.mapping.http.search.contract.IncidentProcessInstanceStatisticsFilterMapper;
 import io.camunda.gateway.mapping.http.search.contract.JobErrorStatisticsFilterMapper;
+import io.camunda.gateway.mapping.http.search.contract.JobFilterMapper;
 import io.camunda.gateway.mapping.http.search.contract.JobTimeSeriesStatisticsFilterMapper;
 import io.camunda.gateway.mapping.http.search.contract.JobTypeStatisticsFilterMapper;
 import io.camunda.gateway.mapping.http.search.contract.JobWorkerStatisticsFilterMapper;
+import io.camunda.gateway.mapping.http.search.contract.MappingRuleFilterMapper;
+import io.camunda.gateway.mapping.http.search.contract.MessageSubscriptionFilterMapper;
 import io.camunda.gateway.mapping.http.search.contract.ProcessDefinitionFilterMapper;
 import io.camunda.gateway.mapping.http.search.contract.ProcessDefinitionInstanceVersionStatisticsFilterMapper;
 import io.camunda.gateway.mapping.http.search.contract.ProcessDefinitionStatisticsFilterMapper;
 import io.camunda.gateway.mapping.http.search.contract.ProcessInstanceFilterMapper;
+import io.camunda.gateway.mapping.http.search.contract.RoleFilterMapper;
+import io.camunda.gateway.mapping.http.search.contract.TenantFilterMapper;
+import io.camunda.gateway.mapping.http.search.contract.UserFilterMapper;
 import io.camunda.gateway.mapping.http.search.contract.UserTaskAuditLogFilterMapper;
 import io.camunda.gateway.mapping.http.search.contract.UserTaskFilterMapper;
 import io.camunda.gateway.mapping.http.search.contract.UserTaskVariableFilterMapper;
 import io.camunda.gateway.mapping.http.search.contract.VariableFilterMapper;
-import io.camunda.gateway.mapping.http.search.contract.generated.AuditLogSearchQueryRequestContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.AuthorizationSearchQueryRequestContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.BatchOperationItemFilterMapper;
-import io.camunda.gateway.mapping.http.search.contract.generated.BatchOperationItemSearchQueryRequestContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.BatchOperationSearchQueryRequestContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.ClusterVariableSearchQueryFilterRequestMapper;
-import io.camunda.gateway.mapping.http.search.contract.generated.ClusterVariableSearchQueryRequestContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.CorrelatedMessageSubscriptionFilterMapper;
-import io.camunda.gateway.mapping.http.search.contract.generated.CorrelatedMessageSubscriptionSearchQueryRequestContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.DecisionDefinitionSearchQueryRequestContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.DecisionInstanceSearchQueryRequestContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.DecisionRequirementsSearchQueryRequestContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.ElementInstanceSearchQueryRequestContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GlobalTaskListenerSearchQueryRequestContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GroupClientSearchQueryRequestContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GroupFilterMapper;
-import io.camunda.gateway.mapping.http.search.contract.generated.GroupSearchQueryRequestContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GroupUserSearchQueryRequestContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.IncidentProcessInstanceStatisticsByDefinitionQuerySearchQueryRequestContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.IncidentProcessInstanceStatisticsByErrorQueryContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.IncidentSearchQueryRequestContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.JobErrorStatisticsQueryContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.JobFilterMapper;
-import io.camunda.gateway.mapping.http.search.contract.generated.JobSearchQueryRequestContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.JobTimeSeriesStatisticsQueryContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.JobTypeStatisticsQueryContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.JobWorkerStatisticsQueryContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.MappingRuleFilterMapper;
-import io.camunda.gateway.mapping.http.search.contract.generated.MappingRuleSearchQueryRequestContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.MessageSubscriptionFilterMapper;
-import io.camunda.gateway.mapping.http.search.contract.generated.MessageSubscriptionSearchQueryRequestContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.ProcessDefinitionElementStatisticsQueryContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.ProcessDefinitionInstanceStatisticsQueryContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.ProcessDefinitionInstanceVersionStatisticsQuerySearchQueryRequestContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.ProcessDefinitionMessageSubscriptionStatisticsQueryContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.ProcessDefinitionSearchQueryRequestContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.ProcessInstanceSearchQueryRequestContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.RoleClientSearchQueryRequestContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.RoleFilterMapper;
-import io.camunda.gateway.mapping.http.search.contract.generated.RoleGroupSearchQueryRequestContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.RoleSearchQueryRequestContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.RoleUserSearchQueryRequestContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.TenantClientSearchQueryRequestContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.TenantFilterMapper;
-import io.camunda.gateway.mapping.http.search.contract.generated.TenantGroupSearchQueryRequestContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.TenantSearchQueryRequestContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.TenantUserSearchQueryRequestContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.UserFilterMapper;
-import io.camunda.gateway.mapping.http.search.contract.generated.UserSearchQueryRequestContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.UserTaskAuditLogSearchQueryRequestContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.UserTaskEffectiveVariableSearchQueryRequestContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.UserTaskSearchQueryRequestContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.UserTaskVariableSearchQueryRequestContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.VariableSearchQueryRequestContract;
 import io.camunda.gateway.mapping.http.validator.RequestValidator;
+import io.camunda.gateway.protocol.model.AuditLogSearchQueryRequest;
+import io.camunda.gateway.protocol.model.AuthorizationSearchQuery;
+import io.camunda.gateway.protocol.model.BatchOperationItemSearchQuery;
+import io.camunda.gateway.protocol.model.BatchOperationSearchQuery;
+import io.camunda.gateway.protocol.model.ClusterVariableSearchQueryRequest;
+import io.camunda.gateway.protocol.model.CorrelatedMessageSubscriptionSearchQuery;
+import io.camunda.gateway.protocol.model.DecisionDefinitionSearchQuery;
+import io.camunda.gateway.protocol.model.DecisionInstanceSearchQuery;
+import io.camunda.gateway.protocol.model.DecisionRequirementsSearchQuery;
+import io.camunda.gateway.protocol.model.ElementInstanceSearchQuery;
+import io.camunda.gateway.protocol.model.GlobalTaskListenerSearchQueryRequest;
+import io.camunda.gateway.protocol.model.GroupClientSearchQueryRequest;
+import io.camunda.gateway.protocol.model.GroupSearchQueryRequest;
+import io.camunda.gateway.protocol.model.GroupUserSearchQueryRequest;
+import io.camunda.gateway.protocol.model.IncidentProcessInstanceStatisticsByDefinitionQuery;
+import io.camunda.gateway.protocol.model.IncidentProcessInstanceStatisticsByErrorQuery;
+import io.camunda.gateway.protocol.model.IncidentSearchQuery;
+import io.camunda.gateway.protocol.model.JobSearchQuery;
+import io.camunda.gateway.protocol.model.JobTimeSeriesStatisticsQuery;
+import io.camunda.gateway.protocol.model.JobTypeStatisticsQuery;
+import io.camunda.gateway.protocol.model.JobWorkerStatisticsQuery;
+import io.camunda.gateway.protocol.model.MappingRuleSearchQueryRequest;
+import io.camunda.gateway.protocol.model.MessageSubscriptionSearchQuery;
+import io.camunda.gateway.protocol.model.ProcessDefinitionElementStatisticsQuery;
+import io.camunda.gateway.protocol.model.ProcessDefinitionInstanceStatisticsQuery;
+import io.camunda.gateway.protocol.model.ProcessDefinitionInstanceVersionStatisticsQuery;
+import io.camunda.gateway.protocol.model.ProcessDefinitionMessageSubscriptionStatisticsQuery;
+import io.camunda.gateway.protocol.model.ProcessDefinitionSearchQuery;
+import io.camunda.gateway.protocol.model.ProcessInstanceSearchQuery;
+import io.camunda.gateway.protocol.model.RoleClientSearchQueryRequest;
+import io.camunda.gateway.protocol.model.RoleGroupSearchQueryRequest;
+import io.camunda.gateway.protocol.model.RoleSearchQueryRequest;
+import io.camunda.gateway.protocol.model.RoleUserSearchQueryRequest;
+import io.camunda.gateway.protocol.model.TenantClientSearchQueryRequest;
+import io.camunda.gateway.protocol.model.TenantGroupSearchQueryRequest;
+import io.camunda.gateway.protocol.model.TenantSearchQueryRequest;
+import io.camunda.gateway.protocol.model.TenantUserSearchQueryRequest;
+import io.camunda.gateway.protocol.model.UserSearchQueryRequest;
+import io.camunda.gateway.protocol.model.UserTaskAuditLogSearchQueryRequest;
+import io.camunda.gateway.protocol.model.UserTaskEffectiveVariableSearchQueryRequest;
+import io.camunda.gateway.protocol.model.UserTaskSearchQuery;
+import io.camunda.gateway.protocol.model.UserTaskVariableSearchQueryRequest;
+import io.camunda.gateway.protocol.model.VariableSearchQuery;
 import io.camunda.search.entities.ProcessInstanceEntity.ProcessInstanceState;
 import io.camunda.search.filter.FilterBase;
 import io.camunda.search.filter.FilterBuilders;
@@ -192,22 +191,23 @@ public final class SearchQueryRequestMapper {
   }
 
   public static Either<ProblemDetail, VariableQuery> toUserTaskEffectiveVariableQueryStrict(
-      final UserTaskEffectiveVariableSearchQueryRequestContract request) {
+      final UserTaskEffectiveVariableSearchQueryRequest request) {
     if (request == null) {
       return Either.right(SearchQueryBuilders.variableSearchQuery().build());
     }
-    final var p = request.page();
+    final var p = request.getPage();
     final var page =
         p != null
-            ? toSearchQueryPage(p.limit(), p.from(), null, null)
+            ? toSearchQueryPage(p.getLimit(), p.getFrom(), null, null)
             : toSearchQueryPage(null, null, null, null);
     final var sortRequests =
-        request.sort() != null
-            ? request.sort().stream()
+        request.getSort() != null
+            ? request.getSort().stream()
                 .map(
                     s ->
                         new SearchQuerySortRequest(
-                            s.field().getValue(), s.order() != null ? s.order().getValue() : null))
+                            s.getField().getValue(),
+                            s.getOrder() != null ? s.getOrder().getValue() : null))
                 .toList()
             : java.util.List.<SearchQuerySortRequest>of();
     final var sort =
@@ -215,7 +215,7 @@ public final class SearchQueryRequestMapper {
             sortRequests,
             SortOptionBuilders::variable,
             SearchQuerySortRequestMapper::applyUserTaskVariableSortField);
-    final var filter = UserTaskVariableFilterMapper.toUserTaskVariableFilter(request.filter());
+    final var filter = UserTaskVariableFilterMapper.toUserTaskVariableFilter(request.getFilter());
     return buildSearchQuery(filter, sort, page, SearchQueryBuilders::variableSearchQuery);
   }
 
@@ -313,15 +313,14 @@ public final class SearchQueryRequestMapper {
   // Pattern 1: filter only, no page/sort
   public static Either<ProblemDetail, ProcessDefinitionStatisticsFilter>
       toProcessDefinitionStatisticsQuery(
-          final long processDefinitionKey,
-          final ProcessDefinitionElementStatisticsQueryContract request) {
+          final long processDefinitionKey, final ProcessDefinitionElementStatisticsQuery request) {
     if (request == null) {
       return Either.right(
           new ProcessDefinitionStatisticsFilter.Builder(processDefinitionKey).build());
     }
     final var filter =
         ProcessDefinitionStatisticsFilterMapper.toProcessDefinitionStatisticsFilter(
-            processDefinitionKey, request.filter());
+            processDefinitionKey, request.getFilter());
     if (filter.isLeft()) {
       final var problem = RequestValidator.createProblemDetail(filter.getLeft());
       if (problem.isPresent()) {
@@ -333,63 +332,64 @@ public final class SearchQueryRequestMapper {
 
   // Pattern 2: CursorForwardPagination + filter, no sort
   public static Either<ProblemDetail, io.camunda.search.query.JobTypeStatisticsQuery>
-      toJobTypeStatisticsQuery(final JobTypeStatisticsQueryContract request) {
+      toJobTypeStatisticsQuery(final JobTypeStatisticsQuery request) {
     if (request == null) {
       return Either.right(SearchQueryBuilders.jobTypeStatisticsSearchQuery().build());
     }
-    final var p = request.page();
+    final var p = request.getPage();
     final var page =
         p != null
-            ? toSearchQueryPage(p.limit(), null, p.after(), null)
+            ? toSearchQueryPage(p.getLimit(), null, p.getAfter(), null)
             : Either.<List<String>, SearchQueryPage>right(null);
-    final var filter = JobTypeStatisticsFilterMapper.toJobTypeStatisticsFilter(request.filter());
+    final var filter = JobTypeStatisticsFilterMapper.toJobTypeStatisticsFilter(request.getFilter());
     return buildSearchQuery(
         filter, Either.right(null), page, SearchQueryBuilders::jobTypeStatisticsSearchQuery);
   }
 
   public static Either<ProblemDetail, io.camunda.search.query.JobWorkerStatisticsQuery>
-      toJobWorkerStatisticsQuery(final JobWorkerStatisticsQueryContract request) {
+      toJobWorkerStatisticsQuery(final JobWorkerStatisticsQuery request) {
     if (request == null) {
       return Either.right(SearchQueryBuilders.jobWorkerStatisticsSearchQuery().build());
     }
-    final var p = request.page();
+    final var p = request.getPage();
     final var page =
         p != null
-            ? toSearchQueryPage(p.limit(), null, p.after(), null)
+            ? toSearchQueryPage(p.getLimit(), null, p.getAfter(), null)
             : Either.<List<String>, SearchQueryPage>right(null);
     final var filter =
-        JobWorkerStatisticsFilterMapper.toJobWorkerStatisticsFilter(request.filter());
+        JobWorkerStatisticsFilterMapper.toJobWorkerStatisticsFilter(request.getFilter());
     return buildSearchQuery(
         filter, Either.right(null), page, SearchQueryBuilders::jobWorkerStatisticsSearchQuery);
   }
 
   public static Either<ProblemDetail, io.camunda.search.query.JobTimeSeriesStatisticsQuery>
-      toJobTimeSeriesStatisticsQuery(final JobTimeSeriesStatisticsQueryContract request) {
+      toJobTimeSeriesStatisticsQuery(final JobTimeSeriesStatisticsQuery request) {
     if (request == null) {
       return Either.right(SearchQueryBuilders.jobTimeSeriesStatisticsSearchQuery().build());
     }
-    final var p = request.page();
+    final var p = request.getPage();
     final var page =
         p != null
-            ? toSearchQueryPage(p.limit(), null, p.after(), null)
+            ? toSearchQueryPage(p.getLimit(), null, p.getAfter(), null)
             : Either.<List<String>, SearchQueryPage>right(null);
     final var filter =
-        JobTimeSeriesStatisticsFilterMapper.toJobTimeSeriesStatisticsFilter(request.filter());
+        JobTimeSeriesStatisticsFilterMapper.toJobTimeSeriesStatisticsFilter(request.getFilter());
     return buildSearchQuery(
         filter, Either.right(null), page, SearchQueryBuilders::jobTimeSeriesStatisticsSearchQuery);
   }
 
   public static Either<ProblemDetail, JobErrorStatisticsQuery> toJobErrorStatisticsQuery(
-      final JobErrorStatisticsQueryContract request) {
+      final io.camunda.gateway.protocol.model.JobErrorStatisticsQuery request) {
     if (request == null) {
       return Either.right(SearchQueryBuilders.jobErrorStatisticsSearchQuery().build());
     }
-    final var p = request.page();
+    final var p = request.getPage();
     final var page =
         p != null
-            ? toSearchQueryPage(p.limit(), null, p.after(), null)
+            ? toSearchQueryPage(p.getLimit(), null, p.getAfter(), null)
             : Either.<List<String>, SearchQueryPage>right(null);
-    final var filter = JobErrorStatisticsFilterMapper.toJobErrorStatisticsFilter(request.filter());
+    final var filter =
+        JobErrorStatisticsFilterMapper.toJobErrorStatisticsFilter(request.getFilter());
     return buildSearchQuery(
         filter, Either.right(null), page, SearchQueryBuilders::jobErrorStatisticsSearchQuery);
   }
@@ -398,18 +398,18 @@ public final class SearchQueryRequestMapper {
           ProblemDetail,
           io.camunda.search.query.ProcessDefinitionMessageSubscriptionStatisticsQuery>
       toProcessDefinitionMessageSubscriptionStatisticsQuery(
-          final ProcessDefinitionMessageSubscriptionStatisticsQueryContract request) {
+          final ProcessDefinitionMessageSubscriptionStatisticsQuery request) {
     if (request == null) {
       return Either.right(
           SearchQueryBuilders.processDefinitionMessageSubscriptionStatisticsQuery().build());
     }
-    final var p = request.page();
+    final var p = request.getPage();
     final var page =
         p != null
-            ? toSearchQueryPage(p.limit(), null, p.after(), null)
+            ? toSearchQueryPage(p.getLimit(), null, p.getAfter(), null)
             : Either.<List<String>, SearchQueryPage>right(null);
     final var filter =
-        MessageSubscriptionFilterMapper.toMessageSubscriptionFilter(request.filter());
+        MessageSubscriptionFilterMapper.toMessageSubscriptionFilter(request.getFilter());
     return buildSearchQuery(
         filter,
         Either.right(null),
@@ -421,25 +421,26 @@ public final class SearchQueryRequestMapper {
   public static Either<
           ProblemDetail, io.camunda.search.query.ProcessDefinitionInstanceStatisticsQuery>
       toProcessDefinitionInstanceStatisticsQuery(
-          final ProcessDefinitionInstanceStatisticsQueryContract request) {
+          final ProcessDefinitionInstanceStatisticsQuery request) {
     final var filter =
         FilterBuilders.processInstance().states(ProcessInstanceState.ACTIVE.name()).build();
     if (request == null) {
       return Either.right(
           SearchQueryBuilders.processDefinitionInstanceStatisticsQuery().filter(filter).build());
     }
-    final var p = request.page();
+    final var p = request.getPage();
     final var page =
         p != null
-            ? toSearchQueryPage(p.limit(), p.from(), null, null)
+            ? toSearchQueryPage(p.getLimit(), p.getFrom(), null, null)
             : Either.<List<String>, SearchQueryPage>right(null);
     final var sortRequests =
-        request.sort() != null
-            ? request.sort().stream()
+        request.getSort() != null
+            ? request.getSort().stream()
                 .map(
                     s ->
                         new SearchQuerySortRequest(
-                            s.field().getValue(), s.order() != null ? s.order().getValue() : null))
+                            s.getField().getValue(),
+                            s.getOrder() != null ? s.getOrder().getValue() : null))
                 .toList()
             : java.util.List.<SearchQuerySortRequest>of();
     final var sort =
@@ -454,8 +455,8 @@ public final class SearchQueryRequestMapper {
   public static Either<
           ProblemDetail, io.camunda.search.query.ProcessDefinitionInstanceVersionStatisticsQuery>
       toProcessDefinitionInstanceVersionStatisticsQuery(
-          final ProcessDefinitionInstanceVersionStatisticsQuerySearchQueryRequestContract request) {
-    if (request == null || request.filter() == null) {
+          final ProcessDefinitionInstanceVersionStatisticsQuery request) {
+    if (request == null || request.getFilter() == null) {
       final var problem =
           RequestValidator.createProblemDetail(
               List.of(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("filter")));
@@ -463,18 +464,19 @@ public final class SearchQueryRequestMapper {
         return Either.left(problem.get());
       }
     }
-    final var p = request.page();
+    final var p = request.getPage();
     final var page =
         p != null
-            ? toSearchQueryPage(p.limit(), p.from(), null, null)
+            ? toSearchQueryPage(p.getLimit(), p.getFrom(), null, null)
             : Either.<List<String>, SearchQueryPage>right(null);
     final var sortRequests =
-        request.sort() != null
-            ? request.sort().stream()
+        request.getSort() != null
+            ? request.getSort().stream()
                 .map(
                     s ->
                         new SearchQuerySortRequest(
-                            s.field().getValue(), s.order() != null ? s.order().getValue() : null))
+                            s.getField().getValue(),
+                            s.getOrder() != null ? s.getOrder().getValue() : null))
                 .toList()
             : java.util.List.<SearchQuerySortRequest>of();
     final var sort =
@@ -484,7 +486,7 @@ public final class SearchQueryRequestMapper {
             SearchQuerySortRequestMapper::applyProcessDefinitionInstanceVersionStatisticsSortField);
     final var filter =
         ProcessDefinitionInstanceVersionStatisticsFilterMapper
-            .toProcessDefinitionInstanceVersionStatisticsFilter(request.filter());
+            .toProcessDefinitionInstanceVersionStatisticsFilter(request.getFilter());
     return buildSearchQuery(
         filter, sort, page, SearchQueryBuilders::processDefinitionInstanceVersionStatisticsQuery);
   }
@@ -492,23 +494,24 @@ public final class SearchQueryRequestMapper {
   public static Either<
           ProblemDetail, io.camunda.search.query.IncidentProcessInstanceStatisticsByErrorQuery>
       toIncidentProcessInstanceStatisticsByErrorQuery(
-          final IncidentProcessInstanceStatisticsByErrorQueryContract request) {
+          final IncidentProcessInstanceStatisticsByErrorQuery request) {
     if (request == null) {
       return Either.right(
           SearchQueryBuilders.incidentProcessInstanceStatisticsByErrorQuery().build());
     }
-    final var p = request.page();
+    final var p = request.getPage();
     final var page =
         p != null
-            ? toSearchQueryPage(p.limit(), p.from(), null, null)
+            ? toSearchQueryPage(p.getLimit(), p.getFrom(), null, null)
             : Either.<List<String>, SearchQueryPage>right(null);
     final var sortRequests =
-        request.sort() != null
-            ? request.sort().stream()
+        request.getSort() != null
+            ? request.getSort().stream()
                 .map(
                     s ->
                         new SearchQuerySortRequest(
-                            s.field().getValue(), s.order() != null ? s.order().getValue() : null))
+                            s.getField().getValue(),
+                            s.getOrder() != null ? s.getOrder().getValue() : null))
                 .toList()
             : java.util.List.<SearchQuerySortRequest>of();
     final var sort =
@@ -524,20 +527,20 @@ public final class SearchQueryRequestMapper {
   public static Either<
           ProblemDetail, io.camunda.search.query.IncidentProcessInstanceStatisticsByDefinitionQuery>
       toIncidentProcessInstanceStatisticsByDefinitionQuery(
-          final IncidentProcessInstanceStatisticsByDefinitionQuerySearchQueryRequestContract
-              request) {
-    final var p = request.page();
+          final IncidentProcessInstanceStatisticsByDefinitionQuery request) {
+    final var p = request.getPage();
     final var page =
         p != null
-            ? toSearchQueryPage(p.limit(), p.from(), null, null)
+            ? toSearchQueryPage(p.getLimit(), p.getFrom(), null, null)
             : Either.<List<String>, SearchQueryPage>right(null);
     final var sortRequests =
-        request.sort() != null
-            ? request.sort().stream()
+        request.getSort() != null
+            ? request.getSort().stream()
                 .map(
                     s ->
                         new SearchQuerySortRequest(
-                            s.field().getValue(), s.order() != null ? s.order().getValue() : null))
+                            s.getField().getValue(),
+                            s.getOrder() != null ? s.getOrder().getValue() : null))
                 .toList()
             : java.util.List.<SearchQuerySortRequest>of();
     final var sort =
@@ -548,7 +551,7 @@ public final class SearchQueryRequestMapper {
                 ::applyIncidentProcessInstanceStatisticsByDefinitionSortField);
     final var filter =
         IncidentProcessInstanceStatisticsFilterMapper
-            .toIncidentProcessInstanceStatisticsByDefinitionFilter(request.filter());
+            .toIncidentProcessInstanceStatisticsByDefinitionFilter(request.getFilter());
     return buildSearchQuery(
         filter,
         sort,
@@ -559,22 +562,23 @@ public final class SearchQueryRequestMapper {
   // -- Strict contract overloads (no protocol model dependency) --
 
   public static Either<ProblemDetail, AuditLogQuery> toAuditLogQueryStrict(
-      final AuditLogSearchQueryRequestContract request) {
+      final AuditLogSearchQueryRequest request) {
     if (request == null) {
       return Either.right(SearchQueryBuilders.auditLogSearchQuery().build());
     }
-    final var p = request.page();
+    final var p = request.getPage();
     final var page =
         p != null
-            ? toSearchQueryPage(p.limit(), p.from(), p.after(), p.before())
+            ? toSearchQueryPage(p.getLimit(), p.getFrom(), p.getAfter(), p.getBefore())
             : toSearchQueryPage(null, null, null, null);
     final var sortRequests =
-        request.sort() != null
-            ? request.sort().stream()
+        request.getSort() != null
+            ? request.getSort().stream()
                 .map(
                     s ->
                         new SearchQuerySortRequest(
-                            s.field().getValue(), s.order() != null ? s.order().getValue() : null))
+                            s.getField().getValue(),
+                            s.getOrder() != null ? s.getOrder().getValue() : null))
                 .toList()
             : java.util.List.<SearchQuerySortRequest>of();
     final var sort =
@@ -582,27 +586,28 @@ public final class SearchQueryRequestMapper {
             sortRequests,
             SortOptionBuilders::auditLog,
             SearchQuerySortRequestMapper::applyAuditLogSortField);
-    final var filter = AuditLogFilterMapper.toAuditLogFilter(request.filter());
+    final var filter = AuditLogFilterMapper.toAuditLogFilter(request.getFilter());
     return buildSearchQuery(filter, sort, page, SearchQueryBuilders::auditLogSearchQuery);
   }
 
   public static Either<ProblemDetail, AuthorizationQuery> toAuthorizationQueryStrict(
-      final AuthorizationSearchQueryRequestContract request) {
+      final AuthorizationSearchQuery request) {
     if (request == null) {
       return Either.right(SearchQueryBuilders.authorizationSearchQuery().build());
     }
-    final var p = request.page();
+    final var p = request.getPage();
     final var page =
         p != null
-            ? toSearchQueryPage(p.limit(), p.from(), p.after(), p.before())
+            ? toSearchQueryPage(p.getLimit(), p.getFrom(), p.getAfter(), p.getBefore())
             : toSearchQueryPage(null, null, null, null);
     final var sortRequests =
-        request.sort() != null
-            ? request.sort().stream()
+        request.getSort() != null
+            ? request.getSort().stream()
                 .map(
                     s ->
                         new SearchQuerySortRequest(
-                            s.field().getValue(), s.order() != null ? s.order().getValue() : null))
+                            s.getField().getValue(),
+                            s.getOrder() != null ? s.getOrder().getValue() : null))
                 .toList()
             : java.util.List.<SearchQuerySortRequest>of();
     final var sort =
@@ -610,27 +615,28 @@ public final class SearchQueryRequestMapper {
             sortRequests,
             SortOptionBuilders::authorization,
             SearchQuerySortRequestMapper::applyAuthorizationSortField);
-    final var filter = AuthorizationFilterMapper.toAuthorizationFilter(request.filter());
+    final var filter = AuthorizationFilterMapper.toAuthorizationFilter(request.getFilter());
     return buildSearchQuery(filter, sort, page, SearchQueryBuilders::authorizationSearchQuery);
   }
 
   public static Either<ProblemDetail, BatchOperationItemQuery> toBatchOperationItemQueryStrict(
-      final BatchOperationItemSearchQueryRequestContract request) {
+      final BatchOperationItemSearchQuery request) {
     if (request == null) {
       return Either.right(SearchQueryBuilders.batchOperationItemQuery().build());
     }
-    final var p = request.page();
+    final var p = request.getPage();
     final var page =
         p != null
-            ? toSearchQueryPage(p.limit(), p.from(), p.after(), p.before())
+            ? toSearchQueryPage(p.getLimit(), p.getFrom(), p.getAfter(), p.getBefore())
             : toSearchQueryPage(null, null, null, null);
     final var sortRequests =
-        request.sort() != null
-            ? request.sort().stream()
+        request.getSort() != null
+            ? request.getSort().stream()
                 .map(
                     s ->
                         new SearchQuerySortRequest(
-                            s.field().getValue(), s.order() != null ? s.order().getValue() : null))
+                            s.getField().getValue(),
+                            s.getOrder() != null ? s.getOrder().getValue() : null))
                 .toList()
             : java.util.List.<SearchQuerySortRequest>of();
     final var sort =
@@ -638,27 +644,29 @@ public final class SearchQueryRequestMapper {
             sortRequests,
             SortOptionBuilders::batchOperationItem,
             SearchQuerySortRequestMapper::applyBatchOperationItemSortField);
-    final var filter = BatchOperationItemFilterMapper.toBatchOperationItemFilter(request.filter());
+    final var filter =
+        BatchOperationItemFilterMapper.toBatchOperationItemFilter(request.getFilter());
     return buildSearchQuery(filter, sort, page, SearchQueryBuilders::batchOperationItemQuery);
   }
 
   public static Either<ProblemDetail, BatchOperationQuery> toBatchOperationQueryStrict(
-      final BatchOperationSearchQueryRequestContract request) {
+      final BatchOperationSearchQuery request) {
     if (request == null) {
       return Either.right(SearchQueryBuilders.batchOperationQuery().build());
     }
-    final var p = request.page();
+    final var p = request.getPage();
     final var page =
         p != null
-            ? toSearchQueryPage(p.limit(), p.from(), p.after(), p.before())
+            ? toSearchQueryPage(p.getLimit(), p.getFrom(), p.getAfter(), p.getBefore())
             : toSearchQueryPage(null, null, null, null);
     final var sortRequests =
-        request.sort() != null
-            ? request.sort().stream()
+        request.getSort() != null
+            ? request.getSort().stream()
                 .map(
                     s ->
                         new SearchQuerySortRequest(
-                            s.field().getValue(), s.order() != null ? s.order().getValue() : null))
+                            s.getField().getValue(),
+                            s.getOrder() != null ? s.getOrder().getValue() : null))
                 .toList()
             : java.util.List.<SearchQuerySortRequest>of();
     final var sort =
@@ -666,27 +674,28 @@ public final class SearchQueryRequestMapper {
             sortRequests,
             SortOptionBuilders::batchOperation,
             SearchQuerySortRequestMapper::applyBatchOperationSortField);
-    final var filter = BatchOperationFilterMapper.toBatchOperationFilter(request.filter());
+    final var filter = BatchOperationFilterMapper.toBatchOperationFilter(request.getFilter());
     return buildSearchQuery(filter, sort, page, SearchQueryBuilders::batchOperationQuery);
   }
 
   public static Either<ProblemDetail, ClusterVariableQuery> toClusterVariableQueryStrict(
-      final ClusterVariableSearchQueryRequestContract request) {
+      final ClusterVariableSearchQueryRequest request) {
     if (request == null) {
       return Either.right(SearchQueryBuilders.clusterVariableSearchQuery().build());
     }
-    final var p = request.page();
+    final var p = request.getPage();
     final var page =
         p != null
-            ? toSearchQueryPage(p.limit(), p.from(), p.after(), p.before())
+            ? toSearchQueryPage(p.getLimit(), p.getFrom(), p.getAfter(), p.getBefore())
             : toSearchQueryPage(null, null, null, null);
     final var sortRequests =
-        request.sort() != null
-            ? request.sort().stream()
+        request.getSort() != null
+            ? request.getSort().stream()
                 .map(
                     s ->
                         new SearchQuerySortRequest(
-                            s.field().getValue(), s.order() != null ? s.order().getValue() : null))
+                            s.getField().getValue(),
+                            s.getOrder() != null ? s.getOrder().getValue() : null))
                 .toList()
             : java.util.List.<SearchQuerySortRequest>of();
     final var sort =
@@ -695,28 +704,29 @@ public final class SearchQueryRequestMapper {
             SortOptionBuilders::clusterVariable,
             SearchQuerySortRequestMapper::applyClusterVariableSortField);
     final var filter =
-        ClusterVariableSearchQueryFilterRequestMapper.toClusterVariableFilter(request.filter());
+        ClusterVariableSearchQueryFilterRequestMapper.toClusterVariableFilter(request.getFilter());
     return buildSearchQuery(filter, sort, page, SearchQueryBuilders::clusterVariableSearchQuery);
   }
 
   public static Either<ProblemDetail, CorrelatedMessageSubscriptionQuery>
       toCorrelatedMessageSubscriptionQueryStrict(
-          final CorrelatedMessageSubscriptionSearchQueryRequestContract request) {
+          final CorrelatedMessageSubscriptionSearchQuery request) {
     if (request == null) {
       return Either.right(SearchQueryBuilders.correlatedMessageSubscriptionSearchQuery().build());
     }
-    final var p = request.page();
+    final var p = request.getPage();
     final var page =
         p != null
-            ? toSearchQueryPage(p.limit(), p.from(), p.after(), p.before())
+            ? toSearchQueryPage(p.getLimit(), p.getFrom(), p.getAfter(), p.getBefore())
             : toSearchQueryPage(null, null, null, null);
     final var sortRequests =
-        request.sort() != null
-            ? request.sort().stream()
+        request.getSort() != null
+            ? request.getSort().stream()
                 .map(
                     s ->
                         new SearchQuerySortRequest(
-                            s.field().getValue(), s.order() != null ? s.order().getValue() : null))
+                            s.getField().getValue(),
+                            s.getOrder() != null ? s.getOrder().getValue() : null))
                 .toList()
             : java.util.List.<SearchQuerySortRequest>of();
     final var sort =
@@ -726,28 +736,29 @@ public final class SearchQueryRequestMapper {
             SearchQuerySortRequestMapper::applyCorrelatedMessageSubscriptionSortField);
     final var filter =
         CorrelatedMessageSubscriptionFilterMapper.toCorrelatedMessageSubscriptionFilter(
-            request.filter());
+            request.getFilter());
     return buildSearchQuery(
         filter, sort, page, SearchQueryBuilders::correlatedMessageSubscriptionSearchQuery);
   }
 
   public static Either<ProblemDetail, DecisionDefinitionQuery> toDecisionDefinitionQueryStrict(
-      final DecisionDefinitionSearchQueryRequestContract request) {
+      final DecisionDefinitionSearchQuery request) {
     if (request == null) {
       return Either.right(SearchQueryBuilders.decisionDefinitionSearchQuery().build());
     }
-    final var p = request.page();
+    final var p = request.getPage();
     final var page =
         p != null
-            ? toSearchQueryPage(p.limit(), p.from(), p.after(), p.before())
+            ? toSearchQueryPage(p.getLimit(), p.getFrom(), p.getAfter(), p.getBefore())
             : toSearchQueryPage(null, null, null, null);
     final var sortRequests =
-        request.sort() != null
-            ? request.sort().stream()
+        request.getSort() != null
+            ? request.getSort().stream()
                 .map(
                     s ->
                         new SearchQuerySortRequest(
-                            s.field().getValue(), s.order() != null ? s.order().getValue() : null))
+                            s.getField().getValue(),
+                            s.getOrder() != null ? s.getOrder().getValue() : null))
                 .toList()
             : java.util.List.<SearchQuerySortRequest>of();
     final var sort =
@@ -755,27 +766,29 @@ public final class SearchQueryRequestMapper {
             sortRequests,
             SortOptionBuilders::decisionDefinition,
             SearchQuerySortRequestMapper::applyDecisionDefinitionSortField);
-    final var filter = DecisionDefinitionFilterMapper.toDecisionDefinitionFilter(request.filter());
+    final var filter =
+        DecisionDefinitionFilterMapper.toDecisionDefinitionFilter(request.getFilter());
     return buildSearchQuery(filter, sort, page, SearchQueryBuilders::decisionDefinitionSearchQuery);
   }
 
   public static Either<ProblemDetail, DecisionInstanceQuery> toDecisionInstanceQueryStrict(
-      final DecisionInstanceSearchQueryRequestContract request) {
+      final DecisionInstanceSearchQuery request) {
     if (request == null) {
       return Either.right(SearchQueryBuilders.decisionInstanceSearchQuery().build());
     }
-    final var p = request.page();
+    final var p = request.getPage();
     final var page =
         p != null
-            ? toSearchQueryPage(p.limit(), p.from(), p.after(), p.before())
+            ? toSearchQueryPage(p.getLimit(), p.getFrom(), p.getAfter(), p.getBefore())
             : toSearchQueryPage(null, null, null, null);
     final var sortRequests =
-        request.sort() != null
-            ? request.sort().stream()
+        request.getSort() != null
+            ? request.getSort().stream()
                 .map(
                     s ->
                         new SearchQuerySortRequest(
-                            s.field().getValue(), s.order() != null ? s.order().getValue() : null))
+                            s.getField().getValue(),
+                            s.getOrder() != null ? s.getOrder().getValue() : null))
                 .toList()
             : java.util.List.<SearchQuerySortRequest>of();
     final var sort =
@@ -783,27 +796,28 @@ public final class SearchQueryRequestMapper {
             sortRequests,
             SortOptionBuilders::decisionInstance,
             SearchQuerySortRequestMapper::applyDecisionInstanceSortField);
-    final var filter = DecisionInstanceFilterMapper.toDecisionInstanceFilter(request.filter());
+    final var filter = DecisionInstanceFilterMapper.toDecisionInstanceFilter(request.getFilter());
     return buildSearchQuery(filter, sort, page, SearchQueryBuilders::decisionInstanceSearchQuery);
   }
 
   public static Either<ProblemDetail, DecisionRequirementsQuery> toDecisionRequirementsQueryStrict(
-      final DecisionRequirementsSearchQueryRequestContract request) {
+      final DecisionRequirementsSearchQuery request) {
     if (request == null) {
       return Either.right(SearchQueryBuilders.decisionRequirementsSearchQuery().build());
     }
-    final var p = request.page();
+    final var p = request.getPage();
     final var page =
         p != null
-            ? toSearchQueryPage(p.limit(), p.from(), p.after(), p.before())
+            ? toSearchQueryPage(p.getLimit(), p.getFrom(), p.getAfter(), p.getBefore())
             : toSearchQueryPage(null, null, null, null);
     final var sortRequests =
-        request.sort() != null
-            ? request.sort().stream()
+        request.getSort() != null
+            ? request.getSort().stream()
                 .map(
                     s ->
                         new SearchQuerySortRequest(
-                            s.field().getValue(), s.order() != null ? s.order().getValue() : null))
+                            s.getField().getValue(),
+                            s.getOrder() != null ? s.getOrder().getValue() : null))
                 .toList()
             : java.util.List.<SearchQuerySortRequest>of();
     final var sort =
@@ -812,28 +826,29 @@ public final class SearchQueryRequestMapper {
             SortOptionBuilders::decisionRequirements,
             SearchQuerySortRequestMapper::applyDecisionRequirementsSortField);
     final var filter =
-        DecisionRequirementsFilterMapper.toDecisionRequirementsFilter(request.filter());
+        DecisionRequirementsFilterMapper.toDecisionRequirementsFilter(request.getFilter());
     return buildSearchQuery(
         filter, sort, page, SearchQueryBuilders::decisionRequirementsSearchQuery);
   }
 
   public static Either<ProblemDetail, FlowNodeInstanceQuery> toElementInstanceQueryStrict(
-      final ElementInstanceSearchQueryRequestContract request) {
+      final ElementInstanceSearchQuery request) {
     if (request == null) {
       return Either.right(SearchQueryBuilders.flownodeInstanceSearchQuery().build());
     }
-    final var p = request.page();
+    final var p = request.getPage();
     final var page =
         p != null
-            ? toSearchQueryPage(p.limit(), p.from(), p.after(), p.before())
+            ? toSearchQueryPage(p.getLimit(), p.getFrom(), p.getAfter(), p.getBefore())
             : toSearchQueryPage(null, null, null, null);
     final var sortRequests =
-        request.sort() != null
-            ? request.sort().stream()
+        request.getSort() != null
+            ? request.getSort().stream()
                 .map(
                     s ->
                         new SearchQuerySortRequest(
-                            s.field().getValue(), s.order() != null ? s.order().getValue() : null))
+                            s.getField().getValue(),
+                            s.getOrder() != null ? s.getOrder().getValue() : null))
                 .toList()
             : java.util.List.<SearchQuerySortRequest>of();
     final var sort =
@@ -841,27 +856,28 @@ public final class SearchQueryRequestMapper {
             sortRequests,
             SortOptionBuilders::flowNodeInstance,
             SearchQuerySortRequestMapper::applyElementInstanceSortField);
-    final var filter = ElementInstanceFilterMapper.toElementInstanceFilter(request.filter());
+    final var filter = ElementInstanceFilterMapper.toElementInstanceFilter(request.getFilter());
     return buildSearchQuery(filter, sort, page, SearchQueryBuilders::flownodeInstanceSearchQuery);
   }
 
   public static Either<ProblemDetail, GlobalListenerQuery> toGlobalTaskListenerQueryStrict(
-      final GlobalTaskListenerSearchQueryRequestContract request) {
+      final GlobalTaskListenerSearchQueryRequest request) {
     if (request == null) {
       return Either.right(SearchQueryBuilders.globalListenerSearchQuery().build());
     }
-    final var p = request.page();
+    final var p = request.getPage();
     final var page =
         p != null
-            ? toSearchQueryPage(p.limit(), p.from(), p.after(), p.before())
+            ? toSearchQueryPage(p.getLimit(), p.getFrom(), p.getAfter(), p.getBefore())
             : toSearchQueryPage(null, null, null, null);
     final var sortRequests =
-        request.sort() != null
-            ? request.sort().stream()
+        request.getSort() != null
+            ? request.getSort().stream()
                 .map(
                     s ->
                         new SearchQuerySortRequest(
-                            s.field().getValue(), s.order() != null ? s.order().getValue() : null))
+                            s.getField().getValue(),
+                            s.getOrder() != null ? s.getOrder().getValue() : null))
                 .toList()
             : java.util.List.<SearchQuerySortRequest>of();
     final var sort =
@@ -869,27 +885,29 @@ public final class SearchQueryRequestMapper {
             sortRequests,
             SortOptionBuilders::globalListener,
             SearchQuerySortRequestMapper::applyGlobalTaskListenerSortField);
-    final var filter = GlobalTaskListenerFilterMapper.toGlobalTaskListenerFilter(request.filter());
+    final var filter =
+        GlobalTaskListenerFilterMapper.toGlobalTaskListenerFilter(request.getFilter());
     return buildSearchQuery(filter, sort, page, SearchQueryBuilders::globalListenerSearchQuery);
   }
 
   public static Either<ProblemDetail, GroupMemberQuery> toGroupClientQueryStrict(
-      final GroupClientSearchQueryRequestContract request) {
+      final GroupClientSearchQueryRequest request) {
     if (request == null) {
       return Either.right(SearchQueryBuilders.groupMemberSearchQuery().build());
     }
-    final var p = request.page();
+    final var p = request.getPage();
     final var page =
         p != null
-            ? toSearchQueryPage(p.limit(), p.from(), p.after(), p.before())
+            ? toSearchQueryPage(p.getLimit(), p.getFrom(), p.getAfter(), p.getBefore())
             : toSearchQueryPage(null, null, null, null);
     final var sortRequests =
-        request.sort() != null
-            ? request.sort().stream()
+        request.getSort() != null
+            ? request.getSort().stream()
                 .map(
                     s ->
                         new SearchQuerySortRequest(
-                            s.field().getValue(), s.order() != null ? s.order().getValue() : null))
+                            s.getField().getValue(),
+                            s.getOrder() != null ? s.getOrder().getValue() : null))
                 .toList()
             : java.util.List.<SearchQuerySortRequest>of();
     final var sort =
@@ -902,22 +920,23 @@ public final class SearchQueryRequestMapper {
   }
 
   public static Either<ProblemDetail, GroupQuery> toGroupQueryStrict(
-      final GroupSearchQueryRequestContract request) {
+      final GroupSearchQueryRequest request) {
     if (request == null) {
       return Either.right(SearchQueryBuilders.groupSearchQuery().build());
     }
-    final var p = request.page();
+    final var p = request.getPage();
     final var page =
         p != null
-            ? toSearchQueryPage(p.limit(), p.from(), p.after(), p.before())
+            ? toSearchQueryPage(p.getLimit(), p.getFrom(), p.getAfter(), p.getBefore())
             : toSearchQueryPage(null, null, null, null);
     final var sortRequests =
-        request.sort() != null
-            ? request.sort().stream()
+        request.getSort() != null
+            ? request.getSort().stream()
                 .map(
                     s ->
                         new SearchQuerySortRequest(
-                            s.field().getValue(), s.order() != null ? s.order().getValue() : null))
+                            s.getField().getValue(),
+                            s.getOrder() != null ? s.getOrder().getValue() : null))
                 .toList()
             : java.util.List.<SearchQuerySortRequest>of();
     final var sort =
@@ -925,27 +944,28 @@ public final class SearchQueryRequestMapper {
             sortRequests,
             SortOptionBuilders::group,
             SearchQuerySortRequestMapper::applyGroupSortField);
-    final var filter = GroupFilterMapper.toGroupFilter(request.filter());
+    final var filter = GroupFilterMapper.toGroupFilter(request.getFilter());
     return buildSearchQuery(filter, sort, page, SearchQueryBuilders::groupSearchQuery);
   }
 
   public static Either<ProblemDetail, GroupMemberQuery> toGroupUserQueryStrict(
-      final GroupUserSearchQueryRequestContract request) {
+      final GroupUserSearchQueryRequest request) {
     if (request == null) {
       return Either.right(SearchQueryBuilders.groupMemberSearchQuery().build());
     }
-    final var p = request.page();
+    final var p = request.getPage();
     final var page =
         p != null
-            ? toSearchQueryPage(p.limit(), p.from(), p.after(), p.before())
+            ? toSearchQueryPage(p.getLimit(), p.getFrom(), p.getAfter(), p.getBefore())
             : toSearchQueryPage(null, null, null, null);
     final var sortRequests =
-        request.sort() != null
-            ? request.sort().stream()
+        request.getSort() != null
+            ? request.getSort().stream()
                 .map(
                     s ->
                         new SearchQuerySortRequest(
-                            s.field().getValue(), s.order() != null ? s.order().getValue() : null))
+                            s.getField().getValue(),
+                            s.getOrder() != null ? s.getOrder().getValue() : null))
                 .toList()
             : java.util.List.<SearchQuerySortRequest>of();
     final var sort =
@@ -958,22 +978,23 @@ public final class SearchQueryRequestMapper {
   }
 
   public static Either<ProblemDetail, IncidentQuery> toIncidentQueryStrict(
-      final IncidentSearchQueryRequestContract request) {
+      final IncidentSearchQuery request) {
     if (request == null) {
       return Either.right(SearchQueryBuilders.incidentSearchQuery().build());
     }
-    final var p = request.page();
+    final var p = request.getPage();
     final var page =
         p != null
-            ? toSearchQueryPage(p.limit(), p.from(), p.after(), p.before())
+            ? toSearchQueryPage(p.getLimit(), p.getFrom(), p.getAfter(), p.getBefore())
             : toSearchQueryPage(null, null, null, null);
     final var sortRequests =
-        request.sort() != null
-            ? request.sort().stream()
+        request.getSort() != null
+            ? request.getSort().stream()
                 .map(
                     s ->
                         new SearchQuerySortRequest(
-                            s.field().getValue(), s.order() != null ? s.order().getValue() : null))
+                            s.getField().getValue(),
+                            s.getOrder() != null ? s.getOrder().getValue() : null))
                 .toList()
             : java.util.List.<SearchQuerySortRequest>of();
     final var sort =
@@ -981,53 +1002,54 @@ public final class SearchQueryRequestMapper {
             sortRequests,
             SortOptionBuilders::incident,
             SearchQuerySortRequestMapper::applyIncidentSortField);
-    final var filter = IncidentFilterMapper.toIncidentFilter(request.filter());
+    final var filter = IncidentFilterMapper.toIncidentFilter(request.getFilter());
     return buildSearchQuery(filter, sort, page, SearchQueryBuilders::incidentSearchQuery);
   }
 
-  public static Either<ProblemDetail, JobQuery> toJobQueryStrict(
-      final JobSearchQueryRequestContract request) {
+  public static Either<ProblemDetail, JobQuery> toJobQueryStrict(final JobSearchQuery request) {
     if (request == null) {
       return Either.right(SearchQueryBuilders.jobSearchQuery().build());
     }
-    final var p = request.page();
+    final var p = request.getPage();
     final var page =
         p != null
-            ? toSearchQueryPage(p.limit(), p.from(), p.after(), p.before())
+            ? toSearchQueryPage(p.getLimit(), p.getFrom(), p.getAfter(), p.getBefore())
             : toSearchQueryPage(null, null, null, null);
     final var sortRequests =
-        request.sort() != null
-            ? request.sort().stream()
+        request.getSort() != null
+            ? request.getSort().stream()
                 .map(
                     s ->
                         new SearchQuerySortRequest(
-                            s.field().getValue(), s.order() != null ? s.order().getValue() : null))
+                            s.getField().getValue(),
+                            s.getOrder() != null ? s.getOrder().getValue() : null))
                 .toList()
             : java.util.List.<SearchQuerySortRequest>of();
     final var sort =
         SearchQuerySortRequestMapper.toSearchQuerySort(
             sortRequests, SortOptionBuilders::job, SearchQuerySortRequestMapper::applyJobSortField);
-    final var filter = JobFilterMapper.toJobFilter(request.filter());
+    final var filter = JobFilterMapper.toJobFilter(request.getFilter());
     return buildSearchQuery(filter, sort, page, SearchQueryBuilders::jobSearchQuery);
   }
 
   public static Either<ProblemDetail, MappingRuleQuery> toMappingRuleQueryStrict(
-      final MappingRuleSearchQueryRequestContract request) {
+      final MappingRuleSearchQueryRequest request) {
     if (request == null) {
       return Either.right(SearchQueryBuilders.mappingRuleSearchQuery().build());
     }
-    final var p = request.page();
+    final var p = request.getPage();
     final var page =
         p != null
-            ? toSearchQueryPage(p.limit(), p.from(), p.after(), p.before())
+            ? toSearchQueryPage(p.getLimit(), p.getFrom(), p.getAfter(), p.getBefore())
             : toSearchQueryPage(null, null, null, null);
     final var sortRequests =
-        request.sort() != null
-            ? request.sort().stream()
+        request.getSort() != null
+            ? request.getSort().stream()
                 .map(
                     s ->
                         new SearchQuerySortRequest(
-                            s.field().getValue(), s.order() != null ? s.order().getValue() : null))
+                            s.getField().getValue(),
+                            s.getOrder() != null ? s.getOrder().getValue() : null))
                 .toList()
             : java.util.List.<SearchQuerySortRequest>of();
     final var sort =
@@ -1035,27 +1057,28 @@ public final class SearchQueryRequestMapper {
             sortRequests,
             SortOptionBuilders::mappingRule,
             SearchQuerySortRequestMapper::applyMappingRuleSortField);
-    final var filter = MappingRuleFilterMapper.toMappingRuleFilter(request.filter());
+    final var filter = MappingRuleFilterMapper.toMappingRuleFilter(request.getFilter());
     return buildSearchQuery(filter, sort, page, SearchQueryBuilders::mappingRuleSearchQuery);
   }
 
   public static Either<ProblemDetail, MessageSubscriptionQuery> toMessageSubscriptionQueryStrict(
-      final MessageSubscriptionSearchQueryRequestContract request) {
+      final MessageSubscriptionSearchQuery request) {
     if (request == null) {
       return Either.right(SearchQueryBuilders.messageSubscriptionSearchQuery().build());
     }
-    final var p = request.page();
+    final var p = request.getPage();
     final var page =
         p != null
-            ? toSearchQueryPage(p.limit(), p.from(), p.after(), p.before())
+            ? toSearchQueryPage(p.getLimit(), p.getFrom(), p.getAfter(), p.getBefore())
             : toSearchQueryPage(null, null, null, null);
     final var sortRequests =
-        request.sort() != null
-            ? request.sort().stream()
+        request.getSort() != null
+            ? request.getSort().stream()
                 .map(
                     s ->
                         new SearchQuerySortRequest(
-                            s.field().getValue(), s.order() != null ? s.order().getValue() : null))
+                            s.getField().getValue(),
+                            s.getOrder() != null ? s.getOrder().getValue() : null))
                 .toList()
             : java.util.List.<SearchQuerySortRequest>of();
     final var sort =
@@ -1064,13 +1087,13 @@ public final class SearchQueryRequestMapper {
             SortOptionBuilders::messageSubscription,
             SearchQuerySortRequestMapper::applyMessageSubscriptionSortField);
     final var filter =
-        MessageSubscriptionFilterMapper.toMessageSubscriptionFilter(request.filter());
+        MessageSubscriptionFilterMapper.toMessageSubscriptionFilter(request.getFilter());
     return buildSearchQuery(
         filter, sort, page, SearchQueryBuilders::messageSubscriptionSearchQuery);
   }
 
   public static Either<ProblemDetail, ProcessDefinitionQuery> toProcessDefinitionQueryStrict(
-      final ProcessDefinitionSearchQueryRequestContract request) {
+      final ProcessDefinitionSearchQuery request) {
     if (request == null) {
       return Either.right(SearchQueryBuilders.processDefinitionSearchQuery().build());
     }
@@ -1081,18 +1104,19 @@ public final class SearchQueryRequestMapper {
       return Either.left(isLatestVersionValidation.getLeft());
     }
 
-    final var p = request.page();
+    final var p = request.getPage();
     final var page =
         p != null
-            ? toSearchQueryPage(p.limit(), p.from(), p.after(), p.before())
+            ? toSearchQueryPage(p.getLimit(), p.getFrom(), p.getAfter(), p.getBefore())
             : toSearchQueryPage(null, null, null, null);
     final var sortRequests =
-        request.sort() != null
-            ? request.sort().stream()
+        request.getSort() != null
+            ? request.getSort().stream()
                 .map(
                     s ->
                         new SearchQuerySortRequest(
-                            s.field().getValue(), s.order() != null ? s.order().getValue() : null))
+                            s.getField().getValue(),
+                            s.getOrder() != null ? s.getOrder().getValue() : null))
                 .toList()
             : java.util.List.<SearchQuerySortRequest>of();
     final var sort =
@@ -1100,27 +1124,28 @@ public final class SearchQueryRequestMapper {
             sortRequests,
             SortOptionBuilders::processDefinition,
             SearchQuerySortRequestMapper::applyProcessDefinitionSortField);
-    final var filter = ProcessDefinitionFilterMapper.toProcessDefinitionFilter(request.filter());
+    final var filter = ProcessDefinitionFilterMapper.toProcessDefinitionFilter(request.getFilter());
     return buildSearchQuery(filter, sort, page, SearchQueryBuilders::processDefinitionSearchQuery);
   }
 
   public static Either<ProblemDetail, ProcessInstanceQuery> toProcessInstanceQueryStrict(
-      final ProcessInstanceSearchQueryRequestContract request) {
+      final ProcessInstanceSearchQuery request) {
     if (request == null) {
       return Either.right(SearchQueryBuilders.processInstanceSearchQuery().build());
     }
-    final var p = request.page();
+    final var p = request.getPage();
     final var page =
         p != null
-            ? toSearchQueryPage(p.limit(), p.from(), p.after(), p.before())
+            ? toSearchQueryPage(p.getLimit(), p.getFrom(), p.getAfter(), p.getBefore())
             : toSearchQueryPage(null, null, null, null);
     final var sortRequests =
-        request.sort() != null
-            ? request.sort().stream()
+        request.getSort() != null
+            ? request.getSort().stream()
                 .map(
                     s ->
                         new SearchQuerySortRequest(
-                            s.field().getValue(), s.order() != null ? s.order().getValue() : null))
+                            s.getField().getValue(),
+                            s.getOrder() != null ? s.getOrder().getValue() : null))
                 .toList()
             : java.util.List.<SearchQuerySortRequest>of();
     final var sort =
@@ -1128,27 +1153,28 @@ public final class SearchQueryRequestMapper {
             sortRequests,
             SortOptionBuilders::processInstance,
             SearchQuerySortRequestMapper::applyProcessInstanceSortField);
-    final var filter = ProcessInstanceFilterMapper.toProcessInstanceFilter(request.filter());
+    final var filter = ProcessInstanceFilterMapper.toProcessInstanceFilter(request.getFilter());
     return buildSearchQuery(filter, sort, page, SearchQueryBuilders::processInstanceSearchQuery);
   }
 
   public static Either<ProblemDetail, RoleMemberQuery> toRoleClientQueryStrict(
-      final RoleClientSearchQueryRequestContract request) {
+      final RoleClientSearchQueryRequest request) {
     if (request == null) {
       return Either.right(SearchQueryBuilders.roleMemberSearchQuery().build());
     }
-    final var p = request.page();
+    final var p = request.getPage();
     final var page =
         p != null
-            ? toSearchQueryPage(p.limit(), p.from(), p.after(), p.before())
+            ? toSearchQueryPage(p.getLimit(), p.getFrom(), p.getAfter(), p.getBefore())
             : toSearchQueryPage(null, null, null, null);
     final var sortRequests =
-        request.sort() != null
-            ? request.sort().stream()
+        request.getSort() != null
+            ? request.getSort().stream()
                 .map(
                     s ->
                         new SearchQuerySortRequest(
-                            s.field().getValue(), s.order() != null ? s.order().getValue() : null))
+                            s.getField().getValue(),
+                            s.getOrder() != null ? s.getOrder().getValue() : null))
                 .toList()
             : java.util.List.<SearchQuerySortRequest>of();
     final var sort =
@@ -1161,22 +1187,23 @@ public final class SearchQueryRequestMapper {
   }
 
   public static Either<ProblemDetail, RoleMemberQuery> toRoleGroupQueryStrict(
-      final RoleGroupSearchQueryRequestContract request) {
+      final RoleGroupSearchQueryRequest request) {
     if (request == null) {
       return Either.right(SearchQueryBuilders.roleMemberSearchQuery().build());
     }
-    final var p = request.page();
+    final var p = request.getPage();
     final var page =
         p != null
-            ? toSearchQueryPage(p.limit(), p.from(), p.after(), p.before())
+            ? toSearchQueryPage(p.getLimit(), p.getFrom(), p.getAfter(), p.getBefore())
             : toSearchQueryPage(null, null, null, null);
     final var sortRequests =
-        request.sort() != null
-            ? request.sort().stream()
+        request.getSort() != null
+            ? request.getSort().stream()
                 .map(
                     s ->
                         new SearchQuerySortRequest(
-                            s.field().getValue(), s.order() != null ? s.order().getValue() : null))
+                            s.getField().getValue(),
+                            s.getOrder() != null ? s.getOrder().getValue() : null))
                 .toList()
             : java.util.List.<SearchQuerySortRequest>of();
     final var sort =
@@ -1189,22 +1216,23 @@ public final class SearchQueryRequestMapper {
   }
 
   public static Either<ProblemDetail, RoleQuery> toRoleQueryStrict(
-      final RoleSearchQueryRequestContract request) {
+      final RoleSearchQueryRequest request) {
     if (request == null) {
       return Either.right(SearchQueryBuilders.roleSearchQuery().build());
     }
-    final var p = request.page();
+    final var p = request.getPage();
     final var page =
         p != null
-            ? toSearchQueryPage(p.limit(), p.from(), p.after(), p.before())
+            ? toSearchQueryPage(p.getLimit(), p.getFrom(), p.getAfter(), p.getBefore())
             : toSearchQueryPage(null, null, null, null);
     final var sortRequests =
-        request.sort() != null
-            ? request.sort().stream()
+        request.getSort() != null
+            ? request.getSort().stream()
                 .map(
                     s ->
                         new SearchQuerySortRequest(
-                            s.field().getValue(), s.order() != null ? s.order().getValue() : null))
+                            s.getField().getValue(),
+                            s.getOrder() != null ? s.getOrder().getValue() : null))
                 .toList()
             : java.util.List.<SearchQuerySortRequest>of();
     final var sort =
@@ -1212,27 +1240,28 @@ public final class SearchQueryRequestMapper {
             sortRequests,
             SortOptionBuilders::role,
             SearchQuerySortRequestMapper::applyRoleSortField);
-    final var filter = RoleFilterMapper.toRoleFilter(request.filter());
+    final var filter = RoleFilterMapper.toRoleFilter(request.getFilter());
     return buildSearchQuery(filter, sort, page, SearchQueryBuilders::roleSearchQuery);
   }
 
   public static Either<ProblemDetail, RoleMemberQuery> toRoleUserQueryStrict(
-      final RoleUserSearchQueryRequestContract request) {
+      final RoleUserSearchQueryRequest request) {
     if (request == null) {
       return Either.right(SearchQueryBuilders.roleMemberSearchQuery().build());
     }
-    final var p = request.page();
+    final var p = request.getPage();
     final var page =
         p != null
-            ? toSearchQueryPage(p.limit(), p.from(), p.after(), p.before())
+            ? toSearchQueryPage(p.getLimit(), p.getFrom(), p.getAfter(), p.getBefore())
             : toSearchQueryPage(null, null, null, null);
     final var sortRequests =
-        request.sort() != null
-            ? request.sort().stream()
+        request.getSort() != null
+            ? request.getSort().stream()
                 .map(
                     s ->
                         new SearchQuerySortRequest(
-                            s.field().getValue(), s.order() != null ? s.order().getValue() : null))
+                            s.getField().getValue(),
+                            s.getOrder() != null ? s.getOrder().getValue() : null))
                 .toList()
             : java.util.List.<SearchQuerySortRequest>of();
     final var sort =
@@ -1245,22 +1274,23 @@ public final class SearchQueryRequestMapper {
   }
 
   public static Either<ProblemDetail, TenantMemberQuery> toTenantClientQueryStrict(
-      final TenantClientSearchQueryRequestContract request) {
+      final TenantClientSearchQueryRequest request) {
     if (request == null) {
       return Either.right(SearchQueryBuilders.tenantMemberSearchQuery().build());
     }
-    final var p = request.page();
+    final var p = request.getPage();
     final var page =
         p != null
-            ? toSearchQueryPage(p.limit(), p.from(), p.after(), p.before())
+            ? toSearchQueryPage(p.getLimit(), p.getFrom(), p.getAfter(), p.getBefore())
             : toSearchQueryPage(null, null, null, null);
     final var sortRequests =
-        request.sort() != null
-            ? request.sort().stream()
+        request.getSort() != null
+            ? request.getSort().stream()
                 .map(
                     s ->
                         new SearchQuerySortRequest(
-                            s.field().getValue(), s.order() != null ? s.order().getValue() : null))
+                            s.getField().getValue(),
+                            s.getOrder() != null ? s.getOrder().getValue() : null))
                 .toList()
             : java.util.List.<SearchQuerySortRequest>of();
     final var sort =
@@ -1273,22 +1303,23 @@ public final class SearchQueryRequestMapper {
   }
 
   public static Either<ProblemDetail, TenantMemberQuery> toTenantGroupQueryStrict(
-      final TenantGroupSearchQueryRequestContract request) {
+      final TenantGroupSearchQueryRequest request) {
     if (request == null) {
       return Either.right(SearchQueryBuilders.tenantMemberSearchQuery().build());
     }
-    final var p = request.page();
+    final var p = request.getPage();
     final var page =
         p != null
-            ? toSearchQueryPage(p.limit(), p.from(), p.after(), p.before())
+            ? toSearchQueryPage(p.getLimit(), p.getFrom(), p.getAfter(), p.getBefore())
             : toSearchQueryPage(null, null, null, null);
     final var sortRequests =
-        request.sort() != null
-            ? request.sort().stream()
+        request.getSort() != null
+            ? request.getSort().stream()
                 .map(
                     s ->
                         new SearchQuerySortRequest(
-                            s.field().getValue(), s.order() != null ? s.order().getValue() : null))
+                            s.getField().getValue(),
+                            s.getOrder() != null ? s.getOrder().getValue() : null))
                 .toList()
             : java.util.List.<SearchQuerySortRequest>of();
     final var sort =
@@ -1301,22 +1332,23 @@ public final class SearchQueryRequestMapper {
   }
 
   public static Either<ProblemDetail, TenantQuery> toTenantQueryStrict(
-      final TenantSearchQueryRequestContract request) {
+      final TenantSearchQueryRequest request) {
     if (request == null) {
       return Either.right(SearchQueryBuilders.tenantSearchQuery().build());
     }
-    final var p = request.page();
+    final var p = request.getPage();
     final var page =
         p != null
-            ? toSearchQueryPage(p.limit(), p.from(), p.after(), p.before())
+            ? toSearchQueryPage(p.getLimit(), p.getFrom(), p.getAfter(), p.getBefore())
             : toSearchQueryPage(null, null, null, null);
     final var sortRequests =
-        request.sort() != null
-            ? request.sort().stream()
+        request.getSort() != null
+            ? request.getSort().stream()
                 .map(
                     s ->
                         new SearchQuerySortRequest(
-                            s.field().getValue(), s.order() != null ? s.order().getValue() : null))
+                            s.getField().getValue(),
+                            s.getOrder() != null ? s.getOrder().getValue() : null))
                 .toList()
             : java.util.List.<SearchQuerySortRequest>of();
     final var sort =
@@ -1324,27 +1356,28 @@ public final class SearchQueryRequestMapper {
             sortRequests,
             SortOptionBuilders::tenant,
             SearchQuerySortRequestMapper::applyTenantSortField);
-    final var filter = TenantFilterMapper.toTenantFilter(request.filter());
+    final var filter = TenantFilterMapper.toTenantFilter(request.getFilter());
     return buildSearchQuery(filter, sort, page, SearchQueryBuilders::tenantSearchQuery);
   }
 
   public static Either<ProblemDetail, TenantMemberQuery> toTenantUserQueryStrict(
-      final TenantUserSearchQueryRequestContract request) {
+      final TenantUserSearchQueryRequest request) {
     if (request == null) {
       return Either.right(SearchQueryBuilders.tenantMemberSearchQuery().build());
     }
-    final var p = request.page();
+    final var p = request.getPage();
     final var page =
         p != null
-            ? toSearchQueryPage(p.limit(), p.from(), p.after(), p.before())
+            ? toSearchQueryPage(p.getLimit(), p.getFrom(), p.getAfter(), p.getBefore())
             : toSearchQueryPage(null, null, null, null);
     final var sortRequests =
-        request.sort() != null
-            ? request.sort().stream()
+        request.getSort() != null
+            ? request.getSort().stream()
                 .map(
                     s ->
                         new SearchQuerySortRequest(
-                            s.field().getValue(), s.order() != null ? s.order().getValue() : null))
+                            s.getField().getValue(),
+                            s.getOrder() != null ? s.getOrder().getValue() : null))
                 .toList()
             : java.util.List.<SearchQuerySortRequest>of();
     final var sort =
@@ -1357,22 +1390,23 @@ public final class SearchQueryRequestMapper {
   }
 
   public static Either<ProblemDetail, UserQuery> toUserQueryStrict(
-      final UserSearchQueryRequestContract request) {
+      final UserSearchQueryRequest request) {
     if (request == null) {
       return Either.right(SearchQueryBuilders.userSearchQuery().build());
     }
-    final var p = request.page();
+    final var p = request.getPage();
     final var page =
         p != null
-            ? toSearchQueryPage(p.limit(), p.from(), p.after(), p.before())
+            ? toSearchQueryPage(p.getLimit(), p.getFrom(), p.getAfter(), p.getBefore())
             : toSearchQueryPage(null, null, null, null);
     final var sortRequests =
-        request.sort() != null
-            ? request.sort().stream()
+        request.getSort() != null
+            ? request.getSort().stream()
                 .map(
                     s ->
                         new SearchQuerySortRequest(
-                            s.field().getValue(), s.order() != null ? s.order().getValue() : null))
+                            s.getField().getValue(),
+                            s.getOrder() != null ? s.getOrder().getValue() : null))
                 .toList()
             : java.util.List.<SearchQuerySortRequest>of();
     final var sort =
@@ -1380,19 +1414,19 @@ public final class SearchQueryRequestMapper {
             sortRequests,
             SortOptionBuilders::user,
             SearchQuerySortRequestMapper::applyUserSortField);
-    final var filter = UserFilterMapper.toUserFilter(request.filter());
+    final var filter = UserFilterMapper.toUserFilter(request.getFilter());
     return buildSearchQuery(filter, sort, page, SearchQueryBuilders::userSearchQuery);
   }
 
   public static Either<ProblemDetail, AuditLogQuery> toUserTaskAuditLogQueryStrict(
-      final UserTaskAuditLogSearchQueryRequestContract request) {
+      final UserTaskAuditLogSearchQueryRequest request) {
     if (request == null) {
       return Either.right(SearchQueryBuilders.auditLogSearchQuery().build());
     }
-    final var p = request.page();
+    final var p = request.getPage();
     final var page =
         p != null
-            ? toSearchQueryPage(p.limit(), p.from(), p.after(), p.before())
+            ? toSearchQueryPage(p.getLimit(), p.getFrom(), p.getAfter(), p.getBefore())
             : toSearchQueryPage(null, null, null, null);
     final var sortRequests = java.util.List.<SearchQuerySortRequest>of();
     final var sort =
@@ -1400,27 +1434,28 @@ public final class SearchQueryRequestMapper {
             sortRequests,
             SortOptionBuilders::auditLog,
             SearchQuerySortRequestMapper::applyAuditLogSortField);
-    final var filter = UserTaskAuditLogFilterMapper.toUserTaskAuditLogFilter(request.filter());
+    final var filter = UserTaskAuditLogFilterMapper.toUserTaskAuditLogFilter(request.getFilter());
     return buildSearchQuery(filter, sort, page, SearchQueryBuilders::auditLogSearchQuery);
   }
 
   public static Either<ProblemDetail, UserTaskQuery> toUserTaskQueryStrict(
-      final UserTaskSearchQueryRequestContract request) {
+      final UserTaskSearchQuery request) {
     if (request == null) {
       return Either.right(SearchQueryBuilders.userTaskSearchQuery().build());
     }
-    final var p = request.page();
+    final var p = request.getPage();
     final var page =
         p != null
-            ? toSearchQueryPage(p.limit(), p.from(), p.after(), p.before())
+            ? toSearchQueryPage(p.getLimit(), p.getFrom(), p.getAfter(), p.getBefore())
             : toSearchQueryPage(null, null, null, null);
     final var sortRequests =
-        request.sort() != null
-            ? request.sort().stream()
+        request.getSort() != null
+            ? request.getSort().stream()
                 .map(
                     s ->
                         new SearchQuerySortRequest(
-                            s.field().getValue(), s.order() != null ? s.order().getValue() : null))
+                            s.getField().getValue(),
+                            s.getOrder() != null ? s.getOrder().getValue() : null))
                 .toList()
             : java.util.List.<SearchQuerySortRequest>of();
     final var sort =
@@ -1428,27 +1463,28 @@ public final class SearchQueryRequestMapper {
             sortRequests,
             SortOptionBuilders::userTask,
             SearchQuerySortRequestMapper::applyUserTaskSortField);
-    final var filter = UserTaskFilterMapper.toUserTaskFilter(request.filter());
+    final var filter = UserTaskFilterMapper.toUserTaskFilter(request.getFilter());
     return buildSearchQuery(filter, sort, page, SearchQueryBuilders::userTaskSearchQuery);
   }
 
   public static Either<ProblemDetail, VariableQuery> toUserTaskVariableQueryStrict(
-      final UserTaskVariableSearchQueryRequestContract request) {
+      final UserTaskVariableSearchQueryRequest request) {
     if (request == null) {
       return Either.right(SearchQueryBuilders.variableSearchQuery().build());
     }
-    final var p = request.page();
+    final var p = request.getPage();
     final var page =
         p != null
-            ? toSearchQueryPage(p.limit(), p.from(), p.after(), p.before())
+            ? toSearchQueryPage(p.getLimit(), p.getFrom(), p.getAfter(), p.getBefore())
             : toSearchQueryPage(null, null, null, null);
     final var sortRequests =
-        request.sort() != null
-            ? request.sort().stream()
+        request.getSort() != null
+            ? request.getSort().stream()
                 .map(
                     s ->
                         new SearchQuerySortRequest(
-                            s.field().getValue(), s.order() != null ? s.order().getValue() : null))
+                            s.getField().getValue(),
+                            s.getOrder() != null ? s.getOrder().getValue() : null))
                 .toList()
             : java.util.List.<SearchQuerySortRequest>of();
     final var sort =
@@ -1456,27 +1492,28 @@ public final class SearchQueryRequestMapper {
             sortRequests,
             SortOptionBuilders::variable,
             SearchQuerySortRequestMapper::applyUserTaskVariableSortField);
-    final var filter = UserTaskVariableFilterMapper.toUserTaskVariableFilter(request.filter());
+    final var filter = UserTaskVariableFilterMapper.toUserTaskVariableFilter(request.getFilter());
     return buildSearchQuery(filter, sort, page, SearchQueryBuilders::variableSearchQuery);
   }
 
   public static Either<ProblemDetail, VariableQuery> toVariableQueryStrict(
-      final VariableSearchQueryRequestContract request) {
+      final VariableSearchQuery request) {
     if (request == null) {
       return Either.right(SearchQueryBuilders.variableSearchQuery().build());
     }
-    final var p = request.page();
+    final var p = request.getPage();
     final var page =
         p != null
-            ? toSearchQueryPage(p.limit(), p.from(), p.after(), p.before())
+            ? toSearchQueryPage(p.getLimit(), p.getFrom(), p.getAfter(), p.getBefore())
             : toSearchQueryPage(null, null, null, null);
     final var sortRequests =
-        request.sort() != null
-            ? request.sort().stream()
+        request.getSort() != null
+            ? request.getSort().stream()
                 .map(
                     s ->
                         new SearchQuerySortRequest(
-                            s.field().getValue(), s.order() != null ? s.order().getValue() : null))
+                            s.getField().getValue(),
+                            s.getOrder() != null ? s.getOrder().getValue() : null))
                 .toList()
             : java.util.List.<SearchQuerySortRequest>of();
     final var sort =
@@ -1484,28 +1521,28 @@ public final class SearchQueryRequestMapper {
             sortRequests,
             SortOptionBuilders::variable,
             SearchQuerySortRequestMapper::applyVariableSortField);
-    final var filter = VariableFilterMapper.toVariableFilter(request.filter());
+    final var filter = VariableFilterMapper.toVariableFilter(request.getFilter());
     return buildSearchQuery(filter, sort, page, SearchQueryBuilders::variableSearchQuery);
   }
 
   private static Either<ProblemDetail, Void> validateIsLatestVersionConstraintsStrict(
-      final ProcessDefinitionSearchQueryRequestContract request) {
-    final var filter = request.filter();
-    if (filter == null || filter.isLatestVersion() == null || !filter.isLatestVersion()) {
+      final ProcessDefinitionSearchQuery request) {
+    final var filter = request.getFilter();
+    if (filter == null || filter.getIsLatestVersion() == null || !filter.getIsLatestVersion()) {
       return Either.right(null);
     }
 
     final java.util.List<String> violations = new java.util.ArrayList<>();
 
-    final var page = request.page();
+    final var page = request.getPage();
     if (page != null) {
-      if (page.before() != null) {
+      if (page.getBefore() != null) {
         violations.add(
             io.camunda.gateway.mapping.http.validator.ErrorMessages
                 .ERROR_MESSAGE_UNSUPPORTED_PAGINATION_WITH_IS_LATEST_VERSION
                 .formatted("before"));
       }
-      if (page.from() != null) {
+      if (page.getFrom() != null) {
         violations.add(
             io.camunda.gateway.mapping.http.validator.ErrorMessages
                 .ERROR_MESSAGE_UNSUPPORTED_PAGINATION_WITH_IS_LATEST_VERSION
@@ -1513,11 +1550,11 @@ public final class SearchQueryRequestMapper {
       }
     }
 
-    final var sort = request.sort();
+    final var sort = request.getSort();
     if (sort != null && !sort.isEmpty()) {
       final var allowedFields = java.util.Set.of("processDefinitionId", "tenantId");
       for (final var sortRequest : sort) {
-        final var field = sortRequest.field();
+        final var field = sortRequest.getField();
         if (field != null && !allowedFields.contains(field.getValue())) {
           violations.add(
               io.camunda.gateway.mapping.http.validator.ErrorMessages

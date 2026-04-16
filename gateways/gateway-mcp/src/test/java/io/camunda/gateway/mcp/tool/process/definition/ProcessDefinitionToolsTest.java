@@ -16,8 +16,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.camunda.gateway.mapping.http.search.contract.StrictSearchQueryResult;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedProcessDefinitionStrictContract;
 import io.camunda.gateway.mcp.OperationalToolsTest;
+import io.camunda.gateway.protocol.model.ProcessDefinition;
 import io.camunda.search.entities.ProcessDefinitionEntity;
 import io.camunda.search.filter.Operation;
 import io.camunda.search.filter.Operator;
@@ -79,16 +79,15 @@ class ProcessDefinitionToolsTest extends OperationalToolsTest {
   @Autowired private JsonMapper objectMapper;
   @Captor private ArgumentCaptor<ProcessDefinitionQuery> queryCaptor;
 
-  private void assertExampleProcessDefinitionResult(
-      final GeneratedProcessDefinitionStrictContract processDefinition) {
-    assertThat(processDefinition.processDefinitionKey()).isEqualTo("5");
-    assertThat(processDefinition.name()).isEqualTo("Complex Process");
-    assertThat(processDefinition.processDefinitionId()).isEqualTo("complexProcess");
-    assertThat(processDefinition.resourceName()).isEqualTo("complexProcess.bpmn");
-    assertThat(processDefinition.version()).isEqualTo(2);
-    assertThat(processDefinition.versionTag()).isEqualTo("v2");
-    assertThat(processDefinition.tenantId()).isEqualTo("tenantId");
-    assertThat(processDefinition.hasStartForm()).isTrue();
+  private void assertExampleProcessDefinitionResult(final ProcessDefinition processDefinition) {
+    assertThat(processDefinition.getProcessDefinitionKey()).isEqualTo("5");
+    assertThat(processDefinition.getName()).isEqualTo("Complex Process");
+    assertThat(processDefinition.getProcessDefinitionId()).isEqualTo("complexProcess");
+    assertThat(processDefinition.getResourceName()).isEqualTo("complexProcess.bpmn");
+    assertThat(processDefinition.getVersion()).isEqualTo(2);
+    assertThat(processDefinition.getVersionTag()).isEqualTo("v2");
+    assertThat(processDefinition.getTenantId()).isEqualTo("tenantId");
+    assertThat(processDefinition.getHasStartForm()).isTrue();
   }
 
   @Nested
@@ -112,8 +111,7 @@ class ProcessDefinitionToolsTest extends OperationalToolsTest {
       assertThat(result.structuredContent()).isNotNull();
 
       final var processDefinition =
-          objectMapper.convertValue(
-              result.structuredContent(), GeneratedProcessDefinitionStrictContract.class);
+          objectMapper.convertValue(result.structuredContent(), ProcessDefinition.class);
       assertExampleProcessDefinitionResult(processDefinition);
 
       assertTextContentFallback(result);
@@ -215,15 +213,14 @@ class ProcessDefinitionToolsTest extends OperationalToolsTest {
       assertThat(result.structuredContent()).isNotNull();
 
       @SuppressWarnings("unchecked")
-      final StrictSearchQueryResult<GeneratedProcessDefinitionStrictContract> response =
-          (StrictSearchQueryResult<GeneratedProcessDefinitionStrictContract>)
+      final StrictSearchQueryResult<ProcessDefinition> response =
+          (StrictSearchQueryResult<ProcessDefinition>)
               objectMapper.convertValue(
                   result.structuredContent(),
                   objectMapper
                       .getTypeFactory()
                       .constructParametricType(
-                          StrictSearchQueryResult.class,
-                          GeneratedProcessDefinitionStrictContract.class));
+                          StrictSearchQueryResult.class, ProcessDefinition.class));
       assertThat(response.page().totalItems()).isEqualTo(1L);
       assertThat(response.page().hasMoreTotalItems()).isFalse();
       assertThat(response.page().startCursor()).isEqualTo("f");

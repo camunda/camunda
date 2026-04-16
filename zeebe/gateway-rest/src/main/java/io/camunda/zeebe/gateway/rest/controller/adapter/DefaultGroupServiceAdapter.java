@@ -14,14 +14,14 @@ import io.camunda.gateway.mapping.http.ResponseMapper;
 import io.camunda.gateway.mapping.http.mapper.GroupMapper;
 import io.camunda.gateway.mapping.http.search.SearchQueryRequestMapper;
 import io.camunda.gateway.mapping.http.search.SearchQueryResponseMapper;
-import io.camunda.gateway.mapping.http.search.contract.generated.GroupClientSearchQueryRequestContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GroupCreateRequestContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GroupSearchQueryRequestContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GroupUpdateRequestContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.GroupUserSearchQueryRequestContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.MappingRuleSearchQueryRequestContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.RoleSearchQueryRequestContract;
 import io.camunda.gateway.mapping.http.validator.GroupRequestValidator;
+import io.camunda.gateway.protocol.model.GroupClientSearchQueryRequest;
+import io.camunda.gateway.protocol.model.GroupCreateRequest;
+import io.camunda.gateway.protocol.model.GroupSearchQueryRequest;
+import io.camunda.gateway.protocol.model.GroupUpdateRequest;
+import io.camunda.gateway.protocol.model.GroupUserSearchQueryRequest;
+import io.camunda.gateway.protocol.model.MappingRuleSearchQueryRequest;
+import io.camunda.gateway.protocol.model.RoleSearchQueryRequest;
 import io.camunda.search.query.GroupMemberQuery;
 import io.camunda.search.query.MappingRuleQuery;
 import io.camunda.search.query.RoleQuery;
@@ -62,7 +62,7 @@ public class DefaultGroupServiceAdapter implements GroupServiceAdapter {
 
   @Override
   public ResponseEntity<Object> createGroup(
-      final GroupCreateRequestContract groupCreateRequestStrict,
+      final GroupCreateRequest groupCreateRequestStrict,
       final CamundaAuthentication authentication) {
     return groupMapper
         .toGroupCreateRequest(groupCreateRequestStrict)
@@ -77,7 +77,7 @@ public class DefaultGroupServiceAdapter implements GroupServiceAdapter {
 
   @Override
   public ResponseEntity<Object> searchGroups(
-      final GroupSearchQueryRequestContract groupSearchQueryRequestStrict,
+      final GroupSearchQueryRequest groupSearchQueryRequestStrict,
       final CamundaAuthentication authentication) {
     return SearchQueryRequestMapper.toGroupQueryStrict(groupSearchQueryRequestStrict)
         .fold(
@@ -107,7 +107,7 @@ public class DefaultGroupServiceAdapter implements GroupServiceAdapter {
   @Override
   public ResponseEntity<Object> updateGroup(
       final String groupId,
-      final GroupUpdateRequestContract groupUpdateRequestStrict,
+      final GroupUpdateRequest groupUpdateRequestStrict,
       final CamundaAuthentication authentication) {
     return groupMapper
         .toGroupUpdateRequest(groupUpdateRequestStrict, groupId)
@@ -155,7 +155,7 @@ public class DefaultGroupServiceAdapter implements GroupServiceAdapter {
   @Override
   public ResponseEntity<Object> searchUsersForGroup(
       final String groupId,
-      final GroupUserSearchQueryRequestContract groupUserSearchQueryRequestStrict,
+      final GroupUserSearchQueryRequest groupUserSearchQueryRequestStrict,
       final CamundaAuthentication authentication) {
     return SearchQueryRequestMapper.toGroupUserQueryStrict(groupUserSearchQueryRequestStrict)
         .fold(
@@ -200,7 +200,7 @@ public class DefaultGroupServiceAdapter implements GroupServiceAdapter {
   @Override
   public ResponseEntity<Object> searchClientsForGroup(
       final String groupId,
-      final GroupClientSearchQueryRequestContract groupClientSearchQueryRequestStrict,
+      final GroupClientSearchQueryRequest groupClientSearchQueryRequestStrict,
       final CamundaAuthentication authentication) {
     return SearchQueryRequestMapper.toGroupClientQueryStrict(groupClientSearchQueryRequestStrict)
         .fold(
@@ -249,7 +249,7 @@ public class DefaultGroupServiceAdapter implements GroupServiceAdapter {
   @Override
   public ResponseEntity<Object> searchMappingRulesForGroup(
       final String groupId,
-      final MappingRuleSearchQueryRequestContract mappingRuleSearchQueryRequestStrict,
+      final MappingRuleSearchQueryRequest mappingRuleSearchQueryRequestStrict,
       final CamundaAuthentication authentication) {
     return SearchQueryRequestMapper.toMappingRuleQueryStrict(mappingRuleSearchQueryRequestStrict)
         .fold(
@@ -269,7 +269,7 @@ public class DefaultGroupServiceAdapter implements GroupServiceAdapter {
   @Override
   public ResponseEntity<Object> searchRolesForGroup(
       final String groupId,
-      final RoleSearchQueryRequestContract roleSearchQueryRequestStrict,
+      final RoleSearchQueryRequest roleSearchQueryRequestStrict,
       final CamundaAuthentication authentication) {
     return SearchQueryRequestMapper.toRoleQueryStrict(roleSearchQueryRequestStrict)
         .fold(

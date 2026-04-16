@@ -8,9 +8,9 @@
 package io.camunda.gateway.mapping.http.mapper;
 
 import io.camunda.gateway.mapping.http.RequestMapper;
-import io.camunda.gateway.mapping.http.search.contract.generated.CreateClusterVariableRequestContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.UpdateClusterVariableRequestContract;
 import io.camunda.gateway.mapping.http.validator.ClusterVariableRequestValidator;
+import io.camunda.gateway.protocol.model.CreateClusterVariableRequest;
+import io.camunda.gateway.protocol.model.UpdateClusterVariableRequest;
 import io.camunda.service.ClusterVariableServices.ClusterVariableRequest;
 import io.camunda.zeebe.util.Either;
 import org.springframework.http.ProblemDetail;
@@ -39,34 +39,32 @@ public class ClusterVariableMapper {
   }
 
   public Either<ProblemDetail, ClusterVariableRequest> toGlobalClusterVariableCreateRequest(
-      final CreateClusterVariableRequestContract request) {
+      final CreateClusterVariableRequest request) {
     return RequestMapper.getResult(
         clusterVariableRequestValidator.validateGlobalClusterVariableCreateRequest(request),
-        () -> new ClusterVariableRequest(request.name(), request.value(), null));
+        () -> new ClusterVariableRequest(request.getName(), request.getValue(), null));
   }
 
   public Either<ProblemDetail, ClusterVariableRequest> toTenantClusterVariableCreateRequest(
-      final CreateClusterVariableRequestContract request, final String tenantId) {
+      final CreateClusterVariableRequest request, final String tenantId) {
     return RequestMapper.getResult(
         clusterVariableRequestValidator.validateTenantClusterVariableCreateRequest(
             request, tenantId),
-        () -> new ClusterVariableRequest(request.name(), request.value(), tenantId));
+        () -> new ClusterVariableRequest(request.getName(), request.getValue(), tenantId));
   }
 
   public Either<ProblemDetail, ClusterVariableRequest> toGlobalClusterVariableUpdateRequest(
-      final String name, final UpdateClusterVariableRequestContract request) {
+      final String name, final UpdateClusterVariableRequest request) {
     return RequestMapper.getResult(
         clusterVariableRequestValidator.validateGlobalClusterVariableUpdateRequest(name, request),
-        () -> new ClusterVariableRequest(name, request.value(), null));
+        () -> new ClusterVariableRequest(name, request.getValue(), null));
   }
 
   public Either<ProblemDetail, ClusterVariableRequest> toTenantClusterVariableUpdateRequest(
-      final String name,
-      final UpdateClusterVariableRequestContract request,
-      final String tenantId) {
+      final String name, final UpdateClusterVariableRequest request, final String tenantId) {
     return RequestMapper.getResult(
         clusterVariableRequestValidator.validateTenantClusterVariableUpdateRequest(
             name, request, tenantId),
-        () -> new ClusterVariableRequest(name, request.value(), tenantId));
+        () -> new ClusterVariableRequest(name, request.getValue(), tenantId));
   }
 }

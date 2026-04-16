@@ -9,8 +9,8 @@ package io.camunda.zeebe.gateway.rest.controller.adapter;
 
 import io.camunda.gateway.mapping.http.RequestMapper;
 import io.camunda.gateway.mapping.http.ResponseMapper;
-import io.camunda.gateway.mapping.http.search.contract.generated.MessageCorrelationRequestContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.MessagePublicationRequestContract;
+import io.camunda.gateway.protocol.model.MessageCorrelationRequest;
+import io.camunda.gateway.protocol.model.MessagePublicationRequest;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.configuration.MultiTenancyConfiguration;
 import io.camunda.service.MessageServices;
@@ -40,8 +40,7 @@ public class DefaultMessageServiceAdapter implements MessageServiceAdapter {
 
   @Override
   public ResponseEntity<Object> publishMessage(
-      final MessagePublicationRequestContract requestStrict,
-      final CamundaAuthentication authentication) {
+      final MessagePublicationRequest requestStrict, final CamundaAuthentication authentication) {
     return RequestMapper.toMessagePublicationRequest(
             requestStrict, multiTenancyCfg.isChecksEnabled(), maxNameFieldLength)
         .fold(
@@ -55,8 +54,7 @@ public class DefaultMessageServiceAdapter implements MessageServiceAdapter {
 
   @Override
   public ResponseEntity<Object> correlateMessage(
-      final MessageCorrelationRequestContract requestStrict,
-      final CamundaAuthentication authentication) {
+      final MessageCorrelationRequest requestStrict, final CamundaAuthentication authentication) {
     return RequestMapper.toMessageCorrelationRequest(
             requestStrict, multiTenancyCfg.isChecksEnabled(), maxNameFieldLength)
         .fold(

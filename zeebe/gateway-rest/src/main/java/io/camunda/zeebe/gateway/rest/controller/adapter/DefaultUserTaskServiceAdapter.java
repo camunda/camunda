@@ -12,13 +12,13 @@ import static io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper.mapErrorToRes
 import io.camunda.gateway.mapping.http.RequestMapper;
 import io.camunda.gateway.mapping.http.search.SearchQueryRequestMapper;
 import io.camunda.gateway.mapping.http.search.SearchQueryResponseMapper;
-import io.camunda.gateway.mapping.http.search.contract.generated.UserTaskAssignmentRequestContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.UserTaskAuditLogSearchQueryRequestContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.UserTaskCompletionRequestContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.UserTaskEffectiveVariableSearchQueryRequestContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.UserTaskSearchQueryRequestContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.UserTaskUpdateRequestContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.UserTaskVariableSearchQueryRequestContract;
+import io.camunda.gateway.protocol.model.UserTaskAssignmentRequest;
+import io.camunda.gateway.protocol.model.UserTaskAuditLogSearchQueryRequest;
+import io.camunda.gateway.protocol.model.UserTaskCompletionRequest;
+import io.camunda.gateway.protocol.model.UserTaskEffectiveVariableSearchQueryRequest;
+import io.camunda.gateway.protocol.model.UserTaskSearchQuery;
+import io.camunda.gateway.protocol.model.UserTaskUpdateRequest;
+import io.camunda.gateway.protocol.model.UserTaskVariableSearchQueryRequest;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.UserTaskServices;
 import io.camunda.zeebe.gateway.rest.controller.generated.UserTaskServiceAdapter;
@@ -39,7 +39,7 @@ public class DefaultUserTaskServiceAdapter implements UserTaskServiceAdapter {
   @Override
   public ResponseEntity<Void> completeUserTask(
       final Long userTaskKey,
-      final UserTaskCompletionRequestContract requestStrict,
+      final UserTaskCompletionRequest requestStrict,
       final CamundaAuthentication authentication) {
     final var mapped = RequestMapper.toUserTaskCompletionRequest(requestStrict, userTaskKey);
     return RequestExecutor.executeSync(
@@ -51,7 +51,7 @@ public class DefaultUserTaskServiceAdapter implements UserTaskServiceAdapter {
   @Override
   public ResponseEntity<Void> assignUserTask(
       final Long userTaskKey,
-      final UserTaskAssignmentRequestContract requestStrict,
+      final UserTaskAssignmentRequest requestStrict,
       final CamundaAuthentication authentication) {
     return RequestMapper.toUserTaskAssignmentRequest(requestStrict, userTaskKey)
         .fold(
@@ -81,7 +81,7 @@ public class DefaultUserTaskServiceAdapter implements UserTaskServiceAdapter {
   @Override
   public ResponseEntity<Void> updateUserTask(
       final Long userTaskKey,
-      final UserTaskUpdateRequestContract requestStrict,
+      final UserTaskUpdateRequest requestStrict,
       final CamundaAuthentication authentication) {
     return RequestMapper.toUserTaskUpdateRequest(requestStrict, userTaskKey)
         .fold(
@@ -122,8 +122,7 @@ public class DefaultUserTaskServiceAdapter implements UserTaskServiceAdapter {
 
   @Override
   public ResponseEntity<Object> searchUserTasks(
-      final UserTaskSearchQueryRequestContract queryStrict,
-      final CamundaAuthentication authentication) {
+      final UserTaskSearchQuery queryStrict, final CamundaAuthentication authentication) {
     return SearchQueryRequestMapper.toUserTaskQueryStrict(queryStrict)
         .fold(
             RestErrorMapper::mapProblemToResponse,
@@ -142,7 +141,7 @@ public class DefaultUserTaskServiceAdapter implements UserTaskServiceAdapter {
   public ResponseEntity<Object> searchUserTaskVariables(
       final Long userTaskKey,
       final Boolean truncateValues,
-      final UserTaskVariableSearchQueryRequestContract requestStrict,
+      final UserTaskVariableSearchQueryRequest requestStrict,
       final CamundaAuthentication authentication) {
     final boolean truncate = truncateValues == null || truncateValues;
     return SearchQueryRequestMapper.toUserTaskVariableQueryStrict(requestStrict)
@@ -164,7 +163,7 @@ public class DefaultUserTaskServiceAdapter implements UserTaskServiceAdapter {
   public ResponseEntity<Object> searchUserTaskEffectiveVariables(
       final Long userTaskKey,
       final Boolean truncateValues,
-      final UserTaskEffectiveVariableSearchQueryRequestContract requestStrict,
+      final UserTaskEffectiveVariableSearchQueryRequest requestStrict,
       final CamundaAuthentication authentication) {
     final boolean truncate = truncateValues == null || truncateValues;
     return SearchQueryRequestMapper.toUserTaskEffectiveVariableQueryStrict(requestStrict)
@@ -186,7 +185,7 @@ public class DefaultUserTaskServiceAdapter implements UserTaskServiceAdapter {
   @Override
   public ResponseEntity<Object> searchUserTaskAuditLogs(
       final Long userTaskKey,
-      final UserTaskAuditLogSearchQueryRequestContract requestStrict,
+      final UserTaskAuditLogSearchQueryRequest requestStrict,
       final CamundaAuthentication authentication) {
     return SearchQueryRequestMapper.toUserTaskAuditLogQueryStrict(requestStrict)
         .fold(

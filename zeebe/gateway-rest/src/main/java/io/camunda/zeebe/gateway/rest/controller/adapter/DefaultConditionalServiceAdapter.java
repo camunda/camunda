@@ -9,7 +9,7 @@ package io.camunda.zeebe.gateway.rest.controller.adapter;
 
 import io.camunda.gateway.mapping.http.RequestMapper;
 import io.camunda.gateway.mapping.http.ResponseMapper;
-import io.camunda.gateway.mapping.http.search.contract.generated.ConditionalEvaluationInstructionContract;
+import io.camunda.gateway.protocol.model.ConditionalEvaluationInstruction;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.configuration.MultiTenancyConfiguration;
 import io.camunda.service.ConditionalServices;
@@ -35,7 +35,7 @@ public class DefaultConditionalServiceAdapter implements ConditionalServiceAdapt
 
   @Override
   public ResponseEntity<Object> evaluateConditionals(
-      final ConditionalEvaluationInstructionContract requestStrict,
+      final ConditionalEvaluationInstruction requestStrict,
       final CamundaAuthentication authentication) {
     return RequestMapper.toEvaluateConditionalRequest(
             requestStrict, multiTenancyCfg.isChecksEnabled())

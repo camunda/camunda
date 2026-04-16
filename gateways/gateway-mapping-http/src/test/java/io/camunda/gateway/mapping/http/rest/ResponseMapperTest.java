@@ -10,8 +10,8 @@ package io.camunda.gateway.mapping.http.rest;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.gateway.mapping.http.ResponseMapper;
-import io.camunda.gateway.mapping.http.search.contract.generated.ActivatedJobContract;
-import io.camunda.gateway.mapping.http.search.contract.generated.UserTaskPropertiesContract;
+import io.camunda.gateway.protocol.model.ActivatedJob;
+import io.camunda.gateway.protocol.model.UserTaskProperties;
 import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
 import io.camunda.zeebe.gateway.impl.job.JobActivationResponse;
 import io.camunda.zeebe.msgpack.spec.MsgPackHelper;
@@ -71,13 +71,13 @@ class ResponseMapperTest {
       final var result = ResponseMapper.toActivateJobsResponse(activationResponse);
 
       // then
-      final var jobs = result.getActivateJobsResponse().jobs();
+      final var jobs = result.getActivateJobsResponse().getJobs();
       assertThat(jobs)
           .singleElement()
           .satisfies(
               job -> {
-                assertThat(job.processInstanceKey()).isEqualTo("456");
-                assertThat(job.rootProcessInstanceKey()).isEqualTo("789");
+                assertThat(job.getProcessInstanceKey()).isEqualTo("456");
+                assertThat(job.getRootProcessInstanceKey()).isEqualTo("789");
               });
     }
 
@@ -111,14 +111,14 @@ class ResponseMapperTest {
       final var result = ResponseMapper.toActivateJobsResponse(activationResponse);
 
       // then
-      final var jobs = result.getActivateJobsResponse().jobs();
+      final var jobs = result.getActivateJobsResponse().getJobs();
       assertThat(jobs)
           .singleElement()
           .satisfies(
               job -> {
-                assertThat(job.processInstanceKey()).isEqualTo("456");
+                assertThat(job.getProcessInstanceKey()).isEqualTo("456");
                 // rootProcessInstanceKey should be null when it's -1 (not set)
-                assertThat(job.rootProcessInstanceKey()).isNull();
+                assertThat(job.getRootProcessInstanceKey()).isNull();
               });
     }
 
@@ -140,16 +140,16 @@ class ResponseMapperTest {
                   Protocol.USER_TASK_KEY_HEADER_NAME, "100"),
               props -> {
                 // Verify all user task properties are correctly mapped
-                assertThat(props.action()).isEqualTo("complete");
-                assertThat(props.assignee()).isEqualTo("john");
-                assertThat(props.candidateGroups()).containsExactly("group1", "group2");
-                assertThat(props.candidateUsers()).containsExactly("user1");
-                assertThat(props.changedAttributes()).containsExactly("assignee");
-                assertThat(props.dueDate()).isEqualTo("2024-07-01");
-                assertThat(props.followUpDate()).isEqualTo("2024-07-02");
-                assertThat(props.formKey()).isEqualTo("1");
-                assertThat(props.priority()).isEqualTo(10);
-                assertThat(props.userTaskKey()).isEqualTo("100");
+                assertThat(props.getAction()).isEqualTo("complete");
+                assertThat(props.getAssignee()).isEqualTo("john");
+                assertThat(props.getCandidateGroups()).containsExactly("group1", "group2");
+                assertThat(props.getCandidateUsers()).containsExactly("user1");
+                assertThat(props.getChangedAttributes()).containsExactly("assignee");
+                assertThat(props.getDueDate()).isEqualTo("2024-07-01");
+                assertThat(props.getFollowUpDate()).isEqualTo("2024-07-02");
+                assertThat(props.getFormKey()).isEqualTo("1");
+                assertThat(props.getPriority()).isEqualTo(10);
+                assertThat(props.getUserTaskKey()).isEqualTo("100");
               }),
           new ActivatedJobWithUserTaskPropsCase(
               "TASK_LISTENER job with invalid/empty headers and no action",
@@ -206,10 +206,10 @@ class ResponseMapperTest {
       final var result = ResponseMapper.toActivateJobsResponse(activationResponse);
 
       // then
-      final var jobs = result.getActivateJobsResponse().jobs();
+      final var jobs = result.getActivateJobsResponse().getJobs();
       assertThat(jobs)
           .singleElement()
-          .extracting(ActivatedJobContract::userTask)
+          .extracting(ActivatedJob::getUserTask)
           .satisfies(testCase.assertions);
     }
 
@@ -319,7 +319,7 @@ class ResponseMapperTest {
         String name,
         JobKind jobKind,
         Map<String, String> headers,
-        Consumer<UserTaskPropertiesContract> assertions) {
+        Consumer<UserTaskProperties> assertions) {
 
       @Override
       public String toString() {
@@ -362,16 +362,16 @@ class ResponseMapperTest {
       final var result = ResponseMapper.toEvaluateDecisionResponse(brokerResponse);
 
       // then
-      assertThat(result.evaluatedDecisions())
+      assertThat(result.getEvaluatedDecisions())
           .singleElement()
           .satisfies(
               evaluated -> {
-                assertThat(evaluated.decisionDefinitionId()).isEqualTo("innerDecisionId");
-                assertThat(evaluated.decisionDefinitionKey()).isEqualTo("300");
-                assertThat(evaluated.decisionDefinitionName()).isEqualTo("innerDecisionName");
-                assertThat(evaluated.decisionDefinitionVersion()).isEqualTo(2);
-                assertThat(evaluated.decisionDefinitionType()).isEqualTo("DECISION_TABLE");
-                assertThat(evaluated.tenantId()).isEqualTo("tenant-1");
+                assertThat(evaluated.getDecisionDefinitionId()).isEqualTo("innerDecisionId");
+                assertThat(evaluated.getDecisionDefinitionKey()).isEqualTo("300");
+                assertThat(evaluated.getDecisionDefinitionName()).isEqualTo("innerDecisionName");
+                assertThat(evaluated.getDecisionDefinitionVersion()).isEqualTo(2);
+                assertThat(evaluated.getDecisionDefinitionType()).isEqualTo("DECISION_TABLE");
+                assertThat(evaluated.getTenantId()).isEqualTo("tenant-1");
               });
     }
 
@@ -414,10 +414,10 @@ class ResponseMapperTest {
       final var result = ResponseMapper.toEvaluateDecisionResponse(brokerResponse);
 
       // then
-      assertThat(result.evaluatedDecisions()).hasSize(2);
-      assertThat(result.evaluatedDecisions().get(0).decisionDefinitionType())
+      assertThat(result.getEvaluatedDecisions()).hasSize(2);
+      assertThat(result.getEvaluatedDecisions().get(0).getDecisionDefinitionType())
           .isEqualTo("DECISION_TABLE");
-      assertThat(result.evaluatedDecisions().get(1).decisionDefinitionType())
+      assertThat(result.getEvaluatedDecisions().get(1).getDecisionDefinitionType())
           .isEqualTo("DECISION_LITERAL_EXPRESSION");
     }
 
@@ -440,16 +440,16 @@ class ResponseMapperTest {
       final var result = ResponseMapper.toEvaluateDecisionResponse(brokerResponse);
 
       // then
-      assertThat(result.decisionDefinitionId()).isEqualTo("myDecisionId");
-      assertThat(result.decisionDefinitionKey()).isEqualTo("100");
-      assertThat(result.decisionDefinitionName()).isEqualTo("myDecision");
-      assertThat(result.decisionDefinitionVersion()).isEqualTo(3);
-      assertThat(result.decisionRequirementsId()).isEqualTo("myDrgId");
-      assertThat(result.decisionRequirementsKey()).isEqualTo("200");
-      assertThat(result.tenantId()).isEqualTo("my-tenant");
-      assertThat(result.decisionInstanceKey()).isEqualTo("555");
-      assertThat(result.decisionEvaluationKey()).isEqualTo("555");
-      assertThat(result.evaluatedDecisions()).isEmpty();
+      assertThat(result.getDecisionDefinitionId()).isEqualTo("myDecisionId");
+      assertThat(result.getDecisionDefinitionKey()).isEqualTo("100");
+      assertThat(result.getDecisionDefinitionName()).isEqualTo("myDecision");
+      assertThat(result.getDecisionDefinitionVersion()).isEqualTo(3);
+      assertThat(result.getDecisionRequirementsId()).isEqualTo("myDrgId");
+      assertThat(result.getDecisionRequirementsKey()).isEqualTo("200");
+      assertThat(result.getTenantId()).isEqualTo("my-tenant");
+      assertThat(result.getDecisionInstanceKey()).isEqualTo("555");
+      assertThat(result.getDecisionEvaluationKey()).isEqualTo("555");
+      assertThat(result.getEvaluatedDecisions()).isEmpty();
     }
   }
 
@@ -467,8 +467,8 @@ class ResponseMapperTest {
       final var response = ResponseMapper.toDeleteResourceResponse(brokerResponse);
 
       // then
-      assertThat(response.resourceKey()).isEqualTo(String.valueOf(resourceKey));
-      assertThat(response.batchOperation()).isNull();
+      assertThat(response.getResourceKey()).isEqualTo(String.valueOf(resourceKey));
+      assertThat(response.getBatchOperation()).isNull();
     }
 
     @Test
@@ -488,12 +488,12 @@ class ResponseMapperTest {
       final var response = ResponseMapper.toDeleteResourceResponse(brokerResponse);
 
       // then
-      assertThat(response.resourceKey()).isEqualTo(String.valueOf(resourceKey));
-      assertThat(response.batchOperation()).isNotNull();
-      assertThat(response.batchOperation().batchOperationKey())
+      assertThat(response.getResourceKey()).isEqualTo(String.valueOf(resourceKey));
+      assertThat(response.getBatchOperation()).isNotNull();
+      assertThat(response.getBatchOperation().getBatchOperationKey())
           .isEqualTo(String.valueOf(batchOperationKey));
-      assertThat(response.batchOperation().batchOperationType()).isNotNull();
-      assertThat(response.batchOperation().batchOperationType().name())
+      assertThat(response.getBatchOperation().getBatchOperationType()).isNotNull();
+      assertThat(response.getBatchOperation().getBatchOperationType().getValue())
           .isEqualTo(batchOperationType.name());
     }
   }
