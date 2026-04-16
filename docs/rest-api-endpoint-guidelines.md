@@ -287,7 +287,7 @@ On the Java controller side, query endpoints that read from the secondary storag
 - If a spec operation has `x-eventually-consistent: true`, the corresponding controller method should have `@RequiresSecondaryStorage`.
 - If you add `@RequiresSecondaryStorage` to a controller method, set `x-eventually-consistent: true` on the matching spec operation.
 
-A mismatch means SDK consumers get incorrect consistency guarantees. See §2.15 for more details on controller–spec alignment.
+A mismatch means SDK consumers get incorrect consistency guarantees. See §2.16 for more details on controller–spec alignment.
 
 ### 2.6 Component reuse and schema organisation
 
@@ -597,7 +597,35 @@ MyResourceFilter:
       description: Whether the resource is active.
 ```
 
-### 2.12 Deprecated enum members
+### 2.12 Upgrading an existing filter field to advanced search
+
+When an **existing** search filter field needs to be upgraded from a plain string to support advanced
+operators (e.g., adding `$like` to `elementId`), do not swap the type to `StringFilterProperty`
+directly. This would change the codegen output and break generated SDKs (see the compatibility table
+in §2.8). Instead, create a **dedicated filter property type** in `identifiers.yaml` that preserves
+the original identifier type.
+
+**Do not use `StringFilterProperty` directly** for existing fields because it loses identifier
+metadata (`example`, `format`, `x-semantic-type`) and causes codegen type conflicts in the gateway
+model.
+
+#### Checklist
+
+1. **`identifiers.yaml`** - Define a `<Type>FilterProperty` as a `oneOf` of the original identifier
+   (plain string, backward compatible) and a new `Advanced<Type>Filter` object. The advanced filter
+   references the original identifier in each operator field.
+2. **Endpoint spec** - Reference the new filter type instead of the original identifier.
+3. **`gateways/gateway-model/pom.xml`** - Add type mappings for both profiles: advanced
+   (`=StringFilterProperty`) and simple (`=String`).
+4. **Java client** - Add `Consumer<StringProperty>` overload. Keep the existing `String` method,
+   delegating to `b -> b.eq(value)`.
+5. **Search domain** - Change `List<String>` to `List<Operation<String>>` in the filter record.
+   Keep convenience methods that wrap in `EQUALS`. Update the transformer from `stringTerms()` to
+   `stringOperations()`. Update RDBMS MyBatis mapper to use `operationCondition`.
+
+For a complete reference implementation, see [#50744](https://github.com/camunda/camunda/pull/50744).
+
+### 2.13 Deprecated enum members
 
 When deprecating enum values, use the `x-deprecated-enum-members` vendor extension:
 
@@ -619,7 +647,7 @@ Rules enforced by the `valid-deprecated-enum-members` Spectral rule:
 - No duplicate names.
 - No extra keys beyond `name` and `deprecatedInVersion`.
 
-### 2.13 Polymorphic union types (`x-polymorphic-schema`)
+### 2.14 Polymorphic union types (`x-polymorphic-schema`)
 
 When a request body accepts **mutually exclusive** sets of properties — e.g., identify a process by `processDefinitionId` **or** by `processDefinitionKey`, but never both — model this as a `oneOf` composition and annotate the wrapper schema with `x-polymorphic-schema: true`.
 
@@ -729,11 +757,11 @@ Omit the discriminator when:
 | `AuthorizationPatchInstruction`                   | `authorizations.yaml`       | (permission variants)                                                          |
 | `SearchQueryPageRequest`                          | `search-models.yaml`        | `LimitPagination`, `OffsetPagination`, `CursorForward...`, `CursorBackward...` |
 
-### 2.14 Security schemes
+### 2.15 Security schemes
 
 Ensure that `securitySchemes` in the OpenAPI YAML mirrors the security schemes defined in `OpenApiResourceConfig.java`. Any changes to the security config must be reflected in both places for SDK generators to produce correct authentication boilerplate.
 
-### 2.15 Controller–spec alignment and the `@Hidden` annotation
+### 2.16 Controller–spec alignment and the `@Hidden` annotation
 
 Every public endpoint in a REST controller **must** have a corresponding path/operation in the OpenAPI spec. Conversely, every spec operation must be backed by a controller method.
 
