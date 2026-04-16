@@ -100,19 +100,6 @@ public final class RdbmsCacheRegistry {
             new CaffeineCacheStatsCounter(CACHE_METRICS_NAMESPACE, metricsName, meterRegistry)));
   }
 
-  private <K, T> void register(
-      final CacheId cacheId,
-      final long maxSize,
-      final String metricsName,
-      final BulkExporterEntityCacheLoader<K, T> cacheLoader) {
-    caches.put(
-        cacheId,
-        new ExporterEntityCacheImpl<>(
-            maxSize,
-            cacheLoader,
-            new CaffeineCacheStatsCounter(CACHE_METRICS_NAMESPACE, metricsName, meterRegistry)));
-  }
-
   @SuppressWarnings("unchecked")
   private <K, T> ExporterEntityCache<K, T> get(final CacheId cacheId) {
     return (ExporterEntityCache<K, T>) caches.get(cacheId);

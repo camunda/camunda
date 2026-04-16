@@ -50,25 +50,23 @@ class ExporterEntityCacheImplTest {
     // given
     final var singleLoadCalls = new AtomicInteger();
     final var bulkLoadCalls = new AtomicInteger();
-    final var cache =
-        new ExporterEntityCacheImpl<>(
-            10,
-            new BulkExporterEntityCacheLoader<Integer, String>() {
-              @Override
-              public String load(final Integer key) {
-                singleLoadCalls.incrementAndGet();
-                return "value-" + key;
-              }
+    final CacheLoader<Integer, String> cacheLoader =
+        new BulkExporterEntityCacheLoader<Integer, String>() {
+          @Override
+          public String load(final Integer key) {
+            singleLoadCalls.incrementAndGet();
+            return "value-" + key;
+          }
 
-              @Override
-              public Map<? extends Integer, ? extends String> loadAll(
-                  final Set<? extends Integer> keys) {
-                bulkLoadCalls.incrementAndGet();
-                return keys.stream()
-                    .collect(java.util.stream.Collectors.toMap(k -> k, k -> "value-" + k));
-              }
-            },
-            cacheStatsCounter);
+          @Override
+          public Map<? extends Integer, ? extends String> loadAll(
+              final Set<? extends Integer> keys) {
+            bulkLoadCalls.incrementAndGet();
+            return keys.stream()
+                .collect(java.util.stream.Collectors.toMap(k -> k, k -> "value-" + k));
+          }
+        };
+    final var cache = new ExporterEntityCacheImpl<>(10, cacheLoader, cacheStatsCounter);
 
     // when
     final var values = cache.getAll(List.of(1, 2));

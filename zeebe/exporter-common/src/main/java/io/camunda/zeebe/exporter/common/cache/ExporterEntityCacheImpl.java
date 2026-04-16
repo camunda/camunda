@@ -31,17 +31,6 @@ public class ExporterEntityCacheImpl<K, T> implements ExporterEntityCache<K, T> 
             .build(wrapCacheLoader(cacheLoader));
   }
 
-  public ExporterEntityCacheImpl(
-      final long maxSize,
-      final BulkExporterEntityCacheLoader<K, T> cacheLoader,
-      final CaffeineCacheStatsCounter statsCounter) {
-    cache =
-        Caffeine.newBuilder()
-            .maximumSize(maxSize)
-            .recordStats(() -> statsCounter)
-            .build(wrapCacheLoader(cacheLoader));
-  }
-
   @Override
   public Optional<T> get(final K entityKey) {
     return Optional.ofNullable(cache.get(entityKey));
@@ -76,6 +65,12 @@ public class ExporterEntityCacheImpl<K, T> implements ExporterEntityCache<K, T> 
 
       @Override
       public Map<? extends K, ? extends T> loadAll(final Set<? extends K> keys) {
+        if (delegate instanceof BulkExporterEntityCacheLoader<?, ?>) {
+          @SuppressWarnings("unchecked")
+          final var bulkDelegate = (BulkExporterEntityCacheLoader<K, T>) delegate;
+          return loadAllValues(bulkDelegate, keys);
+        }
+
         final Map<K, T> entries = new HashMap<>();
         for (final K key : keys) {
           final var value = load(key);
@@ -88,30 +83,20 @@ public class ExporterEntityCacheImpl<K, T> implements ExporterEntityCache<K, T> 
     };
   }
 
-  private static <K, T> BulkExporterEntityCacheLoader<K, T> wrapCacheLoader(
-      final BulkExporterEntityCacheLoader<K, T> delegate) {
-    return new BulkExporterEntityCacheLoader<>() {
-      @Override
-      public T load(final K key) {
-        return loadValue(delegate, key);
-      }
-
-      @Override
-      public Map<? extends K, ? extends T> loadAll(final Set<? extends K> keys) {
-        try {
-          return delegate.loadAll(keys);
-        } catch (final CacheLoaderFailedException e) {
-          throw e;
-        } catch (final Exception e) {
-          throw new CacheLoaderFailedException(e);
-        }
-      }
-    };
-  }
-
   private static <K, T> T loadValue(final CacheLoader<K, T> delegate, final K key) {
     try {
       return delegate.load(key);
+    } catch (final CacheLoaderFailedException e) {
+      throw e;
+    } catch (final Exception e) {
+      throw new CacheLoaderFailedException(e);
+    }
+  }
+
+  private static <K, T> Map<? extends K, ? extends T> loadAllValues(
+      final BulkExporterEntityCacheLoader<K, T> delegate, final Set<? extends K> keys) {
+    try {
+      return delegate.loadAll(keys);
     } catch (final CacheLoaderFailedException e) {
       throw e;
     } catch (final Exception e) {
