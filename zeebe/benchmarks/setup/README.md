@@ -195,6 +195,44 @@ The Camunda Platform deployment automatically sets up a leader balancing cronjob
 
 This will deploy the full Camunda Platform (including `orchestration cluster`, `elasticsearch`, `optimize`, `connectors`, `identity` and `keycloak`) and load test applications (e.g. `starter` and `worker`).
 
+### Running specific scenarios
+
+By default, `make install` uses the load test chart's own defaults (no workload profile applied).
+To run a specific workload profile, use one of the named targets:
+
+```sh
+make latency   # 1 instance/s, 1 worker — low-throughput, useful for latency measurements
+make typical   # 50 instances/s, 6 workers, typical_process BPMN
+make realistic # Realistic multi-instance benchmark (values from camunda-load-tests-helm)
+make max       # 300 instances/s — maximum stress, also disables consistency check overhead
+make archiver  # Multi-instance archiver scenario (no workers)
+```
+
+You can also pass `scenario=` directly to combine with additional overrides:
+
+```sh
+make install scenario=max additional_platform_configuration="--set orchestration.resources.limits.memory=4Gi"
+```
+
+For stable (non-spot) VMs, use `install-stable` with the `scenario=` variable:
+
+```sh
+make install-stable scenario=max
+```
+
+To inspect the resolved flags without running any Helm commands:
+
+```sh
+make print-scenario scenario=max
+```
+
+To render Helm templates for inspection:
+
+```sh
+make template scenario=max          # renders platform manifests
+make template-load-test scenario=max  # renders load test manifests
+```
+
 ### How to clean up a load test
 
 After you're done with your load test, you should remove the remaining namespace.
