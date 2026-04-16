@@ -17,6 +17,7 @@ import {
 	getEnumFilterSchema,
 } from './common';
 import {evaluatedDecisionInputItemSchema, matchedDecisionRuleItemSchema} from './decision-definition';
+import {batchOperationTypeSchema} from './batch-operation';
 
 const decisionDefinitionTypeSchema = z.enum(['DECISION_TABLE', 'LITERAL_EXPRESSION', 'UNSPECIFIED', 'UNKNOWN']);
 type DecisionDefinitionType = z.infer<typeof decisionDefinitionTypeSchema>;
@@ -45,6 +46,30 @@ const decisionInstanceSchema = z.object({
 });
 type DecisionInstance = z.infer<typeof decisionInstanceSchema>;
 
+const queryDecisionInstancesFilterSchema = z
+	.object({
+		decisionEvaluationInstanceKey: basicStringFilterSchema,
+		state: getEnumFilterSchema(decisionInstanceStateSchema),
+		evaluationDate: advancedDateTimeFilterSchema,
+		decisionDefinitionKey: basicStringFilterSchema,
+		elementInstanceKey: basicStringFilterSchema,
+		rootDecisionDefinitionKey: basicStringFilterSchema,
+		decisionRequirementsKey: basicStringFilterSchema,
+		...decisionInstanceSchema.pick({
+			evaluationFailure: true,
+			decisionDefinitionId: true,
+			decisionDefinitionName: true,
+			decisionDefinitionVersion: true,
+			decisionDefinitionType: true,
+			tenantId: true,
+			decisionEvaluationKey: true,
+			processDefinitionKey: true,
+			processInstanceKey: true,
+		}).shape,
+	})
+	.partial();
+type QueryDecisionInstancesFilter = z.infer<typeof queryDecisionInstancesFilterSchema>;
+
 const queryDecisionInstancesRequestBodySchema = getQueryRequestBodySchema({
 	sortFields: [
 		'decisionEvaluationKey',
@@ -63,27 +88,7 @@ const queryDecisionInstancesRequestBodySchema = getQueryRequestBodySchema({
 		'elementInstanceKey',
 		'rootDecisionDefinitionKey',
 	] as const,
-	filter: z
-		.object({
-			decisionEvaluationInstanceKey: basicStringFilterSchema,
-			state: getEnumFilterSchema(decisionInstanceStateSchema),
-			evaluationDate: advancedDateTimeFilterSchema,
-			decisionDefinitionKey: basicStringFilterSchema,
-			elementInstanceKey: basicStringFilterSchema,
-			...decisionInstanceSchema.pick({
-				evaluationFailure: true,
-				decisionDefinitionId: true,
-				decisionDefinitionName: true,
-				decisionDefinitionVersion: true,
-				decisionDefinitionType: true,
-				tenantId: true,
-				decisionEvaluationKey: true,
-				processDefinitionKey: true,
-				processInstanceKey: true,
-				rootDecisionDefinitionKey: true,
-			}).shape,
-		})
-		.partial(),
+	filter: queryDecisionInstancesFilterSchema,
 });
 type QueryDecisionInstancesRequestBody = z.infer<typeof queryDecisionInstancesRequestBodySchema>;
 
@@ -107,21 +112,48 @@ const getDecisionInstance: Endpoint<Pick<DecisionInstance, 'decisionEvaluationIn
 	getUrl: ({decisionEvaluationInstanceKey}) => `/${API_VERSION}/decision-instances/${decisionEvaluationInstanceKey}`,
 };
 
+const createDecisionInstancesDeletionBatchOperationRequestBodySchema = z.object({
+	filter: queryDecisionInstancesFilterSchema,
+});
+type CreateDecisionInstancesDeletionBatchOperationRequestBody = z.infer<
+	typeof createDecisionInstancesDeletionBatchOperationRequestBodySchema
+>;
+
+const createDecisionInstancesDeletionBatchOperationResponseBodySchema = z.object({
+	batchOperationKey: z.string(),
+	batchOperationType: batchOperationTypeSchema,
+});
+type CreateDecisionInstancesDeletionBatchOperationResponseBody = z.infer<
+	typeof createDecisionInstancesDeletionBatchOperationResponseBodySchema
+>;
+
+const createDecisionInstancesDeletionBatchOperation: Endpoint = {
+	method: 'POST',
+	getUrl: () => `/${API_VERSION}/decision-instances/deletion`,
+};
+
 export {
 	decisionDefinitionTypeSchema,
 	decisionInstanceStateSchema,
 	decisionInstanceSchema,
+	queryDecisionInstancesFilterSchema,
 	queryDecisionInstancesRequestBodySchema,
 	queryDecisionInstancesResponseBodySchema,
 	getDecisionInstanceResponseBodySchema,
 	queryDecisionInstances,
 	getDecisionInstance,
+	createDecisionInstancesDeletionBatchOperationRequestBodySchema,
+	createDecisionInstancesDeletionBatchOperationResponseBodySchema,
+	createDecisionInstancesDeletionBatchOperation,
 };
 export type {
 	DecisionDefinitionType,
 	DecisionInstanceState,
 	DecisionInstance,
+	QueryDecisionInstancesFilter,
 	QueryDecisionInstancesRequestBody,
 	QueryDecisionInstancesResponseBody,
 	GetDecisionInstanceResponseBody,
+	CreateDecisionInstancesDeletionBatchOperationRequestBody,
+	CreateDecisionInstancesDeletionBatchOperationResponseBody,
 };

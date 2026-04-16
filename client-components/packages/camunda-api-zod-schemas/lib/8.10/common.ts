@@ -140,6 +140,7 @@ function getEnumFilterSchema<T extends Readonly<Record<string, string>>>(fields:
 			$exists: z.boolean().optional(),
 			$in: z.array(fields).optional(),
 			$notIn: z.array(fields).optional(),
+			$like: z.string().optional(),
 		}),
 	]);
 }

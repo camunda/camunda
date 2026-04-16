@@ -31,7 +31,7 @@ import {
 	getDecisionDefinitionXml,
 	evaluateDecision,
 } from './decision-definition';
-import {queryDecisionInstances, getDecisionInstance} from './decision-instance';
+import {queryDecisionInstances, getDecisionInstance, createDecisionInstancesDeletionBatchOperation} from './decision-instance';
 import {queryDecisionRequirements, getDecisionRequirements, getDecisionRequirementsXml} from './decision-requirements';
 import {createDocument, createDocuments, getDocument, deleteDocument, createDocumentLink} from './document';
 import {
@@ -204,6 +204,7 @@ const endpoints = {
 	evaluateDecision,
 	queryDecisionInstances,
 	getDecisionInstance,
+	createDecisionInstancesDeletionBatchOperation,
 	queryDecisionRequirements,
 	getDecisionRequirements,
 	getDecisionRequirementsXml,
@@ -499,15 +500,21 @@ export {
 	decisionDefinitionTypeSchema,
 	decisionInstanceStateSchema,
 	decisionInstanceSchema,
+	queryDecisionInstancesFilterSchema,
 	queryDecisionInstancesRequestBodySchema,
 	queryDecisionInstancesResponseBodySchema,
 	getDecisionInstanceResponseBodySchema,
+	createDecisionInstancesDeletionBatchOperationRequestBodySchema,
+	createDecisionInstancesDeletionBatchOperationResponseBodySchema,
 	type DecisionDefinitionType,
 	type DecisionInstanceState,
 	type DecisionInstance,
+	type QueryDecisionInstancesFilter,
 	type QueryDecisionInstancesRequestBody,
 	type QueryDecisionInstancesResponseBody,
 	type GetDecisionInstanceResponseBody,
+	type CreateDecisionInstancesDeletionBatchOperationRequestBody,
+	type CreateDecisionInstancesDeletionBatchOperationResponseBody,
 } from './decision-instance';
 export {
 	decisionRequirementsSchema,
