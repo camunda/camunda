@@ -1,6 +1,6 @@
 # description: Reusable workflow for running API tests on C8 Orchestration Cluster with RDBMS databases
 # type: CI
-# owner: @camunda/qa-engineering
+# owner: @camunda/test-automation-team
 ---
 name: C8 Orchestration Cluster API Tests RDBMS (Reusable)
 

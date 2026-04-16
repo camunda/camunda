@@ -1,6 +1,6 @@
 # description: Nightly ES API tests for C8 Orchestration Cluster on main
 # type: CI
-# owner: @camunda/qa-engineering
+# owner: @camunda/test-automation-team
 ---
 name: "C8 Orchestration Cluster Nightly: main API Tests (ES)"
 

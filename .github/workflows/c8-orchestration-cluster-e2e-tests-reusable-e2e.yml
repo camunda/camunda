@@ -1,6 +1,6 @@
 # description: Reusable workflow for running E2E tests on C8 Orchestration Cluster with Docker/Elasticsearch
 # type: CI
-# owner: @camunda/qa-engineering
+# owner: @camunda/test-automation-team
 ---
 name: C8 Orchestration Cluster E2E Tests (Reusable)
 
