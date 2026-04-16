@@ -21,11 +21,10 @@ import org.slf4j.LoggerFactory;
 public final class RecoverableRetryStrategy implements RetryStrategy {
 
   private static final Logger LOG = LoggerFactory.getLogger(RecoverableRetryStrategy.class);
-  private static final ThrottledLogger THROTTLED_LOG =
-      new ThrottledLogger(LOG, Duration.ofSeconds(5));
 
   private final ActorControl actor;
   private final ActorRetryMechanism retryMechanism;
+  private final ThrottledLogger throttledLog = new ThrottledLogger(LOG, Duration.ofSeconds(5));
   private CompletableActorFuture<Boolean> currentFuture;
   private BooleanSupplier terminateCondition;
 
@@ -60,7 +59,7 @@ public final class RecoverableRetryStrategy implements RetryStrategy {
       }
     } catch (final RecoverableException ex) {
       if (!terminateCondition.getAsBoolean()) {
-        THROTTLED_LOG.warn("Caught recoverable exception, will retry: {}", ex.getMessage(), ex);
+        throttledLog.warn("Caught recoverable exception, will retry: {}", ex.getMessage(), ex);
         actor.run(this::run);
         actor.yieldThread();
       }
