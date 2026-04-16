@@ -43,9 +43,9 @@ final class SegmentsManager implements AutoCloseable {
   private static final long INITIAL_ASQN = SegmentedJournal.ASQN_IGNORE;
 
   private static final Logger LOG = LoggerFactory.getLogger(SegmentsManager.class);
-  private static final Logger THROTTLED_LOG = new ThrottledLogger(LOG, Duration.ofSeconds(5));
 
   private final NavigableMap<Long, Segment> segments = new ConcurrentSkipListMap<>();
+  private final ThrottledLogger throttledLog = new ThrottledLogger(LOG, Duration.ofSeconds(5));
   private CompletableFuture<UninitializedSegment> nextSegment = null;
 
   private final JournalMetrics journalMetrics;
@@ -182,7 +182,7 @@ final class SegmentsManager implements AutoCloseable {
     final SortedMap<Long, Segment> compactSegments =
         segments.headMap(segmentEntry.getValue().index());
     if (compactSegments.isEmpty()) {
-      THROTTLED_LOG.debug(
+      throttledLog.debug(
           "No segments can be deleted with index < {} (first log index: {})",
           index,
           getFirstIndex());
