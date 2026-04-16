@@ -7,32 +7,28 @@
  */
 package io.camunda.db.rdbms.write;
 
-import io.camunda.db.rdbms.sql.ExporterPositionMapper;
 import java.time.Duration;
 import java.util.List;
 
-/** PostgreSQL implementation using {@code pg_current_wal_lsn()} and {@code pg_stat_replication}. */
-public final class PostgresReplicationLogStatusProvider implements ReplicationLogStatusProvider {
-
-  private final ExporterPositionMapper mapper;
-
-  public PostgresReplicationLogStatusProvider(final ExporterPositionMapper mapper) {
-    this.mapper = mapper;
-  }
+/**
+ * A no-op implementation that signals LSN-based replication checking is not available. The
+ * replication controller will rely solely on the configured maxLag timeout for position
+ * confirmation.
+ */
+public class NoopReplicationLogStatusProvider implements ReplicationLogStatusProvider {
 
   @Override
   public long getCurrent() {
-    return mapper.findCurrentLsnPostgres();
+    return -1;
   }
 
   @Override
   public List<ReplicationStatusDto> getReplicationStatuses() {
-    return mapper.getReplicationStatusesPostgres();
+    return List.of();
   }
 
   @Override
   public Duration getReplicationLag() {
-    // TODO: implement via a DB query (e.g. max(now() - replay_lsn_time) from pg_stat_replication)
     return Duration.ZERO;
   }
 }

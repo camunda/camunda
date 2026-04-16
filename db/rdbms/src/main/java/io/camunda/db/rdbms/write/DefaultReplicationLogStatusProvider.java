@@ -8,6 +8,7 @@
 package io.camunda.db.rdbms.write;
 
 import io.camunda.db.rdbms.sql.ExporterPositionMapper;
+import java.time.Duration;
 import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -42,6 +43,12 @@ public class DefaultReplicationLogStatusProvider implements ReplicationLogStatus
   public List<ReplicationStatusDto> getReplicationStatuses() {
     trySetupDelegates();
     return delegate.getReplicationStatuses();
+  }
+
+  @Override
+  public Duration getReplicationLag() {
+    trySetupDelegates();
+    return delegate.getReplicationLag();
   }
 
   private void setupDelegates() {

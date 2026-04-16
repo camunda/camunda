@@ -7,6 +7,7 @@
  */
 package io.camunda.db.rdbms.write;
 
+import java.time.Duration;
 import java.util.List;
 
 /**
@@ -25,4 +26,11 @@ public interface ReplicationLogStatusProvider {
 
   /** Returns each replica's last replayed position/timestamp and stable unique identifier. */
   List<ReplicationStatusDto> getReplicationStatuses();
+
+  /**
+   * Returns the current replication lag as reported by the database — how far behind the slowest
+   * tracked replica is from the primary. Used to detect stuck replication so positions can be
+   * confirmed once the lag exceeds the configured maxLag threshold.
+   */
+  Duration getReplicationLag();
 }

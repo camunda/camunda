@@ -10,4 +10,13 @@ package io.camunda.exporter.rdbms.replication;
 public interface ReplicationController extends AutoCloseable {
 
   void onFlush(long exporterPosition);
+
+  /**
+   * Returns {@code true} when the exporter must stop flushing records because replication lag has
+   * exceeded the configured maximum. The exporter resumes flushing once this returns {@code false}
+   * again.
+   */
+  default boolean isPaused() {
+    return false;
+  }
 }

@@ -197,6 +197,17 @@ public final class RdbmsExporter {
   }
 
   public void export(final Record<?> record) {
+    if (isReplicationPaused()) {
+      // Throwing here pushes back-pressure to the broker: ExporterContainer will catch the
+      // exception, RecordExporter keeps its exporterIndex, and BackOffRetryStrategy retries just
+      // this container (exponential backoff, max 10s) until we stop throwing. No new records reach
+      // the exporter, so nothing piles up in memory.
+      throw new ExporterException(
+          String.format(
+              "[RDBMS Exporter P%d] Replication paused: DB-reported lag exceeded maxLag. Retry later.",
+              partitionId));
+    }
+
     LOG.trace(
         "[RDBMS Exporter P{}] Process record {}-{} - {}:{}",
         partitionId,
@@ -377,6 +388,10 @@ public final class RdbmsExporter {
     }
     rdbmsWriters.getMetrics().recordQueueFlush(FlushTrigger.FLUSH_INTERVAL);
     rdbmsWriters.flush(true);
+  }
+
+  private boolean isReplicationPaused() {
+    return replicationController != null && replicationController.isPaused();
   }
 
   @VisibleForTesting("Allows verification of registered handlers in tests")

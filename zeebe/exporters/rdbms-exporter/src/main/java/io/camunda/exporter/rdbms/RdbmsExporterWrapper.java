@@ -10,6 +10,7 @@ package io.camunda.exporter.rdbms;
 import io.camunda.db.rdbms.RdbmsSchemaManager;
 import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.db.rdbms.config.VendorDatabaseProperties;
+import io.camunda.db.rdbms.write.NoopReplicationLogStatusProvider;
 import io.camunda.db.rdbms.write.RdbmsWriterConfig.HistoryDeletionConfig;
 import io.camunda.db.rdbms.write.RdbmsWriters;
 import io.camunda.db.rdbms.write.service.HistoryCleanupService;
@@ -60,7 +61,6 @@ import io.camunda.exporter.rdbms.replication.LsnReplicationControllerFactory;
 import io.camunda.exporter.rdbms.replication.NoopReplicationControllerFactory;
 import io.camunda.search.entities.BatchOperationType;
 import io.camunda.zeebe.exporter.api.Exporter;
-import io.camunda.zeebe.exporter.api.ExporterException;
 import io.camunda.zeebe.exporter.api.context.Context;
 import io.camunda.zeebe.exporter.api.context.Controller;
 import io.camunda.zeebe.exporter.common.auditlog.transformers.AuditLogTransformer;
@@ -159,15 +159,13 @@ public class RdbmsExporterWrapper implements Exporter {
     builder.historyDeletionService(historyDeletionService);
 
     if (config.getAsyncReplication().isEnabled()) {
-      final var lsnProvider = rdbmsWriters.getExporterPositionService().getReplicationLsnProvider();
+      var lsnProvider = rdbmsWriters.getExporterPositionService().getReplicationLsnProvider();
       if (lsnProvider == null) {
-        throw new ExporterException(
-            "Async replication is enabled but no ReplicationLsnProvider is available. "
-                + "Ensure the database supports async replication and the provider is configured.");
+        lsnProvider = new NoopReplicationLogStatusProvider();
       }
       builder.replicationControllerFactory(
           new LsnReplicationControllerFactory(
-              lsnProvider, config.getAsyncReplication(), partitionId));
+              lsnProvider, config.getAsyncReplication(), partitionId, context.clock()));
     } else {
       builder.replicationControllerFactory(new NoopReplicationControllerFactory());
     }

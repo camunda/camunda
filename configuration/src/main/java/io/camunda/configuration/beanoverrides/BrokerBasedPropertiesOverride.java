@@ -969,6 +969,11 @@ public class BrokerBasedPropertiesOverride {
                     config
                         .getAsyncReplication()
                         .setMinSyncReplicas(database.getReplication().getMinSyncReplicas());
+                    config.getAsyncReplication().setMaxLag(database.getReplication().getMaxLag());
+                    config
+                        .getAsyncReplication()
+                        .setPauseOnMaxLagExceeded(
+                            database.getReplication().isPauseOnMaxLagExceeded());
                   }
                 })
             .toArgs());
