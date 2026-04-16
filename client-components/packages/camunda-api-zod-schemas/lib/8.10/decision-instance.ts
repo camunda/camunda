@@ -53,6 +53,8 @@ const queryDecisionInstancesFilterSchema = z
 		evaluationDate: advancedDateTimeFilterSchema,
 		decisionDefinitionKey: basicStringFilterSchema,
 		elementInstanceKey: basicStringFilterSchema,
+		rootDecisionDefinitionKey: basicStringFilterSchema,
+		decisionRequirementsKey: basicStringFilterSchema,
 		...decisionInstanceSchema.pick({
 			evaluationFailure: true,
 			decisionDefinitionId: true,
@@ -63,7 +65,6 @@ const queryDecisionInstancesFilterSchema = z
 			decisionEvaluationKey: true,
 			processDefinitionKey: true,
 			processInstanceKey: true,
-			rootDecisionDefinitionKey: true,
 		}).shape,
 	})
 	.partial();
