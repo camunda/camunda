@@ -196,32 +196,6 @@ final class RetryStrategyTest {
         .succeedsWithin(Duration.ofSeconds(2));
   }
 
-  private record TestCase<T extends RetryStrategy>(ControllableActor actor, T strategy) {
-
-    // used to generate test cases in conjunction with @ValueSource
-    // https://junit.org/junit5/docs/current/user-guide/#writing-tests-parameterized-tests-argument-conversion-implicit
-    @SuppressWarnings("unused")
-    static TestCase<?> of(final String type) {
-      return switch (type.toLowerCase()) {
-        case "endless" -> TestCase.of(EndlessRetryStrategy::new);
-        case "recoverable" -> TestCase.of(RecoverableRetryStrategy::new);
-        case "abortable" -> TestCase.of(AbortableRetryStrategy::new);
-        case "backoff" -> TestCase.of(actor -> new BackOffRetryStrategy(actor, Duration.ZERO));
-        default ->
-            throw new IllegalArgumentException(
-                "Expected one of ['endless', 'recoverable', 'abortable', or 'backoff'], but got "
-                    + type);
-      };
-    }
-
-    private static <T extends RetryStrategy> TestCase<T> of(
-        final Function<ActorControl, T> provider) {
-      final var actor = new ControllableActor();
-      final var strategy = provider.apply(actor.getActor());
-      return new TestCase<>(actor, strategy);
-    }
-  }
-
   @ParameterizedTest
   @ValueSource(strings = {"endless", "recoverable"})
   void shouldFailWhenMaxRetriesExceededOnFalseReturn(final LimitedTestCase<?> test) {
@@ -237,13 +211,13 @@ final class RetryStrategyTest {
     assertThat(resultFuture)
         .failsWithin(Duration.ZERO)
         .withThrowableOfType(ExecutionException.class)
-        .withCauseInstanceOf(MaxRetryReachedException.class)
-        .withMessageContaining("Max retry count of 5 reached");
+        .withCauseInstanceOf(RetryLimitExceededException.class)
+        .withMessageContaining("Retry limit of 5 exceeded");
   }
 
   @ParameterizedTest
   @ValueSource(strings = {"endless", "recoverable"})
-  void shouldSucceedBeforeMaxRetriesOnFalseReturn(final LimitedTestCase<?> test) {
+  void shouldSucceedBeforeMaxRetries(final LimitedTestCase<?> test) {
     // given
     final var count = new AtomicInteger(0);
     schedulerRule.submitActor(test.actor);
@@ -278,8 +252,8 @@ final class RetryStrategyTest {
     assertThat(resultFuture)
         .failsWithin(Duration.ZERO)
         .withThrowableOfType(ExecutionException.class)
-        .withCauseInstanceOf(MaxRetryReachedException.class)
-        .withMessageContaining("Max retry count of 5 reached");
+        .withCauseInstanceOf(RetryLimitExceededException.class)
+        .withMessageContaining("Retry limit of 5 exceeded");
   }
 
   @ParameterizedTest
@@ -302,8 +276,75 @@ final class RetryStrategyTest {
     assertThat(resultFuture)
         .failsWithin(Duration.ZERO)
         .withThrowableOfType(ExecutionException.class)
-        .withCauseInstanceOf(MaxRetryReachedException.class)
-        .withMessageContaining("Max retry count of 5 reached");
+        .withCauseInstanceOf(RetryLimitExceededException.class)
+        .withMessageContaining("Retry limit of 5 exceeded");
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {"endless", "recoverable"})
+  void shouldResetRetryCountOnNewRunWithRetry(final LimitedTestCase<?> test) {
+    // given - exhaust 3 of 5 retries then succeed
+    final var count = new AtomicInteger(0);
+    schedulerRule.submitActor(test.actor);
+
+    test.actor.run(
+        () -> resultFuture = test.strategy.runWithRetry(() -> count.incrementAndGet() == 4));
+    schedulerRule.workUntilDone();
+
+    assertThat(resultFuture).succeedsWithin(Duration.ZERO).isEqualTo(true);
+
+    // when - call runWithRetry again, full 5 retries should be available
+    final var count2 = new AtomicInteger(0);
+    test.actor.run(
+        () -> resultFuture = test.strategy.runWithRetry(() -> count2.incrementAndGet() == 4));
+    schedulerRule.workUntilDone();
+
+    // then - should succeed again (counter was reset)
+    assertThat(count2.get()).isEqualTo(4);
+    assertThat(resultFuture).succeedsWithin(Duration.ZERO).isEqualTo(true);
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {"endless", "recoverable"})
+  void shouldRetryBeyondReasonableCountWithDefaultConstructor(final TestCase<?> test) {
+    // given - single-arg constructor (unlimited retries)
+    final var count = new AtomicInteger(0);
+    schedulerRule.submitActor(test.actor);
+
+    // when - succeed after 1000 retries
+    test.actor.run(
+        () -> resultFuture = test.strategy.runWithRetry(() -> count.incrementAndGet() == 1000));
+    schedulerRule.workUntilDone();
+
+    // then
+    assertThat(count.get()).isEqualTo(1000);
+    assertThat(resultFuture).succeedsWithin(Duration.ZERO).isEqualTo(true);
+  }
+
+  private record TestCase<T extends RetryStrategy>(ControllableActor actor, T strategy) {
+
+    // used to generate test cases in conjunction with @ValueSource
+    // https://junit.org/junit5/docs/current/user-guide/#writing-tests-parameterized-tests-argument-conversion-implicit
+    @SuppressWarnings("unused")
+    static TestCase<?> of(final String type) {
+      return switch (type.toLowerCase()) {
+        case "endless" -> TestCase.of(EndlessRetryStrategy::new);
+        case "recoverable" -> TestCase.of(RecoverableRetryStrategy::new);
+        case "abortable" -> TestCase.of(AbortableRetryStrategy::new);
+        case "backoff" -> TestCase.of(actor -> new BackOffRetryStrategy(actor, Duration.ZERO));
+        default ->
+            throw new IllegalArgumentException(
+                "Expected one of ['endless', 'recoverable', 'abortable', or 'backoff'], but got "
+                    + type);
+      };
+    }
+
+    private static <T extends RetryStrategy> TestCase<T> of(
+        final Function<ActorControl, T> provider) {
+      final var actor = new ControllableActor();
+      final var strategy = provider.apply(actor.getActor());
+      return new TestCase<>(actor, strategy);
+    }
   }
 
   /**

@@ -24,18 +24,20 @@ public final class RecoverableRetryStrategy implements RetryStrategy {
 
   private final ActorControl actor;
   private final ActorRetryMechanism retryMechanism;
+  private final int maxRetries;
   private final ThrottledLogger throttledLog = new ThrottledLogger(LOG, Duration.ofSeconds(5));
   private CompletableActorFuture<Boolean> currentFuture;
   private BooleanSupplier terminateCondition;
+  private int retryCount;
 
   public RecoverableRetryStrategy(final ActorControl actor) {
-    this(actor, ActorRetryMechanism.UNLIMITED);
+    this(actor, Integer.MAX_VALUE);
   }
 
   public RecoverableRetryStrategy(final ActorControl actor, final int maxRetries) {
     this.actor = actor;
+    this.maxRetries = maxRetries;
     retryMechanism = new ActorRetryMechanism();
-    retryMechanism.setMaxRetries(maxRetries);
   }
 
   @Override
@@ -48,6 +50,7 @@ public final class RecoverableRetryStrategy implements RetryStrategy {
       final OperationToRetry callable, final BooleanSupplier condition) {
     currentFuture = new CompletableActorFuture<>();
     terminateCondition = condition;
+    retryCount = 0;
     retryMechanism.wrap(callable, terminateCondition, currentFuture);
 
     actor.run(this::run);
@@ -59,17 +62,31 @@ public final class RecoverableRetryStrategy implements RetryStrategy {
     try {
       final var control = retryMechanism.run();
       if (control == Control.RETRY) {
-        actor.run(this::run);
-        actor.yieldThread();
+        retryCount++;
+        if (retryCount >= maxRetries) {
+          LOG.error("Retry limit reached ({} retries). Failing operation.", retryCount);
+          currentFuture.completeExceptionally(new RetryLimitExceededException(retryCount, null));
+        } else {
+          actor.run(this::run);
+          actor.yieldThread();
+        }
       }
     } catch (final RecoverableException ex) {
       if (!terminateCondition.getAsBoolean()) {
-        if (retryMechanism.incrementAndCheckLimit()) {
-          return;
+        retryCount++;
+        if (retryCount >= maxRetries) {
+          LOG.error("Retry limit reached ({} retries). Failing operation.", retryCount, ex);
+          currentFuture.completeExceptionally(new RetryLimitExceededException(retryCount, ex));
+        } else {
+          throttledLog.warn(
+              "Caught recoverable exception (retry {}/{}), will retry: {}",
+              retryCount,
+              maxRetries,
+              ex.getMessage(),
+              ex);
+          actor.run(this::run);
+          actor.yieldThread();
         }
-        throttledLog.warn("Caught recoverable exception, will retry: {}", ex.getMessage(), ex);
-        actor.run(this::run);
-        actor.yieldThread();
       }
     } catch (final Exception exception) {
       currentFuture.completeExceptionally(exception);
