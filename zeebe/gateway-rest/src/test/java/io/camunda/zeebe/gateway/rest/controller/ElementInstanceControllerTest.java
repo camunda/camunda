@@ -99,7 +99,7 @@ public class ElementInstanceControllerTest extends RestControllerTest {
         """
             {
                 "type":"about:blank",
-                "title":"Bad Request",
+                "title":"INVALID_ARGUMENT",
                 "status":400,
                 "detail":"No variables provided.",
                 "instance":"/v2/element-instances/123/variables"
@@ -161,7 +161,7 @@ public class ElementInstanceControllerTest extends RestControllerTest {
         """
             {
                 "type":"about:blank",
-                "title":"Bad Request",
+                "title":"INVALID_ARGUMENT",
                 "status":400,
                 "detail":"The value for operationReference is '-123' but must be > 0.",
                 "instance":"/v2/element-instances/123/variables"

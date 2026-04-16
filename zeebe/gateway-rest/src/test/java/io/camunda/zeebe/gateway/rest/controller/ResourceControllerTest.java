@@ -485,7 +485,7 @@ public class ResourceControllerTest extends RestControllerTest {
             {
               "type": "about:blank",
               "status": 404,
-              "title": "Not Found",
+              "title": "NOT_FOUND",
               "detail": "Command 'FETCH' rejected with code 'NOT_FOUND': Resource not found",
               "instance": "%s"
             }
@@ -523,7 +523,7 @@ public class ResourceControllerTest extends RestControllerTest {
             {
               "type": "about:blank",
               "status": 500,
-              "title": "Internal Server Error",
+              "title": "INTERNAL",
               "detail": "Command 'FETCH' rejected with code 'PROCESSING_ERROR': something went wrong",
               "instance": "%s"
             }
@@ -557,7 +557,7 @@ public class ResourceControllerTest extends RestControllerTest {
             {
               "type": "about:blank",
               "status": 500,
-              "title": "Internal Server Error",
+              "title": "INTERNAL",
               "detail": "Unexpected error occurred between gateway and broker (code: INTERNAL_ERROR) (message: something went wrong)",
               "instance": "%s"
             }
@@ -619,7 +619,7 @@ public class ResourceControllerTest extends RestControllerTest {
             {
               "type": "about:blank",
               "status": 404,
-              "title": "Not Found",
+              "title": "NOT_FOUND",
               "detail": "Command 'FETCH' rejected with code 'NOT_FOUND': Resource not found",
               "instance": "%s"
             }
@@ -657,7 +657,7 @@ public class ResourceControllerTest extends RestControllerTest {
             {
               "type": "about:blank",
               "status": 500,
-              "title": "Internal Server Error",
+              "title": "INTERNAL",
               "detail": "Command 'FETCH' rejected with code 'PROCESSING_ERROR': something went wrong",
               "instance": "%s"
             }
@@ -691,7 +691,7 @@ public class ResourceControllerTest extends RestControllerTest {
             {
               "type": "about:blank",
               "status": 500,
-              "title": "Internal Server Error",
+              "title": "INTERNAL",
               "detail": "Unexpected error occurred between gateway and broker (code: INTERNAL_ERROR) (message: something went wrong)",
               "instance": "%s"
             }
@@ -933,7 +933,7 @@ public class ResourceControllerTest extends RestControllerTest {
           """
               {
                   "type":"about:blank",
-                  "title":"Bad Request",
+                  "title":"INVALID_ARGUMENT",
                   "status":400,
                   "detail":"The value for operationReference is '-123' but must be > 0.",
                   "instance":"/v2/resources/1/deletion"

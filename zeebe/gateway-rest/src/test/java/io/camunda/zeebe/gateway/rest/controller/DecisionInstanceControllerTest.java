@@ -143,7 +143,7 @@ public class DecisionInstanceControllerTest extends RestControllerTest {
         """
             {
                 "type": "about:blank",
-                "title": "Not Found",
+                "title": "NOT_FOUND",
                 "status": 404,
                 "detail": "Decision Instance with key '999-999' not found",
                 "instance": "%s"
@@ -180,7 +180,7 @@ public class DecisionInstanceControllerTest extends RestControllerTest {
         """
             {
                 "type": "about:blank",
-                "title": "Forbidden",
+                "title": "FORBIDDEN",
                 "status": 403,
                 "detail": "Unauthorized to perform operation 'DELETE_DECISION_INSTANCE' on resource 'DECISION_DEFINITION'",
                 "instance": "%s"
@@ -283,7 +283,7 @@ public class DecisionInstanceControllerTest extends RestControllerTest {
         """
             {
                 "type":"about:blank",
-                "title":"Bad Request",
+                "title":"INVALID_ARGUMENT",
                 "status":400,
                 "detail":"No filter provided.",
                 "instance":"/v2/decision-instances/deletion"
@@ -318,7 +318,7 @@ public class DecisionInstanceControllerTest extends RestControllerTest {
         """
             {
                 "type":"about:blank",
-                "title":"Bad Request",
+                "title":"INVALID_ARGUMENT",
                 "status":400,
                 "detail":"At least one of filter criteria is required.",
                 "instance":"/v2/decision-instances/deletion"

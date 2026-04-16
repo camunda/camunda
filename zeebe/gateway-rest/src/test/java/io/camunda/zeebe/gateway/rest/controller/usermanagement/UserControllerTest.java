@@ -15,6 +15,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
+import io.camunda.gateway.protocol.model.CamundaProblemDetail;
 import io.camunda.gateway.protocol.model.UserRequest;
 import io.camunda.gateway.protocol.model.UserUpdateRequest;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
@@ -23,7 +24,6 @@ import io.camunda.service.UserServices;
 import io.camunda.service.UserServices.UserDTO;
 import io.camunda.service.exception.ErrorMapper;
 import io.camunda.zeebe.broker.client.api.dto.BrokerRejection;
-import io.camunda.zeebe.gateway.rest.CamundaProblemDetail;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.gateway.rest.config.ApiFiltersConfiguration;
 import io.camunda.zeebe.gateway.rest.controller.UserController;
@@ -139,7 +139,7 @@ public class UserControllerTest {
 
       final var expectedBody =
           CamundaProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, message);
-      expectedBody.setTitle("Conflict");
+      expectedBody.setTitle(RejectionType.ALREADY_EXISTS.name());
       expectedBody.setDetail("Command 'CREATE' rejected with code 'ALREADY_EXISTS': " + message);
       expectedBody.setInstance(URI.create(USER_BASE_URL));
 
@@ -167,7 +167,7 @@ public class UserControllerTest {
             {
               "type": "about:blank",
               "status": 400,
-              "title": "Bad Request",
+              "title": "INVALID_ARGUMENT",
               "detail": "No username provided.",
               "instance": "%s"
             }"""
@@ -185,7 +185,7 @@ public class UserControllerTest {
             {
               "type": "about:blank",
               "status": 400,
-              "title": "Bad Request",
+              "title": "INVALID_ARGUMENT",
               "detail": "No username provided.",
               "instance": "%s"
             }"""
@@ -203,7 +203,7 @@ public class UserControllerTest {
             {
               "type": "about:blank",
               "status": 400,
-              "title": "Bad Request",
+              "title": "INVALID_ARGUMENT",
               "detail": "No password provided.",
               "instance": "%s"
             }"""
@@ -221,7 +221,7 @@ public class UserControllerTest {
             {
               "type": "about:blank",
               "status": 400,
-              "title": "Bad Request",
+              "title": "INVALID_ARGUMENT",
               "detail": "No password provided.",
               "instance": "%s"
             }"""
@@ -275,7 +275,7 @@ public class UserControllerTest {
             {
               "type": "about:blank",
               "status": 400,
-              "title": "Bad Request",
+              "title": "INVALID_ARGUMENT",
               "detail": "The provided email '%s' is not valid.",
               "instance": "%s"
             }"""
@@ -298,7 +298,7 @@ public class UserControllerTest {
             {
               "type": "about:blank",
               "status": 400,
-              "title": "Bad Request",
+              "title": "INVALID_ARGUMENT",
               "detail": "The provided username exceeds the limit of 256 characters.",
               "instance": "%s"
             }"""
@@ -326,7 +326,7 @@ public class UserControllerTest {
             {
               "type": "about:blank",
               "status": 400,
-              "title": "Bad Request",
+              "title": "INVALID_ARGUMENT",
               "detail": "The provided username contains illegal characters. It must match the pattern '%s'.",
               "instance": "%s"
             }"""
@@ -430,7 +430,7 @@ public class UserControllerTest {
         {
           "type": "about:blank",
           "status": 403,
-          "title": "Forbidden",
+          "title": "Access issue",
           "detail": "%%s endpoint is not accessible: %s",
           "instance": "%%s"
         }"""

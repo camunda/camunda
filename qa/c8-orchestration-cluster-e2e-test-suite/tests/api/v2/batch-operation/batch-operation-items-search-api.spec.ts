@@ -638,7 +638,8 @@ test.describe.parallel('Batch Operation Items Search API Tests', () => {
 
       await assertBadRequest(
         res,
-        "The provided value 'meow' is not a valid key.",
+        "The provided itemKey 'meow' is not a valid key.",
+        'INVALID_ARGUMENT',
       );
     }).toPass(defaultAssertionOptions);
   });

@@ -125,7 +125,7 @@ test.describe.parallel('Signal Broadcast API', () => {
       data: invalidBody,
     });
 
-    await assertBadRequest(res, /signalName/i, 'Bad Request');
+    await assertBadRequest(res, /signalName/i, 'INVALID_ARGUMENT');
   });
 
   test('Broadcast Signal BadRequest ForInvalidNameType', async ({request}) => {

@@ -63,7 +63,7 @@ test.describe.parallel('Assign User Task Tests', () => {
         data: {}, // Missing assignee
       },
     );
-    await assertBadRequest(res, 'No assignee provided', 'Bad Request');
+    await assertBadRequest(res, 'No assignee provided', 'INVALID_ARGUMENT');
   });
 
   test('Assign user task - unauthorized', async ({request}) => {

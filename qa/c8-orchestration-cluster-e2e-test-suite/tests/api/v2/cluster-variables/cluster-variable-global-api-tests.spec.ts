@@ -83,7 +83,7 @@ test.describe.parallel('Cluster Variable API Tests - Global Scope', () => {
       headers: jsonHeaders(),
       data: body,
     });
-    await assertBadRequest(res, /name/i, 'Bad Request');
+    await assertBadRequest(res, /name/i, 'INVALID_ARGUMENT');
   });
 
   test('Create Global Cluster Variable Missing Value Invalid Body 400', async ({
@@ -94,7 +94,7 @@ test.describe.parallel('Cluster Variable API Tests - Global Scope', () => {
       headers: jsonHeaders(),
       data: body,
     });
-    await assertBadRequest(res, /value/i, 'Bad Request');
+    await assertBadRequest(res, /value/i, 'INVALID_ARGUMENT');
   });
 
   test('Get Global Cluster Variable', async ({request}) => {

@@ -873,7 +873,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
         """
             {
                 "type":"about:blank",
-                "title":"Bad Request",
+                "title":"INVALID_ARGUMENT",
                 "status":400,
                 "detail":"The value for operationReference is '-1' but must be > 0.",
                 "instance":"/v2/process-instances"
@@ -992,7 +992,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
         """
             {
                 "type":"about:blank",
-                "title":"Bad Request",
+                "title":"INVALID_ARGUMENT",
                 "status":400,
                 "detail":"The value for operationReference is '-123' but must be > 0.",
                 "instance":"/v2/process-instances/1/cancellation"
@@ -1082,7 +1082,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
         """
             {
                 "type":"about:blank",
-                "title":"Bad Request",
+                "title":"INVALID_ARGUMENT",
                 "status":400,
                 "detail":"No targetProcessDefinitionKey provided.",
                 "instance":"/v2/process-instances/1/migration"
@@ -1118,7 +1118,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
         """
             {
                 "type":"about:blank",
-                "title":"Bad Request",
+                "title":"INVALID_ARGUMENT",
                 "status":400,
                 "detail":"No mappingInstructions provided.",
                 "instance":"/v2/process-instances/1/migration"
@@ -1155,7 +1155,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
         """
             {
                 "type":"about:blank",
-                "title":"Bad Request",
+                "title":"INVALID_ARGUMENT",
                 "status":400,
                 "detail":"No mappingInstructions provided.",
                 "instance":"/v2/process-instances/1/migration"
@@ -1200,7 +1200,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
         """
             {
                 "type":"about:blank",
-                "title":"Bad Request",
+                "title":"INVALID_ARGUMENT",
                 "status":400,
                 "detail":"No targetElementId provided.",
                 "instance":"/v2/process-instances/1/migration"
@@ -1246,7 +1246,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
         """
             {
                 "type":"about:blank",
-                "title":"Bad Request",
+                "title":"INVALID_ARGUMENT",
                 "status":400,
                 "detail":"The value for operationReference is '-123' but must be > 0.",
                 "instance":"/v2/process-instances/1/migration"
@@ -1675,7 +1675,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
         """
             {
                 "type":"about:blank",
-                "title":"Bad Request",
+                "title":"INVALID_ARGUMENT",
                 "status":400,
                 "detail":"No elementId provided.",
                 "instance":"/v2/process-instances/1/modification"
@@ -1720,7 +1720,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
         """
             {
                 "type":"about:blank",
-                "title":"Bad Request",
+                "title":"INVALID_ARGUMENT",
                 "status":400,
                 "detail":"No variables provided.",
                 "instance":"/v2/process-instances/1/modification"
@@ -1769,7 +1769,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
         """
             {
                 "type":"about:blank",
-                "title":"Bad Request",
+                "title":"INVALID_ARGUMENT",
                 "status":400,
                 "detail":"No variables provided.",
                 "instance":"/v2/process-instances/1/modification"
@@ -1807,7 +1807,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
         """
             {
                 "type":"about:blank",
-                "title":"Bad Request",
+                "title":"INVALID_ARGUMENT",
                 "status":400,
                 "detail":"At least one of [elementId, elementInstanceKey] is required.",
                 "instance":"/v2/process-instances/1/modification"
@@ -1848,7 +1848,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
         """
             {
                 "type":"about:blank",
-                "title":"Bad Request",
+                "title":"INVALID_ARGUMENT",
                 "status":400,
                 "detail":"Only one of [elementId, elementInstanceKey] is allowed.",
                 "instance":"/v2/process-instances/1/modification"
@@ -1895,7 +1895,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
         """
             {
                 "type":"about:blank",
-                "title":"Bad Request",
+                "title":"INVALID_ARGUMENT",
                 "status":400,
                 "detail": "Cannot map value 'unknown' for type 'ancestorScopeInstruction'. \
             Use any of the following values: [direct, inferred, sourceParent].",
@@ -1939,7 +1939,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
         """
             {
                 "type":"about:blank",
-                "title":"Bad Request",
+                "title":"INVALID_ARGUMENT",
                 "status":400,
                 "detail": "No targetElementId provided.",
                 "instance":"/v2/process-instances/1/modification"
@@ -1979,7 +1979,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
         """
             {
                 "type":"about:blank",
-                "title":"Bad Request",
+                "title":"INVALID_ARGUMENT",
                 "status":400,
                 "detail": "No sourceElementInstruction provided.",
                 "instance":"/v2/process-instances/1/modification"
@@ -2039,7 +2039,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
         """
             {
                 "type":"about:blank",
-                "title":"Bad Request",
+                "title":"INVALID_ARGUMENT",
                 "status":400,
                 "detail":"The value for operationReference is '-123' but must be > 0.",
                 "instance":"/v2/process-instances/1/modification"
@@ -2435,7 +2435,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
         """
             {
                 "type":"about:blank",
-                "title":"Bad Request",
+                "title":"INVALID_ARGUMENT",
                 "status":400,
                 "detail":"No filter provided.",
                 "instance":"/v2/process-instances/cancellation"
@@ -2470,7 +2470,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
         """
             {
                 "type":"about:blank",
-                "title":"Bad Request",
+                "title":"INVALID_ARGUMENT",
                 "status":400,
                 "detail":"At least one of filter criteria is required.",
                 "instance":"/v2/process-instances/cancellation"
@@ -2499,7 +2499,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
         """
             {
                 "type":"about:blank",
-                "title":"Bad Request",
+                "title":"INVALID_ARGUMENT",
                 "status":400,
                 "detail":"No filter provided.",
                 "instance":"/v2/process-instances/incident-resolution"
@@ -2529,7 +2529,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
         """
             {
                 "type":"about:blank",
-                "title":"Bad Request",
+                "title":"INVALID_ARGUMENT",
                 "status":400,
                 "detail":"No filter provided.",
                 "instance":"/v2/process-instances/incident-resolution"
@@ -2564,7 +2564,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
         """
             {
                 "type":"about:blank",
-                "title":"Bad Request",
+                "title":"INVALID_ARGUMENT",
                 "status":400,
                 "detail":"At least one of filter criteria is required.",
                 "instance":"/v2/process-instances/incident-resolution"
@@ -2607,7 +2607,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
         """
             {
                 "type":"about:blank",
-                "title":"Bad Request",
+                "title":"INVALID_ARGUMENT",
                 "status":400,
                 "detail":"No filter provided.",
                 "instance":"/v2/process-instances/migration"
@@ -2651,7 +2651,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
         """
             {
                 "type":"about:blank",
-                "title":"Bad Request",
+                "title":"INVALID_ARGUMENT",
                 "status":400,
                 "detail":"At least one of filter criteria is required.",
                 "instance":"/v2/process-instances/migration"
@@ -2696,7 +2696,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
         """
             {
                 "type":"about:blank",
-                "title":"Bad Request",
+                "title":"INVALID_ARGUMENT",
                 "status":400,
                 "detail":"No migrationPlan provided.",
                 "instance":"/v2/process-instances/migration"
@@ -2742,7 +2742,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
         """
             {
                 "type":"about:blank",
-                "title":"Bad Request",
+                "title":"INVALID_ARGUMENT",
                 "status":400,
                 "detail":"No targetProcessDefinitionKey provided. No mappingInstructions provided.",
                 "instance":"/v2/process-instances/migration"
@@ -2782,7 +2782,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
         """
             {
                 "type":"about:blank",
-                "title":"Bad Request",
+                "title":"INVALID_ARGUMENT",
                 "status":400,
                 "detail":"No filter provided.",
                 "instance":"/v2/process-instances/modification"
@@ -2823,7 +2823,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
         """
             {
                 "type":"about:blank",
-                "title":"Bad Request",
+                "title":"INVALID_ARGUMENT",
                 "status":400,
                 "detail":"At least one of filter criteria is required.",
                 "instance":"/v2/process-instances/modification"
@@ -2860,7 +2860,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
         """
             {
                 "type":"about:blank",
-                "title":"Bad Request",
+                "title":"INVALID_ARGUMENT",
                 "status":400,
                 "detail":"No moveInstructions provided.",
                 "instance":"/v2/process-instances/modification"
@@ -2898,7 +2898,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
         """
             {
                 "type":"about:blank",
-                "title":"Bad Request",
+                "title":"INVALID_ARGUMENT",
                 "status":400,
                 "detail":"No moveInstructions provided.",
                 "instance":"/v2/process-instances/modification"
@@ -3000,7 +3000,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
         """
             {
                 "type":"about:blank",
-                "title":"Bad Request",
+                "title":"INVALID_ARGUMENT",
                 "status":400,
                 "detail":"No filter provided.",
                 "instance":"/v2/process-instances/deletion"
@@ -3035,7 +3035,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
         """
             {
                 "type":"about:blank",
-                "title":"Bad Request",
+                "title":"INVALID_ARGUMENT",
                 "status":400,
                 "detail":"At least one of filter criteria is required.",
                 "instance":"/v2/process-instances/deletion"
@@ -3145,7 +3145,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
         """
             {
                 "type": "about:blank",
-                "title": "Not Found",
+                "title": "NOT_FOUND",
                 "status": 404,
                 "detail": "Process Instance with key '1' not found",
                 "instance": "/v2/process-instances/1/deletion"
@@ -3179,7 +3179,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
         """
             {
                 "type":"about:blank",
-                "title":"Bad Request",
+                "title":"INVALID_ARGUMENT",
                 "status":400,
                 "detail":"The provided processDefinitionId contains illegal characters. It must match the pattern '^[\\\\p{L}_][\\\\p{L}\\\\p{N}_\\\\-\\\\.]*$'.",
                 "instance":"/v2/process-instances"
@@ -3217,7 +3217,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
         """
             {
                 "type":"about:blank",
-                "title":"Bad Request",
+                "title":"INVALID_ARGUMENT",
                 "status":400,
                 "detail":"The provided businessId exceeds the limit of 256 characters.",
                 "instance":"/v2/process-instances"
@@ -3255,7 +3255,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
         """
             {
                 "type":"about:blank",
-                "title":"Bad Request",
+                "title":"INVALID_ARGUMENT",
                 "status":400,
                 "detail":"The provided businessId exceeds the limit of 256 characters.",
                 "instance":"/v2/process-instances"

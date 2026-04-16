@@ -14,6 +14,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
+import io.camunda.gateway.protocol.model.CamundaProblemDetail;
 import io.camunda.gateway.protocol.model.UserRequest;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
@@ -22,7 +23,6 @@ import io.camunda.security.entity.AuthenticationMethod;
 import io.camunda.service.RoleServices;
 import io.camunda.service.UserServices;
 import io.camunda.service.UserServices.UserDTO;
-import io.camunda.zeebe.gateway.rest.CamundaProblemDetail;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.gateway.rest.controller.SetupController;
 import io.camunda.zeebe.gateway.rest.controller.adapter.DefaultSetupServiceAdapter;
@@ -131,7 +131,7 @@ class SetupControllerTest extends RestControllerTest {
         CamundaProblemDetail.forStatusAndDetail(
             HttpStatus.FORBIDDEN,
             DefaultSetupServiceAdapter.WRONG_AUTHENTICATION_METHOD_ERROR_MESSAGE);
-    expectedBody.setTitle("Forbidden");
+    expectedBody.setTitle("FORBIDDEN");
     expectedBody.setInstance(URI.create(USER_PATH));
 
     webClient
@@ -156,7 +156,7 @@ class SetupControllerTest extends RestControllerTest {
     final var expectedBody =
         CamundaProblemDetail.forStatusAndDetail(
             HttpStatus.FORBIDDEN, DefaultSetupServiceAdapter.ADMIN_EXISTS_ERROR_MESSAGE);
-    expectedBody.setTitle("Forbidden");
+    expectedBody.setTitle("FORBIDDEN");
     expectedBody.setInstance(URI.create(USER_PATH));
 
     webClient
@@ -182,7 +182,7 @@ class SetupControllerTest extends RestControllerTest {
             {
               "type": "about:blank",
               "status": 400,
-              "title": "Bad Request",
+              "title": "INVALID_ARGUMENT",
               "detail": "No username provided.",
               "instance": "%s"
             }"""
@@ -200,7 +200,7 @@ class SetupControllerTest extends RestControllerTest {
             {
               "type": "about:blank",
               "status": 400,
-              "title": "Bad Request",
+              "title": "INVALID_ARGUMENT",
               "detail": "No username provided.",
               "instance": "%s"
             }"""
@@ -218,7 +218,7 @@ class SetupControllerTest extends RestControllerTest {
             {
               "type": "about:blank",
               "status": 400,
-              "title": "Bad Request",
+              "title": "INVALID_ARGUMENT",
               "detail": "No password provided.",
               "instance": "%s"
             }"""
@@ -236,7 +236,7 @@ class SetupControllerTest extends RestControllerTest {
             {
               "type": "about:blank",
               "status": 400,
-              "title": "Bad Request",
+              "title": "INVALID_ARGUMENT",
               "detail": "No password provided.",
               "instance": "%s"
             }"""
@@ -290,7 +290,7 @@ class SetupControllerTest extends RestControllerTest {
             {
               "type": "about:blank",
               "status": 400,
-              "title": "Bad Request",
+              "title": "INVALID_ARGUMENT",
               "detail": "The provided email '%s' is not valid.",
               "instance": "%s"
             }"""
@@ -313,7 +313,7 @@ class SetupControllerTest extends RestControllerTest {
             {
               "type": "about:blank",
               "status": 400,
-              "title": "Bad Request",
+              "title": "INVALID_ARGUMENT",
               "detail": "The provided username exceeds the limit of 256 characters.",
               "instance": "%s"
             }"""
@@ -341,7 +341,7 @@ class SetupControllerTest extends RestControllerTest {
             {
               "type": "about:blank",
               "status": 400,
-              "title": "Bad Request",
+              "title": "INVALID_ARGUMENT",
               "detail": "The provided username contains illegal characters. It must match the pattern '%s'.",
               "instance": "%s"
             }"""

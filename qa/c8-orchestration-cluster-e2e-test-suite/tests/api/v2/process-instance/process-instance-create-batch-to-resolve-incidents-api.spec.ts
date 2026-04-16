@@ -130,7 +130,7 @@ test.describe
         },
       },
     );
-    await assertBadRequest(res, 'No filter provided.', 'Bad Request');
+    await assertBadRequest(res, 'No filter provided.', 'INVALID_ARGUMENT');
   });
 
   test('Create a Batch Operation to Resolve Incidents - With Invalid Filter - Bad Request', async ({

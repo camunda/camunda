@@ -194,7 +194,7 @@ public class TenantControllerTest {
             {
               "type": "about:blank",
               "status": 400,
-              "title": "Bad Request",
+              "title": "INVALID_ARGUMENT",
               "detail": "No tenantId provided.",
               "instance": "%s"
             }"""
@@ -233,7 +233,7 @@ public class TenantControllerTest {
             {
               "type": "about:blank",
               "status": 400,
-              "title": "Bad Request",
+              "title": "INVALID_ARGUMENT",
               "detail": "The provided tenantId contains illegal characters. It must match the pattern '%s'.",
               "instance": "%s"
             }"""
@@ -265,7 +265,7 @@ public class TenantControllerTest {
             {
               "type": "about:blank",
               "status": 400,
-              "title": "Bad Request",
+              "title": "INVALID_ARGUMENT",
               "detail": "The provided tenantId exceeds the limit of 256 characters.",
               "instance": "%s"
             }"""
@@ -342,7 +342,7 @@ public class TenantControllerTest {
             {
               "type": "about:blank",
               "status": 400,
-              "title": "Bad Request",
+              "title": "INVALID_ARGUMENT",
               "detail": "No name provided.",
               "instance": "%s"
             }"""
@@ -457,7 +457,7 @@ public class TenantControllerTest {
             {
               "type": "about:blank",
               "status": 400,
-              "title": "Bad Request",
+              "title": "INVALID_ARGUMENT",
               "detail": "The provided tenantId contains illegal characters. It must match the pattern '%s'.",
               "instance": "%s"
             }"""
@@ -495,7 +495,7 @@ public class TenantControllerTest {
             {
               "type": "about:blank",
               "status": 400,
-              "title": "Bad Request",
+              "title": "INVALID_ARGUMENT",
               "detail": "The provided %s contains illegal characters. It must match the pattern '%s'.",
               "instance": "%s"
             }"""
@@ -557,7 +557,7 @@ public class TenantControllerTest {
             {
               "type": "about:blank",
               "status": 400,
-              "title": "Bad Request",
+              "title": "INVALID_ARGUMENT",
               "detail": "The provided tenantId contains illegal characters. It must match the pattern '%s'.",
               "instance": "%s"
             }"""
@@ -595,7 +595,7 @@ public class TenantControllerTest {
             {
               "type": "about:blank",
               "status": 400,
-              "title": "Bad Request",
+              "title": "INVALID_ARGUMENT",
               "detail": "The provided %s contains illegal characters. It must match the pattern '%s'.",
               "instance": "%s"
             }"""
@@ -718,7 +718,7 @@ public class TenantControllerTest {
         {
           "type": "about:blank",
           "status": 403,
-          "title": "Forbidden",
+          "title": "Access issue",
           "detail": "%%s endpoint is not accessible: %s",
           "instance": "%%s"
         }"""

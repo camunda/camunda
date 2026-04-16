@@ -83,7 +83,7 @@ test.describe.serial('Create Process Instance Batch to Migrate Tests', () => {
       },
     });
 
-    await assertBadRequest(res, 'No filter provided.', 'Bad Request');
+    await assertBadRequest(res, 'No filter provided.', 'INVALID_ARGUMENT');
   });
 
   test('Create a Batch Operation to Migrate Process Instances - With No Migration Instructions - Bad Request', async ({
@@ -101,7 +101,7 @@ test.describe.serial('Create Process Instance Batch to Migrate Tests', () => {
     await assertBadRequest(
       res,
       'No migrationPlan provided.',
-      'Bad Request',
+      'INVALID_ARGUMENT',
     );
   });
 

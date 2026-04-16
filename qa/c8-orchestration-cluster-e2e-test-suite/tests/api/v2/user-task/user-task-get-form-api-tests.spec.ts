@@ -186,7 +186,7 @@ test.describe.parallel('Get User Task Form Tests', () => {
       await assertStatusCode(res, 404);
       const json = await res.json();
       assertRequiredFields(json, ['detail', 'title']);
-      expect(json.title).toBe('Not Found');
+      expect(json.title).toBe('NOT_FOUND');
       expect(json.detail).toContain(
         `User Task with key '${nonExistingUserTaskKey}' not found`,
       );

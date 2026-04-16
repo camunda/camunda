@@ -7,9 +7,9 @@
  */
 package io.camunda.gateway.mapping.http;
 
+import io.camunda.gateway.protocol.model.CamundaProblemDetail;
 import io.camunda.service.exception.ServiceException;
 import io.camunda.service.exception.ServiceException.Status;
-import io.camunda.zeebe.gateway.rest.CamundaProblemDetail;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Function;
@@ -55,7 +55,7 @@ public class GatewayErrorMapper {
           HttpStatus.FORBIDDEN, ade.getMessage(), HttpStatus.FORBIDDEN.name());
     } else if (exception instanceof NumberFormatException) {
       return createProblemDetail(
-          HttpStatus.BAD_REQUEST, "Invalid numeric value provided.", "INVALID_ARGUMENT");
+          HttpStatus.BAD_REQUEST, exception.getMessage(), "INVALID_ARGUMENT");
     } else {
       LOG.error("Expected to handle REST request, but an unexpected error occurred", error);
       return createProblemDetail(
@@ -80,19 +80,18 @@ public class GatewayErrorMapper {
   }
 
   /**
-   * Creates a {@link ProblemDetail} from a status and detail. Per RFC 9457 §4.2.1, when the problem
-   * type is "about:blank" (the default), the title is set to the standard HTTP reason phrase for
-   * the status code. The title parameter is accepted for backward compatibility but is not applied
-   * — Spring's default title (the HTTP reason phrase) is used instead.
+   * Creates a {@link ProblemDetail} from a status, detail, and title.
    *
    * @param status the status of the problem
    * @param detail the detail text of the problem
-   * @param title unused — retained for source compatibility; the HTTP reason phrase is used instead
+   * @param title the title of the problem
    * @return a problem detail reflecting the provided input
    */
   public static ProblemDetail createProblemDetail(
       final HttpStatusCode status, final String detail, final String title) {
-    return CamundaProblemDetail.forStatusAndDetail(status, detail);
+    final var problemDetail = CamundaProblemDetail.forStatusAndDetail(status, detail);
+    problemDetail.setTitle(title);
+    return problemDetail;
   }
 
   protected static HttpStatus mapStatus(final Status status) {

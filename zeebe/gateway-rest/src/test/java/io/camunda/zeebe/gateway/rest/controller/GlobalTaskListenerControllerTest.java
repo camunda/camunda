@@ -103,7 +103,7 @@ public class GlobalTaskListenerControllerTest extends RestControllerTest {
         """
             {
               "type": "about:blank",
-              "title": "Bad Request",
+              "title": "INVALID_ARGUMENT",
               "status": 400,
               "detail": "The provided id contains illegal characters. It must match the pattern '^[a-zA-Z0-9_~@.+-]+$'.",
               "instance": "%s"

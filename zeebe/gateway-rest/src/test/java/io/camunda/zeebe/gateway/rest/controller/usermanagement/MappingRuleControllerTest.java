@@ -105,7 +105,7 @@ public class MappingRuleControllerTest extends RestControllerTest {
             {
               "type": "about:blank",
               "status": 400,
-              "title": "Bad Request",
+              "title": "INVALID_ARGUMENT",
               "detail": "No mappingRuleId provided.",
               "instance": "%s"
             }"""
@@ -130,7 +130,7 @@ public class MappingRuleControllerTest extends RestControllerTest {
             {
               "type": "about:blank",
               "status": 400,
-              "title": "Bad Request",
+              "title": "INVALID_ARGUMENT",
               "detail": "No mappingRuleId provided.",
               "instance": "%s"
             }"""
@@ -151,7 +151,7 @@ public class MappingRuleControllerTest extends RestControllerTest {
             {
               "type": "about:blank",
               "status": 400,
-              "title": "Bad Request",
+              "title": "INVALID_ARGUMENT",
               "detail": "No claimName provided.",
               "instance": "%s"
             }"""
@@ -176,7 +176,7 @@ public class MappingRuleControllerTest extends RestControllerTest {
             {
               "type": "about:blank",
               "status": 400,
-              "title": "Bad Request",
+              "title": "INVALID_ARGUMENT",
               "detail": "No claimName provided.",
               "instance": "%s"
             }"""
@@ -196,7 +196,7 @@ public class MappingRuleControllerTest extends RestControllerTest {
             {
               "type": "about:blank",
               "status": 400,
-              "title": "Bad Request",
+              "title": "INVALID_ARGUMENT",
               "detail": "No claimValue provided.",
               "instance": "%s"
             }"""
@@ -221,7 +221,7 @@ public class MappingRuleControllerTest extends RestControllerTest {
             {
               "type": "about:blank",
               "status": 400,
-              "title": "Bad Request",
+              "title": "INVALID_ARGUMENT",
               "detail": "No claimValue provided.",
               "instance": "%s"
             }"""
@@ -242,7 +242,7 @@ public class MappingRuleControllerTest extends RestControllerTest {
             {
               "type": "about:blank",
               "status": 400,
-              "title": "Bad Request",
+              "title": "INVALID_ARGUMENT",
               "detail": "No name provided.",
               "instance": "%s"
             }"""
@@ -273,7 +273,7 @@ public class MappingRuleControllerTest extends RestControllerTest {
             {
               "type": "about:blank",
               "status": 400,
-              "title": "Bad Request",
+              "title": "INVALID_ARGUMENT",
               "detail": "The provided mappingRuleId contains illegal characters. It must match the pattern '%s'.",
               "instance": "%s"
             }"""
@@ -299,7 +299,7 @@ public class MappingRuleControllerTest extends RestControllerTest {
             {
               "type": "about:blank",
               "status": 400,
-              "title": "Bad Request",
+              "title": "INVALID_ARGUMENT",
               "detail": "The provided mappingRuleId exceeds the limit of 256 characters.",
               "instance": "%s"
             }"""
@@ -381,7 +381,7 @@ public class MappingRuleControllerTest extends RestControllerTest {
             {
               "type": "about:blank",
               "status": 400,
-              "title": "Bad Request",
+              "title": "INVALID_ARGUMENT",
               "detail": "No claimName provided.",
               "instance": "%s"
             }"""
@@ -403,7 +403,7 @@ public class MappingRuleControllerTest extends RestControllerTest {
             {
               "type": "about:blank",
               "status": 400,
-              "title": "Bad Request",
+              "title": "INVALID_ARGUMENT",
               "detail": "No claimName provided.",
               "instance": "%s"
             }"""
@@ -424,7 +424,7 @@ public class MappingRuleControllerTest extends RestControllerTest {
             {
               "type": "about:blank",
               "status": 400,
-              "title": "Bad Request",
+              "title": "INVALID_ARGUMENT",
               "detail": "No claimValue provided.",
               "instance": "%s"
             }"""
@@ -446,7 +446,7 @@ public class MappingRuleControllerTest extends RestControllerTest {
             {
               "type": "about:blank",
               "status": 400,
-              "title": "Bad Request",
+              "title": "INVALID_ARGUMENT",
               "detail": "No claimValue provided.",
               "instance": "%s"
             }"""
@@ -467,7 +467,7 @@ public class MappingRuleControllerTest extends RestControllerTest {
             {
               "type": "about:blank",
               "status": 400,
-              "title": "Bad Request",
+              "title": "INVALID_ARGUMENT",
               "detail": "No name provided.",
               "instance": "%s"
             }"""

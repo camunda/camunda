@@ -425,7 +425,7 @@ public class DocumentControllerTest extends RestControllerTest {
             """
                 {
                   "type": "about:blank",
-                  "title": "Bad Request",
+                  "title": "INVALID_ARGUMENT",
                   "status": 400,
                   "detail": "No document hash provided for document foo",
                   "instance": "%s"
@@ -456,7 +456,7 @@ public class DocumentControllerTest extends RestControllerTest {
             """
                 {
                   "type": "about:blank",
-                  "title": "Bad Request",
+                  "title": "INVALID_ARGUMENT",
                   "status": 400,
                   "detail": "Document hash for document foo doesn't match the provided hash barbaz",
                   "instance": "%s"

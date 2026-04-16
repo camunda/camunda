@@ -174,7 +174,7 @@ public class SystemControllerTest extends RestControllerTest {
         """
         {
           "type":"about:blank",
-          "title":"Bad Request",
+          "title":"INVALID_ARGUMENT",
           "status":400,
           "detail":"The provided startTime 'foo' cannot be parsed as a date according to RFC 3339, \
         section 5.6. The provided endTime 'bar' cannot be parsed as a date according to RFC 3339, \
@@ -203,7 +203,7 @@ public class SystemControllerTest extends RestControllerTest {
         """
         {
           "type":"about:blank",
-          "title":"Bad Request",
+          "title":"INVALID_ARGUMENT",
           "status":400,
           "detail":"The startTime and endTime must both be specified.",
           "instance":"/v2/system/usage-metrics"
@@ -230,7 +230,7 @@ public class SystemControllerTest extends RestControllerTest {
         """
         {
           "type":"about:blank",
-          "title":"Bad Request",
+          "title":"INVALID_ARGUMENT",
           "status":400,
           "detail":"The startTime and endTime must both be specified.",
           "instance":"/v2/system/usage-metrics"
@@ -257,7 +257,7 @@ public class SystemControllerTest extends RestControllerTest {
         """
         {
           "type":"about:blank",
-          "title":"Bad Request",
+          "title":"INVALID_ARGUMENT",
           "status":400,
           "detail":"The startTime and endTime must both be specified.",
           "instance":"/v2/system/usage-metrics"
@@ -284,7 +284,7 @@ public class SystemControllerTest extends RestControllerTest {
         """
         {
           "type":"about:blank",
-          "title":"Bad Request",
+          "title":"INVALID_ARGUMENT",
           "status":400,
           "detail":"The endTime must be after startTime.",
           "instance":"/v2/system/usage-metrics"
@@ -313,7 +313,7 @@ public class SystemControllerTest extends RestControllerTest {
         """
         {
           "type":"about:blank",
-          "title":"Bad Request",
+          "title":"INVALID_ARGUMENT",
           "status":400,
           "detail":"The endTime must be after startTime.",
           "instance":"/v2/system/usage-metrics"

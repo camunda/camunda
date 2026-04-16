@@ -208,7 +208,7 @@ public class MessageControllerTest extends RestControllerTest {
                 {
                   "type": "about:blank",
                   "status": 400,
-                  "title": "Bad Request",
+                  "title": "INVALID_ARGUMENT",
                   "detail": "No name provided.",
                   "instance": "%s"
                 }"""
@@ -246,7 +246,7 @@ public class MessageControllerTest extends RestControllerTest {
                 {
                   "type": "about:blank",
                   "status": 400,
-                  "title": "Bad Request",
+                  "title": "INVALID_ARGUMENT",
                   "detail": "No messageName provided.",
                   "instance": "%s"
                 }"""
@@ -282,7 +282,7 @@ public class MessageControllerTest extends RestControllerTest {
             {
               "type": "about:blank",
               "status": 400,
-              "title": "Bad Request",
+              "title": "INVALID_ARGUMENT",
               "detail": "Expected to handle request Correlate Message with multi-tenancy enabled, but no tenant identifier was provided.",
               "instance": "%s"
             }"""
@@ -319,7 +319,7 @@ public class MessageControllerTest extends RestControllerTest {
                 {
                   "type": "about:blank",
                   "status": 400,
-                  "title": "Bad Request",
+                  "title": "INVALID_ARGUMENT",
                   "detail": "Expected to handle request Correlate Message with tenant identifier 'tenant', but multi-tenancy is disabled",
                   "instance": "%s"
                 }"""
@@ -356,7 +356,7 @@ public class MessageControllerTest extends RestControllerTest {
                 {
                   "type": "about:blank",
                   "status": 400,
-                  "title": "Bad Request",
+                  "title": "INVALID_ARGUMENT",
                   "detail": "Expected to handle request Correlate Message with tenant identifier 'tenanttenanttenanttenanttenanttenanttenanttenanttenant', but tenant identifier is longer than 31 characters.",
                   "instance": "%s"
                 }"""
@@ -393,7 +393,7 @@ public class MessageControllerTest extends RestControllerTest {
             {
               "type": "about:blank",
               "status": 400,
-              "title": "Bad Request",
+              "title": "INVALID_ARGUMENT",
               "detail": "The provided tenantId contains illegal characters. It must match the pattern '^(<default>|[A-Za-z0-9_@.+-]+)$'.",
               "instance": "%s"
             }"""
@@ -542,7 +542,7 @@ public class MessageControllerTest extends RestControllerTest {
         """
             {
                 "type":"about:blank",
-                "title":"Bad Request",
+                "title":"INVALID_ARGUMENT",
                 "status":400,
                 "detail":"No name provided.",
                 "instance":"/v2/messages/publication"

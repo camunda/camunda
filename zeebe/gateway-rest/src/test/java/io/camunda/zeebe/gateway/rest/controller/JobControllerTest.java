@@ -230,7 +230,7 @@ public class JobControllerTest extends RestControllerTest {
             {
               "type": "about:blank",
               "status": 400,
-              "title": "Bad Request",
+              "title": "INVALID_ARGUMENT",
               "detail": "No errorCode provided.",
               "instance": "%s"
             }"""
@@ -270,7 +270,7 @@ public class JobControllerTest extends RestControllerTest {
             {
               "type": "about:blank",
               "status": 400,
-              "title": "Bad Request",
+              "title": "INVALID_ARGUMENT",
               "detail": "No errorCode provided.",
               "instance": "%s"
             }"""
@@ -310,7 +310,7 @@ public class JobControllerTest extends RestControllerTest {
             {
               "type": "about:blank",
               "status": 400,
-              "title": "Bad Request",
+              "title": "INVALID_ARGUMENT",
               "detail": "No errorCode provided.",
               "instance": "%s"
             }"""
@@ -787,7 +787,7 @@ public class JobControllerTest extends RestControllerTest {
             {
               "type": "about:blank",
               "status": 400,
-              "title": "Bad Request",
+              "title": "INVALID_ARGUMENT",
               "detail": "At least one of [retries, timeout] is required.",
               "instance": "%s"
             }"""
@@ -870,7 +870,7 @@ public class JobControllerTest extends RestControllerTest {
             {
               "type": "about:blank",
               "status": 400,
-              "title": "Bad Request",
+              "title": "INVALID_ARGUMENT",
               "detail": "Expected to handle request Activate Jobs with multi-tenancy enabled, but no tenant identifier was provided.",
               "instance": "%s"
             }"""
@@ -913,7 +913,7 @@ public class JobControllerTest extends RestControllerTest {
             {
               "type": "about:blank",
               "status": 400,
-              "title": "Bad Request",
+              "title": "INVALID_ARGUMENT",
               "detail": "Expected to handle request Activate Jobs with tenant %s, but multi-tenancy is disabled",
               "instance": "%s"
             }"""
@@ -2500,7 +2500,7 @@ public class JobControllerTest extends RestControllerTest {
             """
             {
               "type": "about:blank",
-              "title": "Forbidden",
+              "title": "FORBIDDEN",
               "status": 403,
               "detail": "Job metrics feature is disabled",
               "instance": "%s"
