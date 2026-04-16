@@ -38,7 +38,7 @@ const VariablesTable: React.FC<Props> = ({
   isVariableModificationAllowed,
 }) => {
   const {data: isProcessInstanceRunning} = useIsProcessInstanceRunning();
-  const {initialValues} = useFormState();
+  const {initialValues} = useFormState<VariableFormValues>();
   const form = useForm<VariableFormValues>();
   const variableNameRef = useRef<HTMLDivElement>(null);
 

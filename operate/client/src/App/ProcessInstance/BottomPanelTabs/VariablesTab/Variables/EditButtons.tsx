@@ -12,11 +12,12 @@ import {useFieldError} from 'modules/hooks/useFieldError';
 import {Button} from '@carbon/react';
 import {Checkmark, Close} from '@carbon/react/icons';
 import {Loading} from './EditButtons.styled';
+import type {VariableFormValues} from 'modules/types/variables';
 
 const EditButtons: React.FC = () => {
   const form = useForm();
   const {values, initialValues, validating, hasValidationErrors} =
-    useFormState();
+    useFormState<VariableFormValues>();
 
   const nameError = useFieldError('name');
   const valueError = useFieldError('value');

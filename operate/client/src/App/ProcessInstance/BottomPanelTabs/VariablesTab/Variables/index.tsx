@@ -59,7 +59,7 @@ const Variables: React.FC<Props> = observer(
       return disposer;
     }, [isModificationModeEnabled, form]);
 
-    const {initialValues} = useFormState();
+    const {initialValues} = useFormState<VariableFormValues>();
 
     const fieldArray = useFieldArray('newVariables');
 
