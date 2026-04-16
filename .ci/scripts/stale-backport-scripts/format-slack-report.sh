@@ -159,13 +159,20 @@ while IFS= read -r repo_name; do
         else "" end)
       else "" end) as $bot_info |
 
-      # Header with original PR
+      # Header with original PR — author mention inline for non-bot PRs
       "*Original PR:* " +
       (if .original_pr_url != "" then
         ":pull-request-merged: <\(.original_pr_url)|#\(.original_pr_number // "?")> \(.original_pr_title // "Unknown" | if length > 60 then .[:57] + "..." else . end)"
       else
         ":pull-request-merged: #\(.original_pr_number // "?") — \(.original_pr_title // "Unknown" | if length > 60 then .[:57] + "..." else . end)"
-      end) + (if $bot_info != "" then "  · \($bot_info)" else "" end) + "\n" +
+      end) + (if $bot_info != "" then "  · \($bot_info)"
+      else
+        (slack_id_for(.original_pr_author // ""; .original_pr_author_name // null)) as $sid |
+        if $sid then "  <@\($sid)>"
+        elif ((.original_pr_author_name // "") != "") then "  @\(.original_pr_author_name)"
+        elif ((.original_pr_author // "") != "") then "  \(.original_pr_author)"
+        else "" end
+      end) + "\n" +
       "*Stale backports:*\n" +
       ([.backport_prs[] |
         (if .age_days > 0 then "\(.age_days)d \(.age_hours % 24)h" else "\(.age_hours)h \((.age_minutes // 0) % 60)m" end) as $age |
@@ -175,46 +182,37 @@ while IFS= read -r repo_name; do
       ] | join("\n"))
     ')
 
-    # Resolve author info for context block: avatar + Slack mention
+    # Resolve author avatar for section accessory
     author_login=$(echo "$group" | jq -r '.original_pr_author // "unknown"')
     author_name=$(echo "$group" | jq -r '.original_pr_author_name // ""')
     map_entry=$(jq -c --arg login "$author_login" --arg name "$author_name" \
       '(.[$login] // .[$name] // null) | if type == "string" then {slack_id: .} else . end' \
       "$TMPDIR_WORK/slack_user_map.json" 2>/dev/null || echo 'null')
-    slack_id=$(echo "$map_entry" | jq -r '.slack_id // empty' 2>/dev/null || true)
     avatar_url=$(echo "$map_entry" | jq -r '.avatar_url // .image_48 // empty' 2>/dev/null || true)
     if [[ -z "$avatar_url" && "$author_login" != app/* && "$author_login" != "unknown" ]]; then
       avatar_url="https://github.com/${author_login}.png?size=24"
     fi
 
-    # Build author mention text for context block
-    if [[ -n "$slack_id" ]]; then
-      author_mention="<@${slack_id}>"
-    elif [[ -n "$author_name" ]]; then
-      author_mention="@${author_name}"
-    else
-      author_mention="${author_login}"
-    fi
-
     if [[ "$USE_GROUP_DIVIDERS" == "true" ]]; then
-      jq -c --arg text "$section_text" \
-        '. + [{type: "divider"}, {type: "section", text: {type: "mrkdwn", text: $text}}]' \
-        "$TMPDIR_WORK/blocks.json" > "$TMPDIR_WORK/blocks_tmp.json" && mv "$TMPDIR_WORK/blocks_tmp.json" "$TMPDIR_WORK/blocks.json"
+      if [[ -n "$avatar_url" ]]; then
+        jq -c --arg text "$section_text" --arg avatar "$avatar_url" --arg alt "${author_name:-$author_login}" \
+          '. + [{type: "divider"}, {type: "section", text: {type: "mrkdwn", text: $text}, accessory: {type: "image", image_url: $avatar, alt_text: $alt}}]' \
+          "$TMPDIR_WORK/blocks.json" > "$TMPDIR_WORK/blocks_tmp.json" && mv "$TMPDIR_WORK/blocks_tmp.json" "$TMPDIR_WORK/blocks.json"
+      else
+        jq -c --arg text "$section_text" \
+          '. + [{type: "divider"}, {type: "section", text: {type: "mrkdwn", text: $text}}]' \
+          "$TMPDIR_WORK/blocks.json" > "$TMPDIR_WORK/blocks_tmp.json" && mv "$TMPDIR_WORK/blocks_tmp.json" "$TMPDIR_WORK/blocks.json"
+      fi
     else
-      jq -c --arg text "$section_text" \
-        '. + [{type: "section", text: {type: "mrkdwn", text: ("── ── ── ── ──\n" + $text)}}]' \
-        "$TMPDIR_WORK/blocks.json" > "$TMPDIR_WORK/blocks_tmp.json" && mv "$TMPDIR_WORK/blocks_tmp.json" "$TMPDIR_WORK/blocks.json"
-    fi
-
-    # Add context block with avatar + author mention
-    if [[ -n "$avatar_url" ]]; then
-      jq -c --arg avatar "$avatar_url" --arg mention "$author_mention" --arg alt "${author_name:-$author_login}" \
-        '. + [{type: "context", elements: [{type: "image", image_url: $avatar, alt_text: $alt}, {type: "mrkdwn", text: $mention}]}]' \
-        "$TMPDIR_WORK/blocks.json" > "$TMPDIR_WORK/blocks_tmp.json" && mv "$TMPDIR_WORK/blocks_tmp.json" "$TMPDIR_WORK/blocks.json"
-    else
-      jq -c --arg mention "$author_mention" \
-        '. + [{type: "context", elements: [{type: "mrkdwn", text: $mention}]}]' \
-        "$TMPDIR_WORK/blocks.json" > "$TMPDIR_WORK/blocks_tmp.json" && mv "$TMPDIR_WORK/blocks_tmp.json" "$TMPDIR_WORK/blocks.json"
+      if [[ -n "$avatar_url" ]]; then
+        jq -c --arg text "$section_text" --arg avatar "$avatar_url" --arg alt "${author_name:-$author_login}" \
+          '. + [{type: "section", text: {type: "mrkdwn", text: ("── ── ── ── ──\n" + $text)}, accessory: {type: "image", image_url: $avatar, alt_text: $alt}}]' \
+          "$TMPDIR_WORK/blocks.json" > "$TMPDIR_WORK/blocks_tmp.json" && mv "$TMPDIR_WORK/blocks_tmp.json" "$TMPDIR_WORK/blocks.json"
+      else
+        jq -c --arg text "$section_text" \
+          '. + [{type: "section", text: {type: "mrkdwn", text: ("── ── ── ── ──\n" + $text)}}]' \
+          "$TMPDIR_WORK/blocks.json" > "$TMPDIR_WORK/blocks_tmp.json" && mv "$TMPDIR_WORK/blocks_tmp.json" "$TMPDIR_WORK/blocks.json"
+      fi
     fi
   done
   fi
@@ -222,13 +220,13 @@ done < "$TMPDIR_WORK/repo_list.txt"
 
 # Legend + footer
 # Slack enforces a hard limit of 50 blocks per message. Trim excess content blocks first.
-# Each PR group uses 1-2 blocks (section + optional context for avatar), plus dividers if enabled.
-# With group dividers: limit=45 (conservative for avatar context blocks).
-# Without group dividers: limit=44 (reserve slots for truncation notice + footer).
+# Each PR group uses 1 block (section with optional image accessory), plus dividers if enabled.
+# With group dividers: limit=47 (50 - 3 footer).
+# Without group dividers: limit=46 (reserve slots for truncation notice + footer).
 if [[ "$USE_GROUP_DIVIDERS" == "true" ]]; then
-  CONTENT_LIMIT=45
+  CONTENT_LIMIT=47
 else
-  CONTENT_LIMIT=44
+  CONTENT_LIMIT=46
 fi
 content_count=$(jq 'length' "$TMPDIR_WORK/blocks.json")
 if [[ "$content_count" -gt "$CONTENT_LIMIT" ]]; then
