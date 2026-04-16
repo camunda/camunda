@@ -8,10 +8,21 @@
 package io.camunda.db.rdbms.write;
 
 import io.camunda.db.rdbms.sql.ExporterPositionMapper;
-import java.time.Duration;
 import java.util.List;
 
-/** PostgreSQL implementation using {@code pg_current_wal_lsn()} and {@code pg_stat_replication}. */
+/**
+ * PostgreSQL implementation using {@code pg_current_wal_lsn()} and {@code pg_stat_replication}.
+ *
+ * <p>Per-replica lag is read from {@code pg_stat_replication.replay_lag} — the elapsed time
+ * between flushing WAL locally and the standby acknowledging it has been replayed (applied).
+ * Disconnected replicas simply do not appear in the view and therefore do not contribute a row;
+ * the caller is expected to combine the row count with a configured {@code minSyncReplicas}
+ * quorum to detect broken replication.
+ *
+ * <p>Note: the {@code replay_lag} column is restricted to superusers by default. The exporter user
+ * needs the {@code pg_monitor} or {@code pg_read_all_stats} role to observe it; otherwise the lag
+ * reads as 0.
+ */
 public final class PostgresReplicationLogStatusProvider implements ReplicationLogStatusProvider {
 
   private final ExporterPositionMapper mapper;
@@ -28,11 +39,5 @@ public final class PostgresReplicationLogStatusProvider implements ReplicationLo
   @Override
   public List<ReplicationStatusDto> getReplicationStatuses() {
     return mapper.getReplicationStatusesPostgres();
-  }
-
-  @Override
-  public Duration getReplicationLag() {
-    // TODO: implement via a DB query (e.g. max(now() - replay_lsn_time) from pg_stat_replication)
-    return Duration.ZERO;
   }
 }

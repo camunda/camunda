@@ -41,7 +41,8 @@
   <select id="getReplicationStatusesPostgres" resultType="io.camunda.db.rdbms.write.ReplicationStatusDto">
     SELECT
       COALESCE(pg_wal_lsn_diff(replay_lsn, '0/0'), 0)::bigint AS logStatus,
-      pid::text AS replicaId
+      pid::text AS replicaId,
+      COALESCE((EXTRACT(EPOCH FROM replay_lag) * 1000)::bigint, 0) AS replicationLagMs
     FROM pg_stat_replication
     WHERE pid IS NOT NULL;
   </select>
@@ -55,7 +56,8 @@
   <select id="getReplicationStatusesAurora" resultType="io.camunda.db.rdbms.write.ReplicationStatusDto">
     SELECT
       COALESCE(DURABLE_LSN, 0) AS logStatus,
-      COALESCE(SERVER_ID, SESSION_ID) AS replicaId
+      COALESCE(SERVER_ID, SESSION_ID) AS replicaId,
+      COALESCE(VISIBILITY_LAG_IN_MSEC, 0)::bigint AS replicationLagMs
     FROM aurora_global_db_instance_status()
     WHERE SESSION_ID != 'MASTER_SESSION_ID';
   </select>

@@ -7,13 +7,13 @@
  */
 package io.camunda.db.rdbms.write;
 
-import java.time.Duration;
 import java.util.List;
 
 /**
  * Provides replication log status for tracking async replication state. The primary's current
  * position is captured after each flush to know what has been committed. Replica statuses are
- * polled periodically to determine what each replica has applied.
+ * polled periodically to determine what each replica has applied, together with the DB-reported
+ * replication lag per replica.
  *
  * <p>The position can represent different metrics depending on the database: a WAL LSN
  * (PostgreSQL), a durable LSN (Aurora), or a timestamp (Azure SQL). Implementations are
@@ -24,13 +24,10 @@ public interface ReplicationLogStatusProvider {
   /** Returns the primary's current replication position after the last commit. */
   long getCurrent();
 
-  /** Returns each replica's last replayed position/timestamp and stable unique identifier. */
-  List<ReplicationStatusDto> getReplicationStatuses();
-
   /**
-   * Returns the current replication lag as reported by the database — how far behind the slowest
-   * tracked replica is from the primary. Used to detect stuck replication so positions can be
-   * confirmed once the lag exceeds the configured maxLag threshold.
+   * Returns per-replica state: last replayed position/timestamp, a stable unique identifier, and
+   * the DB-reported replication lag in milliseconds. Returning one row per replica lets the caller
+   * apply quorum-aware aggregation instead of collapsing to a single worst-case value in SQL.
    */
-  Duration getReplicationLag();
+  List<ReplicationStatusDto> getReplicationStatuses();
 }

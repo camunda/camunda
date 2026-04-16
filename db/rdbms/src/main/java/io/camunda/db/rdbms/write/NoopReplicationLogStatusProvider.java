@@ -7,7 +7,6 @@
  */
 package io.camunda.db.rdbms.write;
 
-import java.time.Duration;
 import java.util.List;
 
 /**
@@ -25,10 +24,5 @@ public class NoopReplicationLogStatusProvider implements ReplicationLogStatusPro
   @Override
   public List<ReplicationStatusDto> getReplicationStatuses() {
     return List.of();
-  }
-
-  @Override
-  public Duration getReplicationLag() {
-    return Duration.ZERO;
   }
 }
