@@ -503,11 +503,7 @@ class LsnReplicationControllerTest {
 
   private static ReplicationStatusDto replicationStatus(
       final String replicaId, final long lsn, final long lagMs) {
-    final var status = new ReplicationStatusDto();
-    status.setReplicaId(replicaId);
-    status.setLogStatus(lsn);
-    status.setReplicationLagMs(lagMs);
-    return status;
+    return new ReplicationStatusDto(lsn, replicaId, lagMs);
   }
 
   private static final class TestFixture {

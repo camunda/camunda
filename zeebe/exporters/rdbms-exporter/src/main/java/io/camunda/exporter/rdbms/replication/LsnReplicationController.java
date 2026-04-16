@@ -220,7 +220,7 @@ public class LsnReplicationController implements ReplicationController {
     }
 
     return statuses.stream()
-        .map(ReplicationStatusDto::getLogStatus)
+        .map(ReplicationStatusDto::logStatus)
         .sorted(Comparator.<Long>naturalOrder().reversed())
         .limit(minSyncReplicas)
         .min(Comparator.naturalOrder())
@@ -242,7 +242,7 @@ public class LsnReplicationController implements ReplicationController {
     }
     final long quorumLagMs =
         statuses.stream()
-            .mapToLong(ReplicationStatusDto::getReplicationLagMs)
+            .mapToLong(ReplicationStatusDto::replicationLagMs)
             .sorted()
             .skip(minSyncReplicas - 1L)
             .findFirst()
