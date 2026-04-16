@@ -25,48 +25,49 @@ public final class DecisionInstanceFilterMapper {
 
   public static DecisionInstanceFilter toDecisionInstanceFilter(
       final io.camunda.gateway.protocol.model.DecisionInstanceFilter filter) {
-    final var builder = FilterBuilders.decisionInstance();
-    if (filter != null) {
-      ofNullable(filter.getDecisionEvaluationKey())
-          .map(KeyUtil::keyToLong)
-          .ifPresent(builder::decisionInstanceKeys);
-      ofNullable(filter.getDecisionEvaluationInstanceKey())
-          .map(mapToOperations(String.class))
-          .ifPresent(builder::decisionInstanceIdOperations);
-      ofNullable(filter.getState())
-          .map(mapToOperations(String.class, new DecisionInstanceStateConverter()))
-          .ifPresent(builder::stateOperations);
-      ofNullable(filter.getEvaluationFailure()).ifPresent(builder::evaluationFailures);
-      ofNullable(filter.getEvaluationDate())
-          .map(mapToOperations(OffsetDateTime.class))
-          .ifPresent(builder::evaluationDateOperations);
-      ofNullable(filter.getProcessDefinitionKey())
-          .map(KeyUtil::keyToLong)
-          .ifPresent(builder::processDefinitionKeys);
-      ofNullable(filter.getProcessInstanceKey())
-          .map(KeyUtil::keyToLong)
-          .ifPresent(builder::processInstanceKeys);
-      ofNullable(filter.getElementInstanceKey())
-          .map(mapToOperations(Long.class))
-          .ifPresent(builder::flowNodeInstanceKeyOperations);
-      ofNullable(filter.getDecisionDefinitionKey())
-          .map(mapToOperations(Long.class))
-          .ifPresent(builder::decisionDefinitionKeyOperations);
-      ofNullable(filter.getDecisionDefinitionId()).ifPresent(builder::decisionDefinitionIds);
-      ofNullable(filter.getDecisionDefinitionName()).ifPresent(builder::decisionDefinitionNames);
-      ofNullable(filter.getDecisionDefinitionVersion())
-          .ifPresent(builder::decisionDefinitionVersions);
-      ofNullable(filter.getDecisionDefinitionType())
-          .map(t -> Enum.valueOf(DecisionDefinitionType.class, t.name()))
-          .ifPresent(builder::decisionTypes);
-      ofNullable(filter.getRootDecisionDefinitionKey())
-          .map(mapToOperations(Long.class))
-          .ifPresent(builder::rootDecisionDefinitionKeyOperations);
-      ofNullable(filter.getDecisionRequirementsKey())
-          .map(mapToOperations(Long.class))
-          .ifPresent(builder::decisionRequirementsKeyOperations);
-      ofNullable(filter.getTenantId()).ifPresent(builder::tenantIds);
+    if (filter == null) {
+      return FilterBuilders.decisionInstance().build();
     }
+    final var builder = FilterBuilders.decisionInstance();
+    ofNullable(filter.getDecisionEvaluationKey())
+        .map(KeyUtil::keyToLong)
+        .ifPresent(builder::decisionInstanceKeys);
+    ofNullable(filter.getDecisionEvaluationInstanceKey())
+        .map(mapToOperations(String.class))
+        .ifPresent(builder::decisionInstanceIdOperations);
+    ofNullable(filter.getState())
+        .map(mapToOperations(String.class, new DecisionInstanceStateConverter()))
+        .ifPresent(builder::stateOperations);
+    ofNullable(filter.getEvaluationFailure()).ifPresent(builder::evaluationFailures);
+    ofNullable(filter.getEvaluationDate())
+        .map(mapToOperations(OffsetDateTime.class))
+        .ifPresent(builder::evaluationDateOperations);
+    ofNullable(filter.getProcessDefinitionKey())
+        .map(KeyUtil::keyToLong)
+        .ifPresent(builder::processDefinitionKeys);
+    ofNullable(filter.getProcessInstanceKey())
+        .map(KeyUtil::keyToLong)
+        .ifPresent(builder::processInstanceKeys);
+    ofNullable(filter.getElementInstanceKey())
+        .map(mapToOperations(Long.class))
+        .ifPresent(builder::flowNodeInstanceKeyOperations);
+    ofNullable(filter.getDecisionDefinitionKey())
+        .map(mapToOperations(Long.class))
+        .ifPresent(builder::decisionDefinitionKeyOperations);
+    ofNullable(filter.getDecisionDefinitionId()).ifPresent(builder::decisionDefinitionIds);
+    ofNullable(filter.getDecisionDefinitionName()).ifPresent(builder::decisionDefinitionNames);
+    ofNullable(filter.getDecisionDefinitionVersion())
+        .ifPresent(builder::decisionDefinitionVersions);
+    ofNullable(filter.getDecisionDefinitionType())
+        .map(t -> Enum.valueOf(DecisionDefinitionType.class, t.name()))
+        .ifPresent(builder::decisionTypes);
+    ofNullable(filter.getRootDecisionDefinitionKey())
+        .map(mapToOperations(Long.class))
+        .ifPresent(builder::rootDecisionDefinitionKeyOperations);
+    ofNullable(filter.getDecisionRequirementsKey())
+        .map(mapToOperations(Long.class))
+        .ifPresent(builder::decisionRequirementsKeyOperations);
+    ofNullable(filter.getTenantId()).ifPresent(builder::tenantIds);
     return builder.build();
   }
 }

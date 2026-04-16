@@ -21,22 +21,23 @@ public final class ClusterVariableSearchQueryFilterRequestMapper {
 
   public static ClusterVariableFilter toClusterVariableFilter(
       final io.camunda.gateway.protocol.model.ClusterVariableSearchQueryFilterRequest filter) {
-    final var builder = FilterBuilders.clusterVariable();
-    if (filter != null) {
-      ofNullable(filter.getName())
-          .map(mapToOperations(String.class))
-          .ifPresent(builder::nameOperations);
-      ofNullable(filter.getValue())
-          .map(mapToOperations(String.class))
-          .ifPresent(builder::valueOperations);
-      ofNullable(filter.getScope())
-          .map(mapToOperations(String.class))
-          .ifPresent(builder::scopeOperations);
-      ofNullable(filter.getTenantId())
-          .map(mapToOperations(String.class))
-          .ifPresent(builder::tenantIdOperations);
-      ofNullable(filter.getIsTruncated()).ifPresent(builder::isTruncated);
+    if (filter == null) {
+      return FilterBuilders.clusterVariable().build();
     }
+    final var builder = FilterBuilders.clusterVariable();
+    ofNullable(filter.getName())
+        .map(mapToOperations(String.class))
+        .ifPresent(builder::nameOperations);
+    ofNullable(filter.getValue())
+        .map(mapToOperations(String.class))
+        .ifPresent(builder::valueOperations);
+    ofNullable(filter.getScope())
+        .map(mapToOperations(String.class))
+        .ifPresent(builder::scopeOperations);
+    ofNullable(filter.getTenantId())
+        .map(mapToOperations(String.class))
+        .ifPresent(builder::tenantIdOperations);
+    ofNullable(filter.getIsTruncated()).ifPresent(builder::isTruncated);
     return builder.build();
   }
 }

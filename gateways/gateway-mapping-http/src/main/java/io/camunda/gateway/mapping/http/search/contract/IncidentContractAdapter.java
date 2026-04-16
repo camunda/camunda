@@ -10,8 +10,8 @@ package io.camunda.gateway.mapping.http.search.contract;
 import static io.camunda.gateway.mapping.http.ResponseMapper.formatDate;
 import static io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy.mapEnum;
 import static io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy.requireNonNull;
+import static io.camunda.gateway.mapping.http.util.KeyUtil.keyToString;
 
-import io.camunda.gateway.mapping.http.util.KeyUtil;
 import io.camunda.gateway.protocol.model.IncidentErrorTypeEnum;
 import io.camunda.gateway.protocol.model.IncidentResult;
 import io.camunda.gateway.protocol.model.IncidentStateEnum;
@@ -44,18 +44,15 @@ public final class IncidentContractAdapter {
                 "state",
                 entity))
         .tenantId(requireNonNull(entity.tenantId(), "tenantId", entity))
-        .incidentKey(
-            requireNonNull(KeyUtil.keyToString(entity.incidentKey()), "incidentKey", entity))
+        .incidentKey(requireNonNull(keyToString(entity.incidentKey()), "incidentKey", entity))
         .processDefinitionKey(
             requireNonNull(
-                KeyUtil.keyToString(entity.processDefinitionKey()), "processDefinitionKey", entity))
+                keyToString(entity.processDefinitionKey()), "processDefinitionKey", entity))
         .processInstanceKey(
-            requireNonNull(
-                KeyUtil.keyToString(entity.processInstanceKey()), "processInstanceKey", entity))
+            requireNonNull(keyToString(entity.processInstanceKey()), "processInstanceKey", entity))
         .elementInstanceKey(
-            requireNonNull(
-                KeyUtil.keyToString(entity.flowNodeInstanceKey()), "elementInstanceKey", entity))
-        .rootProcessInstanceKey(KeyUtil.keyToString(entity.rootProcessInstanceKey()))
-        .jobKey(KeyUtil.keyToString(entity.jobKey()));
+            requireNonNull(keyToString(entity.flowNodeInstanceKey()), "elementInstanceKey", entity))
+        .rootProcessInstanceKey(keyToString(entity.rootProcessInstanceKey()))
+        .jobKey(keyToString(entity.jobKey()));
   }
 }

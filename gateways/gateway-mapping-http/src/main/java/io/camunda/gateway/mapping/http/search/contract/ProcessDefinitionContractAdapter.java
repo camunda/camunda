@@ -9,8 +9,8 @@ package io.camunda.gateway.mapping.http.search.contract;
 
 import static io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy.isNotBlank;
 import static io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy.requireNonNull;
+import static io.camunda.gateway.mapping.http.util.KeyUtil.keyToString;
 
-import io.camunda.gateway.mapping.http.util.KeyUtil;
 import io.camunda.gateway.protocol.model.ProcessDefinitionResult;
 import io.camunda.search.entities.ProcessDefinitionEntity;
 
@@ -36,7 +36,7 @@ public final class ProcessDefinitionContractAdapter {
         .tenantId(requireNonNull(entity.tenantId(), "tenantId", entity))
         .processDefinitionKey(
             requireNonNull(
-                KeyUtil.keyToString(entity.processDefinitionKey()), "processDefinitionKey", entity))
+                keyToString(entity.processDefinitionKey()), "processDefinitionKey", entity))
         .hasStartForm(requireNonNull(isNotBlank(entity.formId()), "hasStartForm", entity))
         .name(entity.name()) // required + nullable in contract
         .versionTag(entity.versionTag()); // required + nullable in contract

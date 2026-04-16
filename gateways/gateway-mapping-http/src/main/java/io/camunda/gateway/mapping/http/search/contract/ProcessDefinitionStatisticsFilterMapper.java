@@ -33,57 +33,59 @@ public final class ProcessDefinitionStatisticsFilterMapper {
       toProcessDefinitionStatisticsFilter(
           final long processDefinitionKey,
           final io.camunda.gateway.protocol.model.ProcessDefinitionStatisticsFilter filter) {
+    if (filter == null) {
+      return Either.right(
+          FilterBuilders.processDefinitionStatisticsFilter(processDefinitionKey).build());
+    }
     final List<String> validationErrors = new ArrayList<>();
     final var builder = FilterBuilders.processDefinitionStatisticsFilter(processDefinitionKey);
-    if (filter != null) {
-      applyBaseProcessInstanceFilterFields(
-          builder,
-          filter.getProcessInstanceKey(),
-          filter.getParentProcessInstanceKey(),
-          filter.getParentElementInstanceKey(),
-          filter.getStartDate(),
-          filter.getEndDate(),
-          filter.getState(),
-          filter.getHasIncident(),
-          filter.getTenantId(),
-          filter.getBatchOperationId(),
-          filter.getErrorMessage(),
-          filter.getHasRetriesLeft(),
-          filter.getElementId(),
-          filter.getHasElementInstanceIncident(),
-          filter.getElementInstanceState(),
-          filter.getIncidentErrorHashCode(),
-          filter.getVariables(),
-          validationErrors);
-      if (filter.get$or() != null && !filter.get$or().isEmpty()) {
-        for (final BaseProcessInstanceFilterFields or : filter.get$or()) {
-          final var orBuilder =
-              FilterBuilders.processDefinitionStatisticsFilter(processDefinitionKey);
-          final List<String> orErrors = new ArrayList<>();
-          applyBaseProcessInstanceFilterFields(
-              orBuilder,
-              or.getProcessInstanceKey(),
-              or.getParentProcessInstanceKey(),
-              or.getParentElementInstanceKey(),
-              or.getStartDate(),
-              or.getEndDate(),
-              or.getState(),
-              or.getHasIncident(),
-              or.getTenantId(),
-              or.getBatchOperationId(),
-              or.getErrorMessage(),
-              or.getHasRetriesLeft(),
-              or.getElementId(),
-              or.getHasElementInstanceIncident(),
-              or.getElementInstanceState(),
-              or.getIncidentErrorHashCode(),
-              or.getVariables(),
-              orErrors);
-          if (!orErrors.isEmpty()) {
-            validationErrors.addAll(orErrors);
-          } else {
-            builder.addOrOperation(orBuilder.build());
-          }
+    applyBaseProcessInstanceFilterFields(
+        builder,
+        filter.getProcessInstanceKey(),
+        filter.getParentProcessInstanceKey(),
+        filter.getParentElementInstanceKey(),
+        filter.getStartDate(),
+        filter.getEndDate(),
+        filter.getState(),
+        filter.getHasIncident(),
+        filter.getTenantId(),
+        filter.getBatchOperationId(),
+        filter.getErrorMessage(),
+        filter.getHasRetriesLeft(),
+        filter.getElementId(),
+        filter.getHasElementInstanceIncident(),
+        filter.getElementInstanceState(),
+        filter.getIncidentErrorHashCode(),
+        filter.getVariables(),
+        validationErrors);
+    if (filter.get$or() != null && !filter.get$or().isEmpty()) {
+      for (final BaseProcessInstanceFilterFields or : filter.get$or()) {
+        final var orBuilder =
+            FilterBuilders.processDefinitionStatisticsFilter(processDefinitionKey);
+        final List<String> orErrors = new ArrayList<>();
+        applyBaseProcessInstanceFilterFields(
+            orBuilder,
+            or.getProcessInstanceKey(),
+            or.getParentProcessInstanceKey(),
+            or.getParentElementInstanceKey(),
+            or.getStartDate(),
+            or.getEndDate(),
+            or.getState(),
+            or.getHasIncident(),
+            or.getTenantId(),
+            or.getBatchOperationId(),
+            or.getErrorMessage(),
+            or.getHasRetriesLeft(),
+            or.getElementId(),
+            or.getHasElementInstanceIncident(),
+            or.getElementInstanceState(),
+            or.getIncidentErrorHashCode(),
+            or.getVariables(),
+            orErrors);
+        if (!orErrors.isEmpty()) {
+          validationErrors.addAll(orErrors);
+        } else {
+          builder.addOrOperation(orBuilder.build());
         }
       }
     }

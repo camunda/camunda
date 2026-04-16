@@ -10,8 +10,8 @@ package io.camunda.gateway.mapping.http.search.contract;
 import static io.camunda.gateway.mapping.http.ResponseMapper.formatDate;
 import static io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy.mapEnum;
 import static io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy.requireNonNull;
+import static io.camunda.gateway.mapping.http.util.KeyUtil.keyToString;
 
-import io.camunda.gateway.mapping.http.util.KeyUtil;
 import io.camunda.gateway.protocol.model.MessageSubscriptionResult;
 import io.camunda.gateway.protocol.model.MessageSubscriptionStateEnum;
 import io.camunda.search.entities.MessageSubscriptionEntity;
@@ -30,9 +30,7 @@ public final class MessageSubscriptionContractAdapter {
     return new MessageSubscriptionResult()
         .messageSubscriptionKey(
             requireNonNull(
-                KeyUtil.keyToString(entity.messageSubscriptionKey()),
-                "messageSubscriptionKey",
-                entity))
+                keyToString(entity.messageSubscriptionKey()), "messageSubscriptionKey", entity))
         .processDefinitionId(
             requireNonNull(entity.processDefinitionId(), "processDefinitionId", entity))
         .elementId(requireNonNull(entity.flowNodeId(), "elementId", entity))
@@ -44,10 +42,10 @@ public final class MessageSubscriptionContractAdapter {
         .lastUpdatedDate(requireNonNull(formatDate(entity.dateTime()), "lastUpdatedDate", entity))
         .messageName(requireNonNull(entity.messageName(), "messageName", entity))
         .tenantId(requireNonNull(entity.tenantId(), "tenantId", entity))
-        .processDefinitionKey(KeyUtil.keyToString(entity.processDefinitionKey()))
-        .processInstanceKey(KeyUtil.keyToString(entity.processInstanceKey()))
-        .rootProcessInstanceKey(KeyUtil.keyToString(entity.rootProcessInstanceKey()))
-        .elementInstanceKey(KeyUtil.keyToString(entity.flowNodeInstanceKey()))
+        .processDefinitionKey(keyToString(entity.processDefinitionKey()))
+        .processInstanceKey(keyToString(entity.processInstanceKey()))
+        .rootProcessInstanceKey(keyToString(entity.rootProcessInstanceKey()))
+        .elementInstanceKey(keyToString(entity.flowNodeInstanceKey()))
         .correlationKey(entity.correlationKey());
   }
 }

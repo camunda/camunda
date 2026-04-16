@@ -26,27 +26,28 @@ public final class GlobalTaskListenerFilterMapper {
       @Nullable final GlobalTaskListenerSearchQueryFilterRequest filter) {
     final var builder =
         FilterBuilders.globalListener().listenerTypes(GlobalListenerType.USER_TASK.name());
-    if (filter != null) {
-      ofNullable(filter.getId())
-          .map(mapToOperations(String.class))
-          .ifPresent(builder::listenerIdOperations);
-      ofNullable(filter.getType())
-          .map(mapToOperations(String.class))
-          .ifPresent(builder::typeOperations);
-      ofNullable(filter.getRetries())
-          .map(mapToOperations(Integer.class))
-          .ifPresent(builder::retriesOperations);
-      ofNullable(filter.getEventTypes())
-          .map(mapToOperations(String.class))
-          .ifPresent(builder::eventTypeOperations);
-      ofNullable(filter.getAfterNonGlobal()).ifPresent(builder::afterNonGlobal);
-      ofNullable(filter.getPriority())
-          .map(mapToOperations(Integer.class))
-          .ifPresent(builder::priorityOperations);
-      ofNullable(filter.getSource())
-          .map(mapToOperations(String.class))
-          .ifPresent(builder::sourceOperations);
+    if (filter == null) {
+      return builder.build();
     }
+    ofNullable(filter.getId())
+        .map(mapToOperations(String.class))
+        .ifPresent(builder::listenerIdOperations);
+    ofNullable(filter.getType())
+        .map(mapToOperations(String.class))
+        .ifPresent(builder::typeOperations);
+    ofNullable(filter.getRetries())
+        .map(mapToOperations(Integer.class))
+        .ifPresent(builder::retriesOperations);
+    ofNullable(filter.getEventTypes())
+        .map(mapToOperations(String.class))
+        .ifPresent(builder::eventTypeOperations);
+    ofNullable(filter.getAfterNonGlobal()).ifPresent(builder::afterNonGlobal);
+    ofNullable(filter.getPriority())
+        .map(mapToOperations(Integer.class))
+        .ifPresent(builder::priorityOperations);
+    ofNullable(filter.getSource())
+        .map(mapToOperations(String.class))
+        .ifPresent(builder::sourceOperations);
     return builder.build();
   }
 }

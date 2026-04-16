@@ -9,8 +9,8 @@ package io.camunda.gateway.mapping.http.search.contract;
 
 import static io.camunda.gateway.mapping.http.ResponseMapper.formatDate;
 import static io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy.requireNonNull;
+import static io.camunda.gateway.mapping.http.util.KeyUtil.keyToString;
 
-import io.camunda.gateway.mapping.http.util.KeyUtil;
 import io.camunda.gateway.protocol.model.ProcessInstanceResult;
 import io.camunda.gateway.protocol.model.ProcessInstanceStateEnum;
 import io.camunda.search.entities.ProcessInstanceEntity;
@@ -37,18 +37,17 @@ public final class ProcessInstanceContractAdapter {
         .hasIncident(requireNonNull(entity.hasIncident(), "hasIncident", entity))
         .tenantId(requireNonNull(entity.tenantId(), "tenantId", entity))
         .processInstanceKey(
-            requireNonNull(
-                KeyUtil.keyToString(entity.processInstanceKey()), "processInstanceKey", entity))
+            requireNonNull(keyToString(entity.processInstanceKey()), "processInstanceKey", entity))
         .processDefinitionKey(
             requireNonNull(
-                KeyUtil.keyToString(entity.processDefinitionKey()), "processDefinitionKey", entity))
+                keyToString(entity.processDefinitionKey()), "processDefinitionKey", entity))
         .tags(requireNonNull(entity.tags(), "tags", entity))
         .processDefinitionName(entity.processDefinitionName())
         .processDefinitionVersionTag(entity.processDefinitionVersionTag())
         .endDate(formatDate(entity.endDate()))
-        .parentProcessInstanceKey(KeyUtil.keyToString(entity.parentProcessInstanceKey()))
-        .parentElementInstanceKey(KeyUtil.keyToString(entity.parentFlowNodeInstanceKey()))
-        .rootProcessInstanceKey(KeyUtil.keyToString(entity.rootProcessInstanceKey()))
+        .parentProcessInstanceKey(keyToString(entity.parentProcessInstanceKey()))
+        .parentElementInstanceKey(keyToString(entity.parentFlowNodeInstanceKey()))
+        .rootProcessInstanceKey(keyToString(entity.rootProcessInstanceKey()))
         .businessId(emptyToNull(entity.businessId()));
   }
 

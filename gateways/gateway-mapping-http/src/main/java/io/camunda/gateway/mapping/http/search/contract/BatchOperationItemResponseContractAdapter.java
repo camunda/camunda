@@ -10,8 +10,8 @@ package io.camunda.gateway.mapping.http.search.contract;
 import static io.camunda.gateway.mapping.http.ResponseMapper.formatDate;
 import static io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy.mapEnum;
 import static io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy.requireNonNull;
+import static io.camunda.gateway.mapping.http.util.KeyUtil.keyToString;
 
-import io.camunda.gateway.mapping.http.util.KeyUtil;
 import io.camunda.gateway.protocol.model.BatchOperationItemResponse;
 import io.camunda.gateway.protocol.model.BatchOperationTypeEnum;
 import io.camunda.search.entities.BatchOperationEntity.BatchOperationItemEntity;
@@ -34,13 +34,12 @@ public final class BatchOperationItemResponseContractAdapter {
                 "operationType",
                 entity))
         .batchOperationKey(requireNonNull(entity.batchOperationKey(), "batchOperationKey", entity))
-        .itemKey(requireNonNull(KeyUtil.keyToString(entity.itemKey()), "itemKey", entity))
+        .itemKey(requireNonNull(keyToString(entity.itemKey()), "itemKey", entity))
         .processInstanceKey(
-            requireNonNull(
-                KeyUtil.keyToString(entity.processInstanceKey()), "processInstanceKey", entity))
+            requireNonNull(keyToString(entity.processInstanceKey()), "processInstanceKey", entity))
         .state(
             requireNonNull(entity.state() != null ? entity.state().name() : null, "state", entity))
-        .rootProcessInstanceKey(KeyUtil.keyToString(entity.rootProcessInstanceKey()))
+        .rootProcessInstanceKey(keyToString(entity.rootProcessInstanceKey()))
         .processedDate(formatDate(entity.processedDate()))
         .errorMessage(entity.errorMessage());
   }

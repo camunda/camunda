@@ -26,46 +26,47 @@ public final class IncidentFilterMapper {
 
   public static Either<List<String>, IncidentFilter> toIncidentFilter(
       final io.camunda.gateway.protocol.model.IncidentFilter filter) {
+    if (filter == null) {
+      return Either.right(FilterBuilders.incident().build());
+    }
     final var builder = FilterBuilders.incident();
     final List<String> validationErrors = new ArrayList<>();
-    if (filter != null) {
-      ofNullable(filter.getIncidentKey())
-          .map(mapToKeyOperations("incidentKey", validationErrors))
-          .ifPresent(builder::incidentKeyOperations);
-      ofNullable(filter.getProcessDefinitionKey())
-          .map(mapToKeyOperations("processDefinitionKey", validationErrors))
-          .ifPresent(builder::processDefinitionKeyOperations);
-      ofNullable(filter.getProcessDefinitionId())
-          .map(mapToOperations(String.class))
-          .ifPresent(builder::processDefinitionIdOperations);
-      ofNullable(filter.getProcessInstanceKey())
-          .map(mapToKeyOperations("processInstanceKey", validationErrors))
-          .ifPresent(builder::processInstanceKeyOperations);
-      ofNullable(filter.getErrorType())
-          .map(mapToOperations(String.class))
-          .ifPresent(builder::errorTypeOperations);
-      ofNullable(filter.getErrorMessage())
-          .map(mapToOperations(String.class))
-          .ifPresent(builder::errorMessageOperations);
-      ofNullable(filter.getElementId())
-          .map(mapToOperations(String.class))
-          .ifPresent(builder::flowNodeIdOperations);
-      ofNullable(filter.getElementInstanceKey())
-          .map(mapToKeyOperations("elementInstanceKey", validationErrors))
-          .ifPresent(builder::flowNodeInstanceKeyOperations);
-      ofNullable(filter.getCreationTime())
-          .map(mapToOffsetDateTimeOperations("creationTime", validationErrors))
-          .ifPresent(builder::creationTimeOperations);
-      ofNullable(filter.getState())
-          .map(mapToOperations(String.class))
-          .ifPresent(builder::stateOperations);
-      ofNullable(filter.getJobKey())
-          .map(mapToKeyOperations("jobKey", validationErrors))
-          .ifPresent(builder::jobKeyOperations);
-      ofNullable(filter.getTenantId())
-          .map(mapToOperations(String.class))
-          .ifPresent(builder::tenantIdOperations);
-    }
+    ofNullable(filter.getIncidentKey())
+        .map(mapToKeyOperations("incidentKey", validationErrors))
+        .ifPresent(builder::incidentKeyOperations);
+    ofNullable(filter.getProcessDefinitionKey())
+        .map(mapToKeyOperations("processDefinitionKey", validationErrors))
+        .ifPresent(builder::processDefinitionKeyOperations);
+    ofNullable(filter.getProcessDefinitionId())
+        .map(mapToOperations(String.class))
+        .ifPresent(builder::processDefinitionIdOperations);
+    ofNullable(filter.getProcessInstanceKey())
+        .map(mapToKeyOperations("processInstanceKey", validationErrors))
+        .ifPresent(builder::processInstanceKeyOperations);
+    ofNullable(filter.getErrorType())
+        .map(mapToOperations(String.class))
+        .ifPresent(builder::errorTypeOperations);
+    ofNullable(filter.getErrorMessage())
+        .map(mapToOperations(String.class))
+        .ifPresent(builder::errorMessageOperations);
+    ofNullable(filter.getElementId())
+        .map(mapToOperations(String.class))
+        .ifPresent(builder::flowNodeIdOperations);
+    ofNullable(filter.getElementInstanceKey())
+        .map(mapToKeyOperations("elementInstanceKey", validationErrors))
+        .ifPresent(builder::flowNodeInstanceKeyOperations);
+    ofNullable(filter.getCreationTime())
+        .map(mapToOffsetDateTimeOperations("creationTime", validationErrors))
+        .ifPresent(builder::creationTimeOperations);
+    ofNullable(filter.getState())
+        .map(mapToOperations(String.class))
+        .ifPresent(builder::stateOperations);
+    ofNullable(filter.getJobKey())
+        .map(mapToKeyOperations("jobKey", validationErrors))
+        .ifPresent(builder::jobKeyOperations);
+    ofNullable(filter.getTenantId())
+        .map(mapToOperations(String.class))
+        .ifPresent(builder::tenantIdOperations);
     return validationErrors.isEmpty()
         ? Either.right(builder.build())
         : Either.left(validationErrors);

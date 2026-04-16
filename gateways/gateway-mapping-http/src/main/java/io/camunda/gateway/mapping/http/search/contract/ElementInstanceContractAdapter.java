@@ -10,8 +10,8 @@ package io.camunda.gateway.mapping.http.search.contract;
 import static io.camunda.gateway.mapping.http.ResponseMapper.formatDate;
 import static io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy.mapEnum;
 import static io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy.requireNonNull;
+import static io.camunda.gateway.mapping.http.util.KeyUtil.keyToString;
 
-import io.camunda.gateway.mapping.http.util.KeyUtil;
 import io.camunda.gateway.protocol.model.ElementInstanceResult;
 import io.camunda.gateway.protocol.model.ElementInstanceStateEnum;
 import io.camunda.search.entities.FlowNodeInstanceEntity;
@@ -39,16 +39,14 @@ public final class ElementInstanceContractAdapter {
         .hasIncident(requireNonNull(entity.hasIncident(), "hasIncident", entity))
         .tenantId(requireNonNull(entity.tenantId(), "tenantId", entity))
         .elementInstanceKey(
-            requireNonNull(
-                KeyUtil.keyToString(entity.flowNodeInstanceKey()), "elementInstanceKey", entity))
+            requireNonNull(keyToString(entity.flowNodeInstanceKey()), "elementInstanceKey", entity))
         .processInstanceKey(
-            requireNonNull(
-                KeyUtil.keyToString(entity.processInstanceKey()), "processInstanceKey", entity))
+            requireNonNull(keyToString(entity.processInstanceKey()), "processInstanceKey", entity))
         .processDefinitionKey(
             requireNonNull(
-                KeyUtil.keyToString(entity.processDefinitionKey()), "processDefinitionKey", entity))
+                keyToString(entity.processDefinitionKey()), "processDefinitionKey", entity))
         .endDate(formatDate(entity.endDate()))
-        .rootProcessInstanceKey(KeyUtil.keyToString(entity.rootProcessInstanceKey()))
-        .incidentKey(KeyUtil.keyToString(entity.incidentKey()));
+        .rootProcessInstanceKey(keyToString(entity.rootProcessInstanceKey()))
+        .incidentKey(keyToString(entity.incidentKey()));
   }
 }

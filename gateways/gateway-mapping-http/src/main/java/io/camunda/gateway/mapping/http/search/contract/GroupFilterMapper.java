@@ -21,13 +21,14 @@ public final class GroupFilterMapper {
 
   public static GroupFilter toGroupFilter(
       final io.camunda.gateway.protocol.model.GroupFilter filter) {
-    final var builder = FilterBuilders.group();
-    if (filter != null) {
-      ofNullable(filter.getGroupId())
-          .map(mapToOperations(String.class))
-          .ifPresent(builder::groupIdOperations);
-      ofNullable(filter.getName()).ifPresent(builder::name);
+    if (filter == null) {
+      return FilterBuilders.group().build();
     }
+    final var builder = FilterBuilders.group();
+    ofNullable(filter.getGroupId())
+        .map(mapToOperations(String.class))
+        .ifPresent(builder::groupIdOperations);
+    ofNullable(filter.getName()).ifPresent(builder::name);
     return builder.build();
   }
 }

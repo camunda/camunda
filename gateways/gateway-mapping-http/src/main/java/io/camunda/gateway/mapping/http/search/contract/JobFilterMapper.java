@@ -26,66 +26,67 @@ public final class JobFilterMapper {
 
   public static Either<List<String>, JobFilter> toJobFilter(
       final io.camunda.gateway.protocol.model.JobFilter filter) {
+    if (filter == null) {
+      return Either.right(FilterBuilders.job().build());
+    }
     final var builder = FilterBuilders.job();
     final List<String> validationErrors = new ArrayList<>();
-    if (filter != null) {
-      ofNullable(filter.getJobKey())
-          .map(mapToKeyOperations("jobKey", validationErrors))
-          .ifPresent(builder::jobKeyOperations);
-      ofNullable(filter.getProcessDefinitionKey())
-          .map(mapToKeyOperations("processDefinitionKey", validationErrors))
-          .ifPresent(builder::processDefinitionKeyOperations);
-      ofNullable(filter.getProcessDefinitionId())
-          .map(mapToOperations(String.class))
-          .ifPresent(builder::processDefinitionIdOperations);
-      ofNullable(filter.getProcessInstanceKey())
-          .map(mapToKeyOperations("processInstanceKey", validationErrors))
-          .ifPresent(builder::processInstanceKeyOperations);
-      ofNullable(filter.getElementInstanceKey())
-          .map(mapToKeyOperations("elementInstanceKey", validationErrors))
-          .ifPresent(builder::elementInstanceKeyOperations);
-      ofNullable(filter.getElementId())
-          .map(mapToOperations(String.class))
-          .ifPresent(builder::elementIdOperations);
-      ofNullable(filter.getState())
-          .map(mapToOperations(String.class))
-          .ifPresent(builder::stateOperations);
-      ofNullable(filter.getType())
-          .map(mapToOperations(String.class))
-          .ifPresent(builder::typeOperations);
-      ofNullable(filter.getWorker())
-          .map(mapToOperations(String.class))
-          .ifPresent(builder::workerOperations);
-      ofNullable(filter.getRetries())
-          .map(mapToOperations(Integer.class))
-          .ifPresent(builder::retriesOperations);
-      ofNullable(filter.getErrorMessage())
-          .map(mapToOperations(String.class))
-          .ifPresent(builder::errorMessageOperations);
-      ofNullable(filter.getErrorCode())
-          .map(mapToOperations(String.class))
-          .ifPresent(builder::errorCodeOperations);
-      ofNullable(filter.getHasFailedWithRetriesLeft()).ifPresent(builder::hasFailedWithRetriesLeft);
-      ofNullable(filter.getIsDenied()).ifPresent(builder::isDenied);
-      ofNullable(filter.getDeniedReason())
-          .map(mapToOperations(String.class))
-          .ifPresent(builder::deniedReasonOperations);
-      ofNullable(filter.getKind())
-          .map(mapToOperations(String.class))
-          .ifPresent(builder::kindOperations);
-      ofNullable(filter.getListenerEventType())
-          .map(mapToOperations(String.class))
-          .ifPresent(builder::listenerEventTypeOperations);
-      ofNullable(filter.getTenantId())
-          .map(mapToOperations(String.class))
-          .ifPresent(builder::tenantIdOperations);
-      ofNullable(filter.getDeadline())
-          .map(mapToOffsetDateTimeOperations("deadline", validationErrors))
-          .ifPresent(builder::deadlineOperations);
-      ofNullable(filter.getEndTime())
-          .map(mapToOffsetDateTimeOperations("endTime", validationErrors))
-          .ifPresent(builder::endTimeOperations);
-    }
+    ofNullable(filter.getJobKey())
+        .map(mapToKeyOperations("jobKey", validationErrors))
+        .ifPresent(builder::jobKeyOperations);
+    ofNullable(filter.getProcessDefinitionKey())
+        .map(mapToKeyOperations("processDefinitionKey", validationErrors))
+        .ifPresent(builder::processDefinitionKeyOperations);
+    ofNullable(filter.getProcessDefinitionId())
+        .map(mapToOperations(String.class))
+        .ifPresent(builder::processDefinitionIdOperations);
+    ofNullable(filter.getProcessInstanceKey())
+        .map(mapToKeyOperations("processInstanceKey", validationErrors))
+        .ifPresent(builder::processInstanceKeyOperations);
+    ofNullable(filter.getElementInstanceKey())
+        .map(mapToKeyOperations("elementInstanceKey", validationErrors))
+        .ifPresent(builder::elementInstanceKeyOperations);
+    ofNullable(filter.getElementId())
+        .map(mapToOperations(String.class))
+        .ifPresent(builder::elementIdOperations);
+    ofNullable(filter.getState())
+        .map(mapToOperations(String.class))
+        .ifPresent(builder::stateOperations);
+    ofNullable(filter.getType())
+        .map(mapToOperations(String.class))
+        .ifPresent(builder::typeOperations);
+    ofNullable(filter.getWorker())
+        .map(mapToOperations(String.class))
+        .ifPresent(builder::workerOperations);
+    ofNullable(filter.getRetries())
+        .map(mapToOperations(Integer.class))
+        .ifPresent(builder::retriesOperations);
+    ofNullable(filter.getErrorMessage())
+        .map(mapToOperations(String.class))
+        .ifPresent(builder::errorMessageOperations);
+    ofNullable(filter.getErrorCode())
+        .map(mapToOperations(String.class))
+        .ifPresent(builder::errorCodeOperations);
+    ofNullable(filter.getHasFailedWithRetriesLeft()).ifPresent(builder::hasFailedWithRetriesLeft);
+    ofNullable(filter.getIsDenied()).ifPresent(builder::isDenied);
+    ofNullable(filter.getDeniedReason())
+        .map(mapToOperations(String.class))
+        .ifPresent(builder::deniedReasonOperations);
+    ofNullable(filter.getKind())
+        .map(mapToOperations(String.class))
+        .ifPresent(builder::kindOperations);
+    ofNullable(filter.getListenerEventType())
+        .map(mapToOperations(String.class))
+        .ifPresent(builder::listenerEventTypeOperations);
+    ofNullable(filter.getTenantId())
+        .map(mapToOperations(String.class))
+        .ifPresent(builder::tenantIdOperations);
+    ofNullable(filter.getDeadline())
+        .map(mapToOffsetDateTimeOperations("deadline", validationErrors))
+        .ifPresent(builder::deadlineOperations);
+    ofNullable(filter.getEndTime())
+        .map(mapToOffsetDateTimeOperations("endTime", validationErrors))
+        .ifPresent(builder::endTimeOperations);
     return validationErrors.isEmpty()
         ? Either.right(builder.build())
         : Either.left(validationErrors);

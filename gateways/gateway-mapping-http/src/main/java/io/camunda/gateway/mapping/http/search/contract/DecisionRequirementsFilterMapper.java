@@ -21,17 +21,18 @@ public final class DecisionRequirementsFilterMapper {
 
   public static DecisionRequirementsFilter toDecisionRequirementsFilter(
       final io.camunda.gateway.protocol.model.DecisionRequirementsFilter filter) {
-    final var builder = FilterBuilders.decisionRequirements();
-    if (filter != null) {
-      ofNullable(filter.getDecisionRequirementsKey())
-          .map(KeyUtil::keyToLong)
-          .ifPresent(builder::decisionRequirementsKeys);
-      ofNullable(filter.getDecisionRequirementsName()).ifPresent(builder::names);
-      ofNullable(filter.getVersion()).ifPresent(builder::versions);
-      ofNullable(filter.getDecisionRequirementsId()).ifPresent(builder::decisionRequirementsIds);
-      ofNullable(filter.getTenantId()).ifPresent(builder::tenantIds);
-      ofNullable(filter.getResourceName()).ifPresent(builder::resourceNames);
+    if (filter == null) {
+      return FilterBuilders.decisionRequirements().build();
     }
+    final var builder = FilterBuilders.decisionRequirements();
+    ofNullable(filter.getDecisionRequirementsKey())
+        .map(KeyUtil::keyToLong)
+        .ifPresent(builder::decisionRequirementsKeys);
+    ofNullable(filter.getDecisionRequirementsName()).ifPresent(builder::names);
+    ofNullable(filter.getVersion()).ifPresent(builder::versions);
+    ofNullable(filter.getDecisionRequirementsId()).ifPresent(builder::decisionRequirementsIds);
+    ofNullable(filter.getTenantId()).ifPresent(builder::tenantIds);
+    ofNullable(filter.getResourceName()).ifPresent(builder::resourceNames);
     return builder.build();
   }
 }

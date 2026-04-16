@@ -9,8 +9,8 @@ package io.camunda.gateway.mapping.http.search.contract;
 
 import static io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy.requireNonNull;
 import static io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy.resolvePreviewValue;
+import static io.camunda.gateway.mapping.http.util.KeyUtil.keyToString;
 
-import io.camunda.gateway.mapping.http.util.KeyUtil;
 import io.camunda.gateway.protocol.model.VariableResult;
 import io.camunda.gateway.protocol.model.VariableSearchResult;
 import io.camunda.search.entities.VariableEntity;
@@ -39,12 +39,10 @@ public final class VariableContractAdapter {
     return new VariableSearchResult()
         .name(requireNonNull(entity.name(), "name", entity))
         .tenantId(requireNonNull(entity.tenantId(), "tenantId", entity))
-        .variableKey(
-            requireNonNull(KeyUtil.keyToString(entity.variableKey()), "variableKey", entity))
-        .scopeKey(requireNonNull(KeyUtil.keyToString(entity.scopeKey()), "scopeKey", entity))
+        .variableKey(requireNonNull(keyToString(entity.variableKey()), "variableKey", entity))
+        .scopeKey(requireNonNull(keyToString(entity.scopeKey()), "scopeKey", entity))
         .processInstanceKey(
-            requireNonNull(
-                KeyUtil.keyToString(entity.processInstanceKey()), "processInstanceKey", entity))
+            requireNonNull(keyToString(entity.processInstanceKey()), "processInstanceKey", entity))
         .value(
             requireNonNull(
                 !truncateValues
@@ -53,24 +51,22 @@ public final class VariableContractAdapter {
                 "value",
                 entity))
         .isTruncated(requireNonNull(truncateValues && entity.isPreview(), "isTruncated", entity))
-        .rootProcessInstanceKey(KeyUtil.keyToString(entity.rootProcessInstanceKey()));
+        .rootProcessInstanceKey(keyToString(entity.rootProcessInstanceKey()));
   }
 
   public static VariableResult toItemProjection(final VariableEntity entity) {
     return new VariableResult()
         .name(requireNonNull(entity.name(), "name", entity))
         .tenantId(requireNonNull(entity.tenantId(), "tenantId", entity))
-        .variableKey(
-            requireNonNull(KeyUtil.keyToString(entity.variableKey()), "variableKey", entity))
-        .scopeKey(requireNonNull(KeyUtil.keyToString(entity.scopeKey()), "scopeKey", entity))
+        .variableKey(requireNonNull(keyToString(entity.variableKey()), "variableKey", entity))
+        .scopeKey(requireNonNull(keyToString(entity.scopeKey()), "scopeKey", entity))
         .processInstanceKey(
-            requireNonNull(
-                KeyUtil.keyToString(entity.processInstanceKey()), "processInstanceKey", entity))
+            requireNonNull(keyToString(entity.processInstanceKey()), "processInstanceKey", entity))
         .value(
             requireNonNull(
                 resolvePreviewValue(entity.value(), entity.fullValue(), entity.isPreview()),
                 "value",
                 entity))
-        .rootProcessInstanceKey(KeyUtil.keyToString(entity.rootProcessInstanceKey()));
+        .rootProcessInstanceKey(keyToString(entity.rootProcessInstanceKey()));
   }
 }

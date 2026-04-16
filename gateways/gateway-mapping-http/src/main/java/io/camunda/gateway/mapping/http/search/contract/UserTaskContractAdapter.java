@@ -10,8 +10,8 @@ package io.camunda.gateway.mapping.http.search.contract;
 import static io.camunda.gateway.mapping.http.ResponseMapper.formatDate;
 import static io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy.mapEnum;
 import static io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy.requireNonNull;
+import static io.camunda.gateway.mapping.http.util.KeyUtil.keyToString;
 
-import io.camunda.gateway.mapping.http.util.KeyUtil;
 import io.camunda.gateway.protocol.model.UserTaskResult;
 import io.camunda.gateway.protocol.model.UserTaskStateEnum;
 import io.camunda.search.entities.UserTaskEntity;
@@ -40,17 +40,14 @@ public final class UserTaskContractAdapter {
             requireNonNull(entity.processDefinitionVersion(), "processDefinitionVersion", entity))
         .customHeaders(requireNonNull(entity.customHeaders(), "customHeaders", entity))
         .priority(requireNonNull(entity.priority(), "priority", entity))
-        .userTaskKey(
-            requireNonNull(KeyUtil.keyToString(entity.userTaskKey()), "userTaskKey", entity))
+        .userTaskKey(requireNonNull(keyToString(entity.userTaskKey()), "userTaskKey", entity))
         .elementInstanceKey(
-            requireNonNull(
-                KeyUtil.keyToString(entity.elementInstanceKey()), "elementInstanceKey", entity))
+            requireNonNull(keyToString(entity.elementInstanceKey()), "elementInstanceKey", entity))
         .processDefinitionKey(
             requireNonNull(
-                KeyUtil.keyToString(entity.processDefinitionKey()), "processDefinitionKey", entity))
+                keyToString(entity.processDefinitionKey()), "processDefinitionKey", entity))
         .processInstanceKey(
-            requireNonNull(
-                KeyUtil.keyToString(entity.processInstanceKey()), "processInstanceKey", entity))
+            requireNonNull(keyToString(entity.processInstanceKey()), "processInstanceKey", entity))
         .tags(requireNonNull(entity.tags(), "tags", entity))
         .name(entity.name())
         .assignee(entity.assignee())
@@ -59,7 +56,7 @@ public final class UserTaskContractAdapter {
         .dueDate(formatDate(entity.dueDate()))
         .externalFormReference(entity.externalFormReference())
         .processName(entity.processName())
-        .rootProcessInstanceKey(KeyUtil.keyToString(entity.rootProcessInstanceKey()))
-        .formKey(KeyUtil.keyToString(entity.formKey()));
+        .rootProcessInstanceKey(keyToString(entity.rootProcessInstanceKey()))
+        .formKey(keyToString(entity.formKey()));
   }
 }

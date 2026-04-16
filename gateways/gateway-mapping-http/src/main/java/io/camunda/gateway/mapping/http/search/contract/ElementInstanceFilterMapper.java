@@ -16,7 +16,6 @@ import io.camunda.search.entities.FlowNodeInstanceEntity.FlowNodeType;
 import io.camunda.search.filter.FilterBuilders;
 import io.camunda.search.filter.FlowNodeInstanceFilter;
 import java.time.OffsetDateTime;
-import java.util.Optional;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
@@ -27,46 +26,43 @@ public final class ElementInstanceFilterMapper {
 
   public static FlowNodeInstanceFilter toElementInstanceFilter(
       @Nullable final ElementInstanceFilter filter) {
+    if (filter == null) {
+      return FilterBuilders.flowNodeInstance().build();
+    }
     final var builder = FilterBuilders.flowNodeInstance();
-    Optional.ofNullable(filter)
-        .ifPresent(
-            f -> {
-              ofNullable(f.getElementInstanceKey())
-                  .map(KeyUtil::keyToLong)
-                  .ifPresent(builder::flowNodeInstanceKeys);
-              ofNullable(f.getProcessInstanceKey())
-                  .map(KeyUtil::keyToLong)
-                  .ifPresent(builder::processInstanceKeys);
-              ofNullable(f.getProcessDefinitionKey())
-                  .map(KeyUtil::keyToLong)
-                  .ifPresent(builder::processDefinitionKeys);
-              ofNullable(f.getProcessDefinitionId()).ifPresent(builder::processDefinitionIds);
-              ofNullable(f.getState())
-                  .map(mapToOperations(String.class))
-                  .ifPresent(builder::stateOperations);
-              ofNullable(f.getType())
-                  .ifPresent(t -> builder.types(FlowNodeType.fromZeebeBpmnElementType(t)));
-              ofNullable(f.getElementId())
-                  .map(mapToOperations(String.class))
-                  .ifPresent(builder::flowNodeIdOperations);
-              ofNullable(f.getElementName())
-                  .map(mapToOperations(String.class))
-                  .ifPresent(builder::flowNodeNameOperations);
-              ofNullable(f.getHasIncident()).ifPresent(builder::hasIncident);
-              ofNullable(f.getIncidentKey())
-                  .map(KeyUtil::keyToLong)
-                  .ifPresent(builder::incidentKeys);
-              ofNullable(f.getTenantId()).ifPresent(builder::tenantIds);
-              ofNullable(f.getStartDate())
-                  .map(mapToOperations(OffsetDateTime.class))
-                  .ifPresent(builder::startDateOperations);
-              ofNullable(f.getEndDate())
-                  .map(mapToOperations(OffsetDateTime.class))
-                  .ifPresent(builder::endDateOperations);
-              ofNullable(f.getElementInstanceScopeKey())
-                  .map(KeyUtil::keyToLong)
-                  .ifPresent(builder::elementInstanceScopeKeys);
-            });
+    ofNullable(filter.getElementInstanceKey())
+        .map(KeyUtil::keyToLong)
+        .ifPresent(builder::flowNodeInstanceKeys);
+    ofNullable(filter.getProcessInstanceKey())
+        .map(KeyUtil::keyToLong)
+        .ifPresent(builder::processInstanceKeys);
+    ofNullable(filter.getProcessDefinitionKey())
+        .map(KeyUtil::keyToLong)
+        .ifPresent(builder::processDefinitionKeys);
+    ofNullable(filter.getProcessDefinitionId()).ifPresent(builder::processDefinitionIds);
+    ofNullable(filter.getState())
+        .map(mapToOperations(String.class))
+        .ifPresent(builder::stateOperations);
+    ofNullable(filter.getType())
+        .ifPresent(t -> builder.types(FlowNodeType.fromZeebeBpmnElementType(t)));
+    ofNullable(filter.getElementId())
+        .map(mapToOperations(String.class))
+        .ifPresent(builder::flowNodeIdOperations);
+    ofNullable(filter.getElementName())
+        .map(mapToOperations(String.class))
+        .ifPresent(builder::flowNodeNameOperations);
+    ofNullable(filter.getHasIncident()).ifPresent(builder::hasIncident);
+    ofNullable(filter.getIncidentKey()).map(KeyUtil::keyToLong).ifPresent(builder::incidentKeys);
+    ofNullable(filter.getTenantId()).ifPresent(builder::tenantIds);
+    ofNullable(filter.getStartDate())
+        .map(mapToOperations(OffsetDateTime.class))
+        .ifPresent(builder::startDateOperations);
+    ofNullable(filter.getEndDate())
+        .map(mapToOperations(OffsetDateTime.class))
+        .ifPresent(builder::endDateOperations);
+    ofNullable(filter.getElementInstanceScopeKey())
+        .map(KeyUtil::keyToLong)
+        .ifPresent(builder::elementInstanceScopeKeys);
     return builder.build();
   }
 }

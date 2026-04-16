@@ -25,25 +25,26 @@ public final class BatchOperationItemFilterMapper {
 
   public static Either<List<String>, BatchOperationItemFilter> toBatchOperationItemFilter(
       final io.camunda.gateway.protocol.model.BatchOperationItemFilter filter) {
+    if (filter == null) {
+      return Either.right(FilterBuilders.batchOperationItem().build());
+    }
     final var builder = FilterBuilders.batchOperationItem();
     final List<String> validationErrors = new ArrayList<>();
-    if (filter != null) {
-      ofNullable(filter.getBatchOperationKey())
-          .map(mapToOperations(String.class))
-          .ifPresent(builder::batchOperationKeyOperations);
-      ofNullable(filter.getItemKey())
-          .map(mapToKeyOperations("itemKey", validationErrors))
-          .ifPresent(builder::itemKeyOperations);
-      ofNullable(filter.getProcessInstanceKey())
-          .map(mapToKeyOperations("processInstanceKey", validationErrors))
-          .ifPresent(builder::processInstanceKeyOperations);
-      ofNullable(filter.getState())
-          .map(mapToOperations(String.class))
-          .ifPresent(builder::stateOperations);
-      ofNullable(filter.getOperationType())
-          .map(mapToOperations(String.class))
-          .ifPresent(builder::operationTypeOperations);
-    }
+    ofNullable(filter.getBatchOperationKey())
+        .map(mapToOperations(String.class))
+        .ifPresent(builder::batchOperationKeyOperations);
+    ofNullable(filter.getItemKey())
+        .map(mapToKeyOperations("itemKey", validationErrors))
+        .ifPresent(builder::itemKeyOperations);
+    ofNullable(filter.getProcessInstanceKey())
+        .map(mapToKeyOperations("processInstanceKey", validationErrors))
+        .ifPresent(builder::processInstanceKeyOperations);
+    ofNullable(filter.getState())
+        .map(mapToOperations(String.class))
+        .ifPresent(builder::stateOperations);
+    ofNullable(filter.getOperationType())
+        .map(mapToOperations(String.class))
+        .ifPresent(builder::operationTypeOperations);
     return validationErrors.isEmpty()
         ? Either.right(builder.build())
         : Either.left(validationErrors);

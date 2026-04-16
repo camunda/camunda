@@ -8,8 +8,8 @@
 package io.camunda.gateway.mapping.http.search.contract;
 
 import static io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy.requireNonNull;
+import static io.camunda.gateway.mapping.http.util.KeyUtil.keyToString;
 
-import io.camunda.gateway.mapping.http.util.KeyUtil;
 import io.camunda.gateway.protocol.model.DecisionRequirementsResult;
 import io.camunda.search.entities.DecisionRequirementsEntity;
 import java.util.List;
@@ -29,9 +29,7 @@ public final class DecisionRequirementsContractAdapter {
             requireNonNull(entity.decisionRequirementsId(), "decisionRequirementsId", entity))
         .decisionRequirementsKey(
             requireNonNull(
-                KeyUtil.keyToString(entity.decisionRequirementsKey()),
-                "decisionRequirementsKey",
-                entity))
+                keyToString(entity.decisionRequirementsKey()), "decisionRequirementsKey", entity))
         .decisionRequirementsName(requireNonNull(entity.name(), "decisionRequirementsName", entity))
         .resourceName(requireNonNull(entity.resourceName(), "resourceName", entity))
         .tenantId(requireNonNull(entity.tenantId(), "tenantId", entity))

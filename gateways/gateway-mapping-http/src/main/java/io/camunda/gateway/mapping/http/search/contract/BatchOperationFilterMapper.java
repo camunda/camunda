@@ -22,25 +22,26 @@ public final class BatchOperationFilterMapper {
 
   public static BatchOperationFilter toBatchOperationFilter(
       final io.camunda.gateway.protocol.model.BatchOperationFilter filter) {
-    final var builder = FilterBuilders.batchOperation();
-    if (filter != null) {
-      ofNullable(filter.getBatchOperationKey())
-          .map(mapToOperations(String.class))
-          .ifPresent(builder::batchOperationKeyOperations);
-      ofNullable(filter.getState())
-          .map(mapToOperations(String.class))
-          .ifPresent(builder::stateOperations);
-      ofNullable(filter.getOperationType())
-          .map(mapToOperations(String.class))
-          .ifPresent(builder::operationTypeOperations);
-      ofNullable(filter.getActorType())
-          .map(AuditLogActorTypeEnum::getValue)
-          .map(String::toUpperCase)
-          .ifPresent(builder::actorTypes);
-      ofNullable(filter.getActorId())
-          .map(mapToOperations(String.class))
-          .ifPresent(builder::actorIdOperations);
+    if (filter == null) {
+      return FilterBuilders.batchOperation().build();
     }
+    final var builder = FilterBuilders.batchOperation();
+    ofNullable(filter.getBatchOperationKey())
+        .map(mapToOperations(String.class))
+        .ifPresent(builder::batchOperationKeyOperations);
+    ofNullable(filter.getState())
+        .map(mapToOperations(String.class))
+        .ifPresent(builder::stateOperations);
+    ofNullable(filter.getOperationType())
+        .map(mapToOperations(String.class))
+        .ifPresent(builder::operationTypeOperations);
+    ofNullable(filter.getActorType())
+        .map(AuditLogActorTypeEnum::getValue)
+        .map(String::toUpperCase)
+        .ifPresent(builder::actorTypes);
+    ofNullable(filter.getActorId())
+        .map(mapToOperations(String.class))
+        .ifPresent(builder::actorIdOperations);
     return builder.build();
   }
 }

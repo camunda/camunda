@@ -19,11 +19,12 @@ public final class TenantFilterMapper {
 
   public static TenantFilter toTenantFilter(
       final io.camunda.gateway.protocol.model.TenantFilter filter) {
-    final var builder = FilterBuilders.tenant();
-    if (filter != null) {
-      Optional.ofNullable(filter.getTenantId()).ifPresent(builder::tenantId);
-      Optional.ofNullable(filter.getName()).ifPresent(builder::name);
+    if (filter == null) {
+      return FilterBuilders.tenant().build();
     }
+    final var builder = FilterBuilders.tenant();
+    Optional.ofNullable(filter.getTenantId()).ifPresent(builder::tenantId);
+    Optional.ofNullable(filter.getName()).ifPresent(builder::name);
     return builder.build();
   }
 }

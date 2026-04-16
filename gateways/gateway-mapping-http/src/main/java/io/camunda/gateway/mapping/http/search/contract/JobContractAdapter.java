@@ -10,8 +10,8 @@ package io.camunda.gateway.mapping.http.search.contract;
 import static io.camunda.gateway.mapping.http.ResponseMapper.formatDate;
 import static io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy.mapEnum;
 import static io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy.requireNonNull;
+import static io.camunda.gateway.mapping.http.util.KeyUtil.keyToString;
 
-import io.camunda.gateway.mapping.http.util.KeyUtil;
 import io.camunda.gateway.protocol.model.JobKindEnum;
 import io.camunda.gateway.protocol.model.JobListenerEventTypeEnum;
 import io.camunda.gateway.protocol.model.JobSearchResult;
@@ -31,11 +31,10 @@ public final class JobContractAdapter {
     return new JobSearchResult()
         .customHeaders(requireNonNull(entity.customHeaders(), "customHeaders", entity))
         .elementInstanceKey(
-            requireNonNull(
-                KeyUtil.keyToString(entity.elementInstanceKey()), "elementInstanceKey", entity))
+            requireNonNull(keyToString(entity.elementInstanceKey()), "elementInstanceKey", entity))
         .hasFailedWithRetriesLeft(
             requireNonNull(entity.hasFailedWithRetriesLeft(), "hasFailedWithRetriesLeft", entity))
-        .jobKey(requireNonNull(KeyUtil.keyToString(entity.jobKey()), "jobKey", entity))
+        .jobKey(requireNonNull(keyToString(entity.jobKey()), "jobKey", entity))
         .kind(requireNonNull(mapEnum(entity.kind(), JobKindEnum::fromValue), "kind", entity))
         .listenerEventType(
             requireNonNull(
@@ -46,10 +45,9 @@ public final class JobContractAdapter {
             requireNonNull(entity.processDefinitionId(), "processDefinitionId", entity))
         .processDefinitionKey(
             requireNonNull(
-                KeyUtil.keyToString(entity.processDefinitionKey()), "processDefinitionKey", entity))
+                keyToString(entity.processDefinitionKey()), "processDefinitionKey", entity))
         .processInstanceKey(
-            requireNonNull(
-                KeyUtil.keyToString(entity.processInstanceKey()), "processInstanceKey", entity))
+            requireNonNull(keyToString(entity.processInstanceKey()), "processInstanceKey", entity))
         .retries(requireNonNull(entity.retries(), "retries", entity))
         .state(requireNonNull(mapEnum(entity.state(), JobStateEnum::fromValue), "state", entity))
         .tenantId(requireNonNull(entity.tenantId(), "tenantId", entity))
@@ -62,7 +60,7 @@ public final class JobContractAdapter {
         .errorCode(entity.errorCode())
         .errorMessage(entity.errorMessage())
         .isDenied(entity.isDenied())
-        .rootProcessInstanceKey(KeyUtil.keyToString(entity.rootProcessInstanceKey()))
+        .rootProcessInstanceKey(keyToString(entity.rootProcessInstanceKey()))
         .creationTime(formatDate(entity.creationTime()))
         .lastUpdateTime(formatDate(entity.lastUpdateTime()));
   }

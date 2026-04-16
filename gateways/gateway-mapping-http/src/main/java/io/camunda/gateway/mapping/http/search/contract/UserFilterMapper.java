@@ -20,18 +20,19 @@ public final class UserFilterMapper {
   private UserFilterMapper() {}
 
   public static UserFilter toUserFilter(final io.camunda.gateway.protocol.model.UserFilter filter) {
-    final var builder = FilterBuilders.user();
-    if (filter != null) {
-      ofNullable(filter.getUsername())
-          .map(mapToOperations(String.class))
-          .ifPresent(builder::usernameOperations);
-      ofNullable(filter.getName())
-          .map(mapToOperations(String.class))
-          .ifPresent(builder::nameOperations);
-      ofNullable(filter.getEmail())
-          .map(mapToOperations(String.class))
-          .ifPresent(builder::emailOperations);
+    if (filter == null) {
+      return FilterBuilders.user().build();
     }
+    final var builder = FilterBuilders.user();
+    ofNullable(filter.getUsername())
+        .map(mapToOperations(String.class))
+        .ifPresent(builder::usernameOperations);
+    ofNullable(filter.getName())
+        .map(mapToOperations(String.class))
+        .ifPresent(builder::nameOperations);
+    ofNullable(filter.getEmail())
+        .map(mapToOperations(String.class))
+        .ifPresent(builder::emailOperations);
     return builder.build();
   }
 }

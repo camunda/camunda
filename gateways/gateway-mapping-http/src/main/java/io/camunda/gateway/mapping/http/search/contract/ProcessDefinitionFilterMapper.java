@@ -25,25 +25,26 @@ public final class ProcessDefinitionFilterMapper {
 
   public static Either<List<String>, ProcessDefinitionFilter> toProcessDefinitionFilter(
       final io.camunda.gateway.protocol.model.ProcessDefinitionFilter filter) {
+    if (filter == null) {
+      return Either.right(FilterBuilders.processDefinition().build());
+    }
     final var builder = FilterBuilders.processDefinition();
     final List<String> validationErrors = new ArrayList<>();
-    if (filter != null) {
-      ofNullable(filter.getIsLatestVersion()).ifPresent(builder::isLatestVersion);
-      ofNullable(filter.getProcessDefinitionKey())
-          .map(mapKeyToLong("processDefinitionKey", validationErrors))
-          .ifPresent(builder::processDefinitionKeys);
-      ofNullable(filter.getName())
-          .map(mapToOperations(String.class))
-          .ifPresent(builder::nameOperations);
-      ofNullable(filter.getResourceName()).ifPresent(builder::resourceNames);
-      ofNullable(filter.getVersion()).ifPresent(builder::versions);
-      ofNullable(filter.getVersionTag()).ifPresent(builder::versionTags);
-      ofNullable(filter.getProcessDefinitionId())
-          .map(mapToOperations(String.class))
-          .ifPresent(builder::processDefinitionIdOperations);
-      ofNullable(filter.getTenantId()).ifPresent(builder::tenantIds);
-      ofNullable(filter.getHasStartForm()).ifPresent(builder::hasStartForm);
-    }
+    ofNullable(filter.getIsLatestVersion()).ifPresent(builder::isLatestVersion);
+    ofNullable(filter.getProcessDefinitionKey())
+        .map(mapKeyToLong("processDefinitionKey", validationErrors))
+        .ifPresent(builder::processDefinitionKeys);
+    ofNullable(filter.getName())
+        .map(mapToOperations(String.class))
+        .ifPresent(builder::nameOperations);
+    ofNullable(filter.getResourceName()).ifPresent(builder::resourceNames);
+    ofNullable(filter.getVersion()).ifPresent(builder::versions);
+    ofNullable(filter.getVersionTag()).ifPresent(builder::versionTags);
+    ofNullable(filter.getProcessDefinitionId())
+        .map(mapToOperations(String.class))
+        .ifPresent(builder::processDefinitionIdOperations);
+    ofNullable(filter.getTenantId()).ifPresent(builder::tenantIds);
+    ofNullable(filter.getHasStartForm()).ifPresent(builder::hasStartForm);
     return validationErrors.isEmpty()
         ? Either.right(builder.build())
         : Either.left(validationErrors);

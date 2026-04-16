@@ -8,8 +8,8 @@
 package io.camunda.gateway.mapping.http.search.contract;
 
 import static io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy.requireNonNull;
+import static io.camunda.gateway.mapping.http.util.KeyUtil.keyToString;
 
-import io.camunda.gateway.mapping.http.util.KeyUtil;
 import io.camunda.gateway.protocol.model.AuthorizationResult;
 import io.camunda.gateway.protocol.model.OwnerTypeEnum;
 import io.camunda.gateway.protocol.model.PermissionTypeEnum;
@@ -41,8 +41,7 @@ public final class AuthorizationContractAdapter {
                 "permissionTypes",
                 entity))
         .authorizationKey(
-            requireNonNull(
-                KeyUtil.keyToString(entity.authorizationKey()), "authorizationKey", entity))
+            requireNonNull(keyToString(entity.authorizationKey()), "authorizationKey", entity))
         .resourceId(emptyToNull(entity.resourceId()))
         .resourcePropertyName(emptyToNull(entity.resourcePropertyName()));
   }

@@ -9,8 +9,8 @@ package io.camunda.gateway.mapping.http.search.contract;
 
 import static io.camunda.gateway.mapping.http.ResponseMapper.formatDate;
 import static io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy.requireNonNull;
+import static io.camunda.gateway.mapping.http.util.KeyUtil.keyToString;
 
-import io.camunda.gateway.mapping.http.util.KeyUtil;
 import io.camunda.gateway.protocol.model.CorrelatedMessageSubscriptionResult;
 import io.camunda.search.entities.CorrelatedMessageSubscriptionEntity;
 import java.util.List;
@@ -30,23 +30,21 @@ public final class CorrelatedMessageSubscriptionContractAdapter {
         .correlationTime(
             requireNonNull(formatDate(entity.correlationTime()), "correlationTime", entity))
         .elementId(requireNonNull(entity.flowNodeId(), "elementId", entity))
-        .messageKey(requireNonNull(KeyUtil.keyToString(entity.messageKey()), "messageKey", entity))
+        .messageKey(requireNonNull(keyToString(entity.messageKey()), "messageKey", entity))
         .messageName(requireNonNull(entity.messageName(), "messageName", entity))
         .partitionId(requireNonNull(entity.partitionId(), "partitionId", entity))
         .processDefinitionId(
             requireNonNull(entity.processDefinitionId(), "processDefinitionId", entity))
         .processDefinitionKey(
             requireNonNull(
-                KeyUtil.keyToString(entity.processDefinitionKey()), "processDefinitionKey", entity))
+                keyToString(entity.processDefinitionKey()), "processDefinitionKey", entity))
         .processInstanceKey(
-            requireNonNull(
-                KeyUtil.keyToString(entity.processInstanceKey()), "processInstanceKey", entity))
+            requireNonNull(keyToString(entity.processInstanceKey()), "processInstanceKey", entity))
         .subscriptionKey(
-            requireNonNull(
-                KeyUtil.keyToString(entity.subscriptionKey()), "subscriptionKey", entity))
+            requireNonNull(keyToString(entity.subscriptionKey()), "subscriptionKey", entity))
         .tenantId(requireNonNull(entity.tenantId(), "tenantId", entity))
         .correlationKey(entity.correlationKey())
-        .elementInstanceKey(KeyUtil.keyToString(entity.flowNodeInstanceKey()))
-        .rootProcessInstanceKey(KeyUtil.keyToString(entity.rootProcessInstanceKey()));
+        .elementInstanceKey(keyToString(entity.flowNodeInstanceKey()))
+        .rootProcessInstanceKey(keyToString(entity.rootProcessInstanceKey()));
   }
 }

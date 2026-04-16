@@ -10,8 +10,8 @@ package io.camunda.gateway.mapping.http.search.contract;
 import static io.camunda.gateway.mapping.http.ResponseMapper.formatDate;
 import static io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy.mapEnum;
 import static io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy.requireNonNull;
+import static io.camunda.gateway.mapping.http.util.KeyUtil.keyToString;
 
-import io.camunda.gateway.mapping.http.util.KeyUtil;
 import io.camunda.gateway.protocol.model.AuditLogActorTypeEnum;
 import io.camunda.gateway.protocol.model.AuditLogCategoryEnum;
 import io.camunda.gateway.protocol.model.AuditLogEntityTypeEnum;
@@ -51,27 +51,27 @@ public final class AuditLogContractAdapter {
         .category(
             requireNonNull(
                 mapEnum(entity.category(), AuditLogCategoryEnum::fromValue), "category", entity))
-        .batchOperationKey(KeyUtil.keyToString(entity.batchOperationKey()))
+        .batchOperationKey(keyToString(entity.batchOperationKey()))
         .batchOperationType(mapEnum(entity.batchOperationType(), BatchOperationTypeEnum::fromValue))
         .actorId(entity.actorId())
         .actorType(mapEnum(entity.actorType(), AuditLogActorTypeEnum::fromValue))
         .agentElementId(entity.agentElementId())
         .tenantId(entity.tenantId())
         .processDefinitionId(entity.processDefinitionId())
-        .processDefinitionKey(KeyUtil.keyToString(entity.processDefinitionKey()))
-        .processInstanceKey(KeyUtil.keyToString(entity.processInstanceKey()))
-        .rootProcessInstanceKey(KeyUtil.keyToString(entity.rootProcessInstanceKey()))
-        .elementInstanceKey(KeyUtil.keyToString(entity.elementInstanceKey()))
-        .jobKey(KeyUtil.keyToString(entity.jobKey()))
-        .userTaskKey(KeyUtil.keyToString(entity.userTaskKey()))
+        .processDefinitionKey(keyToString(entity.processDefinitionKey()))
+        .processInstanceKey(keyToString(entity.processInstanceKey()))
+        .rootProcessInstanceKey(keyToString(entity.rootProcessInstanceKey()))
+        .elementInstanceKey(keyToString(entity.elementInstanceKey()))
+        .jobKey(keyToString(entity.jobKey()))
+        .userTaskKey(keyToString(entity.userTaskKey()))
         .decisionRequirementsId(entity.decisionRequirementsId())
-        .decisionRequirementsKey(KeyUtil.keyToString(entity.decisionRequirementsKey()))
+        .decisionRequirementsKey(keyToString(entity.decisionRequirementsKey()))
         .decisionDefinitionId(entity.decisionDefinitionId())
-        .decisionDefinitionKey(KeyUtil.keyToString(entity.decisionDefinitionKey()))
-        .decisionEvaluationKey(KeyUtil.keyToString(entity.decisionEvaluationKey()))
-        .deploymentKey(KeyUtil.keyToString(entity.deploymentKey()))
-        .formKey(KeyUtil.keyToString(entity.formKey()))
-        .resourceKey(KeyUtil.keyToString(entity.resourceKey()))
+        .decisionDefinitionKey(keyToString(entity.decisionDefinitionKey()))
+        .decisionEvaluationKey(keyToString(entity.decisionEvaluationKey()))
+        .deploymentKey(keyToString(entity.deploymentKey()))
+        .formKey(keyToString(entity.formKey()))
+        .resourceKey(keyToString(entity.resourceKey()))
         .relatedEntityKey(entity.relatedEntityKey())
         .relatedEntityType(mapEnum(entity.relatedEntityType(), AuditLogEntityTypeEnum::fromValue))
         .entityDescription(entity.entityDescription());

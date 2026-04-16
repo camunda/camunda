@@ -9,8 +9,8 @@ package io.camunda.gateway.mapping.http.search.contract;
 
 import static io.camunda.gateway.mapping.http.ResponseMapper.formatDate;
 import static io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy.requireNonNull;
+import static io.camunda.gateway.mapping.http.util.KeyUtil.keyToString;
 
-import io.camunda.gateway.mapping.http.util.KeyUtil;
 import io.camunda.gateway.protocol.model.DecisionDefinitionTypeEnum;
 import io.camunda.gateway.protocol.model.DecisionInstanceGetQueryResult;
 import io.camunda.gateway.protocol.model.DecisionInstanceResult;
@@ -77,9 +77,7 @@ public final class DecisionInstanceContractAdapter {
             requireNonNull(entity.decisionDefinitionId(), "decisionDefinitionId", entity))
         .decisionDefinitionKey(
             requireNonNull(
-                KeyUtil.keyToString(entity.decisionDefinitionKey()),
-                "decisionDefinitionKey",
-                entity))
+                keyToString(entity.decisionDefinitionKey()), "decisionDefinitionKey", entity))
         .decisionDefinitionName(
             requireNonNull(entity.decisionDefinitionName(), "decisionDefinitionName", entity))
         .decisionDefinitionType(
@@ -93,22 +91,22 @@ public final class DecisionInstanceContractAdapter {
             requireNonNull(entity.decisionInstanceId(), "decisionEvaluationInstanceKey", entity))
         .decisionEvaluationKey(
             requireNonNull(
-                KeyUtil.keyToString(entity.decisionInstanceKey()), "decisionEvaluationKey", entity))
+                keyToString(entity.decisionInstanceKey()), "decisionEvaluationKey", entity))
         .evaluationDate(
             requireNonNull(formatDate(entity.evaluationDate()), "evaluationDate", entity))
         .result(requireNonNull(entity.result(), "result", entity))
         .rootDecisionDefinitionKey(
             requireNonNull(
-                KeyUtil.keyToString(entity.rootDecisionDefinitionKey()),
+                keyToString(entity.rootDecisionDefinitionKey()),
                 "rootDecisionDefinitionKey",
                 entity))
         .state(requireNonNull(toDecisionInstanceStateEnum(entity.state()), "state", entity))
         .tenantId(requireNonNull(entity.tenantId(), "tenantId", entity))
-        .elementInstanceKey(KeyUtil.keyToString(entity.flowNodeInstanceKey()))
+        .elementInstanceKey(keyToString(entity.flowNodeInstanceKey()))
         .evaluationFailure(entity.evaluationFailure())
-        .processDefinitionKey(KeyUtil.keyToString(entity.processDefinitionKey()))
-        .processInstanceKey(KeyUtil.keyToString(entity.processInstanceKey()))
-        .rootProcessInstanceKey(KeyUtil.keyToString(entity.rootProcessInstanceKey()));
+        .processDefinitionKey(keyToString(entity.processDefinitionKey()))
+        .processInstanceKey(keyToString(entity.processInstanceKey()))
+        .rootProcessInstanceKey(keyToString(entity.rootProcessInstanceKey()));
   }
 
   private static List<EvaluatedDecisionInputItem> toEvaluatedInputs(

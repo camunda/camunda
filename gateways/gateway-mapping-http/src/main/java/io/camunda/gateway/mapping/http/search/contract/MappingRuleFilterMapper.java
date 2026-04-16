@@ -19,13 +19,14 @@ public final class MappingRuleFilterMapper {
 
   public static MappingRuleFilter toMappingRuleFilter(
       final io.camunda.gateway.protocol.model.MappingRuleFilter filter) {
-    final var builder = FilterBuilders.mappingRule();
-    if (filter != null) {
-      Optional.ofNullable(filter.getMappingRuleId()).ifPresent(builder::mappingRuleId);
-      Optional.ofNullable(filter.getClaimName()).ifPresent(builder::claimName);
-      Optional.ofNullable(filter.getClaimValue()).ifPresent(builder::claimValue);
-      Optional.ofNullable(filter.getName()).ifPresent(builder::name);
+    if (filter == null) {
+      return FilterBuilders.mappingRule().build();
     }
+    final var builder = FilterBuilders.mappingRule();
+    Optional.ofNullable(filter.getMappingRuleId()).ifPresent(builder::mappingRuleId);
+    Optional.ofNullable(filter.getClaimName()).ifPresent(builder::claimName);
+    Optional.ofNullable(filter.getClaimValue()).ifPresent(builder::claimValue);
+    Optional.ofNullable(filter.getName()).ifPresent(builder::name);
     return builder.build();
   }
 }

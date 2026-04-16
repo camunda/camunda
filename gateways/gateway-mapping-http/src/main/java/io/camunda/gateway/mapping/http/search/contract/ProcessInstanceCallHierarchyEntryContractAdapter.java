@@ -10,8 +10,8 @@ package io.camunda.gateway.mapping.http.search.contract;
 import static io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy.blankToNull;
 import static io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy.defaultIfNull;
 import static io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy.requireNonNull;
+import static io.camunda.gateway.mapping.http.util.KeyUtil.keyToString;
 
-import io.camunda.gateway.mapping.http.util.KeyUtil;
 import io.camunda.gateway.protocol.model.ProcessInstanceCallHierarchyEntry;
 import io.camunda.search.entities.ProcessInstanceEntity;
 
@@ -33,11 +33,10 @@ public final class ProcessInstanceCallHierarchyEntryContractAdapter {
 
     return new ProcessInstanceCallHierarchyEntry()
         .processInstanceKey(
-            requireNonNull(
-                KeyUtil.keyToString(entity.processInstanceKey()), "processInstanceKey", entity))
+            requireNonNull(keyToString(entity.processInstanceKey()), "processInstanceKey", entity))
         .processDefinitionKey(
             requireNonNull(
-                KeyUtil.keyToString(entity.processDefinitionKey()), "processDefinitionKey", entity))
+                keyToString(entity.processDefinitionKey()), "processDefinitionKey", entity))
         .processDefinitionName(
             requireNonNull(processDefinitionNameOrId, "processDefinitionName", entity));
   }

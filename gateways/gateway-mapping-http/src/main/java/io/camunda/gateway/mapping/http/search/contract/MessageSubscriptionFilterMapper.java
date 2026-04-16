@@ -26,43 +26,44 @@ public final class MessageSubscriptionFilterMapper {
 
   public static Either<List<String>, MessageSubscriptionFilter> toMessageSubscriptionFilter(
       final io.camunda.gateway.protocol.model.MessageSubscriptionFilter filter) {
+    if (filter == null) {
+      return Either.right(FilterBuilders.messageSubscription().build());
+    }
     final var builder = FilterBuilders.messageSubscription();
     final List<String> validationErrors = new ArrayList<>();
-    if (filter != null) {
-      ofNullable(filter.getMessageSubscriptionKey())
-          .map(mapToKeyOperations("messageSubscriptionKey", validationErrors))
-          .ifPresent(builder::messageSubscriptionKeyOperations);
-      ofNullable(filter.getProcessDefinitionKey())
-          .map(mapToKeyOperations("processDefinitionKey", validationErrors))
-          .ifPresent(builder::processDefinitionKeyOperations);
-      ofNullable(filter.getProcessDefinitionId())
-          .map(mapToOperations(String.class))
-          .ifPresent(builder::processDefinitionIdOperations);
-      ofNullable(filter.getProcessInstanceKey())
-          .map(mapToKeyOperations("processInstanceKey", validationErrors))
-          .ifPresent(builder::processInstanceKeyOperations);
-      ofNullable(filter.getElementId())
-          .map(mapToOperations(String.class))
-          .ifPresent(builder::flowNodeIdOperations);
-      ofNullable(filter.getElementInstanceKey())
-          .map(mapToKeyOperations("elementInstanceKey", validationErrors))
-          .ifPresent(builder::flowNodeInstanceKeyOperations);
-      ofNullable(filter.getMessageSubscriptionState())
-          .map(mapToOperations(String.class))
-          .ifPresent(builder::messageSubscriptionStateOperations);
-      ofNullable(filter.getLastUpdatedDate())
-          .map(mapToOffsetDateTimeOperations("lastUpdatedDate", validationErrors))
-          .ifPresent(builder::dateTimeOperations);
-      ofNullable(filter.getMessageName())
-          .map(mapToOperations(String.class))
-          .ifPresent(builder::messageNameOperations);
-      ofNullable(filter.getCorrelationKey())
-          .map(mapToOperations(String.class))
-          .ifPresent(builder::correlationKeyOperations);
-      ofNullable(filter.getTenantId())
-          .map(mapToOperations(String.class))
-          .ifPresent(builder::tenantIdOperations);
-    }
+    ofNullable(filter.getMessageSubscriptionKey())
+        .map(mapToKeyOperations("messageSubscriptionKey", validationErrors))
+        .ifPresent(builder::messageSubscriptionKeyOperations);
+    ofNullable(filter.getProcessDefinitionKey())
+        .map(mapToKeyOperations("processDefinitionKey", validationErrors))
+        .ifPresent(builder::processDefinitionKeyOperations);
+    ofNullable(filter.getProcessDefinitionId())
+        .map(mapToOperations(String.class))
+        .ifPresent(builder::processDefinitionIdOperations);
+    ofNullable(filter.getProcessInstanceKey())
+        .map(mapToKeyOperations("processInstanceKey", validationErrors))
+        .ifPresent(builder::processInstanceKeyOperations);
+    ofNullable(filter.getElementId())
+        .map(mapToOperations(String.class))
+        .ifPresent(builder::flowNodeIdOperations);
+    ofNullable(filter.getElementInstanceKey())
+        .map(mapToKeyOperations("elementInstanceKey", validationErrors))
+        .ifPresent(builder::flowNodeInstanceKeyOperations);
+    ofNullable(filter.getMessageSubscriptionState())
+        .map(mapToOperations(String.class))
+        .ifPresent(builder::messageSubscriptionStateOperations);
+    ofNullable(filter.getLastUpdatedDate())
+        .map(mapToOffsetDateTimeOperations("lastUpdatedDate", validationErrors))
+        .ifPresent(builder::dateTimeOperations);
+    ofNullable(filter.getMessageName())
+        .map(mapToOperations(String.class))
+        .ifPresent(builder::messageNameOperations);
+    ofNullable(filter.getCorrelationKey())
+        .map(mapToOperations(String.class))
+        .ifPresent(builder::correlationKeyOperations);
+    ofNullable(filter.getTenantId())
+        .map(mapToOperations(String.class))
+        .ifPresent(builder::tenantIdOperations);
     return validationErrors.isEmpty()
         ? Either.right(builder.build())
         : Either.left(validationErrors);
