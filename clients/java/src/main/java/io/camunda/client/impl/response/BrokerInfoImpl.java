@@ -32,7 +32,7 @@ public final class BrokerInfoImpl implements BrokerInfo {
   private final List<PartitionInfo> partitions;
 
   public BrokerInfoImpl(final GatewayOuterClass.BrokerInfo grpcBrokerInfo) {
-    nodeId = grpcBrokerInfo.getNodeId();
+    nodeId = grpcBrokerInfo.getMemberId();
     host = grpcBrokerInfo.getHost();
     port = grpcBrokerInfo.getPort();
     version = grpcBrokerInfo.getVersion();
