@@ -1,0 +1,147 @@
+# This GitHub Actions workflow automates the CI build process for the 'tasklist' service.
+# It triggers on a `workflow_call` event and accepts inputs for branch name[required], Java version[optional]
+#
+# It consists of a several steps:
+# 1. Setup: It checks out the specified branch, sets up Java and Maven with the provided inputs, and imports secrets from Vault.
+# 2. Build: Then it builds the Maven artifacts and Docker images
+# 3. Upload: Deploys SNAPSHOT Docker image and mvn artifacts
+#
+# Environment variables are used to define the image tags used for Docker builds.
+# This workflow is designed to provide a comprehensive, automated CI process that ensures code quality, handles secrets securely,
+# and enables detailed reporting of test results.
+# description: Reuseable workflow for building Tasklist and a docker image
+# test location: /tasklist
+# called by: tasklist-ci.yml, preview-env-build-and-deploy.yml
+# type: CI
+# owner: @camunda/core-features
+
+name: Tasklist CI Reusable
+
+on:
+  workflow_call:
+    inputs:
+      branch:
+        description: "The branch name to be used for the workflow"
+        required: true
+        type: string
+      pushDocker:
+        description: "whether the built docker images are pushed to camunda registry"
+        type: boolean
+        default: true
+      previewEnv:
+        description: "Defines whether this is a preview environment build or not. If true, the image will be pushed to the Harbor Docker registry."
+        type: boolean
+        default: false
+
+defaults:
+  run:
+    # use bash shell by default to ensure pipefail behavior is the default
+    # see https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#exit-codes-and-error-action-preference
+    shell: bash
+
+# Define environment variables
+env:
+  BRANCH_NAME: ${{ inputs.branch }}
+  IS_DEFAULT_BRANCH: ${{ inputs.branch == 'main' }}
+  IS_MAIN_OR_STABLE_BRANCH: ${{ inputs.branch == 'main' || startsWith(inputs.branch, 'stable/') }}
+  DOCKER_PLATFORMS: "linux/amd64,linux/arm64"
+
+jobs:
+  # Dynamically generate the Docker tag (e.g., SNAPSHOT or X.Y-SNAPSHOT) based on branch name
+  utils-get-snapshot-docker-tag:
+    uses: ./.github/workflows/generate-snapshot-docker-tag.yml
+    secrets: inherit
+    permissions:
+      contents: read
+
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    needs: [ utils-get-snapshot-docker-tag ]
+    steps:
+      # Setup: checkout branch
+      - name: Checkout '${{ inputs.branch }}' branch
+        uses: actions/checkout@0c366fd6a839edf440554fa01a7085ccba70ac98
+        with:
+          ref: refs/heads/${{ inputs.branch }}
+          fetch-depth: 0 # fetches all history for all branches and tags
+
+      #########################################################################
+      # Setup: define env variables
+      - name: Set GitHub environment variables
+        run: |
+          GIT_COMMIT_HASH=$(git rev-parse ${{ inputs.branch }})
+          BRANCH_SLUG=$(echo "${{ inputs.branch }}" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9-]/-/g')
+          {
+            echo "IMAGE_TAG=$(if [ "${{ inputs.branch }}" = "main" ]; then echo "$GIT_COMMIT_HASH"; else echo "branch-$BRANCH_SLUG"; fi)"
+            echo "CI_IMAGE_TAG=ci-$GIT_COMMIT_HASH"
+            echo "PR_IMAGE_TAG=pr-$GIT_COMMIT_HASH"
+          } >> "$GITHUB_ENV"
+
+      #########################################################################
+      # Setup and configure Maven, Docker, and settings
+      - uses: ./.github/actions/setup-build
+        name: Build setup
+        with:
+          dockerhub: ${{ env.IS_MAIN_OR_STABLE_BRANCH == 'true' }}
+          harbor: true
+          java-distribution: adopt
+          maven-cache-key-modifier: tasklist
+          vault-address: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+          minimus: true
+
+      #########################################################################
+      # Build frontend
+      - name: Build frontend
+        uses: ./.github/actions/build-frontend
+        with:
+          directory: ./tasklist/client
+          package-manager: "npm"
+      #########################################################################
+      # Build backend
+      - name: Build backend
+        run: |
+          ./mvnw -T1C clean deploy -B -PskipFrontendBuild -DskipTests -DskipChecks -DaltStagingDirectory=${{ github.workspace }}/staging-${{ env.BRANCH_NAME }} -DskipRemoteStaging=true -Dmaven.deploy.skip=true
+
+      #########################################################################
+      # Build Docker image
+      - name: Build Docker image
+        uses: ./.github/actions/build-platform-docker
+        with:
+          repository: ${{ inputs.previewEnv && 'registry.camunda.cloud/team-camunda/tasklist' || 'registry.camunda.cloud/team-hto/tasklist' }}
+          version: |
+            ${{ env.IMAGE_TAG }}
+            ${{ env.CI_IMAGE_TAG }}
+            ${{ env.PR_IMAGE_TAG }}
+          push: ${{ inputs.pushDocker }}
+          platforms: ${{ inputs.pushDocker && env.DOCKER_PLATFORMS || 'linux/amd64' }}
+          dockerfile: tasklist.Dockerfile
+
+      #########################################################################
+      # Build SNAPSHOT Docker image
+      - name: Build SNAPSHOT Docker image
+        if: ${{ env.IS_MAIN_OR_STABLE_BRANCH == 'true' }}
+        uses: ./.github/actions/build-platform-docker
+        with:
+          repository: camunda/tasklist
+          version: |
+            ${{ needs.utils-get-snapshot-docker-tag.outputs.version_tag }}
+            ${{ needs.utils-get-snapshot-docker-tag.outputs.snapshot_tag }}
+          push: true
+          platforms: ${{ env.DOCKER_PLATFORMS }}
+          dockerfile: tasklist.Dockerfile
+
+      #########################################################################
+      # Collect information about build status for central statistics with CI Analytics
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
