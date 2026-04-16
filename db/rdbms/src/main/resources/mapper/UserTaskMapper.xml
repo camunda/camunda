@@ -254,6 +254,13 @@
           separator=", ">#{value}
         </foreach>
       </if>
+      <if
+        test="filter.processDefinitionIdOperations != null and !filter.processDefinitionIdOperations.isEmpty()">
+        <foreach collection="filter.processDefinitionIdOperations" item="operation">
+          AND ut.PROCESS_DEFINITION_ID
+          <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+        </foreach>
+      </if>
       <if test="filter.assigneeOperations != null and !filter.assigneeOperations.isEmpty()">
         <foreach collection="filter.assigneeOperations" item="operation">
           AND ut.ASSIGNEE
@@ -282,13 +289,6 @@
         test="filter.processDefinitionKeyOperations != null and !filter.processDefinitionKeyOperations.isEmpty()">
         <foreach collection="filter.processDefinitionKeyOperations" item="operation">
           AND PROCESS_DEFINITION_KEY
-          <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
-        </foreach>
-      </if>
-      <if
-        test="filter.processDefinitionIdOperations != null and !filter.processDefinitionIdOperations.isEmpty()">
-        <foreach collection="filter.processDefinitionIdOperations" item="operation">
-          AND ut.PROCESS_DEFINITION_ID
           <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
         </foreach>
       </if>

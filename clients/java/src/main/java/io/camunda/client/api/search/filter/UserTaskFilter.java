@@ -207,6 +207,15 @@ public interface UserTaskFilter extends SearchRequestFilter {
   UserTaskFilter bpmnProcessId(final String bpmnProcessId);
 
   /**
+   * Filters user tasks by the specified Process Definition Id using {@link StringProperty}
+   * consumer.
+   *
+   * @param fn the Process Definition Id {@link StringProperty} consumer of the user task
+   * @return the updated filter
+   */
+  UserTaskFilter bpmnProcessId(final Consumer<StringProperty> fn);
+
+  /**
    * Filters user tasks by specified Process Instance Variables.
    *
    * @param variableValueFilters from the task
