@@ -6,13 +6,13 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {processInstancesSelectionStore} from './processInstancesSelection';
+import {processInstancesSelectionStore} from './instancesSelection';
 
-describe('ProcessInstancesSelection - checkedProcessInstanceIds', () => {
+describe('InstancesSelection - checkedIds', () => {
   beforeEach(() => {
     processInstancesSelectionStore.reset();
     processInstancesSelectionStore.setRuntime({
-      totalProcessInstancesCount: 4,
+      totalCount: 4,
       visibleIds: ['1', '2', '3', '4'],
       visibleRunningIds: ['1', '3', '4'],
       visibleFinishedIds: ['2'],
@@ -23,79 +23,79 @@ describe('ProcessInstancesSelection - checkedProcessInstanceIds', () => {
     processInstancesSelectionStore.reset();
   });
 
-  it('should return selectedProcessInstanceIds when selectionMode is INCLUDE', () => {
+  it('should return selectedIds when selectionMode is INCLUDE', () => {
     processInstancesSelectionStore.state = {
-      selectedProcessInstanceIds: ['1', '3'],
+      selectedIds: ['1', '3'],
       selectionMode: 'INCLUDE',
     };
 
-    const result = processInstancesSelectionStore.checkedProcessInstanceIds;
+    const result = processInstancesSelectionStore.checkedIds;
     expect(result).toEqual(['1', '3']);
   });
 
-  it('should return all process instance IDs minus selectedProcessInstanceIds when selectionMode is EXCLUDE', () => {
+  it('should return all process instance IDs minus selectedIds when selectionMode is EXCLUDE', () => {
     processInstancesSelectionStore.state = {
-      selectedProcessInstanceIds: ['1', '3'],
+      selectedIds: ['1', '3'],
       selectionMode: 'EXCLUDE',
     };
 
-    const result = processInstancesSelectionStore.checkedProcessInstanceIds;
+    const result = processInstancesSelectionStore.checkedIds;
     expect(result).toEqual(['2', '4']);
   });
 
   it('should return all process instance IDs when selectionMode is ALL', () => {
     processInstancesSelectionStore.state = {
-      selectedProcessInstanceIds: [],
+      selectedIds: [],
       selectionMode: 'ALL',
     };
 
-    const result = processInstancesSelectionStore.checkedProcessInstanceIds;
+    const result = processInstancesSelectionStore.checkedIds;
     expect(result).toEqual(['1', '2', '3', '4']);
   });
 
   it('should handle an empty processInstances array', () => {
     processInstancesSelectionStore.setRuntime({
-      totalProcessInstancesCount: 0,
+      totalCount: 0,
       visibleIds: [],
       visibleRunningIds: [],
       visibleFinishedIds: [],
     });
 
     processInstancesSelectionStore.state = {
-      selectedProcessInstanceIds: ['1', '3'],
+      selectedIds: ['1', '3'],
       selectionMode: 'EXCLUDE',
     };
 
-    const result = processInstancesSelectionStore.checkedProcessInstanceIds;
+    const result = processInstancesSelectionStore.checkedIds;
     expect(result).toEqual([]);
   });
 
-  it('should handle an empty selectedProcessInstanceIds array', () => {
+  it('should handle an empty selectedIds array', () => {
     processInstancesSelectionStore.state = {
-      selectedProcessInstanceIds: [],
+      selectedIds: [],
       selectionMode: 'EXCLUDE',
     };
 
-    const result = processInstancesSelectionStore.checkedProcessInstanceIds;
+    const result = processInstancesSelectionStore.checkedIds;
     expect(result).toEqual(['1', '2', '3', '4']);
   });
 
-  it('should handle when selectionMode is INCLUDE and selectedProcessInstanceIds is empty', () => {
+  it('should handle when selectionMode is INCLUDE and selectedIds is empty', () => {
     processInstancesSelectionStore.state = {
-      selectedProcessInstanceIds: [],
+      selectedIds: [],
       selectionMode: 'INCLUDE',
     };
 
-    const result = processInstancesSelectionStore.checkedProcessInstanceIds;
+    const result = processInstancesSelectionStore.checkedIds;
     expect(result).toEqual([]);
   });
 });
 
-describe('ProcessInstancesSelection - hasSelectedFinishedInstances', () => {
+describe('InstancesSelection - hasSelectedFinishedInstances', () => {
   beforeEach(() => {
     processInstancesSelectionStore.reset();
     processInstancesSelectionStore.setRuntime({
-      totalProcessInstancesCount: 5,
+      totalCount: 5,
       visibleIds: ['1', '2', '3', '4', '5'],
       visibleRunningIds: ['1', '3', '4'],
       visibleFinishedIds: ['2', '5'],
@@ -108,7 +108,7 @@ describe('ProcessInstancesSelection - hasSelectedFinishedInstances', () => {
 
   it('should return true when finished instances are selected in INCLUDE mode', () => {
     processInstancesSelectionStore.state = {
-      selectedProcessInstanceIds: ['2', '3'],
+      selectedIds: ['2', '3'],
       selectionMode: 'INCLUDE',
     };
 
@@ -119,7 +119,7 @@ describe('ProcessInstancesSelection - hasSelectedFinishedInstances', () => {
 
   it('should return false when no finished instances are selected in INCLUDE mode', () => {
     processInstancesSelectionStore.state = {
-      selectedProcessInstanceIds: ['1', '3', '4'],
+      selectedIds: ['1', '3', '4'],
       selectionMode: 'INCLUDE',
     };
 
@@ -130,7 +130,7 @@ describe('ProcessInstancesSelection - hasSelectedFinishedInstances', () => {
 
   it('should return true when selectionMode is ALL', () => {
     processInstancesSelectionStore.state = {
-      selectedProcessInstanceIds: [],
+      selectedIds: [],
       selectionMode: 'ALL',
     };
 
@@ -141,7 +141,7 @@ describe('ProcessInstancesSelection - hasSelectedFinishedInstances', () => {
 
   it('should return true when selectionMode is EXCLUDE', () => {
     processInstancesSelectionStore.state = {
-      selectedProcessInstanceIds: ['1', '3'],
+      selectedIds: ['1', '3'],
       selectionMode: 'EXCLUDE',
     };
 

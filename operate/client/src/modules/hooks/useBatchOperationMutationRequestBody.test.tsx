@@ -10,7 +10,7 @@ import {renderHook} from '@testing-library/react';
 import {MemoryRouter, Route, Routes} from 'react-router-dom';
 import {useBatchOperationMutationRequestBody} from './useBatchOperationMutationRequestBody';
 import {variableFilterStore} from 'modules/stores/variableFilter';
-import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelection';
+import {processInstancesSelectionStore} from 'modules/stores/instancesSelection';
 
 const getWrapper = (initialSearchParams?: Record<string, string>) => {
   const Wrapper = ({children}: {children: React.ReactNode}) => {
@@ -58,13 +58,9 @@ describe('useBatchOperationMutationRequestBody', () => {
     });
   });
 
-  it('should not include process instance keys when checkedRunningProcessInstanceIds is empty', () => {
+  it('should not include process instance keys when checkedRunningIds is empty', () => {
     processInstancesSelectionStore.state.selectionMode = 'INCLUDE';
-    processInstancesSelectionStore.state.selectedProcessInstanceIds = [
-      '123',
-      '456',
-      '789',
-    ];
+    processInstancesSelectionStore.state.selectedIds = ['123', '456', '789'];
 
     const {result} = renderHook(() => useBatchOperationMutationRequestBody(), {
       wrapper: getWrapper(),
@@ -75,9 +71,9 @@ describe('useBatchOperationMutationRequestBody', () => {
     });
   });
 
-  it('should not include process instance keys when selectedProcessInstanceIds is empty', () => {
+  it('should not include process instance keys when selectedIds is empty', () => {
     processInstancesSelectionStore.state.selectionMode = 'INCLUDE';
-    processInstancesSelectionStore.state.selectedProcessInstanceIds = [];
+    processInstancesSelectionStore.state.selectedIds = [];
 
     const {result} = renderHook(() => useBatchOperationMutationRequestBody(), {
       wrapper: getWrapper(),
@@ -90,10 +86,7 @@ describe('useBatchOperationMutationRequestBody', () => {
 
   it('should include excluded process instance keys when in EXCLUDE mode', () => {
     processInstancesSelectionStore.state.selectionMode = 'EXCLUDE';
-    processInstancesSelectionStore.state.selectedProcessInstanceIds = [
-      '111',
-      '222',
-    ];
+    processInstancesSelectionStore.state.selectedIds = ['111', '222'];
 
     const {result} = renderHook(() => useBatchOperationMutationRequestBody(), {
       wrapper: getWrapper(),
@@ -108,7 +101,7 @@ describe('useBatchOperationMutationRequestBody', () => {
 
   it('should not include excludeIds when in ALL mode', () => {
     processInstancesSelectionStore.state.selectionMode = 'ALL';
-    processInstancesSelectionStore.state.selectedProcessInstanceIds = [];
+    processInstancesSelectionStore.state.selectedIds = [];
 
     const {result} = renderHook(() => useBatchOperationMutationRequestBody(), {
       wrapper: getWrapper(),
@@ -165,10 +158,7 @@ describe('useBatchOperationMutationRequestBody', () => {
 
   it('should combine search params, selected keys, and variable filter', () => {
     processInstancesSelectionStore.state.selectionMode = 'INCLUDE';
-    processInstancesSelectionStore.state.selectedProcessInstanceIds = [
-      '123',
-      '456',
-    ];
+    processInstancesSelectionStore.state.selectedIds = ['123', '456'];
 
     variableFilterStore.setVariable({
       name: 'status',

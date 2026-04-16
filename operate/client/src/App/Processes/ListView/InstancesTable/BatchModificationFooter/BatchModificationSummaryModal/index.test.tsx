@@ -10,7 +10,7 @@ import {useEffect} from 'react';
 import {observer} from 'mobx-react';
 import {render, screen, waitFor} from 'modules/testing-library';
 import {batchModificationStore} from 'modules/stores/batchModification';
-import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelection';
+import {processInstancesSelectionStore} from 'modules/stores/instancesSelection';
 import {BatchModificationSummaryModal} from './index';
 import {MemoryRouter} from 'react-router-dom';
 import {Paths} from 'modules/Routes';
@@ -224,8 +224,8 @@ describe('BatchModificationSummaryModal', () => {
   });
 
   it('should handle selected process instances for batch operations', async () => {
-    processInstancesSelectionStore.selectProcessInstance('12345');
-    processInstancesSelectionStore.selectProcessInstance('67890');
+    processInstancesSelectionStore.select('12345');
+    processInstancesSelectionStore.select('67890');
 
     const {user} = render(
       <BatchModificationSummaryModal setOpen={() => {}} open={true} />,
@@ -245,11 +245,7 @@ describe('BatchModificationSummaryModal', () => {
       expect(batchModificationStore.state.isEnabled).toBe(false);
     });
 
-    expect(
-      processInstancesSelectionStore.state.selectedProcessInstanceIds,
-    ).toContain('12345');
-    expect(
-      processInstancesSelectionStore.state.selectedProcessInstanceIds,
-    ).toContain('67890');
+    expect(processInstancesSelectionStore.state.selectedIds).toContain('12345');
+    expect(processInstancesSelectionStore.state.selectedIds).toContain('67890');
   });
 });

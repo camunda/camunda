@@ -13,7 +13,7 @@ import {InstancesTableWrapper} from './InstancesTable/InstancesTableWrapper';
 import {DiagramPanel} from './DiagramPanel';
 import {observer} from 'mobx-react';
 import {useEffect} from 'react';
-import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelection';
+import {processInstancesSelectionStore} from 'modules/stores/instancesSelection';
 import {useLocation, type Location} from 'react-router-dom';
 import {PAGE_TITLE} from 'modules/constants';
 import {batchModificationStore} from 'modules/stores/batchModification';

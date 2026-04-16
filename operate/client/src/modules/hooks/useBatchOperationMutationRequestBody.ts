@@ -8,28 +8,22 @@
 
 import {useSearchParams} from 'react-router-dom';
 import {variableFilterStore} from 'modules/stores/variableFilter';
-import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelection';
+import {processInstancesSelectionStore} from 'modules/stores/instancesSelection';
 import {buildMutationRequestBody} from 'modules/utils/buildMutationRequestBody';
 
 const useBatchOperationMutationRequestBody = () => {
   const variable = variableFilterStore.variable;
   const [searchParams] = useSearchParams();
 
-  const {
-    selectedProcessInstanceIds,
-    excludedProcessInstanceIds,
-    checkedRunningProcessInstanceIds,
-  } = processInstancesSelectionStore;
+  const {selectedIds, excludedIds, checkedRunningIds} =
+    processInstancesSelectionStore;
 
-  const includeIds =
-    selectedProcessInstanceIds.length > 0
-      ? checkedRunningProcessInstanceIds
-      : [];
+  const includeIds = selectedIds.length > 0 ? checkedRunningIds : [];
 
   return buildMutationRequestBody({
     searchParams,
     includeIds,
-    excludeIds: excludedProcessInstanceIds,
+    excludeIds: excludedIds,
     variableFilter: variable,
   });
 };
@@ -43,21 +37,15 @@ const useDeleteBatchOperationMutationRequestBody = () => {
   const variable = variableFilterStore.variable;
   const [searchParams] = useSearchParams();
 
-  const {
-    selectedProcessInstanceIds,
-    excludedProcessInstanceIds,
-    checkedFinishedProcessInstanceIds,
-  } = processInstancesSelectionStore;
+  const {selectedIds, excludedIds, checkedFinishedIds} =
+    processInstancesSelectionStore;
 
-  const includeIds =
-    selectedProcessInstanceIds.length > 0
-      ? checkedFinishedProcessInstanceIds
-      : [];
+  const includeIds = selectedIds.length > 0 ? checkedFinishedIds : [];
 
   return buildMutationRequestBody({
     searchParams,
     includeIds,
-    excludeIds: excludedProcessInstanceIds,
+    excludeIds: excludedIds,
     variableFilter: variable,
   });
 };
