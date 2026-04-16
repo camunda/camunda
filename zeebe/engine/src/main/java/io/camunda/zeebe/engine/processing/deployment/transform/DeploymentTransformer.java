@@ -14,18 +14,16 @@ import io.camunda.zeebe.engine.Loggers;
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
 import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.ChecksumGenerator;
-import io.camunda.zeebe.engine.processing.deployment.model.validation.BpmnDeploymentBindingValidator;
+import io.camunda.zeebe.engine.processing.deployment.model.validation.DeploymentValidator;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentResource;
-import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.FeatureFlags;
 import java.time.InstantSource;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 import org.agrona.DirectBuffer;
 import org.slf4j.Logger;
@@ -33,12 +31,9 @@ import org.slf4j.Logger;
 public final class DeploymentTransformer {
 
   private static final Logger LOG = Loggers.PROCESS_PROCESSOR_LOGGER;
-  private final ValidationConfig config;
+  private final DeploymentValidator validator;
   private final List<DeploymentResourceTransformer> resourceTransformers;
   private final ChecksumGenerator checksumGenerator = new ChecksumGenerator();
-  // internal changes during processing
-  private RejectionType rejectionType;
-  private String rejectionReason;
 
   public DeploymentTransformer(
       final StateWriter stateWriter,
@@ -49,7 +44,7 @@ public final class DeploymentTransformer {
       final ValidationConfig config,
       final InstantSource clock,
       final ExpressionLanguageMetrics expressionLanguageMetrics) {
-    this.config = config;
+    validator = new DeploymentValidator(config);
 
     final var bpmnResourceTransformer =
         new BpmnResourceTransformer(
@@ -99,127 +94,79 @@ public final class DeploymentTransformer {
   }
 
   public Either<Failure, Void> transform(final DeploymentRecord deploymentEvent) {
-    final StringBuilder errors = new StringBuilder();
-    boolean success = true;
+    // Step 1: Validate structural properties of all resources (non-empty, name length)
+    return validator
+        .validateResources(deploymentEvent)
+        // Step 2: Parse each resource and build metadata
+        .flatMap(ok -> buildMetadata(deploymentEvent))
+        // Step 3+4: Validate cross-resource constraints (duplicate IDs, deployment bindings)
+        .flatMap(contexts -> validator.validateMetadata(deploymentEvent, contexts))
+        // Step 5: Write the actual resources/deployment to state
+        .map(
+            ok -> {
+              writeResourceRecords(deploymentEvent);
+              return null;
+            });
+  }
 
-    final Iterator<DeploymentResource> resourceIterator = deploymentEvent.resources().iterator();
-    if (!resourceIterator.hasNext()) {
-      rejectionType = RejectionType.INVALID_ARGUMENT;
-      rejectionReason = "Expected to deploy at least one resource, but none given";
+  /**
+   * Step 2: Iterates over all resources and builds metadata for each. This step validates each
+   * resource individually and adds its metadata to the deployment record.
+   *
+   * @param deploymentEvent the deployment record
+   * @return Either.right with the list of contexts produced by each transformer, or Either.left
+   *     with error details
+   */
+  private Either<Failure, List<DeploymentResourceContext>> buildMetadata(
+      final DeploymentRecord deploymentEvent) {
+    final var errors = new DeploymentErrorCollector();
+    final List<DeploymentResourceContext> contexts = new ArrayList<>();
 
-      return Either.left(new Failure(rejectionReason));
-    }
+    for (final DeploymentResource deploymentResource : deploymentEvent.resources()) {
+      final var transformer = getResourceTransformer(deploymentResource);
+      try {
+        final var result = transformer.createMetadata(deploymentResource, deploymentEvent);
 
-    // step 1: only validate the resources and add their metadata to the deployment record (no event
-    // records are being written yet)
-    final var bpmnResources = new ArrayList<BpmnResource>();
-    while (resourceIterator.hasNext()) {
-      final DeploymentResource deploymentResource = resourceIterator.next();
-      if (isBpmnResource(deploymentResource)) {
-        final var context = new BpmnElementsWithDeploymentBinding();
-        bpmnResources.add(new BpmnResource(deploymentResource, context));
-        success &= createMetadata(deploymentResource, deploymentEvent, context, errors);
-      } else {
-        success &=
-            createMetadata(
-                deploymentResource, deploymentEvent, new DeploymentResourceContext() {}, errors);
-      }
-    }
-
-    // intermediate step (for BPMN resources only): validate process elements that use deployment
-    // binding (all linked resources must be part of the current deployment)
-    if (success && !bpmnResources.isEmpty()) {
-      final var validator = new BpmnDeploymentBindingValidator(deploymentEvent);
-      for (final var bpmnResource : bpmnResources) {
-        final var validationError = validator.validate(bpmnResource.elements);
-        if (validationError != null) {
-          success = false;
-          errors
-              .append("\n'")
-              .append(bpmnResource.resource.getResourceName())
-              .append("':\n")
-              .append(validationError);
+        if (result.isRight()) {
+          contexts.add(result.get());
+        } else {
+          errors.add(result.getLeft().getMessage());
         }
+      } catch (final RuntimeException e) {
+        logAndCollectUnexpectedError(deploymentResource.getResourceName(), e, errors);
       }
     }
 
-    // step 2: update metadata (optionally) and write actual event records
-    if (success) {
-      for (final DeploymentResource deploymentResource : deploymentEvent.resources()) {
-        success &= writeRecords(deploymentResource, deploymentEvent, errors);
+    return errors.toEither(contexts);
+  }
+
+  /**
+   * Step 5: Writes the actual resource records to state. This is called after all validation has
+   * passed. Skips writing if the deployment contains only duplicates (versioning invariant).
+   *
+   * @param deploymentEvent the deployment record with metadata
+   */
+  private void writeResourceRecords(final DeploymentRecord deploymentEvent) {
+    // Check if all resources are duplicates - if so, skip writing entirely (versioning invariant)
+    if (deploymentEvent.hasDuplicatesOnly()) {
+      return;
+    }
+
+    final var errors = new DeploymentErrorCollector();
+
+    for (final DeploymentResource deploymentResource : deploymentEvent.resources()) {
+      final var transformer = getResourceTransformer(deploymentResource);
+      try {
+        transformer.writeRecords(deploymentResource, deploymentEvent);
+      } catch (final RuntimeException e) {
+        logAndCollectUnexpectedError(deploymentResource.getResourceName(), e, errors);
       }
     }
 
-    if (!success) {
-      rejectionType = RejectionType.INVALID_ARGUMENT;
-      rejectionReason =
-          String.format(
-              "Expected to deploy new resources, but encountered the following errors:%s", errors);
-
-      return Either.left(new Failure(rejectionReason));
+    if (errors.hasErrors()) {
+      // Note: In practice, this should never happen as validation already passed
+      throw new IllegalStateException(errors.formatMessage());
     }
-
-    return Either.right(null);
-  }
-
-  private boolean isBpmnResource(final DeploymentResource resource) {
-    return resource.getResourceName().endsWith(".bpmn")
-        || resource.getResourceName().endsWith(".xml");
-  }
-
-  private boolean createMetadata(
-      final DeploymentResource deploymentResource,
-      final DeploymentRecord deploymentEvent,
-      final DeploymentResourceContext context,
-      final StringBuilder errors) {
-    final var resourceName = deploymentResource.getResourceName();
-    final var transformer = getResourceTransformer(deploymentResource);
-
-    if (resourceName.length() > config.maxNameFieldLength()) {
-      errors.append(
-          String.format(
-              "\n- Resource name '%s' exceeds maximum length of %d characters as it has a length of %d characters",
-              resourceName, config.maxNameFieldLength(), resourceName.length()));
-      return false;
-    }
-
-    try {
-      final var result = transformer.createMetadata(deploymentResource, deploymentEvent, context);
-
-      if (result.isRight()) {
-        return true;
-      } else {
-        final var failureMessage = result.getLeft().getMessage();
-        errors.append("\n").append(failureMessage);
-        return false;
-      }
-
-    } catch (final RuntimeException e) {
-      handleUnexpectedError(resourceName, e, errors);
-    }
-    return false;
-  }
-
-  private boolean writeRecords(
-      final DeploymentResource deploymentResource,
-      final DeploymentRecord deploymentEvent,
-      final StringBuilder errors) {
-    final var transformer = getResourceTransformer(deploymentResource);
-    try {
-      transformer.writeRecords(deploymentResource, deploymentEvent);
-      return true;
-    } catch (final RuntimeException e) {
-      handleUnexpectedError(deploymentResource.getResourceName(), e, errors);
-    }
-    return false;
-  }
-
-  public RejectionType getRejectionType() {
-    return rejectionType;
-  }
-
-  public String getRejectionReason() {
-    return rejectionReason;
   }
 
   private DeploymentResourceTransformer getResourceTransformer(final DeploymentResource resource) {
@@ -232,12 +179,11 @@ public final class DeploymentTransformer {
                     "No transformer found for resource: " + resource.getResourceName()));
   }
 
-  private static void handleUnexpectedError(
-      final String resourceName, final RuntimeException exception, final StringBuilder errors) {
+  private static void logAndCollectUnexpectedError(
+      final String resourceName,
+      final RuntimeException exception,
+      final DeploymentErrorCollector errors) {
     LOG.error("Unexpected error while processing resource '{}'", resourceName, exception);
-    errors.append("\n'").append(resourceName).append("': ").append(exception.getMessage());
+    errors.add("'%s': %s", resourceName, exception.getMessage());
   }
-
-  private record BpmnResource(
-      DeploymentResource resource, BpmnElementsWithDeploymentBinding elements) {}
 }
