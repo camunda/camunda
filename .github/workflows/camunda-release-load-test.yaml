@@ -3,7 +3,7 @@
 #              accepting required name and tag inputs plus optional per-component
 #              tag overrides: optimize-tag, identity-tag, and connectors-tag.
 #              Uses official Docker images with scenario: realistic.
-# called-by: camunda-scheduled-release-load-tests.yml (daily schedule),
+# called-by: camunda-scheduled-release-load-tests.yml (weekdays Mon-Fri at 02:00 UTC),
 #            release BPMN process (workflow_dispatch via GitHub API)
 # calls: camunda-load-test.yml (orchestration-tag: <tag>, scenario: realistic)
 # note: Verification and namespace cleanup are handled externally by the scheduled workflow

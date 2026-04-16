@@ -89,7 +89,7 @@ graph TD
 |------------------|------------------------------------------------------|-----------|
 | 00:00 UTC Monday | `zeebe-update-long-running-migrating-benchmark.yaml` | Weekly    |
 | 01:00 UTC Monday | `camunda-weekly-load-tests.yml`                      | Weekly    |
-| 04:00 UTC        | `camunda-scheduled-release-load-tests.yml`           | Daily     |
+| 02:00 UTC Mon-Fri| `camunda-scheduled-release-load-tests.yml`           | Weekdays  |
 | 04:00 UTC        | `camunda-daily-load-tests.yml`                       | Daily     |
 | 04:00 UTC        | `camunda-load-test-clean-up.yml`                     | Daily     |
 
