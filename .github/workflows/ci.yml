@@ -1316,10 +1316,11 @@ jobs:
           user_description: "General"
           user_reason: ${{ (steps.analyze-test-run.outputs.flakyTests != '') && 'flaky-tests' || '' }}
 
-  utils-flaky-tests-summary:
-    name: flaky tests summary comment
+  detect-new-flaky-tests:
+    name: detect new flaky tests
     if: always() && github.event_name == 'pull_request' && !github.event.pull_request.head.repo.fork
     needs:
+      - detect-changes
       - archunit-tests
       - database-integration-tests
       - docker-checks
@@ -1330,40 +1331,57 @@ jobs:
       - rdbms-integration-tests
       - zeebe-unit-tests
     runs-on: ubuntu-latest
-    timeout-minutes: 5
-    outputs:
-      flaky_tests_data: ${{ steps.collect-results.outputs.flaky_tests_data }}
+    timeout-minutes: 10
     permissions:
       pull-requests: write
       contents: read
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Check for bypass label
+        id: bypass
+        shell: bash
+        run: |
+          if [[ "${{ contains(github.event.pull_request.labels.*.name, 'ci:flaky-test-bypass') }}" == "true" ]]; then
+            echo "::notice::Bypass label 'ci:flaky-test-bypass' detected — skipping new flaky test gate."
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Read Zeebe unit tests matrix outputs
+        if: steps.bypass.outputs.skip != 'true'
         uses: cloudposse/github-action-matrix-outputs-read@33cac12fa9282a7230a418d859b93fdbc4f27b5a # 1.0.0
         id: zeebe-matrix-read
         with:
           matrix-step-name: zeebe-unit-tests
       - name: Read Integration tests matrix outputs
+        if: steps.bypass.outputs.skip != 'true'
         uses: cloudposse/github-action-matrix-outputs-read@33cac12fa9282a7230a418d859b93fdbc4f27b5a # 1.0.0
         id: integration-matrix-read
         with:
           matrix-step-name: integration-tests
       - name: Read Database integration tests matrix outputs
+        if: steps.bypass.outputs.skip != 'true'
         uses: cloudposse/github-action-matrix-outputs-read@33cac12fa9282a7230a418d859b93fdbc4f27b5a # 1.0.0
         id: database-integration-matrix-read
         with:
           matrix-step-name: database-integration-tests
       - name: Read history tests matrix outputs
+        if: steps.bypass.outputs.skip != 'true'
         uses: cloudposse/github-action-matrix-outputs-read@33cac12fa9282a7230a418d859b93fdbc4f27b5a # 1.0.0
         id: history-matrix-read
         with:
           matrix-step-name: history-tests
       - name: Read identity tests matrix outputs
+        if: steps.bypass.outputs.skip != 'true'
         uses: cloudposse/github-action-matrix-outputs-read@33cac12fa9282a7230a418d859b93fdbc4f27b5a # 1.0.0
         id: identity-matrix-read
         with:
           matrix-step-name: identity-tests
+
       - name: Collect flaky test results
+        if: steps.bypass.outputs.skip != 'true'
         id: collect-results
         uses: ./.github/actions/collect-flaky-tests
         with:
@@ -1383,49 +1401,12 @@ jobs:
           zeebe-matrix-output-result: ${{ steps.zeebe-matrix-read.outputs.result }}
           integration-tests-result: ${{ needs.integration-tests.result }}
           integration-matrix-output-result: ${{ steps.integration-matrix-read.outputs.result }}
-      - name: Update flaky tests comment
-        uses: ./.github/actions/flaky-tests-summary-comment
-        with:
-          flaky-tests-data: '${{ steps.collect-results.outputs.flaky_tests_data }}'
-          pr-number: ${{ github.event.pull_request.number }}
-          branch-name: ${{ github.event.pull_request.head.ref }}
-      - name: Delete matrix job generated artifacts
-        uses: geekyeggo/delete-artifact@176a747ab7e287e3ff4787bf8a148716375ca118 # v6.0.0
-        with:
-          name: |
-            zeebe-unit-tests-*
-            integration-tests-*
-
-  detect-new-flaky-tests:
-    name: detect new flaky tests
-    if: always() && github.event_name == 'pull_request' && !github.event.pull_request.head.repo.fork
-    needs:
-      - detect-changes
-      - utils-flaky-tests-summary
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    permissions:
-      pull-requests: write
-      contents: read
-    steps:
-      - uses: actions/checkout@v6
-
-      - name: Check for bypass label
-        id: bypass
-        shell: bash
-        run: |
-          if [[ "${{ contains(github.event.pull_request.labels.*.name, 'ci:flaky-test-bypass') }}" == "true" ]]; then
-            echo "::notice::Bypass label 'ci:flaky-test-bypass' detected — skipping new flaky test gate."
-            echo "skip=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "skip=false" >> "$GITHUB_OUTPUT"
-          fi
 
       - name: Check if there are flaky tests to analyze
         if: steps.bypass.outputs.skip != 'true'
         id: check
         env:
-          FLAKY_DATA: ${{ needs.utils-flaky-tests-summary.outputs.flaky_tests_data }}
+          FLAKY_DATA: ${{ steps.collect-results.outputs.flaky_tests_data }}
         shell: bash
         run: |
           if [[ -z "$FLAKY_DATA" ]] || [[ "$FLAKY_DATA" == '[]' ]]; then
@@ -1484,10 +1465,18 @@ jobs:
         if: steps.check.outputs.has_flaky_tests == 'true'
         uses: ./.github/actions/detect-new-flaky-tests
         with:
-          pr-flaky-tests-data: '${{ needs.utils-flaky-tests-summary.outputs.flaky_tests_data }}'
+          pr-flaky-tests-data: '${{ steps.collect-results.outputs.flaky_tests_data }}'
           known-flaky-tests-file: '${{ steps.query-known-flaky.outputs.known_flaky_tests_file }}'
           pr-number: ${{ github.event.pull_request.number }}
           blocking: 'false'
+
+      - name: Delete matrix job generated artifacts
+        if: always()
+        uses: geekyeggo/delete-artifact@v6
+        with:
+          name: |
+            zeebe-unit-tests-*
+            integration-tests-*
       - name: Observe build status
         if: always()
         continue-on-error: true
