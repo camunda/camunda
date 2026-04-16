@@ -15,6 +15,8 @@
  */
 package io.camunda.client.spring.configuration;
 
+import io.camunda.client.CamundaClient;
+import io.camunda.client.CamundaClientBuilder;
 import io.camunda.client.CamundaClientConfiguration;
 import io.camunda.client.CredentialsProvider;
 import io.camunda.client.api.JsonMapper;
@@ -24,10 +26,12 @@ import io.camunda.client.jobhandling.CamundaClientExecutorService;
 import io.camunda.client.jobhandling.JobExceptionHandlerSupplier;
 import io.camunda.client.jobhandling.JobExceptionHandlerSupplier.JobExceptionHandlerSupplierContext;
 import io.camunda.client.spring.properties.CamundaClientProperties;
+import io.camunda.client.spring.properties.CamundaClientProperties.ClientMode;
 import io.grpc.ClientInterceptor;
 import java.net.URI;
 import java.time.Duration;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
 import org.apache.hc.client5.http.async.AsyncExecChainHandler;
@@ -233,6 +237,80 @@ public class SpringCamundaClientConfiguration implements CamundaClientConfigurat
   @Override
   public boolean useClientSideLoadBalancing() {
     return camundaClientProperties.isUseClientSideLoadBalancing();
+  }
+
+  /**
+   * Creates a new {@link CamundaClientBuilder} configured with all settings from this
+   * configuration. Use this to apply all client properties (auth, addresses, etc.) to the builder.
+   *
+   * <p>If SaaS mode is detected (i.e. a cluster ID is set), a cloud client builder is used.
+   * Otherwise, a regular self-managed client builder is returned.
+   *
+   * @return a new {@link CamundaClientBuilder} with all settings applied
+   */
+  public CamundaClientBuilder toBuilder() {
+    final CamundaClientBuilder builder = createClientBuilder();
+
+    Optional.ofNullable(getRestAddress()).ifPresent(builder::restAddress);
+    Optional.ofNullable(getGrpcAddress()).ifPresent(builder::grpcAddress);
+    builder.preferRestOverGrpc(preferRestOverGrpc());
+    Optional.ofNullable(getDefaultTenantId()).ifPresent(builder::defaultTenantId);
+    Optional.ofNullable(getDefaultJobWorkerTenantIds())
+        .ifPresent(builder::defaultJobWorkerTenantIds);
+    Optional.ofNullable(getDefaultJobWorkerTenantFilter())
+        .ifPresent(builder::defaultJobWorkerTenantFilter);
+    builder.numJobWorkerExecutionThreads(getNumJobWorkerExecutionThreads());
+    builder.defaultJobWorkerMaxJobsActive(getDefaultJobWorkerMaxJobsActive());
+    Optional.ofNullable(getDefaultJobWorkerName()).ifPresent(builder::defaultJobWorkerName);
+    builder.defaultJobTimeout(getDefaultJobTimeout());
+    builder.defaultJobPollInterval(getDefaultJobPollInterval());
+    builder.defaultMessageTimeToLive(getDefaultMessageTimeToLive());
+    builder.defaultRequestTimeout(getDefaultRequestTimeout());
+    builder.defaultRequestTimeoutOffset(getDefaultRequestTimeoutOffset());
+    Optional.ofNullable(getCaCertificatePath()).ifPresent(builder::caCertificatePath);
+    Optional.ofNullable(getKeepAlive()).ifPresent(builder::keepAlive);
+    Optional.ofNullable(getOverrideAuthority()).ifPresent(builder::overrideAuthority);
+    builder.maxMessageSize(getMaxMessageSize());
+    builder.maxMetadataSize(getMaxMetadataSize());
+    builder.defaultJobWorkerStreamEnabled(getDefaultJobWorkerStreamEnabled());
+    builder.maxHttpConnections(getMaxHttpConnections());
+    Optional.ofNullable(credentialsProvider).ifPresent(builder::credentialsProvider);
+    Optional.ofNullable(jsonMapper).ifPresent(builder::withJsonMapper);
+    if (interceptors != null && !interceptors.isEmpty()) {
+      builder.withInterceptors(interceptors.toArray(new ClientInterceptor[0]));
+    }
+    if (chainHandlers != null && !chainHandlers.isEmpty()) {
+      builder.withChainHandlers(chainHandlers.toArray(new AsyncExecChainHandler[0]));
+    }
+    if (zeebeClientExecutorService != null) {
+      final ScheduledExecutorService scheduledExecutor =
+          zeebeClientExecutorService.getScheduledExecutor();
+      if (scheduledExecutor != null) {
+        builder.jobWorkerSchedulingExecutor(
+            scheduledExecutor,
+            zeebeClientExecutorService.isScheduledExecutorOwnedByCamundaClient());
+      }
+      final ExecutorService jobHandlingExecutor =
+          zeebeClientExecutorService.getJobHandlingExecutor();
+      if (jobHandlingExecutor != null) {
+        builder.jobHandlingExecutor(
+            jobHandlingExecutor,
+            zeebeClientExecutorService.isJobHandlingExecutorOwnedByCamundaClient());
+      }
+    }
+    return builder;
+  }
+
+  private CamundaClientBuilder createClientBuilder() {
+    if (camundaClientProperties.getMode() == ClientMode.saas
+        || camundaClientProperties.getCloud().getClusterId() != null) {
+      return CamundaClient.newCloudClientBuilder()
+          .withClusterId(camundaClientProperties.getCloud().getClusterId())
+          .withClientId(camundaClientProperties.getAuth().getClientId())
+          .withClientSecret(camundaClientProperties.getAuth().getClientSecret())
+          .withRegion(camundaClientProperties.getCloud().getRegion());
+    }
+    return CamundaClient.newClientBuilder();
   }
 
   @Override

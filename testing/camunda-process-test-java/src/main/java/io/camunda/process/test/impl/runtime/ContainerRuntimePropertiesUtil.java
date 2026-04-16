@@ -17,8 +17,6 @@ package io.camunda.process.test.impl.runtime;
 
 import static io.camunda.process.test.impl.runtime.util.PropertiesUtil.getPropertyOrDefault;
 
-import io.camunda.client.CamundaClient;
-import io.camunda.client.CamundaClientBuilder;
 import io.camunda.process.test.api.CamundaClientBuilderFactory;
 import io.camunda.process.test.api.CamundaProcessTestRuntimeMode;
 import io.camunda.process.test.impl.runtime.properties.AssertionProperties;
@@ -216,14 +214,6 @@ public final class ContainerRuntimePropertiesUtil {
     return remoteRuntimeProperties.getConnectorsRestApiAddress();
   }
 
-  public URI getRemoteClientGrpcAddress() {
-    return remoteRuntimeProperties.getRemoteClientProperties().getGrpcAddress();
-  }
-
-  public URI getRemoteClientRestAddress() {
-    return remoteRuntimeProperties.getRemoteClientProperties().getRestAddress();
-  }
-
   public Duration getRemoteRuntimeConnectionTimeout() {
     return remoteRuntimeProperties.getRuntimeConnectionTimeout();
   }
@@ -232,22 +222,14 @@ public final class ContainerRuntimePropertiesUtil {
     return runtimeMode;
   }
 
+  /**
+   * Returns a {@link CamundaClientBuilderFactory} that applies all standard {@link
+   * io.camunda.client.ClientProperties} from the loaded properties file (e.g. {@code
+   * camunda-container-runtime.properties}), with backwards-compatible overrides for remote client
+   * addresses from {@code remote.client.grpcAddress} and {@code remote.client.restAddress}.
+   */
   public CamundaClientBuilderFactory getCamundaClientBuilderFactory() {
-    return () ->
-        camundaProcessTestClientProperties.configureClientBuilder(createCamundaClientBuilder());
-  }
-
-  private CamundaClientBuilder createCamundaClientBuilder() {
-    switch (runtimeMode) {
-      case MANAGED:
-      case SHARED:
-        return CamundaClient.newClientBuilder();
-      case REMOTE:
-        return remoteRuntimeProperties.createCamundaClientBuilder();
-      default:
-        LOGGER.warn("Unknown runtime mode: {}. Fall back to MANAGED runtime mode.", runtimeMode);
-        return CamundaClient.newClientBuilder();
-    }
+    return camundaProcessTestClientProperties.createCamundaClientBuilderFactory();
   }
 
   public RemoteRuntimeProperties getRemoteRuntimeProperties() {
@@ -260,10 +242,6 @@ public final class ContainerRuntimePropertiesUtil {
 
   public CoverageReportProperties getCoverageReportProperties() {
     return coverageReportProperties;
-  }
-
-  public CamundaProcessTestClientProperties getCamundaClientProperties() {
-    return camundaProcessTestClientProperties;
   }
 
   public JudgeProperties getJudgeProperties() {
