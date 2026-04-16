@@ -190,7 +190,18 @@ jobs:
           fi
 
           echo "Running E2E tests with args: ${TEST_ARGS}"
-          eval npm run test -- ${TEST_ARGS}
+          mapfile -d '' -t test_args < <(
+            python - <<'PY'
+import os
+import shlex
+import sys
+
+for arg in shlex.split(os.environ.get("TEST_ARGS", "")):
+    sys.stdout.write(arg)
+    sys.stdout.write("\0")
+PY
+          )
+          npm run test -- "${test_args[@]}"
         working-directory: qa/c8-orchestration-cluster-e2e-test-suite
 
       - name: Publish test results to TestRail
