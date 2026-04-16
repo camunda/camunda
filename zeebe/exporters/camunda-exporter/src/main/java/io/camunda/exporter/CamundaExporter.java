@@ -423,10 +423,12 @@ public class CamundaExporter implements Exporter {
       metrics.recordFlushReasonBatchMemory();
       return true;
     }
-    if (writer.getBatchSize() > 0
-        && (context.clock().millis() - lastFlushTimestamp) >= flushDelayMs) {
-      metrics.recordFlushReasonScheduled();
-      return true;
+    if (writer.getBatchSize() > 0) {
+      final long lastFlushTimestamp = updateAndGetLastFlushTimestamp();
+      if ((context.clock().millis() - lastFlushTimestamp) >= flushDelayMs) {
+        metrics.recordFlushReasonScheduled();
+        return true;
+      }
     }
     return false;
   }

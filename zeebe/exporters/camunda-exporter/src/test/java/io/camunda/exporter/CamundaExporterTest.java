@@ -45,8 +45,11 @@ import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.InstantSource;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Queue;
 import java.util.concurrent.AbstractExecutorService;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
@@ -130,6 +133,58 @@ final class CamundaExporterTest {
     @Override
     public void execute(final Runnable command) {
       command.run();
+    }
+  }
+
+  static class RunLater extends AbstractExecutorService {
+    private boolean shutdown;
+    private final Queue<Runnable> tasks = new ConcurrentLinkedQueue<>();
+
+    int runTasks() {
+      var run = 0;
+      while (!tasks.isEmpty()) {
+        final var next = tasks.poll();
+        next.run();
+        run++;
+      }
+      return run;
+    }
+
+    @Override
+    public void shutdown() {
+      shutdown = true;
+    }
+
+    @Override
+    public List<Runnable> shutdownNow() {
+      shutdown();
+      return new ArrayList<>(tasks);
+    }
+
+    @Override
+    public boolean isShutdown() {
+      return shutdown;
+    }
+
+    @Override
+    public boolean isTerminated() {
+      return shutdown;
+    }
+
+    @Override
+    public boolean awaitTermination(final long timeout, final TimeUnit unit) {
+      return shutdown;
+    }
+
+    @Override
+    public void execute(final Runnable command) {
+      if (shutdown) {
+        // when shutdown we'll change behaviour
+        // otherwise we can end up blocking the tests from finishing
+        command.run();
+      } else {
+        tasks.add(command);
+      }
     }
   }
 
@@ -721,6 +776,54 @@ final class CamundaExporterTest {
 
       // which should trigger a retry
       verify(failingAdapter, times(2)).createBatchRequest();
+    }
+
+    @Test
+    void shouldNotPerformScheduledFlushIfPendingFlushCompletedRecently() {
+      // given
+      final StubClientAdapter clientAdapter = spy(new StubClientAdapter());
+      mockedClientAdapterFactory
+          .when(() -> ClientAdapter.of(configuration.getConnect()))
+          .thenReturn(clientAdapter);
+
+      final var clock = new MutableClock(1000);
+      testContext.setClock(clock);
+      configuration.getBulk().setDelay(1);
+      try (final var executor = new RunLater()) {
+        final Supplier<ExecutorService> flushExecutorSupplier = mock(Supplier.class);
+        // first executor is created and shutdown to check config, so returning a mock for
+        // for that so the RunLater executor is not shutdown before we want it to be
+        when(flushExecutorSupplier.get()).thenReturn(mock(ExecutorService.class), executor);
+        exporter =
+            new CamundaExporter(
+                resourceProvider,
+                new ExporterMetadata(TestObjectMapper.objectMapper()),
+                flushExecutorSupplier);
+        exporter.configure(testContext);
+        exporter.open(testController);
+
+        // when
+
+        // this should trigger a flush
+        configuration.getBulk().setSize(1);
+        exporter.export(stubRecord());
+
+        clock.advance(1001);
+        final var ran = executor.runTasks();
+        assertThat(ran).isEqualTo(1);
+
+        verify(clientAdapter).createBatchRequest();
+
+        // this should not trigger a flush as the async flush completed recently
+        // and the batch size has not been exceeded
+        configuration.getBulk().setSize(100);
+        exporter.export(stubRecord());
+
+        // then
+        // still only the initial flush
+        assertThat(executor.runTasks()).isEqualTo(0);
+        verify(clientAdapter).createBatchRequest();
+      }
     }
 
     private void waitForPendingFlushToFail() {
