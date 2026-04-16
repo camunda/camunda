@@ -9,7 +9,12 @@
 #   GITHUB_REPOSITORY  - owner/repo (for workflow link, defaults to camunda/camunda)
 #   GITHUB_RUN_ID      - workflow run ID (for workflow link)
 #   TARGET_BRANCH      - if set, shows in the header
-#   SLACK_USER_MAP     - JSON mapping of real names to Slack user IDs (e.g. '{"Peter Szabo": "U09B7CWMX4P"}')
+#   SLACK_USER_MAP      - JSON mapping keyed by GitHub login or real name to Slack user info. Supports two formats:
+#                        Simple:  '{"szpraat": "U09B7CWMX4P"}'
+#                        Rich:    '{"szpraat": {"slack_id": "U09B7CWMX4P", "avatar_url": "https://..."}}'
+#                        GitHub login keys are preferred (reliable); real-name keys also supported for backward compat.
+#   SLACK_USER_MAP_FILE - Alternative to SLACK_USER_MAP: path to a JSON file with the same format.
+#                        If both are set, SLACK_USER_MAP_FILE takes precedence.
 
 set -euo pipefail
 
@@ -19,7 +24,9 @@ GITHUB_RUN_ID="${GITHUB_RUN_ID:-}"
 REPOSITORIES="${REPOSITORIES:-}"
 
 # Default to empty JSON object if no Slack user map provided
-if [[ -z "${SLACK_USER_MAP:-}" ]]; then
+if [[ -n "${SLACK_USER_MAP_FILE:-}" && -f "${SLACK_USER_MAP_FILE}" ]]; then
+  SLACK_USER_MAP=$(cat "$SLACK_USER_MAP_FILE")
+elif [[ -z "${SLACK_USER_MAP:-}" ]]; then
   SLACK_USER_MAP='{}'
 fi
 
@@ -130,7 +137,15 @@ while IFS= read -r repo_name; do
     jq -c --arg repo "$repo_name" '[.[] | select((.repository // "unknown") == $repo)] | .[]' "$TMPDIR_WORK/stale_data.json" | while IFS= read -r group; do
     # Build section text for this group in jq (safe from shell escaping)
     section_text=$(echo "$group" | jq -r --slurpfile slack_map "$TMPDIR_WORK/slack_user_map.json" '
-      $slack_map[0] as $smap |
+      # Normalize map: support both simple ("key": "UID") and rich ("key": {"slack_id": "UID", ...}) formats
+      ($slack_map[0] | with_entries(
+        if (.value | type) == "string" then .value = {slack_id: .value}
+        else . end
+      )) as $smap |
+      # Lookup by GitHub login first, then by real name (backward compat)
+      def slack_entry_for(login; name):
+        ($smap[login] // null) // (if name then $smap[name] // null else null end);
+      def slack_id_for(login; name): (slack_entry_for(login; name) | .slack_id // null);
       # Author display: for bot-authored PRs show bot name + approvers; otherwise <@USLACKID>, @RealName, or GitHub username
       (
         if (.original_pr_author // "") | test("^app/") then
@@ -138,15 +153,15 @@ while IFS= read -r repo_name; do
           ("🤖 \(.original_pr_author)" +
           (if (.original_pr_approver_names // []) | length > 0 then
             ", reviewed by " + ([.original_pr_approver_names[] |
-              if .name and ($smap[.name] // null) then "<@\($smap[.name])>"
+              if slack_id_for(.username; .name) then "<@\(slack_id_for(.username; .name))>"
               elif .name then "@\(.name)"
               else "@\(.username)" end
             ] | join(", "))
           else
             ""
           end))
-        elif .original_pr_author_name and $smap[.original_pr_author_name] then
-          "<@\($smap[.original_pr_author_name])>"
+        elif slack_id_for(.original_pr_author; .original_pr_author_name) then
+          "<@\(slack_id_for(.original_pr_author; .original_pr_author_name))>"
         elif .original_pr_author_name then
           "@\(.original_pr_author_name)"
         else
@@ -160,7 +175,7 @@ while IFS= read -r repo_name; do
         ":pull-request-merged: <\(.original_pr_url)|#\(.original_pr_number // "?")> \(.original_pr_title // "Unknown" | if length > 60 then .[:57] + "..." else . end)"
       else
         ":pull-request-merged: #\(.original_pr_number // "?") — \(.original_pr_title // "Unknown" | if length > 60 then .[:57] + "..." else . end)"
-      end) + "  · 👤 \($author_display)\n" +
+      end) + "  · \($author_display)\n" +
       "*Stale backports:*\n" +
       ([.backport_prs[] |
         (if .age_days > 0 then "\(.age_days)d \(.age_hours % 24)h" else "\(.age_hours)h \((.age_minutes // 0) % 60)m" end) as $age |
@@ -170,14 +185,38 @@ while IFS= read -r repo_name; do
       ] | join("\n"))
     ')
 
+    # Resolve author avatar: Slack avatar from map > GitHub avatar > none
+    author_login=$(echo "$group" | jq -r '.original_pr_author // "unknown"')
+    author_name=$(echo "$group" | jq -r '.original_pr_author_name // ""')
+    avatar_url=$(jq -r --arg login "$author_login" --arg name "$author_name" '
+      (.[$login] // .[$name] // null) |
+      if type == "object" then (.avatar_url // .image_48 // empty)
+      else empty end
+    ' "$TMPDIR_WORK/slack_user_map.json" 2>/dev/null || true)
+    if [[ -z "$avatar_url" && "$author_login" != app/* && "$author_login" != "unknown" ]]; then
+      avatar_url="https://github.com/${author_login}.png?size=48"
+    fi
+
     if [[ "$USE_GROUP_DIVIDERS" == "true" ]]; then
-      jq -c --arg text "$section_text" \
-        '. + [{type: "divider"}, {type: "section", text: {type: "mrkdwn", text: $text}}]' \
-        "$TMPDIR_WORK/blocks.json" > "$TMPDIR_WORK/blocks_tmp.json" && mv "$TMPDIR_WORK/blocks_tmp.json" "$TMPDIR_WORK/blocks.json"
+      if [[ -n "$avatar_url" ]]; then
+        jq -c --arg text "$section_text" --arg avatar "$avatar_url" \
+          '. + [{type: "divider"}, {type: "section", text: {type: "mrkdwn", text: $text}, accessory: {type: "image", image_url: $avatar, alt_text: "author"}}]' \
+          "$TMPDIR_WORK/blocks.json" > "$TMPDIR_WORK/blocks_tmp.json" && mv "$TMPDIR_WORK/blocks_tmp.json" "$TMPDIR_WORK/blocks.json"
+      else
+        jq -c --arg text "$section_text" \
+          '. + [{type: "divider"}, {type: "section", text: {type: "mrkdwn", text: $text}}]' \
+          "$TMPDIR_WORK/blocks.json" > "$TMPDIR_WORK/blocks_tmp.json" && mv "$TMPDIR_WORK/blocks_tmp.json" "$TMPDIR_WORK/blocks.json"
+      fi
     else
-      jq -c --arg text "$section_text" \
-        '. + [{type: "section", text: {type: "mrkdwn", text: ("── ── ── ── ──\n" + $text)}}]' \
-        "$TMPDIR_WORK/blocks.json" > "$TMPDIR_WORK/blocks_tmp.json" && mv "$TMPDIR_WORK/blocks_tmp.json" "$TMPDIR_WORK/blocks.json"
+      if [[ -n "$avatar_url" ]]; then
+        jq -c --arg text "$section_text" --arg avatar "$avatar_url" \
+          '. + [{type: "section", text: {type: "mrkdwn", text: ("── ── ── ── ──\n" + $text)}, accessory: {type: "image", image_url: $avatar, alt_text: "author"}}]' \
+          "$TMPDIR_WORK/blocks.json" > "$TMPDIR_WORK/blocks_tmp.json" && mv "$TMPDIR_WORK/blocks_tmp.json" "$TMPDIR_WORK/blocks.json"
+      else
+        jq -c --arg text "$section_text" \
+          '. + [{type: "section", text: {type: "mrkdwn", text: ("── ── ── ── ──\n" + $text)}}]' \
+          "$TMPDIR_WORK/blocks.json" > "$TMPDIR_WORK/blocks_tmp.json" && mv "$TMPDIR_WORK/blocks_tmp.json" "$TMPDIR_WORK/blocks.json"
+      fi
     fi
   done
   fi

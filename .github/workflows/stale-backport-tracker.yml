@@ -199,6 +199,20 @@ jobs:
     timeout-minutes: 5
     permissions: {}
     steps:
+      - name: Generate GitHub token
+        id: github-token
+        uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@main
+        with:
+          github-app-id-vault-key: MONOREPO_RELEASE_APP_ID
+          github-app-id-vault-path: secret/data/products/camunda/ci/camunda
+          github-app-private-key-vault-key: MONOREPO_RELEASE_APP_PRIVATE_KEY
+          github-app-private-key-vault-path: secret/data/products/camunda/ci/camunda
+          vault-auth-method: approle
+          vault-auth-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-auth-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+          vault-url: ${{ secrets.VAULT_ADDR }}
+          repositories: "monorepo-ci-data"
+
       - name: Checkout repository
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
@@ -215,25 +229,18 @@ jobs:
              secret/data/products/camunda/ci/github-actions SLACK_C8_MONOREPO_NOTIFICATIONS_BOT_TOKEN;
              secret/data/products/camunda/ci/github-actions SLACK_TOPMONOREPOCI_CHANNEL_ID;
 
-      - name: Resolve Slack user IDs
-        id: slack-users
+      - name: Download GitHub-Slack user map
         env:
-          SLACK_BOT_TOKEN: ${{ steps.secrets.outputs.SLACK_C8_MONOREPO_NOTIFICATIONS_BOT_TOKEN }}
+          GH_TOKEN: ${{ steps.github-token.outputs.token }}
         run: |
-          chmod +x .ci/scripts/stale-backport-scripts/resolve-slack-users.sh
-
-          # Extract unique author names from stale data
-          names=$(echo '${{ needs.collect-stale-backports.outputs.stale_data }}' | \
-            jq '[.[].original_pr_author_name // empty] | unique')
-
-          # Resolve names to Slack user IDs
-          slack_user_map=$(echo "$names" | .ci/scripts/stale-backport-scripts/resolve-slack-users.sh)
-
-          {
-            echo "slack_user_map<<SLACK_MAP_EOF"
-            echo "$slack_user_map"
-            echo "SLACK_MAP_EOF"
-          } >> "$GITHUB_OUTPUT"
+          # Download the pre-built GitHub-to-Slack user map artifact from monorepo-ci-data
+          if gh run download --repo camunda/monorepo-ci-data --name github-slack-user-map --dir /tmp/map 2>/dev/null; then
+            cp /tmp/map/github-slack-user-map.json /tmp/slack-user-map.json
+            echo "Downloaded map with $(jq 'length' /tmp/slack-user-map.json) entries"
+          else
+            echo "⚠️ No GitHub-Slack user map artifact found — Slack mentions will use fallback" >&2
+            echo '{}' > /tmp/slack-user-map.json
+          fi
 
       - name: Format Slack report
         id: format
@@ -242,7 +249,7 @@ jobs:
           GITHUB_RUN_ID: ${{ github.run_id }}
           TARGET_BRANCH: ${{ inputs.target_branch || '' }}
           REPOSITORIES: "camunda/camunda,camunda/zeebe-process-test"
-          SLACK_USER_MAP: ${{ steps.slack-users.outputs.slack_user_map }}
+          SLACK_USER_MAP_FILE: /tmp/slack-user-map.json
         run: |
           chmod +x .ci/scripts/stale-backport-scripts/format-slack-report.sh
           payload=$(echo '${{ needs.collect-stale-backports.outputs.stale_data }}' | \
