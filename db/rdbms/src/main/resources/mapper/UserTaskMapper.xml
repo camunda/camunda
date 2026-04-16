@@ -279,10 +279,11 @@
           <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
         </foreach>
       </if>
-      <if test="filter.processInstanceKeys != null and !filter.processInstanceKeys.isEmpty()">
-        AND ut.PROCESS_INSTANCE_KEY IN
-        <foreach close=")" collection="filter.processInstanceKeys" item="value" open="("
-          separator=", ">#{value}
+      <if
+        test="filter.processInstanceKeyOperations != null and !filter.processInstanceKeyOperations.isEmpty()">
+        <foreach collection="filter.pprocessInstanceKeyOperations" item="operation">
+          AND PROCESS_INSTANCE_KEY
+          <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
         </foreach>
       </if>
       <if

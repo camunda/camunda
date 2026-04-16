@@ -27,7 +27,7 @@ public record UserTaskFilter(
     List<Operation<String>> assigneeOperations,
     List<Operation<Integer>> priorityOperations,
     List<Operation<String>> stateOperations,
-    List<Long> processInstanceKeys,
+    List<Operation<Long>> processInstanceKeyOperations,
     List<Operation<Long>> processDefinitionKeyOperations,
     List<Operation<String>> candidateUserOperations,
     List<Operation<String>> candidateGroupOperations,
@@ -52,7 +52,7 @@ public record UserTaskFilter(
     private List<Operation<String>> assigneeOperations;
     private List<Operation<Integer>> priorityOperations;
     private List<Operation<String>> stateOperations;
-    private List<Long> processInstanceKeys;
+    private List<Operation<Long>> processInstanceKeyOperations;
     private List<Operation<Long>> processDefinitionKeyOperations;
     private List<Operation<String>> candidateUserOperations;
     private List<Operation<String>> candidateGroupOperations;
@@ -164,13 +164,19 @@ public record UserTaskFilter(
       return stateOperations(FilterUtil.mapDefaultToOperation(values));
     }
 
-    public Builder processInstanceKeys(final Long... values) {
-      return processInstanceKeys(collectValuesAsList(values));
+    public Builder processInstanceKeyOperations(final List<Operation<Long>> operations) {
+      processInstanceKeyOperations = addValuesToList(processInstanceKeyOperations, operations);
+      return this;
     }
 
-    public Builder processInstanceKeys(final List<Long> values) {
-      processInstanceKeys = addValuesToList(processInstanceKeys, values);
-      return this;
+    @SafeVarargs
+    public final Builder processInstanceKeyOperations(
+        final Operation<Long> operation, final Operation<Long>... operations) {
+      return processInstanceKeyOperations(collectValues(operation, operations));
+    }
+
+    public Builder processInstanceKeys(final Long value, final Long... values) {
+      return processInstanceKeyOperations(FilterUtil.mapDefaultToOperation(value, values));
     }
 
     public Builder processDefinitionKeyOperations(final List<Operation<Long>> operations) {
@@ -316,7 +322,7 @@ public record UserTaskFilter(
           Objects.requireNonNullElse(assigneeOperations, Collections.emptyList()),
           Objects.requireNonNullElse(priorityOperations, Collections.emptyList()),
           Objects.requireNonNullElse(stateOperations, Collections.emptyList()),
-          Objects.requireNonNullElse(processInstanceKeys, Collections.emptyList()),
+          Objects.requireNonNullElse(processInstanceKeyOperations, Collections.emptyList()),
           Objects.requireNonNullElse(processDefinitionKeyOperations, Collections.emptyList()),
           Objects.requireNonNullElse(candidateUserOperations, Collections.emptyList()),
           Objects.requireNonNullElse(candidateGroupOperations, Collections.emptyList()),

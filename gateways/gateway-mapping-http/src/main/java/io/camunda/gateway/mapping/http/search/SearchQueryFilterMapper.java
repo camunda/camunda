@@ -905,8 +905,8 @@ public class SearchQueryFilterMapper {
           .map(mapToKeyOperations("processDefinitionKey", validationErrors))
           .ifPresent(builder::processDefinitionKeyOperations);
       Optional.ofNullable(filter.getProcessInstanceKey())
-          .map(mapKeyToLong("processInstanceKey", validationErrors))
-          .ifPresent(builder::processInstanceKeys);
+          .map(mapToKeyOperations("processInstanceKey", validationErrors))
+          .ifPresent(builder::processInstanceKeyOperations);
       Optional.ofNullable(filter.getTenantId())
           .map(mapToStringOperations())
           .ifPresent(builder::tenantIdOperations);

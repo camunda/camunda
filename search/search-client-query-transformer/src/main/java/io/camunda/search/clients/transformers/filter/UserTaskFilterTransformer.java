@@ -59,7 +59,7 @@ public class UserTaskFilterTransformer extends IndexFilterTransformer<UserTaskFi
   public SearchQuery toSearchQuery(final UserTaskFilter filter) {
     final var queries = new ArrayList<SearchQuery>();
     ofNullable(getUserTaskKeysQuery(filter.userTaskKeys())).ifPresent(queries::add);
-    ofNullable(getProcessInstanceKeysQuery(filter.processInstanceKeys())).ifPresent(queries::add);
+    queries.addAll(getProcessInstanceKeyQuery(filter.processInstanceKeyOperations()));
     queries.addAll(getProcessDefinitionKeyQuery(filter.processDefinitionKeyOperations()));
     ofNullable(getElementIdQuery(filter.elementIds())).ifPresent(queries::add);
     queries.addAll(getNameQuery(filter.nameOperations()));
@@ -168,8 +168,9 @@ public class UserTaskFilterTransformer extends IndexFilterTransformer<UserTaskFi
     return or(queries);
   }
 
-  private SearchQuery getProcessInstanceKeysQuery(final List<Long> processInstanceKeys) {
-    return longTerms(PROCESS_INSTANCE_ID, processInstanceKeys);
+  private List<SearchQuery> getProcessInstanceKeyQuery(
+      final List<Operation<Long>> processInstanceKeys) {
+    return longOperations(PROCESS_INSTANCE_ID, processInstanceKeys);
   }
 
   private List<SearchQuery> getProcessDefinitionKeyQuery(

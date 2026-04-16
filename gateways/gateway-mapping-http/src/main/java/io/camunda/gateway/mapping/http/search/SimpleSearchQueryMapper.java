@@ -380,7 +380,9 @@ public class SimpleSearchQueryMapper {
       ofNullable(filter.getProcessDefinitionKey())
           .map(SimpleSearchQueryMapper::getBasicStringFilter)
           .ifPresent(filterModel::processDefinitionKey);
-      ofNullable(filter.getProcessInstanceKey()).ifPresent(filterModel::processInstanceKey);
+      ofNullable(filter.getProcessInstanceKey())
+          .map(SimpleSearchQueryMapper::getBasicStringFilter)
+          .ifPresent(filterModel::processInstanceKey);
       ofNullable(filter.getElementInstanceKey()).ifPresent(filterModel::elementInstanceKey);
       ofNullable(filter.getTags()).ifPresent(filterModel::tags);
     }

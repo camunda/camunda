@@ -18,12 +18,12 @@ package io.camunda.client.impl.search.filter;
 import io.camunda.client.api.search.enums.UserTaskState;
 import io.camunda.client.api.search.filter.UserTaskFilter;
 import io.camunda.client.api.search.filter.VariableValueFilter;
-import io.camunda.client.api.search.filter.builder.BasicStringProperty;
+import io.camunda.client.api.search.filter.builder.BasicLongProperty;
 import io.camunda.client.api.search.filter.builder.DateTimeProperty;
 import io.camunda.client.api.search.filter.builder.IntegerProperty;
 import io.camunda.client.api.search.filter.builder.StringProperty;
 import io.camunda.client.api.search.filter.builder.UserTaskStateProperty;
-import io.camunda.client.impl.search.filter.builder.BasicStringPropertyImpl;
+import io.camunda.client.impl.search.filter.builder.BasicLongPropertyImpl;
 import io.camunda.client.impl.search.filter.builder.DateTimePropertyImpl;
 import io.camunda.client.impl.search.filter.builder.IntegerPropertyImpl;
 import io.camunda.client.impl.search.filter.builder.StringPropertyImpl;
@@ -157,8 +157,13 @@ public class UserTaskFilterImpl
 
   @Override
   public UserTaskFilter processDefinitionKey(final Long processDefinitionKey) {
-    final Consumer<BasicStringProperty> fn = b -> b.eq(ParseUtil.keyToString(processDefinitionKey));
-    final BasicStringProperty property = new BasicStringPropertyImpl();
+    processDefinitionKey(b -> b.eq(processDefinitionKey));
+    return this;
+  }
+
+  @Override
+  public UserTaskFilter processDefinitionKey(final Consumer<BasicLongProperty> fn) {
+    final BasicLongProperty property = new BasicLongPropertyImpl();
     fn.accept(property);
     filter.setProcessDefinitionKey(provideSearchRequestProperty(property));
     return this;
@@ -166,7 +171,15 @@ public class UserTaskFilterImpl
 
   @Override
   public UserTaskFilter processInstanceKey(final Long processInstanceKey) {
-    filter.setProcessInstanceKey(ParseUtil.keyToString(processInstanceKey));
+    processInstanceKey(b -> b.eq(processInstanceKey));
+    return this;
+  }
+
+  @Override
+  public UserTaskFilter processInstanceKey(final Consumer<BasicLongProperty> fn) {
+    final BasicLongProperty property = new BasicLongPropertyImpl();
+    fn.accept(property);
+    filter.setProcessInstanceKey(provideSearchRequestProperty(property));
     return this;
   }
 

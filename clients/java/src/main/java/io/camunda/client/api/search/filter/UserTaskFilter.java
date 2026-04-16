@@ -16,6 +16,7 @@
 package io.camunda.client.api.search.filter;
 
 import io.camunda.client.api.search.enums.UserTaskState;
+import io.camunda.client.api.search.filter.builder.BasicLongProperty;
 import io.camunda.client.api.search.filter.builder.DateTimeProperty;
 import io.camunda.client.api.search.filter.builder.IntegerProperty;
 import io.camunda.client.api.search.filter.builder.StringProperty;
@@ -175,12 +176,30 @@ public interface UserTaskFilter extends SearchRequestFilter {
   UserTaskFilter processDefinitionKey(final Long processDefinitionKey);
 
   /**
+   * Filters user tasks by the specified process definition key using {@link BasicLongProperty}
+   * consumer.
+   *
+   * @param fn the process definition key {@link BasicLongProperty} consumer of the user task
+   * @return the updated filter
+   */
+  UserTaskFilter processDefinitionKey(final Consumer<BasicLongProperty> fn);
+
+  /**
    * Filters user tasks by the specified process instance key.
    *
    * @param processInstanceKey the process instance key of the user task
    * @return the updated filter
    */
   UserTaskFilter processInstanceKey(final Long processInstanceKey);
+
+  /**
+   * Filters user tasks by the specified process instance key using {@link BasicLongProperty}
+   * consumer.
+   *
+   * @param fn the process instance key {@link BasicLongProperty} consumer of the user task
+   * @return the updated filter
+   */
+  UserTaskFilter processInstanceKey(final Consumer<BasicLongProperty> fn);
 
   /**
    * Filters user tasks by the specified tenant ID.

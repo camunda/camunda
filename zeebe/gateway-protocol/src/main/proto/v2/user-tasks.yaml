@@ -559,7 +559,7 @@ components:
           description: The key of the process definition.
         processInstanceKey:
           allOf:
-            - $ref: 'keys.yaml#/components/schemas/ProcessInstanceKey'
+            - $ref: 'keys.yaml#/components/schemas/ProcessInstanceKeyFilterProperty'
           description: The key of the process instance.
         elementInstanceKey:
           allOf:
