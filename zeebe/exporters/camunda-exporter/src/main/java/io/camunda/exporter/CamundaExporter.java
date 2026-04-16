@@ -367,10 +367,20 @@ public class CamundaExporter implements Exporter {
   }
 
   private boolean shouldFlush() {
-    return writer.getBatchSize() >= configuration.getBulk().getSize()
-        || writer.getBatchMemoryEstimateInMb() >= configuration.getBulk().getMemoryLimit()
-        || (writer.getBatchSize() > 0
-            && (context.clock().millis() - lastFlushTimestamp) >= flushDelayMs);
+    if (writer.getBatchSize() >= configuration.getBulk().getSize()) {
+      metrics.recordFlushReasonBatchSize();
+      return true;
+    }
+    if (writer.getBatchMemoryEstimateInMb() >= configuration.getBulk().getMemoryLimit()) {
+      metrics.recordFlushReasonBatchMemory();
+      return true;
+    }
+    if (writer.getBatchSize() > 0
+        && (context.clock().millis() - lastFlushTimestamp) >= flushDelayMs) {
+      metrics.recordFlushReasonScheduled();
+      return true;
+    }
+    return false;
   }
 
   private ExporterBatchWriter createBatchWriter() {
@@ -394,6 +404,7 @@ public class CamundaExporter implements Exporter {
     final var now = context.clock().millis();
     try {
       if (now - lastFlushTimestamp >= flushDelayMs) {
+        metrics.recordFlushReasonScheduled();
         flush();
       }
     } catch (final Exception e) {
