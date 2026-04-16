@@ -21,7 +21,7 @@ on:
       helmRepositoryDirName:
         description: 'Helm chart directory name'
         type: string
-        default: 'camunda-platform-8.9'
+        default: 'camunda-platform-8.10'
       scenario:
         description: 'Test scenario'
         type: string
@@ -300,7 +300,7 @@ jobs:
       identifier: ${{ needs.format-identifier.outputs.identifier }}
       platforms: gke
       camunda-helm-git-ref: ${{ inputs.helmRepositoryBranchName || 'main' }}
-      camunda-helm-dir: ${{ inputs.helmRepositoryDirName || 'camunda-platform-8.9' }}
+      camunda-helm-dir: ${{ inputs.helmRepositoryDirName || 'camunda-platform-8.10' }}
       namespace-prefix: monorepo
       test-enabled: true
       e2e-enabled: true
