@@ -16,6 +16,7 @@ import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.intent.TimerIntent;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
@@ -299,5 +300,49 @@ public final class TimerIncidentTest {
                 .findAny())
         .describedAs("Expect that element was activated")
         .isPresent();
+  }
+
+  @Test
+  public void shouldCreateIncidentWhenReschedulingTimerFails() {
+    // given - a process with a repeating timer that uses a variable in the cycle expression
+    final String initialDuration = "PT1S";
+    ENGINE.deployment().withXmlResource(createProcessWithCycle(CYCLE_EXPRESSION)).deploy();
+    final long processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withVariable(DURATION_VARIABLE, initialDuration)
+            .create();
+
+    // when - the first timer triggers successfully
+    RecordingExporter.timerRecords(TimerIntent.TRIGGERED)
+        .withProcessInstanceKey(processInstanceKey)
+        .await();
+
+    // and - the variable is changed to an invalid value that will fail when rescheduling
+    ENGINE
+        .variables()
+        .ofScope(processInstanceKey)
+        .withDocument(Collections.singletonMap(DURATION_VARIABLE, "not_a_valid_duration"))
+        .update();
+
+    // and - time advances to trigger the second timer
+    ENGINE.increaseTime(Duration.ofSeconds(1));
+
+    // then - an incident should be created for the rescheduling failure
+    final Record<IncidentRecordValue> incident =
+        RecordingExporter.incidentRecords(IncidentIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+
+    assertThat(incident.getValue().getProcessInstanceKey()).isEqualTo(processInstanceKey);
+    assertThat(incident.getValue().getErrorType()).isEqualTo(ErrorType.EXTRACT_VALUE_ERROR);
+    assertThat(incident.getValue().getErrorMessage())
+        .isEqualTo(
+            """
+            Expected result of the expression 'cycle(duration(timer_duration))' to be 'STRING', but was 'NULL'. \
+            The evaluation reported the following warnings:
+            [FUNCTION_INVOCATION_FAILURE] Failed to invoke function 'duration': Failed to parse duration from 'not_a_valid_duration'
+            [FUNCTION_INVOCATION_FAILURE] Failed to invoke function 'cycle': cycle function expected an interval (duration) parameter, but found 'null'""");
   }
 }

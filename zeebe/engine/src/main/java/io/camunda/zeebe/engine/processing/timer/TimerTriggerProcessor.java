@@ -9,7 +9,9 @@ package io.camunda.zeebe.engine.processing.timer;
 
 import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
+import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnIncidentBehavior;
 import io.camunda.zeebe.engine.processing.common.CatchEventBehavior;
+import io.camunda.zeebe.engine.processing.common.ElementTreePathBuilder;
 import io.camunda.zeebe.engine.processing.common.EventHandle;
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
 import io.camunda.zeebe.engine.processing.common.Failure;
@@ -25,13 +27,14 @@ import io.camunda.zeebe.engine.state.mutable.MutableTimerInstanceState;
 import io.camunda.zeebe.model.bpmn.util.time.Interval;
 import io.camunda.zeebe.model.bpmn.util.time.RepeatingInterval;
 import io.camunda.zeebe.model.bpmn.util.time.Timer;
+import io.camunda.zeebe.protocol.impl.record.value.incident.IncidentRecord;
 import io.camunda.zeebe.protocol.impl.record.value.timer.TimerRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.TimerIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.Either;
-import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.time.Instant;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -55,6 +58,7 @@ public final class TimerTriggerProcessor implements TypedRecordProcessor<TimerRe
   private final KeyGenerator keyGenerator;
   private final StateWriter stateWriter;
   private final TypedRejectionWriter rejectionWriter;
+  private final BpmnIncidentBehavior incidentBehavior;
 
   private final EventHandle eventHandle;
 
@@ -64,6 +68,7 @@ public final class TimerTriggerProcessor implements TypedRecordProcessor<TimerRe
       final Writers writers) {
     catchEventBehavior = bpmnBehaviors.catchEventBehavior();
     expressionProcessor = bpmnBehaviors.expressionProcessor();
+    incidentBehavior = bpmnBehaviors.incidentBehavior();
     stateWriter = writers.state();
     rejectionWriter = writers.rejection();
 
@@ -157,11 +162,8 @@ public final class TimerTriggerProcessor implements TypedRecordProcessor<TimerRe
             .getTimerFactory()
             .apply(expressionProcessor, record.getElementInstanceKey(), record.getTenantId());
     if (timer.isLeft()) {
-      final String message =
-          "Expected to reschedule repeating timer for element with id '%s', but an error occurred: %s"
-              .formatted(BufferUtil.bufferAsString(event.getId()), timer.getLeft().getMessage());
-      throw new IllegalStateException(message);
-      // todo(#4208): raise incident instead of throwing an exception
+      raiseIncidentForReschedulingFailure(timer.getLeft(), record, event);
+      return;
     }
 
     final Timer refreshedTimer = refreshTimer(timer.get(), record);
@@ -172,6 +174,40 @@ public final class TimerTriggerProcessor implements TypedRecordProcessor<TimerRe
         event.getId(),
         record.getTenantId(),
         refreshedTimer);
+  }
+
+  private void raiseIncidentForReschedulingFailure(
+      final Failure failure, final TimerRecord record, final ExecutableCatchEvent event) {
+    // Build element instance path for the incident
+    final var treePathProperties =
+        new ElementTreePathBuilder()
+            .withElementInstanceProvider(elementInstanceState::getInstance)
+            .withCallActivityIndexProvider(processState::getFlowElement)
+            .withElementInstanceKey(record.getElementInstanceKey())
+            .build();
+
+    // Build incident record
+    final var incidentRecord = new IncidentRecord();
+    final var deployedProcess =
+        processState.getProcessByKeyAndTenant(
+            record.getProcessDefinitionKey(), record.getTenantId());
+
+    incidentRecord
+        .setProcessInstanceKey(record.getProcessInstanceKey())
+        .setBpmnProcessId(deployedProcess.getBpmnProcessId())
+        .setProcessDefinitionKey(record.getProcessDefinitionKey())
+        .setElementInstanceKey(record.getElementInstanceKey())
+        .setElementId(event.getId())
+        .setVariableScopeKey(record.getElementInstanceKey())
+        .setErrorType(failure.getErrorType())
+        .setErrorMessage(failure.getMessage())
+        .setTenantId(record.getTenantId())
+        .setElementInstancePath(treePathProperties.elementInstancePath())
+        .setProcessDefinitionPath(treePathProperties.processDefinitionPath())
+        .setCallingElementPath(treePathProperties.callingElementPath());
+
+    final var incidentKey = keyGenerator.nextKey();
+    stateWriter.appendFollowUpEvent(incidentKey, IncidentIntent.CREATED, incidentRecord);
   }
 
   private Timer refreshTimer(final Timer timer, final TimerRecord record) {
