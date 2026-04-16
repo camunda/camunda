@@ -17,32 +17,11 @@ public interface CamundaAuthenticationProvider {
    * Returns the current {@link CamundaAuthentication} representing the authentication context for a
    * user, client, or anonymous user.
    *
-   * <p>The returned {@link CamundaAuthentication} may represent an anonymous user ({@code
-   * authenticatedUsername} and {@code authenticatedClientId} will be null and {@code claims will
-   * contain an entry of key:Authorization.AUTHORIZED_ANONYMOUS_USER value:true}) or a unique
-   * principal (either {@code authenticatedUsername} or {@code authenticatedClientId} will be set,
-   * but never both)
-   *
    * @return the current {@link CamundaAuthentication}
    */
   CamundaAuthentication getCamundaAuthentication();
 
   default CamundaAuthentication getAnonymousCamundaAuthentication() {
     return CamundaAuthentication.anonymous();
-  }
-
-  /**
-   * Returns the current {@link CamundaAuthentication} if available, falling back to anonymous
-   * authentication if the security context is empty or no converter can handle the current
-   * authentication type. This is used by generated controllers that uniformly resolve
-   * authentication for all endpoints, including unprotected ones where the security context
-   * contains no authentication.
-   */
-  default CamundaAuthentication getAnonymousIfUnavailable() {
-    try {
-      return getCamundaAuthentication();
-    } catch (final Exception e) {
-      return getAnonymousCamundaAuthentication();
-    }
   }
 }

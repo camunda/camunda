@@ -70,8 +70,6 @@ public class ResourceControllerTest extends RestControllerTest {
   void setup() {
     when(authenticationProvider.getCamundaAuthentication())
         .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
-    when(authenticationProvider.getAnonymousIfUnavailable())
-        .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
   }
 
   @Test
@@ -213,8 +211,6 @@ public class ResourceControllerTest extends RestControllerTest {
   void shouldDeployResourceWithMultitenancyEnabled() {
     // given
     when(authenticationProvider.getCamundaAuthentication())
-        .thenReturn(AUTHENTICATION_WITH_NON_DEFAULT_TENANT);
-    when(authenticationProvider.getAnonymousIfUnavailable())
         .thenReturn(AUTHENTICATION_WITH_NON_DEFAULT_TENANT);
     when(multiTenancyCfg.isChecksEnabled()).thenReturn(true);
     final var filename = "process.bpmn";

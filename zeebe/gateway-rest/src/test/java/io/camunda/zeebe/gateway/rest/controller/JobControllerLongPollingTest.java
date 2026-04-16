@@ -77,8 +77,6 @@ public class JobControllerLongPollingTest extends RestControllerTest {
     responseObserver.reset();
     when(authenticationProvider.getCamundaAuthentication())
         .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
-    when(authenticationProvider.getAnonymousIfUnavailable())
-        .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
   }
 
   @Test
@@ -294,8 +292,6 @@ public class JobControllerLongPollingTest extends RestControllerTest {
     stub.registerWith(stubbedBrokerClient);
 
     when(authenticationProvider.getCamundaAuthentication())
-        .thenReturn(AUTHENTICATION_WITH_NON_DEFAULT_TENANT);
-    when(authenticationProvider.getAnonymousIfUnavailable())
         .thenReturn(AUTHENTICATION_WITH_NON_DEFAULT_TENANT);
 
     final var request =
