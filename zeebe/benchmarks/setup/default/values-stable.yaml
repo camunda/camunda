@@ -2,7 +2,7 @@
 elasticsearch:
   master:
     nodeSelector:
-      component: benchmark-n2-standard-8
+      component: benchmark-n2-standard-8-stable
       topology.kubernetes.io/zone: __AVAILABILITY_ZONE__
     tolerations:
       - key: nodepool
