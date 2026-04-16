@@ -185,7 +185,7 @@ public class UserTaskFilterImpl
 
   @Override
   public UserTaskFilter bpmnProcessId(final String bpmnProcessId) {
-    bpmnProcessId(b -> b.eq(bpmnProcessId))
+    bpmnProcessId(b -> b.eq(bpmnProcessId));
     return this;
   }
 
