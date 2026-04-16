@@ -59,7 +59,7 @@
     <!-- DATABASE -->
     <!-- Elasticsearch-->
     <version.elasticsearch>8.19.13</version.elasticsearch>
-    <version.elasticsearch-java-client>8.19.13</version.elasticsearch-java-client>
+    <version.elasticsearch-java-client>8.19.14</version.elasticsearch-java-client>
     <!-- The least supported elasticsearch version we should test against-->
     <elasticsearch.test.version>8.19.11</elasticsearch.test.version>
     <!-- The ElasticSearch version of the previous Optimize version -->
