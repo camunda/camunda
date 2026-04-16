@@ -1,0 +1,54 @@
+global:
+  preferRest:
+    enabled: false
+
+  nodeSelector:
+    component: benchmark-n2-standard-4
+    topology.kubernetes.io/zone: europe-west1-d
+
+  tolerations:
+    - key: nodepool
+      operator: Equal
+      value: n2-standard-4
+      effect: NoSchedule
+
+# Saas configuration to run load tests against Camunda SaaS environment
+saas:
+  # Saas.enabled if true enables the load tests to run against Camunda SaaS
+  enabled: true
+
+  # Saas.credentials configuration to connect to a Camunda SaaS cluster
+  credentials:
+    # Saas.existingSecret can be used to configure the secret name that should be referenced by the load tests
+    # applications to retrieve credential information.
+    #
+    # If this value is set, other credentials are not used.
+    #
+    # Credentials Secret need to follow the following format:
+    #
+    # apiVersion: v1
+    # kind: Secret
+    # metadata:
+    #   name: cloud-credentials
+    # type: Opaque
+    # stringData:
+    #   clientId: hH55UFivfw-bbHAuPwN545oyv8tTdW0z
+    #   clientSecret: xtHQB.zBLcQrw4GaP0k_ci~ePjbD8qVlYaFKNo__2a7ZJxL-DAVVHepq~X9elPRb
+    #   zeebeRestAddress: e314a337-a462-4988-a3be-d1f2e153e034.zeebe.ultrawombat.com:443
+    #   authServer: https://login.cloud.ultrawombat.com/oauth/token
+    existingSecret:
+
+    # Saas.credentials.clientId to define the clientId to connect
+    clientId: "orchestration"
+    # Saas.credentials.clientSecret to define the clientSecret to connect
+    clientSecret: "__SECRET__"
+    # Saas.credentials.zeebeRestAddress to define the rest address of the cluster (including port)
+    zeebeRestAddress: "http://camunda-gateway:8080"
+    # SaaS.credentials.authServer to define the authentication server to retrieve JWT tokens
+    authServer: "http://keycloak/auth/realms/camunda-platform/protocol/openid-connect/token"
+    # Saas.credentials.authType to define the authentication type for the starter and workers
+    authType: "OAUTH"
+    # Saas.credentials.zeebeGrpcAddress to define the grpc address of the cluster (including port)
+    zeebeGrpcAddress: "http://camunda-gateway:26500"
+    # Saas.credentials.authorizationAudience to define the auth audience of the cluster
+    authorizationAudience: "orchestration-api"

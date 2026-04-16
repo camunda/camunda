@@ -1,0 +1,178 @@
+########################################################################################
+################################################### Global cluster configuration
+########################################################################################
+global:
+  postgresql:
+    auth:
+      database: camunda
+      username: camunda
+      password: camunda
+      postgresPassword: camunda
+  # needed to allow the pass-through-cache for postgres images
+  security:
+    allowInsecureImages: true
+
+########################################################################################
+################################################### Orchestration cluster configuration
+########################################################################################
+orchestration:
+
+  exporters:
+    camunda:
+      enabled: false
+    rdbms:
+      enabled: true
+  data:
+    secondaryStorage:
+      type: rdbms
+      rdbms:
+        url: jdbc:postgresql://postgres-postgresql:5432/camunda
+        username: camunda
+        secret:
+          inlineSecret: camunda
+        # set to 2001 and not 2000 o´to directly see when queue is full in metrics dashboard
+        queueSize: 2001
+        history:
+          defaultHistoryTTL: PT1H
+          minHistoryCleanupInterval: PT1S
+          maxHistoryCleanupInterval: PT1M
+
+  # Overriding the extraConfiguration for the Platform chart
+  # to disable Camunda Exporter usage and make use of the RDBMS exporter instead, as well as to set some additional configuration for Camunda application
+  extraConfiguration:
+    - file: application.yml
+      content: |
+        # Enable execution metrics exporter to be able to see the execution metrics, like process instance and job completion times
+        zeebe.broker.executionMetricsExporterEnabled: "true"
+        camunda.flags.jfr.metrics: "true"
+        # Define when the broker should start to reject requests when the disk is almost full, for both processing and replication.
+        zeebe.broker.data.disk.freeSpace.processing: "3GB"
+        zeebe.broker.data.disk.freeSpace.replication: "2GB"
+        # We want to have this for long running load tests, to detect consistency issues early on and to have the foreign key checks enabled for better data integrity.
+        # Like endurance / soak tests  but not for our maximum stress tests, where we want to push the system to the limits and consistency checks might cause too much overhead.
+        zeebe.broker.experimental.consistencyChecks.enablePreconditions: "true"
+        zeebe.broker.experimental.consistencyChecks.enableForeignKeyChecks: "true"
+        # Configure a rate limit for all writes, so that we can visualize flow control metrics.
+        zeebe.broker.flowControl.write.enabled: "true"
+        zeebe.broker.flowControl.write.limit: 10000
+        zeebe.broker.flowControl.write.throttling.enabled: "true"
+        # RocksDB memory limit setting, limits the overall RocksDB memory usage
+        # ZEEBE_BROKER_EXPERIMENTAL_ROCKSDB_MEMORYLIMIT
+        zeebe.broker.experimental.rocksdb.memoryLimit: "64MB"
+        # History cleanup adjust batch sizes
+        camunda.data.secondary-storage.rdbms.history.historyCleanupBatchSize: 100000
+        camunda.data.secondary-storage.rdbms.history.historyCleanupProcessInstanceBatchSize: 2000
+    # This file is loaded after application.yml (higher priority). It is empty by default,
+    # but can be overridden via --set-file for specific scenarios (e.g. max) to change settings
+    # like disabling consistency checks without duplicating the full application.yml content.
+    - file: application-override.yml
+      content: "# no overrides"
+
+###########################################################################
+#
+#    ######  #######  #####  #######  #####  ######  #######  #####
+#    #     # #     # #     #    #    #     # #     # #       #     #
+#    #     # #     # #          #    #       #     # #       #
+#    ######  #     #  #####     #    #  #### ######  #####    #####
+#    #       #     #       #    #    #     # #   #   #             #
+#    #       #     # #     #    #    #     # #    #  #       #     #
+#    #       #######  #####     #     #####  #     # #######  #####
+#
+###########################################################################
+# Use the internal registry mirror to avoid Docker Hub rate limiting in the benchmark cluster
+image:
+  registry: europe-west1-docker.pkg.dev
+  repository: camunda-benchmark/dockerhub/bitnami/postgresql
+  tag: latest
+
+postgresqlSharedPreloadLibraries: pg_stat_statements
+
+primary:
+  resources:
+    requests:
+      memory: 4Gi
+      cpu: 3000m
+    limits:
+      cpu: 3000m
+      memory: 6Gi
+
+  nodeSelector:
+    component: benchmark-n2-standard-4
+    topology.kubernetes.io/zone: europe-west1-d
+
+  tolerations:
+    - key: nodepool
+      operator: Equal
+      value: n2-standard-4
+      effect: NoSchedule
+
+  persistence:
+    size: 128Gi
+    storageClass: benchmark-ssd-zonal-v1
+
+  extendedConfiguration: |-
+    # WAL Performance Tuning
+    wal_buffers = 64MB
+    max_wal_size = 4GB
+    min_wal_size = 1GB
+    checkpoint_timeout = 20min
+    checkpoint_completion_target = 0.9
+    wal_writer_delay = 200ms
+    wal_writer_flush_after = 1MB
+
+    # Memory Settings
+    shared_buffers = 2GB
+    effective_cache_size = 4500MB
+    work_mem = 32MB
+    maintenance_work_mem = 512MB
+
+    # Autovacuum - Aggressive for high UPDATE/DELETE volume
+    autovacuum_max_workers = 6
+    autovacuum_naptime = 15s
+    autovacuum_vacuum_scale_factor = 0.03
+    autovacuum_analyze_scale_factor = 0.02
+    autovacuum_vacuum_cost_limit = 5000
+
+    # Monitoring
+    pg_stat_statements.track = all
+    pg_stat_statements.max = 10000
+    track_io_timing = on
+    track_functions = all
+
+########################################################################################
+################################################### Elasticsearch cluster configuration
+########################################################################################
+# We need ES for Optimize
+# But we do not need such a big cluster as with the Camunda Exporter, as we do not need to store as much data in ES, and we do not need to run any queries on it.
+elasticsearch:
+  enabled: true
+  clusterName: "elasticsearch"
+  master:
+    fullnameOverride: elastic
+    nameOverride: elastic
+    ## @param elasticsearch.master.replicaCount defines number of master-elegible replicas to deploy
+    replicaCount: 3
+    pdb:
+      minAvailable: 2
+    ## @param elasticsearch.master.heapSize
+    heapSize: 3g
+    persistence:
+      ## @param elasticsearch.master.persistence.size
+      size: 256Gi
+      storageClass: benchmark-ssd-zonal-v1
+      accessModes: ["ReadWriteOnce"]
+    resources:
+      requests:
+        cpu: 3000m
+        memory: 6Gi
+      limits:
+        cpu: 3000m
+        memory: 6Gi
+    nodeSelector:
+      component: benchmark-n2-standard-4
+      topology.kubernetes.io/zone: europe-west1-d
+    tolerations:
+      - key: nodepool
+        operator: Equal
+        value: n2-standard-4
+        effect: NoSchedule
