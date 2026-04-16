@@ -88,7 +88,7 @@ test.beforeAll(async () => {
 
 });
 
-//Skipping tests as need to be optimized and refactored, also some of the test steps are currently not stable and need to be reworked
+//Skipping tests as need to be optimized and refactored. Ticket created https://github.com/camunda/camunda/issues/51164
 test.describe.skip('Process Instance Modifications', () => {
   test.beforeEach(async ({page, loginPage, operateHomePage}) => {
     await navigateToApp(page, 'operate');
@@ -102,8 +102,7 @@ test.describe.skip('Process Instance Modifications', () => {
     await captureFailureVideo(page, testInfo);
   });
 
-  // Test needs to be optimized and refactored, skipping for now
-  test.skip('Should apply/remove edit variable modifications', async ({
+  test('Should apply/remove edit variable modifications', async ({
     operateProcessInstancePage,
     operateProcessInstanceViewModificationModePage,
   }) => {
