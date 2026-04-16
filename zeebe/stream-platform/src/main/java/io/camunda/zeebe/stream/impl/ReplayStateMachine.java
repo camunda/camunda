@@ -48,6 +48,7 @@ public final class ReplayStateMachine implements LogRecordAwaiter {
       "Expected that position '%d' of current event is higher then position '%d' of last event, but was not. Inconsistent log detected!";
   private static final String ERROR_MSG_EXPECTED_TO_READ_METADATA =
       "Expected to read the metadata for the record '%s', but an exception was thrown.";
+  private static final int MAX_REPLAY_RETRIES = 10_000;
 
   private final RecordMetadata metadata = new RecordMetadata();
   private final KeyGeneratorControls keyGeneratorControls;
@@ -105,7 +106,7 @@ public final class ReplayStateMachine implements LogRecordAwaiter {
     lastProcessedPositionState = context.getLastProcessedPositionState();
 
     typedEvent = new TypedRecordImpl(context.getLogStream().getPartitionId());
-    replayStrategy = new RecoverableRetryStrategy(actor);
+    replayStrategy = new RecoverableRetryStrategy(actor, MAX_REPLAY_RETRIES);
     streamProcessorMode = context.getProcessorMode();
     logStream = context.getLogStream();
     logStreamBatchReader = new LogStreamBatchReaderImpl(context.getLogStreamReader());
