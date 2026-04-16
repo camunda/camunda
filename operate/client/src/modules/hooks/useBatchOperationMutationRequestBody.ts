@@ -34,4 +34,35 @@ const useBatchOperationMutationRequestBody = () => {
   });
 };
 
-export {useBatchOperationMutationRequestBody};
+/**
+ * Hook for building the request body for delete batch operations.
+ * Unlike running operations (cancel, retry), delete operations only work on
+ * finished instances (COMPLETED or TERMINATED).
+ */
+const useDeleteBatchOperationMutationRequestBody = () => {
+  const variable = variableFilterStore.variable;
+  const [searchParams] = useSearchParams();
+
+  const {
+    selectedProcessInstanceIds,
+    excludedProcessInstanceIds,
+    checkedFinishedProcessInstanceIds,
+  } = processInstancesSelectionStore;
+
+  const includeIds =
+    selectedProcessInstanceIds.length > 0
+      ? checkedFinishedProcessInstanceIds
+      : [];
+
+  return buildMutationRequestBody({
+    searchParams,
+    includeIds,
+    excludeIds: excludedProcessInstanceIds,
+    variableFilter: variable,
+  });
+};
+
+export {
+  useBatchOperationMutationRequestBody,
+  useDeleteBatchOperationMutationRequestBody,
+};

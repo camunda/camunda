@@ -219,6 +219,21 @@ class ProcessInstancesSelection {
     );
   }
 
+  get checkedFinishedProcessInstanceIds() {
+    const {selectionMode, selectedProcessInstanceIds} = this.state;
+    const {visibleFinishedIds} = this.runtime;
+
+    if (selectionMode === 'INCLUDE') {
+      return selectedProcessInstanceIds.filter((id) =>
+        visibleFinishedIds.includes(id),
+      );
+    }
+
+    return visibleFinishedIds.filter(
+      (id) => !selectedProcessInstanceIds.includes(id),
+    );
+  }
+
   get checkedProcessInstanceIds() {
     const {selectionMode, selectedProcessInstanceIds} = this.state;
     const {visibleIds} = this.runtime;
