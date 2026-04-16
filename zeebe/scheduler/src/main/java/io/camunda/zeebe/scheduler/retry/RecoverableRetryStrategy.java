@@ -12,6 +12,8 @@ import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.scheduler.retry.ActorRetryMechanism.Control;
 import io.camunda.zeebe.util.exception.RecoverableException;
+import io.camunda.zeebe.util.logging.ThrottledLogger;
+import java.time.Duration;
 import java.util.function.BooleanSupplier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -19,6 +21,8 @@ import org.slf4j.LoggerFactory;
 public final class RecoverableRetryStrategy implements RetryStrategy {
 
   private static final Logger LOG = LoggerFactory.getLogger(RecoverableRetryStrategy.class);
+  private static final ThrottledLogger THROTTLED_LOG =
+      new ThrottledLogger(LOG, Duration.ofSeconds(5));
 
   private final ActorControl actor;
   private final ActorRetryMechanism retryMechanism;
@@ -56,7 +60,7 @@ public final class RecoverableRetryStrategy implements RetryStrategy {
       }
     } catch (final RecoverableException ex) {
       if (!terminateCondition.getAsBoolean()) {
-        LOG.debug("Caught recoverable exception, will retry: {}", ex.getMessage(), ex);
+        THROTTLED_LOG.warn("Caught recoverable exception, will retry: {}", ex.getMessage(), ex);
         actor.run(this::run);
         actor.yieldThread();
       }
