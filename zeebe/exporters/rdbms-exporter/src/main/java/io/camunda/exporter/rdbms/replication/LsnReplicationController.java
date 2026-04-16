@@ -78,6 +78,11 @@ public class LsnReplicationController implements ReplicationController {
     }
   }
 
+  @Override
+  public boolean isPaused() {
+    return paused.get();
+  }
+
   private void checkReplication() {
     try {
       final int minSyncReplicas = replicationConfiguration.getMinSyncReplicas();
@@ -152,11 +157,6 @@ public class LsnReplicationController implements ReplicationController {
       controller.scheduleCancellableTask(
           replicationConfiguration.getPollingInterval(), this::checkReplication);
     }
-  }
-
-  @Override
-  public boolean isPaused() {
-    return paused.get();
   }
 
   private void updatePausedState(
@@ -238,8 +238,13 @@ public class LsnReplicationController implements ReplicationController {
   Duration computeEffectiveLag(
       final List<ReplicationStatusDto> statuses, final int minSyncReplicas) {
     if (minSyncReplicas <= 0 || statuses.size() < minSyncReplicas) {
-      return Duration.ZERO;
+      if (pendingEntries.isEmpty()) {
+        return Duration.ZERO;
+      }
+      final long oldestLsnStatusLag = clock.millis() - pendingEntries.peek().enqueueTimeMs;
+      return Duration.ofMillis(oldestLsnStatusLag);
     }
+
     final long quorumLagMs =
         statuses.stream()
             .mapToLong(ReplicationStatusDto::replicationLagMs)
