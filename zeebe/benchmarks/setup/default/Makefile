@@ -15,6 +15,9 @@ additional_platform_configuration ?=
 # See the load test README for example values and guidance.
 additional_load_test_configuration ?= --set global.image.repository=registry.camunda.cloud/team-zeebe --set global.image.pullSecrets[0].name=harbor-registry
 
+helm_chart_platform := camunda-platform-helm/charts/$(helm_chart)
+helm_chart_load_tests := camunda-load-tests/camunda-load-tests
+
 # Scenario: controls the workload profile for the load test.
 # Options: latency, realistic, typical, max, archiver
 # Use named targets (make max) or pass directly: make install scenario=max
@@ -115,7 +118,7 @@ endif
 # Install/upgrade Camunda Platform helm chart
 .PHONY: install-platform
 install-platform: setup-leader-balancer
-	helm upgrade $(namespace) camunda-platform-helm/charts/$(helm_chart) \
+	helm upgrade $(namespace) $(helm_chart_platform) \
 		--install \
 		--namespace $(namespace) \
 		--reset-then-reuse-values \
@@ -128,7 +131,7 @@ install-platform: setup-leader-balancer
 # Install/upgrade Camunda Platform on stable VMs
 .PHONY: install-platform-stable
 install-platform-stable: setup-leader-balancer
-	helm upgrade $(namespace) camunda-platform-helm/charts/$(helm_chart) \
+	helm upgrade $(namespace) $(helm_chart_platform) \
 		--install \
 		--namespace $(namespace) \
 		--reset-then-reuse-values \
@@ -140,7 +143,7 @@ install-platform-stable: setup-leader-balancer
 # Install/upgrade load test helm chart
 .PHONY: install-load-test
 install-load-test:
-	helm upgrade $(namespace)-test camunda-load-tests/camunda-load-tests \
+	helm upgrade $(namespace)-test $(helm_chart_load_tests) \
 		--install \
 		--namespace $(namespace) \
 		--reset-then-reuse-values \
@@ -166,7 +169,7 @@ setup-leader-balancer:
 # Generates templates from the Camunda Platform helm chart
 .PHONY: template
 template:
-	helm template $(namespace) camunda-platform-helm/charts/$(helm_chart) \
+	helm template $(namespace) $(helm_chart_platform) \
 		$(platform_values) \
 		-f values-preemptible.yaml \
 		$(_scenario_platform_flags) \
@@ -175,7 +178,7 @@ template:
 
 .PHONY: template-stable
 template-stable:
-	helm template $(namespace) camunda-platform-helm/charts/$(helm_chart) \
+	helm template $(namespace) $(helm_chart_platform) \
 		$(platform_values_stable) \
 		$(_scenario_platform_flags) \
 		$(additional_platform_configuration) \
@@ -184,7 +187,7 @@ template-stable:
 # Generates templates from the load test helm chart
 .PHONY: template-load-test
 template-load-test:
-	helm template $(namespace)-test camunda-load-tests/camunda-load-tests \
+	helm template $(namespace)-test $(helm_chart_load_tests) \
 		-f load-test-values.yaml \
 		$(_scenario_load_test_flags) \
 		$(additional_load_test_configuration) \
