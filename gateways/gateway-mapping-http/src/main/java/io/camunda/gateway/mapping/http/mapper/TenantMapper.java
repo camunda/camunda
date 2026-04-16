@@ -37,13 +37,18 @@ public class TenantMapper {
         tenantRequestValidator.validateCreateRequest(request),
         () ->
             new TenantRequest(
-                null, request.getTenantId(), request.getName(), request.getDescription()));
+                null,
+                request.getTenantId(),
+                request.getName(),
+                request.getDescription().orElse(null)));
   }
 
   public Either<ProblemDetail, TenantRequest> toTenantUpdateDto(
       final String tenantId, final TenantUpdateRequest request) {
     return RequestMapper.getResult(
         tenantRequestValidator.validateUpdateRequest(request),
-        () -> new TenantRequest(null, tenantId, request.getName(), request.getDescription()));
+        () ->
+            new TenantRequest(
+                null, tenantId, request.getName(), request.getDescription().orElse(null)));
   }
 }

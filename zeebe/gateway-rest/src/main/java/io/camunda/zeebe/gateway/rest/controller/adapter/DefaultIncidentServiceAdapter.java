@@ -72,7 +72,7 @@ public class DefaultIncidentServiceAdapter implements IncidentServiceAdapter {
                 incidentKey,
                 incidentResolutionRequestStrict == null
                     ? null
-                    : incidentResolutionRequestStrict.getOperationReference(),
+                    : incidentResolutionRequestStrict.getOperationReference().orElse(null),
                 authentication));
   }
 

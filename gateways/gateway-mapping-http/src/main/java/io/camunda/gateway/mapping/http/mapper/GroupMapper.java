@@ -35,13 +35,15 @@ public class GroupMapper {
   public Either<ProblemDetail, GroupDTO> toGroupCreateRequest(final GroupCreateRequest request) {
     return RequestMapper.getResult(
         groupRequestValidator.validateCreateRequest(request),
-        () -> new GroupDTO(request.getGroupId(), request.getName(), request.getDescription()));
+        () ->
+            new GroupDTO(
+                request.getGroupId(), request.getName(), request.getDescription().orElse(null)));
   }
 
   public Either<ProblemDetail, GroupDTO> toGroupUpdateRequest(
       final GroupUpdateRequest request, final String groupId) {
     return RequestMapper.getResult(
         groupRequestValidator.validateUpdateRequest(groupId, request),
-        () -> new GroupDTO(groupId, request.getName(), request.getDescription()));
+        () -> new GroupDTO(groupId, request.getName(), request.getDescription().orElse(null)));
   }
 }

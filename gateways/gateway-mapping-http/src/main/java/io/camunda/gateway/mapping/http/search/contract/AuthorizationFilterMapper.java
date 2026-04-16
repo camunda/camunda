@@ -25,15 +25,11 @@ public final class AuthorizationFilterMapper {
         .map(
             f ->
                 FilterBuilders.authorization()
-                    .ownerIds(f.getOwnerId())
-                    .ownerType(f.getOwnerType() == null ? null : f.getOwnerType().getValue())
-                    .resourceIds(f.getResourceIds() != null ? f.getResourceIds() : List.of())
-                    .resourcePropertyNames(
-                        f.getResourcePropertyNames() != null
-                            ? f.getResourcePropertyNames()
-                            : List.of())
-                    .resourceType(
-                        f.getResourceType() == null ? null : f.getResourceType().getValue())
+                    .ownerIds(f.getOwnerId().orElse(null))
+                    .ownerType(f.getOwnerType().map(ot -> ot.getValue()).orElse(null))
+                    .resourceIds(f.getResourceIds().orElse(List.of()))
+                    .resourcePropertyNames(f.getResourcePropertyNames().orElse(List.of()))
+                    .resourceType(f.getResourceType().map(rt -> rt.getValue()).orElse(null))
                     .build())
         .orElse(null);
   }

@@ -10,7 +10,6 @@ package io.camunda.gateway.mapping.http.search.contract;
 import static io.camunda.gateway.mapping.http.util.AdvancedSearchFilterUtil.mapToKeyOperations;
 import static io.camunda.gateway.mapping.http.util.AdvancedSearchFilterUtil.mapToOffsetDateTimeOperations;
 import static io.camunda.gateway.mapping.http.util.AdvancedSearchFilterUtil.mapToOperations;
-import static java.util.Optional.ofNullable;
 
 import io.camunda.search.filter.FilterBuilders;
 import io.camunda.search.filter.JobFilter;
@@ -28,60 +27,60 @@ public final class JobFilterMapper {
       final io.camunda.gateway.protocol.model.JobFilter filter) {
     final var builder = FilterBuilders.job();
     final List<String> validationErrors = new ArrayList<>();
-    ofNullable(filter.getJobKey())
+    filter
+        .getJobKey()
         .map(mapToKeyOperations("jobKey", validationErrors))
         .ifPresent(builder::jobKeyOperations);
-    ofNullable(filter.getProcessDefinitionKey())
+    filter
+        .getProcessDefinitionKey()
         .map(mapToKeyOperations("processDefinitionKey", validationErrors))
         .ifPresent(builder::processDefinitionKeyOperations);
-    ofNullable(filter.getProcessDefinitionId())
+    filter
+        .getProcessDefinitionId()
         .map(mapToOperations(String.class))
         .ifPresent(builder::processDefinitionIdOperations);
-    ofNullable(filter.getProcessInstanceKey())
+    filter
+        .getProcessInstanceKey()
         .map(mapToKeyOperations("processInstanceKey", validationErrors))
         .ifPresent(builder::processInstanceKeyOperations);
-    ofNullable(filter.getElementInstanceKey())
+    filter
+        .getElementInstanceKey()
         .map(mapToKeyOperations("elementInstanceKey", validationErrors))
         .ifPresent(builder::elementInstanceKeyOperations);
-    ofNullable(filter.getElementId())
+    filter
+        .getElementId()
         .map(mapToOperations(String.class))
         .ifPresent(builder::elementIdOperations);
-    ofNullable(filter.getState())
-        .map(mapToOperations(String.class))
-        .ifPresent(builder::stateOperations);
-    ofNullable(filter.getType())
-        .map(mapToOperations(String.class))
-        .ifPresent(builder::typeOperations);
-    ofNullable(filter.getWorker())
-        .map(mapToOperations(String.class))
-        .ifPresent(builder::workerOperations);
-    ofNullable(filter.getRetries())
-        .map(mapToOperations(Integer.class))
-        .ifPresent(builder::retriesOperations);
-    ofNullable(filter.getErrorMessage())
+    filter.getState().map(mapToOperations(String.class)).ifPresent(builder::stateOperations);
+    filter.getType().map(mapToOperations(String.class)).ifPresent(builder::typeOperations);
+    filter.getWorker().map(mapToOperations(String.class)).ifPresent(builder::workerOperations);
+    filter.getRetries().map(mapToOperations(Integer.class)).ifPresent(builder::retriesOperations);
+    filter
+        .getErrorMessage()
         .map(mapToOperations(String.class))
         .ifPresent(builder::errorMessageOperations);
-    ofNullable(filter.getErrorCode())
+    filter
+        .getErrorCode()
         .map(mapToOperations(String.class))
         .ifPresent(builder::errorCodeOperations);
-    ofNullable(filter.getHasFailedWithRetriesLeft()).ifPresent(builder::hasFailedWithRetriesLeft);
-    ofNullable(filter.getIsDenied()).ifPresent(builder::isDenied);
-    ofNullable(filter.getDeniedReason())
+    filter.getHasFailedWithRetriesLeft().ifPresent(builder::hasFailedWithRetriesLeft);
+    filter.getIsDenied().ifPresent(builder::isDenied);
+    filter
+        .getDeniedReason()
         .map(mapToOperations(String.class))
         .ifPresent(builder::deniedReasonOperations);
-    ofNullable(filter.getKind())
-        .map(mapToOperations(String.class))
-        .ifPresent(builder::kindOperations);
-    ofNullable(filter.getListenerEventType())
+    filter.getKind().map(mapToOperations(String.class)).ifPresent(builder::kindOperations);
+    filter
+        .getListenerEventType()
         .map(mapToOperations(String.class))
         .ifPresent(builder::listenerEventTypeOperations);
-    ofNullable(filter.getTenantId())
-        .map(mapToOperations(String.class))
-        .ifPresent(builder::tenantIdOperations);
-    ofNullable(filter.getDeadline())
+    filter.getTenantId().map(mapToOperations(String.class)).ifPresent(builder::tenantIdOperations);
+    filter
+        .getDeadline()
         .map(mapToOffsetDateTimeOperations("deadline", validationErrors))
         .ifPresent(builder::deadlineOperations);
-    ofNullable(filter.getEndTime())
+    filter
+        .getEndTime()
         .map(mapToOffsetDateTimeOperations("endTime", validationErrors))
         .ifPresent(builder::endTimeOperations);
     return validationErrors.isEmpty()

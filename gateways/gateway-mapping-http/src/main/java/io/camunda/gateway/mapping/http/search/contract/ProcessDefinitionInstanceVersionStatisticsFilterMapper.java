@@ -13,7 +13,6 @@ import io.camunda.search.filter.FilterBuilders;
 import io.camunda.search.filter.ProcessDefinitionInstanceVersionStatisticsFilter;
 import io.camunda.zeebe.util.Either;
 import java.util.List;
-import java.util.Optional;
 import org.jspecify.annotations.NullMarked;
 
 @NullMarked
@@ -34,7 +33,7 @@ public final class ProcessDefinitionInstanceVersionStatisticsFilterMapper {
     }
     final var builder = FilterBuilders.processDefinitionInstanceVersionStatistics();
     builder.processDefinitionId(filter.getProcessDefinitionId());
-    Optional.ofNullable(filter.getTenantId()).map(Object::toString).ifPresent(builder::tenantId);
+    filter.getTenantId().map(Object::toString).ifPresent(builder::tenantId);
     return Either.right(builder.build());
   }
 }

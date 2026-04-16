@@ -8,7 +8,6 @@
 package io.camunda.gateway.mapping.http.search.contract;
 
 import static io.camunda.gateway.mapping.http.util.AdvancedSearchFilterUtil.mapToOperations;
-import static java.util.Optional.ofNullable;
 
 import io.camunda.search.filter.ClusterVariableFilter;
 import io.camunda.search.filter.FilterBuilders;
@@ -22,19 +21,11 @@ public final class ClusterVariableSearchQueryFilterRequestMapper {
   public static ClusterVariableFilter toClusterVariableFilter(
       final io.camunda.gateway.protocol.model.ClusterVariableSearchQueryFilterRequest filter) {
     final var builder = FilterBuilders.clusterVariable();
-    ofNullable(filter.getName())
-        .map(mapToOperations(String.class))
-        .ifPresent(builder::nameOperations);
-    ofNullable(filter.getValue())
-        .map(mapToOperations(String.class))
-        .ifPresent(builder::valueOperations);
-    ofNullable(filter.getScope())
-        .map(mapToOperations(String.class))
-        .ifPresent(builder::scopeOperations);
-    ofNullable(filter.getTenantId())
-        .map(mapToOperations(String.class))
-        .ifPresent(builder::tenantIdOperations);
-    ofNullable(filter.getIsTruncated()).ifPresent(builder::isTruncated);
+    filter.getName().map(mapToOperations(String.class)).ifPresent(builder::nameOperations);
+    filter.getValue().map(mapToOperations(String.class)).ifPresent(builder::valueOperations);
+    filter.getScope().map(mapToOperations(String.class)).ifPresent(builder::scopeOperations);
+    filter.getTenantId().map(mapToOperations(String.class)).ifPresent(builder::tenantIdOperations);
+    filter.getIsTruncated().ifPresent(builder::isTruncated);
     return builder.build();
   }
 }

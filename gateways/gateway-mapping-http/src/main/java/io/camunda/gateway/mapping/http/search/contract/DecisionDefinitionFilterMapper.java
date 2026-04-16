@@ -7,8 +7,6 @@
  */
 package io.camunda.gateway.mapping.http.search.contract;
 
-import static java.util.Optional.ofNullable;
-
 import io.camunda.gateway.mapping.http.util.KeyUtil;
 import io.camunda.search.filter.DecisionDefinitionFilter;
 import io.camunda.search.filter.FilterBuilders;
@@ -22,21 +20,22 @@ public final class DecisionDefinitionFilterMapper {
   public static DecisionDefinitionFilter toDecisionDefinitionFilter(
       final io.camunda.gateway.protocol.model.DecisionDefinitionFilter filter) {
     final var builder = FilterBuilders.decisionDefinition();
-    ofNullable(filter.getDecisionDefinitionKey())
+    filter
+        .getDecisionDefinitionKey()
         .map(KeyUtil::keyToLong)
         .ifPresent(builder::decisionDefinitionKeys);
-    ofNullable(filter.getDecisionDefinitionId()).ifPresent(builder::decisionDefinitionIds);
-    ofNullable(filter.getName()).ifPresent(builder::names);
-    ofNullable(filter.getIsLatestVersion()).ifPresent(builder::isLatestVersion);
-    ofNullable(filter.getVersion()).ifPresent(builder::versions);
-    ofNullable(filter.getDecisionRequirementsId()).ifPresent(builder::decisionRequirementsIds);
-    ofNullable(filter.getDecisionRequirementsKey())
+    filter.getDecisionDefinitionId().ifPresent(builder::decisionDefinitionIds);
+    filter.getName().ifPresent(builder::names);
+    filter.getIsLatestVersion().ifPresent(builder::isLatestVersion);
+    filter.getVersion().ifPresent(builder::versions);
+    filter.getDecisionRequirementsId().ifPresent(builder::decisionRequirementsIds);
+    filter
+        .getDecisionRequirementsKey()
         .map(KeyUtil::keyToLong)
         .ifPresent(builder::decisionRequirementsKeys);
-    ofNullable(filter.getDecisionRequirementsName()).ifPresent(builder::decisionRequirementsNames);
-    ofNullable(filter.getDecisionRequirementsVersion())
-        .ifPresent(builder::decisionRequirementsVersions);
-    ofNullable(filter.getTenantId()).ifPresent(builder::tenantIds);
+    filter.getDecisionRequirementsName().ifPresent(builder::decisionRequirementsNames);
+    filter.getDecisionRequirementsVersion().ifPresent(builder::decisionRequirementsVersions);
+    filter.getTenantId().ifPresent(builder::tenantIds);
     return builder.build();
   }
 }

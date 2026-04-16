@@ -9,7 +9,6 @@ package io.camunda.gateway.mapping.http.search.contract;
 
 import io.camunda.search.filter.FilterBuilders;
 import io.camunda.search.filter.MappingRuleFilter;
-import java.util.Optional;
 import org.jspecify.annotations.NullMarked;
 
 @NullMarked
@@ -20,10 +19,10 @@ public final class MappingRuleFilterMapper {
   public static MappingRuleFilter toMappingRuleFilter(
       final io.camunda.gateway.protocol.model.MappingRuleFilter filter) {
     final var builder = FilterBuilders.mappingRule();
-    Optional.ofNullable(filter.getMappingRuleId()).ifPresent(builder::mappingRuleId);
-    Optional.ofNullable(filter.getClaimName()).ifPresent(builder::claimName);
-    Optional.ofNullable(filter.getClaimValue()).ifPresent(builder::claimValue);
-    Optional.ofNullable(filter.getName()).ifPresent(builder::name);
+    filter.getMappingRuleId().ifPresent(builder::mappingRuleId);
+    filter.getClaimName().ifPresent(builder::claimName);
+    filter.getClaimValue().ifPresent(builder::claimValue);
+    filter.getName().ifPresent(builder::name);
     return builder.build();
   }
 }

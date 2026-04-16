@@ -8,7 +8,6 @@
 package io.camunda.gateway.mapping.http.search.contract;
 
 import static io.camunda.gateway.mapping.http.util.AdvancedSearchFilterUtil.mapToOperations;
-import static java.util.Optional.ofNullable;
 
 import io.camunda.gateway.protocol.model.GlobalTaskListenerSearchQueryFilterRequest;
 import io.camunda.search.entities.GlobalListenerType;
@@ -29,25 +28,16 @@ public final class GlobalTaskListenerFilterMapper {
     if (filter == null) {
       return builder.build();
     }
-    ofNullable(filter.getId())
-        .map(mapToOperations(String.class))
-        .ifPresent(builder::listenerIdOperations);
-    ofNullable(filter.getType())
-        .map(mapToOperations(String.class))
-        .ifPresent(builder::typeOperations);
-    ofNullable(filter.getRetries())
-        .map(mapToOperations(Integer.class))
-        .ifPresent(builder::retriesOperations);
-    ofNullable(filter.getEventTypes())
+    filter.getId().map(mapToOperations(String.class)).ifPresent(builder::listenerIdOperations);
+    filter.getType().map(mapToOperations(String.class)).ifPresent(builder::typeOperations);
+    filter.getRetries().map(mapToOperations(Integer.class)).ifPresent(builder::retriesOperations);
+    filter
+        .getEventTypes()
         .map(mapToOperations(String.class))
         .ifPresent(builder::eventTypeOperations);
-    ofNullable(filter.getAfterNonGlobal()).ifPresent(builder::afterNonGlobal);
-    ofNullable(filter.getPriority())
-        .map(mapToOperations(Integer.class))
-        .ifPresent(builder::priorityOperations);
-    ofNullable(filter.getSource())
-        .map(mapToOperations(String.class))
-        .ifPresent(builder::sourceOperations);
+    filter.getAfterNonGlobal().ifPresent(builder::afterNonGlobal);
+    filter.getPriority().map(mapToOperations(Integer.class)).ifPresent(builder::priorityOperations);
+    filter.getSource().map(mapToOperations(String.class)).ifPresent(builder::sourceOperations);
     return builder.build();
   }
 }

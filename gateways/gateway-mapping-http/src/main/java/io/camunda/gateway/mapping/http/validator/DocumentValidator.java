@@ -24,17 +24,25 @@ public class DocumentValidator {
     }
     return validate(
         violations -> {
-          if (metadata.getFileName() != null && metadata.getFileName().isBlank()) {
-            violations.add("The file name must not be empty, if present");
-          }
+          metadata
+              .getFileName()
+              .ifPresent(
+                  fn -> {
+                    if (fn.isBlank()) {
+                      violations.add("The file name must not be empty, if present");
+                    }
+                  });
 
-          if (metadata.getContentType() != null && metadata.getContentType().isBlank()) {
-            violations.add("The content type must not be empty, if present");
-          }
+          metadata
+              .getContentType()
+              .ifPresent(
+                  ct -> {
+                    if (ct.isBlank()) {
+                      violations.add("The content type must not be empty, if present");
+                    }
+                  });
 
-          if (metadata.getExpiresAt() != null) {
-            validateDate(metadata.getExpiresAt(), "expiresAt", violations);
-          }
+          metadata.getExpiresAt().ifPresent(ea -> validateDate(ea, "expiresAt", violations));
         });
   }
 
@@ -45,7 +53,7 @@ public class DocumentValidator {
     }
     return validate(
         violations -> {
-          final Long timeToLive = request.getTimeToLive();
+          final Long timeToLive = request.getTimeToLive().orElse(0L);
           if (timeToLive <= 0) {
             violations.add(
                 ERROR_MESSAGE_INVALID_ATTRIBUTE_VALUE.formatted(

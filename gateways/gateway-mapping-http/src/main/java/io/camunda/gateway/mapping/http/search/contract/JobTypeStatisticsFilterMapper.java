@@ -36,9 +36,7 @@ public final class JobTypeStatisticsFilterMapper {
     Optional.ofNullable(from).ifPresent(builder::from);
     final var to = validateDate(filter.getTo(), "to", validationErrors);
     Optional.ofNullable(to).ifPresent(builder::to);
-    Optional.ofNullable(filter.getJobType())
-        .map(mapToOperations(String.class))
-        .ifPresent(builder::jobTypeOperations);
+    filter.getJobType().map(mapToOperations(String.class)).ifPresent(builder::jobTypeOperations);
     return validationErrors.isEmpty()
         ? Either.right(builder.build())
         : Either.left(validationErrors);

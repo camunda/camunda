@@ -8,7 +8,6 @@
 package io.camunda.gateway.mapping.http.search.contract;
 
 import static io.camunda.gateway.mapping.http.util.AdvancedSearchFilterUtil.mapToOperations;
-import static java.util.Optional.ofNullable;
 
 import io.camunda.search.filter.FilterBuilders;
 import io.camunda.search.filter.UserFilter;
@@ -21,15 +20,9 @@ public final class UserFilterMapper {
 
   public static UserFilter toUserFilter(final io.camunda.gateway.protocol.model.UserFilter filter) {
     final var builder = FilterBuilders.user();
-    ofNullable(filter.getUsername())
-        .map(mapToOperations(String.class))
-        .ifPresent(builder::usernameOperations);
-    ofNullable(filter.getName())
-        .map(mapToOperations(String.class))
-        .ifPresent(builder::nameOperations);
-    ofNullable(filter.getEmail())
-        .map(mapToOperations(String.class))
-        .ifPresent(builder::emailOperations);
+    filter.getUsername().map(mapToOperations(String.class)).ifPresent(builder::usernameOperations);
+    filter.getName().map(mapToOperations(String.class)).ifPresent(builder::nameOperations);
+    filter.getEmail().map(mapToOperations(String.class)).ifPresent(builder::emailOperations);
     return builder.build();
   }
 }

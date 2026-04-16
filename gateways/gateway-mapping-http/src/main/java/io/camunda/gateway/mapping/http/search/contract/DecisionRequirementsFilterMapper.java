@@ -7,8 +7,6 @@
  */
 package io.camunda.gateway.mapping.http.search.contract;
 
-import static java.util.Optional.ofNullable;
-
 import io.camunda.gateway.mapping.http.util.KeyUtil;
 import io.camunda.search.filter.DecisionRequirementsFilter;
 import io.camunda.search.filter.FilterBuilders;
@@ -22,14 +20,15 @@ public final class DecisionRequirementsFilterMapper {
   public static DecisionRequirementsFilter toDecisionRequirementsFilter(
       final io.camunda.gateway.protocol.model.DecisionRequirementsFilter filter) {
     final var builder = FilterBuilders.decisionRequirements();
-    ofNullable(filter.getDecisionRequirementsKey())
+    filter
+        .getDecisionRequirementsKey()
         .map(KeyUtil::keyToLong)
         .ifPresent(builder::decisionRequirementsKeys);
-    ofNullable(filter.getDecisionRequirementsName()).ifPresent(builder::names);
-    ofNullable(filter.getVersion()).ifPresent(builder::versions);
-    ofNullable(filter.getDecisionRequirementsId()).ifPresent(builder::decisionRequirementsIds);
-    ofNullable(filter.getTenantId()).ifPresent(builder::tenantIds);
-    ofNullable(filter.getResourceName()).ifPresent(builder::resourceNames);
+    filter.getDecisionRequirementsName().ifPresent(builder::names);
+    filter.getVersion().ifPresent(builder::versions);
+    filter.getDecisionRequirementsId().ifPresent(builder::decisionRequirementsIds);
+    filter.getTenantId().ifPresent(builder::tenantIds);
+    filter.getResourceName().ifPresent(builder::resourceNames);
     return builder.build();
   }
 }

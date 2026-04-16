@@ -8,7 +8,6 @@
 package io.camunda.gateway.mapping.http.search.contract;
 
 import static io.camunda.gateway.mapping.http.util.AdvancedSearchFilterUtil.mapToOperations;
-import static java.util.Optional.ofNullable;
 
 import io.camunda.gateway.mapping.http.converters.AuditLogActorTypeConverter;
 import io.camunda.gateway.mapping.http.converters.AuditLogOperationTypeConverter;
@@ -30,19 +29,18 @@ public final class UserTaskAuditLogFilterMapper {
       return FilterBuilders.auditLog().build();
     }
     final var builder = FilterBuilders.auditLog();
-    ofNullable(filter.getOperationType())
+    filter
+        .getOperationType()
         .map(mapToOperations(String.class, new AuditLogOperationTypeConverter()))
         .ifPresent(builder::operationTypeOperations);
-    ofNullable(filter.getResult())
-        .map(mapToOperations(String.class))
-        .ifPresent(builder::resultOperations);
-    ofNullable(filter.getTimestamp())
+    filter.getResult().map(mapToOperations(String.class)).ifPresent(builder::resultOperations);
+    filter
+        .getTimestamp()
         .map(mapToOperations(OffsetDateTime.class))
         .ifPresent(builder::timestampOperations);
-    ofNullable(filter.getActorId())
-        .map(mapToOperations(String.class))
-        .ifPresent(builder::actorIdOperations);
-    ofNullable(filter.getActorType())
+    filter.getActorId().map(mapToOperations(String.class)).ifPresent(builder::actorIdOperations);
+    filter
+        .getActorType()
         .map(mapToOperations(String.class, new AuditLogActorTypeConverter()))
         .ifPresent(builder::actorTypeOperations);
     return builder.build();

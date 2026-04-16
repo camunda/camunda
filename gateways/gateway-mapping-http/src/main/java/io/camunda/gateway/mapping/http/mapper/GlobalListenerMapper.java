@@ -41,19 +41,11 @@ public class GlobalListenerMapper {
           if (request.getType() != null) {
             record.setType(request.getType());
           }
-          if (request.getRetries() != null) {
-            record.setRetries(request.getRetries());
-          }
-          if (request.getAfterNonGlobal() != null) {
-            record.setAfterNonGlobal(request.getAfterNonGlobal());
-          }
-          if (request.getPriority() != null) {
-            record.setPriority(request.getPriority());
-          }
+          request.getRetries().ifPresent(record::setRetries);
+          request.getAfterNonGlobal().ifPresent(record::setAfterNonGlobal);
+          request.getPriority().ifPresent(record::setPriority);
           record.setSource(GlobalListenerSource.API);
-          if (request.getEventTypes() != null) {
-            record.setEventTypes(request.getEventTypes().stream().map(e -> e.getValue()).toList());
-          }
+          record.setEventTypes(request.getEventTypes().stream().map(e -> e.getValue()).toList());
           record.setListenerType(GlobalListenerType.USER_TASK);
           record.setId(request.getId());
           return record;
@@ -79,22 +71,12 @@ public class GlobalListenerMapper {
         requestValidator.validateUpdateRequest(id, request),
         () -> {
           final var record = new GlobalListenerRecord();
-          if (request.getType() != null) {
-            record.setType(request.getType());
-          }
-          if (request.getRetries() != null) {
-            record.setRetries(request.getRetries());
-          }
-          if (request.getAfterNonGlobal() != null) {
-            record.setAfterNonGlobal(request.getAfterNonGlobal());
-          }
-          if (request.getPriority() != null) {
-            record.setPriority(request.getPriority());
-          }
+          record.setType(request.getType());
+          request.getRetries().ifPresent(record::setRetries);
+          request.getAfterNonGlobal().ifPresent(record::setAfterNonGlobal);
+          request.getPriority().ifPresent(record::setPriority);
           record.setSource(GlobalListenerSource.API);
-          if (request.getEventTypes() != null) {
-            record.setEventTypes(request.getEventTypes().stream().map(e -> e.getValue()).toList());
-          }
+          record.setEventTypes(request.getEventTypes().stream().map(e -> e.getValue()).toList());
           record.setListenerType(GlobalListenerType.USER_TASK);
           record.setId(id);
           return record;

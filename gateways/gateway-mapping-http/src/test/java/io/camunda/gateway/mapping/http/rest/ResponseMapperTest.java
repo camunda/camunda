@@ -10,7 +10,6 @@ package io.camunda.gateway.mapping.http.rest;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.gateway.mapping.http.ResponseMapper;
-import io.camunda.gateway.protocol.model.ActivatedJobResult;
 import io.camunda.gateway.protocol.model.UserTaskProperties;
 import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
 import io.camunda.zeebe.gateway.impl.job.JobActivationResponse;
@@ -209,7 +208,7 @@ class ResponseMapperTest {
       final var jobs = result.getActivateJobsResponse().getJobs();
       assertThat(jobs)
           .singleElement()
-          .extracting(ActivatedJobResult::getUserTask)
+          .extracting(job -> job.getUserTask().orElse(null))
           .satisfies(testCase.assertions);
     }
 
@@ -489,11 +488,11 @@ class ResponseMapperTest {
 
       // then
       assertThat(response.getResourceKey()).isEqualTo(String.valueOf(resourceKey));
-      assertThat(response.getBatchOperation()).isNotNull();
-      assertThat(response.getBatchOperation().getBatchOperationKey())
+      assertThat(response.getBatchOperation()).isPresent();
+      assertThat(response.getBatchOperation().get().getBatchOperationKey())
           .isEqualTo(String.valueOf(batchOperationKey));
-      assertThat(response.getBatchOperation().getBatchOperationType()).isNotNull();
-      assertThat(response.getBatchOperation().getBatchOperationType().getValue())
+      assertThat(response.getBatchOperation().get().getBatchOperationType()).isNotNull();
+      assertThat(response.getBatchOperation().get().getBatchOperationType().getValue())
           .isEqualTo(batchOperationType.name());
     }
   }

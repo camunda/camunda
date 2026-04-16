@@ -783,12 +783,12 @@ public class ApiProtocolModelGenerator {
         .setBody("this." + fieldName + " = " + fieldName + ";\nreturn this;");
     fluent.addParameter(fieldType, fieldName).addAnnotation("org.jspecify.annotations.Nullable");
 
-    // Getter
+    // Getter (returns Optional<T> for nullable fields)
     var getter = javaClass.addMethod()
         .setName("get" + capitalizeIdentifier(fieldName))
-        .setReturnType("@Nullable " + fieldType)
+        .setReturnType("Optional<" + fieldType + ">")
         .setPublic()
-        .setBody("return " + fieldName + ";");
+        .setBody("return Optional.ofNullable(" + fieldName + ");");
     getter.addAnnotation("io.swagger.v3.oas.annotations.media.Schema")
         .setStringValue("name", fieldName);
     getter.addAnnotation("com.fasterxml.jackson.annotation.JsonProperty")
@@ -806,20 +806,12 @@ public class ApiProtocolModelGenerator {
   }
 
   /**
-   * Patches getter return types to add @Nullable annotation. Roaster cannot emit type-use
-   * annotations on return types, so we do a string replacement after generating.
+   * No-op now that nullable getters return {@code Optional<T>} directly.
+   * Kept for source compatibility with callers; simply returns the source unchanged.
    */
   private static String patchNullableGetterReturnTypes(
       String source, List<String> fieldNames, List<String> fieldTypes) {
-    var result = source;
-    for (int i = 0; i < fieldNames.size(); i++) {
-      final var getterName = "get" + capitalizeIdentifier(fieldNames.get(i));
-      final var fieldType = fieldTypes.get(i);
-      result = result.replace(
-          "public " + fieldType + " " + getterName + "()",
-          "public @Nullable " + fieldType + " " + getterName + "()");
-    }
-    return result;
+    return source;
   }
 
   /** Formats the license text as a Java block comment. */
@@ -1379,6 +1371,11 @@ public record %s(%s value) implements %s {
       if (ft.contains("java.util.Map")) javaClass.addImport("java.util.Map");
     }
 
+    // Add Optional import if any field is nullable (getters return Optional<T>).
+    if (fields.stream().anyMatch(ApiProtocolModelGenerator::isNullAssignableField)) {
+      javaClass.addImport("java.util.Optional");
+    }
+
     // Private fields
     for (var f : fields) {
       final var fieldType = simplifyCollectionTypeName(f.effectiveJavaType());
@@ -1419,9 +1416,11 @@ public record %s(%s value) implements %s {
       // Getter with @Schema and @JsonProperty
       var getter = javaClass.addMethod()
           .setName(getterName)
-          .setReturnType((nullable ? "@Nullable " : "") + fieldType)
+          .setReturnType(nullable ? "Optional<" + fieldType + ">" : fieldType)
           .setPublic()
-          .setBody("return " + f.identifier() + ";");
+          .setBody(nullable
+              ? "return Optional.ofNullable(" + f.identifier() + ");"
+              : "return " + f.identifier() + ";");
       var schemaAnn = getter.addAnnotation("io.swagger.v3.oas.annotations.media.Schema");
       schemaAnn.setStringValue("name", f.name());
       if (f.description() != null) {
@@ -1461,19 +1460,8 @@ public record %s(%s value) implements %s {
       javaClass.addImport("com.fasterxml.jackson.annotation.JsonValue");
     }
 
-    // Post-process: Roaster cannot emit @Nullable on return types (type-use annotations).
-    // Patch getters for nullable fields to add @Nullable on the return type.
-    var source = javaClass.toString();
-    for (var f : fields) {
-      if (isNullAssignableField(f)) {
-        final var getterName = "get" + capitalizeIdentifier(f.identifier());
-        final var fieldType = simplifyCollectionTypeName(f.effectiveJavaType());
-        source = source.replace(
-            "public " + fieldType + " " + getterName + "()",
-            "public @Nullable " + fieldType + " " + getterName + "()");
-      }
-    }
-    return licenseWithSource(licenseComment, sourceFile, schemaName) + "\n" + source;
+    // Nullable getters now return Optional<T> directly — no post-processing needed.
+    return licenseWithSource(licenseComment, sourceFile, schemaName) + "\n" + javaClass.toString();
   }
 
   private static String renderFieldReferences(
@@ -3181,6 +3169,8 @@ public record %s(%s value) implements %s {
     javaClass.addAnnotation("jakarta.annotation.Generated")
         .setStringValue("value", "io.camunda.gateway.protocol.model.tools.ApiProtocolModelGenerator");
 
+    javaClass.addImport("java.util.Optional");
+
     // Fields: limit, from, after, before
     record PageField(String name, String type) {}
     final var pageFields = List.of(
@@ -3216,6 +3206,8 @@ public record %s(%s value) implements %s {
     javaClass.addAnnotation("jakarta.annotation.Generated")
         .setStringValue("value", "io.camunda.gateway.protocol.model.tools.ApiProtocolModelGenerator");
 
+    javaClass.addImport("java.util.Optional");
+
     javaClass.addField().setName("limit").setType("Integer").setPrivate()
         .addAnnotation("org.jspecify.annotations.Nullable");
     javaClass.addField().setName("from").setType("Integer").setPrivate()
@@ -3249,6 +3241,7 @@ public record %s(%s value) implements %s {
     final var sortType = sortContractClass != null
         ? "List<" + sortContractClass + ">" : "List<Object>";
     javaClass.addImport("java.util.List");
+    javaClass.addImport("java.util.Optional");
     final String filterType;
     if (filterContractClass != null) {
       filterType = filterContractClass.contains(".")

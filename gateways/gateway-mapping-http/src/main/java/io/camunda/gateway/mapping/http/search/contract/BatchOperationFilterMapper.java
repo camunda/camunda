@@ -8,7 +8,6 @@
 package io.camunda.gateway.mapping.http.search.contract;
 
 import static io.camunda.gateway.mapping.http.util.AdvancedSearchFilterUtil.mapToOperations;
-import static java.util.Optional.ofNullable;
 
 import io.camunda.gateway.protocol.model.AuditLogActorTypeEnum;
 import io.camunda.search.filter.BatchOperationFilter;
@@ -23,22 +22,21 @@ public final class BatchOperationFilterMapper {
   public static BatchOperationFilter toBatchOperationFilter(
       final io.camunda.gateway.protocol.model.BatchOperationFilter filter) {
     final var builder = FilterBuilders.batchOperation();
-    ofNullable(filter.getBatchOperationKey())
+    filter
+        .getBatchOperationKey()
         .map(mapToOperations(String.class))
         .ifPresent(builder::batchOperationKeyOperations);
-    ofNullable(filter.getState())
-        .map(mapToOperations(String.class))
-        .ifPresent(builder::stateOperations);
-    ofNullable(filter.getOperationType())
+    filter.getState().map(mapToOperations(String.class)).ifPresent(builder::stateOperations);
+    filter
+        .getOperationType()
         .map(mapToOperations(String.class))
         .ifPresent(builder::operationTypeOperations);
-    ofNullable(filter.getActorType())
+    filter
+        .getActorType()
         .map(AuditLogActorTypeEnum::getValue)
         .map(String::toUpperCase)
         .ifPresent(builder::actorTypes);
-    ofNullable(filter.getActorId())
-        .map(mapToOperations(String.class))
-        .ifPresent(builder::actorIdOperations);
+    filter.getActorId().map(mapToOperations(String.class)).ifPresent(builder::actorIdOperations);
     return builder.build();
   }
 }

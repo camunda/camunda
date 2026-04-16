@@ -9,7 +9,6 @@ package io.camunda.gateway.mapping.http.search.contract;
 
 import io.camunda.search.filter.FilterBuilders;
 import io.camunda.search.filter.RoleFilter;
-import java.util.Optional;
 import org.jspecify.annotations.NullMarked;
 
 @NullMarked
@@ -19,8 +18,8 @@ public final class RoleFilterMapper {
 
   public static RoleFilter toRoleFilter(final io.camunda.gateway.protocol.model.RoleFilter filter) {
     final var builder = FilterBuilders.role();
-    Optional.ofNullable(filter.getRoleId()).ifPresent(builder::roleId);
-    Optional.ofNullable(filter.getName()).ifPresent(builder::name);
+    filter.getRoleId().ifPresent(builder::roleId);
+    filter.getName().ifPresent(builder::name);
     return builder.build();
   }
 }

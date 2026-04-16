@@ -41,7 +41,8 @@ public final class JobTimeSeriesStatisticsFilterMapper {
     } else {
       builder.jobType(filter.getJobType());
     }
-    final var resolution = validateDuration(filter.getResolution(), "resolution", validationErrors);
+    final var resolution =
+        validateDuration(filter.getResolution().orElse(null), "resolution", validationErrors);
     Optional.ofNullable(resolution).ifPresent(builder::resolution);
     return validationErrors.isEmpty()
         ? Either.right(builder.build())

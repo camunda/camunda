@@ -9,7 +9,6 @@ package io.camunda.gateway.mapping.http.search.contract;
 
 import static io.camunda.gateway.mapping.http.util.AdvancedSearchFilterUtil.mapToOperations;
 import static io.camunda.gateway.mapping.http.util.KeyUtil.mapKeyToLong;
-import static java.util.Optional.ofNullable;
 
 import io.camunda.search.filter.FilterBuilders;
 import io.camunda.search.filter.ProcessDefinitionFilter;
@@ -27,21 +26,21 @@ public final class ProcessDefinitionFilterMapper {
       final io.camunda.gateway.protocol.model.ProcessDefinitionFilter filter) {
     final var builder = FilterBuilders.processDefinition();
     final List<String> validationErrors = new ArrayList<>();
-    ofNullable(filter.getIsLatestVersion()).ifPresent(builder::isLatestVersion);
-    ofNullable(filter.getProcessDefinitionKey())
+    filter.getIsLatestVersion().ifPresent(builder::isLatestVersion);
+    filter
+        .getProcessDefinitionKey()
         .map(mapKeyToLong("processDefinitionKey", validationErrors))
         .ifPresent(builder::processDefinitionKeys);
-    ofNullable(filter.getName())
-        .map(mapToOperations(String.class))
-        .ifPresent(builder::nameOperations);
-    ofNullable(filter.getResourceName()).ifPresent(builder::resourceNames);
-    ofNullable(filter.getVersion()).ifPresent(builder::versions);
-    ofNullable(filter.getVersionTag()).ifPresent(builder::versionTags);
-    ofNullable(filter.getProcessDefinitionId())
+    filter.getName().map(mapToOperations(String.class)).ifPresent(builder::nameOperations);
+    filter.getResourceName().ifPresent(builder::resourceNames);
+    filter.getVersion().ifPresent(builder::versions);
+    filter.getVersionTag().ifPresent(builder::versionTags);
+    filter
+        .getProcessDefinitionId()
         .map(mapToOperations(String.class))
         .ifPresent(builder::processDefinitionIdOperations);
-    ofNullable(filter.getTenantId()).ifPresent(builder::tenantIds);
-    ofNullable(filter.getHasStartForm()).ifPresent(builder::hasStartForm);
+    filter.getTenantId().ifPresent(builder::tenantIds);
+    filter.getHasStartForm().ifPresent(builder::hasStartForm);
     return validationErrors.isEmpty()
         ? Either.right(builder.build())
         : Either.left(validationErrors);

@@ -41,10 +41,12 @@ public final class JobErrorStatisticsFilterMapper {
     } else {
       builder.jobType(filter.getJobType());
     }
-    Optional.ofNullable(filter.getErrorCode())
+    filter
+        .getErrorCode()
         .map(mapToOperations(String.class))
         .ifPresent(builder::errorCodeOperations);
-    Optional.ofNullable(filter.getErrorMessage())
+    filter
+        .getErrorMessage()
         .map(mapToOperations(String.class))
         .ifPresent(builder::errorMessageOperations);
     return validationErrors.isEmpty()

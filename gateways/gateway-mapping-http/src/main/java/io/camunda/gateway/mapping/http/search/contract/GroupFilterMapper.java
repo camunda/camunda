@@ -8,7 +8,6 @@
 package io.camunda.gateway.mapping.http.search.contract;
 
 import static io.camunda.gateway.mapping.http.util.AdvancedSearchFilterUtil.mapToOperations;
-import static java.util.Optional.ofNullable;
 
 import io.camunda.search.filter.FilterBuilders;
 import io.camunda.search.filter.GroupFilter;
@@ -22,10 +21,8 @@ public final class GroupFilterMapper {
   public static GroupFilter toGroupFilter(
       final io.camunda.gateway.protocol.model.GroupFilter filter) {
     final var builder = FilterBuilders.group();
-    ofNullable(filter.getGroupId())
-        .map(mapToOperations(String.class))
-        .ifPresent(builder::groupIdOperations);
-    ofNullable(filter.getName()).ifPresent(builder::name);
+    filter.getGroupId().map(mapToOperations(String.class)).ifPresent(builder::groupIdOperations);
+    filter.getName().ifPresent(builder::name);
     return builder.build();
   }
 }

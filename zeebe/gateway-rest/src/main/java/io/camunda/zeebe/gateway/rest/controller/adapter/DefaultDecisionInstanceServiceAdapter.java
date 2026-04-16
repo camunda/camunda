@@ -74,7 +74,9 @@ public class DefaultDecisionInstanceServiceAdapter implements DecisionInstanceSe
         () ->
             decisionInstanceServices.deleteDecisionInstance(
                 decisionInstanceKey,
-                Objects.nonNull(requestStrict) ? requestStrict.getOperationReference() : null,
+                Objects.nonNull(requestStrict)
+                    ? requestStrict.getOperationReference().orElse(null)
+                    : null,
                 authentication));
   }
 

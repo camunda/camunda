@@ -216,18 +216,19 @@ public final class SearchQueryRequestMapper {
     if (request == null) {
       return Either.right(SearchQueryBuilders.variableSearchQuery().build());
     }
-    final var page = toSearchQueryPage(request.getPage());
+    final var page = toSearchQueryPage(request.getPage().orElse(null));
     final var sortRequests =
         toSortRequests(
-            request.getSort(),
+            request.getSort().orElse(null),
             s -> s.getField().getValue(),
-            s -> s.getOrder() != null ? s.getOrder().getValue() : null);
+            s -> s.getOrder().map(o -> o.getValue()).orElse(null));
     final var sort =
         SearchQuerySortRequestMapper.toSearchQuerySort(
             sortRequests,
             SortOptionBuilders::variable,
             SearchQuerySortRequestMapper::applyUserTaskVariableSortField);
-    final var filter = UserTaskVariableFilterMapper.toUserTaskVariableFilter(request.getFilter());
+    final var filter =
+        UserTaskVariableFilterMapper.toUserTaskVariableFilter(request.getFilter().orElse(null));
     return buildSearchQuery(filter, sort, page, SearchQueryBuilders::variableSearchQuery);
   }
 
@@ -240,14 +241,18 @@ public final class SearchQueryRequestMapper {
     if (page == null) {
       return Either.right(null);
     }
-    return toSearchQueryPage(page.getLimit(), page.getFrom(), page.getAfter(), page.getBefore());
+    return toSearchQueryPage(
+        page.getLimit().orElse(null),
+        page.getFrom().orElse(null),
+        page.getAfter().orElse(null),
+        page.getBefore().orElse(null));
   }
 
   static Either<List<String>, SearchQueryPage> toSearchQueryPage(final OffsetPagination page) {
     if (page == null) {
       return Either.right(null);
     }
-    return toSearchQueryPage(page.getLimit(), page.getFrom(), null, null);
+    return toSearchQueryPage(page.getLimit().orElse(null), page.getFrom().orElse(null), null, null);
   }
 
   static Either<List<String>, SearchQueryPage> toSearchQueryPage(
@@ -255,7 +260,8 @@ public final class SearchQueryRequestMapper {
     if (page == null) {
       return Either.right(null);
     }
-    return toSearchQueryPage(page.getLimit(), null, page.getAfter(), null);
+    return toSearchQueryPage(
+        page.getLimit().orElse(null), null, page.getAfter().orElse(null), null);
   }
 
   static Either<List<String>, SearchQueryPage> toSearchQueryPage(
@@ -355,7 +361,7 @@ public final class SearchQueryRequestMapper {
     }
     final var filter =
         ProcessDefinitionStatisticsFilterMapper.toProcessDefinitionStatisticsFilter(
-            processDefinitionKey, request.getFilter());
+            processDefinitionKey, request.getFilter().orElse(null));
     if (filter.isLeft()) {
       final var problem = RequestValidator.createProblemDetail(filter.getLeft());
       if (problem.isPresent()) {
@@ -371,8 +377,9 @@ public final class SearchQueryRequestMapper {
     if (request == null) {
       return Either.right(SearchQueryBuilders.jobTypeStatisticsSearchQuery().build());
     }
-    final var page = toSearchQueryPage(request.getPage());
-    final var filter = JobTypeStatisticsFilterMapper.toJobTypeStatisticsFilter(request.getFilter());
+    final var page = toSearchQueryPage(request.getPage().orElse(null));
+    final var filter =
+        JobTypeStatisticsFilterMapper.toJobTypeStatisticsFilter(request.getFilter().orElse(null));
     return buildSearchQuery(
         filter, Either.right(null), page, SearchQueryBuilders::jobTypeStatisticsSearchQuery);
   }
@@ -382,7 +389,7 @@ public final class SearchQueryRequestMapper {
     if (request == null) {
       return Either.right(SearchQueryBuilders.jobWorkerStatisticsSearchQuery().build());
     }
-    final var page = toSearchQueryPage(request.getPage());
+    final var page = toSearchQueryPage(request.getPage().orElse(null));
     final var filter =
         JobWorkerStatisticsFilterMapper.toJobWorkerStatisticsFilter(request.getFilter());
     return buildSearchQuery(
@@ -394,7 +401,7 @@ public final class SearchQueryRequestMapper {
     if (request == null) {
       return Either.right(SearchQueryBuilders.jobTimeSeriesStatisticsSearchQuery().build());
     }
-    final var page = toSearchQueryPage(request.getPage());
+    final var page = toSearchQueryPage(request.getPage().orElse(null));
     final var filter =
         JobTimeSeriesStatisticsFilterMapper.toJobTimeSeriesStatisticsFilter(request.getFilter());
     return buildSearchQuery(
@@ -406,7 +413,7 @@ public final class SearchQueryRequestMapper {
     if (request == null) {
       return Either.right(SearchQueryBuilders.jobErrorStatisticsSearchQuery().build());
     }
-    final var page = toSearchQueryPage(request.getPage());
+    final var page = toSearchQueryPage(request.getPage().orElse(null));
     final var filter =
         JobErrorStatisticsFilterMapper.toJobErrorStatisticsFilter(request.getFilter());
     return buildSearchQuery(
@@ -422,9 +429,10 @@ public final class SearchQueryRequestMapper {
       return Either.right(
           SearchQueryBuilders.processDefinitionMessageSubscriptionStatisticsQuery().build());
     }
-    final var page = toSearchQueryPage(request.getPage());
+    final var page = toSearchQueryPage(request.getPage().orElse(null));
     final var filter =
-        MessageSubscriptionFilterMapper.toMessageSubscriptionFilter(request.getFilter());
+        MessageSubscriptionFilterMapper.toMessageSubscriptionFilter(
+            request.getFilter().orElse(null));
     return buildSearchQuery(
         filter,
         Either.right(null),
@@ -443,12 +451,12 @@ public final class SearchQueryRequestMapper {
       return Either.right(
           SearchQueryBuilders.processDefinitionInstanceStatisticsQuery().filter(filter).build());
     }
-    final var page = toSearchQueryPage(request.getPage());
+    final var page = toSearchQueryPage(request.getPage().orElse(null));
     final var sortRequests =
         toSortRequests(
-            request.getSort(),
+            request.getSort().orElse(null),
             s -> s.getField().getValue(),
-            s -> s.getOrder() != null ? s.getOrder().getValue() : null);
+            s -> s.getOrder().map(o -> o.getValue()).orElse(null));
     final var sort =
         SearchQuerySortRequestMapper.toSearchQuerySort(
             sortRequests,
@@ -462,7 +470,7 @@ public final class SearchQueryRequestMapper {
           ProblemDetail, io.camunda.search.query.ProcessDefinitionInstanceVersionStatisticsQuery>
       toProcessDefinitionInstanceVersionStatisticsQuery(
           final ProcessDefinitionInstanceVersionStatisticsQuery request) {
-    if (request == null || request.getFilter() == null) {
+    if (request == null || request.getFilter().isEmpty()) {
       final var problem =
           RequestValidator.createProblemDetail(
               List.of(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("filter")));
@@ -470,12 +478,12 @@ public final class SearchQueryRequestMapper {
         return Either.left(problem.get());
       }
     }
-    final var page = toSearchQueryPage(request.getPage());
+    final var page = toSearchQueryPage(request.getPage().orElse(null));
     final var sortRequests =
         toSortRequests(
-            request.getSort(),
+            request.getSort().orElse(null),
             s -> s.getField().getValue(),
-            s -> s.getOrder() != null ? s.getOrder().getValue() : null);
+            s -> s.getOrder().map(o -> o.getValue()).orElse(null));
     final var sort =
         SearchQuerySortRequestMapper.toSearchQuerySort(
             sortRequests,
@@ -483,7 +491,7 @@ public final class SearchQueryRequestMapper {
             SearchQuerySortRequestMapper::applyProcessDefinitionInstanceVersionStatisticsSortField);
     final var filter =
         ProcessDefinitionInstanceVersionStatisticsFilterMapper
-            .toProcessDefinitionInstanceVersionStatisticsFilter(request.getFilter());
+            .toProcessDefinitionInstanceVersionStatisticsFilter(request.getFilter().orElse(null));
     return buildSearchQuery(
         filter, sort, page, SearchQueryBuilders::processDefinitionInstanceVersionStatisticsQuery);
   }
@@ -496,12 +504,12 @@ public final class SearchQueryRequestMapper {
       return Either.right(
           SearchQueryBuilders.incidentProcessInstanceStatisticsByErrorQuery().build());
     }
-    final var page = toSearchQueryPage(request.getPage());
+    final var page = toSearchQueryPage(request.getPage().orElse(null));
     final var sortRequests =
         toSortRequests(
-            request.getSort(),
+            request.getSort().orElse(null),
             s -> s.getField().getValue(),
-            s -> s.getOrder() != null ? s.getOrder().getValue() : null);
+            s -> s.getOrder().map(o -> o.getValue()).orElse(null));
     final var sort =
         SearchQuerySortRequestMapper.toSearchQuerySort(
             sortRequests,
@@ -516,12 +524,12 @@ public final class SearchQueryRequestMapper {
           ProblemDetail, io.camunda.search.query.IncidentProcessInstanceStatisticsByDefinitionQuery>
       toIncidentProcessInstanceStatisticsByDefinitionQuery(
           final IncidentProcessInstanceStatisticsByDefinitionQuery request) {
-    final var page = toSearchQueryPage(request.getPage());
+    final var page = toSearchQueryPage(request.getPage().orElse(null));
     final var sortRequests =
         toSortRequests(
-            request.getSort(),
+            request.getSort().orElse(null),
             s -> s.getField().getValue(),
-            s -> s.getOrder() != null ? s.getOrder().getValue() : null);
+            s -> s.getOrder().map(o -> o.getValue()).orElse(null));
     final var sort =
         SearchQuerySortRequestMapper.toSearchQuerySort(
             sortRequests,
@@ -530,7 +538,8 @@ public final class SearchQueryRequestMapper {
                 ::applyIncidentProcessInstanceStatisticsByDefinitionSortField);
     final var filter =
         IncidentProcessInstanceStatisticsFilterMapper
-            .toIncidentProcessInstanceStatisticsByDefinitionFilter(request.getFilter());
+            .toIncidentProcessInstanceStatisticsByDefinitionFilter(
+                request.getFilter().orElse(null));
     return buildSearchQuery(
         filter,
         sort,
@@ -545,18 +554,18 @@ public final class SearchQueryRequestMapper {
     if (request == null) {
       return Either.right(SearchQueryBuilders.auditLogSearchQuery().build());
     }
-    final var page = toSearchQueryPage(request.getPage());
+    final var page = toSearchQueryPage(request.getPage().orElse(null));
     final var sortRequests =
         toSortRequests(
-            request.getSort(),
+            request.getSort().orElse(null),
             s -> s.getField().getValue(),
-            s -> s.getOrder() != null ? s.getOrder().getValue() : null);
+            s -> s.getOrder().map(o -> o.getValue()).orElse(null));
     final var sort =
         SearchQuerySortRequestMapper.toSearchQuerySort(
             sortRequests,
             SortOptionBuilders::auditLog,
             SearchQuerySortRequestMapper::applyAuditLogSortField);
-    final var filter = AuditLogFilterMapper.toAuditLogFilter(request.getFilter());
+    final var filter = AuditLogFilterMapper.toAuditLogFilter(request.getFilter().orElse(null));
     return buildSearchQuery(filter, sort, page, SearchQueryBuilders::auditLogSearchQuery);
   }
 
@@ -565,18 +574,19 @@ public final class SearchQueryRequestMapper {
     if (request == null) {
       return Either.right(SearchQueryBuilders.authorizationSearchQuery().build());
     }
-    final var page = toSearchQueryPage(request.getPage());
+    final var page = toSearchQueryPage(request.getPage().orElse(null));
     final var sortRequests =
         toSortRequests(
-            request.getSort(),
+            request.getSort().orElse(null),
             s -> s.getField().getValue(),
-            s -> s.getOrder() != null ? s.getOrder().getValue() : null);
+            s -> s.getOrder().map(o -> o.getValue()).orElse(null));
     final var sort =
         SearchQuerySortRequestMapper.toSearchQuerySort(
             sortRequests,
             SortOptionBuilders::authorization,
             SearchQuerySortRequestMapper::applyAuthorizationSortField);
-    final var filter = AuthorizationFilterMapper.toAuthorizationFilter(request.getFilter());
+    final var filter =
+        AuthorizationFilterMapper.toAuthorizationFilter(request.getFilter().orElse(null));
     return buildSearchQuery(filter, sort, page, SearchQueryBuilders::authorizationSearchQuery);
   }
 
@@ -585,19 +595,19 @@ public final class SearchQueryRequestMapper {
     if (request == null) {
       return Either.right(SearchQueryBuilders.batchOperationItemQuery().build());
     }
-    final var page = toSearchQueryPage(request.getPage());
+    final var page = toSearchQueryPage(request.getPage().orElse(null));
     final var sortRequests =
         toSortRequests(
-            request.getSort(),
+            request.getSort().orElse(null),
             s -> s.getField().getValue(),
-            s -> s.getOrder() != null ? s.getOrder().getValue() : null);
+            s -> s.getOrder().map(o -> o.getValue()).orElse(null));
     final var sort =
         SearchQuerySortRequestMapper.toSearchQuerySort(
             sortRequests,
             SortOptionBuilders::batchOperationItem,
             SearchQuerySortRequestMapper::applyBatchOperationItemSortField);
     final var filter =
-        BatchOperationItemFilterMapper.toBatchOperationItemFilter(request.getFilter());
+        BatchOperationItemFilterMapper.toBatchOperationItemFilter(request.getFilter().orElse(null));
     return buildSearchQuery(filter, sort, page, SearchQueryBuilders::batchOperationItemQuery);
   }
 
@@ -606,18 +616,19 @@ public final class SearchQueryRequestMapper {
     if (request == null) {
       return Either.right(SearchQueryBuilders.batchOperationQuery().build());
     }
-    final var page = toSearchQueryPage(request.getPage());
+    final var page = toSearchQueryPage(request.getPage().orElse(null));
     final var sortRequests =
         toSortRequests(
-            request.getSort(),
+            request.getSort().orElse(null),
             s -> s.getField().getValue(),
-            s -> s.getOrder() != null ? s.getOrder().getValue() : null);
+            s -> s.getOrder().map(o -> o.getValue()).orElse(null));
     final var sort =
         SearchQuerySortRequestMapper.toSearchQuerySort(
             sortRequests,
             SortOptionBuilders::batchOperation,
             SearchQuerySortRequestMapper::applyBatchOperationSortField);
-    final var filter = BatchOperationFilterMapper.toBatchOperationFilter(request.getFilter());
+    final var filter =
+        BatchOperationFilterMapper.toBatchOperationFilter(request.getFilter().orElse(null));
     return buildSearchQuery(filter, sort, page, SearchQueryBuilders::batchOperationQuery);
   }
 
@@ -626,19 +637,20 @@ public final class SearchQueryRequestMapper {
     if (request == null) {
       return Either.right(SearchQueryBuilders.clusterVariableSearchQuery().build());
     }
-    final var page = toSearchQueryPage(request.getPage());
+    final var page = toSearchQueryPage(request.getPage().orElse(null));
     final var sortRequests =
         toSortRequests(
-            request.getSort(),
+            request.getSort().orElse(null),
             s -> s.getField().getValue(),
-            s -> s.getOrder() != null ? s.getOrder().getValue() : null);
+            s -> s.getOrder().map(o -> o.getValue()).orElse(null));
     final var sort =
         SearchQuerySortRequestMapper.toSearchQuerySort(
             sortRequests,
             SortOptionBuilders::clusterVariable,
             SearchQuerySortRequestMapper::applyClusterVariableSortField);
     final var filter =
-        ClusterVariableSearchQueryFilterRequestMapper.toClusterVariableFilter(request.getFilter());
+        ClusterVariableSearchQueryFilterRequestMapper.toClusterVariableFilter(
+            request.getFilter().orElse(null));
     return buildSearchQuery(filter, sort, page, SearchQueryBuilders::clusterVariableSearchQuery);
   }
 
@@ -648,12 +660,12 @@ public final class SearchQueryRequestMapper {
     if (request == null) {
       return Either.right(SearchQueryBuilders.correlatedMessageSubscriptionSearchQuery().build());
     }
-    final var page = toSearchQueryPage(request.getPage());
+    final var page = toSearchQueryPage(request.getPage().orElse(null));
     final var sortRequests =
         toSortRequests(
-            request.getSort(),
+            request.getSort().orElse(null),
             s -> s.getField().getValue(),
-            s -> s.getOrder() != null ? s.getOrder().getValue() : null);
+            s -> s.getOrder().map(o -> o.getValue()).orElse(null));
     final var sort =
         SearchQuerySortRequestMapper.toSearchQuerySort(
             sortRequests,
@@ -661,7 +673,7 @@ public final class SearchQueryRequestMapper {
             SearchQuerySortRequestMapper::applyCorrelatedMessageSubscriptionSortField);
     final var filter =
         CorrelatedMessageSubscriptionFilterMapper.toCorrelatedMessageSubscriptionFilter(
-            request.getFilter());
+            request.getFilter().orElse(null));
     return buildSearchQuery(
         filter, sort, page, SearchQueryBuilders::correlatedMessageSubscriptionSearchQuery);
   }
@@ -671,19 +683,19 @@ public final class SearchQueryRequestMapper {
     if (request == null) {
       return Either.right(SearchQueryBuilders.decisionDefinitionSearchQuery().build());
     }
-    final var page = toSearchQueryPage(request.getPage());
+    final var page = toSearchQueryPage(request.getPage().orElse(null));
     final var sortRequests =
         toSortRequests(
-            request.getSort(),
+            request.getSort().orElse(null),
             s -> s.getField().getValue(),
-            s -> s.getOrder() != null ? s.getOrder().getValue() : null);
+            s -> s.getOrder().map(o -> o.getValue()).orElse(null));
     final var sort =
         SearchQuerySortRequestMapper.toSearchQuerySort(
             sortRequests,
             SortOptionBuilders::decisionDefinition,
             SearchQuerySortRequestMapper::applyDecisionDefinitionSortField);
     final var filter =
-        DecisionDefinitionFilterMapper.toDecisionDefinitionFilter(request.getFilter());
+        DecisionDefinitionFilterMapper.toDecisionDefinitionFilter(request.getFilter().orElse(null));
     return buildSearchQuery(filter, sort, page, SearchQueryBuilders::decisionDefinitionSearchQuery);
   }
 
@@ -692,18 +704,19 @@ public final class SearchQueryRequestMapper {
     if (request == null) {
       return Either.right(SearchQueryBuilders.decisionInstanceSearchQuery().build());
     }
-    final var page = toSearchQueryPage(request.getPage());
+    final var page = toSearchQueryPage(request.getPage().orElse(null));
     final var sortRequests =
         toSortRequests(
-            request.getSort(),
+            request.getSort().orElse(null),
             s -> s.getField().getValue(),
-            s -> s.getOrder() != null ? s.getOrder().getValue() : null);
+            s -> s.getOrder().map(o -> o.getValue()).orElse(null));
     final var sort =
         SearchQuerySortRequestMapper.toSearchQuerySort(
             sortRequests,
             SortOptionBuilders::decisionInstance,
             SearchQuerySortRequestMapper::applyDecisionInstanceSortField);
-    final var filter = DecisionInstanceFilterMapper.toDecisionInstanceFilter(request.getFilter());
+    final var filter =
+        DecisionInstanceFilterMapper.toDecisionInstanceFilter(request.getFilter().orElse(null));
     return buildSearchQuery(filter, sort, page, SearchQueryBuilders::decisionInstanceSearchQuery);
   }
 
@@ -712,19 +725,20 @@ public final class SearchQueryRequestMapper {
     if (request == null) {
       return Either.right(SearchQueryBuilders.decisionRequirementsSearchQuery().build());
     }
-    final var page = toSearchQueryPage(request.getPage());
+    final var page = toSearchQueryPage(request.getPage().orElse(null));
     final var sortRequests =
         toSortRequests(
-            request.getSort(),
+            request.getSort().orElse(null),
             s -> s.getField().getValue(),
-            s -> s.getOrder() != null ? s.getOrder().getValue() : null);
+            s -> s.getOrder().map(o -> o.getValue()).orElse(null));
     final var sort =
         SearchQuerySortRequestMapper.toSearchQuerySort(
             sortRequests,
             SortOptionBuilders::decisionRequirements,
             SearchQuerySortRequestMapper::applyDecisionRequirementsSortField);
     final var filter =
-        DecisionRequirementsFilterMapper.toDecisionRequirementsFilter(request.getFilter());
+        DecisionRequirementsFilterMapper.toDecisionRequirementsFilter(
+            request.getFilter().orElse(null));
     return buildSearchQuery(
         filter, sort, page, SearchQueryBuilders::decisionRequirementsSearchQuery);
   }
@@ -734,18 +748,19 @@ public final class SearchQueryRequestMapper {
     if (request == null) {
       return Either.right(SearchQueryBuilders.flownodeInstanceSearchQuery().build());
     }
-    final var page = toSearchQueryPage(request.getPage());
+    final var page = toSearchQueryPage(request.getPage().orElse(null));
     final var sortRequests =
         toSortRequests(
-            request.getSort(),
+            request.getSort().orElse(null),
             s -> s.getField().getValue(),
-            s -> s.getOrder() != null ? s.getOrder().getValue() : null);
+            s -> s.getOrder().map(o -> o.getValue()).orElse(null));
     final var sort =
         SearchQuerySortRequestMapper.toSearchQuerySort(
             sortRequests,
             SortOptionBuilders::flowNodeInstance,
             SearchQuerySortRequestMapper::applyElementInstanceSortField);
-    final var filter = ElementInstanceFilterMapper.toElementInstanceFilter(request.getFilter());
+    final var filter =
+        ElementInstanceFilterMapper.toElementInstanceFilter(request.getFilter().orElse(null));
     return buildSearchQuery(filter, sort, page, SearchQueryBuilders::flownodeInstanceSearchQuery);
   }
 
@@ -754,19 +769,19 @@ public final class SearchQueryRequestMapper {
     if (request == null) {
       return Either.right(SearchQueryBuilders.globalListenerSearchQuery().build());
     }
-    final var page = toSearchQueryPage(request.getPage());
+    final var page = toSearchQueryPage(request.getPage().orElse(null));
     final var sortRequests =
         toSortRequests(
-            request.getSort(),
+            request.getSort().orElse(null),
             s -> s.getField().getValue(),
-            s -> s.getOrder() != null ? s.getOrder().getValue() : null);
+            s -> s.getOrder().map(o -> o.getValue()).orElse(null));
     final var sort =
         SearchQuerySortRequestMapper.toSearchQuerySort(
             sortRequests,
             SortOptionBuilders::globalListener,
             SearchQuerySortRequestMapper::applyGlobalTaskListenerSortField);
     final var filter =
-        GlobalTaskListenerFilterMapper.toGlobalTaskListenerFilter(request.getFilter());
+        GlobalTaskListenerFilterMapper.toGlobalTaskListenerFilter(request.getFilter().orElse(null));
     return buildSearchQuery(filter, sort, page, SearchQueryBuilders::globalListenerSearchQuery);
   }
 
@@ -775,12 +790,12 @@ public final class SearchQueryRequestMapper {
     if (request == null) {
       return Either.right(SearchQueryBuilders.groupMemberSearchQuery().build());
     }
-    final var page = toSearchQueryPage(request.getPage());
+    final var page = toSearchQueryPage(request.getPage().orElse(null));
     final var sortRequests =
         toSortRequests(
-            request.getSort(),
+            request.getSort().orElse(null),
             s -> s.getField().getValue(),
-            s -> s.getOrder() != null ? s.getOrder().getValue() : null);
+            s -> s.getOrder().map(o -> o.getValue()).orElse(null));
     final var sort =
         SearchQuerySortRequestMapper.toSearchQuerySort(
             sortRequests,
@@ -795,18 +810,18 @@ public final class SearchQueryRequestMapper {
     if (request == null) {
       return Either.right(SearchQueryBuilders.groupSearchQuery().build());
     }
-    final var page = toSearchQueryPage(request.getPage());
+    final var page = toSearchQueryPage(request.getPage().orElse(null));
     final var sortRequests =
         toSortRequests(
-            request.getSort(),
+            request.getSort().orElse(null),
             s -> s.getField().getValue(),
-            s -> s.getOrder() != null ? s.getOrder().getValue() : null);
+            s -> s.getOrder().map(o -> o.getValue()).orElse(null));
     final var sort =
         SearchQuerySortRequestMapper.toSearchQuerySort(
             sortRequests,
             SortOptionBuilders::group,
             SearchQuerySortRequestMapper::applyGroupSortField);
-    final var filter = GroupFilterMapper.toGroupFilter(request.getFilter());
+    final var filter = GroupFilterMapper.toGroupFilter(request.getFilter().orElse(null));
     return buildSearchQuery(filter, sort, page, SearchQueryBuilders::groupSearchQuery);
   }
 
@@ -815,12 +830,12 @@ public final class SearchQueryRequestMapper {
     if (request == null) {
       return Either.right(SearchQueryBuilders.groupMemberSearchQuery().build());
     }
-    final var page = toSearchQueryPage(request.getPage());
+    final var page = toSearchQueryPage(request.getPage().orElse(null));
     final var sortRequests =
         toSortRequests(
-            request.getSort(),
+            request.getSort().orElse(null),
             s -> s.getField().getValue(),
-            s -> s.getOrder() != null ? s.getOrder().getValue() : null);
+            s -> s.getOrder().map(o -> o.getValue()).orElse(null));
     final var sort =
         SearchQuerySortRequestMapper.toSearchQuerySort(
             sortRequests,
@@ -835,18 +850,18 @@ public final class SearchQueryRequestMapper {
     if (request == null) {
       return Either.right(SearchQueryBuilders.incidentSearchQuery().build());
     }
-    final var page = toSearchQueryPage(request.getPage());
+    final var page = toSearchQueryPage(request.getPage().orElse(null));
     final var sortRequests =
         toSortRequests(
-            request.getSort(),
+            request.getSort().orElse(null),
             s -> s.getField().getValue(),
-            s -> s.getOrder() != null ? s.getOrder().getValue() : null);
+            s -> s.getOrder().map(o -> o.getValue()).orElse(null));
     final var sort =
         SearchQuerySortRequestMapper.toSearchQuerySort(
             sortRequests,
             SortOptionBuilders::incident,
             SearchQuerySortRequestMapper::applyIncidentSortField);
-    final var filter = IncidentFilterMapper.toIncidentFilter(request.getFilter());
+    final var filter = IncidentFilterMapper.toIncidentFilter(request.getFilter().orElse(null));
     return buildSearchQuery(filter, sort, page, SearchQueryBuilders::incidentSearchQuery);
   }
 
@@ -854,16 +869,16 @@ public final class SearchQueryRequestMapper {
     if (request == null) {
       return Either.right(SearchQueryBuilders.jobSearchQuery().build());
     }
-    final var page = toSearchQueryPage(request.getPage());
+    final var page = toSearchQueryPage(request.getPage().orElse(null));
     final var sortRequests =
         toSortRequests(
-            request.getSort(),
+            request.getSort().orElse(null),
             s -> s.getField().getValue(),
-            s -> s.getOrder() != null ? s.getOrder().getValue() : null);
+            s -> s.getOrder().map(o -> o.getValue()).orElse(null));
     final var sort =
         SearchQuerySortRequestMapper.toSearchQuerySort(
             sortRequests, SortOptionBuilders::job, SearchQuerySortRequestMapper::applyJobSortField);
-    final var filter = JobFilterMapper.toJobFilter(request.getFilter());
+    final var filter = JobFilterMapper.toJobFilter(request.getFilter().orElse(null));
     return buildSearchQuery(filter, sort, page, SearchQueryBuilders::jobSearchQuery);
   }
 
@@ -872,18 +887,19 @@ public final class SearchQueryRequestMapper {
     if (request == null) {
       return Either.right(SearchQueryBuilders.mappingRuleSearchQuery().build());
     }
-    final var page = toSearchQueryPage(request.getPage());
+    final var page = toSearchQueryPage(request.getPage().orElse(null));
     final var sortRequests =
         toSortRequests(
-            request.getSort(),
+            request.getSort().orElse(null),
             s -> s.getField().getValue(),
-            s -> s.getOrder() != null ? s.getOrder().getValue() : null);
+            s -> s.getOrder().map(o -> o.getValue()).orElse(null));
     final var sort =
         SearchQuerySortRequestMapper.toSearchQuerySort(
             sortRequests,
             SortOptionBuilders::mappingRule,
             SearchQuerySortRequestMapper::applyMappingRuleSortField);
-    final var filter = MappingRuleFilterMapper.toMappingRuleFilter(request.getFilter());
+    final var filter =
+        MappingRuleFilterMapper.toMappingRuleFilter(request.getFilter().orElse(null));
     return buildSearchQuery(filter, sort, page, SearchQueryBuilders::mappingRuleSearchQuery);
   }
 
@@ -892,19 +908,20 @@ public final class SearchQueryRequestMapper {
     if (request == null) {
       return Either.right(SearchQueryBuilders.messageSubscriptionSearchQuery().build());
     }
-    final var page = toSearchQueryPage(request.getPage());
+    final var page = toSearchQueryPage(request.getPage().orElse(null));
     final var sortRequests =
         toSortRequests(
-            request.getSort(),
+            request.getSort().orElse(null),
             s -> s.getField().getValue(),
-            s -> s.getOrder() != null ? s.getOrder().getValue() : null);
+            s -> s.getOrder().map(o -> o.getValue()).orElse(null));
     final var sort =
         SearchQuerySortRequestMapper.toSearchQuerySort(
             sortRequests,
             SortOptionBuilders::messageSubscription,
             SearchQuerySortRequestMapper::applyMessageSubscriptionSortField);
     final var filter =
-        MessageSubscriptionFilterMapper.toMessageSubscriptionFilter(request.getFilter());
+        MessageSubscriptionFilterMapper.toMessageSubscriptionFilter(
+            request.getFilter().orElse(null));
     return buildSearchQuery(
         filter, sort, page, SearchQueryBuilders::messageSubscriptionSearchQuery);
   }
@@ -921,18 +938,19 @@ public final class SearchQueryRequestMapper {
       return Either.left(isLatestVersionValidation.getLeft());
     }
 
-    final var page = toSearchQueryPage(request.getPage());
+    final var page = toSearchQueryPage(request.getPage().orElse(null));
     final var sortRequests =
         toSortRequests(
-            request.getSort(),
+            request.getSort().orElse(null),
             s -> s.getField().getValue(),
-            s -> s.getOrder() != null ? s.getOrder().getValue() : null);
+            s -> s.getOrder().map(o -> o.getValue()).orElse(null));
     final var sort =
         SearchQuerySortRequestMapper.toSearchQuerySort(
             sortRequests,
             SortOptionBuilders::processDefinition,
             SearchQuerySortRequestMapper::applyProcessDefinitionSortField);
-    final var filter = ProcessDefinitionFilterMapper.toProcessDefinitionFilter(request.getFilter());
+    final var filter =
+        ProcessDefinitionFilterMapper.toProcessDefinitionFilter(request.getFilter().orElse(null));
     return buildSearchQuery(filter, sort, page, SearchQueryBuilders::processDefinitionSearchQuery);
   }
 
@@ -941,18 +959,19 @@ public final class SearchQueryRequestMapper {
     if (request == null) {
       return Either.right(SearchQueryBuilders.processInstanceSearchQuery().build());
     }
-    final var page = toSearchQueryPage(request.getPage());
+    final var page = toSearchQueryPage(request.getPage().orElse(null));
     final var sortRequests =
         toSortRequests(
-            request.getSort(),
+            request.getSort().orElse(null),
             s -> s.getField().getValue(),
-            s -> s.getOrder() != null ? s.getOrder().getValue() : null);
+            s -> s.getOrder().map(o -> o.getValue()).orElse(null));
     final var sort =
         SearchQuerySortRequestMapper.toSearchQuerySort(
             sortRequests,
             SortOptionBuilders::processInstance,
             SearchQuerySortRequestMapper::applyProcessInstanceSortField);
-    final var filter = ProcessInstanceFilterMapper.toProcessInstanceFilter(request.getFilter());
+    final var filter =
+        ProcessInstanceFilterMapper.toProcessInstanceFilter(request.getFilter().orElse(null));
     return buildSearchQuery(filter, sort, page, SearchQueryBuilders::processInstanceSearchQuery);
   }
 
@@ -961,12 +980,12 @@ public final class SearchQueryRequestMapper {
     if (request == null) {
       return Either.right(SearchQueryBuilders.roleMemberSearchQuery().build());
     }
-    final var page = toSearchQueryPage(request.getPage());
+    final var page = toSearchQueryPage(request.getPage().orElse(null));
     final var sortRequests =
         toSortRequests(
-            request.getSort(),
+            request.getSort().orElse(null),
             s -> s.getField().getValue(),
-            s -> s.getOrder() != null ? s.getOrder().getValue() : null);
+            s -> s.getOrder().map(o -> o.getValue()).orElse(null));
     final var sort =
         SearchQuerySortRequestMapper.toSearchQuerySort(
             sortRequests,
@@ -981,12 +1000,12 @@ public final class SearchQueryRequestMapper {
     if (request == null) {
       return Either.right(SearchQueryBuilders.roleMemberSearchQuery().build());
     }
-    final var page = toSearchQueryPage(request.getPage());
+    final var page = toSearchQueryPage(request.getPage().orElse(null));
     final var sortRequests =
         toSortRequests(
-            request.getSort(),
+            request.getSort().orElse(null),
             s -> s.getField().getValue(),
-            s -> s.getOrder() != null ? s.getOrder().getValue() : null);
+            s -> s.getOrder().map(o -> o.getValue()).orElse(null));
     final var sort =
         SearchQuerySortRequestMapper.toSearchQuerySort(
             sortRequests,
@@ -1001,18 +1020,18 @@ public final class SearchQueryRequestMapper {
     if (request == null) {
       return Either.right(SearchQueryBuilders.roleSearchQuery().build());
     }
-    final var page = toSearchQueryPage(request.getPage());
+    final var page = toSearchQueryPage(request.getPage().orElse(null));
     final var sortRequests =
         toSortRequests(
-            request.getSort(),
+            request.getSort().orElse(null),
             s -> s.getField().getValue(),
-            s -> s.getOrder() != null ? s.getOrder().getValue() : null);
+            s -> s.getOrder().map(o -> o.getValue()).orElse(null));
     final var sort =
         SearchQuerySortRequestMapper.toSearchQuerySort(
             sortRequests,
             SortOptionBuilders::role,
             SearchQuerySortRequestMapper::applyRoleSortField);
-    final var filter = RoleFilterMapper.toRoleFilter(request.getFilter());
+    final var filter = RoleFilterMapper.toRoleFilter(request.getFilter().orElse(null));
     return buildSearchQuery(filter, sort, page, SearchQueryBuilders::roleSearchQuery);
   }
 
@@ -1021,12 +1040,12 @@ public final class SearchQueryRequestMapper {
     if (request == null) {
       return Either.right(SearchQueryBuilders.roleMemberSearchQuery().build());
     }
-    final var page = toSearchQueryPage(request.getPage());
+    final var page = toSearchQueryPage(request.getPage().orElse(null));
     final var sortRequests =
         toSortRequests(
-            request.getSort(),
+            request.getSort().orElse(null),
             s -> s.getField().getValue(),
-            s -> s.getOrder() != null ? s.getOrder().getValue() : null);
+            s -> s.getOrder().map(o -> o.getValue()).orElse(null));
     final var sort =
         SearchQuerySortRequestMapper.toSearchQuerySort(
             sortRequests,
@@ -1041,12 +1060,12 @@ public final class SearchQueryRequestMapper {
     if (request == null) {
       return Either.right(SearchQueryBuilders.tenantMemberSearchQuery().build());
     }
-    final var page = toSearchQueryPage(request.getPage());
+    final var page = toSearchQueryPage(request.getPage().orElse(null));
     final var sortRequests =
         toSortRequests(
-            request.getSort(),
+            request.getSort().orElse(null),
             s -> s.getField().getValue(),
-            s -> s.getOrder() != null ? s.getOrder().getValue() : null);
+            s -> s.getOrder().map(o -> o.getValue()).orElse(null));
     final var sort =
         SearchQuerySortRequestMapper.toSearchQuerySort(
             sortRequests,
@@ -1061,12 +1080,12 @@ public final class SearchQueryRequestMapper {
     if (request == null) {
       return Either.right(SearchQueryBuilders.tenantMemberSearchQuery().build());
     }
-    final var page = toSearchQueryPage(request.getPage());
+    final var page = toSearchQueryPage(request.getPage().orElse(null));
     final var sortRequests =
         toSortRequests(
-            request.getSort(),
+            request.getSort().orElse(null),
             s -> s.getField().getValue(),
-            s -> s.getOrder() != null ? s.getOrder().getValue() : null);
+            s -> s.getOrder().map(o -> o.getValue()).orElse(null));
     final var sort =
         SearchQuerySortRequestMapper.toSearchQuerySort(
             sortRequests,
@@ -1081,18 +1100,18 @@ public final class SearchQueryRequestMapper {
     if (request == null) {
       return Either.right(SearchQueryBuilders.tenantSearchQuery().build());
     }
-    final var page = toSearchQueryPage(request.getPage());
+    final var page = toSearchQueryPage(request.getPage().orElse(null));
     final var sortRequests =
         toSortRequests(
-            request.getSort(),
+            request.getSort().orElse(null),
             s -> s.getField().getValue(),
-            s -> s.getOrder() != null ? s.getOrder().getValue() : null);
+            s -> s.getOrder().map(o -> o.getValue()).orElse(null));
     final var sort =
         SearchQuerySortRequestMapper.toSearchQuerySort(
             sortRequests,
             SortOptionBuilders::tenant,
             SearchQuerySortRequestMapper::applyTenantSortField);
-    final var filter = TenantFilterMapper.toTenantFilter(request.getFilter());
+    final var filter = TenantFilterMapper.toTenantFilter(request.getFilter().orElse(null));
     return buildSearchQuery(filter, sort, page, SearchQueryBuilders::tenantSearchQuery);
   }
 
@@ -1101,12 +1120,12 @@ public final class SearchQueryRequestMapper {
     if (request == null) {
       return Either.right(SearchQueryBuilders.tenantMemberSearchQuery().build());
     }
-    final var page = toSearchQueryPage(request.getPage());
+    final var page = toSearchQueryPage(request.getPage().orElse(null));
     final var sortRequests =
         toSortRequests(
-            request.getSort(),
+            request.getSort().orElse(null),
             s -> s.getField().getValue(),
-            s -> s.getOrder() != null ? s.getOrder().getValue() : null);
+            s -> s.getOrder().map(o -> o.getValue()).orElse(null));
     final var sort =
         SearchQuerySortRequestMapper.toSearchQuerySort(
             sortRequests,
@@ -1121,18 +1140,18 @@ public final class SearchQueryRequestMapper {
     if (request == null) {
       return Either.right(SearchQueryBuilders.userSearchQuery().build());
     }
-    final var page = toSearchQueryPage(request.getPage());
+    final var page = toSearchQueryPage(request.getPage().orElse(null));
     final var sortRequests =
         toSortRequests(
-            request.getSort(),
+            request.getSort().orElse(null),
             s -> s.getField().getValue(),
-            s -> s.getOrder() != null ? s.getOrder().getValue() : null);
+            s -> s.getOrder().map(o -> o.getValue()).orElse(null));
     final var sort =
         SearchQuerySortRequestMapper.toSearchQuerySort(
             sortRequests,
             SortOptionBuilders::user,
             SearchQuerySortRequestMapper::applyUserSortField);
-    final var filter = UserFilterMapper.toUserFilter(request.getFilter());
+    final var filter = UserFilterMapper.toUserFilter(request.getFilter().orElse(null));
     return buildSearchQuery(filter, sort, page, SearchQueryBuilders::userSearchQuery);
   }
 
@@ -1141,14 +1160,15 @@ public final class SearchQueryRequestMapper {
     if (request == null) {
       return Either.right(SearchQueryBuilders.auditLogSearchQuery().build());
     }
-    final var page = toSearchQueryPage(request.getPage());
+    final var page = toSearchQueryPage(request.getPage().orElse(null));
     final var sortRequests = java.util.List.<SearchQuerySortRequest>of();
     final var sort =
         SearchQuerySortRequestMapper.toSearchQuerySort(
             sortRequests,
             SortOptionBuilders::auditLog,
             SearchQuerySortRequestMapper::applyAuditLogSortField);
-    final var filter = UserTaskAuditLogFilterMapper.toUserTaskAuditLogFilter(request.getFilter());
+    final var filter =
+        UserTaskAuditLogFilterMapper.toUserTaskAuditLogFilter(request.getFilter().orElse(null));
     return buildSearchQuery(filter, sort, page, SearchQueryBuilders::auditLogSearchQuery);
   }
 
@@ -1157,18 +1177,18 @@ public final class SearchQueryRequestMapper {
     if (request == null) {
       return Either.right(SearchQueryBuilders.userTaskSearchQuery().build());
     }
-    final var page = toSearchQueryPage(request.getPage());
+    final var page = toSearchQueryPage(request.getPage().orElse(null));
     final var sortRequests =
         toSortRequests(
-            request.getSort(),
+            request.getSort().orElse(null),
             s -> s.getField().getValue(),
-            s -> s.getOrder() != null ? s.getOrder().getValue() : null);
+            s -> s.getOrder().map(o -> o.getValue()).orElse(null));
     final var sort =
         SearchQuerySortRequestMapper.toSearchQuerySort(
             sortRequests,
             SortOptionBuilders::userTask,
             SearchQuerySortRequestMapper::applyUserTaskSortField);
-    final var filter = UserTaskFilterMapper.toUserTaskFilter(request.getFilter());
+    final var filter = UserTaskFilterMapper.toUserTaskFilter(request.getFilter().orElse(null));
     return buildSearchQuery(filter, sort, page, SearchQueryBuilders::userTaskSearchQuery);
   }
 
@@ -1177,18 +1197,19 @@ public final class SearchQueryRequestMapper {
     if (request == null) {
       return Either.right(SearchQueryBuilders.variableSearchQuery().build());
     }
-    final var page = toSearchQueryPage(request.getPage());
+    final var page = toSearchQueryPage(request.getPage().orElse(null));
     final var sortRequests =
         toSortRequests(
-            request.getSort(),
+            request.getSort().orElse(null),
             s -> s.getField().getValue(),
-            s -> s.getOrder() != null ? s.getOrder().getValue() : null);
+            s -> s.getOrder().map(o -> o.getValue()).orElse(null));
     final var sort =
         SearchQuerySortRequestMapper.toSearchQuerySort(
             sortRequests,
             SortOptionBuilders::variable,
             SearchQuerySortRequestMapper::applyUserTaskVariableSortField);
-    final var filter = UserTaskVariableFilterMapper.toUserTaskVariableFilter(request.getFilter());
+    final var filter =
+        UserTaskVariableFilterMapper.toUserTaskVariableFilter(request.getFilter().orElse(null));
     return buildSearchQuery(filter, sort, page, SearchQueryBuilders::variableSearchQuery);
   }
 
@@ -1197,39 +1218,41 @@ public final class SearchQueryRequestMapper {
     if (request == null) {
       return Either.right(SearchQueryBuilders.variableSearchQuery().build());
     }
-    final var page = toSearchQueryPage(request.getPage());
+    final var page = toSearchQueryPage(request.getPage().orElse(null));
     final var sortRequests =
         toSortRequests(
-            request.getSort(),
+            request.getSort().orElse(null),
             s -> s.getField().getValue(),
-            s -> s.getOrder() != null ? s.getOrder().getValue() : null);
+            s -> s.getOrder().map(o -> o.getValue()).orElse(null));
     final var sort =
         SearchQuerySortRequestMapper.toSearchQuerySort(
             sortRequests,
             SortOptionBuilders::variable,
             SearchQuerySortRequestMapper::applyVariableSortField);
-    final var filter = VariableFilterMapper.toVariableFilter(request.getFilter());
+    final var filter = VariableFilterMapper.toVariableFilter(request.getFilter().orElse(null));
     return buildSearchQuery(filter, sort, page, SearchQueryBuilders::variableSearchQuery);
   }
 
   private static Either<ProblemDetail, Void> validateIsLatestVersionConstraintsStrict(
       final ProcessDefinitionSearchQuery request) {
-    final var filter = request.getFilter();
-    if (filter == null || filter.getIsLatestVersion() == null || !filter.getIsLatestVersion()) {
+    final var filter = request.getFilter().orElse(null);
+    if (filter == null
+        || filter.getIsLatestVersion().isEmpty()
+        || !filter.getIsLatestVersion().get()) {
       return Either.right(null);
     }
 
     final java.util.List<String> violations = new java.util.ArrayList<>();
 
-    final var page = request.getPage();
+    final var page = request.getPage().orElse(null);
     if (page != null) {
-      if (page.getBefore() != null) {
+      if (page.getBefore().orElse(null) != null) {
         violations.add(
             io.camunda.gateway.mapping.http.validator.ErrorMessages
                 .ERROR_MESSAGE_UNSUPPORTED_PAGINATION_WITH_IS_LATEST_VERSION
                 .formatted("before"));
       }
-      if (page.getFrom() != null) {
+      if (page.getFrom().orElse(null) != null) {
         violations.add(
             io.camunda.gateway.mapping.http.validator.ErrorMessages
                 .ERROR_MESSAGE_UNSUPPORTED_PAGINATION_WITH_IS_LATEST_VERSION
@@ -1237,7 +1260,7 @@ public final class SearchQueryRequestMapper {
       }
     }
 
-    final var sort = request.getSort();
+    final var sort = request.getSort().orElse(null);
     if (sort != null && !sort.isEmpty()) {
       final var allowedFields = java.util.Set.of("processDefinitionId", "tenantId");
       for (final var sortRequest : sort) {

@@ -237,7 +237,7 @@ public class DefaultProcessInstanceServiceAdapter implements ProcessInstanceServ
             processInstanceServices.deleteProcessInstance(
                 processInstanceKey,
                 Objects.nonNull(deleteProcessInstanceRequestStrict)
-                    ? deleteProcessInstanceRequestStrict.getOperationReference()
+                    ? deleteProcessInstanceRequestStrict.getOperationReference().orElse(null)
                     : null,
                 authentication));
   }

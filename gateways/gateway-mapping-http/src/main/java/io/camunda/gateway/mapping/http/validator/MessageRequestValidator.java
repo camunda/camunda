@@ -25,11 +25,16 @@ public final class MessageRequestValidator {
           if (request.getName() == null || request.getName().isBlank()) {
             violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("name"));
           }
-          if (request.getCorrelationKey() != null
-              && request.getCorrelationKey().length() > maxNameFieldLength) {
-            violations.add(
-                ERROR_MESSAGE_TOO_MANY_CHARACTERS.formatted("correlationKey", maxNameFieldLength));
-          }
+          request
+              .getCorrelationKey()
+              .ifPresent(
+                  ck -> {
+                    if (ck.length() > maxNameFieldLength) {
+                      violations.add(
+                          ERROR_MESSAGE_TOO_MANY_CHARACTERS.formatted(
+                              "correlationKey", maxNameFieldLength));
+                    }
+                  });
         });
   }
 
@@ -40,11 +45,16 @@ public final class MessageRequestValidator {
           if (request.getName() == null || request.getName().isBlank()) {
             violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("messageName"));
           }
-          if (request.getCorrelationKey() != null
-              && request.getCorrelationKey().length() > maxNameFieldLength) {
-            violations.add(
-                ERROR_MESSAGE_TOO_MANY_CHARACTERS.formatted("correlationKey", maxNameFieldLength));
-          }
+          request
+              .getCorrelationKey()
+              .ifPresent(
+                  ck -> {
+                    if (ck.length() > maxNameFieldLength) {
+                      violations.add(
+                          ERROR_MESSAGE_TOO_MANY_CHARACTERS.formatted(
+                              "correlationKey", maxNameFieldLength));
+                    }
+                  });
         });
   }
 }

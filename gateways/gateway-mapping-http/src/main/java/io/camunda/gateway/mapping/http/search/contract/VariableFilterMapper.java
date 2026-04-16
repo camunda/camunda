@@ -9,7 +9,6 @@ package io.camunda.gateway.mapping.http.search.contract;
 
 import static io.camunda.gateway.mapping.http.util.AdvancedSearchFilterUtil.mapToKeyOperations;
 import static io.camunda.gateway.mapping.http.util.AdvancedSearchFilterUtil.mapToOperations;
-import static java.util.Optional.ofNullable;
 
 import io.camunda.search.filter.FilterBuilders;
 import io.camunda.search.filter.VariableFilter;
@@ -27,23 +26,22 @@ public final class VariableFilterMapper {
       final io.camunda.gateway.protocol.model.VariableFilter filter) {
     final var builder = FilterBuilders.variable();
     final List<String> validationErrors = new ArrayList<>();
-    ofNullable(filter.getProcessInstanceKey())
+    filter
+        .getProcessInstanceKey()
         .map(mapToKeyOperations("processInstanceKey", validationErrors))
         .ifPresent(builder::processInstanceKeyOperations);
-    ofNullable(filter.getScopeKey())
+    filter
+        .getScopeKey()
         .map(mapToKeyOperations("scopeKey", validationErrors))
         .ifPresent(builder::scopeKeyOperations);
-    ofNullable(filter.getVariableKey())
+    filter
+        .getVariableKey()
         .map(mapToKeyOperations("variableKey", validationErrors))
         .ifPresent(builder::variableKeyOperations);
-    ofNullable(filter.getTenantId()).ifPresent(builder::tenantIds);
-    ofNullable(filter.getIsTruncated()).ifPresent(builder::isTruncated);
-    ofNullable(filter.getName())
-        .map(mapToOperations(String.class))
-        .ifPresent(builder::nameOperations);
-    ofNullable(filter.getValue())
-        .map(mapToOperations(String.class))
-        .ifPresent(builder::valueOperations);
+    filter.getTenantId().ifPresent(builder::tenantIds);
+    filter.getIsTruncated().ifPresent(builder::isTruncated);
+    filter.getName().map(mapToOperations(String.class)).ifPresent(builder::nameOperations);
+    filter.getValue().map(mapToOperations(String.class)).ifPresent(builder::valueOperations);
     return validationErrors.isEmpty()
         ? Either.right(builder.build())
         : Either.left(validationErrors);

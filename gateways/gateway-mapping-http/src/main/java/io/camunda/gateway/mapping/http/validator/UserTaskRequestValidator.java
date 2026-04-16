@@ -23,29 +23,29 @@ public final class UserTaskRequestValidator {
       final UserTaskAssignmentRequest request) {
     return validate(
         violations -> {
-          if (request.getAssignee() == null || request.getAssignee().isBlank()) {
+          if (request.getAssignee().isEmpty() || request.getAssignee().get().isBlank()) {
             violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("assignee"));
           }
         });
   }
 
   public static Optional<ProblemDetail> validateUpdateRequest(final UserTaskUpdateRequest request) {
-    final var changeset = request != null ? request.getChangeset() : null;
+    final var changeset = request != null ? request.getChangeset().orElse(null) : null;
     final boolean changesetEmpty =
         changeset == null
-            || (changeset.getFollowUpDate() == null
-                && changeset.getDueDate() == null
-                && changeset.getCandidateGroups() == null
-                && changeset.getCandidateUsers() == null
-                && changeset.getPriority() == null);
+            || (changeset.getFollowUpDate().isEmpty()
+                && changeset.getDueDate().isEmpty()
+                && changeset.getCandidateGroups().isEmpty()
+                && changeset.getCandidateUsers().isEmpty()
+                && changeset.getPriority().isEmpty());
     return validate(
         violations -> {
-          if (request == null || (request.getAction() == null && changesetEmpty)) {
+          if (request == null || (request.getAction().isEmpty() && changesetEmpty)) {
             violations.add(ERROR_MESSAGE_EMPTY_UPDATE_CHANGESET);
           }
           if (!changesetEmpty) {
-            validateDate(changeset.getDueDate(), "due date", violations);
-            validateDate(changeset.getFollowUpDate(), "follow-up date", violations);
+            validateDate(changeset.getDueDate().orElse(null), "due date", violations);
+            validateDate(changeset.getFollowUpDate().orElse(null), "follow-up date", violations);
           }
         });
   }

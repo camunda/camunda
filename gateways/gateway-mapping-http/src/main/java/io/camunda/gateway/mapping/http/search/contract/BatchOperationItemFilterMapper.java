@@ -9,7 +9,6 @@ package io.camunda.gateway.mapping.http.search.contract;
 
 import static io.camunda.gateway.mapping.http.util.AdvancedSearchFilterUtil.mapToKeyOperations;
 import static io.camunda.gateway.mapping.http.util.AdvancedSearchFilterUtil.mapToOperations;
-import static java.util.Optional.ofNullable;
 
 import io.camunda.search.filter.BatchOperationItemFilter;
 import io.camunda.search.filter.FilterBuilders;
@@ -27,19 +26,21 @@ public final class BatchOperationItemFilterMapper {
       final io.camunda.gateway.protocol.model.BatchOperationItemFilter filter) {
     final var builder = FilterBuilders.batchOperationItem();
     final List<String> validationErrors = new ArrayList<>();
-    ofNullable(filter.getBatchOperationKey())
+    filter
+        .getBatchOperationKey()
         .map(mapToOperations(String.class))
         .ifPresent(builder::batchOperationKeyOperations);
-    ofNullable(filter.getItemKey())
+    filter
+        .getItemKey()
         .map(mapToKeyOperations("itemKey", validationErrors))
         .ifPresent(builder::itemKeyOperations);
-    ofNullable(filter.getProcessInstanceKey())
+    filter
+        .getProcessInstanceKey()
         .map(mapToKeyOperations("processInstanceKey", validationErrors))
         .ifPresent(builder::processInstanceKeyOperations);
-    ofNullable(filter.getState())
-        .map(mapToOperations(String.class))
-        .ifPresent(builder::stateOperations);
-    ofNullable(filter.getOperationType())
+    filter.getState().map(mapToOperations(String.class)).ifPresent(builder::stateOperations);
+    filter
+        .getOperationType()
         .map(mapToOperations(String.class))
         .ifPresent(builder::operationTypeOperations);
     return validationErrors.isEmpty()

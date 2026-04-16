@@ -38,8 +38,8 @@ public class DefaultExpressionServiceAdapter implements ExpressionServiceAdapter
       final ExpressionEvaluationRequest requestStrict, final CamundaAuthentication authentication) {
     return RequestMapper.toExpressionEvaluationRequest(
             requestStrict.getExpression(),
-            requestStrict.getTenantId(),
-            requestStrict.getVariables(),
+            requestStrict.getTenantId().orElse(null),
+            requestStrict.getVariables().orElse(null),
             multiTenancyCfg.isChecksEnabled())
         .fold(
             RestErrorMapper::mapProblemToResponse,

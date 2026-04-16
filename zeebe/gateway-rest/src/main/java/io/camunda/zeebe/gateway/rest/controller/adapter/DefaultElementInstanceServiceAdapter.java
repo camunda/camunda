@@ -72,8 +72,8 @@ public class DefaultElementInstanceServiceAdapter implements ElementInstanceServ
                 new ElementInstanceServices.SetVariablesRequest(
                     elementInstanceKey,
                     setVariableRequestStrict.getVariables(),
-                    setVariableRequestStrict.getLocal(),
-                    setVariableRequestStrict.getOperationReference()),
+                    setVariableRequestStrict.getLocal().orElse(null),
+                    setVariableRequestStrict.getOperationReference().orElse(null)),
                 authentication));
   }
 
