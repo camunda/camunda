@@ -59,9 +59,9 @@ public final class EndlessRetryStrategy implements RetryStrategy {
       final var control = retryMechanism.run();
       if (control == Control.RETRY) {
         retryCount++;
-        if (retryCount >= maxRetries) {
-          LOG.error("Retry limit reached ({} retries). Failing operation.", retryCount);
-          currentFuture.completeExceptionally(new RetryLimitExceededException(retryCount, null));
+        if (retryCount > maxRetries) {
+          LOG.error("Retry limit reached ({} retries). Failing operation.", maxRetries);
+          currentFuture.completeExceptionally(new RetryLimitExceededException(maxRetries, null));
         } else {
           actor.run(this::run);
           actor.yieldThread();
@@ -72,10 +72,10 @@ public final class EndlessRetryStrategy implements RetryStrategy {
         currentFuture.complete(false);
       } else {
         retryCount++;
-        if (retryCount >= maxRetries) {
-          LOG.error("Retry limit reached ({} retries). Failing operation.", retryCount, exception);
+        if (retryCount > maxRetries) {
+          LOG.error("Retry limit reached ({} retries). Failing operation.", maxRetries, exception);
           currentFuture.completeExceptionally(
-              new RetryLimitExceededException(retryCount, exception));
+              new RetryLimitExceededException(maxRetries, exception));
         } else {
           actor.run(this::run);
           actor.yieldThread();
