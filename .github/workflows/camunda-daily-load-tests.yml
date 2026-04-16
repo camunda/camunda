@@ -13,8 +13,8 @@ on:
         default: ""
         required: false
   schedule:
-    # Runs at 4 am every day https://crontab.guru/#0_4_*_*_*
-    - cron: 0 4 * * *
+    # Runs at 2 am Monday-Friday https://crontab.guru/#0_2_*_*_1-5
+    - cron: 0 2 * * 1-5
 
 defaults:
   run:
