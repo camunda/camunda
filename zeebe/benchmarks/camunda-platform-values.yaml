@@ -103,6 +103,8 @@ optimize:
       historyCleanup:
         cronTrigger: '0 1 * * *'
         ttl: 'P1D'
+        processDataCleanup:
+          enabled: true
   nodeSelector:
     topology.kubernetes.io/zone: __AVAILABILITY_ZONE__
   tolerations:
