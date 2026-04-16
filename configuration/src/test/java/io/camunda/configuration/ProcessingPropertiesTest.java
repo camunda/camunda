@@ -42,6 +42,7 @@ public class ProcessingPropertiesTest {
   private static final boolean EXPECTED_ENABLE_ASYNC_TIMER_DUEDATE_CHECKER = true;
   private static final boolean EXPECTED_ENABLE_STRAIGHTTHROUGH_PROCESSING_LOOP_DETECTOR = false;
   private static final boolean EXPECTED_ENABLE_MESSAGE_BODY_ON_EXPIRED = true;
+  private static final int EXPECTED_MAX_RECOVERABLE_RETRIES = 50;
 
   @Nested
   @TestPropertySource(
@@ -61,7 +62,8 @@ public class ProcessingPropertiesTest {
         "camunda.processing.enable-straightthrough-processing-loop-detector="
             + EXPECTED_ENABLE_STRAIGHTTHROUGH_PROCESSING_LOOP_DETECTOR,
         "camunda.processing.enable-message-body-on-expired="
-            + EXPECTED_ENABLE_MESSAGE_BODY_ON_EXPIRED
+            + EXPECTED_ENABLE_MESSAGE_BODY_ON_EXPIRED,
+        "camunda.processing.max-recoverable-retries=" + EXPECTED_MAX_RECOVERABLE_RETRIES
       })
   class WithOnlyUnifiedConfigSet {
     final BrokerBasedProperties brokerBasedProperties;
@@ -78,7 +80,8 @@ public class ProcessingPropertiesTest {
               EXPECTED_ENABLE_ASYNC_SCHEDULED_TASKS, ProcessingCfg::isEnableAsyncScheduledTasks)
           .returns(
               EXPECTED_SCHEDULED_TASKS_CHECK_INTERVAL, ProcessingCfg::getScheduledTaskCheckInterval)
-          .returns(EXPECTED_SKIP_POSITIONS, ProcessingCfg::skipPositions);
+          .returns(EXPECTED_SKIP_POSITIONS, ProcessingCfg::skipPositions)
+          .returns(EXPECTED_MAX_RECOVERABLE_RETRIES, ProcessingCfg::getMaxRecoverableRetries);
 
       assertThat(brokerBasedProperties.getExperimental().getConsistencyChecks())
           .returns(EXPECTED_ENABLE_PRECONDITIONS_CHECK, ConsistencyCheckCfg::isEnablePreconditions)
@@ -188,6 +191,7 @@ public class ProcessingPropertiesTest {
             + EXPECTED_ENABLE_STRAIGHTTHROUGH_PROCESSING_LOOP_DETECTOR,
         "camunda.processing.enable-message-body-on-expired="
             + EXPECTED_ENABLE_MESSAGE_BODY_ON_EXPIRED,
+        "camunda.processing.max-recoverable-retries=" + EXPECTED_MAX_RECOVERABLE_RETRIES,
 
         // legacy
         "zeebe.broker.processingCfg.maxCommandsInBatch=1",
@@ -217,7 +221,8 @@ public class ProcessingPropertiesTest {
               EXPECTED_ENABLE_ASYNC_SCHEDULED_TASKS, ProcessingCfg::isEnableAsyncScheduledTasks)
           .returns(
               EXPECTED_SCHEDULED_TASKS_CHECK_INTERVAL, ProcessingCfg::getScheduledTaskCheckInterval)
-          .returns(EXPECTED_SKIP_POSITIONS, ProcessingCfg::skipPositions);
+          .returns(EXPECTED_SKIP_POSITIONS, ProcessingCfg::skipPositions)
+          .returns(EXPECTED_MAX_RECOVERABLE_RETRIES, ProcessingCfg::getMaxRecoverableRetries);
 
       assertThat(brokerBasedProperties.getExperimental().getConsistencyChecks())
           .returns(EXPECTED_ENABLE_PRECONDITIONS_CHECK, ConsistencyCheckCfg::isEnablePreconditions)

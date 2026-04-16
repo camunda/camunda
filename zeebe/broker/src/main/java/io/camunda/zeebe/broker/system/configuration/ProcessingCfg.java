@@ -13,7 +13,9 @@ import java.util.Set;
 public final class ProcessingCfg implements ConfigurationEntry {
 
   private static final int DEFAULT_PROCESSING_BATCH_LIMIT = 100;
+  private static final int DEFAULT_MAX_RECOVERABLE_RETRIES = 100;
   private Integer maxCommandsInBatch = DEFAULT_PROCESSING_BATCH_LIMIT;
+  private int maxRecoverableRetries = DEFAULT_MAX_RECOVERABLE_RETRIES;
   private boolean enableAsyncScheduledTasks = true;
   private Duration scheduledTaskCheckInterval = Duration.ofSeconds(1);
   private Set<Long> skipPositions;
@@ -23,6 +25,10 @@ public final class ProcessingCfg implements ConfigurationEntry {
     if (maxCommandsInBatch < 1) {
       throw new IllegalArgumentException(
           "maxCommandsInBatch must be >= 1 but was %s".formatted(maxCommandsInBatch));
+    }
+    if (maxRecoverableRetries < 1) {
+      throw new IllegalArgumentException(
+          "maxRecoverableRetries must be >= 1 but was %s".formatted(maxRecoverableRetries));
     }
     if (!scheduledTaskCheckInterval.isPositive()) {
       throw new IllegalArgumentException(
@@ -37,6 +43,14 @@ public final class ProcessingCfg implements ConfigurationEntry {
 
   public void setMaxCommandsInBatch(final int maxCommandsInBatch) {
     this.maxCommandsInBatch = maxCommandsInBatch;
+  }
+
+  public int getMaxRecoverableRetries() {
+    return maxRecoverableRetries;
+  }
+
+  public void setMaxRecoverableRetries(final int maxRecoverableRetries) {
+    this.maxRecoverableRetries = maxRecoverableRetries;
   }
 
   public boolean isEnableAsyncScheduledTasks() {
@@ -60,6 +74,8 @@ public final class ProcessingCfg implements ConfigurationEntry {
     return "ProcessingCfg{"
         + "maxCommandsInBatch="
         + maxCommandsInBatch
+        + ", maxRecoverableRetries="
+        + maxRecoverableRetries
         + ", enableAsyncScheduledTasks="
         + enableAsyncScheduledTasks
         + ", scheduledTaskCheckInterval="
