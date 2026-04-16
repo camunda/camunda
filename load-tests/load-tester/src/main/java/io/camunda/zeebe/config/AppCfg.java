@@ -23,7 +23,7 @@ public class AppCfg {
   private boolean monitorDataAvailability = true;
   private Duration monitorDataAvailabilityInterval = Duration.ofMillis(250);
   private boolean performReadBenchmarks = false;
-  private boolean clientSideLoadBalancing = false;
+  private boolean clientSideLoadBalancing = true;
 
   private String disabledQueries = "";
 
