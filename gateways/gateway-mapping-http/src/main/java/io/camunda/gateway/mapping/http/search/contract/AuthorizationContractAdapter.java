@@ -7,7 +7,8 @@
  */
 package io.camunda.gateway.mapping.http.search.contract;
 
-import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
+import static io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy.requireNonNull;
+
 import io.camunda.gateway.mapping.http.util.KeyUtil;
 import io.camunda.gateway.protocol.model.AuthorizationResult;
 import io.camunda.gateway.protocol.model.OwnerTypeEnum;
@@ -27,15 +28,12 @@ public final class AuthorizationContractAdapter {
 
   public static AuthorizationResult adapt(final AuthorizationEntity entity) {
     return new AuthorizationResult()
-        .ownerId(ContractPolicy.requireNonNull(entity.ownerId(), "ownerId", entity))
-        .ownerType(
-            ContractPolicy.requireNonNull(
-                OwnerTypeEnum.fromValue(entity.ownerType()), "ownerType", entity))
+        .ownerId(requireNonNull(entity.ownerId(), "ownerId", entity))
+        .ownerType(requireNonNull(OwnerTypeEnum.fromValue(entity.ownerType()), "ownerType", entity))
         .resourceType(
-            ContractPolicy.requireNonNull(
-                ResourceTypeEnum.valueOf(entity.resourceType()), "resourceType", entity))
+            requireNonNull(ResourceTypeEnum.valueOf(entity.resourceType()), "resourceType", entity))
         .permissionTypes(
-            ContractPolicy.requireNonNull(
+            requireNonNull(
                 entity.permissionTypes().stream()
                     .map(pt -> pt.name())
                     .map(PermissionTypeEnum::fromValue)
@@ -43,7 +41,7 @@ public final class AuthorizationContractAdapter {
                 "permissionTypes",
                 entity))
         .authorizationKey(
-            ContractPolicy.requireNonNull(
+            requireNonNull(
                 KeyUtil.keyToString(entity.authorizationKey()), "authorizationKey", entity))
         .resourceId(emptyToNull(entity.resourceId()))
         .resourcePropertyName(emptyToNull(entity.resourcePropertyName()));

@@ -7,7 +7,8 @@
  */
 package io.camunda.gateway.mapping.http.search.contract;
 
-import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
+import static io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy.requireNonNull;
+
 import io.camunda.gateway.mapping.http.util.KeyUtil;
 import io.camunda.gateway.protocol.model.DecisionRequirementsResult;
 import io.camunda.search.entities.DecisionRequirementsEntity;
@@ -25,17 +26,15 @@ public final class DecisionRequirementsContractAdapter {
   public static DecisionRequirementsResult adapt(final DecisionRequirementsEntity entity) {
     return new DecisionRequirementsResult()
         .decisionRequirementsId(
-            ContractPolicy.requireNonNull(
-                entity.decisionRequirementsId(), "decisionRequirementsId", entity))
+            requireNonNull(entity.decisionRequirementsId(), "decisionRequirementsId", entity))
         .decisionRequirementsKey(
-            ContractPolicy.requireNonNull(
+            requireNonNull(
                 KeyUtil.keyToString(entity.decisionRequirementsKey()),
                 "decisionRequirementsKey",
                 entity))
-        .decisionRequirementsName(
-            ContractPolicy.requireNonNull(entity.name(), "decisionRequirementsName", entity))
-        .resourceName(ContractPolicy.requireNonNull(entity.resourceName(), "resourceName", entity))
-        .tenantId(ContractPolicy.requireNonNull(entity.tenantId(), "tenantId", entity))
-        .version(ContractPolicy.requireNonNull(entity.version(), "version", entity));
+        .decisionRequirementsName(requireNonNull(entity.name(), "decisionRequirementsName", entity))
+        .resourceName(requireNonNull(entity.resourceName(), "resourceName", entity))
+        .tenantId(requireNonNull(entity.tenantId(), "tenantId", entity))
+        .version(requireNonNull(entity.version(), "version", entity));
   }
 }

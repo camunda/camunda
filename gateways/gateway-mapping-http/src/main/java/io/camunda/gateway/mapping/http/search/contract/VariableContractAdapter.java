@@ -7,7 +7,9 @@
  */
 package io.camunda.gateway.mapping.http.search.contract;
 
-import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
+import static io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy.requireNonNull;
+import static io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy.resolvePreviewValue;
+
 import io.camunda.gateway.mapping.http.util.KeyUtil;
 import io.camunda.gateway.protocol.model.VariableResult;
 import io.camunda.gateway.protocol.model.VariableSearchResult;
@@ -35,48 +37,38 @@ public final class VariableContractAdapter {
   public static VariableSearchResult toSearchProjection(
       final VariableEntity entity, final boolean truncateValues) {
     return new VariableSearchResult()
-        .name(ContractPolicy.requireNonNull(entity.name(), "name", entity))
-        .tenantId(ContractPolicy.requireNonNull(entity.tenantId(), "tenantId", entity))
+        .name(requireNonNull(entity.name(), "name", entity))
+        .tenantId(requireNonNull(entity.tenantId(), "tenantId", entity))
         .variableKey(
-            ContractPolicy.requireNonNull(
-                KeyUtil.keyToString(entity.variableKey()), "variableKey", entity))
-        .scopeKey(
-            ContractPolicy.requireNonNull(
-                KeyUtil.keyToString(entity.scopeKey()), "scopeKey", entity))
+            requireNonNull(KeyUtil.keyToString(entity.variableKey()), "variableKey", entity))
+        .scopeKey(requireNonNull(KeyUtil.keyToString(entity.scopeKey()), "scopeKey", entity))
         .processInstanceKey(
-            ContractPolicy.requireNonNull(
+            requireNonNull(
                 KeyUtil.keyToString(entity.processInstanceKey()), "processInstanceKey", entity))
         .value(
-            ContractPolicy.requireNonNull(
+            requireNonNull(
                 !truncateValues
-                    ? ContractPolicy.resolvePreviewValue(
-                        entity.value(), entity.fullValue(), entity.isPreview())
+                    ? resolvePreviewValue(entity.value(), entity.fullValue(), entity.isPreview())
                     : entity.value(),
                 "value",
                 entity))
-        .isTruncated(
-            ContractPolicy.requireNonNull(
-                truncateValues && entity.isPreview(), "isTruncated", entity))
+        .isTruncated(requireNonNull(truncateValues && entity.isPreview(), "isTruncated", entity))
         .rootProcessInstanceKey(KeyUtil.keyToString(entity.rootProcessInstanceKey()));
   }
 
   public static VariableResult toItemProjection(final VariableEntity entity) {
     return new VariableResult()
-        .name(ContractPolicy.requireNonNull(entity.name(), "name", entity))
-        .tenantId(ContractPolicy.requireNonNull(entity.tenantId(), "tenantId", entity))
+        .name(requireNonNull(entity.name(), "name", entity))
+        .tenantId(requireNonNull(entity.tenantId(), "tenantId", entity))
         .variableKey(
-            ContractPolicy.requireNonNull(
-                KeyUtil.keyToString(entity.variableKey()), "variableKey", entity))
-        .scopeKey(
-            ContractPolicy.requireNonNull(
-                KeyUtil.keyToString(entity.scopeKey()), "scopeKey", entity))
+            requireNonNull(KeyUtil.keyToString(entity.variableKey()), "variableKey", entity))
+        .scopeKey(requireNonNull(KeyUtil.keyToString(entity.scopeKey()), "scopeKey", entity))
         .processInstanceKey(
-            ContractPolicy.requireNonNull(
+            requireNonNull(
                 KeyUtil.keyToString(entity.processInstanceKey()), "processInstanceKey", entity))
         .value(
-            ContractPolicy.requireNonNull(
-                ContractPolicy.resolvePreviewValue(
-                    entity.value(), entity.fullValue(), entity.isPreview()),
+            requireNonNull(
+                resolvePreviewValue(entity.value(), entity.fullValue(), entity.isPreview()),
                 "value",
                 entity))
         .rootProcessInstanceKey(KeyUtil.keyToString(entity.rootProcessInstanceKey()));

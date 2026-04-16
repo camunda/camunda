@@ -8,8 +8,9 @@
 package io.camunda.gateway.mapping.http.search.contract;
 
 import static io.camunda.gateway.mapping.http.ResponseMapper.formatDate;
+import static io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy.mapEnum;
+import static io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy.requireNonNull;
 
-import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
 import io.camunda.gateway.mapping.http.util.KeyUtil;
 import io.camunda.gateway.protocol.model.MessageSubscriptionResult;
 import io.camunda.gateway.protocol.model.MessageSubscriptionStateEnum;
@@ -28,24 +29,21 @@ public final class MessageSubscriptionContractAdapter {
   public static MessageSubscriptionResult adapt(final MessageSubscriptionEntity entity) {
     return new MessageSubscriptionResult()
         .messageSubscriptionKey(
-            ContractPolicy.requireNonNull(
+            requireNonNull(
                 KeyUtil.keyToString(entity.messageSubscriptionKey()),
                 "messageSubscriptionKey",
                 entity))
         .processDefinitionId(
-            ContractPolicy.requireNonNull(
-                entity.processDefinitionId(), "processDefinitionId", entity))
-        .elementId(ContractPolicy.requireNonNull(entity.flowNodeId(), "elementId", entity))
+            requireNonNull(entity.processDefinitionId(), "processDefinitionId", entity))
+        .elementId(requireNonNull(entity.flowNodeId(), "elementId", entity))
         .messageSubscriptionState(
-            ContractPolicy.requireNonNull(
-                ContractPolicy.mapEnum(
-                    entity.messageSubscriptionState(), MessageSubscriptionStateEnum::fromValue),
+            requireNonNull(
+                mapEnum(entity.messageSubscriptionState(), MessageSubscriptionStateEnum::fromValue),
                 "messageSubscriptionState",
                 entity))
-        .lastUpdatedDate(
-            ContractPolicy.requireNonNull(formatDate(entity.dateTime()), "lastUpdatedDate", entity))
-        .messageName(ContractPolicy.requireNonNull(entity.messageName(), "messageName", entity))
-        .tenantId(ContractPolicy.requireNonNull(entity.tenantId(), "tenantId", entity))
+        .lastUpdatedDate(requireNonNull(formatDate(entity.dateTime()), "lastUpdatedDate", entity))
+        .messageName(requireNonNull(entity.messageName(), "messageName", entity))
+        .tenantId(requireNonNull(entity.tenantId(), "tenantId", entity))
         .processDefinitionKey(KeyUtil.keyToString(entity.processDefinitionKey()))
         .processInstanceKey(KeyUtil.keyToString(entity.processInstanceKey()))
         .rootProcessInstanceKey(KeyUtil.keyToString(entity.rootProcessInstanceKey()))

@@ -7,7 +7,9 @@
  */
 package io.camunda.gateway.mapping.http.search.contract;
 
-import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
+import static io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy.isNotBlank;
+import static io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy.requireNonNull;
+
 import io.camunda.gateway.mapping.http.util.KeyUtil;
 import io.camunda.gateway.protocol.model.ProcessDefinitionResult;
 import io.camunda.search.entities.ProcessDefinitionEntity;
@@ -27,18 +29,15 @@ public final class ProcessDefinitionContractAdapter {
 
   public static ProcessDefinitionResult adapt(final ProcessDefinitionEntity entity) {
     return new ProcessDefinitionResult()
-        .resourceName(ContractPolicy.requireNonNull(entity.resourceName(), "resourceName", entity))
-        .version(ContractPolicy.requireNonNull(entity.version(), "version", entity))
+        .resourceName(requireNonNull(entity.resourceName(), "resourceName", entity))
+        .version(requireNonNull(entity.version(), "version", entity))
         .processDefinitionId(
-            ContractPolicy.requireNonNull(
-                entity.processDefinitionId(), "processDefinitionId", entity))
-        .tenantId(ContractPolicy.requireNonNull(entity.tenantId(), "tenantId", entity))
+            requireNonNull(entity.processDefinitionId(), "processDefinitionId", entity))
+        .tenantId(requireNonNull(entity.tenantId(), "tenantId", entity))
         .processDefinitionKey(
-            ContractPolicy.requireNonNull(
+            requireNonNull(
                 KeyUtil.keyToString(entity.processDefinitionKey()), "processDefinitionKey", entity))
-        .hasStartForm(
-            ContractPolicy.requireNonNull(
-                ContractPolicy.isNotBlank(entity.formId()), "hasStartForm", entity))
+        .hasStartForm(requireNonNull(isNotBlank(entity.formId()), "hasStartForm", entity))
         .name(entity.name()) // required + nullable in contract
         .versionTag(entity.versionTag()); // required + nullable in contract
   }

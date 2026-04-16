@@ -7,7 +7,9 @@
  */
 package io.camunda.gateway.mapping.http.search.contract;
 
-import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
+import static io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy.mapEnum;
+import static io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy.requireNonNull;
+
 import io.camunda.gateway.protocol.model.GlobalListenerSourceEnum;
 import io.camunda.gateway.protocol.model.GlobalTaskListenerEventTypeEnum;
 import io.camunda.gateway.protocol.model.GlobalTaskListenerResult;
@@ -24,23 +26,20 @@ public final class GlobalTaskListenerContractAdapter {
 
   public static GlobalTaskListenerResult adapt(final GlobalListenerEntity entity) {
     return new GlobalTaskListenerResult()
-        .type(ContractPolicy.requireNonNull(entity.type(), "type", entity))
-        .retries(ContractPolicy.requireNonNull(entity.retries(), "retries", entity))
-        .afterNonGlobal(
-            ContractPolicy.requireNonNull(entity.afterNonGlobal(), "afterNonGlobal", entity))
-        .priority(ContractPolicy.requireNonNull(entity.priority(), "priority", entity))
+        .type(requireNonNull(entity.type(), "type", entity))
+        .retries(requireNonNull(entity.retries(), "retries", entity))
+        .afterNonGlobal(requireNonNull(entity.afterNonGlobal(), "afterNonGlobal", entity))
+        .priority(requireNonNull(entity.priority(), "priority", entity))
         .eventTypes(
-            ContractPolicy.requireNonNull(
+            requireNonNull(
                 entity.eventTypes().stream()
                     .map(GlobalTaskListenerEventTypeEnum::fromValue)
                     .toList(),
                 "eventTypes",
                 entity))
-        .id(ContractPolicy.requireNonNull(entity.listenerId(), "id", entity))
+        .id(requireNonNull(entity.listenerId(), "id", entity))
         .source(
-            ContractPolicy.requireNonNull(
-                ContractPolicy.mapEnum(entity.source(), GlobalListenerSourceEnum::fromValue),
-                "source",
-                entity));
+            requireNonNull(
+                mapEnum(entity.source(), GlobalListenerSourceEnum::fromValue), "source", entity));
   }
 }

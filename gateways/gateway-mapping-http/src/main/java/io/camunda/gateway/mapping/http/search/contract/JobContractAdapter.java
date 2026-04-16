@@ -8,8 +8,9 @@
 package io.camunda.gateway.mapping.http.search.contract;
 
 import static io.camunda.gateway.mapping.http.ResponseMapper.formatDate;
+import static io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy.mapEnum;
+import static io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy.requireNonNull;
 
-import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
 import io.camunda.gateway.mapping.http.util.KeyUtil;
 import io.camunda.gateway.protocol.model.JobKindEnum;
 import io.camunda.gateway.protocol.model.JobListenerEventTypeEnum;
@@ -28,41 +29,32 @@ public final class JobContractAdapter {
 
   public static JobSearchResult adapt(final JobEntity entity) {
     return new JobSearchResult()
-        .customHeaders(
-            ContractPolicy.requireNonNull(entity.customHeaders(), "customHeaders", entity))
+        .customHeaders(requireNonNull(entity.customHeaders(), "customHeaders", entity))
         .elementInstanceKey(
-            ContractPolicy.requireNonNull(
+            requireNonNull(
                 KeyUtil.keyToString(entity.elementInstanceKey()), "elementInstanceKey", entity))
         .hasFailedWithRetriesLeft(
-            ContractPolicy.requireNonNull(
-                entity.hasFailedWithRetriesLeft(), "hasFailedWithRetriesLeft", entity))
-        .jobKey(
-            ContractPolicy.requireNonNull(KeyUtil.keyToString(entity.jobKey()), "jobKey", entity))
-        .kind(
-            ContractPolicy.requireNonNull(
-                ContractPolicy.mapEnum(entity.kind(), JobKindEnum::fromValue), "kind", entity))
+            requireNonNull(entity.hasFailedWithRetriesLeft(), "hasFailedWithRetriesLeft", entity))
+        .jobKey(requireNonNull(KeyUtil.keyToString(entity.jobKey()), "jobKey", entity))
+        .kind(requireNonNull(mapEnum(entity.kind(), JobKindEnum::fromValue), "kind", entity))
         .listenerEventType(
-            ContractPolicy.requireNonNull(
-                ContractPolicy.mapEnum(
-                    entity.listenerEventType(), JobListenerEventTypeEnum::fromValue),
+            requireNonNull(
+                mapEnum(entity.listenerEventType(), JobListenerEventTypeEnum::fromValue),
                 "listenerEventType",
                 entity))
         .processDefinitionId(
-            ContractPolicy.requireNonNull(
-                entity.processDefinitionId(), "processDefinitionId", entity))
+            requireNonNull(entity.processDefinitionId(), "processDefinitionId", entity))
         .processDefinitionKey(
-            ContractPolicy.requireNonNull(
+            requireNonNull(
                 KeyUtil.keyToString(entity.processDefinitionKey()), "processDefinitionKey", entity))
         .processInstanceKey(
-            ContractPolicy.requireNonNull(
+            requireNonNull(
                 KeyUtil.keyToString(entity.processInstanceKey()), "processInstanceKey", entity))
-        .retries(ContractPolicy.requireNonNull(entity.retries(), "retries", entity))
-        .state(
-            ContractPolicy.requireNonNull(
-                ContractPolicy.mapEnum(entity.state(), JobStateEnum::fromValue), "state", entity))
-        .tenantId(ContractPolicy.requireNonNull(entity.tenantId(), "tenantId", entity))
-        .type(ContractPolicy.requireNonNull(entity.type(), "type", entity))
-        .worker(ContractPolicy.requireNonNull(entity.worker(), "worker", entity))
+        .retries(requireNonNull(entity.retries(), "retries", entity))
+        .state(requireNonNull(mapEnum(entity.state(), JobStateEnum::fromValue), "state", entity))
+        .tenantId(requireNonNull(entity.tenantId(), "tenantId", entity))
+        .type(requireNonNull(entity.type(), "type", entity))
+        .worker(requireNonNull(entity.worker(), "worker", entity))
         .deadline(formatDate(entity.deadline()))
         .deniedReason(entity.deniedReason())
         .elementId(entity.elementId())

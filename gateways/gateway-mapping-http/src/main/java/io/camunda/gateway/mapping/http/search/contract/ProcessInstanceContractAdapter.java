@@ -8,8 +8,8 @@
 package io.camunda.gateway.mapping.http.search.contract;
 
 import static io.camunda.gateway.mapping.http.ResponseMapper.formatDate;
+import static io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy.requireNonNull;
 
-import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
 import io.camunda.gateway.mapping.http.util.KeyUtil;
 import io.camunda.gateway.protocol.model.ProcessInstanceResult;
 import io.camunda.gateway.protocol.model.ProcessInstanceStateEnum;
@@ -29,23 +29,20 @@ public final class ProcessInstanceContractAdapter {
   public static ProcessInstanceResult adapt(final ProcessInstanceEntity entity) {
     return new ProcessInstanceResult()
         .processDefinitionId(
-            ContractPolicy.requireNonNull(
-                entity.processDefinitionId(), "processDefinitionId", entity))
+            requireNonNull(entity.processDefinitionId(), "processDefinitionId", entity))
         .processDefinitionVersion(
-            ContractPolicy.requireNonNull(
-                entity.processDefinitionVersion(), "processDefinitionVersion", entity))
-        .startDate(
-            ContractPolicy.requireNonNull(formatDate(entity.startDate()), "startDate", entity))
-        .state(ContractPolicy.requireNonNull(toProtocolState(entity.state()), "state", entity))
-        .hasIncident(ContractPolicy.requireNonNull(entity.hasIncident(), "hasIncident", entity))
-        .tenantId(ContractPolicy.requireNonNull(entity.tenantId(), "tenantId", entity))
+            requireNonNull(entity.processDefinitionVersion(), "processDefinitionVersion", entity))
+        .startDate(requireNonNull(formatDate(entity.startDate()), "startDate", entity))
+        .state(requireNonNull(toProtocolState(entity.state()), "state", entity))
+        .hasIncident(requireNonNull(entity.hasIncident(), "hasIncident", entity))
+        .tenantId(requireNonNull(entity.tenantId(), "tenantId", entity))
         .processInstanceKey(
-            ContractPolicy.requireNonNull(
+            requireNonNull(
                 KeyUtil.keyToString(entity.processInstanceKey()), "processInstanceKey", entity))
         .processDefinitionKey(
-            ContractPolicy.requireNonNull(
+            requireNonNull(
                 KeyUtil.keyToString(entity.processDefinitionKey()), "processDefinitionKey", entity))
-        .tags(ContractPolicy.requireNonNull(entity.tags(), "tags", entity))
+        .tags(requireNonNull(entity.tags(), "tags", entity))
         .processDefinitionName(entity.processDefinitionName())
         .processDefinitionVersionTag(entity.processDefinitionVersionTag())
         .endDate(formatDate(entity.endDate()))

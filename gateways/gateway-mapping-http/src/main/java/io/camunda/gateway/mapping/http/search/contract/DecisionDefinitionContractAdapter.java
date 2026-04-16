@@ -7,7 +7,8 @@
  */
 package io.camunda.gateway.mapping.http.search.contract;
 
-import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
+import static io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy.requireNonNull;
+
 import io.camunda.gateway.mapping.http.util.KeyUtil;
 import io.camunda.gateway.protocol.model.DecisionDefinitionResult;
 import io.camunda.search.entities.DecisionDefinitionEntity;
@@ -25,29 +26,26 @@ public final class DecisionDefinitionContractAdapter {
   public static DecisionDefinitionResult adapt(final DecisionDefinitionEntity entity) {
     return new DecisionDefinitionResult()
         .decisionDefinitionId(
-            ContractPolicy.requireNonNull(
-                entity.decisionDefinitionId(), "decisionDefinitionId", entity))
+            requireNonNull(entity.decisionDefinitionId(), "decisionDefinitionId", entity))
         .decisionDefinitionKey(
-            ContractPolicy.requireNonNull(
+            requireNonNull(
                 KeyUtil.keyToString(entity.decisionDefinitionKey()),
                 "decisionDefinitionKey",
                 entity))
         .decisionRequirementsId(
-            ContractPolicy.requireNonNull(
-                entity.decisionRequirementsId(), "decisionRequirementsId", entity))
+            requireNonNull(entity.decisionRequirementsId(), "decisionRequirementsId", entity))
         .decisionRequirementsKey(
-            ContractPolicy.requireNonNull(
+            requireNonNull(
                 KeyUtil.keyToString(entity.decisionRequirementsKey()),
                 "decisionRequirementsKey",
                 entity))
         .decisionRequirementsName(
-            ContractPolicy.requireNonNull(
-                entity.decisionRequirementsName(), "decisionRequirementsName", entity))
+            requireNonNull(entity.decisionRequirementsName(), "decisionRequirementsName", entity))
         .decisionRequirementsVersion(
-            ContractPolicy.requireNonNull(
+            requireNonNull(
                 entity.decisionRequirementsVersion(), "decisionRequirementsVersion", entity))
-        .name(ContractPolicy.requireNonNull(entity.name(), "name", entity))
-        .tenantId(ContractPolicy.requireNonNull(entity.tenantId(), "tenantId", entity))
-        .version(ContractPolicy.requireNonNull(entity.version(), "version", entity));
+        .name(requireNonNull(entity.name(), "name", entity))
+        .tenantId(requireNonNull(entity.tenantId(), "tenantId", entity))
+        .version(requireNonNull(entity.version(), "version", entity));
   }
 }

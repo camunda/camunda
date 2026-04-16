@@ -7,7 +7,8 @@
  */
 package io.camunda.gateway.mapping.http.search.contract;
 
-import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
+import static io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy.requireNonNull;
+
 import io.camunda.gateway.protocol.model.TenantResult;
 import io.camunda.search.entities.TenantEntity;
 import java.util.List;
@@ -22,8 +23,8 @@ public final class TenantContractAdapter {
 
   public static TenantResult adapt(final TenantEntity entity) {
     return new TenantResult()
-        .name(ContractPolicy.requireNonNull(entity.name(), "name", entity))
-        .tenantId(ContractPolicy.requireNonNull(entity.tenantId(), "tenantId", entity))
+        .name(requireNonNull(entity.name(), "name", entity))
+        .tenantId(requireNonNull(entity.tenantId(), "tenantId", entity))
         .description(entity.description());
   }
 }

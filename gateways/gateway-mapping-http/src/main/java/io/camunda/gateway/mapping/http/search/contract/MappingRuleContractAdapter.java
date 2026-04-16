@@ -7,7 +7,8 @@
  */
 package io.camunda.gateway.mapping.http.search.contract;
 
-import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
+import static io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy.requireNonNull;
+
 import io.camunda.gateway.protocol.model.MappingRuleResult;
 import io.camunda.search.entities.MappingRuleEntity;
 import java.util.List;
@@ -22,10 +23,9 @@ public final class MappingRuleContractAdapter {
 
   public static MappingRuleResult adapt(final MappingRuleEntity entity) {
     return new MappingRuleResult()
-        .claimName(ContractPolicy.requireNonNull(entity.claimName(), "claimName", entity))
-        .claimValue(ContractPolicy.requireNonNull(entity.claimValue(), "claimValue", entity))
-        .name(ContractPolicy.requireNonNull(entity.name(), "name", entity))
-        .mappingRuleId(
-            ContractPolicy.requireNonNull(entity.mappingRuleId(), "mappingRuleId", entity));
+        .claimName(requireNonNull(entity.claimName(), "claimName", entity))
+        .claimValue(requireNonNull(entity.claimValue(), "claimValue", entity))
+        .name(requireNonNull(entity.name(), "name", entity))
+        .mappingRuleId(requireNonNull(entity.mappingRuleId(), "mappingRuleId", entity));
   }
 }

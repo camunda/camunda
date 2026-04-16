@@ -8,8 +8,10 @@
 package io.camunda.gateway.mapping.http.search.contract;
 
 import static io.camunda.gateway.mapping.http.ResponseMapper.formatDate;
+import static io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy.mapEnum;
+import static io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy.nullToEmptyList;
+import static io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy.requireNonNull;
 
-import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
 import io.camunda.gateway.protocol.model.AuditLogActorTypeEnum;
 import io.camunda.gateway.protocol.model.BatchOperationError;
 import io.camunda.gateway.protocol.model.BatchOperationResponse;
@@ -32,37 +34,31 @@ public final class BatchOperationResponseContractAdapter {
 
   public static BatchOperationResponse adapt(final BatchOperationEntity entity) {
     return new BatchOperationResponse()
-        .batchOperationKey(
-            ContractPolicy.requireNonNull(entity.batchOperationKey(), "batchOperationKey", entity))
+        .batchOperationKey(requireNonNull(entity.batchOperationKey(), "batchOperationKey", entity))
         .state(
-            ContractPolicy.requireNonNull(
-                ContractPolicy.mapEnum(entity.state(), BatchOperationStateEnum::fromValue),
-                "state",
-                entity))
+            requireNonNull(
+                mapEnum(entity.state(), BatchOperationStateEnum::fromValue), "state", entity))
         .batchOperationType(
-            ContractPolicy.requireNonNull(
-                ContractPolicy.mapEnum(entity.operationType(), BatchOperationTypeEnum::fromValue),
+            requireNonNull(
+                mapEnum(entity.operationType(), BatchOperationTypeEnum::fromValue),
                 "batchOperationType",
                 entity))
         .operationsTotalCount(
-            ContractPolicy.requireNonNull(
-                entity.operationsTotalCount(), "operationsTotalCount", entity))
+            requireNonNull(entity.operationsTotalCount(), "operationsTotalCount", entity))
         .operationsFailedCount(
-            ContractPolicy.requireNonNull(
-                entity.operationsFailedCount(), "operationsFailedCount", entity))
+            requireNonNull(entity.operationsFailedCount(), "operationsFailedCount", entity))
         .operationsCompletedCount(
-            ContractPolicy.requireNonNull(
-                entity.operationsCompletedCount(), "operationsCompletedCount", entity))
+            requireNonNull(entity.operationsCompletedCount(), "operationsCompletedCount", entity))
         .errors(
-            ContractPolicy.requireNonNull(
-                ContractPolicy.nullToEmptyList(entity.errors()).stream()
+            requireNonNull(
+                nullToEmptyList(entity.errors()).stream()
                     .map(BatchOperationResponseContractAdapter::toBatchOperationError)
                     .toList(),
                 "errors",
                 entity))
         .startDate(formatDate(entity.startDate()))
         .endDate(formatDate(entity.endDate()))
-        .actorType(ContractPolicy.mapEnum(entity.actorType(), AuditLogActorTypeEnum::fromValue))
+        .actorType(mapEnum(entity.actorType(), AuditLogActorTypeEnum::fromValue))
         .actorId(entity.actorId());
   }
 
@@ -70,13 +66,11 @@ public final class BatchOperationResponseContractAdapter {
       final BatchOperationEntity.BatchOperationErrorEntity batchOperationErrorEntity) {
     return new BatchOperationError()
         .partitionId(
-            ContractPolicy.requireNonNull(
+            requireNonNull(
                 batchOperationErrorEntity.partitionId(), "partitionId", batchOperationErrorEntity))
-        .type(
-            ContractPolicy.requireNonNull(
-                batchOperationErrorEntity.type(), "type", batchOperationErrorEntity))
+        .type(requireNonNull(batchOperationErrorEntity.type(), "type", batchOperationErrorEntity))
         .message(
-            ContractPolicy.requireNonNull(
+            requireNonNull(
                 batchOperationErrorEntity.message(), "message", batchOperationErrorEntity));
   }
 }

@@ -8,8 +8,8 @@
 package io.camunda.gateway.mapping.http.search.contract;
 
 import static io.camunda.gateway.mapping.http.ResponseMapper.formatDate;
+import static io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy.requireNonNull;
 
-import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
 import io.camunda.gateway.mapping.http.util.KeyUtil;
 import io.camunda.gateway.protocol.model.DecisionDefinitionTypeEnum;
 import io.camunda.gateway.protocol.model.DecisionInstanceGetQueryResult;
@@ -74,43 +74,36 @@ public final class DecisionInstanceContractAdapter {
   private static DecisionInstanceResult toContract(final DecisionInstanceEntity entity) {
     return new DecisionInstanceResult()
         .decisionDefinitionId(
-            ContractPolicy.requireNonNull(
-                entity.decisionDefinitionId(), "decisionDefinitionId", entity))
+            requireNonNull(entity.decisionDefinitionId(), "decisionDefinitionId", entity))
         .decisionDefinitionKey(
-            ContractPolicy.requireNonNull(
+            requireNonNull(
                 KeyUtil.keyToString(entity.decisionDefinitionKey()),
                 "decisionDefinitionKey",
                 entity))
         .decisionDefinitionName(
-            ContractPolicy.requireNonNull(
-                entity.decisionDefinitionName(), "decisionDefinitionName", entity))
+            requireNonNull(entity.decisionDefinitionName(), "decisionDefinitionName", entity))
         .decisionDefinitionType(
-            ContractPolicy.requireNonNull(
+            requireNonNull(
                 toDecisionDefinitionTypeEnum(entity.decisionDefinitionType()),
                 "decisionDefinitionType",
                 entity))
         .decisionDefinitionVersion(
-            ContractPolicy.requireNonNull(
-                entity.decisionDefinitionVersion(), "decisionDefinitionVersion", entity))
+            requireNonNull(entity.decisionDefinitionVersion(), "decisionDefinitionVersion", entity))
         .decisionEvaluationInstanceKey(
-            ContractPolicy.requireNonNull(
-                entity.decisionInstanceId(), "decisionEvaluationInstanceKey", entity))
+            requireNonNull(entity.decisionInstanceId(), "decisionEvaluationInstanceKey", entity))
         .decisionEvaluationKey(
-            ContractPolicy.requireNonNull(
+            requireNonNull(
                 KeyUtil.keyToString(entity.decisionInstanceKey()), "decisionEvaluationKey", entity))
         .evaluationDate(
-            ContractPolicy.requireNonNull(
-                formatDate(entity.evaluationDate()), "evaluationDate", entity))
-        .result(ContractPolicy.requireNonNull(entity.result(), "result", entity))
+            requireNonNull(formatDate(entity.evaluationDate()), "evaluationDate", entity))
+        .result(requireNonNull(entity.result(), "result", entity))
         .rootDecisionDefinitionKey(
-            ContractPolicy.requireNonNull(
+            requireNonNull(
                 KeyUtil.keyToString(entity.rootDecisionDefinitionKey()),
                 "rootDecisionDefinitionKey",
                 entity))
-        .state(
-            ContractPolicy.requireNonNull(
-                toDecisionInstanceStateEnum(entity.state()), "state", entity))
-        .tenantId(ContractPolicy.requireNonNull(entity.tenantId(), "tenantId", entity))
+        .state(requireNonNull(toDecisionInstanceStateEnum(entity.state()), "state", entity))
+        .tenantId(requireNonNull(entity.tenantId(), "tenantId", entity))
         .elementInstanceKey(KeyUtil.keyToString(entity.flowNodeInstanceKey()))
         .evaluationFailure(entity.evaluationFailure())
         .processDefinitionKey(KeyUtil.keyToString(entity.processDefinitionKey()))

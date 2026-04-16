@@ -8,8 +8,9 @@
 package io.camunda.gateway.mapping.http.search.contract;
 
 import static io.camunda.gateway.mapping.http.ResponseMapper.formatDate;
+import static io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy.mapEnum;
+import static io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy.requireNonNull;
 
-import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
 import io.camunda.gateway.mapping.http.util.KeyUtil;
 import io.camunda.gateway.protocol.model.IncidentErrorTypeEnum;
 import io.camunda.gateway.protocol.model.IncidentResult;
@@ -28,37 +29,31 @@ public final class IncidentContractAdapter {
   public static IncidentResult adapt(final IncidentEntity entity) {
     return new IncidentResult()
         .processDefinitionId(
-            ContractPolicy.requireNonNull(
-                entity.processDefinitionId(), "processDefinitionId", entity))
+            requireNonNull(entity.processDefinitionId(), "processDefinitionId", entity))
         .errorType(
-            ContractPolicy.requireNonNull(
-                ContractPolicy.mapEnum(entity.errorType(), IncidentErrorTypeEnum::fromValue),
-                "errorType",
-                entity))
-        .errorMessage(ContractPolicy.requireNonNull(entity.errorMessage(), "errorMessage", entity))
-        .elementId(ContractPolicy.requireNonNull(entity.flowNodeId(), "elementId", entity))
-        .creationTime(
-            ContractPolicy.requireNonNull(
-                formatDate(entity.creationTime()), "creationTime", entity))
+            requireNonNull(
+                mapEnum(entity.errorType(), IncidentErrorTypeEnum::fromValue), "errorType", entity))
+        .errorMessage(requireNonNull(entity.errorMessage(), "errorMessage", entity))
+        .elementId(requireNonNull(entity.flowNodeId(), "elementId", entity))
+        .creationTime(requireNonNull(formatDate(entity.creationTime()), "creationTime", entity))
         .state(
-            ContractPolicy.requireNonNull(
+            requireNonNull(
                 entity.state() != null
                     ? IncidentStateEnum.fromValue(entity.state().name())
                     : IncidentStateEnum.UNKNOWN,
                 "state",
                 entity))
-        .tenantId(ContractPolicy.requireNonNull(entity.tenantId(), "tenantId", entity))
+        .tenantId(requireNonNull(entity.tenantId(), "tenantId", entity))
         .incidentKey(
-            ContractPolicy.requireNonNull(
-                KeyUtil.keyToString(entity.incidentKey()), "incidentKey", entity))
+            requireNonNull(KeyUtil.keyToString(entity.incidentKey()), "incidentKey", entity))
         .processDefinitionKey(
-            ContractPolicy.requireNonNull(
+            requireNonNull(
                 KeyUtil.keyToString(entity.processDefinitionKey()), "processDefinitionKey", entity))
         .processInstanceKey(
-            ContractPolicy.requireNonNull(
+            requireNonNull(
                 KeyUtil.keyToString(entity.processInstanceKey()), "processInstanceKey", entity))
         .elementInstanceKey(
-            ContractPolicy.requireNonNull(
+            requireNonNull(
                 KeyUtil.keyToString(entity.flowNodeInstanceKey()), "elementInstanceKey", entity))
         .rootProcessInstanceKey(KeyUtil.keyToString(entity.rootProcessInstanceKey()))
         .jobKey(KeyUtil.keyToString(entity.jobKey()));

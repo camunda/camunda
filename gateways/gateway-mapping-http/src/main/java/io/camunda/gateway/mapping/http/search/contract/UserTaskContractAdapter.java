@@ -8,8 +8,9 @@
 package io.camunda.gateway.mapping.http.search.contract;
 
 import static io.camunda.gateway.mapping.http.ResponseMapper.formatDate;
+import static io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy.mapEnum;
+import static io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy.requireNonNull;
 
-import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
 import io.camunda.gateway.mapping.http.util.KeyUtil;
 import io.camunda.gateway.protocol.model.UserTaskResult;
 import io.camunda.gateway.protocol.model.UserTaskStateEnum;
@@ -27,41 +28,30 @@ public final class UserTaskContractAdapter {
   public static UserTaskResult adapt(final UserTaskEntity entity) {
     return new UserTaskResult()
         .state(
-            ContractPolicy.requireNonNull(
-                ContractPolicy.mapEnum(entity.state(), UserTaskStateEnum::fromValue),
-                "state",
-                entity))
-        .elementId(ContractPolicy.requireNonNull(entity.elementId(), "elementId", entity))
-        .candidateGroups(
-            ContractPolicy.requireNonNull(entity.candidateGroups(), "candidateGroups", entity))
-        .candidateUsers(
-            ContractPolicy.requireNonNull(entity.candidateUsers(), "candidateUsers", entity))
+            requireNonNull(mapEnum(entity.state(), UserTaskStateEnum::fromValue), "state", entity))
+        .elementId(requireNonNull(entity.elementId(), "elementId", entity))
+        .candidateGroups(requireNonNull(entity.candidateGroups(), "candidateGroups", entity))
+        .candidateUsers(requireNonNull(entity.candidateUsers(), "candidateUsers", entity))
         .processDefinitionId(
-            ContractPolicy.requireNonNull(
-                entity.processDefinitionId(), "processDefinitionId", entity))
-        .creationDate(
-            ContractPolicy.requireNonNull(
-                formatDate(entity.creationDate()), "creationDate", entity))
-        .tenantId(ContractPolicy.requireNonNull(entity.tenantId(), "tenantId", entity))
+            requireNonNull(entity.processDefinitionId(), "processDefinitionId", entity))
+        .creationDate(requireNonNull(formatDate(entity.creationDate()), "creationDate", entity))
+        .tenantId(requireNonNull(entity.tenantId(), "tenantId", entity))
         .processDefinitionVersion(
-            ContractPolicy.requireNonNull(
-                entity.processDefinitionVersion(), "processDefinitionVersion", entity))
-        .customHeaders(
-            ContractPolicy.requireNonNull(entity.customHeaders(), "customHeaders", entity))
-        .priority(ContractPolicy.requireNonNull(entity.priority(), "priority", entity))
+            requireNonNull(entity.processDefinitionVersion(), "processDefinitionVersion", entity))
+        .customHeaders(requireNonNull(entity.customHeaders(), "customHeaders", entity))
+        .priority(requireNonNull(entity.priority(), "priority", entity))
         .userTaskKey(
-            ContractPolicy.requireNonNull(
-                KeyUtil.keyToString(entity.userTaskKey()), "userTaskKey", entity))
+            requireNonNull(KeyUtil.keyToString(entity.userTaskKey()), "userTaskKey", entity))
         .elementInstanceKey(
-            ContractPolicy.requireNonNull(
+            requireNonNull(
                 KeyUtil.keyToString(entity.elementInstanceKey()), "elementInstanceKey", entity))
         .processDefinitionKey(
-            ContractPolicy.requireNonNull(
+            requireNonNull(
                 KeyUtil.keyToString(entity.processDefinitionKey()), "processDefinitionKey", entity))
         .processInstanceKey(
-            ContractPolicy.requireNonNull(
+            requireNonNull(
                 KeyUtil.keyToString(entity.processInstanceKey()), "processInstanceKey", entity))
-        .tags(ContractPolicy.requireNonNull(entity.tags(), "tags", entity))
+        .tags(requireNonNull(entity.tags(), "tags", entity))
         .name(entity.name())
         .assignee(entity.assignee())
         .completionDate(formatDate(entity.completionDate()))

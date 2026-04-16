@@ -8,8 +8,9 @@
 package io.camunda.gateway.mapping.http.search.contract;
 
 import static io.camunda.gateway.mapping.http.ResponseMapper.formatDate;
+import static io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy.mapEnum;
+import static io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy.requireNonNull;
 
-import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
 import io.camunda.gateway.mapping.http.util.KeyUtil;
 import io.camunda.gateway.protocol.model.ElementInstanceResult;
 import io.camunda.gateway.protocol.model.ElementInstanceStateEnum;
@@ -27,30 +28,24 @@ public final class ElementInstanceContractAdapter {
   public static ElementInstanceResult adapt(final FlowNodeInstanceEntity entity) {
     return new ElementInstanceResult()
         .processDefinitionId(
-            ContractPolicy.requireNonNull(
-                entity.processDefinitionId(), "processDefinitionId", entity))
-        .startDate(
-            ContractPolicy.requireNonNull(formatDate(entity.startDate()), "startDate", entity))
-        .elementId(ContractPolicy.requireNonNull(entity.flowNodeId(), "elementId", entity))
-        .elementName(ContractPolicy.requireNonNull(entity.flowNodeName(), "elementName", entity))
-        .type(
-            ContractPolicy.requireNonNull(
-                entity.type() != null ? entity.type().name() : null, "type", entity))
+            requireNonNull(entity.processDefinitionId(), "processDefinitionId", entity))
+        .startDate(requireNonNull(formatDate(entity.startDate()), "startDate", entity))
+        .elementId(requireNonNull(entity.flowNodeId(), "elementId", entity))
+        .elementName(requireNonNull(entity.flowNodeName(), "elementName", entity))
+        .type(requireNonNull(entity.type() != null ? entity.type().name() : null, "type", entity))
         .state(
-            ContractPolicy.requireNonNull(
-                ContractPolicy.mapEnum(entity.state(), ElementInstanceStateEnum::fromValue),
-                "state",
-                entity))
-        .hasIncident(ContractPolicy.requireNonNull(entity.hasIncident(), "hasIncident", entity))
-        .tenantId(ContractPolicy.requireNonNull(entity.tenantId(), "tenantId", entity))
+            requireNonNull(
+                mapEnum(entity.state(), ElementInstanceStateEnum::fromValue), "state", entity))
+        .hasIncident(requireNonNull(entity.hasIncident(), "hasIncident", entity))
+        .tenantId(requireNonNull(entity.tenantId(), "tenantId", entity))
         .elementInstanceKey(
-            ContractPolicy.requireNonNull(
+            requireNonNull(
                 KeyUtil.keyToString(entity.flowNodeInstanceKey()), "elementInstanceKey", entity))
         .processInstanceKey(
-            ContractPolicy.requireNonNull(
+            requireNonNull(
                 KeyUtil.keyToString(entity.processInstanceKey()), "processInstanceKey", entity))
         .processDefinitionKey(
-            ContractPolicy.requireNonNull(
+            requireNonNull(
                 KeyUtil.keyToString(entity.processDefinitionKey()), "processDefinitionKey", entity))
         .endDate(formatDate(entity.endDate()))
         .rootProcessInstanceKey(KeyUtil.keyToString(entity.rootProcessInstanceKey()))
