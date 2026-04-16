@@ -6,6 +6,6 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-const IS_DELETE_BATCH_OPERATION_ENABLED = true;
+const IS_DELETE_BATCH_OPERATION_ENABLED = false;
 
 export {IS_DELETE_BATCH_OPERATION_ENABLED};
