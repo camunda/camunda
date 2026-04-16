@@ -99,6 +99,8 @@ class OperateProcessInstancePage {
   readonly existingVariableByName: (name: string) => {
     name: Locator;
     value: Locator;
+    readModeValue: Locator;
+    editor: Locator;
     editVariableModal: {
       button: Locator;
       exitButton: Locator;
@@ -112,6 +114,8 @@ class OperateProcessInstancePage {
         applyButton: Locator;
         inputField: Locator;
         copyButton: Locator;
+        copiedButton: Locator;
+        closeButton: Locator;
       };
     };
   };
@@ -314,9 +318,13 @@ class OperateProcessInstancePage {
         .getByRole('cell')
         .nth(0),
       value: this.variableValueCellLocator(name),
+      readModeValue: this.variableValueCellLocator(name).getByTestId(
+        'edit-variable-value-readonly',
+      ),
+      editor: this.variableValueCellLocator(name).getByRole('code'),
       editVariableModal: {
         button: this.variableButtonsCellLocator(name).getByRole('button', {
-          name: `Edit variable ${name}`,
+          name: 'Edit',
         }),
         exitButton: this.variableButtonsCellLocator(name).getByRole('button', {
           name: `Exit edit mode`,
@@ -348,6 +356,12 @@ class OperateProcessInstancePage {
           copyButton: this.page
             .getByRole('dialog')
             .getByRole('button', {name: /copy/i}),
+          copiedButton: this.page
+            .getByRole('dialog')
+            .getByRole('button', {name: /copied/i}),
+          closeButton: this.page
+            .getByRole('dialog')
+            .getByRole('button', {name: 'Close'}),
         },
       },
     });
@@ -533,8 +547,7 @@ class OperateProcessInstancePage {
     await this.getNewVariableNameFieldSelector(variableIndex).type(name);
     await this.page.keyboard.press('Tab');
 
-    await expect(this.page.getByRole('code')).toBeVisible();
-    await this.page.keyboard.insertText(value);
+    await this.fillVariableValueInput(value);
     await this.page.keyboard.press('Tab');
   }
 

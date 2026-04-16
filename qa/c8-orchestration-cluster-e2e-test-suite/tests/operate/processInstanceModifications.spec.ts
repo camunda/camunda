@@ -13,10 +13,7 @@ import {captureScreenshot, captureFailureVideo} from '@setup';
 import {navigateToApp, hideHelperModals} from '@pages/UtilitiesPage';
 import {sleep} from 'utils/sleep';
 import {waitForAssertion} from 'utils/waitForAssertion';
-import {
-  expectJsonEqual,
-  getInlineJSONEditor,
-} from '../../utils/inlineJsonEditor';
+import {assertJsonEqual} from '../../utils/assertJsonEqual';
 
 type ProcessInstance = {
   processInstanceKey: string;
@@ -470,10 +467,11 @@ test.describe.skip('Process Instance Modifications', () => {
 
       await waitForAssertion({
         assertion: async () => {
-          await expect(
+          await assertJsonEqual(
             operateProcessInstanceViewModificationModePage.newVariableByIndex(1)
               .writeModeValue,
-          ).toHaveText(JSON.stringify(validJSONValue1, null, 2));
+            validJSONValue1,
+          );
         },
         onFailure: async () => {},
       });
@@ -583,7 +581,7 @@ test.describe.skip('Process Instance Modifications', () => {
         operateProcessInstancePage.existingVariableByName('testLocalVariable')
           .name,
       ).toBeVisible();
-      await expectJsonEqual(
+      await assertJsonEqual(
         operateProcessInstancePage.existingVariableByName('testEmptyVariable')
           .value,
         validJSONValue1,
@@ -604,7 +602,7 @@ test.describe.skip('Process Instance Modifications', () => {
           .existingVariableByName('testNewMeowVariable')
           .value.innerText(),
       ).toContain('7');
-      await expectJsonEqual(
+      await assertJsonEqual(
         operateProcessInstancePage.existingVariableByName('testVariableString')
           .value,
         validJSONValue2,
@@ -613,9 +611,9 @@ test.describe.skip('Process Instance Modifications', () => {
 
     await test.step("Check that an existing variable can't be deleted:", async () => {
       await operateProcessInstancePage.navigateToRootScope();
-      await operateProcessInstancePage.clickEditVariableButton(
-        'testVariableNumber',
-      );
+      await operateProcessInstancePage
+        .existingVariableByName('testVariableNumber')
+        .editVariableModal.button.click();
       await operateProcessInstancePage.clearVariableValueInput();
       await page.keyboard.press('Tab');
       await operateProcessInstancePage.checkExistingVariableErrorMessageText(
@@ -625,11 +623,9 @@ test.describe.skip('Process Instance Modifications', () => {
       await expect(
         operateProcessInstancePage.saveVariableButton,
       ).toBeDisabled();
-      await getInlineJSONEditor(
-        page,
-        operateProcessInstancePage.existingVariableByName('testVariableNumber')
-          .value,
-      ).editReadModeValue.click();
+      await operateProcessInstancePage
+        .existingVariableByName('testVariableNumber')
+        .readModeValue.click();
       await operateProcessInstancePage.fillVariableValueInput('1');
       await expect(operateProcessInstancePage.saveVariableButton).toBeEnabled();
       await operateProcessInstancePage.saveVariableButton.click();

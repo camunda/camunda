@@ -557,9 +557,7 @@ export class OperateProcessInstanceViewModificationModePage {
     await this.getNewVariableNameFieldSelector(variableIndex).type(name);
     await this.page.keyboard.press('Tab');
 
-    await expect(
-      this.getNewVariableValueFieldSelector(variableIndex).getByRole('code'),
-    ).toBeVisible();
+    await this.expectEditorToBeLoaded();
     await this.page.keyboard.insertText(value);
     await this.page.keyboard.press('Tab');
   }
@@ -567,10 +565,9 @@ export class OperateProcessInstanceViewModificationModePage {
   async editVariableValue(variableName: string, value: string) {
     await this.getEditVariableFieldSelector(variableName).click();
 
-    await expect(this.page.getByRole('code')).toBeVisible();
+    await this.expectEditorToBeLoaded();
 
-    await this.page.keyboard.press('Control+A');
-    await this.page.keyboard.press('Backspace');
+    await this.clearMonacoEditor();
 
     await this.page.keyboard.insertText(value);
     await this.page.keyboard.press('Tab');
@@ -603,8 +600,7 @@ export class OperateProcessInstanceViewModificationModePage {
   }
 
   async editNewVariableJSONInModal(variableIndex: number, json: string) {
-    await this.page.keyboard.press('Control+A');
-    await this.page.keyboard.press('Backspace');
+    await this.clearMonacoEditor();
 
     await this.newVariableByIndex(variableIndex).jsonEditorButton.click();
     const jsonEditorModal =
@@ -621,8 +617,7 @@ export class OperateProcessInstanceViewModificationModePage {
     await this.editableExistingVariableByName(
       variableName,
     ).readModeValue.click();
-    await this.page.keyboard.press('Control+A');
-    await this.page.keyboard.press('Backspace');
+    await this.clearMonacoEditor();
 
     await this.editableExistingVariableByName(
       variableName,
@@ -712,5 +707,14 @@ export class OperateProcessInstanceViewModificationModePage {
       const variableName = await row.nameValue.innerText();
       expect(variableName).not.toContain(forbiddenText);
     });
+  }
+
+  async clearMonacoEditor() {
+    await this.page.keyboard.press('Control+A');
+    await this.page.keyboard.press('Backspace');
+  }
+
+  async expectEditorToBeLoaded() {
+    await expect(this.page.getByRole('code')).toBeVisible();
   }
 }
