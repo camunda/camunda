@@ -39,10 +39,7 @@ final class RoundRobinDispatchStrategyTest {
     // given
     final var dispatchStrategy = new RoundRobinDispatchStrategy();
     final var topologyManager = new TestTopologyManager();
-    topologyManager
-        .addPartition(1, BrokerClusterState.NODE_ID_NULL)
-        .addPartition(2, 0)
-        .addPartition(3, 0);
+    topologyManager.addPartitionWithoutLeader(1).addPartition(2, 0).addPartition(3, 0);
 
     // when - then
     assertThat(dispatchStrategy.determinePartition(topologyManager)).isEqualTo(2);

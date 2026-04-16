@@ -11,15 +11,14 @@ import io.camunda.zeebe.broker.client.api.BrokerClusterState;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.camunda.zeebe.protocol.record.PartitionHealthStatus;
+import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Comparator;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 import java.util.Set;
-import org.agrona.collections.Int2IntHashMap;
-import org.agrona.collections.Int2ObjectHashMap;
-import org.agrona.collections.IntArrayList;
 
 /**
  * Represents the current state of the broker cluster topology. It includes both the live state of
@@ -73,28 +72,27 @@ public record BrokerClientTopologyImpl(
   }
 
   @Override
-  public int getLeaderForPartition(final int partition) {
+  public String getLeaderForPartition(final int partition) {
     return liveClusterState.partitionLeaders.get(partition);
   }
 
   @Override
-  public Set<Integer> getFollowersForPartition(final int partition) {
+  public Set<String> getFollowersForPartition(final int partition) {
     return liveClusterState.partitionFollowers.getOrDefault(partition, Set.of());
   }
 
   @Override
-  public Set<Integer> getInactiveNodesForPartition(final int partition) {
+  public Set<String> getInactiveNodesForPartition(final int partition) {
     return liveClusterState.partitionInactiveNodes.getOrDefault(partition, Set.of());
   }
 
   @Override
-  public int getRandomBroker() {
+  public String getRandomBroker() {
     if (liveClusterState.brokers.isEmpty()) {
-      return UNKNOWN_NODE_ID;
-    } else {
-      return liveClusterState.brokers.get(
-          liveClusterState.randomBroker.nextInt(liveClusterState.brokers.size()));
+      return null;
     }
+    return liveClusterState.brokers.get(
+        liveClusterState.randomBroker.nextInt(liveClusterState.brokers.size()));
   }
 
   @Override
@@ -103,39 +101,33 @@ public record BrokerClientTopologyImpl(
   }
 
   @Override
-  public List<Integer> getBrokers() {
+  public List<String> getBrokers() {
     return liveClusterState.brokers;
   }
 
   @Override
-  public String getBrokerAddress(final int brokerId) {
-    return liveClusterState.brokerAddresses.get(brokerId);
+  public String getBrokerAddress(final String memberId) {
+    return liveClusterState.brokerAddresses.get(memberId);
   }
 
   @Override
-  public String getBrokerVersion(final int brokerId) {
-    return liveClusterState.brokerVersions.get(brokerId);
+  public String getBrokerVersion(final String memberId) {
+    return liveClusterState.brokerVersions.get(memberId);
   }
 
   @Override
-  public String getBrokerRegion(final int brokerId) {
-    return liveClusterState.brokerRegions.get(brokerId);
+  public String getBrokerRegion(final String memberId) {
+    return liveClusterState.brokerRegions.get(memberId);
   }
 
   @Override
-  public String getBrokerMemberId(final int brokerId) {
-    return liveClusterState.brokerMemberIds.getOrDefault(brokerId, String.valueOf(brokerId));
-  }
-
-  @Override
-  public PartitionHealthStatus getPartitionHealth(final int brokerId, final int partitionId) {
-    final var brokerHealthyPartitions = liveClusterState.partitionsHealthPerBroker.get(brokerId);
+  public PartitionHealthStatus getPartitionHealth(final String memberId, final int partitionId) {
+    final var brokerHealthyPartitions = liveClusterState.partitionsHealthPerBroker.get(memberId);
 
     if (brokerHealthyPartitions == null) {
       return PartitionHealthStatus.UNHEALTHY;
-    } else {
-      return brokerHealthyPartitions.getOrDefault(partitionId, PartitionHealthStatus.UNHEALTHY);
     }
+    return brokerHealthyPartitions.getOrDefault(partitionId, PartitionHealthStatus.UNHEALTHY);
   }
 
   @Override
@@ -164,110 +156,91 @@ public record BrokerClientTopologyImpl(
 
   static class LiveClusterState {
     private static final Long TERM_NONE = -1L;
-    private final Int2IntHashMap partitionLeaders;
-    private final Int2ObjectHashMap<Long> partitionLeaderTerms;
-    private final Int2ObjectHashMap<Set<Integer>> partitionFollowers;
-    private final Int2ObjectHashMap<Set<Integer>> partitionInactiveNodes;
-    private final Int2ObjectHashMap<Int2ObjectHashMap<PartitionHealthStatus>>
-        partitionsHealthPerBroker;
-    private final Int2ObjectHashMap<String> brokerAddresses;
-    private final Int2ObjectHashMap<String> brokerVersions;
-    private final Int2ObjectHashMap<String> brokerRegions;
-    private final Int2ObjectHashMap<String> brokerMemberIds;
-    private final IntArrayList brokers;
+
+    // partitionId -> memberId of current leader
+    private final Map<Integer, String> partitionLeaders;
+    private final Map<Integer, Long> partitionLeaderTerms;
+    private final Map<Integer, Set<String>> partitionFollowers;
+    private final Map<Integer, Set<String>> partitionInactiveNodes;
+    // memberId -> (partitionId -> health)
+    private final Map<String, Map<Integer, PartitionHealthStatus>> partitionsHealthPerBroker;
+    private final Map<String, String> brokerAddresses;
+    private final Map<String, String> brokerVersions;
+    private final Map<String, String> brokerRegions;
+    private final List<String> brokers;
     private final Random randomBroker;
 
     public LiveClusterState(final Collection<BrokerInfo> distributedBrokerInfos) {
-      partitionLeaders = new Int2IntHashMap(NODE_ID_NULL);
-      partitionLeaderTerms = new Int2ObjectHashMap<>();
-      partitionFollowers = new Int2ObjectHashMap<>();
-      partitionInactiveNodes = new Int2ObjectHashMap<>();
-      partitionsHealthPerBroker = new Int2ObjectHashMap<>();
-      brokerAddresses = new Int2ObjectHashMap<>();
-      brokerVersions = new Int2ObjectHashMap<>();
-      brokerRegions = new Int2ObjectHashMap<>();
-      brokerMemberIds = new Int2ObjectHashMap<>();
-      brokers = new IntArrayList(5, NODE_ID_NULL);
+      partitionLeaders = new HashMap<>();
+      partitionLeaderTerms = new HashMap<>();
+      partitionFollowers = new HashMap<>();
+      partitionInactiveNodes = new HashMap<>();
+      partitionsHealthPerBroker = new HashMap<>();
+      brokerAddresses = new HashMap<>();
+      brokerVersions = new HashMap<>();
+      brokerRegions = new HashMap<>();
+      brokers = new ArrayList<>(distributedBrokerInfos.size());
       randomBroker = new Random();
 
-      // Sort by composite nodeId for a stable, globally-unique int key assignment.
-      // This is necessary when multiple brokers share the same local nodeId (e.g. in a
-      // multi-region cluster where each region uses 0-indexed local IDs).
-      final List<BrokerInfo> sortedBrokerInfos =
-          distributedBrokerInfos.stream()
-              .sorted(
-                  Comparator.comparing(BrokerInfo::getNodeId, Comparator.naturalOrder()))
-              .toList();
-
-      for (int idx = 0; idx < sortedBrokerInfos.size(); idx++) {
-        final BrokerInfo brokerInfo = sortedBrokerInfos.get(idx);
-        // Use the sorted index as the globally-unique int key (avoids collisions in multi-region
-        // setups where two brokers may have the same local numeric ID such as 0).
-        final int key = idx;
-        final String nodeIdStr = brokerInfo.getNodeId();
-        brokers.add(key);
+      for (final BrokerInfo brokerInfo : distributedBrokerInfos) {
+        final String memberId = brokerInfo.getNodeId();
+        brokers.add(memberId);
         final String clientAddress = brokerInfo.getCommandApiAddress();
         if (clientAddress != null) {
-          brokerAddresses.put(key, clientAddress);
+          brokerAddresses.put(memberId, clientAddress);
         }
-        brokerVersions.put(key, brokerInfo.getVersion());
-        brokerMemberIds.put(key, nodeIdStr);
-        // Derive region: strip the "-<localId>" suffix from the composite nodeId.
-        final int localNumericId = brokerInfo.getLocalNodeId();
-        final String nodeSuffix = "-" + localNumericId;
-        if (nodeIdStr != null
-            && nodeIdStr.endsWith(nodeSuffix)
-            && nodeIdStr.length() > nodeSuffix.length()) {
-          brokerRegions.put(
-              key, nodeIdStr.substring(0, nodeIdStr.length() - nodeSuffix.length()));
+        brokerVersions.put(memberId, brokerInfo.getVersion());
+        final String region = brokerInfo.getRegion();
+        if (region != null && !region.isEmpty()) {
+          brokerRegions.put(memberId, region);
         }
         brokerInfo.consumePartitions(
             pId -> {}, // nothing to consume
-            (leaderPartitionId, term) -> setPartitionLeader(leaderPartitionId, key, term),
-            followerPartitionId -> addPartitionFollower(followerPartitionId, key),
-            inactivePartitionId -> addPartitionInactive(inactivePartitionId, key));
+            (leaderPartitionId, term) -> setPartitionLeader(leaderPartitionId, memberId, term),
+            followerPartitionId -> addPartitionFollower(followerPartitionId, memberId),
+            inactivePartitionId -> addPartitionInactive(inactivePartitionId, memberId));
         brokerInfo.consumePartitionsHealth(
-            (partition, health) -> setPartitionHealthStatus(key, partition, health));
+            (partition, health) -> setPartitionHealthStatus(memberId, partition, health));
       }
     }
 
-    void setPartitionLeader(final int partitionId, final int leaderId, final long term) {
+    void setPartitionLeader(final int partitionId, final String leaderId, final long term) {
       if (partitionLeaderTerms.getOrDefault(partitionId, TERM_NONE) <= term) {
         partitionLeaders.put(partitionId, leaderId);
-        partitionLeaderTerms.put(partitionId, Long.valueOf(term));
-        final Set<Integer> followers = partitionFollowers.get(partitionId);
+        partitionLeaderTerms.put(partitionId, term);
+        final Set<String> followers = partitionFollowers.get(partitionId);
         if (followers != null) {
-          followers.removeIf(follower -> follower == leaderId);
+          followers.remove(leaderId);
         }
-        final Set<Integer> inactives = partitionInactiveNodes.get(partitionId);
+        final Set<String> inactives = partitionInactiveNodes.get(partitionId);
         if (inactives != null) {
-          inactives.removeIf(inactive -> inactive == leaderId);
+          inactives.remove(leaderId);
         }
       }
     }
 
     void setPartitionHealthStatus(
-        final int brokerId, final int partitionId, final PartitionHealthStatus status) {
+        final String memberId, final int partitionId, final PartitionHealthStatus status) {
       final var partitionsHealth =
-          partitionsHealthPerBroker.computeIfAbsent(brokerId, integer -> new Int2ObjectHashMap<>());
+          partitionsHealthPerBroker.computeIfAbsent(memberId, id -> new HashMap<>());
       partitionsHealth.put(partitionId, status);
     }
 
-    void addPartitionFollower(final int partitionId, final int followerId) {
-      partitionFollowers.computeIfAbsent(partitionId, HashSet::new).add(followerId);
+    void addPartitionFollower(final int partitionId, final String followerId) {
+      partitionFollowers.computeIfAbsent(partitionId, id -> new HashSet<>()).add(followerId);
       partitionLeaders.remove(partitionId, followerId);
-      final Set<Integer> inactives = partitionInactiveNodes.get(partitionId);
+      final Set<String> inactives = partitionInactiveNodes.get(partitionId);
       if (inactives != null) {
         inactives.remove(followerId);
       }
     }
 
-    void addPartitionInactive(final int partitionId, final int brokerId) {
-      partitionInactiveNodes.computeIfAbsent(partitionId, HashSet::new).add(brokerId);
-      partitionLeaders.remove(partitionId, brokerId);
-      final Set<Integer> followers = partitionFollowers.get(partitionId);
+    void addPartitionInactive(final int partitionId, final String memberId) {
+      partitionInactiveNodes.computeIfAbsent(partitionId, id -> new HashSet<>()).add(memberId);
+      partitionLeaders.remove(partitionId, memberId);
+      final Set<String> followers = partitionFollowers.get(partitionId);
       if (followers != null) {
-        followers.remove(brokerId);
+        followers.remove(memberId);
       }
     }
   }

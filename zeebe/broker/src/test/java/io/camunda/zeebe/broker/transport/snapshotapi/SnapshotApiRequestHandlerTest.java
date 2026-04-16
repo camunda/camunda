@@ -97,8 +97,8 @@ public class SnapshotApiRequestHandlerTest {
     final var clusterService = mock(ClusterEventService.class);
     final var brokerTopology = mock(BrokerTopologyManager.class);
     final var clusterState = mock(BrokerClusterState.class);
-    when(clusterState.getLeaderForPartition(1)).thenReturn(1);
-    when(clusterState.getBrokerAddress(1)).thenReturn(serverAddress);
+    when(clusterState.getLeaderForPartition(1)).thenReturn("1");
+    when(clusterState.getBrokerAddress("1")).thenReturn(serverAddress);
     when(clusterState.getPartitions()).thenReturn(List.of(1));
 
     when(brokerTopology.getTopology()).thenReturn(clusterState);

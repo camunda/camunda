@@ -60,7 +60,7 @@ public class ClusterHealthIndicator implements HealthIndicator {
     final Map<String, PartitionHealthStatus> partitionDetails = new HashMap<>();
     partitions.forEach(
         partition -> {
-          final int broker = optClusterState.getLeaderForPartition(partition);
+          final String broker = optClusterState.getLeaderForPartition(partition);
           final PartitionHealthStatus partitionHealthStatus =
               optClusterState.getPartitionHealth(broker, partition);
           partitionDetails.put(String.format("Partition %d", partition), partitionHealthStatus);

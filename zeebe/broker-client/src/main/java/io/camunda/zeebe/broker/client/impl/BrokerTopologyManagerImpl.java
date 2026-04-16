@@ -71,9 +71,7 @@ public final class BrokerTopologyManagerImpl extends Actor
     actor.run(
         () -> {
           topologyListeners.add(listener);
-          topology.getBrokers().stream()
-              .map(b -> MemberId.from(topology.getBrokerMemberId(b)))
-              .forEach(listener::brokerAdded);
+          topology.getBrokers().stream().map(MemberId::from).forEach(listener::brokerAdded);
         });
   }
 
@@ -189,7 +187,7 @@ public final class BrokerTopologyManagerImpl extends Actor
     partitions.forEach(
         partition -> {
           final var leader = topology.getLeaderForPartition(partition);
-          if (leader != BrokerClusterState.NODE_ID_NULL) {
+          if (leader != null) {
             topologyMetrics.setRoleForPartition(partition, leader, PartitionRoleValues.LEADER);
           }
 

@@ -98,7 +98,7 @@ public class ExportingControlServiceTest {
     final var service = new ExportingControlService(client);
 
     // when
-    when(client.sendRequest(requestTo(1, 1))).thenThrow(new RuntimeException("request failed"));
+    when(client.sendRequest(requestTo(1, "1"))).thenThrow(new RuntimeException("request failed"));
 
     // then
     assertThatExceptionOfType(Throwable.class).isThrownBy(service::pauseExporting);
@@ -165,31 +165,33 @@ public class ExportingControlServiceTest {
       }
 
       @Override
-      public int getLeaderForPartition(final int partition) {
+      public String getLeaderForPartition(final int partition) {
         return Optional.ofNullable(topology.get(partition))
             .filter(brokers -> !brokers.isEmpty())
             .map(List::getFirst)
-            .orElse(NODE_ID_NULL);
+            .map(String::valueOf)
+            .orElse(null);
       }
 
       @Override
-      public Set<Integer> getFollowersForPartition(final int partition) {
+      public Set<String> getFollowersForPartition(final int partition) {
         return topology.getOrDefault(partition, List.of()).stream()
             .skip(1)
+            .map(String::valueOf)
             .collect(Collectors.toSet());
       }
 
       @Override
-      public Set<Integer> getInactiveNodesForPartition(final int partition) {
+      public Set<String> getInactiveNodesForPartition(final int partition) {
         final var members = topology.getOrDefault(partition, List.of());
 
         return getBrokers().stream()
-            .filter(broker -> !members.contains(broker))
+            .filter(broker -> !members.contains(Integer.parseInt(broker)))
             .collect(Collectors.toSet());
       }
 
       @Override
-      public int getRandomBroker() {
+      public String getRandomBroker() {
         throw new UnsupportedOperationException();
       }
 
@@ -199,22 +201,27 @@ public class ExportingControlServiceTest {
       }
 
       @Override
-      public List<Integer> getBrokers() {
-        return topology.values().stream().flatMap(Collection::stream).toList();
+      public List<String> getBrokers() {
+        return topology.values().stream().flatMap(Collection::stream).map(String::valueOf).toList();
       }
 
       @Override
-      public String getBrokerAddress(final int brokerId) {
+      public String getBrokerAddress(final String memberId) {
         throw new UnsupportedOperationException();
       }
 
       @Override
-      public String getBrokerVersion(final int brokerId) {
+      public String getBrokerVersion(final String memberId) {
         throw new UnsupportedOperationException();
       }
 
       @Override
-      public PartitionHealthStatus getPartitionHealth(final int brokerId, final int partition) {
+      public String getBrokerRegion(final String memberId) {
+        return null;
+      }
+
+      @Override
+      public PartitionHealthStatus getPartitionHealth(final String memberId, final int partition) {
         throw new UnsupportedOperationException();
       }
 
@@ -241,17 +248,17 @@ public class ExportingControlServiceTest {
     return ofTopology((int) brokers, partitions, replicationFactor, topology);
   }
 
-  record RequestMatcher(int partitionId, int brokerId)
+  record RequestMatcher(int partitionId, String memberId)
       implements ArgumentMatcher<BrokerRequest<Void>> {
 
-    static BrokerRequest<Void> requestTo(final int partitionId, final int brokerId) {
-      return argThat(new RequestMatcher(partitionId, brokerId));
+    static BrokerRequest<Void> requestTo(final int partitionId, final String memberId) {
+      return argThat(new RequestMatcher(partitionId, memberId));
     }
 
     @Override
     public boolean matches(final BrokerRequest<Void> argument) {
       return argument.getPartitionId() == partitionId
-          && argument.getBrokerId().orElseThrow() == brokerId;
+          && argument.getBrokerId().orElseThrow().equals(memberId);
     }
   }
 }

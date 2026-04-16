@@ -120,21 +120,21 @@ public final class EndpointManager {
   }
 
   private void addBrokerInfo(
-      final Builder brokerInfo, final Integer brokerId, final BrokerClusterState topology) {
-    final String brokerAddress = topology.getBrokerAddress(brokerId);
+      final Builder brokerInfo, final String memberId, final BrokerClusterState topology) {
+    final String brokerAddress = topology.getBrokerAddress(memberId);
     final Address address = Address.from(brokerAddress);
 
-    final String region = topology.getBrokerRegion(brokerId);
+    final String region = topology.getBrokerRegion(memberId);
     brokerInfo
-        .setMemberId(topology.getBrokerMemberId(brokerId))
+        .setMemberId(memberId)
         .setHost(address.host())
         .setPort(address.port())
-        .setVersion(topology.getBrokerVersion(brokerId))
+        .setVersion(topology.getBrokerVersion(memberId))
         .setRegion(region != null ? region : "");
   }
 
   private void addPartitionInfoToBrokerInfo(
-      final Builder brokerInfo, final Integer brokerId, final BrokerClusterState topology) {
+      final Builder brokerInfo, final String memberId, final BrokerClusterState topology) {
     topology
         .getPartitions()
         .forEach(
@@ -142,11 +142,11 @@ public final class EndpointManager {
               final Partition.Builder partitionBuilder =
                   Partition.newBuilder().setPartitionId(partitionId);
 
-              if (!setRole(brokerId, partitionId, topology, partitionBuilder)) {
+              if (!setRole(memberId, partitionId, topology, partitionBuilder)) {
                 return;
               }
 
-              final var status = topology.getPartitionHealth(brokerId, partitionId);
+              final var status = topology.getPartitionHealth(memberId, partitionId);
               switch (status) {
                 case HEALTHY -> partitionBuilder.setHealth(PartitionBrokerHealth.HEALTHY);
                 case UNHEALTHY -> partitionBuilder.setHealth(PartitionBrokerHealth.UNHEALTHY);
@@ -165,19 +165,19 @@ public final class EndpointManager {
    * @return true if it could set the role. False if no role was could be found.
    */
   private boolean setRole(
-      final Integer brokerId,
+      final String memberId,
       final Integer partitionId,
       final BrokerClusterState topology,
       final Partition.Builder partitionBuilder) {
-    final int partitionLeader = topology.getLeaderForPartition(partitionId);
-    final Set<Integer> partitionFollowers = topology.getFollowersForPartition(partitionId);
-    final Set<Integer> partitionInactives = topology.getInactiveNodesForPartition(partitionId);
+    final String partitionLeader = topology.getLeaderForPartition(partitionId);
+    final Set<String> partitionFollowers = topology.getFollowersForPartition(partitionId);
+    final Set<String> partitionInactives = topology.getInactiveNodesForPartition(partitionId);
 
-    if (partitionLeader == brokerId) {
+    if (memberId.equals(partitionLeader)) {
       partitionBuilder.setRole(PartitionBrokerRole.LEADER);
-    } else if (partitionFollowers != null && partitionFollowers.contains(brokerId)) {
+    } else if (partitionFollowers != null && partitionFollowers.contains(memberId)) {
       partitionBuilder.setRole(PartitionBrokerRole.FOLLOWER);
-    } else if (partitionInactives != null && partitionInactives.contains(brokerId)) {
+    } else if (partitionInactives != null && partitionInactives.contains(memberId)) {
       partitionBuilder.setRole(PartitionBrokerRole.INACTIVE);
     } else {
       return false;

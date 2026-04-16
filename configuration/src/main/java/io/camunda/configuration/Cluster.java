@@ -153,8 +153,8 @@ public class Cluster implements Cloneable {
 
   /**
    * The region this broker belongs to. When set, the partitioning scheme must be {@link
-   * io.camunda.zeebe.broker.system.configuration.partitioning.Scheme#REGION_AWARE} and the
-   * broker's {@code nodeId} must be unique within this region only (0-indexed within the region).
+   * io.camunda.zeebe.broker.system.configuration.partitioning.Scheme#REGION_AWARE} and the broker's
+   * {@code nodeId} must be unique within this region only (0-indexed within the region).
    *
    * <p>When {@code null}, the broker operates in the standard non-region-aware mode and all
    * existing behaviour is preserved.

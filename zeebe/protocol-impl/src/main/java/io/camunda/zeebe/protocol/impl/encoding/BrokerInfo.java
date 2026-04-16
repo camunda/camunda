@@ -135,7 +135,7 @@ public final class BrokerInfo implements BufferReader, BufferWriter {
     if (nodeId == nodeIdNullValue()) {
       throw new IllegalStateException("nodeId is not set");
     }
-    return (region != null && !region.isEmpty()) ? region + "-" + nodeId : String.valueOf(nodeId);
+    return MemberIds.compose(region, nodeId);
   }
 
   /**
@@ -166,13 +166,9 @@ public final class BrokerInfo implements BufferReader, BufferWriter {
   }
 
   private void parseAndSetCompositeNodeId(final String compositeNodeId) {
-    final int lastDash = compositeNodeId.lastIndexOf('-');
-    if (lastDash > 0) {
-      region = compositeNodeId.substring(0, lastDash);
-      nodeId = Integer.parseInt(compositeNodeId.substring(lastDash + 1));
-    } else {
-      nodeId = Integer.parseInt(compositeNodeId);
-    }
+    final MemberIds.Parsed parsed = MemberIds.parse(compositeNodeId);
+    region = parsed.region();
+    nodeId = parsed.localNodeId();
   }
 
   public String getRegion() {
