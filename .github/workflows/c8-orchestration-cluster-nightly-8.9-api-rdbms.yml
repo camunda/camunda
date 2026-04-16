@@ -1,0 +1,24 @@
+# description: Nightly RDBMS API tests for stable/8.9 — builds the Camunda distribution
+#              and runs the full database matrix (Postgres, MySQL, MariaDB, MSSQL, Oracle).
+# test location: /qa/c8-orchestration-cluster-e2e-test-suite
+# type: CI
+# owner: @camunda/test-automation-team
+---
+name: C8 Orchestration Cluster Nightly 8.9 - API Tests (RDBMS)
+
+on:
+  pull_request:
+    types: [opened, edited, synchronize]  # Triggers on PR open, new commits on PR and when the PR description is edited
+  # schedule:
+  #   - cron: "0 1 * * *"
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  nightly-api-tests-rdbms:
+    uses: ./.github/workflows/c8-orchestration-cluster-reusable-rdbms-api-tests.yml
+    with:
+      branch: stable/8.9
+    secrets: inherit

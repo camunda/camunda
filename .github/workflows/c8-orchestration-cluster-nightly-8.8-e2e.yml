@@ -1,0 +1,31 @@
+# description: Nightly E2E tests for stable/8.8 in both Tasklist V1 and V2 modes.
+# test location: /qa/c8-orchestration-cluster-e2e-test-suite
+# type: CI
+# owner: @camunda/test-automation-team
+---
+name: C8 Orchestration Cluster Nightly 8.8 - E2E Tests
+
+on:
+  pull_request:
+    types: [opened, edited, synchronize]  # Triggers on PR open, new commits on PR and when the PR description is edited
+  # schedule:
+  #   - cron: "45 0 * * *"
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  nightly-e2e-tests-v1:
+    uses: ./.github/workflows/c8-orchestration-cluster-reusable-e2e-tests.yml
+    with:
+      branch: stable/8.8
+      tasklist_mode: v1
+    secrets: inherit
+
+  nightly-e2e-tests-v2:
+    uses: ./.github/workflows/c8-orchestration-cluster-reusable-e2e-tests.yml
+    with:
+      branch: stable/8.8
+      tasklist_mode: v2
+    secrets: inherit

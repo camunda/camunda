@@ -1,0 +1,251 @@
+# description: Reusable workflow — C8 Orchestration Cluster E2E Tests (Nightly).
+#              Called by the per-version nightly E2E workflows.
+# test location: /qa/c8-orchestration-cluster-e2e-test-suite
+# type: CI
+# owner: @camunda/test-automation-team
+---
+name: C8 Orchestration Cluster - Reusable E2E Tests
+
+on:
+  workflow_call:
+    inputs:
+      branch:
+        description: "Branch to test (e.g. stable/8.8, main)"
+        required: true
+        type: string
+      tasklist_mode:
+        description: "Tasklist UI mode to test: v1 or v2"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  nightly-e2e-tests:
+    name: E2E Tests (${{ inputs.branch }} - Tasklist ${{ inputs.tasklist_mode }} mode)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          ref: ${{ inputs.branch }}
+
+      - name: Set CAMUNDA_DOCKER_IMAGE
+        run: |
+          branch="${{ inputs.branch }}"
+          if [[ "$branch" == "main" ]]; then
+            echo "CAMUNDA_DOCKER_IMAGE=camunda/camunda:SNAPSHOT" >> "$GITHUB_ENV"
+          elif [[ "$branch" == stable/* ]]; then
+            minor="${branch#stable/}"
+            echo "CAMUNDA_DOCKER_IMAGE=camunda/camunda:${minor}-SNAPSHOT" >> "$GITHUB_ENV"
+          fi
+
+      - name: Start Camunda
+        run: |
+          if [[ "${{ inputs.branch }}" == "stable/8.7" ]]; then
+            echo "Using single services for Camunda 8.7"
+            DATABASE=elasticsearch docker compose up -d operate tasklist
+          else
+            echo "Using standalone camunda container"
+            if [[ "${{ inputs.tasklist_mode }}" == "v1" ]]; then
+              echo "Starting with Tasklist V1 mode enabled"
+              CAMUNDA_TASKLIST_V2_MODE_ENABLED=false DATABASE=elasticsearch docker compose up -d camunda
+            else
+              echo "Starting with default Tasklist V2 mode"
+              DATABASE=elasticsearch docker compose up -d camunda
+            fi
+          fi
+        working-directory: qa/c8-orchestration-cluster-e2e-test-suite/config
+
+      - name: List running Docker containers
+        run: docker ps -a
+        working-directory: qa/c8-orchestration-cluster-e2e-test-suite/config
+
+      - name: Wait for services to be ready
+        id: wait-for-services
+        run: |
+          echo "Checking if services are up..."
+          ready=false
+          for i in {1..90}; do
+            if [[ "${{ inputs.branch }}" == "stable/8.7" ]]; then
+              tasklist_status=$(curl -s -m 5 http://localhost:8080 || echo "Failed")
+              operate_status=$(curl -s -m 5 http://localhost:8081 || echo "Failed")
+            else
+              tasklist_status=$(curl -s -m 5 http://localhost:8080/tasklist || echo "Failed")
+              operate_status=$(curl -s -m 5 http://localhost:8080/operate || echo "Failed")
+              identity_status=$(curl -s -m 5 http://localhost:8080/identity || echo "Failed")
+            fi
+
+            if [[ "${{ inputs.branch }}" == "stable/8.7" ]]; then
+              if [[ "$tasklist_status" != "Failed" && "$operate_status" != "Failed" ]]; then
+                echo "Services are ready!"
+                ready=true
+                break
+              fi
+            else
+              if [[ "$tasklist_status" != "Failed" && "$operate_status" != "Failed" && "$identity_status" != "Failed" ]]; then
+                echo "Services are ready!"
+                ready=true
+                break
+              fi
+            fi
+
+            echo "Waiting for services... ($i/90)"
+            echo "Response from Tasklist: $tasklist_status"
+            echo "Response from Operate: $operate_status"
+            [[ -n "$identity_status" ]] && echo "Response from Identity: $identity_status"
+            sleep 10
+          done
+
+          if [ "$ready" = true ]; then
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "Services failed to start in time."
+            exit 1
+          fi
+        working-directory: qa/c8-orchestration-cluster-e2e-test-suite/config
+
+      - name: Print Docker logs before failing
+        if: failure()
+        run: |
+          if [[ "${{ inputs.branch }}" == "stable/8.7" ]]; then
+            docker compose logs tasklist
+            docker compose logs operate
+          else
+            docker compose logs camunda
+          fi
+        working-directory: qa/c8-orchestration-cluster-e2e-test-suite/config
+
+      - name: Setup Node.js
+        uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: qa/c8-orchestration-cluster-e2e-test-suite/package-lock.json
+
+      - name: Clean install dependencies
+        shell: bash
+        run: |
+          rm -rf node_modules package-lock.json
+          npm install
+        working-directory: qa/c8-orchestration-cluster-e2e-test-suite
+
+      - name: Import Secrets
+        id: secrets
+        uses: hashicorp/vault-action@79632e33d6953d190b940ffa440bf97821cabd80
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          exportEnv: false
+          secrets: |
+            secret/data/github.com/organizations/camunda TESTRAIL_QA_EMAIL;
+            secret/data/github.com/organizations/camunda TESTRAIL_QA_PSW;
+            secret/data/products/camunda/ci/github-actions SLACK_CORE_DOMAIN_BOT_TOKEN;
+
+      - name: Install Playwright Browsers
+        shell: bash
+        run: npx playwright install --with-deps chromium
+        working-directory: qa/c8-orchestration-cluster-e2e-test-suite
+
+      - name: Python setup
+        if: always()
+        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
+        with:
+          python-version: "3.x"
+
+      - name: Run E2E tests
+        shell: bash
+        env:
+          LOCAL_TEST: "false"
+          CAMUNDA_AUTH_STRATEGY: "BASIC"
+          CAMUNDA_BASIC_AUTH_USERNAME: "demo"
+          CAMUNDA_BASIC_AUTH_PASSWORD: "demo"
+          INCLUDE_SLACK_REPORTER: false
+          SLACK_BOT_USER_OAUTH_TOKEN: ${{ steps.secrets.outputs.SLACK_CORE_DOMAIN_BOT_TOKEN }}
+          VERSION: ${{ inputs.branch }}
+          CAMUNDA_TASKLIST_V2_MODE_ENABLED: ${{ inputs.tasklist_mode == 'v2' && 'true' || 'false' }}
+        run: |
+          if [[ "${{ inputs.branch }}" == "stable/8.7" ]]; then
+            export CORE_APPLICATION_TASKLIST_URL="http://localhost:8080"
+            export CORE_APPLICATION_OPERATE_URL="http://localhost:8081"
+            export ZEEBE_REST_ADDRESS="http://localhost:8089"
+          else
+            export CORE_APPLICATION_URL="http://localhost:8080"
+            export ZEEBE_REST_ADDRESS="http://localhost:8080"
+          fi
+
+          if [[ "${{ inputs.tasklist_mode }}" == "v2" ]]; then
+            if [[ "${{ inputs.branch }}" == "main" ]]; then
+              echo "Running all tests in V2 mode on main"
+              npm run test -- --project=chromium
+            elif [[ "${{ inputs.branch }}" == "stable/8.9" ]]; then
+              echo "Running all tests in V2 mode on ${{ inputs.branch }}, excluding V1-specific tests"
+              npm run test -- --project=chromium --grep-invert "tests/(common-flows/v1|tasklist/v1)/"
+            else
+              echo "Running all tests in V2 mode: excluding @v1-only tests"
+              npm run test -- --project=chromium --grep-invert "@v1-only"
+            fi
+          else
+            if [[ "${{ inputs.branch }}" == "stable/8.9" ]]; then
+              echo "Running V1 specific tests only: common-flows/v1/ and tests/tasklist/v1/"
+              npm run test -- --project=chromium tests/common-flows/v1/ tests/tasklist/v1/
+            elif [[ "${{ inputs.branch }}" == "stable/8.8" ]]; then
+              echo "Running focused tests in V1 mode"
+              npm run test -- --project=chromium tests/tasklist/ tests/common-flows/
+            else
+              echo "Running all tests in V1 mode"
+              npm run test -- --project=chromium
+            fi
+          fi
+        working-directory: qa/c8-orchestration-cluster-e2e-test-suite
+
+      - name: Publish test results to TestRail
+        if: always()
+        shell: bash
+        env:
+          TESTRAIL_HOST: "https://camunda.testrail.com/"
+          TESTRAIL_USERNAME: ${{ steps.secrets.outputs.TESTRAIL_QA_EMAIL }}
+          TESTRAIL_KEY: ${{ steps.secrets.outputs.TESTRAIL_QA_PSW }}
+          JUNIT_RESULTS_FILE: "qa/c8-orchestration-cluster-e2e-test-suite/test-results/junit-report.xml"
+          BRANCH_NAME: ${{ inputs.branch }}
+        run: |
+          pip install trcli
+          trcli -y -h "$TESTRAIL_HOST" \
+            --project 'C8' \
+            --username "$TESTRAIL_USERNAME" \
+            --key "$TESTRAIL_KEY" \
+            parse_junit --suite-id 17050 \
+            --title "Nightly C8 Orchestration Cluster Test Results - $BRANCH_NAME (Tasklist ${{ inputs.tasklist_mode }} mode) - $(date '+%Y-%m-%d %H:%M:%S')" \
+            --close-run \
+            -f "$JUNIT_RESULTS_FILE"
+
+      - name: Sanitize branch name for artifact names
+        id: sanitize
+        if: always()
+        shell: bash
+        run: |
+          branch="${{ inputs.branch }}"
+          safe_branch="${branch//\//-}"
+          echo "safe_branch=$safe_branch" >> "$GITHUB_OUTPUT"
+
+      - name: Upload json report to GitHub Actions Artifacts
+        if: always()
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        with:
+          name: json-report-nightly-e2e-${{ steps.sanitize.outputs.safe_branch }}-${{ inputs.tasklist_mode }}
+          path: qa/c8-orchestration-cluster-e2e-test-suite/json-report/**
+          retention-days: 60
+
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          job_name: "c8-orchestration-cluster-e2e-nightly-tests/${{ inputs.branch }}/${{ inputs.tasklist_mode }}"
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
