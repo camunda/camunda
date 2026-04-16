@@ -1,0 +1,1 @@
+{"version":3,"file":"get-history-commits.d.ts","sourceRoot":"","sources":["../src/get-history-commits.ts"],"names":[],"mappings":"AAAA,OAAO,KAAK,EAAE,UAAU,EAAE,MAAM,iBAAiB,CAAC;AAIlD,wBAAsB,iBAAiB,CACtC,OAAO,EAAE,UAAU,EACnB,IAAI,GAAE;IAAE,GAAG,CAAC,EAAE,MAAM,CAAA;CAAO,GACzB,OAAO,CAAC,MAAM,EAAE,CAAC,CAyBnB"}

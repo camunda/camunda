@@ -1,0 +1,1 @@
+{"version":3,"file":"scope-case.d.ts","sourceRoot":"","sources":["../src/scope-case.ts"],"names":[],"mappings":"AAEA,OAAO,EAAE,cAAc,EAAE,QAAQ,EAAE,MAAM,mBAAmB,CAAC;AAI7D,eAAO,MAAM,SAAS,EAAE,QAAQ,CAC7B,cAAc,GACd,cAAc,EAAE,GAChB;IACA,KAAK,EAAE,cAAc,EAAE,CAAC;IACxB,UAAU,CAAC,EAAE,MAAM,EAAE,CAAC;CACrB,CAqDH,CAAC"}

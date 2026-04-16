@@ -1,0 +1,42 @@
+{
+  "name": "@simple-libs/child-process-utils",
+  "type": "module",
+  "version": "1.0.2",
+  "description": "A small set of utilities for child process.",
+  "author": {
+    "name": "Dan Onoshko",
+    "email": "danon0404@gmail.com",
+    "url": "https://github.com/dangreen"
+  },
+  "license": "MIT",
+  "homepage": "https://github.com/TrigenSoftware/simple-libs/tree/main/packages/child-process-utils#readme",
+  "funding": "https://ko-fi.com/dangreen",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/TrigenSoftware/simple-libs.git",
+    "directory": "packages/child-process-utils"
+  },
+  "bugs": {
+    "url": "https://github.com/TrigenSoftware/simple-libs/issues"
+  },
+  "keywords": [
+    "child_process",
+    "child",
+    "process",
+    "utilities",
+    "utils"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "exports": {
+    "types": "./dist/index.d.ts",
+    "import": "./dist/index.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "dependencies": {
+    "@simple-libs/stream-utils": "^1.2.0"
+  }
+}

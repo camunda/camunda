@@ -1,0 +1,38 @@
+{
+  "name": "@simple-libs/stream-utils",
+  "type": "module",
+  "version": "1.2.0",
+  "description": "A small set of utilities for streams.",
+  "author": {
+    "name": "Dan Onoshko",
+    "email": "danon0404@gmail.com",
+    "url": "https://github.com/dangreen"
+  },
+  "license": "MIT",
+  "homepage": "https://github.com/TrigenSoftware/simple-libs/tree/main/packages/stream-utils#readme",
+  "funding": "https://ko-fi.com/dangreen",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/TrigenSoftware/simple-libs.git",
+    "directory": "packages/stream-utils"
+  },
+  "bugs": {
+    "url": "https://github.com/TrigenSoftware/simple-libs/issues"
+  },
+  "keywords": [
+    "stream",
+    "streams",
+    "utilities",
+    "utils"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "exports": {
+    "types": "./dist/index.d.ts",
+    "import": "./dist/index.js"
+  },
+  "files": [
+    "dist"
+  ]
+}

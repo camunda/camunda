@@ -1,0 +1,1 @@
+{"version":3,"file":"scope-enum.d.ts","sourceRoot":"","sources":["../src/scope-enum.ts"],"names":[],"mappings":"AAEA,OAAO,EAAE,QAAQ,EAAE,MAAM,mBAAmB,CAAC;AAE7C,eAAO,MAAM,SAAS,EAAE,QAAQ,CAC7B,MAAM,EAAE,GACR;IACA,MAAM,EAAE,MAAM,EAAE,CAAC;IACjB,UAAU,CAAC,EAAE,MAAM,EAAE,CAAC;CACrB,CA8BH,CAAC"}

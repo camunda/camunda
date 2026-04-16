@@ -1,0 +1,42 @@
+{
+  "name": "@commitlint/execute-rule",
+  "type": "module",
+  "version": "20.0.0",
+  "description": "Lint your commit messages",
+  "main": "lib/index.js",
+  "types": "lib/index.d.ts",
+  "files": [
+    "lib/"
+  ],
+  "scripts": {
+    "deps": "dep-check",
+    "pkg": "pkg-check"
+  },
+  "engines": {
+    "node": ">=v18"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/conventional-changelog/commitlint.git",
+    "directory": "@commitlint/execute-rule"
+  },
+  "bugs": {
+    "url": "https://github.com/conventional-changelog/commitlint/issues"
+  },
+  "homepage": "https://commitlint.js.org/",
+  "keywords": [
+    "conventional-changelog",
+    "commitlint",
+    "library",
+    "core"
+  ],
+  "author": {
+    "name": "Mario Nebl",
+    "email": "hello@herebecode.com"
+  },
+  "license": "MIT",
+  "devDependencies": {
+    "@commitlint/utils": "^20.0.0"
+  },
+  "gitHead": "407be6c96b1a108ee012ed5330b0d80a165952d5"
+}

@@ -1,0 +1,54 @@
+{
+  "name": "@conventional-changelog/git-client",
+  "type": "module",
+  "version": "2.7.0",
+  "description": "Simple git client for conventional changelog packages.",
+  "author": {
+    "name": "Dan Onoshko",
+    "email": "danon0404@gmail.com",
+    "url": "https://github.com/dangreen"
+  },
+  "license": "MIT",
+  "homepage": "https://github.com/conventional-changelog/conventional-changelog/tree/master/packages/git-client#readme",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/conventional-changelog/conventional-changelog.git",
+    "directory": "packages/git-client"
+  },
+  "bugs": {
+    "url": "https://github.com/conventional-changelog/conventional-changelog/issues"
+  },
+  "keywords": [
+    "git",
+    "client",
+    "conventional",
+    "changelog"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "exports": {
+    "types": "./dist/index.d.ts",
+    "import": "./dist/index.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "peerDependencies": {
+    "conventional-commits-filter": "^5.0.0",
+    "conventional-commits-parser": "^6.4.0"
+  },
+  "peerDependenciesMeta": {
+    "conventional-commits-filter": {
+      "optional": true
+    },
+    "conventional-commits-parser": {
+      "optional": true
+    }
+  },
+  "dependencies": {
+    "@simple-libs/child-process-utils": "^1.0.0",
+    "@simple-libs/stream-utils": "^1.2.0",
+    "semver": "^7.5.2"
+  }
+}

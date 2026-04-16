@@ -1,0 +1,60 @@
+function isObjectLike(obj) {
+    return Boolean(obj) && typeof obj === "object"; // typeof null === 'object'
+}
+function isParserOptsFunction(obj) {
+    return typeof obj.parserOpts === "function";
+}
+export async function loadParserOpts(pendingParser) {
+    if (typeof pendingParser === "function") {
+        return loadParserOpts(pendingParser());
+    }
+    if (!pendingParser || typeof pendingParser !== "object") {
+        return undefined;
+    }
+    // Await for the module, loaded with require
+    const parser = await pendingParser;
+    // exit early, no opts to resolve
+    if (!parser.parserOpts) {
+        return parser;
+    }
+    // Pull nested parserOpts, might happen if overwritten with a module in main config
+    if (typeof parser.parserOpts === "object") {
+        // Await parser opts if applicable
+        parser.parserOpts = await parser.parserOpts;
+        if (isObjectLike(parser.parserOpts) &&
+            isObjectLike(parser.parserOpts.parserOpts)) {
+            // Preserve any user-provided properties (e.g. issuePrefixes) that
+            // were merged at the outer parserOpts level during config resolution,
+            // while unwrapping the inner module-provided parserOpts (#4640).
+            const { parserOpts: inner, ...rest } = parser.parserOpts;
+            parser.parserOpts = { ...inner, ...rest };
+        }
+        return parser;
+    }
+    // Create parser opts from factory
+    if (isParserOptsFunction(parser) &&
+        typeof parser.name === "string" &&
+        parser.name.startsWith("conventional-changelog-")) {
+        return new Promise((resolve) => {
+            const result = parser.parserOpts((_, opts) => {
+                resolve({
+                    ...parser,
+                    parserOpts: opts?.parserOpts,
+                });
+            });
+            // If result has data or a promise, the parser doesn't support factory-init
+            // due to https://github.com/nodejs/promises-debugging/issues/16 it just quits, so let's use this fallback
+            if (result) {
+                Promise.resolve(result).then((opts) => {
+                    resolve({
+                        ...parser,
+                        parserOpts: opts?.parserOpts || opts?.parser,
+                    });
+                });
+            }
+            return;
+        });
+    }
+    return parser;
+}
+//# sourceMappingURL=load-parser-opts.js.map
