@@ -1,12 +1,12 @@
 # hadolint global ignore=DL3006
-ARG BASE_IMAGE="reg.mini.dev/1212/openjre-base:21-dev"
-ARG BASE_DIGEST="sha256:c28de0ca6d34d1017166c2c16e2ed7757ee2f7ad20f7ac5bea8bbf9989cc9bc2"
+ARG BASE_IMAGE="reg.mini.dev/1212/openjre-base:25-dev"
+ARG BASE_DIGEST="sha256:e2772c8469b0b3cfc792708153d075fcf17778444d6d57792e4ba83d49bf82e6"
 
 # If you don't have access to Minimus hardened base images, you can use public
 # base images like this instead on your own risk.
 # Simply pass `--build-arg BASE=public` in order to build with the Temurin JDK.
-ARG BASE_IMAGE_PUBLIC="eclipse-temurin:21.0.10_7-jre-noble"
-ARG BASE_DIGEST_PUBLIC="sha256:be00aca3f4747fa3f4b936fc35dc64eb5862349e262b2ad8d3299cb96a305780"
+ARG BASE_IMAGE_PUBLIC="eclipse-temurin:25.0.2_10-jre-noble"
+ARG BASE_DIGEST_PUBLIC="sha256:cd44d91d4b2c7b2a171a96a88d77a5f4e94de4faaefea70eda4f0b8e3c3891e6"
 ARG BASE="hardened"
 
 ### Base Application Image ###
