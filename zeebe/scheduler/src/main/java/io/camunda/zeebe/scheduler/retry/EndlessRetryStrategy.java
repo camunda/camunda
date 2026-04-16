@@ -58,11 +58,7 @@ public final class EndlessRetryStrategy implements RetryStrategy {
     try {
       final var control = retryMechanism.run();
       if (control == Control.RETRY) {
-        retryCount++;
-        if (retryCount > maxRetries) {
-          LOG.error("Retry limit reached ({} retries). Failing operation.", maxRetries);
-          currentFuture.completeExceptionally(new RetryLimitExceededException(maxRetries, null));
-        } else {
+        if (!retryLimitExceeded(null)) {
           actor.run(this::run);
           actor.yieldThread();
         }
@@ -70,24 +66,27 @@ public final class EndlessRetryStrategy implements RetryStrategy {
     } catch (final Exception exception) {
       if (terminateCondition.getAsBoolean()) {
         currentFuture.complete(false);
-      } else {
-        retryCount++;
-        if (retryCount > maxRetries) {
-          LOG.error("Retry limit reached ({} retries). Failing operation.", maxRetries, exception);
-          currentFuture.completeExceptionally(
-              new RetryLimitExceededException(maxRetries, exception));
-        } else {
-          actor.run(this::run);
-          actor.yieldThread();
-          LOG.error(
-              "Caught exception {} with message {} (retry {}/{}), will retry...",
-              exception.getClass(),
-              exception.getMessage(),
-              retryCount,
-              maxRetries,
-              exception);
-        }
+      } else if (!retryLimitExceeded(exception)) {
+        actor.run(this::run);
+        actor.yieldThread();
+        LOG.error(
+            "Caught exception {} with message {} (retry {}/{}), will retry...",
+            exception.getClass(),
+            exception.getMessage(),
+            retryCount,
+            maxRetries,
+            exception);
       }
     }
+  }
+
+  private boolean retryLimitExceeded(final Throwable cause) {
+    retryCount++;
+    if (retryCount > maxRetries) {
+      LOG.error("Retry limit reached ({} retries). Failing operation.", maxRetries, cause);
+      currentFuture.completeExceptionally(new RetryLimitExceededException(maxRetries, cause));
+      return true;
+    }
+    return false;
   }
 }
