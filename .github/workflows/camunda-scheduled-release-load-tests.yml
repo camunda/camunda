@@ -9,7 +9,7 @@
 name: Scheduled Camunda Release Load Tests
 on:
   schedule:
-    - cron: '0 4 * * *' # every day at 04:00 UTC
+    - cron: '0 2 * * 1-5' # every weekday (Mon-Fri) at 02:00 UTC
   workflow_dispatch: {}
 
 defaults:
