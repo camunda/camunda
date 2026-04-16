@@ -626,10 +626,13 @@ public class ExporterConfiguration {
 
   public static class ReplicationConfiguration {
     public static final Duration DEFAULT_POLLING_INTERVAL = Duration.ofSeconds(15);
+    public static final Duration DEFAULT_MAX_LAG = Duration.ofMinutes(15);
 
     private boolean enabled = false;
     private Duration pollingInterval = DEFAULT_POLLING_INTERVAL;
     private int minSyncReplicas = 0;
+    private Duration maxLag = DEFAULT_MAX_LAG;
+    private boolean pauseOnMaxLagExceeded = true;
 
     public boolean isEnabled() {
       return enabled;
@@ -655,6 +658,22 @@ public class ExporterConfiguration {
       this.minSyncReplicas = minSyncReplicas;
     }
 
+    public Duration getMaxLag() {
+      return maxLag;
+    }
+
+    public void setMaxLag(final Duration maxLag) {
+      this.maxLag = maxLag;
+    }
+
+    public boolean isPauseOnMaxLagExceeded() {
+      return pauseOnMaxLagExceeded;
+    }
+
+    public void setPauseOnMaxLagExceeded(final boolean pauseOnMaxLagExceeded) {
+      this.pauseOnMaxLagExceeded = pauseOnMaxLagExceeded;
+    }
+
     public List<String> validate() {
       final List<String> errors = new ArrayList<>();
       if (enabled && (pollingInterval.isNegative() || pollingInterval.isZero())) {
@@ -668,6 +687,11 @@ public class ExporterConfiguration {
             String.format(
                 "asyncReplication.minSyncReplicas must be greater or equal 0 but was %d",
                 minSyncReplicas));
+      }
+      if (enabled && (maxLag.isNegative() || maxLag.isZero())) {
+        errors.add(
+            String.format(
+                "asyncReplication.maxLag must be a positive duration but was %s", maxLag));
       }
       return errors;
     }

@@ -7,32 +7,31 @@
  */
 package io.camunda.db.rdbms.write;
 
-import io.camunda.db.rdbms.sql.ExporterPositionMapper;
 import java.time.Duration;
 import java.util.List;
 
-/** PostgreSQL implementation using {@code pg_current_wal_lsn()} and {@code pg_stat_replication}. */
-public final class PostgresReplicationLogStatusProvider implements ReplicationLogStatusProvider {
-
-  private final ExporterPositionMapper mapper;
-
-  public PostgresReplicationLogStatusProvider(final ExporterPositionMapper mapper) {
-    this.mapper = mapper;
-  }
+/**
+ * Azure SQL implementation. Azure does not expose an LSN equivalent usable for replica progress
+ * tracking, so this provider only supports the replication lag (in seconds) reported by
+ * Azure-specific DMVs (e.g. {@code sys.dm_geo_replication_link_status}).
+ */
+public final class AzureReplicationLogStatusProvider implements ReplicationLogStatusProvider {
 
   @Override
   public long getCurrent() {
-    return mapper.findCurrentLsnPostgres();
+    // Azure does not expose a usable LSN — signal LSN-based checking is not available.
+    return -1;
   }
 
   @Override
   public List<ReplicationStatusDto> getReplicationStatuses() {
-    return mapper.getReplicationStatusesPostgres();
+    // Azure does not expose per-replica LSN progress.
+    return List.of();
   }
 
   @Override
   public Duration getReplicationLag() {
-    // TODO: implement via a DB query (e.g. max(now() - replay_lsn_time) from pg_stat_replication)
+    // TODO: implement via Azure-specific query (e.g. sys.dm_geo_replication_link_status)
     return Duration.ZERO;
   }
 }

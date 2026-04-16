@@ -8,6 +8,7 @@
 package io.camunda.db.rdbms.write;
 
 import io.camunda.db.rdbms.sql.ExporterPositionMapper;
+import java.time.Duration;
 import java.util.List;
 
 /**
@@ -30,5 +31,11 @@ public final class AuroraReplicationLogStatusProvider implements ReplicationLogS
   @Override
   public List<ReplicationStatusDto> getReplicationStatuses() {
     return mapper.getReplicationStatusesAurora();
+  }
+
+  @Override
+  public Duration getReplicationLag() {
+    // TODO: implement via a DB query against aurora_global_db_instance_status()
+    return Duration.ZERO;
   }
 }

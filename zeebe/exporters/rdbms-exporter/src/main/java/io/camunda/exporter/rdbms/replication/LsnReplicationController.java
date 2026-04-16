@@ -13,9 +13,12 @@ import io.camunda.exporter.rdbms.ExporterConfiguration.ReplicationConfiguration;
 import io.camunda.zeebe.exporter.api.context.Controller;
 import io.camunda.zeebe.exporter.api.context.ScheduledTask;
 import io.camunda.zeebe.util.VisibleForTesting;
+import java.time.Duration;
+import java.time.InstantSource;
 import java.util.Comparator;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,10 +32,12 @@ public class LsnReplicationController implements ReplicationController {
   private final Controller controller;
   private final ReplicationConfiguration replicationConfiguration;
   private final int partitionId;
+  private final InstantSource clock;
 
   private final BlockingQueue<LsnPositionEntry> pendingEntries;
   private final AtomicLong flushedPosition = new AtomicLong(-1);
   private final AtomicLong replicatedPosition = new AtomicLong(-1);
+  private final AtomicBoolean paused = new AtomicBoolean(false);
 
   private final ScheduledTask replicationCheckTask;
 
@@ -40,11 +45,13 @@ public class LsnReplicationController implements ReplicationController {
       final Controller controller,
       final ReplicationLogStatusProvider lsnProvider,
       final ReplicationConfiguration replicationConfiguration,
-      final int partitionId) {
+      final int partitionId,
+      final InstantSource clock) {
     this.lsnProvider = lsnProvider;
     this.controller = controller;
     this.replicationConfiguration = replicationConfiguration;
     this.partitionId = partitionId;
+    this.clock = clock;
 
     pendingEntries = new ArrayBlockingQueue<>(DEFAULT_QUEUE_CAPACITY);
     replicationCheckTask =
@@ -56,7 +63,12 @@ public class LsnReplicationController implements ReplicationController {
   public void onFlush(final long exporterPosition) {
     flushedPosition.set(exporterPosition);
     final long currentLsn = lsnProvider.getCurrent();
-    if (!pendingEntries.offer(new LsnPositionEntry(exporterPosition, currentLsn))) {
+    final long now = clock.millis();
+    if (!pendingEntries.offer(new LsnPositionEntry(exporterPosition, currentLsn, now))) {
+      // it's fine to just drop. When we are able to compact, when we export a new entry it will be
+      // added.
+      // if the queue is not full for too much it's not a problem, otherwise we will just hit the
+      // max_lag bound.
       LOG.warn(
           "[RDBMS Exporter P{}] Replication queue is full, dropping LSN entry (lsn={}, position={})",
           partitionId,
@@ -68,10 +80,43 @@ public class LsnReplicationController implements ReplicationController {
   private void checkReplication() {
     try {
       final long confirmedLsn = computeConfirmedLsn();
+      final Duration maxLag = replicationConfiguration.getMaxLag();
+      final Duration dbReportedLag = lsnProvider.getReplicationLag();
+      final boolean dbLagExceeded = dbReportedLag.compareTo(maxLag) > 0;
+      final boolean pauseOnMaxLag = replicationConfiguration.isPauseOnMaxLagExceeded();
+      final boolean shouldPause = pauseOnMaxLag && dbLagExceeded;
+      updatePausedState(shouldPause, dbReportedLag, maxLag);
+      final long now = clock.millis();
+      final long lagCutoff = now - maxLag.toMillis();
 
       LsnPositionEntry entry;
       long newReplicatedPosition = replicatedPosition.get();
-      while ((entry = pendingEntries.peek()) != null && entry.lsn() <= confirmedLsn) {
+      while ((entry = pendingEntries.peek()) != null) {
+        final String forcedReason;
+        if (entry.lsn() <= confirmedLsn) {
+          forcedReason = null;
+        } else if (dbLagExceeded && !pauseOnMaxLag) {
+          forcedReason =
+              "DB-reported replication lag ("
+                  + dbReportedLag
+                  + ") exceeded maxLag ("
+                  + maxLag
+                  + ")";
+        } else if (entry.enqueueTimeMs() <= lagCutoff) {
+          forcedReason = "maxLag (" + maxLag + ") exceeded — replication has not caught up";
+        } else {
+          break;
+        }
+
+        if (forcedReason != null) {
+          LOG.warn(
+              "[RDBMS Exporter P{}] Confirming position {} (lsn={}) due to: {}",
+              partitionId,
+              entry.position(),
+              entry.lsn(),
+              forcedReason);
+        }
+
         newReplicatedPosition = entry.position();
         pendingEntries.poll();
       }
@@ -96,13 +141,43 @@ public class LsnReplicationController implements ReplicationController {
     }
   }
 
+  @Override
+  public boolean isPaused() {
+    return paused.get();
+  }
+
+  private void updatePausedState(
+      final boolean shouldPause, final Duration dbReportedLag, final Duration maxLag) {
+    final boolean wasPaused = paused.getAndSet(shouldPause);
+    if (shouldPause && !wasPaused) {
+      LOG.warn(
+          "[RDBMS Exporter P{}] Pausing exporter: DB-reported replication lag ({}) exceeded maxLag ({})",
+          partitionId,
+          dbReportedLag,
+          maxLag);
+    } else if (!shouldPause && wasPaused) {
+      LOG.info(
+          "[RDBMS Exporter P{}] Resuming exporter: DB-reported replication lag ({}) dropped below maxLag ({})",
+          partitionId,
+          dbReportedLag,
+          maxLag);
+    }
+  }
+
   /**
    * Computes the maximum LSN confirmed by at least {@code minSyncReplicas} replicas. Sorts replica
    * statuses ascending and picks the Nth value — the highest LSN that at least N replicas have
-   * reached. Returns {@link Long#MAX_VALUE} when minSyncReplicas is 0.
+   * reached. Returns {@link Long#MAX_VALUE} when minSyncReplicas is 0 and the provider reports a
+   * valid current LSN. Returns {@link Long#MIN_VALUE} when the provider signals LSN checking is not
+   * available (i.e. current LSN is negative), so no entry can match via LSN comparison and entries
+   * are only confirmed via the maxLag timeout.
    */
   @VisibleForTesting
   long computeConfirmedLsn() {
+    if (lsnProvider.getCurrent() < 0) {
+      return Long.MIN_VALUE;
+    }
+
     final int minSyncReplicas = replicationConfiguration.getMinSyncReplicas();
     if (minSyncReplicas == 0) {
       return Long.MAX_VALUE;
@@ -130,5 +205,5 @@ public class LsnReplicationController implements ReplicationController {
     return pendingEntries.size();
   }
 
-  private record LsnPositionEntry(long position, long lsn) {}
+  private record LsnPositionEntry(long position, long lsn, long enqueueTimeMs) {}
 }
