@@ -30,9 +30,6 @@ public final class UserTaskFilterMapper {
 
   public static Either<List<String>, UserTaskFilter> toUserTaskFilter(
       final io.camunda.gateway.protocol.model.UserTaskFilter filter) {
-    if (filter == null) {
-      return Either.right(FilterBuilders.userTask().build());
-    }
     final var builder = FilterBuilders.userTask();
     final List<String> validationErrors = new ArrayList<>();
     Optional.ofNullable(filter.getUserTaskKey())

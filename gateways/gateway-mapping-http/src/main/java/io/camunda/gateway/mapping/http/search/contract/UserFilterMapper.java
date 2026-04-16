@@ -20,9 +20,6 @@ public final class UserFilterMapper {
   private UserFilterMapper() {}
 
   public static UserFilter toUserFilter(final io.camunda.gateway.protocol.model.UserFilter filter) {
-    if (filter == null) {
-      return FilterBuilders.user().build();
-    }
     final var builder = FilterBuilders.user();
     ofNullable(filter.getUsername())
         .map(mapToOperations(String.class))

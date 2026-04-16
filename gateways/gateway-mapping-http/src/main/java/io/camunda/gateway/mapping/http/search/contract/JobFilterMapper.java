@@ -26,9 +26,6 @@ public final class JobFilterMapper {
 
   public static Either<List<String>, JobFilter> toJobFilter(
       final io.camunda.gateway.protocol.model.JobFilter filter) {
-    if (filter == null) {
-      return Either.right(FilterBuilders.job().build());
-    }
     final var builder = FilterBuilders.job();
     final List<String> validationErrors = new ArrayList<>();
     ofNullable(filter.getJobKey())

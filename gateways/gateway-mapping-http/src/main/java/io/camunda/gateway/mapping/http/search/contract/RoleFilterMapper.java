@@ -18,9 +18,6 @@ public final class RoleFilterMapper {
   private RoleFilterMapper() {}
 
   public static RoleFilter toRoleFilter(final io.camunda.gateway.protocol.model.RoleFilter filter) {
-    if (filter == null) {
-      return FilterBuilders.role().build();
-    }
     final var builder = FilterBuilders.role();
     Optional.ofNullable(filter.getRoleId()).ifPresent(builder::roleId);
     Optional.ofNullable(filter.getName()).ifPresent(builder::name);

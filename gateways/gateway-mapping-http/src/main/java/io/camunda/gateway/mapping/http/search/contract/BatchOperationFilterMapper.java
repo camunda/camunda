@@ -22,9 +22,6 @@ public final class BatchOperationFilterMapper {
 
   public static BatchOperationFilter toBatchOperationFilter(
       final io.camunda.gateway.protocol.model.BatchOperationFilter filter) {
-    if (filter == null) {
-      return FilterBuilders.batchOperation().build();
-    }
     final var builder = FilterBuilders.batchOperation();
     ofNullable(filter.getBatchOperationKey())
         .map(mapToOperations(String.class))

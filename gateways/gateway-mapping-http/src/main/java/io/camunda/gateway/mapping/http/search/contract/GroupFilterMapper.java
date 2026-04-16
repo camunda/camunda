@@ -21,9 +21,6 @@ public final class GroupFilterMapper {
 
   public static GroupFilter toGroupFilter(
       final io.camunda.gateway.protocol.model.GroupFilter filter) {
-    if (filter == null) {
-      return FilterBuilders.group().build();
-    }
     final var builder = FilterBuilders.group();
     ofNullable(filter.getGroupId())
         .map(mapToOperations(String.class))

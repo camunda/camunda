@@ -21,9 +21,6 @@ public final class DecisionRequirementsFilterMapper {
 
   public static DecisionRequirementsFilter toDecisionRequirementsFilter(
       final io.camunda.gateway.protocol.model.DecisionRequirementsFilter filter) {
-    if (filter == null) {
-      return FilterBuilders.decisionRequirements().build();
-    }
     final var builder = FilterBuilders.decisionRequirements();
     ofNullable(filter.getDecisionRequirementsKey())
         .map(KeyUtil::keyToLong)

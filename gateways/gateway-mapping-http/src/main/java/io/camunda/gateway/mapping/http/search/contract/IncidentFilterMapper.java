@@ -26,9 +26,6 @@ public final class IncidentFilterMapper {
 
   public static Either<List<String>, IncidentFilter> toIncidentFilter(
       final io.camunda.gateway.protocol.model.IncidentFilter filter) {
-    if (filter == null) {
-      return Either.right(FilterBuilders.incident().build());
-    }
     final var builder = FilterBuilders.incident();
     final List<String> validationErrors = new ArrayList<>();
     ofNullable(filter.getIncidentKey())

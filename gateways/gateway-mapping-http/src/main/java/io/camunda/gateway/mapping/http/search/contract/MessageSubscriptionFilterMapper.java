@@ -26,9 +26,6 @@ public final class MessageSubscriptionFilterMapper {
 
   public static Either<List<String>, MessageSubscriptionFilter> toMessageSubscriptionFilter(
       final io.camunda.gateway.protocol.model.MessageSubscriptionFilter filter) {
-    if (filter == null) {
-      return Either.right(FilterBuilders.messageSubscription().build());
-    }
     final var builder = FilterBuilders.messageSubscription();
     final List<String> validationErrors = new ArrayList<>();
     ofNullable(filter.getMessageSubscriptionKey())

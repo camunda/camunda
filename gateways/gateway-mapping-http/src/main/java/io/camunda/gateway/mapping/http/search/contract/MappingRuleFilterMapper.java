@@ -19,9 +19,6 @@ public final class MappingRuleFilterMapper {
 
   public static MappingRuleFilter toMappingRuleFilter(
       final io.camunda.gateway.protocol.model.MappingRuleFilter filter) {
-    if (filter == null) {
-      return FilterBuilders.mappingRule().build();
-    }
     final var builder = FilterBuilders.mappingRule();
     Optional.ofNullable(filter.getMappingRuleId()).ifPresent(builder::mappingRuleId);
     Optional.ofNullable(filter.getClaimName()).ifPresent(builder::claimName);

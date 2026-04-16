@@ -25,9 +25,6 @@ public final class ProcessDefinitionFilterMapper {
 
   public static Either<List<String>, ProcessDefinitionFilter> toProcessDefinitionFilter(
       final io.camunda.gateway.protocol.model.ProcessDefinitionFilter filter) {
-    if (filter == null) {
-      return Either.right(FilterBuilders.processDefinition().build());
-    }
     final var builder = FilterBuilders.processDefinition();
     final List<String> validationErrors = new ArrayList<>();
     ofNullable(filter.getIsLatestVersion()).ifPresent(builder::isLatestVersion);

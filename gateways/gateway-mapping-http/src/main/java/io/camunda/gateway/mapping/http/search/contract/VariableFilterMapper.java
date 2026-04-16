@@ -25,9 +25,6 @@ public final class VariableFilterMapper {
 
   public static Either<List<String>, VariableFilter> toVariableFilter(
       final io.camunda.gateway.protocol.model.VariableFilter filter) {
-    if (filter == null) {
-      return Either.right(FilterBuilders.variable().build());
-    }
     final var builder = FilterBuilders.variable();
     final List<String> validationErrors = new ArrayList<>();
     ofNullable(filter.getProcessInstanceKey())

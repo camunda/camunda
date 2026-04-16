@@ -21,9 +21,6 @@ public final class ClusterVariableSearchQueryFilterRequestMapper {
 
   public static ClusterVariableFilter toClusterVariableFilter(
       final io.camunda.gateway.protocol.model.ClusterVariableSearchQueryFilterRequest filter) {
-    if (filter == null) {
-      return FilterBuilders.clusterVariable().build();
-    }
     final var builder = FilterBuilders.clusterVariable();
     ofNullable(filter.getName())
         .map(mapToOperations(String.class))

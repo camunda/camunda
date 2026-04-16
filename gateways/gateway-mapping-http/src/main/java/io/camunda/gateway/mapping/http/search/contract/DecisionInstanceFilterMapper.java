@@ -25,9 +25,6 @@ public final class DecisionInstanceFilterMapper {
 
   public static DecisionInstanceFilter toDecisionInstanceFilter(
       final io.camunda.gateway.protocol.model.DecisionInstanceFilter filter) {
-    if (filter == null) {
-      return FilterBuilders.decisionInstance().build();
-    }
     final var builder = FilterBuilders.decisionInstance();
     ofNullable(filter.getDecisionEvaluationKey())
         .map(KeyUtil::keyToLong)

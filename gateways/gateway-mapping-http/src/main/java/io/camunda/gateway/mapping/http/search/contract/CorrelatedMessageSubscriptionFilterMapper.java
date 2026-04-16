@@ -27,9 +27,6 @@ public final class CorrelatedMessageSubscriptionFilterMapper {
   public static Either<List<String>, CorrelatedMessageSubscriptionFilter>
       toCorrelatedMessageSubscriptionFilter(
           final io.camunda.gateway.protocol.model.CorrelatedMessageSubscriptionFilter filter) {
-    if (filter == null) {
-      return Either.right(FilterBuilders.correlatedMessageSubscription().build());
-    }
     final var builder = FilterBuilders.correlatedMessageSubscription();
     final List<String> validationErrors = new ArrayList<>();
     ofNullable(filter.getSubscriptionKey())

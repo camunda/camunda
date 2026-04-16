@@ -28,9 +28,6 @@ public final class AuditLogFilterMapper {
 
   public static AuditLogFilter toAuditLogFilter(
       final io.camunda.gateway.protocol.model.AuditLogFilter filter) {
-    if (filter == null) {
-      return FilterBuilders.auditLog().build();
-    }
     final var builder = FilterBuilders.auditLog();
     ofNullable(filter.getAuditLogKey())
         .map(mapToOperations(String.class))

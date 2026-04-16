@@ -21,9 +21,6 @@ public final class DecisionDefinitionFilterMapper {
 
   public static DecisionDefinitionFilter toDecisionDefinitionFilter(
       final io.camunda.gateway.protocol.model.DecisionDefinitionFilter filter) {
-    if (filter == null) {
-      return FilterBuilders.decisionDefinition().build();
-    }
     final var builder = FilterBuilders.decisionDefinition();
     ofNullable(filter.getDecisionDefinitionKey())
         .map(KeyUtil::keyToLong)

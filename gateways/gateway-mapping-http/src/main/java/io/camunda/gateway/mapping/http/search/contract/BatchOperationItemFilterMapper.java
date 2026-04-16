@@ -25,9 +25,6 @@ public final class BatchOperationItemFilterMapper {
 
   public static Either<List<String>, BatchOperationItemFilter> toBatchOperationItemFilter(
       final io.camunda.gateway.protocol.model.BatchOperationItemFilter filter) {
-    if (filter == null) {
-      return Either.right(FilterBuilders.batchOperationItem().build());
-    }
     final var builder = FilterBuilders.batchOperationItem();
     final List<String> validationErrors = new ArrayList<>();
     ofNullable(filter.getBatchOperationKey())
