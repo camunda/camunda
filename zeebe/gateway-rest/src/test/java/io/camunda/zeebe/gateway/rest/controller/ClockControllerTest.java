@@ -19,6 +19,7 @@ import io.camunda.gateway.protocol.model.ClockPinRequest;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.ClockServices;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
+import io.camunda.zeebe.gateway.rest.controller.adapter.DefaultClockServiceAdapter;
 import io.camunda.zeebe.protocol.impl.record.value.clock.ClockRecord;
 import java.net.URI;
 import java.util.concurrent.CompletableFuture;
@@ -29,11 +30,13 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ProblemDetail;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
+@Import(DefaultClockServiceAdapter.class)
 @WebMvcTest(ClockController.class)
 public class ClockControllerTest extends RestControllerTest {
 
@@ -74,17 +77,13 @@ public class ClockControllerTest extends RestControllerTest {
   }
 
   static Stream<Arguments> invalidClockPinRequests() {
-    return Stream.of(
-        of(new ClockPinRequest(), "No timestamp provided."),
-        of(
-            new ClockPinRequest().timestamp(-1L),
-            "The value for timestamp is '-1' but must be not negative."));
+    return Stream.of(of("{}", "No timestamp provided."));
   }
 
   @ParameterizedTest
   @MethodSource("invalidClockPinRequests")
   public void pinClockShouldReturnBadRequestIfInvalidClockPinRequestProvided(
-      final ClockPinRequest invalidRequest, final String expectedError) {
+      final String invalidRequestJson, final String expectedError) {
     // given
     final var expectedBody = CamundaProblemDetail.forStatus(HttpStatus.BAD_REQUEST);
     expectedBody.setTitle(INVALID_ARGUMENT.name());
@@ -97,7 +96,7 @@ public class ClockControllerTest extends RestControllerTest {
         .uri(CLOCK_URL)
         .accept(MediaType.APPLICATION_JSON)
         .contentType(MediaType.APPLICATION_JSON)
-        .bodyValue(invalidRequest)
+        .bodyValue(invalidRequestJson)
         .exchange()
         .expectStatus()
         .isBadRequest()

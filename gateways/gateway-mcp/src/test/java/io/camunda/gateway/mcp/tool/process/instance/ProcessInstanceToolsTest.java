@@ -16,10 +16,9 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.camunda.gateway.mapping.http.search.contract.StrictSearchQueryResult;
 import io.camunda.gateway.mcp.OperationalToolsTest;
-import io.camunda.gateway.protocol.model.CreateProcessInstanceResult;
-import io.camunda.gateway.protocol.model.ProcessInstanceResult;
-import io.camunda.gateway.protocol.model.ProcessInstanceSearchQueryResult;
+import io.camunda.gateway.protocol.model.ProcessInstance;
 import io.camunda.gateway.protocol.model.ProcessInstanceStateEnum;
 import io.camunda.search.entities.ProcessInstanceEntity;
 import io.camunda.search.entities.ProcessInstanceEntity.ProcessInstanceState;
@@ -106,7 +105,7 @@ class ProcessInstanceToolsTest extends OperationalToolsTest {
   @Captor private ArgumentCaptor<ProcessInstanceQuery> queryCaptor;
   @Captor private ArgumentCaptor<ProcessInstanceCreateRequest> createRequestCaptor;
 
-  private void assertExampleProcessInstance(final ProcessInstanceResult processInstance) {
+  private void assertExampleProcessInstance(final ProcessInstance processInstance) {
     assertThat(processInstance.getProcessInstanceKey()).isEqualTo("123");
     assertThat(processInstance.getProcessDefinitionId()).isEqualTo("demoProcess");
     assertThat(processInstance.getProcessDefinitionName()).isEqualTo("Demo Process");
@@ -144,7 +143,7 @@ class ProcessInstanceToolsTest extends OperationalToolsTest {
       assertThat(result.structuredContent()).isNotNull();
 
       final var processInstance =
-          objectMapper.convertValue(result.structuredContent(), ProcessInstanceResult.class);
+          objectMapper.convertValue(result.structuredContent(), ProcessInstance.class);
       assertExampleProcessInstance(processInstance);
 
       verify(processInstanceServices).getByKey(eq(123L), any());
@@ -174,7 +173,7 @@ class ProcessInstanceToolsTest extends OperationalToolsTest {
           objectMapper.convertValue(result.structuredContent(), ProblemDetail.class);
       assertThat(problemDetail.getDetail()).isEqualTo("Expected failure");
       assertThat(problemDetail.getStatus()).isEqualTo(HttpStatus.NOT_FOUND.value());
-      assertThat(problemDetail.getTitle()).isEqualTo("NOT_FOUND");
+      assertThat(problemDetail.getTitle()).isEqualTo("Not Found");
 
       assertTextContentFallback(result);
     }
@@ -286,14 +285,20 @@ class ProcessInstanceToolsTest extends OperationalToolsTest {
       assertThat(result.isError()).isFalse();
       assertThat(result.structuredContent()).isNotNull();
 
-      final var searchResult =
-          objectMapper.convertValue(
-              result.structuredContent(), ProcessInstanceSearchQueryResult.class);
-      assertThat(searchResult.getPage().getTotalItems()).isEqualTo(1L);
-      assertThat(searchResult.getPage().getHasMoreTotalItems()).isFalse();
-      assertThat(searchResult.getPage().getStartCursor()).isEqualTo("f");
-      assertThat(searchResult.getPage().getEndCursor()).isEqualTo("v");
-      assertThat(searchResult.getItems())
+      @SuppressWarnings("unchecked")
+      final StrictSearchQueryResult<ProcessInstance> searchResult =
+          (StrictSearchQueryResult<ProcessInstance>)
+              objectMapper.convertValue(
+                  result.structuredContent(),
+                  objectMapper
+                      .getTypeFactory()
+                      .constructParametricType(
+                          StrictSearchQueryResult.class, ProcessInstance.class));
+      assertThat(searchResult.page().totalItems()).isEqualTo(1L);
+      assertThat(searchResult.page().hasMoreTotalItems()).isFalse();
+      assertThat(searchResult.page().startCursor()).isEqualTo("f");
+      assertThat(searchResult.page().endCursor()).isEqualTo("v");
+      assertThat(searchResult.items())
           .hasSize(1)
           .first()
           .satisfies(ProcessInstanceToolsTest.this::assertExampleProcessInstance);
@@ -376,7 +381,7 @@ class ProcessInstanceToolsTest extends OperationalToolsTest {
           objectMapper.convertValue(result.structuredContent(), ProblemDetail.class);
       assertThat(problemDetail.getDetail()).isEqualTo("Expected failure");
       assertThat(problemDetail.getStatus()).isEqualTo(HttpStatus.NOT_FOUND.value());
-      assertThat(problemDetail.getTitle()).isEqualTo("NOT_FOUND");
+      assertThat(problemDetail.getTitle()).isEqualTo("Not Found");
 
       assertTextContentFallback(result);
     }
@@ -398,7 +403,7 @@ class ProcessInstanceToolsTest extends OperationalToolsTest {
       final var problemDetail =
           objectMapper.convertValue(result.structuredContent(), ProblemDetail.class);
       assertThat(problemDetail.getStatus()).isEqualTo(HttpStatus.BAD_REQUEST.value());
-      assertThat(problemDetail.getTitle()).isEqualTo("INVALID_ARGUMENT");
+      assertThat(problemDetail.getTitle()).isEqualTo("Bad Request");
       assertThat(problemDetail.getDetail())
           .startsWith("The provided processInstanceKey 'abc' is not a valid key.");
 
@@ -422,7 +427,7 @@ class ProcessInstanceToolsTest extends OperationalToolsTest {
       final var problemDetail =
           objectMapper.convertValue(result.structuredContent(), ProblemDetail.class);
       assertThat(problemDetail.getStatus()).isEqualTo(HttpStatus.BAD_REQUEST.value());
-      assertThat(problemDetail.getTitle()).isEqualTo("INVALID_ARGUMENT");
+      assertThat(problemDetail.getTitle()).isEqualTo("Bad Request");
       assertThat(problemDetail.getDetail())
           .startsWith("The provided startDate 'not-a-date' cannot be parsed as a date");
 
@@ -453,7 +458,7 @@ class ProcessInstanceToolsTest extends OperationalToolsTest {
       final var problemDetail =
           objectMapper.convertValue(result.structuredContent(), ProblemDetail.class);
       assertThat(problemDetail.getStatus()).isEqualTo(HttpStatus.BAD_REQUEST.value());
-      assertThat(problemDetail.getTitle()).isEqualTo("INVALID_ARGUMENT");
+      assertThat(problemDetail.getTitle()).isEqualTo("Bad Request");
       assertThat(problemDetail.getDetail())
           .contains("The provided processInstanceKey 'abc' is not a valid key.")
           .contains("The provided startDate 'not-a-date' cannot be parsed as a date");
@@ -510,7 +515,9 @@ class ProcessInstanceToolsTest extends OperationalToolsTest {
       assertThat(capturedRequest.tags()).containsExactly("mcp-tool:abc");
 
       final var actualResult =
-          objectMapper.convertValue(result.structuredContent(), CreateProcessInstanceResult.class);
+          objectMapper.convertValue(
+              result.structuredContent(),
+              io.camunda.gateway.protocol.model.CreateProcessInstance.class);
       assertThat(actualResult.getProcessDefinitionKey()).isEqualTo("123");
       assertThat(actualResult.getProcessDefinitionId()).isEqualTo("testProcessId");
       assertThat(actualResult.getProcessDefinitionVersion()).isEqualTo(-1);
@@ -570,7 +577,9 @@ class ProcessInstanceToolsTest extends OperationalToolsTest {
       assertThat(capturedRequest.tags()).containsExactly("mcp-tool:abc");
 
       final var actualResult =
-          objectMapper.convertValue(result.structuredContent(), CreateProcessInstanceResult.class);
+          objectMapper.convertValue(
+              result.structuredContent(),
+              io.camunda.gateway.protocol.model.CreateProcessInstance.class);
       assertThat(actualResult.getProcessDefinitionKey()).isEqualTo("123");
       assertThat(actualResult.getProcessDefinitionId()).isEqualTo("testProcessId");
       assertThat(actualResult.getProcessDefinitionVersion()).isEqualTo(7);
@@ -633,7 +642,9 @@ class ProcessInstanceToolsTest extends OperationalToolsTest {
       assertThat(capturedRequest.fetchVariables()).containsExactly("foo");
 
       final var actualResult =
-          objectMapper.convertValue(result.structuredContent(), CreateProcessInstanceResult.class);
+          objectMapper.convertValue(
+              result.structuredContent(),
+              io.camunda.gateway.protocol.model.CreateProcessInstance.class);
       assertThat(actualResult.getProcessDefinitionKey()).isEqualTo("123");
       assertThat(actualResult.getProcessDefinitionId()).isEqualTo("testProcessId");
       assertThat(actualResult.getProcessDefinitionVersion()).isEqualTo(7);
@@ -697,7 +708,9 @@ class ProcessInstanceToolsTest extends OperationalToolsTest {
       assertThat(capturedRequest.requestTimeout()).isEqualTo(60000L);
 
       final var actualResult =
-          objectMapper.convertValue(result.structuredContent(), CreateProcessInstanceResult.class);
+          objectMapper.convertValue(
+              result.structuredContent(),
+              io.camunda.gateway.protocol.model.CreateProcessInstance.class);
       assertThat(actualResult.getProcessDefinitionKey()).isEqualTo("123");
       assertThat(actualResult.getProcessDefinitionId()).isEqualTo("testProcessId");
       assertThat(actualResult.getProcessDefinitionVersion()).isEqualTo(7);
@@ -734,7 +747,7 @@ class ProcessInstanceToolsTest extends OperationalToolsTest {
           objectMapper.convertValue(result.structuredContent(), ProblemDetail.class);
       assertThat(problemDetail.getDetail()).isEqualTo("Expected failure");
       assertThat(problemDetail.getStatus()).isEqualTo(HttpStatus.BAD_REQUEST.value());
-      assertThat(problemDetail.getTitle()).isEqualTo("INVALID_ARGUMENT");
+      assertThat(problemDetail.getTitle()).isEqualTo("Bad Request");
 
       assertTextContentFallback(result);
     }
@@ -752,7 +765,7 @@ class ProcessInstanceToolsTest extends OperationalToolsTest {
       final var problemDetail =
           objectMapper.convertValue(result.structuredContent(), ProblemDetail.class);
       assertThat(problemDetail.getStatus()).isEqualTo(HttpStatus.BAD_REQUEST.value());
-      assertThat(problemDetail.getTitle()).isEqualTo("INVALID_ARGUMENT");
+      assertThat(problemDetail.getTitle()).isEqualTo("Bad Request");
       assertThat(problemDetail.getDetail())
           .contains("At least one of [processDefinitionId, processDefinitionKey] is required");
 
@@ -776,7 +789,7 @@ class ProcessInstanceToolsTest extends OperationalToolsTest {
       final var problemDetail =
           objectMapper.convertValue(result.structuredContent(), ProblemDetail.class);
       assertThat(problemDetail.getStatus()).isEqualTo(HttpStatus.BAD_REQUEST.value());
-      assertThat(problemDetail.getTitle()).isEqualTo("INVALID_ARGUMENT");
+      assertThat(problemDetail.getTitle()).isEqualTo("Bad Request");
       assertThat(problemDetail.getDetail())
           .contains("Only one of [processDefinitionId, processDefinitionKey] is allowed");
 
@@ -830,7 +843,9 @@ class ProcessInstanceToolsTest extends OperationalToolsTest {
       assertThat(capturedRequest.tags()).containsExactly("mcp-tool:abc");
 
       final var actualResult =
-          objectMapper.convertValue(result.structuredContent(), CreateProcessInstanceResult.class);
+          objectMapper.convertValue(
+              result.structuredContent(),
+              io.camunda.gateway.protocol.model.CreateProcessInstance.class);
       assertThat(actualResult.getProcessDefinitionKey()).isEqualTo("123");
       assertThat(actualResult.getProcessDefinitionId()).isEqualTo("testProcessId");
       assertThat(actualResult.getProcessDefinitionVersion()).isEqualTo(-1);
@@ -892,7 +907,9 @@ class ProcessInstanceToolsTest extends OperationalToolsTest {
       assertThat(capturedRequest.tags()).containsExactly("mcp-tool:abc");
 
       final var actualResult =
-          objectMapper.convertValue(result.structuredContent(), CreateProcessInstanceResult.class);
+          objectMapper.convertValue(
+              result.structuredContent(),
+              io.camunda.gateway.protocol.model.CreateProcessInstance.class);
       assertThat(actualResult.getProcessDefinitionKey()).isEqualTo("123");
       assertThat(actualResult.getProcessDefinitionId()).isEqualTo("testProcessId");
       assertThat(actualResult.getProcessDefinitionVersion()).isEqualTo(7);
@@ -952,7 +969,7 @@ class ProcessInstanceToolsTest extends OperationalToolsTest {
       final var problemDetail =
           objectMapper.convertValue(result.structuredContent(), ProblemDetail.class);
       assertThat(problemDetail.getStatus()).isEqualTo(HttpStatus.BAD_REQUEST.value());
-      assertThat(problemDetail.getTitle()).isEqualTo("INVALID_ARGUMENT");
+      assertThat(problemDetail.getTitle()).isEqualTo("Bad Request");
       assertThat(problemDetail.getDetail())
           .contains(
               "Expected to handle request Create Process Instance with multi-tenancy enabled, but no tenant identifier was provided.");
@@ -998,7 +1015,9 @@ class ProcessInstanceToolsTest extends OperationalToolsTest {
       assertThat(capturedRequest.businessId()).isEqualTo(businessId);
 
       final var actualResult =
-          objectMapper.convertValue(result.structuredContent(), CreateProcessInstanceResult.class);
+          objectMapper.convertValue(
+              result.structuredContent(),
+              io.camunda.gateway.protocol.model.CreateProcessInstance.class);
       assertThat(actualResult.getProcessInstanceKey()).isEqualTo("456");
       assertThat(actualResult.getBusinessId()).isEqualTo(businessId);
 

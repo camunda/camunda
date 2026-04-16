@@ -17,12 +17,6 @@ public interface CamundaAuthenticationProvider {
    * Returns the current {@link CamundaAuthentication} representing the authentication context for a
    * user, client, or anonymous user.
    *
-   * <p>The returned {@link CamundaAuthentication} may represent an anonymous user ({@code
-   * authenticatedUsername} and {@code authenticatedClientId} will be null and {@code claims will
-   * contain an entry of key:Authorization.AUTHORIZED_ANONYMOUS_USER value:true}) or a unique
-   * principal (either {@code authenticatedUsername} or {@code authenticatedClientId} will be set,
-   * but never both)
-   *
    * @return the current {@link CamundaAuthentication}
    */
   CamundaAuthentication getCamundaAuthentication();

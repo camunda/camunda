@@ -30,6 +30,8 @@ import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.service.AuthorizationServices;
 import io.camunda.service.exception.ErrorMapper;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
+import io.camunda.zeebe.gateway.rest.controller.AuthorizationController;
+import io.camunda.zeebe.gateway.rest.controller.adapter.DefaultAuthorizationServiceAdapter;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceMatcher;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import java.util.List;
@@ -46,8 +48,8 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.json.JsonCompareMode;
 
+@Import({DefaultAuthorizationServiceAdapter.class, SecurityConfiguration.class})
 @WebMvcTest(value = AuthorizationController.class)
-@Import(SecurityConfiguration.class)
 public class AuthorizationQueryControllerTest extends RestControllerTest {
 
   static final String EXPECTED_SEARCH_RESPONSE =
@@ -226,6 +228,9 @@ public class AuthorizationQueryControllerTest extends RestControllerTest {
     webClient
         .post()
         .uri(AUTHORIZATION_SEARCH_URL)
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue("{}")
         .exchange()
         .expectStatus()
         .isOk()
@@ -459,7 +464,7 @@ public class AuthorizationQueryControllerTest extends RestControllerTest {
                 """
                     {
                       "type": "about:blank",
-                      "title": "Bad Request",
+                      "title": "INVALID_ARGUMENT",
                       "status": 400,
                       "detail": "Only one of [from, after, before] is allowed.",
                       "instance": "%s"

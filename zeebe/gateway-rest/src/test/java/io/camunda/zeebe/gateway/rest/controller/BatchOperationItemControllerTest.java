@@ -23,6 +23,7 @@ import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.BatchOperationServices;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
+import io.camunda.zeebe.gateway.rest.controller.adapter.DefaultBatchOperationServiceAdapter;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.stream.Stream;
@@ -31,11 +32,13 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.json.JsonCompareMode;
 
-@WebMvcTest(value = BatchOperationItemsController.class)
+@Import(DefaultBatchOperationServiceAdapter.class)
+@WebMvcTest(value = BatchOperationController.class)
 class BatchOperationItemControllerTest extends RestControllerTest {
 
   @MockitoBean private BatchOperationServices batchOperationServices;

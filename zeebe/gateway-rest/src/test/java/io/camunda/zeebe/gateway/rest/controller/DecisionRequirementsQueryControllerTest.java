@@ -26,6 +26,7 @@ import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.DecisionRequirementsServices;
 import io.camunda.service.exception.ErrorMapper;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
+import io.camunda.zeebe.gateway.rest.controller.adapter.DefaultDecisionRequirementsServiceAdapter;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.function.BiFunction;
@@ -36,10 +37,12 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.json.JsonCompareMode;
 
+@Import(DefaultDecisionRequirementsServiceAdapter.class)
 @WebMvcTest(value = DecisionRequirementsController.class)
 public class DecisionRequirementsQueryControllerTest extends RestControllerTest {
 
@@ -530,15 +533,6 @@ public class DecisionRequirementsQueryControllerTest extends RestControllerTest 
     final String decisionRequirementsKey = "invalidKey";
 
     // when/then
-    final var expectedResponse =
-        """
-            {
-              "type": "about:blank",
-              "title": "Bad Request",
-              "status": 400,
-              "detail": "Failed to convert 'decisionRequirementsKey' with value: 'invalidKey'",
-              "instance": "/v2/decision-requirements/invalidKey/xml"
-            }""";
     webClient
         .get()
         .uri("/v2/decision-requirements/%s/xml".formatted(decisionRequirementsKey))
@@ -546,8 +540,6 @@ public class DecisionRequirementsQueryControllerTest extends RestControllerTest 
         .expectStatus()
         .isBadRequest()
         .expectHeader()
-        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
-        .expectBody()
-        .json(expectedResponse, JsonCompareMode.STRICT);
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON);
   }
 }

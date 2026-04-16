@@ -14,9 +14,9 @@ import io.camunda.gateway.protocol.model.SignalBroadcastRequest;
 import java.util.Optional;
 import org.springframework.http.ProblemDetail;
 
-public class SignalRequestValidator {
+public final class SignalRequestValidator {
 
-  public static Optional<ProblemDetail> validateSignalBroadcastRequest(
+  public static Optional<ProblemDetail> validateBroadcastRequest(
       final SignalBroadcastRequest request) {
     return validate(
         violations -> {

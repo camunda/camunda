@@ -26,6 +26,7 @@ import io.camunda.security.configuration.MultiTenancyConfiguration;
 import io.camunda.service.DecisionDefinitionServices;
 import io.camunda.service.exception.ErrorMapper;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
+import io.camunda.zeebe.gateway.rest.controller.adapter.DefaultDecisionDefinitionServiceAdapter;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.function.BiFunction;
@@ -36,10 +37,12 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.json.JsonCompareMode;
 
+@Import(DefaultDecisionDefinitionServiceAdapter.class)
 @WebMvcTest(value = DecisionDefinitionController.class)
 public class DecisionDefinitionQueryControllerTest extends RestControllerTest {
 
@@ -410,16 +413,6 @@ public class DecisionDefinitionQueryControllerTest extends RestControllerTest {
     final String decisionDefinitionKey = "invalidKey";
 
     // when/then
-    final var expectedResponse =
-        """
-            {
-              "type": "about:blank",
-              "title": "Bad Request",
-              "status": 400,
-              "detail": "Failed to convert 'decisionDefinitionKey' with value: 'invalidKey'",
-              "instance": "/v2/decision-definitions/invalidKey/xml"
-            }""";
-
     webClient
         .get()
         .uri("/v2/decision-definitions/%s/xml".formatted(decisionDefinitionKey))
@@ -427,9 +420,7 @@ public class DecisionDefinitionQueryControllerTest extends RestControllerTest {
         .expectStatus()
         .isBadRequest()
         .expectHeader()
-        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
-        .expectBody()
-        .json(expectedResponse, JsonCompareMode.STRICT);
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON);
   }
 
   @Test

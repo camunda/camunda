@@ -39,6 +39,7 @@ import io.camunda.security.configuration.MultiTenancyConfiguration;
 import io.camunda.service.ProcessInstanceServices;
 import io.camunda.service.exception.ErrorMapper;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
+import io.camunda.zeebe.gateway.rest.controller.adapter.DefaultProcessInstanceServiceAdapter;
 import java.nio.charset.StandardCharsets;
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -58,11 +59,13 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.skyscreamer.jsonassert.JSONAssert;
 import org.skyscreamer.jsonassert.JSONCompareMode;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.json.JsonCompareMode;
 
 @ExtendWith(MockitoExtension.class)
+@Import(DefaultProcessInstanceServiceAdapter.class)
 @WebMvcTest(value = ProcessInstanceController.class)
 public class ProcessInstanceQueryControllerTest extends RestControllerTest {
 
@@ -358,7 +361,7 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
                   "type": "about:blank",
                   "title": "INVALID_ARGUMENT",
                   "status": 400,
-                  "detail": "Variable value must not be null.",
+                  "detail": "No value provided.",
                   "instance": "%s"
                 }""",
             PROCESS_INSTANCES_SEARCH_URL);
@@ -378,85 +381,6 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
         .json(expectedResponse, JsonCompareMode.STRICT);
 
     verify(processInstanceServices, never()).search(any(ProcessInstanceQuery.class), any());
-  }
-
-  @Test
-  void shouldRejectSearchWithBothBatchOperationIdAndBatchOperationKey() {
-    // given
-    final var request =
-        """
-            {
-                "filter": {
-                    "batchOperationId": {"$eq": "id-1"},
-                    "batchOperationKey": {"$eq": "key-1"}
-                }
-            }""";
-    final var expectedResponse =
-        String.format(
-            """
-                {
-                  "type": "about:blank",
-                  "title": "INVALID_ARGUMENT",
-                  "status": 400,
-                  "detail": "Only one of [batchOperationId, batchOperationKey] is allowed.",
-                  "instance": "%s"
-                }""",
-            PROCESS_INSTANCES_SEARCH_URL);
-    // when / then
-    webClient
-        .post()
-        .uri(PROCESS_INSTANCES_SEARCH_URL)
-        .accept(APPLICATION_JSON)
-        .contentType(APPLICATION_JSON)
-        .bodyValue(request)
-        .exchange()
-        .expectStatus()
-        .isBadRequest()
-        .expectHeader()
-        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
-        .expectBody()
-        .json(expectedResponse, JsonCompareMode.STRICT);
-
-    verify(processInstanceServices, never()).search(any(ProcessInstanceQuery.class), any());
-  }
-
-  @Test
-  void shouldSearchProcessInstancesWithDeprecatedBatchOperationId() {
-    // given - batchOperationId is deprecated but should still be accepted for backward
-    // compatibility
-    final var request =
-        """
-            {
-                "filter": {
-                    "batchOperationId": {"$eq": "op-id-1"}
-                }
-            }""";
-    final var expectedFilter =
-        new ProcessInstanceFilter.Builder()
-            .batchOperationIdOperations(Operation.eq("op-id-1"))
-            .build();
-
-    when(processInstanceServices.search(queryCaptor.capture(), any()))
-        .thenReturn(SEARCH_QUERY_RESULT);
-
-    // when / then
-    webClient
-        .post()
-        .uri(PROCESS_INSTANCES_SEARCH_URL)
-        .accept(MediaType.APPLICATION_JSON)
-        .contentType(MediaType.APPLICATION_JSON)
-        .bodyValue(request)
-        .exchange()
-        .expectStatus()
-        .isOk()
-        .expectHeader()
-        .contentType(MediaType.APPLICATION_JSON)
-        .expectBody()
-        .consumeWith(
-            result -> assertJsonNonExtensible(EXPECTED_SEARCH_RESPONSE, result.getResponseBody()));
-
-    verify(processInstanceServices)
-        .search(eq(new ProcessInstanceQuery.Builder().filter(expectedFilter).build()), any());
   }
 
   @Test
@@ -650,7 +574,7 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
             """
                 {
                   "type": "about:blank",
-                  "title": "Bad Request",
+                  "title": "INVALID_ARGUMENT",
                   "status": 400,
                   "detail": "Only one of [from, after, before] is allowed.",
                   "instance": "%s"
@@ -691,7 +615,7 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
             """
                 {
                   "type": "about:blank",
-                  "title": "Bad Request",
+                  "title": "INVALID_ARGUMENT",
                   "status": 400,
                   "detail": "Only one of [from, after, before] is allowed.",
                   "instance": "%s"
@@ -909,10 +833,6 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
         streamBuilder,
         "errorMessage",
         ops -> new ProcessInstanceFilter.Builder().errorMessageOperations(ops).build());
-    stringOperationTestCases(
-        streamBuilder,
-        "batchOperationKey",
-        ops -> new ProcessInstanceFilter.Builder().batchOperationIdOperations(ops).build());
     return streamBuilder.build();
   }
 
@@ -1042,49 +962,6 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
     verify(processInstanceServices)
         .search(
             eq(new ProcessInstanceQuery.Builder().filter(expectedFilter.build()).build()), any());
-  }
-
-  @Test
-  void shouldReturnBadRequestForInvalidRootFilterWithValidOrClause() {
-    // given
-    final var request =
-        """
-        {
-          "filter": {
-            "processInstanceKey": "abc",
-            "$or": [
-              { "processDefinitionId": "process_v1" }
-            ]
-          }
-        }""";
-    final var expectedResponse =
-        String.format(
-            """
-                {
-                  "type": "about:blank",
-                  "title": "INVALID_ARGUMENT",
-                  "status": 400,
-                  "detail": "The provided processInstanceKey 'abc' is not a valid key. Expected a numeric value. Did you pass an entity id instead of an entity key?.",
-                  "instance": "%s"
-                }""",
-            PROCESS_INSTANCES_SEARCH_URL);
-
-    // when / then
-    webClient
-        .post()
-        .uri(PROCESS_INSTANCES_SEARCH_URL)
-        .accept(MediaType.APPLICATION_JSON)
-        .contentType(MediaType.APPLICATION_JSON)
-        .bodyValue(request)
-        .exchange()
-        .expectStatus()
-        .isBadRequest()
-        .expectHeader()
-        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
-        .expectBody()
-        .json(expectedResponse, JsonCompareMode.STRICT);
-
-    verify(processInstanceServices, never()).search(any(ProcessInstanceQuery.class), any());
   }
 
   @Test

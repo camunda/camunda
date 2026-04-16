@@ -11,6 +11,7 @@ import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESS
 import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_ILLEGAL_CHARACTER;
 import static io.camunda.security.validation.IdentifierValidator.TENANT_ID_MASK;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.gateway.mapping.http.validator.TenantRequestValidator;
 import io.camunda.gateway.protocol.model.TenantCreateRequest;
@@ -32,15 +33,14 @@ public class TenantRequestValidatorTest {
               new io.camunda.security.validation.IdentifierValidator(ID_PATTERN, ID_PATTERN)));
 
   @ParameterizedTest
-  @MethodSource("validTenantIds")
+  @MethodSource("validTenantIdsForCreateRequest")
   void shouldPassTenantIdForCreateRequest(final String tenantId) {
     // given
-    final TenantCreateRequest request =
+    final var request =
         new TenantCreateRequest()
             .tenantId(tenantId)
             .name("New tenant")
             .description("A new tenant for testing");
-
     // when
     final var validationResult = VALIDATOR.validateCreateRequest(request);
 
@@ -63,22 +63,18 @@ public class TenantRequestValidatorTest {
   }
 
   @ParameterizedTest
-  @MethodSource("invalidTenantIds")
-  void shouldFailTenantIdForCreateRequest(final String tenantId, final String errorMessage) {
-    // given
-    final TenantCreateRequest request =
-        new TenantCreateRequest()
-            .tenantId(tenantId)
-            .name("New tenant")
-            .description("A new tenant for testing");
-
-    // when
-    final var validationResult = VALIDATOR.validateCreateRequest(request);
-
-    // then
-    assertThat(validationResult)
-        .hasValueSatisfying(
-            problemDetail -> assertThat(problemDetail.getDetail()).isEqualTo(errorMessage));
+  @MethodSource("invalidTenantIdsForCreateRequest")
+  void shouldFailTenantIdForCreateRequest(final String tenantId, final String expectedMessage) {
+    // The strict contract compact constructor rejects invalid tenantIds at construction time,
+    // which means they are caught during Jackson deserialization before the validator runs.
+    assertThatThrownBy(
+            () ->
+                new TenantCreateRequest()
+                    .tenantId(tenantId)
+                    .name("New tenant")
+                    .description("A new tenant for testing"))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessage(expectedMessage);
   }
 
   @ParameterizedTest
@@ -97,8 +93,28 @@ public class TenantRequestValidatorTest {
             problemDetail -> assertThat(problemDetail.getDetail()).isEqualTo(errorMessage));
   }
 
+  private static Stream<Arguments> validTenantIdsForCreateRequest() {
+    // <default> is allowed by the domain validator (special case) but rejected by the
+    // compact constructor's OpenAPI pattern, so it cannot be tested through object creation.
+    return Stream.of(Arguments.of("custom_1.2-3"));
+  }
+
   private static Stream<Arguments> validTenantIds() {
     return Stream.of(Arguments.of("<default>"), Arguments.of("custom_1.2-3"));
+  }
+
+  private static Stream<Arguments> invalidTenantIdsForCreateRequest() {
+    return Stream.of(
+        Arguments.of(
+            "<custom>",
+            "The provided tenantId contains illegal characters."
+                + " It must match the pattern '^[A-Za-z0-9_@.+-]+$'."),
+        Arguments.of("   ", "tenantId must not be blank"),
+        Arguments.of("", "tenantId must not be blank"),
+        Arguments.of(
+            "not blank",
+            "The provided tenantId contains illegal characters."
+                + " It must match the pattern '^[A-Za-z0-9_@.+-]+$'."));
   }
 
   private static Stream<Arguments> invalidTenantIds() {

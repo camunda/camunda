@@ -30,6 +30,8 @@ import io.camunda.service.UserServices;
 import io.camunda.service.exception.ErrorMapper;
 import io.camunda.zeebe.broker.client.api.dto.BrokerRejection;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
+import io.camunda.zeebe.gateway.rest.controller.RoleController;
+import io.camunda.zeebe.gateway.rest.controller.adapter.DefaultRoleServiceAdapter;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.RoleRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.RoleIntent;
@@ -45,6 +47,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Import;
 import org.springframework.context.annotation.Primary;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -56,6 +59,7 @@ public class RoleControllerTest {
   static final Pattern ID_PATTERN = Pattern.compile(SecurityConfiguration.DEFAULT_ID_REGEX);
 
   @Nested
+  @Import(DefaultRoleServiceAdapter.class)
   @WebMvcTest(RoleController.class)
   class DefaultRoleControllerTest extends RestControllerTest {
 
@@ -113,7 +117,7 @@ public class RoleControllerTest {
           .uri(ROLE_BASE_URL)
           .accept(MediaType.APPLICATION_JSON)
           .contentType(MediaType.APPLICATION_JSON)
-          .bodyValue(new RoleCreateRequest().roleId(roleId).name(roleName))
+          .bodyValue("{\"roleId\":null,\"name\":\"%s\"}".formatted(roleName))
           .exchange()
           .expectStatus()
           .isBadRequest()
@@ -146,7 +150,7 @@ public class RoleControllerTest {
           .uri(ROLE_BASE_URL)
           .accept(MediaType.APPLICATION_JSON)
           .contentType(MediaType.APPLICATION_JSON)
-          .bodyValue(new RoleCreateRequest().roleId(roleId).name(roleName))
+          .bodyValue(new RoleCreateRequest().roleId(roleId).name(roleName).description(null))
           .exchange()
           .expectStatus()
           .isBadRequest()
@@ -179,7 +183,7 @@ public class RoleControllerTest {
           .uri(ROLE_BASE_URL)
           .accept(MediaType.APPLICATION_JSON)
           .contentType(MediaType.APPLICATION_JSON)
-          .bodyValue(new RoleCreateRequest().roleId(roleId).name(roleName))
+          .bodyValue(new RoleCreateRequest().roleId(roleId).name(roleName).description(null))
           .exchange()
           .expectStatus()
           .isBadRequest()
@@ -211,7 +215,7 @@ public class RoleControllerTest {
           .uri(ROLE_BASE_URL)
           .accept(MediaType.APPLICATION_JSON)
           .contentType(MediaType.APPLICATION_JSON)
-          .bodyValue(new RoleCreateRequest().name("name").roleId(roleId))
+          .bodyValue(new RoleCreateRequest().roleId(roleId).name("name").description(null))
           .exchange()
           .expectStatus()
           .isBadRequest()
@@ -246,7 +250,7 @@ public class RoleControllerTest {
           .uri(ROLE_BASE_URL)
           .accept(MediaType.APPLICATION_JSON)
           .contentType(MediaType.APPLICATION_JSON)
-          .bodyValue(new RoleCreateRequest().name("name").roleId(roleId))
+          .bodyValue(new RoleCreateRequest().roleId(roleId).name("name").description(null))
           .exchange()
           .expectStatus()
           .isBadRequest()
@@ -1240,6 +1244,7 @@ public class RoleControllerTest {
   }
 
   @Nested
+  @Import(DefaultRoleServiceAdapter.class)
   @WebMvcTest(RoleController.class)
   class ByogEnabledRoleControllerTest extends RestControllerTest {
 

@@ -15,10 +15,10 @@ import java.util.function.Function;
 
 public class KeyUtil {
 
-  public static Long keyToLong(final String key) {
-    return key != null ? Long.parseLong(key) : null;
-  }
-
+  /**
+   * Returns a function that converts a key string to Long, collecting errors into {@code
+   * validationErrors} instead of throwing.
+   */
   public static Function<String, Long> mapKeyToLong(
       final String fieldName, final List<String> validationErrors) {
     return key -> {
@@ -32,6 +32,10 @@ public class KeyUtil {
         return null;
       }
     };
+  }
+
+  public static Long keyToLong(final String key) {
+    return key != null ? Long.parseLong(key) : null;
   }
 
   public static String keyToString(final Long value) {

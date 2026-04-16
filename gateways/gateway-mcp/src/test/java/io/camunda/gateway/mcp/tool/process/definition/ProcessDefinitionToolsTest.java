@@ -15,9 +15,9 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.camunda.gateway.mapping.http.search.contract.StrictSearchQueryResult;
 import io.camunda.gateway.mcp.OperationalToolsTest;
-import io.camunda.gateway.protocol.model.ProcessDefinitionResult;
-import io.camunda.gateway.protocol.model.ProcessDefinitionSearchQueryResult;
+import io.camunda.gateway.protocol.model.ProcessDefinition;
 import io.camunda.search.entities.ProcessDefinitionEntity;
 import io.camunda.search.filter.Operation;
 import io.camunda.search.filter.Operator;
@@ -79,8 +79,7 @@ class ProcessDefinitionToolsTest extends OperationalToolsTest {
   @Autowired private JsonMapper objectMapper;
   @Captor private ArgumentCaptor<ProcessDefinitionQuery> queryCaptor;
 
-  private void assertExampleProcessDefinitionResult(
-      final ProcessDefinitionResult processDefinition) {
+  private void assertExampleProcessDefinitionResult(final ProcessDefinition processDefinition) {
     assertThat(processDefinition.getProcessDefinitionKey()).isEqualTo("5");
     assertThat(processDefinition.getName()).isEqualTo("Complex Process");
     assertThat(processDefinition.getProcessDefinitionId()).isEqualTo("complexProcess");
@@ -112,7 +111,7 @@ class ProcessDefinitionToolsTest extends OperationalToolsTest {
       assertThat(result.structuredContent()).isNotNull();
 
       final var processDefinition =
-          objectMapper.convertValue(result.structuredContent(), ProcessDefinitionResult.class);
+          objectMapper.convertValue(result.structuredContent(), ProcessDefinition.class);
       assertExampleProcessDefinitionResult(processDefinition);
 
       assertTextContentFallback(result);
@@ -213,14 +212,20 @@ class ProcessDefinitionToolsTest extends OperationalToolsTest {
       assertThat(result.isError()).isFalse();
       assertThat(result.structuredContent()).isNotNull();
 
-      final var response =
-          objectMapper.convertValue(
-              result.structuredContent(), ProcessDefinitionSearchQueryResult.class);
-      assertThat(response.getPage().getTotalItems()).isEqualTo(1L);
-      assertThat(response.getPage().getHasMoreTotalItems()).isFalse();
-      assertThat(response.getPage().getStartCursor()).isEqualTo("f");
-      assertThat(response.getPage().getEndCursor()).isEqualTo("v");
-      assertThat(response.getItems())
+      @SuppressWarnings("unchecked")
+      final StrictSearchQueryResult<ProcessDefinition> response =
+          (StrictSearchQueryResult<ProcessDefinition>)
+              objectMapper.convertValue(
+                  result.structuredContent(),
+                  objectMapper
+                      .getTypeFactory()
+                      .constructParametricType(
+                          StrictSearchQueryResult.class, ProcessDefinition.class));
+      assertThat(response.page().totalItems()).isEqualTo(1L);
+      assertThat(response.page().hasMoreTotalItems()).isFalse();
+      assertThat(response.page().startCursor()).isEqualTo("f");
+      assertThat(response.page().endCursor()).isEqualTo("v");
+      assertThat(response.items())
           .hasSize(1)
           .first()
           .satisfies(ProcessDefinitionToolsTest.this::assertExampleProcessDefinitionResult);
@@ -265,7 +270,7 @@ class ProcessDefinitionToolsTest extends OperationalToolsTest {
           objectMapper.convertValue(result.structuredContent(), ProblemDetail.class);
       assertThat(problemDetail.getDetail()).isEqualTo("Expected failure");
       assertThat(problemDetail.getStatus()).isEqualTo(HttpStatus.NOT_FOUND.value());
-      assertThat(problemDetail.getTitle()).isEqualTo("NOT_FOUND");
+      assertThat(problemDetail.getTitle()).isEqualTo("Not Found");
 
       assertTextContentFallback(result);
     }
@@ -411,7 +416,7 @@ class ProcessDefinitionToolsTest extends OperationalToolsTest {
       assertThat(problemDetail.getDetail())
           .isEqualTo("The BPMN XML for this process definition is not available.");
       assertThat(problemDetail.getStatus()).isEqualTo(HttpStatus.NOT_FOUND.value());
-      assertThat(problemDetail.getTitle()).isEqualTo("NOT_FOUND");
+      assertThat(problemDetail.getTitle()).isEqualTo("Not Found");
 
       assertTextContentFallback(result);
     }

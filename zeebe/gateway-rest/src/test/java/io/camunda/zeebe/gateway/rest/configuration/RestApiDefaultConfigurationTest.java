@@ -13,14 +13,18 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.search.query.ProcessInstanceQuery;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
+import io.camunda.zeebe.gateway.rest.controller.ClusterController;
 import io.camunda.zeebe.gateway.rest.controller.ProcessInstanceController;
-import io.camunda.zeebe.gateway.rest.controller.TopologyController;
+import io.camunda.zeebe.gateway.rest.controller.adapter.DefaultClusterServiceAdapter;
+import io.camunda.zeebe.gateway.rest.controller.adapter.DefaultProcessInstanceServiceAdapter;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
-@WebMvcTest(value = {ProcessInstanceController.class, TopologyController.class})
+@Import({DefaultClusterServiceAdapter.class, DefaultProcessInstanceServiceAdapter.class})
+@WebMvcTest(value = {ProcessInstanceController.class, ClusterController.class})
 public class RestApiDefaultConfigurationTest extends RestApiConfigurationTest {
 
   @MockitoBean private CamundaAuthenticationProvider authenticationProvider;

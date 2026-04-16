@@ -26,6 +26,8 @@ import io.camunda.service.exception.ErrorMapper;
 import io.camunda.zeebe.broker.client.api.dto.BrokerRejection;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.gateway.rest.config.ApiFiltersConfiguration;
+import io.camunda.zeebe.gateway.rest.controller.UserController;
+import io.camunda.zeebe.gateway.rest.controller.adapter.DefaultUserServiceAdapter;
 import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.UserIntent;
@@ -52,6 +54,7 @@ public class UserControllerTest {
   private static final Pattern ID_PATTERN = Pattern.compile(SecurityConfiguration.DEFAULT_ID_REGEX);
 
   @Nested
+  @Import(DefaultUserServiceAdapter.class)
   @WebMvcTest(UserController.class)
   @TestPropertySource(properties = "camunda.security.authentication.method=basic")
   public class CamundaUsersEnabledTest extends RestControllerTest {
@@ -155,11 +158,9 @@ public class UserControllerTest {
     @Test
     void shouldRejectUserCreationWithMissingUsername() {
       // given
-      final var request = validUserWithPasswordRequest().username(null);
-
       // when then
       assertRequestRejectedExceptionally(
-          request,
+          "{\"password\":\"zabraboof\",\"name\":\"Foo Bar\",\"email\":\"bar@baz.com\"}",
           """
             {
               "type": "about:blank",
@@ -175,11 +176,9 @@ public class UserControllerTest {
     @Test
     void shouldRejectUserCreationWithBlankUsername() {
       // given
-      final var request = validUserWithPasswordRequest().username("");
-
       // when then
       assertRequestRejectedExceptionally(
-          request,
+          new UserRequest().password("zabraboof").username("").name("Foo Bar").email("bar@baz.com"),
           """
             {
               "type": "about:blank",
@@ -195,11 +194,9 @@ public class UserControllerTest {
     @Test
     void shouldRejectUserCreationWithEmptyPassword() {
       // given
-      final var request = validUserWithPasswordRequest().password(null);
-
       // when then
       assertRequestRejectedExceptionally(
-          request,
+          "{\"username\":\"foo\",\"name\":\"Foo Bar\",\"email\":\"bar@baz.com\"}",
           """
             {
               "type": "about:blank",
@@ -215,11 +212,9 @@ public class UserControllerTest {
     @Test
     void shouldRejectUserCreationWithBlankPassword() {
       // given
-      final var request = validUserWithPasswordRequest().password("");
-
       // when then
       assertRequestRejectedExceptionally(
-          request,
+          new UserRequest().password("").username("foo").name("Foo Bar").email("bar@baz.com"),
           """
             {
               "type": "about:blank",
@@ -271,11 +266,9 @@ public class UserControllerTest {
     void shouldRejectUserCreationWithInvalidEmail() {
       // given
       final var email = "invalid@email.reject";
-      final var request = validUserWithPasswordRequest().email(email);
-
       // when then
       assertRequestRejectedExceptionally(
-          request,
+          new UserRequest().password("zabraboof").username("foo").name("Foo Bar").email(email),
           """
             {
               "type": "about:blank",
@@ -292,11 +285,13 @@ public class UserControllerTest {
     void shouldRejectUserCreationWithTooLongUsername() {
       // given
       final var username = "x".repeat(257);
-      final var request = validUserWithPasswordRequest().username(username);
-
       // when then
       assertRequestRejectedExceptionally(
-          request,
+          new UserRequest()
+              .password("zabraboof")
+              .username(username)
+              .name("Foo Bar")
+              .email("bar@baz.com"),
           """
             {
               "type": "about:blank",
@@ -318,11 +313,13 @@ public class UserControllerTest {
         })
     void shouldRejectUserCreationWithIllegalCharactersInUsername(final String username) {
       // given
-      final var request = validUserWithPasswordRequest().username(username);
-
       // when then
       assertRequestRejectedExceptionally(
-          request,
+          new UserRequest()
+              .password("zabraboof")
+              .username(username)
+              .name("Foo Bar")
+              .email("bar@baz.com"),
           """
             {
               "type": "about:blank",
@@ -379,9 +376,9 @@ public class UserControllerTest {
           .contentType(MediaType.APPLICATION_JSON)
           .bodyValue(
               new UserUpdateRequest()
+                  .password(user.password())
                   .name(user.name())
-                  .email(user.email())
-                  .password(user.password()))
+                  .email(user.email()))
           .exchange()
           .expectStatus()
           .isOk();
@@ -395,14 +392,14 @@ public class UserControllerTest {
 
     private UserRequest validUserWithPasswordRequest() {
       return new UserRequest()
+          .password("zabraboof")
           .username("foo")
           .name("Foo Bar")
-          .email("bar@baz.com")
-          .password("zabraboof");
+          .email("bar@baz.com");
     }
 
     private void assertRequestRejectedExceptionally(
-        final UserRequest request, final String expectedError) {
+        final Object request, final String expectedError) {
       webClient
           .post()
           .uri(USER_BASE_URL)
@@ -418,10 +415,13 @@ public class UserControllerTest {
   }
 
   @Nested
+  @Import({DefaultUserServiceAdapter.class, ApiFiltersConfiguration.class})
   @WebMvcTest(UserController.class)
-  @Import(ApiFiltersConfiguration.class)
   @TestPropertySource(properties = "camunda.security.authentication.method=oidc")
   public class CamundaUsersDisabledTest extends RestControllerTest {
+
+    @MockitoBean CamundaAuthenticationProvider authenticationProvider;
+    @MockitoBean UserServices userServices;
 
     public static final String FORBIDDEN_MESSAGE =
         """
@@ -468,9 +468,9 @@ public class UserControllerTest {
           .contentType(MediaType.APPLICATION_JSON)
           .bodyValue(
               new UserUpdateRequest()
+                  .password(user.password())
                   .name(user.name())
-                  .email(user.email())
-                  .password(user.password()))
+                  .email(user.email()))
           .exchange()
           .expectStatus()
           .isForbidden()

@@ -14,8 +14,6 @@ import static org.mockito.Mockito.when;
 import io.camunda.gateway.mcp.OperationalToolsTest;
 import io.camunda.gateway.protocol.model.BrokerInfo;
 import io.camunda.gateway.protocol.model.Partition;
-import io.camunda.gateway.protocol.model.Partition.HealthEnum;
-import io.camunda.gateway.protocol.model.Partition.RoleEnum;
 import io.camunda.gateway.protocol.model.TopologyResponse;
 import io.camunda.service.TopologyServices;
 import io.camunda.service.TopologyServices.Broker;
@@ -91,7 +89,7 @@ class ClusterToolsTest extends OperationalToolsTest {
           objectMapper.convertValue(result.structuredContent(), ProblemDetail.class);
       assertThat(problemDetail.getDetail()).isEqualTo("Expected failure");
       assertThat(problemDetail.getStatus()).isEqualTo(HttpStatus.CONFLICT.value());
-      assertThat(problemDetail.getTitle()).isEqualTo("INVALID_STATE");
+      assertThat(problemDetail.getTitle()).isEqualTo("Conflict");
 
       assertTextContentFallback(result);
     }
@@ -106,45 +104,44 @@ class ClusterToolsTest extends OperationalToolsTest {
       final var version = VersionUtil.getVersion();
       final var expectedResponse =
           new TopologyResponse()
+              .brokers(
+                  List.of(
+                      new BrokerInfo()
+                          .nodeId(0)
+                          .host("localhost")
+                          .port(26501)
+                          .partitions(
+                              List.of(
+                                  new Partition().partitionId(1).role("leader").health("healthy")))
+                          .version(version),
+                      new BrokerInfo()
+                          .nodeId(1)
+                          .host("localhost")
+                          .port(26502)
+                          .partitions(
+                              List.of(
+                                  new Partition()
+                                      .partitionId(1)
+                                      .role("follower")
+                                      .health("healthy")))
+                          .version(version),
+                      new BrokerInfo()
+                          .nodeId(2)
+                          .host("localhost")
+                          .port(26503)
+                          .partitions(
+                              List.of(
+                                  new Partition()
+                                      .partitionId(1)
+                                      .role("inactive")
+                                      .health("unhealthy")))
+                          .version(version)))
               .clusterId("cluster-id")
-              .gatewayVersion(version)
               .clusterSize(3)
               .partitionsCount(1)
               .replicationFactor(3)
-              .lastCompletedChangeId("1")
-              .addBrokersItem(
-                  new BrokerInfo()
-                      .nodeId(0)
-                      .host("localhost")
-                      .port(26501)
-                      .version(version)
-                      .addPartitionsItem(
-                          new Partition()
-                              .partitionId(1)
-                              .health(HealthEnum.HEALTHY)
-                              .role(RoleEnum.LEADER)))
-              .addBrokersItem(
-                  new BrokerInfo()
-                      .nodeId(1)
-                      .host("localhost")
-                      .port(26502)
-                      .version(version)
-                      .addPartitionsItem(
-                          new Partition()
-                              .partitionId(1)
-                              .health(HealthEnum.HEALTHY)
-                              .role(RoleEnum.FOLLOWER)))
-              .addBrokersItem(
-                  new BrokerInfo()
-                      .nodeId(2)
-                      .host("localhost")
-                      .port(26503)
-                      .version(version)
-                      .addPartitionsItem(
-                          new Partition()
-                              .partitionId(1)
-                              .health(HealthEnum.UNHEALTHY)
-                              .role(RoleEnum.INACTIVE)));
+              .gatewayVersion(version)
+              .lastCompletedChangeId("1");
       final var topologyResponse =
           new Topology(
               List.of(
@@ -209,7 +206,7 @@ class ClusterToolsTest extends OperationalToolsTest {
           objectMapper.convertValue(result.structuredContent(), ProblemDetail.class);
       assertThat(problemDetail.getDetail()).isEqualTo("Expected failure");
       assertThat(problemDetail.getStatus()).isEqualTo(HttpStatus.CONFLICT.value());
-      assertThat(problemDetail.getTitle()).isEqualTo("INVALID_STATE");
+      assertThat(problemDetail.getTitle()).isEqualTo("Conflict");
 
       assertTextContentFallback(result);
     }

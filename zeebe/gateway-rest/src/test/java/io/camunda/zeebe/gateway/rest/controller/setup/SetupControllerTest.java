@@ -24,6 +24,8 @@ import io.camunda.service.RoleServices;
 import io.camunda.service.UserServices;
 import io.camunda.service.UserServices.UserDTO;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
+import io.camunda.zeebe.gateway.rest.controller.SetupController;
+import io.camunda.zeebe.gateway.rest.controller.adapter.DefaultSetupServiceAdapter;
 import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
 import io.camunda.zeebe.protocol.record.value.DefaultRole;
 import io.camunda.zeebe.protocol.record.value.EntityType;
@@ -37,12 +39,14 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Answers;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ProblemDetail;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.json.JsonCompareMode;
 
+@Import(DefaultSetupServiceAdapter.class)
 @WebMvcTest(SetupController.class)
 class SetupControllerTest extends RestControllerTest {
   private static final String BASE_PATH = "/v2/setup";
@@ -125,7 +129,8 @@ class SetupControllerTest extends RestControllerTest {
     // when then
     final var expectedBody =
         CamundaProblemDetail.forStatusAndDetail(
-            HttpStatus.FORBIDDEN, SetupController.WRONG_AUTHENTICATION_METHOD_ERROR_MESSAGE);
+            HttpStatus.FORBIDDEN,
+            DefaultSetupServiceAdapter.WRONG_AUTHENTICATION_METHOD_ERROR_MESSAGE);
     expectedBody.setTitle("FORBIDDEN");
     expectedBody.setInstance(URI.create(USER_PATH));
 
@@ -150,7 +155,7 @@ class SetupControllerTest extends RestControllerTest {
     // when then
     final var expectedBody =
         CamundaProblemDetail.forStatusAndDetail(
-            HttpStatus.FORBIDDEN, SetupController.ADMIN_EXISTS_ERROR_MESSAGE);
+            HttpStatus.FORBIDDEN, DefaultSetupServiceAdapter.ADMIN_EXISTS_ERROR_MESSAGE);
     expectedBody.setTitle("FORBIDDEN");
     expectedBody.setInstance(URI.create(USER_PATH));
 
@@ -170,11 +175,9 @@ class SetupControllerTest extends RestControllerTest {
   @Test
   void shouldRejectUserCreationWithMissingUsername() {
     // given
-    final var request = validUserWithPasswordRequest().username(null);
-
     // when then
     assertRequestRejectedExceptionally(
-        request,
+        "{\"password\":\"zabraboof\",\"name\":\"Foo Bar\",\"email\":\"bar@baz.com\"}",
         """
             {
               "type": "about:blank",
@@ -190,11 +193,9 @@ class SetupControllerTest extends RestControllerTest {
   @Test
   void shouldRejectUserCreationWithBlankUsername() {
     // given
-    final var request = validUserWithPasswordRequest().username("");
-
     // when then
     assertRequestRejectedExceptionally(
-        request,
+        new UserRequest().password("zabraboof").username("").name("Foo Bar").email("bar@baz.com"),
         """
             {
               "type": "about:blank",
@@ -210,11 +211,9 @@ class SetupControllerTest extends RestControllerTest {
   @Test
   void shouldRejectUserCreationWithEmptyPassword() {
     // given
-    final var request = validUserWithPasswordRequest().password(null);
-
     // when then
     assertRequestRejectedExceptionally(
-        request,
+        "{\"username\":\"foo\",\"name\":\"Foo Bar\",\"email\":\"bar@baz.com\"}",
         """
             {
               "type": "about:blank",
@@ -230,11 +229,9 @@ class SetupControllerTest extends RestControllerTest {
   @Test
   void shouldRejectUserCreationWithBlankPassword() {
     // given
-    final var request = validUserWithPasswordRequest().password("");
-
     // when then
     assertRequestRejectedExceptionally(
-        request,
+        new UserRequest().password("").username("foo").name("Foo Bar").email("bar@baz.com"),
         """
             {
               "type": "about:blank",
@@ -286,11 +283,9 @@ class SetupControllerTest extends RestControllerTest {
   void shouldRejectUserCreationWithInvalidEmail() {
     // given
     final var email = "invalid@email.reject";
-    final var request = validUserWithPasswordRequest().email(email);
-
     // when then
     assertRequestRejectedExceptionally(
-        request,
+        new UserRequest().password("zabraboof").username("foo").name("Foo Bar").email(email),
         """
             {
               "type": "about:blank",
@@ -307,11 +302,13 @@ class SetupControllerTest extends RestControllerTest {
   void shouldRejectUserCreationWithTooLongUsername() {
     // given
     final var username = "x".repeat(257);
-    final var request = validUserWithPasswordRequest().username(username);
-
     // when then
     assertRequestRejectedExceptionally(
-        request,
+        new UserRequest()
+            .password("zabraboof")
+            .username(username)
+            .name("Foo Bar")
+            .email("bar@baz.com"),
         """
             {
               "type": "about:blank",
@@ -333,11 +330,13 @@ class SetupControllerTest extends RestControllerTest {
       })
   void shouldRejectUserCreationWithIllegalCharactersInUsername(final String username) {
     // given
-    final var request = validUserWithPasswordRequest().username(username);
-
     // when then
     assertRequestRejectedExceptionally(
-        request,
+        new UserRequest()
+            .password("zabraboof")
+            .username(username)
+            .name("Foo Bar")
+            .email("bar@baz.com"),
         """
             {
               "type": "about:blank",
@@ -366,14 +365,14 @@ class SetupControllerTest extends RestControllerTest {
 
   private UserRequest validUserWithPasswordRequest() {
     return new UserRequest()
+        .password("zabraboof")
         .username("foo")
         .name("Foo Bar")
-        .email("bar@baz.com")
-        .password("zabraboof");
+        .email("bar@baz.com");
   }
 
   private void assertRequestRejectedExceptionally(
-      final UserRequest request, final String expectedError) {
+      final Object request, final String expectedError) {
     webClient
         .post()
         .uri(USER_PATH)

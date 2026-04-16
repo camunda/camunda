@@ -32,10 +32,13 @@ import io.camunda.service.exception.ErrorMapper;
 import io.camunda.zeebe.broker.client.api.dto.BrokerRejection;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.gateway.rest.config.ApiFiltersConfiguration;
+import io.camunda.zeebe.gateway.rest.controller.TenantController;
+import io.camunda.zeebe.gateway.rest.controller.adapter.DefaultTenantServiceAdapter;
 import io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.TenantIntent;
 import io.camunda.zeebe.protocol.record.value.EntityType;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 import java.util.regex.Pattern;
@@ -63,12 +66,14 @@ public class TenantControllerTest {
 
   private static final String TENANT_BASE_URL = "/v2/tenants";
   private static final Pattern ID_PATTERN = Pattern.compile(SecurityConfiguration.DEFAULT_ID_REGEX);
-  // When building the expected error messages including this regex, for some reason the backslashes
-  // disappear and have to be doubled to prevent that.
-  private static final String TENANT_ID_PATTERN =
+  // Strict contracts validate request body tenantId against the OpenAPI spec pattern.
+  private static final String STRICT_TENANT_ID_PATTERN = "^[A-Za-z0-9_@.+-]+$";
+  // Path parameter tenantIds still go through domain validation (IdentifierValidator).
+  private static final String DOMAIN_TENANT_ID_PATTERN =
       IdentifierValidator.TENANT_ID_MASK.pattern().replace("\\", "\\\\");
 
   @Nested
+  @Import(DefaultTenantServiceAdapter.class)
   @WebMvcTest(TenantController.class)
   public class TenantsApiEnabledTest extends RestControllerTest {
     @MockitoBean private TenantServices tenantServices;
@@ -107,9 +112,9 @@ public class TenantControllerTest {
           .contentType(MediaType.APPLICATION_JSON)
           .bodyValue(
               new TenantCreateRequest()
+                  .tenantId(id)
                   .name(tenantName)
-                  .description(tenantDescription)
-                  .tenantId(id))
+                  .description(tenantDescription))
           .exchange()
           .expectStatus()
           .isCreated();
@@ -142,8 +147,8 @@ public class TenantControllerTest {
           .contentType(MediaType.APPLICATION_JSON)
           .bodyValue(
               new TenantCreateRequest()
-                  .name(tenantName)
                   .tenantId(tenantId)
+                  .name(tenantName)
                   .description(tenantDescription))
           .exchange()
           .expectStatus()
@@ -177,7 +182,7 @@ public class TenantControllerTest {
           .uri(TENANT_BASE_URL)
           .accept(MediaType.APPLICATION_JSON)
           .contentType(MediaType.APPLICATION_JSON)
-          .bodyValue(new TenantCreateRequest().name(tenantName))
+          .bodyValue("{\"name\":\"%s\"}".formatted(tenantName))
           .exchange()
           .expectStatus()
           .isBadRequest()
@@ -203,20 +208,20 @@ public class TenantControllerTest {
         strings = {
           "foo!", "foo#", "foo$", "foo%", "foo^", "foo&", "foo*", "foo(", "foo)", "foo=", "foo{",
           "foo[", "foo}", "foo]", "foo|", "foo\\", "foo:", "foo;", "foo\"", "foo'", "foo<", "foo>",
-          "foo,", "foo?", "foo/", "foo ", "foo\t", "foo\n", "foo\r", "foo~", "foo@"
+          "foo,", "foo?", "foo/", "foo ", "foo\t", "foo\n", "foo\r", "foo~"
         })
     void shouldRejectTenantCreationWithIllegalCharactersInId(final String id) {
       // given
       final var tenantName = "Tenant Name";
-      final var request = new TenantCreateRequest().tenantId(id).name(tenantName);
 
-      // when
+      // when – use Map to bypass compact constructor validation; Jackson handles
+      // JSON-escaping of special characters (tab, newline, backslash, etc.)
       webClient
           .post()
           .uri(TENANT_BASE_URL)
           .accept(MediaType.APPLICATION_JSON)
           .contentType(MediaType.APPLICATION_JSON)
-          .bodyValue(request)
+          .bodyValue(Map.of("tenantId", id, "name", tenantName))
           .exchange()
           .expectStatus()
           .isBadRequest()
@@ -230,7 +235,7 @@ public class TenantControllerTest {
               "detail": "The provided tenantId contains illegal characters. It must match the pattern '%s'.",
               "instance": "%s"
             }"""
-                  .formatted(TENANT_ID_PATTERN, TENANT_BASE_URL),
+                  .formatted(STRICT_TENANT_ID_PATTERN, TENANT_BASE_URL),
               JsonCompareMode.STRICT);
 
       // then
@@ -241,15 +246,14 @@ public class TenantControllerTest {
     void shouldRejectTenantWithTooLongId() {
       // given
       final var id = "x".repeat(257);
-      final var request = new TenantCreateRequest().tenantId(id).name("Tenant name");
 
-      // when
+      // when – use Map to bypass compact constructor validation
       webClient
           .post()
           .uri(TENANT_BASE_URL)
           .accept(MediaType.APPLICATION_JSON)
           .contentType(MediaType.APPLICATION_JSON)
-          .bodyValue(request)
+          .bodyValue(Map.of("tenantId", id, "name", "Tenant name"))
           .exchange()
           .expectStatus()
           .isBadRequest()
@@ -260,7 +264,7 @@ public class TenantControllerTest {
               "type": "about:blank",
               "status": 400,
               "title": "INVALID_ARGUMENT",
-              "detail": "The provided tenantId exceeds the limit of 31 characters.",
+              "detail": "The provided tenantId exceeds the limit of 256 characters.",
               "instance": "%s"
             }"""
                   .formatted(TENANT_BASE_URL),
@@ -326,7 +330,7 @@ public class TenantControllerTest {
           .uri(uri)
           .accept(MediaType.APPLICATION_JSON)
           .contentType(MediaType.APPLICATION_JSON)
-          .bodyValue(new TenantUpdateRequest().description(tenantDescription))
+          .bodyValue("{\"description\":\"%s\"}".formatted(tenantDescription))
           .exchange()
           .expectStatus()
           .isBadRequest()
@@ -455,7 +459,7 @@ public class TenantControllerTest {
               "detail": "The provided tenantId contains illegal characters. It must match the pattern '%s'.",
               "instance": "%s"
             }"""
-                  .formatted(TENANT_ID_PATTERN, uri),
+                  .formatted(DOMAIN_TENANT_ID_PATTERN, uri),
               JsonCompareMode.STRICT);
 
       // then
@@ -555,7 +559,7 @@ public class TenantControllerTest {
               "detail": "The provided tenantId contains illegal characters. It must match the pattern '%s'.",
               "instance": "%s"
             }"""
-                  .formatted(TENANT_ID_PATTERN, uri),
+                  .formatted(DOMAIN_TENANT_ID_PATTERN, uri),
               JsonCompareMode.STRICT);
 
       // then
@@ -620,6 +624,7 @@ public class TenantControllerTest {
   }
 
   @Nested
+  @Import(DefaultTenantServiceAdapter.class)
   @WebMvcTest(TenantController.class)
   public class TenantsApiEnabledAndByogEnabledTest extends RestControllerTest {
     @MockitoBean private TenantServices tenantServices;
@@ -700,8 +705,8 @@ public class TenantControllerTest {
   }
 
   @Nested
+  @Import({DefaultTenantServiceAdapter.class, ApiFiltersConfiguration.class})
   @WebMvcTest(TenantController.class)
-  @Import(ApiFiltersConfiguration.class)
   @TestPropertySource(properties = "camunda.security.multiTenancy.apiEnabled=false")
   public class TenantsApiDisabledTest extends RestControllerTest {
     public static final String FORBIDDEN_MESSAGE =

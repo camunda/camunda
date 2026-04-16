@@ -30,11 +30,14 @@ import io.camunda.service.exception.ErrorMapper;
 import io.camunda.zeebe.broker.client.api.dto.BrokerRejection;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.gateway.rest.config.ApiFiltersConfiguration;
+import io.camunda.zeebe.gateway.rest.controller.GroupController;
+import io.camunda.zeebe.gateway.rest.controller.adapter.DefaultGroupServiceAdapter;
 import io.camunda.zeebe.protocol.impl.record.value.group.GroupRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.GroupIntent;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.test.util.Strings;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.regex.Pattern;
 import org.junit.jupiter.api.BeforeEach;
@@ -55,10 +58,15 @@ public class GroupControllerTest {
   private static final Pattern ID_PATTERN = Pattern.compile(SecurityConfiguration.DEFAULT_ID_REGEX);
 
   @Nested
+  @Import({DefaultGroupServiceAdapter.class, ApiFiltersConfiguration.class})
   @WebMvcTest(GroupController.class)
-  @Import(ApiFiltersConfiguration.class)
   @TestPropertySource(properties = "camunda.security.authentication.oidc.groupsClaim=g1")
   public class CamundaGroupsDisabledTest extends RestControllerTest {
+
+    @MockitoBean CamundaAuthenticationProvider authenticationProvider;
+    @MockitoBean GroupServices groupServices;
+    @MockitoBean MappingRuleServices mappingRuleServices;
+    @MockitoBean RoleServices roleServices;
 
     public static final String FORBIDDEN_MESSAGE =
         """
@@ -84,7 +92,7 @@ public class GroupControllerTest {
           .accept(MediaType.APPLICATION_JSON)
           .contentType(MediaType.APPLICATION_JSON)
           .bodyValue(
-              new GroupCreateRequest().name(groupName).groupId(groupId).description(description))
+              new GroupCreateRequest().groupId(groupId).name(groupName).description(description))
           .exchange()
           .expectStatus()
           .isForbidden()
@@ -208,6 +216,7 @@ public class GroupControllerTest {
   }
 
   @Nested
+  @Import(DefaultGroupServiceAdapter.class)
   @WebMvcTest(GroupController.class)
   @TestPropertySource(properties = "camunda.security.authentication.oidc.groupsClaim=")
   public class CamundaGroupsEnabledTest extends RestControllerTest {
@@ -247,7 +256,7 @@ public class GroupControllerTest {
           .accept(MediaType.APPLICATION_JSON)
           .contentType(MediaType.APPLICATION_JSON)
           .bodyValue(
-              new GroupCreateRequest().name(groupName).groupId(groupId).description(description))
+              new GroupCreateRequest().groupId(groupId).name(groupName).description(description))
           .exchange()
           .expectStatus()
           .isCreated();
@@ -264,7 +273,7 @@ public class GroupControllerTest {
           .uri(GROUP_BASE_URL)
           .accept(MediaType.APPLICATION_JSON)
           .contentType(MediaType.APPLICATION_JSON)
-          .bodyValue(new GroupCreateRequest().name("").groupId("groupId"))
+          .bodyValue(new GroupCreateRequest().groupId("groupId").name("").description(null))
           .exchange()
           .expectStatus()
           .isBadRequest()
@@ -293,7 +302,7 @@ public class GroupControllerTest {
           .uri(GROUP_BASE_URL)
           .accept(MediaType.APPLICATION_JSON)
           .contentType(MediaType.APPLICATION_JSON)
-          .bodyValue(new GroupCreateRequest().name("name"))
+          .bodyValue("{\"name\":\"name\"}")
           .exchange()
           .expectStatus()
           .isBadRequest()
@@ -322,7 +331,7 @@ public class GroupControllerTest {
           .uri(GROUP_BASE_URL)
           .accept(MediaType.APPLICATION_JSON)
           .contentType(MediaType.APPLICATION_JSON)
-          .bodyValue(new GroupCreateRequest().name("name").groupId(""))
+          .bodyValue("{\"name\":\"name\",\"groupId\":\"\"}")
           .exchange()
           .expectStatus()
           .isBadRequest()
@@ -354,7 +363,7 @@ public class GroupControllerTest {
           .uri(GROUP_BASE_URL)
           .accept(MediaType.APPLICATION_JSON)
           .contentType(MediaType.APPLICATION_JSON)
-          .bodyValue(new GroupCreateRequest().name("name").groupId(groupId))
+          .bodyValue("{\"name\":\"name\",\"groupId\":\"%s\"}".formatted(groupId))
           .exchange()
           .expectStatus()
           .isBadRequest()
@@ -383,13 +392,14 @@ public class GroupControllerTest {
           "foo,", "foo?", "foo/", "foo ", "foo\t", "foo\n", "foo\r"
         })
     void shouldRejectGroupCreationWithIllegalCharactersInId(final String groupId) {
-      // when then
+      // when then — use Map to properly JSON-escape special characters
+      // (tab, newline, carriage return, etc.)
       webClient
           .post()
           .uri(GROUP_BASE_URL)
           .accept(MediaType.APPLICATION_JSON)
           .contentType(MediaType.APPLICATION_JSON)
-          .bodyValue(new GroupCreateRequest().name("name").groupId(groupId))
+          .bodyValue(Map.of("name", "name", "groupId", groupId))
           .exchange()
           .expectStatus()
           .isBadRequest()

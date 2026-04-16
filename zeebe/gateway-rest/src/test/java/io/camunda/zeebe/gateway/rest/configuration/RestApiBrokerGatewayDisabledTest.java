@@ -9,13 +9,17 @@ package io.camunda.zeebe.gateway.rest.configuration;
 
 import static org.mockito.Mockito.verifyNoInteractions;
 
+import io.camunda.zeebe.gateway.rest.controller.ClusterController;
 import io.camunda.zeebe.gateway.rest.controller.ProcessInstanceController;
-import io.camunda.zeebe.gateway.rest.controller.TopologyController;
+import io.camunda.zeebe.gateway.rest.controller.adapter.DefaultClusterServiceAdapter;
+import io.camunda.zeebe.gateway.rest.controller.adapter.DefaultProcessInstanceServiceAdapter;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.context.annotation.Import;
 
+@Import({DefaultClusterServiceAdapter.class, DefaultProcessInstanceServiceAdapter.class})
 @WebMvcTest(
-    value = {ProcessInstanceController.class, TopologyController.class},
+    value = {ProcessInstanceController.class, ClusterController.class},
     properties = "zeebe.broker.gateway.enable=false")
 public class RestApiBrokerGatewayDisabledTest extends RestApiConfigurationTest {
 

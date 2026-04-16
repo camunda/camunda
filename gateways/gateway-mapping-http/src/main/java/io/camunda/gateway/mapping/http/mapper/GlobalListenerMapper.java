@@ -10,11 +10,9 @@ package io.camunda.gateway.mapping.http.mapper;
 import io.camunda.gateway.mapping.http.RequestMapper;
 import io.camunda.gateway.mapping.http.validator.GlobalListenerRequestValidator;
 import io.camunda.gateway.protocol.model.CreateGlobalTaskListenerRequest;
-import io.camunda.gateway.protocol.model.GlobalListenerBase;
 import io.camunda.gateway.protocol.model.GlobalListenerSourceEnum;
-import io.camunda.gateway.protocol.model.GlobalTaskListenerBase;
+import io.camunda.gateway.protocol.model.GlobalTaskListener;
 import io.camunda.gateway.protocol.model.GlobalTaskListenerEventTypeEnum;
-import io.camunda.gateway.protocol.model.GlobalTaskListenerResult;
 import io.camunda.gateway.protocol.model.UpdateGlobalTaskListenerRequest;
 import io.camunda.zeebe.protocol.impl.record.value.globallistener.GlobalListenerRecord;
 import io.camunda.zeebe.protocol.record.value.GlobalListenerSource;
@@ -40,7 +38,23 @@ public class GlobalListenerMapper {
         requestValidator.validateCreateRequest(request),
         () -> {
           final var record = new GlobalListenerRecord();
-          fillDataFromGlobalTaskListenerRequest(record, request);
+          if (request.getType() != null) {
+            record.setType(request.getType());
+          }
+          if (request.getRetries() != null) {
+            record.setRetries(request.getRetries());
+          }
+          if (request.getAfterNonGlobal() != null) {
+            record.setAfterNonGlobal(request.getAfterNonGlobal());
+          }
+          if (request.getPriority() != null) {
+            record.setPriority(request.getPriority());
+          }
+          record.setSource(GlobalListenerSource.API);
+          if (request.getEventTypes() != null) {
+            record.setEventTypes(request.getEventTypes().stream().map(e -> e.getValue()).toList());
+          }
+          record.setListenerType(GlobalListenerType.USER_TASK);
           record.setId(request.getId());
           return record;
         });
@@ -52,9 +66,8 @@ public class GlobalListenerMapper {
         requestValidator.validateGetRequest(id),
         () -> {
           final var record = new GlobalListenerRecord();
-          // Ensure basic data for a task listener request is set
-          fillDataFromGlobalTaskListenerRequest(record, new GlobalTaskListenerBase());
-          // Add ID from the actual request
+          record.setSource(GlobalListenerSource.API);
+          record.setListenerType(GlobalListenerType.USER_TASK);
           record.setId(id);
           return record;
         });
@@ -66,8 +79,23 @@ public class GlobalListenerMapper {
         requestValidator.validateUpdateRequest(id, request),
         () -> {
           final var record = new GlobalListenerRecord();
-          fillDataFromGlobalTaskListenerRequest(record, request);
-          // Add ID from the actual request
+          if (request.getType() != null) {
+            record.setType(request.getType());
+          }
+          if (request.getRetries() != null) {
+            record.setRetries(request.getRetries());
+          }
+          if (request.getAfterNonGlobal() != null) {
+            record.setAfterNonGlobal(request.getAfterNonGlobal());
+          }
+          if (request.getPriority() != null) {
+            record.setPriority(request.getPriority());
+          }
+          record.setSource(GlobalListenerSource.API);
+          if (request.getEventTypes() != null) {
+            record.setEventTypes(request.getEventTypes().stream().map(e -> e.getValue()).toList());
+          }
+          record.setListenerType(GlobalListenerType.USER_TASK);
           record.setId(id);
           return record;
         });
@@ -79,60 +107,28 @@ public class GlobalListenerMapper {
         requestValidator.validateDeleteRequest(id),
         () -> {
           final var record = new GlobalListenerRecord();
-          // Ensure basic data for a task listener request is set
-          fillDataFromGlobalTaskListenerRequest(record, new GlobalTaskListenerBase());
-          // Add ID from the actual request
+          record.setSource(GlobalListenerSource.API);
+          record.setListenerType(GlobalListenerType.USER_TASK);
           record.setId(id);
           return record;
         });
-  }
-
-  private void fillDataFromGlobalListenerRequest(
-      final GlobalListenerRecord record, final GlobalListenerBase request) {
-    if (request.getType() != null) {
-      record.setType(request.getType());
-    }
-    if (request.getRetries() != null) {
-      record.setRetries(request.getRetries());
-    }
-    if (request.getAfterNonGlobal() != null) {
-      record.setAfterNonGlobal(request.getAfterNonGlobal());
-    }
-    if (request.getPriority() != null) {
-      record.setPriority(request.getPriority());
-    }
-
-    // All external requests generate API-defined listeners
-    record.setSource(GlobalListenerSource.API);
-  }
-
-  private void fillDataFromGlobalTaskListenerRequest(
-      final GlobalListenerRecord record, final GlobalTaskListenerBase request) {
-    fillDataFromGlobalListenerRequest(record, request);
-    if (request.getEventTypes() != null) {
-      record.setEventTypes(
-          request.getEventTypes().stream().map(GlobalTaskListenerEventTypeEnum::getValue).toList());
-    }
-
-    // All requests related to task listeners must have the listener type set to USER_TASK
-    record.setListenerType(GlobalListenerType.USER_TASK);
   }
 
   //
   // Response mapping
   //
 
-  public GlobalTaskListenerResult toGlobalListenerResponse(final GlobalListenerRecord record) {
-    return new GlobalTaskListenerResult()
-        .id(record.getId())
+  public GlobalTaskListener toGlobalListenerResponse(final GlobalListenerRecord record) {
+    return new GlobalTaskListener()
         .type(record.getType())
         .retries(record.getRetries())
+        .afterNonGlobal(record.isAfterNonGlobal())
+        .priority(record.getPriority())
         .eventTypes(
             record.getEventTypes().stream()
                 .map(GlobalTaskListenerEventTypeEnum::fromValue)
                 .toList())
-        .afterNonGlobal(record.isAfterNonGlobal())
-        .priority(record.getPriority())
+        .id(record.getId())
         .source(GlobalListenerSourceEnum.valueOf(record.getSource().name()));
   }
 }

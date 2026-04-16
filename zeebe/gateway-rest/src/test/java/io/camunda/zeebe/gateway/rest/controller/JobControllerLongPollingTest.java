@@ -14,7 +14,7 @@ import static org.mockito.Mockito.when;
 import com.jayway.jsonpath.JsonPath;
 import io.camunda.gateway.mapping.http.GatewayErrorMapper;
 import io.camunda.gateway.mapping.http.ResponseMapper;
-import io.camunda.gateway.protocol.model.JobActivationResult;
+import io.camunda.gateway.protocol.model.JobActivation;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.security.configuration.MultiTenancyConfiguration;
@@ -33,6 +33,7 @@ import io.camunda.zeebe.gateway.impl.job.LongPollingActivateJobsHandler;
 import io.camunda.zeebe.gateway.metrics.LongPollingMetrics;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.gateway.rest.config.GatewayRestConfiguration;
+import io.camunda.zeebe.gateway.rest.controller.adapter.DefaultJobServiceAdapter;
 import io.camunda.zeebe.gateway.rest.controller.util.ResettableJobActivationRequestResponseObserver;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.record.RejectionType;
@@ -50,6 +51,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
@@ -57,12 +59,13 @@ import org.springframework.test.json.JsonCompareMode;
 import org.springframework.test.web.reactive.server.WebTestClient.ResponseSpec;
 import org.springframework.util.unit.DataSize;
 
+@Import(DefaultJobServiceAdapter.class)
 @WebMvcTest(JobController.class)
 public class JobControllerLongPollingTest extends RestControllerTest {
 
   static final String JOBS_BASE_URL = "/v2/jobs";
 
-  @Autowired ActivateJobsHandler<JobActivationResult> activateJobsHandler;
+  @Autowired ActivateJobsHandler<JobActivation> activateJobsHandler;
   @Autowired StubbedBrokerClient stubbedBrokerClient;
   @MockitoSpyBean ResettableJobActivationRequestResponseObserver responseObserver;
   @MockitoBean MultiTenancyConfiguration multiTenancyCfg;
@@ -407,10 +410,10 @@ public class JobControllerLongPollingTest extends RestControllerTest {
     }
 
     @Bean
-    public ActivateJobsHandler<JobActivationResult> activateJobsHandler(
+    public ActivateJobsHandler<JobActivation> activateJobsHandler(
         final BrokerClient brokerClient, final ActorScheduler actorScheduler) {
       final var handler =
-          LongPollingActivateJobsHandler.<JobActivationResult>newBuilder()
+          LongPollingActivateJobsHandler.<JobActivation>newBuilder()
               .setBrokerClient(brokerClient)
               .setMaxMessageSize(DataSize.ofMegabytes(4L).toBytes())
               .setActivationResultMapper(ResponseMapper::toActivateJobsResponse)
@@ -431,9 +434,9 @@ public class JobControllerLongPollingTest extends RestControllerTest {
     }
 
     @Bean
-    public JobServices<JobActivationResult> jobServices(
+    public JobServices<JobActivation> jobServices(
         final BrokerClient brokerClient,
-        final ActivateJobsHandler<JobActivationResult> activateJobsHandler) {
+        final ActivateJobsHandler<JobActivation> activateJobsHandler) {
       return new JobServices<>(
           brokerClient,
           new SecurityContextProvider(),

@@ -15,10 +15,10 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.camunda.gateway.mapping.http.search.contract.StrictSearchQueryResult;
 import io.camunda.gateway.mcp.OperationalToolsTest;
-import io.camunda.gateway.protocol.model.VariableResult;
-import io.camunda.gateway.protocol.model.VariableSearchQueryResult;
-import io.camunda.gateway.protocol.model.VariableSearchResult;
+import io.camunda.gateway.protocol.model.Variable;
+import io.camunda.gateway.protocol.model.VariableSearch;
 import io.camunda.search.entities.VariableEntity;
 import io.camunda.search.filter.Operation;
 import io.camunda.search.filter.Operator;
@@ -85,7 +85,7 @@ class VariableToolsTest extends OperationalToolsTest {
 
   @Captor private ArgumentCaptor<VariableQuery> queryCaptor;
 
-  private void assertExampleVariable(final VariableResult variable) {
+  private void assertExampleVariable(final Variable variable) {
     assertThat(variable.getVariableKey()).isEqualTo("123");
     assertThat(variable.getName()).isEqualTo("demoVar");
     assertThat(variable.getValue()).isEqualTo(FULL_VALUE);
@@ -94,7 +94,7 @@ class VariableToolsTest extends OperationalToolsTest {
     assertThat(variable.getScopeKey()).isEqualTo("333");
   }
 
-  private void assertExampleVariable(final VariableSearchResult variable) {
+  private void assertExampleVariable(final VariableSearch variable) {
     assertThat(variable.getVariableKey()).isEqualTo("123");
     assertThat(variable.getName()).isEqualTo("demoVar");
     assertThat(variable.getProcessInstanceKey()).isEqualTo("789");
@@ -122,8 +122,7 @@ class VariableToolsTest extends OperationalToolsTest {
       assertThat(result.isError()).isFalse();
       assertThat(result.structuredContent()).isNotNull();
 
-      final var variable =
-          objectMapper.convertValue(result.structuredContent(), VariableResult.class);
+      final var variable = objectMapper.convertValue(result.structuredContent(), Variable.class);
       assertExampleVariable(variable);
 
       verify(variableServices).getByKey(eq(123L), any());
@@ -153,7 +152,7 @@ class VariableToolsTest extends OperationalToolsTest {
           objectMapper.convertValue(result.structuredContent(), ProblemDetail.class);
       assertThat(problemDetail.getDetail()).isEqualTo("Expected failure");
       assertThat(problemDetail.getStatus()).isEqualTo(HttpStatus.NOT_FOUND.value());
-      assertThat(problemDetail.getTitle()).isEqualTo("NOT_FOUND");
+      assertThat(problemDetail.getTitle()).isEqualTo("Not Found");
 
       assertTextContentFallback(result);
     }
@@ -255,13 +254,20 @@ class VariableToolsTest extends OperationalToolsTest {
       assertThat(result.isError()).isFalse();
       assertThat(result.structuredContent()).isNotNull();
 
-      final var variables =
-          objectMapper.convertValue(result.structuredContent(), VariableSearchQueryResult.class);
-      assertThat(variables.getPage().getTotalItems()).isEqualTo(1L);
-      assertThat(variables.getPage().getHasMoreTotalItems()).isFalse();
-      assertThat(variables.getPage().getStartCursor()).isEqualTo("f");
-      assertThat(variables.getPage().getEndCursor()).isEqualTo("v");
-      assertThat(variables.getItems())
+      @SuppressWarnings("unchecked")
+      final StrictSearchQueryResult<VariableSearch> variables =
+          (StrictSearchQueryResult<VariableSearch>)
+              objectMapper.convertValue(
+                  result.structuredContent(),
+                  objectMapper
+                      .getTypeFactory()
+                      .constructParametricType(
+                          StrictSearchQueryResult.class, VariableSearch.class));
+      assertThat(variables.page().totalItems()).isEqualTo(1L);
+      assertThat(variables.page().hasMoreTotalItems()).isFalse();
+      assertThat(variables.page().startCursor()).isEqualTo("f");
+      assertThat(variables.page().endCursor()).isEqualTo("v");
+      assertThat(variables.items())
           .hasSize(1)
           .first()
           .satisfies(
@@ -300,13 +306,20 @@ class VariableToolsTest extends OperationalToolsTest {
       assertThat(result.isError()).isFalse();
       assertThat(result.structuredContent()).isNotNull();
 
-      final var variables =
-          objectMapper.convertValue(result.structuredContent(), VariableSearchQueryResult.class);
-      assertThat(variables.getPage().getTotalItems()).isEqualTo(1L);
-      assertThat(variables.getPage().getHasMoreTotalItems()).isFalse();
-      assertThat(variables.getPage().getStartCursor()).isEqualTo("f");
-      assertThat(variables.getPage().getEndCursor()).isEqualTo("v");
-      assertThat(variables.getItems())
+      @SuppressWarnings("unchecked")
+      final StrictSearchQueryResult<VariableSearch> variables =
+          (StrictSearchQueryResult<VariableSearch>)
+              objectMapper.convertValue(
+                  result.structuredContent(),
+                  objectMapper
+                      .getTypeFactory()
+                      .constructParametricType(
+                          StrictSearchQueryResult.class, VariableSearch.class));
+      assertThat(variables.page().totalItems()).isEqualTo(1L);
+      assertThat(variables.page().hasMoreTotalItems()).isFalse();
+      assertThat(variables.page().startCursor()).isEqualTo("f");
+      assertThat(variables.page().endCursor()).isEqualTo("v");
+      assertThat(variables.items())
           .hasSize(1)
           .first()
           .satisfies(
@@ -360,7 +373,7 @@ class VariableToolsTest extends OperationalToolsTest {
           objectMapper.convertValue(result.structuredContent(), ProblemDetail.class);
       assertThat(problemDetail.getDetail()).isEqualTo("Expected failure");
       assertThat(problemDetail.getStatus()).isEqualTo(HttpStatus.NOT_FOUND.value());
-      assertThat(problemDetail.getTitle()).isEqualTo("NOT_FOUND");
+      assertThat(problemDetail.getTitle()).isEqualTo("Not Found");
 
       assertTextContentFallback(result);
     }
@@ -381,7 +394,7 @@ class VariableToolsTest extends OperationalToolsTest {
       final var problemDetail =
           objectMapper.convertValue(result.structuredContent(), ProblemDetail.class);
       assertThat(problemDetail.getStatus()).isEqualTo(HttpStatus.BAD_REQUEST.value());
-      assertThat(problemDetail.getTitle()).isEqualTo("INVALID_ARGUMENT");
+      assertThat(problemDetail.getTitle()).isEqualTo("Bad Request");
       assertThat(problemDetail.getDetail())
           .startsWith("The provided processInstanceKey 'abc' is not a valid key.");
 
@@ -404,7 +417,7 @@ class VariableToolsTest extends OperationalToolsTest {
       final var problemDetail =
           objectMapper.convertValue(result.structuredContent(), ProblemDetail.class);
       assertThat(problemDetail.getStatus()).isEqualTo(HttpStatus.BAD_REQUEST.value());
-      assertThat(problemDetail.getTitle()).isEqualTo("INVALID_ARGUMENT");
+      assertThat(problemDetail.getTitle()).isEqualTo("Bad Request");
       assertThat(problemDetail.getDetail())
           .startsWith("The provided variableKey 'abc' is not a valid key.");
 

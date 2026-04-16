@@ -24,6 +24,27 @@ public class ClusterVariableMapper {
     this.clusterVariableRequestValidator = clusterVariableRequestValidator;
   }
 
+  public Either<ProblemDetail, ClusterVariableRequest> toTenantClusterVariableRequest(
+      final String name, final String tenantId) {
+    return RequestMapper.getResult(
+        clusterVariableRequestValidator.validateTenantClusterVariableRequest(name, tenantId),
+        () -> new ClusterVariableRequest(name, null, tenantId));
+  }
+
+  public Either<ProblemDetail, ClusterVariableRequest> toGlobalClusterVariableRequest(
+      final String name) {
+    return RequestMapper.getResult(
+        clusterVariableRequestValidator.validateGlobalClusterVariableRequest(name),
+        () -> new ClusterVariableRequest(name, null, null));
+  }
+
+  public Either<ProblemDetail, ClusterVariableRequest> toGlobalClusterVariableCreateRequest(
+      final CreateClusterVariableRequest request) {
+    return RequestMapper.getResult(
+        clusterVariableRequestValidator.validateGlobalClusterVariableCreateRequest(request),
+        () -> new ClusterVariableRequest(request.getName(), request.getValue(), null));
+  }
+
   public Either<ProblemDetail, ClusterVariableRequest> toTenantClusterVariableCreateRequest(
       final CreateClusterVariableRequest request, final String tenantId) {
     return RequestMapper.getResult(
@@ -45,26 +66,5 @@ public class ClusterVariableMapper {
         clusterVariableRequestValidator.validateTenantClusterVariableUpdateRequest(
             name, request, tenantId),
         () -> new ClusterVariableRequest(name, request.getValue(), tenantId));
-  }
-
-  public Either<ProblemDetail, ClusterVariableRequest> toTenantClusterVariableRequest(
-      final String name, final String tenantId) {
-    return RequestMapper.getResult(
-        clusterVariableRequestValidator.validateTenantClusterVariableRequest(name, tenantId),
-        () -> new ClusterVariableRequest(name, null, tenantId));
-  }
-
-  public Either<ProblemDetail, ClusterVariableRequest> toGlobalClusterVariableCreateRequest(
-      final CreateClusterVariableRequest request) {
-    return RequestMapper.getResult(
-        clusterVariableRequestValidator.validateGlobalClusterVariableCreateRequest(request),
-        () -> new ClusterVariableRequest(request.getName(), request.getValue(), null));
-  }
-
-  public Either<ProblemDetail, ClusterVariableRequest> toGlobalClusterVariableRequest(
-      final String name) {
-    return RequestMapper.getResult(
-        clusterVariableRequestValidator.validateGlobalClusterVariableRequest(name),
-        () -> new ClusterVariableRequest(name, null, null));
   }
 }

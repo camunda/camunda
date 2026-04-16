@@ -9,6 +9,7 @@ package io.camunda.zeebe.gateway.rest.validation;
 
 import io.camunda.gateway.protocol.model.LicenseResponse;
 import io.camunda.zeebe.gateway.rest.RestTest;
+import jakarta.validation.constraints.NotNull;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
@@ -24,6 +25,17 @@ import org.springframework.web.bind.annotation.RestController;
  * response validation → error handling flow using a dedicated test controller.
  */
 class ResponseValidationSpringMvcIntegrationTest {
+
+  /**
+   * Test-only DTO that allows null construction for Bean Validation testing. The generated strict
+   * contract records use compact constructors that reject nulls at construction time, preventing
+   * their use in tests that need to verify Bean Validation catches null required fields.
+   */
+  record TestResponseDto(
+      @NotNull Boolean validLicense,
+      @NotNull String licenseType,
+      @NotNull Boolean isCommercial,
+      String expiresAt) {}
 
   /**
    * Test controller that returns DTOs with known validation states. This avoids coupling to real
@@ -42,18 +54,15 @@ class ResponseValidationSpringMvcIntegrationTest {
     }
 
     @GetMapping("/v2/test/response-validation/invalid")
-    public LicenseResponse invalidResponse() {
+    public TestResponseDto invalidResponse() {
       // Missing licenseType (violates @NotNull)
-      return new LicenseResponse()
-          .validLicense(true)
-          .isCommercial(true)
-          .expiresAt("2025-12-31T23:59:59Z");
+      return new TestResponseDto(true, null, true, "2025-12-31T23:59:59Z");
     }
 
     @GetMapping("/v2/test/response-validation/all-null")
-    public LicenseResponse allNullResponse() {
+    public TestResponseDto allNullResponse() {
       // All required fields null
-      return new LicenseResponse();
+      return new TestResponseDto(null, null, null, null);
     }
 
     @GetMapping("/v2/test/response-validation/null-body")

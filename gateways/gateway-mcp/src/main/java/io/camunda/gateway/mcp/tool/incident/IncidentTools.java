@@ -18,8 +18,17 @@ import io.camunda.gateway.mapping.http.search.SearchQueryResponseMapper;
 import io.camunda.gateway.mcp.config.tool.CamundaMcpTool;
 import io.camunda.gateway.mcp.config.tool.McpToolParamsUnwrapped;
 import io.camunda.gateway.mcp.mapper.CallToolResultMapper;
-import io.camunda.gateway.protocol.model.JobActivationResult;
-import io.camunda.gateway.protocol.model.simple.IncidentSearchQuery;
+import io.camunda.gateway.mcp.model.McpDateRange;
+import io.camunda.gateway.mcp.model.McpIncidentFilter;
+import io.camunda.gateway.mcp.model.McpIncidentSearchQuery;
+import io.camunda.gateway.protocol.model.AdvancedDateTimeFilter;
+import io.camunda.gateway.protocol.model.IncidentErrorTypeFilterPropertyPlainValue;
+import io.camunda.gateway.protocol.model.IncidentFilter;
+import io.camunda.gateway.protocol.model.IncidentSearchQuery;
+import io.camunda.gateway.protocol.model.IncidentStateFilterPropertyPlainValue;
+import io.camunda.gateway.protocol.model.ProcessDefinitionKeyFilterPropertyPlainValue;
+import io.camunda.gateway.protocol.model.ProcessInstanceKeyFilterPropertyPlainValue;
+import io.camunda.gateway.protocol.model.StringFilterPropertyPlainValue;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.IncidentServices;
@@ -44,12 +53,12 @@ public class IncidentTools {
 
   private final IncidentServices incidentServices;
   private final CamundaAuthenticationProvider authenticationProvider;
-  private final JobServices<JobActivationResult> jobServices;
+  private final JobServices<?> jobServices;
 
   public IncidentTools(
       final IncidentServices incidentServices,
       final CamundaAuthenticationProvider authenticationProvider,
-      final JobServices<JobActivationResult> jobServices) {
+      final JobServices<?> jobServices) {
     this.incidentServices = incidentServices;
     this.authenticationProvider = authenticationProvider;
     this.jobServices = jobServices;
@@ -59,9 +68,10 @@ public class IncidentTools {
       description = "Search for incidents. " + EVENTUAL_CONSISTENCY_NOTE,
       annotations = @McpAnnotations(readOnlyHint = true))
   public CallToolResult searchIncidents(
-      @McpToolParamsUnwrapped @Valid final IncidentSearchQuery query) {
+      @McpToolParamsUnwrapped @Valid final McpIncidentSearchQuery query) {
     try {
-      final var incidentSearchQuery = SearchQueryRequestMapper.toIncidentQuery(query);
+      final var strictRequest = toStrict(query);
+      final var incidentSearchQuery = SearchQueryRequestMapper.toIncidentQueryStrict(strictRequest);
 
       if (incidentSearchQuery.isLeft()) {
         return CallToolResultMapper.mapProblemToResult(incidentSearchQuery.getLeft());
@@ -147,5 +157,53 @@ public class IncidentTools {
     } catch (final Exception e) {
       return CallToolResultMapper.mapErrorToResult(e);
     }
+  }
+
+  // -- Facade → Strict contract conversion --
+
+  private static IncidentSearchQuery toStrict(final McpIncidentSearchQuery query) {
+    return new IncidentSearchQuery()
+        .page(query.page())
+        .sort(query.sort())
+        .filter(toStrictFilter(query.filter()));
+  }
+
+  private static IncidentFilter toStrictFilter(final McpIncidentFilter filter) {
+    if (filter == null) {
+      return null;
+    }
+    return new IncidentFilter()
+        .processDefinitionId(wrapString(filter.processDefinitionId()))
+        .errorType(
+            filter.errorType() != null
+                ? new IncidentErrorTypeFilterPropertyPlainValue(filter.errorType().getValue())
+                : null)
+        .elementId(wrapString(filter.elementId()))
+        .creationTime(toStrictDateRange(filter.creationTime()))
+        .state(
+            filter.state() != null
+                ? new IncidentStateFilterPropertyPlainValue(filter.state().getValue())
+                : null)
+        .processDefinitionKey(
+            filter.processDefinitionKey() != null
+                ? new ProcessDefinitionKeyFilterPropertyPlainValue(filter.processDefinitionKey())
+                : null)
+        .processInstanceKey(
+            filter.processInstanceKey() != null
+                ? new ProcessInstanceKeyFilterPropertyPlainValue(filter.processInstanceKey())
+                : null);
+  }
+
+  private static StringFilterPropertyPlainValue wrapString(final String value) {
+    return value != null ? new StringFilterPropertyPlainValue(value) : null;
+  }
+
+  private static AdvancedDateTimeFilter toStrictDateRange(final McpDateRange dateRange) {
+    if (dateRange == null) {
+      return null;
+    }
+    return new AdvancedDateTimeFilter()
+        .$gte(dateRange.from()) // from is inclusive
+        .$lt(dateRange.to()); // to is exclusive
   }
 }

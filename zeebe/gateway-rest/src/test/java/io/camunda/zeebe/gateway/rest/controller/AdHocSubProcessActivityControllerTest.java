@@ -20,6 +20,7 @@ import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.AdHocSubProcessActivityServices;
 import io.camunda.service.AdHocSubProcessActivityServices.AdHocSubProcessActivateActivitiesRequest;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
+import io.camunda.zeebe.gateway.rest.controller.adapter.DefaultAdHocSubProcessServiceAdapter;
 import io.camunda.zeebe.protocol.impl.record.value.adhocsubprocess.AdHocSubProcessInstructionRecord;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Stream;
@@ -31,11 +32,13 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.json.JsonCompareMode;
 
-@WebMvcTest(value = AdHocSubProcessActivityController.class)
+@Import(DefaultAdHocSubProcessServiceAdapter.class)
+@WebMvcTest(value = AdHocSubProcessController.class)
 class AdHocSubProcessActivityControllerTest extends RestControllerTest {
   private static final String AD_HOC_ACTIVITIES_URL = "/v2/element-instances/ad-hoc-activities";
   private static final String ACTIVATE_ACTIVITIES_URL =
@@ -212,7 +215,7 @@ class AdHocSubProcessActivityControllerTest extends RestControllerTest {
                 ]
               }
               """,
-              "No elements[0].elementId provided."),
+              "No elementId provided."),
           arguments(
               """
               {
@@ -221,7 +224,7 @@ class AdHocSubProcessActivityControllerTest extends RestControllerTest {
                 ]
               }
               """,
-              "No elements[0].elementId provided."),
+              "No elementId provided."),
           arguments(
               """
               {

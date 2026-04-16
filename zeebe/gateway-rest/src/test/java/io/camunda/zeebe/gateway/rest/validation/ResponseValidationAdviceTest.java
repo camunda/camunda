@@ -16,6 +16,7 @@ import io.camunda.gateway.protocol.model.LicenseResponse;
 import jakarta.validation.Validation;
 import jakarta.validation.Validator;
 import jakarta.validation.ValidatorFactory;
+import jakarta.validation.constraints.NotNull;
 import java.net.URI;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -30,6 +31,17 @@ import org.springframework.http.server.ServerHttpRequest;
 import org.springframework.http.server.ServerHttpResponse;
 
 class ResponseValidationAdviceTest {
+
+  /**
+   * Test-only DTO that allows null construction for Bean Validation testing. The generated strict
+   * contract records use compact constructors that reject nulls at construction time, preventing
+   * their use in tests that need to verify Bean Validation catches null required fields.
+   */
+  record TestResponseDto(
+      @NotNull Boolean validLicense,
+      @NotNull String licenseType,
+      @NotNull Boolean isCommercial,
+      String expiresAt) {}
 
   private static ValidatorFactory validatorFactory;
   private static Validator validator;
@@ -106,7 +118,7 @@ class ResponseValidationAdviceTest {
     @Test
     void shouldPassThroughValidDto() {
       // given — all required fields set
-      final LicenseResponse validResponse =
+      final var validResponse =
           new LicenseResponse()
               .validLicense(true)
               .licenseType("saas")
@@ -139,11 +151,7 @@ class ResponseValidationAdviceTest {
     @Test
     void shouldThrowWhenRequiredFieldIsNull() {
       // given — validLicense is null (violates @NotNull)
-      final LicenseResponse invalidResponse =
-          new LicenseResponse()
-              .licenseType("saas")
-              .isCommercial(true)
-              .expiresAt("2025-12-31T23:59:59Z");
+      final var invalidResponse = new TestResponseDto(null, "saas", true, "2025-12-31T23:59:59Z");
 
       // when / then
       assertThatThrownBy(() -> callBeforeBodyWrite(invalidResponse))
@@ -154,7 +162,7 @@ class ResponseValidationAdviceTest {
     @Test
     void shouldThrowWhenMultipleRequiredFieldsAreNull() {
       // given — all required fields are null (empty DTO)
-      final LicenseResponse invalidResponse = new LicenseResponse();
+      final var invalidResponse = new TestResponseDto(null, null, null, null);
 
       // when / then
       assertThatThrownBy(() -> callBeforeBodyWrite(invalidResponse))
@@ -170,13 +178,8 @@ class ResponseValidationAdviceTest {
 
     @Test
     void shouldIncludePropertyPathInViolationMessage() {
-      // given
-      final LicenseResponse invalidResponse =
-          new LicenseResponse()
-              .validLicense(true)
-              .isCommercial(true)
-              .expiresAt("2025-12-31T23:59:59Z");
-      // licenseType is null
+      // given — only licenseType is null
+      final var invalidResponse = new TestResponseDto(true, null, true, "2025-12-31T23:59:59Z");
 
       // when / then
       assertThatThrownBy(() -> callBeforeBodyWrite(invalidResponse))
@@ -188,11 +191,7 @@ class ResponseValidationAdviceTest {
     @Test
     void shouldIncludeInvalidValueInViolationMessage() {
       // given — licenseType is null
-      final LicenseResponse invalidResponse =
-          new LicenseResponse()
-              .validLicense(true)
-              .isCommercial(true)
-              .expiresAt("2025-12-31T23:59:59Z");
+      final var invalidResponse = new TestResponseDto(true, null, true, "2025-12-31T23:59:59Z");
 
       // when / then
       assertThatThrownBy(() -> callBeforeBodyWrite(invalidResponse))
@@ -207,11 +206,7 @@ class ResponseValidationAdviceTest {
     @Test
     void shouldExposeViolationsInException() {
       // given — only licenseType is null
-      final LicenseResponse invalidResponse =
-          new LicenseResponse()
-              .validLicense(true)
-              .isCommercial(true)
-              .expiresAt("2025-12-31T23:59:59Z");
+      final var invalidResponse = new TestResponseDto(true, null, true, "2025-12-31T23:59:59Z");
 
       // when / then
       assertThatThrownBy(() -> callBeforeBodyWrite(invalidResponse))

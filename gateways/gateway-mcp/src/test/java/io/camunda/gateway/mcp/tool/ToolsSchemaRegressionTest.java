@@ -14,7 +14,6 @@ import io.camunda.gateway.mcp.tool.process.definition.ProcessDefinitionTools;
 import io.camunda.gateway.mcp.tool.process.instance.ProcessInstanceTools;
 import io.camunda.gateway.mcp.tool.usertask.UserTaskTools;
 import io.camunda.gateway.mcp.tool.variable.VariableTools;
-import io.camunda.gateway.protocol.model.JobActivationResult;
 import io.camunda.security.configuration.MultiTenancyConfiguration;
 import io.camunda.service.IncidentServices;
 import io.camunda.service.JobServices;
@@ -69,7 +68,7 @@ class ToolsSchemaRegressionTest extends OperationalToolsTest {
   // Mock all services that tools depend on
   @MockitoBean private TopologyServices topologyServices;
   @MockitoBean private IncidentServices incidentServices;
-  @MockitoBean private JobServices<JobActivationResult> jobServices;
+  @MockitoBean private JobServices<?> jobServices;
   @MockitoBean private ProcessDefinitionServices processDefinitionServices;
   @MockitoBean private ProcessInstanceServices processInstanceServices;
   @MockitoBean private UserTaskServices userTaskServices;

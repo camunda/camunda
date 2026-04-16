@@ -18,12 +18,11 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.camunda.gateway.mapping.http.search.contract.StrictSearchQueryResult;
 import io.camunda.gateway.mcp.OperationalToolsTest;
-import io.camunda.gateway.protocol.model.UserTaskResult;
-import io.camunda.gateway.protocol.model.UserTaskSearchQueryResult;
+import io.camunda.gateway.protocol.model.UserTask;
 import io.camunda.gateway.protocol.model.UserTaskStateEnum;
-import io.camunda.gateway.protocol.model.VariableResultBase;
-import io.camunda.gateway.protocol.model.VariableSearchQueryResult;
+import io.camunda.gateway.protocol.model.VariableSearch;
 import io.camunda.search.entities.UserTaskEntity;
 import io.camunda.search.entities.UserTaskEntity.UserTaskState;
 import io.camunda.search.entities.VariableEntity;
@@ -137,7 +136,7 @@ class UserTaskToolsTest extends OperationalToolsTest {
   @Captor private ArgumentCaptor<UserTaskQuery> userTaskQueryCaptor;
   @Captor private ArgumentCaptor<VariableQuery> variableQueryCaptor;
 
-  private void assertExampleUserTask(final UserTaskResult userTask) {
+  private void assertExampleUserTask(final UserTask userTask) {
     assertThat(userTask.getUserTaskKey()).isEqualTo("5");
     assertThat(userTask.getName()).isEqualTo("Task Name");
     assertThat(userTask.getState()).isEqualTo(UserTaskStateEnum.CREATED);
@@ -159,7 +158,7 @@ class UserTaskToolsTest extends OperationalToolsTest {
     assertThat(userTask.getProcessName()).isEqualTo("Process Name");
   }
 
-  private void assertExampleVariable(final VariableResultBase variable) {
+  private void assertExampleVariable(final VariableSearch variable) {
     assertThat(variable.getVariableKey()).isEqualTo("10");
     assertThat(variable.getName()).isEqualTo("varName");
     assertThat(variable.getScopeKey()).isEqualTo("101");
@@ -187,8 +186,7 @@ class UserTaskToolsTest extends OperationalToolsTest {
       assertThat(result.isError()).isFalse();
       assertThat(result.structuredContent()).isNotNull();
 
-      final var userTask =
-          objectMapper.convertValue(result.structuredContent(), UserTaskResult.class);
+      final var userTask = objectMapper.convertValue(result.structuredContent(), UserTask.class);
       assertExampleUserTask(userTask);
 
       verify(userTaskServices).getByKey(eq(5L), any());
@@ -218,7 +216,7 @@ class UserTaskToolsTest extends OperationalToolsTest {
           objectMapper.convertValue(result.structuredContent(), ProblemDetail.class);
       assertThat(problemDetail.getDetail()).isEqualTo("Expected failure");
       assertThat(problemDetail.getStatus()).isEqualTo(HttpStatus.NOT_FOUND.value());
-      assertThat(problemDetail.getTitle()).isEqualTo("NOT_FOUND");
+      assertThat(problemDetail.getTitle()).isEqualTo("Not Found");
 
       assertTextContentFallback(result);
     }
@@ -317,13 +315,19 @@ class UserTaskToolsTest extends OperationalToolsTest {
       assertThat(result.isError()).isFalse();
       assertThat(result.structuredContent()).isNotNull();
 
-      final var searchResult =
-          objectMapper.convertValue(result.structuredContent(), UserTaskSearchQueryResult.class);
-      assertThat(searchResult.getPage().getTotalItems()).isEqualTo(1L);
-      assertThat(searchResult.getPage().getHasMoreTotalItems()).isFalse();
-      assertThat(searchResult.getPage().getStartCursor()).isEqualTo("f");
-      assertThat(searchResult.getPage().getEndCursor()).isEqualTo("v");
-      assertThat(searchResult.getItems())
+      @SuppressWarnings("unchecked")
+      final StrictSearchQueryResult<UserTask> searchResult =
+          (StrictSearchQueryResult<UserTask>)
+              objectMapper.convertValue(
+                  result.structuredContent(),
+                  objectMapper
+                      .getTypeFactory()
+                      .constructParametricType(StrictSearchQueryResult.class, UserTask.class));
+      assertThat(searchResult.page().totalItems()).isEqualTo(1L);
+      assertThat(searchResult.page().hasMoreTotalItems()).isFalse();
+      assertThat(searchResult.page().startCursor()).isEqualTo("f");
+      assertThat(searchResult.page().endCursor()).isEqualTo("v");
+      assertThat(searchResult.items())
           .hasSize(1)
           .first()
           .satisfies(UserTaskToolsTest.this::assertExampleUserTask);
@@ -564,7 +568,7 @@ class UserTaskToolsTest extends OperationalToolsTest {
           objectMapper.convertValue(result.structuredContent(), ProblemDetail.class);
       assertThat(problemDetail.getDetail()).isEqualTo("Expected failure");
       assertThat(problemDetail.getStatus()).isEqualTo(HttpStatus.NOT_FOUND.value());
-      assertThat(problemDetail.getTitle()).isEqualTo("NOT_FOUND");
+      assertThat(problemDetail.getTitle()).isEqualTo("Not Found");
 
       assertTextContentFallback(result);
     }
@@ -586,9 +590,10 @@ class UserTaskToolsTest extends OperationalToolsTest {
       final var problemDetail =
           objectMapper.convertValue(result.structuredContent(), ProblemDetail.class);
       assertThat(problemDetail.getStatus()).isEqualTo(HttpStatus.BAD_REQUEST.value());
-      assertThat(problemDetail.getTitle()).isEqualTo("INVALID_ARGUMENT");
+      assertThat(problemDetail.getTitle()).isEqualTo("Bad Request");
       assertThat(problemDetail.getDetail())
-          .startsWith("The provided processInstanceKey 'abc' is not a valid key.");
+          .contains("processInstanceKey")
+          .contains("illegal characters");
 
       assertTextContentFallback(result);
     }
@@ -610,7 +615,7 @@ class UserTaskToolsTest extends OperationalToolsTest {
       final var problemDetail =
           objectMapper.convertValue(result.structuredContent(), ProblemDetail.class);
       assertThat(problemDetail.getStatus()).isEqualTo(HttpStatus.BAD_REQUEST.value());
-      assertThat(problemDetail.getTitle()).isEqualTo("INVALID_ARGUMENT");
+      assertThat(problemDetail.getTitle()).isEqualTo("Bad Request");
       assertThat(problemDetail.getDetail())
           .startsWith("The provided creationDate 'not-a-date' cannot be parsed as a date");
 
@@ -769,7 +774,7 @@ class UserTaskToolsTest extends OperationalToolsTest {
           objectMapper.convertValue(result.structuredContent(), ProblemDetail.class);
       assertThat(problemDetail.getDetail()).isEqualTo("Expected failure");
       assertThat(problemDetail.getStatus()).isEqualTo(HttpStatus.NOT_FOUND.value());
-      assertThat(problemDetail.getTitle()).isEqualTo("NOT_FOUND");
+      assertThat(problemDetail.getTitle()).isEqualTo("Not Found");
 
       assertTextContentFallback(result);
     }
@@ -873,11 +878,18 @@ class UserTaskToolsTest extends OperationalToolsTest {
       assertThat(result.isError()).isFalse();
       assertThat(result.structuredContent()).isNotNull();
 
-      final var searchResult =
-          objectMapper.convertValue(result.structuredContent(), VariableSearchQueryResult.class);
-      assertThat(searchResult.getPage().getTotalItems()).isEqualTo(1L);
-      assertThat(searchResult.getPage().getHasMoreTotalItems()).isFalse();
-      assertThat(searchResult.getItems())
+      @SuppressWarnings("unchecked")
+      final StrictSearchQueryResult<VariableSearch> searchResult =
+          (StrictSearchQueryResult<VariableSearch>)
+              objectMapper.convertValue(
+                  result.structuredContent(),
+                  objectMapper
+                      .getTypeFactory()
+                      .constructParametricType(
+                          StrictSearchQueryResult.class, VariableSearch.class));
+      assertThat(searchResult.page().totalItems()).isEqualTo(1L);
+      assertThat(searchResult.page().hasMoreTotalItems()).isFalse();
+      assertThat(searchResult.items())
           .hasSize(1)
           .first()
           .satisfies(
@@ -912,9 +924,16 @@ class UserTaskToolsTest extends OperationalToolsTest {
       assertThat(result.isError()).isFalse();
       assertThat(result.structuredContent()).isNotNull();
 
-      final var searchResult =
-          objectMapper.convertValue(result.structuredContent(), VariableSearchQueryResult.class);
-      assertThat(searchResult.getItems())
+      @SuppressWarnings("unchecked")
+      final StrictSearchQueryResult<VariableSearch> searchResult =
+          (StrictSearchQueryResult<VariableSearch>)
+              objectMapper.convertValue(
+                  result.structuredContent(),
+                  objectMapper
+                      .getTypeFactory()
+                      .constructParametricType(
+                          StrictSearchQueryResult.class, VariableSearch.class));
+      assertThat(searchResult.items())
           .hasSize(1)
           .first()
           .satisfies(
@@ -996,7 +1015,7 @@ class UserTaskToolsTest extends OperationalToolsTest {
           objectMapper.convertValue(result.structuredContent(), ProblemDetail.class);
       assertThat(problemDetail.getDetail()).isEqualTo("Expected failure");
       assertThat(problemDetail.getStatus()).isEqualTo(HttpStatus.NOT_FOUND.value());
-      assertThat(problemDetail.getTitle()).isEqualTo("NOT_FOUND");
+      assertThat(problemDetail.getTitle()).isEqualTo("Not Found");
 
       assertTextContentFallback(result);
     }

@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.gateway.rest.controller;
 
+import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.TopologyServices;
 import io.camunda.service.TopologyServices.Broker;
 import io.camunda.service.TopologyServices.Health;
@@ -14,6 +15,7 @@ import io.camunda.service.TopologyServices.Partition;
 import io.camunda.service.TopologyServices.Role;
 import io.camunda.service.TopologyServices.Topology;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
+import io.camunda.zeebe.gateway.rest.controller.adapter.DefaultClusterServiceAdapter;
 import io.camunda.zeebe.util.VersionUtil;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -21,13 +23,16 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Mockito;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.json.JsonCompareMode;
 
-@WebMvcTest(TopologyController.class)
+@Import(DefaultClusterServiceAdapter.class)
+@WebMvcTest(ClusterController.class)
 public class TopologyControllerTest extends RestControllerTest {
 
+  @MockitoBean CamundaAuthenticationProvider authenticationProvider;
   @MockitoBean TopologyServices topologyServices;
 
   @ParameterizedTest

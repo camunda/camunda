@@ -14,7 +14,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import io.camunda.gateway.protocol.model.AuthorizationCreateResult;
+import io.camunda.gateway.protocol.model.AuthorizationCreate;
 import io.camunda.gateway.protocol.model.AuthorizationIdBasedRequest;
 import io.camunda.gateway.protocol.model.AuthorizationPropertyBasedRequest;
 import io.camunda.gateway.protocol.model.AuthorizationRequest;
@@ -28,6 +28,8 @@ import io.camunda.service.AuthorizationServices;
 import io.camunda.service.AuthorizationServices.CreateAuthorizationRequest;
 import io.camunda.service.AuthorizationServices.UpdateAuthorizationRequest;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
+import io.camunda.zeebe.gateway.rest.controller.AuthorizationController;
+import io.camunda.zeebe.gateway.rest.controller.adapter.DefaultAuthorizationServiceAdapter;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceMatcher;
@@ -51,8 +53,8 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ProblemDetail;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
+@Import({DefaultAuthorizationServiceAdapter.class, SecurityConfiguration.class})
 @WebMvcTest(AuthorizationController.class)
-@Import(SecurityConfiguration.class)
 public class AuthorizationControllerTest extends RestControllerTest {
 
   @MockitoBean private AuthorizationServices authorizationServices;
@@ -85,9 +87,8 @@ public class AuthorizationControllerTest extends RestControllerTest {
         .exchange()
         .expectStatus()
         .isCreated()
-        .expectBody(AuthorizationCreateResult.class)
-        .isEqualTo(
-            new AuthorizationCreateResult().authorizationKey(String.valueOf(authorizationKey)));
+        .expectBody(AuthorizationCreate.class)
+        .isEqualTo(new AuthorizationCreate().authorizationKey(String.valueOf(authorizationKey)));
 
     final var captor = ArgumentCaptor.forClass(CreateAuthorizationRequest.class);
     verify(authorizationServices).createAuthorization(captor.capture(), any());
@@ -131,9 +132,9 @@ public class AuthorizationControllerTest extends RestControllerTest {
             }""";
 
     final var expectedBody = CamundaProblemDetail.forStatus(HttpStatus.BAD_REQUEST);
-    expectedBody.setTitle("Bad Request");
+    expectedBody.setTitle(INVALID_ARGUMENT.name());
     expectedBody.setInstance(URI.create("/v2/authorizations"));
-    expectedBody.setDetail("Only one of [resourceId, resourcePropertyName] is allowed");
+    expectedBody.setDetail("No ownerId provided.");
 
     // when - then
     webClient
@@ -267,9 +268,9 @@ public class AuthorizationControllerTest extends RestControllerTest {
             }""";
 
     final var expectedBody = CamundaProblemDetail.forStatus(HttpStatus.BAD_REQUEST);
-    expectedBody.setTitle("Bad Request");
+    expectedBody.setTitle(INVALID_ARGUMENT.name());
     expectedBody.setInstance(URI.create("/v2/authorizations/2"));
-    expectedBody.setDetail("Only one of [resourceId, resourcePropertyName] is allowed");
+    expectedBody.setDetail("No ownerId provided.");
 
     // when - then
     webClient

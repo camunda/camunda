@@ -18,17 +18,32 @@ import static io.camunda.gateway.mcp.tool.ToolDescriptions.USER_TASK_KEY_POSITIV
 import static io.camunda.gateway.mcp.tool.ToolDescriptions.VARIABLE_FILTER_FORMAT_NOTE;
 import static io.camunda.gateway.mcp.tool.ToolDescriptions.VARIABLE_VALUE_RETURN_FORMAT;
 
+import io.camunda.gateway.mapping.http.GatewayErrorMapper;
 import io.camunda.gateway.mapping.http.RequestMapper;
 import io.camunda.gateway.mapping.http.search.SearchQueryRequestMapper;
 import io.camunda.gateway.mapping.http.search.SearchQueryResponseMapper;
 import io.camunda.gateway.mcp.config.tool.CamundaMcpTool;
 import io.camunda.gateway.mcp.config.tool.McpToolParamsUnwrapped;
 import io.camunda.gateway.mcp.mapper.CallToolResultMapper;
+import io.camunda.gateway.mcp.model.McpDateRange;
+import io.camunda.gateway.mcp.model.McpUserTaskAssignmentOptions;
+import io.camunda.gateway.mcp.model.McpUserTaskFilter;
+import io.camunda.gateway.mcp.model.McpUserTaskSearchQuery;
+import io.camunda.gateway.mcp.model.McpUserTaskVariableFilterParam;
+import io.camunda.gateway.mcp.model.McpVariableValue;
+import io.camunda.gateway.protocol.model.AdvancedDateTimeFilter;
+import io.camunda.gateway.protocol.model.IntegerFilterPropertyPlainValue;
+import io.camunda.gateway.protocol.model.OffsetPagination;
+import io.camunda.gateway.protocol.model.StringFilterProperty;
+import io.camunda.gateway.protocol.model.StringFilterPropertyPlainValue;
+import io.camunda.gateway.protocol.model.UserTaskAssignmentRequest;
+import io.camunda.gateway.protocol.model.UserTaskEffectiveVariableSearchQueryRequest;
+import io.camunda.gateway.protocol.model.UserTaskFilter;
+import io.camunda.gateway.protocol.model.UserTaskSearchQuery;
+import io.camunda.gateway.protocol.model.UserTaskStateFilterPropertyPlainValue;
+import io.camunda.gateway.protocol.model.UserTaskVariableFilter;
 import io.camunda.gateway.protocol.model.UserTaskVariableSearchQuerySortRequest;
-import io.camunda.gateway.protocol.model.simple.OffsetPagination;
-import io.camunda.gateway.protocol.model.simple.UserTaskAssignmentRequest;
-import io.camunda.gateway.protocol.model.simple.UserTaskSearchQuery;
-import io.camunda.gateway.protocol.model.simple.UserTaskVariableFilter;
+import io.camunda.gateway.protocol.model.VariableValueFilterProperty;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.UserTaskServices;
 import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
@@ -38,6 +53,7 @@ import jakarta.validation.constraints.Positive;
 import java.util.List;
 import org.springframework.ai.mcp.annotation.McpTool.McpAnnotations;
 import org.springframework.ai.mcp.annotation.McpToolParam;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import org.springframework.validation.annotation.Validated;
 
@@ -60,9 +76,10 @@ public class UserTaskTools {
           "Search for user tasks. " + VARIABLE_FILTER_FORMAT_NOTE + " " + EVENTUAL_CONSISTENCY_NOTE,
       annotations = @McpAnnotations(readOnlyHint = true))
   public CallToolResult searchUserTasks(
-      @McpToolParamsUnwrapped @Valid final UserTaskSearchQuery query) {
+      @McpToolParamsUnwrapped @Valid final McpUserTaskSearchQuery query) {
     try {
-      final var userTaskSearchQuery = SearchQueryRequestMapper.toUserTaskQuery(query);
+      final var strictRequest = toStrict(query);
+      final var userTaskSearchQuery = SearchQueryRequestMapper.toUserTaskQueryStrict(strictRequest);
 
       if (userTaskSearchQuery.isLeft()) {
         return CallToolResultMapper.mapProblemToResult(userTaskSearchQuery.getLeft());
@@ -72,6 +89,10 @@ public class UserTaskTools {
           SearchQueryResponseMapper.toUserTaskSearchQueryResponse(
               userTaskServices.search(
                   userTaskSearchQuery.get(), authenticationProvider.getCamundaAuthentication())));
+    } catch (final IllegalArgumentException e) {
+      return CallToolResultMapper.mapProblemToResult(
+          GatewayErrorMapper.createProblemDetail(
+              HttpStatus.BAD_REQUEST, e.getMessage(), "INVALID_ARGUMENT"));
     } catch (final Exception e) {
       return CallToolResultMapper.mapErrorToResult(e);
     }
@@ -109,20 +130,17 @@ public class UserTaskTools {
               required = false)
           final String assignee,
       @McpToolParam(description = "Assignment options.", required = false)
-          final UserTaskAssignmentRequest assignmentOptions) {
+          final McpUserTaskAssignmentOptions assignmentOptions) {
     try {
       if (assignee == null || assignee.isBlank()) {
         return performUnassignment(userTaskKey);
       } else {
         // merge assignee root param with potential assignment options
-        UserTaskAssignmentRequest request = new UserTaskAssignmentRequest().assignee(assignee);
-        if (assignmentOptions != null) {
-          request =
-              request
-                  .allowOverride(assignmentOptions.getAllowOverride())
-                  .action(assignmentOptions.getAction());
-        }
-
+        final var request =
+            new UserTaskAssignmentRequest()
+                .assignee(assignee)
+                .allowOverride(assignmentOptions != null ? assignmentOptions.allowOverride() : null)
+                .action(assignmentOptions != null ? assignmentOptions.action() : null);
         return performAssignment(userTaskKey, request);
       }
     } catch (final Exception e) {
@@ -174,15 +192,20 @@ public class UserTaskTools {
           @Positive(message = USER_TASK_KEY_POSITIVE_MESSAGE)
           final Long userTaskKey,
       @McpToolParam(description = FILTER_DESCRIPTION, required = false)
-          final UserTaskVariableFilter filter,
+          final McpUserTaskVariableFilterParam filter,
       @McpToolParam(description = SORT_DESCRIPTION, required = false)
           final List<UserTaskVariableSearchQuerySortRequest> sort,
       @McpToolParam(description = PAGE_DESCRIPTION, required = false) final OffsetPagination page,
       @McpToolParam(description = TRUNCATE_VARIABLES_DESCRIPTION, required = false)
           final Boolean truncateValues) {
     try {
+      final var strictRequest =
+          new UserTaskEffectiveVariableSearchQueryRequest()
+              .page(page)
+              .sort(sort)
+              .filter(toStrictVariableFilter(filter));
       final var variableSearchQuery =
-          SearchQueryRequestMapper.toUserTaskEffectiveVariableQuery(filter, page, sort);
+          SearchQueryRequestMapper.toUserTaskEffectiveVariableQueryStrict(strictRequest);
 
       if (variableSearchQuery.isLeft()) {
         return CallToolResultMapper.mapProblemToResult(variableSearchQuery.getLeft());
@@ -199,5 +222,77 @@ public class UserTaskTools {
     } catch (final Exception e) {
       return CallToolResultMapper.mapErrorToResult(e);
     }
+  }
+
+  // -- Facade → Strict contract conversion --
+
+  private static UserTaskSearchQuery toStrict(final McpUserTaskSearchQuery query) {
+    return new UserTaskSearchQuery()
+        .page(query.page())
+        .sort(query.sort())
+        .filter(toStrictFilter(query.filter()));
+  }
+
+  private static UserTaskFilter toStrictFilter(final McpUserTaskFilter filter) {
+    if (filter == null) {
+      return null;
+    }
+    return new UserTaskFilter()
+        .state(
+            filter.state() != null
+                ? new UserTaskStateFilterPropertyPlainValue(filter.state().getValue())
+                : null)
+        .assignee(wrapString(filter.assignee()))
+        .priority(
+            filter.priority() != null
+                ? new IntegerFilterPropertyPlainValue(filter.priority())
+                : null)
+        .elementId(filter.elementId())
+        .name(wrapString(filter.name()))
+        .processDefinitionId(filter.processDefinitionId())
+        .creationDate(toStrictDateRange(filter.creationDate()))
+        .completionDate(toStrictDateRange(filter.completionDate()))
+        .followUpDate(toStrictDateRange(filter.followUpDate()))
+        .dueDate(toStrictDateRange(filter.dueDate()))
+        .processInstanceVariables(toStrictVariableValueFilters(filter.processInstanceVariables()))
+        .localVariables(toStrictVariableValueFilters(filter.localVariables()))
+        .userTaskKey(filter.userTaskKey())
+        .processDefinitionKey(filter.processDefinitionKey())
+        .processInstanceKey(filter.processInstanceKey())
+        .elementInstanceKey(filter.elementInstanceKey())
+        .tags(filter.tags());
+  }
+
+  private static List<VariableValueFilterProperty> toStrictVariableValueFilters(
+      final List<McpVariableValue> variables) {
+    if (variables == null || variables.isEmpty()) {
+      return null;
+    }
+    return variables.stream()
+        .map(v -> new VariableValueFilterProperty().name(v.name()).value(wrapString(v.value())))
+        .toList();
+  }
+
+  private static StringFilterProperty wrapString(final String value) {
+    return value != null ? new StringFilterPropertyPlainValue(value) : null;
+  }
+
+  private static AdvancedDateTimeFilter toStrictDateRange(final McpDateRange dateRange) {
+    if (dateRange == null) {
+      return null;
+    }
+    return new AdvancedDateTimeFilter()
+        .$gte(dateRange.from()) // from is inclusive
+        .$lt(dateRange.to()); // to is exclusive
+  }
+
+  // -- Variable search: facade → strict contract conversion --
+
+  private static UserTaskVariableFilter toStrictVariableFilter(
+      final McpUserTaskVariableFilterParam filter) {
+    if (filter == null) {
+      return null;
+    }
+    return new UserTaskVariableFilter().name(wrapString(filter.name()));
   }
 }

@@ -13,7 +13,6 @@ import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESS
 import static io.camunda.gateway.mapping.http.validator.RequestValidator.validate;
 
 import io.camunda.gateway.protocol.model.JobActivationRequest;
-import io.camunda.gateway.protocol.model.JobChangeset;
 import io.camunda.gateway.protocol.model.JobErrorRequest;
 import io.camunda.gateway.protocol.model.JobUpdateRequest;
 import java.util.List;
@@ -22,48 +21,44 @@ import org.springframework.http.ProblemDetail;
 
 public final class JobRequestValidator {
 
-  public static Optional<ProblemDetail> validateJobActivationRequest(
-      final JobActivationRequest activationRequest) {
+  public static Optional<ProblemDetail> validateActivationRequest(
+      final JobActivationRequest request) {
     return validate(
         violations -> {
-          if (activationRequest.getType() == null || activationRequest.getType().isBlank()) {
+          if (request.getType() == null || request.getType().isBlank()) {
             violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("type"));
           }
-          if (activationRequest.getTimeout() == null) {
+          if (request.getTimeout() == null) {
             violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("timeout"));
-          } else if (activationRequest.getTimeout() < 1) {
+          } else if (request.getTimeout() < 1) {
             violations.add(
                 ERROR_MESSAGE_INVALID_ATTRIBUTE_VALUE.formatted(
-                    "timeout", activationRequest.getTimeout(), "greater than 0"));
+                    "timeout", request.getTimeout(), "greater than 0"));
           }
-          if (activationRequest.getMaxJobsToActivate() == null) {
+          if (request.getMaxJobsToActivate() == null) {
             violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("maxJobsToActivate"));
-          } else if (activationRequest.getMaxJobsToActivate() < 1) {
+          } else if (request.getMaxJobsToActivate() < 1) {
             violations.add(
                 ERROR_MESSAGE_INVALID_ATTRIBUTE_VALUE.formatted(
-                    "maxJobsToActivate", activationRequest.getTimeout(), "greater than 0"));
+                    "maxJobsToActivate", request.getMaxJobsToActivate(), "greater than 0"));
           }
         });
   }
 
-  public static Optional<ProblemDetail> validateJobErrorRequest(
-      final JobErrorRequest errorRequest) {
+  public static Optional<ProblemDetail> validateErrorRequest(final JobErrorRequest request) {
     return validate(
         violations -> {
-          // errorCode can't be null or empty
-          if (errorRequest.getErrorCode() == null || errorRequest.getErrorCode().isBlank()) {
+          if (request.getErrorCode() == null || request.getErrorCode().isBlank()) {
             violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("errorCode"));
           }
         });
   }
 
-  public static Optional<ProblemDetail> validateJobUpdateRequest(
-      final JobUpdateRequest updateRequest) {
+  public static Optional<ProblemDetail> validateUpdateRequest(final JobUpdateRequest request) {
+    final var cs = request.getChangeset();
     return validate(
         violations -> {
-          final JobChangeset changeset = updateRequest.getChangeset();
-          if (changeset == null
-              || (changeset.getRetries() == null && changeset.getTimeout() == null)) {
+          if (cs == null || (cs.getRetries() == null && cs.getTimeout() == null)) {
             violations.add(
                 ERROR_MESSAGE_AT_LEAST_ONE_FIELD.formatted(List.of("retries", "timeout")));
           }

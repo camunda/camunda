@@ -78,7 +78,11 @@ test.describe.parallel('Tenants API Tests', () => {
   });
 
   test('Create Tenant Empty Name Invalid Body 400', async ({request}) => {
-    const body = {name: '', description: 'empty name'};
+    const body = {
+      tenantId: 'empty-name-test',
+      name: '',
+      description: 'empty name',
+    };
     const res = await request.post(buildUrl('/tenants'), {
       headers: jsonHeaders(),
       data: body,

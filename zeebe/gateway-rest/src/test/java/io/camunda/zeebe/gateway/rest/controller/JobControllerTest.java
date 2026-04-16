@@ -17,7 +17,7 @@ import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
-import io.camunda.gateway.protocol.model.JobActivationResult;
+import io.camunda.gateway.protocol.model.JobActivation;
 import io.camunda.search.entities.GlobalJobStatisticsEntity;
 import io.camunda.search.entities.GlobalJobStatisticsEntity.StatusMetric;
 import io.camunda.search.entities.JobErrorStatisticsEntity;
@@ -32,6 +32,7 @@ import io.camunda.service.JobServices.ActivateJobsRequest;
 import io.camunda.service.JobServices.UpdateJobChangeset;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.gateway.rest.config.GatewayRestConfiguration;
+import io.camunda.zeebe.gateway.rest.controller.adapter.DefaultJobServiceAdapter;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobResult;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobResultCorrections;
@@ -50,17 +51,19 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.json.JsonCompareMode;
 
+@Import(DefaultJobServiceAdapter.class)
 @WebMvcTest(JobController.class)
 public class JobControllerTest extends RestControllerTest {
 
   static final String JOBS_BASE_URL = "/v2/jobs";
 
-  @MockitoBean JobServices<JobActivationResult> jobServices;
+  @MockitoBean JobServices<JobActivation> jobServices;
   @MockitoBean MultiTenancyConfiguration multiTenancyCfg;
   @MockitoBean ResponseObserverProvider responseObserverProvider;
   @MockitoBean CamundaAuthenticationProvider authenticationProvider;
@@ -1399,7 +1402,7 @@ public class JobControllerTest extends RestControllerTest {
         .thenAnswer(
             invocation -> {
               final CompletableFuture<ResponseEntity<Object>> future = invocation.getArgument(0);
-              future.complete(ResponseEntity.ok().body(new JobActivationResult(List.of())));
+              future.complete(ResponseEntity.ok().body(new JobActivation().jobs(List.of())));
               return mockObserver;
             });
 
@@ -1447,7 +1450,7 @@ public class JobControllerTest extends RestControllerTest {
         .thenAnswer(
             invocation -> {
               final CompletableFuture<ResponseEntity<Object>> future = invocation.getArgument(0);
-              future.complete(ResponseEntity.ok().body(new JobActivationResult(List.of())));
+              future.complete(ResponseEntity.ok().body(new JobActivation().jobs(List.of())));
               return mockObserver;
             });
 
@@ -1497,7 +1500,7 @@ public class JobControllerTest extends RestControllerTest {
         .thenAnswer(
             invocation -> {
               final CompletableFuture<ResponseEntity<Object>> future = invocation.getArgument(0);
-              future.complete(ResponseEntity.ok().body(new JobActivationResult(List.of())));
+              future.complete(ResponseEntity.ok().body(new JobActivation().jobs(List.of())));
               return mockObserver;
             });
 
@@ -2442,7 +2445,8 @@ public class JobControllerTest extends RestControllerTest {
                 {
                   "filter": {
                     "from": "2024-07-28T15:51:28.071Z",
-                    "to": "2024-07-29T15:51:28.071Z"
+                    "to": "2024-07-29T15:51:28.071Z",
+                    "jobType": "fetch-customer-data"
                   }
                 }""",
             "/v2/jobs/statistics/by-workers"),

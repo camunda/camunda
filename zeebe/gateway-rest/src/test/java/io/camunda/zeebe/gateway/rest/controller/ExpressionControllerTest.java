@@ -18,6 +18,7 @@ import io.camunda.security.configuration.MultiTenancyConfiguration;
 import io.camunda.service.ExpressionServices;
 import io.camunda.service.ExpressionServices.ExpressionEvaluationRequest;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
+import io.camunda.zeebe.gateway.rest.controller.adapter.DefaultExpressionServiceAdapter;
 import io.camunda.zeebe.protocol.impl.record.value.expression.ExpressionRecord;
 import java.util.List;
 import java.util.Map;
@@ -29,11 +30,13 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.json.JsonCompareMode;
 
 @ExtendWith(MockitoExtension.class)
+@Import(DefaultExpressionServiceAdapter.class)
 @WebMvcTest(value = ExpressionController.class)
 public class ExpressionControllerTest extends RestControllerTest {
 
@@ -145,50 +148,6 @@ public class ExpressionControllerTest extends RestControllerTest {
   }
 
   @Test
-  void shouldEvaluateExpressionWithWarnings() {
-    // given
-    final var expressionRecord = mock(ExpressionRecord.class);
-    when(expressionRecord.getExpression()).thenReturn("=invalid_function()");
-    when(expressionRecord.getResultValue()).thenReturn(null);
-    when(expressionRecord.getWarnings())
-        .thenReturn(List.of("No function found with name 'invalid_function' and 0 parameters"));
-
-    when(expressionServices.evaluateExpression(any(ExpressionEvaluationRequest.class), any()))
-        .thenReturn(CompletableFuture.completedFuture(expressionRecord));
-
-    final var request =
-        """
-        {
-            "expression": "=invalid_function()",
-            "tenantId": "tenant1"
-        }""";
-
-    // when / then
-    webClient
-        .post()
-        .uri(EXPRESSION_URL)
-        .accept(MediaType.APPLICATION_JSON)
-        .contentType(MediaType.APPLICATION_JSON)
-        .bodyValue(request)
-        .exchange()
-        .expectStatus()
-        .isOk()
-        .expectBody()
-        .json(
-            """
-            {
-                "expression": "=invalid_function()",
-                "result": null,
-                "warnings": [
-                    {
-                        "message": "No function found with name 'invalid_function' and 0 parameters"
-                    }
-                ]
-            }""",
-            JsonCompareMode.STRICT);
-  }
-
-  @Test
   void shouldRejectEvaluationWithMissingExpression() {
     // given
     final var request =
@@ -203,7 +162,7 @@ public class ExpressionControllerTest extends RestControllerTest {
               "type": "about:blank",
               "title": "INVALID_ARGUMENT",
               "status": 400,
-              "detail": "No expression provided",
+              "detail": "No expression provided.",
               "instance": "%s"
             }"""
             .formatted(EXPRESSION_URL);

@@ -1,0 +1,84 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+package io.camunda.gateway.mapping.http.search.contract;
+
+import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
+import io.camunda.gateway.mapping.http.util.KeyUtil;
+import io.camunda.gateway.protocol.model.Variable;
+import io.camunda.gateway.protocol.model.VariableSearch;
+import io.camunda.search.entities.VariableEntity;
+import java.util.List;
+
+/**
+ * Contract adaptation layer for variable projections.
+ *
+ * <p>Policy in this adapter controls whether values are emitted as previews or full payloads based
+ * on the operation context. The generated DTOs flatten the OpenAPI allOf inheritance so each
+ * projection is a self-contained record that Jackson can serialize directly.
+ */
+public final class VariableContractAdapter {
+
+  private VariableContractAdapter() {}
+
+  public static List<VariableSearch> toSearchProjections(
+      final List<VariableEntity> variableEntities, final boolean truncateValues) {
+    return variableEntities.stream()
+        .map(entity -> toSearchProjection(entity, truncateValues))
+        .toList();
+  }
+
+  public static VariableSearch toSearchProjection(
+      final VariableEntity entity, final boolean truncateValues) {
+    return new VariableSearch()
+        .name(ContractPolicy.requireNonNull(entity.name(), "name", entity))
+        .tenantId(ContractPolicy.requireNonNull(entity.tenantId(), "tenantId", entity))
+        .variableKey(
+            ContractPolicy.requireNonNull(
+                KeyUtil.keyToString(entity.variableKey()), "variableKey", entity))
+        .scopeKey(
+            ContractPolicy.requireNonNull(
+                KeyUtil.keyToString(entity.scopeKey()), "scopeKey", entity))
+        .processInstanceKey(
+            ContractPolicy.requireNonNull(
+                KeyUtil.keyToString(entity.processInstanceKey()), "processInstanceKey", entity))
+        .value(
+            ContractPolicy.requireNonNull(
+                !truncateValues
+                    ? ContractPolicy.resolvePreviewValue(
+                        entity.value(), entity.fullValue(), entity.isPreview())
+                    : entity.value(),
+                "value",
+                entity))
+        .isTruncated(
+            ContractPolicy.requireNonNull(
+                truncateValues && entity.isPreview(), "isTruncated", entity))
+        .rootProcessInstanceKey(KeyUtil.keyToString(entity.rootProcessInstanceKey()));
+  }
+
+  public static Variable toItemProjection(final VariableEntity entity) {
+    return new Variable()
+        .name(ContractPolicy.requireNonNull(entity.name(), "name", entity))
+        .tenantId(ContractPolicy.requireNonNull(entity.tenantId(), "tenantId", entity))
+        .variableKey(
+            ContractPolicy.requireNonNull(
+                KeyUtil.keyToString(entity.variableKey()), "variableKey", entity))
+        .scopeKey(
+            ContractPolicy.requireNonNull(
+                KeyUtil.keyToString(entity.scopeKey()), "scopeKey", entity))
+        .processInstanceKey(
+            ContractPolicy.requireNonNull(
+                KeyUtil.keyToString(entity.processInstanceKey()), "processInstanceKey", entity))
+        .value(
+            ContractPolicy.requireNonNull(
+                ContractPolicy.resolvePreviewValue(
+                    entity.value(), entity.fullValue(), entity.isPreview()),
+                "value",
+                entity))
+        .rootProcessInstanceKey(KeyUtil.keyToString(entity.rootProcessInstanceKey()));
+  }
+}

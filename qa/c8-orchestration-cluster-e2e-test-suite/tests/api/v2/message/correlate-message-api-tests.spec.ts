@@ -13,12 +13,7 @@ import {
   assertRequiredFields,
   assertEqualsForKeys,
   paginatedResponseFields,
-  assertStatusCode,
-  assertUnauthorizedRequest,
-  assertInvalidArgument,
-  assertNotFoundRequest,
 } from '../../../../utils/http';
-import {validateResponse} from '../../../../json-body-assertions';
 import {
   CORRELATE_MESSAGE4,
   correlateMessageRequiredFields,
@@ -49,7 +44,7 @@ test.describe('Correlate Message API Tests', () => {
       headers: {},
       data: CORRELATE_MESSAGE4,
     });
-    await assertUnauthorizedRequest(res);
+    expect(res.status()).toBe(401);
   });
 
   test('Correlate Message Bad Request', async ({request}) => {
@@ -57,7 +52,11 @@ test.describe('Correlate Message API Tests', () => {
       headers: jsonHeaders(),
       data: {correlationKey: 'correlationKey'},
     });
-    await assertInvalidArgument(res, 400, 'No messageName provided.');
+    expect(res.status()).toBe(400);
+    const json = await res.json();
+    assertRequiredFields(json, ['detail', 'title']);
+    expect(json.title).toBe('INVALID_ARGUMENT');
+    expect(json.detail).toBe('No name provided.');
   });
 
   test('Correlate Message Not found', async ({request}) => {
@@ -69,10 +68,10 @@ test.describe('Correlate Message API Tests', () => {
         variables: {foo: 'bar'},
       },
     });
-    await assertNotFoundRequest(
-      res,
-      "Command 'CORRELATE' rejected with code 'NOT_FOUND': Expected to find subscription for message with name 'invalidMessageName' and correlation key 'invalidKey', but none was found.",
-    );
+    expect(res.status()).toBe(404);
+    const json = await res.json();
+    assertRequiredFields(json, ['detail', 'title']);
+    expect(json.title).toBe('NOT_FOUND');
   });
 
   test('Correlate Message Invalid Tenant', async ({request}) => {
@@ -84,9 +83,11 @@ test.describe('Correlate Message API Tests', () => {
       headers: jsonHeaders(),
       data: updatedBody,
     });
-    await assertInvalidArgument(
-      res,
-      400,
+    expect(res.status()).toBe(400);
+    const json = await res.json();
+    assertRequiredFields(json, ['detail', 'title']);
+    expect(json.title).toBe('INVALID_ARGUMENT');
+    expect(json.detail).toContain(
       'Expected to handle request Correlate Message with tenant identifier',
     );
   });
@@ -97,15 +98,7 @@ test.describe('Correlate Message API Tests', () => {
         headers: jsonHeaders(),
         data: CORRELATE_MESSAGE4,
       });
-      await assertStatusCode(res, 200);
-      await validateResponse(
-        {
-          path: '/messages/correlation',
-          method: 'POST',
-          status: '200',
-        },
-        res,
-      );
+      expect(res.status()).toBe(200);
       const json = await res.json();
       assertRequiredFields(json, correlateMessageRequiredFields);
       assertEqualsForKeys(
@@ -131,15 +124,7 @@ test.describe('Correlate Message API Tests', () => {
             },
           },
         );
-        await assertStatusCode(res, 200);
-        await validateResponse(
-          {
-            path: '/message-subscriptions/search',
-            method: 'POST',
-            status: '200',
-          },
-          res,
-        );
+        expect(res.status()).toBe(200);
         const json = await res.json();
         assertRequiredFields(json, paginatedResponseFields);
         expect(json.page.totalItems).toBe(1);

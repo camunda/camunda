@@ -93,7 +93,7 @@ test.describe.parallel('Roles API Tests', () => {
   });
 
   test('Create Role Empty Name Invalid Body 400', async ({request}) => {
-    const body = {name: '', description: 'empty name'};
+    const body = {roleId: 'test-empty-name-role', name: '', description: 'empty name'};
     const res = await request.post(buildUrl('/roles'), {
       headers: jsonHeaders(),
       data: body,

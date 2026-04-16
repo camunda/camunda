@@ -10,7 +10,6 @@ package io.camunda.gateway.mapping.http.validator;
 import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_INVALID_ATTRIBUTE_VALUE;
 import static io.camunda.gateway.mapping.http.validator.RequestValidator.validate;
 import static io.camunda.gateway.mapping.http.validator.RequestValidator.validateDate;
-import static io.camunda.gateway.mapping.http.validator.RequestValidator.validateProcessDefinitionId;
 
 import io.camunda.gateway.protocol.model.DocumentLinkRequest;
 import io.camunda.gateway.protocol.model.DocumentMetadata;
@@ -36,8 +35,6 @@ public class DocumentValidator {
           if (metadata.getExpiresAt() != null) {
             validateDate(metadata.getExpiresAt(), "expiresAt", violations);
           }
-
-          validateProcessDefinitionId(metadata.getProcessDefinitionId(), violations);
         });
   }
 

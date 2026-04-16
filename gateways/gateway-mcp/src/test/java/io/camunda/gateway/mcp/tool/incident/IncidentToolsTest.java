@@ -19,12 +19,11 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.camunda.gateway.mapping.http.search.contract.StrictSearchQueryResult;
 import io.camunda.gateway.mcp.OperationalToolsTest;
+import io.camunda.gateway.protocol.model.Incident;
 import io.camunda.gateway.protocol.model.IncidentErrorTypeEnum;
-import io.camunda.gateway.protocol.model.IncidentResult;
-import io.camunda.gateway.protocol.model.IncidentSearchQueryResult;
 import io.camunda.gateway.protocol.model.IncidentStateEnum;
-import io.camunda.gateway.protocol.model.JobActivationResult;
 import io.camunda.search.entities.IncidentEntity;
 import io.camunda.search.entities.IncidentEntity.ErrorType;
 import io.camunda.search.entities.IncidentEntity.IncidentState;
@@ -94,12 +93,12 @@ class IncidentToolsTest extends OperationalToolsTest {
           .build();
 
   @MockitoBean private IncidentServices incidentServices;
-  @MockitoBean private JobServices<JobActivationResult> jobServices;
+  @MockitoBean private JobServices<?> jobServices;
 
   @Autowired private JsonMapper objectMapper;
   @Captor private ArgumentCaptor<IncidentQuery> queryCaptor;
 
-  private void assertExampleIncident(final IncidentResult incident) {
+  private void assertExampleIncident(final Incident incident) {
     assertThat(incident.getIncidentKey()).isEqualTo("5");
     assertThat(incident.getProcessDefinitionKey()).isEqualTo("23");
     assertThat(incident.getProcessDefinitionId()).isEqualTo("complexProcess");
@@ -134,8 +133,7 @@ class IncidentToolsTest extends OperationalToolsTest {
       assertThat(result.isError()).isFalse();
       assertThat(result.structuredContent()).isNotNull();
 
-      final var incident =
-          objectMapper.convertValue(result.structuredContent(), IncidentResult.class);
+      final var incident = objectMapper.convertValue(result.structuredContent(), Incident.class);
       assertExampleIncident(incident);
 
       verify(incidentServices).getByKey(eq(5L), any());
@@ -165,7 +163,7 @@ class IncidentToolsTest extends OperationalToolsTest {
           objectMapper.convertValue(result.structuredContent(), ProblemDetail.class);
       assertThat(problemDetail.getDetail()).isEqualTo("Expected failure");
       assertThat(problemDetail.getStatus()).isEqualTo(HttpStatus.NOT_FOUND.value());
-      assertThat(problemDetail.getTitle()).isEqualTo("NOT_FOUND");
+      assertThat(problemDetail.getTitle()).isEqualTo("Not Found");
 
       assertTextContentFallback(result);
     }
@@ -300,13 +298,19 @@ class IncidentToolsTest extends OperationalToolsTest {
       assertThat(result.isError()).isFalse();
       assertThat(result.structuredContent()).isNotNull();
 
-      final var searchResult =
-          objectMapper.convertValue(result.structuredContent(), IncidentSearchQueryResult.class);
-      assertThat(searchResult.getPage().getTotalItems()).isEqualTo(1L);
-      assertThat(searchResult.getPage().getHasMoreTotalItems()).isFalse();
-      assertThat(searchResult.getPage().getStartCursor()).isEqualTo("f");
-      assertThat(searchResult.getPage().getEndCursor()).isEqualTo("v");
-      assertThat(searchResult.getItems())
+      @SuppressWarnings("unchecked")
+      final StrictSearchQueryResult<Incident> searchResult =
+          (StrictSearchQueryResult<Incident>)
+              objectMapper.convertValue(
+                  result.structuredContent(),
+                  objectMapper
+                      .getTypeFactory()
+                      .constructParametricType(StrictSearchQueryResult.class, Incident.class));
+      assertThat(searchResult.page().totalItems()).isEqualTo(1L);
+      assertThat(searchResult.page().hasMoreTotalItems()).isFalse();
+      assertThat(searchResult.page().startCursor()).isEqualTo("f");
+      assertThat(searchResult.page().endCursor()).isEqualTo("v");
+      assertThat(searchResult.items())
           .hasSize(1)
           .first()
           .satisfies(IncidentToolsTest.this::assertExampleIncident);
@@ -352,7 +356,7 @@ class IncidentToolsTest extends OperationalToolsTest {
           objectMapper.convertValue(result.structuredContent(), ProblemDetail.class);
       assertThat(problemDetail.getDetail()).isEqualTo("Expected failure");
       assertThat(problemDetail.getStatus()).isEqualTo(HttpStatus.NOT_FOUND.value());
-      assertThat(problemDetail.getTitle()).isEqualTo("NOT_FOUND");
+      assertThat(problemDetail.getTitle()).isEqualTo("Not Found");
 
       assertTextContentFallback(result);
     }
@@ -374,7 +378,7 @@ class IncidentToolsTest extends OperationalToolsTest {
       final var problemDetail =
           objectMapper.convertValue(result.structuredContent(), ProblemDetail.class);
       assertThat(problemDetail.getStatus()).isEqualTo(HttpStatus.BAD_REQUEST.value());
-      assertThat(problemDetail.getTitle()).isEqualTo("INVALID_ARGUMENT");
+      assertThat(problemDetail.getTitle()).isEqualTo("Bad Request");
       assertThat(problemDetail.getDetail())
           .startsWith("The provided processInstanceKey 'abc' is not a valid key.");
 
@@ -398,7 +402,7 @@ class IncidentToolsTest extends OperationalToolsTest {
       final var problemDetail =
           objectMapper.convertValue(result.structuredContent(), ProblemDetail.class);
       assertThat(problemDetail.getStatus()).isEqualTo(HttpStatus.BAD_REQUEST.value());
-      assertThat(problemDetail.getTitle()).isEqualTo("INVALID_ARGUMENT");
+      assertThat(problemDetail.getTitle()).isEqualTo("Bad Request");
       assertThat(problemDetail.getDetail())
           .startsWith("The provided creationTime 'not-a-date' cannot be parsed as a date");
 
@@ -507,7 +511,7 @@ class IncidentToolsTest extends OperationalToolsTest {
           objectMapper.convertValue(result.structuredContent(), ProblemDetail.class);
       assertThat(problemDetail.getDetail()).isEqualTo("Expected failure");
       assertThat(problemDetail.getStatus()).isEqualTo(HttpStatus.NOT_FOUND.value());
-      assertThat(problemDetail.getTitle()).isEqualTo("NOT_FOUND");
+      assertThat(problemDetail.getTitle()).isEqualTo("Not Found");
 
       verify(incidentServices).resolveIncident(eq(5L), isNull(), any());
       verify(incidentServices).getByKey(eq(5L), any());

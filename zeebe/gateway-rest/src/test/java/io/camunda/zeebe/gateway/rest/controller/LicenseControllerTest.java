@@ -10,18 +10,24 @@ package io.camunda.zeebe.gateway.rest.controller;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.ManagementServices;
 import io.camunda.service.license.LicenseType;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
+import io.camunda.zeebe.gateway.rest.controller.adapter.DefaultLicenseServiceAdapter;
 import java.time.OffsetDateTime;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.json.JsonCompareMode;
 
+@Import(DefaultLicenseServiceAdapter.class)
 @WebMvcTest(value = LicenseController.class)
 public class LicenseControllerTest extends RestControllerTest {
+
+  @MockitoBean CamundaAuthenticationProvider authenticationProvider;
 
   static final String LICENSE_URL = "/v2/license";
 

@@ -33,15 +33,19 @@ import io.camunda.search.sort.AuditLogSort;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.AuditLogServices;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
+import io.camunda.zeebe.gateway.rest.controller.AuditLogController;
+import io.camunda.zeebe.gateway.rest.controller.adapter.DefaultAuditLogServiceAdapter;
 import java.time.OffsetDateTime;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.json.JsonCompareMode;
 
+@Import(DefaultAuditLogServiceAdapter.class)
 @WebMvcTest(AuditLogController.class)
 public class AuditLogControllerTest extends RestControllerTest {
 

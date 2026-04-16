@@ -25,34 +25,25 @@ public class TenantMapper {
     this.tenantRequestValidator = tenantRequestValidator;
   }
 
-  public Either<ProblemDetail, TenantRequest> toTenantCreateDto(
-      final TenantCreateRequest tenantCreateRequest) {
-    return RequestMapper.getResult(
-        tenantRequestValidator.validateCreateRequest(tenantCreateRequest),
-        () ->
-            new TenantRequest(
-                null,
-                tenantCreateRequest.getTenantId(),
-                tenantCreateRequest.getName(),
-                tenantCreateRequest.getDescription()));
-  }
-
-  public Either<ProblemDetail, TenantRequest> toTenantUpdateDto(
-      final String tenantId, final TenantUpdateRequest tenantUpdateRequest) {
-    return RequestMapper.getResult(
-        tenantRequestValidator.validateUpdateRequest(tenantUpdateRequest),
-        () ->
-            new TenantRequest(
-                null,
-                tenantId,
-                tenantUpdateRequest.getName(),
-                tenantUpdateRequest.getDescription()));
-  }
-
   public Either<ProblemDetail, TenantMemberRequest> toTenantMemberRequest(
       final String tenantId, final String memberId, final EntityType entityType) {
     return RequestMapper.getResult(
         tenantRequestValidator.validateMemberRequest(tenantId, memberId, entityType),
         () -> new TenantMemberRequest(tenantId, memberId, entityType));
+  }
+
+  public Either<ProblemDetail, TenantRequest> toTenantCreateDto(final TenantCreateRequest request) {
+    return RequestMapper.getResult(
+        tenantRequestValidator.validateCreateRequest(request),
+        () ->
+            new TenantRequest(
+                null, request.getTenantId(), request.getName(), request.getDescription()));
+  }
+
+  public Either<ProblemDetail, TenantRequest> toTenantUpdateDto(
+      final String tenantId, final TenantUpdateRequest request) {
+    return RequestMapper.getResult(
+        tenantRequestValidator.validateUpdateRequest(request),
+        () -> new TenantRequest(null, tenantId, request.getName(), request.getDescription()));
   }
 }

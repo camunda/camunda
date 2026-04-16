@@ -25,30 +25,23 @@ public class GroupMapper {
     this.groupRequestValidator = groupRequestValidator;
   }
 
-  public Either<ProblemDetail, GroupDTO> toGroupCreateRequest(
-      final GroupCreateRequest groupCreateRequest) {
-    return RequestMapper.getResult(
-        groupRequestValidator.validateCreateRequest(groupCreateRequest),
-        () ->
-            new GroupDTO(
-                groupCreateRequest.getGroupId(),
-                groupCreateRequest.getName(),
-                groupCreateRequest.getDescription()));
-  }
-
-  public Either<ProblemDetail, GroupDTO> toGroupUpdateRequest(
-      final GroupUpdateRequest groupUpdateRequest, final String groupId) {
-    return RequestMapper.getResult(
-        groupRequestValidator.validateUpdateRequest(groupId, groupUpdateRequest),
-        () ->
-            new GroupDTO(
-                groupId, groupUpdateRequest.getName(), groupUpdateRequest.getDescription()));
-  }
-
   public Either<ProblemDetail, GroupMemberDTO> toGroupMemberRequest(
       final String groupId, final String memberId, final EntityType entityType) {
     return RequestMapper.getResult(
         groupRequestValidator.validateMemberRequest(groupId, memberId, entityType),
         () -> new GroupMemberDTO(groupId, memberId, entityType));
+  }
+
+  public Either<ProblemDetail, GroupDTO> toGroupCreateRequest(final GroupCreateRequest request) {
+    return RequestMapper.getResult(
+        groupRequestValidator.validateCreateRequest(request),
+        () -> new GroupDTO(request.getGroupId(), request.getName(), request.getDescription()));
+  }
+
+  public Either<ProblemDetail, GroupDTO> toGroupUpdateRequest(
+      final GroupUpdateRequest request, final String groupId) {
+    return RequestMapper.getResult(
+        groupRequestValidator.validateUpdateRequest(groupId, request),
+        () -> new GroupDTO(groupId, request.getName(), request.getDescription()));
   }
 }

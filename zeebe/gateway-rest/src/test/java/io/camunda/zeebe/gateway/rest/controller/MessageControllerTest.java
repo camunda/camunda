@@ -20,6 +20,7 @@ import io.camunda.service.MessageServices.PublicationMessageRequest;
 import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.gateway.rest.config.GatewayRestConfiguration;
+import io.camunda.zeebe.gateway.rest.controller.adapter.DefaultMessageServiceAdapter;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageCorrelationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageRecord;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
@@ -32,9 +33,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
-import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -42,8 +41,8 @@ import org.springframework.test.json.JsonCompareMode;
 import org.springframework.test.web.reactive.server.WebTestClient.ResponseSpec;
 
 @ExtendWith(MockitoExtension.class)
+@Import({DefaultMessageServiceAdapter.class, GatewayRestConfiguration.class})
 @WebMvcTest(MessageController.class)
-@Import(MessageControllerTest.TestConfig.class)
 public class MessageControllerTest extends RestControllerTest {
 
   private static final String MESSAGE_BASE_URL = "/v2/messages";
@@ -206,7 +205,7 @@ public class MessageControllerTest extends RestControllerTest {
                   "type": "about:blank",
                   "status": 400,
                   "title": "INVALID_ARGUMENT",
-                  "detail": "No messageName provided.",
+                  "detail": "No name provided.",
                   "instance": "%s"
                 }"""
                 .formatted(CORRELATION_ENDPOINT),
@@ -391,7 +390,7 @@ public class MessageControllerTest extends RestControllerTest {
               "type": "about:blank",
               "status": 400,
               "title": "INVALID_ARGUMENT",
-              "detail": "Expected to handle request Correlate Message with tenant identifier '<invalid>', but tenant identifier contains illegal characters.",
+              "detail": "The provided tenantId contains illegal characters. It must match the pattern '^(<default>|[A-Za-z0-9_@.+-]+)$'.",
               "instance": "%s"
             }"""
                 .formatted(CORRELATION_ENDPOINT),
@@ -473,7 +472,7 @@ public class MessageControllerTest extends RestControllerTest {
     Mockito.verify(messageServices).publishMessage(publicationRequestCaptor.capture(), any());
     final var capturedRequest = publicationRequestCaptor.getValue();
     assertThat(capturedRequest.name()).isEqualTo("messageName");
-    assertThat(capturedRequest.correlationKey()).isEqualTo("");
+    assertThat(capturedRequest.correlationKey()).isEmpty();
     assertThat(capturedRequest.timeToLive()).isEqualTo(123L);
     assertThat(capturedRequest.messageId()).isEqualTo("messageId");
     assertThat(capturedRequest.variables()).containsExactly(Map.entry("key", "value"));
@@ -512,7 +511,7 @@ public class MessageControllerTest extends RestControllerTest {
     Mockito.verify(messageServices).publishMessage(publicationRequestCaptor.capture(), any());
     final var capturedRequest = publicationRequestCaptor.getValue();
     assertThat(capturedRequest.name()).isEqualTo("messageName");
-    assertThat(capturedRequest.correlationKey()).isEqualTo("");
+    assertThat(capturedRequest.correlationKey()).isEmpty();
     assertThat(capturedRequest.timeToLive()).isEqualTo(0L);
     assertThat(capturedRequest.messageId()).isEqualTo("messageId");
     assertThat(capturedRequest.variables()).containsExactly(Map.entry("key", "value"));
@@ -567,15 +566,5 @@ public class MessageControllerTest extends RestControllerTest {
             .setTimeToLive(123L)
             .setTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
     return CompletableFuture.completedFuture(new BrokerResponse<>(record, 1, 123));
-  }
-
-  @TestConfiguration
-  static class TestConfig {
-    @Bean
-    GatewayRestConfiguration gatewayRestConfiguration() {
-      final var config = new GatewayRestConfiguration();
-      config.setMaxNameFieldLength(32 * 1024);
-      return config;
-    }
   }
 }
