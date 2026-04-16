@@ -21,6 +21,7 @@ import MockBpmnJs from '__mocks__/bpmn-js';
 import MockBpmnIoElementTemplateIconRenderer from '__mocks__/@bpmn-io/element-template-icon-renderer';
 import MockReactMarkdown from '__mocks__/react-markdown';
 import ResizeObserverPolyfill from 'resize-observer-polyfill';
+import {elementInstancesTreeStore} from 'App/ProcessInstance/ElementInstanceLog/ElementInstancesTree/elementInstancesTreeStore';
 
 vi.mock('dmn-js-shared/lib/base/Manager', () => ({
   default: MockDmnJsSharedManager,
@@ -197,6 +198,9 @@ const localStorageMock = (function () {
     removeItem: vi.fn(),
   };
 })();
+
+beforeEach(() => (elementInstancesTreeStore.forceDisablePolling = true));
+afterEach(() => (elementInstancesTreeStore.forceDisablePolling = false));
 
 let unhandledRequestsCount = 0;
 beforeAll(() => {

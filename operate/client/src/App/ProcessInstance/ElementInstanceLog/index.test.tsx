@@ -24,6 +24,7 @@ import {Paths} from 'modules/Routes';
 import {mockFetchElementInstancesStatistics} from 'modules/mocks/api/v2/elementInstances/elementInstancesStatistics/fetchElementInstancesStatistics';
 import {mockSearchElementInstances} from 'modules/mocks/api/v2/elementInstances/searchElementInstances';
 import {mockQueryBatchOperationItems} from 'modules/mocks/api/v2/batchOperations/queryBatchOperationItems';
+import {elementInstancesTreeStore} from './ElementInstancesTree/elementInstancesTreeStore';
 
 vi.mock('modules/utils/bpmn');
 
@@ -244,6 +245,7 @@ describe('ElementInstanceLog', () => {
   });
 
   it('should continue polling after poll failure', async () => {
+    elementInstancesTreeStore.forceDisablePolling = false;
     mockFetchProcessDefinitionXml().withSuccess('');
     mockFetchProcessInstance().withSuccess(mockProcessInstance);
     mockFetchElementInstancesStatistics().withSuccess({items: []});
