@@ -63,7 +63,6 @@ public class TestContainerUtil {
   // Currently we consider that external Elastic is running on 9200 port.
   private static final String ELS_DOCKER_TESTCONTAINER_URL_DEFAULT =
       "http://host.testcontainers.internal:9200";
-  private Network network;
   private ElasticsearchContainer elsContainer;
   private TestStandaloneBroker broker;
   private GenericContainer operateContainer;
@@ -314,19 +313,11 @@ public class TestContainerUtil {
   @PreDestroy
   public void stopElasticsearch() {
     stopEls();
-    closeNetwork();
   }
 
   private void stopEls() {
     if (elsContainer != null) {
       elsContainer.stop();
-    }
-  }
-
-  private void closeNetwork() {
-    if (network != null) {
-      network.close();
-      network = null;
     }
   }
 }

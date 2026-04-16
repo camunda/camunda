@@ -27,6 +27,7 @@ import io.camunda.operate.util.ElasticsearchTenantHelper;
 import io.camunda.webapps.schema.descriptors.ProcessInstanceDependant;
 import io.camunda.webapps.schema.descriptors.index.ProcessIndex;
 import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
+import io.camunda.webapps.schema.entities.ProcessEntity;
 import io.camunda.webapps.schema.entities.listview.ProcessInstanceState;
 import java.io.IOException;
 import java.util.Collections;
@@ -373,9 +374,8 @@ public class ElasticsearchProcessStoreTest {
   @Test
   public void testGetProcessByKeyExcludesBpmnXml() throws IOException {
     // Given - mock search response with a process entity
-    final var mockRes = createMockSearchResponse(List.of(new Object()));
+    final var mockRes = createMockSearchResponse(List.of(new ProcessEntity()));
     whenEsClientSearch().thenReturn(mockRes);
-    when(processIndex.getAlias()).thenReturn("process-index");
     when(tenantHelper.makeQueryTenantAware(any(Query.class))).thenAnswer(inv -> inv.getArgument(0));
 
     // When - getProcessByKey is called
@@ -391,9 +391,8 @@ public class ElasticsearchProcessStoreTest {
   @Test
   public void testGetDiagramByKeyIncludesBpmnXml() throws IOException {
     // Given - mock search response with a process entity containing BPMN XML
-    final var mockRes = createMockSearchResponse(List.of(new Object()));
+    final var mockRes = createMockSearchResponse(List.of(new ProcessEntity()));
     whenEsClientSearch().thenReturn(mockRes);
-    when(processIndex.getAlias()).thenReturn("process-index");
     when(tenantHelper.makeQueryTenantAware(any(Query.class))).thenAnswer(inv -> inv.getArgument(0));
 
     // When - getDiagramByKey is called

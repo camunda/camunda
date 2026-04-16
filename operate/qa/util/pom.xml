@@ -22,17 +22,7 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
-      <artifactId>operate-webapp</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>io.camunda</groupId>
       <artifactId>camunda-schema-manager</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>zeebe-util</artifactId>
     </dependency>
 
     <dependency>
@@ -53,30 +43,10 @@
       <artifactId>spring-context</artifactId>
     </dependency>
 
-    <dependency>
-      <groupId>org.springframework</groupId>
-      <artifactId>spring-test</artifactId>
-    </dependency>
-
     <!-- TEST CONTAINERS -->
     <dependency>
       <groupId>org.testcontainers</groupId>
       <artifactId>testcontainers-elasticsearch</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>org.testcontainers</groupId>
-      <artifactId>testcontainers-postgresql</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>org.keycloak</groupId>
-      <artifactId>keycloak-admin-client</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>com.google.code.gson</groupId>
-      <artifactId>gson</artifactId>
     </dependency>
 
     <dependency>
@@ -90,18 +60,6 @@
     <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>jakarta.ws.rs</groupId>
-      <artifactId>jakarta.ws.rs-api</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.springframework</groupId>
-      <artifactId>spring-beans</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.keycloak</groupId>
-      <artifactId>keycloak-client-common-synced</artifactId>
     </dependency>
     <dependency>
       <groupId>org.slf4j</groupId>
@@ -118,10 +76,6 @@
     <dependency>
       <groupId>co.elastic.clients</groupId>
       <artifactId>elasticsearch-java</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>io.github.resilience4j</groupId>
-      <artifactId>resilience4j-core</artifactId>
     </dependency>
     <dependency>
       <groupId>io.camunda</groupId>
