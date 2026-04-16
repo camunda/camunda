@@ -437,8 +437,7 @@ test.describe.serial('Correlated Message Subscriptions API Tests', () => {
     });
   });
 
-  // Skiped due to bug 39372: https://github.com/camunda/camunda/issues/39372
-  test.skip('Search Message Subscriptions - Negative pagination - 400 Bad Request', async ({
+  test('Search Message Subscriptions - Negative pagination - 400 Bad Request', async ({
     request,
   }) => {
     await expect(async () => {

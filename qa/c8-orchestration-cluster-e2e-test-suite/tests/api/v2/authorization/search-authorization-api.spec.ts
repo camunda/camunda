@@ -441,8 +441,7 @@ test.describe.parallel('Search Authorization API', () => {
     });
   });
 
-  // Skiped due to bug 39372: https://github.com/camunda/camunda/issues/39372
-  test.skip('Search Authorization - Negative pagination values (known bug) - 200 instead of 400', async ({
+  test('Search Authorization - Negative pagination values - 400 Bad Request', async ({
     request,
   }) => {
     await expect(async () => {

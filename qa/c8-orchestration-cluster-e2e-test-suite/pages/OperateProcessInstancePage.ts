@@ -90,6 +90,10 @@ class OperateProcessInstancePage {
   readonly modifyDialog: Locator;
   readonly incidentErrorIndicators: Locator;
   readonly modifyDialogContinueButton: Locator;
+  readonly editButton: Locator;
+  readonly openButtonLast: Locator;
+  readonly openButtonFirst: Locator;
+  readonly applyVariableButton: Locator;
   private variableValueCellLocator: (name: string) => Locator;
   private variableButtonsCellLocator: (name: string) => Locator;
   readonly existingVariableByName: (name: string) => {
@@ -341,6 +345,10 @@ class OperateProcessInstancePage {
       },
     });
     this.incidentErrorIndicators = page.getByTestId('incident-error-indicator');
+    this.openButtonLast = page.locator('[aria-label="Open variable"]').last();
+    this.openButtonFirst = page.locator('[aria-label="Open variable"]').first();
+    this.editButton = page.getByRole('button', {name:'Edit'});
+    this.applyVariableButton = page.getByRole('button', {name: 'Apply'});
   }
 
   async checkExistingVariableErrorMessageText(
@@ -523,10 +531,20 @@ class OperateProcessInstancePage {
     await this.page.keyboard.press('Tab');
   }
 
-  async editVariableValueModificationMode(variableName: string, value: string) {
-    await this.getEditVariableFieldSelector(variableName).clear();
-    await this.getEditVariableFieldSelector(variableName).type(value);
-    await this.page.keyboard.press('Tab');
+  async editVariableValueModificationMode(variableName: string, oldValue: string, value: string, isFirstVariable = true) {
+    if (isFirstVariable) {
+      await this.openButtonFirst.click();
+    } else {
+      await this.openButtonLast.click();
+    }
+    await sleep(5000);
+     await this.page
+      .getByLabel('Edit Variable "' + variableName + '"')
+      .getByText(oldValue)
+      .dblclick();
+    await this.page.keyboard.press('Backspace');
+    await this.page.keyboard.type(value);
+    await this.applyVariableButton.click();
   }
 
   async clickEditVariableButton(variableName: string): Promise<void> {
@@ -547,8 +565,7 @@ class OperateProcessInstancePage {
   }
 
   async clickSaveVariableButton(): Promise<void> {
-    await expect(this.saveVariableButton).toBeVisible({timeout: 20000});
-    await this.saveVariableButton.click();
+    await this.applyButton.click();
   }
 
   async clickAddVariableButton(): Promise<void> {
@@ -557,7 +574,9 @@ class OperateProcessInstancePage {
 
   async fillNewVariable(name: string, value: string): Promise<void> {
     await this.newVariableNameField.fill(name);
-    await this.newVariableValueField.fill(value);
+    await this.openButtonLast.click();
+    await sleep(5000);
+    await this.page.keyboard.type(value);
   }
 
   async getProcessInstanceKey(): Promise<string> {

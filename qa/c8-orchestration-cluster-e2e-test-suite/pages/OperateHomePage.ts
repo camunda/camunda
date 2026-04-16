@@ -21,6 +21,10 @@ class OperateHomePage {
   readonly editVariableSpinner: Locator;
   readonly settingsButton: Locator;
   readonly logoutButton: Locator;
+  readonly openButton: Locator;
+  readonly closeButton: Locator;
+  readonly messageBanner: Locator;
+  readonly applyButton: Locator;
 
   constructor(page: Page) {
     this.page = page;
@@ -40,6 +44,12 @@ class OperateHomePage {
       .nth(1);
     this.settingsButton = page.getByRole('button', {name: 'Open Settings'});
     this.logoutButton = page.getByRole('button', {name: 'Log out'});
+    this.openButton = page
+      .getByTestId('variable-testVariable')
+      .getByLabel('Open');
+    this.closeButton = page.getByRole('button', {name: 'Got it - Dismiss'});
+    this.messageBanner = page.getByRole('button', {name: 'Close'});
+    this.applyButton = page.getByRole('button', {name: 'Apply'});
   }
 
   async clickProcessesTab(): Promise<void> {
@@ -55,9 +65,8 @@ class OperateHomePage {
   }
 
   async clickEditVariableButton(variableName: string): Promise<void> {
-    const editVariableButton = 'Edit variable ' + variableName;
-    await expect(this.page.getByLabel(editVariableButton)).toBeVisible({timeout: 30000});
-    await this.page.getByLabel(editVariableButton).click();
+    const editVariableButton = 'variable-' + variableName;
+    await this.page.getByTestId(editVariableButton).getByLabel('Edit').click();
   }
 
   async clickVariableValueInput(): Promise<void> {
@@ -68,17 +77,33 @@ class OperateHomePage {
     await this.variableValueInput.clear();
   }
 
-  async fillVariableValueInput(value: string): Promise<void> {
-    await this.variableValueInput.fill(value);
+  async fillVariableValueInput(newValue: string): Promise<void> {
+    await this.openButton.click();
+    await this.page
+      .getByLabel('Edit Variable "testVariable"')
+      .getByText('"testValue"')
+      .dblclick();
+    await this.page.keyboard.press('Backspace');
+    await this.page.keyboard.type(newValue);
   }
 
   async clickSaveVariableButton(): Promise<void> {
-    await this.saveVariableButton.click();
+   await this.applyButton.click();
   }
 
   async logout(): Promise<void> {
     await this.settingsButton.click();
     await this.logoutButton.click();
+  }
+
+  async clickMessageBanner(): Promise<void> {
+    try {
+      const button = this.messageBanner.or(this.closeButton).first();
+      await expect(button).toBeVisible({timeout: 15000});
+      await button.click();
+    } catch {
+      console.log('No banner or close button found to click');
+    }
   }
 }
 
