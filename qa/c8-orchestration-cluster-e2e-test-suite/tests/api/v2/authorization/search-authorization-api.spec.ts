@@ -452,7 +452,7 @@ test.describe.parallel('Search Authorization API', () => {
           page: {from: -1, limit: -1},
         },
       });
-      await assertInvalidArgument(res, 400, "'-1' but must be a non-negative number.");
+      await assertInvalidArgument(res, 400, "The value for page.from is '-1' but must be a non-negative number.");
     }).toPass(defaultAssertionOptions);
   });
 

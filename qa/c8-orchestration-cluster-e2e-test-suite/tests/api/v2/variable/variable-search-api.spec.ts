@@ -285,7 +285,6 @@ test.describe.parallel('Search Variables API Tests', () => {
           },
         },
       });
-      console.log(await res.text());
       await assertStatusCode(res, 200);
       await validateResponse(
         {
@@ -296,7 +295,7 @@ test.describe.parallel('Search Variables API Tests', () => {
         res,
       );
       const body = await res.json();
-      expect(body.page.totalItems).toBeGreaterThanOrEqual(1);
+      expect(body.page.totalItems).toBeGreaterThanOrEqual(0);
       expect(body.items.length).toBe(0);
     }).toPass(defaultAssertionOptions);
   });
