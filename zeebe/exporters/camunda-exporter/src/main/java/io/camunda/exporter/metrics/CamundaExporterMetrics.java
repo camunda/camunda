@@ -105,6 +105,9 @@ public class CamundaExporterMetrics implements AutoCloseable {
   private final DistributionSummary bulkSize;
   private final DistributionSummary bulkEstimatedMemorySize;
   private final Counter bulkOperations;
+  private final Counter flushReasonBatchSize;
+  private final Counter flushReasonBatchMemory;
+  private final Counter flushReasonScheduled;
   private final Timer flushDuration;
   private final Counter failedFlush;
   private final Timer recordExportDuration;
@@ -271,6 +274,22 @@ public class CamundaExporterMetrics implements AutoCloseable {
             .description(
                 "Count of many secondary storage operations have been done via exporter bulk requests")
             .register(meterRegistry);
+    final var flushReasonName = meterName("flush.reason");
+    flushReasonBatchSize =
+        Counter.builder(flushReasonName)
+            .description("Number of flushes due to batch size being exceeded")
+            .tag("reason", "size")
+            .register(meterRegistry);
+    flushReasonBatchMemory =
+        Counter.builder(flushReasonName)
+            .description("Number of flushes due to batch memory limit being exceeded")
+            .tag("reason", "memory")
+            .register(meterRegistry);
+    flushReasonScheduled =
+        Counter.builder(flushReasonName)
+            .description("Number of scheduled/time-based flushes")
+            .tag("reason", "scheduled")
+            .register(meterRegistry);
     flushDuration =
         Timer.builder(meterName("flush.duration.seconds"))
             .description("Flush duration of bulk exporters in seconds")
@@ -310,6 +329,18 @@ public class CamundaExporterMetrics implements AutoCloseable {
             AtomicInteger::get)
         .description("Number of process instances awaiting archival (approximate)")
         .register(meterRegistry);
+  }
+
+  public void recordFlushReasonBatchSize() {
+    flushReasonBatchSize.increment();
+  }
+
+  public void recordFlushReasonBatchMemory() {
+    flushReasonBatchMemory.increment();
+  }
+
+  public void recordFlushReasonScheduled() {
+    flushReasonScheduled.increment();
   }
 
   public CloseableSilently measureFlushDuration() {
@@ -488,6 +519,9 @@ public class CamundaExporterMetrics implements AutoCloseable {
     meterRegistry.remove(bulkSize);
     meterRegistry.remove(bulkEstimatedMemorySize);
     meterRegistry.remove(bulkOperations);
+    meterRegistry.remove(flushReasonBatchSize);
+    meterRegistry.remove(flushReasonBatchMemory);
+    meterRegistry.remove(flushReasonScheduled);
     meterRegistry.remove(flushDuration);
     meterRegistry.remove(failedFlush);
     meterRegistry.remove(recordExportDuration);
