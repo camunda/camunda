@@ -276,7 +276,7 @@ jobs:
             --project 'C8' \
             --username "$TESTRAIL_USERNAME" \
             --key "$TESTRAIL_KEY" \
-            --batch-size 500 \
+            --batch-size 2000 \
             parse_junit --suite-id 17050 \
             --title "Release C8 Orchestration Cluster API Test Run Results - v${{ needs.validate-release.outputs.release_version }} - $(date '+%Y-%m-%d %H:%M:%S')" \
             --close-run \
@@ -898,7 +898,7 @@ jobs:
             --project 'C8' \
             --username "$TESTRAIL_USERNAME" \
             --key "$TESTRAIL_KEY" \
-            --batch-size 500 \
+            --batch-size 2000 \
             parse_junit --suite-id 17050 \
             --title "Release C8 Orchestration Cluster Test Run Results - v${{ needs.validate-release.outputs.release_version }} (Tasklist ${{ matrix.tasklist_mode }} mode) - $(date '+%Y-%m-%d %H:%M:%S')" \
             --close-run \
