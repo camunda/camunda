@@ -81,7 +81,12 @@ type TextMenuItem<D> = {
   label: string;
   onClick: (entity: D) => void;
   isDangerous?: boolean;
+<<<<<<< HEAD
   disabled?: boolean;
+=======
+  disabled?: boolean | ((entity: D) => boolean);
+  hidden?: boolean;
+>>>>>>> 7f3381119 (feat: Read-only roles)
 };
 
 type MenuItem<D> = TextMenuItem<D> & {
@@ -347,6 +352,7 @@ const EntityList = <D extends EntityData>({
                             onSelect={() => {
                               const item = index[rowId];
 
+<<<<<<< HEAD
                               if (batchSelection.isSelected(item)) {
                                 batchSelection.onUnselect(item);
                               } else {
@@ -368,11 +374,73 @@ const EntityList = <D extends EntityData>({
                             )}
                           </StyledTableCell>
                         ))}
+=======
+                      const cellContent = (
+                        <>
+                          {batchSelection && (
+                            <TableSelectRow
+                              id={`select-${rowId}`}
+                              name={`select-${rowId}`}
+                              checked={batchSelection.isSelected(index[rowId])}
+                              onSelect={() => {
+                                const item = index[rowId];
+
+                                if (batchSelection.isSelected(item)) {
+                                  batchSelection.onUnselect(item);
+                                } else {
+                                  batchSelection.onSelect(item);
+                                }
+                              }}
+                            />
+                          )}
+                          {cells.map(({ id: cellId, value }, index) => {
+                            const displayValue = Array.isArray(value)
+                              ? value.join(", ")
+                              : value;
+
+                            const truncatedValue =
+                              displayValue &&
+                              displayValue.toString().length >
+                                maxDisplayCellLength ? (
+                                <StyledToolTip
+                                  label={displayValue}
+                                  autoAlign
+                                  align="bottom"
+                                >
+                                  <TooltipTrigger>
+                                    {displayValue
+                                      .substring(0, maxDisplayCellLength)
+                                      .concat("…")}
+                                  </TooltipTrigger>
+                                </StyledToolTip>
+                              ) : (
+                                displayValue
+                              );
+
+                          return (
+                            <StyledTableCell
+                              key={cellId}
+                              onClick={handleEntityClick(rowId)}
+                              $isClickable={isEntityClickable}
+                            >
+                              {index === 0 && isEntityClickable ? (
+                                <Link>{displayValue}</Link>
+                              ) : (
+                                truncatedValue
+                              )}
+                            </StyledTableCell>
+                          );
+                        })}
+>>>>>>> 7f3381119 (feat: Read-only roles)
                         {hasMenu && (
                           <TableCell>
                             {menuItems?.length > MAX_ICON_ACTIONS ? (
                               <OverflowMenu flipped>
+<<<<<<< HEAD
                                 {menuItems?.map(
+=======
+                                {getVisibleMenuItems(menuItems).map(
+>>>>>>> 7f3381119 (feat: Read-only roles)
                                   ({ label, onClick, isDangerous }) => (
                                     <OverflowMenuItem
                                       key={`${label}-${rowId}`}
@@ -388,6 +456,7 @@ const EntityList = <D extends EntityData>({
                               </OverflowMenu>
                             ) : (
                               <Flex>
+<<<<<<< HEAD
                                 {menuItems?.map((menuItem) => {
                                   const {
                                     label,
@@ -396,6 +465,24 @@ const EntityList = <D extends EntityData>({
                                     isDangerous,
                                     disabled,
                                   } = menuItem as MenuItem<D>;
+=======
+                                {getVisibleMenuItems(menuItems).map(
+                                  (menuItem) => {
+                                    const {
+                                      label,
+                                      onClick,
+                                      icon,
+                                      isDangerous,
+                                      disabled: disabledProp,
+                                    } = menuItem as MenuItem<D>;
+                                    const entity = index[rowId];
+                                    const disabled =
+                                      typeof disabledProp === "function"
+                                        ? entity !== undefined
+                                          ? disabledProp(entity)
+                                          : false
+                                        : disabledProp;
+>>>>>>> 7f3381119 (feat: Read-only roles)
 
                                   const kind =
                                     !icon && isDangerous
