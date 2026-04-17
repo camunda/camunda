@@ -45,8 +45,11 @@ public class PendingFlush {
     pending =
         CompletableFuture.runAsync(
             () -> {
-              flush.run();
-              flushTimeMillis.set(clock.millis());
+              try {
+                flush.run();
+              } finally {
+                flushTimeMillis.set(clock.millis());
+              }
             },
             executor);
   }

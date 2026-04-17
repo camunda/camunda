@@ -96,7 +96,7 @@ public class CamundaExporter implements Exporter {
   private int partitionId;
   private Context context;
   private long flushDelayMs;
-  private long lastFlushTimestamp = 0L;
+  private long lastFlushActiveTimestamp = 0L;
   private PendingFlush pendingFlush;
 
   public CamundaExporter() {
@@ -156,7 +156,7 @@ public class CamundaExporter implements Exporter {
       }
 
       writer = createBatchWriter();
-      lastFlushTimestamp = context.clock().millis();
+      lastFlushActiveTimestamp = context.clock().millis();
       pendingFlush = null;
 
       checkImportersCompletedAndReschedule();
@@ -424,8 +424,9 @@ public class CamundaExporter implements Exporter {
       return true;
     }
     if (writer.getBatchSize() > 0) {
-      final long lastFlushTimestamp = updateAndGetLastFlushTimestamp();
-      if ((context.clock().millis() - lastFlushTimestamp) >= flushDelayMs) {
+      final long now = context.clock().millis();
+      final long lastFlushTimestamp = updateAndGetLastActiveFlushTimestamp(now);
+      if ((now - lastFlushTimestamp) >= flushDelayMs) {
         metrics.recordFlushReasonScheduled();
         return true;
       }
@@ -441,20 +442,22 @@ public class CamundaExporter implements Exporter {
     return builder.build();
   }
 
-  private void updateLastFlushTimestamp(final PendingFlush pendingFlush) {
-    lastFlushTimestamp = pendingFlush.maybeFlushTimeMillis().orElse(lastFlushTimestamp);
+  private void updateLastActiveFlushTimestamp(final PendingFlush pendingFlush, final long now) {
+    // if the flush has not completed we use the current time - as a way to indicate the flush
+    // is still going on, so we can avoid triggering another flush before this one has finished
+    lastFlushActiveTimestamp = pendingFlush.maybeFlushTimeMillis().orElse(now);
   }
 
-  private long updateAndGetLastFlushTimestamp() {
+  private long updateAndGetLastActiveFlushTimestamp(final long now) {
     if (pendingFlush != null) {
-      updateLastFlushTimestamp(pendingFlush);
+      updateLastActiveFlushTimestamp(pendingFlush, now);
     }
-    return lastFlushTimestamp;
+    return lastFlushActiveTimestamp;
   }
 
   private void scheduleDelayedFlush(final long now) {
     long nextDelayMs = flushDelayMs;
-    final long lastFlushTimestamp = updateAndGetLastFlushTimestamp();
+    final long lastFlushTimestamp = updateAndGetLastActiveFlushTimestamp(now);
     if (lastFlushTimestamp > 0) {
       nextDelayMs = Math.max(0, flushDelayMs - (now - lastFlushTimestamp));
     }
@@ -465,7 +468,7 @@ public class CamundaExporter implements Exporter {
   private void flushAndReschedule() {
     final var now = context.clock().millis();
     try {
-      final long lastFlushTimestamp = updateAndGetLastFlushTimestamp();
+      final long lastFlushTimestamp = updateAndGetLastActiveFlushTimestamp(now);
       if (now - lastFlushTimestamp >= flushDelayMs) {
         metrics.recordFlushReasonScheduled();
         flush();
@@ -525,7 +528,7 @@ public class CamundaExporter implements Exporter {
       // Update the record counters only after the flush was successful. If the asynchronous flush
       // fails then the exporter will be invoked with the same record again.
       updateLastExportedPosition(pendingFlush.getLastPosition());
-      updateLastFlushTimestamp(pendingFlush);
+      updateLastActiveFlushTimestamp(pendingFlush, context.clock().millis());
       pendingFlush = null;
     }
   }

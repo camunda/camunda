@@ -22,13 +22,15 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 class PendingFlushTest {
+  private static final long TIME0 = 789L;
+  private static final long TIME1 = 890L;
 
   private final Runnable flush = mock(Runnable.class);
   private final InstantSource clock = mock(InstantSource.class);
 
   @BeforeEach
   void setup() {
-    when(clock.millis()).thenReturn(789L, 890L);
+    when(clock.millis()).thenReturn(TIME0, TIME1);
   }
 
   @Test
@@ -41,11 +43,11 @@ class PendingFlushTest {
 
     // then
     verify(flush).run();
-    assertThat(pendingFlush.maybeFlushTimeMillis()).hasValue(789L);
+    assertThat(pendingFlush.maybeFlushTimeMillis()).hasValue(TIME0);
   }
 
   @Test
-  void shouldFlushTimeDoesNotUpdateIfNotFlushed() {
+  void shouldNotUpdateFlushTimeIfNotFlushed() {
     // given
     final var pendingFlush =
         new PendingFlush(
@@ -73,7 +75,7 @@ class PendingFlushTest {
     // then
     verify(flush).run();
     // flush time should not have been updated by the second waitForCompletion call
-    assertThat(pendingFlush.maybeFlushTimeMillis()).hasValue(789L);
+    assertThat(pendingFlush.maybeFlushTimeMillis()).hasValue(TIME0);
   }
 
   @Test
@@ -89,7 +91,7 @@ class PendingFlushTest {
         .hasMessage("flush failed");
     verify(flush).run();
 
-    assertThat(pendingFlush.maybeFlushTimeMillis()).isEmpty();
+    assertThat(pendingFlush.maybeFlushTimeMillis()).hasValue(TIME0);
   }
 
   @Test
@@ -108,7 +110,7 @@ class PendingFlushTest {
         .hasMessage("flush failed");
     verify(flush).run();
 
-    assertThat(pendingFlush.maybeFlushTimeMillis()).isEmpty();
+    assertThat(pendingFlush.maybeFlushTimeMillis()).hasValue(TIME0);
   }
 
   @Test
@@ -122,7 +124,7 @@ class PendingFlushTest {
         .isInstanceOf(ExporterException.class)
         .hasMessage("flush failed");
 
-    assertThat(pendingFlush.maybeFlushTimeMillis()).isEmpty();
+    assertThat(pendingFlush.maybeFlushTimeMillis()).hasValue(TIME0);
 
     // when
     pendingFlush.waitForCompletion();
@@ -130,6 +132,7 @@ class PendingFlushTest {
     // then
     verify(flush, times(2)).run();
 
-    assertThat(pendingFlush.maybeFlushTimeMillis()).hasValue(789L);
+    // retried so we should be on the next time for the flush
+    assertThat(pendingFlush.maybeFlushTimeMillis()).hasValue(TIME1);
   }
 }
