@@ -9,6 +9,8 @@ package io.camunda.service;
 
 import static io.camunda.search.query.SearchQueryBuilders.decisionRequirementsSearchQuery;
 import static io.camunda.search.query.SearchQueryBuilders.processDefinitionSearchQuery;
+import static io.camunda.security.auth.Authorization.withAuthorization;
+import static io.camunda.service.authorization.Authorizations.RESOURCE_READ_AUTHORIZATION;
 
 import io.camunda.search.clients.DecisionRequirementSearchClient;
 import io.camunda.search.clients.DeployedResourceSearchClient;
@@ -140,7 +142,10 @@ public final class ResourceServices extends ApiServices<ResourceServices> {
       final CamundaAuthentication authentication,
       final boolean includeContent) {
     if (secondaryStorageEnabled) {
-      final var securityContext = securityContextProvider.provideSecurityContext(authentication);
+      final var securityContext =
+          securityContextProvider.provideSecurityContext(
+              authentication,
+              withAuthorization(RESOURCE_READ_AUTHORIZATION, DeployedResourceEntity::resourceId));
       return CompletableFuture.supplyAsync(
           () -> {
             try {
