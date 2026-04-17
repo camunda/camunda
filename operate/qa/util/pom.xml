@@ -20,16 +20,6 @@
       <artifactId>webapps-schema</artifactId>
     </dependency>
 
-    <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>camunda-schema-manager</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>camunda-search-client-connect</artifactId>
-    </dependency>
-
     <!-- ELASTICSEARCH -->
 
     <!-- ZEEBE -->
@@ -68,10 +58,6 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>camunda-authentication</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.opensearch.client</groupId>
-      <artifactId>opensearch-java</artifactId>
     </dependency>
     <dependency>
       <groupId>co.elastic.clients</groupId>
