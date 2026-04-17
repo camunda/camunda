@@ -23,6 +23,7 @@ public class AppCfg {
   private boolean monitorDataAvailability = true;
   private Duration monitorDataAvailabilityInterval = Duration.ofMillis(250);
   private boolean performReadBenchmarks = false;
+  private boolean clientSideLoadBalancing = true;
 
   private String disabledQueries = "";
 
@@ -122,5 +123,13 @@ public class AppCfg {
         .map(String::trim)
         .filter(s -> !s.isBlank())
         .toList();
+  }
+
+  public boolean isClientSideLoadBalancing() {
+    return clientSideLoadBalancing;
+  }
+
+  public void setClientSideLoadBalancing(final boolean clientSideLoadBalancing) {
+    this.clientSideLoadBalancing = clientSideLoadBalancing;
   }
 }
