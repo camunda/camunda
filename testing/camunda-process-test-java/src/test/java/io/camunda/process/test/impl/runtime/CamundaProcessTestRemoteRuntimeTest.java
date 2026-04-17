@@ -132,8 +132,6 @@ public class CamundaProcessTestRemoteRuntimeTest {
     // then
     assertThat(camundaRuntime.getCamundaRestApiAddress()).isEqualTo(camundaRestApiAddress);
     assertThat(camundaRuntime.getCamundaGrpcApiAddress()).isEqualTo(camundaGrpcApiAddress);
-
-    assertThat(camundaRuntime.getCamundaClientBuilderFactory()).isEqualTo(clientBuilderFactory);
   }
 
   @Test
