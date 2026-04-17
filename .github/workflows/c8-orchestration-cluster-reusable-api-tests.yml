@@ -187,7 +187,7 @@ jobs:
           JUNIT_RESULTS_FILE: "qa/c8-orchestration-cluster-e2e-test-suite/test-results/junit-report.xml"
           BRANCH_NAME: ${{ inputs.branch }}
         run: |
-          pip install trcli
+          pip install trcli==1.14.1
           trcli -y -h "$TESTRAIL_HOST" \
             --project 'C8' \
             --username "$TESTRAIL_USERNAME" \

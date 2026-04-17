@@ -215,7 +215,7 @@ jobs:
           TESTRAIL_KEY: ${{ steps.secrets.outputs.TESTRAIL_QA_PSW }}
           JUNIT_RESULTS_FILE: "qa/c8-orchestration-cluster-e2e-test-suite/test-results/junit-report.xml"
         run: |
-          pip install trcli
+          pip install trcli==1.14.1
           trcli -y -h "$TESTRAIL_HOST" \
             --project 'C8' \
             --username "$TESTRAIL_USERNAME" \
@@ -610,7 +610,7 @@ jobs:
           TESTRAIL_KEY: ${{ steps.secrets.outputs.TESTRAIL_QA_PSW }}
           JUNIT_RESULTS_FILE: "qa/c8-orchestration-cluster-e2e-test-suite/test-results/junit-report.xml"
         run: |
-          pip install trcli
+          pip install trcli==1.14.1
           trcli -y -h "$TESTRAIL_HOST" \
             --project 'C8' \
             --username "$TESTRAIL_USERNAME" \
