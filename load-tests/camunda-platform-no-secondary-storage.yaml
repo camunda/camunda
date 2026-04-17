@@ -15,29 +15,7 @@ global:
   # THIS GETS OVERRIDDEN IN THE OTHER VALUES FILES, e.g. for OpenSearch and RDBMS
   elasticsearch:
     enabled: false
-  # Disable global ingress
-  ingress:
-    enabled: false
-  image:
-    # Image.repository defines the repository from which to fetch the docker images
-    repository: "registry.camunda.cloud/team-zeebe"
-    # Image.tag defines the tag / version which should be used in the chart
-    tag: SNAPSHOT
-    ## @param global.image.pullPolicy defines the image pull policy which should be used https://kubernetes.io/docs/concepts/containers/images/#image-pull-policy
-    pullPolicy: Always
-    ## @param global.image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
-    pullSecrets:
-      - name: harbor-registry
-  # By default, we run without Identity
-  identity:
-    auth:
-      enabled: false
-
-identity:
-  enabled: false
-
-identityKeycloak:
-  enabled: false
+  noSecondaryStorage: true
 
 optimize:
   enabled: false
@@ -46,9 +24,6 @@ connectors:
   enabled: false
 
 webModeler:
-  enabled: false
-
-postgresql:
   enabled: false
 
 ########################################################################################
