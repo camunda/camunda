@@ -8,6 +8,8 @@
 package io.camunda.search.clients.transformers.aggregation;
 
 import static io.camunda.search.aggregation.ProcessDefinitionInstanceVersionStatisticsAggregation.AGGREGATION_FIELD_KEY;
+import static io.camunda.search.aggregation.ProcessDefinitionInstanceVersionStatisticsAggregation.AGGREGATION_FIELD_PROCESS_DEFINITION_KEY;
+import static io.camunda.search.aggregation.ProcessDefinitionInstanceVersionStatisticsAggregation.AGGREGATION_FIELD_PROCESS_DEFINITION_NAME;
 import static io.camunda.search.aggregation.ProcessDefinitionInstanceVersionStatisticsAggregation.AGGREGATION_NAME_BY_VERSION_TENANT;
 import static io.camunda.search.aggregation.ProcessDefinitionInstanceVersionStatisticsAggregation.AGGREGATION_NAME_PAGE;
 import static io.camunda.search.aggregation.ProcessDefinitionInstanceVersionStatisticsAggregation.AGGREGATION_NAME_PROCESS_DEFINITION_VERSION;
@@ -112,13 +114,19 @@ final class ProcessDefinitionInstanceVersionStatisticsAggregationTransformerTest
         new ProcessDefinitionInstanceVersionStatisticsSort(
             List.of(
                 new FieldSorting(AGGREGATION_FIELD_KEY, io.camunda.search.sort.SortOrder.ASC),
-                new FieldSorting("processDefinitionKey", io.camunda.search.sort.SortOrder.ASC),
-                new FieldSorting("processDefinitionName", io.camunda.search.sort.SortOrder.ASC),
-                new FieldSorting("processDefinitionVersion", io.camunda.search.sort.SortOrder.ASC),
                 new FieldSorting(
-                    "activeInstancesWithIncidentCount", io.camunda.search.sort.SortOrder.DESC),
+                    AGGREGATION_FIELD_PROCESS_DEFINITION_KEY, io.camunda.search.sort.SortOrder.ASC),
                 new FieldSorting(
-                    "activeInstancesWithoutIncidentCount", io.camunda.search.sort.SortOrder.DESC)));
+                    AGGREGATION_FIELD_PROCESS_DEFINITION_NAME,
+                    io.camunda.search.sort.SortOrder.ASC),
+                new FieldSorting(
+                    AGGREGATION_NAME_PROCESS_DEFINITION_VERSION,
+                    io.camunda.search.sort.SortOrder.ASC),
+                new FieldSorting(
+                    AGGREGATION_NAME_TOTAL_WITH_INCIDENT, io.camunda.search.sort.SortOrder.DESC),
+                new FieldSorting(
+                    AGGREGATION_NAME_TOTAL_WITHOUT_INCIDENT,
+                    io.camunda.search.sort.SortOrder.DESC)));
     final var page = SearchQueryPage.of(p -> p.from(0).size(10));
 
     final var aggregation =
