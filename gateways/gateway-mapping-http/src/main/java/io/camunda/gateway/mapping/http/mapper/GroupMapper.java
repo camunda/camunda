@@ -33,7 +33,7 @@ public class GroupMapper {
             new GroupDTO(
                 groupCreateRequest.getGroupId(),
                 groupCreateRequest.getName(),
-                groupCreateRequest.getDescription().orElse(null)));
+                groupCreateRequest.getDescription()));
   }
 
   public Either<ProblemDetail, GroupDTO> toGroupUpdateRequest(
@@ -42,9 +42,7 @@ public class GroupMapper {
         groupRequestValidator.validateUpdateRequest(groupId, groupUpdateRequest),
         () ->
             new GroupDTO(
-                groupId,
-                groupUpdateRequest.getName(),
-                groupUpdateRequest.getDescription().orElse(null)));
+                groupId, groupUpdateRequest.getName(), groupUpdateRequest.getDescription()));
   }
 
   public Either<ProblemDetail, GroupMemberDTO> toGroupMemberRequest(

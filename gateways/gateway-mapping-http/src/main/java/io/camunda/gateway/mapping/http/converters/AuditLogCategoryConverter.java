@@ -9,6 +9,7 @@ package io.camunda.gateway.mapping.http.converters;
 
 import io.camunda.gateway.protocol.model.AuditLogCategoryEnum;
 import io.camunda.search.entities.AuditLogEntity.AuditLogOperationCategory;
+import org.jspecify.annotations.Nullable;
 
 public final class AuditLogCategoryConverter implements CustomConverter<String> {
 
@@ -19,11 +20,8 @@ public final class AuditLogCategoryConverter implements CustomConverter<String> 
 
   @Override
   public String convertValue(final Object value) {
-    if (value == null) {
-      return null;
-    }
     if (value instanceof final AuditLogCategoryEnum categoryEnum) {
-      return toInternalCategoryAsString(categoryEnum);
+      return AuditLogOperationCategory.valueOf(categoryEnum.name()).name();
     }
     throw new IllegalArgumentException(
         "Cannot convert value [%s] of type [%s]. Expected type: [%s]"
@@ -33,13 +31,14 @@ public final class AuditLogCategoryConverter implements CustomConverter<String> 
                 AuditLogCategoryEnum.class.getSimpleName()));
   }
 
-  public static String toInternalCategoryAsString(final AuditLogCategoryEnum categoryEnum) {
+  public static @Nullable String toInternalCategoryAsString(
+      final @Nullable AuditLogCategoryEnum categoryEnum) {
     final AuditLogOperationCategory internalType = toInternalCategory(categoryEnum);
     return internalType == null ? null : internalType.name();
   }
 
-  public static AuditLogOperationCategory toInternalCategory(
-      final AuditLogCategoryEnum categoryEnum) {
+  public static @Nullable AuditLogOperationCategory toInternalCategory(
+      final @Nullable AuditLogCategoryEnum categoryEnum) {
     if (categoryEnum == null) {
       return null;
     }

@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import org.apache.commons.lang3.StringUtils;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -49,7 +50,7 @@ public class AdvancedSearchFilterUtil {
           }
 
           @Override
-          public Long convertValue(final Object value) {
+          public @Nullable Long convertValue(final Object value) {
             if (value instanceof final Long l) {
               return l;
             }
@@ -86,7 +87,7 @@ public class AdvancedSearchFilterUtil {
           }
 
           @Override
-          public OffsetDateTime convertValue(final Object value) {
+          public @Nullable OffsetDateTime convertValue(final Object value) {
             if (value instanceof final OffsetDateTime odt) {
               return odt;
             }
@@ -109,17 +110,20 @@ public class AdvancedSearchFilterUtil {
     return (final Object filter) -> mapToOperations(filter, tClass, customConverter);
   }
 
-  protected static <T> T convertValue(final Class<T> tClass, final Object value) {
+  protected static <T> @Nullable T convertValue(
+      final Class<T> tClass, final @Nullable Object value) {
     return convertValue(tClass, value, null);
   }
 
-  protected static <T> T convertValue(
-      final Class<T> tClass, final Object value, final CustomConverter<T> customConverter) {
-    if (customConverter != null && customConverter.canConvert(value)) {
-      return customConverter.convertValue(value);
-    }
+  protected static <T> @Nullable T convertValue(
+      final Class<T> tClass,
+      final @Nullable Object value,
+      final @Nullable CustomConverter<T> customConverter) {
     if (value == null) {
       return null;
+    }
+    if (customConverter != null && customConverter.canConvert(value)) {
+      return customConverter.convertValue(value);
     } else if (tClass.isInstance(value)) {
       return tClass.cast(value);
     } else if (tClass == String.class) {
@@ -144,7 +148,9 @@ public class AdvancedSearchFilterUtil {
   }
 
   protected static <T> List<Operation<T>> mapToOperations(
-      final Object filter, final Class<T> tClass, final CustomConverter<T> customConverter) {
+      final Object filter,
+      final Class<T> tClass,
+      final @Nullable CustomConverter<T> customConverter) {
     // Handle plain values (strict contract deserialization of Object fields).
     // Jackson deserializes e.g. "5" as String, 5 as Integer. Treat as implicit $eq.
     if (filter instanceof String || filter instanceof Number || filter instanceof Boolean) {
@@ -203,7 +209,9 @@ public class AdvancedSearchFilterUtil {
   }
 
   private static <T> List<Operation<T>> mapToOperationsFromMap(
-      final Map<?, ?> map, final Class<T> tClass, final CustomConverter<T> customConverter) {
+      final Map<?, ?> map,
+      final Class<T> tClass,
+      final @Nullable CustomConverter<T> customConverter) {
     final var operations = new ArrayList<Operation<T>>();
     for (final Operator operator : Operator.values()) {
       if (operator.getValue() == null) {
@@ -235,7 +243,9 @@ public class AdvancedSearchFilterUtil {
    * accessors: {@code $eq()}, {@code $neq()}, etc.
    */
   private static <T> List<Operation<T>> mapToOperationsFromRecord(
-      final Object filter, final Class<T> tClass, final CustomConverter<T> customConverter) {
+      final Object filter,
+      final Class<T> tClass,
+      final @Nullable CustomConverter<T> customConverter) {
     final var fClass = filter.getClass();
 
     // Check for plain-value wrapper: has a single "value" accessor → implicit $eq.

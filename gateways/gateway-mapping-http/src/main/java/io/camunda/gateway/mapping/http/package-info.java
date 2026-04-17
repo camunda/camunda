@@ -5,9 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.gateway.mapping.http.search;
+@NullMarked
+package io.camunda.gateway.mapping.http;
 
-import io.camunda.gateway.protocol.model.SortOrderEnum;
-import org.jspecify.annotations.Nullable;
-
-public record SearchQuerySortRequest<T>(@Nullable T field, @Nullable SortOrderEnum order) {}
+import org.jspecify.annotations.NullMarked;

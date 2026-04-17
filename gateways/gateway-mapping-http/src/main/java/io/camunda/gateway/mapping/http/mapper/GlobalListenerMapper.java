@@ -18,6 +18,7 @@ import io.camunda.zeebe.protocol.impl.record.value.globallistener.GlobalListener
 import io.camunda.zeebe.protocol.record.value.GlobalListenerSource;
 import io.camunda.zeebe.protocol.record.value.GlobalListenerType;
 import io.camunda.zeebe.util.Either;
+import java.util.Optional;
 import org.springframework.http.ProblemDetail;
 
 public class GlobalListenerMapper {
@@ -41,9 +42,9 @@ public class GlobalListenerMapper {
           if (request.getType() != null) {
             record.setType(request.getType());
           }
-          request.getRetries().ifPresent(record::setRetries);
-          request.getAfterNonGlobal().ifPresent(record::setAfterNonGlobal);
-          request.getPriority().ifPresent(record::setPriority);
+          Optional.ofNullable(request.getRetries()).ifPresent(record::setRetries);
+          Optional.ofNullable(request.getAfterNonGlobal()).ifPresent(record::setAfterNonGlobal);
+          Optional.ofNullable(request.getPriority()).ifPresent(record::setPriority);
           record.setSource(GlobalListenerSource.API);
           record.setEventTypes(request.getEventTypes().stream().map(e -> e.getValue()).toList());
           record.setListenerType(GlobalListenerType.USER_TASK);
@@ -72,9 +73,9 @@ public class GlobalListenerMapper {
         () -> {
           final var record = new GlobalListenerRecord();
           record.setType(request.getType());
-          request.getRetries().ifPresent(record::setRetries);
-          request.getAfterNonGlobal().ifPresent(record::setAfterNonGlobal);
-          request.getPriority().ifPresent(record::setPriority);
+          Optional.ofNullable(request.getRetries()).ifPresent(record::setRetries);
+          Optional.ofNullable(request.getAfterNonGlobal()).ifPresent(record::setAfterNonGlobal);
+          Optional.ofNullable(request.getPriority()).ifPresent(record::setPriority);
           record.setSource(GlobalListenerSource.API);
           record.setEventTypes(request.getEventTypes().stream().map(e -> e.getValue()).toList());
           record.setListenerType(GlobalListenerType.USER_TASK);

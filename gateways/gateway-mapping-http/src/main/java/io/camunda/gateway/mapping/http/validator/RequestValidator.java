@@ -27,6 +27,7 @@ import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.regex.Pattern;
+import org.jspecify.annotations.Nullable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 
@@ -50,8 +51,10 @@ public final class RequestValidator {
                 HttpStatus.BAD_REQUEST, problems, INVALID_ARGUMENT.name()));
   }
 
-  public static OffsetDateTime validateDate(
-      final String dateString, final String attributeName, final List<String> violations) {
+  public static @Nullable OffsetDateTime validateDate(
+      final @Nullable String dateString,
+      final String attributeName,
+      final List<String> violations) {
     if (dateString != null && !dateString.isEmpty()) {
       try {
         return OffsetDateTime.parse(dateString);
@@ -62,8 +65,10 @@ public final class RequestValidator {
     return null;
   }
 
-  public static Duration validateDuration(
-      final String durationString, final String attributeName, final List<String> violations) {
+  public static @Nullable Duration validateDuration(
+      final @Nullable String durationString,
+      final String attributeName,
+      final List<String> violations) {
     if (durationString != null && !durationString.isEmpty()) {
       try {
         return Duration.parse(durationString);
@@ -74,13 +79,13 @@ public final class RequestValidator {
     return null;
   }
 
-  public static boolean isEmpty(final Changeset changeset) {
+  public static boolean isEmpty(final @Nullable Changeset changeset) {
     return changeset == null
-        || (changeset.getFollowUpDate().isEmpty()
-            && changeset.getDueDate().isEmpty()
-            && changeset.getCandidateGroups().isEmpty()
-            && changeset.getCandidateUsers().isEmpty()
-            && changeset.getPriority().isEmpty());
+        || (changeset.getFollowUpDate() == null
+            && changeset.getDueDate() == null
+            && changeset.getCandidateGroups() == null
+            && changeset.getCandidateUsers() == null
+            && changeset.getPriority() == null);
   }
 
   public static Optional<ProblemDetail> validate(final Consumer<List<String>> customValidation) {
@@ -96,7 +101,7 @@ public final class RequestValidator {
   }
 
   public static void validateOperationReference(
-      final Long operationReference, final List<String> violations) {
+      final @Nullable Long operationReference, final List<String> violations) {
     if (operationReference != null && operationReference < 1) {
       violations.add(
           ERROR_MESSAGE_INVALID_ATTRIBUTE_VALUE.formatted(
@@ -112,7 +117,7 @@ public final class RequestValidator {
    * @param violations the list to add validation errors to
    */
   public static void validateKeyFormat(
-      final String keyValue, final String fieldName, final List<String> violations) {
+      final @Nullable String keyValue, final String fieldName, final List<String> violations) {
     if (keyValue != null && KeyUtil.tryParseLong(keyValue).isEmpty()) {
       violations.add(ERROR_MESSAGE_INVALID_KEY_FORMAT.formatted(fieldName, keyValue));
     }
@@ -125,7 +130,7 @@ public final class RequestValidator {
    * @param violations the list to add validation errors to
    */
   public static void validateProcessDefinitionId(
-      final String processDefinitionId, final List<String> violations) {
+      final @Nullable String processDefinitionId, final List<String> violations) {
     if (processDefinitionId != null && !XML_ID_PATTERN.matcher(processDefinitionId).matches()) {
       violations.add(
           ERROR_MESSAGE_ILLEGAL_CHARACTER.formatted(
@@ -140,7 +145,7 @@ public final class RequestValidator {
    * @param violations the list to add validation errors to
    */
   public static void validateDecisionDefinitionId(
-      final String decisionDefinitionId, final List<String> violations) {
+      final @Nullable String decisionDefinitionId, final List<String> violations) {
     if (decisionDefinitionId != null && !XML_ID_PATTERN.matcher(decisionDefinitionId).matches()) {
       violations.add(
           ERROR_MESSAGE_ILLEGAL_CHARACTER.formatted(
@@ -154,7 +159,8 @@ public final class RequestValidator {
    * @param businessId the business ID to validate (may be null; null is not validated)
    * @param violations the list to add validation errors to
    */
-  public static void validateBusinessId(final String businessId, final List<String> violations) {
+  public static void validateBusinessId(
+      final @Nullable String businessId, final List<String> violations) {
     if (businessId != null && businessId.length() > MAX_BUSINESS_ID_LENGTH) {
       violations.add(
           ERROR_MESSAGE_TOO_MANY_CHARACTERS.formatted("businessId", MAX_BUSINESS_ID_LENGTH));

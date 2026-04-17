@@ -9,6 +9,7 @@ package io.camunda.gateway.mapping.http.converters;
 
 import io.camunda.gateway.protocol.model.BatchOperationTypeEnum;
 import io.camunda.search.entities.BatchOperationType;
+import org.jspecify.annotations.Nullable;
 
 public final class BatchOperationTypeConverter implements CustomConverter<String> {
 
@@ -19,11 +20,8 @@ public final class BatchOperationTypeConverter implements CustomConverter<String
 
   @Override
   public String convertValue(final Object value) {
-    if (value == null) {
-      return null;
-    }
     if (value instanceof final BatchOperationTypeEnum categoryEnum) {
-      return toInternalBatchOperationTypeAsString(categoryEnum);
+      return BatchOperationType.valueOf(categoryEnum.name()).name();
     }
     throw new IllegalArgumentException(
         "Cannot convert value [%s] of type [%s]. Expected type: [%s]"
@@ -33,13 +31,14 @@ public final class BatchOperationTypeConverter implements CustomConverter<String
                 BatchOperationTypeEnum.class.getSimpleName()));
   }
 
-  public static String toInternalBatchOperationTypeAsString(final BatchOperationTypeEnum typeEnum) {
+  public static @Nullable String toInternalBatchOperationTypeAsString(
+      final @Nullable BatchOperationTypeEnum typeEnum) {
     final BatchOperationType internalType = toInternalBatchOperationType(typeEnum);
     return internalType == null ? null : internalType.name();
   }
 
-  public static BatchOperationType toInternalBatchOperationType(
-      final BatchOperationTypeEnum categoryEnum) {
+  public static @Nullable BatchOperationType toInternalBatchOperationType(
+      final @Nullable BatchOperationTypeEnum categoryEnum) {
     if (categoryEnum == null) {
       return null;
     }

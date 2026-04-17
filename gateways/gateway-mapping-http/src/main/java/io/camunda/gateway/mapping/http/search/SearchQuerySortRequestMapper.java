@@ -46,223 +46,417 @@ import io.camunda.zeebe.util.Either;
 import jakarta.validation.Valid;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.function.BiFunction;
 import java.util.function.Supplier;
+import org.jspecify.annotations.Nullable;
 
 public class SearchQuerySortRequestMapper {
 
   static List<SearchQuerySortRequest<ProcessDefinitionSearchQuerySortRequest.FieldEnum>>
       fromProcessDefinitionSearchQuerySortRequest(
-          final List<ProcessDefinitionSearchQuerySortRequest> requests) {
-    return requests.stream().map(r -> createFrom(r.getField(), r.getOrder().orElse(null))).toList();
+          final @Nullable List<ProcessDefinitionSearchQuerySortRequest> requests) {
+    if (requests == null) {
+      return List.of();
+    }
+    return requests.stream()
+        .map(r -> createFrom(r.getField(), Optional.ofNullable(r.getOrder()).orElse(null)))
+        .toList();
   }
 
   static List<SearchQuerySortRequest<ProcessInstanceSearchQuerySortRequest.FieldEnum>>
       fromProcessInstanceSearchQuerySortRequest(
-          final List<ProcessInstanceSearchQuerySortRequest> requests) {
-    return requests.stream().map(r -> createFrom(r.getField(), r.getOrder().orElse(null))).toList();
+          final @Nullable List<ProcessInstanceSearchQuerySortRequest> requests) {
+    if (requests == null) {
+      return List.of();
+    }
+    return requests.stream()
+        .map(r -> createFrom(r.getField(), Optional.ofNullable(r.getOrder()).orElse(null)))
+        .toList();
   }
 
   static List<SearchQuerySortRequest<JobSearchQuerySortRequest.FieldEnum>>
-      fromJobSearchQuerySortRequest(final List<JobSearchQuerySortRequest> requests) {
-    return requests.stream().map(r -> createFrom(r.getField(), r.getOrder().orElse(null))).toList();
+      fromJobSearchQuerySortRequest(final @Nullable List<JobSearchQuerySortRequest> requests) {
+    if (requests == null) {
+      return List.of();
+    }
+    return requests.stream()
+        .map(r -> createFrom(r.getField(), Optional.ofNullable(r.getOrder()).orElse(null)))
+        .toList();
   }
 
   static List<SearchQuerySortRequest<RoleSearchQuerySortRequest.FieldEnum>>
-      fromRoleSearchQuerySortRequest(final List<RoleSearchQuerySortRequest> requests) {
-    return requests.stream().map(r -> createFrom(r.getField(), r.getOrder().orElse(null))).toList();
+      fromRoleSearchQuerySortRequest(final @Nullable List<RoleSearchQuerySortRequest> requests) {
+    if (requests == null) {
+      return List.of();
+    }
+    return requests.stream()
+        .map(r -> createFrom(r.getField(), Optional.ofNullable(r.getOrder()).orElse(null)))
+        .toList();
   }
 
   static List<SearchQuerySortRequest<RoleUserSearchQuerySortRequest.FieldEnum>>
-      fromRoleUserSearchQuerySortRequest(final List<RoleUserSearchQuerySortRequest> requests) {
-    return requests.stream().map(r -> createFrom(r.getField(), r.getOrder().orElse(null))).toList();
+      fromRoleUserSearchQuerySortRequest(
+          final @Nullable List<RoleUserSearchQuerySortRequest> requests) {
+    if (requests == null) {
+      return List.of();
+    }
+    return requests.stream()
+        .map(r -> createFrom(r.getField(), Optional.ofNullable(r.getOrder()).orElse(null)))
+        .toList();
   }
 
   static List<SearchQuerySortRequest<RoleGroupSearchQuerySortRequest.FieldEnum>>
       fromRoleGroupSearchQuerySortRequest(
-          final @Valid List<RoleGroupSearchQuerySortRequest> requests) {
-    return requests.stream().map(r -> createFrom(r.getField(), r.getOrder().orElse(null))).toList();
+          final @Valid @Nullable List<RoleGroupSearchQuerySortRequest> requests) {
+    if (requests == null) {
+      return List.of();
+    }
+    return requests.stream()
+        .map(r -> createFrom(r.getField(), Optional.ofNullable(r.getOrder()).orElse(null)))
+        .toList();
   }
 
   static List<SearchQuerySortRequest<RoleClientSearchQuerySortRequest.FieldEnum>>
-      fromRoleClientSearchQuerySortRequest(final List<RoleClientSearchQuerySortRequest> requests) {
-    return requests.stream().map(r -> createFrom(r.getField(), r.getOrder().orElse(null))).toList();
+      fromRoleClientSearchQuerySortRequest(
+          final @Nullable List<RoleClientSearchQuerySortRequest> requests) {
+    if (requests == null) {
+      return List.of();
+    }
+    return requests.stream()
+        .map(r -> createFrom(r.getField(), Optional.ofNullable(r.getOrder()).orElse(null)))
+        .toList();
   }
 
   static List<SearchQuerySortRequest<GroupSearchQuerySortRequest.FieldEnum>>
-      fromGroupSearchQuerySortRequest(final List<GroupSearchQuerySortRequest> requests) {
-    return requests.stream().map(r -> createFrom(r.getField(), r.getOrder().orElse(null))).toList();
+      fromGroupSearchQuerySortRequest(final @Nullable List<GroupSearchQuerySortRequest> requests) {
+    if (requests == null) {
+      return List.of();
+    }
+    return requests.stream()
+        .map(r -> createFrom(r.getField(), Optional.ofNullable(r.getOrder()).orElse(null)))
+        .toList();
   }
 
   static List<SearchQuerySortRequest<GroupUserSearchQuerySortRequest.FieldEnum>>
-      fromGroupUserSearchQuerySortRequest(final List<GroupUserSearchQuerySortRequest> requests) {
-    return requests.stream().map(r -> createFrom(r.getField(), r.getOrder().orElse(null))).toList();
+      fromGroupUserSearchQuerySortRequest(
+          final @Nullable List<GroupUserSearchQuerySortRequest> requests) {
+    if (requests == null) {
+      return List.of();
+    }
+    return requests.stream()
+        .map(r -> createFrom(r.getField(), Optional.ofNullable(r.getOrder()).orElse(null)))
+        .toList();
   }
 
   static List<SearchQuerySortRequest<GroupClientSearchQuerySortRequest.FieldEnum>>
       fromGroupClientSearchQuerySortRequest(
-          final List<GroupClientSearchQuerySortRequest> requests) {
-    return requests.stream().map(r -> createFrom(r.getField(), r.getOrder().orElse(null))).toList();
+          final @Nullable List<GroupClientSearchQuerySortRequest> requests) {
+    if (requests == null) {
+      return List.of();
+    }
+    return requests.stream()
+        .map(r -> createFrom(r.getField(), Optional.ofNullable(r.getOrder()).orElse(null)))
+        .toList();
   }
 
   static List<SearchQuerySortRequest<TenantSearchQuerySortRequest.FieldEnum>>
-      fromTenantSearchQuerySortRequest(final List<TenantSearchQuerySortRequest> requests) {
-    return requests.stream().map(r -> createFrom(r.getField(), r.getOrder().orElse(null))).toList();
+      fromTenantSearchQuerySortRequest(
+          final @Nullable List<TenantSearchQuerySortRequest> requests) {
+    if (requests == null) {
+      return List.of();
+    }
+    return requests.stream()
+        .map(r -> createFrom(r.getField(), Optional.ofNullable(r.getOrder()).orElse(null)))
+        .toList();
   }
 
   static List<SearchQuerySortRequest<TenantUserSearchQuerySortRequest.FieldEnum>>
-      fromTenantUserSearchQuerySortRequest(final List<TenantUserSearchQuerySortRequest> requests) {
-    return requests.stream().map(r -> createFrom(r.getField(), r.getOrder().orElse(null))).toList();
+      fromTenantUserSearchQuerySortRequest(
+          final @Nullable List<TenantUserSearchQuerySortRequest> requests) {
+    if (requests == null) {
+      return List.of();
+    }
+    return requests.stream()
+        .map(r -> createFrom(r.getField(), Optional.ofNullable(r.getOrder()).orElse(null)))
+        .toList();
   }
 
   static List<SearchQuerySortRequest<TenantGroupSearchQuerySortRequest.FieldEnum>>
       fromTenantGroupSearchQuerySortRequest(
-          final List<TenantGroupSearchQuerySortRequest> requests) {
-    return requests.stream().map(r -> createFrom(r.getField(), r.getOrder().orElse(null))).toList();
+          final @Nullable List<TenantGroupSearchQuerySortRequest> requests) {
+    if (requests == null) {
+      return List.of();
+    }
+    return requests.stream()
+        .map(r -> createFrom(r.getField(), Optional.ofNullable(r.getOrder()).orElse(null)))
+        .toList();
   }
 
   static List<SearchQuerySortRequest<TenantClientSearchQuerySortRequest.FieldEnum>>
       fromTenantClientSearchQuerySortRequest(
-          final List<TenantClientSearchQuerySortRequest> requests) {
-    return requests.stream().map(r -> createFrom(r.getField(), r.getOrder().orElse(null))).toList();
+          final @Nullable List<TenantClientSearchQuerySortRequest> requests) {
+    if (requests == null) {
+      return List.of();
+    }
+    return requests.stream()
+        .map(r -> createFrom(r.getField(), Optional.ofNullable(r.getOrder()).orElse(null)))
+        .toList();
   }
 
   static List<SearchQuerySortRequest<MappingRuleSearchQuerySortRequest.FieldEnum>>
       fromMappingRuleSearchQuerySortRequest(
-          final List<MappingRuleSearchQuerySortRequest> requests) {
-    return requests.stream().map(r -> createFrom(r.getField(), r.getOrder().orElse(null))).toList();
+          final @Nullable List<MappingRuleSearchQuerySortRequest> requests) {
+    if (requests == null) {
+      return List.of();
+    }
+    return requests.stream()
+        .map(r -> createFrom(r.getField(), Optional.ofNullable(r.getOrder()).orElse(null)))
+        .toList();
   }
 
   static List<SearchQuerySortRequest<DecisionDefinitionSearchQuerySortRequest.FieldEnum>>
       fromDecisionDefinitionSearchQuerySortRequest(
-          final List<DecisionDefinitionSearchQuerySortRequest> requests) {
-    return requests.stream().map(r -> createFrom(r.getField(), r.getOrder().orElse(null))).toList();
+          final @Nullable List<DecisionDefinitionSearchQuerySortRequest> requests) {
+    if (requests == null) {
+      return List.of();
+    }
+    return requests.stream()
+        .map(r -> createFrom(r.getField(), Optional.ofNullable(r.getOrder()).orElse(null)))
+        .toList();
   }
 
   static List<SearchQuerySortRequest<DecisionRequirementsSearchQuerySortRequest.FieldEnum>>
       fromDecisionRequirementsSearchQuerySortRequest(
-          final List<DecisionRequirementsSearchQuerySortRequest> requests) {
-    return requests.stream().map(r -> createFrom(r.getField(), r.getOrder().orElse(null))).toList();
+          final @Nullable List<DecisionRequirementsSearchQuerySortRequest> requests) {
+    if (requests == null) {
+      return List.of();
+    }
+    return requests.stream()
+        .map(r -> createFrom(r.getField(), Optional.ofNullable(r.getOrder()).orElse(null)))
+        .toList();
   }
 
   static List<SearchQuerySortRequest<ElementInstanceSearchQuerySortRequest.FieldEnum>>
       fromElementInstanceSearchQuerySortRequest(
-          final List<ElementInstanceSearchQuerySortRequest> requests) {
-    return requests.stream().map(r -> createFrom(r.getField(), r.getOrder().orElse(null))).toList();
+          final @Nullable List<ElementInstanceSearchQuerySortRequest> requests) {
+    if (requests == null) {
+      return List.of();
+    }
+    return requests.stream()
+        .map(r -> createFrom(r.getField(), Optional.ofNullable(r.getOrder()).orElse(null)))
+        .toList();
   }
 
   static List<SearchQuerySortRequest<DecisionInstanceSearchQuerySortRequest.FieldEnum>>
       fromDecisionInstanceSearchQuerySortRequest(
-          final List<DecisionInstanceSearchQuerySortRequest> requests) {
-    return requests.stream().map(r -> createFrom(r.getField(), r.getOrder().orElse(null))).toList();
+          final @Nullable List<DecisionInstanceSearchQuerySortRequest> requests) {
+    if (requests == null) {
+      return List.of();
+    }
+    return requests.stream()
+        .map(r -> createFrom(r.getField(), Optional.ofNullable(r.getOrder()).orElse(null)))
+        .toList();
   }
 
   static List<SearchQuerySortRequest<UserTaskSearchQuerySortRequest.FieldEnum>>
-      fromUserTaskSearchQuerySortRequest(final List<UserTaskSearchQuerySortRequest> requests) {
-    return requests.stream().map(r -> createFrom(r.getField(), r.getOrder().orElse(null))).toList();
+      fromUserTaskSearchQuerySortRequest(
+          final @Nullable List<UserTaskSearchQuerySortRequest> requests) {
+    if (requests == null) {
+      return List.of();
+    }
+    return requests.stream()
+        .map(r -> createFrom(r.getField(), Optional.ofNullable(r.getOrder()).orElse(null)))
+        .toList();
   }
 
   static List<SearchQuerySortRequest<UserTaskVariableSearchQuerySortRequest.FieldEnum>>
       fromUserTaskVariableSearchQuerySortRequest(
-          final List<UserTaskVariableSearchQuerySortRequest> requests) {
-    return requests.stream().map(r -> createFrom(r.getField(), r.getOrder().orElse(null))).toList();
+          final @Nullable List<UserTaskVariableSearchQuerySortRequest> requests) {
+    if (requests == null) {
+      return List.of();
+    }
+    return requests.stream()
+        .map(r -> createFrom(r.getField(), Optional.ofNullable(r.getOrder()).orElse(null)))
+        .toList();
   }
 
   static List<SearchQuerySortRequest<VariableSearchQuerySortRequest.FieldEnum>>
-      fromVariableSearchQuerySortRequest(final List<VariableSearchQuerySortRequest> requests) {
-    return requests.stream().map(r -> createFrom(r.getField(), r.getOrder().orElse(null))).toList();
+      fromVariableSearchQuerySortRequest(
+          final @Nullable List<VariableSearchQuerySortRequest> requests) {
+    if (requests == null) {
+      return List.of();
+    }
+    return requests.stream()
+        .map(r -> createFrom(r.getField(), Optional.ofNullable(r.getOrder()).orElse(null)))
+        .toList();
   }
 
   static List<SearchQuerySortRequest<ClusterVariableSearchQuerySortRequest.FieldEnum>>
       fromClusterVariableSearchQuerySortRequest(
-          final List<ClusterVariableSearchQuerySortRequest> requests) {
-    return requests.stream().map(r -> createFrom(r.getField(), r.getOrder().orElse(null))).toList();
+          final @Nullable List<ClusterVariableSearchQuerySortRequest> requests) {
+    if (requests == null) {
+      return List.of();
+    }
+    return requests.stream()
+        .map(r -> createFrom(r.getField(), Optional.ofNullable(r.getOrder()).orElse(null)))
+        .toList();
   }
 
   static List<SearchQuerySortRequest<UserSearchQuerySortRequest.FieldEnum>>
-      fromUserSearchQuerySortRequest(final List<UserSearchQuerySortRequest> requests) {
-    return requests.stream().map(r -> createFrom(r.getField(), r.getOrder().orElse(null))).toList();
+      fromUserSearchQuerySortRequest(final @Nullable List<UserSearchQuerySortRequest> requests) {
+    if (requests == null) {
+      return List.of();
+    }
+    return requests.stream()
+        .map(r -> createFrom(r.getField(), Optional.ofNullable(r.getOrder()).orElse(null)))
+        .toList();
   }
 
   static List<SearchQuerySortRequest<IncidentSearchQuerySortRequest.FieldEnum>>
-      fromIncidentSearchQuerySortRequest(final List<IncidentSearchQuerySortRequest> requests) {
-    return requests.stream().map(r -> createFrom(r.getField(), r.getOrder().orElse(null))).toList();
+      fromIncidentSearchQuerySortRequest(
+          final @Nullable List<IncidentSearchQuerySortRequest> requests) {
+    if (requests == null) {
+      return List.of();
+    }
+    return requests.stream()
+        .map(r -> createFrom(r.getField(), Optional.ofNullable(r.getOrder()).orElse(null)))
+        .toList();
   }
 
   static List<SearchQuerySortRequest<AuthorizationSearchQuerySortRequest.FieldEnum>>
       fromAuthorizationSearchQuerySortRequest(
-          final List<AuthorizationSearchQuerySortRequest> requests) {
-    return requests.stream().map(r -> createFrom(r.getField(), r.getOrder().orElse(null))).toList();
+          final @Nullable List<AuthorizationSearchQuerySortRequest> requests) {
+    if (requests == null) {
+      return List.of();
+    }
+    return requests.stream()
+        .map(r -> createFrom(r.getField(), Optional.ofNullable(r.getOrder()).orElse(null)))
+        .toList();
   }
 
   static List<SearchQuerySortRequest<AuditLogSearchQuerySortRequest.FieldEnum>>
-      fromAuditLogSearchQuerySortRequest(final List<AuditLogSearchQuerySortRequest> requests) {
-    return requests.stream().map(r -> createFrom(r.getField(), r.getOrder().orElse(null))).toList();
+      fromAuditLogSearchQuerySortRequest(
+          final @Nullable List<AuditLogSearchQuerySortRequest> requests) {
+    if (requests == null) {
+      return List.of();
+    }
+    return requests.stream()
+        .map(r -> createFrom(r.getField(), Optional.ofNullable(r.getOrder()).orElse(null)))
+        .toList();
   }
 
   static List<SearchQuerySortRequest<AuditLogSearchQuerySortRequest.FieldEnum>>
-      fromUserTaskAuditLogSearchRequest(final List<AuditLogSearchQuerySortRequest> requests) {
-    return requests.stream().map(r -> createFrom(r.getField(), r.getOrder().orElse(null))).toList();
+      fromUserTaskAuditLogSearchRequest(
+          final @Nullable List<AuditLogSearchQuerySortRequest> requests) {
+    if (requests == null) {
+      return List.of();
+    }
+    return requests.stream()
+        .map(r -> createFrom(r.getField(), Optional.ofNullable(r.getOrder()).orElse(null)))
+        .toList();
   }
 
   static List<SearchQuerySortRequest<BatchOperationSearchQuerySortRequest.FieldEnum>>
       fromBatchOperationSearchQuerySortRequest(
-          final List<BatchOperationSearchQuerySortRequest> requests) {
-    return requests.stream().map(r -> createFrom(r.getField(), r.getOrder().orElse(null))).toList();
+          final @Nullable List<BatchOperationSearchQuerySortRequest> requests) {
+    if (requests == null) {
+      return List.of();
+    }
+    return requests.stream()
+        .map(r -> createFrom(r.getField(), Optional.ofNullable(r.getOrder()).orElse(null)))
+        .toList();
   }
 
   static List<SearchQuerySortRequest<BatchOperationItemSearchQuerySortRequest.FieldEnum>>
       fromBatchOperationItemSearchQuerySortRequest(
-          final List<BatchOperationItemSearchQuerySortRequest> requests) {
-    return requests.stream().map(r -> createFrom(r.getField(), r.getOrder().orElse(null))).toList();
+          final @Nullable List<BatchOperationItemSearchQuerySortRequest> requests) {
+    if (requests == null) {
+      return List.of();
+    }
+    return requests.stream()
+        .map(r -> createFrom(r.getField(), Optional.ofNullable(r.getOrder()).orElse(null)))
+        .toList();
   }
 
   static List<SearchQuerySortRequest<MessageSubscriptionSearchQuerySortRequest.FieldEnum>>
       fromMessageSubscriptionSearchQuerySortRequest(
-          final List<MessageSubscriptionSearchQuerySortRequest> requests) {
-    return requests.stream().map(r -> createFrom(r.getField(), r.getOrder().orElse(null))).toList();
+          final @Nullable List<MessageSubscriptionSearchQuerySortRequest> requests) {
+    if (requests == null) {
+      return List.of();
+    }
+    return requests.stream()
+        .map(r -> createFrom(r.getField(), Optional.ofNullable(r.getOrder()).orElse(null)))
+        .toList();
   }
 
   static List<SearchQuerySortRequest<CorrelatedMessageSubscriptionSearchQuerySortRequest.FieldEnum>>
       fromCorrelatedMessageSubscriptionSearchQuerySortRequest(
-          final List<CorrelatedMessageSubscriptionSearchQuerySortRequest> requests) {
-    return requests.stream().map(r -> createFrom(r.getField(), r.getOrder().orElse(null))).toList();
+          final @Nullable List<CorrelatedMessageSubscriptionSearchQuerySortRequest> requests) {
+    if (requests == null) {
+      return List.of();
+    }
+    return requests.stream()
+        .map(r -> createFrom(r.getField(), Optional.ofNullable(r.getOrder()).orElse(null)))
+        .toList();
   }
 
   public static List<
           SearchQuerySortRequest<ProcessDefinitionInstanceStatisticsQuerySortRequest.FieldEnum>>
       fromProcessDefinitionInstanceStatisticsQuerySortRequest(
-          final List<ProcessDefinitionInstanceStatisticsQuerySortRequest> requests) {
-    return requests.stream().map(r -> createFrom(r.getField(), r.getOrder().orElse(null))).toList();
+          final @Nullable List<ProcessDefinitionInstanceStatisticsQuerySortRequest> requests) {
+    if (requests == null) {
+      return List.of();
+    }
+    return requests.stream()
+        .map(r -> createFrom(r.getField(), Optional.ofNullable(r.getOrder()).orElse(null)))
+        .toList();
   }
 
   public static List<
           SearchQuerySortRequest<
               ProcessDefinitionInstanceVersionStatisticsQuerySortRequest.FieldEnum>>
       fromProcessDefinitionInstanceVersionStatisticsQuerySortRequest(
-          final List<ProcessDefinitionInstanceVersionStatisticsQuerySortRequest> requests) {
-    return requests.stream().map(r -> createFrom(r.getField(), r.getOrder().orElse(null))).toList();
+          final @Nullable List<ProcessDefinitionInstanceVersionStatisticsQuerySortRequest>
+              requests) {
+    if (requests == null) {
+      return List.of();
+    }
+    return requests.stream()
+        .map(r -> createFrom(r.getField(), Optional.ofNullable(r.getOrder()).orElse(null)))
+        .toList();
   }
 
   public static List<
           SearchQuerySortRequest<
               IncidentProcessInstanceStatisticsByErrorQuerySortRequest.FieldEnum>>
       fromIncidentProcessInstanceStatisticsByErrorQuerySortRequest(
-          final List<IncidentProcessInstanceStatisticsByErrorQuerySortRequest> requests) {
-    return requests.stream().map(r -> createFrom(r.getField(), r.getOrder().orElse(null))).toList();
+          final @Nullable List<IncidentProcessInstanceStatisticsByErrorQuerySortRequest> requests) {
+    if (requests == null) {
+      return List.of();
+    }
+    return requests.stream()
+        .map(r -> createFrom(r.getField(), Optional.ofNullable(r.getOrder()).orElse(null)))
+        .toList();
   }
 
   public static List<
           SearchQuerySortRequest<
               IncidentProcessInstanceStatisticsByDefinitionQuerySortRequest.FieldEnum>>
       fromIncidentProcessInstanceStatisticsByDefinitionQuerySortRequest(
-          final List<IncidentProcessInstanceStatisticsByDefinitionQuerySortRequest> requests) {
-    return requests.stream().map(r -> createFrom(r.getField(), r.getOrder().orElse(null))).toList();
+          final @Nullable List<IncidentProcessInstanceStatisticsByDefinitionQuerySortRequest>
+              requests) {
+    if (requests == null) {
+      return List.of();
+    }
+    return requests.stream()
+        .map(r -> createFrom(r.getField(), Optional.ofNullable(r.getOrder()).orElse(null)))
+        .toList();
   }
 
   public static List<SearchQuerySortRequest<GlobalTaskListenerSearchQuerySortRequest.FieldEnum>>
       fromGlobalTaskListenerSearchQuerySortRequest(
-          final List<GlobalTaskListenerSearchQuerySortRequest> requests) {
+          final @Nullable List<GlobalTaskListenerSearchQuerySortRequest> requests) {
     // Add default sorting after provided ones, ensuring a meaningful ordering:
     // - place "after non global" listeners at the end
     // - sort by priority (highest priority is returned first)
@@ -276,12 +470,12 @@ public class SearchQuerySortRequestMapper {
                 .order(SortOrderEnum.DESC),
             new GlobalTaskListenerSearchQuerySortRequest().field(FieldEnum.ID)));
     return requestsWithDefaultSorting.stream()
-        .map(r -> createFrom(r.getField(), r.getOrder().orElse(null)))
+        .map(r -> createFrom(r.getField(), Optional.ofNullable(r.getOrder()).orElse(null)))
         .toList();
   }
 
   private static <T> SearchQuerySortRequest<T> createFrom(
-      final T field, final SortOrderEnum order) {
+      final @Nullable T field, final @Nullable SortOrderEnum order) {
     return new SearchQuerySortRequest<T>(field, order);
   }
 
@@ -996,7 +1190,7 @@ public class SearchQuerySortRequestMapper {
   }
 
   private static void applySortOrder(
-      final SortOrderEnum order, final SortOption.AbstractBuilder<?> builder) {
+      final @Nullable SortOrderEnum order, final SortOption.AbstractBuilder<?> builder) {
     if (order == SortOrderEnum.DESC) {
       builder.desc();
     } else {

@@ -9,6 +9,7 @@ package io.camunda.gateway.mapping.http.converters;
 
 import io.camunda.gateway.protocol.model.DecisionInstanceStateEnum;
 import io.camunda.search.entities.DecisionInstanceEntity;
+import org.jspecify.annotations.Nullable;
 
 public class DecisionInstanceStateConverter implements CustomConverter<String> {
 
@@ -19,11 +20,9 @@ public class DecisionInstanceStateConverter implements CustomConverter<String> {
 
   @Override
   public String convertValue(final Object value) {
-    if (value == null) {
-      return null;
-    }
     if (value instanceof final DecisionInstanceStateEnum decisionInstanceStateEnum) {
-      return toInternalStateAsString(decisionInstanceStateEnum);
+      return DecisionInstanceEntity.DecisionInstanceState.valueOf(decisionInstanceStateEnum.name())
+          .name();
     }
     throw new IllegalArgumentException(
         "Cannot convert value [%s] of type [%s]. Expected type: [%s]"
@@ -33,15 +32,15 @@ public class DecisionInstanceStateConverter implements CustomConverter<String> {
                 DecisionInstanceStateEnum.class.getSimpleName()));
   }
 
-  public static String toInternalStateAsString(
-      final DecisionInstanceStateEnum decisionInstanceStateEnum) {
+  public static @Nullable String toInternalStateAsString(
+      final @Nullable DecisionInstanceStateEnum decisionInstanceStateEnum) {
     final DecisionInstanceEntity.DecisionInstanceState internalState =
         toInternalState(decisionInstanceStateEnum);
     return (internalState == null) ? null : internalState.name();
   }
 
-  public static DecisionInstanceEntity.DecisionInstanceState toInternalState(
-      final DecisionInstanceStateEnum decisionInstanceStateEnum) {
+  public static DecisionInstanceEntity.@Nullable DecisionInstanceState toInternalState(
+      final @Nullable DecisionInstanceStateEnum decisionInstanceStateEnum) {
     if (decisionInstanceStateEnum == null) {
       return null;
     }

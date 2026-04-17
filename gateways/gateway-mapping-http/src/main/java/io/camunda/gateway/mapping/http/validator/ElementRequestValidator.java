@@ -24,8 +24,7 @@ public class ElementRequestValidator {
           if (variableRequest.getVariables() == null || variableRequest.getVariables().isEmpty()) {
             violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("variables"));
           }
-          validateOperationReference(
-              variableRequest.getOperationReference().orElse(null), violations);
+          validateOperationReference(variableRequest.getOperationReference(), violations);
         });
   }
 }

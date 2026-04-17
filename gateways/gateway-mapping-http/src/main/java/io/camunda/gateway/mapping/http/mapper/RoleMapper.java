@@ -34,7 +34,7 @@ public class RoleMapper {
             new CreateRoleRequest(
                 roleCreateRequest.getRoleId(),
                 roleCreateRequest.getName(),
-                roleCreateRequest.getDescription().orElse(null)));
+                roleCreateRequest.getDescription()));
   }
 
   public Either<ProblemDetail, UpdateRoleRequest> toRoleUpdateRequest(
@@ -43,9 +43,7 @@ public class RoleMapper {
         roleRequestValidator.validateUpdateRequest(roleId, roleUpdateRequest),
         () ->
             new UpdateRoleRequest(
-                roleId,
-                roleUpdateRequest.getName(),
-                roleUpdateRequest.getDescription().orElse(null)));
+                roleId, roleUpdateRequest.getName(), roleUpdateRequest.getDescription()));
   }
 
   public Either<ProblemDetail, RoleMemberRequest> toRoleMemberRequest(

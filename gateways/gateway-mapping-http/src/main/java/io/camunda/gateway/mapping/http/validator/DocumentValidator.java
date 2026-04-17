@@ -25,19 +25,19 @@ public class DocumentValidator {
     }
     return validate(
         violations -> {
-          if (metadata.getFileName().isPresent() && metadata.getFileName().get().isBlank()) {
+          if (metadata.getFileName() != null && metadata.getFileName().isBlank()) {
             violations.add("The file name must not be empty, if present");
           }
 
-          if (metadata.getContentType().isPresent() && metadata.getContentType().get().isBlank()) {
+          if (metadata.getContentType() != null && metadata.getContentType().isBlank()) {
             violations.add("The content type must not be empty, if present");
           }
 
-          if (metadata.getExpiresAt().isPresent()) {
-            validateDate(metadata.getExpiresAt().get(), "expiresAt", violations);
+          if (metadata.getExpiresAt() != null) {
+            validateDate(metadata.getExpiresAt(), "expiresAt", violations);
           }
 
-          validateProcessDefinitionId(metadata.getProcessDefinitionId().orElse(null), violations);
+          validateProcessDefinitionId(metadata.getProcessDefinitionId(), violations);
         });
   }
 
@@ -48,8 +48,8 @@ public class DocumentValidator {
     }
     return validate(
         violations -> {
-          final Long timeToLive = request.getTimeToLive().orElse(0L);
-          if (timeToLive <= 0) {
+          final Long timeToLive = request.getTimeToLive();
+          if (timeToLive != null && timeToLive <= 0) {
             violations.add(
                 ERROR_MESSAGE_INVALID_ATTRIBUTE_VALUE.formatted(
                     "timeToLive", timeToLive, "greater than 0"));

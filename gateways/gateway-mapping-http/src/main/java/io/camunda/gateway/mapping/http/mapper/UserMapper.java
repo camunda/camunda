@@ -29,8 +29,8 @@ public class UserMapper {
         () ->
             new UserDTO(
                 request.getUsername(),
-                request.getName().orElse(null),
-                request.getEmail().orElse(null),
+                request.getName(),
+                request.getEmail(),
                 request.getPassword()));
   }
 
@@ -41,8 +41,8 @@ public class UserMapper {
         () ->
             new UserDTO(
                 username,
-                updateRequest.getName().orElse(null),
-                updateRequest.getEmail().orElse(null),
-                updateRequest.getPassword().orElse(null)));
+                updateRequest.getName(),
+                updateRequest.getEmail(),
+                updateRequest.getPassword()));
   }
 }

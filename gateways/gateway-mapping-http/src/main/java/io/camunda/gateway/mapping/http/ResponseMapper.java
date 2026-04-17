@@ -117,8 +117,10 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatusCode;
@@ -161,7 +163,7 @@ public final class ResponseMapper {
           .parseStrict()
           .toFormatter();
 
-  public static String formatDate(final OffsetDateTime date) {
+  public static @Nullable String formatDate(final @Nullable OffsetDateTime date) {
     return date == null ? null : DATE_RESPONSE_MAPPER.format(date);
   }
 
@@ -230,7 +232,7 @@ public final class ResponseMapper {
     return result;
   }
 
-  private static UserTaskProperties toUserTaskProperties(final JobRecord job) {
+  private static @Nullable UserTaskProperties toUserTaskProperties(final JobRecord job) {
     if (job.getJobKind() != TASK_LISTENER || CollectionUtils.isEmpty(job.getCustomHeaders())) {
       return null;
     }
@@ -238,24 +240,28 @@ public final class ResponseMapper {
     final var headers = job.getCustomHeaders();
     final var props = new UserTaskProperties();
 
-    props.setAction(headers.get(Protocol.USER_TASK_ACTION_HEADER_NAME));
+    Optional.ofNullable(headers.get(Protocol.USER_TASK_ACTION_HEADER_NAME))
+        .ifPresent(props::setAction);
     props.setAssignee(headers.get(Protocol.USER_TASK_ASSIGNEE_HEADER_NAME));
-    props.setCandidateGroups(
-        mapStringToList(headers.get(Protocol.USER_TASK_CANDIDATE_GROUPS_HEADER_NAME)));
-    props.setCandidateUsers(
-        mapStringToList(headers.get(Protocol.USER_TASK_CANDIDATE_USERS_HEADER_NAME)));
-    props.setChangedAttributes(
-        mapStringToList(headers.get(Protocol.USER_TASK_CHANGED_ATTRIBUTES_HEADER_NAME)));
+    Optional.ofNullable(headers.get(Protocol.USER_TASK_CANDIDATE_GROUPS_HEADER_NAME))
+        .ifPresent(v -> props.setCandidateGroups(mapStringToList(v)));
+    Optional.ofNullable(headers.get(Protocol.USER_TASK_CANDIDATE_USERS_HEADER_NAME))
+        .ifPresent(v -> props.setCandidateUsers(mapStringToList(v)));
+    Optional.ofNullable(headers.get(Protocol.USER_TASK_CHANGED_ATTRIBUTES_HEADER_NAME))
+        .ifPresent(v -> props.setChangedAttributes(mapStringToList(v)));
     props.setDueDate(headers.get(Protocol.USER_TASK_DUE_DATE_HEADER_NAME));
     props.setFollowUpDate(headers.get(Protocol.USER_TASK_FOLLOW_UP_DATE_HEADER_NAME));
-    props.setFormKey(headers.get(Protocol.USER_TASK_FORM_KEY_HEADER_NAME));
-    props.setPriority(toIntegerOrNull(headers.get(Protocol.USER_TASK_PRIORITY_HEADER_NAME)));
-    props.setUserTaskKey(headers.get(Protocol.USER_TASK_KEY_HEADER_NAME));
+    Optional.ofNullable(headers.get(Protocol.USER_TASK_FORM_KEY_HEADER_NAME))
+        .ifPresent(props::setFormKey);
+    Optional.ofNullable(toIntegerOrNull(headers.get(Protocol.USER_TASK_PRIORITY_HEADER_NAME)))
+        .ifPresent(props::setPriority);
+    Optional.ofNullable(headers.get(Protocol.USER_TASK_KEY_HEADER_NAME))
+        .ifPresent(props::setUserTaskKey);
 
     return props;
   }
 
-  public static List<String> mapStringToList(final String input) {
+  public static List<String> mapStringToList(final @Nullable String input) {
     if (input == null || input.isEmpty()) {
       return List.of();
     }
@@ -268,7 +274,7 @@ public final class ResponseMapper {
     }
   }
 
-  public static Integer toIntegerOrNull(final String value) {
+  public static @Nullable Integer toIntegerOrNull(final @Nullable String value) {
     if (value == null || value.isEmpty()) {
       return null;
     }
@@ -341,13 +347,16 @@ public final class ResponseMapper {
       final DocumentErrorResponse error) {
     final var detail = new DocumentCreationFailureDetail();
     final var defaultProblemDetail = mapDocumentErrorToProblem(error.error());
-    detail.setDetail(defaultProblemDetail.getDetail());
+    final var problemDetailDetail = defaultProblemDetail.getDetail();
+    if (problemDetailDetail != null) {
+      detail.setDetail(problemDetailDetail);
+    }
     detail.setFileName(error.request().metadata().fileName());
     return detail;
   }
 
   private static ProblemDetail mapDocumentErrorToProblem(final ServiceException e) {
-    final String detail = e.getMessage();
+    final String detail = Objects.requireNonNullElse(e.getMessage(), "");
     final HttpStatusCode status = GatewayErrorMapper.mapStatus(e.getStatus());
     return GatewayErrorMapper.createProblemDetail(status, detail, e.getStatus().name());
   }
@@ -534,9 +543,9 @@ public final class ResponseMapper {
       final Integer version,
       final Long processInstanceKey,
       final String tenantId,
-      final Map<String, Object> variables,
-      final Set<String> tags,
-      final String businessId) {
+      final @Nullable Map<String, Object> variables,
+      final @Nullable Set<String> tags,
+      final @Nullable String businessId) {
     final var response =
         new CreateProcessInstanceResult()
             .processDefinitionKey(KeyUtil.keyToString(processDefinitionKey))
@@ -827,7 +836,7 @@ public final class ResponseMapper {
     brokerInfo.setPartitions(partitionDtos);
   }
 
-  private static String emptyToNull(final String value) {
+  private static @Nullable String emptyToNull(final @Nullable String value) {
     return value == null || value.isEmpty() ? null : value;
   }
 
@@ -852,7 +861,11 @@ public final class ResponseMapper {
     @Override
     public List<ActivatedJob> getJobs() {
       return response.getJobs().stream()
-          .map(j -> new ActivatedJob(KeyUtil.keyToLong(j.getJobKey()), j.getRetries()))
+          .map(
+              j ->
+                  new ActivatedJob(
+                      Objects.requireNonNullElse(KeyUtil.keyToLong(j.getJobKey()), 0L),
+                      j.getRetries()))
           .toList();
     }
 
@@ -867,7 +880,9 @@ public final class ResponseMapper {
       for (final var job : sizeExceedingJobs) {
         try {
           final var key = job.getJobKey();
-          result.add(new ActivatedJob(KeyUtil.keyToLong(key), job.getRetries()));
+          result.add(
+              new ActivatedJob(
+                  Objects.requireNonNullElse(KeyUtil.keyToLong(key), 0L), job.getRetries()));
         } catch (final NumberFormatException ignored) {
           // could happen
           LOG.warn(

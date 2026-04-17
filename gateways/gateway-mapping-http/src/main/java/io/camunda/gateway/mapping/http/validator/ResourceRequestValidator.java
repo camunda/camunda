@@ -21,7 +21,7 @@ public class ResourceRequestValidator {
     return validate(
         violations -> {
           if (request != null) {
-            validateOperationReference(request.getOperationReference().orElse(null), violations);
+            validateOperationReference(request.getOperationReference(), violations);
           }
         });
   }

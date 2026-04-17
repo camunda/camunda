@@ -34,7 +34,7 @@ public class TenantMapper {
                 null,
                 tenantCreateRequest.getTenantId(),
                 tenantCreateRequest.getName(),
-                tenantCreateRequest.getDescription().orElse(null)));
+                tenantCreateRequest.getDescription()));
   }
 
   public Either<ProblemDetail, TenantRequest> toTenantUpdateDto(
@@ -46,7 +46,7 @@ public class TenantMapper {
                 null,
                 tenantId,
                 tenantUpdateRequest.getName(),
-                tenantUpdateRequest.getDescription().orElse(null)));
+                tenantUpdateRequest.getDescription()));
   }
 
   public Either<ProblemDetail, TenantMemberRequest> toTenantMemberRequest(

@@ -141,6 +141,14 @@ public class ApiProtocolModelGenerator {
     Files.createDirectories(packagePath);
     cleanupPreviouslyGeneratedFiles(packagePath);
 
+    final var packageInfoFile = packagePath.resolve("package-info.java");
+    Files.writeString(
+        packageInfoFile,
+        licenseComment + "\n"
+            + "@org.jspecify.annotations.NullMarked\n"
+            + "package " + TARGET_PACKAGE + ";\n",
+        StandardCharsets.UTF_8);
+
     // Phase 1: compute fields for all schemas.
     record SchemaGenPlan(
         SchemaDef schema,
@@ -783,12 +791,13 @@ public class ApiProtocolModelGenerator {
         .setBody("this." + fieldName + " = " + fieldName + ";\nreturn this;");
     fluent.addParameter(fieldType, fieldName).addAnnotation("org.jspecify.annotations.Nullable");
 
-    // Getter (returns Optional<T> for nullable fields)
+    // Getter returns @Nullable T directly.
     var getter = javaClass.addMethod()
         .setName("get" + capitalizeIdentifier(fieldName))
-        .setReturnType("Optional<" + fieldType + ">")
+        .setReturnType(fieldType)
         .setPublic()
-        .setBody("return Optional.ofNullable(" + fieldName + ");");
+        .setBody("return " + fieldName + ";");
+    getter.addAnnotation("org.jspecify.annotations.Nullable");
     getter.addAnnotation("io.swagger.v3.oas.annotations.media.Schema")
         .setStringValue("name", fieldName);
     getter.addAnnotation("com.fasterxml.jackson.annotation.JsonProperty")
@@ -1370,9 +1379,9 @@ public record %s(%s value) implements %s {
       if (ft.contains("java.util.Map")) javaClass.addImport("java.util.Map");
     }
 
-    // Add Optional import if any field is nullable (getters return Optional<T>).
+    // @Nullable import if any field is nullable (getters return raw T with @Nullable).
     if (fields.stream().anyMatch(ApiProtocolModelGenerator::isNullAssignableField)) {
-      javaClass.addImport("java.util.Optional");
+      javaClass.addImport("org.jspecify.annotations.Nullable");
     }
 
     // Private fields
@@ -1412,14 +1421,15 @@ public record %s(%s value) implements %s {
         fluentParam.addAnnotation("org.jspecify.annotations.Nullable");
       }
 
-      // Getter with @Schema and @JsonProperty
+      // Getter with @Schema and @JsonProperty; nullable getters return @Nullable T directly.
       var getter = javaClass.addMethod()
           .setName(getterName)
-          .setReturnType(nullable ? "Optional<" + fieldType + ">" : fieldType)
+          .setReturnType(fieldType)
           .setPublic()
-          .setBody(nullable
-              ? "return Optional.ofNullable(" + f.identifier() + ");"
-              : "return " + f.identifier() + ";");
+          .setBody("return " + f.identifier() + ";");
+      if (nullable) {
+        getter.addAnnotation("org.jspecify.annotations.Nullable");
+      }
       var schemaAnn = getter.addAnnotation("io.swagger.v3.oas.annotations.media.Schema");
       schemaAnn.setStringValue("name", f.name());
       if (f.description() != null) {
@@ -2536,6 +2546,11 @@ public record %s(%s value) implements %s {
       return TypeInfo.scalar("Object");
     }
 
+    // Single-element oneOf at the property level behaves like a direct $ref.
+    if (node.oneOfRefs().size() == 1 && node.oneOfInlineType() == null) {
+      return resolveRefTypeInfo(node.oneOfRefs().getFirst(), currentFile, allSchemas, resolvingStack);
+    }
+
     if ("array".equals(node.type())) {
       final var itemType =
           node.items() == null
@@ -2615,6 +2630,15 @@ public record %s(%s value) implements %s {
         && isFilterPropertySchema(schema)) {
       final var strictType = dtoClassName(schemaName);
       return TypeInfo.selfDeserializingObject(strictType, schemaName);
+    }
+
+    // Non-filter polymorphic schemas (pure oneOf) become sealed interfaces; resolve
+    // references to them using the sealed interface type instead of falling through
+    // to Object. Skip oneOf schemas that are actually typed string aliases (type: string
+    // + oneOf branches of typed keys, e.g. ResourceKey) — those remain String.
+    if (isPolymorphicSchema(schema) && !"string".equals(schema.node().type())) {
+      final var strictType = dtoClassName(schemaName);
+      return TypeInfo.strictObject(strictType, schemaName);
     }
 
     if (!schema.node().enumValues().isEmpty()) {
@@ -3168,7 +3192,7 @@ public record %s(%s value) implements %s {
     javaClass.addAnnotation("jakarta.annotation.Generated")
         .setStringValue("value", "io.camunda.gateway.protocol.model.tools.ApiProtocolModelGenerator");
 
-    javaClass.addImport("java.util.Optional");
+    javaClass.addImport("org.jspecify.annotations.Nullable");
 
     // Fields: limit, from, after, before
     record PageField(String name, String type) {}
@@ -3205,7 +3229,7 @@ public record %s(%s value) implements %s {
     javaClass.addAnnotation("jakarta.annotation.Generated")
         .setStringValue("value", "io.camunda.gateway.protocol.model.tools.ApiProtocolModelGenerator");
 
-    javaClass.addImport("java.util.Optional");
+    javaClass.addImport("org.jspecify.annotations.Nullable");
 
     javaClass.addField().setName("limit").setType("Integer").setPrivate()
         .addAnnotation("org.jspecify.annotations.Nullable");
@@ -3240,7 +3264,7 @@ public record %s(%s value) implements %s {
     final var sortType = sortContractClass != null
         ? "List<" + sortContractClass + ">" : "List<Object>";
     javaClass.addImport("java.util.List");
-    javaClass.addImport("java.util.Optional");
+    javaClass.addImport("org.jspecify.annotations.Nullable");
     final String filterType;
     if (filterContractClass != null) {
       filterType = filterContractClass.contains(".")

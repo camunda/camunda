@@ -14,10 +14,11 @@ import io.camunda.zeebe.util.TagUtil;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
+import org.jspecify.annotations.Nullable;
 
 public class TagsValidator {
 
-  public static List<String> validate(final Set<String> tags) {
+  public static List<String> validate(final @Nullable Set<String> tags) {
     final List<String> errors = new ArrayList<>();
     if (tags == null || tags.isEmpty()) {
       return errors;
