@@ -17,16 +17,12 @@ package io.camunda.process.test.impl.runtime;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.client.CamundaClientConfiguration;
 import io.camunda.process.test.api.CamundaProcessTestRuntimeMode;
 import io.camunda.process.test.impl.runtime.properties.CamundaContainerRuntimeProperties;
 import io.camunda.process.test.impl.runtime.properties.ConnectorsContainerRuntimeProperties;
 import io.camunda.process.test.impl.runtime.properties.CoverageReportProperties;
-import io.camunda.process.test.impl.runtime.properties.RemoteRuntimeClientAuthProperties;
-import io.camunda.process.test.impl.runtime.properties.RemoteRuntimeClientAuthProperties.AuthMethod;
-import io.camunda.process.test.impl.runtime.properties.RemoteRuntimeClientCloudProperties;
-import io.camunda.process.test.impl.runtime.properties.RemoteRuntimeClientProperties.ClientMode;
 import java.net.URI;
-import java.nio.file.Paths;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -99,15 +95,6 @@ public class ContainerRuntimePropertiesUtilTest {
     assertThat(propertiesUtil.getConnectorsDockerImageName())
         .isEqualTo("camunda/connectors-bundle");
     assertThat(propertiesUtil.getConnectorsDockerImageVersion()).isEqualTo("8.8-SNAPSHOT");
-    assertThat(propertiesUtil.getRemoteRuntimeProperties().getRemoteClientProperties().getMode())
-        .isEqualTo(ClientMode.selfManaged);
-    assertThat(
-            propertiesUtil
-                .getRemoteRuntimeProperties()
-                .getRemoteClientProperties()
-                .getAuthProperties()
-                .getMethod())
-        .isEqualTo(AuthMethod.none);
   }
 
   @ParameterizedTest
@@ -413,45 +400,6 @@ public class ContainerRuntimePropertiesUtilTest {
       assertThat(propertiesUtil.getConnectorsDockerImageName())
           .isEqualTo("camunda/connectors-bundle");
       assertThat(propertiesUtil.getConnectorsDockerImageVersion()).isEqualTo("8.8.3");
-
-      final RemoteRuntimeClientCloudProperties cloudProps =
-          propertiesUtil
-              .getRemoteRuntimeProperties()
-              .getRemoteClientProperties()
-              .getCloudProperties();
-      assertThat(cloudProps.getClusterId()).isEqualTo("clusterId");
-      assertThat(cloudProps.getRegion()).isEqualTo("region");
-
-      final RemoteRuntimeClientAuthProperties authProps =
-          propertiesUtil
-              .getRemoteRuntimeProperties()
-              .getRemoteClientProperties()
-              .getAuthProperties();
-
-      assertThat(authProps.getMethod()).isEqualTo(AuthMethod.oidc);
-      assertThat(authProps.getUsername()).isEqualTo("username");
-      assertThat(authProps.getPassword()).isEqualTo("password");
-      assertThat(authProps.getClientId()).isEqualTo("clientId");
-      assertThat(authProps.getClientSecret()).isEqualTo("clientSecret");
-      assertThat(authProps.getTokenUrl()).isEqualTo(URI.create("http://example.com"));
-      assertThat(authProps.getAudience()).isEqualTo("audience");
-      assertThat(authProps.getScope()).isEqualTo("scope");
-      assertThat(authProps.getResource()).isEqualTo("resource");
-      assertThat(authProps.getKeystorePath()).isEqualTo(Paths.get("/path/to/keystore"));
-      assertThat(authProps.getKeystorePassword()).isEqualTo("keystorePassword");
-      assertThat(authProps.getKeystoreKeyPassword()).isEqualTo("keystoreKeyPassword");
-      assertThat(authProps.getTruststorePath()).isEqualTo(Paths.get("/path/to/truststore"));
-      assertThat(authProps.getTruststorePassword()).isEqualTo("truststorePassword");
-      assertThat(authProps.getCredentialsCachePath()).isEqualTo("/path/to/credentialsCache");
-      assertThat(authProps.getConnectTimeout()).isEqualTo(Duration.ofSeconds(5));
-      assertThat(authProps.getReadTimeout()).isEqualTo(Duration.ofSeconds(6));
-      assertThat(authProps.getCredentialsCachePath()).isEqualTo("/path/to/credentialsCache");
-      assertThat(authProps.getClientAssertionKeystorePath())
-          .isEqualTo(Paths.get("/path/to/assertion/keystore"));
-      assertThat(authProps.getClientAssertionKeystorePassword()).isEqualTo("keystorePassword");
-      assertThat(authProps.getClientAssertionKeystoreKeyAlias()).isEqualTo("keystoreKeyAlias");
-      assertThat(authProps.getClientAssertionKeystoreKeyPassword())
-          .isEqualTo("keystoreKeyPassword");
     }
 
     @Test
@@ -493,10 +441,6 @@ public class ContainerRuntimePropertiesUtilTest {
           .isEqualTo(URI.create("http://0.0.0.0:8080"));
       assertThat(propertiesUtil.getRemoteConnectorsRestApiAddress())
           .isEqualTo(URI.create("http://0.0.0.0:8085"));
-      assertThat(propertiesUtil.getRemoteClientGrpcAddress())
-          .isEqualTo(URI.create("http://0.0.0.0:8088"));
-      assertThat(propertiesUtil.getRemoteClientRestAddress())
-          .isEqualTo(URI.create("http://0.0.0.0:8089"));
       assertThat(propertiesUtil.getRemoteRuntimeConnectionTimeout())
           .isEqualTo(Duration.ofSeconds(30));
 
@@ -508,6 +452,22 @@ public class ContainerRuntimePropertiesUtilTest {
           .isEqualTo("custom/coverage-report");
       assertThat(coverageReportProperties.getCoverageExcludedProcesses())
           .containsExactlyInAnyOrder("process1", "process2");
+    }
+
+    @Test
+    public void shouldHaveCustomClientProperties() {
+      // when
+      final ContainerRuntimePropertiesUtil propertiesUtil =
+          ContainerRuntimePropertiesUtil.readProperties(
+              "/containerRuntimePropertiesUtil/", emptyGitProperties);
+
+      // then: verify via the client builder factory (which now uses standard ClientProperties)
+      final CamundaClientConfiguration clientBuilder =
+          propertiesUtil.getCamundaClientBuilderFactory().get().build().getConfiguration();
+
+      // The backwards-compatible remote.client.grpcAddress and remote.client.restAddress are used
+      assertThat(clientBuilder.getRestAddress()).isEqualTo(URI.create("http://0.0.0.0:8089"));
+      assertThat(clientBuilder.getGrpcAddress()).isEqualTo(URI.create("http://0.0.0.0:8088"));
     }
   }
 }

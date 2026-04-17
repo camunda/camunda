@@ -18,15 +18,6 @@ package io.camunda.process.test.impl;
 import static java.util.Map.entry;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.client.CamundaClient;
-import io.camunda.client.CamundaClientBuilder;
-import io.camunda.client.CamundaClientConfiguration;
-import io.camunda.client.impl.oauth.OAuthCredentialsProvider;
-import io.camunda.client.spring.properties.CamundaClientAuthProperties;
-import io.camunda.client.spring.properties.CamundaClientCloudProperties;
-import io.camunda.client.spring.properties.CamundaClientProperties;
-import io.camunda.client.spring.properties.CamundaClientProperties.ClientMode;
-import io.camunda.process.test.api.CamundaClientBuilderFactory;
 import io.camunda.process.test.api.CamundaProcessTestRuntimeMode;
 import io.camunda.process.test.impl.configuration.CamundaProcessTestRuntimeConfiguration;
 import io.camunda.process.test.impl.configuration.RemoteConfiguration;
@@ -36,12 +27,13 @@ import io.camunda.process.test.impl.runtime.CamundaProcessTestRuntime;
 import io.camunda.process.test.impl.runtime.CamundaProcessTestRuntimeBuilder;
 import io.camunda.process.test.impl.runtime.CamundaProcessTestRuntimeDefaults;
 import io.camunda.process.test.impl.runtime.CamundaSpringProcessTestRuntimeBuilder;
-import io.camunda.process.test.impl.runtime.ContainerRuntimePorts;
 import java.net.URI;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 
 public class CamundaSpringProcessTestRuntimeBuilderTest {
 
@@ -58,7 +50,24 @@ public class CamundaSpringProcessTestRuntimeBuilderTest {
 
     // then
     assertThat(camundaRuntime).isNotNull().isInstanceOf(CamundaProcessTestContainerRuntime.class);
+  }
 
+  @ParameterizedTest
+  @EnumSource(
+      value = CamundaProcessTestRuntimeMode.class,
+      names = {"MANAGED"})
+  void shouldBuildDefaultRuntime(final CamundaProcessTestRuntimeMode runtimeMode) {
+    // given
+    final CamundaProcessTestRuntimeBuilder runtimeBuilder = new CamundaProcessTestRuntimeBuilder();
+    final CamundaProcessTestRuntimeConfiguration runtimeConfiguration =
+        new CamundaProcessTestRuntimeConfiguration();
+
+    runtimeConfiguration.setRuntimeMode(runtimeMode);
+
+    // when
+    CamundaSpringProcessTestRuntimeBuilder.buildRuntime(runtimeBuilder, runtimeConfiguration);
+
+    // then
     assertThat(runtimeBuilder.getCamundaDockerImageName())
         .isEqualTo(CamundaProcessTestRuntimeDefaults.CAMUNDA_DOCKER_IMAGE_NAME);
     assertThat(runtimeBuilder.getCamundaDockerImageVersion())
@@ -69,12 +78,17 @@ public class CamundaSpringProcessTestRuntimeBuilderTest {
     assertThat(runtimeBuilder.isConnectorsEnabled()).isFalse();
   }
 
-  @Test
-  void shouldConfigureManagedCamundaRuntime() {
+  @ParameterizedTest
+  @EnumSource(
+      value = CamundaProcessTestRuntimeMode.class,
+      names = {"MANAGED"})
+  void shouldConfigureCamundaRuntime(final CamundaProcessTestRuntimeMode runtimeMode) {
     // given
     final CamundaProcessTestRuntimeBuilder runtimeBuilder = new CamundaProcessTestRuntimeBuilder();
     final CamundaProcessTestRuntimeConfiguration runtimeConfiguration =
         new CamundaProcessTestRuntimeConfiguration();
+
+    runtimeConfiguration.setRuntimeMode(runtimeMode);
 
     final Map<String, String> camundaEnvVars =
         Map.ofEntries(entry("env-1", "test-1"), entry("env-2", "test-2"));
@@ -84,7 +98,6 @@ public class CamundaSpringProcessTestRuntimeBuilderTest {
     runtimeConfiguration.setCamundaEnvVars(camundaEnvVars);
     final List<Integer> camundaExposedPorts = List.of(100, 200);
     runtimeConfiguration.setCamundaExposedPorts(camundaExposedPorts);
-
     runtimeConfiguration.setCamundaLoggerName("io.camunda.custom.logger.name");
     runtimeConfiguration.setConnectorsLoggerName("io.camunda.custom.logger.name");
 
@@ -100,12 +113,17 @@ public class CamundaSpringProcessTestRuntimeBuilderTest {
     assertThat(runtimeBuilder.getConnectorsLoggerName()).isEqualTo("io.camunda.custom.logger.name");
   }
 
-  @Test
-  void shouldConfigureManagedConnectorsRuntime() {
+  @ParameterizedTest
+  @EnumSource(
+      value = CamundaProcessTestRuntimeMode.class,
+      names = {"MANAGED"})
+  void shouldConfigureConnectorsRuntime(final CamundaProcessTestRuntimeMode runtimeMode) {
     // given
     final CamundaProcessTestRuntimeBuilder runtimeBuilder = new CamundaProcessTestRuntimeBuilder();
     final CamundaProcessTestRuntimeConfiguration runtimeConfiguration =
         new CamundaProcessTestRuntimeConfiguration();
+
+    runtimeConfiguration.setRuntimeMode(runtimeMode);
 
     final Map<String, String> connectorsEnvVars =
         Map.ofEntries(entry("env-1", "test-1"), entry("env-2", "test-2"));
@@ -154,48 +172,25 @@ public class CamundaSpringProcessTestRuntimeBuilderTest {
         .isEqualTo(CamundaProcessTestRuntimeDefaults.LOCAL_CONNECTORS_REST_API_ADDRESS);
     assertThat(runtimeBuilder.getRemoteRuntimeConnectionTimeout())
         .isEqualTo(CamundaProcessTestRuntimeDefaults.REMOTE_RUNTIME_CONNECTION_TIMEOUT);
-
-    final CamundaClientBuilderFactory remoteCamundaClientBuilderFactory =
-        runtimeBuilder.getRemoteCamundaClientBuilderFactory();
-    final CamundaClientBuilder remoteClientBuilder = remoteCamundaClientBuilderFactory.get();
-    final CamundaClientConfiguration configuration =
-        getCamundaClientConfiguration(remoteClientBuilder);
-
-    assertThat(configuration.getRestAddress())
-        .hasHost("0.0.0.0")
-        .hasPort(ContainerRuntimePorts.CAMUNDA_REST_API)
-        .hasScheme("http");
-
-    assertThat(configuration.getGrpcAddress())
-        .hasHost("0.0.0.0")
-        .hasPort(ContainerRuntimePorts.CAMUNDA_GATEWAY_API)
-        .hasScheme("http");
   }
 
   @Test
-  void shouldConfigureRemoteRuntimeLocal() {
+  void shouldConfigureRemoteRuntimeAddresses() {
     // given
     final CamundaProcessTestRuntimeBuilder runtimeBuilder = new CamundaProcessTestRuntimeBuilder();
     final CamundaProcessTestRuntimeConfiguration runtimeConfiguration =
         new CamundaProcessTestRuntimeConfiguration();
 
-    final URI remoteCamundaRestApiAddress = URI.create("http://camunda.com:1000");
-    final URI remoteCamundaGrpcApiAddress = URI.create("http://camunda.com:2000");
     final URI remoteCamundaMonitoringApiAddress = URI.create("http://camunda.com:3000");
     final URI remoteConnectorsRestApiAddress = URI.create("http://camunda.com:4000");
     final Duration remoteRuntimeConnectionTimeout = Duration.ofSeconds(30);
 
     runtimeConfiguration.setRuntimeMode(CamundaProcessTestRuntimeMode.REMOTE);
-    runtimeConfiguration.getRemote().getClient().setRequestTimeout(Duration.ofHours(1));
 
     final RemoteConfiguration remoteConfiguration = runtimeConfiguration.getRemote();
     remoteConfiguration.setCamundaMonitoringApiAddress(remoteCamundaMonitoringApiAddress);
     remoteConfiguration.setConnectorsRestApiAddress(remoteConnectorsRestApiAddress);
     remoteConfiguration.setRuntimeConnectionTimeout(remoteRuntimeConnectionTimeout);
-
-    final CamundaClientProperties remoteClientProperties = remoteConfiguration.getClient();
-    remoteClientProperties.setRestAddress(remoteCamundaRestApiAddress);
-    remoteClientProperties.setGrpcAddress(remoteCamundaGrpcApiAddress);
 
     // when
     CamundaSpringProcessTestRuntimeBuilder.buildRuntime(runtimeBuilder, runtimeConfiguration);
@@ -207,63 +202,5 @@ public class CamundaSpringProcessTestRuntimeBuilderTest {
         .isEqualTo(remoteConnectorsRestApiAddress);
     assertThat(runtimeBuilder.getRemoteRuntimeConnectionTimeout())
         .isEqualTo(remoteRuntimeConnectionTimeout);
-
-    final CamundaClientBuilderFactory remoteCamundaClientBuilderFactory =
-        runtimeBuilder.getRemoteCamundaClientBuilderFactory();
-    final CamundaClientBuilder remoteClientBuilder = remoteCamundaClientBuilderFactory.get();
-
-    final CamundaClientConfiguration configuration =
-        getCamundaClientConfiguration(remoteClientBuilder);
-
-    assertThat(configuration.getRestAddress()).isEqualTo(remoteCamundaRestApiAddress);
-    assertThat(configuration.getGrpcAddress()).isEqualTo(remoteCamundaGrpcApiAddress);
-    assertThat(configuration.getDefaultRequestTimeout()).isEqualTo(Duration.ofHours(1));
-  }
-
-  @Test
-  void shouldConfigureRemoteRuntimeSaaS() {
-    // given
-    final CamundaProcessTestRuntimeBuilder runtimeBuilder = new CamundaProcessTestRuntimeBuilder();
-    final CamundaProcessTestRuntimeConfiguration runtimeConfiguration =
-        new CamundaProcessTestRuntimeConfiguration();
-
-    runtimeConfiguration.setRuntimeMode(CamundaProcessTestRuntimeMode.REMOTE);
-
-    final RemoteConfiguration remoteConfiguration = runtimeConfiguration.getRemote();
-    final CamundaClientProperties remoteClientProperties = remoteConfiguration.getClient();
-    remoteClientProperties.setMode(ClientMode.saas);
-
-    final CamundaClientCloudProperties cloudProperties = remoteClientProperties.getCloud();
-    cloudProperties.setClusterId("my-cluster");
-    cloudProperties.setRegion("my-region");
-
-    final CamundaClientAuthProperties authProperties = remoteClientProperties.getAuth();
-    authProperties.setClientId("my-client-id");
-    authProperties.setClientSecret("my-client-secret");
-
-    // when
-    CamundaSpringProcessTestRuntimeBuilder.buildRuntime(runtimeBuilder, runtimeConfiguration);
-
-    // then
-    final CamundaClientBuilderFactory remoteCamundaClientBuilderFactory =
-        runtimeBuilder.getRemoteCamundaClientBuilderFactory();
-    final CamundaClientBuilder remoteClientBuilder = remoteCamundaClientBuilderFactory.get();
-
-    final CamundaClientConfiguration configuration =
-        getCamundaClientConfiguration(remoteClientBuilder);
-
-    assertThat(configuration.getRestAddress())
-        .isEqualTo(URI.create("https://my-region.zeebe.camunda.io:443/my-cluster"));
-    assertThat(configuration.getGrpcAddress())
-        .isEqualTo(URI.create("https://my-cluster.my-region.zeebe.camunda.io:443"));
-
-    assertThat(configuration.getCredentialsProvider()).isInstanceOf(OAuthCredentialsProvider.class);
-  }
-
-  private static CamundaClientConfiguration getCamundaClientConfiguration(
-      final CamundaClientBuilder camundaClientBuilder) {
-    try (final CamundaClient camundaClient = camundaClientBuilder.build()) {
-      return camundaClient.getConfiguration();
-    }
   }
 }

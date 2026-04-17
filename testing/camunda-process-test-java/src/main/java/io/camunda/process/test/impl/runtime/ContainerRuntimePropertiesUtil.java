@@ -20,6 +20,7 @@ import static io.camunda.process.test.impl.runtime.util.PropertiesUtil.getProper
 import io.camunda.process.test.api.CamundaClientBuilderFactory;
 import io.camunda.process.test.api.CamundaProcessTestRuntimeMode;
 import io.camunda.process.test.impl.runtime.properties.CamundaContainerRuntimeProperties;
+import io.camunda.process.test.impl.runtime.properties.CamundaProcessTestClientProperties;
 import io.camunda.process.test.impl.runtime.properties.ConnectorsContainerRuntimeProperties;
 import io.camunda.process.test.impl.runtime.properties.CoverageReportProperties;
 import io.camunda.process.test.impl.runtime.properties.RemoteRuntimeProperties;
@@ -52,6 +53,7 @@ public final class ContainerRuntimePropertiesUtil {
   private final ConnectorsContainerRuntimeProperties connectorsContainerRuntimeProperties;
   private final RemoteRuntimeProperties remoteRuntimeProperties;
   private final CoverageReportProperties coverageReportProperties;
+  private final CamundaProcessTestClientProperties camundaProcessTestClientProperties;
 
   private final CamundaProcessTestRuntimeMode runtimeMode;
   private final boolean multiTenancyEnabled;
@@ -75,6 +77,7 @@ public final class ContainerRuntimePropertiesUtil {
         new ConnectorsContainerRuntimeProperties(properties, versionedPropsReader);
     remoteRuntimeProperties = new RemoteRuntimeProperties(properties);
     coverageReportProperties = new CoverageReportProperties(properties);
+    camundaProcessTestClientProperties = new CamundaProcessTestClientProperties(properties);
 
     runtimeMode =
         getPropertyOrDefault(
@@ -202,14 +205,6 @@ public final class ContainerRuntimePropertiesUtil {
     return remoteRuntimeProperties.getConnectorsRestApiAddress();
   }
 
-  public URI getRemoteClientGrpcAddress() {
-    return remoteRuntimeProperties.getRemoteClientProperties().getGrpcAddress();
-  }
-
-  public URI getRemoteClientRestAddress() {
-    return remoteRuntimeProperties.getRemoteClientProperties().getRestAddress();
-  }
-
   public Duration getRemoteRuntimeConnectionTimeout() {
     return remoteRuntimeProperties.getRuntimeConnectionTimeout();
   }
@@ -218,8 +213,14 @@ public final class ContainerRuntimePropertiesUtil {
     return runtimeMode;
   }
 
+  /**
+   * Returns a {@link CamundaClientBuilderFactory} that applies all standard {@link
+   * io.camunda.client.ClientProperties} from the loaded properties file (e.g. {@code
+   * camunda-container-runtime.properties}), with backwards-compatible overrides for remote client
+   * addresses from {@code remote.client.grpcAddress} and {@code remote.client.restAddress}.
+   */
   public CamundaClientBuilderFactory getCamundaClientBuilderFactory() {
-    return remoteRuntimeProperties.getRemoteClientProperties().getClientBuilderFactory();
+    return camundaProcessTestClientProperties.createCamundaClientBuilderFactory();
   }
 
   public RemoteRuntimeProperties getRemoteRuntimeProperties() {

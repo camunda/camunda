@@ -115,7 +115,7 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
         testContext.getApplicationContext().getBean(io.camunda.zeebe.client.api.JsonMapper.class);
 
     // create runtime
-    runtime = buildRuntime(runtimeConfiguration);
+    runtime = buildRuntime(testContext, runtimeConfiguration);
     runtime.start();
 
     camundaManagementClient = createManagementClient(runtimeConfiguration);
@@ -308,7 +308,15 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
   }
 
   private CamundaProcessTestRuntime buildRuntime(
+      final TestContext testContext,
       final CamundaProcessTestRuntimeConfiguration runtimeConfiguration) {
+
+    // Load the CamundaClientBuilderFactory from the Spring context.
+    // This factory applies all camunda.client.* properties (including auth) to the client builder.
+    // It is created in CamundaProcessTestDefaultConfiguration unless overridden by a custom bean.
+    final CamundaClientBuilderFactory clientBuilderFactory =
+        testContext.getApplicationContext().getBean(CamundaClientBuilderFactory.class);
+    containerRuntimeBuilder.withCamundaClientBuilderFactory(clientBuilderFactory);
 
     return CamundaSpringProcessTestRuntimeBuilder.buildRuntime(
         containerRuntimeBuilder, runtimeConfiguration);
