@@ -6,11 +6,5 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-export {
-  mockGetRequest,
-  mockPostRequest,
-  mockPutRequest,
-  mockPatchRequest,
-  mockDeleteRequest,
-  mockXmlGetRequest,
-} from 'modules/mock-server/node';
+export * from './mocks/currentUser';
+export * from './mocks/license';
