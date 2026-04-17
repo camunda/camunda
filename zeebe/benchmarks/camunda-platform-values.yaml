@@ -58,6 +58,10 @@ identity:
   firstUser:
     existingSecret: camunda-credentials
     existingSecretKey: identity-firstuser-password
+  env:
+    # https://docs.camunda.io/docs/8.7/self-managed/identity/miscellaneous/configure-logging/#stackdriver
+    - name: IDENTITY_LOG_APPENDER
+      value: Stackdriver
   nodeSelector:
     topology.kubernetes.io/zone: __AVAILABILITY_ZONE__
   tolerations:
@@ -73,6 +77,10 @@ identityKeycloak:
     adminUser: admin
     existingSecret: camunda-credentials
     passwordSecretKey: identity-keycloak-admin-password
+  extraEnvVars:
+    # https://www.keycloak.org/server/logging#_console
+    - name: KC_LOG_CONSOLE_OUTPUT
+      value: json
   nodeSelector:
     topology.kubernetes.io/zone: __AVAILABILITY_ZONE__
   tolerations:
@@ -105,6 +113,10 @@ optimize:
         ttl: 'P1D'
         processDataCleanup:
           enabled: true
+  env:
+    # https://docs.camunda.io/docs/8.7/self-managed/optimize-deployment/configuration/logging/#google-stackdriver-json-logging
+    - name: JSON_LOGGING
+      value: "true"
   nodeSelector:
     topology.kubernetes.io/zone: __AVAILABILITY_ZONE__
   tolerations:
@@ -127,6 +139,10 @@ operate:
   retention:
     enabled: true
     minimumAge: 1d
+  env:
+    # https://docs.camunda.io/docs/8.7/self-managed/operate-deployment/operate-configuration/#json-logging-configuration
+    - name: OPERATE_LOG_APPENDER
+      value: Stackdriver
   nodeSelector:
     topology.kubernetes.io/zone: __AVAILABILITY_ZONE__
   tolerations:
@@ -148,6 +164,10 @@ tasklist:
   # Retention can be used to define the data in Elasticsearch (ILM).
   retention:
     enabled: true
+  env:
+    # https://docs.camunda.io/docs/8.7/self-managed/tasklist-deployment/tasklist-configuration/#json-logging-configuration
+    - name: TASKLIST_LOG_APPENDER
+      value: Stackdriver
   nodeSelector:
     topology.kubernetes.io/zone: __AVAILABILITY_ZONE__
   tolerations:
@@ -166,6 +186,10 @@ connectors:
     limits:
       cpu: 2
       memory: 2Gi
+  env:
+    # https://docs.camunda.io/docs/self-managed/components/connectors/connectors-configuration/#google-stackdriver-json-logging
+    - name: CONNECTORS_LOG_APPENDER
+      value: stackdriver
   nodeSelector:
     topology.kubernetes.io/zone: __AVAILABILITY_ZONE__
   tolerations:
