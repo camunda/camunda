@@ -36,8 +36,7 @@ public class ResourceExportHandler implements RdbmsExportHandler<Resource> {
   public boolean canExport(final Record<Resource> record) {
     return record.getValueType() == ValueType.RESOURCE
         && record.getIntent() instanceof final ResourceIntent intent
-        && EXPORTABLE_INTENTS.contains(intent)
-        && isRpaResource(record.getValue().getResourceName());
+        && EXPORTABLE_INTENTS.contains(intent);
   }
 
   @Override
@@ -62,9 +61,5 @@ public class ResourceExportHandler implements RdbmsExportHandler<Resource> {
         .tenantId(value.getTenantId())
         .resourceContent(value.getResourceProp())
         .build();
-  }
-
-  private static boolean isRpaResource(final String resourceName) {
-    return resourceName != null && resourceName.endsWith(".rpa");
   }
 }

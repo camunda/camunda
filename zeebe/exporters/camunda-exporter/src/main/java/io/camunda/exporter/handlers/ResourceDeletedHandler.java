@@ -38,8 +38,7 @@ public class ResourceDeletedHandler implements ExportHandler<DeployedResourceEnt
   @Override
   public boolean handlesRecord(final Record<Resource> record) {
     return getHandledValueType().equals(record.getValueType())
-        && SUPPORTED_INTENT.equals(record.getIntent())
-        && isRpaResource(record.getValue().getResourceName());
+        && SUPPORTED_INTENT.equals(record.getIntent());
   }
 
   @Override
@@ -66,9 +65,5 @@ public class ResourceDeletedHandler implements ExportHandler<DeployedResourceEnt
   @Override
   public String getIndexName() {
     return indexName;
-  }
-
-  private static boolean isRpaResource(final String resourceName) {
-    return resourceName != null && resourceName.endsWith(".rpa");
   }
 }

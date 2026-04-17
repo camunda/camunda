@@ -85,38 +85,6 @@ class ResourceExportHandlerTest {
   }
 
   @Test
-  void shouldNotExportNonRpaResourceName() {
-    // given
-    final Resource value =
-        ImmutableResource.builder()
-            .from(factory.generateObject(Resource.class))
-            .withResourceName("process.bpmn")
-            .build();
-    final Record<Resource> record =
-        factory.generateRecord(
-            ValueType.RESOURCE, r -> r.withIntent(ResourceIntent.CREATED).withValue(value));
-
-    // when - then
-    assertThat(handler.canExport(record)).isFalse();
-  }
-
-  @Test
-  void shouldNotExportNullResourceName() {
-    // given
-    final Resource value =
-        ImmutableResource.builder()
-            .from(factory.generateObject(Resource.class))
-            .withResourceName(null)
-            .build();
-    final Record<Resource> record =
-        factory.generateRecord(
-            ValueType.RESOURCE, r -> r.withIntent(ResourceIntent.CREATED).withValue(value));
-
-    // when - then
-    assertThat(handler.canExport(record)).isFalse();
-  }
-
-  @Test
   void shouldHandleCreatedRecord() {
     // given
     final Resource value =

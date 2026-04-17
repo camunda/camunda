@@ -78,22 +78,6 @@ public class ResourceDeletedHandlerTest {
   }
 
   @Test
-  void shouldNotHandleRecordForNonRpaResourceName() {
-    // given
-    final Resource value =
-        ImmutableResource.builder()
-            .from(factory.generateObject(Resource.class))
-            .withResourceName("process.bpmn")
-            .build();
-    final Record<Resource> record =
-        factory.generateRecord(
-            ValueType.RESOURCE, r -> r.withIntent(ResourceIntent.DELETED).withValue(value));
-
-    // when - then
-    assertThat(underTest.handlesRecord(record)).isFalse();
-  }
-
-  @Test
   void shouldGenerateIds() {
     // given
     final Resource value =
