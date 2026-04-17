@@ -8,11 +8,13 @@
 package io.camunda.gateway.mcp.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import io.camunda.gateway.protocol.model.simple.VariableFilter;
 
 /**
- * MCP-specific variable filter modifying the {@link VariableFilter} to hide fields from MCP clients
- * to avoid unnecessary context bloat.
+ * MCP-specific user task assignment request that hides the assignee field from the MCP JSON schema.
+ *
+ * <p>The assignee is exposed as a separate root-level tool parameter with its own description. This
+ * class accepts only the options (allowOverride and action), allowing us to reuse the schema
+ * descriptions from the API spec without duplication.
  */
-@JsonIgnoreProperties("tenantId")
-public interface McpVariableFilter {}
+@JsonIgnoreProperties("assignee")
+public interface McpUserTaskAssignmentRequest {}

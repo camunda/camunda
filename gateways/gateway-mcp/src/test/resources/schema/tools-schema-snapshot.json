@@ -191,15 +191,14 @@
                 },
                 "order": {
                   "type": "string",
+                  "default": "ASC",
                   "enum": [
                     "ASC",
                     "DESC"
-                  ]
+                  ],
+                  "description": "The order in which to sort the related field."
                 }
-              },
-              "required": [
-                "field"
-              ]
+              }
             }
           }
         },
@@ -342,15 +341,14 @@
                 },
                 "order": {
                   "type": "string",
+                  "default": "ASC",
                   "enum": [
                     "ASC",
                     "DESC"
-                  ]
+                  ],
+                  "description": "The order in which to sort the related field."
                 }
-              },
-              "required": [
-                "field"
-              ]
+              }
             }
           }
         },
@@ -600,15 +598,14 @@
                 },
                 "order": {
                   "type": "string",
+                  "default": "ASC",
                   "enum": [
                     "ASC",
                     "DESC"
-                  ]
+                  ],
+                  "description": "The order in which to sort the related field."
                 }
-              },
-              "required": [
-                "field"
-              ]
+              }
             }
           }
         },
@@ -717,15 +714,14 @@
                 },
                 "order": {
                   "type": "string",
+                  "default": "ASC",
                   "enum": [
                     "ASC",
                     "DESC"
-                  ]
+                  ],
+                  "description": "The order in which to sort the related field."
                 }
-              },
-              "required": [
-                "field"
-              ]
+              }
             },
             "description": "Sort criteria"
           },
@@ -972,15 +968,14 @@
                 },
                 "order": {
                   "type": "string",
+                  "default": "ASC",
                   "enum": [
                     "ASC",
                     "DESC"
-                  ]
+                  ],
+                  "description": "The order in which to sort the related field."
                 }
-              },
-              "required": [
-                "field"
-              ]
+              }
             }
           }
         },
@@ -1067,15 +1062,14 @@
                 },
                 "order": {
                   "type": "string",
+                  "default": "ASC",
                   "enum": [
                     "ASC",
                     "DESC"
-                  ]
+                  ],
+                  "description": "The order in which to sort the related field."
                 }
-              },
-              "required": [
-                "field"
-              ]
+              }
             },
             "description": "Sort criteria"
           },

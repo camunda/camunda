@@ -112,41 +112,39 @@ class ClusterToolsTest extends OperationalToolsTest {
               .partitionsCount(1)
               .replicationFactor(3)
               .lastCompletedChangeId("1")
-              .brokers(
-                  List.of(
-                      new BrokerInfo()
-                          .nodeId(0)
-                          .host("localhost")
-                          .port(26501)
-                          .version(version)
-                          .partitions(
-                              List.of(
-                                  new Partition()
-                                      .partitionId(1)
-                                      .health(HealthEnum.HEALTHY)
-                                      .role(RoleEnum.LEADER))),
-                      new BrokerInfo()
-                          .nodeId(1)
-                          .host("localhost")
-                          .port(26502)
-                          .version(version)
-                          .partitions(
-                              List.of(
-                                  new Partition()
-                                      .partitionId(1)
-                                      .health(HealthEnum.HEALTHY)
-                                      .role(RoleEnum.FOLLOWER))),
-                      new BrokerInfo()
-                          .nodeId(2)
-                          .host("localhost")
-                          .port(26503)
-                          .version(version)
-                          .partitions(
-                              List.of(
-                                  new Partition()
-                                      .partitionId(1)
-                                      .health(HealthEnum.UNHEALTHY)
-                                      .role(RoleEnum.INACTIVE)))));
+              .addBrokersItem(
+                  new BrokerInfo()
+                      .nodeId(0)
+                      .host("localhost")
+                      .port(26501)
+                      .version(version)
+                      .addPartitionsItem(
+                          new Partition()
+                              .partitionId(1)
+                              .health(HealthEnum.HEALTHY)
+                              .role(RoleEnum.LEADER)))
+              .addBrokersItem(
+                  new BrokerInfo()
+                      .nodeId(1)
+                      .host("localhost")
+                      .port(26502)
+                      .version(version)
+                      .addPartitionsItem(
+                          new Partition()
+                              .partitionId(1)
+                              .health(HealthEnum.HEALTHY)
+                              .role(RoleEnum.FOLLOWER)))
+              .addBrokersItem(
+                  new BrokerInfo()
+                      .nodeId(2)
+                      .host("localhost")
+                      .port(26503)
+                      .version(version)
+                      .addPartitionsItem(
+                          new Partition()
+                              .partitionId(1)
+                              .health(HealthEnum.UNHEALTHY)
+                              .role(RoleEnum.INACTIVE)));
       final var topologyResponse =
           new Topology(
               List.of(

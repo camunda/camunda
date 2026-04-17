@@ -171,6 +171,18 @@ public class RequestMapper {
   }
 
   public static Either<ProblemDetail, AssignUserTaskRequest> toUserTaskAssignmentRequest(
+      final io.camunda.gateway.protocol.model.simple.UserTaskAssignmentRequest assignmentRequest,
+      final long userTaskKey) {
+
+    return toUserTaskAssignmentRequest(
+        new UserTaskAssignmentRequest()
+            .action(assignmentRequest.getAction())
+            .allowOverride(assignmentRequest.getAllowOverride())
+            .assignee(assignmentRequest.getAssignee()),
+        userTaskKey);
+  }
+
+  public static Either<ProblemDetail, AssignUserTaskRequest> toUserTaskAssignmentRequest(
       final UserTaskAssignmentRequest assignmentRequest, final long userTaskKey) {
 
     final String actionValue =

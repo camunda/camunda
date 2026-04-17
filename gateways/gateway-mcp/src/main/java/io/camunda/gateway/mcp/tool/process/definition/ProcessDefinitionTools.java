@@ -12,18 +12,12 @@ import static io.camunda.gateway.mcp.tool.ToolDescriptions.PROCESS_DEFINITION_KE
 import static io.camunda.gateway.mcp.tool.ToolDescriptions.PROCESS_DEFINITION_KEY_NOT_NULL_MESSAGE;
 import static io.camunda.gateway.mcp.tool.ToolDescriptions.PROCESS_DEFINITION_KEY_POSITIVE_MESSAGE;
 
-import io.camunda.gateway.mapping.http.GatewayErrorMapper;
 import io.camunda.gateway.mapping.http.search.SearchQueryRequestMapper;
 import io.camunda.gateway.mapping.http.search.SearchQueryResponseMapper;
 import io.camunda.gateway.mcp.config.tool.CamundaMcpTool;
 import io.camunda.gateway.mcp.config.tool.McpToolParamsUnwrapped;
 import io.camunda.gateway.mcp.mapper.CallToolResultMapper;
-import io.camunda.gateway.mcp.model.McpProcessDefinitionFilter;
-import io.camunda.gateway.mcp.model.McpProcessDefinitionSearchQuery;
-import io.camunda.gateway.protocol.model.ProcessDefinitionFilter;
-import io.camunda.gateway.protocol.model.ProcessDefinitionSearchQuery;
-import io.camunda.gateway.protocol.model.StringFilterProperty;
-import io.camunda.gateway.protocol.model.StringFilterPropertyPlainValue;
+import io.camunda.gateway.protocol.model.simple.ProcessDefinitionSearchQuery;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.ProcessDefinitionServices;
 import io.camunda.service.exception.ServiceException;
@@ -34,7 +28,6 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import org.springframework.ai.mcp.annotation.McpTool.McpAnnotations;
 import org.springframework.ai.mcp.annotation.McpToolParam;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import org.springframework.validation.annotation.Validated;
 
@@ -56,11 +49,9 @@ public class ProcessDefinitionTools {
       description = "Search for process definitions. " + EVENTUAL_CONSISTENCY_NOTE,
       annotations = @McpAnnotations(readOnlyHint = true))
   public CallToolResult searchProcessDefinitions(
-      @McpToolParamsUnwrapped @Valid final McpProcessDefinitionSearchQuery query) {
+      @McpToolParamsUnwrapped @Valid final ProcessDefinitionSearchQuery query) {
     try {
-      final var strictRequest = toStrict(query);
-      final var processDefinitionQuery =
-          SearchQueryRequestMapper.toProcessDefinitionQuery(strictRequest);
+      final var processDefinitionQuery = SearchQueryRequestMapper.toProcessDefinitionQuery(query);
       if (processDefinitionQuery.isLeft()) {
         return CallToolResultMapper.mapProblemToResult(processDefinitionQuery.getLeft());
       }
@@ -70,10 +61,6 @@ public class ProcessDefinitionTools {
               processDefinitionServices.search(
                   processDefinitionQuery.get(),
                   authenticationProvider.getCamundaAuthentication())));
-    } catch (final IllegalArgumentException e) {
-      return CallToolResultMapper.mapProblemToResult(
-          GatewayErrorMapper.createProblemDetail(
-              HttpStatus.BAD_REQUEST, e.getMessage(), "INVALID_ARGUMENT"));
     } catch (final Exception e) {
       return CallToolResultMapper.mapErrorToResult(e);
     }
@@ -120,34 +107,5 @@ public class ProcessDefinitionTools {
     } catch (final Exception e) {
       return CallToolResultMapper.mapErrorToResult(e);
     }
-  }
-
-  // -- Facade → Strict contract conversion --
-
-  private static ProcessDefinitionSearchQuery toStrict(
-      final McpProcessDefinitionSearchQuery query) {
-    return new ProcessDefinitionSearchQuery()
-        .page(query.page())
-        .sort(query.sort())
-        .filter(toStrictFilter(query.filter()));
-  }
-
-  private static ProcessDefinitionFilter toStrictFilter(final McpProcessDefinitionFilter filter) {
-    if (filter == null) {
-      return null;
-    }
-    return new ProcessDefinitionFilter()
-        .name(wrapString(filter.name()))
-        .isLatestVersion(filter.isLatestVersion())
-        .resourceName(filter.resourceName())
-        .version(filter.version())
-        .versionTag(filter.versionTag())
-        .processDefinitionId(wrapString(filter.processDefinitionId()))
-        .processDefinitionKey(filter.processDefinitionKey())
-        .hasStartForm(filter.hasStartForm());
-  }
-
-  private static StringFilterProperty wrapString(final String value) {
-    return value != null ? new StringFilterPropertyPlainValue(value) : null;
   }
 }

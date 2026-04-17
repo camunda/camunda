@@ -7,46 +7,12 @@
  */
 package io.camunda.gateway.mcp.model;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonPropertyDescription;
-import io.camunda.gateway.protocol.model.IncidentErrorTypeEnum;
-import io.camunda.gateway.protocol.model.IncidentStateEnum;
-import io.swagger.v3.oas.annotations.media.Schema;
-import io.swagger.v3.oas.annotations.media.Schema.RequiredMode;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import io.camunda.gateway.protocol.model.simple.IncidentFilter;
 
 /**
- * MCP-specific incident filter facade record. Declares only the fields exposed to MCP clients with
- * flat Java types (no filter property wrappers). Converted to strict contract types before passing
- * to the mapping layer.
+ * MCP-specific Incident filter modifying the {@link IncidentFilter} to hide fields from MCP clients
+ * to avoid unnecessary context bloat.
  */
-@JsonInclude(JsonInclude.Include.ALWAYS)
-public record McpIncidentFilter(
-    @JsonProperty
-        @JsonPropertyDescription("Date of incident creation.")
-        @Schema(requiredMode = RequiredMode.NOT_REQUIRED, defaultValue = "##default")
-        McpDateRange creationTime,
-    @JsonProperty
-        @JsonPropertyDescription("The element ID associated to this incident.")
-        @Schema(requiredMode = RequiredMode.NOT_REQUIRED, defaultValue = "##default")
-        String elementId,
-    @JsonProperty
-        @JsonPropertyDescription("Incident error type with a defined set of values.")
-        @Schema(requiredMode = RequiredMode.NOT_REQUIRED, defaultValue = "##default")
-        IncidentErrorTypeEnum errorType,
-    @JsonProperty
-        @JsonPropertyDescription("The process definition ID associated to this incident.")
-        @Schema(requiredMode = RequiredMode.NOT_REQUIRED, defaultValue = "##default")
-        String processDefinitionId,
-    @JsonProperty
-        @JsonPropertyDescription("The process definition key associated to this incident.")
-        @Schema(requiredMode = RequiredMode.NOT_REQUIRED, defaultValue = "##default")
-        String processDefinitionKey,
-    @JsonProperty
-        @JsonPropertyDescription("The process instance key associated to this incident.")
-        @Schema(requiredMode = RequiredMode.NOT_REQUIRED, defaultValue = "##default")
-        String processInstanceKey,
-    @JsonProperty
-        @JsonPropertyDescription("State of this incident with a defined set of values.")
-        @Schema(requiredMode = RequiredMode.NOT_REQUIRED, defaultValue = "##default")
-        IncidentStateEnum state) {}
+@JsonIgnoreProperties({"errorMessage", "tenantId", "incidentKey", "elementInstanceKey", "jobKey"})
+public interface McpIncidentFilter {}

@@ -8,33 +8,30 @@
 package io.camunda.gateway.mcp.tool.variable;
 
 import static io.camunda.gateway.mcp.tool.ToolDescriptions.EVENTUAL_CONSISTENCY_NOTE;
+import static io.camunda.gateway.mcp.tool.ToolDescriptions.FILTER_DESCRIPTION;
+import static io.camunda.gateway.mcp.tool.ToolDescriptions.PAGE_DESCRIPTION;
+import static io.camunda.gateway.mcp.tool.ToolDescriptions.SORT_DESCRIPTION;
+import static io.camunda.gateway.mcp.tool.ToolDescriptions.TRUNCATE_VARIABLES_DESCRIPTION;
 import static io.camunda.gateway.mcp.tool.ToolDescriptions.VARIABLE_KEY_DESCRIPTION;
 import static io.camunda.gateway.mcp.tool.ToolDescriptions.VARIABLE_KEY_NOT_NULL_MESSAGE;
 import static io.camunda.gateway.mcp.tool.ToolDescriptions.VARIABLE_KEY_POSITIVE_MESSAGE;
 import static io.camunda.gateway.mcp.tool.ToolDescriptions.VARIABLE_VALUE_RETURN_FORMAT;
 
-import io.camunda.gateway.mapping.http.GatewayErrorMapper;
 import io.camunda.gateway.mapping.http.search.SearchQueryRequestMapper;
 import io.camunda.gateway.mapping.http.search.SearchQueryResponseMapper;
 import io.camunda.gateway.mcp.config.tool.CamundaMcpTool;
-import io.camunda.gateway.mcp.config.tool.McpToolParamsUnwrapped;
 import io.camunda.gateway.mcp.mapper.CallToolResultMapper;
-import io.camunda.gateway.mcp.model.McpVariableFilter;
-import io.camunda.gateway.mcp.model.McpVariableSearchQuery;
-import io.camunda.gateway.protocol.model.StringFilterProperty;
-import io.camunda.gateway.protocol.model.StringFilterPropertyPlainValue;
-import io.camunda.gateway.protocol.model.VariableFilter;
-import io.camunda.gateway.protocol.model.VariableKeyFilterPropertyPlainValue;
-import io.camunda.gateway.protocol.model.VariableSearchQuery;
+import io.camunda.gateway.protocol.model.VariableSearchQuerySortRequest;
+import io.camunda.gateway.protocol.model.simple.SearchQueryPageRequest;
+import io.camunda.gateway.protocol.model.simple.VariableFilter;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.VariableServices;
 import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
-import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
+import java.util.List;
 import org.springframework.ai.mcp.annotation.McpTool.McpAnnotations;
 import org.springframework.ai.mcp.annotation.McpToolParam;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import org.springframework.validation.annotation.Validated;
 
@@ -57,24 +54,25 @@ public class VariableTools {
           "Search for variables. " + VARIABLE_VALUE_RETURN_FORMAT + " " + EVENTUAL_CONSISTENCY_NOTE,
       annotations = @McpAnnotations(readOnlyHint = true))
   public CallToolResult searchVariables(
-      @McpToolParamsUnwrapped @Valid final McpVariableSearchQuery query) {
+      @McpToolParam(description = FILTER_DESCRIPTION, required = false) final VariableFilter filter,
+      @McpToolParam(description = SORT_DESCRIPTION, required = false)
+          final List<VariableSearchQuerySortRequest> sort,
+      @McpToolParam(description = PAGE_DESCRIPTION, required = false)
+          final SearchQueryPageRequest page,
+      @McpToolParam(description = TRUNCATE_VARIABLES_DESCRIPTION, required = false)
+          final Boolean truncateValues) {
     try {
-      final var strictRequest = toStrict(query);
-      final var variableSearchQuery = SearchQueryRequestMapper.toVariableQuery(strictRequest);
+      final var variableSearchQuery = SearchQueryRequestMapper.toVariableQuery(filter, page, sort);
       if (variableSearchQuery.isLeft()) {
         return CallToolResultMapper.mapProblemToResult(variableSearchQuery.getLeft());
       }
 
-      final boolean shouldTruncate = query.truncateValues() == null || query.truncateValues();
+      final boolean shouldTruncate = truncateValues == null || truncateValues;
       return CallToolResultMapper.from(
           SearchQueryResponseMapper.toVariableSearchQueryResponse(
               variableServices.search(
                   variableSearchQuery.get(), authenticationProvider.getCamundaAuthentication()),
               shouldTruncate));
-    } catch (final IllegalArgumentException e) {
-      return CallToolResultMapper.mapProblemToResult(
-          GatewayErrorMapper.createProblemDetail(
-              HttpStatus.BAD_REQUEST, e.getMessage(), "INVALID_ARGUMENT"));
     } catch (final Exception e) {
       return CallToolResultMapper.mapErrorToResult(e);
     }
@@ -97,42 +95,5 @@ public class VariableTools {
     } catch (final Exception e) {
       return CallToolResultMapper.mapErrorToResult(e);
     }
-  }
-
-  // -- Facade → Strict contract conversion --
-
-  private static VariableSearchQuery toStrict(final McpVariableSearchQuery query) {
-    return new VariableSearchQuery()
-        .page(query.page())
-        .sort(query.sort())
-        .filter(toStrictFilter(query.filter()));
-  }
-
-  private static VariableFilter toStrictFilter(final McpVariableFilter filter) {
-    if (filter == null) {
-      return null;
-    }
-    return new VariableFilter()
-        .name(wrapString(filter.name()))
-        .value(wrapString(filter.value()))
-        .isTruncated(filter.isTruncated())
-        .variableKey(
-            filter.variableKey() != null
-                ? new VariableKeyFilterPropertyPlainValue(filter.variableKey())
-                : null)
-        .scopeKey(
-            filter.scopeKey() != null
-                ? new io.camunda.gateway.protocol.model.ScopeKeyFilterPropertyPlainValue(
-                    filter.scopeKey())
-                : null)
-        .processInstanceKey(
-            filter.processInstanceKey() != null
-                ? new io.camunda.gateway.protocol.model.ProcessInstanceKeyFilterPropertyPlainValue(
-                    filter.processInstanceKey())
-                : null);
-  }
-
-  private static StringFilterProperty wrapString(final String value) {
-    return value != null ? new StringFilterPropertyPlainValue(value) : null;
   }
 }

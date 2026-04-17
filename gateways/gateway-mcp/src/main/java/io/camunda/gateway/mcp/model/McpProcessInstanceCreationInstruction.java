@@ -8,11 +8,6 @@
 package io.camunda.gateway.mcp.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import io.camunda.gateway.protocol.model.simple.VariableFilter;
 
-/**
- * MCP-specific variable filter modifying the {@link VariableFilter} to hide fields from MCP clients
- * to avoid unnecessary context bloat.
- */
-@JsonIgnoreProperties("tenantId")
-public interface McpVariableFilter {}
+@JsonIgnoreProperties({"operationReference", "startInstructions", "runtimeInstructions"})
+public interface McpProcessInstanceCreationInstruction {}

@@ -516,7 +516,9 @@ class ProcessInstanceToolsTest extends OperationalToolsTest {
       assertThat(actualResult.getProcessDefinitionVersion()).isEqualTo(-1);
       assertThat(actualResult.getProcessInstanceKey()).isEqualTo("456");
       assertThat(actualResult.getTenantId()).isEqualTo("<default>");
-      assertThat(actualResult.getVariables()).isEmpty();
+      // variables are omitted from the response when the broker record does
+      // not carry them (non-await-completion); after deserialization null.
+      assertThat(actualResult.getVariables()).isNull();
       assertThat(actualResult.getTags()).isEmpty();
 
       assertTextContentFallback(result);
@@ -576,7 +578,9 @@ class ProcessInstanceToolsTest extends OperationalToolsTest {
       assertThat(actualResult.getProcessDefinitionVersion()).isEqualTo(7);
       assertThat(actualResult.getProcessInstanceKey()).isEqualTo("456");
       assertThat(actualResult.getTenantId()).isEqualTo("<default>");
-      assertThat(actualResult.getVariables()).isEmpty();
+      // variables are omitted from the response when the broker record does
+      // not carry them (non-await-completion); after deserialization null.
+      assertThat(actualResult.getVariables()).isNull();
       assertThat(actualResult.getTags()).containsExactly("mcp-tool:abc");
 
       assertTextContentFallback(result);
@@ -836,7 +840,9 @@ class ProcessInstanceToolsTest extends OperationalToolsTest {
       assertThat(actualResult.getProcessDefinitionVersion()).isEqualTo(-1);
       assertThat(actualResult.getProcessInstanceKey()).isEqualTo("456");
       assertThat(actualResult.getTenantId()).isEqualTo("tenant-a");
-      assertThat(actualResult.getVariables()).isEmpty();
+      // variables are omitted from the response when the broker record does
+      // not carry them (non-await-completion); after deserialization null.
+      assertThat(actualResult.getVariables()).isNull();
       assertThat(actualResult.getTags()).isEmpty();
 
       assertTextContentFallback(result);
@@ -898,7 +904,9 @@ class ProcessInstanceToolsTest extends OperationalToolsTest {
       assertThat(actualResult.getProcessDefinitionVersion()).isEqualTo(7);
       assertThat(actualResult.getProcessInstanceKey()).isEqualTo("456");
       assertThat(actualResult.getTenantId()).isEqualTo("tenant-a");
-      assertThat(actualResult.getVariables()).isEmpty();
+      // variables are omitted from the response when the broker record does
+      // not carry them (non-await-completion); after deserialization null.
+      assertThat(actualResult.getVariables()).isNull();
       assertThat(actualResult.getTags()).containsExactly("mcp-tool:abc");
 
       assertTextContentFallback(result);

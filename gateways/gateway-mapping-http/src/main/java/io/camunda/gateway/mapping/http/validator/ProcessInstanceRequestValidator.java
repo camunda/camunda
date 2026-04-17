@@ -10,6 +10,7 @@ package io.camunda.gateway.mapping.http.validator;
 import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_ALL_REQUIRED_FIELD;
 import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_AT_LEAST_ONE_FIELD;
 import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_EMPTY_ATTRIBUTE;
+import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_ONLY_ONE_FIELD;
 import static io.camunda.gateway.mapping.http.validator.RequestValidator.validate;
 import static io.camunda.gateway.mapping.http.validator.RequestValidator.validateBusinessId;
 import static io.camunda.gateway.mapping.http.validator.RequestValidator.validateKeyFormat;
@@ -40,6 +41,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Predicate;
+import org.apache.commons.lang3.StringUtils;
 import org.jspecify.annotations.Nullable;
 import org.springframework.http.ProblemDetail;
 
@@ -85,6 +87,42 @@ public class ProcessInstanceRequestValidator {
           validateOperationReference(request.getOperationReference(), violations);
           validateBusinessId(request.getBusinessId(), violations);
           validateTags(request.getTags(), violations);
+        });
+  }
+
+  public static Optional<ProblemDetail> validateSimpleCreateProcessInstanceRequest(
+      final io.camunda.gateway.protocol.model.simple.ProcessInstanceCreationInstruction request) {
+    return validate(
+        violations -> {
+          final var byIdSet = StringUtils.isNotBlank(request.getProcessDefinitionId());
+          final var byKeySet = StringUtils.isNotBlank(request.getProcessDefinitionKey());
+
+          if (!byIdSet && !byKeySet) {
+            violations.add(
+                ERROR_MESSAGE_AT_LEAST_ONE_FIELD.formatted(
+                    List.of("processDefinitionId", "processDefinitionKey")));
+          }
+
+          if (byIdSet && byKeySet) {
+            violations.add(
+                ERROR_MESSAGE_ONLY_ONE_FIELD.formatted(
+                    List.of("processDefinitionId", "processDefinitionKey")));
+          }
+
+          if (byIdSet) {
+            validateProcessDefinitionId(request.getProcessDefinitionId(), violations);
+          }
+
+          final var versionSet =
+              request.getProcessDefinitionVersion() != null
+                  && request.getProcessDefinitionVersion() != -1;
+
+          if (byKeySet && versionSet) {
+            violations.add(
+                "processDefinitionVersion can only be set when using processDefinitionId");
+          }
+
+          validateBusinessId(request.getBusinessId(), violations);
         });
   }
 
