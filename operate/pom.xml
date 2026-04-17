@@ -28,6 +28,7 @@
 
     <skipSurefire>false</skipSurefire>
     <testForkCount>${env.LIMITS_CPU}</testForkCount>
+    <itDatabase>elasticsearch</itDatabase>
     <maven.javadoc.skip>true</maven.javadoc.skip>
   </properties>
 
