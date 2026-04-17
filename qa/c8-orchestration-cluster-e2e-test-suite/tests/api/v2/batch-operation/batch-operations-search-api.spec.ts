@@ -10,6 +10,7 @@ import {expect, test} from '@playwright/test';
 import {deploy} from '../../../../utils/zeebeClient';
 import {
   assertBadRequest,
+  assertInvalidArgument,
   assertStatusCode,
   assertUnauthorizedRequest,
   buildUrl,
@@ -199,7 +200,7 @@ test.describe.parallel('Search Batch Operation Tests', () => {
         },
       });
 
-      await assertBadRequest(res, /page\.(from|limit)/i);
+      await assertInvalidArgument(res, 400, "The value for page.from is '-1' but must be a non-negative number.");
     }).toPass(defaultAssertionOptions);
   });
 

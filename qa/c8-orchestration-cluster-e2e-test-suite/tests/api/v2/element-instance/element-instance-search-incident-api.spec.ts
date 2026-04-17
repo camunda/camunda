@@ -15,6 +15,7 @@ import {
 import {
   assertBadRequest,
   assertForbiddenRequest,
+  assertInvalidArgument,
   assertNotFoundRequest,
   assertStatusCode,
   assertUnauthorizedRequest,
@@ -449,11 +450,7 @@ test.describe('Element Instance Incident Search API', () => {
           },
         },
       );
-      await assertBadRequest(
-        res,
-        'Sort field must not be null.',
-        'INVALID_ARGUMENT',
-      );
+      await assertInvalidArgument(res, 400, "The value for page.limit is '-1' but must be a non-negative number.");
     }).toPass(defaultAssertionOptions);
   });
 });
