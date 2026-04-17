@@ -26,7 +26,11 @@ import Members from "src/pages/roles/detail/members";
 import Groups from "src/pages/roles/detail/groups";
 import MappingRules from "src/pages/roles/detail/mapping-rules";
 import Clients from "src/pages/roles/detail/clients";
+<<<<<<< HEAD
 import { isOIDC } from "src/configuration";
+=======
+import { isProtectedRole } from "src/pages/roles/protected-roles";
+>>>>>>> 7f338111 (feat: Read-only roles)
 
 const Details: FC = () => {
   const navigate = useNavigate();
@@ -59,6 +63,7 @@ const Details: FC = () => {
                 <Stack gap={spacing03}>
                   <Stack orientation="horizontal" gap={spacing01}>
                     <PageHeadline>{role.name}</PageHeadline>
+<<<<<<< HEAD
                     <OverflowMenu ariaLabel={t("openRoleContextMenu")}>
                       <OverflowMenuItem
                         itemText={t("delete")}
@@ -68,6 +73,23 @@ const Details: FC = () => {
                         }}
                       />
                     </OverflowMenu>
+=======
+                    {!isProtectedRole(role.roleId) && (
+                      <OverflowMenu ariaLabel={t("openRoleContextMenu")}>
+                        <OverflowMenuItem
+                          itemText={t("editRole")}
+                          onClick={() => editRole(role)}
+                        />
+                        <OverflowMenuItem
+                          itemText={t("delete")}
+                          isDelete
+                          onClick={() => {
+                            deleteRole(role);
+                          }}
+                        />
+                      </OverflowMenu>
+                    )}
+>>>>>>> 7f338111 (feat: Read-only roles)
                   </Stack>
                   <p>
                     {t("roleId")}: {role.roleId}

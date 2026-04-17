@@ -16,6 +16,16 @@ import EntityList from "src/components/entityList";
 import { useEntityModal } from "src/components/modal/useModal";
 import { AddModal } from "./modals/add-modal";
 import DeleteModal from "./modals/DeleteModal";
+<<<<<<< HEAD
+=======
+import { isProtectedRole } from "src/pages/roles/protected-roles";
+import { DataTableHeader } from "src/components/entityList/EntityList";
+import type {
+  Authorization,
+  PermissionType,
+  ResourceType,
+} from "@camunda/camunda-api-zod-schemas/8.10";
+>>>>>>> 7f338111 (feat: Read-only roles)
 
 type AuthorizationListProps = {
   tab: ResourceType;
@@ -67,6 +77,8 @@ const AuthorizationList: FC<AuthorizationListProps> = ({
               icon: TrashCan,
               isDangerous: true,
               onClick: deleteAuthorization,
+              disabled: ({ ownerType, ownerId }: Authorization) =>
+                ownerType === "ROLE" && isProtectedRole(ownerId),
             },
           ]}
           maxDisplayCellLength={25}

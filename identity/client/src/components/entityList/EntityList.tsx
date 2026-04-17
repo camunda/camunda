@@ -76,7 +76,7 @@ type TextMenuItem<D> = {
   label: string;
   onClick: (entity: D) => void;
   isDangerous?: boolean;
-  disabled?: boolean;
+  disabled?: boolean | ((entity: D) => boolean);
   hidden?: boolean;
 };
 
@@ -326,6 +326,7 @@ const EntityList = <D extends EntityData>({
                             ? value.join(", ")
                             : value;
 
+<<<<<<< HEAD
                           const truncatedValue =
                             displayValue &&
                             displayValue.toString().length >
@@ -344,6 +345,39 @@ const EntityList = <D extends EntityData>({
                             ) : (
                               displayValue
                             );
+=======
+                                if (batchSelection.isSelected(item)) {
+                                  batchSelection.onUnselect(item);
+                                } else {
+                                  batchSelection.onSelect(item);
+                                }
+                              }}
+                            />
+                          )}
+                          {cells.map(({ id: cellId, value }, index) => {
+                            const displayValue = Array.isArray(value)
+                              ? value.join(", ")
+                              : value;
+
+                            const truncatedValue =
+                              displayValue &&
+                              displayValue.toString().length >
+                                maxDisplayCellLength ? (
+                                <StyledToolTip
+                                  label={displayValue}
+                                  autoAlign
+                                  align="bottom"
+                                >
+                                  <TooltipTrigger>
+                                    {displayValue
+                                      .substring(0, maxDisplayCellLength)
+                                      .concat("…")}
+                                  </TooltipTrigger>
+                                </StyledToolTip>
+                              ) : (
+                                displayValue
+                              );
+>>>>>>> 7f338111 (feat: Read-only roles)
 
                           return (
                             <StyledTableCell
@@ -386,6 +420,7 @@ const EntityList = <D extends EntityData>({
                                       onClick,
                                       icon,
                                       isDangerous,
+<<<<<<< HEAD
                                       disabled,
                                     } = menuItem as MenuItem<D>;
 
@@ -420,6 +455,77 @@ const EntityList = <D extends EntityData>({
                         )}
                       </TableRow>
                     ))}
+=======
+                                      disabled: disabledProp,
+                                    } = menuItem as MenuItem<D>;
+                                    const entity = index[rowId];
+                                    const disabled =
+                                      typeof disabledProp === "function"
+                                        ? entity !== undefined
+                                          ? disabledProp(entity)
+                                          : false
+                                        : disabledProp;
+
+                                      const kind: ButtonKind = isDangerous
+                                        ? "danger--ghost"
+                                        : "ghost";
+                                      const hasIconOnly =
+                                        !!icon && !isDangerous;
+
+                                      return (
+                                        <Button
+                                          key={`${label}-${rowId}`}
+                                          kind={kind}
+                                          size="md"
+                                          disabled={disabled}
+                                          hasIconOnly={hasIconOnly}
+                                          renderIcon={icon}
+                                          tooltipAlignment="end"
+                                          iconDescription={label}
+                                          onClick={handleMenuItemClick(
+                                            rowId,
+                                            onClick,
+                                          )}
+                                        >
+                                          {hasIconOnly ? "" : label}
+                                        </Button>
+                                      );
+                                    },
+                                  )}
+                                </Flex>
+                              )}
+                            </TableCell>
+                          )}
+                        </>
+                      );
+
+                      if (!isExpandable) {
+                        return <TableRow key={rowId}>{cellContent}</TableRow>;
+                      }
+
+                      return (
+                        <Fragment key={rowId}>
+                          <TableExpandRow
+                            // > Warning: A props object containing a "key" prop is being spread into JSX.
+                            // A key is already configured in the fragment. Overwriting the
+                            // key prevents the error from being reported.
+                            {...getRowProps({ row })}
+                            key={undefined}
+                          >
+                            {cellContent}
+                          </TableExpandRow>
+                          <TableExpandedRow
+                            colSpan={rowColSpan}
+                            {...getExpandedRowProps({ row })}
+                          >
+                            {isExpanded &&
+                              index[rowId] &&
+                              renderExpandedRow(index[rowId])}
+                          </TableExpandedRow>
+                        </Fragment>
+                      );
+                    })}
+>>>>>>> 7f338111 (feat: Read-only roles)
                   </TableBody>
                 )}
               </Table>
