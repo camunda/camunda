@@ -71,7 +71,7 @@ public class IncidentTools {
       @McpToolParamsUnwrapped @Valid final McpIncidentSearchQuery query) {
     try {
       final var strictRequest = toStrict(query);
-      final var incidentSearchQuery = SearchQueryRequestMapper.toIncidentQueryStrict(strictRequest);
+      final var incidentSearchQuery = SearchQueryRequestMapper.toIncidentQuery(strictRequest);
 
       if (incidentSearchQuery.isLeft()) {
         return CallToolResultMapper.mapProblemToResult(incidentSearchQuery.getLeft());

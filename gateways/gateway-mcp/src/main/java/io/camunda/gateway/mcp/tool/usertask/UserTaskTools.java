@@ -79,7 +79,7 @@ public class UserTaskTools {
       @McpToolParamsUnwrapped @Valid final McpUserTaskSearchQuery query) {
     try {
       final var strictRequest = toStrict(query);
-      final var userTaskSearchQuery = SearchQueryRequestMapper.toUserTaskQueryStrict(strictRequest);
+      final var userTaskSearchQuery = SearchQueryRequestMapper.toUserTaskQuery(strictRequest);
 
       if (userTaskSearchQuery.isLeft()) {
         return CallToolResultMapper.mapProblemToResult(userTaskSearchQuery.getLeft());
@@ -205,7 +205,7 @@ public class UserTaskTools {
               .sort(sort)
               .filter(toStrictVariableFilter(filter));
       final var variableSearchQuery =
-          SearchQueryRequestMapper.toUserTaskEffectiveVariableQueryStrict(strictRequest);
+          SearchQueryRequestMapper.toUserTaskEffectiveVariableQuery(strictRequest);
 
       if (variableSearchQuery.isLeft()) {
         return CallToolResultMapper.mapProblemToResult(variableSearchQuery.getLeft());

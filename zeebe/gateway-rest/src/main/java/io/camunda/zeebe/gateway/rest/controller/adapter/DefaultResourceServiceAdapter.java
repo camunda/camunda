@@ -77,9 +77,9 @@ public class DefaultResourceServiceAdapter implements ResourceServiceAdapter {
   @Override
   public ResponseEntity<Object> deleteResource(
       final Long resourceKey,
-      final DeleteResourceRequest deleteRequestStrict,
+      final DeleteResourceRequest deleteRequest,
       final CamundaAuthentication authentication) {
-    return RequestMapper.toResourceDeletion(resourceKey, deleteRequestStrict)
+    return RequestMapper.toResourceDeletion(resourceKey, deleteRequest)
         .fold(
             RestErrorMapper::mapProblemToResponse,
             mapped ->

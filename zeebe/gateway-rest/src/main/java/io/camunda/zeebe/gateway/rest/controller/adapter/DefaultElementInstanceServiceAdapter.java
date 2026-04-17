@@ -34,9 +34,9 @@ public class DefaultElementInstanceServiceAdapter implements ElementInstanceServ
 
   @Override
   public ResponseEntity<Object> searchElementInstances(
-      final ElementInstanceSearchQuery elementInstanceSearchQueryStrict,
+      final ElementInstanceSearchQuery elementInstanceSearchQuery,
       final CamundaAuthentication authentication) {
-    return SearchQueryRequestMapper.toElementInstanceQueryStrict(elementInstanceSearchQueryStrict)
+    return SearchQueryRequestMapper.toElementInstanceQuery(elementInstanceSearchQuery)
         .fold(
             RestErrorMapper::mapProblemToResponse,
             query -> {
@@ -64,25 +64,25 @@ public class DefaultElementInstanceServiceAdapter implements ElementInstanceServ
   @Override
   public ResponseEntity<Void> createElementInstanceVariables(
       final Long elementInstanceKey,
-      final SetVariableRequest setVariableRequestStrict,
+      final SetVariableRequest setVariableRequest,
       final CamundaAuthentication authentication) {
     return RequestExecutor.executeSync(
         () ->
             elementInstanceServices.setVariables(
                 new ElementInstanceServices.SetVariablesRequest(
                     elementInstanceKey,
-                    setVariableRequestStrict.getVariables(),
-                    setVariableRequestStrict.getLocal().orElse(null),
-                    setVariableRequestStrict.getOperationReference().orElse(null)),
+                    setVariableRequest.getVariables(),
+                    setVariableRequest.getLocal().orElse(null),
+                    setVariableRequest.getOperationReference().orElse(null)),
                 authentication));
   }
 
   @Override
   public ResponseEntity<Object> searchElementInstanceIncidents(
       final Long elementInstanceKey,
-      final IncidentSearchQuery incidentSearchQueryStrict,
+      final IncidentSearchQuery incidentSearchQuery,
       final CamundaAuthentication authentication) {
-    return SearchQueryRequestMapper.toIncidentQueryStrict(incidentSearchQueryStrict)
+    return SearchQueryRequestMapper.toIncidentQuery(incidentSearchQuery)
         .fold(
             RestErrorMapper::mapProblemToResponse,
             query -> {

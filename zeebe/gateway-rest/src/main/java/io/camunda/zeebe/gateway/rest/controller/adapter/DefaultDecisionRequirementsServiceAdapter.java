@@ -34,9 +34,8 @@ public class DefaultDecisionRequirementsServiceAdapter
 
   @Override
   public ResponseEntity<Object> searchDecisionRequirements(
-      final DecisionRequirementsSearchQuery queryStrict,
-      final CamundaAuthentication authentication) {
-    return SearchQueryRequestMapper.toDecisionRequirementsQueryStrict(queryStrict)
+      final DecisionRequirementsSearchQuery query, final CamundaAuthentication authentication) {
+    return SearchQueryRequestMapper.toDecisionRequirementsQuery(query)
         .fold(
             RestErrorMapper::mapProblemToResponse,
             q -> {

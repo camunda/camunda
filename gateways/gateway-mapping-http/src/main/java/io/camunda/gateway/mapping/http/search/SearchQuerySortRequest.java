@@ -7,4 +7,6 @@
  */
 package io.camunda.gateway.mapping.http.search;
 
-public record SearchQuerySortRequest(String field, String order) {}
+import io.camunda.gateway.protocol.model.SortOrderEnum;
+
+public record SearchQuerySortRequest<T>(T field, SortOrderEnum order) {}

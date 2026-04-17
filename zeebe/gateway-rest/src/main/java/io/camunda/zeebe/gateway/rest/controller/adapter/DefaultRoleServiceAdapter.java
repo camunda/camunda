@@ -52,9 +52,9 @@ public class DefaultRoleServiceAdapter implements RoleServiceAdapter {
 
   @Override
   public ResponseEntity<Object> createRole(
-      final RoleCreateRequest roleCreateRequestStrict, final CamundaAuthentication authentication) {
+      final RoleCreateRequest roleCreateRequest, final CamundaAuthentication authentication) {
     return roleMapper
-        .toRoleCreateRequest(roleCreateRequestStrict)
+        .toRoleCreateRequest(roleCreateRequest)
         .fold(
             RestErrorMapper::mapProblemToResponse,
             request ->
@@ -66,9 +66,9 @@ public class DefaultRoleServiceAdapter implements RoleServiceAdapter {
 
   @Override
   public ResponseEntity<Object> searchRoles(
-      final RoleSearchQueryRequest roleSearchQueryRequestStrict,
+      final RoleSearchQueryRequest roleSearchQueryRequest,
       final CamundaAuthentication authentication) {
-    return SearchQueryRequestMapper.toRoleQueryStrict(roleSearchQueryRequestStrict)
+    return SearchQueryRequestMapper.toRoleQuery(roleSearchQueryRequest)
         .fold(
             RestErrorMapper::mapProblemToResponse,
             query -> {
@@ -96,10 +96,10 @@ public class DefaultRoleServiceAdapter implements RoleServiceAdapter {
   @Override
   public ResponseEntity<Object> updateRole(
       final String roleId,
-      final RoleUpdateRequest roleUpdateRequestStrict,
+      final RoleUpdateRequest roleUpdateRequest,
       final CamundaAuthentication authentication) {
     return roleMapper
-        .toRoleUpdateRequest(roleUpdateRequestStrict, roleId)
+        .toRoleUpdateRequest(roleUpdateRequest, roleId)
         .fold(
             RestErrorMapper::mapProblemToResponse,
             request ->
@@ -141,9 +141,9 @@ public class DefaultRoleServiceAdapter implements RoleServiceAdapter {
   @Override
   public ResponseEntity<Object> searchUsersForRole(
       final String roleId,
-      final RoleUserSearchQueryRequest roleUserSearchQueryRequestStrict,
+      final RoleUserSearchQueryRequest roleUserSearchQueryRequest,
       final CamundaAuthentication authentication) {
-    return SearchQueryRequestMapper.toRoleUserQueryStrict(roleUserSearchQueryRequestStrict)
+    return SearchQueryRequestMapper.toRoleMemberQuery(roleUserSearchQueryRequest)
         .fold(
             RestErrorMapper::mapProblemToResponse,
             query -> {
@@ -185,9 +185,9 @@ public class DefaultRoleServiceAdapter implements RoleServiceAdapter {
   @Override
   public ResponseEntity<Object> searchClientsForRole(
       final String roleId,
-      final RoleClientSearchQueryRequest roleClientSearchQueryRequestStrict,
+      final RoleClientSearchQueryRequest roleClientSearchQueryRequest,
       final CamundaAuthentication authentication) {
-    return SearchQueryRequestMapper.toRoleClientQueryStrict(roleClientSearchQueryRequestStrict)
+    return SearchQueryRequestMapper.toRoleMemberQuery(roleClientSearchQueryRequest)
         .fold(
             RestErrorMapper::mapProblemToResponse,
             query -> {
@@ -229,9 +229,9 @@ public class DefaultRoleServiceAdapter implements RoleServiceAdapter {
   @Override
   public ResponseEntity<Object> searchGroupsForRole(
       final String roleId,
-      final RoleGroupSearchQueryRequest roleGroupSearchQueryRequestStrict,
+      final RoleGroupSearchQueryRequest roleGroupSearchQueryRequest,
       final CamundaAuthentication authentication) {
-    return SearchQueryRequestMapper.toRoleGroupQueryStrict(roleGroupSearchQueryRequestStrict)
+    return SearchQueryRequestMapper.toRoleMemberQuery(roleGroupSearchQueryRequest)
         .fold(
             RestErrorMapper::mapProblemToResponse,
             query -> {
@@ -273,9 +273,9 @@ public class DefaultRoleServiceAdapter implements RoleServiceAdapter {
   @Override
   public ResponseEntity<Object> searchMappingRulesForRole(
       final String roleId,
-      final MappingRuleSearchQueryRequest mappingRuleSearchQueryRequestStrict,
+      final MappingRuleSearchQueryRequest mappingRuleSearchQueryRequest,
       final CamundaAuthentication authentication) {
-    return SearchQueryRequestMapper.toMappingRuleQueryStrict(mappingRuleSearchQueryRequestStrict)
+    return SearchQueryRequestMapper.toMappingRuleQuery(mappingRuleSearchQueryRequest)
         .fold(
             RestErrorMapper::mapProblemToResponse,
             query -> {

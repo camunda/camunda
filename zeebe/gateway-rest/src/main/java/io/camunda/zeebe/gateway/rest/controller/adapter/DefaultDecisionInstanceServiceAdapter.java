@@ -38,8 +38,8 @@ public class DefaultDecisionInstanceServiceAdapter implements DecisionInstanceSe
 
   @Override
   public ResponseEntity<Object> searchDecisionInstances(
-      final DecisionInstanceSearchQuery queryStrict, final CamundaAuthentication authentication) {
-    return SearchQueryRequestMapper.toDecisionInstanceQueryStrict(queryStrict)
+      final DecisionInstanceSearchQuery query, final CamundaAuthentication authentication) {
+    return SearchQueryRequestMapper.toDecisionInstanceQuery(query)
         .fold(
             RestErrorMapper::mapProblemToResponse,
             q -> {
@@ -68,23 +68,21 @@ public class DefaultDecisionInstanceServiceAdapter implements DecisionInstanceSe
   @Override
   public ResponseEntity<Void> deleteDecisionInstance(
       final Long decisionInstanceKey,
-      final DeleteDecisionInstanceRequest requestStrict,
+      final DeleteDecisionInstanceRequest request,
       final CamundaAuthentication authentication) {
     return RequestExecutor.executeSync(
         () ->
             decisionInstanceServices.deleteDecisionInstance(
                 decisionInstanceKey,
-                Objects.nonNull(requestStrict)
-                    ? requestStrict.getOperationReference().orElse(null)
-                    : null,
+                Objects.nonNull(request) ? request.getOperationReference().orElse(null) : null,
                 authentication));
   }
 
   @Override
   public ResponseEntity<Object> deleteDecisionInstancesBatchOperation(
-      final DecisionInstanceDeletionBatchOperationRequest requestStrict,
+      final DecisionInstanceDeletionBatchOperationRequest request,
       final CamundaAuthentication authentication) {
-    return RequestMapper.toRequiredDecisionInstanceFilter(requestStrict.getFilter())
+    return RequestMapper.toRequiredDecisionInstanceFilter(request.getFilter())
         .fold(
             RestErrorMapper::mapProblemToResponse,
             filter ->

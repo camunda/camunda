@@ -62,10 +62,9 @@ public class DefaultGroupServiceAdapter implements GroupServiceAdapter {
 
   @Override
   public ResponseEntity<Object> createGroup(
-      final GroupCreateRequest groupCreateRequestStrict,
-      final CamundaAuthentication authentication) {
+      final GroupCreateRequest groupCreateRequest, final CamundaAuthentication authentication) {
     return groupMapper
-        .toGroupCreateRequest(groupCreateRequestStrict)
+        .toGroupCreateRequest(groupCreateRequest)
         .fold(
             RestErrorMapper::mapProblemToResponse,
             dto ->
@@ -77,9 +76,9 @@ public class DefaultGroupServiceAdapter implements GroupServiceAdapter {
 
   @Override
   public ResponseEntity<Object> searchGroups(
-      final GroupSearchQueryRequest groupSearchQueryRequestStrict,
+      final GroupSearchQueryRequest groupSearchQueryRequest,
       final CamundaAuthentication authentication) {
-    return SearchQueryRequestMapper.toGroupQueryStrict(groupSearchQueryRequestStrict)
+    return SearchQueryRequestMapper.toGroupQuery(groupSearchQueryRequest)
         .fold(
             RestErrorMapper::mapProblemToResponse,
             query -> {
@@ -107,10 +106,10 @@ public class DefaultGroupServiceAdapter implements GroupServiceAdapter {
   @Override
   public ResponseEntity<Object> updateGroup(
       final String groupId,
-      final GroupUpdateRequest groupUpdateRequestStrict,
+      final GroupUpdateRequest groupUpdateRequest,
       final CamundaAuthentication authentication) {
     return groupMapper
-        .toGroupUpdateRequest(groupUpdateRequestStrict, groupId)
+        .toGroupUpdateRequest(groupUpdateRequest, groupId)
         .fold(
             RestErrorMapper::mapProblemToResponse,
             dto ->
@@ -155,9 +154,9 @@ public class DefaultGroupServiceAdapter implements GroupServiceAdapter {
   @Override
   public ResponseEntity<Object> searchUsersForGroup(
       final String groupId,
-      final GroupUserSearchQueryRequest groupUserSearchQueryRequestStrict,
+      final GroupUserSearchQueryRequest groupUserSearchQueryRequest,
       final CamundaAuthentication authentication) {
-    return SearchQueryRequestMapper.toGroupUserQueryStrict(groupUserSearchQueryRequestStrict)
+    return SearchQueryRequestMapper.toGroupMemberQuery(groupUserSearchQueryRequest)
         .fold(
             RestErrorMapper::mapProblemToResponse,
             query -> {
@@ -200,9 +199,9 @@ public class DefaultGroupServiceAdapter implements GroupServiceAdapter {
   @Override
   public ResponseEntity<Object> searchClientsForGroup(
       final String groupId,
-      final GroupClientSearchQueryRequest groupClientSearchQueryRequestStrict,
+      final GroupClientSearchQueryRequest groupClientSearchQueryRequest,
       final CamundaAuthentication authentication) {
-    return SearchQueryRequestMapper.toGroupClientQueryStrict(groupClientSearchQueryRequestStrict)
+    return SearchQueryRequestMapper.toGroupMemberQuery(groupClientSearchQueryRequest)
         .fold(
             RestErrorMapper::mapProblemToResponse,
             query -> {
@@ -249,9 +248,9 @@ public class DefaultGroupServiceAdapter implements GroupServiceAdapter {
   @Override
   public ResponseEntity<Object> searchMappingRulesForGroup(
       final String groupId,
-      final MappingRuleSearchQueryRequest mappingRuleSearchQueryRequestStrict,
+      final MappingRuleSearchQueryRequest mappingRuleSearchQueryRequest,
       final CamundaAuthentication authentication) {
-    return SearchQueryRequestMapper.toMappingRuleQueryStrict(mappingRuleSearchQueryRequestStrict)
+    return SearchQueryRequestMapper.toMappingRuleQuery(mappingRuleSearchQueryRequest)
         .fold(
             RestErrorMapper::mapProblemToResponse,
             query -> {
@@ -269,9 +268,9 @@ public class DefaultGroupServiceAdapter implements GroupServiceAdapter {
   @Override
   public ResponseEntity<Object> searchRolesForGroup(
       final String groupId,
-      final RoleSearchQueryRequest roleSearchQueryRequestStrict,
+      final RoleSearchQueryRequest roleSearchQueryRequest,
       final CamundaAuthentication authentication) {
-    return SearchQueryRequestMapper.toRoleQueryStrict(roleSearchQueryRequestStrict)
+    return SearchQueryRequestMapper.toRoleQuery(roleSearchQueryRequest)
         .fold(
             RestErrorMapper::mapProblemToResponse,
             query -> {

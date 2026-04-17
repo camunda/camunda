@@ -60,7 +60,7 @@ public class ProcessDefinitionTools {
     try {
       final var strictRequest = toStrict(query);
       final var processDefinitionQuery =
-          SearchQueryRequestMapper.toProcessDefinitionQueryStrict(strictRequest);
+          SearchQueryRequestMapper.toProcessDefinitionQuery(strictRequest);
       if (processDefinitionQuery.isLeft()) {
         return CallToolResultMapper.mapProblemToResult(processDefinitionQuery.getLeft());
       }

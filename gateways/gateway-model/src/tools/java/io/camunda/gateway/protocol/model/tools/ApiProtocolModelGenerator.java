@@ -1289,11 +1289,10 @@ public record %s(%s value) implements %s {
       final var fieldDescription = resolveDescription(node, contextFile, allSchemas);
       final var identifier = uniqueIdentifier(toJavaIdentifier(propertyName), usedIdentifiers);
       final var mapperMethod = toJavaMethodName(propertyName);
-      // Generate a nested enum in the DTO for sort request fields with inline enum values.
-      // This ensures Jackson rejects unknown sort field names at deserialization time with
-      // a helpful message listing valid values, rather than deferring to the mapper.
-      final var useNestedEnum = hasInlineEnum && !node.enumValues().isEmpty()
-          && schema.schemaName().contains("SortRequest") && "field".equals(propertyName);
+      // Generate a nested enum in the DTO for fields with inline enum values.
+      // This matches the OpenAPI codegen behavior (inner enums like Foo.StateEnum)
+      // and ensures Jackson rejects unknown values at deserialization time.
+      final var useNestedEnum = hasInlineEnum && !node.enumValues().isEmpty();
       fields.add(
           new ContractField(
               propertyName,

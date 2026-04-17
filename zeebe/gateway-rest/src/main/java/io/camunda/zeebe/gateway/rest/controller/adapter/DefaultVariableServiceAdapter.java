@@ -31,10 +31,10 @@ public class DefaultVariableServiceAdapter implements VariableServiceAdapter {
   @Override
   public ResponseEntity<Object> searchVariables(
       final Boolean truncateValues,
-      final VariableSearchQuery queryStrict,
+      final VariableSearchQuery query,
       final CamundaAuthentication authentication) {
     final boolean truncate = truncateValues == null || truncateValues;
-    return SearchQueryRequestMapper.toVariableQueryStrict(queryStrict)
+    return SearchQueryRequestMapper.toVariableQuery(query)
         .fold(
             RestErrorMapper::mapProblemToResponse,
             q -> {

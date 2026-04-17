@@ -42,9 +42,9 @@ public class DefaultUserServiceAdapter implements UserServiceAdapter {
 
   @Override
   public ResponseEntity<Object> createUser(
-      final UserRequest userRequestStrict, final CamundaAuthentication authentication) {
+      final UserRequest userRequest, final CamundaAuthentication authentication) {
     return userMapper
-        .toUserRequest(userRequestStrict)
+        .toUserRequest(userRequest)
         .fold(
             RestErrorMapper::mapProblemToResponse,
             converted ->
@@ -56,9 +56,9 @@ public class DefaultUserServiceAdapter implements UserServiceAdapter {
 
   @Override
   public ResponseEntity<Object> searchUsers(
-      final UserSearchQueryRequest userSearchQueryRequestStrict,
+      final UserSearchQueryRequest userSearchQueryRequest,
       final CamundaAuthentication authentication) {
-    return SearchQueryRequestMapper.toUserQueryStrict(userSearchQueryRequestStrict)
+    return SearchQueryRequestMapper.toUserQuery(userSearchQueryRequest)
         .fold(
             RestErrorMapper::mapProblemToResponse,
             query -> {
@@ -86,10 +86,10 @@ public class DefaultUserServiceAdapter implements UserServiceAdapter {
   @Override
   public ResponseEntity<Object> updateUser(
       final String username,
-      final UserUpdateRequest userUpdateRequestStrict,
+      final UserUpdateRequest userUpdateRequest,
       final CamundaAuthentication authentication) {
     return userMapper
-        .toUserUpdateRequest(userUpdateRequestStrict, username)
+        .toUserUpdateRequest(userUpdateRequest, username)
         .fold(
             RestErrorMapper::mapProblemToResponse,
             converted ->

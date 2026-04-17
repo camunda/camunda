@@ -34,8 +34,8 @@ public class DefaultSignalServiceAdapter implements SignalServiceAdapter {
 
   @Override
   public ResponseEntity<Object> broadcastSignal(
-      final SignalBroadcastRequest requestStrict, final CamundaAuthentication authentication) {
-    return RequestMapper.toBroadcastSignalRequest(requestStrict, multiTenancyCfg.isChecksEnabled())
+      final SignalBroadcastRequest request, final CamundaAuthentication authentication) {
+    return RequestMapper.toBroadcastSignalRequest(request, multiTenancyCfg.isChecksEnabled())
         .fold(
             RestErrorMapper::mapProblemToResponse,
             mapped ->

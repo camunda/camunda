@@ -76,7 +76,7 @@ public class ProcessInstanceTools {
     try {
       final var strictRequest = toStrict(query);
       final var processInstanceQuery =
-          SearchQueryRequestMapper.toProcessInstanceQueryStrict(strictRequest);
+          SearchQueryRequestMapper.toProcessInstanceQuery(strictRequest);
       if (processInstanceQuery.isLeft()) {
         return CallToolResultMapper.mapProblemToResult(processInstanceQuery.getLeft());
       }

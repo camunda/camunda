@@ -35,10 +35,8 @@ public class DefaultConditionalServiceAdapter implements ConditionalServiceAdapt
 
   @Override
   public ResponseEntity<Object> evaluateConditionals(
-      final ConditionalEvaluationInstruction requestStrict,
-      final CamundaAuthentication authentication) {
-    return RequestMapper.toEvaluateConditionalRequest(
-            requestStrict, multiTenancyCfg.isChecksEnabled())
+      final ConditionalEvaluationInstruction request, final CamundaAuthentication authentication) {
+    return RequestMapper.toEvaluateConditionalRequest(request, multiTenancyCfg.isChecksEnabled())
         .fold(
             RestErrorMapper::mapProblemToResponse,
             mapped ->

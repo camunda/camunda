@@ -43,9 +43,9 @@ public class DefaultBatchOperationServiceAdapter implements BatchOperationServic
 
   @Override
   public ResponseEntity<Object> searchBatchOperations(
-      final BatchOperationSearchQuery batchOperationSearchQueryStrict,
+      final BatchOperationSearchQuery batchOperationSearchQuery,
       final CamundaAuthentication authentication) {
-    return SearchQueryRequestMapper.toBatchOperationQueryStrict(batchOperationSearchQueryStrict)
+    return SearchQueryRequestMapper.toBatchOperationQuery(batchOperationSearchQuery)
         .fold(
             RestErrorMapper::mapProblemToResponse,
             query -> {
@@ -82,10 +82,9 @@ public class DefaultBatchOperationServiceAdapter implements BatchOperationServic
 
   @Override
   public ResponseEntity<Object> searchBatchOperationItems(
-      final BatchOperationItemSearchQuery batchOperationItemSearchQueryStrict,
+      final BatchOperationItemSearchQuery batchOperationItemSearchQuery,
       final CamundaAuthentication authentication) {
-    return SearchQueryRequestMapper.toBatchOperationItemQueryStrict(
-            batchOperationItemSearchQueryStrict)
+    return SearchQueryRequestMapper.toBatchOperationItemQuery(batchOperationItemSearchQuery)
         .fold(
             RestErrorMapper::mapProblemToResponse,
             query -> {

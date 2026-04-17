@@ -32,10 +32,9 @@ public class DefaultMessageSubscriptionServiceAdapter implements MessageSubscrip
 
   @Override
   public ResponseEntity<Object> searchMessageSubscriptions(
-      final MessageSubscriptionSearchQuery messageSubscriptionSearchQueryStrict,
+      final MessageSubscriptionSearchQuery messageSubscriptionSearchQuery,
       final CamundaAuthentication authentication) {
-    return SearchQueryRequestMapper.toMessageSubscriptionQueryStrict(
-            messageSubscriptionSearchQueryStrict)
+    return SearchQueryRequestMapper.toMessageSubscriptionQuery(messageSubscriptionSearchQuery)
         .fold(
             RestErrorMapper::mapProblemToResponse,
             query -> {
@@ -51,10 +50,10 @@ public class DefaultMessageSubscriptionServiceAdapter implements MessageSubscrip
 
   @Override
   public ResponseEntity<Object> searchCorrelatedMessageSubscriptions(
-      final CorrelatedMessageSubscriptionSearchQuery correlatedMessageSubscriptionSearchQueryStrict,
+      final CorrelatedMessageSubscriptionSearchQuery correlatedMessageSubscriptionSearchQuery,
       final CamundaAuthentication authentication) {
-    return SearchQueryRequestMapper.toCorrelatedMessageSubscriptionQueryStrict(
-            correlatedMessageSubscriptionSearchQueryStrict)
+    return SearchQueryRequestMapper.toCorrelatedMessageSubscriptionQuery(
+            correlatedMessageSubscriptionSearchQuery)
         .fold(
             RestErrorMapper::mapProblemToResponse,
             query -> {

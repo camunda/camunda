@@ -100,9 +100,9 @@ public class DefaultProcessInstanceServiceAdapter implements ProcessInstanceServ
 
   @Override
   public ResponseEntity<Object> searchProcessInstances(
-      final ProcessInstanceSearchQuery processInstanceSearchQueryStrict,
+      final ProcessInstanceSearchQuery processInstanceSearchQuery,
       final CamundaAuthentication authentication) {
-    return SearchQueryRequestMapper.toProcessInstanceQueryStrict(processInstanceSearchQueryStrict)
+    return SearchQueryRequestMapper.toProcessInstanceQuery(processInstanceSearchQuery)
         .fold(
             RestErrorMapper::mapProblemToResponse,
             query -> {
@@ -119,9 +119,9 @@ public class DefaultProcessInstanceServiceAdapter implements ProcessInstanceServ
   @Override
   public ResponseEntity<Object> searchProcessInstanceIncidents(
       final Long processInstanceKey,
-      final IncidentSearchQuery incidentSearchQueryStrict,
+      final IncidentSearchQuery incidentSearchQuery,
       final CamundaAuthentication authentication) {
-    return SearchQueryRequestMapper.toIncidentQueryStrict(incidentSearchQueryStrict)
+    return SearchQueryRequestMapper.toIncidentQuery(incidentSearchQuery)
         .fold(
             RestErrorMapper::mapProblemToResponse,
             query -> {
@@ -151,10 +151,9 @@ public class DefaultProcessInstanceServiceAdapter implements ProcessInstanceServ
   @Override
   public ResponseEntity<Void> cancelProcessInstance(
       final Long processInstanceKey,
-      final CancelProcessInstanceRequest cancelProcessInstanceRequestStrict,
+      final CancelProcessInstanceRequest cancelProcessInstanceRequest,
       final CamundaAuthentication authentication) {
-    return RequestMapper.toCancelProcessInstance(
-            processInstanceKey, cancelProcessInstanceRequestStrict)
+    return RequestMapper.toCancelProcessInstance(processInstanceKey, cancelProcessInstanceRequest)
         .fold(
             RestErrorMapper::mapProblemToResponse,
             request ->
@@ -164,9 +163,9 @@ public class DefaultProcessInstanceServiceAdapter implements ProcessInstanceServ
 
   @Override
   public ResponseEntity<Object> cancelProcessInstancesBatchOperation(
-      final ProcessInstanceCancellationBatchOperationRequest requestStrict,
+      final ProcessInstanceCancellationBatchOperationRequest request,
       final CamundaAuthentication authentication) {
-    return RequestMapper.toRequiredProcessInstanceFilter(requestStrict.getFilter())
+    return RequestMapper.toRequiredProcessInstanceFilter(request.getFilter())
         .fold(
             RestErrorMapper::mapProblemToResponse,
             filter ->
@@ -180,10 +179,10 @@ public class DefaultProcessInstanceServiceAdapter implements ProcessInstanceServ
 
   @Override
   public ResponseEntity<Object> resolveIncidentsBatchOperation(
-      final ProcessInstanceIncidentResolutionBatchOperationRequest requestStrict,
+      final ProcessInstanceIncidentResolutionBatchOperationRequest request,
       final CamundaAuthentication authentication) {
     return RequestMapper.toRequiredProcessInstanceFilter(
-            requestStrict != null ? requestStrict.getFilter() : null)
+            request != null ? request.getFilter() : null)
         .fold(
             RestErrorMapper::mapProblemToResponse,
             filter ->
@@ -197,9 +196,9 @@ public class DefaultProcessInstanceServiceAdapter implements ProcessInstanceServ
 
   @Override
   public ResponseEntity<Object> migrateProcessInstancesBatchOperation(
-      final ProcessInstanceMigrationBatchOperationRequest requestStrict,
+      final ProcessInstanceMigrationBatchOperationRequest request,
       final CamundaAuthentication authentication) {
-    return RequestMapper.toProcessInstanceMigrationBatchOperationRequest(requestStrict)
+    return RequestMapper.toProcessInstanceMigrationBatchOperationRequest(request)
         .fold(
             RestErrorMapper::mapProblemToResponse,
             migrationRequest ->
@@ -213,9 +212,9 @@ public class DefaultProcessInstanceServiceAdapter implements ProcessInstanceServ
 
   @Override
   public ResponseEntity<Object> modifyProcessInstancesBatchOperation(
-      final ProcessInstanceModificationBatchOperationRequest requestStrict,
+      final ProcessInstanceModificationBatchOperationRequest request,
       final CamundaAuthentication authentication) {
-    return RequestMapper.toProcessInstanceModifyBatchOperationRequest(requestStrict)
+    return RequestMapper.toProcessInstanceModifyBatchOperationRequest(request)
         .fold(
             RestErrorMapper::mapProblemToResponse,
             modifyRequest ->
@@ -230,23 +229,23 @@ public class DefaultProcessInstanceServiceAdapter implements ProcessInstanceServ
   @Override
   public ResponseEntity<Void> deleteProcessInstance(
       final Long processInstanceKey,
-      final DeleteProcessInstanceRequest deleteProcessInstanceRequestStrict,
+      final DeleteProcessInstanceRequest deleteProcessInstanceRequest,
       final CamundaAuthentication authentication) {
     return RequestExecutor.executeSync(
         () ->
             processInstanceServices.deleteProcessInstance(
                 processInstanceKey,
-                Objects.nonNull(deleteProcessInstanceRequestStrict)
-                    ? deleteProcessInstanceRequestStrict.getOperationReference().orElse(null)
+                Objects.nonNull(deleteProcessInstanceRequest)
+                    ? deleteProcessInstanceRequest.getOperationReference().orElse(null)
                     : null,
                 authentication));
   }
 
   @Override
   public ResponseEntity<Object> deleteProcessInstancesBatchOperation(
-      final ProcessInstanceDeletionBatchOperationRequest requestStrict,
+      final ProcessInstanceDeletionBatchOperationRequest request,
       final CamundaAuthentication authentication) {
-    return RequestMapper.toRequiredProcessInstanceFilter(requestStrict.getFilter())
+    return RequestMapper.toRequiredProcessInstanceFilter(request.getFilter())
         .fold(
             RestErrorMapper::mapProblemToResponse,
             filter ->
@@ -261,33 +260,29 @@ public class DefaultProcessInstanceServiceAdapter implements ProcessInstanceServ
   @Override
   public ResponseEntity<Void> migrateProcessInstance(
       final Long processInstanceKey,
-      final ProcessInstanceMigrationInstruction processInstanceMigrationInstructionStrict,
+      final ProcessInstanceMigrationInstruction processInstanceMigrationInstruction,
       final CamundaAuthentication authentication) {
     return RequestMapper.toMigrateProcessInstance(
-            processInstanceKey, processInstanceMigrationInstructionStrict)
+            processInstanceKey, processInstanceMigrationInstruction)
         .fold(
             RestErrorMapper::mapProblemToResponse,
-            requestStrict ->
+            request ->
                 RequestExecutor.executeSync(
-                    () ->
-                        processInstanceServices.migrateProcessInstance(
-                            requestStrict, authentication)));
+                    () -> processInstanceServices.migrateProcessInstance(request, authentication)));
   }
 
   @Override
   public ResponseEntity<Void> modifyProcessInstance(
       final Long processInstanceKey,
-      final ProcessInstanceModificationInstruction processInstanceModificationInstructionStrict,
+      final ProcessInstanceModificationInstruction processInstanceModificationInstruction,
       final CamundaAuthentication authentication) {
     return RequestMapper.toModifyProcessInstance(
-            processInstanceKey, processInstanceModificationInstructionStrict)
+            processInstanceKey, processInstanceModificationInstruction)
         .fold(
             RestErrorMapper::mapProblemToResponse,
-            requestStrict ->
+            request ->
                 RequestExecutor.executeSync(
-                    () ->
-                        processInstanceServices.modifyProcessInstance(
-                            requestStrict, authentication)));
+                    () -> processInstanceServices.modifyProcessInstance(request, authentication)));
   }
 
   @SuppressWarnings("unchecked")
@@ -308,18 +303,15 @@ public class DefaultProcessInstanceServiceAdapter implements ProcessInstanceServ
   }
 
   private ResponseEntity<Object> createProcessInstance(
-      final ProcessInstanceCreateRequest requestStrict,
-      final CamundaAuthentication authentication) {
-    if (Boolean.TRUE.equals(requestStrict.awaitCompletion())) {
+      final ProcessInstanceCreateRequest request, final CamundaAuthentication authentication) {
+    if (Boolean.TRUE.equals(request.awaitCompletion())) {
       return RequestExecutor.executeSync(
-          () ->
-              processInstanceServices.createProcessInstanceWithResult(
-                  requestStrict, authentication),
+          () -> processInstanceServices.createProcessInstanceWithResult(request, authentication),
           ResponseMapper::toCreateProcessInstanceWithResultResponse,
           HttpStatus.OK);
     }
     return RequestExecutor.executeSync(
-        () -> processInstanceServices.createProcessInstance(requestStrict, authentication),
+        () -> processInstanceServices.createProcessInstance(request, authentication),
         ResponseMapper::toCreateProcessInstanceResponse,
         HttpStatus.OK);
   }

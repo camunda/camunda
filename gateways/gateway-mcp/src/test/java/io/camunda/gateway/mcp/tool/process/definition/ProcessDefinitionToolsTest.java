@@ -15,9 +15,9 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import io.camunda.gateway.mapping.http.search.contract.StrictSearchQueryResult;
 import io.camunda.gateway.mcp.OperationalToolsTest;
 import io.camunda.gateway.protocol.model.ProcessDefinitionResult;
+import io.camunda.gateway.protocol.model.ProcessDefinitionSearchQueryResult;
 import io.camunda.search.entities.ProcessDefinitionEntity;
 import io.camunda.search.filter.Operation;
 import io.camunda.search.filter.Operator;
@@ -213,20 +213,14 @@ class ProcessDefinitionToolsTest extends OperationalToolsTest {
       assertThat(result.isError()).isFalse();
       assertThat(result.structuredContent()).isNotNull();
 
-      @SuppressWarnings("unchecked")
-      final StrictSearchQueryResult<ProcessDefinitionResult> response =
-          (StrictSearchQueryResult<ProcessDefinitionResult>)
-              objectMapper.convertValue(
-                  result.structuredContent(),
-                  objectMapper
-                      .getTypeFactory()
-                      .constructParametricType(
-                          StrictSearchQueryResult.class, ProcessDefinitionResult.class));
-      assertThat(response.page().totalItems()).isEqualTo(1L);
-      assertThat(response.page().hasMoreTotalItems()).isFalse();
-      assertThat(response.page().startCursor()).isEqualTo("f");
-      assertThat(response.page().endCursor()).isEqualTo("v");
-      assertThat(response.items())
+      final var response =
+          objectMapper.convertValue(
+              result.structuredContent(), ProcessDefinitionSearchQueryResult.class);
+      assertThat(response.getPage().getTotalItems()).isEqualTo(1L);
+      assertThat(response.getPage().getHasMoreTotalItems()).isFalse();
+      assertThat(response.getPage().getStartCursor()).isEqualTo("f");
+      assertThat(response.getPage().getEndCursor()).isEqualTo("v");
+      assertThat(response.getItems())
           .hasSize(1)
           .first()
           .satisfies(ProcessDefinitionToolsTest.this::assertExampleProcessDefinitionResult);
@@ -271,7 +265,7 @@ class ProcessDefinitionToolsTest extends OperationalToolsTest {
           objectMapper.convertValue(result.structuredContent(), ProblemDetail.class);
       assertThat(problemDetail.getDetail()).isEqualTo("Expected failure");
       assertThat(problemDetail.getStatus()).isEqualTo(HttpStatus.NOT_FOUND.value());
-      assertThat(problemDetail.getTitle()).isEqualTo("Not Found");
+      assertThat(problemDetail.getTitle()).isEqualTo("NOT_FOUND");
 
       assertTextContentFallback(result);
     }
@@ -417,7 +411,7 @@ class ProcessDefinitionToolsTest extends OperationalToolsTest {
       assertThat(problemDetail.getDetail())
           .isEqualTo("The BPMN XML for this process definition is not available.");
       assertThat(problemDetail.getStatus()).isEqualTo(HttpStatus.NOT_FOUND.value());
-      assertThat(problemDetail.getTitle()).isEqualTo("Not Found");
+      assertThat(problemDetail.getTitle()).isEqualTo("NOT_FOUND");
 
       assertTextContentFallback(result);
     }

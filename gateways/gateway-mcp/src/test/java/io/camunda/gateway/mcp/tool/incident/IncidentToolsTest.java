@@ -19,11 +19,12 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import io.camunda.gateway.mapping.http.search.contract.StrictSearchQueryResult;
 import io.camunda.gateway.mcp.OperationalToolsTest;
 import io.camunda.gateway.protocol.model.IncidentErrorTypeEnum;
 import io.camunda.gateway.protocol.model.IncidentResult;
+import io.camunda.gateway.protocol.model.IncidentSearchQueryResult;
 import io.camunda.gateway.protocol.model.IncidentStateEnum;
+import io.camunda.gateway.protocol.model.JobActivationResult;
 import io.camunda.search.entities.IncidentEntity;
 import io.camunda.search.entities.IncidentEntity.ErrorType;
 import io.camunda.search.entities.IncidentEntity.IncidentState;
@@ -93,7 +94,7 @@ class IncidentToolsTest extends OperationalToolsTest {
           .build();
 
   @MockitoBean private IncidentServices incidentServices;
-  @MockitoBean private JobServices<?> jobServices;
+  @MockitoBean private JobServices<JobActivationResult> jobServices;
 
   @Autowired private JsonMapper objectMapper;
   @Captor private ArgumentCaptor<IncidentQuery> queryCaptor;
@@ -164,7 +165,7 @@ class IncidentToolsTest extends OperationalToolsTest {
           objectMapper.convertValue(result.structuredContent(), ProblemDetail.class);
       assertThat(problemDetail.getDetail()).isEqualTo("Expected failure");
       assertThat(problemDetail.getStatus()).isEqualTo(HttpStatus.NOT_FOUND.value());
-      assertThat(problemDetail.getTitle()).isEqualTo("Not Found");
+      assertThat(problemDetail.getTitle()).isEqualTo("NOT_FOUND");
 
       assertTextContentFallback(result);
     }
@@ -186,7 +187,7 @@ class IncidentToolsTest extends OperationalToolsTest {
               TextContent.class,
               textContent ->
                   assertThat(textContent.text())
-                      .isEqualTo("incidentKey: IncidentResult key must not be null."));
+                      .isEqualTo("incidentKey: Incident key must not be null."));
     }
 
     @Test
@@ -208,7 +209,7 @@ class IncidentToolsTest extends OperationalToolsTest {
               TextContent.class,
               textContent ->
                   assertThat(textContent.text())
-                      .isEqualTo("incidentKey: IncidentResult key must not be null."));
+                      .isEqualTo("incidentKey: Incident key must not be null."));
     }
 
     @Test
@@ -231,7 +232,7 @@ class IncidentToolsTest extends OperationalToolsTest {
               TextContent.class,
               textContent ->
                   assertThat(textContent.text())
-                      .isEqualTo("incidentKey: IncidentResult key must be a positive number."));
+                      .isEqualTo("incidentKey: Incident key must be a positive number."));
     }
   }
 
@@ -299,20 +300,13 @@ class IncidentToolsTest extends OperationalToolsTest {
       assertThat(result.isError()).isFalse();
       assertThat(result.structuredContent()).isNotNull();
 
-      @SuppressWarnings("unchecked")
-      final StrictSearchQueryResult<IncidentResult> searchResult =
-          (StrictSearchQueryResult<IncidentResult>)
-              objectMapper.convertValue(
-                  result.structuredContent(),
-                  objectMapper
-                      .getTypeFactory()
-                      .constructParametricType(
-                          StrictSearchQueryResult.class, IncidentResult.class));
-      assertThat(searchResult.page().totalItems()).isEqualTo(1L);
-      assertThat(searchResult.page().hasMoreTotalItems()).isFalse();
-      assertThat(searchResult.page().startCursor()).isEqualTo("f");
-      assertThat(searchResult.page().endCursor()).isEqualTo("v");
-      assertThat(searchResult.items())
+      final var searchResult =
+          objectMapper.convertValue(result.structuredContent(), IncidentSearchQueryResult.class);
+      assertThat(searchResult.getPage().getTotalItems()).isEqualTo(1L);
+      assertThat(searchResult.getPage().getHasMoreTotalItems()).isFalse();
+      assertThat(searchResult.getPage().getStartCursor()).isEqualTo("f");
+      assertThat(searchResult.getPage().getEndCursor()).isEqualTo("v");
+      assertThat(searchResult.getItems())
           .hasSize(1)
           .first()
           .satisfies(IncidentToolsTest.this::assertExampleIncident);
@@ -358,7 +352,7 @@ class IncidentToolsTest extends OperationalToolsTest {
           objectMapper.convertValue(result.structuredContent(), ProblemDetail.class);
       assertThat(problemDetail.getDetail()).isEqualTo("Expected failure");
       assertThat(problemDetail.getStatus()).isEqualTo(HttpStatus.NOT_FOUND.value());
-      assertThat(problemDetail.getTitle()).isEqualTo("Not Found");
+      assertThat(problemDetail.getTitle()).isEqualTo("NOT_FOUND");
 
       assertTextContentFallback(result);
     }
@@ -380,7 +374,7 @@ class IncidentToolsTest extends OperationalToolsTest {
       final var problemDetail =
           objectMapper.convertValue(result.structuredContent(), ProblemDetail.class);
       assertThat(problemDetail.getStatus()).isEqualTo(HttpStatus.BAD_REQUEST.value());
-      assertThat(problemDetail.getTitle()).isEqualTo("Bad Request");
+      assertThat(problemDetail.getTitle()).isEqualTo("INVALID_ARGUMENT");
       assertThat(problemDetail.getDetail())
           .startsWith("The provided processInstanceKey 'abc' is not a valid key.");
 
@@ -404,7 +398,7 @@ class IncidentToolsTest extends OperationalToolsTest {
       final var problemDetail =
           objectMapper.convertValue(result.structuredContent(), ProblemDetail.class);
       assertThat(problemDetail.getStatus()).isEqualTo(HttpStatus.BAD_REQUEST.value());
-      assertThat(problemDetail.getTitle()).isEqualTo("Bad Request");
+      assertThat(problemDetail.getTitle()).isEqualTo("INVALID_ARGUMENT");
       assertThat(problemDetail.getDetail())
           .startsWith("The provided creationTime 'not-a-date' cannot be parsed as a date");
 
@@ -437,7 +431,7 @@ class IncidentToolsTest extends OperationalToolsTest {
           .isInstanceOfSatisfying(
               TextContent.class,
               textContent ->
-                  assertThat(textContent.text()).isEqualTo("IncidentResult with key 5 resolved."));
+                  assertThat(textContent.text()).isEqualTo("Incident with key 5 resolved."));
 
       verify(incidentServices).resolveIncident(eq(5L), isNull(), any());
     }
@@ -473,7 +467,7 @@ class IncidentToolsTest extends OperationalToolsTest {
           .isInstanceOfSatisfying(
               TextContent.class,
               textContent ->
-                  assertThat(textContent.text()).isEqualTo("IncidentResult with key 5 resolved."));
+                  assertThat(textContent.text()).isEqualTo("Incident with key 5 resolved."));
 
       verify(incidentServices, times(2)).resolveIncident(eq(5L), isNull(), any());
       verify(incidentServices).getByKey(eq(5L), any());
@@ -513,7 +507,7 @@ class IncidentToolsTest extends OperationalToolsTest {
           objectMapper.convertValue(result.structuredContent(), ProblemDetail.class);
       assertThat(problemDetail.getDetail()).isEqualTo("Expected failure");
       assertThat(problemDetail.getStatus()).isEqualTo(HttpStatus.NOT_FOUND.value());
-      assertThat(problemDetail.getTitle()).isEqualTo("Not Found");
+      assertThat(problemDetail.getTitle()).isEqualTo("NOT_FOUND");
 
       verify(incidentServices).resolveIncident(eq(5L), isNull(), any());
       verify(incidentServices).getByKey(eq(5L), any());
@@ -539,7 +533,7 @@ class IncidentToolsTest extends OperationalToolsTest {
               TextContent.class,
               textContent ->
                   assertThat(textContent.text())
-                      .isEqualTo("incidentKey: IncidentResult key must not be null."));
+                      .isEqualTo("incidentKey: Incident key must not be null."));
     }
 
     @Test
@@ -561,7 +555,7 @@ class IncidentToolsTest extends OperationalToolsTest {
               TextContent.class,
               textContent ->
                   assertThat(textContent.text())
-                      .isEqualTo("incidentKey: IncidentResult key must not be null."));
+                      .isEqualTo("incidentKey: Incident key must not be null."));
     }
 
     @Test
@@ -584,7 +578,7 @@ class IncidentToolsTest extends OperationalToolsTest {
               TextContent.class,
               textContent ->
                   assertThat(textContent.text())
-                      .isEqualTo("incidentKey: IncidentResult key must be a positive number."));
+                      .isEqualTo("incidentKey: Incident key must be a positive number."));
     }
   }
 }

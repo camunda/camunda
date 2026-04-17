@@ -45,10 +45,10 @@ public class DefaultMappingRuleServiceAdapter implements MappingRuleServiceAdapt
 
   @Override
   public ResponseEntity<Object> createMappingRule(
-      final MappingRuleCreateRequest mappingRuleCreateRequestStrict,
+      final MappingRuleCreateRequest mappingRuleCreateRequest,
       final CamundaAuthentication authentication) {
     return mappingRuleMapper
-        .toMappingRuleCreateRequest(mappingRuleCreateRequestStrict)
+        .toMappingRuleCreateRequest(mappingRuleCreateRequest)
         .fold(
             RestErrorMapper::mapProblemToResponse,
             converted ->
@@ -61,10 +61,10 @@ public class DefaultMappingRuleServiceAdapter implements MappingRuleServiceAdapt
   @Override
   public ResponseEntity<Object> updateMappingRule(
       final String mappingRuleId,
-      final MappingRuleUpdateRequest mappingRuleUpdateRequestStrict,
+      final MappingRuleUpdateRequest mappingRuleUpdateRequest,
       final CamundaAuthentication authentication) {
     return mappingRuleMapper
-        .toMappingRuleUpdateRequest(mappingRuleId, mappingRuleUpdateRequestStrict)
+        .toMappingRuleUpdateRequest(mappingRuleId, mappingRuleUpdateRequest)
         .fold(
             RestErrorMapper::mapProblemToResponse,
             converted ->
@@ -94,9 +94,9 @@ public class DefaultMappingRuleServiceAdapter implements MappingRuleServiceAdapt
 
   @Override
   public ResponseEntity<Object> searchMappingRule(
-      final MappingRuleSearchQueryRequest mappingRuleSearchQueryRequestStrict,
+      final MappingRuleSearchQueryRequest mappingRuleSearchQueryRequest,
       final CamundaAuthentication authentication) {
-    return SearchQueryRequestMapper.toMappingRuleQueryStrict(mappingRuleSearchQueryRequestStrict)
+    return SearchQueryRequestMapper.toMappingRuleQuery(mappingRuleSearchQueryRequest)
         .fold(
             RestErrorMapper::mapProblemToResponse,
             query -> {

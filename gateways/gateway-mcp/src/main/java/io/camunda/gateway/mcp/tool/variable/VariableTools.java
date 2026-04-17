@@ -60,7 +60,7 @@ public class VariableTools {
       @McpToolParamsUnwrapped @Valid final McpVariableSearchQuery query) {
     try {
       final var strictRequest = toStrict(query);
-      final var variableSearchQuery = SearchQueryRequestMapper.toVariableQueryStrict(strictRequest);
+      final var variableSearchQuery = SearchQueryRequestMapper.toVariableQuery(strictRequest);
       if (variableSearchQuery.isLeft()) {
         return CallToolResultMapper.mapProblemToResult(variableSearchQuery.getLeft());
       }

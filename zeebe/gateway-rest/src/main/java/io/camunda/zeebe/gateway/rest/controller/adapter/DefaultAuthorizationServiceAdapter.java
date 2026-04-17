@@ -90,9 +90,9 @@ public class DefaultAuthorizationServiceAdapter implements AuthorizationServiceA
 
   @Override
   public ResponseEntity<Object> searchAuthorizations(
-      final AuthorizationSearchQuery authorizationSearchQueryStrict,
+      final AuthorizationSearchQuery authorizationSearchQuery,
       final CamundaAuthentication authentication) {
-    return SearchQueryRequestMapper.toAuthorizationQueryStrict(authorizationSearchQueryStrict)
+    return SearchQueryRequestMapper.toAuthorizationQuery(authorizationSearchQuery)
         .fold(
             RestErrorMapper::mapProblemToResponse,
             query -> {

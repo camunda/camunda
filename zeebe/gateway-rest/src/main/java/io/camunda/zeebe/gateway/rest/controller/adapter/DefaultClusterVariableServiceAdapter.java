@@ -43,10 +43,10 @@ public class DefaultClusterVariableServiceAdapter implements ClusterVariableServ
 
   @Override
   public ResponseEntity<Object> createGlobalClusterVariable(
-      final CreateClusterVariableRequest createClusterVariableRequestStrict,
+      final CreateClusterVariableRequest createClusterVariableRequest,
       final CamundaAuthentication authentication) {
     return clusterVariableMapper
-        .toGlobalClusterVariableCreateRequest(createClusterVariableRequestStrict)
+        .toGlobalClusterVariableCreateRequest(createClusterVariableRequest)
         .fold(
             RestErrorMapper::mapProblemToResponse,
             request ->
@@ -61,10 +61,10 @@ public class DefaultClusterVariableServiceAdapter implements ClusterVariableServ
   @Override
   public ResponseEntity<Object> createTenantClusterVariable(
       final String tenantId,
-      final CreateClusterVariableRequest createClusterVariableRequestStrict,
+      final CreateClusterVariableRequest createClusterVariableRequest,
       final CamundaAuthentication authentication) {
     return clusterVariableMapper
-        .toTenantClusterVariableCreateRequest(createClusterVariableRequestStrict, tenantId)
+        .toTenantClusterVariableCreateRequest(createClusterVariableRequest, tenantId)
         .fold(
             RestErrorMapper::mapProblemToResponse,
             request ->
@@ -79,10 +79,10 @@ public class DefaultClusterVariableServiceAdapter implements ClusterVariableServ
   @Override
   public ResponseEntity<Object> searchClusterVariables(
       final Boolean truncateValues,
-      final ClusterVariableSearchQueryRequest clusterVariableSearchQueryStrict,
+      final ClusterVariableSearchQueryRequest clusterVariableSearchQuery,
       final CamundaAuthentication authentication) {
     final boolean truncate = truncateValues == null || truncateValues;
-    return SearchQueryRequestMapper.toClusterVariableQueryStrict(clusterVariableSearchQueryStrict)
+    return SearchQueryRequestMapper.toClusterVariableQuery(clusterVariableSearchQuery)
         .fold(
             RestErrorMapper::mapProblemToResponse,
             query -> {
@@ -120,10 +120,10 @@ public class DefaultClusterVariableServiceAdapter implements ClusterVariableServ
   @Override
   public ResponseEntity<Object> updateGlobalClusterVariable(
       final String name,
-      final UpdateClusterVariableRequest updateClusterVariableRequestStrict,
+      final UpdateClusterVariableRequest updateClusterVariableRequest,
       final CamundaAuthentication authentication) {
     return clusterVariableMapper
-        .toGlobalClusterVariableUpdateRequest(name, updateClusterVariableRequestStrict)
+        .toGlobalClusterVariableUpdateRequest(name, updateClusterVariableRequest)
         .fold(
             RestErrorMapper::mapProblemToResponse,
             request ->
@@ -173,10 +173,10 @@ public class DefaultClusterVariableServiceAdapter implements ClusterVariableServ
   public ResponseEntity<Object> updateTenantClusterVariable(
       final String tenantId,
       final String name,
-      final UpdateClusterVariableRequest updateClusterVariableRequestStrict,
+      final UpdateClusterVariableRequest updateClusterVariableRequest,
       final CamundaAuthentication authentication) {
     return clusterVariableMapper
-        .toTenantClusterVariableUpdateRequest(name, updateClusterVariableRequestStrict, tenantId)
+        .toTenantClusterVariableUpdateRequest(name, updateClusterVariableRequest, tenantId)
         .fold(
             RestErrorMapper::mapProblemToResponse,
             request ->

@@ -8,7 +8,6 @@
 package io.camunda.gateway.mapping.http;
 
 import static io.camunda.gateway.mapping.http.validator.DocumentValidator.validateDocumentMetadata;
-import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_AT_LEAST_ONE_FIELD;
 import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_EMPTY_ATTRIBUTE;
 import static io.camunda.gateway.mapping.http.validator.MultiTenancyValidator.validateTenantId;
 import static io.camunda.gateway.mapping.http.validator.MultiTenancyValidator.validateTenantIds;
@@ -28,8 +27,7 @@ import io.camunda.gateway.mapping.http.MappedCommandRequests.ErrorJobRequest;
 import io.camunda.gateway.mapping.http.MappedCommandRequests.FailJobRequest;
 import io.camunda.gateway.mapping.http.MappedCommandRequests.UpdateJobRequest;
 import io.camunda.gateway.mapping.http.MappedCommandRequests.UpdateUserTaskRequest;
-import io.camunda.gateway.mapping.http.search.contract.DecisionInstanceFilterMapper;
-import io.camunda.gateway.mapping.http.search.contract.ProcessInstanceFilterMapper;
+import io.camunda.gateway.mapping.http.search.SearchQueryFilterMapper;
 import io.camunda.gateway.mapping.http.util.KeyUtil;
 import io.camunda.gateway.mapping.http.validator.AdHocSubProcessRequestValidator;
 import io.camunda.gateway.mapping.http.validator.ConditionalRequestValidator;
@@ -860,7 +858,7 @@ public class RequestMapper {
 
   public static Either<ProblemDetail, io.camunda.search.filter.ProcessInstanceFilter>
       toRequiredProcessInstanceFilter(final ProcessInstanceFilter request) {
-    final var filter = ProcessInstanceFilterMapper.toRequiredProcessInstanceFilter(request);
+    final var filter = SearchQueryFilterMapper.toRequiredProcessInstanceFilter(request);
     if (filter.isLeft()) {
       return Either.left(createProblemDetail(filter.getLeft()).get());
     }
@@ -1178,17 +1176,10 @@ public class RequestMapper {
 
   public static Either<ProblemDetail, DecisionInstanceFilter> toRequiredDecisionInstanceFilter(
       final io.camunda.gateway.protocol.model.DecisionInstanceFilter request) {
-    if (request == null) {
-      return Either.left(
-          createProblemDetail(List.of(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("filter"))).get());
+    final var filter = SearchQueryFilterMapper.toRequiredDecisionInstanceFilter(request);
+    if (filter.isLeft()) {
+      return Either.left(createProblemDetail(filter.getLeft()).get());
     }
-    final var result = DecisionInstanceFilterMapper.toDecisionInstanceFilter(request);
-    if (result.equals(io.camunda.search.filter.FilterBuilders.decisionInstance().build())) {
-      return Either.left(
-          createProblemDetail(
-                  List.of(ERROR_MESSAGE_AT_LEAST_ONE_FIELD.formatted("filter criteria")))
-              .get());
-    }
-    return Either.right(result);
+    return Either.right(filter.get());
   }
 }

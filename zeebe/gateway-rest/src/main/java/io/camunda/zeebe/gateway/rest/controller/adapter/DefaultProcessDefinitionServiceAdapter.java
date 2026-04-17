@@ -36,10 +36,9 @@ public class DefaultProcessDefinitionServiceAdapter implements ProcessDefinition
 
   @Override
   public ResponseEntity<Object> searchProcessDefinitions(
-      final ProcessDefinitionSearchQuery processDefinitionSearchQueryStrict,
+      final ProcessDefinitionSearchQuery processDefinitionSearchQuery,
       final CamundaAuthentication authentication) {
-    return SearchQueryRequestMapper.toProcessDefinitionQueryStrict(
-            processDefinitionSearchQueryStrict)
+    return SearchQueryRequestMapper.toProcessDefinitionQuery(processDefinitionSearchQuery)
         .fold(
             RestErrorMapper::mapProblemToResponse,
             query -> {
@@ -104,10 +103,9 @@ public class DefaultProcessDefinitionServiceAdapter implements ProcessDefinition
   @Override
   public ResponseEntity<Object> getProcessDefinitionStatistics(
       final Long processDefinitionKey,
-      final ProcessDefinitionElementStatisticsQuery queryStrict,
+      final ProcessDefinitionElementStatisticsQuery query,
       final CamundaAuthentication authentication) {
-    return SearchQueryRequestMapper.toProcessDefinitionStatisticsQuery(
-            processDefinitionKey, queryStrict)
+    return SearchQueryRequestMapper.toProcessDefinitionStatisticsQuery(processDefinitionKey, query)
         .fold(
             RestErrorMapper::mapProblemToResponse,
             filter -> {
@@ -124,10 +122,9 @@ public class DefaultProcessDefinitionServiceAdapter implements ProcessDefinition
 
   @Override
   public ResponseEntity<Object> getProcessDefinitionMessageSubscriptionStatistics(
-      final ProcessDefinitionMessageSubscriptionStatisticsQuery queryStrict,
+      final ProcessDefinitionMessageSubscriptionStatisticsQuery query,
       final CamundaAuthentication authentication) {
-    return SearchQueryRequestMapper.toProcessDefinitionMessageSubscriptionStatisticsQuery(
-            queryStrict)
+    return SearchQueryRequestMapper.toProcessDefinitionMessageSubscriptionStatisticsQuery(query)
         .fold(
             RestErrorMapper::mapProblemToResponse,
             serviceQuery -> {
@@ -146,9 +143,9 @@ public class DefaultProcessDefinitionServiceAdapter implements ProcessDefinition
 
   @Override
   public ResponseEntity<Object> getProcessDefinitionInstanceStatistics(
-      final ProcessDefinitionInstanceStatisticsQuery queryStrict,
+      final ProcessDefinitionInstanceStatisticsQuery query,
       final CamundaAuthentication authentication) {
-    return SearchQueryRequestMapper.toProcessDefinitionInstanceStatisticsQuery(queryStrict)
+    return SearchQueryRequestMapper.toProcessDefinitionInstanceStatisticsQuery(query)
         .fold(
             RestErrorMapper::mapProblemToResponse,
             serviceQuery -> {
@@ -166,9 +163,9 @@ public class DefaultProcessDefinitionServiceAdapter implements ProcessDefinition
 
   @Override
   public ResponseEntity<Object> getProcessDefinitionInstanceVersionStatistics(
-      final ProcessDefinitionInstanceVersionStatisticsQuery queryStrict,
+      final ProcessDefinitionInstanceVersionStatisticsQuery query,
       final CamundaAuthentication authentication) {
-    return SearchQueryRequestMapper.toProcessDefinitionInstanceVersionStatisticsQuery(queryStrict)
+    return SearchQueryRequestMapper.toProcessDefinitionInstanceVersionStatisticsQuery(query)
         .fold(
             RestErrorMapper::mapProblemToResponse,
             serviceQuery -> {

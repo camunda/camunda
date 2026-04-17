@@ -42,8 +42,8 @@ public class DefaultDecisionDefinitionServiceAdapter implements DecisionDefiniti
 
   @Override
   public ResponseEntity<Object> searchDecisionDefinitions(
-      final DecisionDefinitionSearchQuery queryStrict, final CamundaAuthentication authentication) {
-    return SearchQueryRequestMapper.toDecisionDefinitionQueryStrict(queryStrict)
+      final DecisionDefinitionSearchQuery query, final CamundaAuthentication authentication) {
+    return SearchQueryRequestMapper.toDecisionDefinitionQuery(query)
         .fold(
             RestErrorMapper::mapProblemToResponse,
             q -> {

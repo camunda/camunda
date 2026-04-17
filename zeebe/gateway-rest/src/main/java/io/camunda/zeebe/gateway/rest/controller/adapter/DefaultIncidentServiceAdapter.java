@@ -34,9 +34,8 @@ public class DefaultIncidentServiceAdapter implements IncidentServiceAdapter {
 
   @Override
   public ResponseEntity<Object> searchIncidents(
-      final IncidentSearchQuery incidentSearchQueryStrict,
-      final CamundaAuthentication authentication) {
-    return SearchQueryRequestMapper.toIncidentQueryStrict(incidentSearchQueryStrict)
+      final IncidentSearchQuery incidentSearchQuery, final CamundaAuthentication authentication) {
+    return SearchQueryRequestMapper.toIncidentQuery(incidentSearchQuery)
         .fold(
             RestErrorMapper::mapProblemToResponse,
             query -> {
@@ -64,25 +63,25 @@ public class DefaultIncidentServiceAdapter implements IncidentServiceAdapter {
   @Override
   public ResponseEntity<Void> resolveIncident(
       final Long incidentKey,
-      final IncidentResolutionRequest incidentResolutionRequestStrict,
+      final IncidentResolutionRequest incidentResolutionRequest,
       final CamundaAuthentication authentication) {
     return RequestExecutor.executeSync(
         () ->
             incidentServices.resolveIncident(
                 incidentKey,
-                incidentResolutionRequestStrict == null
+                incidentResolutionRequest == null
                     ? null
-                    : incidentResolutionRequestStrict.getOperationReference().orElse(null),
+                    : incidentResolutionRequest.getOperationReference().orElse(null),
                 authentication));
   }
 
   @Override
   public ResponseEntity<Object> getProcessInstanceStatisticsByError(
       final IncidentProcessInstanceStatisticsByErrorQuery
-          incidentProcessInstanceStatisticsByErrorQueryStrict,
+          incidentProcessInstanceStatisticsByErrorQuery,
       final CamundaAuthentication authentication) {
     return SearchQueryRequestMapper.toIncidentProcessInstanceStatisticsByErrorQuery(
-            incidentProcessInstanceStatisticsByErrorQueryStrict)
+            incidentProcessInstanceStatisticsByErrorQuery)
         .fold(
             RestErrorMapper::mapProblemToResponse,
             query -> {
@@ -102,10 +101,10 @@ public class DefaultIncidentServiceAdapter implements IncidentServiceAdapter {
   @Override
   public ResponseEntity<Object> getProcessInstanceStatisticsByDefinition(
       final IncidentProcessInstanceStatisticsByDefinitionQuery
-          incidentProcessInstanceStatisticsByDefinitionQueryStrict,
+          incidentProcessInstanceStatisticsByDefinitionQuery,
       final CamundaAuthentication authentication) {
     return SearchQueryRequestMapper.toIncidentProcessInstanceStatisticsByDefinitionQuery(
-            incidentProcessInstanceStatisticsByDefinitionQueryStrict)
+            incidentProcessInstanceStatisticsByDefinitionQuery)
         .fold(
             RestErrorMapper::mapProblemToResponse,
             query -> {

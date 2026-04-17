@@ -30,9 +30,9 @@ public class DefaultAuditLogServiceAdapter implements AuditLogServiceAdapter {
 
   @Override
   public ResponseEntity<Object> searchAuditLogs(
-      final AuditLogSearchQueryRequest auditLogSearchQueryRequestStrict,
+      final AuditLogSearchQueryRequest auditLogSearchQueryRequest,
       final CamundaAuthentication authentication) {
-    return SearchQueryRequestMapper.toAuditLogQueryStrict(auditLogSearchQueryRequestStrict)
+    return SearchQueryRequestMapper.toAuditLogQuery(auditLogSearchQueryRequest)
         .fold(
             RestErrorMapper::mapProblemToResponse,
             query -> {

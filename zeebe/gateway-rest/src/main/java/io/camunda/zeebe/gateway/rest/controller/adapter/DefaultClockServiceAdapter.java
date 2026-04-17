@@ -26,9 +26,9 @@ public class DefaultClockServiceAdapter implements ClockServiceAdapter {
 
   @Override
   public ResponseEntity<Void> pinClock(
-      final ClockPinRequest clockPinRequestStrict, final CamundaAuthentication authentication) {
+      final ClockPinRequest clockPinRequest, final CamundaAuthentication authentication) {
     return RequestExecutor.executeSync(
-        () -> clockServices.pinClock(clockPinRequestStrict.getTimestamp(), authentication));
+        () -> clockServices.pinClock(clockPinRequest.getTimestamp(), authentication));
   }
 
   @Override

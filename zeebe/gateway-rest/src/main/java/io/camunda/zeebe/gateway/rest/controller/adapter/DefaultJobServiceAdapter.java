@@ -63,10 +63,9 @@ public class DefaultJobServiceAdapter implements JobServiceAdapter {
   @SuppressWarnings("unchecked")
   @Override
   public ResponseEntity<Object> activateJobs(
-      final JobActivationRequest jobActivationRequestStrict,
-      final CamundaAuthentication authentication) {
+      final JobActivationRequest jobActivationRequest, final CamundaAuthentication authentication) {
     return RequestMapper.toJobsActivationRequest(
-            jobActivationRequestStrict, multiTenancyCfg.isChecksEnabled())
+            jobActivationRequest, multiTenancyCfg.isChecksEnabled())
         .fold(
             RestErrorMapper::mapProblemToResponse,
             activationRequest -> {
@@ -114,9 +113,9 @@ public class DefaultJobServiceAdapter implements JobServiceAdapter {
 
   @Override
   public ResponseEntity<Object> getJobTypeStatistics(
-      final JobTypeStatisticsQuery requestStrict, final CamundaAuthentication authentication) {
+      final JobTypeStatisticsQuery request, final CamundaAuthentication authentication) {
     return requireJobMetricsEnabled("/v2/jobs/statistics/by-types")
-        .flatMap(ok -> SearchQueryRequestMapper.toJobTypeStatisticsQuery(requestStrict))
+        .flatMap(ok -> SearchQueryRequestMapper.toJobTypeStatisticsQuery(request))
         .fold(
             RestErrorMapper::mapProblemToResponse,
             query -> {
@@ -132,9 +131,9 @@ public class DefaultJobServiceAdapter implements JobServiceAdapter {
 
   @Override
   public ResponseEntity<Object> getJobWorkerStatistics(
-      final JobWorkerStatisticsQuery requestStrict, final CamundaAuthentication authentication) {
+      final JobWorkerStatisticsQuery request, final CamundaAuthentication authentication) {
     return requireJobMetricsEnabled("/v2/jobs/statistics/by-workers")
-        .flatMap(ok -> SearchQueryRequestMapper.toJobWorkerStatisticsQuery(requestStrict))
+        .flatMap(ok -> SearchQueryRequestMapper.toJobWorkerStatisticsQuery(request))
         .fold(
             RestErrorMapper::mapProblemToResponse,
             query -> {
@@ -150,10 +149,9 @@ public class DefaultJobServiceAdapter implements JobServiceAdapter {
 
   @Override
   public ResponseEntity<Object> getJobTimeSeriesStatistics(
-      final JobTimeSeriesStatisticsQuery requestStrict,
-      final CamundaAuthentication authentication) {
+      final JobTimeSeriesStatisticsQuery request, final CamundaAuthentication authentication) {
     return requireJobMetricsEnabled("/v2/jobs/statistics/time-series")
-        .flatMap(ok -> SearchQueryRequestMapper.toJobTimeSeriesStatisticsQuery(requestStrict))
+        .flatMap(ok -> SearchQueryRequestMapper.toJobTimeSeriesStatisticsQuery(request))
         .fold(
             RestErrorMapper::mapProblemToResponse,
             query -> {
@@ -169,8 +167,8 @@ public class DefaultJobServiceAdapter implements JobServiceAdapter {
 
   @Override
   public ResponseEntity<Object> getJobErrorStatistics(
-      final JobErrorStatisticsQuery requestStrict, final CamundaAuthentication authentication) {
-    return SearchQueryRequestMapper.toJobErrorStatisticsQuery(requestStrict)
+      final JobErrorStatisticsQuery request, final CamundaAuthentication authentication) {
+    return SearchQueryRequestMapper.toJobErrorStatisticsQuery(request)
         .fold(
             RestErrorMapper::mapProblemToResponse,
             query -> {
@@ -186,8 +184,8 @@ public class DefaultJobServiceAdapter implements JobServiceAdapter {
 
   @Override
   public ResponseEntity<Object> searchJobs(
-      final JobSearchQuery requestStrict, final CamundaAuthentication authentication) {
-    return SearchQueryRequestMapper.toJobQueryStrict(requestStrict)
+      final JobSearchQuery request, final CamundaAuthentication authentication) {
+    return SearchQueryRequestMapper.toJobQuery(request)
         .fold(
             RestErrorMapper::mapProblemToResponse,
             query -> {
@@ -204,9 +202,9 @@ public class DefaultJobServiceAdapter implements JobServiceAdapter {
   @Override
   public ResponseEntity<Void> failJob(
       final Long jobKey,
-      final JobFailRequest failRequestStrict,
+      final JobFailRequest failRequest,
       final CamundaAuthentication authentication) {
-    final var mapped = RequestMapper.toJobFailRequest(failRequestStrict, jobKey);
+    final var mapped = RequestMapper.toJobFailRequest(failRequest, jobKey);
     return RequestExecutor.executeSync(
         () ->
             jobServices.failJob(
@@ -221,9 +219,9 @@ public class DefaultJobServiceAdapter implements JobServiceAdapter {
   @Override
   public ResponseEntity<Void> throwJobError(
       final Long jobKey,
-      final JobErrorRequest errorRequestStrict,
+      final JobErrorRequest errorRequest,
       final CamundaAuthentication authentication) {
-    return RequestMapper.toJobErrorRequest(errorRequestStrict, jobKey)
+    return RequestMapper.toJobErrorRequest(errorRequest, jobKey)
         .fold(
             RestErrorMapper::mapProblemToResponse,
             mapped ->
@@ -240,9 +238,9 @@ public class DefaultJobServiceAdapter implements JobServiceAdapter {
   @Override
   public ResponseEntity<Void> completeJob(
       final Long jobKey,
-      final JobCompletionRequest completionRequestStrict,
+      final JobCompletionRequest completionRequest,
       final CamundaAuthentication authentication) {
-    final var mapped = RequestMapper.toJobCompletionRequest(completionRequestStrict, jobKey);
+    final var mapped = RequestMapper.toJobCompletionRequest(completionRequest, jobKey);
     return RequestExecutor.executeSync(
         () ->
             jobServices.completeJob(
@@ -252,9 +250,9 @@ public class DefaultJobServiceAdapter implements JobServiceAdapter {
   @Override
   public ResponseEntity<Void> updateJob(
       final Long jobKey,
-      final JobUpdateRequest updateRequestStrict,
+      final JobUpdateRequest updateRequest,
       final CamundaAuthentication authentication) {
-    return RequestMapper.toJobUpdateRequest(updateRequestStrict, jobKey)
+    return RequestMapper.toJobUpdateRequest(updateRequest, jobKey)
         .fold(
             RestErrorMapper::mapProblemToResponse,
             mapped ->

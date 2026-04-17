@@ -39,9 +39,9 @@ public class DefaultUserTaskServiceAdapter implements UserTaskServiceAdapter {
   @Override
   public ResponseEntity<Void> completeUserTask(
       final Long userTaskKey,
-      final UserTaskCompletionRequest requestStrict,
+      final UserTaskCompletionRequest request,
       final CamundaAuthentication authentication) {
-    final var mapped = RequestMapper.toUserTaskCompletionRequest(requestStrict, userTaskKey);
+    final var mapped = RequestMapper.toUserTaskCompletionRequest(request, userTaskKey);
     return RequestExecutor.executeSync(
         () ->
             userTaskServices.completeUserTask(
@@ -51,9 +51,9 @@ public class DefaultUserTaskServiceAdapter implements UserTaskServiceAdapter {
   @Override
   public ResponseEntity<Void> assignUserTask(
       final Long userTaskKey,
-      final UserTaskAssignmentRequest requestStrict,
+      final UserTaskAssignmentRequest request,
       final CamundaAuthentication authentication) {
-    return RequestMapper.toUserTaskAssignmentRequest(requestStrict, userTaskKey)
+    return RequestMapper.toUserTaskAssignmentRequest(request, userTaskKey)
         .fold(
             RestErrorMapper::mapProblemToResponse,
             mapped ->
@@ -81,9 +81,9 @@ public class DefaultUserTaskServiceAdapter implements UserTaskServiceAdapter {
   @Override
   public ResponseEntity<Void> updateUserTask(
       final Long userTaskKey,
-      final UserTaskUpdateRequest requestStrict,
+      final UserTaskUpdateRequest request,
       final CamundaAuthentication authentication) {
-    return RequestMapper.toUserTaskUpdateRequest(requestStrict, userTaskKey)
+    return RequestMapper.toUserTaskUpdateRequest(request, userTaskKey)
         .fold(
             RestErrorMapper::mapProblemToResponse,
             mapped ->
@@ -122,8 +122,8 @@ public class DefaultUserTaskServiceAdapter implements UserTaskServiceAdapter {
 
   @Override
   public ResponseEntity<Object> searchUserTasks(
-      final UserTaskSearchQuery queryStrict, final CamundaAuthentication authentication) {
-    return SearchQueryRequestMapper.toUserTaskQueryStrict(queryStrict)
+      final UserTaskSearchQuery query, final CamundaAuthentication authentication) {
+    return SearchQueryRequestMapper.toUserTaskQuery(query)
         .fold(
             RestErrorMapper::mapProblemToResponse,
             q -> {
@@ -141,10 +141,10 @@ public class DefaultUserTaskServiceAdapter implements UserTaskServiceAdapter {
   public ResponseEntity<Object> searchUserTaskVariables(
       final Long userTaskKey,
       final Boolean truncateValues,
-      final UserTaskVariableSearchQueryRequest requestStrict,
+      final UserTaskVariableSearchQueryRequest request,
       final CamundaAuthentication authentication) {
     final boolean truncate = truncateValues == null || truncateValues;
-    return SearchQueryRequestMapper.toUserTaskVariableQueryStrict(requestStrict)
+    return SearchQueryRequestMapper.toUserTaskVariableQuery(request)
         .fold(
             RestErrorMapper::mapProblemToResponse,
             query -> {
@@ -163,10 +163,10 @@ public class DefaultUserTaskServiceAdapter implements UserTaskServiceAdapter {
   public ResponseEntity<Object> searchUserTaskEffectiveVariables(
       final Long userTaskKey,
       final Boolean truncateValues,
-      final UserTaskEffectiveVariableSearchQueryRequest requestStrict,
+      final UserTaskEffectiveVariableSearchQueryRequest request,
       final CamundaAuthentication authentication) {
     final boolean truncate = truncateValues == null || truncateValues;
-    return SearchQueryRequestMapper.toUserTaskEffectiveVariableQueryStrict(requestStrict)
+    return SearchQueryRequestMapper.toUserTaskEffectiveVariableQuery(request)
         .fold(
             RestErrorMapper::mapProblemToResponse,
             query -> {
@@ -185,9 +185,9 @@ public class DefaultUserTaskServiceAdapter implements UserTaskServiceAdapter {
   @Override
   public ResponseEntity<Object> searchUserTaskAuditLogs(
       final Long userTaskKey,
-      final UserTaskAuditLogSearchQueryRequest requestStrict,
+      final UserTaskAuditLogSearchQueryRequest request,
       final CamundaAuthentication authentication) {
-    return SearchQueryRequestMapper.toUserTaskAuditLogQueryStrict(requestStrict)
+    return SearchQueryRequestMapper.toUserTaskAuditLogQuery(request)
         .fold(
             RestErrorMapper::mapProblemToResponse,
             query -> {

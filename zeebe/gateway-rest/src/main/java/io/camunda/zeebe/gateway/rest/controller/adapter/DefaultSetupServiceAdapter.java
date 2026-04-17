@@ -61,7 +61,7 @@ public class DefaultSetupServiceAdapter implements SetupServiceAdapter {
 
   @Override
   public ResponseEntity<Object> createAdminUser(
-      final UserRequest requestStrict, final CamundaAuthentication authentication) {
+      final UserRequest request, final CamundaAuthentication authentication) {
     if (securityConfiguration.getAuthentication().getMethod() != AuthenticationMethod.BASIC) {
       final var exception =
           new ServiceException(WRONG_AUTHENTICATION_METHOD_ERROR_MESSAGE, Status.FORBIDDEN);
@@ -75,7 +75,7 @@ public class DefaultSetupServiceAdapter implements SetupServiceAdapter {
     }
 
     return userMapper
-        .toUserRequest(requestStrict)
+        .toUserRequest(request)
         .fold(
             RestErrorMapper::mapProblemToResponse,
             dto ->

@@ -42,10 +42,9 @@ public class DefaultGlobalListenerServiceAdapter implements GlobalListenerServic
 
   @Override
   public ResponseEntity<Object> createGlobalTaskListener(
-      final CreateGlobalTaskListenerRequest requestStrict,
-      final CamundaAuthentication authentication) {
+      final CreateGlobalTaskListenerRequest request, final CamundaAuthentication authentication) {
     return globalListenerMapper
-        .toGlobalTaskListenerCreateRequest(requestStrict)
+        .toGlobalTaskListenerCreateRequest(request)
         .fold(
             RestErrorMapper::mapProblemToResponse,
             mapped ->
@@ -76,10 +75,10 @@ public class DefaultGlobalListenerServiceAdapter implements GlobalListenerServic
   @Override
   public ResponseEntity<Object> updateGlobalTaskListener(
       final String id,
-      final UpdateGlobalTaskListenerRequest requestStrict,
+      final UpdateGlobalTaskListenerRequest request,
       final CamundaAuthentication authentication) {
     return globalListenerMapper
-        .toGlobalTaskListenerUpdateRequest(id, requestStrict)
+        .toGlobalTaskListenerUpdateRequest(id, request)
         .fold(
             RestErrorMapper::mapProblemToResponse,
             mapped ->
@@ -103,9 +102,9 @@ public class DefaultGlobalListenerServiceAdapter implements GlobalListenerServic
 
   @Override
   public ResponseEntity<Object> searchGlobalTaskListeners(
-      final GlobalTaskListenerSearchQueryRequest requestStrict,
+      final GlobalTaskListenerSearchQueryRequest request,
       final CamundaAuthentication authentication) {
-    return SearchQueryRequestMapper.toGlobalTaskListenerQueryStrict(requestStrict)
+    return SearchQueryRequestMapper.toGlobalTaskListenerQuery(request)
         .fold(
             RestErrorMapper::mapProblemToResponse,
             query -> {

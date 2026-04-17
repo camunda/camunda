@@ -59,10 +59,9 @@ public class DefaultTenantServiceAdapter implements TenantServiceAdapter {
 
   @Override
   public ResponseEntity<Object> createTenant(
-      final TenantCreateRequest tenantCreateRequestStrict,
-      final CamundaAuthentication authentication) {
+      final TenantCreateRequest tenantCreateRequest, final CamundaAuthentication authentication) {
     return tenantMapper
-        .toTenantCreateDto(tenantCreateRequestStrict)
+        .toTenantCreateDto(tenantCreateRequest)
         .fold(
             RestErrorMapper::mapProblemToResponse,
             request ->
@@ -74,9 +73,9 @@ public class DefaultTenantServiceAdapter implements TenantServiceAdapter {
 
   @Override
   public ResponseEntity<Object> searchTenants(
-      final TenantSearchQueryRequest tenantSearchQueryRequestStrict,
+      final TenantSearchQueryRequest tenantSearchQueryRequest,
       final CamundaAuthentication authentication) {
-    return SearchQueryRequestMapper.toTenantQueryStrict(tenantSearchQueryRequestStrict)
+    return SearchQueryRequestMapper.toTenantQuery(tenantSearchQueryRequest)
         .fold(
             RestErrorMapper::mapProblemToResponse,
             query -> {
@@ -105,10 +104,10 @@ public class DefaultTenantServiceAdapter implements TenantServiceAdapter {
   @Override
   public ResponseEntity<Object> updateTenant(
       final String tenantId,
-      final TenantUpdateRequest tenantUpdateRequestStrict,
+      final TenantUpdateRequest tenantUpdateRequest,
       final CamundaAuthentication authentication) {
     return tenantMapper
-        .toTenantUpdateDto(tenantId, tenantUpdateRequestStrict)
+        .toTenantUpdateDto(tenantId, tenantUpdateRequest)
         .fold(
             RestErrorMapper::mapProblemToResponse,
             request ->
@@ -151,9 +150,9 @@ public class DefaultTenantServiceAdapter implements TenantServiceAdapter {
   @Override
   public ResponseEntity<Object> searchUsersForTenant(
       final String tenantId,
-      final TenantUserSearchQueryRequest tenantUserSearchQueryRequestStrict,
+      final TenantUserSearchQueryRequest tenantUserSearchQueryRequest,
       final CamundaAuthentication authentication) {
-    return SearchQueryRequestMapper.toTenantUserQueryStrict(tenantUserSearchQueryRequestStrict)
+    return SearchQueryRequestMapper.toTenantMemberQuery(tenantUserSearchQueryRequest)
         .fold(
             RestErrorMapper::mapProblemToResponse,
             query -> {
@@ -196,9 +195,9 @@ public class DefaultTenantServiceAdapter implements TenantServiceAdapter {
   @Override
   public ResponseEntity<Object> searchClientsForTenant(
       final String tenantId,
-      final TenantClientSearchQueryRequest tenantClientSearchQueryRequestStrict,
+      final TenantClientSearchQueryRequest tenantClientSearchQueryRequest,
       final CamundaAuthentication authentication) {
-    return SearchQueryRequestMapper.toTenantClientQueryStrict(tenantClientSearchQueryRequestStrict)
+    return SearchQueryRequestMapper.toTenantMemberQuery(tenantClientSearchQueryRequest)
         .fold(
             RestErrorMapper::mapProblemToResponse,
             query -> {
@@ -241,9 +240,9 @@ public class DefaultTenantServiceAdapter implements TenantServiceAdapter {
   @Override
   public ResponseEntity<Object> searchGroupIdsForTenant(
       final String tenantId,
-      final TenantGroupSearchQueryRequest tenantGroupSearchQueryRequestStrict,
+      final TenantGroupSearchQueryRequest tenantGroupSearchQueryRequest,
       final CamundaAuthentication authentication) {
-    return SearchQueryRequestMapper.toTenantGroupQueryStrict(tenantGroupSearchQueryRequestStrict)
+    return SearchQueryRequestMapper.toTenantMemberQuery(tenantGroupSearchQueryRequest)
         .fold(
             RestErrorMapper::mapProblemToResponse,
             query -> {
@@ -262,9 +261,9 @@ public class DefaultTenantServiceAdapter implements TenantServiceAdapter {
   @Override
   public ResponseEntity<Object> searchRolesForTenant(
       final String tenantId,
-      final RoleSearchQueryRequest roleSearchQueryRequestStrict,
+      final RoleSearchQueryRequest roleSearchQueryRequest,
       final CamundaAuthentication authentication) {
-    return SearchQueryRequestMapper.toRoleQueryStrict(roleSearchQueryRequestStrict)
+    return SearchQueryRequestMapper.toRoleQuery(roleSearchQueryRequest)
         .fold(
             RestErrorMapper::mapProblemToResponse,
             query -> {
@@ -334,9 +333,9 @@ public class DefaultTenantServiceAdapter implements TenantServiceAdapter {
   @Override
   public ResponseEntity<Object> searchMappingRulesForTenant(
       final String tenantId,
-      final MappingRuleSearchQueryRequest mappingRuleSearchQueryRequestStrict,
+      final MappingRuleSearchQueryRequest mappingRuleSearchQueryRequest,
       final CamundaAuthentication authentication) {
-    return SearchQueryRequestMapper.toMappingRuleQueryStrict(mappingRuleSearchQueryRequestStrict)
+    return SearchQueryRequestMapper.toMappingRuleQuery(mappingRuleSearchQueryRequest)
         .fold(
             RestErrorMapper::mapProblemToResponse,
             query -> {

@@ -35,11 +35,11 @@ public class DefaultExpressionServiceAdapter implements ExpressionServiceAdapter
 
   @Override
   public ResponseEntity<Object> evaluateExpression(
-      final ExpressionEvaluationRequest requestStrict, final CamundaAuthentication authentication) {
+      final ExpressionEvaluationRequest request, final CamundaAuthentication authentication) {
     return RequestMapper.toExpressionEvaluationRequest(
-            requestStrict.getExpression(),
-            requestStrict.getTenantId().orElse(null),
-            requestStrict.getVariables().orElse(null),
+            request.getExpression(),
+            request.getTenantId().orElse(null),
+            request.getVariables().orElse(null),
             multiTenancyCfg.isChecksEnabled())
         .fold(
             RestErrorMapper::mapProblemToResponse,

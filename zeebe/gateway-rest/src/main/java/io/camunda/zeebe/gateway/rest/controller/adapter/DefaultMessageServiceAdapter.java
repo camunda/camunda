@@ -40,9 +40,9 @@ public class DefaultMessageServiceAdapter implements MessageServiceAdapter {
 
   @Override
   public ResponseEntity<Object> publishMessage(
-      final MessagePublicationRequest requestStrict, final CamundaAuthentication authentication) {
+      final MessagePublicationRequest request, final CamundaAuthentication authentication) {
     return RequestMapper.toMessagePublicationRequest(
-            requestStrict, multiTenancyCfg.isChecksEnabled(), maxNameFieldLength)
+            request, multiTenancyCfg.isChecksEnabled(), maxNameFieldLength)
         .fold(
             RestErrorMapper::mapProblemToResponse,
             mapped ->
@@ -54,9 +54,9 @@ public class DefaultMessageServiceAdapter implements MessageServiceAdapter {
 
   @Override
   public ResponseEntity<Object> correlateMessage(
-      final MessageCorrelationRequest requestStrict, final CamundaAuthentication authentication) {
+      final MessageCorrelationRequest request, final CamundaAuthentication authentication) {
     return RequestMapper.toMessageCorrelationRequest(
-            requestStrict, multiTenancyCfg.isChecksEnabled(), maxNameFieldLength)
+            request, multiTenancyCfg.isChecksEnabled(), maxNameFieldLength)
         .fold(
             RestErrorMapper::mapProblemToResponse,
             mapped ->

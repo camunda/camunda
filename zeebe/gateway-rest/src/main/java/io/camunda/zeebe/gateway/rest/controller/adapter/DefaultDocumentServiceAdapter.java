@@ -41,9 +41,9 @@ public class DefaultDocumentServiceAdapter implements DocumentServiceAdapter {
       final String storeId,
       final String documentId,
       final Part file,
-      final DocumentMetadata metadataStrict,
+      final DocumentMetadata metadata,
       final CamundaAuthentication authentication) {
-    return RequestMapper.toDocumentCreateRequest(documentId, storeId, file, metadataStrict)
+    return RequestMapper.toDocumentCreateRequest(documentId, storeId, file, metadata)
         .fold(
             RestErrorMapper::mapProblemToResponse,
             request ->
@@ -57,10 +57,9 @@ public class DefaultDocumentServiceAdapter implements DocumentServiceAdapter {
   public ResponseEntity<Object> createDocuments(
       final String storeId,
       final List<Part> files,
-      final List<DocumentMetadata> metadataListStrict,
+      final List<DocumentMetadata> metadataList,
       final CamundaAuthentication authentication) {
-    return RequestMapper.toDocumentCreateRequestBatch(
-            files, storeId, objectMapper, metadataListStrict)
+    return RequestMapper.toDocumentCreateRequestBatch(files, storeId, objectMapper, metadataList)
         .fold(
             RestErrorMapper::mapProblemToResponse,
             requests ->
@@ -102,9 +101,9 @@ public class DefaultDocumentServiceAdapter implements DocumentServiceAdapter {
       final String documentId,
       final String storeId,
       final String contentHash,
-      final DocumentLinkRequest linkRequestStrict,
+      final DocumentLinkRequest linkRequest,
       final CamundaAuthentication authentication) {
-    return RequestMapper.toDocumentLinkParams(linkRequestStrict)
+    return RequestMapper.toDocumentLinkParams(linkRequest)
         .fold(
             RestErrorMapper::mapProblemToResponse,
             params ->
