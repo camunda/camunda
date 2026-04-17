@@ -63,8 +63,13 @@ final class BackupRangeTrackingIT {
 
   @AfterEach
   void tearDown() throws InterruptedException {
-    executor.shutdownNow();
-    executor.awaitTermination(5, TimeUnit.SECONDS);
+    executor.shutdown();
+    if (!executor.awaitTermination(5, TimeUnit.SECONDS)) {
+      executor.shutdownNow();
+      assertThat(executor.awaitTermination(5, TimeUnit.SECONDS))
+          .as("expected executor to terminate during test teardown")
+          .isTrue();
+    }
   }
 
   private void configureBroker(final TestStandaloneBroker broker) {
