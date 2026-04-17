@@ -15,6 +15,7 @@
 #                        GitHub login keys are preferred (reliable); real-name keys also supported for backward compat.
 #   SLACK_USER_MAP_FILE - Alternative to SLACK_USER_MAP: path to a JSON file with the same format.
 #                        If both are set, SLACK_USER_MAP_FILE takes precedence.
+#   SLACK_USER_MAP_FALLBACK - If "true", shows a warning that the user map artifact was not accessible.
 
 set -euo pipefail
 
@@ -97,6 +98,12 @@ jq -c --arg header "⏰ *Stale Backport PRs*${branch_header}  ·  _Updated ${upd
 jq -c --argjson total "$total_prs" --argjson groups "$total_groups" --argjson repos "$repo_count" \
   '. + [{type: "section", text: {type: "mrkdwn", text: ("Found *\($total)* stale backport PR(s) across *\($groups)* original PR(s) in *\($repos)* repo(s)")}}]' \
   "$TMPDIR_WORK/blocks.json" > "$TMPDIR_WORK/blocks_tmp.json" && mv "$TMPDIR_WORK/blocks_tmp.json" "$TMPDIR_WORK/blocks.json"
+
+# Warning when user map artifact was not accessible
+if [[ "${SLACK_USER_MAP_FALLBACK:-}" == "true" ]]; then
+  jq -c '. + [{type: "context", elements: [{type: "mrkdwn", text: "⚠️ _GitHub-Slack user map not available — author names shown as GitHub usernames instead of Slack mentions. cc <!subteam^S09E9P9TPAA|@monorepo-devops-team>_"}]}]' \
+    "$TMPDIR_WORK/blocks.json" > "$TMPDIR_WORK/blocks_tmp.json" && mv "$TMPDIR_WORK/blocks_tmp.json" "$TMPDIR_WORK/blocks.json"
+fi
 
 # Build the list of repos to show: union of repos in data + REPOSITORIES env var
 jq -n --arg repos "$REPOSITORIES" --argjson data "$(jq -c '[.[].repository // "unknown"] | unique' "$TMPDIR_WORK/stale_data.json")" '

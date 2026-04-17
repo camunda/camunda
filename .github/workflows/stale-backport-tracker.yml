@@ -7,9 +7,9 @@ name: Stale Backport Tracker
 
 on:
   schedule:
-    # Run every 4 hours during weekday business hours (UTC): 6, 10, 14, 18
+    # Run every hour during weekday business hours (UTC): 6–18
     # First run at 6 AM creates a new message; subsequent runs update it in-place.
-    - cron: '0 6-18/4 * * 1-5'
+    - cron: '0 6-18 * * 1-5'
   workflow_dispatch:
     inputs:
       target_branch:
@@ -233,13 +233,19 @@ jobs:
         env:
           GH_TOKEN: ${{ steps.github-token.outputs.token }}
         run: |
-          # Download the pre-built GitHub-to-Slack user map artifact from monorepo-ci-data
+          # The GitHub-to-Slack user map is built weekly by a workflow in camunda/monorepo-ci-data.
+          # It resolves Slack custom profile fields (GitHub username) into a JSON mapping of
+          # GitHub login → {slack_id, display_name, real_name}.
+          # The map is stored as a GitHub Actions artifact named "github-slack-user-map".
+          # See: https://github.com/camunda/monorepo-ci-data/blob/main/.github/workflows/build-github-slack-user-map.yml
           if gh run download --repo camunda/monorepo-ci-data --name github-slack-user-map --dir /tmp/map 2>/dev/null; then
             cp /tmp/map/github-slack-user-map.json /tmp/slack-user-map.json
             echo "Downloaded map with $(jq 'length' /tmp/slack-user-map.json) entries"
+            echo "SLACK_USER_MAP_FALLBACK=false" >> "$GITHUB_ENV"
           else
             echo "⚠️ No GitHub-Slack user map artifact found — Slack mentions will use fallback" >&2
             echo '{}' > /tmp/slack-user-map.json
+            echo "SLACK_USER_MAP_FALLBACK=true" >> "$GITHUB_ENV"
           fi
 
       - name: Format Slack report
@@ -250,6 +256,7 @@ jobs:
           TARGET_BRANCH: ${{ inputs.target_branch || '' }}
           REPOSITORIES: "camunda/camunda,camunda/zeebe-process-test"
           SLACK_USER_MAP_FILE: /tmp/slack-user-map.json
+          SLACK_USER_MAP_FALLBACK: ${{ env.SLACK_USER_MAP_FALLBACK }}
         run: |
           chmod +x .ci/scripts/stale-backport-scripts/format-slack-report.sh
           payload=$(echo '${{ needs.collect-stale-backports.outputs.stale_data }}' | \
