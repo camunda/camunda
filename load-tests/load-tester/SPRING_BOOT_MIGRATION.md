@@ -492,9 +492,11 @@ doesn't auto-configure them.
 - `starter.data.availability.query.duration` (Timer) — search query duration
 - `starter.read.benchmark` (Timer, per query) — read benchmark query latency
 
-> **Dashboard note:** Grafana dashboards that scrape `/metrics` need to be updated to
-> `/actuator/prometheus`. The metric names themselves are unchanged thanks to
-> `PrometheusRenameFilter`.
+> **Dashboard note:** Actuator is remapped in `application.yaml` so Prometheus is
+> served at `/metrics` (not `/actuator/prometheus`) and health at `/health`. This
+> keeps the existing Helm-provided `ServiceMonitor` (which scrapes `path: /metrics`)
+> working without any chart change — Grafana dashboards and scrape configs do not
+> need updating. Metric names are unchanged thanks to `PrometheusRenameFilter`.
 
 ---
 
@@ -565,6 +567,11 @@ Same main class, different Spring profiles passed as container args:
     <args>
       <arg>--spring.profiles.active=starter</arg>
     </args>
+    <jvmFlags>
+      <jvmFlag>-XX:MaxRAMPercentage=60</jvmFlag>
+      <jvmFlag>-XX:MaxMetaspaceSize=128m</jvmFlag>
+      <jvmFlag>-XX:MaxDirectMemorySize=64m</jvmFlag>
+    </jvmFlags>
   </container>
   <to><image>gcr.io/zeebe-io/starter:SNAPSHOT</image></to>
 </profile>
@@ -576,6 +583,11 @@ Same main class, different Spring profiles passed as container args:
     <args>
       <arg>--spring.profiles.active=worker</arg>
     </args>
+    <jvmFlags>
+      <jvmFlag>-XX:MaxRAMPercentage=60</jvmFlag>
+      <jvmFlag>-XX:MaxMetaspaceSize=128m</jvmFlag>
+      <jvmFlag>-XX:MaxDirectMemorySize=64m</jvmFlag>
+    </jvmFlags>
   </container>
   <to><image>gcr.io/zeebe-io/worker:SNAPSHOT</image></to>
 </profile>
@@ -583,6 +595,30 @@ Same main class, different Spring profiles passed as container args:
 
 Both images use Eclipse Temurin JDK 21 and produce the same image names:
 `gcr.io/zeebe-io/starter:SNAPSHOT` and `gcr.io/zeebe-io/worker:SNAPSHOT`.
+
+### Memory footprint (why the JVM flags matter)
+
+Helm allocates `256Mi` per worker pod — the limit was tuned for the lean HOCON build.
+The Spring Boot build carries ~60 MiB of extra baseline (Netty + Actuator + Spring
+auto-config + Jackson + Micrometer), leaving almost no headroom. The three JVM flags:
+
+| Flag | Purpose |
+|------|---------|
+| `-XX:MaxRAMPercentage=60` | Caps `Xmx` at ~150 MiB on a 256 Mi container, reserving ~100 MiB for Metaspace + Netty direct buffers + thread stacks + JVM native. |
+| `-XX:MaxMetaspaceSize=128m` | Bounds Spring's reflection-driven class growth so it can't silently consume the reserve. |
+| `-XX:MaxDirectMemorySize=64m` | Bounds the Netty/gRPC off-heap pool (defaults to "up to heap" — can eat our savings under streaming load). |
+
+Without these caps we have seen the `dispute_process_request_proof_from_vendor` worker
+OOM-killed under the realistic scenario (`bankCustomerComplaintDisputeHandling.bpmn` —
+a `sendMessage`-true task inside a 50-way multi-instance loop). The plain HOCON worker
+coexists on the same 256 Mi budget because it runs no servlet container and no Spring
+framework.
+
+Note: `spring-boot-starter-webflux` (Netty) is used instead of
+`spring-boot-starter-web` (Tomcat) for the same reason — Netty's footprint is tens of
+MiB smaller and the app has no servlet-specific code (no `@Controller`,
+`HttpServletRequest`, etc.). Only `/actuator/health` and `/actuator/prometheus` are
+exposed; both work identically on WebFlux.
 
 ---
 

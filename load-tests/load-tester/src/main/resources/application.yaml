@@ -11,6 +11,14 @@ management:
     port: ${server.port}
   endpoints:
     web:
+      # Match the old HOCON app's paths so Prometheus ServiceMonitors
+      # (and Grafana dashboards) that scrape `/metrics` keep working
+      # without a Helm chart change. Without this, metrics are at
+      # /actuator/prometheus and the Helm-managed scraper gets an empty
+      # response, so worker/starter panels show no data.
+      base-path: /
+      path-mapping:
+        prometheus: metrics
       exposure:
         include: health,prometheus
 
