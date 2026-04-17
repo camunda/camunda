@@ -180,6 +180,23 @@ test.describe.parallel('Get process instance statistics by version API Tests', (
         await assertInvalidArgument(res, 400, 'No filter provided.');
   });
 
+  test('Get process instance statistics by version with non-existing field - Bad Request', async ({request}) => {
+    const notExistingField = {meow: 'meow'};
+    const res = await request.post(
+      buildUrl(`/process-definitions/statistics/process-instances-by-version`),
+      {
+        headers: jsonHeaders(),
+        data: {
+            filter: {
+                processDefinitionId,
+                ...notExistingField,
+            },
+        },
+      }
+    );
+    await assertBadRequest(res, 'Request property [filter.meow] cannot be parsed');
+  });
+
   test('Get process instance statistics by version with non-existing processDefinitionId - Success, empty result', async ({request}) => {
     const nonExistingProcessDefinitionId = 'nonExistingProcessDefinitionId';
         const res = await request.post(
