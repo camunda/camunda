@@ -1,4 +1,9 @@
 global:
+  image:
+    repository: registry.camunda.cloud/team-zeebe
+    pullSecrets:
+      - name: harbor-registry
+
   preferRest:
     enabled: true
 
