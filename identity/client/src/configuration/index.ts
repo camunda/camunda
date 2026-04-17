@@ -6,8 +6,13 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import type {
+  PermissionType,
+  ResourceType,
+} from "@camunda/camunda-api-zod-schemas/8.10";
 import {
   getClientConfigBoolean,
+  getClientConfigObject,
   getClientConfigString,
 } from "src/configuration/clientConfig";
 
@@ -32,6 +37,11 @@ export const isTenantsApiEnabled = getClientConfigBoolean(
 export const docsUrl = "https://docs.camunda.io/docs/next";
 
 export const isSaaS = Boolean(getClientConfigString("organizationId"));
+
+export const resourcePermissions = getClientConfigObject(
+  "resourcePermissions",
+  {} as Record<ResourceType, PermissionType[]>,
+) as Record<ResourceType, PermissionType[]>;
 
 export function getApiBaseUrl() {
   return getBasePathBeforeAdmin() + apiBaseUrl;
