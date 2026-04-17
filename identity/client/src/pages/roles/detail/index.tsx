@@ -28,6 +28,7 @@ import Groups from "src/pages/roles/detail/groups";
 import MappingRules from "src/pages/roles/detail/mapping-rules";
 import Clients from "src/pages/roles/detail/clients";
 import { isOIDC } from "src/configuration";
+import { isProtectedRole } from "src/pages/roles/protected-roles";
 
 const Details: FC = () => {
   const navigate = useNavigate();
@@ -65,19 +66,21 @@ const Details: FC = () => {
                 <Stack gap={spacing03}>
                   <Stack orientation="horizontal" gap={spacing01}>
                     <PageHeadline>{role.name}</PageHeadline>
-                    <OverflowMenu ariaLabel={t("openRoleContextMenu")}>
-                      <OverflowMenuItem
-                        itemText={t("editRole")}
-                        onClick={() => editRole(role)}
-                      />
-                      <OverflowMenuItem
-                        itemText={t("delete")}
-                        isDelete
-                        onClick={() => {
-                          deleteRole(role);
-                        }}
-                      />
-                    </OverflowMenu>
+                    {!isProtectedRole(role.roleId) && (
+                      <OverflowMenu ariaLabel={t("openRoleContextMenu")}>
+                        <OverflowMenuItem
+                          itemText={t("editRole")}
+                          onClick={() => editRole(role)}
+                        />
+                        <OverflowMenuItem
+                          itemText={t("delete")}
+                          isDelete
+                          onClick={() => {
+                            deleteRole(role);
+                          }}
+                        />
+                      </OverflowMenu>
+                    )}
                   </Stack>
                   <p>
                     {t("roleId")}: {role.roleId}

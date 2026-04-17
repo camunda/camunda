@@ -76,7 +76,7 @@ type TextMenuItem<D> = {
   label: string;
   onClick: (entity: D) => void;
   isDangerous?: boolean;
-  disabled?: boolean;
+  disabled?: boolean | ((entity: D) => boolean);
   hidden?: boolean;
 };
 
@@ -390,8 +390,12 @@ const EntityList = <D extends EntityData>({
                                       onClick,
                                       icon,
                                       isDangerous,
-                                      disabled,
+                                      disabled: disabledProp,
                                     } = menuItem as MenuItem<D>;
+                                    const disabled =
+                                      typeof disabledProp === "function"
+                                        ? disabledProp(index[rowId])
+                                        : disabledProp;
 
                                     const kind: ButtonKind = isDangerous
                                       ? "danger--ghost"
