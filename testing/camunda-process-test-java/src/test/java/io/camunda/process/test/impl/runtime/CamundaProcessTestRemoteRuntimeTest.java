@@ -126,7 +126,7 @@ public class CamundaProcessTestRemoteRuntimeTest {
     final CamundaProcessTestRuntime camundaRuntime =
         CamundaProcessTestContainerRuntime.newBuilder()
             .withRuntimeMode(CamundaProcessTestRuntimeMode.REMOTE)
-            .withRemoteCamundaClientBuilderFactory(clientBuilderFactory)
+            .withCamundaClientBuilderFactory(clientBuilderFactory)
             .build();
 
     // then
@@ -154,7 +154,7 @@ public class CamundaProcessTestRemoteRuntimeTest {
     final CamundaProcessTestRuntime camundaRuntime =
         CamundaProcessTestContainerRuntime.newBuilder()
             .withRuntimeMode(CamundaProcessTestRuntimeMode.REMOTE)
-            .withRemoteCamundaClientBuilderFactory(() -> camundaClientBuilder)
+            .withCamundaClientBuilderFactory(() -> camundaClientBuilder)
             .build();
 
     // when/then
@@ -175,7 +175,7 @@ public class CamundaProcessTestRemoteRuntimeTest {
     final CamundaProcessTestRuntime camundaRuntime =
         CamundaProcessTestContainerRuntime.newBuilder()
             .withRuntimeMode(CamundaProcessTestRuntimeMode.REMOTE)
-            .withRemoteCamundaClientBuilderFactory(() -> camundaClientBuilder)
+            .withCamundaClientBuilderFactory(() -> camundaClientBuilder)
             .withRemoteRuntimeConnectionTimeout(Duration.ofSeconds(1))
             .build();
 
@@ -207,7 +207,7 @@ public class CamundaProcessTestRemoteRuntimeTest {
     final CamundaProcessTestRuntime camundaRuntime =
         CamundaProcessTestContainerRuntime.newBuilder()
             .withRuntimeMode(CamundaProcessTestRuntimeMode.REMOTE)
-            .withRemoteCamundaClientBuilderFactory(() -> camundaClientBuilder)
+            .withCamundaClientBuilderFactory(() -> camundaClientBuilder)
             .withRemoteRuntimeConnectionTimeout(Duration.ofSeconds(1))
             .build();
 
@@ -231,7 +231,7 @@ public class CamundaProcessTestRemoteRuntimeTest {
     final CamundaProcessTestRuntime camundaRuntime =
         CamundaProcessTestContainerRuntime.newBuilder()
             .withRuntimeMode(CamundaProcessTestRuntimeMode.REMOTE)
-            .withRemoteCamundaClientBuilderFactory(() -> camundaClientBuilder)
+            .withCamundaClientBuilderFactory(() -> camundaClientBuilder)
             .withRemoteRuntimeConnectionTimeout(Duration.ofSeconds(1))
             .build();
 
