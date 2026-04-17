@@ -11,6 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.authentication.entity.CamundaUserDTO;
 import io.camunda.gateway.protocol.model.BatchOperationItemResponse;
+import io.camunda.gateway.protocol.model.BatchOperationItemResponse.StateEnum;
 import io.camunda.gateway.protocol.model.BatchOperationTypeEnum;
 import io.camunda.gateway.protocol.model.IncidentStateEnum;
 import io.camunda.search.entities.AuditLogEntity;
@@ -78,7 +79,7 @@ class SearchQueryResponseMapperTest {
     assertThat(response.getItemKey()).isEqualTo("1234");
     assertThat(response.getProcessInstanceKey()).isEqualTo("4321");
     assertThat(response.getRootProcessInstanceKey()).isEqualTo("4320");
-    assertThat(response.getState()).isEqualTo("COMPLETED");
+    assertThat(response.getState()).isEqualTo(StateEnum.COMPLETED);
     assertThat(response.getProcessedDate()).isEqualTo("2025-01-15T11:53:00.000Z");
     assertThat(response.getErrorMessage()).isEqualTo("errorMessage");
   }

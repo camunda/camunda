@@ -10,15 +10,146 @@ package io.camunda.gateway.mapping.http.rest;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.gateway.mapping.http.RequestMapper;
+import io.camunda.gateway.protocol.model.AdvancedStringFilter;
 import io.camunda.gateway.protocol.model.DeleteResourceRequest;
 import io.camunda.gateway.protocol.model.JobActivationRequest;
+import io.camunda.gateway.protocol.model.MigrateProcessInstanceMappingInstruction;
+import io.camunda.gateway.protocol.model.ProcessInstanceFilter;
+import io.camunda.gateway.protocol.model.ProcessInstanceMigrationBatchOperationPlan;
+import io.camunda.gateway.protocol.model.ProcessInstanceMigrationBatchOperationRequest;
+import io.camunda.gateway.protocol.model.ProcessInstanceModificationBatchOperationRequest;
+import io.camunda.gateway.protocol.model.ProcessInstanceModificationMoveBatchOperationInstruction;
 import io.camunda.gateway.protocol.model.TenantFilterEnum;
+import io.camunda.service.ProcessInstanceServices.ProcessInstanceMigrateBatchOperationRequest;
+import io.camunda.service.ProcessInstanceServices.ProcessInstanceModifyBatchOperationRequest;
 import io.camunda.zeebe.protocol.record.value.TenantFilter;
+import io.camunda.zeebe.util.Either;
 import java.util.List;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.springframework.http.ProblemDetail;
 
 class RequestMapperTest {
+
+  @Test
+  void shouldMapToProcessInstanceMigrationBatchOperationRequest() {
+    // given
+    final var migrationPlan = new ProcessInstanceMigrationBatchOperationPlan();
+    migrationPlan.setTargetProcessDefinitionKey("123");
+    final var mappingInstruction = new MigrateProcessInstanceMappingInstruction();
+    mappingInstruction.setSourceElementId("source1");
+    mappingInstruction.setTargetElementId("target1");
+    migrationPlan.setMappingInstructions(List.of(mappingInstruction));
+
+    final var batchOperationInstruction = new ProcessInstanceMigrationBatchOperationRequest();
+    batchOperationInstruction.setMigrationPlan(migrationPlan);
+    final var filter = new ProcessInstanceFilter();
+    filter.setProcessDefinitionId(new AdvancedStringFilter().$like("process"));
+    batchOperationInstruction.setFilter(filter);
+
+    // when
+    final Either<ProblemDetail, ProcessInstanceMigrateBatchOperationRequest> result =
+        RequestMapper.toProcessInstanceMigrationBatchOperationRequest(batchOperationInstruction);
+
+    // then
+    assertThat(result.isRight()).isTrue();
+    final var request = result.get();
+    assertThat(request.targetProcessDefinitionKey()).isEqualTo(123L);
+    assertThat(request.mappingInstructions())
+        .hasSize(1)
+        .first()
+        .satisfies(
+            instruction -> {
+              assertThat(instruction.getSourceElementId()).isEqualTo("source1");
+              assertThat(instruction.getTargetElementId()).isEqualTo("target1");
+            });
+  }
+
+  @Test
+  void shouldReturnProblemDetailForInvalidInput() {
+    // given
+    final var migrationPlan = new ProcessInstanceMigrationBatchOperationPlan();
+    migrationPlan.setTargetProcessDefinitionKey("123");
+    final var mappingInstruction = new MigrateProcessInstanceMappingInstruction();
+    mappingInstruction.setSourceElementId(null);
+    mappingInstruction.setTargetElementId(null);
+    migrationPlan.setMappingInstructions(List.of(mappingInstruction));
+
+    final var batchOperationRequest = new ProcessInstanceMigrationBatchOperationRequest();
+    batchOperationRequest.setMigrationPlan(migrationPlan);
+    final var filter = new ProcessInstanceFilter();
+    batchOperationRequest.setFilter(filter);
+
+    // when
+    final Either<ProblemDetail, ProcessInstanceMigrateBatchOperationRequest> result =
+        RequestMapper.toProcessInstanceMigrationBatchOperationRequest(batchOperationRequest);
+
+    // then
+    assertThat(result.isLeft()).isTrue();
+    final var problemDetail = result.getLeft();
+    assertThat(problemDetail.getStatus()).isEqualTo(400); // Bad Request
+    assertThat(problemDetail.getDetail()).contains("are required");
+  }
+
+  @Test
+  void shouldMapProcessInstanceModifyBatchOperationRequest() {
+    // given
+    final var moveInstruction =
+        new ProcessInstanceModificationMoveBatchOperationInstruction()
+            .sourceElementId("source1")
+            .targetElementId("target1");
+    final var filter = new ProcessInstanceFilter();
+    filter.setProcessDefinitionId(new AdvancedStringFilter().$like("process"));
+
+    final var modificationRequest =
+        new ProcessInstanceModificationBatchOperationRequest()
+            .addMoveInstructionsItem(moveInstruction);
+    modificationRequest.setFilter(filter);
+
+    // when
+    final Either<ProblemDetail, ProcessInstanceModifyBatchOperationRequest> result =
+        RequestMapper.toProcessInstanceModifyBatchOperationRequest(modificationRequest);
+
+    // then
+    assertThat(result.isRight()).isTrue();
+    final var request = result.get();
+    assertThat(request.moveInstructions())
+        .hasSize(1)
+        .first()
+        .satisfies(
+            instruction -> {
+              assertThat(instruction.getSourceElementId()).isEqualTo("source1");
+              assertThat(instruction.getTargetElementId()).isEqualTo("target1");
+              assertThat(instruction.getAncestorScopeKey()).isEqualTo(-1L);
+              assertThat(instruction.isInferAncestorScopeFromSourceHierarchy()).isTrue();
+              assertThat(instruction.isUseSourceParentKeyAsAncestorScopeKey()).isFalse();
+              assertThat(instruction.getVariableInstructions()).isEmpty();
+            });
+  }
+
+  @Test
+  void shouldNotMapProcessInstanceModifyBatchOperationRequestWhenInvalid() {
+    // given
+    final var moveInstruction =
+        new ProcessInstanceModificationMoveBatchOperationInstruction().sourceElementId("source1");
+    final var filter = new ProcessInstanceFilter();
+    filter.setProcessDefinitionId(new AdvancedStringFilter().$like("process"));
+
+    final var modificationRequest =
+        new ProcessInstanceModificationBatchOperationRequest()
+            .addMoveInstructionsItem(moveInstruction);
+    modificationRequest.setFilter(filter);
+
+    // when
+    final Either<ProblemDetail, ProcessInstanceModifyBatchOperationRequest> result =
+        RequestMapper.toProcessInstanceModifyBatchOperationRequest(modificationRequest);
+
+    // then
+    assertThat(result.isLeft()).isTrue();
+    final var problemDetail = result.getLeft();
+    assertThat(problemDetail.getStatus()).isEqualTo(400);
+    assertThat(problemDetail.getDetail()).isEqualTo("No targetElementId provided.");
+  }
 
   @Nested
   class ResourceDeletionRequestMappingTest {
@@ -29,8 +160,7 @@ class RequestMapperTest {
       final long resourceKey = 12345L;
 
       // when
-      final var result =
-          RequestMapper.toResourceDeletion(resourceKey, (DeleteResourceRequest) null);
+      final var result = RequestMapper.toResourceDeletion(resourceKey, null);
 
       // then
       assertThat(result.isRight()).isTrue();
@@ -110,14 +240,20 @@ class RequestMapperTest {
     }
 
     @Test
-    void shouldRejectResourceDeletionWithZeroOperationReference() {
-      // given — operationReference constraint is enforced by the strict contract
+    void shouldRejectResourceDeletionWithInvalidOperationReference() {
+      // given
       final long resourceKey = 44444L;
+      final var deleteRequest = new DeleteResourceRequest().operationReference(0L);
 
-      // when / then
-      org.assertj.core.api.Assertions.assertThatThrownBy(
-              () -> new DeleteResourceRequest().operationReference(0L))
-          .isInstanceOf(IllegalArgumentException.class);
+      // when
+      final var result = RequestMapper.toResourceDeletion(resourceKey, deleteRequest);
+
+      // then
+      assertThat(result.isLeft()).isTrue();
+      final var problemDetail = result.getLeft();
+      assertThat(problemDetail.getStatus()).isEqualTo(400);
+      assertThat(problemDetail.getDetail()).contains("operationReference");
+      assertThat(problemDetail.getDetail()).contains("> 0");
     }
   }
 
@@ -130,9 +266,10 @@ class RequestMapperTest {
       final var request =
           new JobActivationRequest()
               .type("test-job")
-              .timeout(5000L)
               .maxJobsToActivate(10)
-              .tenantIds(List.of("tenant-a", "tenant-b"));
+              .timeout(5000L)
+              .addTenantIdsItem("tenant-a")
+              .addTenantIdsItem("tenant-b");
       // when
       final var result = RequestMapper.toJobsActivationRequest(request, true);
 
@@ -152,8 +289,8 @@ class RequestMapperTest {
       final var request =
           new JobActivationRequest()
               .type("test-job")
-              .timeout(3000L)
               .maxJobsToActivate(5)
+              .timeout(3000L)
               .tenantFilter(TenantFilterEnum.ASSIGNED);
 
       // when
@@ -175,9 +312,10 @@ class RequestMapperTest {
       final var request =
           new JobActivationRequest()
               .type("test-job")
-              .timeout(3000L)
               .maxJobsToActivate(5)
-              .tenantIds(List.of("tenant-a", "tenant-b"))
+              .timeout(3000L)
+              .addTenantIdsItem("tenant-a")
+              .addTenantIdsItem("tenant-b")
               .tenantFilter(TenantFilterEnum.ASSIGNED);
       // when
       final var result = RequestMapper.toJobsActivationRequest(request, true);
@@ -197,7 +335,7 @@ class RequestMapperTest {
     void shouldRejectProvidedFilterWithoutTenantIdsWhenMultiTenancyEnabled() {
       // given
       final var request =
-          new JobActivationRequest().type("test-job").timeout(5000L).maxJobsToActivate(10);
+          new JobActivationRequest().type("test-job").maxJobsToActivate(10).timeout(5000L);
 
       // when
       final var result = RequestMapper.toJobsActivationRequest(request, true);
@@ -216,9 +354,9 @@ class RequestMapperTest {
       final var request =
           new JobActivationRequest()
               .type("test-job")
-              .timeout(5000L)
               .maxJobsToActivate(10)
-              .tenantIds(List.of("tenant-a"));
+              .timeout(5000L)
+              .addTenantIdsItem("tenant-a");
 
       // when
       final var result = RequestMapper.toJobsActivationRequest(request, true);
@@ -238,8 +376,8 @@ class RequestMapperTest {
       final var request =
           new JobActivationRequest()
               .type("test-job")
-              .timeout(3000L)
               .maxJobsToActivate(5)
+              .timeout(3000L)
               .worker("test-worker");
 
       // when
@@ -261,9 +399,9 @@ class RequestMapperTest {
       final var request =
           new JobActivationRequest()
               .type("test-job")
-              .timeout(5000L)
               .maxJobsToActivate(10)
-              .tenantIds(List.of("tenant-a"));
+              .timeout(5000L)
+              .addTenantIdsItem("tenant-a");
 
       // when
       final var result = RequestMapper.toJobsActivationRequest(request, false);
@@ -281,12 +419,13 @@ class RequestMapperTest {
       final var request =
           new JobActivationRequest()
               .type("complex-job")
-              .timeout(10000L)
               .maxJobsToActivate(15)
+              .timeout(10000L)
               .worker("worker-123")
               .requestTimeout(30000L)
-              .fetchVariable(List.of("var1", "var2"))
-              .tenantIds(List.of("tenant-a"));
+              .addFetchVariableItem("var1")
+              .addFetchVariableItem("var2")
+              .addTenantIdsItem("tenant-a");
 
       // when
       final var result = RequestMapper.toJobsActivationRequest(request, true);
@@ -309,9 +448,9 @@ class RequestMapperTest {
       final var request =
           new JobActivationRequest()
               .type("")
-              .timeout(5000L)
               .maxJobsToActivate(10)
-              .tenantIds(List.of("tenant-a"));
+              .timeout(5000L)
+              .addTenantIdsItem("tenant-a");
 
       // when
       final var result = RequestMapper.toJobsActivationRequest(request, true);
@@ -329,9 +468,9 @@ class RequestMapperTest {
       final var request =
           new JobActivationRequest()
               .type("test-job")
-              .timeout(5000L)
               .maxJobsToActivate(0)
-              .tenantIds(List.of("tenant-a"));
+              .timeout(5000L)
+              .addTenantIdsItem("tenant-a");
 
       // when
       final var result = RequestMapper.toJobsActivationRequest(request, true);
@@ -349,9 +488,9 @@ class RequestMapperTest {
       final var request =
           new JobActivationRequest()
               .type("test-job")
-              .timeout(0L)
               .maxJobsToActivate(10)
-              .tenantIds(List.of("tenant-a"));
+              .timeout(0L)
+              .addTenantIdsItem("tenant-a");
 
       // when
       final var result = RequestMapper.toJobsActivationRequest(request, true);
@@ -369,9 +508,11 @@ class RequestMapperTest {
       final var request =
           new JobActivationRequest()
               .type("test-job")
-              .timeout(5000L)
               .maxJobsToActivate(10)
-              .tenantIds(List.of("tenant-a", "tenant-b", "tenant-c"));
+              .timeout(5000L)
+              .addTenantIdsItem("tenant-a")
+              .addTenantIdsItem("tenant-b")
+              .addTenantIdsItem("tenant-c");
 
       // when
       final var result = RequestMapper.toJobsActivationRequest(request, true);
@@ -389,8 +530,8 @@ class RequestMapperTest {
       final var request =
           new JobActivationRequest()
               .type("test-job")
-              .timeout(5000L)
               .maxJobsToActivate(10)
+              .timeout(5000L)
               .tenantFilter(TenantFilterEnum.ASSIGNED);
 
       // when

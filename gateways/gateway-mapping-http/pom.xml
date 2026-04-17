@@ -246,6 +246,20 @@
             <version>${version.nullaway}</version>
           </dependency>
         </dependencies>
+        <executions>
+          <execution>
+            <!-- NullAway/ErrorProne are focused on production code; tests should be able
+                 to exercise nullable boundaries freely without per-call-site null guards. -->
+            <id>default-testCompile</id>
+            <goals>
+              <goal>testCompile</goal>
+            </goals>
+            <configuration>
+              <compilerArgs combine.self="override"/>
+              <annotationProcessorPaths combine.self="override"/>
+            </configuration>
+          </execution>
+        </executions>
       </plugin>
     </plugins>
   </build>

@@ -725,8 +725,8 @@ public final class SearchQueryResponseMapper {
         .errorCode(job.errorCode())
         .errorMessage(job.errorMessage())
         .customHeaders(job.customHeaders())
-        .deadline(Objects.requireNonNullElse(formatDate(job.deadline()), ""))
-        .endTime(Objects.requireNonNullElse(formatDate(job.endTime()), ""))
+        .deadline(formatDate(job.deadline()))
+        .endTime(formatDate(job.endTime()))
         .processDefinitionId(job.processDefinitionId())
         .processDefinitionKey(KeyUtil.keyToString(job.processDefinitionKey()))
         .processInstanceKey(KeyUtil.keyToString(job.processInstanceKey()))
@@ -734,8 +734,8 @@ public final class SearchQueryResponseMapper {
         .elementId(job.elementId())
         .elementInstanceKey(KeyUtil.keyToString(job.elementInstanceKey()))
         .tenantId(job.tenantId())
-        .creationTime(Objects.requireNonNullElse(formatDate(job.creationTime()), ""))
-        .lastUpdateTime(Objects.requireNonNullElse(formatDate(job.lastUpdateTime()), ""));
+        .creationTime(formatDate(job.creationTime()))
+        .lastUpdateTime(formatDate(job.lastUpdateTime()));
   }
 
   public static ProcessInstanceResult toProcessInstance(final ProcessInstanceEntity p) {
@@ -750,8 +750,8 @@ public final class SearchQueryResponseMapper {
             .processDefinitionKey(KeyUtil.keyToString(p.processDefinitionKey()))
             .parentProcessInstanceKey(KeyUtil.keyToString(p.parentProcessInstanceKey()))
             .parentElementInstanceKey(KeyUtil.keyToString(p.parentFlowNodeInstanceKey()))
-            .startDate(Objects.requireNonNullElse(formatDate(p.startDate()), ""))
-            .endDate(Objects.requireNonNullElse(formatDate(p.endDate()), ""))
+            .startDate(formatDate(p.startDate()))
+            .endDate(formatDate(p.endDate()))
             .hasIncident(p.hasIncident())
             .tenantId(p.tenantId())
             .tags(p.tags())
@@ -773,8 +773,8 @@ public final class SearchQueryResponseMapper {
         .batchOperationKey(entity.batchOperationKey())
         .state(BatchOperationStateEnum.fromValue(entity.state().name()))
         .batchOperationType(BatchOperationTypeEnum.fromValue(entity.operationType().name()))
-        .startDate(Objects.requireNonNullElse(formatDate(entity.startDate()), ""))
-        .endDate(Objects.requireNonNullElse(formatDate(entity.endDate()), ""))
+        .startDate(formatDate(entity.startDate()))
+        .endDate(formatDate(entity.endDate()))
         .actorType(
             ofNullable(entity.actorType())
                 .map(Enum::name)
@@ -814,7 +814,7 @@ public final class SearchQueryResponseMapper {
         new BatchOperationItemResponse()
             .batchOperationKey(entity.batchOperationKey())
             .rootProcessInstanceKey(KeyUtil.keyToString(entity.rootProcessInstanceKey()))
-            .processedDate(Objects.requireNonNullElse(formatDate(entity.processedDate()), ""))
+            .processedDate(formatDate(entity.processedDate()))
             .errorMessage(entity.errorMessage());
     if (entity.operationType() != null) {
       response.operationType(BatchOperationTypeEnum.fromValue(entity.operationType().name()));
@@ -977,8 +977,8 @@ public final class SearchQueryResponseMapper {
         .rootProcessInstanceKey(KeyUtil.keyToString(instance.rootProcessInstanceKey()))
         .incidentKey(KeyUtil.keyToString(instance.incidentKey()))
         .hasIncident(instance.hasIncident())
-        .startDate(Objects.requireNonNullElse(formatDate(instance.startDate()), ""))
-        .endDate(Objects.requireNonNullElse(formatDate(instance.endDate()), ""))
+        .startDate(formatDate(instance.startDate()))
+        .endDate(formatDate(instance.endDate()))
         .state(ElementInstanceStateEnum.fromValue(instance.state().name()))
         .type(ElementInstanceResult.TypeEnum.fromValue(instance.type().name()))
         .tenantId(instance.tenantId());
@@ -1032,7 +1032,7 @@ public final class SearchQueryResponseMapper {
         .errorMessage(t.errorMessage())
         .elementId(t.flowNodeId())
         .elementInstanceKey(KeyUtil.keyToString(t.flowNodeInstanceKey()))
-        .creationTime(Objects.requireNonNullElse(formatDate(t.creationTime()), ""))
+        .creationTime(formatDate(t.creationTime()))
         .state(
             t.state() != null
                 ? IncidentStateEnum.fromValue(t.state().name())
@@ -1061,7 +1061,7 @@ public final class SearchQueryResponseMapper {
         .messageSubscriptionState(
             MessageSubscriptionStateEnum.fromValue(
                 messageSubscription.messageSubscriptionState().name()))
-        .lastUpdatedDate(Objects.requireNonNullElse(formatDate(messageSubscription.dateTime()), ""))
+        .lastUpdatedDate(formatDate(messageSubscription.dateTime()))
         .messageName(messageSubscription.messageName())
         .correlationKey(messageSubscription.correlationKey())
         .tenantId(messageSubscription.tenantId());
@@ -1114,10 +1114,10 @@ public final class SearchQueryResponseMapper {
         .candidateGroups(t.candidateGroups())
         .formKey(KeyUtil.keyToString(t.formKey()))
         .elementId(t.elementId())
-        .creationDate(Objects.requireNonNullElse(formatDate(t.creationDate()), ""))
-        .completionDate(Objects.requireNonNullElse(formatDate(t.completionDate()), ""))
-        .dueDate(Objects.requireNonNullElse(formatDate(t.dueDate()), ""))
-        .followUpDate(Objects.requireNonNullElse(formatDate(t.followUpDate()), ""))
+        .creationDate(formatDate(t.creationDate()))
+        .completionDate(formatDate(t.completionDate()))
+        .dueDate(formatDate(t.dueDate()))
+        .followUpDate(formatDate(t.followUpDate()))
         .externalFormReference(t.externalFormReference())
         .processDefinitionVersion(t.processDefinitionVersion())
         .customHeaders(t.customHeaders())
@@ -1179,7 +1179,7 @@ public final class SearchQueryResponseMapper {
         new DecisionInstanceResult()
             .decisionEvaluationKey(KeyUtil.keyToString(entity.decisionInstanceKey()))
             .decisionEvaluationInstanceKey(entity.decisionInstanceId())
-            .evaluationDate(Objects.requireNonNullElse(formatDate(entity.evaluationDate()), ""))
+            .evaluationDate(formatDate(entity.evaluationDate()))
             .evaluationFailure(entity.evaluationFailure())
             .processDefinitionKey(KeyUtil.keyToString(entity.processDefinitionKey()))
             .processInstanceKey(KeyUtil.keyToString(entity.processInstanceKey()))
@@ -1209,7 +1209,7 @@ public final class SearchQueryResponseMapper {
         new DecisionInstanceGetQueryResult()
             .decisionEvaluationKey(KeyUtil.keyToString(entity.decisionInstanceKey()))
             .decisionEvaluationInstanceKey(entity.decisionInstanceId())
-            .evaluationDate(Objects.requireNonNullElse(formatDate(entity.evaluationDate()), ""))
+            .evaluationDate(formatDate(entity.evaluationDate()))
             .evaluationFailure(entity.evaluationFailure())
             .processDefinitionKey(KeyUtil.keyToString(entity.processDefinitionKey()))
             .processInstanceKey(KeyUtil.keyToString(entity.processInstanceKey()))
@@ -1465,7 +1465,7 @@ public final class SearchQueryResponseMapper {
             .auditLogKey(auditLog.auditLogKey())
             .entityKey(auditLog.entityKey())
             .batchOperationKey(KeyUtil.keyToString(auditLog.batchOperationKey()))
-            .timestamp(Objects.requireNonNullElse(formatDate(auditLog.timestamp()), ""))
+            .timestamp(formatDate(auditLog.timestamp()))
             .actorId(auditLog.actorId())
             .agentElementId(auditLog.agentElementId())
             .tenantId(auditLog.tenantId())
@@ -1661,7 +1661,7 @@ public final class SearchQueryResponseMapper {
     }
 
     return new JobTimeSeriesStatisticsItem()
-        .time(Objects.requireNonNullElse(formatDate(entity.time()), ""))
+        .time(formatDate(entity.time()))
         .created(toStatusMetric(entity.created()))
         .completed(toStatusMetric(entity.completed()))
         .failed(toStatusMetric(entity.failed()));
@@ -1696,7 +1696,7 @@ public final class SearchQueryResponseMapper {
     }
     return new StatusMetric()
         .count(metric.count())
-        .lastUpdatedAt(Objects.requireNonNullElse(formatDate(metric.lastUpdatedAt()), ""));
+        .lastUpdatedAt(formatDate(metric.lastUpdatedAt()));
   }
 
   public static GlobalTaskListenerSearchQueryResult toGlobalTaskListenerSearchQueryResponse(

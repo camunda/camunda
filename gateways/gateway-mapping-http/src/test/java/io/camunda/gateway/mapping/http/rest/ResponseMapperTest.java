@@ -10,6 +10,7 @@ package io.camunda.gateway.mapping.http.rest;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.gateway.mapping.http.ResponseMapper;
+import io.camunda.gateway.protocol.model.ActivatedJobResult;
 import io.camunda.gateway.protocol.model.UserTaskProperties;
 import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
 import io.camunda.zeebe.gateway.impl.job.JobActivationResponse;
@@ -151,18 +152,32 @@ class ResponseMapperTest {
                 assertThat(props.getUserTaskKey()).isEqualTo("100");
               }),
           new ActivatedJobWithUserTaskPropsCase(
-              "TASK_LISTENER job with invalid/empty headers and no action",
+              "TASK_LISTENER job with invalid or empty header values",
               JobKind.TASK_LISTENER,
               Map.of(
                   Protocol.USER_TASK_CANDIDATE_GROUPS_HEADER_NAME, "",
                   Protocol.USER_TASK_CANDIDATE_USERS_HEADER_NAME, "invalid_string",
                   Protocol.USER_TASK_CHANGED_ATTRIBUTES_HEADER_NAME, "132",
                   Protocol.USER_TASK_PRIORITY_HEADER_NAME, "<not_a_number>"),
-              props ->
-                  assertThat(props)
-                      .as(
-                          "User task properties should be null when required action header is missing")
-                      .isNull()),
+              props -> {
+                // Verify invalid or empty headers result in empty or null properties
+                assertThat(props.getAction()).as("Action should be null").isNull();
+                assertThat(props.getAssignee()).as("Assignee should be null").isNull();
+                assertThat(props.getCandidateGroups())
+                    .as("Candidate groups should be empty for invalid input")
+                    .isEmpty();
+                assertThat(props.getCandidateUsers())
+                    .as("Candidate users should be empty for invalid input")
+                    .isEmpty();
+                assertThat(props.getChangedAttributes())
+                    .as("Changed attributes should be empty for invalid input")
+                    .isEmpty();
+                assertThat(props.getDueDate()).as("Due date should be null").isNull();
+                assertThat(props.getFollowUpDate()).as("Follow-up date should be null").isNull();
+                assertThat(props.getFormKey()).as("Form key should be null").isNull();
+                assertThat(props.getPriority()).as("Priority should be null").isNull();
+                assertThat(props.getUserTaskKey()).as("User task key should be null").isNull();
+              }),
           new ActivatedJobWithUserTaskPropsCase(
               "TASK_LISTENER job with empty headers map",
               JobKind.TASK_LISTENER,
@@ -208,7 +223,7 @@ class ResponseMapperTest {
       final var jobs = result.getActivateJobsResponse().getJobs();
       assertThat(jobs)
           .singleElement()
-          .extracting(job -> job.getUserTask().orElse(null))
+          .extracting(ActivatedJobResult::getUserTask)
           .satisfies(testCase.assertions);
     }
 
@@ -488,11 +503,11 @@ class ResponseMapperTest {
 
       // then
       assertThat(response.getResourceKey()).isEqualTo(String.valueOf(resourceKey));
-      assertThat(response.getBatchOperation()).isPresent();
-      assertThat(response.getBatchOperation().get().getBatchOperationKey())
+      assertThat(response.getBatchOperation()).isNotNull();
+      assertThat(response.getBatchOperation().getBatchOperationKey())
           .isEqualTo(String.valueOf(batchOperationKey));
-      assertThat(response.getBatchOperation().get().getBatchOperationType()).isNotNull();
-      assertThat(response.getBatchOperation().get().getBatchOperationType().getValue())
+      assertThat(response.getBatchOperation().getBatchOperationType()).isNotNull();
+      assertThat(response.getBatchOperation().getBatchOperationType().name())
           .isEqualTo(batchOperationType.name());
     }
   }

@@ -1410,16 +1410,15 @@ public record %s(%s value) implements %s {
       final var getterName = "get" + capitalizeIdentifier(f.identifier());
       final var setterName = "set" + capitalizeIdentifier(f.identifier());
 
-      // Fluent setter
+      // Fluent setter — always accepts @Nullable so callers can pass optional or defaulted
+      // values without guarding; Jackson's @JsonInclude(NON_NULL) drops unset fields.
       var fluent = javaClass.addMethod()
           .setName(f.identifier())
           .setReturnType(dtoClass)
           .setPublic()
           .setBody("this." + f.identifier() + " = " + f.identifier() + ";\nreturn this;");
-      var fluentParam = fluent.addParameter(fieldType, f.identifier());
-      if (nullable) {
-        fluentParam.addAnnotation("org.jspecify.annotations.Nullable");
-      }
+      fluent.addParameter(fieldType, f.identifier())
+          .addAnnotation("org.jspecify.annotations.Nullable");
 
       // Getter with @Schema and @JsonProperty; nullable getters return @Nullable T directly.
       var getter = javaClass.addMethod()
@@ -1441,18 +1440,59 @@ public record %s(%s value) implements %s {
       getter.addAnnotation("com.fasterxml.jackson.annotation.JsonProperty")
           .setStringValue(f.name());
 
-      // Setter with @JsonProperty
+      // Setter with @JsonProperty — same permissive nullability as the fluent setter.
       var setter = javaClass.addMethod()
           .setName(setterName)
           .setReturnTypeVoid()
           .setPublic()
           .setBody("this." + f.identifier() + " = " + f.identifier() + ";");
-      var setterParam = setter.addParameter(fieldType, f.identifier());
-      if (nullable) {
-        setterParam.addAnnotation("org.jspecify.annotations.Nullable");
-      }
+      setter.addParameter(fieldType, f.identifier())
+          .addAnnotation("org.jspecify.annotations.Nullable");
       setter.addAnnotation("com.fasterxml.jackson.annotation.JsonProperty")
           .setStringValue(f.name());
+
+      // Collection helpers matching the OpenAPI codegen's addXxxItem / putXxxItem convention,
+      // so hand-written callers can keep their fluent-style usage.
+      if (fieldType.startsWith("List<") || fieldType.startsWith("Set<")) {
+        final var itemType =
+            fieldType.substring(fieldType.indexOf('<') + 1, fieldType.lastIndexOf('>'));
+        final var implType = fieldType.startsWith("List<") ? "ArrayList" : "LinkedHashSet";
+        javaClass.addImport("java.util." + implType);
+        final var adderName = "add" + capitalizeIdentifier(f.identifier()) + "Item";
+        var adder = javaClass.addMethod()
+            .setName(adderName)
+            .setReturnType(dtoClass)
+            .setPublic()
+            .setBody(
+                "if (this." + f.identifier() + " == null) {\n"
+                    + "  this." + f.identifier() + " = new " + implType + "<>();\n"
+                    + "}\n"
+                    + "this." + f.identifier() + ".add(" + f.identifier() + "Item);\n"
+                    + "return this;");
+        adder.addParameter(itemType, f.identifier() + "Item");
+      } else if (fieldType.startsWith("Map<")) {
+        final var inner =
+            fieldType.substring(fieldType.indexOf('<') + 1, fieldType.lastIndexOf('>'));
+        final var comma = inner.indexOf(',');
+        if (comma > 0) {
+          final var keyType = inner.substring(0, comma).trim();
+          final var valueType = inner.substring(comma + 1).trim();
+          javaClass.addImport("java.util.HashMap");
+          final var putterName = "put" + capitalizeIdentifier(f.identifier()) + "Item";
+          var putter = javaClass.addMethod()
+              .setName(putterName)
+              .setReturnType(dtoClass)
+              .setPublic()
+              .setBody(
+                  "if (this." + f.identifier() + " == null) {\n"
+                      + "  this." + f.identifier() + " = new HashMap<>();\n"
+                      + "}\n"
+                      + "this." + f.identifier() + ".put(key, " + f.identifier() + "Item);\n"
+                      + "return this;");
+          putter.addParameter(keyType, "key");
+          putter.addParameter(valueType, f.identifier() + "Item");
+        }
+      }
     }
 
     // Render nested enums for fields with inline enum values
@@ -2094,6 +2134,11 @@ public record %s(%s value) implements %s {
     if (identifier == null || identifier.isBlank()) {
       return "Field";
     }
+    // Match the OpenAPI codegen for identifiers starting with '$' (e.g. filter operators
+    // $eq, $neq): keep the leading '$' and capitalize the following character.
+    if (identifier.startsWith("$") && identifier.length() > 1) {
+      return "$" + identifier.substring(1, 2).toUpperCase() + identifier.substring(2);
+    }
     return identifier.substring(0, 1).toUpperCase() + identifier.substring(1);
   }
 
@@ -2101,7 +2146,10 @@ public record %s(%s value) implements %s {
     final var result = new StringBuilder();
     for (int i = 0; i < identifier.length(); i++) {
       final var ch = identifier.charAt(i);
-      if (Character.isUpperCase(ch) && i > 0) {
+      final var prev = i > 0 ? identifier.charAt(i - 1) : '\0';
+      // Insert underscore between camelCase boundaries, but not between consecutive
+      // uppercase letters in an already-constant name like "ACTIVE".
+      if (Character.isUpperCase(ch) && i > 0 && !Character.isUpperCase(prev)) {
         result.append('_');
       }
       result.append(Character.toUpperCase(ch));

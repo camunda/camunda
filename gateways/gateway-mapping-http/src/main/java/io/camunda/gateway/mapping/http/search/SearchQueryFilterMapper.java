@@ -103,7 +103,7 @@ public class SearchQueryFilterMapper {
     }
 
     if (filter != null) {
-      Optional.ofNullable(filter.get$or())
+      Optional.ofNullable(filter.get$Or())
           .filter(orList -> !orList.isEmpty())
           .ifPresent(
               orList -> {
@@ -735,7 +735,7 @@ public class SearchQueryFilterMapper {
     }
 
     if (filter != null) {
-      Optional.ofNullable(filter.get$or())
+      Optional.ofNullable(filter.get$Or())
           .filter(orList -> !orList.isEmpty())
           .ifPresent(
               orList -> {

@@ -34,6 +34,58 @@ public class AdvancedSearchFilterUtil {
     return (final Object filter) -> mapToOperations(filter, tClass);
   }
 
+  public static Function<Object, List<Operation<String>>> mapToStringOperations() {
+    return mapToOperations(String.class);
+  }
+
+  public static Function<Object, List<Operation<String>>> mapToStringOperations(
+      final String fieldName,
+      final List<String> validationErrors,
+      final CustomConverter<String> converter) {
+    return mapToOperations(
+        String.class,
+        new CustomConverter<>() {
+          @Override
+          public boolean canConvert(final Object value) {
+            return converter.canConvert(value);
+          }
+
+          @Override
+          public @Nullable String convertValue(final Object value) {
+            try {
+              return converter.convertValue(value);
+            } catch (final Exception e) {
+              validationErrors.add(
+                  "The provided %s '%s' is not valid: %s"
+                      .formatted(fieldName, value, e.getMessage()));
+              return null;
+            }
+          }
+        });
+  }
+
+  public static Function<Object, List<Operation<Integer>>> mapToIntegerOperations(
+      final String fieldName, final List<String> validationErrors) {
+    return mapToOperations(
+        Integer.class,
+        new CustomConverter<>() {
+          @Override
+          public boolean canConvert(final Object value) {
+            return true;
+          }
+
+          @Override
+          public @Nullable Integer convertValue(final Object value) {
+            if (value instanceof final Integer i) {
+              return i;
+            }
+            validationErrors.add(
+                "The provided %s '%s' is not a valid integer value.".formatted(fieldName, value));
+            return null;
+          }
+        });
+  }
+
   /**
    * Returns a function that converts a filter property object to a list of {@link Operation}s of
    * type {@link Long}. Invalid values are collected into the provided {@code validationErrors} list
@@ -157,8 +209,8 @@ public class AdvancedSearchFilterUtil {
       if (filter instanceof final Boolean booleanValue) {
         return List.of(Operation.exists(booleanValue));
       }
-      return List.of(
-          new Operation<>(Operator.EQUALS, convertValue(tClass, filter, customConverter)));
+      final var converted = convertValue(tClass, filter, customConverter);
+      return converted == null ? List.of() : List.of(new Operation<>(Operator.EQUALS, converted));
     }
 
     // Handle Map values (strict contract deserialization of {"$eq": "5"} etc.).
@@ -191,14 +243,18 @@ public class AdvancedSearchFilterUtil {
         if (value != null) {
           if (value instanceof final Boolean booleanValue) {
             operations.add(Operation.exists(booleanValue));
-          } else if (value instanceof final List<?> values) {
-            if (!values.isEmpty()) {
-              final var tValues =
-                  values.stream().map(v -> convertValue(tClass, v, customConverter)).toList();
+          } else if (value instanceof final List<?> values && !values.isEmpty()) {
+            final var tValues =
+                values.stream().map(v -> convertValue(tClass, v, customConverter)).toList();
+            // Drop the whole operation if any element failed to convert (null in the list).
+            if (!tValues.contains(null)) {
               operations.add(new Operation<>(operator, tValues));
             }
-          } else {
-            operations.add(new Operation<>(operator, convertValue(tClass, value, customConverter)));
+          } else if (!(value instanceof List<?>)) {
+            final var converted = convertValue(tClass, value, customConverter);
+            if (converted != null) {
+              operations.add(new Operation<>(operator, converted));
+            }
           }
         }
       } catch (final InvocationTargetException | IllegalAccessException e) {
@@ -228,10 +284,15 @@ public class AdvancedSearchFilterUtil {
         if (!values.isEmpty()) {
           final var tValues =
               values.stream().map(v -> convertValue(tClass, v, customConverter)).toList();
-          operations.add(new Operation<>(operator, tValues));
+          if (!tValues.contains(null)) {
+            operations.add(new Operation<>(operator, tValues));
+          }
         }
       } else {
-        operations.add(new Operation<>(operator, convertValue(tClass, value, customConverter)));
+        final var converted = convertValue(tClass, value, customConverter);
+        if (converted != null) {
+          operations.add(new Operation<>(operator, converted));
+        }
       }
     }
     return operations;
@@ -253,8 +314,8 @@ public class AdvancedSearchFilterUtil {
       final var valueMethod = fClass.getMethod("value");
       final var plainValue = valueMethod.invoke(filter);
       if (plainValue != null) {
-        return List.of(
-            new Operation<>(Operator.EQUALS, convertValue(tClass, plainValue, customConverter)));
+        final var converted = convertValue(tClass, plainValue, customConverter);
+        return converted == null ? List.of() : List.of(new Operation<>(Operator.EQUALS, converted));
       }
       return List.of();
     } catch (final NoSuchMethodException e) {
@@ -282,14 +343,18 @@ public class AdvancedSearchFilterUtil {
         if (value != null) {
           if (value instanceof final Boolean booleanValue) {
             operations.add(Operation.exists(booleanValue));
-          } else if (value instanceof final List<?> values) {
-            if (!values.isEmpty()) {
-              final var tValues =
-                  values.stream().map(v -> convertValue(tClass, v, customConverter)).toList();
+          } else if (value instanceof final List<?> values && !values.isEmpty()) {
+            final var tValues =
+                values.stream().map(v -> convertValue(tClass, v, customConverter)).toList();
+            // Drop the whole operation if any element failed to convert (null in the list).
+            if (!tValues.contains(null)) {
               operations.add(new Operation<>(operator, tValues));
             }
-          } else {
-            operations.add(new Operation<>(operator, convertValue(tClass, value, customConverter)));
+          } else if (!(value instanceof List<?>)) {
+            final var converted = convertValue(tClass, value, customConverter);
+            if (converted != null) {
+              operations.add(new Operation<>(operator, converted));
+            }
           }
         }
       } catch (final ReflectiveOperationException e) {

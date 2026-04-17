@@ -39,8 +39,8 @@ public class KeyUtil {
     return String.valueOf(value);
   }
 
-  public static String keyToString(final Long value) {
-    return String.valueOf(value);
+  public static @Nullable String keyToString(final @Nullable Long value) {
+    return value != null ? String.valueOf(value) : null;
   }
 
   public static Optional<Long> tryParseLong(final @Nullable String key) {
