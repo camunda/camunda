@@ -1,15 +1,6 @@
 # Additional values file to run on stable VMs
-elasticsearch:
-  master:
-    nodeSelector:
-      component: benchmark-n2-standard-8-stable
-      topology.kubernetes.io/zone: __AVAILABILITY_ZONE__
-    tolerations:
-      - key: nodepool
-        operator: Equal
-        value: n2-standard-8-stable
-        effect: NoSchedule
-
+# Scheduling on stable VMs is useful to observe long-term behavior, such as memory leaks, etc.
+# https://github.com/camunda/camunda-platform-helm/blob/22051fea1fbd831171cce58292ea53ee2593d8b4/charts/camunda-platform-8.7/values.yaml#L969-L972
 zeebe:
   # Require n2-standard-4-stable to ensure the broker is the only application running on its node
   nodeSelector:
