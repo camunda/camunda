@@ -14,7 +14,7 @@ additional_platform_configuration ?=
 # Optional: additional Helm configuration for the load test release.
 # Use this to pass extra `--set`/`-f` flags when installing/upgrading the load tests.
 # See the load test README for example values and guidance.
-additional_load_test_configuration ?= --set global.image.repository=registry.camunda.cloud/team-zeebe --set global.image.pullSecrets[0].name=harbor-registry
+additional_load_test_configuration ?=
 
 helm_chart_platform := camunda-platform-helm/charts/$(helm_chart)
 helm_chart_load_tests := camunda-load-tests/camunda-load-tests
