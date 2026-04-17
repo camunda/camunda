@@ -14,7 +14,7 @@ public final class AuditLogCategoryConverter implements CustomConverter<String> 
 
   @Override
   public boolean canConvert(final Object value) {
-    return value instanceof AuditLogCategoryEnum || value instanceof String;
+    return value instanceof AuditLogCategoryEnum;
   }
 
   @Override
@@ -24,9 +24,6 @@ public final class AuditLogCategoryConverter implements CustomConverter<String> 
     }
     if (value instanceof final AuditLogCategoryEnum categoryEnum) {
       return toInternalCategoryAsString(categoryEnum);
-    }
-    if (value instanceof final String stringValue) {
-      return toInternalCategoryAsString(AuditLogCategoryEnum.fromValue(stringValue));
     }
     throw new IllegalArgumentException(
         "Cannot convert value [%s] of type [%s]. Expected type: [%s]"

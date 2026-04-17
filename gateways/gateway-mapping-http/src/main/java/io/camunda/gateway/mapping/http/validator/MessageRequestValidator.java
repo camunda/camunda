@@ -13,48 +13,41 @@ import static io.camunda.gateway.mapping.http.validator.RequestValidator.validat
 
 import io.camunda.gateway.protocol.model.MessageCorrelationRequest;
 import io.camunda.gateway.protocol.model.MessagePublicationRequest;
+import java.util.List;
 import java.util.Optional;
 import org.springframework.http.ProblemDetail;
 
 public final class MessageRequestValidator {
 
-  public static Optional<ProblemDetail> validatePublicationRequest(
-      final MessagePublicationRequest request, final int maxNameFieldLength) {
+  public static Optional<ProblemDetail> validateMessageCorrelationRequest(
+      final MessageCorrelationRequest correlationRequest, final int maxNameFieldLength) {
     return validate(
         violations -> {
-          if (request.getName() == null || request.getName().isBlank()) {
-            violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("name"));
+          if (correlationRequest.getName() == null || correlationRequest.getName().isBlank()) {
+            violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("messageName"));
           }
-          request
-              .getCorrelationKey()
-              .ifPresent(
-                  ck -> {
-                    if (ck.length() > maxNameFieldLength) {
-                      violations.add(
-                          ERROR_MESSAGE_TOO_MANY_CHARACTERS.formatted(
-                              "correlationKey", maxNameFieldLength));
-                    }
-                  });
+          validateCorrelationKeyLength(
+              correlationRequest.getCorrelationKey().orElse(null), maxNameFieldLength, violations);
         });
   }
 
-  public static Optional<ProblemDetail> validateCorrelationRequest(
-      final MessageCorrelationRequest request, final int maxNameFieldLength) {
+  public static Optional<ProblemDetail> validateMessagePublicationRequest(
+      final MessagePublicationRequest publicationRequest, final int maxNameFieldLength) {
     return validate(
         violations -> {
-          if (request.getName() == null || request.getName().isBlank()) {
-            violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("messageName"));
+          if (publicationRequest.getName() == null || publicationRequest.getName().isBlank()) {
+            violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("name"));
           }
-          request
-              .getCorrelationKey()
-              .ifPresent(
-                  ck -> {
-                    if (ck.length() > maxNameFieldLength) {
-                      violations.add(
-                          ERROR_MESSAGE_TOO_MANY_CHARACTERS.formatted(
-                              "correlationKey", maxNameFieldLength));
-                    }
-                  });
+          validateCorrelationKeyLength(
+              publicationRequest.getCorrelationKey().orElse(null), maxNameFieldLength, violations);
         });
+  }
+
+  private static void validateCorrelationKeyLength(
+      final String correlationKey, final int maxNameFieldLength, final List<String> violations) {
+    if (correlationKey != null && correlationKey.length() > maxNameFieldLength) {
+      violations.add(
+          ERROR_MESSAGE_TOO_MANY_CHARACTERS.formatted("correlationKey", maxNameFieldLength));
+    }
   }
 }

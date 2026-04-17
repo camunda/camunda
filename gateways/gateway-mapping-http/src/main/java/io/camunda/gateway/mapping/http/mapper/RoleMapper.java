@@ -26,28 +26,32 @@ public class RoleMapper {
     this.roleRequestValidator = roleRequestValidator;
   }
 
+  public Either<ProblemDetail, CreateRoleRequest> toRoleCreateRequest(
+      final RoleCreateRequest roleCreateRequest) {
+    return RequestMapper.getResult(
+        roleRequestValidator.validateCreateRequest(roleCreateRequest),
+        () ->
+            new CreateRoleRequest(
+                roleCreateRequest.getRoleId(),
+                roleCreateRequest.getName(),
+                roleCreateRequest.getDescription().orElse(null)));
+  }
+
+  public Either<ProblemDetail, UpdateRoleRequest> toRoleUpdateRequest(
+      final RoleUpdateRequest roleUpdateRequest, final String roleId) {
+    return RequestMapper.getResult(
+        roleRequestValidator.validateUpdateRequest(roleId, roleUpdateRequest),
+        () ->
+            new UpdateRoleRequest(
+                roleId,
+                roleUpdateRequest.getName(),
+                roleUpdateRequest.getDescription().orElse(null)));
+  }
+
   public Either<ProblemDetail, RoleMemberRequest> toRoleMemberRequest(
       final String roleId, final String memberId, final EntityType entityType) {
     return RequestMapper.getResult(
         roleRequestValidator.validateMemberRequest(roleId, memberId, entityType),
         () -> new RoleMemberRequest(roleId, memberId, entityType));
-  }
-
-  public Either<ProblemDetail, CreateRoleRequest> toRoleCreateRequest(
-      final RoleCreateRequest request) {
-    return RequestMapper.getResult(
-        roleRequestValidator.validateCreateRequest(request),
-        () ->
-            new CreateRoleRequest(
-                request.getRoleId(), request.getName(), request.getDescription().orElse(null)));
-  }
-
-  public Either<ProblemDetail, UpdateRoleRequest> toRoleUpdateRequest(
-      final RoleUpdateRequest request, final String roleId) {
-    return RequestMapper.getResult(
-        roleRequestValidator.validateUpdateRequest(roleId, request),
-        () ->
-            new UpdateRoleRequest(
-                roleId, request.getName(), request.getDescription().orElse(null)));
   }
 }

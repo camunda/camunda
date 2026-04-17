@@ -102,15 +102,15 @@ public class GlobalListenerMapper {
 
   public GlobalTaskListenerResult toGlobalListenerResponse(final GlobalListenerRecord record) {
     return new GlobalTaskListenerResult()
+        .id(record.getId())
         .type(record.getType())
         .retries(record.getRetries())
-        .afterNonGlobal(record.isAfterNonGlobal())
-        .priority(record.getPriority())
         .eventTypes(
             record.getEventTypes().stream()
                 .map(GlobalTaskListenerEventTypeEnum::fromValue)
                 .toList())
-        .id(record.getId())
+        .afterNonGlobal(record.isAfterNonGlobal())
+        .priority(record.getPriority())
         .source(GlobalListenerSourceEnum.valueOf(record.getSource().name()));
   }
 }

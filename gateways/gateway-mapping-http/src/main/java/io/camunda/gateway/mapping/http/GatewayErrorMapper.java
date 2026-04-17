@@ -53,9 +53,6 @@ public class GatewayErrorMapper {
       LOG.warn("Expected to handle REST request, but access was denied", error);
       return createProblemDetail(
           HttpStatus.FORBIDDEN, ade.getMessage(), HttpStatus.FORBIDDEN.name());
-    } else if (exception instanceof NumberFormatException) {
-      return createProblemDetail(
-          HttpStatus.BAD_REQUEST, exception.getMessage(), "INVALID_ARGUMENT");
     } else {
       LOG.error("Expected to handle REST request, but an unexpected error occurred", error);
       return createProblemDetail(

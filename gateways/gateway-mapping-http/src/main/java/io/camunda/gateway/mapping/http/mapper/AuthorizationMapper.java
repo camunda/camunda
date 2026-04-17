@@ -7,6 +7,7 @@
  */
 package io.camunda.gateway.mapping.http.mapper;
 
+import io.camunda.gateway.mapping.http.GatewayErrorMapper;
 import io.camunda.gateway.mapping.http.RequestMapper;
 import io.camunda.gateway.mapping.http.validator.AuthorizationRequestValidator;
 import io.camunda.gateway.protocol.model.AuthorizationIdBasedRequest;
@@ -24,6 +25,7 @@ import io.camunda.zeebe.util.Either;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 
 public class AuthorizationMapper {
@@ -34,18 +36,12 @@ public class AuthorizationMapper {
     this.authorizationRequestValidator = authorizationRequestValidator;
   }
 
-  private static AuthorizationResourceMatcher resolveIdBasedResourceMatcher(
-      final String resourceId) {
-    return AuthorizationScope.WILDCARD.getResourceId().equals(resourceId)
-        ? AuthorizationResourceMatcher.ANY
-        : AuthorizationResourceMatcher.ID;
-  }
-
   public Either<ProblemDetail, CreateAuthorizationRequest> toCreateAuthorizationRequest(
       final AuthorizationRequest request) {
     return switch (request) {
-      case AuthorizationIdBasedRequest idReq -> toCreateAuthorizationRequest(idReq);
-      case AuthorizationPropertyBasedRequest propReq -> toCreateAuthorizationRequest(propReq);
+      case final AuthorizationIdBasedRequest idReq -> toCreateAuthorizationRequest(idReq);
+      case final AuthorizationPropertyBasedRequest propReq -> toCreateAuthorizationRequest(propReq);
+      default -> Either.left(createUnsupportedAuthorizationProblemDetail(request));
     };
   }
 
@@ -66,6 +62,7 @@ public class AuthorizationMapper {
 
   public Either<ProblemDetail, CreateAuthorizationRequest> toCreateAuthorizationRequest(
       final AuthorizationPropertyBasedRequest request) {
+
     return RequestMapper.getResult(
         authorizationRequestValidator.validatePropertyBasedRequest(request),
         () ->
@@ -82,10 +79,11 @@ public class AuthorizationMapper {
   public Either<ProblemDetail, UpdateAuthorizationRequest> toUpdateAuthorizationRequest(
       final long authorizationKey, final AuthorizationRequest request) {
     return switch (request) {
-      case AuthorizationIdBasedRequest idReq ->
+      case final AuthorizationIdBasedRequest idReq ->
           toUpdateAuthorizationRequest(authorizationKey, idReq);
-      case AuthorizationPropertyBasedRequest propReq ->
+      case final AuthorizationPropertyBasedRequest propReq ->
           toUpdateAuthorizationRequest(authorizationKey, propReq);
+      default -> Either.left(createUnsupportedAuthorizationProblemDetail(request));
     };
   }
 
@@ -119,6 +117,21 @@ public class AuthorizationMapper {
                 request.getResourcePropertyName(),
                 AuthorizationResourceType.valueOf(request.getResourceType().name()),
                 transformPermissionTypes(request.getPermissionTypes())));
+  }
+
+  private static AuthorizationResourceMatcher resolveIdBasedResourceMatcher(
+      final String resourceId) {
+    return AuthorizationScope.WILDCARD.getResourceId().equals(resourceId)
+        ? AuthorizationResourceMatcher.ANY
+        : AuthorizationResourceMatcher.ID;
+  }
+
+  private static ProblemDetail createUnsupportedAuthorizationProblemDetail(
+      final AuthorizationRequest request) {
+    return GatewayErrorMapper.createProblemDetail(
+        HttpStatus.BAD_REQUEST,
+        "Unsupported authorization request: " + request.getClass().getSimpleName(),
+        "Only authorization by id or property is supported.");
   }
 
   private static Set<PermissionType> transformPermissionTypes(

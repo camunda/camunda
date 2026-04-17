@@ -14,9 +14,9 @@ import io.camunda.gateway.protocol.model.ConditionalEvaluationInstruction;
 import java.util.Optional;
 import org.springframework.http.ProblemDetail;
 
-public final class ConditionalRequestValidator {
+public class ConditionalEvaluationRequestValidator {
 
-  public static Optional<ProblemDetail> validateEvaluateRequest(
+  public static Optional<ProblemDetail> validateConditionalEvaluationRequest(
       final ConditionalEvaluationInstruction request) {
     return validate(
         violations -> {

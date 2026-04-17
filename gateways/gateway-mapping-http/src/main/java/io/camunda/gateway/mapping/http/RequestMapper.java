@@ -29,8 +29,8 @@ import io.camunda.gateway.mapping.http.MappedCommandRequests.UpdateJobRequest;
 import io.camunda.gateway.mapping.http.MappedCommandRequests.UpdateUserTaskRequest;
 import io.camunda.gateway.mapping.http.search.SearchQueryFilterMapper;
 import io.camunda.gateway.mapping.http.util.KeyUtil;
-import io.camunda.gateway.mapping.http.validator.AdHocSubProcessRequestValidator;
-import io.camunda.gateway.mapping.http.validator.ConditionalRequestValidator;
+import io.camunda.gateway.mapping.http.validator.AdHocSubProcessActivityRequestValidator;
+import io.camunda.gateway.mapping.http.validator.ConditionalEvaluationRequestValidator;
 import io.camunda.gateway.mapping.http.validator.DocumentValidator;
 import io.camunda.gateway.mapping.http.validator.JobRequestValidator;
 import io.camunda.gateway.mapping.http.validator.MessageRequestValidator;
@@ -600,7 +600,7 @@ public class RequestMapper {
 
   public static Either<ProblemDetail, ActivateJobsRequest> toJobsActivationRequest(
       final JobActivationRequest request, final boolean multiTenancyEnabled) {
-    final var validationError = JobRequestValidator.validateActivationRequest(request);
+    final var validationError = JobRequestValidator.validateJobActivationRequest(request);
     if (validationError.isPresent()) {
       return Either.left(validationError.get());
     }
@@ -672,7 +672,7 @@ public class RequestMapper {
   public static Either<ProblemDetail, ErrorJobRequest> toJobErrorRequest(
       final JobErrorRequest request, final long jobKey) {
     return getResult(
-        JobRequestValidator.validateErrorRequest(request),
+        JobRequestValidator.validateJobErrorRequest(request),
         () ->
             new ErrorJobRequest(
                 jobKey,
@@ -804,7 +804,7 @@ public class RequestMapper {
       final JobUpdateRequest request, final long jobKey) {
     final var cs = request.getChangeset();
     return getResult(
-        JobRequestValidator.validateUpdateRequest(request),
+        JobRequestValidator.validateJobUpdateRequest(request),
         () ->
             new UpdateJobRequest(
                 jobKey,
@@ -820,7 +820,7 @@ public class RequestMapper {
                 request.getTenantId().orElse(null), multiTenancyEnabled, "Broadcast Signal")
             .flatMap(
                 tenantId ->
-                    SignalRequestValidator.validateBroadcastRequest(request)
+                    SignalRequestValidator.validateSignalBroadcastRequest(request)
                         .map(Either::<ProblemDetail, String>left)
                         .orElseGet(() -> Either.right(tenantId)));
     return validationResponse.map(
@@ -1103,7 +1103,8 @@ public class RequestMapper {
         validateTenantId(request.getTenantId().orElse(null), multiTenancyEnabled, "Publish Message")
             .flatMap(
                 tenantId ->
-                    MessageRequestValidator.validatePublicationRequest(request, maxNameFieldLength)
+                    MessageRequestValidator.validateMessagePublicationRequest(
+                            request, maxNameFieldLength)
                         .map(Either::<ProblemDetail, String>left)
                         .orElseGet(() -> Either.right(tenantId)));
     return validationResponse.map(
@@ -1126,7 +1127,8 @@ public class RequestMapper {
                 request.getTenantId().orElse(null), multiTenancyEnabled, "Correlate Message")
             .flatMap(
                 tenantId ->
-                    MessageRequestValidator.validateCorrelationRequest(request, maxNameFieldLength)
+                    MessageRequestValidator.validateMessageCorrelationRequest(
+                            request, maxNameFieldLength)
                         .map(Either::<ProblemDetail, String>left)
                         .orElseGet(() -> Either.right(tenantId)));
     return validationResponse.map(
@@ -1145,7 +1147,8 @@ public class RequestMapper {
                 request.getTenantId().orElse(null), multiTenancyEnabled, "Evaluate Conditional")
             .flatMap(
                 tenantId ->
-                    ConditionalRequestValidator.validateEvaluateRequest(request)
+                    ConditionalEvaluationRequestValidator.validateConditionalEvaluationRequest(
+                            request)
                         .map(Either::<ProblemDetail, String>left)
                         .orElseGet(() -> Either.right(tenantId)));
     return validationResponse.map(
@@ -1161,7 +1164,7 @@ public class RequestMapper {
           final String adHocSubProcessInstanceKey,
           final AdHocSubProcessActivateActivitiesInstruction request) {
     return getResult(
-        AdHocSubProcessRequestValidator.validateActivateActivitiesRequest(request),
+        AdHocSubProcessActivityRequestValidator.validateAdHocSubProcessActivationRequest(request),
         () ->
             new AdHocSubProcessActivateActivitiesRequest(
                 Long.parseLong(adHocSubProcessInstanceKey),

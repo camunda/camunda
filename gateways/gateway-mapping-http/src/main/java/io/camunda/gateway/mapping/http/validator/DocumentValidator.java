@@ -10,6 +10,7 @@ package io.camunda.gateway.mapping.http.validator;
 import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_INVALID_ATTRIBUTE_VALUE;
 import static io.camunda.gateway.mapping.http.validator.RequestValidator.validate;
 import static io.camunda.gateway.mapping.http.validator.RequestValidator.validateDate;
+import static io.camunda.gateway.mapping.http.validator.RequestValidator.validateProcessDefinitionId;
 
 import io.camunda.gateway.protocol.model.DocumentLinkRequest;
 import io.camunda.gateway.protocol.model.DocumentMetadata;
@@ -24,25 +25,19 @@ public class DocumentValidator {
     }
     return validate(
         violations -> {
-          metadata
-              .getFileName()
-              .ifPresent(
-                  fn -> {
-                    if (fn.isBlank()) {
-                      violations.add("The file name must not be empty, if present");
-                    }
-                  });
+          if (metadata.getFileName().isPresent() && metadata.getFileName().get().isBlank()) {
+            violations.add("The file name must not be empty, if present");
+          }
 
-          metadata
-              .getContentType()
-              .ifPresent(
-                  ct -> {
-                    if (ct.isBlank()) {
-                      violations.add("The content type must not be empty, if present");
-                    }
-                  });
+          if (metadata.getContentType().isPresent() && metadata.getContentType().get().isBlank()) {
+            violations.add("The content type must not be empty, if present");
+          }
 
-          metadata.getExpiresAt().ifPresent(ea -> validateDate(ea, "expiresAt", violations));
+          if (metadata.getExpiresAt().isPresent()) {
+            validateDate(metadata.getExpiresAt().get(), "expiresAt", violations);
+          }
+
+          validateProcessDefinitionId(metadata.getProcessDefinitionId().orElse(null), violations);
         });
   }
 

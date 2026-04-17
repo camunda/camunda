@@ -14,7 +14,7 @@ public class ProcessInstanceStateConverter implements CustomConverter<String> {
 
   @Override
   public boolean canConvert(final Object value) {
-    return value instanceof ProcessInstanceStateEnum || value instanceof String;
+    return value instanceof ProcessInstanceStateEnum;
   }
 
   @Override
@@ -24,14 +24,6 @@ public class ProcessInstanceStateConverter implements CustomConverter<String> {
     }
     if (value instanceof final ProcessInstanceStateEnum processInstanceStateEnum) {
       return toInternalStateAsString(processInstanceStateEnum);
-    }
-    if (value instanceof final String stringValue) {
-      try {
-        return toInternalStateAsString(ProcessInstanceStateEnum.valueOf(stringValue));
-      } catch (final IllegalArgumentException e) {
-        // Not a known enum constant (e.g. partial value for $like); pass through as-is.
-        return stringValue;
-      }
     }
     throw new IllegalArgumentException(
         "Cannot convert value [%s] of type [%s]. Expected type: [%s]"

@@ -17,6 +17,7 @@ import static io.camunda.zeebe.protocol.record.RejectionType.INVALID_ARGUMENT;
 
 import io.camunda.gateway.mapping.http.GatewayErrorMapper;
 import io.camunda.gateway.mapping.http.util.KeyUtil;
+import io.camunda.gateway.protocol.model.Changeset;
 import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeParseException;
@@ -71,6 +72,15 @@ public final class RequestValidator {
       }
     }
     return null;
+  }
+
+  public static boolean isEmpty(final Changeset changeset) {
+    return changeset == null
+        || (changeset.getFollowUpDate().isEmpty()
+            && changeset.getDueDate().isEmpty()
+            && changeset.getCandidateGroups().isEmpty()
+            && changeset.getCandidateUsers().isEmpty()
+            && changeset.getPriority().isEmpty());
   }
 
   public static Optional<ProblemDetail> validate(final Consumer<List<String>> customValidation) {

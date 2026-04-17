@@ -35,14 +35,14 @@ public class UserMapper {
   }
 
   public Either<ProblemDetail, UserDTO> toUserUpdateRequest(
-      final UserUpdateRequest request, final String username) {
+      final UserUpdateRequest updateRequest, final String username) {
     return RequestMapper.getResult(
-        userRequestValidator.validateUpdateRequest(request),
+        userRequestValidator.validateUpdateRequest(updateRequest),
         () ->
             new UserDTO(
                 username,
-                request.getName().orElse(null),
-                request.getEmail().orElse(null),
-                request.getPassword().orElse(null)));
+                updateRequest.getName().orElse(null),
+                updateRequest.getEmail().orElse(null),
+                updateRequest.getPassword().orElse(null)));
   }
 }

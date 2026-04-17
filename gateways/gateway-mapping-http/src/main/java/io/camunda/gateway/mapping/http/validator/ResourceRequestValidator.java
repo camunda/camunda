@@ -7,21 +7,21 @@
  */
 package io.camunda.gateway.mapping.http.validator;
 
-import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_EMPTY_ATTRIBUTE;
 import static io.camunda.gateway.mapping.http.validator.RequestValidator.validate;
+import static io.camunda.gateway.mapping.http.validator.RequestValidator.validateOperationReference;
 
-import io.camunda.gateway.protocol.model.SignalBroadcastRequest;
+import io.camunda.gateway.protocol.model.DeleteResourceRequest;
 import java.util.Optional;
 import org.springframework.http.ProblemDetail;
 
-public class SignalRequestValidator {
+public class ResourceRequestValidator {
 
-  public static Optional<ProblemDetail> validateSignalBroadcastRequest(
-      final SignalBroadcastRequest request) {
+  public static Optional<ProblemDetail> validateResourceDeletion(
+      final DeleteResourceRequest request) {
     return validate(
         violations -> {
-          if (request.getSignalName() == null) {
-            violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("signalName"));
+          if (request != null) {
+            validateOperationReference(request.getOperationReference().orElse(null), violations);
           }
         });
   }

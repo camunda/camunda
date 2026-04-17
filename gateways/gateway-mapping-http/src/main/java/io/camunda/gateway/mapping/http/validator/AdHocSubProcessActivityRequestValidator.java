@@ -12,11 +12,11 @@ import static io.camunda.gateway.mapping.http.validator.RequestValidator.validat
 
 import io.camunda.gateway.protocol.model.AdHocSubProcessActivateActivitiesInstruction;
 import java.util.Optional;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.http.ProblemDetail;
 
-public final class AdHocSubProcessRequestValidator {
-
-  public static Optional<ProblemDetail> validateActivateActivitiesRequest(
+public class AdHocSubProcessActivityRequestValidator {
+  public static Optional<ProblemDetail> validateAdHocSubProcessActivationRequest(
       final AdHocSubProcessActivateActivitiesInstruction request) {
     return validate(
         violations -> {
@@ -24,8 +24,7 @@ public final class AdHocSubProcessRequestValidator {
             violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("elements"));
           } else {
             for (int i = 0; i < request.getElements().size(); i++) {
-              final var elementId = request.getElements().get(i).getElementId();
-              if (elementId == null || elementId.isBlank()) {
+              if (StringUtils.isBlank(request.getElements().get(i).getElementId())) {
                 violations.add(
                     ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("elements[%d].elementId".formatted(i)));
               }
