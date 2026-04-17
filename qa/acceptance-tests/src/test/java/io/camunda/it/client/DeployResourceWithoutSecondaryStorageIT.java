@@ -15,6 +15,9 @@ import io.camunda.client.CamundaClient;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import org.apache.commons.io.IOUtils;
 import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -35,7 +38,7 @@ class DeployResourceWithoutSecondaryStorageIT {
   }
 
   @Test
-  void shouldDeployRpaResourceAndFetchMetadataWithoutSecondaryStorage() {
+  void shouldDeployRpaResourceAndFetchMetadataWithoutSecondaryStorage() throws IOException {
     // given
     final var deployment =
         camundaClient
@@ -55,7 +58,10 @@ class DeployResourceWithoutSecondaryStorageIT {
     assertThat(resource.getVersion()).isEqualTo(1);
 
     // and content should also be retrievable directly from the broker
+    final var expectedContent =
+        IOUtils.toString(
+            getClass().getResourceAsStream("/rpa/test-rpa.rpa"), StandardCharsets.UTF_8);
     final var content = camundaClient.newResourceContentGetRequest(resourceKey).execute();
-    assertThat(content).isNotNull().isNotEmpty();
+    assertThat(content).isEqualTo(expectedContent);
   }
 }

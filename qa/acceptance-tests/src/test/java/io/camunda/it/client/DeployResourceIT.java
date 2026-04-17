@@ -13,6 +13,9 @@ import static org.awaitility.Awaitility.await;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.qa.util.multidb.MultiDbTest;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import org.apache.commons.io.IOUtils;
 import org.junit.jupiter.api.Test;
 
 @MultiDbTest
@@ -21,7 +24,7 @@ class DeployResourceIT {
   private static CamundaClient camundaClient;
 
   @Test
-  void shouldDeployRpaResourceAndFetchMetadataWithSecondaryStorage() {
+  void shouldDeployRpaResourceAndFetchMetadataWithSecondaryStorage() throws IOException {
     // given
     final var deployment =
         camundaClient
@@ -44,13 +47,17 @@ class DeployResourceIT {
               assertThat(resource.getVersion()).isEqualTo(1);
             });
 
+    final var expectedContent =
+        IOUtils.toString(
+            getClass().getResourceAsStream("/rpa/test-rpa.rpa"), StandardCharsets.UTF_8);
+
     await("resource content should be available in secondary storage")
         .atMost(TIMEOUT_DATA_AVAILABILITY)
         .ignoreExceptions()
         .untilAsserted(
             () -> {
               final var content = camundaClient.newResourceContentGetRequest(resourceKey).execute();
-              assertThat(content).isNotNull().isNotEmpty();
+              assertThat(content).isEqualTo(expectedContent);
             });
   }
 }
