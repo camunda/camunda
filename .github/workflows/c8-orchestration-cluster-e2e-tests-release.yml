@@ -279,6 +279,7 @@ jobs:
             parse_junit --suite-id 17050 \
             --title "Release C8 Orchestration Cluster API Test Run Results - v${{ needs.validate-release.outputs.release_version }} - $(date '+%Y-%m-%d %H:%M:%S')" \
             --close-run \
+            --batch-size 500 \
             -f "$JUNIT_RESULTS_FILE"
 
       - uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
@@ -900,6 +901,7 @@ jobs:
             parse_junit --suite-id 17050 \
             --title "Release C8 Orchestration Cluster Test Run Results - v${{ needs.validate-release.outputs.release_version }} (Tasklist ${{ matrix.tasklist_mode }} mode) - $(date '+%Y-%m-%d %H:%M:%S')" \
             --close-run \
+            --batch-size 500 \
             -f "$JUNIT_RESULTS_FILE"
 
       - uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0

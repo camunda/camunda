@@ -398,6 +398,7 @@ jobs:
             parse_junit --suite-id 17050 \
             --title "Nightly C8 Orchestration Cluster Test Results - $BRANCH_NAME - $DATABASE_NAME - API tests - $(date '+%Y-%m-%d %H:%M:%S')" \
             --close-run \
+            --batch-size 500 \
             -f "$JUNIT_RESULTS_FILE"
 
       - name: Upload json report to GitHub Actions Artifacts
