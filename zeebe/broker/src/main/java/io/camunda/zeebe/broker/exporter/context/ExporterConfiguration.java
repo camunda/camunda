@@ -11,14 +11,20 @@ import com.fasterxml.jackson.core.json.JsonReadFeature;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.PropertyNamingStrategies;
+import com.fasterxml.jackson.databind.exc.UnrecognizedPropertyException;
 import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import io.camunda.zeebe.exporter.api.context.Configuration;
+import io.camunda.zeebe.exporter.api.context.StrictConfiguration;
 import io.camunda.zeebe.util.ReflectUtil;
 import java.nio.file.Path;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public record ExporterConfiguration(String id, Map<String, Object> arguments)
     implements Configuration {
@@ -30,6 +36,12 @@ public record ExporterConfiguration(String id, Map<String, Object> arguments)
    * <p>Features:
    *
    * <ul>
+   *   <li>Kebab-case property naming strategy: both {@code myField} and {@code my-field} are
+   *       accepted in YAML args. {@code asArgs}/{@code toArgs} serialise to kebab-case; {@code
+   *       fromArgs}/{@code instantiate} first convert camelCase keys to kebab-case via {@code
+   *       normalizeKeys}, then hand off to the MAPPER which matches via kebab-case canonical names
+   *       and {@code ACCEPT_CASE_INSENSITIVE_PROPERTIES} (e.g. {@code my-field} and {@code
+   *       MY-FIELD} are equivalent).
    *   <li>Case-insensitive enum, property, and value matching
    *   <li>Custom List deserializer for Spring Boot indexed properties (myList[0]=value)
    *   <li>Custom Path module to preserve relative/absolute paths (no resolution)
@@ -50,7 +62,16 @@ public record ExporterConfiguration(String id, Map<String, Object> arguments)
           .enable(MapperFeature.ACCEPT_CASE_INSENSITIVE_VALUES)
           .enable(JsonReadFeature.ALLOW_SINGLE_QUOTES)
           .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+          .propertyNamingStrategy(PropertyNamingStrategies.KEBAB_CASE)
           .build();
+  private static final Logger LOG = LoggerFactory.getLogger(ExporterConfiguration.class);
+  /**
+   * Strict variant of {@link #MAPPER} that rejects unknown properties. Used in {@link
+   * #fromArgs(Class, Map)} to fail fast at startup when the exporter args contain a typo or an
+   * unsupported property name.
+   */
+  private static final ObjectMapper STRICT_MAPPER =
+      MAPPER.copy().enable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
 
   @Override
   public String getId() {
@@ -69,12 +90,69 @@ public record ExporterConfiguration(String id, Map<String, Object> arguments)
 
   public static <T> T fromArgs(final Class<T> configClass, final Map<String, Object> values) {
     if (values != null) {
-      // Use MAPPER (with custom list deserializer) to properly handle Spring Boot indexed
-      // properties like myList[0]=value which are stored as Maps with numeric string keys
-      return MAPPER.convertValue(values, configClass);
+      // Normalize camelCase keys to kebab-case so that both forms are accepted in YAML args.
+      // Spring Boot relaxed binding (camelCase ↔ kebab-case) only applies to
+      // @ConfigurationProperties
+      // beans and does NOT apply here — the args arrive as a raw Map<String, Object> that Jackson
+      // binds directly. With KEBAB_CASE naming strategy the mapper expects kebab-case keys, so we
+      // pre-process the map to convert any camelCase keys before handing off to convertValue().
+      final var normalized = normalizeKeys(values);
+      final var mapper =
+          configClass.isAnnotationPresent(StrictConfiguration.class) ? STRICT_MAPPER : MAPPER;
+      try {
+        return mapper.convertValue(normalized, configClass);
+      } catch (final IllegalArgumentException e) {
+        if (e.getCause() instanceof final UnrecognizedPropertyException upe) {
+          final String coloredMessage =
+              "\u001B[1;31m❌ Unknown exporter configuration property"
+                  + " '\u001B[0;31m"
+                  + upe.getPropertyName()
+                  + "\u001B[1;31m'"
+                  + " in config class "
+                  + configClass.getSimpleName()
+                  + "\u001B[0m\n"
+                  + "\u001B[33m   ⚠ Known properties: "
+                  + upe.getKnownPropertyIds()
+                  + "\u001B[0m\n"
+                  + "   Fix the property name in your exporter args — the application cannot start.";
+          LOG.error(coloredMessage);
+          throw new IllegalArgumentException(
+              "Unknown exporter configuration property '"
+                  + upe.getPropertyName()
+                  + "' in config class "
+                  + configClass.getSimpleName()
+                  + "; known properties: "
+                  + upe.getKnownPropertyIds(),
+              upe);
+        }
+        throw e;
+      }
     } else {
       return ReflectUtil.newInstance(configClass);
     }
+  }
+
+  /**
+   * Recursively converts all camelCase map keys to kebab-case. Leaves already-kebab-case and
+   * numeric keys unchanged. Nested {@link Map} values are normalized in the same pass.
+   */
+  @SuppressWarnings("unchecked")
+  private static Map<String, Object> normalizeKeys(final Map<String, Object> map) {
+    final var result = new LinkedHashMap<String, Object>(map.size());
+    for (final var entry : map.entrySet()) {
+      final var key = camelToKebab(entry.getKey());
+      final var value =
+          entry.getValue() instanceof final Map<?, ?> nested
+              ? normalizeKeys((Map<String, Object>) nested)
+              : entry.getValue();
+      result.put(key, value);
+    }
+    return result;
+  }
+
+  /** Converts a camelCase or PascalCase string to kebab-case. Kebab-case input is unchanged. */
+  private static String camelToKebab(final String name) {
+    return name.replaceAll("([a-z\\d])([A-Z])", "$1-$2").toLowerCase();
   }
 
   /**

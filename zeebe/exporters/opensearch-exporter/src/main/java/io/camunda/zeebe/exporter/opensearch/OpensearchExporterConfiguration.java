@@ -10,6 +10,7 @@ package io.camunda.zeebe.exporter.opensearch;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.search.connect.plugin.PluginConfiguration;
+import io.camunda.zeebe.exporter.api.context.StrictConfiguration;
 import io.camunda.zeebe.exporter.filter.FilterConfiguration;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -18,6 +19,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
+@StrictConfiguration
 public class OpensearchExporterConfiguration implements FilterConfiguration {
 
   private static final String DEFAULT_URL = "http://localhost:9200";
