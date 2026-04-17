@@ -30,7 +30,7 @@ import {createUser} from 'utils/requestHelpers/user-requestHelpers';
 type ProcessInstanceStatisticsByVersionResponse = {
   processDefinitionId: string;
   processDefinitionKey: string;
-  processDefinitionName: string;
+  processDefinitionName: string | null;
   tenantId: string;
   processDefinitionVersion: number;
   activeInstancesWithIncidentCount: number;
@@ -119,7 +119,7 @@ test.describe
       );
       await assertStatusCode(res, 200);
       const body = await res.json();
-      validateResponse(
+      await validateResponse(
         {
           path: '/process-definitions/statistics/process-instances-by-version',
           method: 'POST',
@@ -169,7 +169,7 @@ test.describe
         );
         await assertStatusCode(res, 200);
         const body = await res.json();
-        validateResponse(
+        await validateResponse(
           {
             path: '/process-definitions/statistics/process-instances-by-version',
             method: 'POST',
@@ -250,7 +250,7 @@ test.describe
     );
     await assertStatusCode(res, 200);
     const body = await res.json();
-    validateResponse(
+    await validateResponse(
       {
         path: '/process-definitions/statistics/process-instances-by-version',
         method: 'POST',
@@ -298,7 +298,7 @@ test.describe
     );
     await assertStatusCode(res, 200);
     const body = await res.json();
-    validateResponse(
+    await validateResponse(
       {
         path: '/process-definitions/statistics/process-instances-by-version',
         method: 'POST',

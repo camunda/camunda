@@ -91,7 +91,7 @@ test.describe.parallel('Get process instance statistics API Tests', () => {
     );
     await assertStatusCode(res, 200);
     const body = await res.json();
-    validateResponse(
+    await validateResponse(
       {
         path: '/process-definitions/statistics/process-instances',
         method: 'POST',
@@ -121,7 +121,7 @@ test.describe.parallel('Get process instance statistics API Tests', () => {
     );
     await assertStatusCode(res, 200);
     const body = await res.json();
-    validateResponse(
+    await validateResponse(
       {
         path: '/process-definitions/statistics/process-instances',
         method: 'POST',
@@ -131,12 +131,12 @@ test.describe.parallel('Get process instance statistics API Tests', () => {
     );
     expect(body.page.totalItems).toBeGreaterThanOrEqual(1);
     const actualActiveInstancesWithIncidentCountList = body.items.map(
-      (item: {ActiveInstancesWithIncidentCount: string}) =>
-        item.ActiveInstancesWithIncidentCount,
+      (item: {activeInstancesWithIncidentCount: string}) =>
+        item.activeInstancesWithIncidentCount,
     );
     const expectedActiveInstancesWithIncidentCountList = [
       ...actualActiveInstancesWithIncidentCountList,
-    ].sort();
+    ].sort().reverse();
     expect(actualActiveInstancesWithIncidentCountList).toEqual(
       expectedActiveInstancesWithIncidentCountList,
     );
@@ -161,7 +161,7 @@ test.describe.parallel('Get process instance statistics API Tests', () => {
     );
     await assertStatusCode(res, 200);
     const body = await res.json();
-    validateResponse(
+    await validateResponse(
       {
         path: '/process-definitions/statistics/process-instances',
         method: 'POST',
@@ -171,12 +171,12 @@ test.describe.parallel('Get process instance statistics API Tests', () => {
     );
     expect(body.page.totalItems).toBeGreaterThanOrEqual(1);
     const actualActiveInstancesWithoutIncidentCountList = body.items.map(
-      (item: {ActiveInstancesWithoutIncidentCount: string}) =>
-        item.ActiveInstancesWithoutIncidentCount,
+      (item: {activeInstancesWithoutIncidentCount: number}) =>
+        item.activeInstancesWithoutIncidentCount,
     );
     const expectedActiveInstancesWithoutIncidentCountList = [
       ...actualActiveInstancesWithoutIncidentCountList,
-    ].sort();
+    ].sort((a, b) => a - b);
     expect(actualActiveInstancesWithoutIncidentCountList).toEqual(
       expectedActiveInstancesWithoutIncidentCountList,
     );
@@ -202,7 +202,7 @@ test.describe.parallel('Get process instance statistics API Tests', () => {
     );
     await assertStatusCode(res, 200);
     const body = await res.json();
-    validateResponse(
+    await validateResponse(
       {
         path: '/process-definitions/statistics/process-instances',
         method: 'POST',
@@ -264,7 +264,7 @@ test.describe.parallel('Get process instance statistics API Tests', () => {
       );
       await assertStatusCode(res, 200);
       const body = await res.json();
-      validateResponse(
+      await validateResponse(
         {
           path: '/process-definitions/statistics/process-instances',
           method: 'POST',
@@ -323,7 +323,7 @@ test.describe.parallel('Get process instance statistics API Tests', () => {
     );
     await assertStatusCode(res, 200);
     const body = await res.json();
-    validateResponse(
+    await validateResponse(
       {
         path: '/process-definitions/statistics/process-instances',
         method: 'POST',

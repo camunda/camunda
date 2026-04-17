@@ -10,7 +10,6 @@ import {expect, test} from '@playwright/test';
 import {
   cancelProcessInstance,
   createInstances,
-  createSingleInstance,
   deploy,
 } from '../../../../utils/zeebeClient';
 import {
@@ -23,7 +22,6 @@ import {
   encode,
 } from '../../../../utils/http';
 import {validateResponse} from '../../../../json-body-assertions';
-import {defaultAssertionOptions} from '../../../../utils/constants';
 import {cleanupUsers} from 'utils/usersCleanup';
 import {
   CORRELATE_MESSAGE,
@@ -38,14 +36,6 @@ import {
   grantUserResourceAuthorization,
   createUser,
 } from '@requestHelpers';
-
-type MessageSubscriptionStatisticsResponse = {
-  processDefinitionId: string;
-  processDefinitionKey: string;
-  tenantId: string;
-  processInstancesWithActiveSubscriptions: number;
-  activeSubscriptions: number;
-};
 
 test.describe.parallel('Get message subscription statistics API Tests', () => {
   let userWithResourcesAuthorizationToSendRequest: {
@@ -98,7 +88,7 @@ test.describe.parallel('Get message subscription statistics API Tests', () => {
 
     await test.step('Poll process instances', async () => {
       for (const key of processInstanceKeys) {
-        expectProcessInstanceCanBeFound(request, key);
+        await expectProcessInstanceCanBeFound(request, key);
       }
     });
 
@@ -166,9 +156,9 @@ test.describe.parallel('Get message subscription statistics API Tests', () => {
         },
       },
     );
-    assertStatusCode(res, 200);
+    await assertStatusCode(res, 200);
     const body = await res.json();
-    validateResponse(
+    await validateResponse(
       {
         path: '/process-definitions/statistics/message-subscriptions',
         method: 'POST',
@@ -194,9 +184,9 @@ test.describe.parallel('Get message subscription statistics API Tests', () => {
         },
       },
     );
-    assertStatusCode(res, 200);
+    await assertStatusCode(res, 200);
     const body = await res.json();
-    validateResponse(
+    await validateResponse(
       {
         path: '/process-definitions/statistics/message-subscriptions',
         method: 'POST',
@@ -222,7 +212,7 @@ test.describe.parallel('Get message subscription statistics API Tests', () => {
           headers: jsonHeaders(),
         },
       );
-      assertStatusCode(res, 200);
+      await assertStatusCode(res, 200);
       await validateResponse(
         {
           path: '/process-instances/{processInstanceKey}',
@@ -247,9 +237,9 @@ test.describe.parallel('Get message subscription statistics API Tests', () => {
           },
         },
       );
-      assertStatusCode(res, 200);
+      await assertStatusCode(res, 200);
       const body = await res.json();
-      validateResponse(
+      await validateResponse(
         {
           path: '/process-definitions/statistics/message-subscriptions',
           method: 'POST',
@@ -333,9 +323,9 @@ test.describe.parallel('Get message subscription statistics API Tests', () => {
         headers: jsonHeaders(token),
       },
     );
-    assertStatusCode(res, 200);
+    await assertStatusCode(res, 200);
     const body = await res.json();
-    validateResponse(
+    await validateResponse(
       {
         path: '/process-definitions/statistics/message-subscriptions',
         method: 'POST',
