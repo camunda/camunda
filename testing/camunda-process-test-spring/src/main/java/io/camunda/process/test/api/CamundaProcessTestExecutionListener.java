@@ -319,7 +319,7 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
     containerRuntimeBuilder.withCamundaClientBuilderFactory(clientBuilderFactory);
 
     return CamundaSpringProcessTestRuntimeBuilder.buildRuntime(
-        containerRuntimeBuilder, runtimeConfiguration, clientProperties);
+        containerRuntimeBuilder, runtimeConfiguration);
   }
 
   private static CamundaClient createClient(

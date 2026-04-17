@@ -44,7 +44,7 @@ public class CamundaProcessTestRemoteRuntime implements CamundaProcessTestRuntim
   private final CamundaClientBuilderFactory camundaClientBuilderFactory;
 
   public CamundaProcessTestRemoteRuntime(final CamundaProcessTestRuntimeBuilder runtimeBuilder) {
-    camundaClientBuilderFactory = runtimeBuilder.getRemoteCamundaClientBuilderFactory();
+    camundaClientBuilderFactory = runtimeBuilder.getConfiguredCamundaClientBuilderFactory();
     camundaMonitoringApiAddress = runtimeBuilder.getRemoteCamundaMonitoringApiAddress();
     connectorsRestApiAddress = runtimeBuilder.getRemoteConnectorsRestApiAddress();
     runtimeConnectionTimeout = runtimeBuilder.getRemoteRuntimeConnectionTimeout();
