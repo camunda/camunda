@@ -18,15 +18,6 @@ import static io.camunda.zeebe.protocol.record.RejectionType.INVALID_ARGUMENT;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.document.api.DocumentMetadataModel;
-import io.camunda.gateway.mapping.http.MappedCommandRequests.AssignUserTaskRequest;
-import io.camunda.gateway.mapping.http.MappedCommandRequests.BroadcastSignalRequest;
-import io.camunda.gateway.mapping.http.MappedCommandRequests.CompleteJobRequest;
-import io.camunda.gateway.mapping.http.MappedCommandRequests.CompleteUserTaskRequest;
-import io.camunda.gateway.mapping.http.MappedCommandRequests.DecisionEvaluationRequest;
-import io.camunda.gateway.mapping.http.MappedCommandRequests.ErrorJobRequest;
-import io.camunda.gateway.mapping.http.MappedCommandRequests.FailJobRequest;
-import io.camunda.gateway.mapping.http.MappedCommandRequests.UpdateJobRequest;
-import io.camunda.gateway.mapping.http.MappedCommandRequests.UpdateUserTaskRequest;
 import io.camunda.gateway.mapping.http.search.SearchQueryFilterMapper;
 import io.camunda.gateway.mapping.http.util.KeyUtil;
 import io.camunda.gateway.mapping.http.validator.AdHocSubProcessActivityRequestValidator;
@@ -132,14 +123,12 @@ import org.springframework.http.ProblemDetail;
  */
 public class RequestMapper {
 
-  // Jackson converter for types where strict-contract fields are untyped (Object / LinkedHashMap)
-  // and the generated sealed interface relies on registered deserializers (e.g. oneOf sub-types).
-  private static final ObjectMapper PROTOCOL_MAPPER =
-      new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-
   public static final String VND_CAMUNDA_API_KEYS_STRING_JSON = "vnd.camunda.api.keys.string+json";
   public static final String MEDIA_TYPE_KEYS_STRING_VALUE =
       "application/" + VND_CAMUNDA_API_KEYS_STRING_JSON;
+
+  private static final ObjectMapper PROTOCOL_MAPPER =
+      new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
   public static AssignUserTaskRequest toUserTaskUnassignmentRequest(final long userTaskKey) {
     return new AssignUserTaskRequest(userTaskKey, "", "unassign", true);
@@ -1185,4 +1174,33 @@ public class RequestMapper {
     }
     return Either.right(filter.get());
   }
+
+  public record CompleteUserTaskRequest(
+      long userTaskKey, Map<String, Object> variables, String action) {}
+
+  public record UpdateUserTaskRequest(long userTaskKey, UserTaskRecord changeset, String action) {}
+
+  public record AssignUserTaskRequest(
+      long userTaskKey, String assignee, String action, boolean allowOverride) {}
+
+  public record FailJobRequest(
+      long jobKey,
+      int retries,
+      String errorMessage,
+      Long retryBackoff,
+      Map<String, Object> variables) {}
+
+  public record ErrorJobRequest(
+      long jobKey, String errorCode, String errorMessage, Map<String, Object> variables) {}
+
+  public record CompleteJobRequest(long jobKey, Map<String, Object> variables, JobResult result) {}
+
+  public record UpdateJobRequest(
+      long jobKey, Long operationReference, UpdateJobChangeset changeset) {}
+
+  public record BroadcastSignalRequest(
+      String signalName, Map<String, Object> variables, String tenantId) {}
+
+  public record DecisionEvaluationRequest(
+      String decisionId, Long decisionKey, Map<String, Object> variables, String tenantId) {}
 }
