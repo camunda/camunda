@@ -7,7 +7,12 @@
  */
 
 import {expect, test} from '@playwright/test';
-import {cancelProcessInstance, createInstances, createSingleInstance, deploy} from '../../../../utils/zeebeClient';
+import {
+  cancelProcessInstance,
+  createInstances,
+  createSingleInstance,
+  deploy,
+} from '../../../../utils/zeebeClient';
 import {
   assertBadRequest,
   assertInvalidArgument,
@@ -19,7 +24,7 @@ import {
 } from '../../../../utils/http';
 import {validateResponse} from '../../../../json-body-assertions';
 import {defaultAssertionOptions} from '../../../../utils/constants';
-import { cleanupUsers } from 'utils/usersCleanup';
+import {cleanupUsers} from 'utils/usersCleanup';
 import {
   CORRELATE_MESSAGE,
   CORRELATE_MESSAGE1,
@@ -35,11 +40,11 @@ import {
 } from '@requestHelpers';
 
 type MessageSubscriptionStatisticsResponse = {
-    processDefinitionId: string;
-    processDefinitionKey: string;
-    tenantId: string;
-    processInstancesWithActiveSubscriptions: number;
-    activeSubscriptions: number;
+  processDefinitionId: string;
+  processDefinitionKey: string;
+  tenantId: string;
+  processInstancesWithActiveSubscriptions: number;
+  activeSubscriptions: number;
 };
 
 test.describe.parallel('Get message subscription statistics API Tests', () => {
@@ -92,9 +97,9 @@ test.describe.parallel('Get message subscription statistics API Tests', () => {
     });
 
     await test.step('Poll process instances', async () => {
-        for (const key of processInstanceKeys) {
-          expectProcessInstanceCanBeFound(request, key);
-        }
+      for (const key of processInstanceKeys) {
+        expectProcessInstanceCanBeFound(request, key);
+      }
     });
 
     await test.step('Correlate messages', async () => {
@@ -140,175 +145,203 @@ test.describe.parallel('Get message subscription statistics API Tests', () => {
     });
 
     await test.step('Cancel process instances', async () => {
-        for (const key of processInstanceKeys) {
-            await cancelProcessInstance(key);
-        }
+      for (const key of processInstanceKeys) {
+        await cancelProcessInstance(key);
+      }
     });
 
     await test.step('Clean arrays', async () => {
-        processInstanceKeys = [];
-        messageKeys = [];
+      processInstanceKeys = [];
+      messageKeys = [];
     });
   });
 
   test('Get message subscription statistics - Success', async ({request}) => {
     const res = await request.post(
-        buildUrl('/process-definitions/statistics/message-subscriptions'),
-        {
-            headers: jsonHeaders(),
-            data: {
-                filter: {},
-            },
-          }
+      buildUrl('/process-definitions/statistics/message-subscriptions'),
+      {
+        headers: jsonHeaders(),
+        data: {
+          filter: {},
+        },
+      },
     );
     assertStatusCode(res, 200);
     const body = await res.json();
     validateResponse(
-        {
-            path: '/process-definitions/statistics/message-subscriptions',
-            method: 'POST',
-            status: '200',
-        }, 
-        res
+      {
+        path: '/process-definitions/statistics/message-subscriptions',
+        method: 'POST',
+        status: '200',
+      },
+      res,
     );
     expect(body.page.totalItems).toBeGreaterThanOrEqual(1);
     expect(body.items.length).toBeGreaterThanOrEqual(1);
   });
 
-  test('Get message subscription statistics filter by processDefinitionId - Success', async ({request}) => {
+  test('Get message subscription statistics filter by processDefinitionId - Success', async ({
+    request,
+  }) => {
     const res = await request.post(
-        buildUrl('/process-definitions/statistics/message-subscriptions'),
-        {
-            headers: jsonHeaders(),
-            data: {
-                filter: {
-                    processDefinitionId
-                },
-            },
-          }
+      buildUrl('/process-definitions/statistics/message-subscriptions'),
+      {
+        headers: jsonHeaders(),
+        data: {
+          filter: {
+            processDefinitionId,
+          },
+        },
+      },
     );
     assertStatusCode(res, 200);
     const body = await res.json();
     validateResponse(
-        {
-            path: '/process-definitions/statistics/message-subscriptions',
-            method: 'POST',
-            status: '200',
-        }, 
-        res
+      {
+        path: '/process-definitions/statistics/message-subscriptions',
+        method: 'POST',
+        status: '200',
+      },
+      res,
     );
     expect(body.page.totalItems).toBe(1);
     expect(body.items.length).toBe(1);
     expect(body.items[0].processDefinitionId).toBe(processDefinitionId);
   });
-  
-  test('Get message subscription statistics by process instance key - Success', async ({request}) => {
+
+  test('Get message subscription statistics by process instance key - Success', async ({
+    request,
+  }) => {
     const processInstanceKey = processInstanceKeys[1];
     let processDefinitionKey: string = '';
+
     await test.step('Get definitionKEy of process instance', async () => {
-        const res = await request.get(buildUrl(`/process-instances/${processInstanceKey}`),
+      const res = await request.get(
+        buildUrl(`/process-instances/${processInstanceKey}`),
         {
-            headers: jsonHeaders()
-        });
-        assertStatusCode(res, 200);
-        await validateResponse({
-            path: '/process-instances/{processInstanceKey}',
-            method: 'GET',
-            status: '200',
-        }, res);
-        const body = await res.json();
-        processDefinitionKey = body.processDefinitionKey;
+          headers: jsonHeaders(),
+        },
+      );
+      assertStatusCode(res, 200);
+      await validateResponse(
+        {
+          path: '/process-instances/{processInstanceKey}',
+          method: 'GET',
+          status: '200',
+        },
+        res,
+      );
+      const body = await res.json();
+      processDefinitionKey = body.processDefinitionKey;
     });
 
     await test.step('Get message subscription statistics by process instance key', async () => {
-        const res = await request.post(
-            buildUrl('/process-definitions/statistics/message-subscriptions'),
-            {
-                headers: jsonHeaders(),
-                data: {
-                    filter: {
-                        processInstanceKey
-                    },
-                },
-            }
-        );
-        assertStatusCode(res, 200);
-        const body = await res.json();
-        validateResponse(
-            {
-                path: '/process-definitions/statistics/message-subscriptions',
-                method: 'POST',
-                status: '200',
-            }, 
-            res
-        );
-        expect(body.page.totalItems).toBe(1);
-        expect(body.items.length).toBe(1);
-        const item = body.items[0];
-        expect(item.processDefinitionKey).toBe(processDefinitionKey);
-        expect(item.processDefinitionId).toBe(processDefinitionId);
-        expect(item.processInstancesWithActiveSubscriptions).toBe(1);
-        expect(item.activeSubscriptions).toBe(1);
+      const res = await request.post(
+        buildUrl('/process-definitions/statistics/message-subscriptions'),
+        {
+          headers: jsonHeaders(),
+          data: {
+            filter: {
+              processInstanceKey,
+            },
+          },
+        },
+      );
+      assertStatusCode(res, 200);
+      const body = await res.json();
+      validateResponse(
+        {
+          path: '/process-definitions/statistics/message-subscriptions',
+          method: 'POST',
+          status: '200',
+        },
+        res,
+      );
+      expect(body.page.totalItems).toBe(1);
+      expect(body.items.length).toBe(1);
+      const item = body.items[0];
+      expect(item.processDefinitionKey).toBe(processDefinitionKey);
+      expect(item.processDefinitionId).toBe(processDefinitionId);
+      expect(item.processInstancesWithActiveSubscriptions).toBe(1);
+      expect(item.activeSubscriptions).toBe(1);
     });
   });
 
-  test('Get message subscription statistics with not existing filter - Bad Request', async ({request}) => {
+  test('Get message subscription statistics with not existing filter - Bad Request', async ({
+    request,
+  }) => {
     const res = await request.post(
-        buildUrl('/process-definitions/statistics/message-subscriptions'),
-        {
-            headers: jsonHeaders(),
-            data: {
-                filter: {
-                    nonExistingFilter: 'test'
-                },
-            },
-          }
+      buildUrl('/process-definitions/statistics/message-subscriptions'),
+      {
+        headers: jsonHeaders(),
+        data: {
+          filter: {
+            nonExistingFilter: 'test',
+          },
+        },
+      },
     );
-    await assertBadRequest(res, 'Request property [filter.nonExistingFilter] cannot be parsed');
+    await assertBadRequest(
+      res,
+      'Request property [filter.nonExistingFilter] cannot be parsed',
+    );
   });
 
-  test('Get message subscription statistics with not valid process instance key - Invalid Argument', async ({request}) => {
+  test('Get message subscription statistics with not valid process instance key - Invalid Argument', async ({
+    request,
+  }) => {
     const wrongProcessInstanceKey = 'abc';
     const res = await request.post(
-        buildUrl('/process-definitions/statistics/message-subscriptions'),
-        {
-            headers: jsonHeaders(),
-            data: {
-                filter: {
-                    processInstanceKey: wrongProcessInstanceKey
-                },
-            },
-          }
+      buildUrl('/process-definitions/statistics/message-subscriptions'),
+      {
+        headers: jsonHeaders(),
+        data: {
+          filter: {
+            processInstanceKey: wrongProcessInstanceKey,
+          },
+        },
+      },
     );
-    await assertInvalidArgument(res, 400,  `The provided processInstanceKey '${wrongProcessInstanceKey}' is not a valid key.`);
+    await assertInvalidArgument(
+      res,
+      400,
+      `The provided processInstanceKey '${wrongProcessInstanceKey}' is not a valid key.`,
+    );
   });
 
-  test('Get message subscription statistics without authorization - Unauthorized', async ({request}) => {
+  test('Get message subscription statistics without authorization - Unauthorized', async ({
+    request,
+  }) => {
     const res = await request.post(
-        buildUrl('/process-definitions/statistics/message-subscriptions'),
-        {
-            headers: {},
-          }
+      buildUrl('/process-definitions/statistics/message-subscriptions'),
+      {
+        headers: {},
+      },
     );
     await assertUnauthorizedRequest(res);
   });
 
-  test('Get message subscription statistics - Forbidden, 200, empty response', async ({request}) => {
-    const token = encode(`${userWithResourcesAuthorizationToSendRequest.username}:${userWithResourcesAuthorizationToSendRequest.password}`);
+  test('Get message subscription statistics - Forbidden, 200, empty response', async ({
+    request,
+  }) => {
+    const token = encode(
+      `${userWithResourcesAuthorizationToSendRequest.username}:${userWithResourcesAuthorizationToSendRequest.password}`,
+    );
     const res = await request.post(
-        buildUrl('/process-definitions/statistics/message-subscriptions'),
-        {
-            headers: jsonHeaders(token),
-        });
+      buildUrl('/process-definitions/statistics/message-subscriptions'),
+      {
+        headers: jsonHeaders(token),
+      },
+    );
     assertStatusCode(res, 200);
     const body = await res.json();
     validateResponse(
-        {
-            path: '/process-definitions/statistics/message-subscriptions',
-            method: 'POST',
-            status: '200',
-        }, 
-        res
+      {
+        path: '/process-definitions/statistics/message-subscriptions',
+        method: 'POST',
+        status: '200',
+      },
+      res,
     );
     expect(body.page.totalItems).toBe(0);
     expect(body.items.length).toBe(0);
