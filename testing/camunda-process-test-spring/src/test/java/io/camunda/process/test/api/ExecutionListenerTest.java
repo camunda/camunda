@@ -109,11 +109,7 @@ public class ExecutionListenerTest {
     when(camundaContainerRuntime.getCamundaGrpcApiAddress()).thenReturn(GRPC_API_ADDRESS);
     when(camundaContainerRuntime.getCamundaRestApiAddress()).thenReturn(REST_API_ADDRESS);
     when(camundaContainerRuntime.getCamundaClientBuilderFactory())
-        .thenReturn(
-            () ->
-                CamundaClient.newClientBuilder()
-                    .grpcAddress(GRPC_API_ADDRESS)
-                    .restAddress(REST_API_ADDRESS));
+        .thenReturn(camundaClientBuilderFactory);
 
     when(processCoverageBuilder.build()).thenReturn(processCoverage);
     when(testContext.getApplicationContext()).thenReturn(applicationContext);
@@ -125,6 +121,14 @@ public class ExecutionListenerTest {
         .thenReturn(camundaProcessTestContextProxy);
     when(applicationContext.getBean(CamundaProcessTestRuntimeConfiguration.class))
         .thenReturn(new CamundaProcessTestRuntimeConfiguration());
+    when(applicationContext.getBean(CamundaClientBuilderFactory.class))
+        .thenReturn(camundaClientBuilderFactory);
+
+    when(camundaClientBuilderFactory.get())
+        .thenReturn(
+            CamundaClient.newClientBuilder()
+                .grpcAddress(GRPC_API_ADDRESS)
+                .restAddress(REST_API_ADDRESS));
   }
 
   @Test
