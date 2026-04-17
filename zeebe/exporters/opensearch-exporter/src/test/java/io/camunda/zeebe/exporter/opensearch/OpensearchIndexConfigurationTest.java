@@ -8,8 +8,10 @@
 package io.camunda.zeebe.exporter.opensearch;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 
 import io.camunda.zeebe.broker.exporter.context.ExporterConfiguration;
+import io.camunda.zeebe.exporter.api.context.StrictConfiguration;
 import io.camunda.zeebe.exporter.opensearch.OpensearchExporterConfiguration.IndexConfiguration;
 import java.util.List;
 import java.util.Map;
@@ -22,6 +24,27 @@ import org.junit.jupiter.api.Test;
  * exact mapper the Zeebe broker uses to instantiate exporter configuration at runtime.
  */
 final class OpensearchIndexConfigurationTest {
+
+  // ---------------------------------------------------------------------------
+  // @StrictConfiguration — unknown properties must be rejected at startup
+  // ---------------------------------------------------------------------------
+
+  @Test
+  void shouldBeAnnotatedWithStrictConfiguration() {
+    assertThat(OpensearchExporterConfiguration.class).hasAnnotation(StrictConfiguration.class);
+  }
+
+  @Test
+  void shouldRejectUnknownPropertyOnInstantiate() {
+    // given
+    final var args = Map.<String, Object>of("unknownProp", "value");
+    final var config = new ExporterConfiguration("id", args);
+
+    // when - then
+    assertThatCode(() -> config.instantiate(OpensearchExporterConfiguration.class))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("unknown-prop");
+  }
 
   // ---------------------------------------------------------------------------
   // exportLocalVariablesEnabled
@@ -38,7 +61,7 @@ final class OpensearchIndexConfigurationTest {
     final var args = Map.<String, Object>of("exportLocalVariablesEnabled", false);
 
     // when
-    final var config = ExporterConfiguration.MAPPER.convertValue(args, IndexConfiguration.class);
+    final var config = ExporterConfiguration.fromArgs(IndexConfiguration.class, args);
 
     // then
     assertThat(config.isExportLocalVariablesEnabled()).isFalse();
@@ -55,7 +78,7 @@ final class OpensearchIndexConfigurationTest {
         Map.<String, Object>of("localVariableNameInclusionExact", List.of("localVar", "other"));
 
     // when
-    final var config = ExporterConfiguration.MAPPER.convertValue(args, IndexConfiguration.class);
+    final var config = ExporterConfiguration.fromArgs(IndexConfiguration.class, args);
 
     // then
     assertThat(config.getLocalVariableNameInclusionExact()).containsExactly("localVar", "other");
@@ -68,7 +91,7 @@ final class OpensearchIndexConfigurationTest {
         Map.<String, Object>of("localVariableNameExclusionStartWith", List.of("debug_", "tmp_"));
 
     // when
-    final var config = ExporterConfiguration.MAPPER.convertValue(args, IndexConfiguration.class);
+    final var config = ExporterConfiguration.fromArgs(IndexConfiguration.class, args);
 
     // then
     assertThat(config.getLocalVariableNameExclusionStartWith()).containsExactly("debug_", "tmp_");
@@ -84,7 +107,7 @@ final class OpensearchIndexConfigurationTest {
     final var args = Map.<String, Object>of("rootVariableNameInclusionExact", List.of("rootVar"));
 
     // when
-    final var config = ExporterConfiguration.MAPPER.convertValue(args, IndexConfiguration.class);
+    final var config = ExporterConfiguration.fromArgs(IndexConfiguration.class, args);
 
     // then
     assertThat(config.getRootVariableNameInclusionExact()).containsExactly("rootVar");
@@ -96,7 +119,7 @@ final class OpensearchIndexConfigurationTest {
     final var args = Map.<String, Object>of("rootVariableNameExclusionEndWith", List.of("_secret"));
 
     // when
-    final var config = ExporterConfiguration.MAPPER.convertValue(args, IndexConfiguration.class);
+    final var config = ExporterConfiguration.fromArgs(IndexConfiguration.class, args);
 
     // then
     assertThat(config.getRootVariableNameExclusionEndWith()).containsExactly("_secret");
@@ -115,7 +138,7 @@ final class OpensearchIndexConfigurationTest {
             "rootVariableValueTypeExclusion", List.of("BOOLEAN"));
 
     // when
-    final var config = ExporterConfiguration.MAPPER.convertValue(args, IndexConfiguration.class);
+    final var config = ExporterConfiguration.fromArgs(IndexConfiguration.class, args);
 
     // then
     assertThat(config.getLocalVariableValueTypeInclusion()).containsExactly("NUMBER", "STRING");
@@ -162,7 +185,7 @@ final class OpensearchIndexConfigurationTest {
             "localVariableNameInclusionExact", Map.of("0", "localVar", "1", "other"));
 
     // when
-    final var config = ExporterConfiguration.MAPPER.convertValue(args, IndexConfiguration.class);
+    final var config = ExporterConfiguration.fromArgs(IndexConfiguration.class, args);
 
     // then
     assertThat(config.getLocalVariableNameInclusionExact()).containsExactly("localVar", "other");
@@ -176,7 +199,7 @@ final class OpensearchIndexConfigurationTest {
             "rootVariableNameExclusionExact", Map.of("0", "_secret", "1", "_internal"));
 
     // when
-    final var config = ExporterConfiguration.MAPPER.convertValue(args, IndexConfiguration.class);
+    final var config = ExporterConfiguration.fromArgs(IndexConfiguration.class, args);
 
     // then
     assertThat(config.getRootVariableNameExclusionExact()).containsExactly("_secret", "_internal");
@@ -190,9 +213,59 @@ final class OpensearchIndexConfigurationTest {
             "localVariableValueTypeInclusion", Map.of("0", "NUMBER", "1", "STRING"));
 
     // when
-    final var config = ExporterConfiguration.MAPPER.convertValue(args, IndexConfiguration.class);
+    final var config = ExporterConfiguration.fromArgs(IndexConfiguration.class, args);
 
     // then
     assertThat(config.getLocalVariableValueTypeInclusion()).containsExactly("NUMBER", "STRING");
+  }
+
+  @Test
+  void shouldDeserializeApplicationDevVariableFilterCases() {
+    // given
+    final var indexArgs =
+        Map.<String, Object>ofEntries(
+            Map.entry("export-local-variables-enabled", true),
+            Map.entry("root-variable-name-inclusion-exact", List.of("customerId", "orderId")),
+            Map.entry("rootVariableNameInclusionStartWith", List.of("REPORTING_", "order_")),
+            Map.entry("root-variable-name-inclusion-end-with", Map.of("0", "_Id", "1", "_Key")),
+            Map.entry("root-variable-name-exclusion-exact", ""),
+            Map.entry("rootVariableNameExclusionStartWith", ""),
+            Map.entry("root-variable-name-exclusion-end-with", "_tmp"),
+            Map.entry("localVariableNameInclusionExact", List.of("loopCounter", "taskResult")),
+            Map.entry("local-variable-name-inclusion-start-with", List.of("tmp_", "debug_")),
+            Map.entry("localVariableNameInclusionEndWith", Map.of("0", "_local")),
+            Map.entry("local-variable-name-exclusion-exact", ""),
+            Map.entry("localVariableNameExclusionStartWith", ""),
+            Map.entry("local-variable-name-exclusion-end-with", ""),
+            Map.entry("root-variable-value-type-inclusion", ""),
+            Map.entry("root-variable-value-type-exclusion", ""),
+            Map.entry("local-variable-value-type-inclusion", List.of("String", "Number")),
+            Map.entry("localVariableValueTypeExclusion", ""));
+    final var args = Map.<String, Object>of("url", "http://localhost:9200", "index", indexArgs);
+    final var exporterConfig = new ExporterConfiguration("id", args);
+
+    // when
+    final var config = exporterConfig.instantiate(OpensearchExporterConfiguration.class).index;
+
+    // then
+    assertThat(config.isExportLocalVariablesEnabled()).isTrue();
+    assertThat(config.getRootVariableNameInclusionExact()).containsExactly("customerId", "orderId");
+    assertThat(config.getRootVariableNameInclusionStartWith())
+        .containsExactly("REPORTING_", "order_");
+    assertThat(config.getRootVariableNameInclusionEndWith()).containsExactly("_Id", "_Key");
+    assertThat(config.getRootVariableNameExclusionExact()).isEmpty();
+    assertThat(config.getRootVariableNameExclusionStartWith()).isEmpty();
+    assertThat(config.getRootVariableNameExclusionEndWith()).containsExactly("_tmp");
+    assertThat(config.getLocalVariableNameInclusionExact())
+        .containsExactly("loopCounter", "taskResult");
+    assertThat(config.getLocalVariableNameInclusionStartWith()).containsExactly("tmp_", "debug_");
+    assertThat(config.getLocalVariableNameInclusionEndWith()).containsExactly("_local");
+    assertThat(config.getLocalVariableNameExclusionExact()).isEmpty();
+    assertThat(config.getLocalVariableNameExclusionStartWith()).isEmpty();
+    assertThat(config.getLocalVariableNameExclusionEndWith()).isEmpty();
+    assertThat(config.getRootVariableValueTypeInclusion()).isEmpty();
+    assertThat(config.getRootVariableValueTypeExclusion()).isEmpty();
+    assertThat(config.getLocalVariableValueTypeInclusion()).containsExactly("String", "Number");
+    assertThat(config.getLocalVariableValueTypeExclusion()).isEmpty();
   }
 }
