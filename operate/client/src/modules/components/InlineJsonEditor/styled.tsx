@@ -122,7 +122,7 @@ const ReadOnlyEditorContainer = styled.div`
 const CopyIcon = styled.span`
   position: absolute;
   top: ${EDITOR_PADDING_TOP}px;
-  right: 0;
+  right: 12px;
   padding: 0.25rem;
   color: var(--cds-icon-secondary);
   opacity: 0;
