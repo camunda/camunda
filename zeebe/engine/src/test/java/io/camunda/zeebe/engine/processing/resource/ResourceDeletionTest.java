@@ -51,6 +51,7 @@ import io.camunda.zeebe.protocol.record.value.HistoryDeletionRecordValue;
 import io.camunda.zeebe.protocol.record.value.HistoryDeletionType;
 import io.camunda.zeebe.protocol.record.value.NestedRecordValue;
 import io.camunda.zeebe.protocol.record.value.ResourceType;
+import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.protocol.record.value.deployment.DecisionRecordValue;
 import io.camunda.zeebe.protocol.record.value.deployment.DecisionRequirementsMetadataValue;
 import io.camunda.zeebe.protocol.record.value.deployment.Form;
@@ -1559,7 +1560,7 @@ public class ResourceDeletionTest {
         null,
         null,
         false,
-        null,
+        TenantOwned.DEFAULT_TENANT_IDENTIFIER,
         null,
         Set.of(),
         null);
@@ -1567,8 +1568,10 @@ public class ResourceDeletionTest {
 
   private DecisionInstanceEntity createDecisionInstanceEntity(final long decisionInstanceKey) {
     return new DecisionInstanceEntity.Builder()
+        .decisionInstanceId(decisionInstanceKey + "-1")
         .decisionInstanceKey(decisionInstanceKey)
         .processInstanceKey(decisionInstanceKey)
+        .tenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER)
         .build();
   }
 

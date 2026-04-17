@@ -8,6 +8,7 @@
 package io.camunda.search.entities;
 
 import io.camunda.search.entities.GlobalJobStatisticsEntity.StatusMetric;
+import java.util.Objects;
 
 /**
  * Represents aggregated job statistics for a specific worker within a job type.
@@ -18,4 +19,12 @@ import io.camunda.search.entities.GlobalJobStatisticsEntity.StatusMetric;
  * @param failed metrics for failed jobs
  */
 public record JobWorkerStatisticsEntity(
-    String worker, StatusMetric created, StatusMetric completed, StatusMetric failed) {}
+    String worker, StatusMetric created, StatusMetric completed, StatusMetric failed) {
+
+  public JobWorkerStatisticsEntity {
+    Objects.requireNonNull(worker, "worker");
+    Objects.requireNonNull(created, "created");
+    Objects.requireNonNull(completed, "completed");
+    Objects.requireNonNull(failed, "failed");
+  }
+}

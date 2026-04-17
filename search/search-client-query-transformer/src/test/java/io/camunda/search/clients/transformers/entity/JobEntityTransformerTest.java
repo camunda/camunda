@@ -31,6 +31,7 @@ class JobEntityTransformerTest {
   @BeforeEach
   void setUp() {
     when(entityValue.getKey()).thenReturn(123456L);
+    when(entityValue.getTenantId()).thenReturn("tenant-1");
     when(entityValue.getState()).thenReturn(JobState.CREATED.name());
     when(entityValue.getJobKind()).thenReturn(JobKind.BPMN_ELEMENT.name());
     when(entityValue.getListenerEventType()).thenReturn(ListenerEventType.UNSPECIFIED.name());

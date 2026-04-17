@@ -9,6 +9,7 @@ package io.camunda.gateway.mapping.http.search;
 
 import static io.camunda.gateway.mapping.http.ResponseMapper.formatDate;
 import static java.util.Objects.requireNonNull;
+import static java.util.Objects.requireNonNullElse;
 import static java.util.Optional.ofNullable;
 import static java.util.stream.Collectors.toMap;
 import static org.apache.commons.lang3.StringUtils.defaultIfEmpty;
@@ -208,6 +209,13 @@ import org.slf4j.LoggerFactory;
 public final class SearchQueryResponseMapper {
   private static final Logger LOGGER = LoggerFactory.getLogger(SearchQueryResponseMapper.class);
 
+  // Emitted as a sentinel for required date-time response fields when the data layer has no value.
+  // Only surfaces in rare, transient edge cases (exporter cache miss, or conditional-write intents
+  // where the usual start event was compacted or not yet observed) and is typically backfilled on
+  // the next exporter event. Preferred over a spec-incompatible `""` so ISO-8601 parsing on the
+  // client still succeeds.
+  private static final String EPOCH_DATE_SENTINEL = "1970-01-01T00:00:00Z";
+
   private SearchQueryResponseMapper() {}
 
   public static UsageMetricsResponse toUsageMetricsResponse(
@@ -286,10 +294,10 @@ public final class SearchQueryResponseMapper {
       final ProcessFlowNodeStatisticsEntity result) {
     return new ProcessElementStatisticsResult()
         .elementId(result.flowNodeId())
-        .active(requireNonNull(result.active(), "active"))
-        .canceled(requireNonNull(result.canceled(), "canceled"))
-        .incidents(requireNonNull(result.incidents(), "incidents"))
-        .completed(requireNonNull(result.completed(), "completed"));
+        .active(result.active())
+        .canceled(result.canceled())
+        .incidents(result.incidents())
+        .completed(result.completed());
   }
 
   public static ProcessDefinitionInstanceStatisticsQueryResult
@@ -322,35 +330,24 @@ public final class SearchQueryResponseMapper {
         .processDefinitionId(result.processDefinitionId())
         .tenantId(result.tenantId())
         .latestProcessDefinitionName(result.latestProcessDefinitionName())
-        .hasMultipleVersions(requireNonNull(result.hasMultipleVersions(), "hasMultipleVersions"))
-        .activeInstancesWithIncidentCount(
-            requireNonNull(
-                result.activeInstancesWithIncidentCount(), "activeInstancesWithIncidentCount"))
-        .activeInstancesWithoutIncidentCount(
-            requireNonNull(
-                result.activeInstancesWithoutIncidentCount(),
-                "activeInstancesWithoutIncidentCount"));
+        .hasMultipleVersions(result.hasMultipleVersions())
+        .activeInstancesWithIncidentCount(result.activeInstancesWithIncidentCount())
+        .activeInstancesWithoutIncidentCount(result.activeInstancesWithoutIncidentCount());
   }
 
   private static ProcessDefinitionInstanceVersionStatisticsResult
       toProcessInstanceVersionStatisticsResult(
           final ProcessDefinitionInstanceVersionStatisticsEntity result) {
+    // `processDefinitionVersion` is null on exporter cache miss (version enrichment path).
+    // Fall back to -1 rather than 500; caller can treat it as "unknown version".
     return new ProcessDefinitionInstanceVersionStatisticsResult()
         .processDefinitionId(result.processDefinitionId())
-        .processDefinitionKey(
-            requireNonNull(
-                KeyUtil.keyToString(result.processDefinitionKey()), "processDefinitionKey"))
+        .processDefinitionKey(KeyUtil.keyToString(result.processDefinitionKey()))
         .processDefinitionName(result.processDefinitionName())
         .tenantId(result.tenantId())
-        .processDefinitionVersion(
-            requireNonNull(result.processDefinitionVersion(), "processDefinitionVersion"))
-        .activeInstancesWithIncidentCount(
-            requireNonNull(
-                result.activeInstancesWithIncidentCount(), "activeInstancesWithIncidentCount"))
-        .activeInstancesWithoutIncidentCount(
-            requireNonNull(
-                result.activeInstancesWithoutIncidentCount(),
-                "activeInstancesWithoutIncidentCount"));
+        .processDefinitionVersion(requireNonNullElse(result.processDefinitionVersion(), -1))
+        .activeInstancesWithIncidentCount(result.activeInstancesWithIncidentCount())
+        .activeInstancesWithoutIncidentCount(result.activeInstancesWithoutIncidentCount());
   }
 
   public static IncidentProcessInstanceStatisticsByErrorQueryResult
@@ -368,12 +365,12 @@ public final class SearchQueryResponseMapper {
   private static IncidentProcessInstanceStatisticsByErrorResult
       toIncidentProcessInstanceStatisticsByErrorResult(
           final IncidentProcessInstanceStatisticsByErrorEntity result) {
+    // `errorMessage` is null when the incident aggregation has no representative message (e.g.
+    // rows with no message columns populated in the source incidents). Fall back to empty string.
     return new IncidentProcessInstanceStatisticsByErrorResult()
-        .errorHashCode(requireNonNull(result.errorHashCode(), "errorHashCode"))
-        .errorMessage(requireNonNull(result.errorMessage(), "errorMessage"))
-        .activeInstancesWithErrorCount(
-            requireNonNull(
-                result.activeInstancesWithErrorCount(), "activeInstancesWithErrorCount"));
+        .errorHashCode(result.errorHashCode())
+        .errorMessage(requireNonNullElse(result.errorMessage(), ""))
+        .activeInstancesWithErrorCount(result.activeInstancesWithErrorCount());
   }
 
   public static IncidentProcessInstanceStatisticsByDefinitionQueryResult
@@ -393,19 +390,15 @@ public final class SearchQueryResponseMapper {
   private static IncidentProcessInstanceStatisticsByDefinitionResult
       toIncidentProcessInstanceStatisticsByDefinitionResult(
           final IncidentProcessInstanceStatisticsByDefinitionEntity result) {
+    // Process-definition fields are null on exporter cache miss (enrichment path). Fall back to
+    // spec-compliant sentinels rather than 500 so partial statistics rows can still be returned.
     return new IncidentProcessInstanceStatisticsByDefinitionResult()
-        .processDefinitionId(requireNonNull(result.processDefinitionId(), "processDefinitionId"))
-        .processDefinitionKey(
-            requireNonNull(
-                KeyUtil.keyToString(result.processDefinitionKey()), "processDefinitionKey"))
-        .processDefinitionName(
-            requireNonNull(result.processDefinitionName(), "processDefinitionName"))
-        .processDefinitionVersion(
-            requireNonNull(result.processDefinitionVersion(), "processDefinitionVersion"))
-        .tenantId(requireNonNull(result.tenantId(), "tenantId"))
-        .activeInstancesWithErrorCount(
-            requireNonNull(
-                result.activeInstancesWithErrorCount(), "activeInstancesWithErrorCount"));
+        .processDefinitionId(requireNonNullElse(result.processDefinitionId(), ""))
+        .processDefinitionKey(KeyUtil.keyToString(result.processDefinitionKey()))
+        .processDefinitionName(requireNonNullElse(result.processDefinitionName(), ""))
+        .processDefinitionVersion(requireNonNullElse(result.processDefinitionVersion(), -1))
+        .tenantId(requireNonNullElse(result.tenantId(), ""))
+        .activeInstancesWithErrorCount(result.activeInstancesWithErrorCount());
   }
 
   public static ProcessInstanceSequenceFlowsQueryResult toSequenceFlowsResult(
@@ -421,12 +414,9 @@ public final class SearchQueryResponseMapper {
       final SequenceFlowEntity result) {
     return new ProcessInstanceSequenceFlowResult()
         .sequenceFlowId(result.sequenceFlowId())
-        .processInstanceKey(
-            requireNonNull(KeyUtil.keyToString(result.processInstanceKey()), "processInstanceKey"))
+        .processInstanceKey(KeyUtil.keyToString(result.processInstanceKey()))
         .rootProcessInstanceKey(KeyUtil.keyToString(result.rootProcessInstanceKey()))
-        .processDefinitionKey(
-            requireNonNull(
-                KeyUtil.keyToString(result.processDefinitionKey()), "processDefinitionKey"))
+        .processDefinitionKey(KeyUtil.keyToString(result.processDefinitionKey()))
         .processDefinitionId(result.processDefinitionId())
         .elementId(result.flowNodeId())
         .tenantId(result.tenantId());
@@ -904,7 +894,7 @@ public final class SearchQueryResponseMapper {
   public static GroupResult toGroup(final GroupEntity groupEntity) {
     return new GroupResult()
         .groupId(groupEntity.groupId())
-        .name(requireNonNull(groupEntity.name(), "name"))
+        .name(groupEntity.name())
         .description(groupEntity.description());
   }
 
@@ -1193,32 +1183,30 @@ public final class SearchQueryResponseMapper {
   public static UserTaskResult toUserTask(final UserTaskEntity t) {
     return new UserTaskResult()
         .tenantId(t.tenantId())
-        .userTaskKey(requireNonNull(KeyUtil.keyToString(t.userTaskKey()), "userTaskKey"))
+        .userTaskKey(KeyUtil.keyToString(t.userTaskKey()))
         .name(t.name())
-        .processInstanceKey(
-            requireNonNull(KeyUtil.keyToString(t.processInstanceKey()), "processInstanceKey"))
+        .processInstanceKey(KeyUtil.keyToString(t.processInstanceKey()))
         .rootProcessInstanceKey(KeyUtil.keyToString(t.rootProcessInstanceKey()))
-        .processDefinitionKey(
-            requireNonNull(KeyUtil.keyToString(t.processDefinitionKey()), "processDefinitionKey"))
-        .elementInstanceKey(
-            requireNonNull(KeyUtil.keyToString(t.elementInstanceKey()), "elementInstanceKey"))
+        .processDefinitionKey(KeyUtil.keyToString(t.processDefinitionKey()))
+        .elementInstanceKey(KeyUtil.keyToString(t.elementInstanceKey()))
         .processDefinitionId(t.processDefinitionId())
         .processName(t.processName())
-        .state(UserTaskStateEnum.fromValue(requireNonNull(t.state(), "state").name()))
+        .state(UserTaskStateEnum.fromValue(t.state().name()))
         .assignee(t.assignee())
         .candidateUsers(t.candidateUsers())
         .candidateGroups(t.candidateGroups())
         .formKey(KeyUtil.keyToString(t.formKey()))
         .elementId(t.elementId())
-        .creationDate(requireNonNull(formatDate(t.creationDate()), "creationDate"))
+        .creationDate(formatDate(t.creationDate()))
         .completionDate(formatDate(t.completionDate()))
         .dueDate(formatDate(t.dueDate()))
         .followUpDate(formatDate(t.followUpDate()))
         .externalFormReference(t.externalFormReference())
-        .processDefinitionVersion(
-            requireNonNull(t.processDefinitionVersion(), "processDefinitionVersion"))
+        .processDefinitionVersion(t.processDefinitionVersion())
         .customHeaders(t.customHeaders())
-        .priority(requireNonNull(t.priority(), "priority"))
+        // `priority` is null when the user-task handler path did not propagate it (e.g. job-based
+        // tasks before 8.8). Fall back to the Zeebe / BPMN default of 50.
+        .priority(requireNonNullElse(t.priority(), 50))
         .tags(t.tags());
   }
 
@@ -1696,15 +1684,10 @@ public final class SearchQueryResponseMapper {
                 new ProcessDefinitionMessageSubscriptionStatisticsResult()
                     .processDefinitionId(e.processDefinitionId())
                     .tenantId(e.tenantId())
-                    .processDefinitionKey(
-                        requireNonNull(
-                            KeyUtil.keyToString(e.processDefinitionKey()), "processDefinitionKey"))
-                    .activeSubscriptions(
-                        requireNonNull(e.activeSubscriptions(), "activeSubscriptions"))
+                    .processDefinitionKey(KeyUtil.keyToString(e.processDefinitionKey()))
+                    .activeSubscriptions(e.activeSubscriptions())
                     .processInstancesWithActiveSubscriptions(
-                        requireNonNull(
-                            e.processInstancesWithActiveSubscriptions(),
-                            "processInstancesWithActiveSubscriptions")))
+                        e.processInstancesWithActiveSubscriptions()))
         .toList();
   }
 
@@ -1831,7 +1814,7 @@ public final class SearchQueryResponseMapper {
 
     return new JobErrorStatisticsItem()
         .errorCode(ofNullable(entity.errorCode()).orElse(""))
-        .errorMessage(entity.errorMessage())
+        .errorMessage(ofNullable(entity.errorMessage()).orElse(""))
         .workers(entity.workers());
   }
 

@@ -430,7 +430,7 @@ public final class ResponseMapper {
 
   public static String toGetResourceContentResponse(
       final DeployedResourceEntity deployedResourceEntity) {
-    return deployedResourceEntity.resourceContent();
+    return requireNonNull(deployedResourceEntity.resourceContent(), "resourceContent");
   }
 
   public static MessagePublicationResult toMessagePublicationResponse(

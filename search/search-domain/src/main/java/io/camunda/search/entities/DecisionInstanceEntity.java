@@ -11,31 +11,35 @@ import io.camunda.util.ObjectBuilder;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
+import org.jspecify.annotations.Nullable;
 
 public record DecisionInstanceEntity(
     String decisionInstanceId, // this is the unique identifier of the decision instance
-    Long decisionInstanceKey,
-    DecisionInstanceState state,
-    OffsetDateTime evaluationDate,
-    String evaluationFailure,
-    String evaluationFailureMessage,
-    Long processDefinitionKey,
-    Long processInstanceKey,
-    Long rootProcessInstanceKey,
-    Long flowNodeInstanceKey,
+    @Nullable Long decisionInstanceKey,
+    @Nullable DecisionInstanceState state,
+    @Nullable OffsetDateTime evaluationDate,
+    @Nullable String evaluationFailure,
+    @Nullable String evaluationFailureMessage,
+    @Nullable Long processDefinitionKey,
+    @Nullable Long processInstanceKey,
+    @Nullable Long rootProcessInstanceKey,
+    @Nullable Long flowNodeInstanceKey,
     String tenantId,
-    String decisionDefinitionId,
-    Long decisionDefinitionKey,
-    String decisionDefinitionName,
-    Integer decisionDefinitionVersion,
-    DecisionDefinitionType decisionDefinitionType,
-    Long rootDecisionDefinitionKey,
-    String result,
+    @Nullable String decisionDefinitionId,
+    @Nullable Long decisionDefinitionKey,
+    @Nullable String decisionDefinitionName,
+    @Nullable Integer decisionDefinitionVersion,
+    @Nullable DecisionDefinitionType decisionDefinitionType,
+    @Nullable Long rootDecisionDefinitionKey,
+    @Nullable String result,
     List<DecisionInstanceInputEntity> evaluatedInputs,
     List<DecisionInstanceOutputEntity> evaluatedOutputs)
     implements TenantOwnedEntity {
 
   public DecisionInstanceEntity {
+    Objects.requireNonNull(decisionInstanceId, "decisionInstanceId");
+    Objects.requireNonNull(tenantId, "tenantId");
     // Mutable collections are required: MyBatis hydrates collection-mapped fields (e.g. from a
     // <collection> result map or a LEFT JOIN) by calling .add() on the existing instance.
     // Immutable defaults (e.g. List.of()) would cause UnsupportedOperationException at runtime.
@@ -216,10 +220,15 @@ public record DecisionInstanceEntity(
     }
   }
 
-  public record DecisionInstanceInputEntity(String inputId, String inputName, String inputValue) {}
+  public record DecisionInstanceInputEntity(
+      @Nullable String inputId, @Nullable String inputName, @Nullable String inputValue) {}
 
   public record DecisionInstanceOutputEntity(
-      String outputId, String outputName, String outputValue, String ruleId, int ruleIndex) {}
+      @Nullable String outputId,
+      @Nullable String outputName,
+      @Nullable String outputValue,
+      @Nullable String ruleId,
+      int ruleIndex) {}
 
   public enum DecisionDefinitionType {
     DECISION_TABLE,

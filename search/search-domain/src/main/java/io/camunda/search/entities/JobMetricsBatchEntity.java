@@ -9,6 +9,8 @@ package io.camunda.search.entities;
 
 import io.camunda.util.ObjectBuilder;
 import java.time.OffsetDateTime;
+import java.util.Objects;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Represents a single row in the {@code JOB_METRICS_BATCH} table.
@@ -40,14 +42,27 @@ public record JobMetricsBatchEntity(
     Boolean incompleteBatch,
     String tenantId,
     Integer failedCount,
-    OffsetDateTime lastFailedAt,
+    @Nullable OffsetDateTime lastFailedAt,
     Integer completedCount,
-    OffsetDateTime lastCompletedAt,
+    @Nullable OffsetDateTime lastCompletedAt,
     Integer createdCount,
-    OffsetDateTime lastCreatedAt,
+    @Nullable OffsetDateTime lastCreatedAt,
     String jobType,
-    String worker)
+    @Nullable String worker)
     implements TenantOwnedEntity {
+
+  public JobMetricsBatchEntity {
+    Objects.requireNonNull(key, "key");
+    Objects.requireNonNull(partitionId, "partitionId");
+    Objects.requireNonNull(startTime, "startTime");
+    Objects.requireNonNull(endTime, "endTime");
+    Objects.requireNonNull(incompleteBatch, "incompleteBatch");
+    Objects.requireNonNull(tenantId, "tenantId");
+    Objects.requireNonNull(failedCount, "failedCount");
+    Objects.requireNonNull(completedCount, "completedCount");
+    Objects.requireNonNull(createdCount, "createdCount");
+    Objects.requireNonNull(jobType, "jobType");
+  }
 
   public static class Builder implements ObjectBuilder<JobMetricsBatchEntity> {
 

@@ -8,16 +8,24 @@
 package io.camunda.search.entities;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import java.util.Objects;
+import org.jspecify.annotations.Nullable;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public record DecisionDefinitionEntity(
     Long decisionDefinitionKey,
-    String decisionDefinitionId,
-    String name,
-    Integer version,
-    String decisionRequirementsId,
-    Long decisionRequirementsKey,
-    String decisionRequirementsName,
-    Integer decisionRequirementsVersion,
+    @Nullable String decisionDefinitionId,
+    @Nullable String name,
+    @Nullable Integer version,
+    @Nullable String decisionRequirementsId,
+    @Nullable Long decisionRequirementsKey,
+    @Nullable String decisionRequirementsName,
+    @Nullable Integer decisionRequirementsVersion,
     String tenantId)
-    implements TenantOwnedEntity {}
+    implements TenantOwnedEntity {
+
+  public DecisionDefinitionEntity {
+    Objects.requireNonNull(decisionDefinitionKey, "decisionDefinitionKey");
+    Objects.requireNonNull(tenantId, "tenantId");
+  }
+}

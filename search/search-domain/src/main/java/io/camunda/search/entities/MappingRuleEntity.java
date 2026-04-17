@@ -9,8 +9,21 @@ package io.camunda.search.entities;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import io.camunda.security.auth.MappingRuleMatcher;
+import java.util.Objects;
+import org.jspecify.annotations.Nullable;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public record MappingRuleEntity(
-    String mappingRuleId, Long mappingRuleKey, String claimName, String claimValue, String name)
-    implements MappingRuleMatcher.MappingRule {}
+    String mappingRuleId,
+    @Nullable Long mappingRuleKey,
+    String claimName,
+    String claimValue,
+    @Nullable String name)
+    implements MappingRuleMatcher.MappingRule {
+
+  public MappingRuleEntity {
+    Objects.requireNonNull(mappingRuleId, "mappingRuleId");
+    Objects.requireNonNull(claimName, "claimName");
+    Objects.requireNonNull(claimValue, "claimValue");
+  }
+}

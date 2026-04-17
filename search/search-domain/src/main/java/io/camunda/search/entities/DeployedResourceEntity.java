@@ -9,19 +9,33 @@ package io.camunda.search.entities;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import io.camunda.util.ObjectBuilder;
+import java.util.Objects;
+import org.jspecify.annotations.Nullable;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public record DeployedResourceEntity(
     Long resourceKey,
     String resourceId,
     String resourceName,
-    String resourceType,
+    // null when fetched via the no-secondary-storage broker path (BrokerFetchResourceRequest does
+    // not carry the type), or when ResourceUtils.deriveResourceType() cannot derive a type from the
+    // resource name (no extension / empty name).
+    @Nullable String resourceType,
     Integer version,
-    String versionTag,
+    @Nullable String versionTag,
     Long deploymentKey,
     String tenantId,
-    String resourceContent)
+    @Nullable String resourceContent)
     implements TenantOwnedEntity {
+
+  public DeployedResourceEntity {
+    Objects.requireNonNull(resourceKey, "resourceKey");
+    Objects.requireNonNull(resourceId, "resourceId");
+    Objects.requireNonNull(resourceName, "resourceName");
+    Objects.requireNonNull(version, "version");
+    Objects.requireNonNull(deploymentKey, "deploymentKey");
+    Objects.requireNonNull(tenantId, "tenantId");
+  }
 
   public static class Builder implements ObjectBuilder<DeployedResourceEntity> {
     private Long resourceKey;

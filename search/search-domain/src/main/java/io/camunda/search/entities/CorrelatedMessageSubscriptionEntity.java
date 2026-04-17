@@ -9,24 +9,34 @@ package io.camunda.search.entities;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import java.time.OffsetDateTime;
+import java.util.Objects;
+import org.jspecify.annotations.Nullable;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public record CorrelatedMessageSubscriptionEntity(
-    String correlationKey,
-    OffsetDateTime correlationTime,
+    @Nullable String correlationKey,
+    @Nullable OffsetDateTime correlationTime,
     String flowNodeId,
-    Long flowNodeInstanceKey,
-    Long messageKey,
+    @Nullable Long flowNodeInstanceKey,
+    @Nullable Long messageKey,
     String messageName,
-    Integer partitionId,
+    @Nullable Integer partitionId,
     String processDefinitionId,
-    Long processDefinitionKey,
-    Long processInstanceKey,
-    Long rootProcessInstanceKey,
-    Long subscriptionKey,
-    MessageSubscriptionType subscriptionType,
+    @Nullable Long processDefinitionKey,
+    @Nullable Long processInstanceKey,
+    @Nullable Long rootProcessInstanceKey,
+    @Nullable Long subscriptionKey,
+    @Nullable MessageSubscriptionType subscriptionType,
     String tenantId)
     implements TenantOwnedEntity {
+
+  public CorrelatedMessageSubscriptionEntity {
+    Objects.requireNonNull(flowNodeId, "flowNodeId");
+    Objects.requireNonNull(messageName, "messageName");
+    Objects.requireNonNull(processDefinitionId, "processDefinitionId");
+    Objects.requireNonNull(tenantId, "tenantId");
+  }
+
   public static Builder builder() {
     return new Builder();
   }

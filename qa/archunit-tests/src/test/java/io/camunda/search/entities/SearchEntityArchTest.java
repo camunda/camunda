@@ -247,6 +247,29 @@ public final class SearchEntityArchTest {
   // Helpers
   // ---------------------------------------------------------------------------
 
+  // sun.misc.Unsafe access for allocating instances without invoking constructors. Used only by
+  // this ArchUnit test to satisfy non-null parameter requirements when reflectively instantiating
+  // records to verify their collection-field defaulting logic.
+  private static final Object UNSAFE;
+  private static final java.lang.reflect.Method UNSAFE_ALLOCATE;
+
+  static {
+    Object unsafe;
+    java.lang.reflect.Method allocate;
+    try {
+      final Class<?> unsafeClass = Class.forName("sun.misc.Unsafe");
+      final java.lang.reflect.Field theUnsafe = unsafeClass.getDeclaredField("theUnsafe");
+      theUnsafe.setAccessible(true);
+      unsafe = theUnsafe.get(null);
+      allocate = unsafeClass.getMethod("allocateInstance", Class.class);
+    } catch (final ReflectiveOperationException e) {
+      unsafe = null;
+      allocate = null;
+    }
+    UNSAFE = unsafe;
+    UNSAFE_ALLOCATE = allocate;
+  }
+
   private static boolean isCollectionField(final JavaField field) {
     try {
       final Class<?> fieldClass = Class.forName(field.getRawType().getName());
@@ -257,8 +280,10 @@ public final class SearchEntityArchTest {
   }
 
   /**
-   * Reflectively creates an instance of the given record class, passing {@code null} for all
-   * reference-type parameters and zero/false defaults for primitive parameters.
+   * Reflectively creates an instance of the given record class. Passes {@code null} for all
+   * collection-typed parameters (so the compact constructor's defaulting logic is exercised), and
+   * non-null sentinel values for every other reference parameter (so compact-constructor null
+   * guards on required fields don't interfere with this test).
    */
   private static Object instantiateRecordWithNulls(final JavaClass archClass) throws Exception {
     final Class<?> recordClass = Class.forName(archClass.getName());
@@ -274,34 +299,56 @@ public final class SearchEntityArchTest {
   }
 
   private static Object defaultValueFor(final Class<?> type) {
-    if (!type.isPrimitive()) {
+    if (type.isPrimitive()) {
+      if (type == boolean.class) {
+        return false;
+      }
+      if (type == byte.class) {
+        return (byte) 0;
+      }
+      if (type == short.class) {
+        return (short) 0;
+      }
+      if (type == int.class) {
+        return 0;
+      }
+      if (type == long.class) {
+        return 0L;
+      }
+      if (type == float.class) {
+        return 0.0f;
+      }
+      if (type == double.class) {
+        return 0.0;
+      }
+      if (type == char.class) {
+        return '\0';
+      }
       return null;
     }
-    if (type == boolean.class) {
-      return false;
+    // Collection-typed parameters must be passed as null so the compact ctor's defaulting logic
+    // is exercised and verified.
+    if (COLLECTION_TYPES.stream().anyMatch(ct -> ct.isAssignableFrom(type))) {
+      return null;
     }
-    if (type == byte.class) {
-      return (byte) 0;
+    if (type == String.class) {
+      return "";
     }
-    if (type == short.class) {
-      return (short) 0;
+    if (type.isEnum()) {
+      final Object[] constants = type.getEnumConstants();
+      return constants != null && constants.length > 0 ? constants[0] : null;
     }
-    if (type == int.class) {
-      return 0;
+    if (type.isArray()) {
+      return java.lang.reflect.Array.newInstance(type.getComponentType(), 0);
     }
-    if (type == long.class) {
-      return 0L;
+    // For any other reference type, allocate a zero-initialized instance without invoking its
+    // constructor. This produces a non-null sentinel that satisfies Objects.requireNonNull guards
+    // in the record's compact constructor without us needing to know how to construct that type.
+    try {
+      return UNSAFE_ALLOCATE.invoke(UNSAFE, type);
+    } catch (final ReflectiveOperationException e) {
+      return null;
     }
-    if (type == float.class) {
-      return 0.0f;
-    }
-    if (type == double.class) {
-      return 0.0;
-    }
-    if (type == char.class) {
-      return '\0';
-    }
-    return null;
   }
 
   /**

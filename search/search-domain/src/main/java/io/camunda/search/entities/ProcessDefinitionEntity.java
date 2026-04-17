@@ -7,14 +7,24 @@
  */
 package io.camunda.search.entities;
 
+import java.util.Objects;
+import org.jspecify.annotations.Nullable;
+
 public record ProcessDefinitionEntity(
     Long processDefinitionKey,
-    String name,
+    @Nullable String name,
     String processDefinitionId,
-    String bpmnXml,
-    String resourceName,
-    Integer version,
-    String versionTag,
+    @Nullable String bpmnXml,
+    @Nullable String resourceName,
+    @Nullable Integer version,
+    @Nullable String versionTag,
     String tenantId,
-    String formId)
-    implements TenantOwnedEntity {}
+    @Nullable String formId)
+    implements TenantOwnedEntity {
+
+  public ProcessDefinitionEntity {
+    Objects.requireNonNull(processDefinitionKey, "processDefinitionKey");
+    Objects.requireNonNull(processDefinitionId, "processDefinitionId");
+    Objects.requireNonNull(tenantId, "tenantId");
+  }
+}

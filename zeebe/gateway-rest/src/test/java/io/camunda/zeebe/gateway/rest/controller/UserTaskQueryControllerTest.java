@@ -209,7 +209,7 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
             "agentElementId": null,
             "batchOperationKey": null,
             "batchOperationType": null,
-            "category": null,
+            "category": "USER_TASKS",
             "decisionDefinitionId": null,
             "decisionDefinitionKey": null,
             "decisionEvaluationKey": null,
@@ -218,21 +218,21 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
             "deploymentKey": null,
             "elementInstanceKey": null,
             "entityDescription": null,
-            "entityKey": null,
-            "entityType": null,
+            "entityKey": "u1",
+            "entityType": "USER_TASK",
             "formKey": null,
             "jobKey": null,
-            "operationType": null,
+            "operationType": "CREATE",
             "processDefinitionId": null,
             "processDefinitionKey": null,
             "processInstanceKey": null,
             "relatedEntityKey": null,
             "relatedEntityType": null,
             "resourceKey": null,
-            "result": null,
+            "result": "SUCCESS",
             "rootProcessInstanceKey": null,
             "tenantId": null,
-            "timestamp": null,
+            "timestamp": "2025-01-01T00:00:00.000Z",
             "userTaskKey": null
           },
           {
@@ -242,7 +242,7 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
             "agentElementId": null,
             "batchOperationKey": null,
             "batchOperationType": null,
-            "category": null,
+            "category": "USER_TASKS",
             "decisionDefinitionId": null,
             "decisionDefinitionKey": null,
             "decisionEvaluationKey": null,
@@ -251,21 +251,21 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
             "deploymentKey": null,
             "elementInstanceKey": null,
             "entityDescription": null,
-            "entityKey": null,
-            "entityType": null,
+            "entityKey": "u2",
+            "entityType": "USER_TASK",
             "formKey": null,
             "jobKey": null,
-            "operationType": null,
+            "operationType": "UPDATE",
             "processDefinitionId": null,
             "processDefinitionKey": null,
             "processInstanceKey": null,
             "relatedEntityKey": null,
             "relatedEntityType": null,
             "resourceKey": null,
-            "result": null,
+            "result": "SUCCESS",
             "rootProcessInstanceKey": null,
             "tenantId": null,
-            "timestamp": null,
+            "timestamp": "2025-01-01T00:00:00.000Z",
             "userTaskKey": null
           }
         ],
@@ -385,8 +385,26 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
           .total(2L)
           .items(
               List.of(
-                  new AuditLogEntity.Builder().auditLogKey("1").actorId("1").build(),
-                  new AuditLogEntity.Builder().auditLogKey("2").actorId("2").build()))
+                  new AuditLogEntity.Builder()
+                      .auditLogKey("1")
+                      .actorId("1")
+                      .entityKey("u1")
+                      .entityType(AuditLogEntity.AuditLogEntityType.USER_TASK)
+                      .operationType(AuditLogEntity.AuditLogOperationType.CREATE)
+                      .result(AuditLogEntity.AuditLogOperationResult.SUCCESS)
+                      .category(AuditLogEntity.AuditLogOperationCategory.USER_TASKS)
+                      .timestamp(OffsetDateTime.parse("2025-01-01T00:00:00Z"))
+                      .build(),
+                  new AuditLogEntity.Builder()
+                      .auditLogKey("2")
+                      .actorId("2")
+                      .entityKey("u2")
+                      .entityType(AuditLogEntity.AuditLogEntityType.USER_TASK)
+                      .operationType(AuditLogEntity.AuditLogOperationType.UPDATE)
+                      .result(AuditLogEntity.AuditLogOperationResult.SUCCESS)
+                      .category(AuditLogEntity.AuditLogOperationCategory.USER_TASKS)
+                      .timestamp(OffsetDateTime.parse("2025-01-01T00:00:00Z"))
+                      .build()))
           .startCursor("0")
           .endCursor("1")
           .build();

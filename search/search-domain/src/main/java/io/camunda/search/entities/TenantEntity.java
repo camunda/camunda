@@ -8,6 +8,14 @@
 package io.camunda.search.entities;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import java.util.Objects;
+import org.jspecify.annotations.Nullable;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
-public record TenantEntity(Long key, String tenantId, String name, String description) {}
+public record TenantEntity(
+    @Nullable Long key, String tenantId, @Nullable String name, @Nullable String description) {
+
+  public TenantEntity {
+    Objects.requireNonNull(tenantId, "tenantId");
+  }
+}

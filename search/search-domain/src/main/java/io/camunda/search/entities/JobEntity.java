@@ -14,36 +14,39 @@ import io.camunda.util.ObjectBuilder;
 import java.time.OffsetDateTime;
 import java.util.HashMap;
 import java.util.Map;
+import org.jspecify.annotations.Nullable;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public record JobEntity(
     Long jobKey,
-    String type,
-    String worker,
-    JobState state,
-    JobKind kind,
-    ListenerEventType listenerEventType,
-    Integer retries,
-    Boolean isDenied,
-    String deniedReason,
-    Boolean hasFailedWithRetriesLeft,
-    String errorCode,
-    String errorMessage,
+    @Nullable String type,
+    @Nullable String worker,
+    @Nullable JobState state,
+    @Nullable JobKind kind,
+    @Nullable ListenerEventType listenerEventType,
+    @Nullable Integer retries,
+    @Nullable Boolean isDenied,
+    @Nullable String deniedReason,
+    @Nullable Boolean hasFailedWithRetriesLeft,
+    @Nullable String errorCode,
+    @Nullable String errorMessage,
     Map<String, String> customHeaders,
-    OffsetDateTime deadline,
-    OffsetDateTime endTime,
-    String processDefinitionId,
-    Long processDefinitionKey,
-    Long processInstanceKey,
-    Long rootProcessInstanceKey,
-    String elementId,
-    Long elementInstanceKey,
+    @Nullable OffsetDateTime deadline,
+    @Nullable OffsetDateTime endTime,
+    @Nullable String processDefinitionId,
+    @Nullable Long processDefinitionKey,
+    @Nullable Long processInstanceKey,
+    @Nullable Long rootProcessInstanceKey,
+    @Nullable String elementId,
+    @Nullable Long elementInstanceKey,
     String tenantId,
-    OffsetDateTime creationTime,
-    OffsetDateTime lastUpdateTime)
+    @Nullable OffsetDateTime creationTime,
+    @Nullable OffsetDateTime lastUpdateTime)
     implements TenantOwnedEntity {
 
   public JobEntity {
+    requireNonNull(jobKey, "jobKey");
+    requireNonNull(tenantId, "tenantId");
     // Mutable collections are required: MyBatis hydrates collection-mapped fields (e.g. from a
     // <collection> result map or a LEFT JOIN) by calling .add() on the existing instance.
     // Immutable defaults (e.g. Map.of()) would cause UnsupportedOperationException at runtime.
@@ -199,12 +202,12 @@ public record JobEntity(
     @Override
     public JobEntity build() {
       return new JobEntity(
-          requireNonNull(jobKey, "Expected non-null field for jobKey."),
+          jobKey,
           type,
           worker,
-          requireNonNull(state, "Expected non-null field for state"),
-          requireNonNull(kind, "Expected non-null field for kind."),
-          requireNonNull(listenerEventType, "Expected non-null field for listenerEventType."),
+          state,
+          kind,
+          listenerEventType,
           retries,
           isDenied,
           deniedReason,

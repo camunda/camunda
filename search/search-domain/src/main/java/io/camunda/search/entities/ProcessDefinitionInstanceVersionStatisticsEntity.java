@@ -9,16 +9,29 @@ package io.camunda.search.entities;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import io.camunda.util.ObjectBuilder;
+import java.util.Objects;
+import org.jspecify.annotations.Nullable;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public record ProcessDefinitionInstanceVersionStatisticsEntity(
     String processDefinitionId,
     Long processDefinitionKey,
-    Integer processDefinitionVersion,
-    String processDefinitionName,
+    // mirrors ProcessInstanceEntity.processDefinitionVersion; null for list-view rows lacking it.
+    @Nullable Integer processDefinitionVersion,
+    // cache-enriched; null on cache miss.
+    @Nullable String processDefinitionName,
     String tenantId,
     Long activeInstancesWithoutIncidentCount,
     Long activeInstancesWithIncidentCount) {
+
+  public ProcessDefinitionInstanceVersionStatisticsEntity {
+    Objects.requireNonNull(processDefinitionId, "processDefinitionId");
+    Objects.requireNonNull(processDefinitionKey, "processDefinitionKey");
+    Objects.requireNonNull(tenantId, "tenantId");
+    Objects.requireNonNull(
+        activeInstancesWithoutIncidentCount, "activeInstancesWithoutIncidentCount");
+    Objects.requireNonNull(activeInstancesWithIncidentCount, "activeInstancesWithIncidentCount");
+  }
 
   public static class Builder
       implements ObjectBuilder<ProcessDefinitionInstanceVersionStatisticsEntity> {

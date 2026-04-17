@@ -5,17 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
+@NullMarked
 package io.camunda.search.entities;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import io.camunda.zeebe.protocol.record.value.EntityType;
-import java.util.Objects;
-
-@JsonIgnoreProperties(ignoreUnknown = true)
-public record RoleMemberEntity(String id, EntityType entityType) {
-
-  public RoleMemberEntity {
-    Objects.requireNonNull(id, "id");
-    Objects.requireNonNull(entityType, "entityType");
-  }
-}
+import org.jspecify.annotations.NullMarked;

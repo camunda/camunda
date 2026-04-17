@@ -9,26 +9,35 @@ package io.camunda.search.entities;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import java.time.OffsetDateTime;
+import java.util.Objects;
+import org.jspecify.annotations.Nullable;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public record FlowNodeInstanceEntity(
     Long flowNodeInstanceKey,
-    Long processInstanceKey,
-    Long rootProcessInstanceKey,
-    Long processDefinitionKey,
-    OffsetDateTime startDate,
-    OffsetDateTime endDate,
+    @Nullable Long processInstanceKey,
+    @Nullable Long rootProcessInstanceKey,
+    @Nullable Long processDefinitionKey,
+    @Nullable OffsetDateTime startDate,
+    @Nullable OffsetDateTime endDate,
     String flowNodeId,
-    String flowNodeName,
-    String treePath,
-    FlowNodeType type,
-    FlowNodeState state,
-    Boolean hasIncident,
-    Long incidentKey,
+    @Nullable String flowNodeName,
+    @Nullable String treePath,
+    @Nullable FlowNodeType type,
+    @Nullable FlowNodeState state,
+    @Nullable Boolean hasIncident,
+    @Nullable Long incidentKey,
     String processDefinitionId,
     String tenantId,
-    Integer level)
+    @Nullable Integer level)
     implements TenantOwnedEntity {
+
+  public FlowNodeInstanceEntity {
+    Objects.requireNonNull(flowNodeInstanceKey, "flowNodeInstanceKey");
+    Objects.requireNonNull(flowNodeId, "flowNodeId");
+    Objects.requireNonNull(processDefinitionId, "processDefinitionId");
+    Objects.requireNonNull(tenantId, "tenantId");
+  }
 
   public FlowNodeInstanceEntity withFlowNodeName(final String name) {
     return new FlowNodeInstanceEntity(

@@ -12,6 +12,8 @@ import io.camunda.search.entities.AuditLogEntity.AuditLogActorType;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
+import org.jspecify.annotations.Nullable;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public record BatchOperationEntity(
@@ -19,28 +21,29 @@ public record BatchOperationEntity(
     // Operate BatchOperation Key is a UUID
     // Engine BatchOperation Key is a Long
     String batchOperationKey,
-    BatchOperationState state,
-    BatchOperationType operationType,
-    OffsetDateTime startDate,
-    OffsetDateTime endDate,
+    @Nullable BatchOperationState state,
+    @Nullable BatchOperationType operationType,
+    @Nullable OffsetDateTime startDate,
+    @Nullable OffsetDateTime endDate,
     /*
      * The type of the actor who started the batch operation.
      *
      * @since 8.9.0 - so null for older versions
      */
-    AuditLogActorType actorType,
+    @Nullable AuditLogActorType actorType,
     /*
      * The id of the actor who started the batch operation.
      *
      * @since 8.9.0 - so null for older versions
      */
-    String actorId,
-    Integer operationsTotalCount,
-    Integer operationsFailedCount,
-    Integer operationsCompletedCount,
+    @Nullable String actorId,
+    @Nullable Integer operationsTotalCount,
+    @Nullable Integer operationsFailedCount,
+    @Nullable Integer operationsCompletedCount,
     List<BatchOperationErrorEntity> errors) {
 
   public BatchOperationEntity {
+    Objects.requireNonNull(batchOperationKey, "batchOperationKey");
     // Mutable collections are required: MyBatis hydrates collection-mapped fields (e.g. from a
     // <collection> result map or a LEFT JOIN) by calling .add() on the existing instance.
     // Immutable defaults (e.g. List.of()) would cause UnsupportedOperationException at runtime.
@@ -72,15 +75,20 @@ public record BatchOperationEntity(
       // Operate BatchOperation Key is a UUID
       // Engine BatchOperation Key is a Long
       String batchOperationKey,
-      BatchOperationType operationType,
-      Long itemKey,
-      Long processInstanceKey,
-      Long rootProcessInstanceKey,
-      BatchOperationItemState state,
-      OffsetDateTime processedDate,
-      String errorMessage) {}
+      @Nullable BatchOperationType operationType,
+      @Nullable Long itemKey,
+      @Nullable Long processInstanceKey,
+      @Nullable Long rootProcessInstanceKey,
+      @Nullable BatchOperationItemState state,
+      @Nullable OffsetDateTime processedDate,
+      @Nullable String errorMessage) {
+    public BatchOperationItemEntity {
+      Objects.requireNonNull(batchOperationKey, "batchOperationKey");
+    }
+  }
 
-  public record BatchOperationErrorEntity(Integer partitionId, String type, String message) {}
+  public record BatchOperationErrorEntity(
+      @Nullable Integer partitionId, @Nullable String type, @Nullable String message) {}
 
   public enum BatchOperationState {
     CREATED,

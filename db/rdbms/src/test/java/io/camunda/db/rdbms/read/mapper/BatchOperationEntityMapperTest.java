@@ -66,6 +66,7 @@ class BatchOperationEntityMapperTest {
   void shouldMapDbModelToEntityWithActor() {
     final var dbModel =
         new BatchOperationDbModel.Builder()
+            .batchOperationKey("batch-1")
             .actorType(AuditLogActorType.USER)
             .actorId("user-123")
             .build();

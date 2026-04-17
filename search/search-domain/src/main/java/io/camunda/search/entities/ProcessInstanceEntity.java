@@ -10,30 +10,34 @@ package io.camunda.search.entities;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import java.time.OffsetDateTime;
 import java.util.HashSet;
+import java.util.Objects;
 import java.util.Set;
+import org.jspecify.annotations.Nullable;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public record ProcessInstanceEntity(
     Long processInstanceKey,
-    Long rootProcessInstanceKey,
-    String processDefinitionId,
-    String processDefinitionName,
-    Integer processDefinitionVersion,
-    String processDefinitionVersionTag,
-    Long processDefinitionKey,
-    Long parentProcessInstanceKey,
-    Long parentFlowNodeInstanceKey,
-    OffsetDateTime startDate,
-    OffsetDateTime endDate,
-    ProcessInstanceState state,
-    Boolean hasIncident,
+    @Nullable Long rootProcessInstanceKey,
+    @Nullable String processDefinitionId,
+    @Nullable String processDefinitionName,
+    @Nullable Integer processDefinitionVersion,
+    @Nullable String processDefinitionVersionTag,
+    @Nullable Long processDefinitionKey,
+    @Nullable Long parentProcessInstanceKey,
+    @Nullable Long parentFlowNodeInstanceKey,
+    @Nullable OffsetDateTime startDate,
+    @Nullable OffsetDateTime endDate,
+    @Nullable ProcessInstanceState state,
+    @Nullable Boolean hasIncident,
     String tenantId,
-    String treePath,
+    @Nullable String treePath,
     Set<String> tags,
-    String businessId)
+    @Nullable String businessId)
     implements TenantOwnedEntity {
 
   public ProcessInstanceEntity {
+    Objects.requireNonNull(processInstanceKey, "processInstanceKey");
+    Objects.requireNonNull(tenantId, "tenantId");
     // Mutable collections are required: MyBatis hydrates collection-mapped fields (e.g. from a
     // <collection> result map or a LEFT JOIN) by calling .add() on the existing instance.
     // Immutable defaults (e.g. Set.of()) would cause UnsupportedOperationException at runtime.

@@ -35,6 +35,7 @@ import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.BatchOperationType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
+import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.protocol.record.value.UserRecordValue;
 import io.camunda.zeebe.test.util.BrokerClassRuleHelper;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
@@ -337,7 +338,7 @@ abstract class AbstractBatchOperationTest {
         null,
         null,
         false,
-        null,
+        TenantOwned.DEFAULT_TENANT_IDENTIFIER,
         null,
         Set.of(),
         null);
@@ -358,7 +359,7 @@ abstract class AbstractBatchOperationTest {
         null, // creationTime
         IncidentEntity.IncidentState.ACTIVE,
         -1L, // jobKey
-        null // tenantId
+        TenantOwned.DEFAULT_TENANT_IDENTIFIER // tenantId
         );
   }
 
@@ -392,8 +393,10 @@ abstract class AbstractBatchOperationTest {
 
   protected DecisionInstanceEntity fakeDecisionInstanceEntity(final long itemKey) {
     return new DecisionInstanceEntity.Builder()
+        .decisionInstanceId(itemKey + "-1")
         .decisionInstanceKey(itemKey)
         .processInstanceKey(itemKey)
+        .tenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER)
         .build();
   }
 

@@ -10,43 +10,50 @@ package io.camunda.search.entities;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import io.camunda.util.ObjectBuilder;
 import java.time.OffsetDateTime;
+import java.util.Objects;
+import org.jspecify.annotations.Nullable;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public record AuditLogEntity(
     String auditLogKey,
-    String entityKey,
-    AuditLogEntityType entityType,
-    AuditLogOperationType operationType,
-    Long batchOperationKey,
-    BatchOperationType batchOperationType,
+    @Nullable String entityKey,
+    @Nullable AuditLogEntityType entityType,
+    @Nullable AuditLogOperationType operationType,
+    @Nullable Long batchOperationKey,
+    @Nullable BatchOperationType batchOperationType,
     OffsetDateTime timestamp,
-    String actorId,
-    AuditLogActorType actorType,
-    String agentElementId,
-    String tenantId,
-    AuditLogTenantScope tenantScope,
-    AuditLogOperationResult result,
-    AuditLogOperationCategory category,
-    String processDefinitionId,
-    Long processDefinitionKey,
-    Long processInstanceKey,
-    Long rootProcessInstanceKey,
-    Long elementInstanceKey,
-    Long jobKey,
-    Long userTaskKey,
-    String decisionRequirementsId,
-    Long decisionRequirementsKey,
-    String decisionDefinitionId,
-    Long decisionDefinitionKey,
-    Long decisionEvaluationKey,
-    Long deploymentKey,
-    Long formKey,
-    Long resourceKey,
-    AuditLogEntityType relatedEntityType,
-    String relatedEntityKey,
-    String entityDescription,
-    OffsetDateTime historyCleanupDate)
+    @Nullable String actorId,
+    @Nullable AuditLogActorType actorType,
+    @Nullable String agentElementId,
+    @Nullable String tenantId,
+    @Nullable AuditLogTenantScope tenantScope,
+    @Nullable AuditLogOperationResult result,
+    @Nullable AuditLogOperationCategory category,
+    @Nullable String processDefinitionId,
+    @Nullable Long processDefinitionKey,
+    @Nullable Long processInstanceKey,
+    @Nullable Long rootProcessInstanceKey,
+    @Nullable Long elementInstanceKey,
+    @Nullable Long jobKey,
+    @Nullable Long userTaskKey,
+    @Nullable String decisionRequirementsId,
+    @Nullable Long decisionRequirementsKey,
+    @Nullable String decisionDefinitionId,
+    @Nullable Long decisionDefinitionKey,
+    @Nullable Long decisionEvaluationKey,
+    @Nullable Long deploymentKey,
+    @Nullable Long formKey,
+    @Nullable Long resourceKey,
+    @Nullable AuditLogEntityType relatedEntityType,
+    @Nullable String relatedEntityKey,
+    @Nullable String entityDescription,
+    @Nullable OffsetDateTime historyCleanupDate)
     implements TenantOwnedEntity {
+
+  public AuditLogEntity {
+    Objects.requireNonNull(auditLogKey, "auditLogKey");
+    Objects.requireNonNull(timestamp, "timestamp");
+  }
 
   @Override
   public boolean hasTenantScope() {
