@@ -12,14 +12,15 @@ import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESS
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
+import org.jspecify.annotations.Nullable;
 
 public class KeyUtil {
 
-  public static Long keyToLong(final String key) {
+  public static @Nullable Long keyToLong(final @Nullable String key) {
     return key != null ? Long.parseLong(key) : null;
   }
 
-  public static Function<String, Long> mapKeyToLong(
+  public static Function<String, @Nullable Long> mapKeyToLong(
       final String fieldName, final List<String> validationErrors) {
     return key -> {
       if (key == null) {
@@ -34,11 +35,11 @@ public class KeyUtil {
     };
   }
 
-  public static String keyToString(final Long value) {
+  public static @Nullable String keyToString(final @Nullable Long value) {
     return value != null ? String.valueOf(value) : null;
   }
 
-  public static Optional<Long> tryParseLong(final String key) {
+  public static Optional<Long> tryParseLong(final @Nullable String key) {
     try {
       return Optional.ofNullable(keyToLong(key));
     } catch (final NumberFormatException e) {

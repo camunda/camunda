@@ -48,6 +48,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.BiFunction;
 import java.util.function.Supplier;
+import org.jspecify.annotations.Nullable;
 
 public class SearchQuerySortRequestMapper {
 
@@ -1000,7 +1001,7 @@ public class SearchQuerySortRequestMapper {
   }
 
   private static void applySortOrder(
-      final SortOrderEnum order, final SortOption.AbstractBuilder<?> builder) {
+      final @Nullable SortOrderEnum order, final SortOption.AbstractBuilder<?> builder) {
     if (order == SortOrderEnum.DESC) {
       builder.desc();
     } else {

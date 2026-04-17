@@ -87,23 +87,31 @@ class SearchQueryResponseMapperTest {
   }
 
   @Test
-  void shouldHandleNullFieldsInBatchOperationItemEntity() {
-    // given
+  void shouldHandleNullOptionalFieldsInBatchOperationItemEntity() {
+    // given — all optional fields null, required fields populated per OpenAPI contract
     final BatchOperationItemEntity item =
-        new BatchOperationItemEntity(null, null, null, null, null, null, null, null);
+        new BatchOperationItemEntity(
+            "batch-1",
+            BatchOperationType.CANCEL_PROCESS_INSTANCE,
+            123L,
+            456L,
+            null, // rootProcessInstanceKey is optional
+            BatchOperationItemState.ACTIVE,
+            null, // processedDate is optional
+            null); // errorMessage is optional
 
     // when
     final BatchOperationItemResponse response =
         SearchQueryResponseMapper.toBatchOperationItem(item);
 
-    // then
-    assertThat(response.getBatchOperationKey()).isNull();
-    assertThat(response.getOperationType()).isNull();
-    assertThat(response.getItemKey()).isNull();
-    assertThat(response.getProcessInstanceKey()).isNull();
-    assertThat(response.getState()).isNull();
+    // then — optional fields remain null
+    assertThat(response.getRootProcessInstanceKey()).isNull();
     assertThat(response.getProcessedDate()).isNull();
     assertThat(response.getErrorMessage()).isNull();
+    // required fields carry through
+    assertThat(response.getBatchOperationKey()).isEqualTo("batch-1");
+    assertThat(response.getItemKey()).isEqualTo("123");
+    assertThat(response.getProcessInstanceKey()).isEqualTo("456");
   }
 
   @Test
@@ -374,10 +382,16 @@ class SearchQueryResponseMapperTest {
         new JobEntity.Builder()
             .jobKey(123L)
             .type("test-type")
+            .worker("test-worker")
             .state(JobState.CREATED)
             .kind(JobKind.BPMN_ELEMENT)
             .listenerEventType(ListenerEventType.UNSPECIFIED)
+            .retries(1)
+            .hasFailedWithRetriesLeft(false)
+            .processDefinitionId("processId")
+            .processDefinitionKey(456L)
             .processInstanceKey(789L)
+            .elementInstanceKey(111L)
             .rootProcessInstanceKey(null)
             .tenantId("tenant")
             .build();
@@ -426,9 +440,13 @@ class SearchQueryResponseMapperTest {
     final var entity =
         MessageSubscriptionEntity.builder()
             .messageSubscriptionKey(123L)
+            .processDefinitionId("processId")
+            .flowNodeId("flowNode")
+            .messageName("testMessage")
             .processInstanceKey(789L)
             .rootProcessInstanceKey(null)
             .messageSubscriptionState(MessageSubscriptionState.CREATED)
+            .dateTime(OffsetDateTime.now())
             .tenantId("tenant")
             .build();
 
@@ -478,8 +496,16 @@ class SearchQueryResponseMapperTest {
     final var entity =
         CorrelatedMessageSubscriptionEntity.builder()
             .correlationKey("corrKey")
+            .correlationTime(OffsetDateTime.now())
+            .flowNodeId("flowNode")
+            .messageKey(222L)
+            .messageName("testMessage")
+            .partitionId(1)
+            .processDefinitionId("processId")
+            .processDefinitionKey(456L)
             .processInstanceKey(789L)
             .rootProcessInstanceKey(null)
+            .subscriptionKey(333L)
             .tenantId("tenant")
             .build();
 
@@ -551,6 +577,8 @@ class SearchQueryResponseMapperTest {
             .entityKey("entity-456")
             .entityType(AuditLogEntityType.PROCESS_INSTANCE)
             .operationType(AuditLogOperationType.CREATE)
+            .result(AuditLogOperationResult.SUCCESS)
+            .category(AuditLogOperationCategory.DEPLOYED_RESOURCES)
             .timestamp(OffsetDateTime.now())
             .processInstanceKey(789L)
             .rootProcessInstanceKey(null)

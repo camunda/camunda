@@ -35,6 +35,7 @@ import static io.camunda.gateway.mapping.http.validator.UserTaskRequestValidator
 import static io.camunda.zeebe.protocol.record.RejectionType.INVALID_ARGUMENT;
 import static io.camunda.zeebe.protocol.record.value.JobResultType.AD_HOC_SUB_PROCESS;
 import static io.camunda.zeebe.protocol.record.value.JobResultType.USER_TASK;
+import static java.util.Objects.requireNonNull;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.document.api.DocumentMetadataModel;
@@ -131,11 +132,13 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.jspecify.annotations.Nullable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.web.multipart.MultipartFile;
@@ -340,7 +343,7 @@ public class RequestMapper {
       final List<Part> parts,
       final String storeId,
       final ObjectMapper objectMapper,
-      final List<DocumentMetadata> metadataList) {
+      final @Nullable List<DocumentMetadata> metadataList) {
 
     final boolean hasList = metadataList != null && !metadataList.isEmpty();
     final boolean hasHeaderMetadata =
@@ -353,7 +356,7 @@ public class RequestMapper {
       return Either.left(pd);
     }
 
-    if (hasList) {
+    if (hasList && metadataList != null) {
       // Size must match number of files
       if (metadataList.size() != parts.size()) {
         final ProblemDetail pd = CamundaProblemDetail.forStatus(HttpStatus.BAD_REQUEST);
@@ -591,7 +594,7 @@ public class RequestMapper {
   }
 
   private static DocumentMetadataModel toInternalDocumentMetadata(
-      final DocumentMetadata metadata, final Part file) {
+      final @Nullable DocumentMetadata metadata, final Part file) {
 
     if (metadata == null) {
       return new DocumentMetadataModel(
@@ -636,7 +639,7 @@ public class RequestMapper {
   private static ProblemDetail createInternalErrorProblemDetail(
       final IOException e, final String message) {
     return GatewayErrorMapper.createProblemDetail(
-        HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage(), message);
+        HttpStatus.INTERNAL_SERVER_ERROR, Objects.requireNonNullElse(e.getMessage(), ""), message);
   }
 
   public static Either<ProblemDetail, ProcessInstanceCreateRequest> toCreateProcessInstance(
@@ -820,7 +823,7 @@ public class RequestMapper {
                               instanceof
                               final ProcessInstanceModificationTerminateByKeyInstruction byKey) {
                             mappedInstruction.setElementInstanceKey(
-                                KeyUtil.keyToLong(byKey.getElementInstanceKey()));
+                                requireNonNull(KeyUtil.keyToLong(byKey.getElementInstanceKey())));
                           } else {
                             mappedInstruction.setElementId(
                                 ((ProcessInstanceModificationTerminateByIdInstruction) instruction)
@@ -1011,11 +1014,11 @@ public class RequestMapper {
         .setVariables(new UnsafeBuffer(MsgPackConverter.convertToMsgPack(variable.getVariables())));
   }
 
-  private static Long getAncestorKey(final String ancestorElementInstanceKey) {
+  private static Long getAncestorKey(final @Nullable String ancestorElementInstanceKey) {
     if (ancestorElementInstanceKey == null) {
       return -1L;
     }
-    return KeyUtil.keyToLong(ancestorElementInstanceKey);
+    return requireNonNull(KeyUtil.keyToLong(ancestorElementInstanceKey));
   }
 
   private static List<ProcessInstanceModificationMoveInstruction>
@@ -1034,7 +1037,7 @@ public class RequestMapper {
                     mappedInstruction.setSourceElementId(byId.getSourceElementId());
                 case final SourceElementInstanceKeyInstruction byKey ->
                     mappedInstruction.setSourceElementInstanceKey(
-                        KeyUtil.keyToLong(byKey.getSourceElementInstanceKey()));
+                        requireNonNull(KeyUtil.keyToLong(byKey.getSourceElementInstanceKey())));
                 default ->
                     throw new IllegalStateException(
                         "Unexpected value: " + instruction.getSourceElementInstruction());
@@ -1071,7 +1074,7 @@ public class RequestMapper {
   }
 
   private static <R> Map<String, Object> getMapOrEmpty(
-      final R request, final Function<R, Map<String, Object>> mapExtractor) {
+      final @Nullable R request, final NullableExtractor<R, Map<String, Object>> mapExtractor) {
     final Map<String, Object> value = request == null ? null : mapExtractor.apply(request);
     return value == null ? Map.of() : value;
   }
@@ -1157,29 +1160,36 @@ public class RequestMapper {
   }
 
   private static <R> boolean getBooleanOrDefault(
-      final R request, final Function<R, Boolean> valueExtractor, final boolean defaultValue) {
+      final @Nullable R request,
+      final NullableExtractor<R, Boolean> valueExtractor,
+      final boolean defaultValue) {
     final Boolean value = request == null ? null : valueExtractor.apply(request);
     return value == null ? defaultValue : value;
   }
 
   private static <R> String getStringOrEmpty(
-      final R request, final Function<R, String> valueExtractor) {
+      final @Nullable R request, final NullableExtractor<R, String> valueExtractor) {
     final String value = request == null ? null : valueExtractor.apply(request);
     return value == null ? "" : value;
   }
 
-  private static <R> long getLongOrZero(final R request, final Function<R, Long> valueExtractor) {
+  private static <R> long getLongOrZero(
+      final @Nullable R request, final NullableExtractor<R, Long> valueExtractor) {
     return getLongOrDefault(request, valueExtractor, 0L);
   }
 
   private static <R> long getLongOrDefault(
-      final R request, final Function<R, Long> valueExtractor, final Long defaultValue) {
+      final @Nullable R request,
+      final NullableExtractor<R, Long> valueExtractor,
+      final Long defaultValue) {
     final Long value = request == null ? null : valueExtractor.apply(request);
     return value == null ? defaultValue : value;
   }
 
   private static <R> long getKeyOrDefault(
-      final R request, final Function<R, String> valueExtractor, final Long defaultValue) {
+      final @Nullable R request,
+      final NullableExtractor<R, String> valueExtractor,
+      final Long defaultValue) {
     final String value = request == null ? null : valueExtractor.apply(request);
     return value == null ? defaultValue : Long.parseLong(value);
   }
@@ -1200,13 +1210,23 @@ public class RequestMapper {
     return value == null ? defaultValue : value;
   }
 
+  /**
+   * Functional interface variant that permits a {@code @Nullable} return value. Used for method
+   * references into generated models whose getters are {@code @Nullable}, which would otherwise be
+   * rejected when passed as {@link Function}.
+   */
+  @FunctionalInterface
+  private interface NullableExtractor<R, T> {
+    @Nullable T apply(R request);
+  }
+
   public record CompleteUserTaskRequest(
       long userTaskKey, Map<String, Object> variables, String action) {}
 
   public record UpdateUserTaskRequest(long userTaskKey, UserTaskRecord changeset, String action) {}
 
   public record AssignUserTaskRequest(
-      long userTaskKey, String assignee, String action, boolean allowOverride) {}
+      long userTaskKey, @Nullable String assignee, String action, boolean allowOverride) {}
 
   public record FailJobRequest(
       long jobKey,
@@ -1221,7 +1241,7 @@ public class RequestMapper {
   public record CompleteJobRequest(long jobKey, Map<String, Object> variables, JobResult result) {}
 
   public record UpdateJobRequest(
-      long jobKey, Long operationReference, UpdateJobChangeset changeset) {}
+      long jobKey, @Nullable Long operationReference, UpdateJobChangeset changeset) {}
 
   public record BroadcastSignalRequest(
       String signalName, Map<String, Object> variables, String tenantId) {}

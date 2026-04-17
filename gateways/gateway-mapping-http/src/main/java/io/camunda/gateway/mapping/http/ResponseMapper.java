@@ -13,6 +13,7 @@ import static java.time.temporal.ChronoField.HOUR_OF_DAY;
 import static java.time.temporal.ChronoField.MINUTE_OF_HOUR;
 import static java.time.temporal.ChronoField.NANO_OF_SECOND;
 import static java.time.temporal.ChronoField.SECOND_OF_MINUTE;
+import static java.util.Objects.requireNonNull;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -118,8 +119,10 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatusCode;
@@ -162,7 +165,7 @@ public final class ResponseMapper {
           .parseStrict()
           .toFormatter();
 
-  public static String formatDate(final OffsetDateTime date) {
+  public static @Nullable String formatDate(final @Nullable OffsetDateTime date) {
     return date == null ? null : DATE_RESPONSE_MAPPER.format(date);
   }
 
@@ -202,14 +205,20 @@ public final class ResponseMapper {
   private static ActivatedJobResult toActivatedJob(final long jobKey, final JobRecord job) {
     final var result =
         new ActivatedJobResult()
-            .jobKey(KeyUtil.keyToString(jobKey))
+            .jobKey(requireNonNull(KeyUtil.keyToString(jobKey), "jobKey"))
             .type(job.getType())
             .processDefinitionId(job.getBpmnProcessId())
             .elementId(job.getElementId())
-            .processInstanceKey(KeyUtil.keyToString(job.getProcessInstanceKey()))
+            .processInstanceKey(
+                requireNonNull(
+                    KeyUtil.keyToString(job.getProcessInstanceKey()), "processInstanceKey"))
             .processDefinitionVersion(job.getProcessDefinitionVersion())
-            .processDefinitionKey(KeyUtil.keyToString(job.getProcessDefinitionKey()))
-            .elementInstanceKey(KeyUtil.keyToString(job.getElementInstanceKey()))
+            .processDefinitionKey(
+                requireNonNull(
+                    KeyUtil.keyToString(job.getProcessDefinitionKey()), "processDefinitionKey"))
+            .elementInstanceKey(
+                requireNonNull(
+                    KeyUtil.keyToString(job.getElementInstanceKey()), "elementInstanceKey"))
             .worker(bufferAsString(job.getWorkerBuffer()))
             .retries(job.getRetries())
             .deadline(job.getDeadline())
@@ -231,7 +240,7 @@ public final class ResponseMapper {
     return result;
   }
 
-  private static UserTaskProperties toUserTaskProperties(final JobRecord job) {
+  private static @Nullable UserTaskProperties toUserTaskProperties(final JobRecord job) {
     if (job.getJobKind() != TASK_LISTENER || CollectionUtils.isEmpty(job.getCustomHeaders())) {
       return null;
     }
@@ -239,7 +248,7 @@ public final class ResponseMapper {
     final var headers = job.getCustomHeaders();
     final var props = new UserTaskProperties();
 
-    props.setAction(headers.get(Protocol.USER_TASK_ACTION_HEADER_NAME));
+    props.setAction(requireNonNull(headers.get(Protocol.USER_TASK_ACTION_HEADER_NAME), "action"));
     props.setAssignee(headers.get(Protocol.USER_TASK_ASSIGNEE_HEADER_NAME));
     props.setCandidateGroups(
         mapStringToList(headers.get(Protocol.USER_TASK_CANDIDATE_GROUPS_HEADER_NAME)));
@@ -256,7 +265,7 @@ public final class ResponseMapper {
     return props;
   }
 
-  public static List<String> mapStringToList(final String input) {
+  public static List<String> mapStringToList(final @Nullable String input) {
     if (input == null || input.isEmpty()) {
       return List.of();
     }
@@ -269,7 +278,7 @@ public final class ResponseMapper {
     }
   }
 
-  public static Integer toIntegerOrNull(final String value) {
+  public static @Nullable Integer toIntegerOrNull(final @Nullable String value) {
     if (value == null || value.isEmpty()) {
       return null;
     }
@@ -284,9 +293,12 @@ public final class ResponseMapper {
   public static MessageCorrelationResult toMessageCorrelationResponse(
       final MessageCorrelationRecord brokerResponse) {
     return new MessageCorrelationResult()
-        .messageKey(KeyUtil.keyToString(brokerResponse.getMessageKey()))
+        .messageKey(
+            requireNonNull(KeyUtil.keyToString(brokerResponse.getMessageKey()), "messageKey"))
         .tenantId(brokerResponse.getTenantId())
-        .processInstanceKey(KeyUtil.keyToString(brokerResponse.getProcessInstanceKey()));
+        .processInstanceKey(
+            requireNonNull(
+                KeyUtil.keyToString(brokerResponse.getProcessInstanceKey()), "processInstanceKey"));
   }
 
   public static MediaType resolveMediaType(final DocumentContentResponse contentResponse) {
@@ -339,13 +351,13 @@ public final class ResponseMapper {
       final DocumentErrorResponse error) {
     final var detail = new DocumentCreationFailureDetail();
     final var defaultProblemDetail = mapDocumentErrorToProblem(error.error());
-    detail.setDetail(defaultProblemDetail.getDetail());
+    detail.setDetail(requireNonNull(defaultProblemDetail.getDetail(), "detail"));
     detail.setFileName(error.request().metadata().fileName());
     return detail;
   }
 
   private static ProblemDetail mapDocumentErrorToProblem(final ServiceException e) {
-    final String detail = e.getMessage();
+    final String detail = Objects.requireNonNullElse(e.getMessage(), "");
     final HttpStatusCode status = GatewayErrorMapper.mapStatus(e.getStatus());
     return GatewayErrorMapper.createProblemDetail(status, detail, e.getStatus().name());
   }
@@ -361,7 +373,9 @@ public final class ResponseMapper {
   public static DeploymentResult toDeployResourceResponse(final DeploymentRecord brokerResponse) {
     final var response =
         new DeploymentResult()
-            .deploymentKey(KeyUtil.keyToString(brokerResponse.getDeploymentKey()))
+            .deploymentKey(
+                requireNonNull(
+                    KeyUtil.keyToString(brokerResponse.getDeploymentKey()), "deploymentKey"))
             .tenantId(brokerResponse.getTenantId());
     addDeployedProcess(response, brokerResponse.getProcessesMetadata());
     addDeployedDecision(response, brokerResponse.decisionsMetadata());
@@ -375,12 +389,17 @@ public final class ResponseMapper {
       final ResourceDeletionRecord brokerResponse) {
     final var response =
         new DeleteResourceResponse()
-            .resourceKey(KeyUtil.keyToString(brokerResponse.getResourceKey()));
+            .resourceKey(
+                requireNonNull(
+                    KeyUtil.keyToString(brokerResponse.getResourceKey()), "resourceKey"));
 
     if (brokerResponse.isDeleteHistory() && brokerResponse.getBatchOperationKey() > 0) {
       final var batchOperationCreatedResult =
           new BatchOperationCreatedResult()
-              .batchOperationKey(KeyUtil.keyToString(brokerResponse.getBatchOperationKey()))
+              .batchOperationKey(
+                  requireNonNull(
+                      KeyUtil.keyToString(brokerResponse.getBatchOperationKey()),
+                      "batchOperationKey"))
               .batchOperationType(
                   BatchOperationTypeEnum.valueOf(brokerResponse.getBatchOperationType().name()));
       response.setBatchOperation(batchOperationCreatedResult);
@@ -417,7 +436,7 @@ public final class ResponseMapper {
   public static MessagePublicationResult toMessagePublicationResponse(
       final BrokerResponse<MessageRecord> brokerResponse) {
     return new MessagePublicationResult()
-        .messageKey(KeyUtil.keyToString(brokerResponse.getKey()))
+        .messageKey(requireNonNull(KeyUtil.keyToString(brokerResponse.getKey()), "messageKey"))
         .tenantId(brokerResponse.getResponse().getTenantId());
   }
 
@@ -429,7 +448,7 @@ public final class ResponseMapper {
                 new DeploymentFormResult()
                     .formId(form.getFormId())
                     .version(form.getVersion())
-                    .formKey(KeyUtil.keyToString(form.getFormKey()))
+                    .formKey(requireNonNull(KeyUtil.keyToString(form.getFormKey()), "formKey"))
                     .resourceName(form.getResourceName())
                     .tenantId(form.getTenantId()))
         .map(deploymentForm -> new DeploymentMetadataResult().form(deploymentForm))
@@ -445,7 +464,9 @@ public final class ResponseMapper {
                 new DeploymentResourceResult()
                     .resourceId(resource.getResourceId())
                     .version(resource.getVersion())
-                    .resourceKey(KeyUtil.keyToString(resource.getResourceKey()))
+                    .resourceKey(
+                        requireNonNull(
+                            KeyUtil.keyToString(resource.getResourceKey()), "resourceKey"))
                     .resourceName(resource.getResourceName())
                     .tenantId(resource.getTenantId()))
         .map(deploymentForm -> new DeploymentMetadataResult().resource(deploymentForm))
@@ -464,7 +485,9 @@ public final class ResponseMapper {
                     .decisionRequirementsName(decisionRequirement.getDecisionRequirementsName())
                     .tenantId(decisionRequirement.getTenantId())
                     .decisionRequirementsKey(
-                        KeyUtil.keyToString(decisionRequirement.getDecisionRequirementsKey()))
+                        requireNonNull(
+                            KeyUtil.keyToString(decisionRequirement.getDecisionRequirementsKey()),
+                            "decisionRequirementsKey"))
                     .resourceName(decisionRequirement.getResourceName()))
         .map(
             deploymentDecisionRequirement ->
@@ -480,12 +503,17 @@ public final class ResponseMapper {
                 new DeploymentDecisionResult()
                     .decisionDefinitionId(decision.getDecisionId())
                     .version(decision.getVersion())
-                    .decisionDefinitionKey(KeyUtil.keyToString(decision.getDecisionKey()))
+                    .decisionDefinitionKey(
+                        requireNonNull(
+                            KeyUtil.keyToString(decision.getDecisionKey()),
+                            "decisionDefinitionKey"))
                     .name(decision.getDecisionName())
                     .tenantId(decision.getTenantId())
                     .decisionRequirementsId(decision.getDecisionRequirementsId())
                     .decisionRequirementsKey(
-                        KeyUtil.keyToString(decision.getDecisionRequirementsKey())))
+                        requireNonNull(
+                            KeyUtil.keyToString(decision.getDecisionRequirementsKey()),
+                            "decisionRequirementsKey")))
         .map(
             deploymentDecision ->
                 new DeploymentMetadataResult().decisionDefinition(deploymentDecision))
@@ -500,7 +528,10 @@ public final class ResponseMapper {
                 new DeploymentProcessResult()
                     .processDefinitionId(process.getBpmnProcessId())
                     .processDefinitionVersion(process.getVersion())
-                    .processDefinitionKey(KeyUtil.keyToString(process.getProcessDefinitionKey()))
+                    .processDefinitionKey(
+                        requireNonNull(
+                            KeyUtil.keyToString(process.getProcessDefinitionKey()),
+                            "processDefinitionKey"))
                     .tenantId(process.getTenantId())
                     .resourceName(process.getResourceName()))
         .map(
@@ -541,15 +572,17 @@ public final class ResponseMapper {
       final Integer version,
       final Long processInstanceKey,
       final String tenantId,
-      final Map<String, Object> variables,
+      final @Nullable Map<String, Object> variables,
       final Set<String> tags,
       final String businessId) {
     final var response =
         new CreateProcessInstanceResult()
-            .processDefinitionKey(KeyUtil.keyToString(processDefinitionKey))
+            .processDefinitionKey(
+                requireNonNull(KeyUtil.keyToString(processDefinitionKey), "processDefinitionKey"))
             .processDefinitionId(bpmnProcessId)
             .processDefinitionVersion(version)
-            .processInstanceKey(KeyUtil.keyToString(processInstanceKey))
+            .processInstanceKey(
+                requireNonNull(KeyUtil.keyToString(processInstanceKey), "processInstanceKey"))
             .tenantId(tenantId)
             // defaults to an empty string on the originating record
             // the conversion to null ensures response contract compliance
@@ -566,7 +599,9 @@ public final class ResponseMapper {
   public static BatchOperationCreatedResult toBatchOperationCreatedWithResultResponse(
       final BatchOperationCreationRecord brokerResponse) {
     return new BatchOperationCreatedResult()
-        .batchOperationKey(KeyUtil.keyToString(brokerResponse.getBatchOperationKey()))
+        .batchOperationKey(
+            requireNonNull(
+                KeyUtil.keyToString(brokerResponse.getBatchOperationKey()), "batchOperationKey"))
         .batchOperationType(
             BatchOperationTypeEnum.valueOf(brokerResponse.getBatchOperationType().name()));
   }
@@ -574,7 +609,7 @@ public final class ResponseMapper {
   public static SignalBroadcastResult toSignalBroadcastResponse(
       final BrokerResponse<SignalRecord> brokerResponse) {
     return new SignalBroadcastResult()
-        .signalKey(KeyUtil.keyToString(brokerResponse.getKey()))
+        .signalKey(requireNonNull(KeyUtil.keyToString(brokerResponse.getKey()), "signalKey"))
         .tenantId(brokerResponse.getResponse().getTenantId());
   }
 
@@ -587,12 +622,19 @@ public final class ResponseMapper {
                 instance ->
                     new ProcessInstanceReference()
                         .processDefinitionKey(
-                            KeyUtil.keyToString(instance.getProcessDefinitionKey()))
-                        .processInstanceKey(KeyUtil.keyToString(instance.getProcessInstanceKey())))
+                            requireNonNull(
+                                KeyUtil.keyToString(instance.getProcessDefinitionKey()),
+                                "processDefinitionKey"))
+                        .processInstanceKey(
+                            requireNonNull(
+                                KeyUtil.keyToString(instance.getProcessInstanceKey()),
+                                "processInstanceKey")))
             .toList();
 
     return new EvaluateConditionalResult()
-        .conditionalEvaluationKey(KeyUtil.keyToString(brokerResponse.getKey()))
+        .conditionalEvaluationKey(
+            requireNonNull(
+                KeyUtil.keyToString(brokerResponse.getKey()), "conditionalEvaluationKey"))
         .tenantId(response.getTenantId())
         .processInstances(processInstances);
   }
@@ -600,7 +642,10 @@ public final class ResponseMapper {
   public static AuthorizationCreateResult toAuthorizationCreateResponse(
       final AuthorizationRecord authorizationRecord) {
     return new AuthorizationCreateResult()
-        .authorizationKey(KeyUtil.keyToString(authorizationRecord.getAuthorizationKey()));
+        .authorizationKey(
+            requireNonNull(
+                KeyUtil.keyToString(authorizationRecord.getAuthorizationKey()),
+                "authorizationKey"));
   }
 
   public static UserCreateResult toUserCreateResponse(final UserRecord userRecord) {
@@ -683,20 +728,28 @@ public final class ResponseMapper {
     final var response =
         new EvaluateDecisionResult()
             .decisionDefinitionId(decisionEvaluationRecord.getDecisionId())
-            .decisionDefinitionKey(KeyUtil.keyToString(decisionEvaluationRecord.getDecisionKey()))
+            .decisionDefinitionKey(
+                requireNonNull(
+                    KeyUtil.keyToString(decisionEvaluationRecord.getDecisionKey()),
+                    "decisionDefinitionKey"))
             .decisionDefinitionName(decisionEvaluationRecord.getDecisionName())
             .decisionDefinitionVersion(decisionEvaluationRecord.getDecisionVersion())
             .decisionRequirementsId(decisionEvaluationRecord.getDecisionRequirementsId())
             .decisionRequirementsKey(
-                KeyUtil.keyToString(decisionEvaluationRecord.getDecisionRequirementsKey()))
+                requireNonNull(
+                    KeyUtil.keyToString(decisionEvaluationRecord.getDecisionRequirementsKey()),
+                    "decisionRequirementsKey"))
             .output(decisionEvaluationRecord.getDecisionOutput())
             // these optional fields default to an empty string on the originating record
             // the conversion to null ensures response contract compliance
             .failedDecisionDefinitionId(emptyToNull(decisionEvaluationRecord.getFailedDecisionId()))
             .failureMessage(emptyToNull(decisionEvaluationRecord.getEvaluationFailureMessage()))
             .tenantId(decisionEvaluationRecord.getTenantId())
-            .decisionInstanceKey(KeyUtil.keyToString(brokerResponse.getKey()))
-            .decisionEvaluationKey(KeyUtil.keyToString(brokerResponse.getKey()));
+            .decisionInstanceKey(
+                requireNonNull(KeyUtil.keyToString(brokerResponse.getKey()), "decisionInstanceKey"))
+            .decisionEvaluationKey(
+                requireNonNull(
+                    KeyUtil.keyToString(brokerResponse.getKey()), "decisionEvaluationKey"));
 
     buildEvaluatedDecisions(decisionEvaluationRecord, response);
     return response;
@@ -709,7 +762,10 @@ public final class ResponseMapper {
         .map(
             evaluatedDecision ->
                 new EvaluatedDecisionResult()
-                    .decisionDefinitionKey(KeyUtil.keyToString(evaluatedDecision.getDecisionKey()))
+                    .decisionDefinitionKey(
+                        requireNonNull(
+                            KeyUtil.keyToString(evaluatedDecision.getDecisionKey()),
+                            "decisionDefinitionKey"))
                     .decisionDefinitionId(evaluatedDecision.getDecisionId())
                     .decisionEvaluationInstanceKey(
                         evaluatedDecision.getDecisionEvaluationInstanceKey())
@@ -793,7 +849,9 @@ public final class ResponseMapper {
         .gatewayVersion(topology.gatewayVersion())
         .partitionsCount(topology.partitionsCount())
         .replicationFactor(topology.replicationFactor())
-        .lastCompletedChangeId(KeyUtil.keyToString(topology.lastCompletedChangeId()));
+        .lastCompletedChangeId(
+            requireNonNull(
+                KeyUtil.keyToString(topology.lastCompletedChangeId()), "lastCompletedChangeId"));
 
     topology
         .brokers()
@@ -829,7 +887,7 @@ public final class ResponseMapper {
         });
   }
 
-  private static String emptyToNull(final String value) {
+  private static @Nullable String emptyToNull(final @Nullable String value) {
     return value == null || value.isEmpty() ? null : value;
   }
 
@@ -854,7 +912,10 @@ public final class ResponseMapper {
     @Override
     public List<ActivatedJob> getJobs() {
       return response.getJobs().stream()
-          .map(j -> new ActivatedJob(KeyUtil.keyToLong(j.getJobKey()), j.getRetries()))
+          .map(
+              j ->
+                  new ActivatedJob(
+                      requireNonNull(KeyUtil.keyToLong(j.getJobKey())), j.getRetries()))
           .toList();
     }
 
@@ -869,7 +930,7 @@ public final class ResponseMapper {
       for (final var job : sizeExceedingJobs) {
         try {
           final var key = job.getJobKey();
-          result.add(new ActivatedJob(KeyUtil.keyToLong(key), job.getRetries()));
+          result.add(new ActivatedJob(requireNonNull(KeyUtil.keyToLong(key)), job.getRetries()));
         } catch (final NumberFormatException ignored) {
           // could happen
           LOG.warn(

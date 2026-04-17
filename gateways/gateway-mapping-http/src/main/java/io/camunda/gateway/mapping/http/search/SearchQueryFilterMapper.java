@@ -84,6 +84,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Stream;
 import org.apache.commons.lang3.StringUtils;
+import org.jspecify.annotations.Nullable;
 import org.springframework.util.CollectionUtils;
 
 public class SearchQueryFilterMapper {
@@ -91,7 +92,8 @@ public class SearchQueryFilterMapper {
   public static Either<List<String>, ProcessDefinitionStatisticsFilter>
       toProcessDefinitionStatisticsFilter(
           final long processDefinitionKey,
-          final io.camunda.gateway.protocol.model.ProcessDefinitionStatisticsFilter filter) {
+          final io.camunda.gateway.protocol.model.@Nullable ProcessDefinitionStatisticsFilter
+              filter) {
     final List<String> validationErrors = new ArrayList<>();
 
     final Either<List<String>, ProcessDefinitionStatisticsFilter.Builder> builder =
@@ -120,7 +122,7 @@ public class SearchQueryFilterMapper {
 
   private static Either<List<String>, ProcessDefinitionStatisticsFilter.Builder>
       toBaseProcessInstanceFilterFields(
-          final long processDefinitionKey, final BaseProcessInstanceFilterFields filter) {
+          final long processDefinitionKey, final @Nullable BaseProcessInstanceFilterFields filter) {
     final var builder = FilterBuilders.processDefinitionStatisticsFilter(processDefinitionKey);
     final List<String> validationErrors = new ArrayList<>();
     if (filter != null) {
@@ -189,7 +191,7 @@ public class SearchQueryFilterMapper {
   }
 
   static Either<List<String>, JobFilter> toJobFilter(
-      final io.camunda.gateway.protocol.model.JobFilter filter) {
+      final io.camunda.gateway.protocol.model.@Nullable JobFilter filter) {
     final var builder = FilterBuilders.job();
     final List<String> validationErrors = new ArrayList<>();
     if (filter != null) {
@@ -259,7 +261,7 @@ public class SearchQueryFilterMapper {
   }
 
   static Either<List<String>, DecisionInstanceFilter> toDecisionInstanceFilter(
-      final io.camunda.gateway.protocol.model.DecisionInstanceFilter filter) {
+      final io.camunda.gateway.protocol.model.@Nullable DecisionInstanceFilter filter) {
     final var builder = FilterBuilders.decisionInstance();
     final List<String> validationErrors = new ArrayList<>();
 
@@ -317,7 +319,7 @@ public class SearchQueryFilterMapper {
   }
 
   static Either<List<String>, VariableFilter> toVariableFilter(
-      final io.camunda.gateway.protocol.model.VariableFilter filter) {
+      final io.camunda.gateway.protocol.model.@Nullable VariableFilter filter) {
     if (filter == null) {
       return Either.right(FilterBuilders.variable().build());
     }
@@ -345,7 +347,7 @@ public class SearchQueryFilterMapper {
   }
 
   static ClusterVariableFilter toClusterVariableFilter(
-      final ClusterVariableSearchQueryFilterRequest filter) {
+      final @Nullable ClusterVariableSearchQueryFilterRequest filter) {
 
     if (filter == null) {
       return FilterBuilders.clusterVariable().build();
@@ -365,7 +367,7 @@ public class SearchQueryFilterMapper {
   }
 
   static BatchOperationFilter toBatchOperationFilter(
-      final io.camunda.gateway.protocol.model.BatchOperationFilter filter) {
+      final io.camunda.gateway.protocol.model.@Nullable BatchOperationFilter filter) {
     final var builder = FilterBuilders.batchOperation();
 
     if (filter != null) {
@@ -392,7 +394,7 @@ public class SearchQueryFilterMapper {
 
   static Either<List<String>, io.camunda.search.filter.BatchOperationItemFilter>
       toBatchOperationItemFilter(
-          final io.camunda.gateway.protocol.model.BatchOperationItemFilter filter) {
+          final io.camunda.gateway.protocol.model.@Nullable BatchOperationItemFilter filter) {
     final var builder = FilterBuilders.batchOperationItem();
     final List<String> validationErrors = new ArrayList<>();
 
@@ -420,7 +422,9 @@ public class SearchQueryFilterMapper {
   }
 
   public static Either<List<String>, GlobalJobStatisticsFilter> toGlobalJobStatisticsFilter(
-      final OffsetDateTime from, final OffsetDateTime to, final String jobType) {
+      final @Nullable OffsetDateTime from,
+      final @Nullable OffsetDateTime to,
+      final @Nullable String jobType) {
     final var builder = FilterBuilders.globalJobStatistics();
     final List<String> validationErrors = new ArrayList<>();
 
@@ -444,7 +448,7 @@ public class SearchQueryFilterMapper {
   }
 
   public static Either<List<String>, JobTypeStatisticsFilter> toJobTypeStatisticsFilter(
-      final io.camunda.gateway.protocol.model.JobTypeStatisticsFilter filter) {
+      final io.camunda.gateway.protocol.model.@Nullable JobTypeStatisticsFilter filter) {
     final var builder = FilterBuilders.jobTypeStatistics();
     final List<String> validationErrors = new ArrayList<>();
 
@@ -469,7 +473,7 @@ public class SearchQueryFilterMapper {
   }
 
   public static Either<List<String>, JobWorkerStatisticsFilter> toJobWorkerStatisticsFilter(
-      final io.camunda.gateway.protocol.model.JobWorkerStatisticsFilter filter) {
+      final io.camunda.gateway.protocol.model.@Nullable JobWorkerStatisticsFilter filter) {
     final var builder = FilterBuilders.jobWorkerStatistics();
     final List<String> validationErrors = new ArrayList<>();
 
@@ -496,7 +500,7 @@ public class SearchQueryFilterMapper {
   }
 
   public static Either<List<String>, JobTimeSeriesStatisticsFilter> toJobTimeSeriesStatisticsFilter(
-      final io.camunda.gateway.protocol.model.JobTimeSeriesStatisticsFilter filter) {
+      final io.camunda.gateway.protocol.model.@Nullable JobTimeSeriesStatisticsFilter filter) {
     final var builder = FilterBuilders.jobTimeSeriesStatistics();
     final List<String> validationErrors = new ArrayList<>();
 
@@ -526,7 +530,7 @@ public class SearchQueryFilterMapper {
   }
 
   public static Either<List<String>, JobErrorStatisticsFilter> toJobErrorStatisticsFilter(
-      final io.camunda.gateway.protocol.model.JobErrorStatisticsFilter filter) {
+      final io.camunda.gateway.protocol.model.@Nullable JobErrorStatisticsFilter filter) {
     final var builder = FilterBuilders.jobErrorStatistics();
     final List<String> validationErrors = new ArrayList<>();
 
@@ -560,7 +564,7 @@ public class SearchQueryFilterMapper {
   }
 
   static Either<List<String>, ProcessDefinitionFilter> toProcessDefinitionFilter(
-      final io.camunda.gateway.protocol.model.ProcessDefinitionFilter filter) {
+      final io.camunda.gateway.protocol.model.@Nullable ProcessDefinitionFilter filter) {
     final var builder = FilterBuilders.processDefinition();
     final List<String> validationErrors = new ArrayList<>();
     if (filter != null) {
@@ -583,12 +587,12 @@ public class SearchQueryFilterMapper {
         : Either.left(validationErrors);
   }
 
-  static OffsetDateTime toOffsetDateTime(final String text) {
+  static @Nullable OffsetDateTime toOffsetDateTime(final @Nullable String text) {
     return StringUtils.isEmpty(text) ? null : OffsetDateTime.parse(text);
   }
 
   public static Either<List<String>, ProcessInstanceFilter> toRequiredProcessInstanceFilter(
-      final io.camunda.gateway.protocol.model.ProcessInstanceFilter filter) {
+      final io.camunda.gateway.protocol.model.@Nullable ProcessInstanceFilter filter) {
     if (filter == null) {
       return Either.left(List.of(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("filter")));
     }
@@ -599,7 +603,7 @@ public class SearchQueryFilterMapper {
   }
 
   public static Either<List<String>, DecisionInstanceFilter> toRequiredDecisionInstanceFilter(
-      final io.camunda.gateway.protocol.model.DecisionInstanceFilter filter) {
+      final io.camunda.gateway.protocol.model.@Nullable DecisionInstanceFilter filter) {
     if (filter == null) {
       return Either.left(List.of(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("filter")));
     }
@@ -610,7 +614,7 @@ public class SearchQueryFilterMapper {
   }
 
   public static Either<List<String>, ProcessInstanceFilter> toProcessInstanceFilter(
-      final io.camunda.gateway.protocol.model.ProcessInstanceFilter filter) {
+      final io.camunda.gateway.protocol.model.@Nullable ProcessInstanceFilter filter) {
     final List<String> validationErrors = new ArrayList<>();
 
     final Either<List<String>, Builder> builder = toProcessInstanceFilterFields(filter);
@@ -637,7 +641,7 @@ public class SearchQueryFilterMapper {
   }
 
   public static Either<List<String>, Builder> toProcessInstanceFilterFields(
-      final ProcessInstanceFilterFields filter) {
+      final @Nullable ProcessInstanceFilterFields filter) {
     final var builder = FilterBuilders.processInstance();
     final List<String> validationErrors = new ArrayList<>();
     if (filter != null) {
@@ -734,7 +738,8 @@ public class SearchQueryFilterMapper {
     return validationErrors.isEmpty() ? Either.right(builder) : Either.left(validationErrors);
   }
 
-  static TenantFilter toTenantFilter(final io.camunda.gateway.protocol.model.TenantFilter filter) {
+  static TenantFilter toTenantFilter(
+      final io.camunda.gateway.protocol.model.@Nullable TenantFilter filter) {
     final var builder = FilterBuilders.tenant();
     if (filter != null) {
       ofNullable(filter.getTenantId()).ifPresent(builder::tenantId);
@@ -743,7 +748,8 @@ public class SearchQueryFilterMapper {
     return builder.build();
   }
 
-  static GroupFilter toGroupFilter(final io.camunda.gateway.protocol.model.GroupFilter filter) {
+  static GroupFilter toGroupFilter(
+      final io.camunda.gateway.protocol.model.@Nullable GroupFilter filter) {
     final var builder = FilterBuilders.group();
     if (filter != null) {
       ofNullable(filter.getGroupId())
@@ -754,7 +760,8 @@ public class SearchQueryFilterMapper {
     return builder.build();
   }
 
-  static RoleFilter toRoleFilter(final io.camunda.gateway.protocol.model.RoleFilter filter) {
+  static RoleFilter toRoleFilter(
+      final io.camunda.gateway.protocol.model.@Nullable RoleFilter filter) {
     final var builder = FilterBuilders.role();
     if (filter != null) {
       ofNullable(filter.getRoleId()).ifPresent(builder::roleId);
@@ -764,7 +771,7 @@ public class SearchQueryFilterMapper {
   }
 
   static MappingRuleFilter toMappingRuleFilter(
-      final io.camunda.gateway.protocol.model.MappingRuleFilter filter) {
+      final io.camunda.gateway.protocol.model.@Nullable MappingRuleFilter filter) {
     final var builder = FilterBuilders.mappingRule();
     if (filter != null) {
       ofNullable(filter.getClaimName()).ifPresent(builder::claimName);
@@ -776,7 +783,7 @@ public class SearchQueryFilterMapper {
   }
 
   static Either<List<String>, DecisionDefinitionFilter> toDecisionDefinitionFilter(
-      final io.camunda.gateway.protocol.model.DecisionDefinitionFilter filter) {
+      final io.camunda.gateway.protocol.model.@Nullable DecisionDefinitionFilter filter) {
     final var builder = FilterBuilders.decisionDefinition();
     final List<String> validationErrors = new ArrayList<>();
 
@@ -805,7 +812,7 @@ public class SearchQueryFilterMapper {
   }
 
   static Either<List<String>, DecisionRequirementsFilter> toDecisionRequirementsFilter(
-      final io.camunda.gateway.protocol.model.DecisionRequirementsFilter filter) {
+      final io.camunda.gateway.protocol.model.@Nullable DecisionRequirementsFilter filter) {
     final var builder = FilterBuilders.decisionRequirements();
     final List<String> validationErrors = new ArrayList<>();
 
@@ -826,7 +833,7 @@ public class SearchQueryFilterMapper {
   }
 
   static Either<List<String>, FlowNodeInstanceFilter> toElementInstanceFilter(
-      final io.camunda.gateway.protocol.model.ElementInstanceFilter filter) {
+      final io.camunda.gateway.protocol.model.@Nullable ElementInstanceFilter filter) {
     final var builder = FilterBuilders.flowNodeInstance();
     final List<String> validationErrors = new ArrayList<>();
     if (filter != null) {
@@ -872,7 +879,7 @@ public class SearchQueryFilterMapper {
   }
 
   static Either<List<String>, UserTaskFilter> toUserTaskFilter(
-      final io.camunda.gateway.protocol.model.UserTaskFilter filter) {
+      final io.camunda.gateway.protocol.model.@Nullable UserTaskFilter filter) {
     final var builder = FilterBuilders.userTask();
     final List<String> validationErrors = new ArrayList<>();
     if (filter != null) {
@@ -959,7 +966,8 @@ public class SearchQueryFilterMapper {
         : Either.left(validationErrors);
   }
 
-  static UserFilter toUserFilter(final io.camunda.gateway.protocol.model.UserFilter filter) {
+  static UserFilter toUserFilter(
+      final io.camunda.gateway.protocol.model.@Nullable UserFilter filter) {
 
     final var builder = FilterBuilders.user();
     if (filter != null) {
@@ -977,7 +985,7 @@ public class SearchQueryFilterMapper {
   }
 
   static Either<List<String>, IncidentFilter> toIncidentFilter(
-      final io.camunda.gateway.protocol.model.IncidentFilter filter) {
+      final io.camunda.gateway.protocol.model.@Nullable IncidentFilter filter) {
     final var builder = FilterBuilders.incident();
     final List<String> validationErrors = new ArrayList<>();
 
@@ -1025,7 +1033,7 @@ public class SearchQueryFilterMapper {
   }
 
   static Either<List<String>, MessageSubscriptionFilter> toMessageSubscriptionFilter(
-      final io.camunda.gateway.protocol.model.MessageSubscriptionFilter filter) {
+      final io.camunda.gateway.protocol.model.@Nullable MessageSubscriptionFilter filter) {
     final var builder = FilterBuilders.messageSubscription();
     final List<String> validationErrors = new ArrayList<>();
 
@@ -1086,7 +1094,8 @@ public class SearchQueryFilterMapper {
 
   static Either<List<String>, CorrelatedMessageSubscriptionFilter>
       toCorrelatedMessageSubscriptionFilter(
-          final io.camunda.gateway.protocol.model.CorrelatedMessageSubscriptionFilter filter) {
+          final io.camunda.gateway.protocol.model.@Nullable CorrelatedMessageSubscriptionFilter
+              filter) {
     final var builder = FilterBuilders.correlatedMessageSubscription();
     final List<String> validationErrors = new ArrayList<>();
 
@@ -1134,7 +1143,7 @@ public class SearchQueryFilterMapper {
   }
 
   static Either<List<String>, io.camunda.search.filter.AuditLogFilter> toAuditLogFilter(
-      final io.camunda.gateway.protocol.model.AuditLogFilter filter) {
+      final io.camunda.gateway.protocol.model.@Nullable AuditLogFilter filter) {
     if (filter == null) {
       return Either.right(FilterBuilders.auditLog().build());
     }
@@ -1304,23 +1313,21 @@ public class SearchQueryFilterMapper {
   }
 
   static AuthorizationFilter toAuthorizationFilter(
-      final io.camunda.gateway.protocol.model.AuthorizationFilter filter) {
-    return Optional.ofNullable(filter)
-        .map(
-            f ->
-                FilterBuilders.authorization()
-                    .ownerIds(f.getOwnerId())
-                    .ownerType(f.getOwnerType() == null ? null : f.getOwnerType().getValue())
-                    .resourceIds(f.getResourceIds())
-                    .resourcePropertyNames(f.getResourcePropertyNames())
-                    .resourceType(
-                        f.getResourceType() == null ? null : f.getResourceType().getValue())
-                    .build())
-        .orElse(null);
+      final io.camunda.gateway.protocol.model.@Nullable AuthorizationFilter filter) {
+    if (filter == null) {
+      return FilterBuilders.authorization().build();
+    }
+    return FilterBuilders.authorization()
+        .ownerIds(filter.getOwnerId())
+        .ownerType(filter.getOwnerType() == null ? null : filter.getOwnerType().getValue())
+        .resourceIds(filter.getResourceIds())
+        .resourcePropertyNames(filter.getResourcePropertyNames())
+        .resourceType(filter.getResourceType() == null ? null : filter.getResourceType().getValue())
+        .build();
   }
 
   static Either<List<String>, AuditLogFilter> toUserTaskAuditLogFilter(
-      final UserTaskAuditLogFilter filter) {
+      final @Nullable UserTaskAuditLogFilter filter) {
     if (filter == null) {
       return Either.right(FilterBuilders.auditLog().build());
     }
@@ -1349,7 +1356,7 @@ public class SearchQueryFilterMapper {
         : Either.left(validationErrors);
   }
 
-  static VariableFilter toUserTaskVariableFilter(final UserTaskVariableFilter filter) {
+  static VariableFilter toUserTaskVariableFilter(final @Nullable UserTaskVariableFilter filter) {
     if (filter == null) {
       return FilterBuilders.variable().build();
     }
@@ -1364,7 +1371,7 @@ public class SearchQueryFilterMapper {
           List<String>,
           io.camunda.search.filter.IncidentProcessInstanceStatisticsByDefinitionFilter>
       toIncidentProcessInstanceStatisticsByDefinitionFilter(
-          final IncidentProcessInstanceStatisticsByDefinitionFilter filter) {
+          final @Nullable IncidentProcessInstanceStatisticsByDefinitionFilter filter) {
     if (filter == null) {
       return Either.left(List.of(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("filter")));
     }
@@ -1379,7 +1386,7 @@ public class SearchQueryFilterMapper {
   }
 
   static Either<List<String>, GlobalListenerFilter> toGlobalTaskListenerFilter(
-      final GlobalTaskListenerSearchQueryFilterRequest filter) {
+      final @Nullable GlobalTaskListenerSearchQueryFilterRequest filter) {
 
     final var builder =
         FilterBuilders.globalListener().listenerTypes(GlobalListenerType.USER_TASK.name());

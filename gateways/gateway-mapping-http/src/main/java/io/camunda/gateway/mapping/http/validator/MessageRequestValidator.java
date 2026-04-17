@@ -15,6 +15,7 @@ import io.camunda.gateway.protocol.model.MessageCorrelationRequest;
 import io.camunda.gateway.protocol.model.MessagePublicationRequest;
 import java.util.List;
 import java.util.Optional;
+import org.jspecify.annotations.Nullable;
 import org.springframework.http.ProblemDetail;
 
 public final class MessageRequestValidator {
@@ -44,7 +45,9 @@ public final class MessageRequestValidator {
   }
 
   private static void validateCorrelationKeyLength(
-      final String correlationKey, final int maxNameFieldLength, final List<String> violations) {
+      final @Nullable String correlationKey,
+      final int maxNameFieldLength,
+      final List<String> violations) {
     if (correlationKey != null && correlationKey.length() > maxNameFieldLength) {
       violations.add(
           ERROR_MESSAGE_TOO_MANY_CHARACTERS.formatted("correlationKey", maxNameFieldLength));

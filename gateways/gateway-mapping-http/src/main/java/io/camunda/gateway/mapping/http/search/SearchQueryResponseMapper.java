@@ -8,6 +8,7 @@
 package io.camunda.gateway.mapping.http.search;
 
 import static io.camunda.gateway.mapping.http.ResponseMapper.formatDate;
+import static java.util.Objects.requireNonNull;
 import static java.util.Optional.ofNullable;
 import static java.util.stream.Collectors.toMap;
 import static org.apache.commons.lang3.StringUtils.defaultIfEmpty;
@@ -200,6 +201,7 @@ import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.apache.commons.lang3.StringUtils;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -284,10 +286,10 @@ public final class SearchQueryResponseMapper {
       final ProcessFlowNodeStatisticsEntity result) {
     return new ProcessElementStatisticsResult()
         .elementId(result.flowNodeId())
-        .active(result.active())
-        .canceled(result.canceled())
-        .incidents(result.incidents())
-        .completed(result.completed());
+        .active(requireNonNull(result.active(), "active"))
+        .canceled(requireNonNull(result.canceled(), "canceled"))
+        .incidents(requireNonNull(result.incidents(), "incidents"))
+        .completed(requireNonNull(result.completed(), "completed"));
   }
 
   public static ProcessDefinitionInstanceStatisticsQueryResult
@@ -320,9 +322,14 @@ public final class SearchQueryResponseMapper {
         .processDefinitionId(result.processDefinitionId())
         .tenantId(result.tenantId())
         .latestProcessDefinitionName(result.latestProcessDefinitionName())
-        .hasMultipleVersions(result.hasMultipleVersions())
-        .activeInstancesWithIncidentCount(result.activeInstancesWithIncidentCount())
-        .activeInstancesWithoutIncidentCount(result.activeInstancesWithoutIncidentCount());
+        .hasMultipleVersions(requireNonNull(result.hasMultipleVersions(), "hasMultipleVersions"))
+        .activeInstancesWithIncidentCount(
+            requireNonNull(
+                result.activeInstancesWithIncidentCount(), "activeInstancesWithIncidentCount"))
+        .activeInstancesWithoutIncidentCount(
+            requireNonNull(
+                result.activeInstancesWithoutIncidentCount(),
+                "activeInstancesWithoutIncidentCount"));
   }
 
   private static ProcessDefinitionInstanceVersionStatisticsResult
@@ -330,12 +337,20 @@ public final class SearchQueryResponseMapper {
           final ProcessDefinitionInstanceVersionStatisticsEntity result) {
     return new ProcessDefinitionInstanceVersionStatisticsResult()
         .processDefinitionId(result.processDefinitionId())
-        .processDefinitionKey(KeyUtil.keyToString(result.processDefinitionKey()))
+        .processDefinitionKey(
+            requireNonNull(
+                KeyUtil.keyToString(result.processDefinitionKey()), "processDefinitionKey"))
         .processDefinitionName(result.processDefinitionName())
         .tenantId(result.tenantId())
-        .processDefinitionVersion(result.processDefinitionVersion())
-        .activeInstancesWithIncidentCount(result.activeInstancesWithIncidentCount())
-        .activeInstancesWithoutIncidentCount(result.activeInstancesWithoutIncidentCount());
+        .processDefinitionVersion(
+            requireNonNull(result.processDefinitionVersion(), "processDefinitionVersion"))
+        .activeInstancesWithIncidentCount(
+            requireNonNull(
+                result.activeInstancesWithIncidentCount(), "activeInstancesWithIncidentCount"))
+        .activeInstancesWithoutIncidentCount(
+            requireNonNull(
+                result.activeInstancesWithoutIncidentCount(),
+                "activeInstancesWithoutIncidentCount"));
   }
 
   public static IncidentProcessInstanceStatisticsByErrorQueryResult
@@ -354,9 +369,11 @@ public final class SearchQueryResponseMapper {
       toIncidentProcessInstanceStatisticsByErrorResult(
           final IncidentProcessInstanceStatisticsByErrorEntity result) {
     return new IncidentProcessInstanceStatisticsByErrorResult()
-        .errorHashCode(result.errorHashCode())
-        .errorMessage(result.errorMessage())
-        .activeInstancesWithErrorCount(result.activeInstancesWithErrorCount());
+        .errorHashCode(requireNonNull(result.errorHashCode(), "errorHashCode"))
+        .errorMessage(requireNonNull(result.errorMessage(), "errorMessage"))
+        .activeInstancesWithErrorCount(
+            requireNonNull(
+                result.activeInstancesWithErrorCount(), "activeInstancesWithErrorCount"));
   }
 
   public static IncidentProcessInstanceStatisticsByDefinitionQueryResult
@@ -377,12 +394,18 @@ public final class SearchQueryResponseMapper {
       toIncidentProcessInstanceStatisticsByDefinitionResult(
           final IncidentProcessInstanceStatisticsByDefinitionEntity result) {
     return new IncidentProcessInstanceStatisticsByDefinitionResult()
-        .processDefinitionId(result.processDefinitionId())
-        .processDefinitionKey(KeyUtil.keyToString(result.processDefinitionKey()))
-        .processDefinitionName(result.processDefinitionName())
-        .processDefinitionVersion(result.processDefinitionVersion())
-        .tenantId(result.tenantId())
-        .activeInstancesWithErrorCount(result.activeInstancesWithErrorCount());
+        .processDefinitionId(requireNonNull(result.processDefinitionId(), "processDefinitionId"))
+        .processDefinitionKey(
+            requireNonNull(
+                KeyUtil.keyToString(result.processDefinitionKey()), "processDefinitionKey"))
+        .processDefinitionName(
+            requireNonNull(result.processDefinitionName(), "processDefinitionName"))
+        .processDefinitionVersion(
+            requireNonNull(result.processDefinitionVersion(), "processDefinitionVersion"))
+        .tenantId(requireNonNull(result.tenantId(), "tenantId"))
+        .activeInstancesWithErrorCount(
+            requireNonNull(
+                result.activeInstancesWithErrorCount(), "activeInstancesWithErrorCount"));
   }
 
   public static ProcessInstanceSequenceFlowsQueryResult toSequenceFlowsResult(
@@ -398,9 +421,12 @@ public final class SearchQueryResponseMapper {
       final SequenceFlowEntity result) {
     return new ProcessInstanceSequenceFlowResult()
         .sequenceFlowId(result.sequenceFlowId())
-        .processInstanceKey(KeyUtil.keyToString(result.processInstanceKey()))
+        .processInstanceKey(
+            requireNonNull(KeyUtil.keyToString(result.processInstanceKey()), "processInstanceKey"))
         .rootProcessInstanceKey(KeyUtil.keyToString(result.rootProcessInstanceKey()))
-        .processDefinitionKey(KeyUtil.keyToString(result.processDefinitionKey()))
+        .processDefinitionKey(
+            requireNonNull(
+                KeyUtil.keyToString(result.processDefinitionKey()), "processDefinitionKey"))
         .processDefinitionId(result.processDefinitionId())
         .elementId(result.flowNodeId())
         .tenantId(result.tenantId());
@@ -690,10 +716,12 @@ public final class SearchQueryResponseMapper {
 
   public static ProcessDefinitionResult toProcessDefinition(final ProcessDefinitionEntity entity) {
     return new ProcessDefinitionResult()
-        .processDefinitionKey(KeyUtil.keyToString(entity.processDefinitionKey()))
+        .processDefinitionKey(
+            requireNonNull(
+                KeyUtil.keyToString(entity.processDefinitionKey()), "processDefinitionKey"))
         .name(entity.name())
-        .resourceName(entity.resourceName())
-        .version(entity.version())
+        .resourceName(requireNonNull(entity.resourceName(), "resourceName"))
+        .version(requireNonNull(entity.version(), "version"))
         .versionTag(entity.versionTag())
         .processDefinitionId(entity.processDefinitionId())
         .tenantId(entity.tenantId())
@@ -711,27 +739,33 @@ public final class SearchQueryResponseMapper {
 
   private static JobSearchResult toJob(final JobEntity job) {
     return new JobSearchResult()
-        .jobKey(KeyUtil.keyToString(job.jobKey()))
-        .type(job.type())
-        .worker(job.worker())
-        .state(JobStateEnum.fromValue(job.state().name()))
-        .kind(JobKindEnum.fromValue(job.kind().name()))
-        .listenerEventType(JobListenerEventTypeEnum.fromValue(job.listenerEventType().name()))
-        .retries(job.retries())
+        .jobKey(requireNonNull(KeyUtil.keyToString(job.jobKey()), "jobKey"))
+        .type(requireNonNull(job.type(), "type"))
+        .worker(requireNonNull(job.worker(), "worker"))
+        .state(JobStateEnum.fromValue(requireNonNull(job.state(), "state").name()))
+        .kind(JobKindEnum.fromValue(requireNonNull(job.kind(), "kind").name()))
+        .listenerEventType(
+            JobListenerEventTypeEnum.fromValue(
+                requireNonNull(job.listenerEventType(), "listenerEventType").name()))
+        .retries(requireNonNull(job.retries(), "retries"))
         .isDenied(job.isDenied())
         .deniedReason(job.deniedReason())
-        .hasFailedWithRetriesLeft(job.hasFailedWithRetriesLeft())
+        .hasFailedWithRetriesLeft(
+            requireNonNull(job.hasFailedWithRetriesLeft(), "hasFailedWithRetriesLeft"))
         .errorCode(job.errorCode())
         .errorMessage(job.errorMessage())
         .customHeaders(job.customHeaders())
         .deadline(formatDate(job.deadline()))
         .endTime(formatDate(job.endTime()))
-        .processDefinitionId(job.processDefinitionId())
-        .processDefinitionKey(KeyUtil.keyToString(job.processDefinitionKey()))
-        .processInstanceKey(KeyUtil.keyToString(job.processInstanceKey()))
+        .processDefinitionId(requireNonNull(job.processDefinitionId(), "processDefinitionId"))
+        .processDefinitionKey(
+            requireNonNull(KeyUtil.keyToString(job.processDefinitionKey()), "processDefinitionKey"))
+        .processInstanceKey(
+            requireNonNull(KeyUtil.keyToString(job.processInstanceKey()), "processInstanceKey"))
         .rootProcessInstanceKey(KeyUtil.keyToString(job.rootProcessInstanceKey()))
         .elementId(job.elementId())
-        .elementInstanceKey(KeyUtil.keyToString(job.elementInstanceKey()))
+        .elementInstanceKey(
+            requireNonNull(KeyUtil.keyToString(job.elementInstanceKey()), "elementInstanceKey"))
         .tenantId(job.tenantId())
         .creationTime(formatDate(job.creationTime()))
         .lastUpdateTime(formatDate(job.lastUpdateTime()));
@@ -739,19 +773,22 @@ public final class SearchQueryResponseMapper {
 
   public static ProcessInstanceResult toProcessInstance(final ProcessInstanceEntity p) {
     return new ProcessInstanceResult()
-        .processInstanceKey(KeyUtil.keyToString(p.processInstanceKey()))
+        .processInstanceKey(
+            requireNonNull(KeyUtil.keyToString(p.processInstanceKey()), "processInstanceKey"))
         .rootProcessInstanceKey(KeyUtil.keyToString(p.rootProcessInstanceKey()))
-        .processDefinitionId(p.processDefinitionId())
+        .processDefinitionId(requireNonNull(p.processDefinitionId(), "processDefinitionId"))
         .processDefinitionName(p.processDefinitionName())
-        .processDefinitionVersion(p.processDefinitionVersion())
+        .processDefinitionVersion(
+            requireNonNull(p.processDefinitionVersion(), "processDefinitionVersion"))
         .processDefinitionVersionTag(p.processDefinitionVersionTag())
-        .processDefinitionKey(KeyUtil.keyToString(p.processDefinitionKey()))
+        .processDefinitionKey(
+            requireNonNull(KeyUtil.keyToString(p.processDefinitionKey()), "processDefinitionKey"))
         .parentProcessInstanceKey(KeyUtil.keyToString(p.parentProcessInstanceKey()))
         .parentElementInstanceKey(KeyUtil.keyToString(p.parentFlowNodeInstanceKey()))
-        .startDate(formatDate(p.startDate()))
+        .startDate(requireNonNull(formatDate(p.startDate()), "startDate"))
         .endDate(formatDate(p.endDate()))
-        .state(toProtocolState(p.state()))
-        .hasIncident(p.hasIncident())
+        .state(requireNonNull(toProtocolState(p.state()), "state"))
+        .hasIncident(requireNonNull(p.hasIncident(), "hasIncident"))
         .tenantId(p.tenantId())
         .tags(p.tags())
         .businessId(emptyToNull(p.businessId()));
@@ -765,8 +802,10 @@ public final class SearchQueryResponseMapper {
   public static BatchOperationResponse toBatchOperation(final BatchOperationEntity entity) {
     return new BatchOperationResponse()
         .batchOperationKey(entity.batchOperationKey())
-        .state(BatchOperationStateEnum.fromValue(entity.state().name()))
-        .batchOperationType(BatchOperationTypeEnum.fromValue(entity.operationType().name()))
+        .state(BatchOperationStateEnum.fromValue(requireNonNull(entity.state(), "state").name()))
+        .batchOperationType(
+            BatchOperationTypeEnum.fromValue(
+                requireNonNull(entity.operationType(), "operationType").name()))
         .startDate(formatDate(entity.startDate()))
         .endDate(formatDate(entity.endDate()))
         .actorType(
@@ -775,9 +814,11 @@ public final class SearchQueryResponseMapper {
                 .map(AuditLogActorTypeEnum::fromValue)
                 .orElse(null))
         .actorId(entity.actorId())
-        .operationsTotalCount(entity.operationsTotalCount())
-        .operationsFailedCount(entity.operationsFailedCount())
-        .operationsCompletedCount(entity.operationsCompletedCount())
+        .operationsTotalCount(requireNonNull(entity.operationsTotalCount(), "operationsTotalCount"))
+        .operationsFailedCount(
+            requireNonNull(entity.operationsFailedCount(), "operationsFailedCount"))
+        .operationsCompletedCount(
+            requireNonNull(entity.operationsCompletedCount(), "operationsCompletedCount"))
         .errors(
             ofNullable(entity.errors())
                 .map(
@@ -807,33 +848,42 @@ public final class SearchQueryResponseMapper {
     return new BatchOperationItemResponse()
         .batchOperationKey(entity.batchOperationKey())
         .operationType(
-            entity.operationType() != null
-                ? BatchOperationTypeEnum.fromValue(entity.operationType().name())
-                : null)
+            requireNonNull(
+                entity.operationType() != null
+                    ? BatchOperationTypeEnum.fromValue(entity.operationType().name())
+                    : null,
+                "operationType"))
         .itemKey(
-            warnIfNull(entity, BatchOperationItemEntity::itemKey, "itemKey")
-                .map(Object::toString)
-                .orElse(null))
+            requireNonNull(
+                warnIfNull(entity, BatchOperationItemEntity::itemKey, "itemKey")
+                    .map(Object::toString)
+                    .orElse(null),
+                "itemKey"))
         .processInstanceKey(
-            warnIfNull(entity, BatchOperationItemEntity::processInstanceKey, "processInstanceKey")
-                .map(Object::toString)
-                .orElse(null))
+            requireNonNull(
+                warnIfNull(
+                        entity, BatchOperationItemEntity::processInstanceKey, "processInstanceKey")
+                    .map(Object::toString)
+                    .orElse(null),
+                "processInstanceKey"))
         .rootProcessInstanceKey(KeyUtil.keyToString(entity.rootProcessInstanceKey()))
         .processedDate(formatDate(entity.processedDate()))
         .errorMessage(entity.errorMessage())
         .state(
-            warnIfNull(entity, BatchOperationItemEntity::state, "state")
-                .map(Enum::name)
-                .map(BatchOperationItemResponse.StateEnum::fromValue)
-                .orElse(null));
+            requireNonNull(
+                warnIfNull(entity, BatchOperationItemEntity::state, "state")
+                    .map(Enum::name)
+                    .map(BatchOperationItemResponse.StateEnum::fromValue)
+                    .orElse(null),
+                "state"));
   }
 
   private static BatchOperationError toBatchOperationError(
       final BatchOperationErrorEntity batchOperationErrorEntity) {
     return new BatchOperationError()
-        .partitionId(batchOperationErrorEntity.partitionId())
-        .type(TypeEnum.fromValue(batchOperationErrorEntity.type()))
-        .message(batchOperationErrorEntity.message());
+        .partitionId(requireNonNull(batchOperationErrorEntity.partitionId(), "partitionId"))
+        .type(TypeEnum.fromValue(requireNonNull(batchOperationErrorEntity.type(), "type")))
+        .message(requireNonNull(batchOperationErrorEntity.message(), "message"));
   }
 
   private static List<RoleResult> toRoles(final List<RoleEntity> roles) {
@@ -844,7 +894,7 @@ public final class SearchQueryResponseMapper {
     return new RoleResult()
         .roleId(roleEntity.roleId())
         .description(roleEntity.description())
-        .name(roleEntity.name());
+        .name(requireNonNull(roleEntity.name(), "name"));
   }
 
   private static List<GroupResult> toGroups(final List<GroupEntity> groups) {
@@ -854,7 +904,7 @@ public final class SearchQueryResponseMapper {
   public static GroupResult toGroup(final GroupEntity groupEntity) {
     return new GroupResult()
         .groupId(groupEntity.groupId())
-        .name(groupEntity.name())
+        .name(requireNonNull(groupEntity.name(), "name"))
         .description(groupEntity.description());
   }
 
@@ -881,7 +931,7 @@ public final class SearchQueryResponseMapper {
 
   public static TenantResult toTenant(final TenantEntity tenantEntity) {
     return new TenantResult()
-        .name(tenantEntity.name())
+        .name(requireNonNull(tenantEntity.name(), "name"))
         .description(tenantEntity.description())
         .tenantId(tenantEntity.tenantId());
   }
@@ -944,7 +994,7 @@ public final class SearchQueryResponseMapper {
         .claimName(mappingRuleEntity.claimName())
         .claimValue(mappingRuleEntity.claimValue())
         .mappingRuleId(mappingRuleEntity.mappingRuleId())
-        .name(mappingRuleEntity.name());
+        .name(requireNonNull(mappingRuleEntity.name(), "name"));
   }
 
   private static List<DecisionDefinitionResult> toDecisionDefinitions(
@@ -964,44 +1014,61 @@ public final class SearchQueryResponseMapper {
 
   public static ElementInstanceResult toElementInstance(final FlowNodeInstanceEntity instance) {
     return new ElementInstanceResult()
-        .elementInstanceKey(KeyUtil.keyToString(instance.flowNodeInstanceKey()))
+        .elementInstanceKey(
+            requireNonNull(
+                KeyUtil.keyToString(instance.flowNodeInstanceKey()), "elementInstanceKey"))
         .elementId(instance.flowNodeId())
-        .elementName(instance.flowNodeName())
-        .processDefinitionKey(KeyUtil.keyToString(instance.processDefinitionKey()))
+        .elementName(requireNonNull(instance.flowNodeName(), "elementName"))
+        .processDefinitionKey(
+            requireNonNull(
+                KeyUtil.keyToString(instance.processDefinitionKey()), "processDefinitionKey"))
         .processDefinitionId(instance.processDefinitionId())
-        .processInstanceKey(KeyUtil.keyToString(instance.processInstanceKey()))
+        .processInstanceKey(
+            requireNonNull(
+                KeyUtil.keyToString(instance.processInstanceKey()), "processInstanceKey"))
         .rootProcessInstanceKey(KeyUtil.keyToString(instance.rootProcessInstanceKey()))
         .incidentKey(KeyUtil.keyToString(instance.incidentKey()))
-        .hasIncident(instance.hasIncident())
-        .startDate(formatDate(instance.startDate()))
+        .hasIncident(requireNonNull(instance.hasIncident(), "hasIncident"))
+        .startDate(requireNonNull(formatDate(instance.startDate()), "startDate"))
         .endDate(formatDate(instance.endDate()))
-        .state(ElementInstanceStateEnum.fromValue(instance.state().name()))
-        .type(ElementInstanceResult.TypeEnum.fromValue(instance.type().name()))
+        .state(ElementInstanceStateEnum.fromValue(requireNonNull(instance.state(), "state").name()))
+        .type(
+            ElementInstanceResult.TypeEnum.fromValue(
+                requireNonNull(instance.type(), "type").name()))
         .tenantId(instance.tenantId());
   }
 
   public static DecisionDefinitionResult toDecisionDefinition(final DecisionDefinitionEntity d) {
     return new DecisionDefinitionResult()
-        .tenantId(d.tenantId())
-        .decisionDefinitionKey(KeyUtil.keyToString(d.decisionDefinitionKey()))
-        .name(d.name())
-        .version(d.version())
-        .decisionDefinitionId(d.decisionDefinitionId())
-        .decisionRequirementsKey(KeyUtil.keyToString(d.decisionRequirementsKey()))
-        .decisionRequirementsId(d.decisionRequirementsId())
-        .decisionRequirementsName(d.decisionRequirementsName())
-        .decisionRequirementsVersion(d.decisionRequirementsVersion());
+        .tenantId(requireNonNull(d.tenantId(), "tenantId"))
+        .decisionDefinitionKey(
+            requireNonNull(KeyUtil.keyToString(d.decisionDefinitionKey()), "decisionDefinitionKey"))
+        .name(requireNonNull(d.name(), "name"))
+        .version(requireNonNull(d.version(), "version"))
+        .decisionDefinitionId(requireNonNull(d.decisionDefinitionId(), "decisionDefinitionId"))
+        .decisionRequirementsKey(
+            requireNonNull(
+                KeyUtil.keyToString(d.decisionRequirementsKey()), "decisionRequirementsKey"))
+        .decisionRequirementsId(
+            requireNonNull(d.decisionRequirementsId(), "decisionRequirementsId"))
+        .decisionRequirementsName(
+            requireNonNull(d.decisionRequirementsName(), "decisionRequirementsName"))
+        .decisionRequirementsVersion(
+            requireNonNull(d.decisionRequirementsVersion(), "decisionRequirementsVersion"));
   }
 
   public static DecisionRequirementsResult toDecisionRequirements(
       final DecisionRequirementsEntity d) {
     return new DecisionRequirementsResult()
         .tenantId(d.tenantId())
-        .decisionRequirementsKey(KeyUtil.keyToString(d.decisionRequirementsKey()))
-        .decisionRequirementsName(d.name())
-        .version(d.version())
-        .resourceName(d.resourceName())
-        .decisionRequirementsId(d.decisionRequirementsId());
+        .decisionRequirementsKey(
+            requireNonNull(
+                KeyUtil.keyToString(d.decisionRequirementsKey()), "decisionRequirementsKey"))
+        .decisionRequirementsName(requireNonNull(d.name(), "name"))
+        .version(requireNonNull(d.version(), "version"))
+        .resourceName(requireNonNull(d.resourceName(), "resourceName"))
+        .decisionRequirementsId(
+            requireNonNull(d.decisionRequirementsId(), "decisionRequirementsId"));
   }
 
   private static List<UserTaskResult> toUserTasks(final List<UserTaskEntity> tasks) {
@@ -1019,16 +1086,20 @@ public final class SearchQueryResponseMapper {
 
   public static IncidentResult toIncident(final IncidentEntity t) {
     return new IncidentResult()
-        .incidentKey(KeyUtil.keyToString(t.incidentKey()))
-        .processDefinitionKey(KeyUtil.keyToString(t.processDefinitionKey()))
-        .processDefinitionId(t.processDefinitionId())
-        .processInstanceKey(KeyUtil.keyToString(t.processInstanceKey()))
+        .incidentKey(requireNonNull(KeyUtil.keyToString(t.incidentKey()), "incidentKey"))
+        .processDefinitionKey(
+            requireNonNull(KeyUtil.keyToString(t.processDefinitionKey()), "processDefinitionKey"))
+        .processDefinitionId(requireNonNull(t.processDefinitionId(), "processDefinitionId"))
+        .processInstanceKey(
+            requireNonNull(KeyUtil.keyToString(t.processInstanceKey()), "processInstanceKey"))
         .rootProcessInstanceKey(KeyUtil.keyToString(t.rootProcessInstanceKey()))
-        .errorType(IncidentErrorTypeEnum.fromValue(t.errorType().name()))
-        .errorMessage(t.errorMessage())
-        .elementId(t.flowNodeId())
-        .elementInstanceKey(KeyUtil.keyToString(t.flowNodeInstanceKey()))
-        .creationTime(formatDate(t.creationTime()))
+        .errorType(
+            IncidentErrorTypeEnum.fromValue(requireNonNull(t.errorType(), "errorType").name()))
+        .errorMessage(requireNonNull(t.errorMessage(), "errorMessage"))
+        .elementId(requireNonNull(t.flowNodeId(), "flowNodeId"))
+        .elementInstanceKey(
+            requireNonNull(KeyUtil.keyToString(t.flowNodeInstanceKey()), "elementInstanceKey"))
+        .creationTime(requireNonNull(formatDate(t.creationTime()), "creationTime"))
         .state(
             t.state() != null
                 ? IncidentStateEnum.fromValue(t.state().name())
@@ -1047,7 +1118,10 @@ public final class SearchQueryResponseMapper {
   private static MessageSubscriptionResult toMessageSubscription(
       final MessageSubscriptionEntity messageSubscription) {
     return new MessageSubscriptionResult()
-        .messageSubscriptionKey(KeyUtil.keyToString(messageSubscription.messageSubscriptionKey()))
+        .messageSubscriptionKey(
+            requireNonNull(
+                KeyUtil.keyToString(messageSubscription.messageSubscriptionKey()),
+                "messageSubscriptionKey"))
         .processDefinitionId(messageSubscription.processDefinitionId())
         .processDefinitionKey(KeyUtil.keyToString(messageSubscription.processDefinitionKey()))
         .processInstanceKey(KeyUtil.keyToString(messageSubscription.processInstanceKey()))
@@ -1056,13 +1130,16 @@ public final class SearchQueryResponseMapper {
         .elementInstanceKey(KeyUtil.keyToString(messageSubscription.flowNodeInstanceKey()))
         .messageSubscriptionState(
             MessageSubscriptionStateEnum.fromValue(
-                messageSubscription.messageSubscriptionState().name()))
+                requireNonNull(
+                        messageSubscription.messageSubscriptionState(), "messageSubscriptionState")
+                    .name()))
         .messageSubscriptionType(
             messageSubscription.messageSubscriptionType() != null
                 ? MessageSubscriptionTypeEnum.fromValue(
                     messageSubscription.messageSubscriptionType().name())
                 : null)
-        .lastUpdatedDate(formatDate(messageSubscription.dateTime()))
+        .lastUpdatedDate(
+            requireNonNull(formatDate(messageSubscription.dateTime()), "lastUpdatedDate"))
         .messageName(messageSubscription.messageName())
         .correlationKey(messageSubscription.correlationKey())
         .tenantId(messageSubscription.tenantId())
@@ -1084,57 +1161,73 @@ public final class SearchQueryResponseMapper {
       final CorrelatedMessageSubscriptionEntity correlatedMessageSubscription) {
     return new CorrelatedMessageSubscriptionResult()
         .correlationKey(correlatedMessageSubscription.correlationKey())
-        .correlationTime(formatDate(correlatedMessageSubscription.correlationTime()))
+        .correlationTime(
+            requireNonNull(
+                formatDate(correlatedMessageSubscription.correlationTime()), "correlationTime"))
         .elementId(correlatedMessageSubscription.flowNodeId())
         .elementInstanceKey(
             KeyUtil.keyToString(correlatedMessageSubscription.flowNodeInstanceKey()))
-        .messageKey(KeyUtil.keyToString(correlatedMessageSubscription.messageKey()))
+        .messageKey(
+            requireNonNull(
+                KeyUtil.keyToString(correlatedMessageSubscription.messageKey()), "messageKey"))
         .messageName(correlatedMessageSubscription.messageName())
-        .partitionId(correlatedMessageSubscription.partitionId())
+        .partitionId(requireNonNull(correlatedMessageSubscription.partitionId(), "partitionId"))
         .processDefinitionId(correlatedMessageSubscription.processDefinitionId())
         .processDefinitionKey(
-            KeyUtil.keyToString(correlatedMessageSubscription.processDefinitionKey()))
-        .processInstanceKey(KeyUtil.keyToString(correlatedMessageSubscription.processInstanceKey()))
+            requireNonNull(
+                KeyUtil.keyToString(correlatedMessageSubscription.processDefinitionKey()),
+                "processDefinitionKey"))
+        .processInstanceKey(
+            requireNonNull(
+                KeyUtil.keyToString(correlatedMessageSubscription.processInstanceKey()),
+                "processInstanceKey"))
         .rootProcessInstanceKey(
             KeyUtil.keyToString(correlatedMessageSubscription.rootProcessInstanceKey()))
-        .subscriptionKey(KeyUtil.keyToString(correlatedMessageSubscription.subscriptionKey()))
+        .subscriptionKey(
+            requireNonNull(
+                KeyUtil.keyToString(correlatedMessageSubscription.subscriptionKey()),
+                "subscriptionKey"))
         .tenantId(correlatedMessageSubscription.tenantId());
   }
 
   public static UserTaskResult toUserTask(final UserTaskEntity t) {
     return new UserTaskResult()
         .tenantId(t.tenantId())
-        .userTaskKey(KeyUtil.keyToString(t.userTaskKey()))
+        .userTaskKey(requireNonNull(KeyUtil.keyToString(t.userTaskKey()), "userTaskKey"))
         .name(t.name())
-        .processInstanceKey(KeyUtil.keyToString(t.processInstanceKey()))
+        .processInstanceKey(
+            requireNonNull(KeyUtil.keyToString(t.processInstanceKey()), "processInstanceKey"))
         .rootProcessInstanceKey(KeyUtil.keyToString(t.rootProcessInstanceKey()))
-        .processDefinitionKey(KeyUtil.keyToString(t.processDefinitionKey()))
-        .elementInstanceKey(KeyUtil.keyToString(t.elementInstanceKey()))
+        .processDefinitionKey(
+            requireNonNull(KeyUtil.keyToString(t.processDefinitionKey()), "processDefinitionKey"))
+        .elementInstanceKey(
+            requireNonNull(KeyUtil.keyToString(t.elementInstanceKey()), "elementInstanceKey"))
         .processDefinitionId(t.processDefinitionId())
         .processName(t.processName())
-        .state(UserTaskStateEnum.fromValue(t.state().name()))
+        .state(UserTaskStateEnum.fromValue(requireNonNull(t.state(), "state").name()))
         .assignee(t.assignee())
         .candidateUsers(t.candidateUsers())
         .candidateGroups(t.candidateGroups())
         .formKey(KeyUtil.keyToString(t.formKey()))
         .elementId(t.elementId())
-        .creationDate(formatDate(t.creationDate()))
+        .creationDate(requireNonNull(formatDate(t.creationDate()), "creationDate"))
         .completionDate(formatDate(t.completionDate()))
         .dueDate(formatDate(t.dueDate()))
         .followUpDate(formatDate(t.followUpDate()))
         .externalFormReference(t.externalFormReference())
-        .processDefinitionVersion(t.processDefinitionVersion())
+        .processDefinitionVersion(
+            requireNonNull(t.processDefinitionVersion(), "processDefinitionVersion"))
         .customHeaders(t.customHeaders())
-        .priority(t.priority())
+        .priority(requireNonNull(t.priority(), "priority"))
         .tags(t.tags());
   }
 
   public static FormResult toFormItem(final FormEntity f) {
     return new FormResult()
-        .formKey(KeyUtil.keyToString(f.formKey()))
-        .formId(f.formId())
-        .version(f.version())
-        .schema(f.schema())
+        .formKey(requireNonNull(KeyUtil.keyToString(f.formKey()), "formKey"))
+        .formId(requireNonNull(f.formId(), "formId"))
+        .version(requireNonNull(f.version(), "version"))
+        .schema(requireNonNull(f.schema(), "schema"))
         .tenantId(f.tenantId());
   }
 
@@ -1180,51 +1273,76 @@ public final class SearchQueryResponseMapper {
 
   public static DecisionInstanceResult toDecisionInstance(final DecisionInstanceEntity entity) {
     return new DecisionInstanceResult()
-        .decisionEvaluationKey(KeyUtil.keyToString(entity.decisionInstanceKey()))
+        .decisionEvaluationKey(
+            requireNonNull(
+                KeyUtil.keyToString(entity.decisionInstanceKey()), "decisionEvaluationKey"))
         .decisionEvaluationInstanceKey(entity.decisionInstanceId())
-        .state(toDecisionInstanceStateEnum(entity.state()))
-        .evaluationDate(formatDate(entity.evaluationDate()))
+        .state(requireNonNull(toDecisionInstanceStateEnum(entity.state()), "state"))
+        .evaluationDate(requireNonNull(formatDate(entity.evaluationDate()), "evaluationDate"))
         .evaluationFailure(entity.evaluationFailure())
         .processDefinitionKey(KeyUtil.keyToString(entity.processDefinitionKey()))
         .processInstanceKey(KeyUtil.keyToString(entity.processInstanceKey()))
         .rootProcessInstanceKey(KeyUtil.keyToString(entity.rootProcessInstanceKey()))
         .elementInstanceKey(KeyUtil.keyToString(entity.flowNodeInstanceKey()))
-        .decisionDefinitionKey(KeyUtil.keyToString(entity.decisionDefinitionKey()))
-        .decisionDefinitionId(entity.decisionDefinitionId())
-        .decisionDefinitionName(entity.decisionDefinitionName())
-        .decisionDefinitionVersion(entity.decisionDefinitionVersion())
-        .decisionDefinitionType(toDecisionDefinitionTypeEnum(entity.decisionDefinitionType()))
-        .rootDecisionDefinitionKey(KeyUtil.keyToString(entity.rootDecisionDefinitionKey()))
-        .result(entity.result())
+        .decisionDefinitionKey(
+            requireNonNull(
+                KeyUtil.keyToString(entity.decisionDefinitionKey()), "decisionDefinitionKey"))
+        .decisionDefinitionId(requireNonNull(entity.decisionDefinitionId(), "decisionDefinitionId"))
+        .decisionDefinitionName(
+            requireNonNull(entity.decisionDefinitionName(), "decisionDefinitionName"))
+        .decisionDefinitionVersion(
+            requireNonNull(entity.decisionDefinitionVersion(), "decisionDefinitionVersion"))
+        .decisionDefinitionType(
+            requireNonNull(
+                toDecisionDefinitionTypeEnum(entity.decisionDefinitionType()),
+                "decisionDefinitionType"))
+        .rootDecisionDefinitionKey(
+            requireNonNull(
+                KeyUtil.keyToString(entity.rootDecisionDefinitionKey()),
+                "rootDecisionDefinitionKey"))
+        .result(requireNonNull(entity.result(), "result"))
         .tenantId(entity.tenantId());
   }
 
   public static DecisionInstanceGetQueryResult toDecisionInstanceGetQueryResponse(
       final DecisionInstanceEntity entity) {
     return new DecisionInstanceGetQueryResult()
-        .decisionEvaluationKey(KeyUtil.keyToString(entity.decisionInstanceKey()))
+        .decisionEvaluationKey(
+            requireNonNull(
+                KeyUtil.keyToString(entity.decisionInstanceKey()), "decisionEvaluationKey"))
         .decisionEvaluationInstanceKey(entity.decisionInstanceId())
-        .state(toDecisionInstanceStateEnum(entity.state()))
-        .evaluationDate(formatDate(entity.evaluationDate()))
+        .state(requireNonNull(toDecisionInstanceStateEnum(entity.state()), "state"))
+        .evaluationDate(requireNonNull(formatDate(entity.evaluationDate()), "evaluationDate"))
         .evaluationFailure(entity.evaluationFailure())
         .processDefinitionKey(KeyUtil.keyToString(entity.processDefinitionKey()))
         .processInstanceKey(KeyUtil.keyToString(entity.processInstanceKey()))
         .rootProcessInstanceKey(KeyUtil.keyToString(entity.rootProcessInstanceKey()))
         .elementInstanceKey(KeyUtil.keyToString(entity.flowNodeInstanceKey()))
-        .decisionDefinitionKey(KeyUtil.keyToString(entity.decisionDefinitionKey()))
-        .decisionDefinitionId(entity.decisionDefinitionId())
-        .decisionDefinitionName(entity.decisionDefinitionName())
-        .decisionDefinitionVersion(entity.decisionDefinitionVersion())
-        .decisionDefinitionType(toDecisionDefinitionTypeEnum(entity.decisionDefinitionType()))
-        .rootDecisionDefinitionKey(KeyUtil.keyToString(entity.rootDecisionDefinitionKey()))
-        .result(entity.result())
-        .evaluatedInputs(toEvaluatedInputs(entity.evaluatedInputs()))
-        .matchedRules(toMatchedRules(entity.evaluatedOutputs()))
+        .decisionDefinitionKey(
+            requireNonNull(
+                KeyUtil.keyToString(entity.decisionDefinitionKey()), "decisionDefinitionKey"))
+        .decisionDefinitionId(requireNonNull(entity.decisionDefinitionId(), "decisionDefinitionId"))
+        .decisionDefinitionName(
+            requireNonNull(entity.decisionDefinitionName(), "decisionDefinitionName"))
+        .decisionDefinitionVersion(
+            requireNonNull(entity.decisionDefinitionVersion(), "decisionDefinitionVersion"))
+        .decisionDefinitionType(
+            requireNonNull(
+                toDecisionDefinitionTypeEnum(entity.decisionDefinitionType()),
+                "decisionDefinitionType"))
+        .rootDecisionDefinitionKey(
+            requireNonNull(
+                KeyUtil.keyToString(entity.rootDecisionDefinitionKey()),
+                "rootDecisionDefinitionKey"))
+        .result(requireNonNull(entity.result(), "result"))
+        .evaluatedInputs(
+            requireNonNull(toEvaluatedInputs(entity.evaluatedInputs()), "evaluatedInputs"))
+        .matchedRules(requireNonNull(toMatchedRules(entity.evaluatedOutputs()), "matchedRules"))
         .tenantId(entity.tenantId());
   }
 
-  private static List<EvaluatedDecisionInputItem> toEvaluatedInputs(
-      final List<DecisionInstanceInputEntity> decisionInstanceInputEntities) {
+  private static @Nullable List<EvaluatedDecisionInputItem> toEvaluatedInputs(
+      final @Nullable List<DecisionInstanceInputEntity> decisionInstanceInputEntities) {
     if (decisionInstanceInputEntities == null) {
       return null;
     }
@@ -1232,43 +1350,46 @@ public final class SearchQueryResponseMapper {
         .map(
             input ->
                 new EvaluatedDecisionInputItem()
-                    .inputId(input.inputId())
-                    .inputName(input.inputName())
-                    .inputValue(input.inputValue()))
+                    .inputId(requireNonNull(input.inputId(), "inputId"))
+                    .inputName(requireNonNull(input.inputName(), "inputName"))
+                    .inputValue(requireNonNull(input.inputValue(), "inputValue")))
         .toList();
   }
 
-  private static List<MatchedDecisionRuleItem> toMatchedRules(
-      final List<DecisionInstanceOutputEntity> decisionInstanceOutputEntities) {
+  private static @Nullable List<MatchedDecisionRuleItem> toMatchedRules(
+      final @Nullable List<DecisionInstanceOutputEntity> decisionInstanceOutputEntities) {
     if (decisionInstanceOutputEntities == null) {
       return null;
     }
     final var outputEntitiesMappedByRule =
         decisionInstanceOutputEntities.stream()
-            .collect(Collectors.groupingBy(e -> new RuleIdentifier(e.ruleId(), e.ruleIndex())));
+            .collect(
+                Collectors.groupingBy(
+                    e -> new RuleIdentifier(requireNonNull(e.ruleId(), "ruleId"), e.ruleIndex())));
     return outputEntitiesMappedByRule.entrySet().stream()
         .map(
             entry -> {
               final var ruleIdentifier = entry.getKey();
               final var outputs = entry.getValue();
               return new MatchedDecisionRuleItem()
-                  .ruleId(ruleIdentifier.ruleId())
+                  .ruleId(requireNonNull(ruleIdentifier.ruleId(), "ruleId"))
                   .ruleIndex(ruleIdentifier.ruleIndex())
                   .evaluatedOutputs(
                       outputs.stream()
                           .map(
                               output ->
                                   new EvaluatedDecisionOutputItem()
-                                      .outputId(output.outputId())
-                                      .outputName(output.outputName())
-                                      .outputValue(output.outputValue()))
+                                      .outputId(requireNonNull(output.outputId(), "outputId"))
+                                      .outputName(requireNonNull(output.outputName(), "outputName"))
+                                      .outputValue(
+                                          requireNonNull(output.outputValue(), "outputValue")))
                           .toList());
             })
         .toList();
   }
 
-  private static DecisionInstanceStateEnum toDecisionInstanceStateEnum(
-      final DecisionInstanceState state) {
+  private static @Nullable DecisionInstanceStateEnum toDecisionInstanceStateEnum(
+      final @Nullable DecisionInstanceState state) {
     if (state == null) {
       return null;
     }
@@ -1280,8 +1401,8 @@ public final class SearchQueryResponseMapper {
     };
   }
 
-  private static DecisionDefinitionTypeEnum toDecisionDefinitionTypeEnum(
-      final DecisionDefinitionType decisionDefinitionType) {
+  private static @Nullable DecisionDefinitionTypeEnum toDecisionDefinitionTypeEnum(
+      final @Nullable DecisionDefinitionType decisionDefinitionType) {
     if (decisionDefinitionType == null) {
       return null;
     }
@@ -1312,29 +1433,40 @@ public final class SearchQueryResponseMapper {
   private static VariableSearchResult toVariable(
       final VariableEntity variableEntity, final boolean truncateValues) {
     return new VariableSearchResult()
-        .variableKey(KeyUtil.keyToString(variableEntity.variableKey()))
-        .name(variableEntity.name())
-        .value(!truncateValues ? getFullValueIfPresent(variableEntity) : variableEntity.value())
-        .processInstanceKey(KeyUtil.keyToString(variableEntity.processInstanceKey()))
+        .variableKey(
+            requireNonNull(KeyUtil.keyToString(variableEntity.variableKey()), "variableKey"))
+        .name(requireNonNull(variableEntity.name(), "name"))
+        .value(
+            requireNonNull(
+                !truncateValues ? getFullValueIfPresent(variableEntity) : variableEntity.value(),
+                "value"))
+        .processInstanceKey(
+            requireNonNull(
+                KeyUtil.keyToString(variableEntity.processInstanceKey()), "processInstanceKey"))
         .rootProcessInstanceKey(KeyUtil.keyToString(variableEntity.rootProcessInstanceKey()))
         .tenantId(variableEntity.tenantId())
-        .isTruncated(truncateValues && variableEntity.isPreview())
-        .scopeKey(KeyUtil.keyToString(variableEntity.scopeKey()));
+        .isTruncated(truncateValues && requireNonNull(variableEntity.isPreview(), "isPreview"))
+        .scopeKey(requireNonNull(KeyUtil.keyToString(variableEntity.scopeKey()), "scopeKey"));
   }
 
   public static VariableResult toVariableItem(final VariableEntity variableEntity) {
     return new VariableResult()
-        .variableKey(KeyUtil.keyToString(variableEntity.variableKey()))
-        .name(variableEntity.name())
-        .value(getFullValueIfPresent(variableEntity))
-        .processInstanceKey(KeyUtil.keyToString(variableEntity.processInstanceKey()))
+        .variableKey(
+            requireNonNull(KeyUtil.keyToString(variableEntity.variableKey()), "variableKey"))
+        .name(requireNonNull(variableEntity.name(), "name"))
+        .value(requireNonNull(getFullValueIfPresent(variableEntity), "value"))
+        .processInstanceKey(
+            requireNonNull(
+                KeyUtil.keyToString(variableEntity.processInstanceKey()), "processInstanceKey"))
         .rootProcessInstanceKey(KeyUtil.keyToString(variableEntity.rootProcessInstanceKey()))
         .tenantId(variableEntity.tenantId())
-        .scopeKey(KeyUtil.keyToString(variableEntity.scopeKey()));
+        .scopeKey(requireNonNull(KeyUtil.keyToString(variableEntity.scopeKey()), "scopeKey"));
   }
 
-  private static String getFullValueIfPresent(final VariableEntity variableEntity) {
-    return variableEntity.isPreview() ? variableEntity.fullValue() : variableEntity.value();
+  private static @Nullable String getFullValueIfPresent(final VariableEntity variableEntity) {
+    return Boolean.TRUE.equals(variableEntity.isPreview())
+        ? requireNonNull(variableEntity.fullValue(), "fullValue")
+        : variableEntity.value();
   }
 
   public static ClusterVariableSearchQueryResult toClusterVariableSearchQueryResponse(
@@ -1365,10 +1497,13 @@ public final class SearchQueryResponseMapper {
         new ClusterVariableSearchResult()
             .name(clusterVariableEntity.name())
             .value(
-                !truncateValues
-                    ? getFullValueIfPresent(clusterVariableEntity)
-                    : clusterVariableEntity.value())
-            .isTruncated(truncateValues && clusterVariableEntity.isPreview());
+                requireNonNull(
+                    !truncateValues
+                        ? getFullValueIfPresent(clusterVariableEntity)
+                        : clusterVariableEntity.value(),
+                    "value"))
+            .isTruncated(
+                truncateValues && requireNonNull(clusterVariableEntity.isPreview(), "isPreview"));
     return switch (clusterVariableEntity.scope()) {
       case GLOBAL -> clusterVariableResult.scope(ClusterVariableScopeEnum.GLOBAL);
       case TENANT ->
@@ -1384,7 +1519,7 @@ public final class SearchQueryResponseMapper {
     final var clusterVariableResult =
         new ClusterVariableResult()
             .name(clusterVariableEntity.name())
-            .value(getFullValueIfPresent(clusterVariableEntity));
+            .value(requireNonNull(getFullValueIfPresent(clusterVariableEntity), "value"));
     return switch (clusterVariableEntity.scope()) {
       case GLOBAL -> clusterVariableResult.scope(ClusterVariableScopeEnum.GLOBAL);
       case TENANT ->
@@ -1394,9 +1529,10 @@ public final class SearchQueryResponseMapper {
     };
   }
 
-  private static String getFullValueIfPresent(final ClusterVariableEntity clusterVariableEntity) {
-    return clusterVariableEntity.isPreview()
-        ? clusterVariableEntity.fullValue()
+  private static @Nullable String getFullValueIfPresent(
+      final ClusterVariableEntity clusterVariableEntity) {
+    return Boolean.TRUE.equals(clusterVariableEntity.isPreview())
+        ? requireNonNull(clusterVariableEntity.fullValue(), "fullValue")
         : clusterVariableEntity.value();
   }
 
@@ -1417,7 +1553,9 @@ public final class SearchQueryResponseMapper {
 
   public static AuthorizationResult toAuthorization(final AuthorizationEntity authorization) {
     return new AuthorizationResult()
-        .authorizationKey(KeyUtil.keyToString(authorization.authorizationKey()))
+        .authorizationKey(
+            requireNonNull(
+                KeyUtil.keyToString(authorization.authorizationKey()), "authorizationKey"))
         .ownerId(authorization.ownerId())
         .ownerType(OwnerTypeEnum.fromValue(authorization.ownerType()))
         .resourceType(ResourceTypeEnum.valueOf(authorization.resourceType()))
@@ -1444,24 +1582,28 @@ public final class SearchQueryResponseMapper {
   public static AuditLogResult toAuditLog(final AuditLogEntity auditLog) {
     return new AuditLogResult()
         .auditLogKey(auditLog.auditLogKey())
-        .entityKey(auditLog.entityKey())
+        .entityKey(requireNonNull(auditLog.entityKey(), "entityKey"))
         .entityType(
-            ofNullable(auditLog.entityType())
-                .map(Enum::name)
-                .map(AuditLogEntityTypeEnum::fromValue)
-                .orElse(null))
+            requireNonNull(
+                ofNullable(auditLog.entityType())
+                    .map(Enum::name)
+                    .map(AuditLogEntityTypeEnum::fromValue)
+                    .orElse(null),
+                "entityType"))
         .operationType(
-            ofNullable(auditLog.operationType())
-                .map(Enum::name)
-                .map(AuditLogOperationTypeEnum::fromValue)
-                .orElse(null))
+            requireNonNull(
+                ofNullable(auditLog.operationType())
+                    .map(Enum::name)
+                    .map(AuditLogOperationTypeEnum::fromValue)
+                    .orElse(null),
+                "operationType"))
         .batchOperationKey(KeyUtil.keyToString(auditLog.batchOperationKey()))
         .batchOperationType(
             ofNullable(auditLog.batchOperationType())
                 .map(Enum::name)
                 .map(BatchOperationTypeEnum::fromValue)
                 .orElse(null))
-        .timestamp(formatDate(auditLog.timestamp()))
+        .timestamp(requireNonNull(formatDate(auditLog.timestamp()), "timestamp"))
         .actorId(auditLog.actorId())
         .actorType(
             ofNullable(auditLog.actorType())
@@ -1471,15 +1613,19 @@ public final class SearchQueryResponseMapper {
         .agentElementId(auditLog.agentElementId())
         .tenantId(auditLog.tenantId())
         .result(
-            ofNullable(auditLog.result())
-                .map(Enum::name)
-                .map(AuditLogResultEnum::fromValue)
-                .orElse(null))
+            requireNonNull(
+                ofNullable(auditLog.result())
+                    .map(Enum::name)
+                    .map(AuditLogResultEnum::fromValue)
+                    .orElse(null),
+                "result"))
         .category(
-            ofNullable(auditLog.category())
-                .map(Enum::name)
-                .map(AuditLogCategoryEnum::fromValue)
-                .orElse(null))
+            requireNonNull(
+                ofNullable(auditLog.category())
+                    .map(Enum::name)
+                    .map(AuditLogCategoryEnum::fromValue)
+                    .orElse(null),
+                "category"))
         .processDefinitionId(auditLog.processDefinitionId())
         .processDefinitionKey(KeyUtil.keyToString(auditLog.processDefinitionKey()))
         .processInstanceKey(KeyUtil.keyToString(auditLog.processInstanceKey()))
@@ -1504,8 +1650,8 @@ public final class SearchQueryResponseMapper {
         .entityDescription(auditLog.entityDescription());
   }
 
-  private static ProcessInstanceStateEnum toProtocolState(
-      final ProcessInstanceEntity.ProcessInstanceState value) {
+  private static @Nullable ProcessInstanceStateEnum toProtocolState(
+      final ProcessInstanceEntity.@Nullable ProcessInstanceState value) {
     if (value == null) {
       return null;
     }
@@ -1525,12 +1671,20 @@ public final class SearchQueryResponseMapper {
   public static ProcessInstanceCallHierarchyEntry toProcessInstanceCallHierarchyEntry(
       final ProcessInstanceEntity processInstanceEntity) {
     return new ProcessInstanceCallHierarchyEntry()
-        .processInstanceKey(KeyUtil.keyToString(processInstanceEntity.processInstanceKey()))
-        .processDefinitionKey(KeyUtil.keyToString(processInstanceEntity.processDefinitionKey()))
+        .processInstanceKey(
+            requireNonNull(
+                KeyUtil.keyToString(processInstanceEntity.processInstanceKey()),
+                "processInstanceKey"))
+        .processDefinitionKey(
+            requireNonNull(
+                KeyUtil.keyToString(processInstanceEntity.processDefinitionKey()),
+                "processDefinitionKey"))
         .processDefinitionName(
-            processInstanceEntity.processDefinitionName().isBlank()
-                ? processInstanceEntity.processDefinitionId()
-                : processInstanceEntity.processDefinitionName());
+            requireNonNull(
+                StringUtils.isBlank(processInstanceEntity.processDefinitionName())
+                    ? processInstanceEntity.processDefinitionId()
+                    : processInstanceEntity.processDefinitionName(),
+                "processDefinitionName"));
   }
 
   private static List<ProcessDefinitionMessageSubscriptionStatisticsResult>
@@ -1542,10 +1696,15 @@ public final class SearchQueryResponseMapper {
                 new ProcessDefinitionMessageSubscriptionStatisticsResult()
                     .processDefinitionId(e.processDefinitionId())
                     .tenantId(e.tenantId())
-                    .processDefinitionKey(KeyUtil.keyToString(e.processDefinitionKey()))
-                    .activeSubscriptions(e.activeSubscriptions())
+                    .processDefinitionKey(
+                        requireNonNull(
+                            KeyUtil.keyToString(e.processDefinitionKey()), "processDefinitionKey"))
+                    .activeSubscriptions(
+                        requireNonNull(e.activeSubscriptions(), "activeSubscriptions"))
                     .processInstancesWithActiveSubscriptions(
-                        e.processInstancesWithActiveSubscriptions()))
+                        requireNonNull(
+                            e.processInstancesWithActiveSubscriptions(),
+                            "processInstancesWithActiveSubscriptions")))
         .toList();
   }
 
@@ -1647,7 +1806,7 @@ public final class SearchQueryResponseMapper {
     }
 
     return new JobTimeSeriesStatisticsItem()
-        .time(formatDate(entity.time()))
+        .time(requireNonNull(formatDate(entity.time()), "time"))
         .created(toStatusMetric(entity.created()))
         .completed(toStatusMetric(entity.completed()))
         .failed(toStatusMetric(entity.failed()));
@@ -1710,13 +1869,14 @@ public final class SearchQueryResponseMapper {
             entity.eventTypes().stream().map(GlobalTaskListenerEventTypeEnum::fromValue).toList())
         .afterNonGlobal(entity.afterNonGlobal())
         .priority(entity.priority())
-        .source(GlobalListenerSourceEnum.fromValue(entity.source().name()));
+        .source(
+            GlobalListenerSourceEnum.fromValue(requireNonNull(entity.source(), "source").name()));
   }
 
   // sometimes we've seen null for properties that should not be null; log a warning if that happens
   // so we can at least return data - rather than erroring out the whole response
   private static <T, R> Optional<R> warnIfNull(
-      final T entity, final Function<T, R> mapper, final String propertyName) {
+      final T entity, final Function<T, @Nullable R> mapper, final String propertyName) {
     final R value = mapper.apply(entity);
     if (value == null) {
       LOGGER.warn("{} value is null for entity: {}", propertyName, entity);
@@ -1725,7 +1885,7 @@ public final class SearchQueryResponseMapper {
     return Optional.of(value);
   }
 
-  private static String emptyToNull(final String value) {
+  private static @Nullable String emptyToNull(final @Nullable String value) {
     return value == null || value.isEmpty() ? null : value;
   }
 
