@@ -14,6 +14,7 @@ import {
   assertUnauthorizedRequest,
   encode,
   assertStatusCode,
+  assertInvalidArgument,
 } from '../../../../utils/http';
 import {defaultAssertionOptions} from '../../../../utils/constants';
 import {cleanupUsers} from '../../../../utils/usersCleanup';
@@ -451,7 +452,7 @@ test.describe.parallel('Search Authorization API', () => {
           page: {from: -1, limit: -1},
         },
       });
-      await assertBadRequest(res, /page\.(from|limit)/i);
+      await assertInvalidArgument(res, 400, "The value for page.from is '-1' but must be a non-negative number.");
     }).toPass(defaultAssertionOptions);
   });
 

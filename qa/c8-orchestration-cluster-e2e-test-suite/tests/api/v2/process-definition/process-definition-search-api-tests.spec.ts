@@ -9,6 +9,7 @@
 import {expect, test} from '@playwright/test';
 import {
   assertBadRequest,
+  assertInvalidArgument,
   assertStatusCode,
   assertUnauthorizedRequest,
   buildUrl,
@@ -212,7 +213,7 @@ test.describe.parallel('Process Definition Search API', () => {
         },
       },
     });
-    await assertBadRequest(res, 'limit must be a positive number');
+    await assertInvalidArgument(res, 400, "The value for page.limit is '-1' but must be a non-negative number.");
   });
 
   test('Search Process Definitions - with sorting', async ({request}) => {
