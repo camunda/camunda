@@ -7,6 +7,7 @@
   "commitMessagePrefix": "deps:",
   "baseBranchPatterns": [
     "/^stable\\/8\\.([7-9]|[1-9][0-9])/",
+    "stable/optimize-8.7",
     "main"
   ],
   "dependencyDashboard": true,
@@ -59,13 +60,15 @@
       "description": "Enable separateMinorPatch so updates to latest patch are not ignored in maintenance branches.",
       "separateMinorPatch": true,
       "matchBaseBranches": [
-        "/^stable\\/8\\..*/"
+        "/^stable\\/8\\..*/",
+        "stable/optimize-8.7"
       ]
     },
     {
       "description": "Only patch updates for our maintenance branches to avoid breaking changes.",
       "matchBaseBranches": [
-        "/^stable\\/8\\..*/"
+        "/^stable\\/8\\..*/",
+        "stable/optimize-8.7"
       ],
       "matchUpdateTypes": [
         "minor",
@@ -181,7 +184,8 @@
     {
       "description": "Skip lucene minor and patch in stable branches to avoid breaking changes.",
       "matchBaseBranches": [
-        "/^stable\\/8\\.[6-8]/"
+        "/^stable\\/8\\.[6-8]/",
+        "stable/optimize-8.7"
       ],
       "matchManagers": [
         "maven"
@@ -356,7 +360,8 @@
         "maven"
       ],
       "matchBaseBranches": [
-        "/^stable\\/8\\..*/"
+        "/^stable\\/8\\..*/",
+        "stable/optimize-8.7"
       ],
       "matchPackageNames": [
         "/^io\\.camunda:.+/"
