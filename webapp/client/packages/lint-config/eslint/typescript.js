@@ -39,9 +39,7 @@ function typescriptConfig({browserFiles, testFiles, nodeFiles, tsconfigRootDir, 
 		},
 		{
 			files: [...browserFiles, ...testFiles],
-			plugins: {
-				import: importPlugin,
-			},
+			plugins: {import: importPlugin},
 			languageOptions: {
 				ecmaVersion: 2022,
 				sourceType: 'module',
@@ -58,6 +56,9 @@ function typescriptConfig({browserFiles, testFiles, nodeFiles, tsconfigRootDir, 
 				},
 			},
 			rules: {
+				'import/no-default-export': 'error',
+				'import/exports-last': 'error',
+				'import/group-exports': 'error',
 				'import/extensions': [
 					'error',
 					'ignorePackages',
@@ -75,6 +76,14 @@ function typescriptConfig({browserFiles, testFiles, nodeFiles, tsconfigRootDir, 
 						extensions: ['.js', '.jsx', '.ts', '.tsx'],
 					},
 				},
+			},
+		},
+		{
+			files: ['**/__mocks__/**', '**/*.d.ts'],
+			rules: {
+				'import/no-default-export': 'off',
+				'import/exports-last': 'off',
+				'import/group-exports': 'off',
 			},
 		},
 		{

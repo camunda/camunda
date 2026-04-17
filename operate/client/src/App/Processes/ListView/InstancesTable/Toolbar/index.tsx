@@ -12,7 +12,7 @@ import {
   TableBatchAction,
   TableBatchActions,
 } from '@carbon/react';
-import pluralSuffix from 'modules/utils/pluralSuffix';
+import {pluralSuffix} from 'modules/utils/pluralSuffix';
 import {useState} from 'react';
 import {RetryFailed, Error, TrashCan} from '@carbon/react/icons';
 import {MigrateAction} from './MigrateAction';
