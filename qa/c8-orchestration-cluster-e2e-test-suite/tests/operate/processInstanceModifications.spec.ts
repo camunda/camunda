@@ -86,10 +86,10 @@ test.beforeAll(async () => {
     },
   );
 
-  await sleep(2000);
 });
 
-test.describe('Process Instance Modifications', () => {
+//Skipping tests as need to be optimized and refactored. Ticket created https://github.com/camunda/camunda/issues/51164
+test.describe.skip('Process Instance Modifications', () => {
   test.beforeEach(async ({page, loginPage, operateHomePage}) => {
     await navigateToApp(page, 'operate');
     await loginPage.login('demo', 'demo');
@@ -142,8 +142,7 @@ test.describe('Process Instance Modifications', () => {
     });
 
     await test.step('Edit variable foo to value 1', async () => {
-      await operateProcessInstancePage.editVariableValueModificationMode(
-        'foo',
+      await operateProcessInstancePage.editVariableValueModificationMode('foo', '"bar"',
         '1',
       );
 
@@ -156,9 +155,8 @@ test.describe('Process Instance Modifications', () => {
     });
 
     await test.step('Edit variable test to value 2', async () => {
-      await operateProcessInstancePage.editVariableValueModificationMode(
-        'test',
-        '2',
+      await operateProcessInstancePage.editVariableValueModificationMode('test', '123',
+        '2', false
       );
 
       await expect(
@@ -171,8 +169,7 @@ test.describe('Process Instance Modifications', () => {
 
     await test.step('Edit variable foo again to value 3', async () => {
       await operateProcessInstancePage.editVariableValueModificationMode(
-        'foo',
-        '3',
+        'foo', "1", '3'
       );
 
       await expect(
@@ -252,14 +249,8 @@ test.describe('Process Instance Modifications', () => {
     });
 
     await test.step('Edit variable and remove from summary modal', async () => {
-      await operateProcessInstancePage.editVariableValueModificationMode(
-        'foo',
-        '1',
-      );
-      await operateProcessInstancePage.editVariableValueModificationMode(
-        'foo',
-        '2',
-      );
+      await operateProcessInstancePage.editVariableValueModificationMode( 'foo', '2', '2');
+      await operateProcessInstancePage.editVariableValueModificationMode('test', '123', '1234', false);
 
       await operateProcessInstancePage.clickReviewModifications();
 

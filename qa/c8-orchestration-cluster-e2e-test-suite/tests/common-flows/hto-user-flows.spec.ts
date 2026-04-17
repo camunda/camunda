@@ -76,12 +76,7 @@ test.describe('HTO User Flow Tests', () => {
       });
       await expect(page.getByText('testVariable', {exact: true})).toBeVisible();
       await operateHomePage.clickEditVariableButton('testVariable');
-      await operateHomePage.clickVariableValueInput();
-      await operateHomePage.clearVariableValueInput();
-      await operateHomePage.fillVariableValueInput('"updatedValue"');
-      await expect(operateHomePage.saveVariableButton).toBeVisible({
-        timeout: 30000,
-      });
+      await operateHomePage.fillVariableValueInput('updatedValue');
       await operateHomePage.clickSaveVariableButton();
 
       await expect(operateHomePage.editVariableSpinner).not.toBeVisible({
