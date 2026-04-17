@@ -17,6 +17,7 @@ import { searchRoles } from "src/utility/api/roles";
 import { TranslatedErrorInlineNotification } from "src/components/notifications/InlineNotification";
 import useModal, { useEntityModal } from "src/components/modal/useModal";
 import AddModal from "src/pages/roles/modals/AddModal";
+import { isProtectedRole } from "src/pages/roles/protected-roles";
 import DeleteModal from "src/pages/roles/modals/DeleteModal";
 import PageEmptyState from "src/components/layout/PageEmptyState";
 import type { Role } from "@camunda/camunda-api-zod-schemas/8.9";
@@ -82,6 +83,7 @@ const List: FC = () => {
             icon: TrashCan,
             isDangerous: true,
             onClick: deleteRole,
+            disabled: ({ roleId }: Role) => isProtectedRole(roleId),
           },
         ]}
         searchPlaceholder={t("searchByRoleId")}
