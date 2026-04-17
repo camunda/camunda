@@ -64,6 +64,12 @@
       <groupId>io.swagger.core.v3</groupId>
       <artifactId>swagger-annotations-jakarta</artifactId>
     </dependency>
+
+    <!-- Required for @NullMarked emitted on generated model classes. -->
+    <dependency>
+      <groupId>org.jspecify</groupId>
+      <artifactId>jspecify</artifactId>
+    </dependency>
   </dependencies>
 
   <build>
@@ -84,6 +90,11 @@
               <templateDirectory>${project.basedir}/src/main/resources/templates/java-spring/advanced</templateDirectory>
               <inputSpec>${openapi.dir}/rest-api.yaml</inputSpec>
               <modelPackage>io.camunda.gateway.protocol.model</modelPackage>
+              <importMappings>
+                <!-- Redirect the Spring generator's default `@Nullable` (org.springframework.lang.Nullable)
+                     to JSpecify so NullAway on downstream modules sees JSpecify annotations. -->
+                <importMapping>Nullable=org.jspecify.annotations.Nullable</importMapping>
+              </importMappings>
               <typeMappings>
                 <!-- map OffsetDateTime to String to avoid timezone issues and do validation manually -->
                 <typeMapping>OffsetDateTime=String</typeMapping>
@@ -123,7 +134,7 @@
               <minimalUpdate>true</minimalUpdate>
               <openapiNormalizer>REF_AS_PARENT_IN_ALLOF=true</openapiNormalizer>
               <configOptions>
-                <additionalModelTypeAnnotations>@com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.ALWAYS)</additionalModelTypeAnnotations>
+                <additionalModelTypeAnnotations>@com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.ALWAYS);@org.jspecify.annotations.NullMarked</additionalModelTypeAnnotations>
                 <serializationLibrary>jackson</serializationLibrary>
                 <library>spring-boot</library>
                 <jdk8>true</jdk8>
@@ -241,7 +252,7 @@
               <!-- only write files whose content changed to avoid spurious recompilation -->
               <minimalUpdate>true</minimalUpdate>
               <configOptions>
-                <additionalModelTypeAnnotations>@com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.ALWAYS)</additionalModelTypeAnnotations>
+                <additionalModelTypeAnnotations>@com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.ALWAYS);@org.jspecify.annotations.NullMarked</additionalModelTypeAnnotations>
                 <serializationLibrary>jackson</serializationLibrary>
                 <library>spring-boot</library>
                 <jdk8>true</jdk8>
