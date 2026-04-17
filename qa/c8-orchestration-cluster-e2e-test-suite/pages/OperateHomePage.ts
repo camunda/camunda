@@ -17,6 +17,7 @@ class OperateHomePage {
   readonly informationDialog: Locator;
   readonly editVariableButton: Locator;
   readonly variableValueInput: Locator;
+  readonly variableValueEditor: Locator;
   readonly saveVariableButton: Locator;
   readonly editVariableSpinner: Locator;
   readonly settingsButton: Locator;
@@ -37,7 +38,8 @@ class OperateHomePage {
     });
     this.editVariableButton = page.getByTestId('edit-variable-button');
     this.variableValueInput = page.getByTestId('edit-variable-value');
-    this.saveVariableButton = page.getByLabel('Save variable');
+    this.variableValueEditor = page.getByRole('code');
+    this.saveVariableButton = page.getByLabel('Save');
     this.editVariableSpinner = page
       .getByTestId('variable-operation-spinner')
       .locator('circle')
@@ -65,8 +67,13 @@ class OperateHomePage {
   }
 
   async clickEditVariableButton(variableName: string): Promise<void> {
-    const editVariableButton = 'variable-' + variableName;
-    await this.page.getByTestId(editVariableButton).getByLabel('Edit').click();
+    const editVariableButton = this.page
+      .getByTestId(`variable-${variableName}`)
+      .getByLabel('Edit');
+    await expect(editVariableButton).toBeVisible({
+      timeout: 30000,
+    });
+    await editVariableButton.click();
   }
 
   async clickVariableValueInput(): Promise<void> {
@@ -74,17 +81,12 @@ class OperateHomePage {
   }
 
   async clearVariableValueInput(): Promise<void> {
-    await this.variableValueInput.clear();
+    await this.page.keyboard.press('Control+A');
+    await this.page.keyboard.press('Backspace');
   }
 
-  async fillVariableValueInput(newValue: string): Promise<void> {
-    await this.openButton.click();
-    await this.page
-      .getByLabel('Edit Variable "testVariable"')
-      .getByText('"testValue"')
-      .dblclick();
-    await this.page.keyboard.press('Backspace');
-    await this.page.keyboard.type(newValue);
+  async fillVariableValueInput(value: string): Promise<void> {
+    await this.page.keyboard.insertText(value);
   }
 
   async clickSaveVariableButton(): Promise<void> {
