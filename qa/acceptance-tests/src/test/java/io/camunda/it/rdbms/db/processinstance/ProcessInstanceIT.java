@@ -528,7 +528,7 @@ public class ProcessInstanceIT {
   public void shouldSelectRootExpiredRootProcessInstances(
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
-    final int partitionId = nextKey().intValue();
+    final var partitionId = nextKey().intValue();
 
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(partitionId);
 
@@ -571,7 +571,7 @@ public class ProcessInstanceIT {
   public void shouldSelectExpiredRootProcessInstancesWithLimit(
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
-    final int partitionId = nextKey().intValue();
+    final var partitionId = nextKey().intValue();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(partitionId);
 
     final var cleanupDate = NOW;
@@ -626,7 +626,7 @@ public class ProcessInstanceIT {
   public void shouldNotSelectExpiredRootProcessInstancesFromDifferentPartition(
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
-    final int partitionId = nextKey().intValue();
+    final var partitionId = nextKey().intValue();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(partitionId);
 
     final var cleanupDate = NOW;
@@ -660,7 +660,7 @@ public class ProcessInstanceIT {
   public void shouldNotSelectRootProcessInstancesWithoutCleanupDate(
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
-    final int partitionId = nextKey().intValue();
+    final var partitionId = nextKey().intValue();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(partitionId);
 
     final var cleanupDate = NOW;
@@ -692,7 +692,7 @@ public class ProcessInstanceIT {
   public void shouldNotScheduleNonRootProcessInstancesForCleanupByThemselves(
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
-    final int partitionId = nextKey().intValue();
+    final var partitionId = nextKey().intValue();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(partitionId);
 
     final var cleanupDate = NOW;
