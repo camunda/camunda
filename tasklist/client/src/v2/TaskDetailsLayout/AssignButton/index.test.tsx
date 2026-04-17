@@ -46,7 +46,6 @@ describe('AssignButton', () => {
 
     nodeMockServer.use(
       http.post('/v2/user-tasks/:userTaskKey/assignment', () => {
-        // Deferred - simulates a slow assignment request for task 1
         return assignmentPromise;
       }),
     );
@@ -66,10 +65,8 @@ describe('AssignButton', () => {
 
     await user.click(screen.getByRole('button', {name: 'Assign to me'}));
 
-    // Task 1's button is now in loading/assigning state
     expect(screen.getByText('Assigning...')).toBeVisible();
 
-    // Simulate switching to task 2 - the key change causes a fresh component mount
     rerender(
       <AssignButton
         key={mockUnassignedTask2.userTaskKey}
@@ -80,10 +77,7 @@ describe('AssignButton', () => {
       />,
     );
 
-    // Task 2's button should be immediately available (no loading state carried over)
     expect(screen.getByRole('button', {name: 'Assign to me'})).toBeEnabled();
-
-    // Resolve the deferred request to avoid open handles
     resolveAssignment(HttpResponse.json());
   });
 
