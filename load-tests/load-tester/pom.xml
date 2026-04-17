@@ -228,11 +228,6 @@
                 <args>
                   <arg>--spring.profiles.active=starter</arg>
                 </args>
-                <jvmFlags>
-                  <jvmFlag>-XX:MaxRAMPercentage=60</jvmFlag>
-                  <jvmFlag>-XX:MaxMetaspaceSize=128m</jvmFlag>
-                  <jvmFlag>-XX:MaxDirectMemorySize=64m</jvmFlag>
-                </jvmFlags>
               </container>
             </configuration>
           </plugin>
@@ -259,11 +254,6 @@
                 <args>
                   <arg>--spring.profiles.active=worker</arg>
                 </args>
-                <jvmFlags>
-                  <jvmFlag>-XX:MaxRAMPercentage=60</jvmFlag>
-                  <jvmFlag>-XX:MaxMetaspaceSize=128m</jvmFlag>
-                  <jvmFlag>-XX:MaxDirectMemorySize=64m</jvmFlag>
-                </jvmFlags>
               </container>
             </configuration>
           </plugin>
