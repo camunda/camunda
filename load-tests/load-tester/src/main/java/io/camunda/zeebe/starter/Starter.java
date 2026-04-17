@@ -19,7 +19,6 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.zeebe.client.ZeebeClient;
-import io.camunda.zeebe.client.api.command.ClientStatusException;
 import io.camunda.zeebe.client.api.command.DeployResourceCommandStep1.DeployResourceCommandStep2;
 import io.camunda.zeebe.client.api.response.Process;
 import io.camunda.zeebe.client.api.response.ProcessInstanceEvent;
@@ -28,7 +27,7 @@ import io.camunda.zeebe.client.api.search.response.SearchResponsePage;
 import io.camunda.zeebe.client.api.search.sort.ProcessInstanceSort;
 import io.camunda.zeebe.config.LoadTesterProperties;
 import io.camunda.zeebe.config.StarterProperties;
-import io.camunda.zeebe.metrics.AppMetricsDoc;
+import io.camunda.zeebe.metrics.ConnectionMonitor;
 import io.camunda.zeebe.metrics.ProcessInstanceStartMeter;
 import io.camunda.zeebe.metrics.StarterLatencyMetricsDoc;
 import io.camunda.zeebe.util.PayloadReader;
@@ -36,7 +35,6 @@ import io.camunda.zeebe.util.logging.ThrottledLogger;
 import io.camunda.zeebe.util.micrometer.MicrometerUtil;
 import io.grpc.Status.Code;
 import io.grpc.StatusRuntimeException;
-import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
 import jakarta.annotation.PreDestroy;
@@ -54,7 +52,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BooleanSupplier;
 import org.slf4j.Logger;
@@ -80,8 +77,8 @@ public class Starter implements CommandLineRunner {
   private final StarterProperties starterCfg;
   private final MeterRegistry registry;
   private final PayloadReader payloadReader;
+  private final ConnectionMonitor connectionMonitor;
   private final AtomicLong businessKey = new AtomicLong(0);
-  private final AtomicInteger connected = new AtomicInteger(0);
 
   private Timer responseLatencyTimer;
   private ScheduledExecutorService executorService;
@@ -92,20 +89,19 @@ public class Starter implements CommandLineRunner {
       final ZeebeClient client,
       final LoadTesterProperties properties,
       final MeterRegistry registry,
-      final PayloadReader payloadReader) {
+      final PayloadReader payloadReader,
+      final ConnectionMonitor connectionMonitor) {
     this.client = client;
     this.properties = properties;
     starterCfg = properties.getStarter();
     this.registry = registry;
     this.payloadReader = payloadReader;
-    Gauge.builder(AppMetricsDoc.CONNECTED.getName(), connected, AtomicInteger::get)
-        .description(AppMetricsDoc.CONNECTED.getDescription())
-        .register(registry);
+    this.connectionMonitor = connectionMonitor;
   }
 
   @Override
   public void run(final String... args) {
-    printTopology();
+    connectionMonitor.awaitAndPrintTopology();
 
     responseLatencyTimer =
         MicrometerUtil.buildTimer(StarterLatencyMetricsDoc.RESPONSE_LATENCY).register(registry);
@@ -336,44 +332,6 @@ public class Starter implements CommandLineRunner {
       return () -> LocalDateTime.now().isBefore(endTime);
     } else {
       return () -> true;
-    }
-  }
-
-  private void printTopology() {
-    while (true) {
-      try {
-        final var topology = client.newTopologyRequest().send().join();
-        topology
-            .getBrokers()
-            .forEach(
-                b -> {
-                  LOG.info("Broker {} - {} ({})", b.getNodeId(), b.getAddress(), b.getVersion());
-                  b.getPartitions()
-                      .forEach(p -> LOG.info("{} - {}", p.getPartitionId(), p.getRole()));
-                });
-        connected.set(1);
-        return;
-      } catch (final ClientStatusException e) {
-        final var statusCode = e.getStatusCode();
-        if (statusCode.equals(Code.UNAUTHENTICATED) || statusCode.equals(Code.PERMISSION_DENIED)) {
-          LOG.error(
-              "Failed to retrieve topology due to authentication error; check your config", e);
-          System.exit(1);
-        }
-        THROTTLED_LOGGER.warn("Failed to retrieve topology due to client exception: ", e);
-        try {
-          Thread.sleep(1000);
-        } catch (final InterruptedException ex) {
-          throw new RuntimeException(ex);
-        }
-      } catch (final Exception e) {
-        THROTTLED_LOGGER.warn("Failed to retrieve topology: ", e);
-        try {
-          Thread.sleep(1000);
-        } catch (final InterruptedException ex) {
-          throw new RuntimeException(ex);
-        }
-      }
     }
   }
 }

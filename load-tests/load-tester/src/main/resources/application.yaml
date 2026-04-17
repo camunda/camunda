@@ -6,6 +6,12 @@
 server:
   port: 9600
 
+# Logging configuration
+logging:
+  level:
+    root: ${LOG_LEVEL:WARN}
+    io.camunda: ${CAMUNDA_LOG_LEVEL:INFO}
+
 management:
   server:
     port: ${server.port}
@@ -27,6 +33,7 @@ camunda:
   client:
     mode: selfManaged
     auth:
+      method: ${ZEEBE_AUTH_METHOD:none}
       username: ${ZEEBE_AUTH_USERNAME:demo}
       password: ${ZEEBE_AUTH_PASSWORD:demo}
       client-id: ${ZEEBE_CLIENT_ID:orchestration}
