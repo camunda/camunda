@@ -609,19 +609,31 @@ public class CamundaProcessTestExtension
   }
 
   /**
+   * Configure the client builder factory to create the Camunda client. Use this for a full custom
+   * client configuration.
+   *
+   * @param camundaClientBuilderFactory the factory to create the Camunda client builder
+   * @return the extension builder
+   * @since 8.10.0
+   */
+  public CamundaProcessTestExtension withCamundaClientBuilderFactory(
+      final CamundaClientBuilderFactory camundaClientBuilderFactory) {
+    runtimeBuilder.withCamundaClientBuilderFactory(camundaClientBuilderFactory);
+    return this;
+  }
+
+  /**
    * Configure the connection to the remote runtime using the given client builder.
    *
    * @param camundaClientBuilderFactory the client builder to configure the connection
    * @return the extension builder
-   * @deprecated use {@link #withCamundaClientBuilderOverrides(Consumer)} instead.
+   * @deprecated use {@link #withCamundaClientBuilderFactory(CamundaClientBuilderFactory)} instead.
    * @since 8.8.0
    */
   @Deprecated
   public CamundaProcessTestExtension withRemoteCamundaClientBuilderFactory(
       final CamundaClientBuilderFactory camundaClientBuilderFactory) {
-
-    runtimeBuilder.withCamundaClientBuilderFactory(camundaClientBuilderFactory);
-    return this;
+    return withCamundaClientBuilderFactory(camundaClientBuilderFactory);
   }
 
   /**
