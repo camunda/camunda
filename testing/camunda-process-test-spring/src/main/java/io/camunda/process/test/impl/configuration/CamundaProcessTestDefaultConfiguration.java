@@ -36,8 +36,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.function.Supplier;
 import org.apache.hc.client5.http.async.AsyncExecChainHandler;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
@@ -66,25 +66,6 @@ public class CamundaProcessTestDefaultConfiguration {
         .configure(ACCEPT_EMPTY_ARRAY_AS_NULL_OBJECT, true);
   }
 
-  @Bean(name = "camundaProcessTestClientScheduledExecutor")
-  @ConditionalOnMissingBean(CamundaClientBuilderFactory.class)
-  public ScheduledExecutorService camundaProcessTestScheduledExecutor(
-      final CamundaClientProperties clientProperties) {
-    return Executors.newScheduledThreadPool(clientProperties.getExecutionThreads());
-  }
-
-  @Bean(name = "camundaProcessTestOwnedClientExecutorService")
-  @ConditionalOnMissingBean(CamundaClientBuilderFactory.class)
-  public CamundaClientExecutorService camundaProcessTestOwnedClientExecutorService(
-      @Qualifier("camundaProcessTestClientScheduledExecutor")
-          final ScheduledExecutorService scheduledExecutor) {
-
-    // Use a dedicated executor with ownByCamundaClient=false to prevent closing the shared
-    // executor when a test client is closed. Each test creates and closes its own CamundaClient,
-    // and we reuse this executor across all clients within the test class.
-    return new CamundaClientExecutorService(scheduledExecutor, false);
-  }
-
   /**
    * Creates a {@link CamundaClientBuilderFactory} that configures the Camunda client using all
    * properties from the Spring configuration (e.g. {@code camunda.client.*}).
@@ -104,9 +85,15 @@ public class CamundaProcessTestDefaultConfiguration {
       final CredentialsProvider camundaClientCredentialsProvider,
       final List<ClientInterceptor> interceptors,
       final List<AsyncExecChainHandler> chainHandlers,
-      @Qualifier("camundaProcessTestOwnedClientExecutorService")
-          final CamundaClientExecutorService executorService,
       final CamundaProcessTestRuntimeConfiguration runtimeConfiguration) {
+
+    // Use a dedicated executor with ownByCamundaClient=false to prevent closing the shared
+    // executor when a test client is closed. Each test creates and closes its own CamundaClient,
+    // and we reuse this executor across all clients within the test class.
+    final ScheduledExecutorService scheduledExecutor =
+        Executors.newScheduledThreadPool(clientProperties.getExecutionThreads());
+    final CamundaClientExecutorService executorService =
+        new CamundaClientExecutorService(scheduledExecutor, false);
 
     final SpringCamundaClientConfiguration configuration =
         new SpringCamundaClientConfiguration(
@@ -127,14 +114,32 @@ public class CamundaProcessTestDefaultConfiguration {
         Optional.ofNullable(remoteClientProperties.getRestAddress())
             .filter(address -> !address.equals(CamundaClientBuilderImpl.DEFAULT_REST_ADDRESS));
 
-    return () -> {
-      final CamundaClientBuilder builder = configuration.toBuilder();
-      // Backwards compatibility: apply remote client addresses only when explicitly configured
-      // (i.e. different from the default addresses of CamundaClientProperties).
-      // This matches the previously supported camunda.process-test.remote.client.* properties.
-      remoteGrpcAddress.ifPresent(builder::grpcAddress);
-      remoteRestAddress.ifPresent(builder::restAddress);
-      return builder;
-    };
+    return new DefaultCamundaClientBuilderFactory(
+        () -> {
+          final CamundaClientBuilder builder = configuration.toBuilder();
+          // Backwards compatibility: apply remote client addresses only when explicitly configured
+          // (i.e. different from the default addresses of CamundaClientProperties).
+          // This matches the previously supported camunda.process-test.remote.client.* properties.
+          remoteGrpcAddress.ifPresent(builder::grpcAddress);
+          remoteRestAddress.ifPresent(builder::restAddress);
+          return builder;
+        },
+        scheduledExecutor);
+  }
+
+  /** A wrapper around the client builder factory that closes the executor service. */
+  private record DefaultCamundaClientBuilderFactory(
+      Supplier<CamundaClientBuilder> builderSupplier, ScheduledExecutorService executorService)
+      implements CamundaClientBuilderFactory, AutoCloseable {
+
+    @Override
+    public CamundaClientBuilder get() {
+      return builderSupplier.get();
+    }
+
+    @Override
+    public void close() {
+      executorService.shutdown();
+    }
   }
 }
