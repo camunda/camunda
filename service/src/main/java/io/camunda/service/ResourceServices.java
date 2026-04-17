@@ -24,7 +24,6 @@ import io.camunda.zeebe.gateway.impl.broker.request.BrokerDeleteResourceRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerDeployResourceRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerFetchResourceRequest;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
-import io.camunda.zeebe.protocol.impl.record.value.deployment.ResourceRecord;
 import io.camunda.zeebe.protocol.impl.record.value.resource.ResourceDeletionRecord;
 import io.camunda.zeebe.protocol.record.value.ResourceType;
 import java.util.Map;
@@ -126,12 +125,6 @@ public final class ResourceServices extends ApiServices<ResourceServices> {
     }
   }
 
-  public CompletableFuture<ResourceRecord> fetchResource(
-      final ResourceFetchRequest request, final CamundaAuthentication authentication) {
-    return sendBrokerRequest(
-        new BrokerFetchResourceRequest().setResourceKey(request.resourceKey()), authentication);
-  }
-
   public CompletableFuture<DeployedResourceEntity> getByKey(
       final long resourceKey, final CamundaAuthentication authentication) {
     return fetchDeployedResource(resourceKey, authentication, false);
@@ -161,7 +154,8 @@ public final class ResourceServices extends ApiServices<ResourceServices> {
           },
           executorProvider.getExecutor());
     } else {
-      return fetchResource(new ResourceFetchRequest(resourceKey), authentication)
+      return sendBrokerRequest(
+              new BrokerFetchResourceRequest().setResourceKey(resourceKey), authentication)
           .thenApply(
               record ->
                   new DeployedResourceEntity(
@@ -180,6 +174,4 @@ public final class ResourceServices extends ApiServices<ResourceServices> {
 
   public record ResourceDeletionRequest(
       long resourceKey, Long operationReference, boolean deleteHistory) {}
-
-  public record ResourceFetchRequest(long resourceKey) {}
 }

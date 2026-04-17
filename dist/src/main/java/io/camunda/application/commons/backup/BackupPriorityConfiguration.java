@@ -145,7 +145,6 @@ public class BackupPriorityConfiguration {
             new ClusterVariableIndex(indexPrefix, isElasticsearch),
             new JobMetricsBatchTemplate(indexPrefix, isElasticsearch),
             new GlobalListenerIndex(indexPrefix, isElasticsearch),
-            // RESOURCE
             new DeployedResourceIndex(indexPrefix, isElasticsearch));
 
     LOG.debug("Prio1 are {}", prio1);
