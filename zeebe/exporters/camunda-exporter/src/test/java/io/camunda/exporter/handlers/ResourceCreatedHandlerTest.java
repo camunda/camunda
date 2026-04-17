@@ -122,7 +122,6 @@ public class ResourceCreatedHandlerTest {
   @Test
   void shouldUpdateEntityFromRecord() {
     // given
-    final byte[] checksum = new byte[] {1, 2, 3};
     final Resource value =
         ImmutableResource.builder()
             .from(factory.generateObject(Resource.class))
@@ -133,7 +132,6 @@ public class ResourceCreatedHandlerTest {
             .withVersionTag("v2")
             .withDeploymentKey(100L)
             .withTenantId("tenant-1")
-            .withChecksum(checksum)
             .withResourceProp("rpa-content")
             .build();
     final Record<Resource> record =
@@ -154,7 +152,6 @@ public class ResourceCreatedHandlerTest {
     assertThat(entity.getVersionTag()).isEqualTo("v2");
     assertThat(entity.getDeploymentKey()).isEqualTo(100L);
     assertThat(entity.getTenantId()).isEqualTo("tenant-1");
-    assertThat(entity.getChecksum()).isEqualTo(checksum);
     assertThat(entity.getResourceContent()).isEqualTo("rpa-content");
   }
 }

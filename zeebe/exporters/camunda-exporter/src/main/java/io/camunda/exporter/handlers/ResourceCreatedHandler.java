@@ -62,7 +62,6 @@ public class ResourceCreatedHandler implements ExportHandler<DeployedResourceEnt
         .setVersionTag(value.getVersionTag())
         .setDeploymentKey(value.getDeploymentKey())
         .setTenantId(value.getTenantId())
-        .setChecksum(value.getChecksum())
         .setResourceContent(value.getResourceProp());
   }
 

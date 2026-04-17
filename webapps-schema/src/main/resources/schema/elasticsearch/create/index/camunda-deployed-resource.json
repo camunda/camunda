@@ -26,9 +26,6 @@
       "tenantId": {
         "type": "keyword"
       },
-      "checksum": {
-        "type": "binary"
-      },
       "resourceContent": {
         "type": "text",
         "index": false

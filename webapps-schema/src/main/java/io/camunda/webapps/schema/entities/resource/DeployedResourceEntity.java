@@ -9,7 +9,6 @@ package io.camunda.webapps.schema.entities.resource;
 
 import io.camunda.webapps.schema.entities.ExporterEntity;
 import io.camunda.webapps.schema.entities.SinceVersion;
-import java.util.Arrays;
 import java.util.Objects;
 
 public final class DeployedResourceEntity implements ExporterEntity<DeployedResourceEntity> {
@@ -37,9 +36,6 @@ public final class DeployedResourceEntity implements ExporterEntity<DeployedReso
 
   @SinceVersion(value = "8.10.0", requireDefault = false)
   private String tenantId;
-
-  @SinceVersion(value = "8.10.0", requireDefault = false)
-  private byte[] checksum;
 
   @SinceVersion(value = "8.10.0", requireDefault = false)
   private String resourceContent;
@@ -118,15 +114,6 @@ public final class DeployedResourceEntity implements ExporterEntity<DeployedReso
     return this;
   }
 
-  public byte[] getChecksum() {
-    return checksum;
-  }
-
-  public DeployedResourceEntity setChecksum(final byte[] checksum) {
-    this.checksum = checksum;
-    return this;
-  }
-
   public String getResourceContent() {
     return resourceContent;
   }
@@ -138,19 +125,16 @@ public final class DeployedResourceEntity implements ExporterEntity<DeployedReso
 
   @Override
   public int hashCode() {
-    int result =
-        Objects.hash(
-            id,
-            resourceKey,
-            resourceId,
-            resourceName,
-            version,
-            versionTag,
-            deploymentKey,
-            tenantId,
-            resourceContent);
-    result = 31 * result + Arrays.hashCode(checksum);
-    return result;
+    return Objects.hash(
+        id,
+        resourceKey,
+        resourceId,
+        resourceName,
+        version,
+        versionTag,
+        deploymentKey,
+        tenantId,
+        resourceContent);
   }
 
   @Override
@@ -167,7 +151,6 @@ public final class DeployedResourceEntity implements ExporterEntity<DeployedReso
         && Objects.equals(resourceName, that.resourceName)
         && Objects.equals(versionTag, that.versionTag)
         && Objects.equals(tenantId, that.tenantId)
-        && Arrays.equals(checksum, that.checksum)
         && Objects.equals(resourceContent, that.resourceContent);
   }
 

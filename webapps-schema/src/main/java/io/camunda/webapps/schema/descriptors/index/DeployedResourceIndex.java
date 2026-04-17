@@ -25,7 +25,6 @@ public class DeployedResourceIndex extends AbstractIndexDescriptor implements Pr
   public static final String VERSION_TAG = "versionTag";
   public static final String DEPLOYMENT_KEY = "deploymentKey";
   public static final String TENANT_ID = "tenantId";
-  public static final String CHECKSUM = "checksum";
   public static final String RESOURCE_CONTENT = "resourceContent";
 
   public DeployedResourceIndex(final String indexPrefix, final boolean isElasticsearch) {
