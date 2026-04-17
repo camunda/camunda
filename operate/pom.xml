@@ -28,7 +28,6 @@
 
     <skipSurefire>false</skipSurefire>
     <testForkCount>${env.LIMITS_CPU}</testForkCount>
-    <itDatabase>elasticsearch</itDatabase>
     <maven.javadoc.skip>true</maven.javadoc.skip>
   </properties>
 
@@ -105,22 +104,6 @@
               <configuration>
                 <failOnWarning>true</failOnWarning>
                 <outputXML>true</outputXML>
-                <!-- dependencies not directly used in all projects during tests -->
-                <ignoredUnusedDeclaredDependencies combine.children="append">
-                  <dep>org.apache.logging.log4j:log4j-slf4j2-impl</dep>
-                  <dep>org.apache.logging.log4j:log4j-core</dep>
-                  <dep>io.camunda:zeebe-build-tools</dep>
-                  <dep>io.camunda:zeebe-gateway-protocol</dep>
-                  <dep>org.ow2.asm:asm</dep>
-                  <dep>org.bouncycastle:bcpkix-jdk18on</dep>
-                  <dep>org.bouncycastle:bcprov-jdk18on</dep>
-                  <dep>org.junit.jupiter:junit-jupiter-engine</dep>
-                  <dep>org.junit.vintage:junit-vintage-engine</dep>
-                  <dep>org.junit.platform:junit-platform-suite</dep>
-                  <dep>com.tngtech.archunit:archunit-junit5-engine</dep>
-                  <dep>org.openjdk.jmh:jmh-generator-annprocess</dep>
-                  <dep>org.postgresql:postgresql</dep>
-                </ignoredUnusedDeclaredDependencies>
               </configuration>
             </execution>
           </executions>
