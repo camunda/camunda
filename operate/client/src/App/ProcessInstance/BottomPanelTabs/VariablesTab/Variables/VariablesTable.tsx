@@ -24,13 +24,68 @@ import {Operation} from './NewVariableModification/Operation';
 import {ViewFullVariableButton} from './ViewFullVariableButton';
 import {useIsProcessInstanceRunning} from 'modules/queries/processInstance/useIsProcessInstanceRunning';
 import {useVariables} from 'modules/queries/variables/useVariables';
+import {useVariable} from 'modules/queries/variables/useVariable';
 import {InlineJsonEditor} from 'modules/components/InlineJsonEditor';
-import {getVariable} from 'modules/api/v2/variables/getVariable';
 
 type Props = {
   scopeId: string | null;
   isModificationModeEnabled?: boolean;
   isVariableModificationAllowed?: boolean;
+};
+
+type VariableValueCellProps = {
+  variableKey: string;
+  variableName: string;
+  value: string;
+  isTruncated: boolean | undefined;
+  isModificationModeEnabled: boolean | undefined;
+  isProcessInstanceRunning: boolean | undefined;
+};
+
+const VariableValueCell: React.FC<VariableValueCellProps> = ({
+  variableKey,
+  variableName,
+  value,
+  isTruncated,
+  isModificationModeEnabled,
+  isProcessInstanceRunning,
+}) => {
+  const {refetch} = useVariable(variableKey, {enabled: false});
+
+  return (
+    <InlineJsonEditor
+      value={value}
+      isTruncatedValue={Boolean(isTruncated)}
+      readOnly
+      onCopy={
+        isTruncated
+          ? async () => {
+              const result = await refetch();
+              if (result.data) {
+                return result.data.value;
+              }
+              throw result.error ?? new Error('Failed to fetch variable');
+            }
+          : undefined
+      }
+      renderButton={
+        isTruncated
+          ? () => (
+              <ViewFullVariableButton
+                mode="show"
+                variableKey={variableKey}
+                variableName={variableName}
+                variableValue={value}
+                buttonLabel="Show all"
+                canEdit={
+                  !isModificationModeEnabled && !!isProcessInstanceRunning
+                }
+              />
+            )
+          : undefined
+      }
+    />
+  );
 };
 
 const VariablesTable: React.FC<Props> = ({
@@ -78,39 +133,13 @@ const VariablesTable: React.FC<Props> = ({
                 isPreview={Boolean(isTruncated)}
               />
             ) : (
-              <InlineJsonEditor
+              <VariableValueCell
+                variableKey={variableKey}
+                variableName={name}
                 value={value}
-                isTruncatedValue={Boolean(isTruncated)}
-                readOnly
-                onCopy={
-                  isTruncated
-                    ? async () => {
-                        const {response, error} =
-                          await getVariable(variableKey);
-                        if (response !== null) {
-                          return response.value;
-                        }
-                        throw error;
-                      }
-                    : undefined
-                }
-                renderButton={
-                  isTruncated
-                    ? () => (
-                        <ViewFullVariableButton
-                          mode="show"
-                          variableKey={variableKey}
-                          variableName={name}
-                          variableValue={value}
-                          buttonLabel="Show all"
-                          canEdit={
-                            !isModificationModeEnabled &&
-                            !!isProcessInstanceRunning
-                          }
-                        />
-                      )
-                    : undefined
-                }
+                isTruncated={isTruncated}
+                isModificationModeEnabled={isModificationModeEnabled}
+                isProcessInstanceRunning={isProcessInstanceRunning}
               />
             ),
             width: 'auto',

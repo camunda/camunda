@@ -7,6 +7,7 @@
  */
 
 import {
+  ReadOnlyEditorContainer,
   ReadOnlyEditorContent,
   ReadOnlyEditorWrapper,
   CopyIcon,
@@ -102,26 +103,29 @@ const ReadOnlyEditor: React.FC<Props> = ({
   }, [lineCount, maxLines]);
 
   return (
-    <ReadOnlyEditorWrapper
-      $height={height}
-      $empty={value === ''}
-      $editMode={!isReadOnly}
-      $scrollable={isScrollable}
-      $invalid={!!fieldError}
-    >
-      <ReadOnlyEditorContent
-        data-testid={
-          dataTestId ? `${dataTestId}-readonly` : 'json-editor-readonly'
-        }
-        tabIndex={0}
-        role={isReadOnly ? 'button' : undefined}
-        aria-label={isReadOnly ? `Copy ${label}` : undefined}
-        aria-disabled={isReadOnly && isCopying ? true : undefined}
-        onClick={isReadOnly ? handleCopy : undefined}
-        onKeyDown={isReadOnly ? handleCopyKeyDown : undefined}
+    <ReadOnlyEditorContainer>
+      <ReadOnlyEditorWrapper
+        $height={height}
+        $empty={value === ''}
+        $editMode={!isReadOnly}
+        $scrollable={isScrollable}
+        $invalid={!!fieldError}
       >
-        {value || placeholder}
-      </ReadOnlyEditorContent>
+        <ReadOnlyEditorContent
+          data-testid={
+            dataTestId ? `${dataTestId}-readonly` : 'json-editor-readonly'
+          }
+          tabIndex={0}
+          role={isReadOnly ? 'button' : undefined}
+          aria-label={isReadOnly ? `Copy ${label}` : undefined}
+          aria-disabled={isReadOnly && isCopying ? true : undefined}
+          onClick={isReadOnly ? handleCopy : undefined}
+          onKeyDown={isReadOnly ? handleCopyKeyDown : undefined}
+        >
+          {value || placeholder}
+        </ReadOnlyEditorContent>
+        {renderButton && renderButton()}
+      </ReadOnlyEditorWrapper>
       {isReadOnly && !isCopying && (
         <CopyIcon data-testid="copy-icon-indicator" aria-hidden="true">
           <Copy size={16} />
@@ -134,8 +138,7 @@ const ReadOnlyEditor: React.FC<Props> = ({
           status="active"
         />
       )}
-      {renderButton && renderButton()}
-    </ReadOnlyEditorWrapper>
+    </ReadOnlyEditorContainer>
   );
 };
 

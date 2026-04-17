@@ -114,6 +114,11 @@ const ReadOnlyEditorWrapper = styled.div<{
     `};
 `;
 
+const ReadOnlyEditorContainer = styled.div`
+  position: relative;
+  width: 100%;
+`;
+
 const CopyIcon = styled.span`
   position: absolute;
   top: ${EDITOR_PADDING_TOP}px;
@@ -127,7 +132,7 @@ const CopyIcon = styled.span`
   justify-content: center;
   pointer-events: none;
 
-  ${ReadOnlyEditorWrapper}:hover & {
+  ${ReadOnlyEditorContainer}:hover & {
     opacity: 1;
   }
 `;
@@ -180,6 +185,7 @@ const WriteModeEditor = styled.div<{
 export {
   EditorWrapper,
   EditorLoader,
+  ReadOnlyEditorContainer,
   ReadOnlyEditorWrapper,
   ReadOnlyEditorContent,
   CopyIcon,
