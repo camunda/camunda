@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterEach;
@@ -61,8 +62,9 @@ final class BackupRangeTrackingIT {
   }
 
   @AfterEach
-  void tearDown() {
+  void tearDown() throws InterruptedException {
     executor.shutdownNow();
+    executor.awaitTermination(5, TimeUnit.SECONDS);
   }
 
   private void configureBroker(final TestStandaloneBroker broker) {
@@ -149,11 +151,22 @@ final class BackupRangeTrackingIT {
               }
             });
 
-    final var lastBackupBeforeLeaderChange =
-        actuator.state().getBackupStates().stream()
-            .filter((final PartitionBackupState state) -> state.getPartitionId() == 1)
-            .findFirst()
-            .orElseThrow();
+    // Partition 1's new leader may need time to report backup state; retry until available
+    final var lastBackupBeforeLeaderChangeRef = new AtomicReference<PartitionBackupState>();
+    Awaitility.await("Partition 1 backup state should be available on new leader")
+        .atMost(Duration.ofSeconds(30))
+        .untilAsserted(
+            () -> {
+              final var state =
+                  actuator.state().getBackupStates().stream()
+                      .filter((final PartitionBackupState s) -> s.getPartitionId() == 1)
+                      .findFirst();
+              assertThat(state)
+                  .describedAs("Backup state for partition 1 should be present")
+                  .isPresent();
+              lastBackupBeforeLeaderChangeRef.set(state.get());
+            });
+    final var lastBackupBeforeLeaderChange = lastBackupBeforeLeaderChangeRef.get();
 
     // then
     Awaitility.await("New leader should continue to take backups and extend the existing range")

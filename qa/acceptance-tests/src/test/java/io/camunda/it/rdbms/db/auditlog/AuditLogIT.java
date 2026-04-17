@@ -39,6 +39,7 @@ import io.camunda.security.reader.TenantCheck;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
+import java.util.UUID;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.TestTemplate;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -431,8 +432,10 @@ public class AuditLogIT {
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
     final AuditLogDbReader auditLogReader = rdbmsService.getAuditLogReader();
 
-    final var processDefId1 = "process-def-1";
-    final var processDefId2 = "process-def-2";
+    // Use unique IDs to avoid interference from other tests sharing the same database instance
+    final var suffix = UUID.randomUUID().toString();
+    final var processDefId1 = "process-def-1-" + suffix;
+    final var processDefId2 = "process-def-2-" + suffix;
 
     // Create audit logs with different process definitions and categories
     final var log1 =
@@ -463,7 +466,10 @@ public class AuditLogIT {
                             .resourceIds(List.of("*")))),
             TenantCheck.disabled());
 
-    final var searchResult = auditLogReader.search(AuditLogQuery.of(b -> b), resourceAccessChecks);
+    // Explicit large page to avoid default-page truncation hiding results in a shared DB
+    final var searchResult =
+        auditLogReader.search(
+            AuditLogQuery.of(b -> b.page(p -> p.size(1000))), resourceAccessChecks);
 
     // Should return all USER_TASKS category logs
     assertThat(searchResult.items())
