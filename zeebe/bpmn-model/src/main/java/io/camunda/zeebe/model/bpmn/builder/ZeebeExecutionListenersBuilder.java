@@ -28,6 +28,33 @@ public interface ZeebeExecutionListenersBuilder<B> {
 
   B zeebeEndExecutionListener(String type);
 
+  /**
+   * Adds a {@code beforeAll} execution listener to a multi-instance activity. The listener job is
+   * created and completed <em>before</em> the input collection or loop cardinality is evaluated and
+   * before any child element instances are created. Variables set by this listener are available to
+   * the {@code inputCollection} and {@code loopCardinality} expressions.
+   *
+   * <p>This listener type is only valid on multi-instance activities.
+   *
+   * @param type the job type of the listener worker
+   * @param retries the number of retries for the listener job
+   * @return this builder
+   */
+  default B zeebeBeforeAllExecutionListener(final String type, final String retries) {
+    return null;
+  }
+
+  /**
+   * Adds a {@code beforeAll} execution listener to a multi-instance activity using the default
+   * retry count. See {@link #zeebeBeforeAllExecutionListener(String, String)} for full semantics.
+   *
+   * @param type the job type of the listener worker
+   * @return this builder
+   */
+  default B zeebeBeforeAllExecutionListener(final String type) {
+    return null;
+  }
+
   B zeebeExecutionListener(
       final Consumer<ExecutionListenerBuilder> executionListenerBuilderConsumer);
 }

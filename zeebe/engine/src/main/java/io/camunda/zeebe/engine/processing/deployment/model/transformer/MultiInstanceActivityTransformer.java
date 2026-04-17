@@ -111,6 +111,7 @@ public final class MultiInstanceActivityTransformer implements ModelElementTrans
     connectSequenceFlowsToMultiInstanceBody(innerActivity, multiInstanceBody);
     replaceCompensationHandlerWithMultiInstanceBody(process, innerActivity, multiInstanceBody);
     replaceAdHocActivityWithMultiInstanceBody(process, innerActivity, multiInstanceBody);
+    transferBeforeAllListenersToMultiInstanceBody(innerActivity, multiInstanceBody);
 
     // replace the inner element with the body
     process.addFlowElement(multiInstanceBody);
@@ -171,5 +172,19 @@ public final class MultiInstanceActivityTransformer implements ModelElementTrans
                 adHocSubProcess.getAdHocActivitiesById().values().stream()
                     .filter(innerActivity::equals)
                     .forEach(adHocActivity -> adHocSubProcess.addAdHocActivity(multiInstanceBody)));
+  }
+
+  /**
+   * Moves {@code beforeAll} execution listeners from the inner activity to the enclosing
+   * multi-instance body. {@code beforeAll} listeners must fire before the input collection or loop
+   * cardinality is evaluated — which happens on the body, not on individual instances — so they
+   * belong to the body element.
+   */
+  private static void transferBeforeAllListenersToMultiInstanceBody(
+      final ExecutableActivity innerActivity,
+      final ExecutableMultiInstanceBody multiInstanceBody) {
+    innerActivity
+        .removeBeforeAllExecutionListeners()
+        .forEach(multiInstanceBody::addExecutionListener);
   }
 }

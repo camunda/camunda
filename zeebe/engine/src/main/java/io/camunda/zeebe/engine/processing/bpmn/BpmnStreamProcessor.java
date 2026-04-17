@@ -21,6 +21,7 @@ import io.camunda.zeebe.engine.processing.common.EventTriggerBehavior;
 import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowNode;
+import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableMultiInstanceBody;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutionListener;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
@@ -169,8 +170,7 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
         final var activatingContext = stateTransitionBehavior.transitionToActivating(context);
         stateTransitionBehavior
             .onElementActivating(element, activatingContext)
-            .flatMap(ok -> processor.onActivate(element, activatingContext))
-            .flatMap(ok -> afterActivating(element, processor, activatingContext))
+            .flatMap(ok -> beforeActivating(element, processor, activatingContext))
             .ifLeft(failure -> incidentBehavior.createIncident(failure, activatingContext));
         break;
       case COMPLETE_ELEMENT:
@@ -191,9 +191,16 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
         final ProcessInstanceIntent elementState =
             stateBehavior.getElementInstance(context).getState();
         switch (elementState) {
-          case ELEMENT_ACTIVATING ->
+          case ELEMENT_ACTIVATING -> {
+            if (element instanceof final ExecutableMultiInstanceBody multiInstanceBody
+                && !multiInstanceBody.getBeforeAllExecutionListeners().isEmpty()) {
+              onBeforeAllExecutionListenerComplete(multiInstanceBody, processor, context)
+                  .ifLeft(failure -> incidentBehavior.createIncident(failure, context));
+            } else {
               onStartExecutionListenerComplete((ExecutableFlowNode) element, processor, context)
                   .ifLeft(failure -> incidentBehavior.createIncident(failure, context));
+            }
+          }
           case ELEMENT_COMPLETING ->
               onEndExecutionListenerComplete((ExecutableFlowNode) element, processor, context)
                   .ifLeft(failure -> incidentBehavior.createIncident(failure, context));
@@ -212,6 +219,34 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
                 "Expected the processor '%s' to handle the event but the intent '%s' is not supported",
                 processor.getClass(), intent));
     }
+  }
+
+  /**
+   * Called from {@link io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent#ACTIVATE_ELEMENT}
+   * processing after {@code onElementActivating}. For multi-instance bodies that have {@code
+   * beforeAll} execution listeners, this method creates the first listener job and defers {@code
+   * onActivate} (collection evaluation + child creation) until all {@code beforeAll} listeners
+   * complete. For all other elements — or multi-instance bodies without {@code beforeAll} listeners
+   * — it delegates directly to {@code onActivate} and then {@code afterActivating}.
+   */
+  private Either<Failure, ?> beforeActivating(
+      final ExecutableFlowElement element,
+      final BpmnElementProcessor<ExecutableFlowElement> processor,
+      final BpmnElementContext context) {
+
+    if (element instanceof final ExecutableMultiInstanceBody multiInstanceBody) {
+      final List<ExecutionListener> beforeAllListeners =
+          multiInstanceBody.getBeforeAllExecutionListeners();
+      if (!beforeAllListeners.isEmpty()) {
+        // Fire first beforeAll listener; onActivate is deferred until all complete.
+        return createExecutionListenerJob(context, beforeAllListeners.getFirst());
+      }
+    }
+
+    // No beforeAll listeners — proceed with normal activation.
+    return processor
+        .onActivate(element, context)
+        .flatMap(ok -> afterActivating(element, processor, context));
   }
 
   private Either<Failure, ?> afterActivating(
@@ -287,6 +322,41 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
         context,
         ExecutableFlowNode::getEndExecutionListeners,
         processor::finalizeCompletion);
+  }
+
+  /**
+   * Handles the completion of a {@code beforeAll} execution listener on a multi-instance body.
+   *
+   * <p>Variables produced by the completed listener are merged into the multi-instance body's local
+   * scope so they are available to the {@code inputCollection} / {@code loopCardinality}
+   * expressions. If more {@code beforeAll} listeners remain, the next one is created. When all
+   * {@code beforeAll} listeners have completed, the element proceeds with {@code onActivate}
+   * (collection evaluation + child instance creation) followed by {@code afterActivating} (any
+   * {@code start} listeners on the body, then finalize activation).
+   */
+  public Either<Failure, ?> onBeforeAllExecutionListenerComplete(
+      final ExecutableMultiInstanceBody element,
+      final BpmnElementProcessor<ExecutableFlowElement> processor,
+      final BpmnElementContext context) {
+    // Merge listener output variables into the body's local scope (local = true) so that
+    // inputCollection / loopCardinality expressions can see them.
+    mergeVariablesOfExecutionListener(context, true);
+
+    final List<ExecutionListener> beforeAllListeners = element.getBeforeAllExecutionListeners();
+    final int currentListenerIndex =
+        stateBehavior.getElementInstance(context).getExecutionListenerIndex();
+    final Optional<ExecutionListener> nextListener =
+        findNextExecutionListener(beforeAllListeners, currentListenerIndex);
+
+    if (nextListener.isPresent()) {
+      return createExecutionListenerJob(context, nextListener.get());
+    }
+
+    // All beforeAll listeners completed — proceed to onActivate (collection evaluation) then
+    // afterActivating (start listeners on body, if any, then finalizeActivation).
+    return processor
+        .onActivate(element, context)
+        .flatMap(ok -> afterActivating(element, processor, context));
   }
 
   private Either<Failure, ?> onExecutionListenerComplete(
