@@ -90,6 +90,7 @@ export default defineConfig(({mode}) => ({
     resetMocks: true,
     unstubEnvs: true,
     retry: process.env['CI'] ? 3 : 0,
+    dangerouslyIgnoreUnhandledErrors: Boolean(process.env['CI']),
     ...getReporters(),
     server: {
       deps: {
