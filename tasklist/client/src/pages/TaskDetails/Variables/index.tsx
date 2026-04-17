@@ -25,10 +25,7 @@ import {
   TaskDetailsRow,
 } from 'modules/tasks/details/TaskDetailsLayout';
 import {Separator} from 'modules/tasks/variables-editor/Separator';
-import {
-  useQueryAllVariables,
-  flattenVariablePages,
-} from 'modules/api/useQueryAllVariables.query';
+import {useQueryAllVariables} from 'modules/api/useQueryAllVariables.query';
 import {useTranslation} from 'react-i18next';
 import {FailedVariableFetchError} from 'modules/tasks/details/FailedVariableFetchError';
 import {CompleteTaskButton} from 'modules/tasks/details/CompleteTaskButton';
@@ -120,9 +117,8 @@ const Variables: React.FC<Props> = ({
     user.username === assignee && state === 'CREATED' && status === 'success';
   const hasEmptyNewVariable = (values: FormValues | undefined) =>
     values?.newVariables?.some((variable) => variable === undefined);
-  const variables = useMemo(() => flattenVariablePages(data), [data]);
-  const totalVariables =
-    data?.pages.at(-1)?.page.totalItems ?? variables.length;
+  const variables = useMemo(() => data?.items ?? [], [data?.items]);
+  const totalVariables = data?.totalItems ?? variables.length;
   const initialFormValues = useMemo(
     () =>
       Object.fromEntries(

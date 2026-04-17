@@ -128,17 +128,7 @@ const VariableEditor: React.FC<Props> = ({
       <StructuredListBody>
         {readOnly ? (
           <>
-            {paddingTop > 0 && (
-              <div
-                className={styles.virtualSpacer}
-                style={
-                  {
-                    '--virtual-spacer-height': `${paddingTop}px`,
-                  } as React.CSSProperties
-                }
-                aria-hidden
-              />
-            )}
+            {paddingTop > 0 && <div style={{height: paddingTop}} aria-hidden />}
             {virtualItems.map((virtualRow) => {
               const variable = variables[virtualRow.index];
 
@@ -203,15 +193,7 @@ const VariableEditor: React.FC<Props> = ({
               );
             })}
             {paddingBottom > 0 && (
-              <div
-                className={styles.virtualSpacer}
-                style={
-                  {
-                    '--virtual-spacer-height': `${paddingBottom}px`,
-                  } as React.CSSProperties
-                }
-                aria-hidden
-              />
+              <div style={{height: paddingBottom}} aria-hidden />
             )}
           </>
         ) : (

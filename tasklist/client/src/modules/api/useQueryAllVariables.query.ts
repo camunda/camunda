@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useInfiniteQuery, type InfiniteData} from '@tanstack/react-query';
+import {useInfiniteQuery} from '@tanstack/react-query';
 import {api} from 'modules/api';
 import {request} from 'modules/api/request';
 import type {
@@ -59,6 +59,10 @@ function useQueryAllVariables(
 
       throw error;
     },
+    select: (data) => ({
+      items: data.pages.flatMap((page) => page.items) as Variable[],
+      totalItems: data.pages.at(-1)?.page.totalItems ?? 0,
+    }),
     initialPageParam: 0,
     refetchInterval: pollingInterval
       ? (query) => {
@@ -79,27 +83,11 @@ function useQueryAllVariables(
 
       return nextPage;
     },
-    getPreviousPageParam: (_, __, firstPageParam) => {
-      const previousPage = firstPageParam - MAX_VARIABLES_PER_REQUEST;
-
-      if (previousPage < 0) {
-        return null;
-      }
-
-      return previousPage;
-    },
   });
 }
-
-const flattenVariablePages = (
-  data: InfiniteData<QueryVariablesByUserTaskResponseBody, unknown> | undefined,
-): Variable[] => {
-  return data?.pages?.flatMap((page) => page.items) ?? [];
-};
 
 export {
   useQueryAllVariables,
   getAllVariablesQueryKey,
-  flattenVariablePages,
   MAX_VARIABLES_PER_REQUEST,
 };

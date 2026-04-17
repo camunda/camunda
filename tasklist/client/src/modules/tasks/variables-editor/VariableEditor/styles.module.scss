@@ -50,10 +50,6 @@
   overflow-y: auto;
 }
 
-.virtualSpacer {
-  height: var(--virtual-spacer-height, 0px);
-}
-
 .singleLineValue {
   white-space: nowrap;
   overflow: hidden;
