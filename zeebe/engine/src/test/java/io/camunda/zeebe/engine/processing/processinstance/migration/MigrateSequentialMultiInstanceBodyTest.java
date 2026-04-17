@@ -19,6 +19,7 @@ import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
+import io.camunda.zeebe.protocol.record.intent.TimerIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
@@ -917,6 +918,102 @@ public class MigrateSequentialMultiInstanceBodyTest {
                 .findAny())
         .describedAs("Expect that the process instance is continued in the target process")
         .isPresent();
+  }
+
+  @Test
+  public void shouldMigrateMappedTimerBoundaryEventAttachedToSequentialMultiInstanceSubprocess() {
+    // given
+    final String processId = helper.getBpmnProcessId();
+    final String targetProcessId = helper.getBpmnProcessId() + "2";
+
+    final var deployment =
+        ENGINE
+            .deployment()
+            .withXmlResource(
+                Bpmn.createExecutableProcess(processId)
+                    .startEvent()
+                    .subProcess(
+                        "sub",
+                        sub ->
+                            sub.multiInstance(
+                                b ->
+                                    b.sequential()
+                                        .zeebeInputCollectionExpression("[1,2,3]")
+                                        .zeebeInputElement("index")))
+                    .embeddedSubProcess()
+                    .startEvent()
+                    .serviceTask("task", t -> t.zeebeJobType("task"))
+                    .endEvent()
+                    .subProcessDone()
+                    .boundaryEvent("timerBoundary", b -> b.timerWithDuration("PT1H"))
+                    .cancelActivity(false)
+                    .endEvent("boundaryEnd")
+                    .moveToActivity("sub")
+                    .endEvent()
+                    .done())
+            .withXmlResource(
+                Bpmn.createExecutableProcess(targetProcessId)
+                    .startEvent()
+                    .subProcess(
+                        "sub",
+                        sub ->
+                            sub.multiInstance(
+                                b ->
+                                    b.sequential()
+                                        .zeebeInputCollectionExpression("[1,2,3]")
+                                        .zeebeInputElement("index")))
+                    .embeddedSubProcess()
+                    .startEvent()
+                    .serviceTask("task", t -> t.zeebeJobType("task"))
+                    .endEvent()
+                    .subProcessDone()
+                    .boundaryEvent("timerBoundary", b -> b.timerWithDuration("PT1H"))
+                    .cancelActivity(false)
+                    .endEvent("boundaryEnd")
+                    .moveToActivity("sub")
+                    .endEvent()
+                    .done())
+            .deploy();
+
+    final long targetProcessDefinitionKey =
+        extractProcessDefinitionKeyByProcessId(deployment, targetProcessId);
+
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(processId).create();
+
+    RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .withElementId("task")
+        .await();
+
+    // when
+    ENGINE
+        .processInstance()
+        .withInstanceKey(processInstanceKey)
+        .migration()
+        .withTargetProcessDefinitionKey(targetProcessDefinitionKey)
+        .addMappingInstruction("sub", "sub")
+        .addMappingInstruction("task", "task")
+        .addMappingInstruction("timerBoundary", "timerBoundary")
+        .migrate();
+
+    // then
+    Assertions.assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_MIGRATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withElementType(BpmnElementType.MULTI_INSTANCE_BODY)
+                .getFirst()
+                .getValue())
+        .describedAs("Expect that the multi-instance body is migrated to the target process")
+        .hasProcessDefinitionKey(targetProcessDefinitionKey)
+        .hasBpmnProcessId(targetProcessId)
+        .hasElementId("sub");
+
+    assertThat(
+            RecordingExporter.timerRecords(TimerIntent.MIGRATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .exists())
+        .describedAs("Expect that the timer boundary event subscription is migrated")
+        .isTrue();
   }
 
   @Test

@@ -794,10 +794,13 @@ public final class ProcessInstanceMigrationPreconditions {
       }
 
       final var targetCatchEventId = sourceElementIdToTargetElementId.get(sourceCatchEventId);
+      // a generic lookup traverses to the inner activity, which has no boundary events
+      final Class<? extends ExecutableCatchEventSupplier> expectedType =
+          sourceCatchEventSupplier instanceof ExecutableMultiInstanceBody
+              ? ExecutableMultiInstanceBody.class
+              : ExecutableCatchEventSupplier.class;
       final var targetElement =
-          targetProcessDefinition
-              .getProcess()
-              .getElementById(targetElementId, ExecutableCatchEventSupplier.class);
+          targetProcessDefinition.getProcess().getElementById(targetElementId, expectedType);
       if (targetElement.getEvents().stream()
           .map(catchEvent -> BufferUtil.bufferAsString(catchEvent.getId()))
           .noneMatch(targetCatchEventId::equals)) {
