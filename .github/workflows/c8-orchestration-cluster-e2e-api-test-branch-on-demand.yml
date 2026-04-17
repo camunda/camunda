@@ -269,6 +269,7 @@ jobs:
             --project 'C8' \
             --username "$TESTRAIL_USERNAME" \
             --key "$TESTRAIL_KEY" \
+            --batch-size 500 \
             parse_junit --suite-id 17050 \
             --title "On Demand C8 Orchestration Cluster API Test Run Results - ${{ github.event.inputs.branch }} - $(date '+%Y-%m-%d %H:%M:%S')" \
             --close-run \
