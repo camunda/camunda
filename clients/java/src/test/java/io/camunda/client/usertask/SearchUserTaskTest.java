@@ -196,6 +196,16 @@ public final class SearchUserTaskTest extends ClientRestTest {
   }
 
   @Test
+  void shouldSearchUserTaskByBpmnProcessId() {
+    // when
+    client.newUserTaskSearchRequest().filter(f -> f.bpmnProcessId("my-process")).send().join();
+
+    // then
+    final UserTaskSearchQuery request = gatewayService.getLastRequest(UserTaskSearchQuery.class);
+    assertThat(request.getFilter().getProcessDefinitionId().get$Eq()).isEqualTo("my-process");
+  }
+
+  @Test
   void shouldSearchUserTaskByProcessDefinitionKey() {
     // when
     client.newUserTaskSearchRequest().filter(f -> f.processDefinitionKey(123L)).send().join();
@@ -212,7 +222,7 @@ public final class SearchUserTaskTest extends ClientRestTest {
 
     // then
     final UserTaskSearchQuery request = gatewayService.getLastRequest(UserTaskSearchQuery.class);
-    assertThat(request.getFilter().getProcessInstanceKey()).isEqualTo("456");
+    assertThat(request.getFilter().getProcessInstanceKey().get$Eq()).isEqualTo("456");
   }
 
   @Test
