@@ -49,7 +49,7 @@ describe('<ReadOnlyEditor />', () => {
     it('should copy the value and show a success notification on click', async () => {
       const {user} = render(<ReadOnlyEditor {...defaultProps} />);
 
-      await user.click(screen.getByRole('button', {name: 'Copy myVar'}));
+      await user.click(screen.getByTestId('json-editor-readonly'));
 
       expect(mockWriteText).toHaveBeenCalledWith('"hello"');
       expect(notificationsStore.displayNotification).toHaveBeenCalledWith({
@@ -63,7 +63,7 @@ describe('<ReadOnlyEditor />', () => {
       mockWriteText.mockRejectedValue(new Error('Permission denied'));
       const {user} = render(<ReadOnlyEditor {...defaultProps} />);
 
-      await user.click(screen.getByRole('button', {name: 'Copy myVar'}));
+      await user.click(screen.getByTestId('json-editor-readonly'));
 
       expect(notificationsStore.displayNotification).toHaveBeenCalledWith({
         kind: 'error',
@@ -77,6 +77,105 @@ describe('<ReadOnlyEditor />', () => {
 
       expect(
         screen.queryByRole('button', {name: 'Copy myVar'}),
+      ).not.toBeInTheDocument();
+    });
+
+    it('should show copy icon indicator in read-only mode', () => {
+      render(<ReadOnlyEditor {...defaultProps} />);
+
+      expect(screen.getByTestId('copy-icon-indicator')).toBeInTheDocument();
+    });
+
+    it('should not show copy icon indicator when not in read-only mode', () => {
+      render(<ReadOnlyEditor {...defaultProps} isReadOnly={false} />);
+
+      expect(
+        screen.queryByTestId('copy-icon-indicator'),
+      ).not.toBeInTheDocument();
+    });
+  });
+
+  describe('onCopy prop (truncated value handling)', () => {
+    it('should call onCopy to get the value and copy the result when onCopy is provided', async () => {
+      const onCopy = vi.fn().mockResolvedValue('"full value"');
+      const {user} = render(
+        <ReadOnlyEditor
+          {...defaultProps}
+          value='"truncated..."'
+          onCopy={onCopy}
+        />,
+      );
+
+      await user.click(screen.getByTestId('json-editor-readonly'));
+
+      expect(onCopy).toHaveBeenCalled();
+      expect(mockWriteText).toHaveBeenCalledWith('"full value"');
+      expect(notificationsStore.displayNotification).toHaveBeenCalledWith({
+        kind: 'success',
+        title: 'myVar copied to clipboard',
+        isDismissable: true,
+      });
+    });
+
+    it('should not copy the truncated value when onCopy is provided', async () => {
+      const onCopy = vi.fn().mockResolvedValue('"full value"');
+      const {user} = render(
+        <ReadOnlyEditor
+          {...defaultProps}
+          value='"truncated..."'
+          onCopy={onCopy}
+        />,
+      );
+
+      await user.click(screen.getByTestId('json-editor-readonly'));
+
+      expect(mockWriteText).not.toHaveBeenCalledWith('"truncated..."');
+    });
+
+    it('should show an error notification and not copy when onCopy rejects', async () => {
+      const onCopy = vi.fn().mockRejectedValue(new Error('Network error'));
+      const {user} = render(
+        <ReadOnlyEditor {...defaultProps} onCopy={onCopy} />,
+      );
+
+      await user.click(screen.getByTestId('json-editor-readonly'));
+
+      expect(mockWriteText).not.toHaveBeenCalled();
+      expect(notificationsStore.displayNotification).toHaveBeenCalledWith({
+        kind: 'error',
+        title: 'Failed to fetch full myVar',
+        isDismissable: true,
+      });
+    });
+
+    it('should show the loading spinner while onCopy is in progress', async () => {
+      let resolveOnCopy!: (value: string) => void;
+      const onCopy = vi.fn(
+        () =>
+          new Promise<string>((resolve) => {
+            resolveOnCopy = resolve;
+          }),
+      );
+      const {user} = render(
+        <ReadOnlyEditor {...defaultProps} onCopy={onCopy} />,
+      );
+
+      user.click(screen.getByTestId('json-editor-readonly'));
+
+      expect(
+        await screen.findByTestId('copy-loading-indicator'),
+      ).toBeInTheDocument();
+      expect(
+        screen.queryByTestId('copy-icon-indicator'),
+      ).not.toBeInTheDocument();
+
+      resolveOnCopy('"full value"');
+
+      expect(
+        await screen.findByTestId('copy-icon-indicator'),
+      ).toBeInTheDocument();
+      expect(
+        screen.queryByTestId('copy-loading-indicator'),
       ).not.toBeInTheDocument();
     });
   });

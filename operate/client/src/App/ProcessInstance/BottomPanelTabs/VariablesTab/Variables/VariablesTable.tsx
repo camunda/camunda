@@ -24,7 +24,7 @@ import {Operation} from './NewVariableModification/Operation';
 import {ViewFullVariableButton} from './ViewFullVariableButton';
 import {useIsProcessInstanceRunning} from 'modules/queries/processInstance/useIsProcessInstanceRunning';
 import {useVariables} from 'modules/queries/variables/useVariables';
-import {InlineJsonEditor} from 'modules/components/InlineJsonEditor';
+import {VariableValueCell} from './VariableValueCell';
 
 type Props = {
   scopeId: string | null;
@@ -77,27 +77,13 @@ const VariablesTable: React.FC<Props> = ({
                 isPreview={Boolean(isTruncated)}
               />
             ) : (
-              <InlineJsonEditor
+              <VariableValueCell
+                variableKey={variableKey}
+                variableName={name}
                 value={value}
-                isTruncatedValue={Boolean(isTruncated)}
-                readOnly
-                renderButton={
-                  isTruncated
-                    ? () => (
-                        <ViewFullVariableButton
-                          mode="show"
-                          variableKey={variableKey}
-                          variableName={name}
-                          variableValue={value}
-                          buttonLabel="Show all"
-                          canEdit={
-                            !isModificationModeEnabled &&
-                            !!isProcessInstanceRunning
-                          }
-                        />
-                      )
-                    : undefined
-                }
+                isTruncated={isTruncated}
+                isModificationModeEnabled={isModificationModeEnabled}
+                isProcessInstanceRunning={isProcessInstanceRunning}
               />
             ),
             width: 'auto',
