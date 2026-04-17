@@ -50,10 +50,19 @@ jobs:
         run: |
           # Resolve c8run version
           if [[ "${INPUT_C8RUN_VERSION}" == "latest" ]]; then
-            # Get latest stable release (exclude pre-releases) that has c8run artifacts
-            c8run_version=$(gh api repos/camunda/camunda/releases --jq '
-              [.[] | select(.prerelease == false) | select(.assets[].name | test("camunda8-run-"))] | first | .tag_name
-            ')
+            # Pick the semantically highest stable release that ships c8run artifacts.
+            # GitHub returns releases ordered by publication date, so picking `first`
+            # is wrong when patches on older minor lines (e.g. 8.7.27) ship after a
+            # newer minor (e.g. 8.9.0). We paginate to cover all historical releases,
+            # restrict to strict X.Y.Z tags (drops `c8run-*` legacy tags and any
+            # mislabeled pre-release like `8.8.0-alpha7`), then sort by semver.
+            c8run_version=$(gh api --paginate repos/camunda/camunda/releases --jq '
+              .[]
+              | select(.prerelease == false)
+              | select(any(.assets[]; .name | test("camunda8-run-")))
+              | .tag_name
+              | select(test("^[0-9]+\\.[0-9]+\\.[0-9]+$"))
+            ' | sort -V | tail -n 1)
             echo "Resolved c8run version: ${c8run_version}"
           else
             c8run_version="${INPUT_C8RUN_VERSION}"
