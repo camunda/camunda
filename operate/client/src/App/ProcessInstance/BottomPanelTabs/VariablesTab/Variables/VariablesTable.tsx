@@ -50,6 +50,7 @@ const VariableValueCell: React.FC<VariableValueCellProps> = ({
   isModificationModeEnabled,
   isProcessInstanceRunning,
 }) => {
+  // Query is disabled by default and only executed on-demand when copying truncated values
   const {refetch} = useVariable(variableKey, {enabled: false});
 
   return (
@@ -64,7 +65,7 @@ const VariableValueCell: React.FC<VariableValueCellProps> = ({
               if (result.data) {
                 return result.data.value;
               }
-              throw result.error ?? new Error('Failed to fetch variable');
+              throw result.error ?? new Error(`Failed to fetch variable: ${variableName}`);
             }
           : undefined
       }
