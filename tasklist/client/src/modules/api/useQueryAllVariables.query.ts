@@ -74,10 +74,9 @@ function useQueryAllVariables(
         }
       : false,
     getNextPageParam: (lastPage, _, lastPageParam) => {
-      const {page} = lastPage;
       const nextPage = lastPageParam + MAX_VARIABLES_PER_REQUEST;
 
-      if (nextPage >= page.totalItems) {
+      if (nextPage >= (lastPage.page?.totalItems ?? 0)) {
         return null;
       }
 
