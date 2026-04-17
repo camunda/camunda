@@ -167,8 +167,7 @@ public class SpringCamundaClientConfigurationTest {
     auth.setClientSecret("my-client-secret");
 
     final SpringCamundaClientConfiguration configuration =
-        configuration(
-            props, jsonMapper(), List.of(), List.of(), executorService(), null);
+        configuration(props, jsonMapper(), List.of(), List.of(), executorService(), null);
 
     // when
     final CamundaClientBuilder builder = configuration.toBuilder();
@@ -197,8 +196,7 @@ public class SpringCamundaClientConfigurationTest {
     auth.setClientSecret("client-secret");
 
     final SpringCamundaClientConfiguration configuration =
-        configuration(
-            props, jsonMapper(), List.of(), List.of(), executorService(), null);
+        configuration(props, jsonMapper(), List.of(), List.of(), executorService(), null);
 
     // when
     final CamundaClientBuilder builder = configuration.toBuilder();

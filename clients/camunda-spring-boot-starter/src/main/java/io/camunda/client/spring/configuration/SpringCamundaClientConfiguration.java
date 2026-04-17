@@ -29,7 +29,6 @@ import java.net.URI;
 import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
 import org.apache.hc.client5.http.async.AsyncExecChainHandler;
 import org.slf4j.Logger;
@@ -283,12 +282,10 @@ public class SpringCamundaClientConfiguration implements CamundaClientConfigurat
       builder.withChainHandlers(chainHandlers.toArray(new AsyncExecChainHandler[0]));
     }
     if (zeebeClientExecutorService != null) {
-      final ScheduledExecutorService scheduledExecutor =
-          zeebeClientExecutorService.get();
+      final ScheduledExecutorService scheduledExecutor = zeebeClientExecutorService.get();
       if (scheduledExecutor != null) {
         builder.jobWorkerExecutor(
-            scheduledExecutor,
-            zeebeClientExecutorService.isOwnedByCamundaClient());
+            scheduledExecutor, zeebeClientExecutorService.isOwnedByCamundaClient());
       }
     }
     return builder;
