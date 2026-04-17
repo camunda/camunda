@@ -202,6 +202,40 @@ while IFS= read -r repo_name; do
   fi
 done < "$TMPDIR_WORK/repo_list.txt"
 
+# Collect GitHub usernames that could not be resolved to Slack IDs.
+# Only meaningful when we actually have a user map (not in fallback mode).
+if [[ "${SLACK_USER_MAP_FALLBACK:-}" != "true" ]]; then
+  jq -r --slurpfile slack_map "$TMPDIR_WORK/slack_user_map.json" '
+    ($slack_map[0] | with_entries(
+      if (.value | type) == "string" then .value = {slack_id: .value}
+      else . end
+    )) as $smap |
+    def has_slack(login; name):
+      ($smap[login] // null) // (if name then $smap[name] // null else null end) | . != null;
+    [
+      .[] |
+      # Non-bot PR authors
+      (if ((.original_pr_author // "") | test("^app/") | not) and ((.original_pr_author // "") != "") then
+        {username: .original_pr_author, name: (.original_pr_author_name // null)}
+      else empty end),
+      # Bot PR approvers
+      (if (.original_pr_author // "") | test("^app/") then
+        (.original_pr_approver_names // [])[]
+      else empty end)
+    ] |
+    [.[] | select(.username != null and .username != "") | select(has_slack(.username; .name) | not) | .username] |
+    unique | .[]
+  ' "$TMPDIR_WORK/stale_data.json" > "$TMPDIR_WORK/unresolved_users.txt"
+
+  if [[ -s "$TMPDIR_WORK/unresolved_users.txt" ]]; then
+    # Format as comma-separated backtick-wrapped list
+    unresolved_list=$(sed 's/.*/ `&`/' "$TMPDIR_WORK/unresolved_users.txt" | paste -s -d',' -)
+    jq -c --arg users "$unresolved_list" \
+      '. + [{type: "context", elements: [{type: "mrkdwn", text: ("⚠️ _Could not resolve GitHub → Slack for: " + $users + ". These users either need to add or if its already present, remove and re-add their GitHub handle in Okta to sync it to Slack. See <https://camunda.slack.com/archives/C08F5RD5X8B/p1776240827921619|instructions>._")}]}]' \
+      "$TMPDIR_WORK/blocks.json" > "$TMPDIR_WORK/blocks_tmp.json" && mv "$TMPDIR_WORK/blocks_tmp.json" "$TMPDIR_WORK/blocks.json"
+  fi
+fi
+
 # Legend + footer
 # Slack enforces a hard limit of 50 blocks per message. Trim excess content blocks first.
 # Each PR group uses 1 block (section with optional image accessory), plus dividers if enabled.
