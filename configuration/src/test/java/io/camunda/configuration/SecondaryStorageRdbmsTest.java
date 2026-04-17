@@ -220,11 +220,15 @@ public class SecondaryStorageRdbmsTest {
       final ExporterCfg exporter = brokerBasedProperties.getRdbmsExporter();
       assertThat(exporter).isNotNull();
       final Map<String, Object> args = exporter.getArgs();
-      assertThat(args.get("queueSize")).isEqualTo(1000);
-      assertThat(args.get("queueMemoryLimit")).isEqualTo(20);
-      assertThat(args.get("flushInterval")).isEqualTo(Duration.ofMillis(500));
-      assertThat(args.get("exportBatchOperationItemsOnCreation")).isEqualTo(true);
-      assertThat(args.get("batchOperationItemInsertBlockSize")).isEqualTo(10000);
+      final ExporterConfiguration rdbmsExporterConfiguration =
+          io.camunda.zeebe.broker.exporter.context.ExporterConfiguration.fromArgs(
+              ExporterConfiguration.class, args);
+      assertThat(rdbmsExporterConfiguration.getQueueSize()).isEqualTo(1000);
+      assertThat(rdbmsExporterConfiguration.getQueueMemoryLimit()).isEqualTo(20);
+      assertThat(rdbmsExporterConfiguration.getFlushInterval()).isEqualTo(Duration.ofMillis(500));
+      assertThat(rdbmsExporterConfiguration.isExportBatchOperationItemsOnCreation()).isTrue();
+      assertThat(rdbmsExporterConfiguration.getBatchOperationItemInsertBlockSize())
+          .isEqualTo(10000);
     }
 
     @Test
