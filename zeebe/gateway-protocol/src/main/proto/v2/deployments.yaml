@@ -44,7 +44,7 @@ paths:
 
   /resources/{resourceKey}:
     get:
-      x-eventually-consistent: false
+      x-eventually-consistent: true
       tags:
         - Resource
       operationId: getResource
@@ -79,7 +79,7 @@ paths:
 
   /resources/{resourceKey}/content:
     get:
-      x-eventually-consistent: false
+      x-eventually-consistent: true
       tags:
         - Resource
       operationId: getResourceContent
@@ -100,9 +100,10 @@ paths:
         "200":
           description: The resource content is successfully returned.
           content:
-            application/json:
+            application/octet-stream:
               schema:
                 type: string
+                format: binary
         "404":
           description: A resource with the given key was not found.
           content:

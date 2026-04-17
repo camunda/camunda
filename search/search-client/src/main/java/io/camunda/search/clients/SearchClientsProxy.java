@@ -34,7 +34,8 @@ public interface SearchClientsProxy
         UserSearchClient,
         VariableSearchClient,
         ClusterVariableSearchClient,
-        GlobalListenerSearchClient {
+        GlobalListenerSearchClient,
+        DeployedResourceSearchClient {
 
   @Override
   SearchClientsProxy withSecurityContext(SecurityContext securityContext);

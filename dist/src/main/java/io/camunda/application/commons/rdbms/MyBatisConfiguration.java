@@ -20,6 +20,7 @@ import io.camunda.db.rdbms.sql.CorrelatedMessageSubscriptionMapper;
 import io.camunda.db.rdbms.sql.DecisionDefinitionMapper;
 import io.camunda.db.rdbms.sql.DecisionInstanceMapper;
 import io.camunda.db.rdbms.sql.DecisionRequirementsMapper;
+import io.camunda.db.rdbms.sql.DeployedResourceMapper;
 import io.camunda.db.rdbms.sql.ExporterPositionMapper;
 import io.camunda.db.rdbms.sql.FlowNodeInstanceMapper;
 import io.camunda.db.rdbms.sql.FormMapper;
@@ -340,6 +341,12 @@ public class MyBatisConfiguration {
   public MapperFactoryBean<GlobalListenerMapper> globalListenerMapper(
       final SqlSessionFactory sqlSessionFactory) {
     return createMapperFactoryBean(sqlSessionFactory, GlobalListenerMapper.class);
+  }
+
+  @Bean
+  public MapperFactoryBean<DeployedResourceMapper> resourceMapper(
+      final SqlSessionFactory sqlSessionFactory) {
+    return createMapperFactoryBean(sqlSessionFactory, DeployedResourceMapper.class);
   }
 
   private <T> MapperFactoryBean<T> createMapperFactoryBean(

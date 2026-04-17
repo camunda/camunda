@@ -39,6 +39,7 @@ import io.camunda.db.rdbms.write.service.CorrelatedMessageSubscriptionWriter;
 import io.camunda.db.rdbms.write.service.DecisionDefinitionWriter;
 import io.camunda.db.rdbms.write.service.DecisionInstanceWriter;
 import io.camunda.db.rdbms.write.service.DecisionRequirementsWriter;
+import io.camunda.db.rdbms.write.service.DeployedResourceWriter;
 import io.camunda.db.rdbms.write.service.ExporterPositionService;
 import io.camunda.db.rdbms.write.service.FlowNodeInstanceWriter;
 import io.camunda.db.rdbms.write.service.FormWriter;
@@ -181,6 +182,7 @@ public class RdbmsWriters {
         HistoryDeletionWriter.class,
         new HistoryDeletionWriter(executionQueue, historyDeletionMapper));
     writers.put(GlobalListenerWriter.class, new GlobalListenerWriter(executionQueue));
+    writers.put(DeployedResourceWriter.class, new DeployedResourceWriter(executionQueue));
   }
 
   public AuthorizationWriter getAuthorizationWriter() {
@@ -293,6 +295,10 @@ public class RdbmsWriters {
 
   public GlobalListenerWriter getGlobalListenerWriter() {
     return getWriter(GlobalListenerWriter.class);
+  }
+
+  public DeployedResourceWriter getResourceWriter() {
+    return getWriter(DeployedResourceWriter.class);
   }
 
   public List<ProcessInstanceDependant> getProcessInstanceDependantWriters() {

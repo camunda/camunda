@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!--
+  ~ Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+  ~ one or more contributor license agreements. See the NOTICE file distributed
+  ~ with this work for additional information regarding copyright ownership.
+  ~ Licensed under the Camunda License 1.0. You may not use this file
+  ~ except in compliance with the Camunda License 1.0.
+  -->
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="io.camunda.db.rdbms.sql.DeployedResourceMapper">
+
+  <resultMap id="resourceResultMap" type="io.camunda.search.entities.DeployedResourceEntity">
+    <constructor>
+      <idArg column="RESOURCE_KEY" javaType="java.lang.Long"/>
+      <arg column="RESOURCE_ID" javaType="java.lang.String"
+        typeHandler="io.camunda.db.rdbms.sql.typehandler.NullToEmptyStringTypeHandler"/>
+      <arg column="RESOURCE_NAME" javaType="java.lang.String"
+        typeHandler="io.camunda.db.rdbms.sql.typehandler.NullToEmptyStringTypeHandler"/>
+      <arg column="VERSION" javaType="int"/>
+      <arg column="VERSION_TAG" javaType="java.lang.String"/>
+      <arg column="DEPLOYMENT_KEY" javaType="java.lang.Long"/>
+      <arg column="TENANT_ID" javaType="java.lang.String"
+        typeHandler="io.camunda.db.rdbms.sql.typehandler.NullToEmptyStringTypeHandler"/>
+      <arg column="RESOURCE_CONTENT" javaType="java.lang.String"/>
+    </constructor>
+  </resultMap>
+
+  <insert id="insert" parameterType="io.camunda.db.rdbms.write.domain.DeployedResourceDbModel">
+    INSERT INTO ${prefix}DEPLOYED_RESOURCE (RESOURCE_KEY, RESOURCE_ID, RESOURCE_NAME, VERSION, VERSION_TAG,
+                                   DEPLOYMENT_KEY, TENANT_ID, RESOURCE_CONTENT)
+    VALUES (#{resourceKey}, #{resourceId}, #{resourceName}, #{version}, #{versionTag},
+            #{deploymentKey}, #{tenantId}, #{resourceContent})
+  </insert>
+
+  <delete id="delete" parameterType="java.lang.Long">
+    DELETE
+    FROM ${prefix}DEPLOYED_RESOURCE
+    WHERE RESOURCE_KEY = #{resourceKey}
+  </delete>
+
+  <select id="get" parameterType="java.lang.Long"
+    resultMap="io.camunda.db.rdbms.sql.DeployedResourceMapper.resourceResultMap">
+    SELECT
+      RESOURCE_KEY,
+      RESOURCE_ID,
+      RESOURCE_NAME,
+      VERSION,
+      VERSION_TAG,
+      DEPLOYMENT_KEY,
+      TENANT_ID,
+      RESOURCE_CONTENT
+    FROM ${prefix}DEPLOYED_RESOURCE
+    WHERE RESOURCE_KEY = #{resourceKey}
+  </select>
+
+  <select id="getMetadata" parameterType="java.lang.Long"
+    resultMap="io.camunda.db.rdbms.sql.DeployedResourceMapper.resourceResultMap">
+    SELECT
+      RESOURCE_KEY,
+      RESOURCE_ID,
+      RESOURCE_NAME,
+      VERSION,
+      VERSION_TAG,
+      DEPLOYMENT_KEY,
+      TENANT_ID,
+      NULL AS RESOURCE_CONTENT
+    FROM ${prefix}DEPLOYED_RESOURCE
+    WHERE RESOURCE_KEY = #{resourceKey}
+  </select>
+
+</mapper>

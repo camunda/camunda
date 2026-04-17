@@ -18,6 +18,7 @@ import io.camunda.search.entities.ClusterVariableEntity;
 import io.camunda.search.entities.DecisionDefinitionEntity;
 import io.camunda.search.entities.DecisionInstanceEntity;
 import io.camunda.search.entities.DecisionRequirementsEntity;
+import io.camunda.search.entities.DeployedResourceEntity;
 import io.camunda.search.entities.FlowNodeInstanceEntity;
 import io.camunda.search.entities.GlobalListenerEntity;
 import io.camunda.search.entities.GroupEntity;
@@ -77,6 +78,9 @@ public abstract class Authorizations {
 
   public static final Authorization<ProcessDefinitionEntity> PROCESS_DEFINITION_READ_AUTHORIZATION =
       Authorization.of(a -> a.processDefinition().readProcessDefinition());
+
+  public static final Authorization<DeployedResourceEntity> RESOURCE_READ_AUTHORIZATION =
+      Authorization.of(a -> a.resource().read());
 
   public static final Authorization<ProcessInstanceEntity> PROCESS_INSTANCE_READ_AUTHORIZATION =
       Authorization.of(a -> a.processDefinition().readProcessInstance());
