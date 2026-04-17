@@ -34,7 +34,7 @@ camunda:
     # handleJob() blocks with Thread.sleep(completionDelay).
     execution-threads: ${LOAD_TESTER_WORKER_THREADS:10}
     auth:
-      method: ${ZEEBE_AUTH_METHOD:oidc}
+      method: ${ZEEBE_AUTH_METHOD:none}
       username: ${ZEEBE_AUTH_USERNAME:demo}
       password: ${ZEEBE_AUTH_PASSWORD:demo}
       client-id: ${ZEEBE_CLIENT_ID:orchestration}

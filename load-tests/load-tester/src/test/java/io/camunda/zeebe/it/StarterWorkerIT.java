@@ -25,24 +25,29 @@ import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 /**
- * Integration test for the Worker component. Verifies that the worker can connect to a Camunda
- * cluster, subscribe to jobs via {@code @JobWorker}, and complete them.
- *
- * <p>Unlike the Starter, the Worker does not block Spring Boot startup. The {@code @JobWorker}
- * annotation registers the job handler automatically, so we can deploy a process and create
- * instances in the test method and verify the worker completes the jobs.
+ * End-to-end integration test activating both the {@code starter} and {@code worker} profiles in
+ * the same Spring context. The starter deploys the BPMN, creates a small number of instances at a
+ * low rate, and the worker completes them via {@code @JobWorker}. The test then queries the broker
+ * directly to confirm that at least one process instance reached the {@code COMPLETED} state.
  */
 @Testcontainers
 @SpringBootTest(
     classes = LoadTesterApplication.class,
     properties = {
+      // starter: create a handful of instances for a short window
+      "load-tester.starter.rate=1",
+      "load-tester.starter.duration-limit=5",
+      "load-tester.starter.threads=1",
+      "load-tester.starter.payload-path=bpmn/small_payload.json",
+      // worker: no artificial delay; small payload to keep the IT fast
       "load-tester.worker.completion-delay=0ms",
       "load-tester.worker.payload-path=bpmn/small_payload.json",
+      // avoid background meters hitting the testcontainer gateway
       "load-tester.monitor-data-availability=false",
       "load-tester.perform-read-benchmarks=false",
     })
-@ActiveProfiles({"worker", "it"})
-class WorkerIT {
+@ActiveProfiles({"starter", "worker", "it"})
+class StarterWorkerIT {
 
   @Container
   static final CamundaContainer CAMUNDA = CamundaContainerProvider.createCamundaContainer();
@@ -55,33 +60,33 @@ class WorkerIT {
   @Autowired private CamundaClient client;
 
   @Test
-  void shouldCompleteJobs() {
-    // given - deploy a process with a service task of type "benchmark-task"
-    client.newDeployResourceCommand().addResourceFromClasspath("bpmn/one_task.bpmn").send().join();
+  void shouldStartInstancesAndCompleteThem() {
+    // given — the starter has already run (CommandLineRunner blocks context startup for
+    //         duration-limit=5s) and produced ~5 instances of the "benchmark" process.
+    //         The worker is also active and subscribed to "benchmark-task".
 
-    // when - create a process instance
-    final var instanceEvent =
-        client
-            .newCreateInstanceCommand()
-            .bpmnProcessId("benchmark")
-            .latestVersion()
-            .variables("{\"businessKey\": 1}")
-            .send()
-            .join();
-
-    final long processInstanceKey = instanceEvent.getProcessInstanceKey();
-
-    // then - the @JobWorker in Worker completes the job; verify via process instance get request
+    // then — at least one instance should be queryable via REST and in COMPLETED state.
+    //        Awaitility handles the async gap between "starter stopped" and "worker drained queue".
     await()
         .atMost(Duration.ofSeconds(60))
         .pollInterval(Duration.ofSeconds(2))
         .ignoreExceptions()
         .untilAsserted(
             () -> {
-              final var pi = client.newProcessInstanceGetRequest(processInstanceKey).execute();
-              assertThat(pi.getState())
-                  .describedAs("Process instance should be completed by the worker")
-                  .isEqualTo(ProcessInstanceState.COMPLETED);
+              final var response =
+                  client
+                      .newProcessInstanceSearchRequest()
+                      .filter(f -> f.processDefinitionId("benchmark"))
+                      .send()
+                      .join();
+
+              assertThat(response.items())
+                  .describedAs("Starter should have created instances of 'benchmark'")
+                  .isNotEmpty();
+
+              assertThat(response.items())
+                  .describedAs("Worker should have completed at least one instance")
+                  .anyMatch(pi -> pi.getState() == ProcessInstanceState.COMPLETED);
             });
   }
 }
