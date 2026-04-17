@@ -24,69 +24,12 @@ import {Operation} from './NewVariableModification/Operation';
 import {ViewFullVariableButton} from './ViewFullVariableButton';
 import {useIsProcessInstanceRunning} from 'modules/queries/processInstance/useIsProcessInstanceRunning';
 import {useVariables} from 'modules/queries/variables/useVariables';
-import {useVariable} from 'modules/queries/variables/useVariable';
-import {InlineJsonEditor} from 'modules/components/InlineJsonEditor';
+import {VariableValueCell} from './VariableValueCell';
 
 type Props = {
   scopeId: string | null;
   isModificationModeEnabled?: boolean;
   isVariableModificationAllowed?: boolean;
-};
-
-type VariableValueCellProps = {
-  variableKey: string;
-  variableName: string;
-  value: string;
-  isTruncated: boolean | undefined;
-  isModificationModeEnabled: boolean | undefined;
-  isProcessInstanceRunning: boolean | undefined;
-};
-
-const VariableValueCell: React.FC<VariableValueCellProps> = ({
-  variableKey,
-  variableName,
-  value,
-  isTruncated,
-  isModificationModeEnabled,
-  isProcessInstanceRunning,
-}) => {
-  // Query is disabled by default and only executed on-demand when copying truncated values
-  const {refetch} = useVariable(variableKey, {enabled: false});
-
-  return (
-    <InlineJsonEditor
-      value={value}
-      isTruncatedValue={Boolean(isTruncated)}
-      readOnly
-      onCopy={
-        isTruncated
-          ? async () => {
-              const result = await refetch();
-              if (result.data) {
-                return result.data.value;
-              }
-              throw result.error ?? new Error(`Failed to fetch variable: ${variableName}`);
-            }
-          : undefined
-      }
-      renderButton={
-        isTruncated
-          ? () => (
-              <ViewFullVariableButton
-                mode="show"
-                variableKey={variableKey}
-                variableName={variableName}
-                variableValue={value}
-                buttonLabel="Show all"
-                canEdit={
-                  !isModificationModeEnabled && !!isProcessInstanceRunning
-                }
-              />
-            )
-          : undefined
-      }
-    />
-  );
 };
 
 const VariablesTable: React.FC<Props> = ({
