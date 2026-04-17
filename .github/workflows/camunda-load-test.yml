@@ -73,11 +73,6 @@ on:
         type: boolean
         required: false
         default: false
-      perform-read-benchmarks:
-        description: 'Run continuous read benchmarks on secondary storage (may affect exporter performance)'
-        type: boolean
-        required: false
-        default: false
       ttl:
         description: '── Lifecycle & advanced ──────────── Days before the namespace is auto-deleted'
         type: number
@@ -251,7 +246,6 @@ jobs:
           | Stable VMs | `${{ inputs.stable-vms }}` |
           | Enable Optimize | `${{ inputs.enable-optimize }}` |
           | Build frontend | `${{ inputs.build-frontend }}` |
-          | Perform read benchmarks | `${{ inputs.perform-read-benchmarks }}` |
           | Optimize tag | ${{ inputs.optimize-tag || '—' }} |
           | Identity tag | ${{ inputs.identity-tag || '—' }} |
           | Connectors tag | ${{ inputs.connectors-tag || '—' }} |
