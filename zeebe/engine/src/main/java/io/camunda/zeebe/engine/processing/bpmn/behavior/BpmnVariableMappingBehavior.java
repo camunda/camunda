@@ -20,6 +20,7 @@ import io.camunda.zeebe.engine.state.immutable.EventScopeInstanceState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.VariableState;
 import io.camunda.zeebe.engine.state.instance.EventTrigger;
+import io.camunda.zeebe.msgpack.MsgPackUtil;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.util.Either;
@@ -133,12 +134,20 @@ public final class BpmnVariableMappingBehavior {
             variables);
       }
 
-      // apply the output mappings
       return expressionProcessor
           .evaluateVariableMappingExpression(
               outputMappingExpression.get(), elementInstanceKey, tenantId)
           .map(
-              result -> {
+              localScopeVars -> {
+                // For multi-instance inner activities, scopeKey == elementInstanceKey.
+                final DirectBuffer resultDoc;
+                if (isMultiInstanceActivity(elementInstanceKey)) {
+                  resultDoc = localScopeVars;
+                } else {
+                  final DirectBuffer parentScopeVars =
+                      variablesState.getVariablesAsDocument(scopeKey);
+                  resultDoc = MsgPackUtil.mergeMsgPackDocuments(parentScopeVars, localScopeVars);
+                }
                 variableBehavior.mergeDocument(
                     scopeKey,
                     processDefinitionKey,
@@ -146,7 +155,7 @@ public final class BpmnVariableMappingBehavior {
                     rootProcessInstanceKey,
                     bpmnProcessId,
                     context.getTenantId(),
-                    result);
+                    resultDoc);
                 return null;
               });
 
@@ -183,9 +192,13 @@ public final class BpmnVariableMappingBehavior {
 
     // an inner multi-instance activity needs to read from/write to its own scope
     // to access the input and output element variables
-    final var isMultiInstanceActivity =
-        elementInstanceState.getInstance(elementInstanceKey).getMultiInstanceLoopCounter() > 0;
-    return isMultiInstanceActivity ? elementInstanceKey : context.getFlowScopeKey();
+    return isMultiInstanceActivity(elementInstanceKey)
+        ? elementInstanceKey
+        : context.getFlowScopeKey();
+  }
+
+  private boolean isMultiInstanceActivity(final long elementInstanceKey) {
+    return elementInstanceState.getInstance(elementInstanceKey).getMultiInstanceLoopCounter() > 0;
   }
 
   private boolean isConnectedToEventBasedGateway(final ExecutableFlowNode element) {
