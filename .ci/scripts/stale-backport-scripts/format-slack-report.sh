@@ -101,7 +101,7 @@ jq -c --argjson total "$total_prs" --argjson groups "$total_groups" --argjson re
 
 # Warning when user map artifact was not accessible
 if [[ "${SLACK_USER_MAP_FALLBACK:-}" == "true" ]]; then
-  jq -c '. + [{type: "context", elements: [{type: "mrkdwn", text: "⚠️ _GitHub-Slack user map not available — author names shown as GitHub usernames instead of Slack mentions. cc <!subteam^S09E9P9TPAA|@monorepo-devops-team>_"}]}]' \
+  jq -c '. + [{type: "context", elements: [{type: "mrkdwn", text: "⚠️ _GitHub-Slack user map not available — author names shown as GitHub logins/real names instead of Slack mentions. cc <!subteam^S09E9P9TPAA|@monorepo-devops-team>_"}]}]' \
     "$TMPDIR_WORK/blocks.json" > "$TMPDIR_WORK/blocks_tmp.json" && mv "$TMPDIR_WORK/blocks_tmp.json" "$TMPDIR_WORK/blocks.json"
 fi
 
