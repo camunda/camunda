@@ -186,7 +186,7 @@ runs:
     - if: ${{ inputs.os == 'macos-15-intel' }}
       name: Set env
       shell: bash
-      run: echo "JAVA_HOME=$(echo $JAVA_HOME_21_X64)" >> $GITHUB_ENV
+      run: echo "JAVA_HOME=$(echo $JAVA_HOME_25_X64)" >> $GITHUB_ENV
 
     - if: ${{ inputs.os == 'ubuntu-latest' }}
       name: Linux - Run c8run
@@ -194,8 +194,8 @@ runs:
       shell: bash
       working-directory: ./c8run
       env:
-        JAVA_HOME: /usr/lib/jvm/temurin-21-jdk-amd64
-        JAVA_VERSION: 21.0.3
+        JAVA_HOME: /usr/lib/jvm/temurin-25-jdk-amd64
+        JAVA_VERSION: 25.0.2
 
     - if: ${{ startsWith(inputs.os, 'macos') }}
       name: Mac - Run c8run
@@ -203,7 +203,7 @@ runs:
       run: ./c8run start --config e2e_tests/prefix-config.yaml
       working-directory: ./c8run
       env:
-        JAVA_VERSION: 21.0.3
+        JAVA_VERSION: 25.0.2
 
     - uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
       with:

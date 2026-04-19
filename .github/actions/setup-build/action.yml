@@ -44,7 +44,7 @@ inputs:
   java-version:
     description: JDK version to install
     required: false
-    default: "21"
+    default: "25"
   maven-cache-key-modifier:
     description: A modifier to use for maven cache key
     required: false
