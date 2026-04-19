@@ -132,4 +132,81 @@ public final class ServiceTaskJobPriorityTest {
 
     assertThat(jobCreated.getValue().getPriority()).isEqualTo(-5L);
   }
+
+  @Test
+  public void shouldInheritJobPriorityFromProcessLevel() {
+    // given
+    final BpmnModelInstance process =
+        Bpmn.createExecutableProcess(PROCESS_ID)
+            .zeebeJobPriority("10")
+            .startEvent()
+            .serviceTask("task", t -> t.zeebeJobType("test"))
+            .endEvent()
+            .done();
+    ENGINE.deployment().withXmlResource(process).deploy();
+
+    // when
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // then
+    final Record<JobRecordValue> jobCreated =
+        RecordingExporter.jobRecords(JobIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+
+    assertThat(jobCreated.getValue().getPriority()).isEqualTo(10L);
+  }
+
+  @Test
+  public void shouldOverrideProcessLevelPriorityAtTaskLevel() {
+    // given
+    final BpmnModelInstance process =
+        Bpmn.createExecutableProcess(PROCESS_ID)
+            .zeebeJobPriority("10")
+            .startEvent()
+            .serviceTask("task", t -> t.zeebeJobType("test").zeebeJobPriority("90"))
+            .endEvent()
+            .done();
+    ENGINE.deployment().withXmlResource(process).deploy();
+
+    // when
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // then
+    final Record<JobRecordValue> jobCreated =
+        RecordingExporter.jobRecords(JobIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+
+    assertThat(jobCreated.getValue().getPriority()).isEqualTo(90L);
+  }
+
+  @Test
+  public void shouldEvaluateFeelPriorityExpressionAtProcessLevel() {
+    // given
+    final BpmnModelInstance process =
+        Bpmn.createExecutableProcess(PROCESS_ID)
+            .zeebeJobPriorityExpression("if tier = \"premium\" then 80 else 20")
+            .startEvent()
+            .serviceTask("task", t -> t.zeebeJobType("test"))
+            .endEvent()
+            .done();
+    ENGINE.deployment().withXmlResource(process).deploy();
+
+    // when
+    final long processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withVariables(Map.of("tier", "premium"))
+            .create();
+
+    // then
+    final Record<JobRecordValue> jobCreated =
+        RecordingExporter.jobRecords(JobIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+
+    assertThat(jobCreated.getValue().getPriority()).isEqualTo(80L);
+  }
 }

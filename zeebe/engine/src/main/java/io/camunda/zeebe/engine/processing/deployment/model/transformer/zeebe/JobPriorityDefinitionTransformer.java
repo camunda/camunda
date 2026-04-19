@@ -8,7 +8,6 @@
 package io.camunda.zeebe.engine.processing.deployment.model.transformer.zeebe;
 
 import io.camunda.zeebe.el.Expression;
-import io.camunda.zeebe.el.ExpressionLanguage;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableJobWorkerElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.JobWorkerProperties;
 import io.camunda.zeebe.engine.processing.deployment.model.transformation.TransformContext;
@@ -22,18 +21,22 @@ public final class JobPriorityDefinitionTransformer {
       final TransformContext context,
       final ZeebeJobPriorityDefinition jobPriorityDefinition) {
 
-    if (jobPriorityDefinition == null) {
+    final Expression priorityExpression = resolvePriorityExpression(context, jobPriorityDefinition);
+    if (priorityExpression == null) {
       return;
     }
 
     final var jobWorkerProperties =
         Optional.ofNullable(element.getJobWorkerProperties()).orElse(new JobWorkerProperties());
     element.setJobWorkerProperties(jobWorkerProperties);
-
-    final ExpressionLanguage expressionLanguage = context.getExpressionLanguage();
-    final Expression priorityExpression =
-        expressionLanguage.parseExpression(jobPriorityDefinition.getPriority());
-
     jobWorkerProperties.setJobPriority(priorityExpression);
+  }
+
+  private Expression resolvePriorityExpression(
+      final TransformContext context, final ZeebeJobPriorityDefinition taskLevel) {
+    if (taskLevel != null) {
+      return context.getExpressionLanguage().parseExpression(taskLevel.getPriority());
+    }
+    return context.getCurrentProcess().getJobPriority();
   }
 }
