@@ -51,6 +51,37 @@ public class ProcessInstanceByIdArchiverJob extends ProcessInstanceArchiverJob {
   }
 
   @Override
+  protected CompletableFuture<Void> archiveProcessDependants(
+      final ProcessInstanceArchiveBatch batch) {
+    // get the usual process instance dependent archive tasks
+    final List<CompletableFuture<?>> dependentFutures = getProcessDependentArchiveFutures(batch);
+
+    // add archiving tasks to archive data from list-view in parallel with the dependent indexes.
+
+    // Note: We can archive all data except documents with `joinRelation: processInstance`.
+    // These must be moved last to avoid dangling data (i.e., child/dependent records that cannot
+    // be moved independently of their parent instance). We use fields from the parent
+    // document (e.g., `endDate`, `status`) to decide whether to archive documents from the
+    // main index.
+
+    // add archiving variables from the list view index as a parallel task
+    dependentFutures.add(
+        archive(
+            getTemplateDescriptor(),
+            batch,
+            Map.of(ListViewTemplate.JOIN_RELATION, ListViewTemplate.VARIABLES_JOIN_RELATION)));
+
+    // add archiving flownodes/activities from the list view index as a parallel task
+    dependentFutures.add(
+        archive(
+            getTemplateDescriptor(),
+            batch,
+            Map.of(ListViewTemplate.JOIN_RELATION, ListViewTemplate.ACTIVITIES_JOIN_RELATION)));
+
+    return CompletableFuture.allOf(dependentFutures.toArray(CompletableFuture[]::new));
+  }
+
+  @Override
   protected CompletableFuture<Integer> archive(
       final IndexTemplateDescriptor templateDescriptor,
       final ProcessInstanceArchiveBatch batch,

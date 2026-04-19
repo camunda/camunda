@@ -139,15 +139,13 @@ public class ProcessInstanceArchiverJob extends ArchiverJob<ProcessInstanceArchi
     return idsMap;
   }
 
-  private int largeBatchSize() {
-    final int rolloverBatchSize = config.getRolloverBatchSize();
-    final int largeBatchSize =
-        Math.min(MAX_LARGE_BATCH_SIZE, SUB_BATCHES_PER_LARGE_BATCH * rolloverBatchSize);
-    // just in case rollover batch size is configured very high
-    return Math.max(largeBatchSize, rolloverBatchSize);
+  protected CompletableFuture<Void> archiveProcessDependants(
+      final ProcessInstanceArchiveBatch batch) {
+    final List<CompletableFuture<?>> dependentFutures = getProcessDependentArchiveFutures(batch);
+    return CompletableFuture.allOf(dependentFutures.toArray(CompletableFuture[]::new));
   }
 
-  private CompletableFuture<Void> archiveProcessDependants(
+  protected List<CompletableFuture<?>> getProcessDependentArchiveFutures(
       final ProcessInstanceArchiveBatch batch) {
     final var futures = new ArrayList<CompletableFuture<?>>();
 
@@ -155,6 +153,14 @@ public class ProcessInstanceArchiverJob extends ArchiverJob<ProcessInstanceArchi
       futures.add(archive(dependant, batch, Map.of()));
     }
 
-    return CompletableFuture.allOf(futures.toArray(CompletableFuture[]::new));
+    return futures;
+  }
+
+  private int largeBatchSize() {
+    final int rolloverBatchSize = config.getRolloverBatchSize();
+    final int largeBatchSize =
+        Math.min(MAX_LARGE_BATCH_SIZE, SUB_BATCHES_PER_LARGE_BATCH * rolloverBatchSize);
+    // just in case rollover batch size is configured very high
+    return Math.max(largeBatchSize, rolloverBatchSize);
   }
 }
