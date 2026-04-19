@@ -862,6 +862,7 @@ final class JsonSerializableToJsonTest {
                         "foo": "bar"
                       },
                       "retries": 3,
+                      "priority": 0,
                       "jobKind": "BPMN_ELEMENT",
                       "jobListenerEventType": "UNSPECIFIED",
                       "retryBackoff": 1002,
@@ -1046,6 +1047,7 @@ final class JsonSerializableToJsonTest {
                     "foo": "bar"
                   },
                   "retries": 12,
+                  "priority": 0,
                   "jobKind": "BPMN_ELEMENT",
                   "jobListenerEventType": "UNSPECIFIED",
                   "retryBackoff": 1003,
@@ -1123,6 +1125,7 @@ final class JsonSerializableToJsonTest {
                   "variables": {},
                   "worker": "",
                   "retries": -1,
+                  "priority": 0,
                   "jobKind": "BPMN_ELEMENT",
                   "jobListenerEventType": "UNSPECIFIED",
                   "retryBackoff": 0,
@@ -1185,6 +1188,7 @@ final class JsonSerializableToJsonTest {
                   "timeout": -1,
                   "worker": "",
                   "retries": -1,
+                  "priority": 0,
                   "jobKind": "BPMN_ELEMENT",
                   "jobListenerEventType": "UNSPECIFIED",
                   "retryBackoff": 0,

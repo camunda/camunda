@@ -39,6 +39,17 @@ import org.agrona.concurrent.UnsafeBuffer;
 
 public final class JobRecord extends UnifiedRecordValue implements JobRecordValue {
 
+  /**
+   * The worker type prefix for Camunda Agentic AI jobs that are set in Camunda Connectors.
+   *
+   * <p>For 8.9 this is accepted as limitation that all agentic jobs must have this prefix in order
+   * to be categorized as agentic jobs.
+   *
+   * <p>In the future, we might want to introduce a more robust way of identifying agentic jobs
+   */
+  public static final String IO_CAMUNDA_AI_AGENT_JOB_WORKER_TYPE_PREFIX =
+      "io.camunda.agenticai:aiagent";
+
   public static final DirectBuffer NO_HEADERS = new UnsafeBuffer(MsgPackHelper.EMTPY_OBJECT);
   public static final String RETRIES = "retries";
   public static final String TIMEOUT = "timeout";
@@ -47,7 +58,6 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
   private static final String CUSTOM_HEADERS = "customHeaders";
   private static final String VARIABLES = "variables";
   private static final String ERROR_MESSAGE = "errorMessage";
-
   // Static StringValue keys to avoid memory waste
   private static final StringValue TYPE_KEY = new StringValue(TYPE);
   private static final StringValue WORKER_KEY = new StringValue("worker");
@@ -77,6 +87,7 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
       new StringValue("isUserTaskMigration");
   private static final StringValue ROOT_PROCESS_INSTANCE_KEY_KEY =
       new StringValue("rootProcessInstanceKey");
+  private static final StringValue PRIORITY_KEY = new StringValue("priority");
   private final StringProperty typeProp = new StringProperty(TYPE_KEY, EMPTY_STRING);
   private final StringProperty workerProp = new StringProperty(WORKER_KEY, EMPTY_STRING);
   private final LongProperty deadlineProp = new LongProperty(DEADLINE_KEY, -1);
@@ -119,9 +130,10 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
       new BooleanProperty(IS_JOB_TO_USERTASK_MIGRATION_KEY, false);
   private final LongProperty rootProcessInstanceKeyProp =
       new LongProperty(ROOT_PROCESS_INSTANCE_KEY_KEY, -1L);
+  private final LongProperty priorityProp = new LongProperty(PRIORITY_KEY, 0L);
 
   public JobRecord() {
-    super(24);
+    super(25);
     declareProperty(deadlineProp)
         .declareProperty(timeoutProp)
         .declareProperty(workerProp)
@@ -146,7 +158,8 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
         .declareProperty(resultProp)
         .declareProperty(tagsProp)
         .declareProperty(isJobToUserTaskMigrationProp)
-        .declareProperty(rootProcessInstanceKeyProp);
+        .declareProperty(rootProcessInstanceKeyProp)
+        .declareProperty(priorityProp);
   }
 
   public void wrapWithoutVariables(final JobRecord record) {
@@ -154,6 +167,7 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
     timeoutProp.setValue(record.getTimeout());
     workerProp.setValue(record.getWorkerBuffer());
     retriesProp.setValue(record.getRetries());
+    priorityProp.setValue(record.getPriority());
     retryBackoffProp.setValue(record.getRetryBackoff());
     recurringTimeProp.setValue(record.getRecurringTime());
     typeProp.setValue(record.getTypeBuffer());
@@ -221,6 +235,11 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
   @Override
   public int getRetries() {
     return retriesProp.getValue();
+  }
+
+  @Override
+  public long getPriority() {
+    return priorityProp.getValue();
   }
 
   @Override
@@ -419,6 +438,11 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
     return this;
   }
 
+  public JobRecord setPriority(final long priority) {
+    priorityProp.setValue(priority);
+    return this;
+  }
+
   public JobRecord setRetries(final int retries) {
     retriesProp.setValue(retries);
     return this;
@@ -535,5 +559,10 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
   public JobRecord setTenantId(final String tenantId) {
     tenantIdProp.setValue(tenantId);
     return this;
+  }
+
+  @JsonIgnore
+  public boolean isAgentic() {
+    return getType().startsWith(IO_CAMUNDA_AI_AGENT_JOB_WORKER_TYPE_PREFIX);
   }
 }

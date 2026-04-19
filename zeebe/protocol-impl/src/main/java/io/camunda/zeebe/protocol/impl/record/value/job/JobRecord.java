@@ -87,6 +87,7 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
       new StringValue("isUserTaskMigration");
   private static final StringValue ROOT_PROCESS_INSTANCE_KEY_KEY =
       new StringValue("rootProcessInstanceKey");
+  private static final StringValue PRIORITY_KEY = new StringValue("priority");
   private final StringProperty typeProp = new StringProperty(TYPE_KEY, EMPTY_STRING);
   private final StringProperty workerProp = new StringProperty(WORKER_KEY, EMPTY_STRING);
   private final LongProperty deadlineProp = new LongProperty(DEADLINE_KEY, -1);
@@ -129,9 +130,10 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
       new BooleanProperty(IS_JOB_TO_USERTASK_MIGRATION_KEY, false);
   private final LongProperty rootProcessInstanceKeyProp =
       new LongProperty(ROOT_PROCESS_INSTANCE_KEY_KEY, -1L);
+  private final LongProperty priorityProp = new LongProperty(PRIORITY_KEY, 0L);
 
   public JobRecord() {
-    super(24);
+    super(25);
     declareProperty(deadlineProp)
         .declareProperty(timeoutProp)
         .declareProperty(workerProp)
@@ -156,7 +158,8 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
         .declareProperty(resultProp)
         .declareProperty(tagsProp)
         .declareProperty(isJobToUserTaskMigrationProp)
-        .declareProperty(rootProcessInstanceKeyProp);
+        .declareProperty(rootProcessInstanceKeyProp)
+        .declareProperty(priorityProp);
   }
 
   public void wrapWithoutVariables(final JobRecord record) {
@@ -164,6 +167,7 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
     timeoutProp.setValue(record.getTimeout());
     workerProp.setValue(record.getWorkerBuffer());
     retriesProp.setValue(record.getRetries());
+    priorityProp.setValue(record.getPriority());
     retryBackoffProp.setValue(record.getRetryBackoff());
     recurringTimeProp.setValue(record.getRecurringTime());
     typeProp.setValue(record.getTypeBuffer());
@@ -231,6 +235,11 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
   @Override
   public int getRetries() {
     return retriesProp.getValue();
+  }
+
+  @Override
+  public long getPriority() {
+    return priorityProp.getValue();
   }
 
   @Override
@@ -426,6 +435,11 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
 
   public JobRecord setRetryBackoff(final long retryBackoff) {
     retryBackoffProp.setValue(retryBackoff);
+    return this;
+  }
+
+  public JobRecord setPriority(final long priority) {
+    priorityProp.setValue(priority);
     return this;
   }
 
