@@ -334,7 +334,7 @@ jobs:
           DATE="$(date +%FT%TZ)"
           export DATE
           export REVISION="${REVISION}"
-          export BASE_IMAGE="reg.mini.dev/1212/openjre-base:21-dev"
+          export BASE_IMAGE="reg.mini.dev/1212/openjre-base:25-dev"
 
           # if CI (GHA) export the variables for pushing in a later step
           if [ "${CI}" = "true" ]; then

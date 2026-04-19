@@ -65,7 +65,7 @@ defaults:
     shell: bash
 
 env:
-  JAVA_VERSION: 21
+  JAVA_VERSION: 25
   LIMITS_CPU: 4
   RELEASE_VERSION: ${{ inputs.releaseVersion }}
   TAG_VERSION: operate-${{ inputs.releaseVersion }}
@@ -223,7 +223,7 @@ jobs:
           export VERSION="$VERSION"
           export DATE="$date_time_stamp"
           export REVISION="$commit_hash"
-          export BASE_IMAGE="reg.mini.dev/1212/openjre-base:21-dev"
+          export BASE_IMAGE="reg.mini.dev/1212/openjre-base:25-dev"
           sudo apt update
           sudo apt install -y jq
           sudo apt install -y bash
