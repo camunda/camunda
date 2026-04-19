@@ -60,6 +60,22 @@ public final class DbJobState implements JobState, MutableJobState {
           DbTenantAwareKey<DbCompositeKey<DbString, DbForeignKey<DbLong>>>, DbNil>
       activatableColumnFamily;
 
+  // [[type, invertedPriority, key], tenant_id] => nil
+  //   where invertedPriority = Long.MAX_VALUE - priority, so RocksDB's natural ascending
+  //   byte-order iteration returns entries in priority DESC, jobKey ASC. Negative priorities
+  //   encode correctly via two's-complement wraparound; see CF_DESIGN.md §Negative Priority
+  // Handling.
+  private final DbLong invertedPriorityKey;
+  private final DbCompositeKey<DbString, DbCompositeKey<DbLong, DbForeignKey<DbLong>>>
+      typePriorityJobKey;
+  private final DbTenantAwareKey<
+          DbCompositeKey<DbString, DbCompositeKey<DbLong, DbForeignKey<DbLong>>>>
+      tenantAwareTypePriorityJobKey;
+  private final ColumnFamily<
+          DbTenantAwareKey<DbCompositeKey<DbString, DbCompositeKey<DbLong, DbForeignKey<DbLong>>>>,
+          DbNil>
+      priorityActivatableColumnFamily;
+
   // timeout => key
   private final DbLong deadlineKey;
   private final DbCompositeKey<DbLong, DbForeignKey<DbLong>> deadlineJobKey;
@@ -96,6 +112,18 @@ public final class DbJobState implements JobState, MutableJobState {
             tenantAwareTypeJobKey,
             DbNil.INSTANCE);
 
+    invertedPriorityKey = new DbLong();
+    typePriorityJobKey =
+        new DbCompositeKey<>(jobTypeKey, new DbCompositeKey<>(invertedPriorityKey, fkJob));
+    tenantAwareTypePriorityJobKey =
+        new DbTenantAwareKey<>(tenantIdKey, typePriorityJobKey, PlacementType.SUFFIX);
+    priorityActivatableColumnFamily =
+        zeebeDb.createColumnFamily(
+            ZbColumnFamilies.JOB_ACTIVATABLE_BY_PRIORITY,
+            transactionContext,
+            tenantAwareTypePriorityJobKey,
+            DbNil.INSTANCE);
+
     deadlineKey = new DbLong();
     deadlineJobKey = new DbCompositeKey<>(deadlineKey, fkJob);
     deadlinesColumnFamily =
@@ -111,8 +139,7 @@ public final class DbJobState implements JobState, MutableJobState {
 
   @Override
   public void create(final long key, final JobRecord record) {
-    final DirectBuffer type = record.getTypeBuffer();
-    createJob(key, record, type);
+    createJob(key, record);
   }
 
   @Override
@@ -128,7 +155,7 @@ public final class DbJobState implements JobState, MutableJobState {
 
     updateJobState(State.ACTIVATED);
 
-    makeJobNotActivatable(type, tenantId);
+    makeJobNotActivatable(key, record);
 
     addJobDeadline(key, deadline);
   }
@@ -163,13 +190,13 @@ public final class DbJobState implements JobState, MutableJobState {
   @Override
   public void disable(final long key, final JobRecord record) {
     updateJob(key, record, State.FAILED);
-    makeJobNotActivatable(record.getTypeBuffer(), record.getTenantId());
+    makeJobNotActivatable(key, record);
   }
 
   @Override
   public void throwError(final long key, final JobRecord updatedValue) {
     updateJob(key, updatedValue, State.ERROR_THROWN);
-    makeJobNotActivatable(updatedValue.getTypeBuffer(), updatedValue.getTenantId());
+    makeJobNotActivatable(key, updatedValue);
   }
 
   @Override
@@ -182,7 +209,7 @@ public final class DbJobState implements JobState, MutableJobState {
 
     statesJobColumnFamily.deleteExisting(fkJob);
 
-    makeJobNotActivatable(type, tenantId);
+    makeJobNotActivatable(key, record);
 
     removeJobDeadline(key, record.getDeadline());
     removeJobBackoff(key, record.getRecurringTime());
@@ -194,13 +221,13 @@ public final class DbJobState implements JobState, MutableJobState {
       if (updatedValue.getRetryBackoff() > 0) {
         addJobBackoff(key, updatedValue.getRecurringTime());
         updateJob(key, updatedValue, State.FAILED);
-        makeJobNotActivatable(updatedValue.getTypeBuffer(), updatedValue.getTenantId());
+        makeJobNotActivatable(key, updatedValue);
       } else {
         updateJob(key, updatedValue, State.ACTIVATABLE);
       }
     } else {
       updateJob(key, updatedValue, State.FAILED);
-      makeJobNotActivatable(updatedValue.getTypeBuffer(), updatedValue.getTenantId());
+      makeJobNotActivatable(key, updatedValue);
     }
   }
 
@@ -309,10 +336,10 @@ public final class DbJobState implements JobState, MutableJobState {
         });
   }
 
-  private void createJob(final long key, final JobRecord record, final DirectBuffer type) {
+  private void createJob(final long key, final JobRecord record) {
     createJobRecord(key, record);
     initializeJobState();
-    makeJobActivatable(type, key, record.getTenantId());
+    makeJobActivatable(key, record);
   }
 
   private void updateJob(final long key, final JobRecord updatedValue, final State newState) {
@@ -325,7 +352,7 @@ public final class DbJobState implements JobState, MutableJobState {
     updateJobState(newState);
 
     if (newState == State.ACTIVATABLE) {
-      makeJobActivatable(type, key, updatedValue.getTenantId());
+      makeJobActivatable(key, updatedValue);
     }
 
     if (newState != State.ACTIVATED) {
@@ -401,6 +428,27 @@ public final class DbJobState implements JobState, MutableJobState {
     return getState(key) == state;
   }
 
+  /**
+   * Merges the legacy {@code JOB_ACTIVATABLE} CF with the new {@code JOB_ACTIVATABLE_BY_PRIORITY}
+   * CF, visiting jobs in {@code (priority DESC, jobKey ASC)} order.
+   *
+   * <p>The legacy CF is drain-only in 8.10 - no 8.10 writes go there - and will be empty on fresh
+   * installs. Pre-existing 8.9 entries are consumed inline by the merge without any startup
+   * migration. Legacy entries carry no stored priority and are treated as implicit priority 0; at
+   * parity with new priority=0 entries, lower jobKey wins, which naturally drains legacy first
+   * because pre-8.10 jobKeys are always lower than 8.10 jobKeys.
+   *
+   * <p>The merge uses seek-resume cursors (one per CF, each backed by the three-argument {@code
+   * whileEqualPrefix(prefix, startAt, visitor)} overload): each cursor holds the last-visited
+   * entry; to advance, the cursor constructs a {@code startAt} key strictly after its last position
+   * and re-seeks, capturing the first remaining entry. This supports input-side early termination -
+   * when the caller's visitor returns {@code false} the loop exits without scanning the rest of
+   * either CF - and never materialises the full queue in memory.
+   *
+   * <p>This is the closest existing idiom to the single-CF cursor-resume pattern in {@link
+   * #forEachTimedOutEntry(long, io.camunda.zeebe.engine.state.immutable.JobState.DeadlineIndex,
+   * BiPredicate)}, extended here to two CFs merged in sort order.
+   */
   @Override
   public void forEachActivatableJobs(
       final DirectBuffer type,
@@ -408,18 +456,143 @@ public final class DbJobState implements JobState, MutableJobState {
       final BiFunction<Long, JobRecord, Boolean> callback) {
     jobTypeKey.wrapBuffer(type);
 
+    final LegacyCursor legacy = new LegacyCursor();
+    final PriorityCursor priority = new PriorityCursor();
+    primeLegacyCursor(legacy);
+    primePriorityCursor(priority);
+
+    while (!legacy.exhausted || !priority.exhausted) {
+      final boolean fromPriority = legacyShouldYieldToPriority(legacy, priority);
+      final long visitingJobKey = fromPriority ? priority.jobKey : legacy.jobKey;
+      final String visitingTenantId = fromPriority ? priority.tenantId : legacy.tenantId;
+
+      // Tenant-filter the visit, not the advance: entries for other tenants are still stepped
+      // over so their cursor progresses. Cursors advance independently, so skipping a visit in
+      // one CF never blocks the other from producing entries.
+      if (tenantIds.contains(visitingTenantId) && !visitJob(visitingJobKey, callback::apply)) {
+        return;
+      }
+
+      if (fromPriority) {
+        advancePriorityCursor(priority);
+      } else {
+        advanceLegacyCursor(legacy);
+      }
+    }
+  }
+
+  /**
+   * Decides which cursor yields the next entry in {@code (priority DESC, jobKey ASC)} order. The
+   * legacy cursor always represents implicit priority=0.
+   *
+   * <p>Two's-complement self-inverse recovers the original priority from the inverted key value
+   * across the full signed-long range, including {@code Long.MIN_VALUE} and {@code Long.MAX_VALUE}
+   * (see CF_DESIGN.md §Negative Priority Handling - the subtraction deliberately exploits
+   * wraparound; do not "fix" it by switching to unsigned arithmetic).
+   */
+  private static boolean legacyShouldYieldToPriority(
+      final LegacyCursor legacy, final PriorityCursor priority) {
+    if (priority.exhausted) {
+      return false;
+    }
+    if (legacy.exhausted) {
+      return true;
+    }
+    final long actualPriority = Long.MAX_VALUE - priority.invertedPriority;
+    if (actualPriority > 0L) {
+      return true;
+    }
+    if (actualPriority < 0L) {
+      return false;
+    }
+    // Parity at priority=0: the cursor with the lower jobKey yields first. Pre-8.10 legacy
+    // jobKeys are disjoint from and strictly less than 8.10 jobKeys, so legacy drains fully
+    // before any new priority=0 entry surfaces.
+    return priority.jobKey < legacy.jobKey;
+  }
+
+  private void primeLegacyCursor(final LegacyCursor cursor) {
+    // Null startAt is equivalent to seeking to the prefix start; see TransactionalColumnFamily
+    // forEachInPrefix which substitutes prefix for null.
+    readFirstAfterLegacyStartAt(cursor, null);
+  }
+
+  private void advanceLegacyCursor(final LegacyCursor cursor) {
+    // Seek strictly after the last-consumed entry. All jobKeys are globally unique, so jobKey+1
+    // safely skips the consumed entry regardless of tenant (which is SUFFIX-placed in the key).
+    // Guard against overflow at Long.MAX_VALUE (practically unreachable via Zeebe's key
+    // generation but defensive here so correctness does not depend on production invariants).
+    if (cursor.jobKey == Long.MAX_VALUE) {
+      cursor.exhausted = true;
+      return;
+    }
+    jobKey.wrapLong(cursor.jobKey + 1L);
+    tenantIdKey.wrapString("");
+    readFirstAfterLegacyStartAt(cursor, tenantAwareTypeJobKey);
+  }
+
+  private void readFirstAfterLegacyStartAt(
+      final LegacyCursor cursor,
+      final DbTenantAwareKey<DbCompositeKey<DbString, DbForeignKey<DbLong>>> startAt) {
+    cursor.exhausted = true;
     activatableColumnFamily.whileEqualPrefix(
         jobTypeKey,
-        tenantAwareCompositeKey -> {
-          final DbLong jobKey = tenantAwareCompositeKey.wrappedKey().second().inner();
-          final String tenantId = tenantAwareCompositeKey.tenantKey().toString();
-
-          if (tenantIds.contains(tenantId)) {
-            return visitJob(jobKey.getValue(), callback::apply);
-          }
-          // we want to continue with the iteration
-          return true;
+        startAt,
+        (key, nil) -> {
+          cursor.jobKey = key.wrappedKey().second().inner().getValue();
+          cursor.tenantId = key.tenantKey().toString();
+          cursor.exhausted = false;
+          return false;
         });
+  }
+
+  private void primePriorityCursor(final PriorityCursor cursor) {
+    readFirstAfterPriorityStartAt(cursor, null);
+  }
+
+  private void advancePriorityCursor(final PriorityCursor cursor) {
+    // Seek strictly after the last-consumed entry within the same (type, invertedPriority) slice.
+    // If no entry exists at jobKey+1 for this invertedPriority, RocksDB naturally rolls over to
+    // the next invertedPriority (i.e., lower priority) - which is the desired next position.
+    // Overflow guard: see advanceLegacyCursor.
+    if (cursor.jobKey == Long.MAX_VALUE) {
+      cursor.exhausted = true;
+      return;
+    }
+    invertedPriorityKey.wrapLong(cursor.invertedPriority);
+    jobKey.wrapLong(cursor.jobKey + 1L);
+    tenantIdKey.wrapString("");
+    readFirstAfterPriorityStartAt(cursor, tenantAwareTypePriorityJobKey);
+  }
+
+  private void readFirstAfterPriorityStartAt(
+      final PriorityCursor cursor,
+      final DbTenantAwareKey<DbCompositeKey<DbString, DbCompositeKey<DbLong, DbForeignKey<DbLong>>>>
+          startAt) {
+    cursor.exhausted = true;
+    priorityActivatableColumnFamily.whileEqualPrefix(
+        jobTypeKey,
+        startAt,
+        (key, nil) -> {
+          cursor.invertedPriority = key.wrappedKey().second().first().getValue();
+          cursor.jobKey = key.wrappedKey().second().second().inner().getValue();
+          cursor.tenantId = key.tenantKey().toString();
+          cursor.exhausted = false;
+          return false;
+        });
+  }
+
+  private static final class LegacyCursor {
+    long jobKey;
+    String tenantId;
+    boolean exhausted = true;
+  }
+
+  private static final class PriorityCursor {
+    long invertedPriority;
+    long jobKey;
+    String tenantId;
+    boolean exhausted = true;
   }
 
   @Override
@@ -498,25 +671,38 @@ public final class DbJobState implements JobState, MutableJobState {
     statesJobColumnFamily.update(fkJob, jobState);
   }
 
-  private void makeJobActivatable(final DirectBuffer type, final long key, final String tenantId) {
+  private void makeJobActivatable(final long key, final JobRecord record) {
+    final DirectBuffer type = record.getTypeBuffer();
+    final String tenantId = record.getTenantId();
     EnsureUtil.ensureNotNullOrEmpty("type", type);
     EnsureUtil.ensureNotNullOrEmpty("tenantId", tenantId);
 
     jobTypeKey.wrapBuffer(type);
     jobKey.wrapLong(key);
     tenantIdKey.wrapString(tenantId);
+    invertedPriorityKey.wrapLong(Long.MAX_VALUE - record.getPriority());
     // Need to upsert here because jobs can be marked as failed (and thus made activatable)
-    // without activating them first
-    activatableColumnFamily.upsert(tenantAwareTypeJobKey, DbNil.INSTANCE);
+    // without activating them first.
+    //
+    // The legacy JOB_ACTIVATABLE CF is never written by 8.10; it only drains pre-existing
+    // 8.9 entries via the k-way merge read path (see CF_DESIGN.md §Write Path).
+    priorityActivatableColumnFamily.upsert(tenantAwareTypePriorityJobKey, DbNil.INSTANCE);
   }
 
-  private void makeJobNotActivatable(final DirectBuffer type, final String tenantId) {
+  private void makeJobNotActivatable(final long key, final JobRecord record) {
+    final DirectBuffer type = record.getTypeBuffer();
+    final String tenantId = record.getTenantId();
     EnsureUtil.ensureNotNullOrEmpty("type", type);
-    EnsureUtil.ensureNotNullOrEmpty("tenantid", tenantId);
+    EnsureUtil.ensureNotNullOrEmpty("tenantId", tenantId);
 
     jobTypeKey.wrapBuffer(type);
+    jobKey.wrapLong(key);
     tenantIdKey.wrapString(tenantId);
+    invertedPriorityKey.wrapLong(Long.MAX_VALUE - record.getPriority());
+    // Soft-delete from both CFs — the job may be in either (legacy if 8.9 era, priority if 8.10).
+    // No CF tracking per job; mirrors the DbMessageState multi-index pattern.
     activatableColumnFamily.deleteIfExists(tenantAwareTypeJobKey);
+    priorityActivatableColumnFamily.deleteIfExists(tenantAwareTypePriorityJobKey);
   }
 
   private void addJobDeadline(final long job, final long deadline) {
