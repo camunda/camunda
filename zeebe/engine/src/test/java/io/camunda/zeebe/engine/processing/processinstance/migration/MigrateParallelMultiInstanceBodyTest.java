@@ -13,6 +13,7 @@ import static org.assertj.core.groups.Tuple.tuple;
 
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
@@ -1304,48 +1305,8 @@ public class MigrateParallelMultiInstanceBodyTest {
     final var deployment =
         ENGINE
             .deployment()
-            .withXmlResource(
-                Bpmn.createExecutableProcess(processId)
-                    .startEvent()
-                    .subProcess(
-                        "sub",
-                        sub ->
-                            sub.multiInstance(
-                                b ->
-                                    b.zeebeInputCollectionExpression("[1,2,3]")
-                                        .zeebeInputElement("index")))
-                    .embeddedSubProcess()
-                    .startEvent()
-                    .serviceTask("task", t -> t.zeebeJobType("task"))
-                    .endEvent()
-                    .subProcessDone()
-                    .boundaryEvent("timerBoundary", b -> b.timerWithDuration("PT1H"))
-                    .cancelActivity(false)
-                    .endEvent("boundaryEnd")
-                    .moveToActivity("sub")
-                    .endEvent()
-                    .done())
-            .withXmlResource(
-                Bpmn.createExecutableProcess(targetProcessId)
-                    .startEvent()
-                    .subProcess(
-                        "sub",
-                        sub ->
-                            sub.multiInstance(
-                                b ->
-                                    b.zeebeInputCollectionExpression("[1,2,3]")
-                                        .zeebeInputElement("index")))
-                    .embeddedSubProcess()
-                    .startEvent()
-                    .serviceTask("task", t -> t.zeebeJobType("task"))
-                    .endEvent()
-                    .subProcessDone()
-                    .boundaryEvent("timerBoundary", b -> b.timerWithDuration("PT1H"))
-                    .cancelActivity(false)
-                    .endEvent("boundaryEnd")
-                    .moveToActivity("sub")
-                    .endEvent()
-                    .done())
+            .withXmlResource(parallelSubProcessWithTimerBoundary(processId))
+            .withXmlResource(parallelSubProcessWithTimerBoundary(targetProcessId))
             .deploy();
 
     final long targetProcessDefinitionKey =
@@ -1391,5 +1352,26 @@ public class MigrateParallelMultiInstanceBodyTest {
         .describedAs(
             "Expect that the timer boundary event subscription is migrated to the target process")
         .isTrue();
+  }
+
+  private static BpmnModelInstance parallelSubProcessWithTimerBoundary(final String processId) {
+    return Bpmn.createExecutableProcess(processId)
+        .startEvent()
+        .subProcess(
+            "sub",
+            sub ->
+                sub.multiInstance(
+                    b -> b.zeebeInputCollectionExpression("[1,2,3]").zeebeInputElement("index")))
+        .embeddedSubProcess()
+        .startEvent()
+        .serviceTask("task", t -> t.zeebeJobType("task"))
+        .endEvent()
+        .subProcessDone()
+        .boundaryEvent("timerBoundary", b -> b.timerWithDuration("PT1H"))
+        .cancelActivity(false)
+        .endEvent("boundaryEnd")
+        .moveToActivity("sub")
+        .endEvent()
+        .done();
   }
 }
