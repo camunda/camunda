@@ -16,6 +16,7 @@ import io.camunda.zeebe.util.VisibleForTesting;
 import io.micrometer.core.instrument.Timer;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
@@ -116,7 +117,7 @@ public class ProcessInstanceArchiverJob implements ArchiverJob {
     return CompletableFuture.completedFuture(0);
   }
 
-  private CompletableFuture<Void> moveDependants(
+  protected CompletableFuture<Void> moveDependants(
       final String finishDate, final List<String> processInstanceKeys) {
     final List<CompletableFuture<?>> dependentFutures =
         getProcessDependentArchiveFutures(finishDate, processInstanceKeys);
@@ -129,7 +130,8 @@ public class ProcessInstanceArchiverJob implements ArchiverJob {
         template.getFullQualifiedName(),
         ListViewTemplate.PROCESS_INSTANCE_KEY,
         finishDate,
-        processInstanceKeys);
+        processInstanceKeys,
+        Map.of());
   }
 
   protected List<CompletableFuture<?>> getProcessDependentArchiveFutures(
@@ -142,7 +144,8 @@ public class ProcessInstanceArchiverJob implements ArchiverJob {
               dependant.getFullQualifiedName(),
               dependant.getProcessInstanceDependantField(),
               finishDate,
-              processInstanceKeys));
+              processInstanceKeys,
+              Map.of()));
     }
     return futures;
   }
@@ -151,7 +154,8 @@ public class ProcessInstanceArchiverJob implements ArchiverJob {
       final String sourceIdxName,
       final String idField,
       final String finishDate,
-      final List<String> processInstanceKeys) {
+      final List<String> processInstanceKeys,
+      final Map<String, String> ignored) {
     return repository
         .moveDocuments(
             sourceIdxName, sourceIdxName + finishDate, idField, processInstanceKeys, executor)
@@ -169,6 +173,10 @@ public class ProcessInstanceArchiverJob implements ArchiverJob {
   @Override
   public String getCaption() {
     return "Process instances archiver job";
+  }
+
+  public ListViewTemplate getTemplateDescriptor() {
+    return template;
   }
 
   public ArchiverRepository getRepository() {

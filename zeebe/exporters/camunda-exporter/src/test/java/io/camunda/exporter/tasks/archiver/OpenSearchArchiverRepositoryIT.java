@@ -1086,7 +1086,8 @@ final class OpenSearchArchiverRepositoryIT {
     // then - we expect documents with IDs 1,2 and 4 to be returned
     final var batch =
         repository
-            .getArchiveDocIdsBatch(processInstanceIndex, "processInstanceKey", List.of("111"), null)
+            .getArchiveDocIdsBatch(
+                processInstanceIndex, "processInstanceKey", List.of("111"), Map.of(), null)
             .join();
 
     assertThat(batch.ids()).containsExactlyInAnyOrder("1", "2", "4");
@@ -1097,7 +1098,8 @@ final class OpenSearchArchiverRepositoryIT {
     // then - we expect no documents to be returned
     final var emptyBatch =
         repository
-            .getArchiveDocIdsBatch(processInstanceIndex, "processInstanceKey", List.of("999"), null)
+            .getArchiveDocIdsBatch(
+                processInstanceIndex, "processInstanceKey", List.of("999"), Map.of(), null)
             .join();
 
     assertThat(emptyBatch.isEmpty()).isTrue();
@@ -1109,7 +1111,8 @@ final class OpenSearchArchiverRepositoryIT {
     config.setReindexBatchSize(2);
     final var batchPg1 =
         repository
-            .getArchiveDocIdsBatch(processInstanceIndex, "processInstanceKey", List.of("111"), null)
+            .getArchiveDocIdsBatch(
+                processInstanceIndex, "processInstanceKey", List.of("111"), Map.of(), null)
             .join();
 
     assertThat(batchPg1.ids()).containsExactlyInAnyOrder("1", "2");
@@ -1121,7 +1124,11 @@ final class OpenSearchArchiverRepositoryIT {
     final var batchPg2 =
         repository
             .getArchiveDocIdsBatch(
-                processInstanceIndex, "processInstanceKey", List.of("111"), batchPg1.searchAfter())
+                processInstanceIndex,
+                "processInstanceKey",
+                List.of("111"),
+                Map.of(),
+                batchPg1.searchAfter())
             .join();
 
     assertThat(batchPg2.ids()).containsExactlyInAnyOrder("4");
@@ -1133,7 +1140,11 @@ final class OpenSearchArchiverRepositoryIT {
     final var batchPg3 =
         repository
             .getArchiveDocIdsBatch(
-                processInstanceIndex, "processInstanceKey", List.of("111"), batchPg2.searchAfter())
+                processInstanceIndex,
+                "processInstanceKey",
+                List.of("111"),
+                Map.of(),
+                batchPg2.searchAfter())
             .join();
 
     assertThat(batchPg3.isEmpty()).isTrue();
@@ -1231,6 +1242,7 @@ final class OpenSearchArchiverRepositoryIT {
             processInstanceIndex + "_dest",
             "processInstanceKey",
             List.of("111", "333"),
+            Map.of(),
             executor)
         .join(); // wait for completion
 

@@ -12,6 +12,7 @@ import io.camunda.exporter.metrics.CamundaExporterMetrics;
 import io.camunda.webapps.schema.descriptors.ProcessInstanceDependant;
 import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import org.slf4j.Logger;
@@ -43,14 +44,56 @@ public class ProcessInstanceByIdArchiverJob extends ProcessInstanceArchiverJob {
   }
 
   @Override
+  public CompletableFuture<Void> moveDependants(
+      final String finishDate, final List<String> processInstanceKeys) {
+    // get the usual process instance dependent archive tasks
+    final List<CompletableFuture<?>> dependentFutures =
+        getProcessDependentArchiveFutures(finishDate, processInstanceKeys);
+
+    // add archiving tasks to archive data from list-view in parallel with the dependent indexes.
+
+    // Note: We can archive all data except documents with `joinRelation: processInstance`.
+    // These must be moved last to avoid dangling data (i.e., child/dependent records that cannot
+    // be moved independently of their parent instance). We use fields from the parent
+    // document (e.g., `endDate`, `status`) to decide whether to archive documents from the
+    // main index.
+
+    // add archiving variables from the list view index as a parallel task
+    dependentFutures.add(
+        archive(
+            getTemplateDescriptor().getFullQualifiedName(),
+            ListViewTemplate.PROCESS_INSTANCE_KEY,
+            finishDate,
+            processInstanceKeys,
+            Map.of(ListViewTemplate.JOIN_RELATION, ListViewTemplate.VARIABLES_JOIN_RELATION)));
+
+    // add archiving flownodes/activities from the list view index as a parallel task
+    dependentFutures.add(
+        archive(
+            getTemplateDescriptor().getFullQualifiedName(),
+            ListViewTemplate.PROCESS_INSTANCE_KEY,
+            finishDate,
+            processInstanceKeys,
+            Map.of(ListViewTemplate.JOIN_RELATION, ListViewTemplate.ACTIVITIES_JOIN_RELATION)));
+
+    return CompletableFuture.allOf(dependentFutures.toArray(CompletableFuture[]::new));
+  }
+
+  @Override
   protected CompletableFuture<Integer> archive(
       final String sourceIdxName,
       final String idField,
       final String finishDate,
-      final List<String> processInstanceKeys) {
+      final List<String> processInstanceKeys,
+      final Map<String, String> filters) {
     return getRepository()
         .moveDocumentsById(
-            sourceIdxName, sourceIdxName + finishDate, idField, processInstanceKeys, getExecutor())
+            sourceIdxName,
+            sourceIdxName + finishDate,
+            idField,
+            processInstanceKeys,
+            filters,
+            getExecutor())
         .thenApplyAsync(ok -> processInstanceKeys.size(), getExecutor());
   }
 
