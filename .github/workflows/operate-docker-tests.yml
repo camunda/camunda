@@ -80,7 +80,7 @@ jobs:
         uses: actions/setup-java@v5
         with:
           distribution: "adopt"
-          java-version: "21"
+          java-version: "25"
       # Use CI Nexus as co-located pull-through cache for Maven artifacts via ~/.m2/settings.xml
       - name: 'Create settings.xml'
         uses: s4u/maven-settings-action@v4.0.0

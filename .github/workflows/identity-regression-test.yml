@@ -127,11 +127,11 @@ jobs:
           ref: ${{ inputs.branch }}
           fetch-depth: 0
 
-      - name: Set up Java 21
+      - name: Set up Java 25
         uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654 # v5.2.0
         with:
           distribution: temurin
-          java-version: 21
+          java-version: 25
 
       - name: Download Camunda Distribution Artifact
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
