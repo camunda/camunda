@@ -127,6 +127,10 @@ public final class BpmnJobBehavior {
         .flatMap(
             p -> evalRetriesExp(jobWorkerProps.getRetries(), scopeKey, tenantId).map(p::retries))
         .flatMap(
+            p ->
+                evalPriorityExp(jobWorkerProps.getJobPriority(), scopeKey, tenantId)
+                    .map(p::priority))
+        .flatMap(
             p -> evalLinkedResourceProps(jobWorkerProps, context, scopeKey).map(p::linkedResources))
         .flatMap(
             p ->
@@ -428,6 +432,14 @@ public final class BpmnJobBehavior {
     return expressionBehavior.evaluateLongExpression(retries, scopeKey, tenantId);
   }
 
+  private Either<Failure, Long> evalPriorityExp(
+      final Expression priority, final long scopeKey, final String tenantId) {
+    if (priority == null) {
+      return Either.right(0L);
+    }
+    return expressionBehavior.evaluateLongExpression(priority, scopeKey, tenantId);
+  }
+
   private void writeJobCreatedEvent(
       final BpmnElementContext context,
       final JobProperties props,
@@ -442,6 +454,7 @@ public final class BpmnJobBehavior {
         .setJobKind(jobKind)
         .setListenerEventType(jobListenerEventType)
         .setRetries(props.getRetries().intValue())
+        .setPriority(props.getPriority())
         .setCustomHeaders(encodedHeaders)
         .setBpmnProcessId(context.getBpmnProcessId())
         .setProcessDefinitionVersion(context.getProcessVersion())
@@ -565,6 +578,7 @@ public final class BpmnJobBehavior {
   public static final class JobProperties {
     private String type;
     private Long retries;
+    private long priority;
     private String assignee;
     private String candidateGroups;
     private String candidateUsers;
@@ -589,6 +603,15 @@ public final class BpmnJobBehavior {
 
     public Long getRetries() {
       return retries;
+    }
+
+    public JobProperties priority(final Long priority) {
+      this.priority = priority;
+      return this;
+    }
+
+    public long getPriority() {
+      return priority;
     }
 
     public JobProperties assignee(final String assignee) {
