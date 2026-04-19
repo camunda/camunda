@@ -7,21 +7,26 @@
  */
 package io.camunda.exporter.tasks.archiver;
 
+import co.elastic.clients.elasticsearch._types.ElasticsearchException;
 import com.google.common.base.Stopwatch;
 import io.camunda.zeebe.util.function.TriFunction;
+import java.net.SocketTimeoutException;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiFunction;
 import java.util.function.Function;
+import org.opensearch.client.opensearch._types.OpenSearchException;
 import org.slf4j.Logger;
 
 public class ArchiveByIdTaskSupplier<SortFieldType> {
+  private static final int MAX_RETRY_COUNT = 3;
+
   private final String sourceIdx;
   private final String destinationIdx;
   private final Function<List<SortFieldType>, CompletableFuture<ArchiveDocIdsBatch<SortFieldType>>>
@@ -34,6 +39,7 @@ public class ArchiveByIdTaskSupplier<SortFieldType> {
   private final AtomicReference<ArchiveDocIdsBatch<SortFieldType>> lastSearchResponse =
       new AtomicReference<>(null);
   private final AtomicBoolean finished = new AtomicBoolean(false);
+  private final AtomicInteger retryCount = new AtomicInteger(0);
 
   private final AtomicLong totalArchived = new AtomicLong(0);
   private final AtomicLong totalTimeTakenMs = new AtomicLong(0);
@@ -74,9 +80,6 @@ public class ArchiveByIdTaskSupplier<SortFieldType> {
         .apply(getLastSearchPosition())
         .thenComposeAsync(
             response -> {
-              // we can set this in another stage (like after reindex/delete if we want retries)
-              lastSearchResponse.set(response);
-
               if (response.isEmpty()) {
                 finished.set(true);
                 return CompletableFuture.completedFuture(0L);
@@ -90,18 +93,19 @@ public class ArchiveByIdTaskSupplier<SortFieldType> {
                         // successfully
                         lastSearchResponse.set(response);
                         totalArchived.accumulateAndGet(deletedCount, Long::sum);
+                        retryCount.set(0);
                         return deletedCount;
                       })
                   .exceptionally(
                       ex -> {
-                        final var cause = ex instanceof CompletionException ? ex.getCause() : ex;
-                        if (cause instanceof final BatchCountMismatchException countMismatchEx) {
+                        if (isRetryableError(ex)
+                            && retryCount.incrementAndGet() < MAX_RETRY_COUNT) {
                           logger.debug(
-                              "Processed batch count during '{}' stage doesn't match expected doc "
-                                  + "count when archiving docs from '{}' to '{}'.",
-                              countMismatchEx.operation,
+                              "Encountered retryable error when archiving docs from '{}' to '{}', "
+                                  + "retrying the batch. Error: {}",
                               sourceIdx,
-                              destinationIdx);
+                              destinationIdx,
+                              ex.getMessage());
                           return 0L;
                         }
                         // re-throw unexpected exceptions
@@ -148,6 +152,15 @@ public class ArchiveByIdTaskSupplier<SortFieldType> {
               operation, sourceIdx, processedCount, expectedCount));
     }
     return processedCount;
+  }
+
+  private boolean isRetryableError(final Throwable thr) {
+    if (thr != null && thr.getCause() != null) {
+      return thr.getCause() instanceof SocketTimeoutException
+          || thr.getCause() instanceof ElasticsearchException
+          || thr.getCause() instanceof OpenSearchException;
+    }
+    return false;
   }
 
   public record ArchiveDocIdsBatch<T>(List<String> ids, List<T> searchAfter) {
