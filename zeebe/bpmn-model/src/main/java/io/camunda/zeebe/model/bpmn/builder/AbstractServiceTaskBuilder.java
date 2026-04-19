@@ -19,6 +19,7 @@ package io.camunda.zeebe.model.bpmn.builder;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.instance.ServiceTask;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeBindingType;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeJobPriorityDefinition;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeLinkedResource;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeLinkedResources;
 import java.util.function.Consumer;
@@ -59,5 +60,16 @@ public abstract class AbstractServiceTaskBuilder<B extends AbstractServiceTaskBu
     final ZeebeLinkedResources linkedResources =
         myself.getCreateSingleExtensionElement(ZeebeLinkedResources.class);
     return myself.createChild(linkedResources, ZeebeLinkedResource.class);
+  }
+
+  public B zeebeJobPriority(final String priority) {
+    final ZeebeJobPriorityDefinition jobPriorityDefinition =
+        myself.getCreateSingleExtensionElement(ZeebeJobPriorityDefinition.class);
+    jobPriorityDefinition.setPriority(priority);
+    return myself;
+  }
+
+  public B zeebeJobPriorityExpression(final String expression) {
+    return zeebeJobPriority(asZeebeExpression(expression));
   }
 }

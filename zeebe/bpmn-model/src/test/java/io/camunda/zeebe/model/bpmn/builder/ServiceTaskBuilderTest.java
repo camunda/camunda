@@ -26,6 +26,7 @@ import io.camunda.zeebe.model.bpmn.instance.ExtensionElements;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeExecutionListener;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeExecutionListeners;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeHeader;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeJobPriorityDefinition;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskDefinition;
 import java.util.Collection;
 import org.camunda.bpm.model.xml.instance.ModelElementInstance;
@@ -121,6 +122,53 @@ public class ServiceTaskBuilderTest {
                 assertThat(listener.getTaskHeaders().getHeaders())
                     .extracting(ZeebeHeader::getKey, ZeebeHeader::getValue)
                     .containsExactly(tuple("aKey", "aValue"), tuple("bKey", "bValue")));
+  }
+
+  @Test
+  void shouldSetJobPriorityOnServiceTask() {
+    // given
+    final String priority = "90";
+
+    // when
+    final BpmnModelInstance instance =
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .serviceTask("task", task -> task.zeebeJobType("type").zeebeJobPriority(priority))
+            .endEvent()
+            .done();
+
+    // then
+    final ModelElementInstance serviceTask = instance.getModelElementById("task");
+    final ExtensionElements extensionElements =
+        (ExtensionElements) serviceTask.getUniqueChildElementByType(ExtensionElements.class);
+    assertThat(extensionElements.getChildElementsByType(ZeebeJobPriorityDefinition.class))
+        .hasSize(1)
+        .extracting(ZeebeJobPriorityDefinition::getPriority)
+        .containsExactly(priority);
+  }
+
+  @Test
+  void shouldSetJobPriorityExpressionOnServiceTask() {
+    // given
+    final String expression = "customer.tier";
+
+    // when
+    final BpmnModelInstance instance =
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .serviceTask(
+                "task", task -> task.zeebeJobType("type").zeebeJobPriorityExpression(expression))
+            .endEvent()
+            .done();
+
+    // then
+    final ModelElementInstance serviceTask = instance.getModelElementById("task");
+    final ExtensionElements extensionElements =
+        (ExtensionElements) serviceTask.getUniqueChildElementByType(ExtensionElements.class);
+    assertThat(extensionElements.getChildElementsByType(ZeebeJobPriorityDefinition.class))
+        .hasSize(1)
+        .extracting(ZeebeJobPriorityDefinition::getPriority)
+        .containsExactly("=" + expression);
   }
 
   private Collection<ZeebeExecutionListener> getExecutionListeners(
