@@ -59,6 +59,7 @@ import io.micrometer.core.instrument.Timer;
 import java.time.Duration;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
@@ -333,13 +334,15 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
       final String destinationIndexName,
       final String idFieldName,
       final List<String> ids,
+      final Map<String, String> filters,
       final Executor executor) {
 
     final ArchiveByIdTaskSupplier<FieldValue> taskSupplier =
         new ArchiveByIdTaskSupplier<>(
             sourceIndexName,
             destinationIndexName,
-            searchAfter -> getArchiveDocIdsBatch(sourceIndexName, idFieldName, ids, searchAfter),
+            searchAfter ->
+                getArchiveDocIdsBatch(sourceIndexName, idFieldName, ids, filters, searchAfter),
             this::reindexDocumentsById,
             this::deleteDocumentsById,
             executor,
@@ -395,15 +398,16 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
       final String sourceIndexName,
       final String idFieldName,
       final List<String> ids,
+      final Map<String, String> filters,
       final List<FieldValue> searchAfter) {
-    final TermsQuery termsQuery = buildIdTermsQuery(idFieldName, ids);
+    final Query query = buildFilterQuery(idFieldName, ids, filters);
     final SearchRequest.Builder requestBuilder =
         new SearchRequest.Builder()
             .index(sourceIndexName)
             .requestCache(false)
             .allowNoIndices(true)
             .ignoreUnavailable(true)
-            .query(q -> q.terms(termsQuery))
+            .query(query)
             .size(config.getReindexBatchSize())
             .source(s -> s.fetch(false))
             .sort(SortOptions.of(s -> s.field(f -> f.field("id").order(SortOrder.Asc))));
@@ -591,6 +595,26 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
         .field(idFieldName)
         .terms(terms -> terms.value(idValues.stream().map(FieldValue::of).toList()))
         .build();
+  }
+
+  private Query buildFilterQuery(
+      final String idFieldName, final List<String> idValues, final Map<String, String> filters) {
+    final var boolBuilder = QueryBuilders.bool();
+
+    if (!idValues.isEmpty()) {
+      final var keysBoolBuilder = QueryBuilders.bool();
+      keysBoolBuilder.should(s -> s.terms(buildIdTermsQuery(idFieldName, idValues)));
+      keysBoolBuilder.minimumShouldMatch("1");
+      boolBuilder.filter(keysBoolBuilder.build()._toQuery());
+    }
+
+    // Match all additional filters
+    for (final var filter : filters.entrySet()) {
+      boolBuilder.filter(
+          f -> f.term(t -> t.field(filter.getKey()).value(FieldValue.of(filter.getValue()))));
+    }
+
+    return boolBuilder.build()._toQuery();
   }
 
   private SearchRequest createFinishedBatchOperationsSearchRequest() {
