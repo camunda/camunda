@@ -51,7 +51,7 @@ import org.springframework.context.annotation.Import;
 })
 public class TestApplication {
 
-  public static void main(final String[] args) throws Exception {
+  public static void main(final String[] args) {
     SpringApplication.run(TestApplication.class, args);
   }
 }

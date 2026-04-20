@@ -10,10 +10,9 @@ package io.camunda.operate.qa.util;
 import static io.camunda.operate.util.ThreadUtil.sleepFor;
 
 import io.camunda.client.CamundaClient;
-import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.command.CompleteJobCommandStep1;
 import io.camunda.client.api.command.CreateProcessInstanceCommandStep1;
-import io.camunda.client.api.command.DeployProcessCommandStep1;
+import io.camunda.client.api.command.DeployProcessCommandStep1.DeployProcessCommandBuilderStep2;
 import io.camunda.client.api.response.DeploymentEvent;
 import io.camunda.client.api.response.ProcessInstanceEvent;
 import io.camunda.client.api.worker.JobWorker;
@@ -30,65 +29,12 @@ public abstract class ZeebeTestUtil {
   private static final Random RANDOM = new Random();
 
   public static String deployProcess(
-      final CamundaClient client, final String... classpathResources) {
-    if (classpathResources.length == 0) {
-      return null;
-    }
-    DeployProcessCommandStep1 deployProcessCommandStep1 = client.newDeployCommand();
-    for (final String classpathResource : classpathResources) {
-      deployProcessCommandStep1 =
-          deployProcessCommandStep1.addResourceFromClasspath(classpathResource);
-    }
-    final DeploymentEvent deploymentEvent =
-        ((DeployProcessCommandStep1.DeployProcessCommandBuilderStep2) deployProcessCommandStep1)
-            .send()
-            .join();
-    LOGGER.debug("Deployment of resource [{}] was performed", (Object[]) classpathResources);
-    return String.valueOf(
-        deploymentEvent
-            .getProcesses()
-            .get(classpathResources.length - 1)
-            .getProcessDefinitionKey());
-  }
-
-  public static void deployDecision(
-      final CamundaClient client, final String... classpathResources) {
-    if (classpathResources.length == 0) {
-      return;
-    }
-    DeployProcessCommandStep1 deployProcessCommandStep1 = client.newDeployCommand();
-    for (final String classpathResource : classpathResources) {
-      deployProcessCommandStep1 =
-          deployProcessCommandStep1.addResourceFromClasspath(classpathResource);
-    }
-    final DeploymentEvent deploymentEvent =
-        ((DeployProcessCommandStep1.DeployProcessCommandBuilderStep2) deployProcessCommandStep1)
-            .send()
-            .join();
-    LOGGER.debug("Deployment of resource [{}] was performed", (Object[]) classpathResources);
-  }
-
-  public static String deployProcess(
       final CamundaClient client, final BpmnModelInstance processModel, final String resourceName) {
-    final DeployProcessCommandStep1 deployProcessCommandStep1 =
+    final DeployProcessCommandBuilderStep2 deployProcessCommandStep1 =
         client.newDeployCommand().addProcessModel(processModel, resourceName);
-    final DeploymentEvent deploymentEvent =
-        ((DeployProcessCommandStep1.DeployProcessCommandBuilderStep2) deployProcessCommandStep1)
-            .send()
-            .join();
+    final DeploymentEvent deploymentEvent = deployProcessCommandStep1.send().join();
     LOGGER.debug("Deployment of resource [{}] was performed", resourceName);
-    return String.valueOf(deploymentEvent.getProcesses().get(0).getProcessDefinitionKey());
-  }
-
-  public static CamundaFuture<ProcessInstanceEvent> startProcessInstanceAsync(
-      final CamundaClient client, final String bpmnProcessId, final String payload) {
-    final CreateProcessInstanceCommandStep1.CreateProcessInstanceCommandStep3
-        createProcessInstanceCommandStep3 =
-            client.newCreateInstanceCommand().bpmnProcessId(bpmnProcessId).latestVersion();
-    if (payload != null) {
-      createProcessInstanceCommandStep3.variables(payload);
-    }
-    return createProcessInstanceCommandStep3.send();
+    return String.valueOf(deploymentEvent.getProcesses().getFirst().getProcessDefinitionKey());
   }
 
   public static long startProcessInstance(

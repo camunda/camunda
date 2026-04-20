@@ -7,7 +7,6 @@
  */
 package io.camunda.operate.modules;
 
-import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.util.apps.modules.ModulesTestApplication;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,7 +20,6 @@ import org.springframework.test.context.junit4.SpringRunner;
       ModulesTestApplication.class,
     },
     properties = {
-      OperateProperties.PREFIX + ".zeebe.compatibility.enabled = true",
       "spring.mvc.pathmatch.matching-strategy=ANT_PATH_MATCHER",
       "spring.profiles.active=test,consolidated-auth"
     })

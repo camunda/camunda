@@ -14,6 +14,7 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import io.camunda.client.CredentialsProvider;
 import io.camunda.tasklist.webapp.api.rest.v1.entities.TaskSearchResponse;
 import io.camunda.zeebe.util.CloseableSilently;
+import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -44,7 +45,7 @@ public class TestRestTasklistClient implements CloseableSilently {
 
   public TestRestTasklistClient(final URI endpoint, final CredentialsProvider credentialsProvider) {
     this(endpoint);
-    authenticationApplier = TestRestOperateClient.applyCredentialsProvider(credentialsProvider);
+    authenticationApplier = applyCredentialsProvider(credentialsProvider);
   }
 
   TestRestTasklistClient(
@@ -201,6 +202,17 @@ public class TestRestTasklistClient implements CloseableSilently {
 
   public TestRestTasklistClient withAuthentication(final String username, final String password) {
     return new TestRestTasklistClient(endpoint, httpClient, username, password);
+  }
+
+  private static Consumer<Builder> applyCredentialsProvider(
+      final CredentialsProvider credentialsProvider) {
+    return builder -> {
+      try {
+        credentialsProvider.applyCredentials(builder::header);
+      } catch (final IOException e) {
+        throw new RuntimeException("Could not apply credentials", e);
+      }
+    };
   }
 
   public record CreateProcessInstanceVariable(String name, Object value) {}

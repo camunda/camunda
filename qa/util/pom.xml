@@ -101,10 +101,6 @@
     </dependency>
     <dependency>
       <groupId>io.camunda</groupId>
-      <artifactId>operate-webapp</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>io.camunda</groupId>
       <artifactId>tasklist-webapp</artifactId>
     </dependency>
     <dependency>
