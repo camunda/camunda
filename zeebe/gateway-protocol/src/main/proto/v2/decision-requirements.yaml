@@ -30,6 +30,7 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/Forbidden'
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+      x-added-in-version: "8.6"
 
   /decision-requirements/{decisionRequirementsKey}:
     get:
@@ -69,6 +70,7 @@ paths:
                 $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+      x-added-in-version: "8.8"
 
   /decision-requirements/{decisionRequirementsKey}/xml:
     get:
@@ -108,6 +110,7 @@ paths:
                 $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+      x-added-in-version: "8.8"
 
 ## Schema definitions
 

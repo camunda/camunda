@@ -31,6 +31,7 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
+      x-added-in-version: "8.8"
 
   /roles/search:
     post:
@@ -61,6 +62,7 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/Forbidden'
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+      x-added-in-version: "8.8"
 
   /roles/{roleId}:
     get:
@@ -96,6 +98,7 @@ paths:
                 $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+      x-added-in-version: "8.8"
 
     put:
       x-eventually-consistent: false
@@ -138,6 +141,7 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
+      x-added-in-version: "8.8"
 
     delete:
       x-eventually-consistent: false
@@ -168,6 +172,7 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
+      x-added-in-version: "8.8"
 
   /roles/{roleId}/users/{username}:
     put:
@@ -213,6 +218,7 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
+      x-added-in-version: "8.8"
 
     delete:
       x-eventually-consistent: false
@@ -251,6 +257,7 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
+      x-added-in-version: "8.8"
 
   /roles/{roleId}/users/search:
     post:
@@ -294,6 +301,7 @@ paths:
                 $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+      x-added-in-version: "8.8"
 
   /roles/{roleId}/clients/{clientId}:
     put:
@@ -339,6 +347,7 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
+      x-added-in-version: "8.8"
 
     delete:
       x-eventually-consistent: false
@@ -377,6 +386,7 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
+      x-added-in-version: "8.8"
 
   /roles/{roleId}/clients/search:
     post:
@@ -420,6 +430,7 @@ paths:
                 $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+      x-added-in-version: "8.8"
 
   /roles/{roleId}/groups/{groupId}:
     put:
@@ -465,6 +476,7 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
+      x-added-in-version: "8.8"
 
     delete:
       x-eventually-consistent: false
@@ -503,6 +515,7 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
+      x-added-in-version: "8.8"
 
   /roles/{roleId}/groups/search:
     post:
@@ -546,6 +559,7 @@ paths:
                 $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+      x-added-in-version: "8.8"
 
   /roles/{roleId}/mapping-rules/{mappingRuleId}:
     put:
@@ -591,6 +605,7 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
+      x-added-in-version: "8.8"
 
     delete:
       x-eventually-consistent: false
@@ -629,6 +644,7 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
+      x-added-in-version: "8.8"
 
   /roles/{roleId}/mapping-rules/search:
     post:
@@ -672,6 +688,7 @@ paths:
                 $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+      x-added-in-version: "8.8"
 
 ## Schema definitions
 

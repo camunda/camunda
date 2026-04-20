@@ -51,6 +51,7 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
         "504":
           $ref: 'common-responses.yaml#/components/responses/GatewayTimeoutTaskListenerBlocking'
+      x-added-in-version: "8.5"
 
   /user-tasks/{userTaskKey}/assignment:
     post:
@@ -103,6 +104,7 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
         "504":
           $ref: 'common-responses.yaml#/components/responses/GatewayTimeoutTaskListenerBlocking'
+      x-added-in-version: "8.5"
 
   /user-tasks/{userTaskKey}:
     get:
@@ -140,6 +142,7 @@ paths:
                 $ref: "problem-detail.yaml#/components/schemas/ProblemDetail"
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+      x-added-in-version: "8.8"
 
     patch:
       x-eventually-consistent: false
@@ -190,6 +193,7 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
         "504":
           $ref: 'common-responses.yaml#/components/responses/GatewayTimeoutTaskListenerBlocking'
+      x-added-in-version: "8.5"
 
   /user-tasks/{userTaskKey}/form:
     get:
@@ -231,6 +235,7 @@ paths:
                 $ref: "problem-detail.yaml#/components/schemas/ProblemDetail"
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+      x-added-in-version: "8.8"
 
   /user-tasks/{userTaskKey}/assignee:
     delete:
@@ -277,6 +282,7 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
         "504":
           $ref: 'common-responses.yaml#/components/responses/GatewayTimeoutTaskListenerBlocking'
+      x-added-in-version: "8.5"
 
   /user-tasks/search:
     post:
@@ -307,6 +313,7 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/Forbidden'
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+      x-added-in-version: "8.6"
 
   /user-tasks/{userTaskKey}/variables/search:
     post:
@@ -353,6 +360,7 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/InvalidData'
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+      x-added-in-version: "8.8"
 
   /user-tasks/{userTaskKey}/effective-variables/search:
     post:
@@ -398,6 +406,7 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/InvalidData'
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+      x-added-in-version: "8.8"
 
   /user-tasks/{userTaskKey}/audit-logs/search:
     post:
@@ -431,6 +440,7 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/InvalidData'
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+      x-added-in-version: "8.9"
 
 ## Schema definitions
 
