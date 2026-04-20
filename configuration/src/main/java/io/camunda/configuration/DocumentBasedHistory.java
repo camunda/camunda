@@ -20,10 +20,12 @@ public class DocumentBasedHistory {
   private static final boolean DEFAULT_HISTORY_PROCESS_INSTANCE_ENABLED = true;
   private static final ProcessInstanceRetentionMode
       DEFAULT_HISTORY_PROCESS_INSTANCE_RETENTION_MODE = ProcessInstanceRetentionMode.PI_HIERARCHY;
+  private static final boolean DEFAULT_HISTORY_ARCHIVE_BY_ID_ENABLED = false;
   private static final String DEFAULT_HISTORY_POLICY_NAME = "camunda-retention-policy";
   private static final String DEFAULT_HISTORY_ELS_ROLLOVER_DATE_FORMAT = "date";
   private static final String DEFAULT_HISTORY_ROLLOVER_INTERVAL = "1d";
   private static final int DEFAULT_HISTORY_ROLLOVER_BATCH_SIZE = 100;
+  private static final int DEFAULT_HISTORY_REINDEX_BATCH_SIZE = 1000;
   private static final String DEFAULT_HISTORY_WAIT_PERIOD_BEFORE_ARCHIVING = "1h";
   private static final Map<String, String> LEGACY_BROKER_PROPERTIES =
       Map.of(
@@ -50,6 +52,8 @@ public class DocumentBasedHistory {
   private ProcessInstanceRetentionMode processInstanceRetentionMode =
       DEFAULT_HISTORY_PROCESS_INSTANCE_RETENTION_MODE;
 
+  private boolean archiveByIdEnabled = DEFAULT_HISTORY_ARCHIVE_BY_ID_ENABLED;
+
   /** Date format for historical indices in Java DateTimeFormatter syntax */
   private String elsRolloverDateFormat = DEFAULT_HISTORY_ELS_ROLLOVER_DATE_FORMAT;
 
@@ -58,6 +62,9 @@ public class DocumentBasedHistory {
 
   /** Maximum number of process instances per archiving batch */
   private int rolloverBatchSize = DEFAULT_HISTORY_ROLLOVER_BATCH_SIZE;
+
+  /** Maximum number of docs reindexed/deleted in a batch */
+  private int reindexBatchSize = DEFAULT_HISTORY_REINDEX_BATCH_SIZE;
 
   /**
    * Grace period before archiving completed processes. Processes finished within this window are
@@ -105,6 +112,14 @@ public class DocumentBasedHistory {
     this.processInstanceRetentionMode = processInstanceRetentionMode;
   }
 
+  public boolean isArchiveByIdEnabled() {
+    return archiveByIdEnabled;
+  }
+
+  public void setArchiveByIdEnabled(final boolean archiveByIdEnabled) {
+    this.archiveByIdEnabled = archiveByIdEnabled;
+  }
+
   public String getPrefix() {
     return prefix;
   }
@@ -146,6 +161,14 @@ public class DocumentBasedHistory {
 
   public void setRolloverBatchSize(final int rolloverBatchSize) {
     this.rolloverBatchSize = rolloverBatchSize;
+  }
+
+  public int getReindexBatchSize() {
+    return reindexBatchSize;
+  }
+
+  public void setReindexBatchSize(final int reindexBatchSize) {
+    this.reindexBatchSize = reindexBatchSize;
   }
 
   public String getWaitPeriodBeforeArchiving() {
