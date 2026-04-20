@@ -15,7 +15,7 @@ import io.camunda.search.connect.es.ElasticsearchConnector;
 import io.camunda.search.connect.os.OpensearchConnector;
 import io.camunda.search.connect.tenant.SearchClients;
 import io.camunda.search.connect.tenant.TenantConnectConfigResolver;
-import io.camunda.spring.utils.ConditionalOnSecondaryStorageEnabled;
+import io.camunda.spring.utils.ConditionalOnPhysicalTenantsEnabled;
 import java.util.Map;
 import org.opensearch.client.opensearch.OpenSearchAsyncClient;
 import org.opensearch.client.opensearch.OpenSearchClient;
@@ -47,15 +47,15 @@ public class NativeSearchClientsConfiguration {
   }
 
   @Bean
+  @ConditionalOnPhysicalTenantsEnabled
   public TenantConnectConfigResolver tenantConnectConfigResolver(
       final ConnectConfiguration connectConfiguration) {
     return new TenantConnectConfigResolver(
         Map.of(TenantConnectConfigResolver.DEFAULT_TENANT_ID, connectConfiguration));
   }
 
-  // TODO: Wire up physical tenant configuration to creation of search clients
   @Bean
-  @ConditionalOnSecondaryStorageEnabled
+  @ConditionalOnPhysicalTenantsEnabled
   public SearchClients searchClients(
       final TenantConnectConfigResolver tenantConnectConfigResolver) {
     return SearchClients.from(tenantConnectConfigResolver.tenantConfigs());

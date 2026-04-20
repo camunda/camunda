@@ -57,6 +57,7 @@ import io.camunda.search.clients.reader.VariableReader;
 import io.camunda.search.clients.transformers.ServiceTransformers;
 import io.camunda.search.connect.configuration.ConnectConfiguration;
 import io.camunda.search.connect.tenant.TenantConnectConfigResolver;
+import io.camunda.spring.utils.ConditionalOnPhysicalTenantsEnabled;
 import io.camunda.webapps.schema.descriptors.IndexDescriptors;
 import io.camunda.webapps.schema.descriptors.index.AuthorizationIndex;
 import io.camunda.webapps.schema.descriptors.index.ClusterVariableIndex;
@@ -107,8 +108,8 @@ public class SearchClientReaderConfiguration {
         connectConfiguration.getTypeEnum().isElasticSearch());
   }
 
-  // TODO: Wire up physical tenant configuration to creation of index descriptors
   @Bean
+  @ConditionalOnPhysicalTenantsEnabled
   public Map<String, IndexDescriptors> physicalTenantScopedIndexDescriptors(
       final TenantConnectConfigResolver tenantConnectConfigResolver) {
     return tenantConnectConfigResolver.tenantConfigs().entrySet().stream()
@@ -128,11 +129,6 @@ public class SearchClientReaderConfiguration {
     return new SearchClientBasedQueryExecutor(searchClient, transformers);
   }
 
-  /**
-   * Creates all ES/OS document readers in a single factory call. Individual reader beans below
-   * extract from this record so they can be injected into {@link
-   * SearchClientConfiguration#searchClientReaders}.
-   */
   @Bean
   public SearchClientReaders documentReaders(
       final SearchClientBasedQueryExecutor executor,
