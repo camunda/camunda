@@ -98,7 +98,9 @@ public final class DbMessageSubscriptionState
           if (subscription.isCorrelating()) {
             transientState.add(
                 new PendingSubscription(
-                    elementInstanceKey.getValue(), messageName.toString(), tenantIdKey.toString()),
+                    elementInstanceKey.getValue(),
+                    subscription.getRecord().getMessageName(),
+                    subscription.getRecord().getTenantId()),
                 clock.millis());
           }
         });
