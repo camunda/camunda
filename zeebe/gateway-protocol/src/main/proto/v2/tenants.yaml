@@ -38,6 +38,7 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
+      x-added-in-version: "8.8"
 
   /tenants/search:
     post:
@@ -74,6 +75,7 @@ paths:
                 $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+      x-added-in-version: "8.8"
 
   /tenants/{tenantId}:
     get:
@@ -111,6 +113,7 @@ paths:
                 $ref: "problem-detail.yaml#/components/schemas/ProblemDetail"
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+      x-added-in-version: "8.8"
 
     put:
       x-eventually-consistent: false
@@ -153,6 +156,7 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
+      x-added-in-version: "8.8"
 
     delete:
       x-eventually-consistent: false
@@ -185,6 +189,7 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
+      x-added-in-version: "8.8"
 
   /tenants/{tenantId}/users/{username}:
     put:
@@ -224,6 +229,7 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
+      x-added-in-version: "8.8"
 
     delete:
       x-eventually-consistent: false
@@ -264,6 +270,7 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
+      x-added-in-version: "8.8"
 
   /tenants/{tenantId}/users/search:
     post:
@@ -293,6 +300,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/TenantUserSearchResult'
+      x-added-in-version: "8.8"
 
   /tenants/{tenantId}/clients/{clientId}:
     put:
@@ -334,6 +342,7 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
+      x-added-in-version: "8.8"
 
     delete:
       x-eventually-consistent: false
@@ -374,6 +383,7 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
+      x-added-in-version: "8.8"
 
   /tenants/{tenantId}/clients/search:
     post:
@@ -403,6 +413,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/TenantClientSearchResult'
+      x-added-in-version: "8.8"
 
   /tenants/{tenantId}/groups/{groupId}:
     put:
@@ -444,6 +455,7 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
+      x-added-in-version: "8.8"
 
     delete:
       x-eventually-consistent: false
@@ -484,6 +496,7 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
+      x-added-in-version: "8.8"
 
   /tenants/{tenantId}/groups/search:
     post:
@@ -513,6 +526,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/TenantGroupSearchResult'
+      x-added-in-version: "8.8"
 
   /tenants/{tenantId}/roles/search:
     post:
@@ -542,6 +556,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/TenantRoleSearchResult'
+      x-added-in-version: "8.8"
 
   /tenants/{tenantId}/roles/{roleId}:
     put:
@@ -583,6 +598,7 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
+      x-added-in-version: "8.8"
 
     delete:
       x-eventually-consistent: false
@@ -624,6 +640,7 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
+      x-added-in-version: "8.8"
 
   /tenants/{tenantId}/mapping-rules/{mappingRuleId}:
     put:
@@ -663,6 +680,7 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
+      x-added-in-version: "8.8"
 
     delete:
       x-eventually-consistent: false
@@ -701,6 +719,7 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
+      x-added-in-version: "8.8"
 
   /tenants/{tenantId}/mapping-rules/search:
     post:
@@ -730,6 +749,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/TenantMappingRuleSearchResult'
+      x-added-in-version: "8.8"
 
 ## Schema definitions
 
