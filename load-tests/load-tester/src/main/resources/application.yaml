@@ -10,7 +10,6 @@ server:
 logging:
   level:
     root: ${LOG_LEVEL:WARN}
-    io.camunda: ${CAMUNDA_LOG_LEVEL:INFO}
 
 management:
   server:
@@ -43,10 +42,10 @@ camunda:
       grpc-address: ${ZEEBE_GRPC_ADDRESS:http://localhost:26500}
       rest-address: ${ZEEBE_REST_ADDRESS:http://localhost:8080}
       prefer-rest-over-grpc: true
-      # Number of threads for job handler execution. The old HOCON app used 10 threads
-      # (app.worker.threads=10). The starter default is 1, which is too low when
-      # handleJob() blocks with Thread.sleep(completionDelay).
-      execution-threads: ${LOAD_TESTER_WORKER_THREADS:10}
+      # Default 0 for starter profile (no job worker execution threads needed).
+      # Worker profile overrides this below to 10 threads. The old HOCON app
+      # used 10 threads (app.worker.threads=10).
+      execution-threads: 0
       defaults:
         # Bridge LOAD_TESTER_WORKER_* env vars from the Helm chart so that
         # @JobWorker picks up the correct values per deployment.
@@ -92,3 +91,12 @@ load-tester:
     send-message: ${LOAD_TESTER_WORKER_SEND_MESSAGE:false}
     message-name: ${LOAD_TESTER_WORKER_MESSAGE_NAME:messageName}
     correlation-key-variable-name: ${LOAD_TESTER_WORKER_CORRELATION_KEY_VARIABLE_NAME:correlationKey-var}
+
+# Worker-profile override: worker pods actually handle jobs, so they need a real
+# thread pool. Matches the old HOCON app.worker.threads=10 default.
+---
+spring.config.activate.on-profile: worker
+camunda:
+  client:
+    zeebe:
+      execution-threads: ${LOAD_TESTER_WORKER_THREADS:10}
