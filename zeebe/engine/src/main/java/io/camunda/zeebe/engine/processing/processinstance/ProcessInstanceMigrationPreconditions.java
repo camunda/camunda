@@ -23,6 +23,7 @@ import io.camunda.zeebe.engine.state.deployment.DeployedProcess;
 import io.camunda.zeebe.engine.state.immutable.DistributionState;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.EventScopeInstanceState;
+import io.camunda.zeebe.engine.state.immutable.IncidentState;
 import io.camunda.zeebe.engine.state.immutable.MessageState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
 import io.camunda.zeebe.engine.state.instance.EventTrigger;
@@ -208,6 +209,12 @@ public final class ProcessInstanceMigrationPreconditions {
       Expected to migrate process instance '%s' \
       but joining gateway with id '%s' has a taken sequence flow with id '%s'. \
       Taken sequence flows must be mapped to a sequence flow in the target process definition.""";
+
+  private static final String ERROR_JOB_WORKER_USER_TASK_CONVERSION_WITH_INCIDENT =
+      """
+      Expected to migrate process instance '%s' \
+      but active element with id '%s' is a job worker user task with an active incident. \
+      Please resolve the incident before migrating the user task to a Camunda user task.""";
 
   private static final String ZEEBE_USER_TASK_IMPLEMENTATION = "zeebe user task";
   private static final String JOB_WORKER_IMPLEMENTATION = "job worker";
@@ -633,6 +640,35 @@ public final class ProcessInstanceMigrationPreconditions {
     }
     return sourceUserTaskType.equals(JOB_WORKER_IMPLEMENTATION)
         && targetUserTaskType.equals(ZEEBE_USER_TASK_IMPLEMENTATION);
+  }
+
+  /**
+   * Checks that there is no active incident on the job of a job worker user task that is being
+   * converted to a Camunda user task. Throws an exception if an incident exists, because the
+   * incident cannot be properly migrated when the job is cancelled during conversion.
+   *
+   * @param incidentState incident state to look up job incidents
+   * @param elementInstance element instance of the job worker user task
+   * @param processInstanceKey process instance key to be logged
+   */
+  public static void requireNoIncidentForJobWorkerUserTaskConversion(
+      final IncidentState incidentState,
+      final ElementInstance elementInstance,
+      final long processInstanceKey) {
+    final long jobKey = elementInstance.getJobKey();
+    if (jobKey <= 0) {
+      return;
+    }
+    final long jobIncidentKey = incidentState.getJobIncidentKey(jobKey);
+    if (jobIncidentKey != IncidentState.MISSING_INCIDENT) {
+      final String reason =
+          String.format(
+              ERROR_JOB_WORKER_USER_TASK_CONVERSION_WITH_INCIDENT,
+              processInstanceKey,
+              elementInstance.getValue().getElementId());
+      throw new ProcessInstanceMigrationPreconditionFailedException(
+          reason, RejectionType.INVALID_STATE);
+    }
   }
 
   /**
