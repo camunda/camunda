@@ -56,7 +56,7 @@ test.describe.parallel('Resource Get Content API', () => {
 
     await assertNotFoundRequest(
       res,
-      "Command 'FETCH' rejected with code 'NOT_FOUND': Expected to fetch resource but no resource found with key `2251799813733053`",
+      `Resource with key '${nonExistentResourceKey}' not found`,
     );
   });
 
