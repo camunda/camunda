@@ -13,6 +13,7 @@ import {captureScreenshot, captureFailureVideo} from '@setup';
 import {navigateToApp, hideHelperModals} from '@pages/UtilitiesPage';
 import {sleep} from 'utils/sleep';
 import {waitForAssertion} from 'utils/waitForAssertion';
+import {assertJsonEqual} from '../../utils/assertJsonEqual';
 
 type ProcessInstance = {
   processInstanceKey: string;
@@ -180,7 +181,7 @@ test.describe.skip('Process Instance Modifications', () => {
       ).toBeVisible();
       await expect(
         operateProcessInstancePage.getEditVariableFieldSelector('foo'),
-      ).toHaveValue('3');
+      ).toHaveText('3');
     });
 
     await test.step('Undo last modification and verify value reverted to 1', async () => {
@@ -188,7 +189,7 @@ test.describe.skip('Process Instance Modifications', () => {
 
       await expect(
         operateProcessInstancePage.getEditVariableFieldSelector('foo'),
-      ).toHaveValue('1');
+      ).toHaveText('1');
       await expect(
         operateProcessInstancePage.lastAddedModificationText,
       ).toBeVisible();
@@ -197,7 +198,7 @@ test.describe.skip('Process Instance Modifications', () => {
       ).toBeVisible();
       await expect(
         operateProcessInstancePage.getEditVariableFieldSelector('foo'),
-      ).toHaveValue('1');
+      ).toHaveText('1');
     });
 
     await test.step('Navigate to different flow node and undo', async () => {
@@ -222,10 +223,10 @@ test.describe.skip('Process Instance Modifications', () => {
 
       await expect(
         operateProcessInstancePage.getEditVariableFieldSelector('test'),
-      ).toHaveValue('123');
+      ).toHaveText('123');
       await expect(
         operateProcessInstancePage.getEditVariableFieldSelector('foo'),
-      ).toHaveValue('1');
+      ).toHaveText('1');
     });
 
     await test.step('Undo again and verify all modifications removed', async () => {
@@ -242,10 +243,10 @@ test.describe.skip('Process Instance Modifications', () => {
       ).toBeVisible();
       await expect(
         operateProcessInstancePage.getEditVariableFieldSelector('test'),
-      ).toHaveValue('123');
+      ).toHaveText('123');
       await expect(
         operateProcessInstancePage.getEditVariableFieldSelector('foo'),
-      ).toHaveValue('"bar"');
+      ).toHaveText('"bar"');
     });
 
     await test.step('Edit variable and remove from summary modal', async () => {
@@ -266,10 +267,10 @@ test.describe.skip('Process Instance Modifications', () => {
 
       await expect(
         operateProcessInstancePage.getEditVariableFieldSelector('test'),
-      ).toHaveValue('123');
+      ).toHaveText('123');
       await expect(
         operateProcessInstancePage.getEditVariableFieldSelector('foo'),
-      ).toHaveValue('"bar"');
+      ).toHaveText('"bar"');
       await expect(
         operateProcessInstancePage.lastAddedModificationText,
       ).toBeVisible();
@@ -281,7 +282,7 @@ test.describe.skip('Process Instance Modifications', () => {
       ).toBeVisible();
       await expect(
         operateProcessInstancePage.getEditVariableFieldSelector('foo'),
-      ).toHaveValue('"bar"');
+      ).toHaveText('"bar"');
     });
   });
 
@@ -368,7 +369,7 @@ test.describe.skip('Process Instance Modifications', () => {
         operateProcessInstanceViewModificationModePage.getEditVariableFieldSelector(
           'testVariableNumber',
         ),
-      ).toHaveValue('123');
+      ).toHaveText('123');
     });
 
     await test.step('Add variable on process-level and verify warning appeared', async () => {
@@ -451,7 +452,9 @@ test.describe.skip('Process Instance Modifications', () => {
     await test.step('Update variable value in JSON editor modal window and verify results', async () => {
       await operateProcessInstanceViewModificationModePage
         .newVariableByIndex(1)
-        .value.fill('meow');
+        .readModeValue.click();
+      await page.keyboard.insertText('meow');
+
       await operateProcessInstanceViewModificationModePage.checkNewVariableErrorMessageText(
         1,
         'Value has to be JSON',
@@ -464,10 +467,11 @@ test.describe.skip('Process Instance Modifications', () => {
 
       await waitForAssertion({
         assertion: async () => {
-          await expect(
+          await assertJsonEqual(
             operateProcessInstanceViewModificationModePage.newVariableByIndex(1)
-              .value,
-          ).toHaveValue(JSON.stringify(validJSONValue1));
+              .writeModeValue,
+            validJSONValue1,
+          );
         },
         onFailure: async () => {},
       });
@@ -493,7 +497,7 @@ test.describe.skip('Process Instance Modifications', () => {
         operateProcessInstanceViewModificationModePage.getEditVariableFieldSelector(
           'testVariableString',
         ),
-      ).toHaveValue(JSON.stringify(validJSONValue2));
+      ).toContainText(JSON.stringify(validJSONValue2, null, 2));
 
       await expect(
         operateProcessInstanceViewModificationModePage.lastAddedModificationText,
@@ -577,11 +581,11 @@ test.describe.skip('Process Instance Modifications', () => {
         operateProcessInstancePage.existingVariableByName('testLocalVariable')
           .name,
       ).toBeVisible();
-      expect(
-        await operateProcessInstancePage
-          .existingVariableByName('testEmptyVariable')
-          .value.innerText(),
-      ).toContain(JSON.stringify(validJSONValue1));
+      await assertJsonEqual(
+        operateProcessInstancePage.existingVariableByName('testEmptyVariable')
+          .value,
+        validJSONValue1,
+      );
     });
 
     await test.step('Check that the edited variables are visible on process level and have correct values', async () => {
@@ -598,18 +602,18 @@ test.describe.skip('Process Instance Modifications', () => {
           .existingVariableByName('testNewMeowVariable')
           .value.innerText(),
       ).toContain('7');
-      expect(
-        await operateProcessInstancePage
-          .existingVariableByName('testVariableString')
-          .value.innerText(),
-      ).toContain(JSON.stringify(validJSONValue2));
+      await assertJsonEqual(
+        operateProcessInstancePage.existingVariableByName('testVariableString')
+          .value,
+        validJSONValue2,
+      );
     });
 
     await test.step("Check that an existing variable can't be deleted:", async () => {
       await operateProcessInstancePage.navigateToRootScope();
-      await operateProcessInstancePage.clickEditVariableButton(
-        'testVariableNumber',
-      );
+      await operateProcessInstancePage
+        .existingVariableByName('testVariableNumber')
+        .editVariableModal.button.click();
       await operateProcessInstancePage.clearVariableValueInput();
       await page.keyboard.press('Tab');
       await operateProcessInstancePage.checkExistingVariableErrorMessageText(
@@ -619,6 +623,9 @@ test.describe.skip('Process Instance Modifications', () => {
       await expect(
         operateProcessInstancePage.saveVariableButton,
       ).toBeDisabled();
+      await operateProcessInstancePage
+        .existingVariableByName('testVariableNumber')
+        .readModeValue.click();
       await operateProcessInstancePage.fillVariableValueInput('1');
       await expect(operateProcessInstancePage.saveVariableButton).toBeEnabled();
       await operateProcessInstancePage.saveVariableButton.click();
@@ -783,7 +790,7 @@ test.describe.skip('Process Instance Modifications', () => {
         operateProcessInstancePage.getNewVariableValueFieldSelector(
           'newVariables[0]',
         ),
-      ).toHaveValue('1');
+      ).toHaveText('1');
     });
 
     await test.step('Undo again and verify new variable field removed', async () => {

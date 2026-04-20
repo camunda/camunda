@@ -90,8 +90,8 @@ test.describe('Process Instance', () => {
       await operateProcessInstancePage.clickVariablesTab();
       await operateProcessInstancePage.editVariableButtonInList.click();
 
-      await operateProcessInstancePage.editVariableValueField.clear();
-      await operateProcessInstancePage.editVariableValueField.type('20');
+      await operateProcessInstancePage.clearVariableValueInput();
+      await operateProcessInstancePage.fillVariableValueInput('20');
 
       await expect(operateProcessInstancePage.saveVariableButton).toBeEnabled();
       await operateProcessInstancePage.saveVariableButton.click();
@@ -148,9 +148,15 @@ test.describe('Process Instance', () => {
     await test.step('Add variable isCool', async () => {
       await operateProcessInstancePage.clickVariablesTab();
       await operateProcessInstancePage.addVariableButton.click();
-
+      await expect(
+        operateProcessInstancePage.newVariableNameField,
+      ).toBeFocused();
       await operateProcessInstancePage.newVariableNameField.type('isCool');
-      await operateProcessInstancePage.newVariableValueField.type('true');
+      await expect(operateProcessInstancePage.newVariableNameField).toHaveValue(
+        'isCool',
+      );
+      await operateProcessInstancePage.newVariableValueField.click();
+      await operateProcessInstancePage.fillVariableValueInput('true');
 
       await expect(operateProcessInstancePage.saveVariableButton).toBeEnabled();
 
