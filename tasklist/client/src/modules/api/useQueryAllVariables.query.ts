@@ -26,7 +26,7 @@ type Options = {
   enabled?: boolean;
   refetchOnWindowFocus?: boolean;
   refetchOnReconnect?: boolean;
-  pollingInterval?: number;
+  refetchInterval?: number;
 };
 
 function useQueryAllVariables(
@@ -34,7 +34,7 @@ function useQueryAllVariables(
   options: Options = {},
 ) {
   const {userTaskKey} = params;
-  const {pollingInterval, enabled, refetchOnWindowFocus, refetchOnReconnect} =
+  const {refetchInterval, enabled, refetchOnWindowFocus, refetchOnReconnect} =
     options;
 
   return useInfiniteQuery({
@@ -64,15 +64,7 @@ function useQueryAllVariables(
       totalItems: data.pages.at(-1)?.page.totalItems ?? 0,
     }),
     initialPageParam: 0,
-    refetchInterval: pollingInterval
-      ? (query) => {
-          const pages = query.state.data?.pages;
-          const loadedCount =
-            pages?.reduce((sum, p) => sum + p.items.length, 0) ?? 0;
-          const totalItems = pages?.at(-1)?.page.totalItems ?? 0;
-          return loadedCount < totalItems ? false : pollingInterval;
-        }
-      : false,
+    refetchInterval,
     getNextPageParam: (lastPage, _, lastPageParam) => {
       const nextPage = lastPageParam + MAX_VARIABLES_PER_REQUEST;
 

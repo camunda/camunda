@@ -88,7 +88,7 @@ const Variables: React.FC<Props> = ({
     {
       refetchOnWindowFocus: assignee === null,
       refetchOnReconnect: assignee === null,
-      pollingInterval: assignee === null ? 5000 : undefined,
+      refetchInterval: assignee === null ? 5000 : undefined,
     },
   );
 
