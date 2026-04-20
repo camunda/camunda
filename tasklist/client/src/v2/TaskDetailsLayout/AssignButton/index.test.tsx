@@ -56,7 +56,7 @@ describe('AssignButton', () => {
       <AssignButton
         key={mockUnassignedTask1.userTaskKey}
         id={mockUnassignedTask1.userTaskKey}
-        assignee={null}
+        assignee={undefined}
         taskState={mockUnassignedTask1.state}
         currentUser={currentUser.username}
       />,
@@ -71,7 +71,7 @@ describe('AssignButton', () => {
       <AssignButton
         key={mockUnassignedTask2.userTaskKey}
         id={mockUnassignedTask2.userTaskKey}
-        assignee={null}
+        assignee={undefined}
         taskState={mockUnassignedTask2.state}
         currentUser={currentUser.username}
       />,
