@@ -504,6 +504,7 @@ jobs:
               EXCLUDED_TESTS+=("CamundaProcessTestExtensionMultiTenancyIT#multiTenancyWithConnectorsEnabled")
               EXCLUDED_TESTS+=("CamundaSpringProcessTestConnectorsIT")
               EXCLUDED_TESTS+=("CamundaSpringProcessMultiTenancyTestListenerWithConnectorsIT")
+              EXCLUDED_TESTS+=("InvoiceApprovalIntegrationTest")
               echo "CPT version $CLIENT_VERSION < 8.8.20 - excluding connector-related tests (missing secret prefix support)"
             fi
           fi
