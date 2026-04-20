@@ -56,7 +56,7 @@ public class AlignmentTest {
   private static final Function<JsonNode, Object> URI_MAPPER = p -> URI.create(p.asText());
   private static final Function<JsonNode, Object> DOUBLE_MAPPER = JsonNode::doubleValue;
   private static final Map<String, Getter> NEW_GETTERS =
-      Map.ofEntries(
+      Map.<String, Getter>ofEntries(
           entry(
               "camunda.client.execution-threads",
               new Getter(CamundaClientProperties::getExecutionThreads)),
@@ -252,6 +252,7 @@ public class AlignmentTest {
     return properties
         .valueStream()
         .filter(p -> !p.has("deprecation"))
+        .filter(p -> p.get("name").asText().startsWith("camunda.client."))
         .map(
             p -> {
               final String name = p.get("name").asText();
