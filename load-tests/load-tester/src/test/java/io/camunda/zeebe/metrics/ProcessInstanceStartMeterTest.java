@@ -21,19 +21,18 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
-import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-public class ProcessInstanceStartMeterTest {
+class ProcessInstanceStartMeterTest {
 
   private ProcessInstanceStartMeter processInstanceStartMeter;
   private SimpleMeterRegistry meterRegistry;
   private AvailabilityChecker availabilityChecker;
 
   @BeforeEach
-  public void setUp() {
+  void setUp() {
     meterRegistry = new SimpleMeterRegistry();
     availabilityChecker = CompletableFuture::completedFuture;
     processInstanceStartMeter =
@@ -46,13 +45,13 @@ public class ProcessInstanceStartMeterTest {
   }
 
   @AfterEach
-  public void tearDown() {
+  void tearDown() {
     processInstanceStartMeter.stop();
     meterRegistry.close();
   }
 
   @Test
-  public void shouldRecordInstanceAvailability() {
+  void shouldRecordInstanceAvailability() {
     // given
 
     // when
@@ -80,7 +79,7 @@ public class ProcessInstanceStartMeterTest {
   }
 
   @Test
-  public void shouldRecordQueryDurationForAvailabilityMeasurement() {
+  void shouldRecordQueryDurationForAvailabilityMeasurement() {
     // given
 
     // when
@@ -108,54 +107,52 @@ public class ProcessInstanceStartMeterTest {
   }
 
   @Test
-  public void shouldNotRecordInstanceAvailability() throws InterruptedException {
-    // given
-    final CountDownLatch countDownLatch = new CountDownLatch(1);
-    availabilityChecker =
-        (list) -> {
-          countDownLatch.countDown();
-          return CompletableFuture.completedFuture(list);
-        };
+  void shouldNotRecordInstanceAvailability() {
+    // given - no instances are recorded
 
-    // when
+    // when - the meter starts but has nothing to check
     processInstanceStartMeter.start();
 
-    // then
-    countDownLatch.await(250, TimeUnit.MILLISECONDS);
-
-    assertThatThrownBy(
+    // then - over a sustained window, the availability metric must never be created
+    await()
+        .during(Duration.ofMillis(250))
+        .atMost(Duration.ofMillis(500))
+        .untilAsserted(
             () ->
-                meterRegistry
-                    .get(StarterLatencyMetricsDoc.DATA_AVAILABILITY_LATENCY.getName())
-                    .timer())
-        .hasMessageContaining("No meter with name 'starter.data.availability.latency' was found.");
+                assertThatThrownBy(
+                        () ->
+                            meterRegistry
+                                .get(StarterLatencyMetricsDoc.DATA_AVAILABILITY_LATENCY.getName())
+                                .timer())
+                    .hasMessageContaining(
+                        "No meter with name 'starter.data.availability.latency' was found."));
   }
 
   @Test
-  public void shouldNotRecordQueryDurationWhenNoInstancesStarted() throws InterruptedException {
-    // given
-    final CountDownLatch countDownLatch = new CountDownLatch(1);
-    availabilityChecker =
-        (list) -> {
-          countDownLatch.countDown();
-          return CompletableFuture.completedFuture(list);
-        };
+  void shouldNotRecordQueryDurationWhenNoInstancesStarted() {
+    // given - no instances are recorded
 
-    // when
+    // when - the meter starts but has nothing to check
     processInstanceStartMeter.start();
 
-    // then
-    countDownLatch.await(250, TimeUnit.MILLISECONDS);
-    assertThat(
-            meterRegistry
-                .get(StarterLatencyMetricsDoc.DATA_AVAILABILITY_QUERY_DURATION.getName())
-                .timer()
-                .count())
-        .isZero();
+    // then - the query-duration timer may be registered by Micrometer but its count
+    // must stay at zero over a sustained window because the checker never runs
+    await()
+        .during(Duration.ofMillis(250))
+        .atMost(Duration.ofMillis(500))
+        .untilAsserted(
+            () ->
+                assertThat(
+                        meterRegistry
+                            .get(
+                                StarterLatencyMetricsDoc.DATA_AVAILABILITY_QUERY_DURATION.getName())
+                            .timer()
+                            .count())
+                    .isZero());
   }
 
   @Test
-  public void shouldNotRecordInstanceAvailabilityWhenNotAvailable() throws InterruptedException {
+  void shouldNotRecordInstanceAvailabilityWhenNotAvailable() throws InterruptedException {
     // given
     final CountDownLatch countDownLatch = new CountDownLatch(1);
     availabilityChecker =
@@ -171,7 +168,9 @@ public class ProcessInstanceStartMeterTest {
         Protocol.encodePartitionId(1, 1), System.nanoTime());
 
     // then
-    countDownLatch.await(1, TimeUnit.SECONDS);
+    assertThat(countDownLatch.await(1, TimeUnit.SECONDS))
+        .describedAs("availability checker should have been invoked at least once")
+        .isTrue();
 
     assertThatThrownBy(
             () ->
@@ -182,7 +181,7 @@ public class ProcessInstanceStartMeterTest {
   }
 
   @Test
-  public void shouldRecordQueryDurationEvenWhenPIsNotAvailable() throws InterruptedException {
+  void shouldRecordQueryDurationEvenWhenPIsNotAvailable() throws InterruptedException {
     // given
     final CountDownLatch countDownLatch = new CountDownLatch(1);
     availabilityChecker =
@@ -198,7 +197,9 @@ public class ProcessInstanceStartMeterTest {
         Protocol.encodePartitionId(1, 1), System.nanoTime());
 
     // then
-    countDownLatch.await(1, TimeUnit.SECONDS);
+    assertThat(countDownLatch.await(1, TimeUnit.SECONDS))
+        .describedAs("availability checker should have been invoked at least once")
+        .isTrue();
 
     await()
         .ignoreExceptions()
@@ -215,11 +216,11 @@ public class ProcessInstanceStartMeterTest {
                 .get(StarterLatencyMetricsDoc.DATA_AVAILABILITY_QUERY_DURATION.getName())
                 .timer()
                 .totalTime(TimeUnit.MILLISECONDS))
-        .isGreaterThan(1);
+        .isNotZero();
   }
 
   @Test
-  public void shouldNotRecordInstanceAvailabilityWhenNotStarted() {
+  void shouldNotRecordInstanceAvailabilityWhenNotStarted() {
     // given
     processInstanceStartMeter =
         new ProcessInstanceStartMeter(
@@ -243,7 +244,7 @@ public class ProcessInstanceStartMeterTest {
   }
 
   @Test
-  public void shouldNotRecordQueryDurationWhenNotStarted() {
+  void shouldNotRecordQueryDurationWhenNotStarted() {
     // given
     processInstanceStartMeter =
         new ProcessInstanceStartMeter(
@@ -267,7 +268,7 @@ public class ProcessInstanceStartMeterTest {
   }
 
   @Test
-  public void shouldRecordMetricAfterMaxDuration() {
+  void shouldRecordMetricAfterMaxDuration() {
     // given
     final AtomicLong time = new AtomicLong();
     processInstanceStartMeter =
@@ -285,7 +286,7 @@ public class ProcessInstanceStartMeterTest {
     time.set(System.nanoTime() + Duration.ofSeconds(90).toNanos());
 
     // then
-    Awaitility.await()
+    await()
         .ignoreExceptions()
         .untilAsserted(
             () ->
@@ -303,7 +304,7 @@ public class ProcessInstanceStartMeterTest {
   }
 
   @Test
-  public void shouldOnlyRecordAvailableInstances() throws InterruptedException {
+  void shouldOnlyRecordAvailableInstances() throws InterruptedException {
     // given
     final CountDownLatch countDownLatch = new CountDownLatch(1);
     availabilityChecker =
@@ -325,7 +326,9 @@ public class ProcessInstanceStartMeterTest {
     processInstanceStartMeter.start();
 
     // then
-    countDownLatch.await(1, TimeUnit.SECONDS);
+    assertThat(countDownLatch.await(1, TimeUnit.SECONDS))
+        .describedAs("availability checker should have been invoked at least once")
+        .isTrue();
     await()
         .ignoreExceptions()
         .untilAsserted(

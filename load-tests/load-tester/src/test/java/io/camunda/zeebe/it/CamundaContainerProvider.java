@@ -9,7 +9,9 @@ package io.camunda.zeebe.it;
 
 import io.camunda.process.test.impl.containers.CamundaContainer;
 import io.camunda.process.test.impl.runtime.CamundaProcessTestRuntimeDefaults;
+import java.time.Duration;
 import org.springframework.test.context.DynamicPropertyRegistry;
+import org.testcontainers.images.PullPolicy;
 import org.testcontainers.utility.DockerImageName;
 
 /**
@@ -21,8 +23,9 @@ final class CamundaContainerProvider {
 
   static CamundaContainer createCamundaContainer() {
     return new CamundaContainer(
-        DockerImageName.parse(CamundaProcessTestRuntimeDefaults.CAMUNDA_DOCKER_IMAGE_NAME)
-            .withTag(CamundaProcessTestRuntimeDefaults.CAMUNDA_DOCKER_IMAGE_VERSION));
+            DockerImageName.parse(CamundaProcessTestRuntimeDefaults.CAMUNDA_DOCKER_IMAGE_NAME)
+                .withTag(CamundaProcessTestRuntimeDefaults.CAMUNDA_DOCKER_IMAGE_VERSION))
+        .withImagePullPolicy(PullPolicy.ageBased(Duration.ofHours(12)));
   }
 
   static void registerClientProperties(
