@@ -5,7 +5,7 @@
       "name": "Judge assertion - global variable",
       "instructions": [
         {
-          "type": "ASSERT_VARIABLE_JUDGE",
+          "type": "ASSERT_VARIABLE_SATISFIES_JUDGE",
           "processInstanceSelector": {
             "processDefinitionId": "ai-agent-process"
           },
@@ -18,7 +18,7 @@
       "name": "Judge assertion - local variable with overrides",
       "instructions": [
         {
-          "type": "ASSERT_VARIABLE_JUDGE",
+          "type": "ASSERT_VARIABLE_SATISFIES_JUDGE",
           "processInstanceSelector": {
             "processDefinitionId": "ai-agent-process"
           },
