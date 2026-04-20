@@ -32,7 +32,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.TestFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -42,78 +44,192 @@ import org.springframework.util.unit.DataSize;
 
 @SpringBootTest(classes = CamundaClientPropertiesTestConfig.class)
 public class AlignmentTest {
-  private static final Map<String, Function<CamundaClientProperties, Object>> GETTERS =
-      new HashMap<>();
-  private static final Map<String, Function<Object, Object>> MAPPERS = new HashMap<>();
-
-  static {
-    // camunda.client.execution-threads
-    GETTERS.put("camunda.client.execution-threads", CamundaClientProperties::getExecutionThreads);
-    // camunda.client.message-time-to-live
-    GETTERS.put(
-        "camunda.client.message-time-to-live", CamundaClientProperties::getMessageTimeToLive);
-    MAPPERS.put("camunda.client.message-time-to-live", p -> Duration.parse((String) p));
-    // camunda.client.max-message-size
-    GETTERS.put("camunda.client.max-message-size", CamundaClientProperties::getMaxMessageSize);
-    MAPPERS.put("camunda.client.max-message-size", p -> DataSize.parse((String) p));
-    // camunda.client.max-metadata-size
-    GETTERS.put("camunda.client.max-metadata-size", CamundaClientProperties::getMaxMetadataSize);
-    MAPPERS.put("camunda.client.max-metadata-size", p -> DataSize.parse((String) p));
-    // camunda.client.prefer-rest-over-grpc
-    GETTERS.put(
-        "camunda.client.prefer-rest-over-grpc", CamundaClientProperties::getPreferRestOverGrpc);
-    // camunda.client.prefer-rest-over-grpc
-    GETTERS.put(
-        "camunda.client.max-http-connections", CamundaClientProperties::getMaxHttpConnections);
-    // camunda.client.rest-address
-    GETTERS.put("camunda.client.rest-address", CamundaClientProperties::getRestAddress);
-    MAPPERS.put("camunda.client.rest-address", p -> URI.create((String) p));
-    // camunda.client.grpc-address
-    GETTERS.put("camunda.client.grpc-address", CamundaClientProperties::getGrpcAddress);
-    MAPPERS.put("camunda.client.grpc-address", p -> URI.create((String) p));
-    // camunda.client.request-timeout
-    GETTERS.put("camunda.client.request-timeout", CamundaClientProperties::getRequestTimeout);
-    MAPPERS.put("camunda.client.request-timeout", p -> Duration.parse((String) p));
-    // camunda.client.request-timeout-offset
-    GETTERS.put(
-        "camunda.client.request-timeout-offset", CamundaClientProperties::getRequestTimeoutOffset);
-    MAPPERS.put("camunda.client.request-timeout-offset", p -> Duration.parse((String) p));
-    // camunda.client.tenant-id
-    GETTERS.put("camunda.client.tenant-id", CamundaClientProperties::getTenantId);
-    // camunda.client.auth.credentials-cache-path
-    GETTERS.put(
-        "camunda.client.auth.credentials-cache-path", p -> p.getAuth().getCredentialsCachePath());
-    MAPPERS.put("camunda.client.auth.credentials-cache-path", p -> DEFAULT_CREDENTIALS_CACHE_PATH);
-    // camunda.client.auth.connect-timeout
-    GETTERS.put("camunda.client.auth.connect-timeout", p -> p.getAuth().getConnectTimeout());
-    MAPPERS.put("camunda.client.auth.connect-timeout", p -> Duration.parse((String) p));
-    // camunda.client.auth.read-timeout
-    GETTERS.put("camunda.client.auth.read-timeout", p -> p.getAuth().getReadTimeout());
-    MAPPERS.put("camunda.client.auth.read-timeout", p -> Duration.parse((String) p));
-    // camunda.client.worker.defaults.tenant-ids
-    GETTERS.put(
-        "camunda.client.worker.defaults.tenant-ids",
-        p -> p.getWorker().getDefaults().getTenantIds());
-    // camunda.client.worker.defaults.timeout
-    GETTERS.put(
-        "camunda.client.worker.defaults.timeout", p -> p.getWorker().getDefaults().getTimeout());
-    MAPPERS.put("camunda.client.worker.defaults.timeout", p -> Duration.parse((String) p));
-    // camunda.client.worker.defaults.max-jobs-active
-    GETTERS.put(
-        "camunda.client.worker.defaults.max-jobs-active",
-        p -> p.getWorker().getDefaults().getMaxJobsActive());
-    // camunda.client.worker.defaults.poll-interval
-    GETTERS.put(
-        "camunda.client.worker.defaults.poll-interval",
-        p -> p.getWorker().getDefaults().getPollInterval());
-    MAPPERS.put("camunda.client.worker.defaults.poll-interval", p -> Duration.parse((String) p));
-    // camunda.client.worker.defaults.name
-    GETTERS.put("camunda.client.worker.defaults.name", p -> p.getWorker().getDefaults().getName());
-    // camunda.client.worker.defaults.stream-enabled
-    GETTERS.put(
-        "camunda.client.worker.defaults.stream-enabled",
-        p -> p.getWorker().getDefaults().getStreamEnabled());
-  }
+  private static final Function<JsonNode, Object> INT_SET_MAPPER =
+      p ->
+          StreamSupport.stream(p.spliterator(), false)
+              .map(JsonNode::asInt)
+              .collect(Collectors.toSet());
+  private static final ObjectMapper MAPPER = new ObjectMapper();
+  private static final Function<JsonNode, Object> DURATION_MAPPER = p -> Duration.parse(p.asText());
+  private static final Function<JsonNode, Object> DATA_SIZE_MAPPER =
+      p -> DataSize.parse(p.asText());
+  private static final Function<JsonNode, Object> URI_MAPPER = p -> URI.create(p.asText());
+  private static final Function<JsonNode, Object> DOUBLE_MAPPER = JsonNode::doubleValue;
+  private static final Map<String, Getter> NEW_GETTERS =
+      Map.<String, Getter>ofEntries(
+          entry(
+              "camunda.client.use-client-side-load-balancing",
+              new Getter(CamundaClientProperties::isUseClientSideLoadBalancing)),
+          entry(
+              "camunda.client.execution-threads",
+              new Getter(CamundaClientProperties::getExecutionThreads)),
+          entry(
+              "camunda.client.message-time-to-live",
+              new Getter(CamundaClientProperties::getMessageTimeToLive, DURATION_MAPPER)),
+          entry(
+              "camunda.client.max-message-size",
+              new Getter(CamundaClientProperties::getMaxMessageSize, DATA_SIZE_MAPPER)),
+          entry(
+              "camunda.client.max-metadata-size",
+              new Getter(CamundaClientProperties::getMaxMetadataSize, DATA_SIZE_MAPPER)),
+          entry(
+              "camunda.client.prefer-rest-over-grpc",
+              new Getter(CamundaClientProperties::getPreferRestOverGrpc)),
+          entry(
+              "camunda.client.rest-address",
+              new Getter(CamundaClientProperties::getRestAddress, URI_MAPPER)),
+          entry(
+              "camunda.client.grpc-address",
+              new Getter(CamundaClientProperties::getGrpcAddress, URI_MAPPER)),
+          entry(
+              "camunda.client.request-timeout",
+              new Getter(CamundaClientProperties::getRequestTimeout, DURATION_MAPPER)),
+          entry(
+              "camunda.client.request-timeout-offset",
+              new Getter(CamundaClientProperties::getRequestTimeoutOffset, DURATION_MAPPER)),
+          entry("camunda.client.tenant-id", new Getter(CamundaClientProperties::getTenantId)),
+          entry(
+              "camunda.client.auth.connect-timeout",
+              new Getter(p -> p.getAuth().getConnectTimeout(), DURATION_MAPPER)),
+          entry(
+              "camunda.client.auth.read-timeout",
+              new Getter(p -> p.getAuth().getReadTimeout(), DURATION_MAPPER)),
+          entry(
+              "camunda.client.worker.defaults.tenant-ids",
+              new Getter(p -> p.getWorker().getDefaults().getTenantIds())),
+          entry(
+              "camunda.client.worker.defaults.tenant-filter",
+              new Getter(p -> p.getWorker().getDefaults().getTenantFilter().name())),
+          entry(
+              "camunda.client.worker.defaults.timeout",
+              new Getter(p -> p.getWorker().getDefaults().getTimeout(), DURATION_MAPPER)),
+          entry(
+              "camunda.client.worker.defaults.max-jobs-active",
+              new Getter(p -> p.getWorker().getDefaults().getMaxJobsActive())),
+          entry(
+              "camunda.client.worker.defaults.poll-interval",
+              new Getter(p -> p.getWorker().getDefaults().getPollInterval(), DURATION_MAPPER)),
+          entry(
+              "camunda.client.worker.defaults.name",
+              new Getter(p -> p.getWorker().getDefaults().getName())),
+          entry(
+              "camunda.client.worker.defaults.stream-enabled",
+              new Getter(p -> p.getWorker().getDefaults().getStreamEnabled())),
+          entry(
+              "camunda.client.worker.defaults.enabled",
+              new Getter(p -> p.getWorker().getDefaults().getEnabled())),
+          entry(
+              "camunda.client.worker.defaults.auto-complete",
+              new Getter(p -> p.getWorker().getDefaults().getAutoComplete())),
+          entry(
+              "camunda.client.worker.defaults.request-timeout",
+              new Getter(p -> p.getWorker().getDefaults().getRequestTimeout(), DURATION_MAPPER)),
+          entry(
+              "camunda.client.worker.defaults.max-retries",
+              new Getter(p -> p.getWorker().getDefaults().getMaxRetries())),
+          entry(
+              "camunda.client.worker.defaults.force-fetch-all-variables",
+              new Getter(p -> p.getWorker().getDefaults().getForceFetchAllVariables())),
+          entry(
+              "camunda.client.worker.defaults.stream-timeout",
+              new Getter(p -> p.getWorker().getDefaults().getStreamTimeout(), DURATION_MAPPER)),
+          entry(
+              "camunda.client.worker.defaults.stream-inactivity-timeout",
+              new Getter(
+                  p -> p.getWorker().getDefaults().getStreamInactivityTimeout(), DURATION_MAPPER)),
+          entry(
+              "camunda.client.max-http-connections",
+              new Getter(CamundaClientProperties::getMaxHttpConnections)),
+          entry(
+              "camunda.client.worker.defaults.retry-backoff",
+              new Getter(p -> p.getWorker().getDefaults().getRetryBackoff(), DURATION_MAPPER)),
+          entry(
+              "camunda.client.keep-alive",
+              new Getter(CamundaClientProperties::getKeepAlive, DURATION_MAPPER)),
+          entry("camunda.client.mode", new Getter(CamundaClientProperties::getMode)),
+          entry(
+              "camunda.client.override-authority",
+              new Getter(CamundaClientProperties::getOverrideAuthority)),
+          entry(
+              "camunda.client.auth.client-assertion.keystore-password",
+              new Getter(p -> p.getAuth().getClientAssertion().getKeystorePassword())),
+          entry(
+              "camunda.client.auth.client-assertion.keystore-path",
+              new Getter(p -> p.getAuth().getClientAssertion().getKeystorePath())),
+          entry("camunda.client.auth.client-id", new Getter(p -> p.getAuth().getClientId())),
+          entry(
+              "camunda.client.auth.client-secret", new Getter(p -> p.getAuth().getClientSecret())),
+          entry(
+              "camunda.client.worker.defaults.fetch-variables",
+              new Getter(p -> p.getWorker().getDefaults().getFetchVariables())),
+          entry(
+              "camunda.client.worker.defaults.type",
+              new Getter(p -> p.getWorker().getDefaults().getType())),
+          entry("camunda.client.worker.override", new Getter(p -> p.getWorker().getOverride())),
+          entry("camunda.client.enabled", new Getter(CamundaClientProperties::getEnabled)),
+          entry(
+              "camunda.client.ca-certificate-path",
+              new Getter(CamundaClientProperties::getCaCertificatePath)),
+          entry("camunda.client.cloud.cluster-id", new Getter(p -> p.getCloud().getClusterId())),
+          entry("camunda.client.cloud.domain", new Getter(p -> p.getCloud().getDomain())),
+          entry("camunda.client.cloud.port", new Getter(p -> p.getCloud().getPort())),
+          entry("camunda.client.cloud.region", new Getter(p -> p.getCloud().getRegion())),
+          entry(
+              "camunda.client.deployment.enabled", new Getter(p -> p.getDeployment().isEnabled())),
+          entry(
+              "camunda.client.deployment.own-jar-only",
+              new Getter(p -> p.getDeployment().isOwnJarOnly())),
+          // as the auth method is set by the properties post processor, we have to hardcode it to
+          // null for this test
+          entry("camunda.client.auth.method", new Getter(p -> null)),
+          entry("camunda.client.auth.username", new Getter(p -> p.getAuth().getUsername())),
+          entry("camunda.client.auth.password", new Getter(p -> p.getAuth().getPassword())),
+          entry("camunda.client.auth.token-url", new Getter(p -> p.getAuth().getTokenUrl())),
+          entry("camunda.client.auth.issuer-url", new Getter(p -> p.getAuth().getIssuerUrl())),
+          entry(
+              "camunda.client.auth.well-known-configuration-url",
+              new Getter(p -> p.getAuth().getWellKnownConfigurationUrl())),
+          entry("camunda.client.auth.audience", new Getter(p -> p.getAuth().getAudience())),
+          entry("camunda.client.auth.scope", new Getter(p -> p.getAuth().getScope())),
+          entry("camunda.client.auth.resource", new Getter(p -> p.getAuth().getResource())),
+          entry(
+              "camunda.client.auth.keystore-path", new Getter(p -> p.getAuth().getKeystorePath())),
+          entry(
+              "camunda.client.auth.keystore-password",
+              new Getter(p -> p.getAuth().getKeystorePassword())),
+          entry(
+              "camunda.client.auth.keystore-key-password",
+              new Getter(p -> p.getAuth().getKeystoreKeyPassword())),
+          entry(
+              "camunda.client.auth.truststore-path",
+              new Getter(p -> p.getAuth().getTruststorePath())),
+          entry(
+              "camunda.client.auth.truststore-password",
+              new Getter(p -> p.getAuth().getTruststorePassword())),
+          entry(
+              "camunda.client.auth.proactive-token-refresh-threshold",
+              new Getter(p -> p.getAuth().getProactiveTokenRefreshThreshold(), DURATION_MAPPER)),
+          entry(
+              "camunda.client.auth.token-fetch-max-retries",
+              new Getter(p -> p.getAuth().getTokenFetchMaxRetries())),
+          entry(
+              "camunda.client.auth.token-fetch-initial-backoff",
+              new Getter(p -> p.getAuth().getTokenFetchInitialBackoff(), DURATION_MAPPER)),
+          entry(
+              "camunda.client.auth.token-fetch-backoff-multiplier",
+              new Getter(p -> p.getAuth().getTokenFetchBackoffMultiplier(), DOUBLE_MAPPER)),
+          entry(
+              "camunda.client.auth.token-fetch-retryable-status-codes",
+              new Getter(p -> p.getAuth().getTokenFetchRetryableStatusCodes(), INT_SET_MAPPER)),
+          entry(
+              "camunda.client.auth.token-fetch-non-retryable-cooldown",
+              new Getter(p -> p.getAuth().getTokenFetchNonRetryableCooldown(), DURATION_MAPPER)),
+          entry(
+              "camunda.client.auth.client-assertion.keystore-key-alias",
+              new Getter(p -> p.getAuth().getClientAssertion().getKeystoreKeyAlias())),
+          entry(
+              "camunda.client.auth.client-assertion.keystore-key-password",
+              new Getter(p -> p.getAuth().getClientAssertion().getKeystoreKeyPassword())));
 
   @Autowired CamundaClientProperties camundaClientProperties;
 
@@ -127,6 +243,7 @@ public class AlignmentTest {
     return properties
         .valueStream()
         .filter(p -> !p.has("deprecation"))
+        .filter(p -> p.get("name").asText().startsWith("camunda.client."))
         .map(
             p -> {
               final String name = p.get("name").asText();
