@@ -10,12 +10,25 @@ This document describes the planned Unified Identity Architecture for Camunda Hu
 
 - Summarizes the current identity architecture across Camunda platform components (OC Identity, Management Identity, SaaS Auth0).
 - Proposes a target architecture with a single identity plane, implemented as a hexagonal library reused in Hub and Orchestration Clusters.
-- Shows how the architecture supports multiple engines per cluster and multi-tenancy.
+- Shows how the architecture supports multiple Physical Tenants per broker/cluster and multi-tenancy.
 - Emphasizes that standalone Orchestration Cluster (without Hub) remains a first-class deployment option.
 - Outlines how a single shared frontend and pluggable backends (persistence, OC command creation, etc.) fit into the design.
 
-IMPORTANT: This document shows the final architecture, we won’t be able to implement it by October.
+IMPORTANT: This document shows the final architecture, we won't be able to implement it by October.
 We need to break the project down into several iterations with interim goals until we actually reach the endgame.
+
+### 1.1 Terminology: Orchestration Cluster topology
+
+The term **Orchestration Cluster (OC)** is used at two abstraction levels in this document:
+
+- **High level (logical):** "Orchestration Cluster" refers to the logical execution unit owned by one organization and associated with one set of policies. This is the level used in high-level diagrams that contrast Hub with OC.
+- **Low level (physical/deployment):** A concrete Orchestration Cluster deployment consists of:
+  - **One or more Gateways** (standalone Zeebe Gateways or embedded) — these form the **Gateway / Search Layer** where the Security Gateway Framework is embedded. The SGF lives here and enforces authentication and search authorization for all inbound requests before they reach the broker/search clients.
+  - **One or more Brokers**, each containing one or more **Engines**. A Broker is the Zeebe broker process. Each Engine inside a Broker corresponds to what the unified identity model calls a **Physical Tenant**.
+
+In high-level architecture diagrams the OC is shown as a single logical box. In detailed building-block diagrams (section 5.1 and below) the Gateway/Search Layer and Broker/Physical Tenant layers are shown explicitly.
+
+> **Terminology and naming rule:** What earlier versions of this document called "multi-engine support" is now called **Physical Tenant support**. An Engine in identity-model terms is a **Physical Tenant**. Multiple Brokers, or multiple engines within a Broker, give you multiple Physical Tenants inside one OC. In this document, **Tenant** means **logical Tenant** unless explicitly written as **Physical Tenant**. A single Physical Tenant can host multiple logical Tenants. The `scope_type = PHYSICAL_TENANT` field in the policy data model refers to Physical Tenant scope.
 
 ---
 
@@ -138,7 +151,7 @@ Based on the target-architecture appendix and identity roadmap, the current setu
   - Identity migrations (e.g. Management Identity → unified plane) and policy changes are fragile, not first-class “jobs”.
   - It is hard to see and debug identity health end to end.
 
-These limitations motivate a unified identity plane with consistent semantics and tooling across Hub and all clusters, including multi-engine and multi-tenant scenarios.
+These limitations motivate a unified identity plane with consistent semantics and tooling across Hub and all clusters, including multiple-Physical-Tenant and multi-logical-tenant scenarios.
 
 ---
 
@@ -168,6 +181,8 @@ The target architecture is based on the following assumptions:
 
 - [Prepare Authentication for Hub Integration](https://github.com/camunda/camunda/issues/38556)
 - Spike about extraction of code: [Spike/new replacement auth lib](https://github.com/camunda/camunda/pull/49058)
+- Security Gateway library repository: [camunda/camunda-security-gateway](https://github.com/camunda/camunda-security-gateway/tree/main)
+
 
 ---
 
@@ -205,7 +220,7 @@ The following user journeys describe, from a functional perspective, which actor
 
 #### 3.1.1 Configure cluster policies in full mode (Hub + OC)
 
-Short- to midterm target: Admins configure cluster policies (including engine- and tenant-scoped permissions) primarily in Hub. OC Admin exposes a read-only view of the applied policy for that cluster.
+Short- to midterm target: Admins configure cluster policies (including Physical Tenant-scoped (`PHYSICAL_TENANT`) and Tenant-scoped permissions) primarily in Hub. OC Admin exposes a read-only view of the applied policy for that cluster.
 
 - Actor: Organization / platform administrator (Hub)
 - Goal: Adjust who can do what on a given Orchestration Cluster and its engines/tenants.
@@ -215,12 +230,12 @@ Short- to midterm target: Admins configure cluster policies (including engine- a
   3. Admin edits tenants, roles, groups, mapping rules, and authorizations for that cluster, including:
     - Cluster-wide permissions (for example cluster admins).
     - Tenant-scoped permissions (for example `retail` vs `wholesale`).
-    - Engine-scoped or engine+tenant-scoped permissions where needed.
+    - Physical Tenant-scoped (`PHYSICAL_TENANT`).
   4. Hub Security Gateway Framework validates and persists the changes in the selected organization scope, producing a new `PolicyVersion` for the target cluster.
-  5. The outbox dispatcher propagates the updated policy to the target OC; OC Security Gateway Framework applies it and updates the engine-scoped projections.
+  5. The outbox dispatcher propagates the updated policy to the target OC; OC Security Gateway Framework applies it and updates the Physical Tenant-scoped (`PHYSICAL_TENANT`) projections.
   6. OC Admin UI (read-only in full mode) allows cluster operators to view the effective policies per engine and tenant, including the applied policy version.
 
-Outcome: Cluster policies, including engine- and tenant-specific permissions, are authored once in Hub and enforced consistently in the target OC. Cluster operators can inspect, but not change, these policies via OC Admin.
+Outcome: Cluster policies, including Physical Tenant- and Tenant-specific permissions, are authored once in Hub and enforced consistently in the target OC. Cluster operators can inspect, but not change, these policies via OC Admin.
 
 #### 3.1.2 Application developer configures a worker client
 
@@ -250,18 +265,18 @@ Outcome: The user experiences a consistent identity across Hub and OC: one Enter
 
 #### 3.1.4 Configure policies in an OC-only deployment (long-term target)
 
-Long-term target: Bring the same unified policy model, including engine- and tenant-scoped authorizations, to OC-only deployments. Today OC-only already supports identity and authorizations, but this journey describes the target unified behavior.
+Long-term target: Bring the same unified policy model, including Physical Tenant- and Tenant-scoped authorizations, to OC-only deployments. Today OC-only already supports identity and authorizations, but this journey describes the target unified behavior.
 
 - Actor: Cluster administrator (OC-only)
-- Goal: Configure identity and policies for a standalone OC without Hub, including engine- and tenant-scoped rules.
+- Goal: Configure identity and policies for a standalone OC without Hub, including Physical Tenant- and Tenant-scoped rules.
 - Main steps:
   1. Cluster admin opens the OC Admin UI.
   2. Cluster admin configures the Enterprise IdP connection directly on the OC (OIDC/SAML client settings for the deployment).
   3. Cluster admin creates tenants, roles, groups, and mapping rules in the OC Admin UI.
-  4. Cluster admin defines authorizations for cluster resources (definitions, instances, tasks, cluster APIs) and, if needed, engine- and tenant-specific scopes.
-  5. OC Security Gateway Framework persists the policy locally and propagates engine-scoped projections to the engines.
+  4. Cluster admin defines authorizations for cluster resources (definitions, instances, tasks, cluster APIs) and, if needed, Physical Tenant- and Tenant-specific scopes.
+  5. OC Security Gateway Framework persists the policy locally and propagates Physical Tenant-scoped (`PHYSICAL_TENANT`) projections to the engines.
 
-Outcome: The OC acts as local SoT for identity and policy. Users and workers can authenticate via the Enterprise IdP, and permissions are enforced consistently across Operate, Tasklist, Admin, and APIs within that cluster, including engine- and tenant-specific rules.
+Outcome: The OC acts as local SoT for identity and policy. Users and workers can authenticate via the Enterprise IdP, and permissions are enforced consistently across Operate, Tasklist, Admin, and APIs within that cluster, including Physical Tenant- and Tenant-specific rules.
 
 #### 3.1.5 Configure identity for a new organization (full mode: Hub + OC, long-term target)
 
@@ -316,7 +331,11 @@ This section describes the unified identity system at a high level, showing how 
 
 In full mode, the platform runs with both Hub (management/control plane) and Orchestration Cluster (execution plane). Both use the same identity model and the same Security Gateway Framework.
 
-Configuration flows top-down: Hub is the central source of truth for all policy. Configuration is authored once in Hub and propagated via the outbox pattern to each OC, which then propagates scoped views to individual engines. The Admin UI in each OC runs in read-only mode, showing the local projection of Hub policy. In SaaS, this full-mode topology is realized by one shared Hub instance serving multiple organizations, where each organization owns one or more OC clusters and all policy data is partitioned by `organization_id`. In Self-Managed, the same topology applies but with exactly one organization: Hub manages a single customer organization and its OC clusters, so `organization_id` is fixed and the multi-org partitioning is present in the model but not operationally relevant.
+Configuration flows top-down: Hub is the central source of truth for all policy. Configuration is authored once in Hub and propagated to each OC, which then propagates scoped views to individual engines. The Admin UI in each OC runs in read-only mode, showing the local projection of Hub policy.
+
+In SaaS, this full-mode topology is realized by one shared Hub instance serving multiple organizations, where each organization owns one or more OC clusters.
+
+In Self-Managed, the same topology applies but with exactly one organization: Hub manages a single customer organization and its OC clusters, so `organization_id` is fixed and the multi-org partitioning is present in the model but not operationally relevant.
 
 ```mermaid
 flowchart TB
@@ -343,7 +362,7 @@ flowchart TB
 
   Infra["Infrastructure (IDPs, DBs)"]
 
-  Hub --> OC
+  Hub -->|"policy propagation"| OC
   OC --> Infra
   Hub --> Infra
 ```
@@ -352,7 +371,7 @@ flowchart TB
 - Hub is the single source of truth for all policy and configuration.
 - Hub propagates policy changes via the outbox pattern to OC, which maintains a local projection and handles runtime enforcement per engine/tenant.
 - Existing infrastructure is reused, no new databases or services are introduced.
-- Hub and OC instances of the framework integrate with one or more IdPs (per tenant/engine as configured) via standard OIDC/SAML clients; engines never integrate with IdPs directly.
+- Hub and OC gateway-layer instances of the framework integrate with one or more IdPs (per organization/cluster and mapped to logical Tenants and Physical Tenants) via standard OIDC/SAML clients; engines never integrate with IdPs directly.
 
 ### 4.2 OC-only mode (standalone OC)
 
@@ -368,32 +387,15 @@ flowchart TB
     Tasklist["Tasklist"]
     Admin["Admin"]
 
-    subgraph OC["Orchestration Cluster"]
-      OCLib["Security Gateway Framework"]
-
-      OCLib -->|"config propagation"| Engine2
-      OCLib -->|"config propagation"| EngineN
-
-      subgraph EngineN["Default Engine"]
-        EngLibN["Security Engine Framework"]
-      end
-
-      subgraph Engine2["Engine2 (optional)"]
-        EngLib2["Security Engine Framework"]
-      end
-    end
+    OC["Orchestration Cluster"]
   end
 
   Operate & Tasklist & Admin --> OC
 
-  IdPs[("[1 - N] IDPs (per tenant/engine)")]
+  IdPs[("[1 - N] IDPs (per logical tenant/Physical Tenant)")]
   DBs[("DBs (primary/secondary)")]
 
-  Engine2 & EngineN --> DBs
-  OC --> IdPs
-
-  style Engine2 fill:#34a853,color:#fff
-  style EngineN fill:#34a853,color:#fff
+  OC --> DBs & IdPs
 ```
 
 - OC is the single source of truth for all policy and configuration.
@@ -407,7 +409,7 @@ flowchart TB
 
 ### 5.1 High-level components
 
-The following diagrams show the internal structure of Hub and Orchestration Cluster, including how Security Gateway Framework instance connects to frontend applications, infrastructure, and (in multi-engine scenarios) individual engine instances.
+The following diagrams show the internal structure of Hub and Orchestration Cluster, including how Security Gateway Framework instance connects to frontend applications, infrastructure, and (in multiple-Physical-Tenant scenarios) individual engine instances.
 
 Both the Hub and OC instances of the Security Gateway Framework maintain their own local state:
 
@@ -415,7 +417,7 @@ Both the Hub and OC instances of the Security Gateway Framework maintain their o
 - Local tracking of the last applied policy version (`last_applied_version` on the OC side, `last_acked_version` per OC on the Hub side).
 - Local session state.
 
-#### 5.1.1 Full mode (Hub + OC)
+#### 5.1.1 Full mode Simple (Hub + OC with one Engine)
 
 ```mermaid
 flowchart TB
@@ -437,50 +439,52 @@ flowchart TB
     AdminOC["Admin UI (view only)"]
 
     subgraph OC["Orchestration Cluster"]
-      SecGatOC["Security Gateway Framework"]
-
-      SecGatOC -->|"config propagation"| Engine2
-      SecGatOC -->|"config propagation"| EngineN
-
-      subgraph Engine2["Engine2 (optional)"]
-        SecEngFrame1["Security Engine Framework"]
+      subgraph GatewayLayer["Gateway / Search Layer"]
+        SecGatOC["Security Gateway Framework</br>(embedded in Gateway)"]
       end
 
-      subgraph EngineN["Default Engine"]
-        SecEngFrameN["Security Engine Framework"]
+      subgraph Broker["Broker"]
+        Engine["Engine</br>(Physical Tenant)"]
+        SecEngFrame["Security Engine Framework"]
       end
+
+      SecGatOC -->|"config propagation</br>(batch operation)"| Broker
     end
 
-    AdminOC & Operate & Tasklist --> OC
+    AdminOC & Operate & Tasklist --> GatewayLayer
   end
 
-  IdPs[("[1 - N] IDPs (per tenant/engine)")]
+  IdPs[("[1 - N] IDPs (per logical tenant/Physical Tenant)")]
   DBs[("DBs (primary/secondary)")]
   HubDb[("Hub DB")]
 
   SecGatHub -->|"config propagation"| SecGatOC
-  Engine2 & EngineN --> DBs
+  Broker --> DBs
   OC & Hub --> IdPs
-
   Hub --> HubDb
 
-  style Engine2 fill:#34a853,color:#fff
-  style EngineN fill:#34a853,color:#fff
+  style Broker fill:#34a853,color:#fff
 ```
 
-Key building blocks in full mode:
+Key building blocks in full mode simple:
 
 - Console, Web Modeler, Admin UI (read-write): Frontend applications in the management plane. The Admin UI here allows full policy authoring for all configurable layers (Hub, OCs, engines, tenants).
 - Hub + Security Gateway Framework: Central source of truth. Manages all policy configuration for all clusters, OCs, and engines. All policy changes originate here.
 - Operate, Tasklist, Admin UI (read-only): Runtime frontends in the execution plane. The Admin UI shows the cluster-local projection of Hub policy; configuration is read-only.
-- OC + Security Gateway Framework: Per-cluster policy enforcement and projection layer. Receives policy snapshots from Hub via the outbox pattern. Propagates scoped policy views to individual engines.
-- Engine instances (Default Engine, Engine2 optional): Optional multi-engine support. Each engine receives its scoped projection of cluster policy from OC. No direct Hub connection.
+- OC + Security Gateway Framework: Per-cluster policy enforcement and projection layer. Receives policy snapshots from Hub via the outbox pattern. Propagates scoped policy views via batch operation to the single engine.
+- Engine (Physical Tenant): A single execution context (Zeebe engine) inside the Broker. A Physical Tenant is an independent execution unit that hosts one or more logical Tenants (e.g., `default`, `retail`). Receives its scoped projection of cluster policy from OC. No direct Hub connection.
 - Security Engine Framework: Engine-specific policy enforcement layer.
 - Infrastructure (IDPs, DBs): Shared existing persistence and IdP connectivity for authentication and authorization across all layers.
 
-Configuration propagation chain: Hub → OC → Engine.
+> **Important:** A **Physical Tenant** is an Engine (a physical execution unit). A **Tenant** (like `default`, `retail`, `wholesale`) is a logical partition for data and access. Multiple logical Tenants can execute within a single Physical Tenant (Engine). The policy scopes are: `ALL` (cluster-wide), `TENANT` (specific logical tenant) or `PHYSICAL_TENANT` (specific physical tenant).
 
-#### 5.1.2 OC-only mode (standalone OC)
+Configuration propagation chain: Hub → OC → Physical Tenant (Engine).
+
+For concrete deployment topologies (including multi-gateway and multi-broker layouts), see section [7. Deployment view](#7-deployment-view).
+
+#### 5.1.2 OC-only mode Simple (standalone OC with one Engine)
+
+> **Note on physical layout:** In this diagram, the OC box represents the full logical cluster. At the physical level the Security Gateway Framework runs inside the **Gateway / Search Layer** (one or more Zeebe Gateways), and each Broker contains one or more **Engines (Physical Tenants)**. See section 1.1 for details.
 
 ```mermaid
 flowchart TB
@@ -491,42 +495,54 @@ flowchart TB
     AdminUI["Admin"]
 
     subgraph OC["Orchestration Cluster"]
-      OCLib["Security Gateway Framework"]
-
-      OCLib -->|"config propagation"| Engine2
-      OCLib -->|"config propagation"| EngineN
-
-      subgraph EngineN["Default Engine"]
-        EngLibN["Security Engine Framework"]
+      subgraph GatewayLayer["Gateway / Search Layer"]
+        OCLib["Security Gateway Framework"]
       end
 
-      subgraph Engine2["Engine2 (optional)"]
-        EngLib2["Security Engine Framework"]
+      subgraph Broker["Broker"]
+        Engine["Engine</br>(Physical Tenant)"]
+        EngLib["Security Engine Framework"]
       end
+
+      OCLib -->|"config propagation</br>(batch operation)"| Broker
     end
   end
 
-  Operate & Tasklist & AdminUI --> OC
+  Operate & Tasklist & AdminUI --> GatewayLayer
 
-  IdPs[("[1 - N] IDPs (per tenant/engine)")]
+  IdPs[("[1 - N] IDPs (per logical tenant/Physical Tenant)")]
   DBs[("DBs (primary/secondary)")]
 
-  Engine2 & EngineN --> DBs
+  Broker --> DBs
   OC --> IdPs
 
-  style Engine2 fill:#34a853,color:#fff
-  style EngineN fill:#34a853,color:#fff
+  style Broker fill:#34a853,color:#fff
 ```
 
-Key building blocks in OC-only mode:
+Key building blocks in OC-only mode simple:
 
 - Operate, Tasklist, Admin UI (read-write): Runtime frontends that interact directly with OC. The Admin UI allows full policy authoring (no Hub restrictions).
 - OC + Security Gateway Framework: Local source of truth. Manages all policy and authorization directly without Hub coordination. All policy changes originate here.
-- Engine instances (Default Engine, Engine2 optional): Each engine receives its scoped projection of local OC policy. OC is the single source of all policy.
+- Engine (Physical Tenant): A single execution context (Zeebe engine) inside the Broker. A Physical Tenant is an independent execution unit that hosts one or more logical Tenants (e.g., `default`, `retail`). Receives its scoped projection of local OC policy. OC is the single source of all policy.
 - Security Engine Framework: Engine-specific policy enforcement layer.
 - Infrastructure (IDPs, DBs): Local persistence and IdP connectivity; no cross-cluster replication or Hub involvement.
 
-Configuration propagation chain: OC → Engine.
+> **Important:** A **Physical Tenant** is an Engine (a physical execution unit). A **Tenant** (like `default`, `retail`, `wholesale`) is a logical partition for data and access. Multiple logical Tenants can execute within a single Physical Tenant (Engine).
+
+For more complex OC-only deployments with multiple brokers and multiple engines per broker, see section [7.1.3 OC-only mode Standalone (2 Gateways + 3 Brokers)](#713-oc-only-mode-standalone-2-gateways--3-brokers).
+
+#### 5.1.3 Full mode Complex (Hub + OC with multiple Brokers and multiple Engines)
+
+This section defines the conceptual behavior only; the complete deployment examples are maintained in section [7. Deployment view](#7-deployment-view).
+
+- Full mode keeps the same propagation chain: Hub (policy SoT) -> OC gateway/search layer (Security Gateway Framework) -> broker/engine layer (Security Engine Framework).
+- OC may run one or many gateways and one or many brokers depending on scale and availability targets.
+- Each broker may host one or many engines (Physical Tenants), and each engine hosts one or many logical tenants.
+
+For concrete diagrams:
+
+- Single-node full mode: [7.1.2 Full mode (Hub + Orchestration Cluster, self-managed)](#712-full-mode-hub--orchestration-cluster-self-managed)
+- Standalone multi-node OC-only mode: [7.1.3 OC-only mode Standalone (2 Gateways + 3 Brokers)](#713-oc-only-mode-standalone-2-gateways--3-brokers)
 
 ---
 
@@ -595,7 +611,7 @@ Both Hub and OC use exactly the same policy model, but with different responsibi
 
 - **Hub Identity & Policy** (central policy authoring and propagation)
   - Acts as **policy source of truth** for all clusters in full-mode deployments.
-  - Authoring location for tenants, roles, groups, mapping rules, and authorizations (all with full scope awareness: `ALL`, `TENANT`, `ENGINE`, `TENANT_ENGINE`).
+  - Authoring location for tenants, roles, groups, mapping rules, and authorizations (all with full scope awareness: `ALL`, `TENANT`, `PHYSICAL_TENANT`).
   - Stores organization-scoped `PolicyVersion` records per cluster and drives propagation via Outbox/`OutboxEvent`.
   - Handles authentication for Hub applications (Console, Web Modeler, Admin UI) via the same Security Gateway Framework instance.
   - Does **not** enforce authorization for runtime execution APIs; that is strictly an OC responsibility.
@@ -621,13 +637,13 @@ The following table summarizes which information must be known to which componen
 
 | Information type                             | Hub (full mode)                                                | OC (full mode)                                                      | OC-only mode (OC)                | Engine                                 |
 |---------------------------------------------|-----------------------------------------------------------------|---------------------------------------------------------------------|----------------------------------|----------------------------------------|
-| IdP client credentials (client IDs/secrets) | Yes (managed centrally or per-tenant)                          | Yes (cluster-local credentials / secrets per OC / tenant / engine)  | Yes                              | No                                     |
-| IdP connections per tenant (OIDC/SAML)      | Yes (for Hub apps)                                             | Yes (for cluster-side authn)                                        | Yes                              | No (trusts OC)                         |
+| IdP client credentials (client IDs/secrets) | Yes (managed centrally or per logical Tenant)                  | Yes (cluster-local credentials / secrets per OC / logical Tenant / Physical Tenant) | Yes                              | No                                     |
+| IdP connections per logical Tenant (OIDC/SAML) | Yes (for Hub apps)                                          | Yes (for cluster-side authn)                                        | Yes                              | No (trusts OC)                         |
 | Organization / cluster ownership metadata   | Yes (organization boundary + OC enumeration via `ClusterRegistryPort`) | Yes (cluster-local identity context)                                | No                               | No                                     |
-| Tenant                                      | Yes (SoT)                                                      | Yes (projection per cluster)                                        | Yes (SoT)                        | Indirectly via OC commands             |
+| Logical Tenant                              | Yes (SoT)                                                      | Yes (projection per cluster)                                        | Yes                              | Indirectly via OC commands             |
 | Mapping rules (claims → roles/tenants)      | Yes (SoT)                                                      | Yes (projection per cluster)                                        | Yes                              | No                                     |
 | Roles and groups                            | Yes (SoT)                                                      | Yes (projection per cluster)                                        | Yes                              | No (only resulting permissions)        |
-| Authorizations (role/group → resource perms)| Yes (SoT)                                                      | Yes (projection per cluster; engine-scoped and tenant-scoped views) | Yes                              | Indirectly (via engine-local projections) |
+| Authorizations (role/group → resource perms)| Yes (SoT)                                                      | Yes (projection per cluster; Physical-Tenant-scoped and logical-Tenant-scoped views) | Yes                              | Indirectly (via engine-local projections) |
 | Policy versions and outbox state            | Yes (`PolicyVersion`, `OutboxEvent`, `OcSyncState`), scoped by organization + cluster in shared Hub deployments | Yes (`last_applied_version` per cluster)                            | Yes (local policy versions only) | No explicit versioning; consumes OC-level updates |
 | Session data                                | Yes (Hub sessions only)                                        | Yes (cluster sessions only)                                         | Yes                              | No                                     |
 
@@ -812,8 +828,8 @@ PolicyVersionChange
   entity_type        -- TENANT | GROUP | ROLE | MAPPING_RULE | PRINCIPAL | AUTHORIZATION
   entity_id          -- stable logical ID
   operation          -- UPSERT | DELETE
-  scope_type         -- ALL | TENANT | ENGINE | TENANT_ENGINE
-  scope_id           -- nullable; for TENANT_ENGINE use a composite key format
+  scope_type         -- ALL | TENANT | PHYSICAL_TENANT
+  scope_id           -- nullable;
   revision_ref       -- reference to concrete entity revision payload
 ```
 
@@ -972,7 +988,7 @@ The following simplified rows show selected database rows for the same entities 
 | `rev-authz-cluster-admin-api-v1` | `org-acme` | `AUTHORIZATION` | `authz-cluster-admin-api` | `pv-1` | `ALL` |  | `false` | `{"id":"authz-cluster-admin-api","ownerType":"ROLE","ownerId":"role-cluster-admin","resourceType":"CLUSTER_API","resourceId":"*","permissions":["MANAGE_CLUSTER_SETTINGS","MANAGE_USERS"]}` |
 | `rev-role-support-agent-v2` | `org-acme` | `ROLE` | `role-support-agent` | `pv-2` | `ALL` |  | `false` | `{"id":"role-support-agent","permissions":["READ_PROCESS_INSTANCE","READ_TASK","UPDATE_TASK"]}` |
 | `rev-authz-support-task-v2` | `org-acme` | `AUTHORIZATION` | `authz-support-task` | `pv-2` | `ALL` |  | `false` | `{"id":"authz-support-task","ownerType":"ROLE","ownerId":"role-support-agent","resourceType":"USER_TASK","resourceId":"*","permissions":["READ_TASK","UPDATE_TASK"]}` |
-| `rev-authz-engine2-support-v3` | `org-acme` | `AUTHORIZATION` | `authz-engine2-support` | `pv-3` | `ENGINE` | `engine-2` | `false` | `{"id":"authz-engine2-support","ownerType":"ROLE","ownerId":"role-support-agent","resourceType":"PROCESS_INSTANCE","resourceId":"*","permissions":["READ_PROCESS_INSTANCE"]}` |
+| `rev-authz-engine2-support-v3` | `org-acme` | `AUTHORIZATION` | `authz-engine2-support` | `pv-3` | `PHYSICAL_TENANT` | `engine-2` | `false` | `{"id":"authz-engine2-support","ownerType":"ROLE","ownerId":"role-support-agent","resourceType":"PROCESS_INSTANCE","resourceId":"*","permissions":["READ_PROCESS_INSTANCE"]}` |
 
 **PolicyVersionChange**
 
@@ -983,7 +999,7 @@ The following simplified rows show selected database rows for the same entities 
 | `chg-3` | `org-acme` | `pv-1` | 3 | `AUTHORIZATION` | `authz-cluster-admin-api` | `UPSERT` | `ALL` |  | `rev-authz-cluster-admin-api-v1` |
 | `chg-4` | `org-acme` | `pv-2` | 1 | `ROLE` | `role-support-agent` | `UPSERT` | `ALL` |  | `rev-role-support-agent-v2` |
 | `chg-5` | `org-acme` | `pv-2` | 2 | `AUTHORIZATION` | `authz-support-task` | `UPSERT` | `ALL` |  | `rev-authz-support-task-v2` |
-| `chg-6` | `org-acme` | `pv-3` | 1 | `AUTHORIZATION` | `authz-engine2-support` | `UPSERT` | `ENGINE` | `engine-2` | `rev-authz-engine2-support-v3` |
+| `chg-6` | `org-acme` | `pv-3` | 1 | `AUTHORIZATION` | `authz-engine2-support` | `UPSERT` | `PHYSICAL_TENANT` | `engine-2` | `rev-authz-engine2-support-v3` |
 
 ### 5.3.7 Example policy versions (initial + 2 updates)
 
@@ -1231,7 +1247,7 @@ The **Security Engine Framework** is the identity sub-framework embedded directl
 
 The OC Security Gateway Framework communicates with each engine exclusively through the `EngineCommandPort` outbound port, which translates into engine-level identity commands. The Security Engine Framework receives those commands via its own inbound port and decides how to persist and apply the identity state changes inside the engine.
 
-**Key rule:** engines never talk to IdPs directly, never hold policy versions, and never interpret scope metadata beyond what is needed for their own authorization decisions. The Security Gateway Framework on the OC side is responsible for deciding what to forward and how to scope it; see [ADR-0004](adr/0004-oc-identity-data-persistence-and-engine-command-scope.md) for the open decision on how scope metadata flows into the engine.
+**Key rule:** engines never talk to IdPs directly, never hold policy versions, and never interpret scope metadata beyond what is needed for their own authorization decisions. The Security Gateway Framework on the OC side is responsible for deciding what to forward and how to scope it; see [ ADR-0004](adr/0004-oc-identity-data-persistence-and-engine-command-scope.md) for the open decision on how scope metadata flows into the engine.
 
 ```mermaid
 graph LR
@@ -1266,14 +1282,14 @@ graph LR
 
 | Inbound port | Responsibility |
 |---|---|
-| `IdentityCommandPort` | Receive and apply identity state updates forwarded by the OC Security Gateway Framework (tenants, roles, groups, mapping rules, authorizations). Persists the effective state to primary storage via `IdentityStatePort`. |
+| `IdentityCommandPort` | Receive and apply identity state updates forwarded by the OC Security Gateway Framework (tenants, roles, mapping rules, authorizations). Persists the effective state to primary storage via `IdentityStatePort`. |
 | `EngineAuthorizationPort` | Evaluate whether a given engine command (e.g. create process instance, complete user task) is authorized for the requesting principal, using the identity state held in primary storage. |
 
 **Outbound port responsibilities:**
 
 | Outbound port | Responsibility |
 |---|---|
-| `IdentityStatePort` | Read and write identity state (authorizations, roles, memberships, mapping rules, tenants) to the engine's primary storage (RocksDB). Abstracts the concrete state class layer from the domain logic. |
+| `IdentityStatePort` | Read and write identity state (authorizations, tenants, memberships) to the engine's primary storage (RocksDB). Abstracts the concrete state class layer from the domain logic. |
 
 **Open question:** how identity data is persisted in the OC (direct write from the OC SGF to secondary storage vs. routing through engine commands and the exporter) is an unresolved design question that also determines what scope metadata the engine must receive. See [ADR-0004: Identity data persistence in the Orchestration Cluster](adr/0004-oc-identity-data-persistence-and-engine-command-scope.md).
 
@@ -1290,6 +1306,21 @@ The dedicated enforcement layer inside each engine is intentional:
   - Engines only apply what the OC Security Gateway Framework forwards; they cannot author or override policy.
 - Pluggable state adapter
   - `IdentityStatePort` decouples authorization logic from the concrete persistence backend (RocksDB today), so the backend can be swapped without changing domain logic.
+
+#### 5.5.2 Config propagation to the engine via batch operations
+
+When the OC Security Gateway Framework needs to propagate a policy change to a Physical Tenant (Engine) inside a Broker, it must create a potentially large number of identity commands and/or resources inside the engine (tenants, roles, mapping rules, authorizations). Creating these one-by-one would be fragile and slow.
+
+**The propagation is therefore implemented using the engine's existing Batch Operation feature.** The `EngineCommandPort` adapter creates for each Physical Tenant a single batch operation. This gives us:
+
+- **Atomicity:** all identity resources for one policy update land in the engine together as one batch job.
+- **Scalability:** the batch operation infrastructure already handles large volumes of commands efficiently.
+- **Observability:** batch operation progress and failure are visible through existing batch operation monitoring.
+- **Consistency with the engine's design:** no new ad-hoc bulk command mechanism is introduced; we reuse an already-solved problem.
+
+This is the primary mechanism by which the OC Gateway/Search Layer propagates Physical Tenant configuration to Brokers and their engines.
+
+Open Topic: Currently, in batch operation we just handover lists of numbers to the engine. For this feature, we need to push a list of objects ...
 
 ### 5.6 Persistent sessions
 
@@ -1317,14 +1348,15 @@ TODO
 
 ### 5.8 Scoped Policies
 
-#### 5.8.1 Multi Engine support
+#### 5.8.1 Physical Tenant support (formerly: Multi Engine support)
 
-The unified identity plane supports multiple engines per Orchestration Cluster in both deployment modes:
+The unified identity plane supports multiple Physical Tenants (Engines) per Orchestration Cluster in both deployment modes. Each Physical Tenant is an Engine inside a Broker — a scoped execution context with its own identity projection (see section 1.1).
 
-- Full mode (Hub + OC): Hub as SoT defines cluster-scoped policies (roles, mappings, tenants, authorizations), OC projects them, and engines consume scoped views.
+- Full mode (Hub + OC): Hub as SoT defines cluster-scoped policies (roles, mappings, logical Tenants, authorizations), OC projects them, and engines consume scoped views.
 - OC-only mode: OC is SoT for local policies and propagates scoped views directly to engines.
-- Policy scoping supports all levels needed for multi-engine and multi-tenant operation: `ALL` (cluster-wide), `TENANT` (tenant-wide), `ENGINE` (engine-wide), and `TENANT_ENGINE` (tenant within a specific engine).
+- Policy scoping supports all levels needed for multiple-Physical-Tenant and multi-logical-tenant operation: `ALL` (cluster-wide), `TENANT` (logical-tenant-wide) and `PHYSICAL_TENANT` (Physical-Tenant-wide).
 - In both modes: Engines do not define their own identity models.
+- One Physical Tenant can host multiple logical Tenants.
 
 ```mermaid
 flowchart TB
@@ -1349,31 +1381,31 @@ flowchart TB
   OC2Id -->|"Engine-local role/perm view"| E3
 ```
 
-- In full mode, Hub is the single SoT; policy flows downward: Hub → all OCs → all Engines.
-- OC identity instances maintain cluster-local projections and handle engine-level scoping.
-- OC identity instances also enforce tenant-level scoping and combined tenant+engine scoping where required.
+- In full mode, Hub is the single SoT; policy flows downward: Hub -> all OCs -> all Physical Tenants.
+- OC identity instances maintain cluster-local projections and handle Physical-Tenant-level scoping.
+- OC identity instances also enforce logical-Tenant-level scoping and combined logical-Tenant+Physical-Tenant scoping where required.
 - Engines consume the cluster-level projection; they do not define their own identity models and cannot override OC policy.
 - In OC-only mode, the same projection model applies with local flow: OC → Engines.
 
-#### 5.8.2 Multi Tenant support
+#### 5.8.2 Logical Tenant support
 
-Multi-tenancy is a first-class concern in the policy model. Tenant configuration is authored once in Hub and propagated top-down to OC and then to engines. Each layer maintains tenant-aware roles, mapping rules, and authorizations.
+Logical multi-tenancy is a first-class concern in the policy model. Logical Tenant configuration is authored once in Hub and propagated top-down to OC and then to engines. Each layer maintains logical-tenant-aware roles, mapping rules, and authorizations.
 
 ```mermaid
 graph TB
   subgraph HubTenants["Hub – Tenant registry & IDP config"]
     TR["Tenant Registry</br>(e.g. tenant-a, tenant-b)"]
-    IdpMap["IDP Connection Map</br>(per tenant)"]
+    IdpMap["IDP Connection Map</br>(per logical Tenant)"]
   end
 
   subgraph OCView["OC – Tenant-scoped security context"]
-    OC_TA["Tenant A context</br>(roles, perms, mappings)"]
-    OC_TB["Tenant B context</br>(roles, perms, mappings)"]
+    OC_TA["Logical Tenant A context</br>(roles, perms, mappings)"]
+    OC_TB["Logical Tenant B context</br>(roles, perms, mappings)"]
   end
 
   subgraph EngineView["Engine – Tenant-scoped enforcement"]
-    ENG_TA["Tenant A</br>Authorization filter active"]
-    ENG_TB["Tenant B</br>Authorization filter active"]
+    ENG_TA["Logical Tenant A</br>Authorization filter active"]
+    ENG_TB["Logical Tenant B</br>Authorization filter active"]
   end
 
   TR --> IdpMap
@@ -1384,23 +1416,23 @@ graph TB
 
 On each request, the Security Gateway Framework:
 
-1. Resolves the tenant context from token claims and/or headers.
-2. Loads the tenant-specific policy view (roles, mappings, authorizations).
-3. Enforces permissions within the tenant boundary, preventing cross-tenant data access.
+ 1. Resolves the logical-tenant context from token claims and/or headers.
+ 2. Loads the logical-tenant-specific policy view (roles, mappings, authorizations).
+ 3. Enforces permissions within the logical-tenant boundary, preventing cross-tenant data access.
 
-#### 5.8.3 Global vs scoped policies (tenant and engine)
+#### 5.8.3 Global vs scoped policies (logical Tenant and Physical Tenant)
 
 The policy model supports both:
 
 - Global roles and permissions
   - Roles (for example `ClusterAdmin`, `SupportAgent`) are defined once per cluster in Hub or OC.
   - Authorizations with scope `ALL` apply across all engines in the cluster.
-- Tenant- and engine-scoped authorizations
-  - The same role can have additional authorizations restricted to a tenant (`scope_type = TENANT`), a specific engine (`scope_type = ENGINE`), or a tenant within a specific engine (`scope_type = TENANT_ENGINE`).
+- Logical-Tenant- and Physical-Tenant-scoped authorizations
+  - The same role can have additional authorizations restricted to a logical Tenant (`scope_type = TENANT`) or a specific Physical Tenant (`scope_type = PYSICAL_TENANT`).
   - Example: `SupportAgent` role may have:
     - Global read/update access to user tasks across all engines (`ALL`).
-    - Additional read access to process instances only on `engine-2` (`ENGINE`).
-    - Access to process instances only for tenant `retail` (`TENANT`) or only for tenant `retail` on `engine-2` (`TENANT_ENGINE`).
+    - Additional read access to process instances only on `engine-2` (`PHYSICAL_TENANT`).
+    - Access to process instances only for tenant `retail` (`TENANT`).
 
 Roles and groups are always defined at the OC/cluster level; engine-specific behavior is expressed through scoping of authorizations, not through engine-local role definitions.
 
@@ -1459,14 +1491,14 @@ sequenceDiagram
 ### 6.2 End user logs into Operate in full mode
 
 1. User opens Operate in the browser.
-2. Operate delegate authentication to the OC’s Security Gateway Framework (for example via OAuth2 login flow or existing session cookie).
+2. Operate delegate authentication to the OC's Security Gateway Framework (for example via OAuth2 login flow or existing session cookie).
 3. OC Security Gateway Framework:
-  - Redirects or talks to the configured IdP for the user’s tenant.
-  - Validates the returned OIDC/SAML token and derives the principal’s roles, groups, and tenant assignments from mapping rules and direct assignments.
+  - Redirects or talks to the configured IdP for the user's logical Tenant.
+  - Validates the returned OIDC/SAML token and derives the principal's roles, groups, and logical-Tenant assignments from mapping rules and direct assignments.
 4. For each incoming request from Operate:
-  - OC resolves the tenant context (from token claims and/or headers).
-  - Loads the tenant- and engine-scoped policy view from its local projection (which is synchronized from Hub).
-  - Evaluates whether the principal has the required permissions on the requested resource (for example reading process instances in a given tenant).
+  - OC resolves the logical-Tenant context (from token claims and/or headers).
+  - Loads the logical-Tenant- and Physical-Tenant-scoped policy view from its local projection (which is synchronized from Hub).
+  - Evaluates whether the principal has the required permissions on the requested resource (for example reading process instances in a given logical Tenant).
 5. If the check passes:
   - OC forwards or executes the corresponding operation against the engine(s).
   - Engines apply their own runtime-level checks (for example engine-level authorization filters) based on the OC-provided projections.
@@ -1543,7 +1575,7 @@ sequenceDiagram
 
 ### 7.1 Self-Managed deployment
 
-In Self-Managed, the customer owns and operates all infrastructure. Two deployment modes are supported, mirroring the general modes described in section 4.
+In Self-Managed, the customer owns and operates all infrastructure. Three deployment views are shown below, mirroring the general modes and scaling variants from section 4.
 
 #### 7.1.1 OC-only mode (standalone Orchestration Cluster)
 
@@ -1551,6 +1583,7 @@ The most common Self-Managed topology. Hub is not present; the Orchestration Clu
 
 - OC acts as local SoT for identity and policy.
 - The Enterprise IdP is integrated directly via OIDC/SAML; no Camunda-operated broker is involved.
+- OC includes an embedded gateway/search layer and a broker/engine layer; policy is enforced by Security Gateway Framework (gateway) and Security Engine Framework (broker/engine).
 - Multiple engines per cluster are supported with OC-level policy propagation.
 - Suitable for production use cases that do not require cross-cluster policy management.
 
@@ -1566,14 +1599,20 @@ flowchart TB
       AdminUI["Admin UI (read/write)"]
 
       subgraph OC["Orchestration Cluster"]
-        SecGatOC["Security Gateway Framework"]
+        subgraph GatewayLayer["Gateway / Search Layer"]
+          SecGatOC["Security Gateway Framework"]
+        end
+
+        subgraph Broker1["Broker"]
+          SecEngFrame1["Security Engine Framework"]
+        end
       end
 
-      Operate & Tasklist & AdminUI --> OC
+      Operate & Tasklist & AdminUI --> GatewayLayer
     end
 
     DBs[("DBs (Primary / Secondary)")]
-    OC --> DBs
+    Broker1 --> DBs
   end
 
   EnterpriseIdP[["Enterprise IdP</br>(Keycloak, Entra, Okta, ...)"]]
@@ -1587,7 +1626,8 @@ An advanced Self-Managed topology where the customer also operates Hub. Hub beco
 - Hub and all OC instances are deployed and operated by the customer on their own infrastructure.
 - The Enterprise IdP is integrated at both Hub (management plane auth) and OC (execution plane auth) levels.
 - Cluster discovery and registration are handled via the `ClusterRegistryPort` and `ClusterRegistrationService` ports; the host application's adapter determines how new OCs are discovered and registered.
-- Policy flows top-down: Hub → OC → Engine, same as in SaaS, but without a Camunda-operated broker.
+- OC is configured with an embedded gateway/search layer and broker/engine layer; Security Gateway Framework runs in gateway, Security Engine Framework runs in broker/engine.
+- Policy flows top-down: Hub -> Gateway -> Broker(Engine), same as in SaaS, but without a Camunda-operated broker.
 - Suitable for large-scale or multi-cluster Self-Managed environments requiring centralized policy governance.
 
 ```mermaid
@@ -1611,10 +1651,16 @@ flowchart TB
     subgraph Execution["Execution Plane"]
       Operate["Operate"]
       Tasklist["Tasklist"]
-      AdminOC["Admin UI (read-only)"]
+      AdminOC["Admin UI (view-only)"]
 
       subgraph OC["Orchestration Cluster"]
-        SecGatOC["Security Gateway Framework"]
+        subgraph GatewayLayer["Gateway / Search Layer"]
+          SecGatOC["Security Gateway Framework"]
+        end
+
+        subgraph Broker1["Broker"]
+          SecEngFrame1["Security Engine Framework"]
+        end
       end
 
       Operate & Tasklist & AdminOC --> OC
@@ -1632,6 +1678,61 @@ flowchart TB
   Hub & OC --> EnterpriseIdP
 ```
 
+#### 7.1.3 OC-only mode Standalone (2 Gateways + 3 Brokers)
+
+Standalone OC topology for higher throughput and availability. Hub is not present; OC remains the local policy source of truth. Two gateways provide ingress and search-layer responsibilities, and three brokers execute workloads.
+
+- Two gateways each run the Security Gateway Framework and connect clients (Operate, Tasklist, Admin UI, workers) to the cluster.
+- Three brokers run the Security Engine Framework and receive policy snapshots from the gateway layer.
+- Each broker hosts multiple engines (Physical Tenants); logical tenants are scoped onto those engines using `ALL`, `TENANT` and `PHYSICAL_TENANT`.
+- Suitable for larger standalone Self-Managed deployments that need horizontal scale without Hub.
+
+```mermaid
+---
+title: Self-Managed Deployment - OC-only standalone (2 Gateways + 3 Brokers)
+---
+flowchart TB
+  subgraph Customer["Customer-managed Infrastructure"]
+    subgraph Execution["Execution Plane"]
+      subgraph GW1["Gateway 1"]
+        GW1SGF["Security Gateway Framework"]
+      end
+      subgraph GW2["Gateway 2"]
+        GW2SGF["Security Gateway Framework"]
+      end
+
+      subgraph Broker1["Broker 1"]
+        B1E1["Engine A</br>(Physical Tenant)"]
+        B1E2["Engine B</br>(Physical Tenant)"]
+        B1SEF["Security Engine Framework"]
+      end
+
+      subgraph Broker2["Broker 2"]
+        B2E1["Engine C</br>(Physical Tenant)"]
+        B2E2["Engine D</br>(Physical Tenant)"]
+        B2SEF["Security Engine Framework"]
+      end
+
+      subgraph Broker3["Broker 3"]
+        B3E1["Engine E</br>(Physical Tenant)"]
+        B3E2["Engine F</br>(Physical Tenant)"]
+        B3SEF["Security Engine Framework"]
+      end
+
+      GW1 --> Broker1
+      GW1 --> Broker2
+      GW2 --> Broker2
+      GW2 --> Broker3
+    end
+
+    DBs[("DBs (Primary / Secondary)")]
+  end
+
+  EnterpriseIdP[["Enterprise IdP</br>(Keycloak, Entra, Okta, ...)"]]
+  Execution --> DBs
+  GW1 & GW2 --> EnterpriseIdP
+```
+
 ---
 
 ### 7.2 SaaS deployment
@@ -1639,9 +1740,9 @@ flowchart TB
 In SaaS, Camunda operates one shared Hub instance for many customer organizations. The unified identity library therefore has to support multi-organization policy authoring and propagation inside a single Hub runtime.
 
 - One shared Hub instance serves **many organizations** (one per customer); policy and identity data in Hub must therefore be partitioned by organization. Each organization owns one or more OC clusters. This is in direct contrast to Self-Managed, where there is always exactly one organization.
-- In the first iterations, this partitioning is logical only: shared Hub databases and infrastructure are reused, while policy tables and queries are keyed by `organization_id`.
+- In the first iterations, this partitioning is logical only: shared Hub infrastructure and databases are reused, while policy tables and queries are keyed by `organization_id`.
 - Each OC remains associated with exactly one organization boundary for policy propagation.
-- Cluster enumeration and registration in Hub are handled via `ClusterRegistryPort` (outbound) and `ClusterRegistrationService` (inbound) ports. How Hub's adapter implementation populates the cluster registry is a host-application integration concern, not a library concern.
+- Cluster discovery and registration in Hub are handled via `ClusterRegistryPort` (outbound) and `ClusterRegistrationService` (inbound) ports. How Hub's adapter implementation populates the cluster registry is a host-application integration concern, not a library concern.
 - During migration, SaaS may still keep Auth0 or another broker as an internal implementation detail; this does not change the target policy model.
 
 ```mermaid
@@ -1719,7 +1820,7 @@ This unified architecture builds on existing identity arc42 docs and ADRs for OC
 - Use a shared hexagonal Security Gateway Framework with SPIs for persistence, outbox, IdP, OC commands, and (optionally) engine-level integration.
 - Use Hub as policy SoT whenever present; OC-only deployments are treated as documented first-class modes, not afterthoughts.
 - Ship a single shared Admin UI package, feature-gated by configuration for Hub vs OC, standalone vs Hub-managed.
-- Make multi-tenancy and multi-engine support explicit in the core model and diagrams, not side effects.
+- Make logical-tenant and Physical-Tenant support explicit in the core model and diagrams, not side effects.
 
 ### 9.1 Open High Level points (to be refined in separate ADRs):
 
@@ -1750,3 +1851,4 @@ The migration path from the current split identity systems (Auth0 in SaaS, Manag
 ### Sources
 
 - [Unified Identity Target Architecture for Camunda Hub and Orchestration Clusters](https://docs.google.com/document/d/1ExLH2KYmz_V7Zq51adzz9c1Yk2s5ZR7ZhhIKwaEcPs0)
+
