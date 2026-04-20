@@ -440,7 +440,7 @@ jobs:
 
           # General UT configuration
           GENERAL_UT_EXTRA_SKIP="camunda-exporter rdbms-exporter"
-          GENERAL_UT_DO_NOT_SKIP="zeebe-bom zeebe-build-tools zeebe-parent zeebe-qa zeebe-qa-util zeebe-qa-integration-tests zeebe-qa-update-tests zeebe-root operate-qa operate-qa-util operate-qa-data-generator operate-qa-it-tests operate-qa-backup-restore-tests tasklist-qa tasklist-qa-util tasklist-it-tests tasklist-test-coverage"
+          GENERAL_UT_DO_NOT_SKIP="zeebe-bom zeebe-build-tools zeebe-parent zeebe-qa zeebe-qa-util zeebe-qa-integration-tests zeebe-qa-update-tests zeebe-root operate-qa operate-qa-data-generator operate-qa-it-tests tasklist-qa tasklist-qa-util tasklist-it-tests tasklist-test-coverage"
 
           # ============================================================================
           # Integration Test Module Constants (computed from UT constants)

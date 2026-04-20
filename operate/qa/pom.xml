@@ -14,7 +14,6 @@
   <name>Operate QA</name>
 
   <modules>
-    <module>util</module>
     <module>integration-tests</module>
   </modules>
 

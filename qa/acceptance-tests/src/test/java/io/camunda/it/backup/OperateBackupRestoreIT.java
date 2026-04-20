@@ -199,8 +199,6 @@ public class OperateBackupRestoreIT {
               throw new IllegalArgumentException("Unsupported database type: " + databaseType);
         };
 
-    configureZeebeBackupStore(testStandaloneApplication.unifiedConfig(), databaseType);
-
     testStandaloneApplication.start().awaitCompleteTopology();
 
     refreshCamundaClient();
@@ -228,7 +226,7 @@ public class OperateBackupRestoreIT {
 
     backup.setStore(BackupStoreType.AZURE);
     azure.setBasePath(containerName);
-    azure.setConnectionString(AZURITE_CONTAINER.getConnectString());
+    azure.setConnectionString(AZURITE_CONTAINER.externalConnectionString());
 
     if (databaseType.isElasticSearch()) {
       cfg.getData()
@@ -281,7 +279,7 @@ public class OperateBackupRestoreIT {
 
     backup.setStore(PrimaryStorageBackup.BackupStoreType.AZURE);
     backup.getAzure().setBasePath(containerName);
-    backup.getAzure().setConnectionString(AZURITE_CONTAINER.getConnectString());
+    backup.getAzure().setConnectionString(AZURITE_CONTAINER.externalConnectionString());
 
     final var brokerCfg = testStandaloneApplication.unifiedConfig();
     unifiedRestoreConfig.getCluster().setNodeId(brokerCfg.getCluster().getNodeId());

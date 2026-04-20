@@ -37,13 +37,13 @@ import org.slf4j.LoggerFactory;
 final class OperateDataGenerator implements AutoCloseable {
 
   static final String PROCESS_BPMN_PROCESS_ID = "basicProcess";
-  static final int PROCESS_INSTANCE_COUNT = 31;
+  static final int PROCESS_INSTANCE_COUNT = 20;
   static final int INCIDENT_COUNT = 12;
   static final int COUNT_OF_CANCEL_OPERATION = 4;
   static final int COUNT_OF_RESOLVE_OPERATION = 5;
   static final String NEW_BPMN_PROCESS_ID = "testProcess2";
   static final int CANCELLED_PROCESS_INSTANCES = 3;
-  static final int NEW_PROCESS_INSTANCES_COUNT = 13;
+  static final int NEW_PROCESS_INSTANCES_COUNT = 2;
   private static final int MIN_ACTIVE_PROCESS_INSTANCE_COUNT_AFTER_INITIAL_OPERATIONS =
       PROCESS_INSTANCE_COUNT - COUNT_OF_CANCEL_OPERATION;
   private static final int MIN_ACTIVE_PROCESS_INSTANCE_COUNT_AFTER_CHANGE =
@@ -244,7 +244,10 @@ final class OperateDataGenerator implements AutoCloseable {
     while (!operationStarted && attempts < maxAttempts) {
       final List<ProcessInstance> incidentProcessInstances = searchIncidentProcessInstances();
       if (incidentProcessInstances.isEmpty()) {
-        break;
+        LOGGER.debug(
+            "Skip change operation {} because no incident process instances were found",
+            operationName);
+        return;
       }
 
       try {
