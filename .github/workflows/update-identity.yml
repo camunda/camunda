@@ -56,12 +56,16 @@ jobs:
       - name: Update identity version in ./parent/pom.xml
         id: update-identity-version
         if: ${{ steps.get-current-identity-version.outputs.info != inputs.identityVersion }}
+        env:
+          IDENTITY_VERSION: ${{ inputs.identityVersion }}
         run: |
-          ./mvnw versions:set-property -DgenerateBackupPoms=false -Dproperty=version.identity -DnewVersion=${{ inputs.identityVersion }} -pl parent
-          git commit -am "deps(identity): update identity to ${{ inputs.identityVersion }}"
+          ./mvnw versions:set-property -DgenerateBackupPoms=false -Dproperty=version.identity -DnewVersion="$IDENTITY_VERSION" -pl parent
+          git commit -am "deps(identity): update identity to $IDENTITY_VERSION"
       - name: Push Changes to the target branch
         if: ${{ steps.update-identity-version.outcome == 'success' && inputs.dryRun == false }}
-        run: git push origin "${{ inputs.targetBranch }}"
+        env:
+          TARGET_BRANCH: ${{ inputs.targetBranch }}
+        run: git push origin -- "$TARGET_BRANCH"
       - name: Import Camunda Secrets
         if: success()
         id: camunda-secrets
