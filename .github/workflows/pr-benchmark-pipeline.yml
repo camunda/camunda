@@ -1,0 +1,274 @@
+# description: Reusable benchmark pipeline for PR load tests. Handles the full
+#              create→await→profile→comment cycle for a single benchmark type. Supports exact
+#              label matching (label) or wildcard matching (label-prefix), where the storage type
+#              is derived from the label suffix (e.g. benchmark-postgresql → postgresql).
+#              Also handles cleanup on label removal/close.
+# called-by: camunda-pr-load-test.yaml
+# calls: camunda-load-test.yml, profile-load-test.yml
+# type: CI
+# owner: @camunda/reliability-testing
+name: PR Benchmark Pipeline
+on:
+  workflow_call:
+    inputs:
+      label:
+        description: 'Exact PR label for single-type benchmarks (e.g. benchmark). Mutually exclusive with label-prefix.'
+        required: false
+        type: string
+        default: ''
+      label-prefix:
+        description: 'PR label prefix for wildcard matching (e.g. benchmark-). The storage type is derived from the label suffix. Mutually exclusive with label.'
+        required: false
+        type: string
+        default: ''
+      ref:
+        description: 'Branch ref to sanitize, deploy, and profile'
+        required: true
+        type: string
+      secondary-storage-type:
+        description: 'Storage backend override. Only used with exact label; with label-prefix the type is derived from the label suffix.'
+        required: false
+        type: string
+        default: 'elasticsearch'
+
+defaults:
+  run:
+    shell: bash
+
+env:
+  CLUSTER: camunda-benchmark-prod
+  TELEPORT_JOIN_TOKEN: infra-benchmark-prod-github-action-zeebe
+
+jobs:
+  compute-namespace:
+    name: Compute Namespace
+    runs-on: ubuntu-latest
+    outputs:
+      name: ${{ steps.assemble.outputs.name }}
+      storage-type: ${{ steps.label-info.outputs.storage-type }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - id: label-info
+        name: Extract storage type from label
+        run: |
+          label_prefix="${{ inputs.label-prefix }}"
+          event_label="${{ github.event.label.name }}"
+          pr_labels='${{ toJSON(github.event.pull_request.labels.*.name) }}'
+
+          if [[ -n "$label_prefix" ]]; then
+            # Prefix mode: derive storage type from the matched label suffix
+            case "${{ github.event.action }}" in
+              labeled|unlabeled)
+                [[ "$event_label" == "${label_prefix}"* ]] && storage_type="${event_label#$label_prefix}" ;;
+              synchronize|closed)
+                match=$(echo "$pr_labels" | jq -r --arg p "$label_prefix" '.[] | select(startswith($p))' | head -1)
+                [[ -n "$match" ]] && storage_type="${match#$label_prefix}" ;;
+            esac
+          else
+            # Exact label mode: storage type is fixed from the input
+            storage_type="${{ inputs.secondary-storage-type }}"
+          fi
+
+          suffix=$([[ "$storage_type" == "elasticsearch" || -z "$storage_type" ]] && echo "" || echo "-${storage_type}")
+          echo "storage-type=$storage_type"            >> "$GITHUB_OUTPUT"
+          echo "suffix=$suffix"                        >> "$GITHUB_OUTPUT"
+          echo "max-length=$((60 - ${#suffix}))"       >> "$GITHUB_OUTPUT"
+
+      - id: validate
+        name: Validate storage type
+        if: steps.label-info.outputs.storage-type != ''
+        run: |
+          valid_types="elasticsearch opensearch postgresql mysql mariadb mssql oracle none"
+          storage_type="${{ steps.label-info.outputs.storage-type }}"
+          if ! echo "$valid_types" | grep -wq "$storage_type"; then
+            echo "::error::Label suffix '${storage_type}' is not a supported storage type. Valid suffixes: ${valid_types// /, }"
+            exit 1
+          fi
+
+      - id: sanitize
+        uses: camunda/infra-global-github-actions/sanitize-branch-name@main
+        with:
+          branch: ${{ inputs.ref }}
+          max_length: ${{ steps.label-info.outputs.max-length }}
+
+      - id: assemble
+        run: |
+          branch="${{ steps.sanitize.outputs.branch_name }}"
+          echo "name=c8-${branch%-}${{ steps.label-info.outputs.suffix }}" >> "$GITHUB_OUTPUT"
+
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+
+  create-benchmark:
+    name: Benchmark
+    needs: compute-namespace
+    if: >
+      (github.event.action == 'labeled' && (
+        (inputs.label != '' && github.event.label.name == inputs.label) ||
+        (inputs.label-prefix != '' && startsWith(github.event.label.name, inputs.label-prefix))
+      )) ||
+      (github.event.action == 'synchronize' && (
+        (inputs.label != '' && contains(github.event.pull_request.labels.*.name, inputs.label)) ||
+        (inputs.label-prefix != '' && needs.compute-namespace.outputs.storage-type != '')
+      ))
+    uses: ./.github/workflows/camunda-load-test.yml
+    secrets: inherit
+    with:
+      name: ${{ needs.compute-namespace.outputs.name }}
+      ref: ${{ inputs.ref }}
+      scenario: 'max'
+      secondary-storage-type: ${{ needs.compute-namespace.outputs.storage-type }}
+
+  await-benchmark:
+    name: Await Benchmark
+    needs: create-benchmark
+    runs-on: ubuntu-latest
+    permissions: {}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Wait for load test to stabilize
+        run: sleep 900  # 15 minutes
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+
+  run-profiling:
+    name: Run Profiling
+    needs: [compute-namespace, await-benchmark]
+    uses: ./.github/workflows/profile-load-test.yml
+    secrets: inherit
+    with:
+      name: ${{ needs.compute-namespace.outputs.name }}
+      pod: ''
+      database: ${{ needs.compute-namespace.outputs.storage-type }}
+
+  comment-pr:
+    name: Comment on PR with profiling results
+    needs: [run-profiling, compute-namespace]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: 'read'
+      pull-requests: 'write'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          path: artifacts
+      - name: Comment PR with profiling results
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8.0.0
+        with:
+          script: |
+            const fs = require('fs');
+            const path = require('path');
+
+            // List all downloaded artifacts
+            const artifactPath = 'artifacts';
+            const artifacts = fs.readdirSync(artifactPath);
+
+            // Get artifact IDs from GitHub API
+            const { data: workflowArtifacts } = await github.rest.actions.listWorkflowRunArtifacts({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              run_id: context.runId,
+            });
+
+            let comment = '## Profiling Results - ${{ needs.compute-namespace.outputs.storage-type }}\n\n';
+            comment += 'The benchmark has been profiled with the following events:\n\n';
+            comment += '| Event | Pod | Artifact |\n';
+            comment += '|-------|-----|----------|\n';
+
+            artifacts.forEach(artifact => {
+              const match = artifact.match(/flamegraph-(\w+)-(\w+-\d+)/);
+              if (match) {
+                const event = match[1];
+                const pod = match[2];
+
+                // Find the artifact ID for this artifact name
+                const artifactInfo = workflowArtifacts.artifacts.find(a => a.name === artifact);
+                if (artifactInfo) {
+                  const downloadUrl = `https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts/${artifactInfo.id}`;
+                  comment += `| ${event} | ${pod} | [Download](${downloadUrl}) |\n`;
+                } else {
+                  comment += `| ${event} | ${pod} | N/A |\n`;
+                }
+              }
+            });
+
+            comment += '\n📊 [View all artifacts and workflow summary](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})\n';
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment
+            });
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+
+  delete-benchmark:
+    name: Benchmark Cleanup
+    needs: compute-namespace
+    if: >
+      (github.event.action == 'unlabeled' && (
+        (inputs.label != '' && github.event.label.name == inputs.label) ||
+        (inputs.label-prefix != '' && startsWith(github.event.label.name, inputs.label-prefix))
+      )) ||
+      (github.event.action == 'closed' && (
+        (inputs.label != '' && contains(github.event.pull_request.labels.*.name, inputs.label)) ||
+        (inputs.label-prefix != '' && needs.compute-namespace.outputs.storage-type != '')
+      ))
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: 'read'
+      id-token: 'write'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Set up Teleport
+        uses: teleport-actions/setup@b638ff596557cc3959eb6b5287d5e58e0c8ac6a6 # v1.1.1
+        with:
+          proxy: camunda.teleport.sh:443
+          version: auto
+      - name: Authenticate to Cluster using Teleport
+        uses: teleport-actions/auth-k8s@0f46164469ae4fcd4d359d40e06bab17d4be17c9 # v2.0.6
+        with:
+          proxy: camunda.teleport.sh:443
+          token: ${{ env.TELEPORT_JOIN_TOKEN }}
+          kubernetes-cluster: ${{ env.CLUSTER }}
+      - name: Delete benchmark namespace
+        run: kubectl delete ns "${{ needs.compute-namespace.outputs.name }}"
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
