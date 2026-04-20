@@ -11,7 +11,16 @@ import {Loading as BaseLoading} from '@carbon/react';
 
 const Loading = styled(BaseLoading)`
   align-self: center;
-  justify-self: center;
 `;
 
-export {Loading};
+const LoadingContainer = styled.div`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  flex-shrink: 0;
+  align-self: center;
+`;
+
+export {Loading, LoadingContainer};
