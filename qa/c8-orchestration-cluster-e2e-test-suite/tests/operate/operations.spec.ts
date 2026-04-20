@@ -17,6 +17,7 @@ import {
 import {captureScreenshot, captureFailureVideo} from '@setup';
 import {navigateToApp} from '@pages/UtilitiesPage';
 import {waitForAssertion} from 'utils/waitForAssertion';
+import {sleep} from 'utils/sleep';
 
 type ProcessInstance = {
   processInstanceKey: string;
@@ -40,8 +41,8 @@ test.beforeAll(async () => {
     operationsProcessB: processBId,
   });
 
-  // processWithAnIncident has a FEEL assertion (=assert(orderId, orderId!=null)) in its service
-  // task io mapping. Creating the instance without 'orderId' immediately raises an
+  // operationsProcessA has a FEEL assertion (=assert(orderId, orderId!=null)) in its
+  // service task io mapping. Creating the instance without 'orderId' immediately raises an
   // INPUT_OUTPUT_MAPPING_ERROR incident, which makes the Retry Instance button appear.
   const singleInstance = await createSingleInstance(processAId, 1);
   const batchInstances = await createInstances(processBId, 1, 10);

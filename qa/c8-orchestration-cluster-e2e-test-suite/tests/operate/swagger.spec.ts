@@ -100,7 +100,7 @@ test.describe('Swagger UI Tests', () => {
       timeout: 10_000,
     });
 
-    // Find the POST /v1/process-definitions/search operation block and expand it
+    // Find the POST /v2/process-definitions/search operation block and expand it
     const processDefinitionOperation = page
       .locator(PROCESS_DEFINITION_OPERATION_SELECTOR)
       .filter({hasText: PROCESS_DEFINITION_API_PATH})
@@ -158,7 +158,7 @@ test.describe('Swagger UI Tests', () => {
       timeout: 10_000,
     });
 
-    // Find the POST /v1/process-definitions/search operation block and expand it
+    // Find the POST /v2/process-definitions/search operation block and expand it
     const processDefinitionOperation = page
       .locator(PROCESS_DEFINITION_OPERATION_SELECTOR)
       .filter({hasText: PROCESS_DEFINITION_API_PATH})
