@@ -179,12 +179,14 @@ flowchart TB
     subgraph MGMT_API["Management Identity API (Spring Boot)"]
       SEC_CFG["Security Configuration<br>(WebSecurityConfig)"]
       SECURITY["Spring Security"]
+      IDENTITY_SDK["Identity SDK"]
       CONTROLLERS["REST Controllers"]
       SERVICES["Service Interfaces"]
       IMPL["Profile-specific implementations"]
       REPOSITORIES["Repositories<br>(Spring Data JPA)"]
 
       SEC_CFG --> SECURITY --> CONTROLLERS
+      SECURITY -->|"JWT validation"| IDENTITY_SDK
       CONTROLLERS --> SERVICES
       SERVICES --> IMPL
       IMPL --> REPOSITORIES
@@ -194,7 +196,7 @@ flowchart TB
   BROWSER --> UI
   UI --> SECURITY
 
-  SECURITY -->|"Token validation"| IDP
+  IDENTITY_SDK -->|"Token validation (JWKS)"| IDP
   IMPL -->|"Realm, client,<br>user config (keycloak profile)"| IDP
   REPOSITORIES --> MGMT_DB
 ```
@@ -204,6 +206,13 @@ Main building blocks:
 - Management Identity UI: React single-page application (served by `FrontendController`) for administrators to manage users, groups, roles, clients (OAuth2 applications), and tenants, and to define mapping rules.
 - Security Configuration (`WebSecurityConfig`): Spring configuration class that defines the security filter chain. It registers the `JwtFilter` implementation before the `BasicAuthenticationFilter` and explicitly permits unauthenticated access to paths such as `/auth/**`, `/actuator/**`, and public token-resolution endpoints.
 - Spring Security: Filter chain responsible for authenticating incoming requests (OIDC token validation via the configured IdP JWKS endpoint) and enforcing RBAC before delegating to controllers.
+- Identity SDK (`Authentication` interface): the SDK selects a provider-specific `Authentication` implementation at startup based on the configured `camunda.identity.type`:
+  - `KEYCLOAK` → `KeycloakAuthentication` (used in the `keycloak` profile)
+  - `MICROSOFT` → `MicrosoftAuthentication` (used in the `oidc` profile with Microsoft Entra as IdP; enables the certificate-backed `client_assertion` path)
+  - `GENERIC` → `GenericAuthentication` (used in the `oidc` profile with other external OIDC providers)
+  - `AUTH0` → `Auth0Authentication` (legacy / Auth0-specific)
+
+  This selection determines which token-endpoint interactions, claim-extraction logic, and client-authentication method are used by `SmJwtFilter` and all SDK-backed authentication calls. Where the documentation refers to the "Identity SDK", the behavior in practice is always one of these concrete implementations.
 - REST Controllers: Active controllers depend on the Spring profile (see section 5.2).
 - Service Interfaces: The API contract for each resource domain.
 - Profile-specific implementations - Concrete service implementations are organized by deployment mode:
@@ -224,7 +233,7 @@ The internal decomposition of the Management Identity API differs across the act
 
 #### 5.2.1 Default Keycloak deployment (profile `keycloak`)
 
-In the default configuration (Spring profile `keycloak`), Management Identity uses Keycloak both for token validation (via the Identity SDK + Keycloak JWKS) and for user and client synchronization via the Keycloak Admin REST API.
+In the default configuration (Spring profile `keycloak`), Management Identity uses Keycloak both for token validation (via the Identity SDK with `KEYCLOAK` type → `KeycloakAuthentication`) and for user and client synchronization via the Keycloak Admin REST API.
 
 Service implementations (`KeycloakUserServiceImpl`, etc.) hold user, client, group, and role state in Keycloak; the Management Identity DB stores tenants, authorizations, and access rules.
 
@@ -242,6 +251,8 @@ flowchart TB
   subgraph MGMT_API["Management Identity API (profile: keycloak)"]
     SEC_CFG["WebSecurityConfig<br>+ SmJwtFilter"]
 
+    IDENTITY_SDK["Identity SDK<br>(KeycloakAuthentication)"]
+
     CTRL_KC["REST Controllers<br>(users, clients, groups, roles,<br>tenants, resource servers, authorizations)"]
 
     SVC_KC["Keycloak Service Implementations<br>"]
@@ -249,9 +260,12 @@ flowchart TB
     REPO["Repositories<br>(tenants, authorizations, access rules)"]
 
     INIT["Keycloak Initializers<br>(realm, clients, roles, groups on startup)"]
+
+    SEC_CFG -->|"JWT validation"| IDENTITY_SDK
   end
 
-  SEC_CFG -->|"JWKS token validation"| KEYCLOAK
+  IDENTITY_SDK -->|"Token validation (JWKS)"| KEYCLOAK
+  SEC_CFG --> CTRL_KC
   CTRL_KC --> SVC_KC
   SVC_KC -->|"Users, clients, groups,<br>roles via Admin REST API"| KEYCLOAK
   SVC_KC --> REPO
@@ -275,7 +289,9 @@ Key responsibilities:
 
 When an external OIDC provider is used instead of Keycloak (Spring profile `oidc`), user and client management via an admin API is not available.
 Groups, roles, permissions, and mapping rules are stored in the Management Identity PostgreSQL database.
-Token validation is handled in the same way as in the `keycloak` profile: `SmJwtFilter` delegates to the Identity SDK, which uses the configured IdP metadata (issuer, JWKS, and token endpoints).
+Token validation is handled in the same way as in the `keycloak` profile: `SmJwtFilter` delegates to the Identity SDK, but the active `Authentication` implementation differs:
+- For Microsoft Entra: `MICROSOFT` type → `MicrosoftAuthentication`, which also supports certificate-backed client assertions (see section 6.6).
+- For other external OIDC providers (Okta, generic OIDC): `GENERIC` type → `GenericAuthentication`.
 
 OIDC service implementations (`OidcGroupService`, `OidcRoleServiceImpl`, `OidcPermissionServiceImpl`, `OidcMappingRuleServiceImpl`, `OidcTokenTenantService`, etc.) replace the Keycloak implementations.
 
@@ -292,6 +308,8 @@ flowchart TB
   subgraph MGMT_API["Management Identity API (profile: oidc)"]
     SEC_CFG["WebSecurityConfig<br>+ SmJwtFilter"]
 
+    IDENTITY_SDK["Identity SDK<br>(MicrosoftAuthentication<br>or GenericAuthentication)"]
+
     CTRL_OIDC["REST Controllers<br>(groups, roles, tenants, mapping rules,<br>resource servers, authorizations)<br>[UserController / ClientController not active]"]
 
     SVC_OIDC["OIDC Service Implementations<br>(profile: oidc)"]
@@ -299,9 +317,12 @@ flowchart TB
     REPO_OIDC["Repositories<br>(groups, roles, permissions, mapping rules,<br>tenants, authorizations, access rules)"]
 
     INIT_OIDC["OIDC Initializers<br>(roles, permissions, mapping rules on startup)"]
+
+    SEC_CFG -->|"JWT validation"| IDENTITY_SDK
   end
 
-  SEC_CFG -->|"JWKS token validation"| EXT_IDP
+  IDENTITY_SDK -->|"Token validation (JWKS)"| EXT_IDP
+  SEC_CFG --> CTRL_OIDC
   CTRL_OIDC --> SVC_OIDC
   SVC_OIDC --> REPO_OIDC
   REPO_OIDC --> MGMT_DB
@@ -528,56 +549,57 @@ sequenceDiagram
   MGMT_DB-->>MGMT_API: Resolved roles from mapping rules
   MGMT_API-->>SERVICE: API response
 ```
-### 6.6 OIDC with private_key_jwt client authentication (Management Identity server-side OAuth client)
+### 6.6 Entra-focused certificate-based client assertion (smaller `private_key_jwt` variant for Management Identity)
 
 > **Available since**: Camunda 8.9 (issue [#3328](https://github.com/camunda/identity/issues/3328)).
 
-Scenario: Management Identity itself needs to call the IdP token endpoint in OIDC mode (for example during authorization code exchange, refresh token flow, or to perform token introspection). For this Management Identity-side client authentication to the IdP, Management Identity can use either `client_secret_basic` or `private_key_jwt` instead of transmitting a static client secret.
+Scenario: in OIDC mode, Management Identity sometimes needs to call the IdP token endpoint itself (for example during authorization code exchange, refresh token renewal, or SDK-managed client-credentials requests). For this Management Identity-side client authentication, there is a smaller certificate-based variant that works with Microsoft Entra ID.
 
-When `private_key_jwt` is configured, Management Identity loads a private key from a keystore and builds a signed JWT (client assertion) to authenticate to the IdP. This is more secure than transmitting a client secret, as only the assertion signature needs validation at the IdP and the private key never leaves Management Identity.
+This is **not** the same generic OC server-side `private_key_jwt` implementation described in the [Orchestration Cluster Identity architecture](identity_architecture_docs.md#633-oidc-with-private_key_jwt-client-authentication-oc-server-side-oauth-client). Management Identity currently uses the narrower Microsoft / Entra path from the Identity SDK (`MicrosoftAuthentication` + `CertSignedJwt`). Instead of OC's generic Spring Security assertion stack, it signs a certificate-backed JWT assertion and sends it to the Microsoft token endpoint.
 
-Configured via (Management Identity-side):
+When this path is used, Management Identity loads a PKCS12 certificate and private key, creates a signed `client_assertion` JWT with an `x5t` certificate thumbprint header, and authenticates to Entra without sending a shared client secret. This should be read as Entra-focused support, not as feature parity with the broader Orchestration Cluster Identity implementation.
 
-- `camunda.security.authentication.oidc.clientAuthenticationMethod=private_key_jwt` (or omit to default to `client_secret_basic`)
-- `camunda.security.authentication.oidc.assertion.keystore.*` (path, password, keyAlias, keyPassword)
-- Optional `assertion.kidSource`, `assertion.kidDigestAlgorithm`, `assertion.kidEncoding`, `assertion.kidCase`
+Configured via (Management Identity / Identity SDK side):
+
+- Microsoft / Entra provider type (`MICROSOFT`)
+- Standard issuer, backend issuer, client ID, and audience settings
+- Either a client secret, or a PKCS12 certificate configuration in the Identity SDK (`certPath`, `certStorePassword`)
 
 Flow:
 
-1. Management Identity needs to call the IdP token endpoint (for example to exchange an authorization code for tokens).
-2. Management Identity loads the configured private key and certificate from the keystore and builds a JSON Web Key (JWK).
-3. A signed `client_assertion` JWT is created, containing the JWK information (including `kid` and `x5t#S256`).
+1. Management Identity, via the Identity SDK's Microsoft authentication path, needs to call the Microsoft Entra token endpoint.
+2. `CertSignedJwt` loads the configured PKCS12 certificate and private key.
+3. A signed `client_assertion` JWT is created with certificate-thumbprint information (`x5t`) in the header.
 4. Management Identity sends a token request with `client_assertion` and `client_assertion_type=urn:ietf:params:oauth:client-assertion-type:jwt-bearer`.
-5. The IdP validates the assertion signature using the registered public key/certificate for that Management Identity OAuth client.
+5. Microsoft Entra validates the assertion against the certificate registered for that OAuth client.
 6. The IdP returns tokens (access token, ID token, or refresh token).
 
 ```mermaid
 sequenceDiagram
   box Management Identity
-    participant AUTHN as Spring Security / Token Handler
-    participant ASSERTION as AssertionJwkProvider
-    participant CONV as NimbusJwtClientAuthenticationParametersConverter
+    participant AUTHN as Management Identity / Identity SDK
+    participant MS_AUTH as MicrosoftAuthentication
+    participant ASSERTION as CertSignedJwt
   end
   box External
-    participant IDP as OIDC IdP
+    participant IDP as Microsoft Entra ID
   end
 
-  AUTHN->>ASSERTION: Load private key/cert from keystore
-  ASSERTION-->>AUTHN: JSON Web Key (JWK)
-  AUTHN->>CONV: Build signed client_assertion JWT
-  CONV-->>AUTHN: client_assertion
-  AUTHN->>IDP: Token request + client_assertion
+  AUTHN->>MS_AUTH: Request token endpoint interaction
+  MS_AUTH->>ASSERTION: Load certificate/private key and sign client_assertion
+  ASSERTION-->>MS_AUTH: Signed client_assertion
+  MS_AUTH->>IDP: Token request + client_assertion
   IDP->>IDP: Validate client assertion
-  IDP-->>AUTHN: Token response
+  IDP-->>MS_AUTH: Token response
+  MS_AUTH-->>AUTHN: Tokens
 ```
 
 Participants:
 
-* Spring Security: orchestrates Management Identity-side OAuth client calls to the IdP token endpoint.
-* Token Handler: wraps Spring Security OAuth2 client to build assertion-based token requests.
-* `AssertionJwkProvider`: loads key material and builds a JSON Web Key (JWK) for signing assertions.
-* `NimbusJwtClientAuthenticationParametersConverter`: builds and injects the signed `client_assertion`.
-* OIDC IdP: validates Management Identity's client assertion and issues tokens.
+* Management Identity / Identity SDK: triggers token endpoint calls needed for browser login and other OAuth interactions.
+* `MicrosoftAuthentication`: Microsoft-specific SDK authentication implementation used for Entra.
+* `CertSignedJwt`: loads the certificate/private key and builds the signed `client_assertion` JWT.
+* Microsoft Entra ID: validates Management Identity's certificate-backed assertion and issues tokens.
 
 ### 6.7 Admin operations: managing users and roles (Keycloak profile)
 
@@ -714,8 +736,8 @@ This section only highlights differences or specifics for Management Identity. F
 - Authentication
   - OIDC via Keycloak or external IdP.
   - Authorization code flow for human users; `AuthController` handles the OIDC callback and `CookieService` manages session cookies for browser-based UI access.
-  - Client credentials for platform services and external tools, using supported OAuth2 client authentication methods such as `client_secret_basic` and `private_key_jwt`.
-  - Token validation in active profiles is performed by `SmJwtFilter` (a `JwtFilter` subclass) using the Identity SDK.
+  - Client credentials for platform services and external tools, typically using `client_secret_basic`; for the current Microsoft / Entra SDK path, Management Identity can also use a certificate-backed `client_assertion` (`private_key_jwt`-style) flow.
+  - Token validation in active profiles is performed by `SmJwtFilter` (a `JwtFilter` subclass) using the Identity SDK. The concrete SDK `Authentication` implementation is selected by the `camunda.identity.type` setting and differs per deployment mode: `KEYCLOAK` in the `keycloak` profile; `MICROSOFT` or `GENERIC` in the `oidc` profile depending on the external IdP. This affects claim extraction, token-endpoint client authentication method, and availability of certificate assertion (see section 6.6).
 
 - Authorization
   - RBAC model with roles, permissions, users, and groups controlling:
@@ -804,11 +826,11 @@ Legacy `saas` profile and SaaS extended support
 | Tenant (Optimize)         | Logical partition for reporting and data isolation in Optimize. Stored in `TenantRepository`. Distinct from runtime tenants in Orchestration Cluster Identity. |
 | Mapping rule              | Entity mapping IdP token claims (for example group names, attributes) to Management Identity roles or Optimize tenants; evaluated by mapping rule services in the `oidc` profile. |
 | OIDC                      | OpenID Connect; the protocol used for authentication and token issuance between platform apps, IdP, and Management Identity. |
-| Client credentials grant  | OAuth2 flow for machine-to-machine access; a service authenticates as a client (for example with `client_secret_basic` or `private_key_jwt`) to obtain a token. |
+| Client credentials grant  | OAuth2 flow for machine-to-machine access; a service authenticates as a client (for example with `client_secret_basic`, or in the current Entra-focused Management Identity variant with a certificate-backed `client_assertion`) to obtain a token. |
 | Authorization code flow   | OAuth2/OIDC flow for interactive user login via a browser redirect to the IdP. |
 | JWKS                      | JSON Web Key Set; the public key endpoint exposed by Keycloak/IdP, used by JWT filters to validate incoming JWT signatures. |
-| `private_key_jwt`         | OAuth2 client authentication method where the client signs a JWT assertion with a private key instead of using a static secret; more secure and auditable than `client_secret_basic`. |
-| Client assertion          | Signed JWT used to authenticate Management Identity or a client to the IdP token endpoint when using `private_key_jwt` client authentication. |
+| `private_key_jwt`         | OAuth2 client authentication method where the client signs a JWT assertion with a private key instead of using a static secret. In Management Identity, the currently documented server-side variant is a smaller Microsoft Entra-focused implementation, not the broader Orchestration Cluster Identity implementation. |
+| Client assertion          | Signed JWT used to authenticate a client to the IdP token endpoint. In Management Identity's current Entra-focused variant, this assertion is certificate-backed and generated by the Identity SDK's Microsoft authentication path. |
 | WebSecurityConfig         | Spring configuration class that defines the security filter chain for the Management Identity API. |
 | SmJwtFilter               | Self-Managed JWT filter; validates tokens and handles session cookie refresh for browser flows. |
 | JwtAuthenticationToken    | Spring Security Authentication object set on the `SecurityContext` after JWT validation. |
