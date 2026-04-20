@@ -70,9 +70,11 @@ const ReadOnlyEditor: React.FC<Props> = ({
 
     try {
       await navigator.clipboard.writeText(valueToCopy);
+      const capitalizedLabel =
+        label.charAt(0).toUpperCase() + label.slice(1);
       notificationsStore.displayNotification({
         kind: 'success',
-        title: `${label} copied to clipboard`,
+        title: `${capitalizedLabel} copied to clipboard`,
         isDismissable: true,
       });
     } catch {
