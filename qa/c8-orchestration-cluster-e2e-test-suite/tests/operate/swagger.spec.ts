@@ -15,7 +15,7 @@ import {LOGIN_CREDENTIALS} from '../../utils/constants';
 const SWAGGER_UI_URL = '/swagger-ui/index.html';
 const API_DOCS_URL = '/v3/api-docs';
 const CSRF_COOKIE_NAME = 'X-CSRF-TOKEN';
-const PROCESS_DEFINITION_API_PATH = '/v1/process-definitions/search';
+const PROCESS_DEFINITION_API_PATH = '/v2/process-definitions/search';
 const SWAGGER_UI_CONTAINER_SELECTOR = 'section.swagger-ui.swagger-container';
 const PROCESS_DEFINITION_OPERATION_SELECTOR = '.opblock.opblock-post';
 
