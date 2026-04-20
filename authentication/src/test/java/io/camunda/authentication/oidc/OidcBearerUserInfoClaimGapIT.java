@@ -1,0 +1,146 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+package io.camunda.authentication.oidc;
+
+import static com.github.tomakehurst.wiremock.client.WireMock.exactly;
+import static com.github.tomakehurst.wiremock.client.WireMock.get;
+import static com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor;
+import static com.github.tomakehurst.wiremock.client.WireMock.okJson;
+import static com.github.tomakehurst.wiremock.client.WireMock.urlMatching;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.verify;
+
+import com.github.tomakehurst.wiremock.client.WireMock;
+import com.github.tomakehurst.wiremock.junit5.WireMockExtension;
+import io.camunda.authentication.config.AbstractWebSecurityConfigTest;
+import io.camunda.authentication.config.WebSecurityConfig;
+import io.camunda.authentication.config.controllers.WebSecurityConfigTestContext;
+import io.camunda.authentication.config.controllers.WebSecurityOidcTestContext;
+import io.camunda.authentication.converter.OidcTokenAuthenticationConverter;
+import io.camunda.authentication.converter.TokenClaimsConverter;
+import io.camunda.security.auth.CamundaAuthentication;
+import java.time.Instant;
+import java.util.List;
+import java.util.Map;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Mockito;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.http.HttpStatus;
+import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
+import org.springframework.test.context.DynamicPropertyRegistry;
+import org.springframework.test.context.DynamicPropertySource;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
+
+/**
+ * Documents the customer's reported scenario: for bearer-token authentication, a JWT that does not
+ * carry the configured {@code groups} claim cannot be augmented with the groups from the OIDC
+ * {@code /userinfo} response. Authorizations that depend on {@code groups} therefore fail even
+ * though the IdP would return the groups if asked.
+ *
+ * <p>This test is expected to FAIL on current code (8.8). It encodes the behaviour we want after a
+ * fix: {@link TokenClaimsConverter} should receive a merged claims map containing {@code groups}
+ * from {@code /userinfo}. On current code, only the raw JWT claims are passed through, {@code
+ * /userinfo} is never called, and the assertions below do not hold.
+ */
+@SuppressWarnings("SpringBootApplicationProperties")
+@SpringBootTest(
+    classes = {
+      WebSecurityConfigTestContext.class,
+      WebSecurityOidcTestContext.class,
+      WebSecurityConfig.class
+    },
+    properties = {
+      "camunda.security.authentication.unprotected-api=false",
+      "camunda.security.authentication.method=oidc",
+      "camunda.security.authentication.oidc.client-id=example",
+      "camunda.security.authentication.oidc.redirect-uri=redirect.example.com",
+      "camunda.security.authentication.oidc.authorization-uri=authorization.example.com",
+      "camunda.security.authentication.oidc.token-uri=token.example.com",
+      "camunda.security.authentication.oidc.groups-claim=groups",
+    })
+public class OidcBearerUserInfoClaimGapIT extends AbstractWebSecurityConfigTest {
+
+  @RegisterExtension
+  static WireMockExtension wireMock =
+      WireMockExtension.newInstance().configureStaticDsl(true).build();
+
+  @Autowired private OidcTokenAuthenticationConverter converter;
+
+  @MockitoBean private TokenClaimsConverter tokenClaimsConverter;
+
+  @DynamicPropertySource
+  static void registerWireMockProperties(final DynamicPropertyRegistry registry) {
+    final var issuerUri = "http://localhost:" + wireMock.getPort() + "/issuer";
+    registry.add("camunda.security.authentication.oidc.issuer-uri", () -> issuerUri);
+    registry.add(
+        "camunda.security.authentication.oidc.jwk-set-uri",
+        () -> "http://localhost:" + wireMock.getPort() + "/issuer/jwks");
+
+    final var openidConfig =
+        "{\"issuer\":\""
+            + issuerUri
+            + "\","
+            + "\"token_endpoint\":\"token.example.com\","
+            + "\"jwks_uri\":\"http://localhost:"
+            + wireMock.getPort()
+            + "/issuer/jwks\","
+            + "\"userinfo_endpoint\":\""
+            + issuerUri
+            + "/userinfo\","
+            + "\"subject_types_supported\":[\"public\"]}";
+    wireMock
+        .getRuntimeInfo()
+        .getWireMock()
+        .register(
+            get(urlMatching(".*/issuer/.well-known/openid-configuration"))
+                .willReturn(WireMock.jsonResponse(openidConfig, HttpStatus.OK.value())));
+  }
+
+  @Test
+  void groupsFromUserInfoShouldReachTokenClaimsConverterButCurrentlyDoNot() {
+    // The IdP is configured to return the groups on /userinfo (common SaaS IdP pattern).
+    wireMock.stubFor(
+        get(urlMatching(".*/userinfo"))
+            .willReturn(okJson("{\"sub\":\"alice\",\"groups\":[\"engineering\"]}")));
+
+    // The JWT access token the customer receives does NOT carry the groups claim.
+    final var jwt =
+        Jwt.withTokenValue("token-abc")
+            .header("alg", "RS256")
+            .claim("sub", "alice")
+            .claim("iss", "http://localhost:" + wireMock.getPort() + "/issuer")
+            .claim("jti", "jti-1")
+            .issuedAt(Instant.now())
+            .expiresAt(Instant.now().plusSeconds(3600))
+            .build();
+
+    Mockito.when(tokenClaimsConverter.convert(Mockito.any()))
+        .thenReturn(CamundaAuthentication.of(b -> b.user("alice")));
+
+    converter.convert(new JwtAuthenticationToken(jwt));
+
+    @SuppressWarnings("unchecked")
+    final ArgumentCaptor<Map<String, Object>> claimsCaptor = ArgumentCaptor.forClass(Map.class);
+    verify(tokenClaimsConverter).convert(claimsCaptor.capture());
+
+    // The customer's acceptance criterion: groups must arrive at TokenClaimsConverter so that
+    // MembershipService.resolveMemberships(...) can grant group-based authorizations. On current
+    // code this assertion fails because only JWT claims are passed through.
+    assertThat(claimsCaptor.getValue())
+        .containsEntry("sub", "alice")
+        .containsEntry("groups", List.of("engineering"));
+
+    // Additionally: /userinfo should have been consulted at least once. On current code it is
+    // never called for bearer-token flows.
+    wireMock.verify(exactly(1), getRequestedFor(urlMatching(".*/userinfo")));
+  }
+}
