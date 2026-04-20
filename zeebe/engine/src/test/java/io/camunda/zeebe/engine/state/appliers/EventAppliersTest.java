@@ -308,7 +308,7 @@ public class EventAppliersTest {
               });
     }
 
-    @ParameterizedTest
+    @ParameterizedTest(name = "{0}")
     @MethodSource("registeredAppliers")
     void shouldNotChangeImplementation(final RegisteredApplier registeredApplier)
         throws IOException {
@@ -488,6 +488,16 @@ public class EventAppliersTest {
       }
     }
 
-    private record RegisteredApplier(Intent intent, int version, TypedEventApplier applier) {}
+    private record RegisteredApplier(Intent intent, int version, TypedEventApplier applier) {
+      @Override
+      public String toString() {
+        final var valueType = intent.getClass().getSimpleName().replace("Intent", "");
+        final var applierName =
+            applier == EventAppliers.NOOP_EVENT_APPLIER
+                ? "NOOP applier"
+                : applier.getClass().getSimpleName();
+        return "%s for '%s.%s' (v%d)".formatted(applierName, valueType, intent, version);
+      }
+    }
   }
 }
