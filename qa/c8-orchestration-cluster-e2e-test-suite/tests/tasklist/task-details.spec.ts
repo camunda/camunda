@@ -43,12 +43,14 @@ test.beforeAll(async () => {
     './resources/zeebe_and_job_worker_process.bpmn',
     './resources/bigVariableProcessWithForm.bpmn',
     './resources/bigVariableForm.form',
+    './resources/user_task_with_form_assigned_filter.bpmn',
   ]);
   await sleep(1000);
 
   await Promise.all([
     createInstances('usertask_to_be_completed', 1, 1),
-    createInstances('user_registration', 1, 3),
+    createInstances('user_registration', 1, 2),
+    createInstances('user_registration_assigned_filter', 1, 1),
     createInstances('user_registration_with_vars', 1, 2, {
       name: 'Jane',
       age: '50',
@@ -191,6 +193,7 @@ test.describe('task details page', () => {
     await taskPanelPage.assertCompletedHeadingVisible();
     await taskPanelPage.openTask('User registration');
 
+    await expect(taskDetailsPage.form).toBeVisible({timeout: 30000});
     await taskDetailsPage.assertFieldValue('Name*', 'Jon');
     await taskDetailsPage.assertFieldValue('Address*', 'Earth');
     await taskDetailsPage.assertFieldValue('Age', '21');
@@ -285,14 +288,14 @@ test.describe('task details page', () => {
     taskPanelPage,
     taskDetailsPage,
   }) => {
-    await taskPanelPage.openTask('User registration');
+    await taskPanelPage.openTask('User registration assigned filter');
 
     await expect(taskDetailsPage.nameInput).toBeVisible();
     await taskDetailsPage.clickAssignToMeButton();
     await expect(taskDetailsPage.completeTaskButton).toBeEnabled();
 
     await taskPanelPage.filterBy('Assigned to me');
-    await taskPanelPage.openTask('User registration');
+    await taskPanelPage.openTask('User registration assigned filter');
 
     await expect(taskDetailsPage.nameInput).toBeVisible();
     await taskDetailsPage.fillTextInput('Name*', 'Gaius Julius Caesar');
@@ -304,7 +307,7 @@ test.describe('task details page', () => {
 
     await taskPanelPage.filterBy('Completed');
     await taskPanelPage.assertCompletedHeadingVisible();
-    await taskPanelPage.openTask('User registration');
+    await taskPanelPage.openTask('User registration assigned filter');
 
     await taskDetailsPage.assertFieldValue('Name*', 'Gaius Julius Caesar');
     await taskDetailsPage.assertFieldValue('Address*', 'Rome');
