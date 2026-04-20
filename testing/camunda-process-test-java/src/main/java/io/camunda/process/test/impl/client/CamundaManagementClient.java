@@ -19,8 +19,8 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.process.test.impl.client.clock.CamundaAddClockRequestDto;
 import io.camunda.process.test.impl.client.clock.CamundaClockResponseDto;
+import io.camunda.process.test.impl.client.purge.ManagementClusterTopologyResponseDto;
 import io.camunda.process.test.impl.client.purge.MinimalPlannedOperationsResponseDto;
-import io.camunda.process.test.impl.client.purge.MinimalTopologyResponseDto;
 import java.io.IOException;
 import java.net.URI;
 import java.time.Duration;
@@ -37,12 +37,12 @@ import org.apache.hc.core5.http.io.entity.HttpEntities;
 import org.awaitility.Awaitility;
 import org.awaitility.core.ConditionTimeoutException;
 
-public final class CamundaManagementClient {
+public final class CamundaManagementClient implements CamundaClockClient {
 
   private static final String CLOCK_ENDPOINT = "/actuator/clock";
   private static final String CLOCK_ADD_ENDPOINT = "/actuator/clock/add";
 
-  private static final String TOPOLOGY_ENDPOINT = "/v2/topology";
+  private static final String CLUSTER_TOPOLOGY_ENDPOINT = "/actuator/cluster";
   private static final String CLUSTER_PURGE_ENDPOINT = "/actuator/cluster/purge";
 
   private final ObjectMapper objectMapper =
@@ -51,31 +51,16 @@ public final class CamundaManagementClient {
   private final CloseableHttpClient httpClient = HttpClients.createDefault();
 
   private final URI camundaManagementApi;
-  private final URI camundaRestApi;
-  private final String basicAuthCredentials;
 
-  private CamundaManagementClient(final URI camundaManagementApi, final URI camundaRestApi) {
-    this(camundaManagementApi, camundaRestApi, null);
-  }
-
-  private CamundaManagementClient(
-      final URI camundaManagementApi, final URI camundaRestApi, final String basicAuthCredentials) {
-
+  private CamundaManagementClient(final URI camundaManagementApi) {
     this.camundaManagementApi = camundaManagementApi;
-    this.camundaRestApi = camundaRestApi;
-    this.basicAuthCredentials = basicAuthCredentials;
   }
 
-  public static CamundaManagementClient createAuthenticatedClient(
-      final URI camundaManagementApi, final URI camundaRestApi, final String basicAuthCredentials) {
-    return new CamundaManagementClient(camundaManagementApi, camundaRestApi, basicAuthCredentials);
+  public static CamundaManagementClient createClient(final URI camundaManagementApi) {
+    return new CamundaManagementClient(camundaManagementApi);
   }
 
-  public static CamundaManagementClient createClient(
-      final URI camundaManagementApi, final URI camundaRestApi) {
-    return new CamundaManagementClient(camundaManagementApi, camundaRestApi);
-  }
-
+  @Override
   public Instant getCurrentTime() {
     try {
       final HttpGet request = new HttpGet(camundaManagementApi + CLOCK_ENDPOINT);
@@ -88,6 +73,7 @@ public final class CamundaManagementClient {
     }
   }
 
+  @Override
   public void increaseTime(final Duration timeToAdd) {
     final HttpPost request = new HttpPost(camundaManagementApi + CLOCK_ADD_ENDPOINT);
 
@@ -104,6 +90,7 @@ public final class CamundaManagementClient {
     }
   }
 
+  @Override
   public void setTime(final Instant timeToSet) {
     final Instant now = getCurrentTime();
     final Duration timeOffset = Duration.between(now, timeToSet);
@@ -111,6 +98,7 @@ public final class CamundaManagementClient {
     increaseTime(timeOffset);
   }
 
+  @Override
   public void resetTime() {
     final HttpDelete request = new HttpDelete(camundaManagementApi + CLOCK_ENDPOINT);
 
@@ -178,13 +166,14 @@ public final class CamundaManagementClient {
   }
 
   private boolean isPurgeComplete(final long changeId) {
-    final HttpGet clusterStatusRequest = new HttpGet(camundaRestApi + TOPOLOGY_ENDPOINT);
+    final HttpGet clusterStatusRequest =
+        new HttpGet(camundaManagementApi + CLUSTER_TOPOLOGY_ENDPOINT);
 
     try {
-      final MinimalTopologyResponseDto minimalTopologyResponse =
-          sendRequest(clusterStatusRequest, MinimalTopologyResponseDto.class);
+      final ManagementClusterTopologyResponseDto topologyResponse =
+          sendRequest(clusterStatusRequest, ManagementClusterTopologyResponseDto.class);
 
-      return minimalTopologyResponse.isTopologyChangeCompleted(changeId);
+      return topologyResponse.isTopologyChangeCompleted(changeId);
     } catch (final IOException e) {
       // Ignore silently and wait for next status request; awaitility will abort after timeout
       // expires
@@ -198,10 +187,6 @@ public final class CamundaManagementClient {
   }
 
   private String sendRequest(final ClassicHttpRequest request) throws IOException {
-    if (basicAuthCredentials != null) {
-      request.setHeader("Authorization", "Basic " + basicAuthCredentials);
-    }
-
     return httpClient.execute(
         request,
         response -> {
@@ -216,11 +201,6 @@ public final class CamundaManagementClient {
   }
 
   private boolean isNotSuccessfulStatusCode(final int statusCode) {
-    /*
-     * Multi-tenancy uses basic auth to secure the camunda gateway. During the purge, the default
-     * user is briefly deleted and previously authenticated requests will fail until the user's
-     * been recreated. Therefore, we choose to silently ignore 401 errors.
-     */
-    return statusCode < 200 || (statusCode >= 300 && statusCode != 401);
+    return statusCode < 200 || statusCode >= 300;
   }
 }
