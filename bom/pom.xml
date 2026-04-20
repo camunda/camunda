@@ -102,6 +102,12 @@
 
       <dependency>
         <groupId>io.camunda</groupId>
+        <artifactId>camunda-spring-boot-starter-virtual-threads</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.camunda</groupId>
         <artifactId>camunda-spring-boot-3-starter</artifactId>
         <version>${project.version}</version>
       </dependency>
