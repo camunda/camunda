@@ -17,11 +17,13 @@ import {useLocation, useSearchParams, type Location} from 'react-router-dom';
 import {useQueryClient} from '@tanstack/react-query';
 import {queryKeys} from 'modules/queries/queryKeys';
 import {decisionInstancesSelectionStore} from 'modules/stores/instancesSelection';
+import {parseDecisionsFilter} from 'modules/utils/filter/decisionsFilter';
 
 const Decisions: React.FC = () => {
   const location = useLocation() as Location<{refreshContent?: boolean}>;
   const client = useQueryClient();
   const [searchParams] = useSearchParams();
+  const filtersJSON = JSON.stringify(parseDecisionsFilter(searchParams));
 
   useEffect(() => {
     document.title = PAGE_TITLE.DECISION_INSTANCES;
@@ -34,7 +36,7 @@ const Decisions: React.FC = () => {
 
   useEffect(() => {
     decisionInstancesSelectionStore.resetState();
-  }, [searchParams]);
+  }, [filtersJSON]);
 
   useEffect(() => {
     if (location.state?.refreshContent) {
