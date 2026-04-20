@@ -6,7 +6,7 @@
 # called-by: camunda-pr-benchmark-elasticsearch.yml, camunda-pr-benchmark-opensearch.yml,
 #            camunda-pr-benchmark-postgresql.yml, camunda-pr-benchmark-mysql.yml,
 #            camunda-pr-benchmark-mariadb.yml, camunda-pr-benchmark-mssql.yml,
-#            camunda-pr-benchmark-oracle.yml
+#            camunda-pr-benchmark-oracle.yml, camunda-pr-benchmark-none.yml
 # calls: camunda-load-test.yml, profile-load-test.yml
 # type: CI
 # owner: @camunda/reliability-testing
