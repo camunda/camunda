@@ -16,6 +16,8 @@ import io.camunda.process.test.impl.containers.CamundaContainer;
 import io.camunda.zeebe.LoadTesterApplication;
 import java.time.Duration;
 import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
@@ -51,13 +53,14 @@ class StarterWorkerIT {
 
   @Container
   static final CamundaContainer CAMUNDA = CamundaContainerProvider.createCamundaContainer();
+  private static final Logger LOG = LoggerFactory.getLogger(StarterWorkerIT.class);
+
+  @Autowired private CamundaClient client;
 
   @DynamicPropertySource
   static void configure(final DynamicPropertyRegistry registry) {
     CamundaContainerProvider.registerClientProperties(CAMUNDA, registry);
   }
-
-  @Autowired private CamundaClient client;
 
   @Test
   void shouldStartInstancesAndCompleteThem() {
