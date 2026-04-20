@@ -6,33 +6,55 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import { FC } from "react";
-import { Loading } from "@carbon/react";
+import { FC, useMemo } from "react";
 import useTranslate from "src/utility/localization";
 import Page, { PageHeader } from "src/components/layout/Page";
+import EntityList, {
+  type DataTableHeader,
+} from "src/components/entityList/EntityList";
 import { TranslatedErrorInlineNotification } from "src/components/notifications/InlineNotification";
-import { useMcpProcessTools } from "./useMcpProcessTools";
+import { isTenantsApiEnabled } from "src/configuration";
+import { useMcpProcessTools, type McpProcessTool } from "./useMcpProcessTools";
 
 const List: FC = () => {
-  const { t } = useTranslate();
+  const { t } = useTranslate("mcpProcesses");
+  const { t: tComponents } = useTranslate();
 
-  const { processTools, loading, success, reload } = useMcpProcessTools();
+  const { processTools, loading, success, reload, ...paginationProps } =
+    useMcpProcessTools();
+
+  const headers = useMemo<DataTableHeader<McpProcessTool>[]>(() => {
+    const columns: DataTableHeader<McpProcessTool>[] = [
+      { header: t("toolName"), key: "toolName" },
+      { header: t("toolDescription"), key: "toolDescription" },
+      { header: t("processName"), key: "processDefinitionName" },
+      { header: t("version"), key: "processDefinitionVersion" },
+    ];
+
+    if (isTenantsApiEnabled) {
+      columns.push({ header: t("tenant"), key: "tenantId" });
+    }
+
+    return columns;
+  }, [t]);
 
   return (
     <Page>
       <PageHeader
-        title={t("mcpProcesses")}
-        linkText={t("mcpProcesses").toLowerCase()}
+        title={tComponents("mcpProcesses")}
+        linkText={tComponents("mcpProcesses").toLowerCase()}
         shouldShowDocumentationLink={false}
       />
-      {loading && <Loading withOverlay={false} />}
-      {!loading && success && (
-        <pre>{JSON.stringify(processTools, null, 2)}</pre>
-      )}
+      <EntityList
+        data={processTools}
+        headers={headers}
+        loading={loading}
+        {...paginationProps}
+      />
       {!loading && !success && (
         <TranslatedErrorInlineNotification
-          title={t("errorOccurred")}
-          actionButton={{ label: t("retry"), onClick: reload }}
+          title={t("mcpProcessesCouldNotLoad")}
+          actionButton={{ label: tComponents("retry"), onClick: reload }}
         />
       )}
     </Page>
