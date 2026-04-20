@@ -106,14 +106,16 @@ test.describe('Swagger UI Tests', () => {
       .filter({hasText: PROCESS_DEFINITION_API_PATH})
       .first();
     await expect(processDefinitionOperation).toBeVisible({timeout: 10_000});
-    await processDefinitionOperation.click();
+    // noWaitAfter prevents Playwright from hanging on Swagger UI's hash-navigation
+    // triggered by expanding the operation block.
+    await processDefinitionOperation.click({noWaitAfter: true});
 
     // Click "Try it out" so Swagger generates the request command preview
     const tryItOutButton = processDefinitionOperation.getByRole('button', {
       name: /try it out/i,
     });
     await expect(tryItOutButton).toBeVisible({timeout: 10_000});
-    await tryItOutButton.click();
+    await tryItOutButton.click({noWaitAfter: true});
 
     // Trigger generation of the curl/response section without inspecting network requests.
     const executeButton = processDefinitionOperation.getByRole('button', {
@@ -164,14 +166,16 @@ test.describe('Swagger UI Tests', () => {
       .filter({hasText: PROCESS_DEFINITION_API_PATH})
       .first();
     await expect(processDefinitionOperation).toBeVisible({timeout: 10_000});
-    await processDefinitionOperation.click();
+    // noWaitAfter prevents Playwright from hanging on Swagger UI's hash-navigation
+    // triggered by expanding the operation block.
+    await processDefinitionOperation.click({noWaitAfter: true});
 
     // Click "Try it out" so Swagger generates the request command preview
     const tryItOutButton = processDefinitionOperation.getByRole('button', {
       name: /try it out/i,
     });
     await expect(tryItOutButton).toBeVisible({timeout: 10_000});
-    await tryItOutButton.click();
+    await tryItOutButton.click({noWaitAfter: true});
 
     // Trigger generation of the curl/response section without inspecting network requests.
     const executeButton = processDefinitionOperation.getByRole('button', {
