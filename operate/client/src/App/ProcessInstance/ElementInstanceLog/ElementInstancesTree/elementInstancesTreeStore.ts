@@ -394,6 +394,7 @@ class ElementInstancesTreeStore extends NetworkReconnectionHandler {
     this.state.rootScopeKey = null;
     this.state.nodes.clear();
     this.state.expandedNodes.clear();
+    this.isPollRequestRunning = false;
   }
 
   private hasRunningChildren = (scopeKey: string): boolean => {
