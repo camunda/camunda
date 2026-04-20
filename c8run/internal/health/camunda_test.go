@@ -97,6 +97,40 @@ func TestShouldUsePortFlagForStatusOutput(t *testing.T) {
 	}
 }
 
+func TestQueryConnectorsShouldReturnNilWhenConnectorsAreHealthy(t *testing.T) {
+	// given
+	original := isRunningFunc
+	t.Cleanup(func() { isRunningFunc = original })
+	isRunningFunc = func(_ context.Context, _ string, _ string, _ int, _ time.Duration) bool {
+		return true
+	}
+
+	// when
+	err := QueryConnectors(context.Background(), 0)
+
+	// then
+	if err != nil {
+		t.Fatalf("expected nil error when connectors are healthy, got: %v", err)
+	}
+}
+
+func TestQueryConnectorsShouldReturnErrorWhenConnectorsAreUnhealthy(t *testing.T) {
+	// given
+	original := isRunningFunc
+	t.Cleanup(func() { isRunningFunc = original })
+	isRunningFunc = func(_ context.Context, _ string, _ string, _ int, _ time.Duration) bool {
+		return false
+	}
+
+	// when
+	err := QueryConnectors(context.Background(), 0)
+
+	// then
+	if err == nil {
+		t.Fatal("expected error when connectors are unhealthy, got nil")
+	}
+}
+
 func TestShouldMarkQuickstartAsSeenAfterSuccessfulStartup(t *testing.T) {
 	// given
 	markerPath := filepath.Join(t.TempDir(), ".c8run-quickstart-seen")

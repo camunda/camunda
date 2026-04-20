@@ -324,7 +324,8 @@ func (s *StartupHandler) StartCommand(wg *sync.WaitGroup, ctx context.Context, s
 			return
 		}
 	}, func() error {
-		// TODO do a health check on the connectors process
+		// Connectors needs Zeebe running before it becomes healthy; defer the real
+		// health check until after Camunda is confirmed up (see below).
 		return nil
 	}, stop)
 
@@ -340,4 +341,12 @@ func (s *StartupHandler) StartCommand(wg *sync.WaitGroup, ctx context.Context, s
 	}, func() error {
 		return health.QueryCamunda(ctx, c8, "Camunda", settings, 24)
 	}, stop)
+
+	// Connectors depends on Zeebe being available before reporting healthy, so
+	// check its health only after Camunda is confirmed up.
+	if err := health.QueryConnectors(ctx, 12); err != nil {
+		log.Err(err).Msg("Connectors did not start")
+		stop()
+		return
+	}
 }

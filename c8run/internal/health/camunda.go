@@ -58,6 +58,15 @@ var (
 	markSeenStartup = startupurl.MarkSeen
 )
 
+// QueryConnectors polls the Connectors health endpoint until it responds or retries are exhausted.
+func QueryConnectors(ctx context.Context, retries int) error {
+	healthEndpoint := fmt.Sprintf("http://localhost:%d/actuator/health", inboundConnectorsPort)
+	if isRunningFunc(ctx, "Connectors", healthEndpoint, retries, 5*time.Second) {
+		return nil
+	}
+	return fmt.Errorf("queryConnectors: Connectors did not start")
+}
+
 func QueryCamunda(ctx context.Context, c8 opener, name string, settings types.C8RunSettings, retries int) error {
 	healthEndpoint := fmt.Sprintf("%s://localhost:9600/actuator/health", settings.GetProtocol())
 	if isRunningFunc(ctx, name, healthEndpoint, retries, 14*time.Second) {
