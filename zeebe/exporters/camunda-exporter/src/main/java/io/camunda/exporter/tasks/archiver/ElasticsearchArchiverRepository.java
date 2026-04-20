@@ -352,7 +352,8 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
       final String sourceIndexName,
       final String destinationIndexName,
       final Map<String, List<String>> keysByField,
-      final Map<String, String> filters,
+      final Map<String, String> inclusionFilters,
+      final Map<String, String> exclusionFilters,
       final Executor executor) {
 
     final ArchiveByIdTaskSupplier<FieldValue> taskSupplier =
@@ -360,7 +361,8 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
             sourceIndexName,
             destinationIndexName,
             searchAfter ->
-                getArchiveDocIdsBatch(sourceIndexName, keysByField, filters, searchAfter),
+                getArchiveDocIdsBatch(
+                    sourceIndexName, keysByField, inclusionFilters, exclusionFilters, searchAfter),
             this::reindexDocumentsById,
             this::deleteDocumentsById,
             executor,
@@ -415,9 +417,10 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
   CompletableFuture<ArchiveDocIdsBatch<FieldValue>> getArchiveDocIdsBatch(
       final String sourceIndexName,
       final Map<String, List<String>> keysByField,
-      final Map<String, String> filters,
+      final Map<String, String> inclusionFilters,
+      final Map<String, String> exclusionFilters,
       final List<FieldValue> searchAfter) {
-    final Query query = buildFilterQuery(keysByField, filters);
+    final Query query = buildFilterQuery(keysByField, inclusionFilters, exclusionFilters);
     final Builder requestBuilder =
         new SearchRequest.Builder()
             .index(sourceIndexName)
@@ -675,7 +678,14 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
   }
 
   private Query buildFilterQuery(
-      final Map<String, List<String>> keysByField, final Map<String, String> filters) {
+      final Map<String, List<String>> keysByField, final Map<String, String> inclusionFilters) {
+    return buildFilterQuery(keysByField, inclusionFilters, Map.of());
+  }
+
+  private Query buildFilterQuery(
+      final Map<String, List<String>> keysByField,
+      final Map<String, String> inclusionFilters,
+      final Map<String, String> exclusionFilters) {
     final var boolBuilder = QueryBuilders.bool();
 
     // Match any keys
@@ -688,9 +698,15 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
       boolBuilder.filter(keysBoolBuilder.build()._toQuery());
     }
 
-    // Match all the extra filters
-    for (final var filter : filters.entrySet()) {
+    // Match all additional inclusion filters
+    for (final var filter : inclusionFilters.entrySet()) {
       boolBuilder.filter(
+          f -> f.term(t -> t.field(filter.getKey()).value(FieldValue.of(filter.getValue()))));
+    }
+
+    // Exclude all docs matching exclusion filters
+    for (final var filter : exclusionFilters.entrySet()) {
+      boolBuilder.mustNot(
           f -> f.term(t -> t.field(filter.getKey()).value(FieldValue.of(filter.getValue()))));
     }
 
