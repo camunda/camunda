@@ -83,6 +83,11 @@ const sidebars = {
                 },
               ],
             },
+            {
+              type: 'doc',
+              id: 'architecture/components/identity/management_identity_architecture_docs',
+              label: 'Management Identity',
+            },
           ],
         },
       ],
