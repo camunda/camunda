@@ -160,8 +160,10 @@ public class ProcessInstanceStartMeter implements AutoCloseable {
   }
 
   public void recordProcessInstanceStart(final long processInstanceKey, final long startTimeNanos) {
-    startedInstances.put(
-        processInstanceKey, new PiCreationResult(processInstanceKey, startTimeNanos));
+    if (startedInstances.size() < 1000) {
+      startedInstances.put(
+          processInstanceKey, new PiCreationResult(processInstanceKey, startTimeNanos));
+    }
   }
 
   private record PiCreationResult(long processInstanceKey, long startTimeNanos) {}
