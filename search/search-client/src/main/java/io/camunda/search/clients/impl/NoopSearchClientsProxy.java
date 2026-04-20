@@ -393,7 +393,8 @@ public class NoopSearchClientsProxy implements SearchClientsProxy {
 
   @Override
   public SearchClientsProxy withPhysicalTenant(final String physicalTenantId) {
-    return this;
+    throw new UnsupportedOperationException(
+        "Physical tenants are not supported by " + getClass().getSimpleName());
   }
 
   @Override

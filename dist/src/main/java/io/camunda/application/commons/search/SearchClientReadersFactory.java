@@ -18,6 +18,7 @@ import io.camunda.search.clients.reader.CorrelatedMessageSubscriptionDocumentRea
 import io.camunda.search.clients.reader.DecisionDefinitionDocumentReader;
 import io.camunda.search.clients.reader.DecisionInstanceDocumentReader;
 import io.camunda.search.clients.reader.DecisionRequirementsDocumentReader;
+import io.camunda.search.clients.reader.DeployedResourceDocumentReader;
 import io.camunda.search.clients.reader.FlowNodeInstanceDocumentReader;
 import io.camunda.search.clients.reader.FormDocumentReader;
 import io.camunda.search.clients.reader.GlobalListenerDocumentReader;
@@ -54,6 +55,7 @@ import io.camunda.webapps.schema.descriptors.index.AuthorizationIndex;
 import io.camunda.webapps.schema.descriptors.index.ClusterVariableIndex;
 import io.camunda.webapps.schema.descriptors.index.DecisionIndex;
 import io.camunda.webapps.schema.descriptors.index.DecisionRequirementsIndex;
+import io.camunda.webapps.schema.descriptors.index.DeployedResourceIndex;
 import io.camunda.webapps.schema.descriptors.index.FormIndex;
 import io.camunda.webapps.schema.descriptors.index.GlobalListenerIndex;
 import io.camunda.webapps.schema.descriptors.index.GroupIndex;
@@ -80,7 +82,7 @@ import io.camunda.webapps.schema.descriptors.template.UsageMetricTemplate;
 import io.camunda.webapps.schema.descriptors.template.VariableTemplate;
 
 /** Static factory that creates a complete set of ES/OS document readers for one physical tenant. */
-public class SearchClientReadersFactory {
+public final class SearchClientReadersFactory {
 
   private SearchClientReadersFactory() {}
 
@@ -134,6 +136,8 @@ public class SearchClientReadersFactory {
     final var processInstanceStatisticsReader =
         new ProcessInstanceStatisticsDocumentReader(
             executor, descriptors.get(ListViewTemplate.class));
+    final var deployedResourceReader =
+        new DeployedResourceDocumentReader(executor, descriptors.get(DeployedResourceIndex.class));
     final var sequenceFlowReader =
         new SequenceFlowDocumentReader(executor, descriptors.get(SequenceFlowTemplate.class));
     final var tenantReader = new TenantDocumentReader(executor, descriptors.get(TenantIndex.class));
@@ -224,6 +228,7 @@ public class SearchClientReadersFactory {
         processDefinitionInstanceStatisticsReader,
         processDefinitionInstanceVersionStatisticsReader,
         processInstanceStatisticsReader,
+        deployedResourceReader,
         roleReader,
         roleMemberReader,
         sequenceFlowReader,

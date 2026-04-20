@@ -127,6 +127,7 @@ public class CamundaSearchClients implements SearchClientsProxy {
   private static final Logger LOG = LoggerFactory.getLogger(CamundaSearchClients.class);
 
   private final SearchClientReaders readers;
+  private final Map<String, SearchClientReaders> tenantReaders;
   private final ResourceAccessController resourceAccessController;
   private final SecurityContext securityContext;
 
@@ -134,7 +135,16 @@ public class CamundaSearchClients implements SearchClientsProxy {
       final SearchClientReaders readers,
       final ResourceAccessController resourceAccessController,
       final SecurityContext securityContext) {
+    this(readers, Map.of(), resourceAccessController, securityContext);
+  }
+
+  public CamundaSearchClients(
+      final SearchClientReaders readers,
+      final Map<String, SearchClientReaders> tenantReaders,
+      final ResourceAccessController resourceAccessController,
+      final SecurityContext securityContext) {
     this.readers = readers;
+    this.tenantReaders = Map.copyOf(tenantReaders);
     this.resourceAccessController = resourceAccessController;
     this.securityContext = securityContext;
   }
@@ -213,12 +223,23 @@ public class CamundaSearchClients implements SearchClientsProxy {
 
   @Override
   public SearchClientsProxy withPhysicalTenant(final String physicalTenantId) {
-    return null;
+    if (tenantReaders.isEmpty()) {
+      throw new UnsupportedOperationException(
+          "Physical tenants are not configured for this CamundaSearchClients instance");
+    }
+    final SearchClientReaders matchedReaders = tenantReaders.get(physicalTenantId);
+    if (matchedReaders == null) {
+      throw new IllegalArgumentException(
+          "Unknown physical tenant: '%s'. Known tenants: %s"
+              .formatted(physicalTenantId, tenantReaders.keySet()));
+    }
+    return new CamundaSearchClients(matchedReaders, resourceAccessController, securityContext);
   }
 
   @Override
   public CamundaSearchClients withSecurityContext(final SecurityContext securityContext) {
-    return new CamundaSearchClients(readers, resourceAccessController, securityContext);
+    return new CamundaSearchClients(
+        readers, tenantReaders, resourceAccessController, securityContext);
   }
 
   @Override
