@@ -143,13 +143,15 @@ public class ProcessInstanceIT {
     final ProcessInstanceDbReader processInstanceReader = rdbmsService.getProcessInstanceReader();
 
     final Long processInstanceKey = nextKey();
+    final Long processDefinitionKey = nextKey();
+    final String processDefinitionId = ProcessInstanceFixtures.nextStringId();
     createAndSaveProcessInstance(
         rdbmsWriters,
         ProcessInstanceFixtures.createRandomized(
             b ->
                 b.processInstanceKey(processInstanceKey)
-                    .processDefinitionId("test-process-unique")
-                    .processDefinitionKey(1338L)
+                    .processDefinitionId(processDefinitionId)
+                    .processDefinitionKey(processDefinitionKey)
                     .state(ProcessInstanceState.ACTIVE)
                     .startDate(NOW)
                     .parentProcessInstanceKey(-1L)
@@ -160,7 +162,7 @@ public class ProcessInstanceIT {
         processInstanceReader.search(
             ProcessInstanceQuery.of(
                 b ->
-                    b.filter(f -> f.processDefinitionIds("test-process-unique"))
+                    b.filter(f -> f.processDefinitionIds(processDefinitionId))
                         .sort(s -> s)
                         .page(p -> p.from(0).size(10))));
 
@@ -171,8 +173,8 @@ public class ProcessInstanceIT {
     final var instance = searchResult.items().getFirst();
 
     assertThat(instance.processInstanceKey()).isEqualTo(processInstanceKey);
-    assertThat(instance.processDefinitionId()).isEqualTo("test-process-unique");
-    assertThat(instance.processDefinitionKey()).isEqualTo(1338L);
+    assertThat(instance.processDefinitionId()).isEqualTo(processDefinitionId);
+    assertThat(instance.processDefinitionKey()).isEqualTo(processDefinitionKey);
     assertThat(instance.state()).isEqualTo(ProcessInstanceState.ACTIVE);
     assertThat(instance.startDate())
         .isCloseTo(NOW, new TemporalUnitWithinOffset(1, ChronoUnit.MILLIS));
@@ -188,7 +190,10 @@ public class ProcessInstanceIT {
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
     final ProcessInstanceDbReader processInstanceReader = rdbmsService.getProcessInstanceReader();
 
-    final var processInstance = createAndSaveRandomProcessInstance(rdbmsWriters, b -> b);
+    final String uniqueProcessDefinitionId = ProcessInstanceFixtures.nextStringId();
+    final var processInstance =
+        createAndSaveRandomProcessInstance(
+            rdbmsWriters, b -> b.processDefinitionId(uniqueProcessDefinitionId));
     createAndSaveRandomProcessInstances(rdbmsWriters);
 
     final var searchResult =
@@ -523,7 +528,7 @@ public class ProcessInstanceIT {
   public void shouldSelectRootExpiredRootProcessInstances(
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
-    final var partitionId = (int) (Math.random() * 1000);
+    final var partitionId = nextKey().intValue();
 
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(partitionId);
 
@@ -566,7 +571,7 @@ public class ProcessInstanceIT {
   public void shouldSelectExpiredRootProcessInstancesWithLimit(
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
-    final var partitionId = (int) (Math.random() * 1000);
+    final var partitionId = nextKey().intValue();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(partitionId);
 
     final var cleanupDate = NOW;
@@ -621,7 +626,7 @@ public class ProcessInstanceIT {
   public void shouldNotSelectExpiredRootProcessInstancesFromDifferentPartition(
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
-    final var partitionId = (int) (Math.random() * 1000);
+    final var partitionId = nextKey().intValue();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(partitionId);
 
     final var cleanupDate = NOW;
@@ -655,7 +660,7 @@ public class ProcessInstanceIT {
   public void shouldNotSelectRootProcessInstancesWithoutCleanupDate(
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
-    final var partitionId = (int) (Math.random() * 1000);
+    final var partitionId = nextKey().intValue();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(partitionId);
 
     final var cleanupDate = NOW;
@@ -687,7 +692,7 @@ public class ProcessInstanceIT {
   public void shouldNotScheduleNonRootProcessInstancesForCleanupByThemselves(
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
-    final var partitionId = (int) (Math.random() * 1000);
+    final var partitionId = nextKey().intValue();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(partitionId);
 
     final var cleanupDate = NOW;
