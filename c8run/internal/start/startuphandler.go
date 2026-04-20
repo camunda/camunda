@@ -15,6 +15,7 @@ import (
 	"syscall"
 
 	"github.com/camunda/camunda/c8run/internal/health"
+	"github.com/camunda/camunda/c8run/internal/jre"
 	"github.com/camunda/camunda/c8run/internal/overrides"
 	"github.com/camunda/camunda/c8run/internal/types"
 	"github.com/rs/zerolog/log"
@@ -150,7 +151,11 @@ func getJavaHome(javaBinary string) (string, error) {
 	return javaHomeOutput, nil
 }
 
-func resolveJavaHomeAndBinary() (string, string, error) {
+func resolveJavaHomeAndBinary(parentDir string) (string, string, error) {
+	if javaHome, javaBinary, ok := resolveBundledJava(parentDir); ok {
+		return javaHome, javaBinary, nil
+	}
+
 	javaHome := os.Getenv("JAVA_HOME")
 	javaBinary := "java"
 	var javaHomeAfterSymlink string
@@ -210,6 +215,44 @@ func resolveJavaHomeAndBinary() (string, string, error) {
 	return javaHome, javaBinary, nil
 }
 
+func resolveBundledJava(parentDir string) (string, string, bool) {
+	if parentDir == "" {
+		return "", "", false
+	}
+
+	javaHome := jre.Home(parentDir)
+	javaBinary := jre.JavaBinary(parentDir)
+	if !isExecutableFile(javaBinary) {
+		return "", "", false
+	}
+	return javaHome, javaBinary, true
+}
+
+func isExecutableFile(path string) bool {
+	info, err := os.Stat(path)
+	if err != nil || info.IsDir() {
+		return false
+	}
+	if runtime.GOOS == "windows" {
+		return true
+	}
+	return info.Mode().Perm()&0o111 != 0
+}
+
+func configureJavaRuntimeEnvironment(javaHome, javaBinary string) error {
+	if err := os.Setenv("JAVA_HOME", javaHome); err != nil {
+		return fmt.Errorf("failed to set JAVA_HOME: %w", err)
+	}
+	javaCmd := javaBinary
+	if runtime.GOOS == "windows" {
+		javaCmd = `"` + javaBinary + `"`
+	}
+	if err := os.Setenv("JAVACMD", javaCmd); err != nil {
+		return fmt.Errorf("failed to set JAVACMD: %w", err)
+	}
+	return nil
+}
+
 // ensureDefaultConfig verifies that <parentDir>/configuration/default.yaml exists.
 func ensureDefaultConfig(parentDir string) error {
 	configDir := filepath.Join(parentDir, "configuration")
@@ -235,8 +278,12 @@ func (s *StartupHandler) StartCommand(wg *sync.WaitGroup, ctx context.Context, s
 	processInfo := state.ProcessInfo
 
 	// Resolve JAVA_HOME and javaBinary
-	javaHome, javaBinary, err := resolveJavaHomeAndBinary()
+	javaHome, javaBinary, err := resolveJavaHomeAndBinary(parentDir)
 	if err != nil {
+		fmt.Println(err.Error())
+		os.Exit(1)
+	}
+	if err := configureJavaRuntimeEnvironment(javaHome, javaBinary); err != nil {
 		fmt.Println(err.Error())
 		os.Exit(1)
 	}
