@@ -12,6 +12,7 @@ import io.camunda.identity.sdk.IdentityConfiguration;
 import io.camunda.search.clients.SearchClientsProxy;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.security.oidc.OidcClaimsProvider;
 import io.camunda.service.UserServices;
 import io.camunda.zeebe.broker.PartitionListener;
 import io.camunda.zeebe.broker.PartitionRaftListener;
@@ -137,6 +138,8 @@ public interface BrokerStartupContext {
   PasswordEncoder getPasswordEncoder();
 
   JwtDecoder getJwtDecoder();
+
+  OidcClaimsProvider getOidcClaimsProvider();
 
   SnapshotApiRequestHandler getSnapshotApiRequestHandler();
 

@@ -13,6 +13,8 @@ import io.camunda.identity.sdk.IdentityConfiguration;
 import io.camunda.search.clients.SearchClientsProxy;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.security.oidc.NoopOidcClaimsProvider;
+import io.camunda.security.oidc.OidcClaimsProvider;
 import io.camunda.service.UserServices;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.exporter.repo.ExporterDescriptor;
@@ -60,6 +62,7 @@ public class BrokerModuleConfiguration implements CloseableSilently {
   private final UserServices userServices;
   private final PasswordEncoder passwordEncoder;
   private final JwtDecoder jwtDecoder;
+  private final OidcClaimsProvider oidcClaimsProvider;
   private final SearchClientsProxy searchClientsProxy;
 
   private Broker broker;
@@ -79,6 +82,7 @@ public class BrokerModuleConfiguration implements CloseableSilently {
       @Autowired(required = false) final UserServices userServices,
       final PasswordEncoder passwordEncoder,
       @Autowired(required = false) final JwtDecoder jwtDecoder,
+      @Autowired(required = false) final OidcClaimsProvider oidcClaimsProvider,
       @Autowired(required = false) final SearchClientsProxy searchClientsProxy) {
     this.configuration = configuration;
     this.identityConfiguration = identityConfiguration;
@@ -92,6 +96,8 @@ public class BrokerModuleConfiguration implements CloseableSilently {
     this.userServices = userServices;
     this.passwordEncoder = passwordEncoder;
     this.jwtDecoder = jwtDecoder;
+    this.oidcClaimsProvider =
+        oidcClaimsProvider != null ? oidcClaimsProvider : new NoopOidcClaimsProvider();
     this.searchClientsProxy = searchClientsProxy;
   }
 
@@ -121,6 +127,7 @@ public class BrokerModuleConfiguration implements CloseableSilently {
             userServices,
             passwordEncoder,
             jwtDecoder,
+            oidcClaimsProvider,
             searchClientsProxy,
             new BrokerRequestAuthorizationConverter(securityConfiguration));
     springBrokerBridge.registerShutdownHelper(

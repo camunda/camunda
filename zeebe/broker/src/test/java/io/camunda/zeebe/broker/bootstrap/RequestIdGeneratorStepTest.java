@@ -17,6 +17,7 @@ import static org.mockito.Mockito.when;
 import io.camunda.search.clients.SearchClientsProxy;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.security.oidc.OidcClaimsProvider;
 import io.camunda.service.UserServices;
 import io.camunda.zeebe.broker.SpringBrokerBridge;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
@@ -67,6 +68,7 @@ class RequestIdGeneratorStepTest {
             mock(UserServices.class),
             mock(PasswordEncoder.class),
             mock(JwtDecoder.class),
+            mock(OidcClaimsProvider.class),
             mock(SearchClientsProxy.class),
             mock(BrokerRequestAuthorizationConverter.class));
     testBrokerStartupContext.setConcurrencyControl(spyConcurrencyControl);

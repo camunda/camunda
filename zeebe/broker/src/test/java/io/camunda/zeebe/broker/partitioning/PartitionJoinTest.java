@@ -119,6 +119,7 @@ final class PartitionJoinTest {
             null,
             null,
             null,
+            null,
             null);
 
     return new Broker(systemContext, new SpringBrokerBridge(), List.of());
