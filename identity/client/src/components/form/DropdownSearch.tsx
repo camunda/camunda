@@ -24,12 +24,24 @@ type DropdownSearchProps<Item extends Record<string, unknown>> = {
   onSelect: (item: Item) => unknown;
   filter?: (item: Item) => boolean;
   autoFocus?: boolean;
+  invalid?: boolean;
 };
 
 type ItemWithTitleAndSubTitle<Item> = Item & {
   title: string;
   subTitle?: string;
 };
+
+const InvalidSearchWrapper = styled.div<{ $invalid: boolean }>`
+  ${({ $invalid }) =>
+    $invalid &&
+    `
+    .cds--search-input {
+      outline: 2px solid var(--cds-support-error, #da1e28);
+      outline-offset: -2px;
+    }
+  `}
+`;
 
 const ListStyleWrapper = styled.div`
   & .cds--list-box__menu-item,
@@ -56,6 +68,7 @@ const DropdownSearch = <Item extends Record<string, unknown>>({
   onSelect,
   filter = () => true, // We require a filter to allow the parent to remove items with accumulated state. See comment below for details.
   autoFocus = false,
+  invalid = false,
 }: DropdownSearchProps<Item>) => {
   const debounce = useDebounce();
   const [search, setSearch] = useState("");
@@ -164,15 +177,17 @@ const DropdownSearch = <Item extends Record<string, unknown>>({
 
   return (
     <ListBox disabled={false} type="inline" isOpen>
-      <Search
-        labelText={placeholder}
-        placeholder={placeholder}
-        onChange={handleChange}
-        onClear={handleClear}
-        value={search}
-        autoFocus={autoFocus}
-        onKeyDown={handleKeyDown}
-      />
+      <InvalidSearchWrapper $invalid={invalid}>
+        <Search
+          labelText={placeholder}
+          placeholder={placeholder}
+          onChange={handleChange}
+          onClear={handleClear}
+          value={search}
+          autoFocus={autoFocus}
+          onKeyDown={handleKeyDown}
+        />
+      </InvalidSearchWrapper>
       {search && (
         <ListStyleWrapper>
           <ListBox.Menu id="list-box">
