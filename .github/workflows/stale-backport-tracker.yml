@@ -1,5 +1,5 @@
 # description: Tracks stale backport PRs and notifies authors via GitHub comments and Slack.
-#   Runs every 4 hours on weekdays, on manual dispatch, and can be called by other workflows.
+# Runs every hours on weekdays, on manual dispatch, and can be called by other workflows.
 # type: CI Helper
 # owner: @camunda/monorepo-devops-team
 ---
