@@ -10,6 +10,7 @@ functions:
   - verifyArrayPropertiesRequired
   - verifyResponsePropertiesRequired
   - verifyDeprecatedEnumMembers
+  - verifyAddedInVersion
 functionsDir: ./spectral-functions
 rules:
   # Tag validation
@@ -149,3 +150,11 @@ rules:
     message: "{{error}}"
     then:
       function: verifyDeprecatedEnumMembers
+
+  require-added-in-version:
+    description: "Every operation must have `x-added-in-version` declaring the Camunda version in which it was introduced."
+    severity: error
+    given: $.paths[*][*]
+    message: "{{error}}"
+    then:
+      function: verifyAddedInVersion
