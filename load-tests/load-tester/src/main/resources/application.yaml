@@ -10,7 +10,6 @@ server:
 logging:
   level:
     root: ${LOG_LEVEL:WARN}
-    io.camunda: ${CAMUNDA_LOG_LEVEL:INFO}
 
 management:
   server:
