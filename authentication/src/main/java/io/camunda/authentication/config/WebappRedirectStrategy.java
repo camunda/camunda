@@ -7,7 +7,6 @@
  */
 package io.camunda.authentication.config;
 
-import static io.camunda.authentication.config.CamundaOidcLogoutSuccessHandler.LOGOUT_MESSAGE_ATTRIBUTE;
 import static org.springframework.http.HttpStatus.*;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -40,6 +39,16 @@ import org.springframework.security.web.RedirectStrategy;
  */
 public class WebappRedirectStrategy implements RedirectStrategy {
 
+  /**
+   * Request attribute key used to pass a human-readable message to the redirect response. When set
+   * on a {@code 204 No Content} response, the value is sent as an {@code X-Logout-Message} header.
+   *
+   * <p>Any component that needs to communicate a diagnostic message through the redirect response
+   * can set this attribute on the {@link HttpServletRequest} before the redirect is executed.
+   */
+  public static final String REDIRECT_MESSAGE_ATTRIBUTE =
+      WebappRedirectStrategy.class.getName() + ".REDIRECT_MESSAGE";
+
   private static final String DEFAULT_REDIRECT_URL = "/";
   private final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -49,7 +58,7 @@ public class WebappRedirectStrategy implements RedirectStrategy {
       throws IOException {
 
     if (url == null || DEFAULT_REDIRECT_URL.equals(url)) {
-      final String message = (String) request.getAttribute(LOGOUT_MESSAGE_ATTRIBUTE);
+      final String message = (String) request.getAttribute(REDIRECT_MESSAGE_ATTRIBUTE);
       response.setStatus(NO_CONTENT.value());
       if (message != null) {
         response.setHeader("X-Logout-Message", message);

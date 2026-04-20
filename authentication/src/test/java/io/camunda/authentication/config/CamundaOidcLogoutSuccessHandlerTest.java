@@ -167,7 +167,7 @@ public class CamundaOidcLogoutSuccessHandlerTest {
     handler.determineTargetUrl(request, response, authentication);
 
     // then
-    assertThat(request.getAttribute(CamundaOidcLogoutSuccessHandler.LOGOUT_MESSAGE_ATTRIBUTE))
+    assertThat(request.getAttribute(WebappRedirectStrategy.REDIRECT_MESSAGE_ATTRIBUTE))
         .isEqualTo(
             "The identity provider's end_session_endpoint is not available. "
                 + "The local session has been terminated, but the IdP session will still be active.");

@@ -7,6 +7,7 @@
  */
 package io.camunda.authentication.config;
 
+import static io.camunda.authentication.config.WebappRedirectStrategy.REDIRECT_MESSAGE_ATTRIBUTE;
 import static io.camunda.authentication.controller.PostLogoutController.POST_LOGOUT_REDIRECT_ATTRIBUTE;
 import static io.camunda.authentication.utils.RequestValidationUtils.isAllowedRedirect;
 
@@ -37,8 +38,6 @@ import org.springframework.web.util.UriComponentsBuilder;
  */
 public class CamundaOidcLogoutSuccessHandler extends OidcClientInitiatedLogoutSuccessHandler {
 
-  public static final String LOGOUT_MESSAGE_ATTRIBUTE =
-      CamundaOidcLogoutSuccessHandler.class.getName() + ".LOGOUT_MESSAGE";
   private static final Logger LOG = LoggerFactory.getLogger(CamundaOidcLogoutSuccessHandler.class);
   private final ClientRegistrationRepository clientRegistrationRepository;
 
@@ -71,7 +70,7 @@ The local session has been terminated, but the IdP session will still be active.
 Falling back to '{}' without logout hint.""",
           baseLogoutUrl);
       request.setAttribute(
-          LOGOUT_MESSAGE_ATTRIBUTE,
+          REDIRECT_MESSAGE_ATTRIBUTE,
           "The identity provider's end_session_endpoint is not available. "
               + "The local session has been terminated, but the IdP session will still be active.");
       return baseLogoutUrl;
