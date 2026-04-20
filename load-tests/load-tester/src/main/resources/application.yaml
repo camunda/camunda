@@ -6,6 +6,12 @@
 server:
   port: 9600
 
+# Logging configuration
+logging:
+  level:
+    root: ${LOG_LEVEL:WARN}
+    io.camunda: ${CAMUNDA_LOG_LEVEL:INFO}
+
 management:
   server:
     port: ${server.port}
