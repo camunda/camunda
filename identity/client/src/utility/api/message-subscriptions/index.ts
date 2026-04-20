@@ -7,8 +7,9 @@
  */
 
 import type {
-  QueryMessageSubscriptionsRequestBody,
-  QueryMessageSubscriptionsResponseBody,
+  MessageSubscription as BaseMessageSubscription,
+  QueryMessageSubscriptionsRequestBody as BaseQueryMessageSubscriptionsRequestBody,
+  QueryMessageSubscriptionsResponseBody as BaseQueryMessageSubscriptionsResponseBody,
 } from "@camunda/camunda-api-zod-schemas/8.10";
 import { ApiDefinition, apiPost } from "src/utility/api/request";
 
@@ -18,3 +19,37 @@ export const searchMessageSubscriptions: ApiDefinition<
   QueryMessageSubscriptionsResponseBody,
   QueryMessageSubscriptionsRequestBody | undefined
 > = (params) => apiPost(`${MESSAGE_SUBSCRIPTIONS_ENDPOINT}/search`, params);
+
+// TODO: Remove extended types once API is stabilized and schema merged back into @camunda/camunda-api-zod-schemas.
+// https://github.com/camunda/camunda/issues/51241
+
+type MessageSubscriptionType = "START_EVENT" | "PROCESS_EVENT";
+
+export interface MessageSubscription extends BaseMessageSubscription {
+  messageSubscriptionType: MessageSubscriptionType;
+  extensionProperties: Record<string, string>;
+  processDefinitionName: string | null;
+  processDefinitionVersion: number | null;
+}
+
+type BaseMessageSubscriptionFilter = NonNullable<
+  BaseQueryMessageSubscriptionsRequestBody["filter"]
+>;
+
+interface MessageSubscriptionFilter extends BaseMessageSubscriptionFilter {
+  messageSubscriptionType?: MessageSubscriptionType;
+}
+
+export interface QueryMessageSubscriptionsRequestBody extends Omit<
+  BaseQueryMessageSubscriptionsRequestBody,
+  "filter"
+> {
+  filter?: MessageSubscriptionFilter;
+}
+
+export interface QueryMessageSubscriptionsResponseBody extends Omit<
+  BaseQueryMessageSubscriptionsResponseBody,
+  "items"
+> {
+  items: MessageSubscription[];
+}
