@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {Suspense, lazy, useRef, useState} from 'react';
+import {Suspense, lazy, useCallback, useMemo, useRef, useState} from 'react';
 import {Form} from 'react-final-form';
 import intersection from 'lodash/intersection';
 import get from 'lodash/get';
@@ -67,21 +67,45 @@ const Variables: React.FC<Props> = ({
   user,
 }) => {
   const formRef = useRef<HTMLFormElement | null>(null);
+  const scrollContainerRef = useRef<HTMLDivElement | null>(null);
   const {assignee, state} = task;
   const {t} = useTranslation();
   const [variablesLoadingFullValue, setVariablesLoadingFullValue] = useState<
     string[]
   >([]);
   const {mutateAsync: fetchFullVariable} = useFetchFullVariable();
-  const {data, isLoading, status} = useQueryAllVariables(
+  const {
+    data,
+    isLoading,
+    status,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useQueryAllVariables(
     {
       userTaskKey: task.userTaskKey,
     },
     {
       refetchOnWindowFocus: assignee === null,
       refetchOnReconnect: assignee === null,
+      refetchInterval: assignee === null ? 5000 : undefined,
     },
   );
+
+  const handleScroll = useCallback(
+    (event: React.UIEvent<HTMLDivElement>) => {
+      const {scrollTop, scrollHeight, clientHeight} = event.currentTarget;
+      if (
+        Math.floor(scrollHeight - clientHeight - scrollTop) <= 0 &&
+        hasNextPage &&
+        !isFetchingNextPage
+      ) {
+        fetchNextPage();
+      }
+    },
+    [hasNextPage, isFetchingNextPage, fetchNextPage],
+  );
+
   const [editingVariable, setEditingVariable] = useState<string | undefined>();
   const [localSubmissionState, setLocalSubmissionState] = useState<
     NonNullable<InlineLoadingProps['status']>
@@ -93,7 +117,15 @@ const Variables: React.FC<Props> = ({
     user.username === assignee && state === 'CREATED' && status === 'success';
   const hasEmptyNewVariable = (values: FormValues | undefined) =>
     values?.newVariables?.some((variable) => variable === undefined);
-  const variables = data?.items ?? [];
+  const variables = useMemo(() => data?.items ?? [], [data?.items]);
+  const totalVariables = data?.totalItems ?? variables.length;
+  const initialFormValues = useMemo(
+    () =>
+      Object.fromEntries(
+        variables.map((v) => [createVariableFieldName(v.name), v.value]),
+      ),
+    [variables],
+  );
   const isJsonEditorModalOpen = editingVariable !== undefined;
 
   if (isLoading) {
@@ -139,13 +171,7 @@ const Variables: React.FC<Props> = ({
           setLocalSubmissionState('error');
         }
       }}
-      initialValues={variables.reduce(
-        (values, variable) => ({
-          ...values,
-          [createVariableFieldName(variable.name)]: variable.value,
-        }),
-        {},
-      )}
+      initialValues={initialFormValues}
       keepDirtyOnReinitialize
     >
       {({
@@ -178,7 +204,11 @@ const Variables: React.FC<Props> = ({
             )}
           </div>
           <Separator />
-          <ScrollableContent>
+          <ScrollableContent
+            ref={scrollContainerRef}
+            onScroll={handleScroll}
+            data-testid="variables-scroll-container"
+          >
             <form
               className={styles.form}
               onSubmit={handleSubmit}
@@ -241,6 +271,7 @@ const Variables: React.FC<Props> = ({
                         <VariableEditor
                           containerRef={formRef}
                           variables={variables}
+                          totalVariables={totalVariables}
                           readOnly={!canCompleteTask}
                           fetchFullVariable={async (variableKey) => {
                             setVariablesLoadingFullValue((variableKeys) => [
@@ -257,6 +288,10 @@ const Variables: React.FC<Props> = ({
                           }}
                           variablesLoadingFullValue={variablesLoadingFullValue}
                           onEdit={(id) => setEditingVariable(id)}
+                          fetchNextPage={fetchNextPage}
+                          hasNextPage={hasNextPage}
+                          isFetchingNextPage={isFetchingNextPage}
+                          scrollContainerRef={scrollContainerRef}
                         />
                       </Layer>
                     ),

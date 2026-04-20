@@ -644,7 +644,7 @@ describe('<Task />', () => {
       http.post(
         '/v2/user-tasks/:userTaskKey/effective-variables/search',
         () => {
-          return HttpResponse.json([]);
+          return HttpResponse.json(getQueryVariablesResponseMock([]));
         },
       ),
       http.delete('/v2/user-tasks/:userTaskKey/assignee', () => {

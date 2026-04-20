@@ -6,9 +6,10 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import type {RefObject} from 'react';
+import {type RefObject, useEffect} from 'react';
 import {
   IconButton,
+  SkeletonText,
   StructuredListBody,
   StructuredListCell,
   StructuredListHead,
@@ -16,6 +17,7 @@ import {
   StructuredListWrapper,
   TextInput,
 } from '@carbon/react';
+import {useVirtualizer} from '@tanstack/react-virtual';
 import {Maximize, Close} from '@carbon/react/icons';
 import type {Variable} from '@camunda/camunda-api-zod-schemas/8.10';
 import {Field, useFormState} from 'react-final-form';
@@ -40,25 +42,75 @@ import styles from 'modules/tasks/variables-editor/VariableEditor/styles.module.
 import cn from 'classnames';
 import {useTranslation} from 'react-i18next';
 
+const ESTIMATED_ROW_HEIGHT = 48;
+const OVERSCAN = 5;
+
 type Props = {
   containerRef: RefObject<HTMLElement | null>;
   variables: Variable[];
+  totalVariables: number;
   readOnly: boolean;
   fetchFullVariable: (variableKey: string) => void;
   variablesLoadingFullValue: string[];
   onEdit: (id: string) => void;
+  fetchNextPage: () => void;
+  hasNextPage: boolean;
+  isFetchingNextPage: boolean;
+  scrollContainerRef: RefObject<HTMLElement | null>;
 };
 
 const VariableEditor: React.FC<Props> = ({
   containerRef,
   variables,
+  totalVariables,
   readOnly,
   fetchFullVariable,
   variablesLoadingFullValue,
   onEdit,
+  fetchNextPage,
+  hasNextPage,
+  isFetchingNextPage,
+  scrollContainerRef,
 }) => {
   const {dirtyFields} = useFormState<FormValues>();
   const {t} = useTranslation();
+
+  const virtualizer = useVirtualizer({
+    count: totalVariables,
+    getScrollElement: () => scrollContainerRef.current,
+    estimateSize: () => ESTIMATED_ROW_HEIGHT,
+    overscan: OVERSCAN,
+    enabled: readOnly,
+  });
+
+  const virtualItems = virtualizer.getVirtualItems();
+
+  useEffect(() => {
+    if (!readOnly) {
+      return;
+    }
+
+    const lastItem = virtualItems.at(-1);
+    if (
+      lastItem &&
+      lastItem.index >= variables.length - 1 &&
+      hasNextPage &&
+      !isFetchingNextPage
+    ) {
+      fetchNextPage();
+    }
+  }, [
+    virtualItems,
+    variables.length,
+    hasNextPage,
+    isFetchingNextPage,
+    fetchNextPage,
+    readOnly,
+  ]);
+
+  const paddingTop = virtualItems[0]?.start ?? 0;
+  const paddingBottom =
+    virtualizer.getTotalSize() - (virtualItems.at(-1)?.end ?? 0);
 
   return (
     <StructuredListWrapper className={styles.list} isCondensed>
@@ -75,43 +127,75 @@ const VariableEditor: React.FC<Props> = ({
       </StructuredListHead>
       <StructuredListBody>
         {readOnly ? (
-          variables.map((variable) => (
-            <StructuredListRow key={variable.name}>
-              <StructuredListCell
-                className={cn(styles.listCell, styles.cellName)}
-              >
-                {variable.name}
-              </StructuredListCell>
-              <StructuredListCell
-                className={cn(styles.listCell, styles.valueCell)}
-              >
-                <div className={styles.singleLineValue}>
-                  {variable.isTruncated ? variable.value : variable.value}
-                </div>
-              </StructuredListCell>
-              <StructuredListCell
-                className={cn(styles.listCell, styles.controlsCell)}
-              >
-                <div className={cn(styles.iconButtons, styles.extraPadding)}>
-                  <IconButton
-                    label={t('variableEditorOpenJsonLabel')}
-                    onClick={() => {
-                      if (variable.isTruncated) {
-                        fetchFullVariable(variable.variableKey);
-                      }
-                      onEdit(createVariableFieldName(variable.name));
-                    }}
-                    size="sm"
-                    kind="ghost"
-                    align="top-end"
-                    leaveDelayMs={100}
+          <>
+            {paddingTop > 0 && <div style={{height: paddingTop}} aria-hidden />}
+            {virtualItems.map((virtualRow) => {
+              const variable = variables[virtualRow.index];
+
+              if (variable === undefined) {
+                return (
+                  <StructuredListRow key={virtualRow.index}>
+                    <StructuredListCell
+                      className={cn(styles.listCell, styles.cellName)}
+                    >
+                      <SkeletonText />
+                    </StructuredListCell>
+                    <StructuredListCell
+                      className={cn(styles.listCell, styles.valueCell)}
+                    >
+                      <SkeletonText />
+                    </StructuredListCell>
+                    <StructuredListCell
+                      className={cn(styles.listCell, styles.controlsCell)}
+                    />
+                  </StructuredListRow>
+                );
+              }
+
+              return (
+                <StructuredListRow key={variable.variableKey}>
+                  <StructuredListCell
+                    className={cn(styles.listCell, styles.cellName)}
                   >
-                    <Maximize />
-                  </IconButton>
-                </div>
-              </StructuredListCell>
-            </StructuredListRow>
-          ))
+                    {variable.name}
+                  </StructuredListCell>
+                  <StructuredListCell
+                    className={cn(styles.listCell, styles.valueCell)}
+                  >
+                    <div className={styles.singleLineValue}>
+                      {variable.value}
+                    </div>
+                  </StructuredListCell>
+                  <StructuredListCell
+                    className={cn(styles.listCell, styles.controlsCell)}
+                  >
+                    <div
+                      className={cn(styles.iconButtons, styles.extraPadding)}
+                    >
+                      <IconButton
+                        label={t('variableEditorOpenJsonLabel')}
+                        onClick={() => {
+                          if (variable.isTruncated) {
+                            fetchFullVariable(variable.variableKey);
+                          }
+                          onEdit(createVariableFieldName(variable.name));
+                        }}
+                        size="sm"
+                        kind="ghost"
+                        align="top-end"
+                        leaveDelayMs={100}
+                      >
+                        <Maximize />
+                      </IconButton>
+                    </div>
+                  </StructuredListCell>
+                </StructuredListRow>
+              );
+            })}
+            {paddingBottom > 0 && (
+              <div style={{height: paddingBottom}} aria-hidden />
+            )}
+          </>
         ) : (
           <>
             {variables.map((variable) => (
