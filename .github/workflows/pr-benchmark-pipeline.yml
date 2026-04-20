@@ -275,7 +275,7 @@ jobs:
           token: ${{ env.TELEPORT_JOIN_TOKEN }}
           kubernetes-cluster: ${{ env.CLUSTER }}
       - name: Delete benchmark namespace
-        run: kubectl delete ns "${{ needs.compute-namespace.outputs.name }}"
+        run: kubectl delete ns "${{ needs.compute-namespace.outputs.name }}" --ignore-not-found
       - name: Observe build status
         if: always()
         continue-on-error: true
