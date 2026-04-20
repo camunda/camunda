@@ -186,13 +186,19 @@ public class ZeebeUserTaskImportService
                 .toList();
 
         // Calculate idle time, which is the sum of differences between claim and unclaim timestamp
-        // pairs, ie (claim_n -
-        // unclaim_n)
-        // Note there will always be at least one unclaim (startDate)
+        // pairs, ie (claim_n - unclaim_n).
+        // Note there will always be at least one unclaim (startDate).
+        // Stop when a claim does not follow its paired unclaim (e.g. consecutive CLAIMs with no
+        // UNCLAIM in between, caused by double-assigning the same user), as that pair would
+        // produce a negative duration.
         for (int i = 0; i < allUnclaimTimestamps.size() && i < allClaimTimestamps.size(); i++) {
           final OffsetDateTime unclaimDate = allUnclaimTimestamps.get(i);
           final OffsetDateTime claimDate = allClaimTimestamps.get(i);
-          totalIdleTimeInMs += Duration.between(unclaimDate, claimDate).toMillis();
+          final long idleTimeToAdd = Duration.between(unclaimDate, claimDate).toMillis();
+          if (idleTimeToAdd < 0) {
+            break;
+          }
+          totalIdleTimeInMs += idleTimeToAdd;
           idleTimeHasChanged = true;
         }
 

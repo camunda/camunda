@@ -97,12 +97,16 @@ public final class UserTaskDurationScriptUtil {
             +
 
             // Calculate idle time, which is the sum of differences between claim and unclaim
-            // timestamp pairs, ie (claim_n - unclaim_n)
-            // Note there will always be at least one unclaim (startDate)
+            // timestamp pairs, ie (claim_n - unclaim_n).
+            // Note there will always be at least one unclaim (startDate).
+            // Stop when a claim does not follow its paired unclaim (e.g. consecutive CLAIMs with
+            // no UNCLAIM in between, caused by double-assigning the same user), as that pair
+            // would produce a negative duration.
             "   for (def i = 0; i < allUnclaimTimestamps.size() &&  i < allClaimTimestamps.size(); i++) {\n"
             + "     def unclaimDate = allUnclaimTimestamps.get(i);\n"
             + "     def claimDate= allClaimTimestamps.get(i);\n"
             + "     def idleTimeToAdd = claimDate.getTime() - unclaimDate.getTime();\n"
+            + "     if (idleTimeToAdd < 0) { break; }\n"
             + "     totalIdleTimeInMs = totalIdleTimeInMs + idleTimeToAdd;\n"
             + "     idleTimeHasChanged = true;\n"
             + "   }\n"
