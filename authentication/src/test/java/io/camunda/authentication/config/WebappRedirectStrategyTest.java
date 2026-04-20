@@ -7,6 +7,7 @@
  */
 package io.camunda.authentication.config;
 
+import static io.camunda.authentication.config.WebappRedirectStrategy.REDIRECT_MESSAGE_ATTRIBUTE;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -63,6 +64,22 @@ public class WebappRedirectStrategyTest {
 
     assertThat(OBJECT_MAPPER.readTree(response.getContentAsString()).get("url").asText())
         .isEqualTo(url);
+  }
+
+  @Test
+  void shouldReturnNoContentWithLogoutMessageHeaderWhenAttributeIsPresent() throws Exception {
+    // given
+    final MockHttpServletRequest request = new MockHttpServletRequest();
+    final MockHttpServletResponse response = new MockHttpServletResponse();
+    final String message = "The identity provider's end_session_endpoint is not available.";
+    request.setAttribute(REDIRECT_MESSAGE_ATTRIBUTE, message);
+
+    // when
+    redirectStrategy.sendRedirect(request, response, "/");
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(NO_CONTENT.value());
+    assertThat(response.getHeader("X-Logout-Message")).isEqualTo(message);
   }
 
   @Test

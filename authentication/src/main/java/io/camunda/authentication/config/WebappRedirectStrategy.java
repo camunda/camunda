@@ -28,10 +28,26 @@ import org.springframework.security.web.RedirectStrategy;
  *       redirect destination.
  * </ul>
  *
+ * <p>On a {@code 204} response, an {@code X-Logout-Message} header may be included to convey a
+ * human-readable diagnostic message to the frontend. This happens when the OIDC identity provider's
+ * {@code end_session_endpoint} is not available: the local session is terminated successfully, but
+ * the IdP session cannot be ended. The header allows the frontend to display an appropriate warning
+ * to the user.
+ *
  * <p>This allows a JavaScript client to decide how to handle navigation based on the returned
  * response.
  */
 public class WebappRedirectStrategy implements RedirectStrategy {
+
+  /**
+   * Request attribute key used to pass a human-readable message to the redirect response. When set
+   * on a {@code 204 No Content} response, the value is sent as an {@code X-Logout-Message} header.
+   *
+   * <p>Any component that needs to communicate a diagnostic message through the redirect response
+   * can set this attribute on the {@link HttpServletRequest} before the redirect is executed.
+   */
+  public static final String REDIRECT_MESSAGE_ATTRIBUTE =
+      WebappRedirectStrategy.class.getName() + ".REDIRECT_MESSAGE";
 
   private static final String DEFAULT_REDIRECT_URL = "/";
   private final ObjectMapper objectMapper = new ObjectMapper();
@@ -42,7 +58,11 @@ public class WebappRedirectStrategy implements RedirectStrategy {
       throws IOException {
 
     if (url == null || DEFAULT_REDIRECT_URL.equals(url)) {
+      final String message = (String) request.getAttribute(REDIRECT_MESSAGE_ATTRIBUTE);
       response.setStatus(NO_CONTENT.value());
+      if (message != null) {
+        response.setHeader("X-Logout-Message", message);
+      }
       return;
     }
 

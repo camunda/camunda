@@ -7,6 +7,7 @@
  */
 package io.camunda.authentication.config;
 
+import static io.camunda.authentication.config.WebappRedirectStrategy.REDIRECT_MESSAGE_ATTRIBUTE;
 import static io.camunda.authentication.controller.PostLogoutController.POST_LOGOUT_REDIRECT_ATTRIBUTE;
 import static io.camunda.authentication.utils.RequestValidationUtils.isAllowedRedirect;
 
@@ -65,8 +66,13 @@ public class CamundaOidcLogoutSuccessHandler extends OidcClientInitiatedLogoutSu
       LOG.trace(
 """
 Unable to determine end-session endpoint for OIDC logout. \
+The local session has been terminated, but the IdP session will still be active. \
 Falling back to '{}' without logout hint.""",
           baseLogoutUrl);
+      request.setAttribute(
+          REDIRECT_MESSAGE_ATTRIBUTE,
+          "The identity provider's end_session_endpoint is not available. "
+              + "The local session has been terminated, but the IdP session will still be active.");
       return baseLogoutUrl;
     }
 
