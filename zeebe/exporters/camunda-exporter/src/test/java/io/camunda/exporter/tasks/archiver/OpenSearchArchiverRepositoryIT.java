@@ -1254,11 +1254,11 @@ final class OpenSearchArchiverRepositoryIT {
     final var repository = createRepository();
     final var documents =
         List.of(
-            new TestProcessDocument("1", 111L),
-            new TestProcessDocument("2", 111L),
-            new TestProcessDocument("3", 222L),
-            new TestProcessDocument("4", 111L),
-            new TestProcessDocument("5", 222L));
+            new TestProcessDocument("1", 111L, "variable"),
+            new TestProcessDocument("2", 111L, "activity"),
+            new TestProcessDocument("3", 222L, "variable"),
+            new TestProcessDocument("4", 111L, "variable"),
+            new TestProcessDocument("5", 222L, "activity"));
 
     // create the index template first to ensure ID is a keyword, otherwise the surrounding
     // aggregation will fail
@@ -1271,7 +1271,11 @@ final class OpenSearchArchiverRepositoryIT {
     final var batch =
         repository
             .getArchiveDocIdsBatch(
-                processInstanceIndex, Map.of("processInstanceKey", List.of("111")), Map.of(), null)
+                processInstanceIndex,
+                Map.of("processInstanceKey", List.of("111")),
+                Map.of(),
+                Map.of(),
+                null)
             .join();
 
     assertThat(batch.ids()).containsExactlyInAnyOrder("1", "2", "4");
@@ -1283,7 +1287,11 @@ final class OpenSearchArchiverRepositoryIT {
     final var emptyBatch =
         repository
             .getArchiveDocIdsBatch(
-                processInstanceIndex, Map.of("processInstanceKey", List.of("999")), Map.of(), null)
+                processInstanceIndex,
+                Map.of("processInstanceKey", List.of("999")),
+                Map.of(),
+                Map.of(),
+                null)
             .join();
 
     assertThat(emptyBatch.isEmpty()).isTrue();
@@ -1296,7 +1304,11 @@ final class OpenSearchArchiverRepositoryIT {
     final var batchPg1 =
         repository
             .getArchiveDocIdsBatch(
-                processInstanceIndex, Map.of("processInstanceKey", List.of("111")), Map.of(), null)
+                processInstanceIndex,
+                Map.of("processInstanceKey", List.of("111")),
+                Map.of(),
+                Map.of(),
+                null)
             .join();
 
     assertThat(batchPg1.ids()).containsExactlyInAnyOrder("1", "2");
@@ -1310,6 +1322,7 @@ final class OpenSearchArchiverRepositoryIT {
             .getArchiveDocIdsBatch(
                 processInstanceIndex,
                 Map.of("processInstanceKey", List.of("111")),
+                Map.of(),
                 Map.of(),
                 batchPg1.searchAfter())
             .join();
@@ -1326,12 +1339,43 @@ final class OpenSearchArchiverRepositoryIT {
                 processInstanceIndex,
                 Map.of("processInstanceKey", List.of("111")),
                 Map.of(),
+                Map.of(),
                 batchPg2.searchAfter())
             .join();
 
     assertThat(batchPg3.isEmpty()).isTrue();
     assertThat(batchPg3.ids()).isEmpty();
     assertThat(batchPg3.searchAfter()).isEmpty();
+
+    // when searching for process instance key 111 with exclusion filter for joinRelation=activity
+    // then - we expect only documents with joinRelation != activity (IDs 1 and 4)
+    config.setReindexBatchSize(100);
+    final var batchExcluded =
+        repository
+            .getArchiveDocIdsBatch(
+                processInstanceIndex,
+                Map.of("processInstanceKey", List.of("111")),
+                Map.of(),
+                Map.of("joinRelation", "activity"),
+                null)
+            .join();
+
+    assertThat(batchExcluded.ids()).containsExactlyInAnyOrder("1", "4");
+
+    // when searching for process instance key 111 with inclusion filter for joinRelation=variable
+    // and exclusion filter for joinRelation=activity
+    // then - we expect only documents matching joinRelation=variable (IDs 1 and 4)
+    final var batchBothFilters =
+        repository
+            .getArchiveDocIdsBatch(
+                processInstanceIndex,
+                Map.of("processInstanceKey", List.of("111")),
+                Map.of("joinRelation", "variable"),
+                Map.of("joinRelation", "activity"),
+                null)
+            .join();
+
+    assertThat(batchBothFilters.ids()).containsExactlyInAnyOrder("1", "4");
   }
 
   @Test
@@ -1423,6 +1467,7 @@ final class OpenSearchArchiverRepositoryIT {
             processInstanceIndex,
             processInstanceIndex + "_dest",
             Map.of("processInstanceKey", List.of("111", "333")),
+            Map.of(),
             Map.of(),
             executor)
         .join(); // wait for completion
@@ -1953,7 +1998,12 @@ final class OpenSearchArchiverRepositoryIT {
 
   private record TestDocument(String id) implements TDocument {}
 
-  private record TestProcessDocument(String id, Long processInstanceKey) implements TDocument {}
+  private record TestProcessDocument(String id, Long processInstanceKey, String joinRelation)
+      implements TDocument {
+    TestProcessDocument(final String id, final Long processInstanceKey) {
+      this(id, processInstanceKey, null);
+    }
+  }
 
   private record TestProcessInstance(
       String id,

@@ -13,6 +13,7 @@ import io.camunda.exporter.tasks.archiver.ArchiveBatch.ProcessInstanceArchiveBat
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
 import io.camunda.webapps.schema.descriptors.ProcessInstanceDependant;
 import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
+import io.camunda.zeebe.util.FunctionUtil;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -51,6 +52,28 @@ public class ProcessInstanceByIdArchiverJob extends ProcessInstanceArchiverJob {
   }
 
   @Override
+  protected CompletableFuture<Integer> archive(
+      final IndexTemplateDescriptor templateDescriptor, final ProcessInstanceArchiveBatch batch) {
+    // 1. First archive docs from dependent indices and `joinRelation={variable OR activity}`
+    // from operate-list-view index
+    // 2. Then archive all docs except `joinRelation=processInstance` from operate-list-view index
+    // 3. Then archive remaining docs from operate-list-view index (catch-all without filters)
+    return archiveProcessDependants(batch)
+        .thenComposeAsync(
+            v ->
+                archive(
+                    templateDescriptor,
+                    batch,
+                    Map.of(),
+                    Map.of(
+                        ListViewTemplate.JOIN_RELATION,
+                        ListViewTemplate.PROCESS_INSTANCE_JOIN_RELATION)),
+            getExecutor())
+        .thenComposeAsync(ignored -> archive(templateDescriptor, batch, Map.of()), getExecutor())
+        .thenApply(FunctionUtil.peek(archived -> markBatchRecentlyArchived(batch)));
+  }
+
+  @Override
   protected CompletableFuture<Void> archiveProcessDependants(
       final ProcessInstanceArchiveBatch batch) {
     // get the usual process instance dependent archive tasks
@@ -85,13 +108,26 @@ public class ProcessInstanceByIdArchiverJob extends ProcessInstanceArchiverJob {
   protected CompletableFuture<Integer> archive(
       final IndexTemplateDescriptor templateDescriptor,
       final ProcessInstanceArchiveBatch batch,
-      final Map<String, String> filters) {
+      final Map<String, String> inclusionFilters) {
+    return archive(templateDescriptor, batch, inclusionFilters, Map.of());
+  }
+
+  protected CompletableFuture<Integer> archive(
+      final IndexTemplateDescriptor templateDescriptor,
+      final ProcessInstanceArchiveBatch batch,
+      final Map<String, String> inclusionFilters,
+      final Map<String, String> exclusionFilters) {
     final var sourceIdxName = templateDescriptor.getFullQualifiedName();
     final var idsMap = createIdsByFieldMap(templateDescriptor, batch);
     final var finishDate = batch.finishDate();
     return getArchiverRepository()
         .moveDocumentsById(
-            sourceIdxName, sourceIdxName + finishDate, idsMap, filters, getExecutor())
+            sourceIdxName,
+            sourceIdxName + finishDate,
+            idsMap,
+            inclusionFilters,
+            exclusionFilters,
+            getExecutor())
         .thenApplyAsync(ok -> batch.size(), getExecutor());
   }
 }

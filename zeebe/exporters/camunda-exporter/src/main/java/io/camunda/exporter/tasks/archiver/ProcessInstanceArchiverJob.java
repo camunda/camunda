@@ -13,6 +13,7 @@ import io.camunda.exporter.tasks.archiver.ArchiveBatch.ProcessInstanceArchiveBat
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
 import io.camunda.webapps.schema.descriptors.ProcessInstanceDependant;
 import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
+import io.camunda.zeebe.util.FunctionUtil;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -100,11 +101,7 @@ public class ProcessInstanceArchiverJob extends ArchiverJob<ProcessInstanceArchi
       final IndexTemplateDescriptor templateDescriptor, final ProcessInstanceArchiveBatch batch) {
     return archiveProcessDependants(batch)
         .thenComposeAsync(v -> archive(templateDescriptor, batch, Map.of()), getExecutor())
-        .thenApply(
-            archived -> {
-              recentlyArchivedProcessInstances.markRecentlyArchived(batch);
-              return archived;
-            });
+        .thenApply(FunctionUtil.peek(archived -> markBatchRecentlyArchived(batch)));
   }
 
   @Override
@@ -143,6 +140,10 @@ public class ProcessInstanceArchiverJob extends ArchiverJob<ProcessInstanceArchi
       final ProcessInstanceArchiveBatch batch) {
     final List<CompletableFuture<?>> dependentFutures = getProcessDependentArchiveFutures(batch);
     return CompletableFuture.allOf(dependentFutures.toArray(CompletableFuture[]::new));
+  }
+
+  protected void markBatchRecentlyArchived(final ProcessInstanceArchiveBatch batch) {
+    recentlyArchivedProcessInstances.markRecentlyArchived(batch);
   }
 
   protected List<CompletableFuture<?>> getProcessDependentArchiveFutures(
