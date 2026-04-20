@@ -1,24 +1,40 @@
 #!/bin/bash -xeu
 # Usage:
-#   ./executeProfiling.sh <POD-NAME> [EVENT-TYPE] [ADDITIONAL-OPTIONS]
+#  ./executeProfiling.sh <POD-NAME> [EVENT-TYPE] [DATABASE] [ADDITIONAL-OPTIONS]
 #
 # EVENT-TYPE can be:
 #   cpu   - CPU profiling (default)
 #   wall  - Wall clock time profiling
 #   alloc - Memory allocation profiling
-#
+# DATABASE can be:
+#   elasticsearch (default)
+#   postgresql
 # ADDITIONAL-OPTIONS: Optional additional flags to pass to async-profiler (e.g., "-t" to profile threads separately)
 # See https://github.com/async-profiler/async-profiler/blob/master/docs/ProfilerOptions.md for potential options
 set -oxe pipefail
 
 if [ -z "$1" ]; then
   echo "Error: Missing required argument <POD-NAME>."
-  echo "Usage: ./executeProfiling.sh <POD-NAME> [EVENT-TYPE] [ADDITIONAL-OPTIONS]"
+  echo "Usage: ./executeProfiling.sh <POD-NAME> [EVENT-TYPE] [DATABASE] [ADDITIONAL-OPTIONS]"
   exit 1
 fi
 node=$1
 profiler_event=${2:-cpu}
 additional_options=${3:-}
+raw_database=${3:-}
+additional_options=${4:-}
+database=""
+
+# Validate database param — if it's not a known value, treat it as additional options
+valid_databases=("elasticsearch" "opensearch" "postgresql" "oracle" "mysql" "mssql" "mariadb" "none")
+
+if [[ -n "$raw_database" ]] && [[ ! " ${valid_databases[*]} " =~ " ${raw_database} " ]]; then
+  # Not a known database — treat it as additional options
+  additional_options="$raw_database ${4:-}"
+  database=""
+else
+  database="$raw_database"
+fi
 
 if [[ $profiler_event == "wall" ]]; then
   # Add -t flag for wall profiling to split threads (recommended for wall-clock profiling)
@@ -50,7 +66,11 @@ then
 fi
 
 # Run profiling
-filename=flamegraph-$profiler_event-$(date +%Y-%m-%d_%H-%M-%S).html
+if [ -n "$database" ]; then
+  filename=flamegraph-$database-$profiler_event-$(date +%Y-%m-%d_%H-%M-%S).html
+else
+  filename=flamegraph-$profiler_event-$(date +%Y-%m-%d_%H-%M-%S).html
+fi
 # Extracting the PID:
 #
 #  $ k exec camunda-0 -it -- ps -ax
