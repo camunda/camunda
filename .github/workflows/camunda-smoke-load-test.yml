@@ -1,0 +1,143 @@
+# description: Smoke-tests the load-test setup on every push that touches load-test infra.
+#              Deploys a minimal load test from the pushed ref, waits for pod readiness and
+#              gateway connectivity, then deletes the namespace. Fails loudly on Slack so
+#              breakages in load-test infra are caught immediately on main/stable branches.
+# calls: camunda-load-test.yml (scenario: realistic),
+#        camunda-verify-and-cleanup-load-test.yml (verify + delete namespace)
+# notifications: Slack (#reliability-testing-alerts) on failure only
+# type: CI
+# owner: @camunda/reliability-testing
+name: Camunda Smoke Load Test
+on:
+  push:
+    branches:
+      - main
+      - 'stable/**'
+    paths:
+      - 'load-tests/**'
+      - '.github/workflows/camunda-load-test.yml'
+      - '.github/workflows/camunda-verify-and-cleanup-load-test.yml'
+      - '.github/workflows/camunda-smoke-load-test.yml'
+  workflow_dispatch: {}
+
+concurrency:
+  group: smoke-load-test-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    # use bash shell by default to ensure pipefail behavior is the default
+    # see https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#exit-codes-and-error-action-preference
+    shell: bash
+
+jobs:
+  sanitize-ref-name:
+    name: Sanitize Ref Name
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions: {}
+    outputs:
+      sanitized-name: c8-smoke-${{ steps.sanitize.outputs.branch_name }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - id: sanitize
+        uses: camunda/infra-global-github-actions/sanitize-branch-name@main
+        with:
+          branch: ${{ github.ref_name }}
+          # reduced to account for smoke-load-test prefix "c8-smoke-" and potential suffixes for uniqueness
+          max_length: 40
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+
+  smoke-install:
+    name: Smoke Install
+    needs: sanitize-ref-name
+    uses: ./.github/workflows/camunda-load-test.yml
+    secrets: inherit
+    with:
+      name: ${{ needs.sanitize-ref-name.outputs.sanitized-name }}
+      ref: ${{ github.ref_name }}
+      scenario: realistic
+      # Short TTL acts as a safety net; verify-and-cleanup deletes the namespace explicitly.
+      ttl: 1
+
+  verify-and-cleanup:
+    name: Verify and cleanup
+    needs: [sanitize-ref-name, smoke-install]
+    if: always()
+    uses: ./.github/workflows/camunda-verify-and-cleanup-load-test.yml
+    secrets: inherit
+    with:
+      namespace: ${{ needs.sanitize-ref-name.outputs.sanitized-name }}
+
+  notify-on-failure:
+    name: Notify on failure
+    runs-on: ubuntu-latest
+    needs: [sanitize-ref-name, smoke-install, verify-and-cleanup]
+    if: >-
+      always() &&
+      (needs.smoke-install.result == 'failure' ||
+      needs.verify-and-cleanup.result == 'failure')
+    timeout-minutes: 5
+    permissions: {}
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Import Slack webhook from Vault
+        id: slack-secrets
+        uses: hashicorp/vault-action@4c06c5ccf5c0761b6029f56cfb1dcf5565918a3b # v3.4.0
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          exportEnv: false
+          secrets: |
+            secret/data/products/camunda/ci/github-actions SLACK_ZEEBOT_RELIABILITY_TESTING_ALERTS_WEBHOOK_URL;
+      - id: slack-notify
+        uses: slackapi/slack-github-action@af78098f536edbc4de71162a307590698245be95 # v3.0.1
+        with:
+          webhook: ${{ steps.slack-secrets.outputs.SLACK_ZEEBOT_RELIABILITY_TESTING_ALERTS_WEBHOOK_URL }}
+          webhook-type: incoming-webhook
+          payload: |
+            {
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": ":alarm: *Smoke load test failed on `${{ github.ref_name }}`*"
+                  }
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*Job results:*\n- smoke-install: ${{ needs.smoke-install.result }}\n- verify-and-cleanup: ${{ needs.verify-and-cleanup.result }}\n\n*Namespace:* `${{ needs.sanitize-ref-name.outputs.sanitized-name }}`"
+                  }
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "@reliability-testing-team Please check: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+                  }
+                }
+              ]
+            }
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
