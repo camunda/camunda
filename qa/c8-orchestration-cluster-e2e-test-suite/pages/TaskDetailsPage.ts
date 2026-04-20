@@ -377,11 +377,14 @@ class TaskDetailsPage {
     const input = this.page.getByLabel(label, {exact: true});
     await waitForAssertion({
       assertion: async () => {
-        const actualValue = input;
-        await expect(actualValue).toHaveValue(expectedValue);
+        await expect(input).toHaveValue(expectedValue);
       },
       onFailure: async () => {
-        console.log(`Retrying assertion for field "${label}"...`);
+        console.log(
+          `Assertion for field "${label}" failed, reloading page and retrying...`,
+        );
+        await this.page.reload();
+        await expect(this.form).toBeVisible({timeout: 30000});
       },
     });
   }
