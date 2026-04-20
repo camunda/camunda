@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import { FC, useMemo } from "react";
+import { FC, useCallback, useMemo, useState } from "react";
 import useTranslate from "src/utility/localization";
 import Page, { PageHeader } from "src/components/layout/Page";
 import EntityList, {
@@ -38,6 +38,23 @@ const List: FC = () => {
     return columns;
   }, [t]);
 
+  // Note: Filtering by tool name is currently not supported by the API.
+  const [toolNameSearch, setToolNameSearch] = useState("");
+  const handleSearch = useCallback(
+    (value: Record<string, string> | undefined) => {
+      const toolName = value?.toolName.trim().toLowerCase();
+      setToolNameSearch(toolName ?? "");
+    },
+    [],
+  );
+
+  const filteredTools = useMemo(() => {
+    if (!toolNameSearch) return processTools;
+    return processTools.filter((tool) =>
+      tool.toolName.toLowerCase().includes(toolNameSearch),
+    );
+  }, [processTools, toolNameSearch]);
+
   return (
     <Page>
       <PageHeader
@@ -46,10 +63,13 @@ const List: FC = () => {
         shouldShowDocumentationLink={false}
       />
       <EntityList
-        data={processTools}
+        data={filteredTools}
         headers={headers}
         loading={loading}
+        searchKey="toolName"
+        searchPlaceholder={t("searchByToolName")}
         {...paginationProps}
+        setSearch={handleSearch}
       />
       {!loading && !success && (
         <TranslatedErrorInlineNotification
