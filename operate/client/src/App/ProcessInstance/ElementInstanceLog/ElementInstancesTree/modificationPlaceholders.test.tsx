@@ -467,8 +467,6 @@ describe('ElementInstancesTree - Modification placeholders', () => {
       }),
     ).toHaveLength(2);
 
-    const businessObjects = await parseDiagramXML(mockNestedSubprocess);
-
     act(() => {
       modificationsStore.enableModificationMode();
       modificationsStore.addModification({
@@ -480,7 +478,7 @@ describe('ElementInstancesTree - Modification placeholders', () => {
           affectedTokenCount: 1,
           visibleAffectedTokenCount: 1,
           parentScopeIds: generateParentScopeIds(
-            businessObjects.elementsById,
+            mockNestedSubprocessDiagramModel.elementsById,
             'user_task',
             'nested_sub_process',
           ),
@@ -495,7 +493,7 @@ describe('ElementInstancesTree - Modification placeholders', () => {
           affectedTokenCount: 1,
           visibleAffectedTokenCount: 1,
           parentScopeIds: generateParentScopeIds(
-            businessObjects.elementsById,
+            mockNestedSubprocessDiagramModel.elementsById,
             'user_task',
             'nested_sub_process',
           ),
