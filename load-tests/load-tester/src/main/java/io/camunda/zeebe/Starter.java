@@ -320,7 +320,7 @@ public class Starter extends App {
   }
 
   private CamundaClient createCamundaClient() {
-    return newClientBuilder().numJobWorkerExecutionThreads(0).build();
+    return newClientBuilder().numJobWorkerExecutionThreads(0).maxHttpConnections(500).build();
   }
 
   private void deployProcess(final CamundaClient client, final StarterCfg starterCfg) {

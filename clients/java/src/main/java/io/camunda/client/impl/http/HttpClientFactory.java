@@ -117,6 +117,7 @@ public class HttpClientFactory {
         PoolingAsyncClientConnectionManagerBuilder.create()
             .setTlsStrategy(tlsStrategy)
             .setPoolConcurrencyPolicy(PoolConcurrencyPolicy.LAX)
+            .setMaxConnTotal(config.getMaxHttpConnections())
             .setMaxConnPerRoute(config.getMaxHttpConnections());
 
     if (config.useClientSideLoadBalancing()) {
