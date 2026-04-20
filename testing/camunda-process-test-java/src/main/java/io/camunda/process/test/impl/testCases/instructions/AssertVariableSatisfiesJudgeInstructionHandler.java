@@ -21,17 +21,17 @@ import io.camunda.process.test.api.assertions.ElementSelector;
 import io.camunda.process.test.api.assertions.ProcessInstanceAssert;
 import io.camunda.process.test.api.assertions.ProcessInstanceSelector;
 import io.camunda.process.test.api.judge.JudgeConfig;
-import io.camunda.process.test.api.testCases.instructions.AssertVariableJudgeInstruction;
+import io.camunda.process.test.api.testCases.instructions.AssertVariableSatisfiesJudgeInstruction;
 import io.camunda.process.test.impl.testCases.AssertionFacade;
 import io.camunda.process.test.impl.testCases.TestCaseInstructionHandler;
 import java.util.Optional;
 
-public class AssertVariableJudgeInstructionHandler
-    implements TestCaseInstructionHandler<AssertVariableJudgeInstruction> {
+public class AssertVariableSatisfiesJudgeInstructionHandler
+    implements TestCaseInstructionHandler<AssertVariableSatisfiesJudgeInstruction> {
 
   @Override
   public void execute(
-      final AssertVariableJudgeInstruction instruction,
+      final AssertVariableSatisfiesJudgeInstruction instruction,
       final CamundaProcessTestContext context,
       final CamundaClient camundaClient,
       final AssertionFacade assertionFacade) {
@@ -40,23 +40,13 @@ public class AssertVariableJudgeInstructionHandler
         InstructionSelectorFactory.buildProcessInstanceSelector(
             instruction.getProcessInstanceSelector());
 
-    // Not declared final because withJudgeConfig returns a new assertion instance
     ProcessInstanceAssert processInstanceAssert =
         assertionFacade.assertThatProcessInstance(processInstanceSelector);
 
     if (instruction.getThreshold().isPresent() || instruction.getCustomPrompt().isPresent()) {
       processInstanceAssert =
           processInstanceAssert.withJudgeConfig(
-              config -> {
-                JudgeConfig modified = config;
-                if (instruction.getThreshold().isPresent()) {
-                  modified = modified.withThreshold(instruction.getThreshold().get());
-                }
-                if (instruction.getCustomPrompt().isPresent()) {
-                  modified = modified.withCustomPrompt(instruction.getCustomPrompt().get());
-                }
-                return modified;
-              });
+              config -> customizeJudgeConfig(instruction, config));
     }
 
     final Optional<ElementSelector> elementSelector =
@@ -72,7 +62,19 @@ public class AssertVariableJudgeInstructionHandler
   }
 
   @Override
-  public Class<AssertVariableJudgeInstruction> getInstructionType() {
-    return AssertVariableJudgeInstruction.class;
+  public Class<AssertVariableSatisfiesJudgeInstruction> getInstructionType() {
+    return AssertVariableSatisfiesJudgeInstruction.class;
+  }
+
+  private static JudgeConfig customizeJudgeConfig(
+      final AssertVariableSatisfiesJudgeInstruction instruction, final JudgeConfig config) {
+    JudgeConfig modified = config;
+    if (instruction.getThreshold().isPresent()) {
+      modified = modified.withThreshold(instruction.getThreshold().get());
+    }
+    if (instruction.getCustomPrompt().isPresent()) {
+      modified = modified.withCustomPrompt(instruction.getCustomPrompt().get());
+    }
+    return modified;
   }
 }
