@@ -60,10 +60,12 @@ public final class DefaultTransactionContext implements TransactionContext {
     try {
       transaction.resetTransaction();
       operations.run();
-      transaction.commitInternal();
-      committed = true;
+      if (transaction.isInCurrentTransaction()) {
+        transaction.commitInternal();
+        committed = true;
+      }
     } finally {
-      if (!committed) {
+      if (!committed && transaction.isInCurrentTransaction()) {
         transaction.rollbackInternal();
       }
     }

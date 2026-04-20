@@ -11,6 +11,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.when;
 
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
@@ -21,6 +22,7 @@ import io.camunda.zeebe.db.impl.DefaultColumnFamily;
 import io.camunda.zeebe.db.impl.DefaultZeebeDbFactory;
 import io.camunda.zeebe.util.exception.RecoverableException;
 import java.io.File;
+import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -35,11 +37,15 @@ final class ZeebeRocksDbTransactionTest {
   private final ZeebeDbFactory<DefaultColumnFamily> dbFactory =
       DefaultZeebeDbFactory.getDefaultFactory();
 
+  @SuppressWarnings("FieldCanBeLocal")
+  @AutoClose
+  private ZeebeDb<DefaultColumnFamily> zeebeDb;
+
   private TransactionContext transactionContext;
 
   @BeforeEach
   void setup() throws Exception {
-    final ZeebeDb<DefaultColumnFamily> zeebeDb = dbFactory.createDb(tempDir);
+    zeebeDb = dbFactory.createDb(tempDir);
     transactionContext = zeebeDb.createContext();
   }
 
@@ -94,6 +100,9 @@ final class ZeebeRocksDbTransactionTest {
     final ZeebeTransaction transaction = mock(ZeebeTransaction.class);
     final TransactionContext newContext = new DefaultTransactionContext(transaction);
     final Status status = new Status(Code.IOError, SubCode.None, "");
+    // first call: not in transaction (triggers runInNewTransaction); second: in transaction
+    // (triggers commit)
+    when(transaction.isInCurrentTransaction()).thenReturn(false, true);
     doThrow(new RocksDBException("expected", status)).when(transaction).commitInternal();
 
     // when / then
@@ -107,6 +116,7 @@ final class ZeebeRocksDbTransactionTest {
     final ZeebeTransaction transaction = mock(ZeebeTransaction.class);
     final TransactionContext newContext = new DefaultTransactionContext(transaction);
     final Status status = new Status(Code.NotSupported, SubCode.None, "");
+    when(transaction.isInCurrentTransaction()).thenReturn(false, true);
     doThrow(new RocksDBException("expected", status)).when(transaction).commitInternal();
 
     // when / then
@@ -121,6 +131,7 @@ final class ZeebeRocksDbTransactionTest {
     final TransactionContext newContext = new DefaultTransactionContext(transaction);
     final Status commitStatus = new Status(Code.IOError, SubCode.None, "");
     final Status rollbackStatus = new Status(Code.IOError, SubCode.None, "");
+    when(transaction.isInCurrentTransaction()).thenReturn(false, true);
     doThrow(new RocksDBException("commit failed", commitStatus)).when(transaction).commitInternal();
     doThrow(new RocksDBException("rollback failed", rollbackStatus))
         .when(transaction)
@@ -139,6 +150,7 @@ final class ZeebeRocksDbTransactionTest {
     final TransactionContext newContext = new DefaultTransactionContext(transaction);
     final Status commitStatus = new Status(Code.IOError, SubCode.None, "");
     final Status rollbackStatus = new Status(Code.NotSupported, SubCode.None, "");
+    when(transaction.isInCurrentTransaction()).thenReturn(false, true);
     doThrow(new RocksDBException("commit failed", commitStatus)).when(transaction).commitInternal();
     doThrow(new RocksDBException("rollback failed", rollbackStatus))
         .when(transaction)
