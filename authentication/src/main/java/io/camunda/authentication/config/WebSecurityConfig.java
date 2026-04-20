@@ -647,25 +647,35 @@ public class WebSecurityConfig {
     @Bean
     public OidcClaimsProvider oidcClaimsProvider(
         final SecurityConfiguration securityConfiguration,
+        final ClientRegistrationRepository clientRegistrationRepository,
         final OidcAuthenticationConfigurationRepository oidcProviderRepository,
         final MeterRegistry meterRegistry) {
       final var oidc = securityConfiguration.getAuthentication().getOidc();
       if (oidc == null || !oidc.getUserInfoAugmentation().isEnabled()) {
         return new NoopOidcClaimsProvider();
       }
-      // Resolve userinfo URI from the first matching provider's issuer.
-      // Multi-provider selection by 'iss' claim is a follow-up; single-provider
-      // setups are covered today.
+      // Read userinfo URI from the Spring-managed ClientRegistration. Spring populates
+      // ProviderDetails.UserInfoEndpoint.uri from the IdP's OIDC discovery document when
+      // ClientRegistrations.fromIssuerLocation(...) runs — so it's accurate even for IdPs
+      // whose userinfo path isn't {issuer}/userinfo. A null URI means either the IdP does
+      // not publish a userinfo endpoint or the operator set userInfoEnabled=false; both
+      // legitimately preclude augmentation.
+      // Multi-provider selection by 'iss' claim is a follow-up; single-provider setups are
+      // covered today by picking the first registration that exposes a userinfo endpoint.
       final URI userInfoUri =
-          oidcProviderRepository.getOidcAuthenticationConfigurations().values().stream()
-              .map(OidcAuthenticationConfiguration::getIssuerUri)
+          oidcProviderRepository.getOidcAuthenticationConfigurations().keySet().stream()
+              .map(clientRegistrationRepository::findByRegistrationId)
+              .filter(Objects::nonNull)
+              .map(cr -> cr.getProviderDetails().getUserInfoEndpoint().getUri())
               .filter(Objects::nonNull)
               .findFirst()
-              .map(issuer -> URI.create(issuer.replaceAll("/$", "") + "/userinfo"))
+              .map(URI::create)
               .orElseThrow(
                   () ->
                       new IllegalStateException(
-                          "UserInfo augmentation enabled but no issuerUri configured"));
+                          "UserInfo augmentation is enabled but no ClientRegistration exposes a"
+                              + " userinfo endpoint. Check the IdP's OIDC discovery document and"
+                              + " the userInfoEnabled flag."));
       final var httpClient = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(5)).build();
       return new CachingOidcClaimsProvider(
           oidc,
