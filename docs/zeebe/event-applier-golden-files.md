@@ -154,7 +154,7 @@ not cost much effort.
 `NoChangesTest` contains an inner class `GoldenFileUpdater` with a `main` method. It iterates all
 registered appliers and copies each source file to its golden file (or creates an empty file for
 NOOP appliers). You can run it from your IDE (IntelliJ shows a run gutter icon) or from the command
-line.
+line. It will prompt for confirmation before overwriting any files.
 
 Only use this when you have many new golden files to create at once — for example, after adding
 several new appliers. Always review each failing test case first to confirm that updating the golden
