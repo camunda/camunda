@@ -138,7 +138,7 @@ public final class RdbmsExporter {
     // decoupled from the main export thread
     backgroundTaskManager =
         new RdbmsBackgroundTaskManager(
-            partitionId, historyCleanupService, historyDeletionService, LOG);
+            partitionId, historyCleanupService, historyDeletionService, rdbmsSchemaManager, LOG);
     backgroundTaskManager.start();
 
     LOG.info(

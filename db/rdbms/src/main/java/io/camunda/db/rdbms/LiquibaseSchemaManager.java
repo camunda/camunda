@@ -57,6 +57,7 @@ public class LiquibaseSchemaManager extends MultiTenantSpringLiquibase
   @Override
   public void afterPropertiesSet() throws Exception {
     releaseStaleLockIfPresent();
+    setContexts("!async");
     performMigrationWithRetry();
     initialized = true;
     LOG.debug("Liquibase migrations completed.");
@@ -133,6 +134,20 @@ public class LiquibaseSchemaManager extends MultiTenantSpringLiquibase
   @Override
   public boolean isInitialized() {
     return initialized;
+  }
+
+  @Override
+  public void migrateAsync() {
+    LOG.debug("Start async liquibase migrations.");
+    releaseStaleLockIfPresent();
+    setContexts("async");
+    try {
+      performMigrationWithRetry();
+    } catch (final Exception e) {
+      throw new RuntimeException(e);
+    }
+    setContexts("!async");
+    LOG.debug("Async liquibase migrations completed.");
   }
 
   public Duration getDdlLockWaitTimeout() {

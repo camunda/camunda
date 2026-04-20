@@ -9,11 +9,13 @@ package io.camunda.exporter.rdbms.tasks;
 
 import static io.camunda.zeebe.exporter.common.tasks.BackgroundTaskManager.buildExecutor;
 
+import io.camunda.db.rdbms.RdbmsSchemaManager;
 import io.camunda.db.rdbms.write.service.HistoryCleanupService;
 import io.camunda.db.rdbms.write.service.HistoryDeletionService;
 import io.camunda.zeebe.exporter.common.tasks.BackgroundTaskManager;
 import io.camunda.zeebe.exporter.common.tasks.RunnableTask;
 import io.camunda.zeebe.exporter.common.tasks.SelfSchedulingTask;
+import io.camunda.zeebe.exporter.common.tasks.SingleExecutionTask;
 import io.camunda.zeebe.util.CloseableSilently;
 import java.time.Duration;
 import java.time.OffsetDateTime;
@@ -35,6 +37,7 @@ public final class RdbmsBackgroundTaskManager implements CloseableSilently {
   private final int partitionId;
   private final HistoryCleanupService historyCleanupService;
   private final HistoryDeletionService historyDeletionService;
+  private final RdbmsSchemaManager rdbmsSchemaManager;
   private final Logger logger;
   private final Duration closeTimeout;
 
@@ -44,19 +47,28 @@ public final class RdbmsBackgroundTaskManager implements CloseableSilently {
       final int partitionId,
       final HistoryCleanupService historyCleanupService,
       final HistoryDeletionService historyDeletionService,
+      final RdbmsSchemaManager rdbmsSchemaManager,
       final Logger logger) {
-    this(partitionId, historyCleanupService, historyDeletionService, logger, DEFAULT_CLOSE_TIMEOUT);
+    this(
+        partitionId,
+        historyCleanupService,
+        historyDeletionService,
+        rdbmsSchemaManager,
+        logger,
+        DEFAULT_CLOSE_TIMEOUT);
   }
 
   RdbmsBackgroundTaskManager(
       final int partitionId,
       final HistoryCleanupService historyCleanupService,
       final HistoryDeletionService historyDeletionService,
+      final RdbmsSchemaManager rdbmsSchemaManager,
       final Logger logger,
       final Duration closeTimeout) {
     this.partitionId = partitionId;
     this.historyCleanupService = historyCleanupService;
     this.historyDeletionService = historyDeletionService;
+    this.rdbmsSchemaManager = rdbmsSchemaManager;
     this.logger = logger;
     this.closeTimeout = closeTimeout;
   }
@@ -84,6 +96,8 @@ public final class RdbmsBackgroundTaskManager implements CloseableSilently {
 
   private List<RunnableTask> buildTasks(final ScheduledThreadPoolExecutor executor) {
     return List.of(
+        new SingleExecutionTask(
+            "AsyncSchemaSetup", (Runnable) rdbmsSchemaManager::migrateAsync, executor, logger),
         new SelfSchedulingTask(
             "HistoryCleanup",
             () -> historyCleanupService.cleanupHistory(partitionId, OffsetDateTime.now()),

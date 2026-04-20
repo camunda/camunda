@@ -13,6 +13,7 @@ import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import io.camunda.db.rdbms.RdbmsSchemaManager;
 import io.camunda.db.rdbms.write.service.HistoryCleanupService;
 import io.camunda.db.rdbms.write.service.HistoryDeletionService;
 import java.time.Duration;
@@ -30,11 +31,13 @@ final class RdbmsBackgroundTaskManagerTest {
 
   private HistoryCleanupService historyCleanupService;
   private HistoryDeletionService historyDeletionService;
+  private RdbmsSchemaManager rdbmsSchemaManager;
 
   @BeforeEach
   void setUp() {
     historyCleanupService = mock(HistoryCleanupService.class);
     historyDeletionService = mock(HistoryDeletionService.class);
+    rdbmsSchemaManager = mock(RdbmsSchemaManager.class);
     when(historyCleanupService.cleanupHistory(anyInt(), any())).thenReturn(Duration.ofDays(1));
     when(historyCleanupService.cleanupUsageMetricsHistory(anyInt(), any()))
         .thenReturn(Duration.ofDays(1));
@@ -60,6 +63,7 @@ final class RdbmsBackgroundTaskManagerTest {
               PARTITION_ID,
               historyCleanupService,
               historyDeletionService,
+              rdbmsSchemaManager,
               LoggerFactory.getLogger(RdbmsBackgroundTaskManagerTest.class),
               CLOSE_TIMEOUT);
       manager.start();
@@ -79,6 +83,7 @@ final class RdbmsBackgroundTaskManagerTest {
               PARTITION_ID,
               historyCleanupService,
               historyDeletionService,
+              rdbmsSchemaManager,
               LoggerFactory.getLogger(RdbmsBackgroundTaskManagerTest.class),
               CLOSE_TIMEOUT);
 
@@ -105,6 +110,7 @@ final class RdbmsBackgroundTaskManagerTest {
               PARTITION_ID,
               historyCleanupService,
               historyDeletionService,
+              rdbmsSchemaManager,
               LoggerFactory.getLogger(RdbmsBackgroundTaskManagerTest.class),
               CLOSE_TIMEOUT);
       manager.start();
@@ -128,6 +134,7 @@ final class RdbmsBackgroundTaskManagerTest {
               PARTITION_ID,
               historyCleanupService,
               historyDeletionService,
+              rdbmsSchemaManager,
               LoggerFactory.getLogger(RdbmsBackgroundTaskManagerTest.class),
               CLOSE_TIMEOUT);
       manager.start();
@@ -144,6 +151,7 @@ final class RdbmsBackgroundTaskManagerTest {
               PARTITION_ID,
               historyCleanupService,
               historyDeletionService,
+              rdbmsSchemaManager,
               LoggerFactory.getLogger(RdbmsBackgroundTaskManagerTest.class),
               CLOSE_TIMEOUT);
       manager.start();
@@ -176,6 +184,7 @@ final class RdbmsBackgroundTaskManagerTest {
               PARTITION_ID,
               historyCleanupService,
               historyDeletionService,
+              rdbmsSchemaManager,
               LoggerFactory.getLogger(RdbmsBackgroundTaskManagerTest.class),
               CLOSE_TIMEOUT);
 
@@ -205,6 +214,7 @@ final class RdbmsBackgroundTaskManagerTest {
               PARTITION_ID,
               historyCleanupService,
               historyDeletionService,
+              rdbmsSchemaManager,
               LoggerFactory.getLogger(RdbmsBackgroundTaskManagerTest.class),
               CLOSE_TIMEOUT);
 
