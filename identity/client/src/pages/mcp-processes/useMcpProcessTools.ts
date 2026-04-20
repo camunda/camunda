@@ -8,7 +8,7 @@
 
 import { useMemo } from "react";
 import { z } from "zod";
-import { useApi } from "src/utility/api";
+import { usePaginatedApi } from "src/utility/api";
 import {
   searchMessageSubscriptions,
   type MessageSubscription,
@@ -19,50 +19,54 @@ const mcpExtensionPropertiesSchema = z.object({
   "io.camunda.tool:purpose": z.string(),
 });
 
-export interface ProcessTool {
-  toolKey: string;
+export type McpProcessTool = {
+  id: string;
   toolName: string;
   toolDescription: string;
   processDefinitionKey: string;
+  processDefinitionId: string;
   processDefinitionName: string;
-  processDefinitionVersion: number | null;
-  tenantId: string | null;
-}
+  processDefinitionVersion: number | string;
+  tenantId: string;
+};
 
 const mapSubscriptionToProcessTool = (
   sub: MessageSubscription,
-): ProcessTool | null => {
+): McpProcessTool | null => {
   const result = mcpExtensionPropertiesSchema.safeParse(
     sub.extensionProperties,
   );
   if (!result.success) return null;
 
   return {
-    toolKey: sub.messageSubscriptionKey,
+    id: sub.messageSubscriptionKey,
     toolName: result.data["io.camunda.tool:name"],
     toolDescription: result.data["io.camunda.tool:purpose"],
     processDefinitionKey: sub.processDefinitionKey,
+    processDefinitionId: sub.processDefinitionId,
     processDefinitionName: sub.processDefinitionName ?? sub.processDefinitionId,
-    processDefinitionVersion: sub.processDefinitionVersion,
+    processDefinitionVersion: sub.processDefinitionVersion ?? "-",
     tenantId: sub.tenantId,
   };
 };
 
 export const useMcpProcessTools = () => {
-  const { data, loading, success, error, reload } = useApi(
-    searchMessageSubscriptions,
-    { filter: { messageSubscriptionType: "START_EVENT" } },
-  );
+  const { data, ...rest } = usePaginatedApi(searchMessageSubscriptions, {
+    filter: { messageSubscriptionType: "START_EVENT" },
+  });
 
-  const processTools = useMemo<ProcessTool[]>(() => {
+  const processTools = useMemo<McpProcessTool[]>(() => {
     if (!data?.items || data.items.length === 0) {
       return [];
     }
 
-    return data?.items
+    return data.items
       .map(mapSubscriptionToProcessTool)
       .filter((p) => p !== null);
   }, [data]);
 
-  return { processTools, loading, success, error, reload };
+  return {
+    processTools,
+    ...rest,
+  };
 };
