@@ -254,6 +254,10 @@ public class ProcessInstanceMigrationMigrateProcessor
             targetElementId,
             elementInstance,
             processInstanceKey);
+    if (isUserTaskConversion) {
+      requireNoIncidentForJobWorkerUserTaskConversion(
+          incidentState, elementInstance, processInstanceKey);
+    }
     requireUnchangedFlowScope(
         elementInstanceState, elementInstanceRecord, targetProcessDefinition, targetElementId);
     requireNoEventSubprocessInSource(
