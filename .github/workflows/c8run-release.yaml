@@ -139,6 +139,12 @@ jobs:
         with:
           go-version: ">=1.23.1"
           cache: false # disabling since not working anyways without a cache-dependency-path specified
+
+      - uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654 # v5.2.0
+        with:
+          distribution: "temurin"
+          java-version: "21"
+
       - name: Build artifact runtime distro
         working-directory: ${{ matrix.os.workingDir }}
         run: go build -o ${{ matrix.os.c8runArtifactName }} ./cmd/c8run
