@@ -74,6 +74,7 @@ jobs:
       nextDevelopmentVersion: 0.0.0-SNAPSHOT
       isLatest: true
       dryRun: true
+      includeOptimize: true
   dry-run-release-88:
     name: "Release from stable/8.8"
     needs: create-dry-run-branches
@@ -88,6 +89,7 @@ jobs:
       nextDevelopmentVersion: 0.0.0-SNAPSHOT
       isLatest: true
       dryRun: true
+      includeOptimize: true
   dry-run-release-87:
     name: "Release from stable/8.7"
     needs: create-dry-run-branches
