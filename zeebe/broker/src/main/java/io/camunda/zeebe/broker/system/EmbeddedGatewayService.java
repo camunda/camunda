@@ -8,6 +8,7 @@
 package io.camunda.zeebe.broker.system;
 
 import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.security.oidc.OidcClaimsProvider;
 import io.camunda.service.UserServices;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
@@ -40,6 +41,7 @@ public final class EmbeddedGatewayService implements AutoCloseable {
       final UserServices userServices,
       final PasswordEncoder passwordEncoder,
       final JwtDecoder jwtDecoder,
+      final OidcClaimsProvider oidcClaimsProvider,
       final MeterRegistry meterRegistry) {
     this.concurrencyControl = concurrencyControl;
     this.brokerClient = brokerClient;
@@ -55,6 +57,7 @@ public final class EmbeddedGatewayService implements AutoCloseable {
             userServices,
             passwordEncoder,
             jwtDecoder,
+            oidcClaimsProvider,
             meterRegistry);
   }
 

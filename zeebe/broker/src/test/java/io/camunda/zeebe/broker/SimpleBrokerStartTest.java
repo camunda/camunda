@@ -16,6 +16,7 @@ import io.atomix.cluster.AtomixCluster;
 import io.camunda.search.clients.SearchClientsProxy;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.security.oidc.OidcClaimsProvider;
 import io.camunda.service.UserServices;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.system.SystemContext;
@@ -76,6 +77,7 @@ public final class SimpleBrokerStartTest {
                       mock(UserServices.class),
                       mock(PasswordEncoder.class),
                       mock(JwtDecoder.class),
+                      mock(OidcClaimsProvider.class),
                       mock(SearchClientsProxy.class),
                       mock(BrokerRequestAuthorizationConverter.class));
               new Broker(systemContext, TEST_SPRING_BROKER_BRIDGE, emptyList());
@@ -107,6 +109,7 @@ public final class SimpleBrokerStartTest {
             mock(UserServices.class),
             mock(PasswordEncoder.class),
             mock(JwtDecoder.class),
+            mock(OidcClaimsProvider.class),
             mock(SearchClientsProxy.class),
             mock(BrokerRequestAuthorizationConverter.class));
 

@@ -17,6 +17,7 @@ import io.camunda.client.api.command.ClientStatusException;
 import io.camunda.client.api.response.DeploymentEvent;
 import io.camunda.client.impl.util.AddressUtil;
 import io.camunda.security.configuration.SecurityConfigurations;
+import io.camunda.security.oidc.NoopOidcClaimsProvider;
 import io.camunda.service.UserServices;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.client.api.BrokerClientRequestMetrics;
@@ -106,7 +107,8 @@ final class InterceptorIT {
             mock(UserServices.class),
             mock(PasswordEncoder.class),
             new SimpleMeterRegistry(),
-            mock(JwtDecoder.class));
+            mock(JwtDecoder.class),
+            new NoopOidcClaimsProvider());
 
     cluster.start().join();
     scheduler.start();
