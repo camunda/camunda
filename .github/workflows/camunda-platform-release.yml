@@ -1081,10 +1081,12 @@ jobs:
         with:
           allowUpdates: true
           bodyFile: changelog.md
+          makeLatest: ${{ inputs.isLatest }}
           omitBodyDuringUpdate: false
           omitNameDuringUpdate: true
           omitDraftDuringUpdate: true
-          omitPrereleaseDuringUpdate: true
+          omitPrereleaseDuringUpdate: false
+          prerelease: ${{ steps.pre-release.outputs.result }}
           token: ${{ secrets.GITHUB_TOKEN }}
           tag: ${{ env.RELEASE_TAG }}
       - name: Warn if Github release body update failed
