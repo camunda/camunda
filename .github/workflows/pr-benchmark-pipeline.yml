@@ -30,6 +30,11 @@ on:
         required: false
         type: string
         default: 'elasticsearch'
+      reuse-tag:
+        description: 'Pre-built image tag from the internal registry. When set, skips the image build step.'
+        required: false
+        type: string
+        default: ''
 
 defaults:
   run:
@@ -61,10 +66,10 @@ jobs:
             # Prefix mode: derive storage type from the matched label suffix
             case "${{ github.event.action }}" in
               labeled|unlabeled)
-                [[ "$event_label" == "${label_prefix}"* ]] && storage_type="${event_label#$label_prefix}" ;;
+                [[ "$event_label" == "${label_prefix}"* ]] && storage_type="${event_label#"$label_prefix"}" ;;
               synchronize|closed)
                 match=$(echo "$pr_labels" | jq -r --arg p "$label_prefix" '.[] | select(startswith($p))' | head -1)
-                [[ -n "$match" ]] && storage_type="${match#$label_prefix}" ;;
+                [[ -n "$match" ]] && storage_type="${match#"$label_prefix"}" ;;
             esac
           else
             # Exact label mode: storage type is fixed from the input
@@ -72,9 +77,11 @@ jobs:
           fi
 
           suffix=$([[ "$storage_type" == "elasticsearch" || -z "$storage_type" ]] && echo "" || echo "-${storage_type}")
-          echo "storage-type=$storage_type"            >> "$GITHUB_OUTPUT"
-          echo "suffix=$suffix"                        >> "$GITHUB_OUTPUT"
-          echo "max-length=$((60 - ${#suffix}))"       >> "$GITHUB_OUTPUT"
+          {
+            echo "storage-type=$storage_type"
+            echo "suffix=$suffix"
+            echo "max-length=$((60 - ${#suffix}))"
+          } >> "$GITHUB_OUTPUT"
 
       - id: validate
         name: Validate storage type
@@ -127,6 +134,7 @@ jobs:
       ref: ${{ inputs.ref }}
       scenario: 'max'
       secondary-storage-type: ${{ needs.compute-namespace.outputs.storage-type }}
+      reuse-tag: ${{ inputs.reuse-tag }}
 
   await-benchmark:
     name: Await Benchmark
