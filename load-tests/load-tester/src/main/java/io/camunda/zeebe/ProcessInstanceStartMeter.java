@@ -67,6 +67,7 @@ public class ProcessInstanceStartMeter implements AutoCloseable {
             checkForProcessInstances();
           } catch (final Exception e) {
             LOG.error("Failed to check process instances. Will retry...", e);
+            cleanUpStaleInstances();
           }
         },
         availabilityCheckInterval.toMillis(),
@@ -93,26 +94,19 @@ public class ProcessInstanceStartMeter implements AutoCloseable {
     checksPending.incrementAndGet();
     LOG.debug("Current instances awaiting {}", startedInstances.size());
     final var startQueryTime = clock.getNanos();
-    availabilityChecker
-        .findAvailableInstances(List.copyOf(startedInstances.keySet()))
-        .whenCompleteAsync(
-            (availableInstances, error) -> {
-              checksPending.decrementAndGet();
-              final var endQueryTime = clock.getNanos();
-              dataAvailabilityQueryDurationTimer.record(
-                  endQueryTime - startQueryTime, TimeUnit.NANOSECONDS);
+    final var availableInstances =
+        availabilityChecker
+            .findAvailableInstances(List.copyOf(startedInstances.keySet()))
+            .toCompletableFuture()
+            .join();
 
-              if (error != null) {
-                LOG.error("Error while checking for available process instances", error);
-                cleanUpStaleInstances();
-                return;
-              }
+    checksPending.decrementAndGet();
+    final var endQueryTime = clock.getNanos();
+    dataAvailabilityQueryDurationTimer.record(endQueryTime - startQueryTime, TimeUnit.NANOSECONDS);
 
-              LOG.debug("Available process instances items: {}", availableInstances.size());
-              processAvailableInstances(availableInstances);
-              cleanUpStaleInstances();
-            },
-            piCheckExecutorService);
+    LOG.debug("Available process instances items: {}", availableInstances.size());
+    processAvailableInstances(availableInstances);
+    cleanUpStaleInstances();
   }
 
   private void cleanUpStaleInstances() {
