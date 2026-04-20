@@ -507,12 +507,17 @@ jobs:
               echo "CPT version $CLIENT_VERSION < 8.8.20 - excluding connector-related tests (missing secret prefix support)"
             fi
           fi
-          # Build the -Dit.test exclusion string from the array
+          # Build the failsafe.excludes string from the array.
           if (( ${#EXCLUDED_TESTS[@]} > 0 )); then
-            EXCLUSION_PATTERN=$(printf "!%s+" "${EXCLUDED_TESTS[@]}")
-            # Remove trailing +
-            EXCLUSION_PATTERN="${EXCLUSION_PATTERN%+}"
-            EXTRA_PROPS+=" -Dit.test=${EXCLUSION_PATTERN} -Dfailsafe.failIfNoSpecifiedTests=false"
+            EXCLUDE_PATTERNS=()
+            for t in "${EXCLUDED_TESTS[@]}"; do
+              # Strip method-level selectors (Class#method → Class) since
+              # failsafe.excludes works at class level only
+              CLASS_NAME="${t%%#*}"
+              EXCLUDE_PATTERNS+=("**/${CLASS_NAME}.java")
+            done
+            EXCLUDES_CSV=$(IFS=,; echo "${EXCLUDE_PATTERNS[*]}")
+            EXTRA_PROPS+=" -Dfailsafe.excludes=${EXCLUDES_CSV}"
           fi
           echo "extra-props=${EXTRA_PROPS}" >> "$GITHUB_OUTPUT"
 
