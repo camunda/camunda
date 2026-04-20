@@ -56,7 +56,7 @@ public class Worker {
 
   @PostConstruct
   void awaitTopologyAndLogConfig() {
-    connectionMonitor.awaitTopology();
+    connectionMonitor.awaitAndPrintTopology();
     LOGGER.info(
         "Worker config: completionDelay={}, sendMessage={}, messageName={}, "
             + "correlationKeyVariable={}, payloadPath={}",

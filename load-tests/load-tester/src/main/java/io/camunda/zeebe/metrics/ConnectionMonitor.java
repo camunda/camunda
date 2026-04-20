@@ -44,7 +44,7 @@ public class ConnectionMonitor {
    * Blocks until the topology request succeeds, logging each broker/partition once. Flips the
    * {@code app.connected} gauge to 1 on success. Fails fast on authentication errors.
    */
-  public void awaitTopology() {
+  public void awaitAndPrintTopology() {
     while (true) {
       try {
         final var topology = client.newTopologyRequest().send().join();

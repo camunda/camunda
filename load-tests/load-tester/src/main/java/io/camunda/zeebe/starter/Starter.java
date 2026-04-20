@@ -101,7 +101,7 @@ public class Starter implements CommandLineRunner {
 
   @Override
   public void run(final String... args) {
-    connectionMonitor.awaitTopology();
+    connectionMonitor.awaitAndPrintTopology();
 
     responseLatencyTimer =
         MicrometerUtil.buildTimer(StarterLatencyMetricsDoc.RESPONSE_LATENCY).register(registry);
@@ -372,5 +372,4 @@ public class Starter implements CommandLineRunner {
       return () -> true;
     }
   }
-
 }
