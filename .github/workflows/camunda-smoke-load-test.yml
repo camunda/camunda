@@ -15,6 +15,10 @@ on:
       - 'stable/**'
     paths:
       - 'load-tests/**'
+      # Docs-only changes under load-tests/ don't affect the install path — skip the smoke run.
+      - '!load-tests/README.md'
+      - '!load-tests/**/README.md'
+      - '!load-tests/docs/**'
       - '.github/workflows/camunda-load-test.yml'
       - '.github/workflows/camunda-verify-and-cleanup-load-test.yml'
       - '.github/workflows/camunda-smoke-load-test.yml'
