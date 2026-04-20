@@ -13,6 +13,7 @@ import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContextImpl;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnJobBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnUserTaskBehavior;
+import io.camunda.zeebe.engine.processing.common.BannedInstanceCommandCheck;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableUserTask;
 import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.identity.authorization.request.AuthorizationRequest;
@@ -60,6 +61,7 @@ public final class VariableDocumentUpdateProcessor
   private final Writers writers;
   private final AsyncRequestBehavior asyncRequestBehavior;
   private final AuthorizationCheckBehavior authCheckBehavior;
+  private final BannedInstanceCommandCheck bannedInstanceCheck;
 
   public VariableDocumentUpdateProcessor(
       final ProcessingState processingState,
@@ -80,6 +82,8 @@ public final class VariableDocumentUpdateProcessor
     this.writers = writers;
     this.asyncRequestBehavior = asyncRequestBehavior;
     this.authCheckBehavior = authCheckBehavior;
+    this.bannedInstanceCheck =
+        new BannedInstanceCommandCheck(processingState.getBannedInstanceState());
   }
 
   @Override
@@ -91,6 +95,15 @@ public final class VariableDocumentUpdateProcessor
       final String reason = String.format(ERROR_MESSAGE_SCOPE_NOT_FOUND, value.getScopeKey());
       writers.rejection().appendRejection(record, RejectionType.NOT_FOUND, reason);
       writers.response().writeRejectionOnCommand(record, RejectionType.NOT_FOUND, reason);
+      return;
+    }
+
+    // Check if the process instance is banned
+    final var bannedInstanceCheckResult = bannedInstanceCheck.check(scope.getValue());
+    if (bannedInstanceCheckResult.isLeft()) {
+      final var rejection = bannedInstanceCheckResult.getLeft();
+      writers.rejection().appendRejection(record, rejection.type(), rejection.reason());
+      writers.response().writeRejectionOnCommand(record, rejection.type(), rejection.reason());
       return;
     }
 
