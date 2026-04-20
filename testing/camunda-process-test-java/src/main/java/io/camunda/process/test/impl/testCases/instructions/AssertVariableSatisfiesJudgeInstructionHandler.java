@@ -40,13 +40,14 @@ public class AssertVariableSatisfiesJudgeInstructionHandler
         InstructionSelectorFactory.buildProcessInstanceSelector(
             instruction.getProcessInstanceSelector());
 
-    final ProcessInstanceAssert baseAssert =
+    ProcessInstanceAssert processInstanceAssert =
         assertionFacade.assertThatProcessInstance(processInstanceSelector);
 
-    final ProcessInstanceAssert processInstanceAssert =
-        hasJudgeConfigOverrides(instruction)
-            ? baseAssert.withJudgeConfig(config -> applyJudgeConfigOverrides(instruction, config))
-            : baseAssert;
+    if (instruction.getThreshold().isPresent() || instruction.getCustomPrompt().isPresent()) {
+      processInstanceAssert =
+          processInstanceAssert.withJudgeConfig(
+              config -> customizeJudgeConfig(instruction, config));
+    }
 
     final Optional<ElementSelector> elementSelector =
         instruction.getElementSelector().map(InstructionSelectorFactory::buildElementSelector);
@@ -60,17 +61,12 @@ public class AssertVariableSatisfiesJudgeInstructionHandler
     }
   }
 
-  private static boolean hasJudgeConfigOverrides(
-      final AssertVariableSatisfiesJudgeInstruction instruction) {
-    return instruction.getThreshold().isPresent() || instruction.getCustomPrompt().isPresent();
-  }
-
   @Override
   public Class<AssertVariableSatisfiesJudgeInstruction> getInstructionType() {
     return AssertVariableSatisfiesJudgeInstruction.class;
   }
 
-  private static JudgeConfig applyJudgeConfigOverrides(
+  private static JudgeConfig customizeJudgeConfig(
       final AssertVariableSatisfiesJudgeInstruction instruction, final JudgeConfig config) {
     JudgeConfig modified = config;
     if (instruction.getThreshold().isPresent()) {
