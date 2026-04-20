@@ -8,12 +8,16 @@
 
 import {test} from 'fixtures';
 import {expect} from '@playwright/test';
-import {deploy, createInstances, createSingleInstance} from 'utils/zeebeClient';
+import {randomUUID} from 'crypto';
+import {
+  deployWithSubstitutions,
+  createInstances,
+  createSingleInstance,
+} from 'utils/zeebeClient';
 import {captureScreenshot, captureFailureVideo} from '@setup';
 import {navigateToApp} from '@pages/UtilitiesPage';
-import {sleep} from 'utils/sleep';
-import {createDemoOperations} from 'utils/operations.helper';
 import {waitForAssertion} from 'utils/waitForAssertion';
+import {sleep} from 'utils/sleep';
 
 type ProcessInstance = {
   processInstanceKey: string;
@@ -25,31 +29,34 @@ let initialData: {
   batchOperationInstances: ProcessInstance[];
 };
 
-test.beforeAll(async ({request}) => {
-  await deploy([
-    './resources/operationsProcessA.bpmn',
-    './resources/operationsProcessB.bpmn',
-  ]);
+const runSuffix = randomUUID().slice(0, 8);
+const processAId = `operationsProcessA-${runSuffix}`;
+const processBId = `operationsProcessB-${runSuffix}`;
 
-  const singleInstance = await createSingleInstance('operationsProcessA', 1);
-  const batchInstances = await createInstances('operationsProcessB', 1, 10);
+test.beforeAll(async () => {
+  await deployWithSubstitutions('./resources/operationsProcessA.bpmn', {
+    operationsProcessA: processAId,
+  });
+  await deployWithSubstitutions('./resources/operationsProcessB.bpmn', {
+    operationsProcessB: processBId,
+  });
+
+  // operationsProcessA has a FEEL assertion (=assert(orderId, orderId!=null)) in its
+  // service task io mapping. Creating the instance without 'orderId' immediately raises an
+  // INPUT_OUTPUT_MAPPING_ERROR incident, which makes the Retry Instance button appear.
+  const singleInstance = await createSingleInstance(processAId, 1);
+  const batchInstances = await createInstances(processBId, 1, 10);
 
   initialData = {
     singleOperationInstance: {
       processInstanceKey: singleInstance.processInstanceKey,
-      bpmnProcessId: 'operationsProcessA',
+      bpmnProcessId: processAId,
     },
     batchOperationInstances: batchInstances.map((instance) => ({
       processInstanceKey: instance.processInstanceKey,
-      bpmnProcessId: 'operationsProcessB',
+      bpmnProcessId: processBId,
     })),
   };
-  await sleep(2000);
-  await createDemoOperations(
-    request,
-    initialData.singleOperationInstance.processInstanceKey,
-    50,
-  );
 });
 
 test.describe('Operations', () => {
@@ -89,7 +96,9 @@ test.describe('Operations', () => {
       );
 
       await expect(operateProcessesPage.singleOperationSpinner).toBeVisible();
-      await expect(operateProcessesPage.singleOperationSpinner).toBeHidden();
+      await expect(operateProcessesPage.singleOperationSpinner).toBeHidden({
+        timeout: 60000,
+      });
     });
 
     await test.step('Cancel single instance using operation button', async () => {
@@ -106,6 +115,8 @@ test.describe('Operations', () => {
 
     await test.step('Validate canceled instance details', async () => {
       const instanceRow = operateProcessesPage.getInstanceRow(0);
+
+      await operateFiltersPanelPage.clickCanceledInstancesCheckbox();
 
       await expect(
         operateProcessesPage.getCanceledIcon(instance.processInstanceKey),

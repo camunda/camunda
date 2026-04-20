@@ -7,7 +7,7 @@
  */
 
 import {expect, APIRequestContext} from '@playwright/test';
-import {credentials, authHeaders} from './http';
+import {credentials, authHeaders, buildUrl} from './http';
 
 export async function createDemoOperations(
   request: APIRequestContext,
@@ -24,12 +24,11 @@ export async function createDemoOperations(
   await Promise.all(
     [...new Array(count)].map(async (_, index) => {
       const response = await request.post(
-        `${credentials.baseUrl}/api/process-instances/${processInstanceKey}/operation`,
+        buildUrl(
+          `/process-instances/${processInstanceKey}/incident-resolution`,
+        ),
         {
           ...requestHeaders,
-          data: {
-            operationType: 'RESOLVE_INCIDENT',
-          },
         },
       );
       if (!response.ok()) {
@@ -52,7 +51,7 @@ export async function createDemoOperations(
     .poll(
       async () => {
         const response = await request.post(
-          `${credentials.baseUrl}/v2/batch-operations/search`,
+          buildUrl('/batch-operations/search'),
           {
             ...requestHeaders,
             data: {
