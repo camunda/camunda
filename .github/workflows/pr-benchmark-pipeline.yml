@@ -206,8 +206,10 @@ jobs:
             comment += '| Event | Pod | Artifact |\n';
             comment += '|-------|-----|----------|\n';
 
+            const artifactPrefix = 'flamegraph-${{ needs.compute-namespace.outputs.storage-type }}';
+            const regex = new RegExp(artifactPrefix + '-(\\w+)-(\\w+-\\d+)');
             artifacts.forEach(artifact => {
-              const match = artifact.match(/flamegraph-(\w+)-(\w+-\d+)/);
+              const match = artifact.match(regex);
               if (match) {
                 const event = match[1];
                 const pod = match[2];
