@@ -30,7 +30,7 @@ import io.camunda.process.test.api.CamundaProcessTestContext;
 import io.camunda.process.test.api.assertions.UserTaskSelector;
 import io.camunda.process.test.api.assertions.UserTaskSelectors;
 import io.camunda.process.test.api.mock.JobWorkerMockBuilder;
-import io.camunda.process.test.impl.client.CamundaManagementClient;
+import io.camunda.process.test.impl.client.CamundaClockClient;
 import io.camunda.process.test.impl.mock.JobWorkerMockBuilderImpl;
 import io.camunda.process.test.impl.runtime.CamundaProcessTestRuntime;
 import io.camunda.zeebe.client.ZeebeClient;
@@ -67,7 +67,7 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
   private final URI connectorsRestApiAddress;
   private final CamundaClientBuilderFactory camundaClientBuilderFactory;
   private final Consumer<AutoCloseable> clientCreationCallback;
-  private final CamundaManagementClient camundaManagementClient;
+  private final CamundaClockClient clockClient;
 
   private final JsonMapper jsonMapper;
   private final io.camunda.zeebe.client.api.JsonMapper zeebeJsonMapper;
@@ -76,7 +76,7 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
   public CamundaProcessTestContextImpl(
       final CamundaProcessTestRuntime camundaRuntime,
       final Consumer<AutoCloseable> clientCreationCallback,
-      final CamundaManagementClient camundaManagementClient,
+      final CamundaClockClient clockClient,
       final CamundaAssertAwaitBehavior awaitBehavior,
       final JsonMapper jsonMapper,
       final io.camunda.zeebe.client.api.JsonMapper zeebeJsonMapper) {
@@ -86,7 +86,7 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
     camundaGrpcApiAddress = camundaRuntime.getCamundaGrpcApiAddress();
     connectorsRestApiAddress = camundaRuntime.getConnectorsRestApiAddress();
     this.clientCreationCallback = clientCreationCallback;
-    this.camundaManagementClient = camundaManagementClient;
+    this.clockClient = clockClient;
     this.awaitBehavior = awaitBehavior;
     this.jsonMapper = jsonMapper;
     this.zeebeJsonMapper = zeebeJsonMapper;
@@ -158,19 +158,19 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
 
   @Override
   public Instant getCurrentTime() {
-    return camundaManagementClient.getCurrentTime();
+    return clockClient.getCurrentTime();
   }
 
   @Override
   public void increaseTime(final Duration timeToAdd) {
     LOGGER.debug("Increase the time by {}", timeToAdd);
-    camundaManagementClient.increaseTime(timeToAdd);
+    clockClient.increaseTime(timeToAdd);
   }
 
   @Override
   public void setTime(final Instant timeToSet) {
     LOGGER.debug("Setting the time to {}", timeToSet);
-    camundaManagementClient.setTime(timeToSet);
+    clockClient.setTime(timeToSet);
   }
 
   @Override

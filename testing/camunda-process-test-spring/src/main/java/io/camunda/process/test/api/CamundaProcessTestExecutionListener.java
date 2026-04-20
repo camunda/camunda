@@ -23,7 +23,6 @@ import io.camunda.process.test.impl.assertions.CamundaDataSource;
 import io.camunda.process.test.impl.client.CamundaManagementClient;
 import io.camunda.process.test.impl.configuration.CamundaProcessTestRuntimeConfiguration;
 import io.camunda.process.test.impl.configuration.CoverageReportConfiguration;
-import io.camunda.process.test.impl.containers.CamundaContainer.MultiTenancyConfiguration;
 import io.camunda.process.test.impl.coverage.ProcessCoverage;
 import io.camunda.process.test.impl.coverage.ProcessCoverageBuilder;
 import io.camunda.process.test.impl.extension.CamundaProcessTestContextImpl;
@@ -242,16 +241,7 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
 
   private CamundaManagementClient createManagementClient(
       final CamundaProcessTestRuntimeConfiguration runtimeConfiguration) {
-
-    if (runtimeConfiguration.isMultiTenancyEnabled()) {
-      return CamundaManagementClient.createAuthenticatedClient(
-          runtime.getCamundaMonitoringApiAddress(),
-          runtime.getCamundaRestApiAddress(),
-          MultiTenancyConfiguration.getBasicAuthCredentials());
-    } else {
-      return CamundaManagementClient.createClient(
-          runtime.getCamundaMonitoringApiAddress(), runtime.getCamundaRestApiAddress());
-    }
+    return CamundaManagementClient.createClient(runtime.getCamundaMonitoringApiAddress());
   }
 
   private void printTestResults() {

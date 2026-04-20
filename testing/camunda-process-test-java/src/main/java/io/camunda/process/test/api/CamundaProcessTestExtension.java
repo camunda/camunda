@@ -20,7 +20,6 @@ import io.camunda.client.CamundaClientBuilder;
 import io.camunda.client.api.JsonMapper;
 import io.camunda.process.test.impl.assertions.CamundaDataSource;
 import io.camunda.process.test.impl.client.CamundaManagementClient;
-import io.camunda.process.test.impl.containers.CamundaContainer.MultiTenancyConfiguration;
 import io.camunda.process.test.impl.coverage.ProcessCoverage;
 import io.camunda.process.test.impl.coverage.ProcessCoverageBuilder;
 import io.camunda.process.test.impl.extension.CamundaProcessTestContextImpl;
@@ -183,15 +182,7 @@ public class CamundaProcessTestExtension
 
   private CamundaManagementClient createManagementClient(
       final CamundaProcessTestRuntimeBuilder runtimeBuilder) {
-    if (runtimeBuilder.isMultiTenancyEnabled()) {
-      return CamundaManagementClient.createAuthenticatedClient(
-          runtime.getCamundaMonitoringApiAddress(),
-          runtime.getCamundaRestApiAddress(),
-          MultiTenancyConfiguration.getBasicAuthCredentials());
-    } else {
-      return CamundaManagementClient.createClient(
-          runtime.getCamundaMonitoringApiAddress(), runtime.getCamundaRestApiAddress());
-    }
+    return CamundaManagementClient.createClient(runtime.getCamundaMonitoringApiAddress());
   }
 
   private void initializeJsonMapper(
