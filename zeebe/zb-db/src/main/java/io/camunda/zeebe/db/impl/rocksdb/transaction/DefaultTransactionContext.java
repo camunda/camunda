@@ -56,12 +56,16 @@ public final class DefaultTransactionContext implements TransactionContext {
   }
 
   private void runInNewTransaction(final TransactionOperation operations) throws Exception {
+    boolean committed = false;
     try {
       transaction.resetTransaction();
       operations.run();
       transaction.commitInternal();
+      committed = true;
     } finally {
-      transaction.rollbackInternal();
+      if (!committed) {
+        transaction.rollbackInternal();
+      }
     }
   }
 

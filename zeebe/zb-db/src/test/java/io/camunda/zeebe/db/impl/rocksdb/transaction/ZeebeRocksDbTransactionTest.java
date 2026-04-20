@@ -106,11 +106,15 @@ public final class ZeebeRocksDbTransactionTest {
 
   @Test(expected = ZeebeDbException.class)
   public void shouldThrowRecoverableExceptionOnRollback() throws Exception {
-    // given
+    // given - commit fails (triggering rollback), and rollback also fails with a recoverable error
     final ZeebeTransaction transaction = mock(ZeebeTransaction.class);
     final TransactionContext newContext = new DefaultTransactionContext(transaction);
-    final Status status = new Status(Code.IOError, SubCode.None, "");
-    doThrow(new RocksDBException("expected", status)).when(transaction).rollbackInternal();
+    final Status commitStatus = new Status(Code.IOError, SubCode.None, "");
+    final Status rollbackStatus = new Status(Code.IOError, SubCode.None, "");
+    doThrow(new RocksDBException("commit failed", commitStatus)).when(transaction).commitInternal();
+    doThrow(new RocksDBException("rollback failed", rollbackStatus))
+        .when(transaction)
+        .rollbackInternal();
 
     // when
     newContext.runInTransaction(() -> {});
@@ -118,11 +122,15 @@ public final class ZeebeRocksDbTransactionTest {
 
   @Test(expected = RuntimeException.class)
   public void shouldWrapExceptionInRuntimeExceptionOnRollback() throws Exception {
-    // given
+    // given - commit fails (triggering rollback), and rollback also fails with a non-recoverable error
     final ZeebeTransaction transaction = mock(ZeebeTransaction.class);
     final TransactionContext newContext = new DefaultTransactionContext(transaction);
-    final Status status = new Status(Code.NotSupported, SubCode.None, "");
-    doThrow(new RocksDBException("expected", status)).when(transaction).rollbackInternal();
+    final Status commitStatus = new Status(Code.IOError, SubCode.None, "");
+    final Status rollbackStatus = new Status(Code.NotSupported, SubCode.None, "");
+    doThrow(new RocksDBException("commit failed", commitStatus)).when(transaction).commitInternal();
+    doThrow(new RocksDBException("rollback failed", rollbackStatus))
+        .when(transaction)
+        .rollbackInternal();
 
     // when
     newContext.runInTransaction(() -> {});
