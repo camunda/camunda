@@ -58,6 +58,8 @@ public class OidcAuthenticationConfiguration {
   private Duration clockSkew = DEFAULT_CLOCK_SKEW;
   private boolean idpLogoutEnabled = true;
   private boolean userInfoEnabled = true;
+  private OidcUserInfoAugmentationConfiguration userInfoAugmentation =
+      new OidcUserInfoAugmentationConfiguration();
 
   @PostConstruct
   public void validate() {
@@ -286,6 +288,15 @@ public class OidcAuthenticationConfiguration {
     this.userInfoEnabled = userInfoEnabled;
   }
 
+  public OidcUserInfoAugmentationConfiguration getUserInfoAugmentation() {
+    return userInfoAugmentation;
+  }
+
+  public void setUserInfoAugmentation(
+      final OidcUserInfoAugmentationConfiguration userInfoAugmentation) {
+    this.userInfoAugmentation = userInfoAugmentation;
+  }
+
   public boolean isSet() {
     return issuerUri != null
         || clientId != null
@@ -353,6 +364,8 @@ public class OidcAuthenticationConfiguration {
     private Duration clockSkew = DEFAULT_CLOCK_SKEW;
     private boolean idpLogoutEnabled = true;
     private boolean userInfoEnabled = true;
+    private OidcUserInfoAugmentationConfiguration userInfoAugmentation =
+        new OidcUserInfoAugmentationConfiguration();
 
     public Builder issuerUri(final String issuerUri) {
       this.issuerUri = issuerUri;
@@ -486,6 +499,12 @@ public class OidcAuthenticationConfiguration {
       return this;
     }
 
+    public Builder userInfoAugmentation(
+        final OidcUserInfoAugmentationConfiguration userInfoAugmentation) {
+      this.userInfoAugmentation = userInfoAugmentation;
+      return this;
+    }
+
     public OidcAuthenticationConfiguration build() {
       final OidcAuthenticationConfiguration config = new OidcAuthenticationConfiguration();
       config.setIssuerUri(issuerUri);
@@ -514,6 +533,7 @@ public class OidcAuthenticationConfiguration {
       config.setClockSkew(clockSkew);
       config.setIdpLogoutEnabled(idpLogoutEnabled);
       config.setUserInfoEnabled(userInfoEnabled);
+      config.setUserInfoAugmentation(userInfoAugmentation);
       return config;
     }
   }
