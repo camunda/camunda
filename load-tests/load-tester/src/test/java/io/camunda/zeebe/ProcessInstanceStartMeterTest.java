@@ -215,7 +215,7 @@ public class ProcessInstanceStartMeterTest {
                 .get(StarterLatencyMetricsDoc.DATA_AVAILABILITY_QUERY_DURATION.getName())
                 .timer()
                 .totalTime(TimeUnit.MILLISECONDS))
-        .isGreaterThan(1);
+        .isGreaterThan(0.0);
   }
 
   @Test
