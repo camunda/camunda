@@ -53,6 +53,7 @@ public class JobEntityTransformer
 
     return switch (value) {
       case "UNSPECIFIED" -> ListenerEventType.UNSPECIFIED;
+      case "BEFORE_ALL" -> ListenerEventType.BEFORE_ALL;
       case "START" -> ListenerEventType.START;
       case "END" -> ListenerEventType.END;
       case "CREATING" -> ListenerEventType.CREATING;

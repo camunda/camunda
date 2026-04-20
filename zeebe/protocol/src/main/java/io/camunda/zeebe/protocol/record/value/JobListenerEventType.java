@@ -27,8 +27,8 @@ public enum JobListenerEventType {
 
   /**
    * Represents the `beforeAll` event for an execution listener. This event type is used to indicate
-   * that the listener should be triggered before starting the execution, such as the composition
-   * of inputCollection for multi-instance cases
+   * that the listener should be triggered before instances are created, allowing variable
+   * initialization prior to element activation, such as in multi-instance bodies.
    */
   BEFORE_ALL,
 
