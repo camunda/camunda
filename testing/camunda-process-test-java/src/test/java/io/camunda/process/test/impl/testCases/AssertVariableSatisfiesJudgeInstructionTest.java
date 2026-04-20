@@ -174,6 +174,7 @@ public class AssertVariableSatisfiesJudgeInstructionTest {
     assertThat(updatedConfig.getThreshold()).isEqualTo(0.8);
 
     verify(mockAssert).hasVariableSatisfiesJudge(eq(VARIABLE_NAME), eq(EXPECTATION));
+    verifyNoMoreInteractions(camundaClient, processTestContext, mockAssert);
   }
 
   @SuppressWarnings("unchecked")
@@ -207,6 +208,7 @@ public class AssertVariableSatisfiesJudgeInstructionTest {
     assertThat(updatedConfig.getCustomPrompt()).hasValue("You are a financial data judge");
 
     verify(mockAssert).hasVariableSatisfiesJudge(eq(VARIABLE_NAME), eq(EXPECTATION));
+    verifyNoMoreInteractions(camundaClient, processTestContext, mockAssert);
   }
 
   @SuppressWarnings("unchecked")
@@ -242,5 +244,45 @@ public class AssertVariableSatisfiesJudgeInstructionTest {
     assertThat(updatedConfig.getCustomPrompt()).hasValue("Custom evaluation criteria");
 
     verify(mockAssert).hasVariableSatisfiesJudge(eq(VARIABLE_NAME), eq(EXPECTATION));
+    verifyNoMoreInteractions(camundaClient, processTestContext, mockAssert);
+  }
+
+  @SuppressWarnings("unchecked")
+  @Test
+  void shouldApplyOverridesForLocalVariable() {
+    // given
+    final ProcessInstanceAssert mockAssert = assertionFacade.assertThatProcessInstance(any());
+    when(mockAssert.withJudgeConfig(any(UnaryOperator.class))).thenReturn(mockAssert);
+
+    final AssertVariableSatisfiesJudgeInstruction instruction =
+        ImmutableAssertVariableSatisfiesJudgeInstruction.builder()
+            .processInstanceSelector(
+                ImmutableProcessInstanceSelector.builder()
+                    .processDefinitionId(PROCESS_DEFINITION_ID)
+                    .build())
+            .elementSelector(ImmutableElementSelector.builder().elementId(ELEMENT_ID).build())
+            .variableName(VARIABLE_NAME)
+            .expectation(EXPECTATION)
+            .threshold(0.7)
+            .customPrompt("Local variable evaluation criteria")
+            .build();
+
+    // when
+    instructionHandler.execute(instruction, processTestContext, camundaClient, assertionFacade);
+
+    // then
+    final ArgumentCaptor<UnaryOperator<JudgeConfig>> judgeConfigOverrideCaptor =
+        ArgumentCaptor.forClass(UnaryOperator.class);
+    verify(mockAssert).withJudgeConfig(judgeConfigOverrideCaptor.capture());
+
+    final JudgeConfig updatedConfig =
+        judgeConfigOverrideCaptor.getValue().apply(new JudgeConfigImpl(s -> s, 0.0, null));
+    assertThat(updatedConfig.getThreshold()).isEqualTo(0.7);
+    assertThat(updatedConfig.getCustomPrompt()).hasValue("Local variable evaluation criteria");
+
+    verify(mockAssert)
+        .hasLocalVariableSatisfiesJudge(
+            any(ElementSelector.class), eq(VARIABLE_NAME), eq(EXPECTATION));
+    verifyNoMoreInteractions(camundaClient, processTestContext, mockAssert);
   }
 }
