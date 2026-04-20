@@ -50,7 +50,7 @@ const LIMITED_ROLE_AUTHORIZATION = {
 
 test.describe.serial('Get usage metrics API Tests', () => {
   //Skipped due to bug 49032: https://github.com/camunda/camunda/issues/49032
-  test.skip('Get Usage Metrics Success', async ({request}) => {
+  test('Get Usage Metrics Success', async ({request}) => {
     const startOfTodayLocal = new Date();
     startOfTodayLocal.setHours(0, 0, 0, 0);
     const isoLocalMidnight = startOfTodayLocal.toISOString();
