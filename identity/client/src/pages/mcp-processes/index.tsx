@@ -6,6 +6,12 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-export const featureFlags = [];
+import { FC } from "react";
+import Lazy from "src/components/router/Lazy";
+import PageRoutes from "src/components/router/PageRoutes";
 
-export const IS_MCP_PROCESSES_VIEW_ENABLED = true;
+const McpProcesses: FC = () => (
+  <PageRoutes indexElement={<Lazy load={() => import("./List")} />} />
+);
+
+export default McpProcesses;
