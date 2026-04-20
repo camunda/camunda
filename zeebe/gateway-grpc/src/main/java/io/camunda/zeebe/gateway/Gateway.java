@@ -10,6 +10,7 @@ package io.camunda.zeebe.gateway;
 import com.google.rpc.Code;
 import io.camunda.security.configuration.MultiTenancyConfiguration;
 import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.security.oidc.OidcClaimsProvider;
 import io.camunda.service.UserServices;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.gateway.health.GatewayHealthManager;
@@ -98,6 +99,7 @@ public final class Gateway implements CloseableSilently {
   private final UserServices userServices;
   private final PasswordEncoder passwordEncoder;
   private final JwtDecoder jwtDecoder;
+  private final OidcClaimsProvider oidcClaimsProvider;
   private final MeterRegistry meterRegistry;
 
   public Gateway(
@@ -109,7 +111,8 @@ public final class Gateway implements CloseableSilently {
       final UserServices userServices,
       final PasswordEncoder passwordEncoder,
       final MeterRegistry meterRegistry,
-      final JwtDecoder jwtDecoder) {
+      final JwtDecoder jwtDecoder,
+      final OidcClaimsProvider oidcClaimsProvider) {
     this(
         DEFAULT_SHUTDOWN_TIMEOUT,
         gatewayCfg,
@@ -120,6 +123,7 @@ public final class Gateway implements CloseableSilently {
         userServices,
         passwordEncoder,
         jwtDecoder,
+        oidcClaimsProvider,
         meterRegistry);
   }
 
@@ -133,6 +137,7 @@ public final class Gateway implements CloseableSilently {
       final UserServices userServices,
       final PasswordEncoder passwordEncoder,
       final JwtDecoder jwtDecoder,
+      final OidcClaimsProvider oidcClaimsProvider,
       final MeterRegistry meterRegistry) {
     shutdownTimeout = shutdownDuration;
     this.gatewayCfg = gatewayCfg;
@@ -143,6 +148,7 @@ public final class Gateway implements CloseableSilently {
     this.userServices = userServices;
     this.passwordEncoder = passwordEncoder;
     this.jwtDecoder = jwtDecoder;
+    this.oidcClaimsProvider = oidcClaimsProvider;
     this.meterRegistry = meterRegistry;
 
     healthManager = new GatewayHealthManagerImpl();
@@ -416,7 +422,9 @@ public final class Gateway implements CloseableSilently {
             case BASIC -> basicAuth();
             case OIDC ->
                 new AuthenticationHandler.Oidc(
-                    jwtDecoder, securityConfiguration.getAuthentication().getOidc());
+                    jwtDecoder,
+                    securityConfiguration.getAuthentication().getOidc(),
+                    oidcClaimsProvider);
           };
       interceptors.add(new AuthenticationInterceptor(handler));
     }
