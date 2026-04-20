@@ -11,16 +11,12 @@ import { Loading } from "@carbon/react";
 import useTranslate from "src/utility/localization";
 import Page, { PageHeader } from "src/components/layout/Page";
 import { TranslatedErrorInlineNotification } from "src/components/notifications/InlineNotification";
-import { useApi } from "src/utility/api";
-import { searchMessageSubscriptions } from "src/utility/api/message-subscriptions";
+import { useMcpProcessTools } from "./useMcpProcessTools";
 
 const List: FC = () => {
   const { t } = useTranslate();
 
-  const { data, loading, success, reload } = useApi(
-    searchMessageSubscriptions,
-    { filter: {} },
-  );
+  const { processTools, loading, success, reload } = useMcpProcessTools();
 
   return (
     <Page>
@@ -30,7 +26,9 @@ const List: FC = () => {
         shouldShowDocumentationLink={false}
       />
       {loading && <Loading withOverlay={false} />}
-      {!loading && success && <pre>{JSON.stringify(data, null, 2)}</pre>}
+      {!loading && success && (
+        <pre>{JSON.stringify(processTools, null, 2)}</pre>
+      )}
       {!loading && !success && (
         <TranslatedErrorInlineNotification
           title={t("errorOccurred")}
