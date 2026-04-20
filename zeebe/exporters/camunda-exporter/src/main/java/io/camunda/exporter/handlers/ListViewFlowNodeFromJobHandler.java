@@ -28,7 +28,8 @@ public class ListViewFlowNodeFromJobHandler
   private static final Logger LOGGER =
       LoggerFactory.getLogger(ListViewFlowNodeFromJobHandler.class);
 
-  private static final Set<Intent> FAILED_JOB_EVENTS = Set.of(JobIntent.FAIL, JobIntent.FAILED);
+  private static final Set<Intent> FAILED_JOB_EVENTS =
+      Set.of(JobIntent.FAIL, JobIntent.FAILED, JobIntent.ERROR_THROWN);
 
   private final String indexName;
 
@@ -77,15 +78,21 @@ public class ListViewFlowNodeFromJobHandler
         .setKey(record.getValue().getElementInstanceKey())
         .setPartitionId(record.getPartitionId())
         .setPositionJob(record.getPosition())
-        .setActivityId(recordValue.getElementId())
         .setProcessInstanceKey(recordValue.getProcessInstanceKey())
         .setTenantId(tenantOrDefault(recordValue.getTenantId()))
         .getJoinRelation()
         .setParent(recordValue.getProcessInstanceKey());
 
-    if (FAILED_JOB_EVENTS.contains(intent) && recordValue.getRetries() > 0) {
-      entity.setJobFailedWithRetriesLeft(true);
+    if (FAILED_JOB_EVENTS.contains(intent)) {
+      // Don't overwrite activityId for failed/error-thrown jobs because the engine may set
+      // elementId to a marker value (e.g. "NO_CATCH_EVENT_FOUND") instead of the actual element ID
+      if (recordValue.getRetries() > 0) {
+        entity.setJobFailedWithRetriesLeft(true);
+      } else {
+        entity.setJobFailedWithRetriesLeft(false);
+      }
     } else {
+      entity.setActivityId(recordValue.getElementId());
       entity.setJobFailedWithRetriesLeft(false);
     }
   }
