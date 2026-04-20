@@ -63,7 +63,7 @@ public class OperateInternalApiRolePermissionsIT {
           .withAdditionalProfile(Profile.OPERATE);
 
   private static final String BASE_PATH = "api/process-instances";
-  private static final String PROCESS_ID = "processId";
+  private static final String PROCESS_ID = "process-" + Strings.newRandomValidIdentityId();
   private static final String ADMIN_USERNAME = "admin";
   private static final String AUTHORIZED_USERNAME = "authorized";
   private static final String UNAUTHORIZED_USERNAME = "unauthorized";
