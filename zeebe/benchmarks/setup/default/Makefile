@@ -34,7 +34,7 @@ _scenario_load_test_flags := --set starter.rate=50 --set workers.worker.replicas
 _scenario_platform_flags  :=
 else ifeq ($(scenario),max)
 _scenario_load_test_flags := --set starter.rate=300
-_scenario_platform_flags  := --set-file 'orchestration.extraConfiguration[1].content=./camunda-platform-override-values.yaml'
+_scenario_platform_flags  := --set-file 'orchestration.extraConfiguration.application-override\.yml=./camunda-platform-override-values.yaml'
 else ifeq ($(scenario),archiver)
 _scenario_load_test_flags := --set starter.rate=1 --set starter.rateDuration=10m --set starter.processId=multiInstanceElements --set starter.bpmnXmlPath=bpmn/multiInstanceElements.bpmn --set starter.payloadPath=bpmn/multiInstanceElementsPayload.json --set workers.worker.replicas=0
 _scenario_platform_flags  :=
