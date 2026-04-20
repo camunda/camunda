@@ -580,7 +580,7 @@ public class ExecutionListenerTaskElementsTest {
           .hasErrorType(ErrorType.IO_MAPPING_ERROR)
           .hasErrorMessage(
               """
-                Assertion failure on evaluate the expression '{o_var_1:assert(some_var, some_var != null)}': \
+                Assertion failure on evaluate the expression '{o_var_1:assert(some_var, some_var != null),_camunda_output_context:context put({},"o_var_1",o_var_1)}._camunda_output_context': \
                 The condition is not fulfilled The evaluation reported the following warnings:
                 [NO_VARIABLE_FOUND] No variable found with name 'some_var'
                 [NO_VARIABLE_FOUND] No variable found with name 'some_var'
