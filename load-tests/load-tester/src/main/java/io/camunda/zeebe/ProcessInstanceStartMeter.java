@@ -10,6 +10,7 @@ package io.camunda.zeebe;
 import io.camunda.zeebe.StarterLatencyMetricsDoc.StarterMetricKeyNames;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.util.micrometer.MicrometerUtil;
+import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
 import java.time.Duration;
@@ -51,6 +52,11 @@ public class ProcessInstanceStartMeter implements AutoCloseable {
             .register(registry);
     this.availabilityCheckInterval = availabilityCheckInterval;
     this.availabilityChecker = availabilityChecker;
+    Gauge.builder(
+            "starter.data.availability.process.instances.pending", startedInstances, Map::size)
+        .description(
+            "The number of process instances we are waiting to see when they are available.")
+        .register(registry);
   }
 
   /** Starts the periodic checking for process instance availability. */
