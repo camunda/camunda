@@ -32,6 +32,7 @@ const VariableValueCell: React.FC<Props> = ({
   return (
     <InlineJsonEditor
       value={value}
+      label={variableName}
       isTruncatedValue={Boolean(isTruncated)}
       readOnly
       onCopy={

@@ -20,7 +20,6 @@ const LoadingContainer = styled.div`
   width: 2rem;
   height: 2rem;
   flex-shrink: 0;
-  align-self: center;
 `;
 
 export {Loading, LoadingContainer};

@@ -44,7 +44,11 @@ const EditButtons: React.FC = () => {
 
       {form.getState().submitting ? (
         <LoadingContainer>
-          <Loading small withOverlay={false} data-testid="full-variable-loader" />
+          <Loading
+            small
+            withOverlay={false}
+            data-testid="full-variable-loader"
+          />
         </LoadingContainer>
       ) : (
         <Button

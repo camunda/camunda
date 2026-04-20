@@ -54,7 +54,7 @@ describe('<ReadOnlyEditor />', () => {
       expect(mockWriteText).toHaveBeenCalledWith('"hello"');
       expect(notificationsStore.displayNotification).toHaveBeenCalledWith({
         kind: 'success',
-        title: 'MyVar copied to clipboard',
+        title: 'Copied myVar to clipboard',
         isDismissable: true,
       });
     });
@@ -112,7 +112,7 @@ describe('<ReadOnlyEditor />', () => {
       expect(mockWriteText).toHaveBeenCalledWith('"full value"');
       expect(notificationsStore.displayNotification).toHaveBeenCalledWith({
         kind: 'success',
-        title: 'MyVar copied to clipboard',
+        title: 'Copied myVar to clipboard',
         isDismissable: true,
       });
     });
