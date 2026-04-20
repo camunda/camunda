@@ -29,6 +29,12 @@ import org.springframework.security.web.RedirectStrategy;
  *       redirect destination.
  * </ul>
  *
+ * <p>On a {@code 204} response, an {@code X-Logout-Message} header may be included to convey a
+ * human-readable diagnostic message to the frontend. This happens when the OIDC identity provider's
+ * {@code end_session_endpoint} is not available: the local session is terminated successfully, but
+ * the IdP session cannot be ended. The header allows the frontend to display an appropriate warning
+ * to the user.
+ *
  * <p>This allows a JavaScript client to decide how to handle navigation based on the returned
  * response.
  */
