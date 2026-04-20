@@ -62,14 +62,14 @@ public final class RecoverableRetryStrategy implements RetryStrategy {
     try {
       final var control = retryMechanism.run();
       if (control == Control.RETRY) {
-        if (!retryLimitExceeded(null)) {
+        if (!retryLimitExceeded(++retryCount, maxRetries, null, LOG, currentFuture)) {
           actor.run(this::run);
           actor.yieldThread();
         }
       }
     } catch (final RecoverableException ex) {
       if (!terminateCondition.getAsBoolean()) {
-        if (!retryLimitExceeded(ex)) {
+        if (!retryLimitExceeded(++retryCount, maxRetries, ex, LOG, currentFuture)) {
           throttledLog.warn(
               "Caught recoverable exception (retry {}/{}), will retry: {}",
               retryCount,
@@ -83,15 +83,5 @@ public final class RecoverableRetryStrategy implements RetryStrategy {
     } catch (final Exception exception) {
       currentFuture.completeExceptionally(exception);
     }
-  }
-
-  private boolean retryLimitExceeded(final Throwable cause) {
-    retryCount++;
-    if (retryCount > maxRetries) {
-      LOG.error("Retry limit reached ({} retries). Failing operation.", maxRetries, cause);
-      currentFuture.completeExceptionally(new RetryLimitExceededException(maxRetries, cause));
-      return true;
-    }
-    return false;
   }
 }
