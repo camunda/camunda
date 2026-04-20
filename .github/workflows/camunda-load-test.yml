@@ -2,7 +2,7 @@
 #              routes through this workflow. Builds Docker images (or reuses existing ones),
 #              then deploys via newLoadTest.sh + `make install` to a GKE cluster.
 # called-by: camunda-daily-load-tests.yml, camunda-weekly-load-tests.yml,
-#            camunda-pr-load-test.yaml, camunda-release-load-test.yaml,
+#            pr-benchmark-pipeline.yml, camunda-release-load-test.yaml,
 #            zeebe-update-long-running-migrating-benchmark.yaml
 # also: triggerable manually via workflow_dispatch for ad-hoc load tests
 # monitoring: https://dashboard.benchmark.camunda.cloud/

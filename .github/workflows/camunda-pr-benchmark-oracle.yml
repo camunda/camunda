@@ -1,0 +1,27 @@
+# type: CI
+# owner: @camunda/reliability-testing
+name: Camunda PR Benchmark (oracle)
+on:
+  pull_request:
+    types:
+      - labeled
+      - unlabeled
+      - synchronize
+      - closed
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  benchmark:
+    name: Benchmark (oracle)
+    if: >
+      (contains(fromJSON('["labeled", "unlabeled"]'), github.event.action) && github.event.label.name == 'benchmark-oracle') ||
+      (contains(fromJSON('["synchronize", "closed"]'), github.event.action) && contains(github.event.pull_request.labels.*.name, 'benchmark-oracle'))
+    uses: ./.github/workflows/pr-benchmark-pipeline.yml
+    secrets: inherit
+    with:
+      label: 'benchmark-oracle'
+      secondary-storage-type: 'oracle'
+      ref: ${{ github.event.pull_request.head.ref }}
