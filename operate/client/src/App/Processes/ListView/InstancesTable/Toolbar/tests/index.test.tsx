@@ -27,10 +27,6 @@ type Props = {
   initialEntries?: string[];
 };
 
-vi.mock('modules/feature-flags', () => ({
-  IS_DELETE_BATCH_OPERATION_ENABLED: true,
-}));
-
 vi.mock('modules/tracking', () => ({
   tracking: {
     track: vi.fn(),
