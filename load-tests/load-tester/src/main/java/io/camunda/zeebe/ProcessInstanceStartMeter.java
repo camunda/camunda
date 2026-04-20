@@ -10,6 +10,7 @@ package io.camunda.zeebe;
 import io.camunda.zeebe.StarterLatencyMetricsDoc.StarterMetricKeyNames;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.util.micrometer.MicrometerUtil;
+import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
 import java.time.Duration;
@@ -20,6 +21,7 @@ import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -34,6 +36,7 @@ public class ProcessInstanceStartMeter implements AutoCloseable {
   private final Duration availabilityCheckInterval;
   private final Clock clock;
   private final Timer dataAvailabilityQueryDurationTimer;
+  private final AtomicInteger checksPending = new AtomicInteger();
 
   public ProcessInstanceStartMeter(
       final Clock clock,
@@ -51,6 +54,9 @@ public class ProcessInstanceStartMeter implements AutoCloseable {
             .register(registry);
     this.availabilityCheckInterval = availabilityCheckInterval;
     this.availabilityChecker = availabilityChecker;
+    Gauge.builder("process_instance_start_checks_pending", checksPending, AtomicInteger::get)
+        .description("Number of pending process instance availability checks")
+        .register(registry);
   }
 
   /** Starts the periodic checking for process instance availability. */
@@ -84,12 +90,14 @@ public class ProcessInstanceStartMeter implements AutoCloseable {
       return;
     }
 
+    checksPending.incrementAndGet();
     LOG.debug("Current instances awaiting {}", startedInstances.size());
     final var startQueryTime = clock.getNanos();
     availabilityChecker
         .findAvailableInstances(List.copyOf(startedInstances.keySet()))
         .whenCompleteAsync(
             (availableInstances, error) -> {
+              checksPending.decrementAndGet();
               final var endQueryTime = clock.getNanos();
               dataAvailabilityQueryDurationTimer.record(
                   endQueryTime - startQueryTime, TimeUnit.NANOSECONDS);
