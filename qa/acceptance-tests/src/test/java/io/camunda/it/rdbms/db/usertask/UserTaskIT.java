@@ -308,7 +308,7 @@ public class UserTaskIT {
             .search(
                 new UserTaskQuery(
                     new UserTaskFilter.Builder()
-                        .processDefinitionIdOperations(Operation.like(prefix + "%"))
+                        .processDefinitionIdOperations(Operation.like(prefix + "*"))
                         .build(),
                     UserTaskSort.of(b -> b),
                     SearchQueryPage.of(b -> b.from(0).size(10))));
