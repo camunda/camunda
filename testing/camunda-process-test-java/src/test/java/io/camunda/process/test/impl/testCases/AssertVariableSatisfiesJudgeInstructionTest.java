@@ -27,9 +27,9 @@ import io.camunda.process.test.api.assertions.ElementSelector;
 import io.camunda.process.test.api.assertions.ProcessInstanceAssert;
 import io.camunda.process.test.api.testCases.ImmutableElementSelector;
 import io.camunda.process.test.api.testCases.ImmutableProcessInstanceSelector;
-import io.camunda.process.test.api.testCases.instructions.AssertVariableJudgeInstruction;
-import io.camunda.process.test.api.testCases.instructions.ImmutableAssertVariableJudgeInstruction;
-import io.camunda.process.test.impl.testCases.instructions.AssertVariableJudgeInstructionHandler;
+import io.camunda.process.test.api.testCases.instructions.AssertVariableSatisfiesJudgeInstruction;
+import io.camunda.process.test.api.testCases.instructions.ImmutableAssertVariableSatisfiesJudgeInstruction;
+import io.camunda.process.test.impl.testCases.instructions.AssertVariableSatisfiesJudgeInstructionHandler;
 import java.util.function.UnaryOperator;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -38,7 +38,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-public class AssertVariableJudgeInstructionTest {
+public class AssertVariableSatisfiesJudgeInstructionTest {
 
   private static final String PROCESS_DEFINITION_ID = "process";
   private static final String ELEMENT_ID = "task_A";
@@ -52,14 +52,14 @@ public class AssertVariableJudgeInstructionTest {
   @Mock(answer = Answers.RETURNS_DEEP_STUBS)
   private AssertionFacade assertionFacade;
 
-  private final AssertVariableJudgeInstructionHandler instructionHandler =
-      new AssertVariableJudgeInstructionHandler();
+  private final AssertVariableSatisfiesJudgeInstructionHandler instructionHandler =
+      new AssertVariableSatisfiesJudgeInstructionHandler();
 
   @Test
   void shouldAssertGlobalVariable() {
     // given
-    final AssertVariableJudgeInstruction instruction =
-        ImmutableAssertVariableJudgeInstruction.builder()
+    final AssertVariableSatisfiesJudgeInstruction instruction =
+        ImmutableAssertVariableSatisfiesJudgeInstruction.builder()
             .processInstanceSelector(
                 ImmutableProcessInstanceSelector.builder()
                     .processDefinitionId(PROCESS_DEFINITION_ID)
@@ -84,8 +84,8 @@ public class AssertVariableJudgeInstructionTest {
   @Test
   void shouldAssertLocalVariableByElementId() {
     // given
-    final AssertVariableJudgeInstruction instruction =
-        ImmutableAssertVariableJudgeInstruction.builder()
+    final AssertVariableSatisfiesJudgeInstruction instruction =
+        ImmutableAssertVariableSatisfiesJudgeInstruction.builder()
             .processInstanceSelector(
                 ImmutableProcessInstanceSelector.builder()
                     .processDefinitionId(PROCESS_DEFINITION_ID)
@@ -113,8 +113,8 @@ public class AssertVariableJudgeInstructionTest {
   @Test
   void shouldAssertLocalVariableByElementName() {
     // given
-    final AssertVariableJudgeInstruction instruction =
-        ImmutableAssertVariableJudgeInstruction.builder()
+    final AssertVariableSatisfiesJudgeInstruction instruction =
+        ImmutableAssertVariableSatisfiesJudgeInstruction.builder()
             .processInstanceSelector(
                 ImmutableProcessInstanceSelector.builder()
                     .processDefinitionId(PROCESS_DEFINITION_ID)
@@ -146,8 +146,8 @@ public class AssertVariableJudgeInstructionTest {
     final ProcessInstanceAssert mockAssert = assertionFacade.assertThatProcessInstance(any());
     when(mockAssert.withJudgeConfig(any(UnaryOperator.class))).thenReturn(mockAssert);
 
-    final AssertVariableJudgeInstruction instruction =
-        ImmutableAssertVariableJudgeInstruction.builder()
+    final AssertVariableSatisfiesJudgeInstruction instruction =
+        ImmutableAssertVariableSatisfiesJudgeInstruction.builder()
             .processInstanceSelector(
                 ImmutableProcessInstanceSelector.builder()
                     .processDefinitionId(PROCESS_DEFINITION_ID)
@@ -172,8 +172,8 @@ public class AssertVariableJudgeInstructionTest {
     final ProcessInstanceAssert mockAssert = assertionFacade.assertThatProcessInstance(any());
     when(mockAssert.withJudgeConfig(any(UnaryOperator.class))).thenReturn(mockAssert);
 
-    final AssertVariableJudgeInstruction instruction =
-        ImmutableAssertVariableJudgeInstruction.builder()
+    final AssertVariableSatisfiesJudgeInstruction instruction =
+        ImmutableAssertVariableSatisfiesJudgeInstruction.builder()
             .processInstanceSelector(
                 ImmutableProcessInstanceSelector.builder()
                     .processDefinitionId(PROCESS_DEFINITION_ID)
@@ -198,8 +198,8 @@ public class AssertVariableJudgeInstructionTest {
     final ProcessInstanceAssert mockAssert = assertionFacade.assertThatProcessInstance(any());
     when(mockAssert.withJudgeConfig(any(UnaryOperator.class))).thenReturn(mockAssert);
 
-    final AssertVariableJudgeInstruction instruction =
-        ImmutableAssertVariableJudgeInstruction.builder()
+    final AssertVariableSatisfiesJudgeInstruction instruction =
+        ImmutableAssertVariableSatisfiesJudgeInstruction.builder()
             .processInstanceSelector(
                 ImmutableProcessInstanceSelector.builder()
                     .processDefinitionId(PROCESS_DEFINITION_ID)

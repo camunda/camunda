@@ -25,13 +25,13 @@ import org.immutables.value.Value;
 
 /** An instruction to assert a process variable using an LLM judge evaluation. */
 @Value.Immutable
-@JsonDeserialize(builder = ImmutableAssertVariableJudgeInstruction.Builder.class)
-public interface AssertVariableJudgeInstruction extends TestCaseInstruction {
+@JsonDeserialize(builder = ImmutableAssertVariableSatisfiesJudgeInstruction.Builder.class)
+public interface AssertVariableSatisfiesJudgeInstruction extends TestCaseInstruction {
 
   @Value.Default
   @Override
   default String getType() {
-    return TestCaseInstructionType.ASSERT_VARIABLE_JUDGE;
+    return TestCaseInstructionType.ASSERT_VARIABLE_SATISFIES_JUDGE;
   }
 
   /**
