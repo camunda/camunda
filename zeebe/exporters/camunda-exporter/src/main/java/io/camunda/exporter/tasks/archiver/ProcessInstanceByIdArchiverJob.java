@@ -65,7 +65,8 @@ public class ProcessInstanceByIdArchiverJob extends ProcessInstanceArchiverJob {
             ListViewTemplate.PROCESS_INSTANCE_KEY,
             finishDate,
             processInstanceKeys,
-            Map.of(ListViewTemplate.JOIN_RELATION, ListViewTemplate.VARIABLES_JOIN_RELATION)));
+            Map.of(ListViewTemplate.JOIN_RELATION, ListViewTemplate.VARIABLES_JOIN_RELATION),
+            Map.of()));
 
     // add archiving flownodes/activities from the list view index as a parallel task
     dependentFutures.add(
@@ -74,9 +75,36 @@ public class ProcessInstanceByIdArchiverJob extends ProcessInstanceArchiverJob {
             ListViewTemplate.PROCESS_INSTANCE_KEY,
             finishDate,
             processInstanceKeys,
-            Map.of(ListViewTemplate.JOIN_RELATION, ListViewTemplate.ACTIVITIES_JOIN_RELATION)));
+            Map.of(ListViewTemplate.JOIN_RELATION, ListViewTemplate.ACTIVITIES_JOIN_RELATION),
+            Map.of()));
 
     return CompletableFuture.allOf(dependentFutures.toArray(CompletableFuture[]::new));
+  }
+
+  @Override
+  protected CompletableFuture<Integer> moveProcessInstances(
+      final String finishDate, final List<String> processInstanceKeys) {
+    // 1. First archive docs from dependent indices and `joinRelation={variable OR activity}`
+    // from operate-list-view index (already done)
+    // 2. Then archive all docs except `joinRelation=processInstance` from operate-list-view index
+    // 3. Then archive remaining docs from operate-list-view index (catch-all without filters)
+    return archive(
+            getTemplateDescriptor().getFullQualifiedName(),
+            ListViewTemplate.PROCESS_INSTANCE_KEY,
+            finishDate,
+            processInstanceKeys,
+            Map.of(),
+            Map.of(ListViewTemplate.JOIN_RELATION, ListViewTemplate.PROCESS_INSTANCE_JOIN_RELATION))
+        .thenComposeAsync(
+            ignored ->
+                archive(
+                    getTemplateDescriptor().getFullQualifiedName(),
+                    ListViewTemplate.PROCESS_INSTANCE_KEY,
+                    finishDate,
+                    processInstanceKeys,
+                    Map.of(),
+                    Map.of()),
+            getExecutor());
   }
 
   @Override
@@ -85,14 +113,16 @@ public class ProcessInstanceByIdArchiverJob extends ProcessInstanceArchiverJob {
       final String idField,
       final String finishDate,
       final List<String> processInstanceKeys,
-      final Map<String, String> filters) {
+      final Map<String, String> inclusionFilters,
+      final Map<String, String> exclusionFilters) {
     return getRepository()
         .moveDocumentsById(
             sourceIdxName,
             sourceIdxName + finishDate,
             idField,
             processInstanceKeys,
-            filters,
+            inclusionFilters,
+            exclusionFilters,
             getExecutor())
         .thenApplyAsync(ok -> processInstanceKeys.size(), getExecutor());
   }

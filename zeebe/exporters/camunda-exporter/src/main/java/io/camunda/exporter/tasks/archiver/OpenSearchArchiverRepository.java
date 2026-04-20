@@ -336,7 +336,8 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
       final String destinationIndexName,
       final String idFieldName,
       final List<String> ids,
-      final Map<String, String> filters,
+      final Map<String, String> inclusionFilters,
+      final Map<String, String> exclusionFilters,
       final Executor executor) {
 
     final ArchiveByIdTaskSupplier<FieldValue> taskSupplier =
@@ -344,7 +345,13 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
             sourceIndexName,
             destinationIndexName,
             searchAfter ->
-                getArchiveDocIdsBatch(sourceIndexName, idFieldName, ids, filters, searchAfter),
+                getArchiveDocIdsBatch(
+                    sourceIndexName,
+                    idFieldName,
+                    ids,
+                    inclusionFilters,
+                    exclusionFilters,
+                    searchAfter),
             this::reindexDocumentsById,
             this::deleteDocumentsById,
             executor,
@@ -404,9 +411,10 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
       final String sourceIndexName,
       final String idFieldName,
       final List<String> ids,
-      final Map<String, String> filters,
+      final Map<String, String> inclusionFilters,
+      final Map<String, String> exclusionFilters,
       final List<FieldValue> searchAfter) {
-    final Query query = buildFilterQuery(idFieldName, ids, filters);
+    final Query query = buildFilterQuery(idFieldName, ids, inclusionFilters, exclusionFilters);
     final SearchRequest.Builder requestBuilder =
         new SearchRequest.Builder()
             .index(sourceIndexName)
@@ -743,7 +751,10 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
   }
 
   private Query buildFilterQuery(
-      final String idFieldName, final List<String> idValues, final Map<String, String> filters) {
+      final String idFieldName,
+      final List<String> idValues,
+      final Map<String, String> inclusionFilters,
+      final Map<String, String> exclusionFilters) {
     final var boolBuilder = QueryBuilders.bool();
 
     // Match any keys
@@ -754,9 +765,15 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
       boolBuilder.filter(keysBoolBuilder.build().toQuery());
     }
 
-    // Match all additional filters
-    for (final var filter : filters.entrySet()) {
+    // Match all additional inclusion filters
+    for (final var filter : inclusionFilters.entrySet()) {
       boolBuilder.filter(
+          f -> f.term(t -> t.field(filter.getKey()).value(FieldValue.of(filter.getValue()))));
+    }
+
+    // Exclude all docs matching exclusion filters
+    for (final var filter : exclusionFilters.entrySet()) {
+      boolBuilder.mustNot(
           f -> f.term(t -> t.field(filter.getKey()).value(FieldValue.of(filter.getValue()))));
     }
 
