@@ -8,7 +8,7 @@
 
 import {instanceHistoryModificationStore} from 'modules/stores/instanceHistoryModification';
 import {modificationsStore} from 'modules/stores/modifications';
-import {useEffect} from 'react';
+import {useEffect, useState} from 'react';
 import {TreeView} from '@carbon/react';
 import {ProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
 import {QueryClientProvider} from '@tanstack/react-query';
@@ -1199,6 +1199,8 @@ const adHocSubProcessInnerInstanceElementInstances = {
 } satisfies Record<string, QueryElementInstancesResponseBody>;
 
 const Wrapper = ({children}: {children?: React.ReactNode}) => {
+  const [queryClient] = useState(() => getMockQueryClient());
+
   useEffect(() => {
     return () => {
       modificationsStore.reset();
@@ -1208,7 +1210,7 @@ const Wrapper = ({children}: {children?: React.ReactNode}) => {
 
   return (
     <ProcessDefinitionKeyContext.Provider value="123">
-      <QueryClientProvider client={getMockQueryClient()}>
+      <QueryClientProvider client={queryClient}>
         <MemoryRouter initialEntries={[Paths.processInstance('1')]}>
           <Routes>
             <Route
