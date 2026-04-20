@@ -7,7 +7,7 @@
  */
 package io.camunda.authentication.config;
 
-import static io.camunda.authentication.config.CamundaOidcLogoutSuccessHandler.*;
+import static io.camunda.authentication.config.WebappRedirectStrategy.REDIRECT_MESSAGE_ATTRIBUTE;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -72,7 +72,7 @@ public class WebappRedirectStrategyTest {
     final MockHttpServletRequest request = new MockHttpServletRequest();
     final MockHttpServletResponse response = new MockHttpServletResponse();
     final String message = "The identity provider's end_session_endpoint is not available.";
-    request.setAttribute(LOGOUT_MESSAGE_ATTRIBUTE, message);
+    request.setAttribute(REDIRECT_MESSAGE_ATTRIBUTE, message);
 
     // when
     redirectStrategy.sendRedirect(request, response, "/");
