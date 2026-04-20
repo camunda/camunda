@@ -15,6 +15,7 @@
  */
 package io.camunda.process.test.impl.testCases;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
@@ -25,15 +26,18 @@ import io.camunda.client.CamundaClient;
 import io.camunda.process.test.api.CamundaProcessTestContext;
 import io.camunda.process.test.api.assertions.ElementSelector;
 import io.camunda.process.test.api.assertions.ProcessInstanceAssert;
+import io.camunda.process.test.api.judge.JudgeConfig;
 import io.camunda.process.test.api.testCases.ImmutableElementSelector;
 import io.camunda.process.test.api.testCases.ImmutableProcessInstanceSelector;
 import io.camunda.process.test.api.testCases.instructions.AssertVariableSatisfiesJudgeInstruction;
 import io.camunda.process.test.api.testCases.instructions.ImmutableAssertVariableSatisfiesJudgeInstruction;
+import io.camunda.process.test.impl.judge.JudgeConfigImpl;
 import io.camunda.process.test.impl.testCases.instructions.AssertVariableSatisfiesJudgeInstructionHandler;
 import java.util.function.UnaryOperator;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Answers;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -161,7 +165,14 @@ public class AssertVariableSatisfiesJudgeInstructionTest {
     instructionHandler.execute(instruction, processTestContext, camundaClient, assertionFacade);
 
     // then
-    verify(mockAssert).withJudgeConfig(any(UnaryOperator.class));
+    final ArgumentCaptor<UnaryOperator<JudgeConfig>> judgeConfigOverrideCaptor =
+        ArgumentCaptor.forClass(UnaryOperator.class);
+    verify(mockAssert).withJudgeConfig(judgeConfigOverrideCaptor.capture());
+
+    final JudgeConfig updatedConfig =
+        judgeConfigOverrideCaptor.getValue().apply(new JudgeConfigImpl(s -> s, 0.0, null));
+    assertThat(updatedConfig.getThreshold()).isEqualTo(0.8);
+
     verify(mockAssert).hasVariableSatisfiesJudge(eq(VARIABLE_NAME), eq(EXPECTATION));
   }
 
@@ -187,7 +198,14 @@ public class AssertVariableSatisfiesJudgeInstructionTest {
     instructionHandler.execute(instruction, processTestContext, camundaClient, assertionFacade);
 
     // then
-    verify(mockAssert).withJudgeConfig(any(UnaryOperator.class));
+    final ArgumentCaptor<UnaryOperator<JudgeConfig>> judgeConfigOverrideCaptor =
+        ArgumentCaptor.forClass(UnaryOperator.class);
+    verify(mockAssert).withJudgeConfig(judgeConfigOverrideCaptor.capture());
+
+    final JudgeConfig updatedConfig =
+        judgeConfigOverrideCaptor.getValue().apply(new JudgeConfigImpl(s -> s, 0.0, null));
+    assertThat(updatedConfig.getCustomPrompt()).hasValue("You are a financial data judge");
+
     verify(mockAssert).hasVariableSatisfiesJudge(eq(VARIABLE_NAME), eq(EXPECTATION));
   }
 
@@ -214,7 +232,15 @@ public class AssertVariableSatisfiesJudgeInstructionTest {
     instructionHandler.execute(instruction, processTestContext, camundaClient, assertionFacade);
 
     // then
-    verify(mockAssert).withJudgeConfig(any(UnaryOperator.class));
+    final ArgumentCaptor<UnaryOperator<JudgeConfig>> judgeConfigOverrideCaptor =
+        ArgumentCaptor.forClass(UnaryOperator.class);
+    verify(mockAssert).withJudgeConfig(judgeConfigOverrideCaptor.capture());
+
+    final JudgeConfig updatedConfig =
+        judgeConfigOverrideCaptor.getValue().apply(new JudgeConfigImpl(s -> s, 0.0, null));
+    assertThat(updatedConfig.getThreshold()).isEqualTo(0.9);
+    assertThat(updatedConfig.getCustomPrompt()).hasValue("Custom evaluation criteria");
+
     verify(mockAssert).hasVariableSatisfiesJudge(eq(VARIABLE_NAME), eq(EXPECTATION));
   }
 }
