@@ -8,72 +8,80 @@
 package io.camunda.authentication.converter;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.camunda.security.auth.CamundaAuthentication;
+import io.camunda.security.oidc.NoopOidcClaimsProvider;
+import io.camunda.security.oidc.OidcClaimsProvider;
+import java.util.List;
 import java.util.Map;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
 import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 
 public class OidcTokenAuthenticationConverterTest {
 
-  @Mock private TokenClaimsConverter tokenClaimsConverter;
-  @InjectMocks private OidcTokenAuthenticationConverter authenticationConverter;
+  @Test
+  void shouldSupportJwtAuthenticationToken() {
+    final var converter =
+        new OidcTokenAuthenticationConverter(
+            mock(TokenClaimsConverter.class), new NoopOidcClaimsProvider());
 
-  @BeforeEach
-  void setup() throws Exception {
-    MockitoAnnotations.openMocks(this).close();
+    assertThat(converter.supports(mock(JwtAuthenticationToken.class))).isTrue();
   }
 
   @Test
-  void shouldSupport() {
-    // given
-    final var authentication = mock(JwtAuthenticationToken.class);
+  void shouldNotSupportNonJwtAuthentication() {
+    final var converter =
+        new OidcTokenAuthenticationConverter(
+            mock(TokenClaimsConverter.class), new NoopOidcClaimsProvider());
 
-    // when
-    final var supports = authenticationConverter.supports(authentication);
-
-    // then
-    assertThat(supports).isTrue();
+    assertThat(converter.supports(mock(OAuth2AuthenticationToken.class))).isFalse();
   }
 
   @Test
-  void shouldNotSupport() {
-    // given
-    final var authentication = mock(OAuth2AuthenticationToken.class);
+  void shouldPassJwtClaimsThroughNoopProviderToTokenClaimsConverter() {
+    final TokenClaimsConverter tokenClaimsConverter = mock(TokenClaimsConverter.class);
+    final var jwt =
+        Jwt.withTokenValue("token-abc")
+            .header("alg", "RS256")
+            .claim("sub", "alice")
+            .claim("iss", "https://idp.example")
+            .build();
+    final var authentication = new JwtAuthenticationToken(jwt);
+    final var expected = CamundaAuthentication.of(b -> b.user("alice"));
+    when(tokenClaimsConverter.convert(jwt.getClaims())).thenReturn(expected);
 
-    // when
-    final var supports = authenticationConverter.supports(authentication);
+    final var converter =
+        new OidcTokenAuthenticationConverter(tokenClaimsConverter, new NoopOidcClaimsProvider());
 
-    // then
-    assertThat(supports).isFalse();
+    assertThat(converter.convert(authentication)).isSameAs(expected);
   }
 
   @Test
-  public void shouldConvertAccessToken() {
-    // given
+  void shouldUseClaimsReturnedByProviderForAugmentation() {
+    final TokenClaimsConverter tokenClaimsConverter = mock(TokenClaimsConverter.class);
+    final OidcClaimsProvider claimsProvider = mock(OidcClaimsProvider.class);
+    final var jwt =
+        Jwt.withTokenValue("token-abc")
+            .header("alg", "RS256")
+            .claim("sub", "alice")
+            .claim("iss", "https://idp.example")
+            .build();
+    final var authentication = new JwtAuthenticationToken(jwt);
 
-    final Map<String, Object> accessTokenClaims =
-        Map.of("access_token", "test-access-token", "token_type", "Bearer", "expires_in", 3600);
-    final var authentication = mock(JwtAuthenticationToken.class);
-    when(authentication.getTokenAttributes()).thenReturn(accessTokenClaims);
+    final Map<String, Object> augmentedClaims = Map.of("sub", "alice", "groups", List.of("eng"));
+    when(claimsProvider.claimsFor(any(), eq("token-abc"))).thenReturn(augmentedClaims);
+    final var expected = CamundaAuthentication.of(b -> b.user("alice"));
+    when(tokenClaimsConverter.convert(augmentedClaims)).thenReturn(expected);
 
-    final var expectedAuthentication = CamundaAuthentication.of(b -> b.user("foo"));
-    when(tokenClaimsConverter.convert(eq(accessTokenClaims))).thenReturn(expectedAuthentication);
+    final var converter =
+        new OidcTokenAuthenticationConverter(tokenClaimsConverter, claimsProvider);
 
-    // when
-    final var userToken = authenticationConverter.convert(authentication);
-
-    // then
-    assertThat(userToken).isEqualTo(expectedAuthentication);
-    verify(tokenClaimsConverter).convert(eq(accessTokenClaims));
+    assertThat(converter.convert(authentication)).isSameAs(expected);
   }
 }

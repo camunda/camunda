@@ -39,6 +39,10 @@ import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.security.configuration.headers.HeaderConfiguration;
 import io.camunda.security.configuration.headers.values.FrameOptionMode;
 import io.camunda.security.entity.AuthenticationMethod;
+import io.camunda.security.oidc.CachingOidcClaimsProvider;
+import io.camunda.security.oidc.NoopOidcClaimsProvider;
+import io.camunda.security.oidc.OidcClaimsProvider;
+import io.camunda.security.oidc.OidcUserInfoClient;
 import io.camunda.security.reader.ResourceAccessProvider;
 import io.camunda.service.GroupServices;
 import io.camunda.service.RoleServices;
@@ -57,8 +61,12 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -631,8 +639,39 @@ public class WebSecurityConfig {
 
     @Bean
     public CamundaAuthenticationConverter<Authentication> oidcTokenAuthenticationConverter(
-        final TokenClaimsConverter tokenClaimsConverter) {
-      return new OidcTokenAuthenticationConverter(tokenClaimsConverter);
+        final TokenClaimsConverter tokenClaimsConverter,
+        final OidcClaimsProvider oidcClaimsProvider) {
+      return new OidcTokenAuthenticationConverter(tokenClaimsConverter, oidcClaimsProvider);
+    }
+
+    @Bean
+    public OidcClaimsProvider oidcClaimsProvider(
+        final SecurityConfiguration securityConfiguration,
+        final OidcAuthenticationConfigurationRepository oidcProviderRepository,
+        final MeterRegistry meterRegistry) {
+      final var oidc = securityConfiguration.getAuthentication().getOidc();
+      if (oidc == null || !oidc.getUserInfoAugmentation().isEnabled()) {
+        return new NoopOidcClaimsProvider();
+      }
+      // Resolve userinfo URI from the first matching provider's issuer.
+      // Multi-provider selection by 'iss' claim is a follow-up; single-provider
+      // setups are covered today.
+      final URI userInfoUri =
+          oidcProviderRepository.getOidcAuthenticationConfigurations().values().stream()
+              .map(OidcAuthenticationConfiguration::getIssuerUri)
+              .filter(Objects::nonNull)
+              .findFirst()
+              .map(issuer -> URI.create(issuer.replaceAll("/$", "") + "/userinfo"))
+              .orElseThrow(
+                  () ->
+                      new IllegalStateException(
+                          "UserInfo augmentation enabled but no issuerUri configured"));
+      final var httpClient = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(5)).build();
+      return new CachingOidcClaimsProvider(
+          oidc,
+          userInfoUri,
+          new OidcUserInfoClient(httpClient, Duration.ofSeconds(5)),
+          meterRegistry);
     }
 
     @Bean
