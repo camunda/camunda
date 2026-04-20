@@ -122,15 +122,24 @@ public class AlignmentTest {
     final ObjectMapper objectMapper = new ObjectMapper();
     final JsonNode jsonNode =
         objectMapper.readTree(
-            ResourceUtils.getFile(
-                "classpath:META-INF/additional-spring-configuration-metadata.json"));
+            ResourceUtils.getFile("classpath:META-INF/spring-configuration-metadata.json"));
     final ArrayNode properties = (ArrayNode) jsonNode.get("properties");
     return properties
         .valueStream()
-        .filter(p -> p.has("defaultValue"))
+        .filter(p -> !p.has("deprecation"))
         .map(
             p -> {
               final String name = p.get("name").asText();
+              if (!p.has("defaultValue")) {
+                return DynamicTest.dynamicTest(
+                    "Property " + name + " without default value",
+                    () -> {
+                      assertThat(NEW_GETTERS).containsKey(name);
+                      final Getter getter = NEW_GETTERS.get(name);
+                      final Object value = getter.getter().apply(camundaClientProperties);
+                      assertThat(value).isNull();
+                    });
+              }
               final Object defaultValue =
                   objectMapper.convertValue(p.get("defaultValue"), Object.class);
               return DynamicTest.dynamicTest(
