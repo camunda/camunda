@@ -20,7 +20,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.github.tomakehurst.wiremock.http.RequestMethod;
 import com.github.tomakehurst.wiremock.verification.LoggedRequest;
 import io.camunda.client.api.search.enums.UserTaskState;
+import io.camunda.client.api.search.filter.builder.BasicLongProperty;
+import io.camunda.client.api.search.filter.builder.StringProperty;
 import io.camunda.client.api.search.filter.builder.UserTaskStateProperty;
+import io.camunda.client.protocol.rest.BasicStringFilterProperty;
 import io.camunda.client.protocol.rest.FormResult;
 import io.camunda.client.protocol.rest.IntegerFilterProperty;
 import io.camunda.client.protocol.rest.StringFilterProperty;
@@ -195,6 +198,50 @@ public final class SearchUserTaskTest extends ClientRestTest {
     assertThat(request.getFilter().getCandidateUser().get$Eq()).isEqualTo("user1");
   }
 
+  static Stream<Arguments> provideBpmnProcessIdFilters() {
+    return Stream.of(
+        stringFilterCase(
+            "eq:my-process",
+            b -> b.eq("my-process"),
+            f -> assertThat(f.get$Eq()).isEqualTo("my-process")),
+        stringFilterCase(
+            "neq:my-process",
+            b -> b.neq("my-process"),
+            f -> assertThat(f.get$Neq()).isEqualTo("my-process")),
+        stringFilterCase(
+            "exists:true", b -> b.exists(true), f -> assertThat(f.get$Exists()).isTrue()),
+        stringFilterCase(
+            "exists:false", b -> b.exists(false), f -> assertThat(f.get$Exists()).isFalse()),
+        stringFilterCase(
+            "in:[proc-a,proc-b]",
+            b -> b.in("proc-a", "proc-b"),
+            f -> assertThat(f.get$In()).containsExactly("proc-a", "proc-b")),
+        stringFilterCase(
+            "like:my-proc*",
+            b -> b.like("my-proc*"),
+            f -> assertThat(f.get$Like()).isEqualTo("my-proc*")));
+  }
+
+  private static Arguments stringFilterCase(
+      final String label,
+      final Consumer<StringProperty> filter,
+      final Consumer<StringFilterProperty> assertion) {
+    return Arguments.of(Named.of(label, filter), Named.of("assert " + label, assertion));
+  }
+
+  @ParameterizedTest(name = "[{index}] should apply {0}")
+  @MethodSource("provideBpmnProcessIdFilters")
+  @DisplayName("Should search user tasks by bpmnProcessId using advanced filters")
+  void shouldSearchUserTasksByBpmnProcessIdUsingAdvancedFilter(
+      final Consumer<StringProperty> filter, final Consumer<StringFilterProperty> assertion) {
+    // when
+    client.newUserTaskSearchRequest().filter(f -> f.bpmnProcessId(filter)).send().join();
+
+    // then
+    final UserTaskSearchQuery request = gatewayService.getLastRequest(UserTaskSearchQuery.class);
+    assertThat(request.getFilter().getProcessDefinitionId()).isNotNull().satisfies(assertion);
+  }
+
   @Test
   void shouldSearchUserTaskByBpmnProcessId() {
     // when
@@ -223,6 +270,60 @@ public final class SearchUserTaskTest extends ClientRestTest {
     // then
     final UserTaskSearchQuery request = gatewayService.getLastRequest(UserTaskSearchQuery.class);
     assertThat(request.getFilter().getProcessInstanceKey().get$Eq()).isEqualTo("456");
+  }
+
+  static Stream<Arguments> provideKeyFilters() {
+    return Stream.of(
+        longKeyFilterCase("eq:123", b -> b.eq(123L), f -> assertThat(f.get$Eq()).isEqualTo("123")),
+        longKeyFilterCase(
+            "neq:123", b -> b.neq(123L), f -> assertThat(f.get$Neq()).isEqualTo("123")),
+        longKeyFilterCase(
+            "exists:true", b -> b.exists(true), f -> assertThat(f.get$Exists()).isTrue()),
+        longKeyFilterCase(
+            "exists:false", b -> b.exists(false), f -> assertThat(f.get$Exists()).isFalse()),
+        longKeyFilterCase(
+            "in:[123,456]",
+            b -> b.in(123L, 456L),
+            f -> assertThat(f.get$In()).containsExactly("123", "456")),
+        longKeyFilterCase(
+            "notIn:[123,456]",
+            b -> b.notIn(123L, 456L),
+            f -> assertThat(f.get$NotIn()).containsExactly("123", "456")));
+  }
+
+  private static Arguments longKeyFilterCase(
+      final String label,
+      final Consumer<BasicLongProperty> filter,
+      final Consumer<BasicStringFilterProperty> assertion) {
+    return Arguments.of(Named.of(label, filter), Named.of("assert " + label, assertion));
+  }
+
+  @ParameterizedTest(name = "[{index}] should apply {0}")
+  @MethodSource("provideKeyFilters")
+  @DisplayName("Should search user tasks by processDefinitionKey using advanced filters")
+  void shouldSearchUserTasksByProcessDefinitionKeyUsingAdvancedFilter(
+      final Consumer<BasicLongProperty> filter,
+      final Consumer<BasicStringFilterProperty> assertion) {
+    // when
+    client.newUserTaskSearchRequest().filter(f -> f.processDefinitionKey(filter)).send().join();
+
+    // then
+    final UserTaskSearchQuery request = gatewayService.getLastRequest(UserTaskSearchQuery.class);
+    assertThat(request.getFilter().getProcessDefinitionKey()).isNotNull().satisfies(assertion);
+  }
+
+  @ParameterizedTest(name = "[{index}] should apply {0}")
+  @MethodSource("provideKeyFilters")
+  @DisplayName("Should search user tasks by processInstanceKey using advanced filters")
+  void shouldSearchUserTasksByProcessInstanceKeyUsingAdvancedFilter(
+      final Consumer<BasicLongProperty> filter,
+      final Consumer<BasicStringFilterProperty> assertion) {
+    // when
+    client.newUserTaskSearchRequest().filter(f -> f.processInstanceKey(filter)).send().join();
+
+    // then
+    final UserTaskSearchQuery request = gatewayService.getLastRequest(UserTaskSearchQuery.class);
+    assertThat(request.getFilter().getProcessInstanceKey()).isNotNull().satisfies(assertion);
   }
 
   @Test
