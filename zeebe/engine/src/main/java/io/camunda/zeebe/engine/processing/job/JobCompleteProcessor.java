@@ -154,6 +154,7 @@ public final class JobCompleteProcessor implements TypedRecordProcessor<JobRecor
     preconditionChecker =
         new JobCommandPreconditionValidator(
             state.getJobState(),
+            state.getBannedInstanceState(),
             "complete",
             List.of(State.ACTIVATABLE, State.ACTIVATED),
             List.of(
@@ -174,11 +175,8 @@ public final class JobCompleteProcessor implements TypedRecordProcessor<JobRecor
 
   @Override
   public void processRecord(final TypedRecord<JobRecord> record, final ProcessingSession session) {
-    final long jobKey = record.getKey();
-    final JobState.State state = jobState.getState(jobKey);
-
     preconditionChecker
-        .check(state, record)
+        .check(record)
         .flatMap(job -> checkAuthorization(record, job))
         .ifRightOrLeft(
             job -> completeJob(record, job, session),
