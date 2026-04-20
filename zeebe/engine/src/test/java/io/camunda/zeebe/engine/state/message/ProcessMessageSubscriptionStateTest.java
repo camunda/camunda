@@ -11,13 +11,17 @@ import static io.camunda.zeebe.util.buffer.BufferUtil.cloneBuffer;
 import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.zeebe.engine.state.immutable.PendingProcessMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessMessageSubscriptionState;
 import io.camunda.zeebe.engine.util.ProcessingStateRule;
 import io.camunda.zeebe.protocol.impl.record.value.message.ProcessMessageSubscriptionRecord;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
+import io.camunda.zeebe.stream.api.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.util.collection.Tuple;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
+import java.util.concurrent.atomic.AtomicReference;
 import org.agrona.DirectBuffer;
 import org.junit.Before;
 import org.junit.Rule;
@@ -28,10 +32,12 @@ public final class ProcessMessageSubscriptionStateTest {
   @Rule public final ProcessingStateRule stateRule = new ProcessingStateRule();
 
   private MutableProcessMessageSubscriptionState state;
+  private PendingProcessMessageSubscriptionState pendingState;
 
   @Before
   public void setUp() {
     state = stateRule.getProcessingState().getProcessMessageSubscriptionState();
+    pendingState = stateRule.getProcessingState().getPendingProcessMessageSubscriptionState();
   }
 
   @Test
@@ -156,6 +162,30 @@ public final class ProcessMessageSubscriptionStateTest {
 
     // then
     assertThat(subscription).isNull();
+  }
+
+  @Test
+  public void shouldRepopulateTransientStateWithCorrectMessageNameAndTenantIdOnRecovery() {
+    // given
+    final ProcessMessageSubscriptionRecord record = subscriptionRecordWithElementInstanceKey(1L);
+    record.setTenantId(UUID.randomUUID().toString());
+    state.put(1L, record);
+
+    // when
+    ((StreamProcessorLifecycleAware) state).onRecovered(null);
+
+    // then
+    final AtomicReference<String> tenantId = new AtomicReference<>();
+    final AtomicReference<String> messageName = new AtomicReference<>();
+    pendingState.visitPending(
+        Long.MAX_VALUE,
+        s -> {
+          messageName.set(s.getRecord().getMessageName());
+          tenantId.set(s.getRecord().getTenantId());
+          return true;
+        });
+    assertThat(tenantId.get()).isEqualTo(record.getTenantId());
+    assertThat(messageName.get()).isEqualTo(record.getMessageName());
   }
 
   private ProcessMessageSubscriptionRecord subscriptionRecordWithElementInstanceKey(
