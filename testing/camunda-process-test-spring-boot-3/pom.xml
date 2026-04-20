@@ -18,7 +18,7 @@
     <!-- Override Spring Boot version for 3.x compatibility -->
     <version.spring-boot>3.5.11</version.spring-boot>
     <!-- Spring Framework 6.x is required for Spring Boot 3.x -->
-    <version.spring>6.2.16</version.spring>
+    <version.spring>6.2.17</version.spring>
   </properties>
 
   <dependencies>
