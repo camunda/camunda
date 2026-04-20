@@ -57,6 +57,9 @@ public class ProcessInstanceStartMeter implements AutoCloseable {
     Gauge.builder("process_instance_start_checks_pending", checksPending, AtomicInteger::get)
         .description("Number of pending process instance availability checks")
         .register(registry);
+    Gauge.builder("process_instances_pending", startedInstances, Map::size)
+        .description("Number of pending process instances we have yet to check")
+        .register(registry);
   }
 
   /** Starts the periodic checking for process instance availability. */
