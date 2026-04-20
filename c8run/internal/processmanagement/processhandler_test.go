@@ -22,7 +22,7 @@ func (m *mockC8) ProcessTree(pid int) []int {
 	return nil
 }
 func (m *mockC8) VersionCmd(ctx context.Context, javaBinaryPath string) *exec.Cmd { return nil }
-func (m *mockC8) ConnectorsCmd(ctx context.Context, javaBinary string, parentDir string, connectorsVersion string, camundaPort int) *exec.Cmd {
+func (m *mockC8) ConnectorsCmd(ctx context.Context, javaBinary string, parentDir string, connectorsVersion string, camundaPort int, connectorsPort int) *exec.Cmd {
 	return nil
 }
 

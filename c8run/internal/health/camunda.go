@@ -59,8 +59,8 @@ var (
 )
 
 // QueryConnectors polls the Connectors health endpoint until it responds or retries are exhausted.
-func QueryConnectors(ctx context.Context, retries int) error {
-	healthEndpoint := fmt.Sprintf("http://localhost:%d/actuator/health", inboundConnectorsPort)
+func QueryConnectors(ctx context.Context, retries int, port int) error {
+	healthEndpoint := fmt.Sprintf("http://localhost:%d/actuator/health", port)
 	if isRunningFunc(ctx, "Connectors", healthEndpoint, retries, 5*time.Second) {
 		return nil
 	}
@@ -125,7 +125,10 @@ func isRunning(ctx context.Context, name, url string, retries int, delay time.Du
 }
 
 func PrintStatus(settings types.C8RunSettings) error {
-	operatePort, tasklistPort, adminPort, camundaPort := settings.Port, settings.Port, settings.Port, settings.Port
+	operatePort, tasklistPort, adminPort, camundaPort, connectorsPort := settings.Port, settings.Port, settings.Port, settings.Port, settings.ConnectorsPort
+	if connectorsPort == 0 {
+		connectorsPort = inboundConnectorsPort
+	}
 
 	username := settings.Username
 	if strings.TrimSpace(username) == "" {
@@ -151,7 +154,7 @@ func PrintStatus(settings types.C8RunSettings) error {
 		Password:             password,
 		OrchestrationAPI:     fmt.Sprintf("%s://localhost:%d/v2/", protocol, camundaPort),
 		OrchestrationMCP:     fmt.Sprintf("%s://localhost:%d/mcp/cluster", protocol, camundaPort),
-		InboundConnectorsAPI: fmt.Sprintf("http://localhost:%d/", inboundConnectorsPort),
+		InboundConnectorsAPI: fmt.Sprintf("http://localhost:%d/", connectorsPort),
 		ZeebeAPI:             zeebeAPIURL,
 		CamundaMetrics:       camundaMetricsURL,
 		DesktopModelerTarget: fmt.Sprintf("%s://localhost:%d/v2/", protocol, camundaPort),

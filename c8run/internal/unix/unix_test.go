@@ -42,6 +42,7 @@ func TestConnectorsCmdWithCustomPort(t *testing.T) {
 				"/test/parent/dir",
 				"8.8.1",
 				tt.camundaPort,
+				8086,
 			)
 
 			// Check that the environment variable is set correctly
@@ -95,6 +96,7 @@ func TestConnectorsCmdPortNotInArgs(t *testing.T) {
 		"/test/parent/dir",
 		"8.8.1",
 		9000,
+		8086,
 	)
 
 	// The port should be in the environment variable, not in the command arguments
@@ -117,6 +119,7 @@ func TestConnectorsCmdRespectsExistingZeebeRestEnv(t *testing.T) {
 		"/test/parent/dir",
 		"8.8.1",
 		9000,
+		8086,
 	)
 
 	if cmd.Env != nil {
@@ -138,6 +141,7 @@ func TestConnectorsCmdUsesPropertiesLauncherWhenVersionRequiresIt(t *testing.T) 
 		"/test/parent/dir",
 		"8.9.0",
 		8080,
+		8086,
 	)
 
 	args := strings.Join(cmd.Args, " ")
@@ -146,5 +150,33 @@ func TestConnectorsCmdUsesPropertiesLauncherWhenVersionRequiresIt(t *testing.T) 
 	}
 	if strings.Contains(args, "io.camunda.connector.runtime.app.ConnectorRuntimeApplication") {
 		t.Fatalf("did not expect legacy main class when PropertiesLauncher is enabled")
+	}
+}
+
+func TestConnectorsCmdInjectsCustomConnectorsPort(t *testing.T) {
+	ctx := context.Background()
+	unixC8Run := &UnixC8Run{}
+
+	// when a non-default connectors port is provided
+	cmd := unixC8Run.ConnectorsCmd(ctx, "java", "/test/parent/dir", "8.8.1", 8080, 9000)
+
+	// then --server.port is passed as a Spring Boot arg
+	args := strings.Join(cmd.Args, " ")
+	if !strings.Contains(args, "--server.port=9000") {
+		t.Fatalf("expected --server.port=9000 in args when custom connectors port is set, got: %s", args)
+	}
+}
+
+func TestConnectorsCmdDoesNotInjectDefaultConnectorsPort(t *testing.T) {
+	ctx := context.Background()
+	unixC8Run := &UnixC8Run{}
+
+	// when the default connectors port is used
+	cmd := unixC8Run.ConnectorsCmd(ctx, "java", "/test/parent/dir", "8.8.1", 8080, 8086)
+
+	// then --server.port is not injected (connectors-application.properties already sets it)
+	args := strings.Join(cmd.Args, " ")
+	if strings.Contains(args, "--server.port=") {
+		t.Fatalf("expected no --server.port arg for default port, got: %s", args)
 	}
 }

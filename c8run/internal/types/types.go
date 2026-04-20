@@ -9,7 +9,7 @@ type C8Run interface {
 	OpenBrowser(ctx context.Context, url string) error
 	ProcessTree(commandPid int) []int
 	VersionCmd(ctx context.Context, javaBinaryPath string) *exec.Cmd
-	ConnectorsCmd(ctx context.Context, javaBinary string, parentDir string, connectorsVersion string, camundaPort int) *exec.Cmd
+	ConnectorsCmd(ctx context.Context, javaBinary string, parentDir string, connectorsVersion string, camundaPort int, connectorsPort int) *exec.Cmd
 	CamundaCmd(ctx context.Context, camundaVersion string, parentDir string, extraArgs string, javaOpts string) *exec.Cmd
 }
 
@@ -18,6 +18,7 @@ type C8RunSettings struct {
 	ResolvedConfigPath   string
 	Detached             bool
 	Port                 int
+	ConnectorsPort       int
 	Keystore             string
 	KeystorePassword     string
 	LogLevel             string
