@@ -187,11 +187,12 @@ jobs:
           JUNIT_RESULTS_FILE: "qa/c8-orchestration-cluster-e2e-test-suite/test-results/junit-report.xml"
           BRANCH_NAME: ${{ inputs.branch }}
         run: |
-          pip install trcli
+          pip install trcli==1.14.1
           trcli -y -h "$TESTRAIL_HOST" \
             --project 'C8' \
             --username "$TESTRAIL_USERNAME" \
             --key "$TESTRAIL_KEY" \
+            --batch-size 500 \
             parse_junit --suite-id 17050 \
             --title "Nightly C8 Orchestration Cluster Test Results - $BRANCH_NAME - API tests - $(date '+%Y-%m-%d %H:%M:%S')" \
             --close-run \

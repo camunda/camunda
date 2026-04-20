@@ -264,11 +264,12 @@ jobs:
           TESTRAIL_KEY: ${{ steps.secrets.outputs.TESTRAIL_QA_PSW }}
           JUNIT_RESULTS_FILE: "qa/c8-orchestration-cluster-e2e-test-suite/test-results/junit-report.xml"
         run: |
-          pip install trcli
+          pip install trcli==1.14.1
           trcli -y -h "$TESTRAIL_HOST" \
             --project 'C8' \
             --username "$TESTRAIL_USERNAME" \
             --key "$TESTRAIL_KEY" \
+            --batch-size 500 \
             parse_junit --suite-id 17050 \
             --title "On Demand C8 Orchestration Cluster API Test Run Results - ${{ github.event.inputs.branch }} - $(date '+%Y-%m-%d %H:%M:%S')" \
             --close-run \
