@@ -146,15 +146,24 @@ public class AlignmentTest {
   Stream<DynamicTest> alignmentWithDefaultPropertiesTest() throws IOException {
     final JsonNode jsonNode =
         MAPPER.readTree(
-            ResourceUtils.getFile(
-                "classpath:META-INF/additional-spring-configuration-metadata.json"));
+            ResourceUtils.getFile("classpath:META-INF/spring-configuration-metadata.json"));
     final ArrayNode properties = (ArrayNode) jsonNode.get("properties");
     return properties
         .valueStream()
-        .filter(p -> p.has("defaultValue"))
+        .filter(p -> !p.has("deprecation"))
         .map(
             p -> {
               final String name = p.get("name").asText();
+              if (!p.has("defaultValue")) {
+                return DynamicTest.dynamicTest(
+                    "Property " + name + " without default value",
+                    () -> {
+                      assertThat(NEW_GETTERS).containsKey(name);
+                      final Getter getter = NEW_GETTERS.get(name);
+                      final Object value = getter.getter().apply(camundaClientProperties);
+                      assertThat(value).isNull();
+                    });
+              }
               final JsonNode defaultValue = p.get("defaultValue");
               return DynamicTest.dynamicTest(
                   "Property " + name + " with default value " + defaultValue,
