@@ -95,7 +95,7 @@ public class CompleteUserTaskTest {
               camundaProcessTestRuntime,
               clientCreationCallback,
               camundaManagementClient,
-              DevAwaitBehavior.expectSuccess(),
+              DevAwaitBehavior::expectSuccess,
               jsonMapper,
               zeebeJsonMapper,
               new ConditionalBehaviorEngine());
@@ -216,7 +216,7 @@ public class CompleteUserTaskTest {
               camundaProcessTestRuntime,
               clientCreationCallback,
               camundaManagementClient,
-              DevAwaitBehavior.expectFailure(),
+              DevAwaitBehavior::expectFailure,
               jsonMapper,
               zeebeJsonMapper,
               new ConditionalBehaviorEngine());

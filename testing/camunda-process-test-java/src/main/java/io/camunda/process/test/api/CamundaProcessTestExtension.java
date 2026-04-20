@@ -175,7 +175,7 @@ public class CamundaProcessTestExtension
             runtime,
             createdClients::add,
             camundaManagementClient,
-            CamundaAssert.getAwaitBehavior(),
+            CamundaAssert::getAwaitBehavior,
             jsonMapper,
             zeebeJsonMapper,
             conditionalBehaviorEngine);

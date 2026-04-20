@@ -140,7 +140,7 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
             runtime,
             createdClients::add,
             camundaManagementClient,
-            CamundaAssert.getAwaitBehavior(),
+            CamundaAssert::getAwaitBehavior,
             jsonMapper,
             zeebeJsonMapper,
             conditionalBehaviorEngine);
