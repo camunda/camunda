@@ -92,7 +92,7 @@ class OperateHomePage {
   }
 
   async clickSaveVariableButton(): Promise<void> {
-   await this.applyButton.click();
+    await this.saveVariableButton.click();
   }
 
   async logout(): Promise<void> {

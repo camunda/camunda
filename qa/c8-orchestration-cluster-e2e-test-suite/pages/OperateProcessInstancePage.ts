@@ -120,9 +120,6 @@ class OperateProcessInstancePage {
     };
   };
   readonly editor: Locator;
-  readonly openVariableButton: (variableName: string) => Locator;
-  readonly jsonEditorModalCopyButton: Locator;
-  readonly jsonEditorModalTitle: Locator;
 
   constructor(page: Page) {
     this.page = page;
@@ -369,7 +366,7 @@ class OperateProcessInstancePage {
     this.editor = page.getByRole('code');
     this.openButtonLast = page.locator('[aria-label="Open variable"]').last();
     this.openButtonFirst = page.locator('[aria-label="Open variable"]').first();
-    this.editButton = page.getByRole('button', {name:'Edit'});
+    this.editButton = page.getByRole('button', {name: 'Edit'});
     this.applyVariableButton = page.getByRole('button', {name: 'Apply'});
   }
 
@@ -578,7 +575,7 @@ class OperateProcessInstancePage {
   }
 
   async clickSaveVariableButton(): Promise<void> {
-    await this.applyButton.click();
+    await this.saveVariableButton.click();
   }
 
   async clickAddVariableButton(): Promise<void> {
