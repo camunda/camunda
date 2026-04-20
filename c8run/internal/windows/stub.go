@@ -19,7 +19,7 @@ func (w *WindowsC8Run) VersionCmd(ctx context.Context, javaBinaryPath string) *e
 	panic("Platform was not built for windows")
 }
 
-func (w *WindowsC8Run) ConnectorsCmd(ctx context.Context, javaBinary string, parentDir string, connectorsVersion string, camundaPort int) *exec.Cmd {
+func (w *WindowsC8Run) ConnectorsCmd(ctx context.Context, javaBinary string, parentDir string, connectorsVersion string, camundaPort int, connectorsPort int) *exec.Cmd {
 	panic("Platform was not built for windows")
 }
 

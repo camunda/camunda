@@ -68,6 +68,7 @@ func TestConnectorsCmdWithCustomPort(t *testing.T) {
 				"C:\\test\\parent\\dir",
 				"8.8.1",
 				tt.camundaPort,
+				8086,
 			)
 
 			// Check that the environment variable is set correctly
@@ -121,6 +122,7 @@ func TestConnectorsCmdPortNotInArgs(t *testing.T) {
 		"C:\\test\\parent\\dir",
 		"8.8.1",
 		9000,
+		8086,
 	)
 
 	// The port should be in the environment variable, not in the command arguments
@@ -143,6 +145,7 @@ func TestConnectorsCmdRespectsExistingZeebeRestEnv(t *testing.T) {
 		"C:\\test\\parent\\dir",
 		"8.8.1",
 		9000,
+		8086,
 	)
 
 	if cmd.Env != nil {
@@ -164,6 +167,7 @@ func TestConnectorsCmdUsesPropertiesLauncherWhenVersionRequiresIt(t *testing.T) 
 		"C:\\test\\parent\\dir",
 		"8.9.0",
 		8080,
+		8086,
 	)
 
 	args := strings.Join(cmd.Args, " ")

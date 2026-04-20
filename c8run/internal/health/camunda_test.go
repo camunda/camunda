@@ -106,7 +106,7 @@ func TestQueryConnectorsShouldReturnNilWhenConnectorsAreHealthy(t *testing.T) {
 	}
 
 	// when
-	err := QueryConnectors(context.Background(), 0)
+	err := QueryConnectors(context.Background(), 0, 8086)
 
 	// then
 	if err != nil {
@@ -123,7 +123,7 @@ func TestQueryConnectorsShouldReturnErrorWhenConnectorsAreUnhealthy(t *testing.T
 	}
 
 	// when
-	err := QueryConnectors(context.Background(), 0)
+	err := QueryConnectors(context.Background(), 0, 8086)
 
 	// then
 	if err == nil {

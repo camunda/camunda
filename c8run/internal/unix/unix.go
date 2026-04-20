@@ -42,14 +42,18 @@ func (w *UnixC8Run) VersionCmd(ctx context.Context, javaBinaryPath string) *exec
 	return exec.CommandContext(ctx, javaBinaryPath, "--version")
 }
 
-func (w *UnixC8Run) ConnectorsCmd(ctx context.Context, javaBinary string, parentDir string, connectorsVersion string, camundaPort int) *exec.Cmd {
+func (w *UnixC8Run) ConnectorsCmd(ctx context.Context, javaBinary string, parentDir string, connectorsVersion string, camundaPort int, connectorsPort int) *exec.Cmd {
 	classPath := parentDir + "/*:" + parentDir + "/custom_connectors/*"
 	mainClass := "io.camunda.connector.runtime.app.ConnectorRuntimeApplication"
 	if connectors.UsePropertiesLauncher(connectorsVersion) {
 		mainClass = "org.springframework.boot.loader.launch.PropertiesLauncher"
 	}
 	springConfigLocation := "--spring.config.additional-location=" + parentDir + "/connectors-application.properties"
-	connectorsCmd := exec.CommandContext(ctx, javaBinary, "-cp", classPath, mainClass, springConfigLocation)
+	args := []string{"-cp", classPath, mainClass, springConfigLocation}
+	if connectorsPort != defaultConnectorsPort {
+		args = append(args, fmt.Sprintf("--server.port=%d", connectorsPort))
+	}
+	connectorsCmd := exec.CommandContext(ctx, javaBinary, args...)
 	connectorsCmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
 
 	// Set default Zeebe REST address if the user has not provided one already.

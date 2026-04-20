@@ -19,7 +19,7 @@ func (w *UnixC8Run) VersionCmd(ctx context.Context, javaBinaryPath string) *exec
 	panic("Platform was not built for unix")
 }
 
-func (w *UnixC8Run) ConnectorsCmd(ctx context.Context, javaBinary string, parentDir string, connectorsVersion string, camundaPort int) *exec.Cmd {
+func (w *UnixC8Run) ConnectorsCmd(ctx context.Context, javaBinary string, parentDir string, connectorsVersion string, camundaPort int, connectorsPort int) *exec.Cmd {
 	panic("Platform was not built for unix")
 }
 

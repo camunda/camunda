@@ -315,7 +315,7 @@ func (s *StartupHandler) StartCommand(wg *sync.WaitGroup, ctx context.Context, s
 	}
 
 	s.ProcessHandler.AttemptToStartProcess(processInfo.Connectors.PidPath, "Connectors", func() {
-		connectorsCmd := c8.ConnectorsCmd(ctx, javaBinary, parentDir, processInfo.Connectors.Version, state.Settings.Port)
+		connectorsCmd := c8.ConnectorsCmd(ctx, javaBinary, parentDir, processInfo.Connectors.Version, state.Settings.Port, state.Settings.ConnectorsPort)
 		connectorsLogPath := filepath.Join(parentDir, "log", "connectors.log")
 		err := s.startApplication(connectorsCmd, processInfo.Connectors.PidPath, connectorsLogPath, stop)
 		if err != nil {
@@ -344,7 +344,7 @@ func (s *StartupHandler) StartCommand(wg *sync.WaitGroup, ctx context.Context, s
 
 	// Connectors depends on Zeebe being available before reporting healthy, so
 	// check its health only after Camunda is confirmed up.
-	if err := health.QueryConnectors(ctx, 12); err != nil {
+	if err := health.QueryConnectors(ctx, 12, settings.ConnectorsPort); err != nil {
 		log.Err(err).Msg("Connectors did not start")
 		stop()
 		return

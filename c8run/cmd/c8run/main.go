@@ -75,6 +75,7 @@ Options:
   --keystore <path>         Enable HTTPS with a TLS certificate (JKS format)
   --keystorePassword <pw>  Password for the provided keystore
   --port <number>           Set the main Camunda port (default: 8080)
+  --connectors-port <number> Set the Connectors port (default: 8086)
   --log-level <level>       Set log level (e.g., info, debug)
 
 Examples:
@@ -173,6 +174,7 @@ func createStartFlagSet(settings *types.C8RunSettings) *flag.FlagSet {
 	startFlagSet.Var((*stringSliceFlag)(&settings.ExtraDrivers), "extra-driver", "Path to a JDBC driver jar to copy into the Camunda lib directory (repeatable).")
 	startFlagSet.BoolVar(&settings.Detached, "detached", false, "Starts Camunda Run as a detached process")
 	startFlagSet.IntVar(&settings.Port, "port", 8080, "Port to run Camunda on")
+	startFlagSet.IntVar(&settings.ConnectorsPort, "connectors-port", 8086, "Port to run Connectors on")
 	startFlagSet.StringVar(&settings.Keystore, "keystore", "", "Provide a JKS filepath to enable TLS")
 	startFlagSet.StringVar(&settings.KeystorePassword, "keystorePassword", "", "Provide a password to unlock your JKS keystore")
 	startFlagSet.StringVar(&settings.LogLevel, "log-level", "", "Adjust the log level of Camunda")
