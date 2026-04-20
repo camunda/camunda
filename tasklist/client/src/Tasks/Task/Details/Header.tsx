@@ -171,6 +171,7 @@ const AssignButton: React.FC<{
 
   return (
     <AsyncActionButton
+      key={id}
       inlineLoadingProps={{
         description:
           assignmentStatus === 'off'
