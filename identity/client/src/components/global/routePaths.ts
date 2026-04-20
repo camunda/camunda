@@ -40,6 +40,9 @@ export const Paths = {
   operationsLog() {
     return "/operations-log";
   },
+  mcpProcesses() {
+    return "/mcp-processes";
+  },
   globalTaskListeners() {
     return "/global-task-listeners";
   },
