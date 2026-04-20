@@ -27,6 +27,7 @@ import io.camunda.security.auth.CamundaAuthentication;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.mockito.ArgumentCaptor;
@@ -66,6 +67,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
       "camunda.security.authentication.oidc.authorization-uri=authorization.example.com",
       "camunda.security.authentication.oidc.token-uri=token.example.com",
       "camunda.security.authentication.oidc.groups-claim=groups",
+      "camunda.security.authentication.oidc.user-info-augmentation.enabled=true",
     })
 public class OidcBearerUserInfoClaimGapIT extends AbstractWebSecurityConfigTest {
 
@@ -76,6 +78,15 @@ public class OidcBearerUserInfoClaimGapIT extends AbstractWebSecurityConfigTest 
   @Autowired private OidcTokenAuthenticationConverter converter;
 
   @MockitoBean private TokenClaimsConverter tokenClaimsConverter;
+
+  @BeforeEach
+  void resetWireMockBetweenTests() {
+    // The static WireMock instance is shared across test methods. Reset the request
+    // journal so `wireMock.verify(exactly(N), ...)` counts only the current test's
+    // requests. The cached CachingOidcClaimsProvider is also process-wide, so we use
+    // distinct `jti` values per test to avoid cross-test cache hits.
+    wireMock.resetRequests();
+  }
 
   @DynamicPropertySource
   static void registerWireMockProperties(final DynamicPropertyRegistry registry) {
@@ -142,5 +153,59 @@ public class OidcBearerUserInfoClaimGapIT extends AbstractWebSecurityConfigTest 
     // Additionally: /userinfo should have been consulted at least once. On current code it is
     // never called for bearer-token flows.
     wireMock.verify(exactly(1), getRequestedFor(urlMatching(".*/userinfo")));
+  }
+
+  @Test
+  void userInfoIsCalledOnlyOncePerTokenWithinTtl() {
+    wireMock.stubFor(
+        get(urlMatching(".*/userinfo"))
+            .willReturn(okJson("{\"sub\":\"alice\",\"groups\":[\"engineering\"]}")));
+
+    final var jwt =
+        Jwt.withTokenValue("token-cached")
+            .header("alg", "RS256")
+            .claim("sub", "alice")
+            .claim("iss", "http://localhost:" + wireMock.getPort() + "/issuer")
+            .claim("jti", "jti-cached")
+            .issuedAt(Instant.now())
+            .expiresAt(Instant.now().plusSeconds(3600))
+            .build();
+
+    Mockito.when(tokenClaimsConverter.convert(Mockito.any()))
+        .thenReturn(CamundaAuthentication.of(b -> b.user("alice")));
+
+    for (int i = 0; i < 50; i++) {
+      converter.convert(new JwtAuthenticationToken(jwt));
+    }
+
+    // Performance acceptance criterion: under a burst of bearer requests with the same token,
+    // we must not hammer the IdP — Caffeine serves subsequent calls from cache.
+    wireMock.verify(exactly(1), getRequestedFor(urlMatching(".*/userinfo")));
+  }
+
+  @Test
+  void distinctTokensEachTriggerOneUserInfoCall() {
+    wireMock.stubFor(
+        get(urlMatching(".*/userinfo"))
+            .willReturn(okJson("{\"sub\":\"alice\",\"groups\":[\"engineering\"]}")));
+
+    Mockito.when(tokenClaimsConverter.convert(Mockito.any()))
+        .thenReturn(CamundaAuthentication.of(b -> b.user("alice")));
+
+    final Instant expiry = Instant.now().plusSeconds(3600);
+    for (int i = 0; i < 3; i++) {
+      final var jwt =
+          Jwt.withTokenValue("token-distinct-" + i)
+              .header("alg", "RS256")
+              .claim("sub", "alice")
+              .claim("iss", "http://localhost:" + wireMock.getPort() + "/issuer")
+              .claim("jti", "jti-distinct-" + i)
+              .issuedAt(Instant.now())
+              .expiresAt(expiry)
+              .build();
+      converter.convert(new JwtAuthenticationToken(jwt));
+    }
+
+    wireMock.verify(exactly(3), getRequestedFor(urlMatching(".*/userinfo")));
   }
 }
