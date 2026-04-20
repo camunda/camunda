@@ -106,11 +106,10 @@ public class ProcessInstanceArchiverJob implements ArchiverJob {
           // we want to make sure the rescheduling happens after we update the metrics, so we peek
           // instead of creating an additional pipeline on the interim future
           .thenApplyAsync(FunctionUtil.peek(metrics::recordProcessInstancesArchived), executor)
-          .thenApply(
-              archived -> {
-                recentlyArchivedProcessInstances.markRecentlyArchived(batch);
-                return archived;
-              });
+          .thenApplyAsync(
+              FunctionUtil.peek(
+                  (count) -> recentlyArchivedProcessInstances.markRecentlyArchived(batch)),
+              executor);
     }
 
     logger.trace("Nothing to archive");
@@ -130,8 +129,7 @@ public class ProcessInstanceArchiverJob implements ArchiverJob {
         template.getFullQualifiedName(),
         ListViewTemplate.PROCESS_INSTANCE_KEY,
         finishDate,
-        processInstanceKeys,
-        Map.of());
+        processInstanceKeys);
   }
 
   protected List<CompletableFuture<?>> getProcessDependentArchiveFutures(
@@ -144,8 +142,7 @@ public class ProcessInstanceArchiverJob implements ArchiverJob {
               dependant.getFullQualifiedName(),
               dependant.getProcessInstanceDependantField(),
               finishDate,
-              processInstanceKeys,
-              Map.of()));
+              processInstanceKeys));
     }
     return futures;
   }
@@ -154,8 +151,17 @@ public class ProcessInstanceArchiverJob implements ArchiverJob {
       final String sourceIdxName,
       final String idField,
       final String finishDate,
+      final List<String> processInstanceKeys) {
+    return archive(sourceIdxName, idField, finishDate, processInstanceKeys, Map.of(), Map.of());
+  }
+
+  protected CompletableFuture<Integer> archive(
+      final String sourceIdxName,
+      final String idField,
+      final String finishDate,
       final List<String> processInstanceKeys,
-      final Map<String, String> ignored) {
+      final Map<String, String> ignoredInclusionFilters,
+      final Map<String, String> ignoredExclusionFilters) {
     return repository
         .moveDocuments(
             sourceIdxName, sourceIdxName + finishDate, idField, processInstanceKeys, executor)

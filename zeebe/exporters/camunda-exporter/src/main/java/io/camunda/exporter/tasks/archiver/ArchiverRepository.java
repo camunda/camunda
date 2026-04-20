@@ -68,7 +68,8 @@ public interface ArchiverRepository extends AutoCloseable {
       final String destinationIndexName,
       final String idFieldName,
       final List<String> ids,
-      final Map<String, String> filters,
+      final Map<String, String> inclusionFilters,
+      final Map<String, String> exclusionFilters,
       final Executor executor);
 
   CompletableFuture<Integer> getCountOfProcessInstancesAwaitingArchival();
@@ -148,7 +149,8 @@ public interface ArchiverRepository extends AutoCloseable {
         final String destinationIndexName,
         final String idFieldName,
         final List<String> ids,
-        final Map<String, String> filters,
+        final Map<String, String> inclusionFilters,
+        final Map<String, String> exclusionFilters,
         final Executor executor) {
       return CompletableFuture.completedFuture(null);
     }
