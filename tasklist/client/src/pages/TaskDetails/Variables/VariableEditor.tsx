@@ -153,7 +153,7 @@ const VariableEditor: React.FC<Props> = ({
               }
 
               return (
-                <StructuredListRow key={variable.name}>
+                <StructuredListRow key={variable.variableKey}>
                   <StructuredListCell
                     className={cn(styles.listCell, styles.cellName)}
                   >
