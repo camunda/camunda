@@ -69,12 +69,6 @@ const JSONEditorModal: React.FC<Props> = observer(
       setIsInEditMode(!readOnly);
     }, [readOnly, isVisible]);
 
-    useEffect(() => {
-      if (isValid) {
-        editorRef.current?.hideMarkers();
-      }
-    }, [isValid]);
-
     if (!isVisible) {
       return null;
     }
@@ -131,7 +125,12 @@ const JSONEditorModal: React.FC<Props> = observer(
             value={editedValue}
             onChange={setEditedValue}
             readOnly={isReadOnly}
-            onValidate={setIsValid}
+            onValidate={(valid) => {
+              setIsValid(valid);
+              if (valid) {
+                editorRef.current?.hideMarkers();
+              }
+            }}
             onMount={(editor) => {
               editorRef.current = editor;
             }}
