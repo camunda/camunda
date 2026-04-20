@@ -24,6 +24,7 @@ import {getClientConfig} from 'modules/utils/getClientConfig';
 import {decisionInstancesSelectionStore} from 'modules/stores/instancesSelection';
 import {useEffect} from 'react';
 import {IS_DELETE_DI_BATCH_OPERATION_ENABLED} from 'modules/feature-flags';
+import {Toolbar} from './Toolbar';
 
 const InstancesTable: React.FC = observer(() => {
   const filter = useDecisionInstancesSearchFilter();
@@ -107,6 +108,7 @@ const InstancesTable: React.FC = observer(() => {
         count={filteredDecisionInstancesCount}
         hasMoreTotalItems={hasMoreTotalItems}
       />
+      <Toolbar selectedCount={decisionInstancesSelectionStore.selectedCount} />
       <PaginatedSortableTable
         state={getTableState()}
         emptyMessage={getEmptyListMessage()}

@@ -30,6 +30,11 @@ import {
   invoiceClassification,
 } from 'modules/mocks/mockDecisionInstance';
 import * as clientConfig from 'modules/utils/getClientConfig';
+import {decisionInstancesSelectionStore} from 'modules/stores/instancesSelection';
+
+vi.mock('modules/feature-flags', () => ({
+  IS_DELETE_DI_BATCH_OPERATION_ENABLED: true,
+}));
 
 const createWrapper = (
   initialPath: string = `${Paths.decisions()}?evaluated=true`,
@@ -54,9 +59,14 @@ const createWrapper = (
 
 describe('<InstancesTable />', () => {
   beforeEach(() => {
+    decisionInstancesSelectionStore.init();
     mockSearchDecisionInstances().withSuccess(
       mockDecisionInstancesSearchResult,
     );
+  });
+
+  afterEach(() => {
+    decisionInstancesSelectionStore.reset();
   });
 
   it('should initially render skeleton', async () => {
@@ -339,5 +349,42 @@ describe('<InstancesTable />', () => {
         name: /decision instances - 10000\+ results/i,
       }),
     ).toBeInTheDocument();
+  });
+
+  it('should render a checkbox for each row', async () => {
+    render(<InstancesTable />, {wrapper: createWrapper()});
+
+    await waitForElementToBeRemoved(
+      screen.queryByTestId('data-table-skeleton'),
+    );
+
+    expect(
+      screen.getByRole('checkbox', {name: /select all rows/i}),
+    ).toBeInTheDocument();
+    expect(screen.getAllByRole('checkbox', {name: /select row/i})).toHaveLength(
+      2,
+    );
+  });
+
+  it('should show toolbar on row selection and hide it when discarded', async () => {
+    const {user} = render(<InstancesTable />, {wrapper: createWrapper()});
+
+    await waitForElementToBeRemoved(
+      screen.queryByTestId('data-table-skeleton'),
+    );
+
+    const [firstRowCheckbox] = screen.getAllByRole('checkbox', {
+      name: /select row/i,
+    });
+    await user.click(firstRowCheckbox!);
+
+    expect(screen.getByText('1 item selected')).toBeInTheDocument();
+    expect(screen.getByRole('button', {name: /delete/i})).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', {name: 'Discard'}));
+
+    expect(
+      screen.queryByRole('button', {name: /delete/i}),
+    ).not.toBeInTheDocument();
   });
 });
