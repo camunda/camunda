@@ -171,6 +171,16 @@ public abstract class AbstractActivityBuilder<
   }
 
   @Override
+  public B zeebeBeforeAllExecutionListener(final String type, final String retries) {
+    return zeebeExecutionListenersBuilder.zeebeBeforeAllExecutionListener(type, retries);
+  }
+
+  @Override
+  public B zeebeBeforeAllExecutionListener(final String type) {
+    return zeebeExecutionListenersBuilder.zeebeBeforeAllExecutionListener(type);
+  }
+
+  @Override
   public B zeebeStartExecutionListener(final String type, final String retries) {
     return zeebeExecutionListenersBuilder.zeebeStartExecutionListener(type, retries);
   }

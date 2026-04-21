@@ -23,6 +23,7 @@ import io.camunda.zeebe.model.bpmn.builder.AbstractFlowNodeBuilder;
 import io.camunda.zeebe.model.bpmn.builder.AbstractTaskBuilder;
 import io.camunda.zeebe.model.bpmn.builder.StartEventBuilder;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeExecutionListener;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeExecutionListenerEventType;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeExecutionListeners;
 import java.util.function.Function;
 import java.util.stream.Stream;
@@ -36,6 +37,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 public class ZeebeExecutionListenersValidationTest {
   private static final String PROCESS_ID = "process";
   private static final String SERVICE_TASK_TYPE = "service_task_job";
+  private static final String BEFORE_ALL_EL_TYPE = "before_all_execution_listener_job";
   private static final String START_EL_TYPE = "start_execution_listener_job";
   private static final String END_EL_TYPE = "end_execution_listener_job";
 
@@ -197,5 +199,117 @@ public class ZeebeExecutionListenersValidationTest {
             ZeebeExecutionListeners.class,
             "Found '2' duplicates based on eventType[start] and type[type_A], these combinations should be unique."),
         expect(ZeebeExecutionListener.class, "Attribute 'type' must be present and not empty"));
+  }
+
+  @Test
+  @DisplayName("beforeAll listener on a multi-instance service task passes validation")
+  void shouldAllowBeforeAllListenerOnMultiInstanceServiceTask() {
+    // given
+    final BpmnModelInstance process =
+        Bpmn.createExecutableProcess(PROCESS_ID)
+            .startEvent()
+            .serviceTask(
+                "task",
+                task ->
+                    task.zeebeJobType(SERVICE_TASK_TYPE)
+                        .multiInstance(b -> b.zeebeInputCollectionExpression("items"))
+                        .zeebeBeforeAllExecutionListener(BEFORE_ALL_EL_TYPE))
+            .endEvent()
+            .done();
+
+    // when/then
+    ProcessValidationUtil.assertThatProcessIsValid(process);
+  }
+
+  @Test
+  @DisplayName(
+      "beforeAll listener on a multi-instance service task combined with start/end listeners passes validation")
+  void shouldAllowBeforeAllWithStartAndEndListenersOnMultiInstanceServiceTask() {
+    // given
+    final BpmnModelInstance process =
+        Bpmn.createExecutableProcess(PROCESS_ID)
+            .startEvent()
+            .serviceTask(
+                "task",
+                task ->
+                    task.zeebeJobType(SERVICE_TASK_TYPE)
+                        .multiInstance(b -> b.zeebeInputCollectionExpression("items"))
+                        .zeebeBeforeAllExecutionListener(BEFORE_ALL_EL_TYPE)
+                        .zeebeStartExecutionListener(START_EL_TYPE)
+                        .zeebeEndExecutionListener(END_EL_TYPE))
+            .endEvent()
+            .done();
+
+    // when/then
+    ProcessValidationUtil.assertThatProcessIsValid(process);
+  }
+
+  @Test
+  @DisplayName("beforeAll listener on a plain (non-multi-instance) service task fails validation")
+  void shouldRejectBeforeAllListenerOnNonMultiInstanceServiceTask() {
+    // given
+    final BpmnModelInstance process =
+        Bpmn.createExecutableProcess(PROCESS_ID)
+            .startEvent()
+            .serviceTask(
+                "task",
+                task ->
+                    task.zeebeJobType(SERVICE_TASK_TYPE)
+                        .zeebeBeforeAllExecutionListener(BEFORE_ALL_EL_TYPE))
+            .endEvent()
+            .done();
+
+    // when/then
+    ProcessValidationUtil.assertThatProcessHasViolations(
+        process,
+        expect(
+            ZeebeExecutionListeners.class,
+            "Execution listeners with event type 'beforeAll' are only supported on multi-instance "
+                + "activities and are not valid on 'serviceTask'"));
+  }
+
+  @Test
+  @DisplayName("beforeAll listener on a gateway fails validation")
+  void shouldRejectBeforeAllListenerOnGateway() {
+    // given
+    final BpmnModelInstance process =
+        Bpmn.createExecutableProcess(PROCESS_ID)
+            .startEvent()
+            .exclusiveGateway("gateway")
+            .zeebeExecutionListener(
+                l ->
+                    l.eventType(ZeebeExecutionListenerEventType.beforeAll).type(BEFORE_ALL_EL_TYPE))
+            .endEvent()
+            .done();
+
+    // when/then
+    ProcessValidationUtil.assertThatProcessHasViolations(
+        process,
+        expect(
+            ZeebeExecutionListeners.class,
+            "Execution listeners with event type 'beforeAll' are only supported on multi-instance "
+                + "activities and are not valid on 'exclusiveGateway'"));
+  }
+
+  @Test
+  @DisplayName("beforeAll listener on process (non-Activity) fails validation")
+  void shouldRejectBeforeAllListenerOnProcess() {
+    // given
+    final BpmnModelInstance process =
+        Bpmn.createExecutableProcess(PROCESS_ID)
+            .zeebeExecutionListener(
+                l ->
+                    l.eventType(ZeebeExecutionListenerEventType.beforeAll).type(BEFORE_ALL_EL_TYPE))
+            .startEvent()
+            .endEvent()
+            .done();
+
+    // when/then
+    ProcessValidationUtil.assertThatProcessHasViolations(
+        process,
+        expect(
+            ZeebeExecutionListeners.class,
+            "Execution listeners with event type 'beforeAll' are only supported on multi-instance "
+                + "activities and are not valid on 'process'"));
   }
 }
