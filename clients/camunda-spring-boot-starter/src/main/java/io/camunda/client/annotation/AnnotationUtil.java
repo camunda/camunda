@@ -106,6 +106,12 @@ public class AnnotationUtil {
     return result;
   }
 
+  public static List<ParameterInfo> getDocumentParameters(final MethodInfo methodInfo) {
+    final List<ParameterInfo> result = new ArrayList<>();
+    result.addAll(methodInfo.getParametersFilteredByAnnotation(Document.class));
+    return result;
+  }
+
   public static List<ParameterInfo> getVariablesAsTypeParameters(final MethodInfo methodInfo) {
     final List<ParameterInfo> result = new ArrayList<>();
     result.addAll(methodInfo.getParametersFilteredByAnnotation(VariablesAsType.class));
@@ -193,7 +199,57 @@ public class AnnotationUtil {
               Duration.of(annotation.streamTimeout(), ChronoUnit.MILLIS),
               annotation.maxRetries()));
     }
-    return Optional.empty();
+    if (annotationProperty.length == 1) {
+      return new FromAnnotation<>(annotationProperty[0]);
+    }
+    throw new IllegalArgumentException(
+        String.format(
+            "Illegal configuration of boolean property '%s' on @JobWorker method '%s'",
+            propertyName, methodName));
+  }
+
+  private static SourceAware<Boolean> fromSingletonBooleanArray(
+      final boolean[] annotationProperty, final String propertyName, final String methodName) {
+    return fromSingletonBooleanArray(annotationProperty, Empty::new, propertyName, methodName);
+  }
+
+  private static boolean usesActivatedJob(final MethodInfo methodInfo) {
+    return methodInfo.getParameters().stream()
+        .anyMatch(p -> p.getParameter().getType().isAssignableFrom(ActivatedJob.class));
+  }
+
+  public static List<String> usedVariableNames(final MethodInfo methodInfo) {
+    final List<String> result = new ArrayList<>();
+    final List<ParameterInfo> parameters = getVariablesAsTypeParameters(methodInfo);
+    parameters.forEach(
+        pi ->
+            ReflectionUtils.doWithFields(
+                pi.getParameter().getType(), f -> result.add(extractFieldName(f))));
+    result.addAll(
+        getVariableParameters(methodInfo).stream()
+            .map(AnnotationUtil::getVariableValue)
+            .filter(Optional::isPresent)
+            .map(Optional::get)
+            .map(VariableValue::getName)
+            .toList());
+    result.addAll(
+        getDocumentParameters(methodInfo).stream()
+            .map(AnnotationUtil::getDocumentValue)
+            .filter(Optional::isPresent)
+            .map(Optional::get)
+            .map(DocumentValue::getName)
+            .toList());
+    return result;
+  }
+
+  private static String extractFieldName(final Field field) {
+    if (field.isAnnotationPresent(JsonProperty.class)) {
+      final String value = field.getAnnotation(JsonProperty.class).value();
+      if (StringUtils.isNotBlank(value)) {
+        return value;
+      }
+    }
+    return field.getName();
   }
 
   public static Optional<VariableValue> getVariableValue(final ParameterInfo parameterInfo) {
