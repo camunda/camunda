@@ -78,7 +78,11 @@ const Selection: FC<SelectionProps> = ({
       }
       return (
         <div onBlur={onBlur}>
-          <OwnerSelectionSearch onChange={onChange} isEmpty={isEmpty} />
+          <OwnerSelectionSearch
+            onChange={onChange}
+            ownerId={ownerId}
+            isEmpty={isEmpty}
+          />
         </div>
       );
     case "GROUP":
