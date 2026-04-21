@@ -230,8 +230,8 @@ class InstancesSelection {
   }
 
   resetState = () => {
-    this.state.selectedIds = [];
-    this.state.selectionMode = 'INCLUDE';
+    this.#setSelectedIds([]);
+    this.#setMode('INCLUDE');
   };
 
   reset = () => {
