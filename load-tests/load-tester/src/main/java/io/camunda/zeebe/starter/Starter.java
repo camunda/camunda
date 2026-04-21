@@ -18,6 +18,7 @@ import io.camunda.client.api.response.ProcessInstanceEvent;
 import io.camunda.client.api.search.response.ProcessInstance;
 import io.camunda.client.api.search.response.SearchResponse;
 import io.camunda.client.api.search.sort.ProcessInstanceSort;
+import io.camunda.client.impl.CamundaClientBuilderImpl;
 import io.camunda.zeebe.config.LoadTesterProperties;
 import io.camunda.zeebe.config.StarterProperties;
 import io.camunda.zeebe.metrics.ConnectionMonitor;
@@ -46,6 +47,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
@@ -79,6 +81,7 @@ public class Starter implements CommandLineRunner {
   private final AtomicLong lastProcessInstanceKey = new AtomicLong(0);
   private final AtomicReference<Instant> lastProcessInstanceKeyTimestamp =
       new AtomicReference<>(Instant.now());
+  private final Semaphore processStartingSemaphore;
 
   private Timer responseLatencyTimer;
   private ScheduledExecutorService executorService;
@@ -97,6 +100,7 @@ public class Starter implements CommandLineRunner {
     this.registry = registry;
     this.payloadReader = payloadReader;
     this.connectionMonitor = connectionMonitor;
+    processStartingSemaphore = new Semaphore(maxProcessStartingConcurrency());
   }
 
   @Override
@@ -220,6 +224,16 @@ public class Starter implements CommandLineRunner {
             return;
           }
 
+          // ensure we don't have too many pending requests
+          // as this can lead to us seeing much worse availability times
+          // than expected
+          try {
+            processStartingSemaphore.acquire();
+          } catch (final InterruptedException e) {
+            Thread.currentThread().interrupt();
+            return;
+          }
+
           try {
             final var vars = new HashMap<>(baseVariables);
             vars.put(starterCfg.getBusinessKey(), businessKey.incrementAndGet());
@@ -235,6 +249,7 @@ public class Starter implements CommandLineRunner {
             }
             requestFuture.whenComplete(
                 (noop, error) -> {
+                  processStartingSemaphore.release();
                   final long durationNanos = System.nanoTime() - startTime;
                   responseLatencyTimer.record(durationNanos, TimeUnit.NANOSECONDS);
                   if (error instanceof final StatusRuntimeException statusRuntimeException) {
@@ -248,6 +263,7 @@ public class Starter implements CommandLineRunner {
                 });
           } catch (final Exception e) {
             THROTTLED_LOGGER.error("Error on creating new process instance", e);
+            processStartingSemaphore.release();
           }
         },
         0,
@@ -317,6 +333,10 @@ public class Starter implements CommandLineRunner {
       LOG.error("Failed to parse variables '{}'.", variablesString, e);
       throw new RuntimeException(e);
     }
+  }
+
+  private int maxProcessStartingConcurrency() {
+    return CamundaClientBuilderImpl.DEFAULT_MAX_HTTP_CONNECTIONS;
   }
 
   private void deployProcess() {
