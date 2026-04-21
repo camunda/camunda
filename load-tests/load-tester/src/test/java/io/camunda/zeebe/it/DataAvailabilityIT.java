@@ -52,12 +52,12 @@ class DataAvailabilityIT {
   @Container
   static final CamundaContainer CAMUNDA = CamundaContainerProvider.createCamundaContainer();
 
+  @Autowired private MeterRegistry meterRegistry;
+
   @DynamicPropertySource
   static void configure(final DynamicPropertyRegistry registry) {
     CamundaContainerProvider.registerClientProperties(CAMUNDA, registry);
   }
-
-  @Autowired private MeterRegistry meterRegistry;
 
   @Test
   void shouldMeasureDataAvailabilityLatency() {

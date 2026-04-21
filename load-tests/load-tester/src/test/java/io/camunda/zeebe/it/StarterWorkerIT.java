@@ -52,12 +52,12 @@ class StarterWorkerIT {
   @Container
   static final CamundaContainer CAMUNDA = CamundaContainerProvider.createCamundaContainer();
 
+  @Autowired private CamundaClient client;
+
   @DynamicPropertySource
   static void configure(final DynamicPropertyRegistry registry) {
     CamundaContainerProvider.registerClientProperties(CAMUNDA, registry);
   }
-
-  @Autowired private CamundaClient client;
 
   @Test
   void shouldStartInstancesAndCompleteThem() {
