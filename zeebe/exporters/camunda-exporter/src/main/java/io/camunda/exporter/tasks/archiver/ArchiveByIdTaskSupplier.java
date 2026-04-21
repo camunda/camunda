@@ -80,9 +80,6 @@ public class ArchiveByIdTaskSupplier<SortFieldType> {
         .apply(getLastSearchPosition())
         .thenComposeAsync(
             response -> {
-              // we can set this in another stage (like after reindex/delete if we want retries)
-              lastSearchResponse.set(response);
-
               if (response.isEmpty()) {
                 finished.set(true);
                 return CompletableFuture.completedFuture(0L);
