@@ -15,6 +15,7 @@ import io.camunda.identity.sdk.IdentityConfiguration;
 import io.camunda.search.clients.SearchClientsProxy;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.security.oidc.OidcClaimsProvider;
 import io.camunda.service.UserServices;
 import io.camunda.zeebe.broker.PartitionListener;
 import io.camunda.zeebe.broker.PartitionRaftListener;
@@ -67,6 +68,7 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
   private final UserServices userServices;
   private final PasswordEncoder passwordEncoder;
   private final JwtDecoder jwtDecoder;
+  private final OidcClaimsProvider oidcClaimsProvider;
   private final SearchClientsProxy searchClientsProxy;
   private final NodeIdProvider nodeIdProvider;
   private final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter;
@@ -103,6 +105,7 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
       final UserServices userServices,
       final PasswordEncoder passwordEncoder,
       final JwtDecoder jwtDecoder,
+      final OidcClaimsProvider oidcClaimsProvider,
       final SearchClientsProxy searchClientsProxy,
       final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter,
       final NodeIdProvider nodeIdProvider) {
@@ -122,6 +125,7 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
     this.userServices = userServices;
     this.passwordEncoder = passwordEncoder;
     this.jwtDecoder = jwtDecoder;
+    this.oidcClaimsProvider = oidcClaimsProvider;
     this.searchClientsProxy = searchClientsProxy;
     this.nodeIdProvider = requireNonNull(nodeIdProvider);
     partitionListeners.addAll(additionalPartitionListeners);
@@ -361,6 +365,11 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
   @Override
   public JwtDecoder getJwtDecoder() {
     return jwtDecoder;
+  }
+
+  @Override
+  public OidcClaimsProvider getOidcClaimsProvider() {
+    return oidcClaimsProvider;
   }
 
   @Override
