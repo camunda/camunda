@@ -18,11 +18,10 @@ package io.camunda.process.test.impl.client;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.client.CamundaClient;
-import io.camunda.client.api.response.PartitionBrokerHealth;
-import io.camunda.client.api.response.PartitionInfo;
-import io.camunda.client.api.response.Topology;
 import io.camunda.process.test.impl.client.clock.CamundaAddClockRequestDto;
 import io.camunda.process.test.impl.client.clock.CamundaClockResponseDto;
+import io.camunda.process.test.impl.client.purge.ManagementClusterTopologyResponseDto;
+import io.camunda.process.test.impl.client.purge.MinimalPlannedOperationsResponseDto;
 import java.io.IOException;
 import java.net.URI;
 import java.time.Duration;
@@ -44,6 +43,7 @@ public final class CamundaManagementClient implements CamundaClockClient {
   private static final String CLOCK_ENDPOINT = "/actuator/clock";
   private static final String CLOCK_ADD_ENDPOINT = "/actuator/clock/add";
 
+  private static final String CLUSTER_TOPOLOGY_ENDPOINT = "/actuator/cluster";
   private static final String CLUSTER_PURGE_ENDPOINT = "/actuator/cluster/purge";
 
   private final ObjectMapper objectMapper =
@@ -144,13 +144,13 @@ public final class CamundaManagementClient implements CamundaClockClient {
    *     code
    */
   public void purgeCluster(final Duration timeout) {
-    startPurge();
+    final long changeId = startPurge();
 
     try {
       Awaitility.await()
           .pollInterval(Duration.ofMillis(250))
           .atMost(timeout)
-          .until(() -> isPurgeComplete(camundaClient));
+          .until(() -> isPurgeComplete(changeId));
 
     } catch (final ConditionTimeoutException e) {
       throw new RuntimeException("Failed to purge the cluster, timeout expired.", e);
@@ -160,28 +160,34 @@ public final class CamundaManagementClient implements CamundaClockClient {
     }
   }
 
-  private void startPurge() {
+  private long startPurge() {
     final HttpPost purgeRequest = new HttpPost(camundaManagementApi + CLUSTER_PURGE_ENDPOINT);
 
     try {
-      sendRequest(purgeRequest);
+      return sendRequest(purgeRequest, MinimalPlannedOperationsResponseDto.class).getChangeId();
     } catch (final IOException e) {
       throw new RuntimeException("Failed to initiate cluster purge", e);
     }
   }
 
-  private boolean isPurgeComplete(final CamundaClient camundaClient) {
+  private boolean isPurgeComplete(final long changeId) {
+    // Use the Camunda client to verify the cluster is reachable and authentication is working.
     try {
-      final Topology topology = camundaClient.newTopologyRequest().send().join();
-      final boolean hasAtLeastOnePartition =
-          topology.getBrokers().stream()
-              .anyMatch(brokerInfo -> !brokerInfo.getPartitions().isEmpty());
-      final boolean isHealthy =
-          topology.getBrokers().stream()
-              .flatMap(brokerInfo -> brokerInfo.getPartitions().stream())
-              .map(PartitionInfo::getHealth)
-              .allMatch(PartitionBrokerHealth.HEALTHY::equals);
-      return hasAtLeastOnePartition && isHealthy;
+      camundaClient.newTopologyRequest().send().join();
+    } catch (final Exception e) {
+      // Ignore silently and wait for next status request; awaitility will abort after timeout
+      // expires
+      return false;
+    }
+
+    // Compare the lastCompletedChangeId from the management cluster topology with the change ID
+    // returned by the purge request to confirm the specific purge operation has completed.
+    try {
+      final HttpGet clusterStatusRequest =
+          new HttpGet(camundaManagementApi + CLUSTER_TOPOLOGY_ENDPOINT);
+      final ManagementClusterTopologyResponseDto topologyResponse =
+          sendRequest(clusterStatusRequest, ManagementClusterTopologyResponseDto.class);
+      return topologyResponse.isTopologyChangeCompleted(changeId);
     } catch (final Exception e) {
       // Ignore silently and wait for next status request; awaitility will abort after timeout
       // expires
