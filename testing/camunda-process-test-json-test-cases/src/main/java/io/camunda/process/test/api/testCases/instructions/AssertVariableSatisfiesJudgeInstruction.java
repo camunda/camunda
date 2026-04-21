@@ -63,10 +63,10 @@ public interface AssertVariableSatisfiesJudgeInstruction extends TestCaseInstruc
   Optional<ElementSelector> getElementSelector();
 
   /**
-   * The score threshold at or above which the judge assertion passes. Must be between
-   * {@code 0.0} and {@code 1.0}; higher values are stricter. Overrides the preconfigured
-   * threshold. Optional; defaults to the preconfigured {@code JudgeConfig} threshold
-   * ({@code 0.5} unless otherwise configured) when omitted.
+   * The score threshold at or above which the judge assertion passes. Must be between {@code 0.0}
+   * and {@code 1.0}; higher values are stricter. Overrides the preconfigured threshold. Optional;
+   * defaults to the preconfigured {@code JudgeConfig} threshold ({@code 0.5} unless otherwise
+   * configured) when omitted.
    *
    * @return the threshold or empty if using the preconfigured value
    */
