@@ -16,7 +16,10 @@
 package io.camunda.zeebe.model.bpmn.validation.zeebe;
 
 import io.camunda.zeebe.model.bpmn.impl.BpmnModelConstants;
+import io.camunda.zeebe.model.bpmn.instance.Activity;
+import io.camunda.zeebe.model.bpmn.instance.MultiInstanceLoopCharacteristics;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeExecutionListener;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeExecutionListenerEventType;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeExecutionListeners;
 import java.util.Arrays;
 import java.util.Collection;
@@ -26,6 +29,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import org.camunda.bpm.model.xml.instance.ModelElementInstance;
 import org.camunda.bpm.model.xml.validation.ModelElementValidator;
 import org.camunda.bpm.model.xml.validation.ValidationResultCollector;
 
@@ -74,8 +78,8 @@ public class ExecutionListenersValidator implements ModelElementValidator<ZeebeE
       return;
     }
 
-    final String parentElementTypeName =
-        element.getParentElement().getParentElement().getElementType().getTypeName();
+    final ModelElementInstance bpmnElement = element.getParentElement().getParentElement();
+    final String parentElementTypeName = bpmnElement.getElementType().getTypeName();
     if (!ELEMENTS_THAT_SUPPORT_EXECUTION_LISTENERS.contains(parentElementTypeName)) {
       final String errorMessage =
           String.format(
@@ -84,6 +88,8 @@ public class ExecutionListenersValidator implements ModelElementValidator<ZeebeE
       validationResultCollector.addError(0, errorMessage);
       return;
     }
+
+    validateBeforeAllListeners(executionListeners, bpmnElement, validationResultCollector);
 
     final Function<ZeebeExecutionListener, String> eventTypeAndTypeClassifier =
         listener -> listener.getEventType() + "|" + listener.getType();
@@ -96,6 +102,34 @@ public class ExecutionListenersValidator implements ModelElementValidator<ZeebeE
     listenersGroupedByType.values().stream()
         .filter(duplicates -> duplicates.size() > 1)
         .forEach(duplicates -> reportDuplicateListeners(duplicates, validationResultCollector));
+  }
+
+  /**
+   * Validates that {@code beforeAll} execution listeners are only used on multi-instance activities
+   * (i.e., activities with a {@link MultiInstanceLoopCharacteristics}). Using {@code beforeAll} on
+   * any other element type is an error because the semantics — running before the input collection
+   * is evaluated — only apply to the enclosing multi-instance body.
+   */
+  private void validateBeforeAllListeners(
+      final Collection<ZeebeExecutionListener> executionListeners,
+      final ModelElementInstance bpmnElement,
+      final ValidationResultCollector validationResultCollector) {
+
+    final boolean hasBeforeAllOnNonMultiInstance =
+        executionListeners.stream()
+                .anyMatch(l -> l.getEventType() == ZeebeExecutionListenerEventType.beforeAll)
+            && !(bpmnElement instanceof Activity
+                && ((Activity) bpmnElement).getLoopCharacteristics()
+                    instanceof MultiInstanceLoopCharacteristics);
+
+    if (hasBeforeAllOnNonMultiInstance) {
+      validationResultCollector.addError(
+          0,
+          "Execution listeners with event type 'beforeAll' are only supported on multi-instance "
+              + "activities and are not valid on '"
+              + bpmnElement.getElementType().getTypeName()
+              + "'");
+    }
   }
 
   private void reportDuplicateListeners(
