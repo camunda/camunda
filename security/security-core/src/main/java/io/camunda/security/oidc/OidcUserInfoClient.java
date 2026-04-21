@@ -65,6 +65,9 @@ public class OidcUserInfoClient {
     final HttpResponse<byte[]> response;
     try {
       response = httpClient.send(request, HttpResponse.BodyHandlers.ofByteArray());
+    } catch (final InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new OidcUserInfoException("UserInfo request interrupted", e);
     } catch (final Exception e) {
       throw new OidcUserInfoException("UserInfo request failed: " + e.getMessage(), e);
     }

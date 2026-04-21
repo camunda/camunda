@@ -70,6 +70,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import org.slf4j.Logger;
@@ -149,7 +150,8 @@ public final class SystemContext {
     this.userServices = userServices;
     this.passwordEncoder = passwordEncoder;
     this.jwtDecoder = jwtDecoder;
-    this.oidcClaimsProvider = oidcClaimsProvider;
+    this.oidcClaimsProvider =
+        Objects.requireNonNull(oidcClaimsProvider, "oidcClaimsProvider must not be null");
     this.searchClientsProxy = searchClientsProxy;
     this.brokerRequestAuthorizationConverter = brokerRequestAuthorizationConverter;
     initSystemContext();
