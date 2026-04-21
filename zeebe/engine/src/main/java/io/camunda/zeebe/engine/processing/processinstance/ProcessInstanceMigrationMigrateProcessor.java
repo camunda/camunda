@@ -85,6 +85,7 @@ public class ProcessInstanceMigrationMigrateProcessor
   private final ProcessInstanceMigrationCatchEventBehavior migrationCatchEventBehaviour;
   private final ProcessInstanceMigrationJobBehavior migrationJobBehaviour;
   private final ProcessInstanceMigrationSequenceFlowBehavior migrationSequenceFlowBehaviour;
+  private final BpmnBehaviors bpmnBehaviors;
 
   public ProcessInstanceMigrationMigrateProcessor(
       final Writers writers,
@@ -121,8 +122,8 @@ public class ProcessInstanceMigrationMigrateProcessor
             routingInfo);
 
     migrationJobBehaviour =
-        new ProcessInstanceMigrationJobBehavior(
-            bpmnBehaviors, stateWriter, jobState, incidentState);
+        new ProcessInstanceMigrationJobBehavior(stateWriter, jobState, incidentState);
+    this.bpmnBehaviors = bpmnBehaviors;
 
     migrationSequenceFlowBehaviour =
         new ProcessInstanceMigrationSequenceFlowBehavior(
@@ -300,10 +301,6 @@ public class ProcessInstanceMigrationMigrateProcessor
         targetElementId,
         elementId);
 
-    final boolean isUserTaskConversion =
-        ProcessInstanceMigrationUserTaskBehavior.isJobWorkerToZeebeUserTaskConversion(
-            sourceProcessDefinition, targetProcessDefinition, targetElementId, elementInstance);
-
     final var updatedElementInstanceRecord =
         getUpdatedElementInstanceRecord(elementInstance, targetProcessDefinition, targetElementId);
 
@@ -321,14 +318,30 @@ public class ProcessInstanceMigrationMigrateProcessor
         elementInstanceRecord,
         updatedElementInstanceRecord);
 
-    migrationJobBehaviour.migrateOrConvertJob(
-        elementInstance,
-        sourceProcessDefinition,
-        targetProcessDefinition,
-        isUserTaskConversion,
-        processInstanceKey,
-        targetElementId,
-        updatedElementInstanceRecord);
+    final boolean isUserTaskConversion =
+        ProcessInstanceMigrationUserTaskBehavior.isJobWorkerToZeebeUserTaskConversion(
+            sourceProcessDefinition, targetProcessDefinition, targetElementId, elementInstance);
+    if (isUserTaskConversion) {
+      final var migrationUserTaskBehavior =
+          new ProcessInstanceMigrationUserTaskBehavior(
+              processInstanceKey,
+              elementInstance,
+              sourceProcessDefinition,
+              targetProcessDefinition,
+              bpmnBehaviors,
+              targetElementId,
+              updatedElementInstanceRecord,
+              stateWriter,
+              jobState);
+      migrationUserTaskBehavior.tryMigrateJobWorkerToCamundaUserTask();
+    } else {
+      migrationJobBehaviour.migrateJob(
+          elementInstance,
+          targetProcessDefinition,
+          processInstanceKey,
+          targetElementId,
+          updatedElementInstanceRecord);
+    }
 
     migrateElementInstanceIncident(
         elementInstance, targetProcessDefinition, targetElementId, updatedElementInstanceRecord);
