@@ -11,7 +11,7 @@ import {formatToISO} from 'modules/utils/date/formatDate';
 import type {ProcessInstanceFilters} from 'modules/utils/filter/shared';
 import type {RequestFilters} from 'modules/utils/filter';
 import {getValidVariableValues} from 'modules/utils/filter/getValidVariableValues';
-import {buildProcessInstanceKeyCriterion} from 'modules/mutations/processes/buildProcessInstanceKeyCriterion';
+import {buildInstanceKeyCriterion} from 'modules/utils/instances/buildInstanceKeyCriterion';
 import type {QueryProcessInstancesRequestBody} from '@camunda/camunda-api-zod-schemas/8.10';
 import type {BusinessObjects} from 'bpmn-js/lib/NavigatedViewer';
 import {getElementInstanceStateFilter} from './getElementInstanceStateFilter';
@@ -296,7 +296,7 @@ const buildProcessInstanceFilter = (
     query.processInstanceKey = {$in: normalizedFilters.processInstanceKey};
   }
 
-  const processInstanceKeyCriterion = buildProcessInstanceKeyCriterion(
+  const processInstanceKeyCriterion = buildInstanceKeyCriterion(
     options.includeIds,
     options.excludeIds,
   );
