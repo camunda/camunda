@@ -41,6 +41,7 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/InvalidData'
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
+      x-added-in-version: "8.6"
 
   /resources/{resourceKey}:
     get:
@@ -76,6 +77,7 @@ paths:
                 $ref: "problem-detail.yaml#/components/schemas/ProblemDetail"
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+      x-added-in-version: "8.7"
 
   /resources/{resourceKey}/content:
     get:
@@ -111,6 +113,7 @@ paths:
                 $ref: "problem-detail.yaml#/components/schemas/ProblemDetail"
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+      x-added-in-version: "8.7"
 
   /resources/{resourceKey}/deletion:
     post:
@@ -168,6 +171,7 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
+      x-added-in-version: "8.6"
 
 ## Schema definitions
 
