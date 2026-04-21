@@ -1,7 +1,7 @@
 # description: Profiles a running load test cluster using async-profiler.
 #              When no pod is specified, profiles all 3 pods in parallel (cpu, wall, alloc events).
 #              When a specific pod is given, profiles that pod with cpu event only.
-#              Uploads flamegraph artifacts named flamegraph-{event}-{pod}.
+#              Uploads flamegraph artifacts named flamegraph-{database}-{event}-{pod}.
 # called-by: pr-benchmark-pipeline.yml
 # type: CI
 # owner: @camunda/zeebe-distributed-platform
