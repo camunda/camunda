@@ -62,7 +62,9 @@ const VariablesFinalForm: React.FC<Props> = ({scopeId}) => {
         const {initialValues} = form.getState();
         const isNewVariable = initialValues?.name === '';
         const {name, value} = values;
+        const variableKey = initialValues?.variableKey;
 
+<<<<<<< HEAD:operate/client/src/App/ProcessInstance/BottomPanel/VariablePanel/VariablesFinalForm.tsx
         try {
           await mutateAsyncVariables({
             name,
@@ -89,6 +91,33 @@ const VariablesFinalForm: React.FC<Props> = ({scopeId}) => {
             queryKey: queryKeys.variables.search(),
           });
         }
+=======
+        await mutateAsyncVariables(
+          {name, value: JSON.stringify(JSON.parse(value)), variableKey},
+          {
+            onSuccess: () => {
+              notificationsStore.displayNotification({
+                kind: 'success',
+                title: isNewVariable ? 'Variable added' : 'Variable updated',
+                isDismissable: true,
+              });
+            },
+            onError: (error) => {
+              handleMutationError({
+                statusCode: error.status,
+                title: 'Variable could not be saved',
+                subtitle: error.statusText,
+              });
+            },
+            onSettled: async () => {
+              form.reset({});
+              await queryClient.invalidateQueries({
+                queryKey: queryKeys.variables.search(),
+              });
+            },
+          },
+        ).catch(() => void 0);
+>>>>>>> dbca852b (fix: truncated variables create/update stuck in loading state):operate/client/src/App/ProcessInstance/BottomPanelTabs/VariablesTab/VariablesFinalForm.tsx
       }}
     />
   );

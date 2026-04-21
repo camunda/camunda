@@ -125,8 +125,19 @@ describe('Edit variable', () => {
       expect(saveButton).toBeEnabled();
     });
 
+<<<<<<< HEAD:operate/client/src/App/ProcessInstance/BottomPanel/VariablePanel/tests/editVariable.test.tsx
     mockUpdateElementInstanceVariables('1').withDelay(null as unknown as never);
     mockSearchVariables().withSuccess(mockVariables);
+=======
+    mockUpdateElementInstanceVariables('1').withDelay(null);
+    mockGetVariable().withSuccess(
+      createVariable({
+        name: 'firstVariable',
+        value: '"updated-value"',
+        isTruncated: false,
+      }),
+    );
+>>>>>>> dbca852b (fix: truncated variables create/update stuck in loading state):operate/client/src/App/ProcessInstance/BottomPanelTabs/VariablesTab/tests/editVariable.test.tsx
     mockSearchVariables().withSuccess(mockVariables);
     mockSearchJobs().withSuccess({items: [], page: {totalItems: 0}});
 

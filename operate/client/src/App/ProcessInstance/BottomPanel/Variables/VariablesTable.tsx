@@ -110,10 +110,25 @@ const VariablesTable: React.FC<Props> = ({
                   }
 
                   return (
+<<<<<<< HEAD:operate/client/src/App/ProcessInstance/BottomPanel/Variables/VariablesTable.tsx
                     <Restricted
                       resourceBasedRestrictions={{
                         scopes: ['UPDATE_PROCESS_INSTANCE'],
                         permissions,
+=======
+                    <Button
+                      kind="ghost"
+                      size="sm"
+                      tooltipPosition="top"
+                      iconDescription="Edit"
+                      aria-label={`Edit variable ${name}`}
+                      disabled={
+                        isFetchingNextPage || form.getState().submitting
+                      }
+                      onClick={async () => {
+                        form.reset({name, value, variableKey});
+                        form.change('value', value);
+>>>>>>> dbca852b (fix: truncated variables create/update stuck in loading state):operate/client/src/App/ProcessInstance/BottomPanelTabs/VariablesTab/Variables/VariablesTable.tsx
                       }}
                       fallback={
                         isTruncated ? (
