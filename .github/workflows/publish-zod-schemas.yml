@@ -18,7 +18,7 @@ on:
       - '**'  # Allow testing from any branch
     paths:
       - '.github/workflows/publish-zod-schemas.yml'
-      - 'client-components/packages/camunda-api-zod-schemas/**'
+      - 'webapp/client/packages/camunda-api-zod-schemas/**'
 
 env:
   GHA_BEST_PRACTICES_LINTER: enabled
@@ -33,7 +33,7 @@ jobs:
       contents: read
     defaults:
       run:
-        working-directory: client-components
+        working-directory: webapp/client
         shell: bash
     env:
       TEST_OWNER: Core Features

@@ -117,7 +117,7 @@ Types: `build`, `ci`, `deps`, `docs`, `feat`, `fix`, `merge`, `perf`, `refactor`
 
 **Ask first:**
 
-- Modifying shared libraries (`webapps-common/`, `client-components/`, `security/`)
+- Modifying shared libraries (`webapps-common/`, `webapp/client/`, `security/`)
 - Changing public API contracts (REST controllers, gRPC, exported types)
 - Adding new dependencies to `pom.xml` or `package.json`
 

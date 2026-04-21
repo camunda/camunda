@@ -448,7 +448,7 @@
         "npm"
       ],
       "matchFileNames": [
-        "client-components/**"
+        "webapp/client/**"
       ],
       "matchUpdateTypes": [
         "patch"
