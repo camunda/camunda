@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import { FC, useState } from "react";
+import { FC, useEffect, useState } from "react";
 import { FormLabel, Tag } from "@carbon/react";
 import { useApi } from "src/utility/api";
 import { searchUser } from "src/utility/api/users";
@@ -16,11 +16,13 @@ import type { User } from "@camunda/camunda-api-zod-schemas/8.10";
 
 type OwnerSelectionSearchProps = {
   onChange: (ownerId: string) => void;
+  ownerId?: string;
   isEmpty?: boolean;
 };
 
 const OwnerSelectionSearch: FC<OwnerSelectionSearchProps> = ({
   onChange,
+  ownerId,
   isEmpty = false,
 }) => {
   const { t } = useTranslate("authorizations");
@@ -30,6 +32,12 @@ const OwnerSelectionSearch: FC<OwnerSelectionSearchProps> = ({
     page: { limit: USER_SEARCH_PAGE_LIMIT },
   });
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
+
+  useEffect(() => {
+    if (!ownerId) {
+      setSelectedUser(null);
+    }
+  }, [ownerId]);
 
   const handleSearchChange = (searchText: string) => {
     if (searchText === "") {
