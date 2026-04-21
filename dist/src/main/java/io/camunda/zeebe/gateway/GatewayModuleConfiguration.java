@@ -10,6 +10,8 @@ package io.camunda.zeebe.gateway;
 import io.atomix.cluster.AtomixCluster;
 import io.camunda.application.commons.configuration.GatewayBasedConfiguration;
 import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.security.oidc.NoopOidcClaimsProvider;
+import io.camunda.security.oidc.OidcClaimsProvider;
 import io.camunda.service.UserServices;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
@@ -63,6 +65,7 @@ public class GatewayModuleConfiguration implements CloseableSilently {
   private final UserServices userServices;
   private final PasswordEncoder passwordEncoder;
   private final JwtDecoder jwtDecoder;
+  private final OidcClaimsProvider oidcClaimsProvider;
   private final MeterRegistry meterRegistry;
 
   private Gateway gateway;
@@ -79,6 +82,7 @@ public class GatewayModuleConfiguration implements CloseableSilently {
       @Autowired(required = false) final UserServices userServices,
       final PasswordEncoder passwordEncoder,
       @Autowired(required = false) final JwtDecoder jwtDecoder,
+      @Autowired(required = false) final OidcClaimsProvider oidcClaimsProvider,
       final MeterRegistry meterRegistry) {
     this.configuration = configuration;
     this.securityConfiguration = securityConfiguration;
@@ -90,6 +94,8 @@ public class GatewayModuleConfiguration implements CloseableSilently {
     this.userServices = userServices;
     this.passwordEncoder = passwordEncoder;
     this.jwtDecoder = jwtDecoder;
+    this.oidcClaimsProvider =
+        oidcClaimsProvider != null ? oidcClaimsProvider : new NoopOidcClaimsProvider();
     this.meterRegistry = meterRegistry;
   }
 
@@ -120,6 +126,7 @@ public class GatewayModuleConfiguration implements CloseableSilently {
             userServices,
             passwordEncoder,
             jwtDecoder,
+            oidcClaimsProvider,
             meterRegistry);
     springGatewayBridge.registerGatewayStatusSupplier(gateway::getStatus);
     springGatewayBridge.registerClusterStateSupplier(

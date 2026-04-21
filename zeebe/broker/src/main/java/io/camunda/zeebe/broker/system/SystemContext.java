@@ -14,6 +14,7 @@ import io.camunda.identity.sdk.IdentityConfiguration;
 import io.camunda.search.clients.SearchClientsProxy;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.security.oidc.OidcClaimsProvider;
 import io.camunda.security.validation.AuthorizationValidator;
 import io.camunda.security.validation.GroupValidator;
 import io.camunda.security.validation.IdentifierValidator;
@@ -69,6 +70,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import org.slf4j.Logger;
@@ -118,6 +120,7 @@ public final class SystemContext {
   private final UserServices userServices;
   private final PasswordEncoder passwordEncoder;
   private final JwtDecoder jwtDecoder;
+  private final OidcClaimsProvider oidcClaimsProvider;
   private final SearchClientsProxy searchClientsProxy;
   private final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter;
 
@@ -133,6 +136,7 @@ public final class SystemContext {
       final UserServices userServices,
       final PasswordEncoder passwordEncoder,
       final JwtDecoder jwtDecoder,
+      final OidcClaimsProvider oidcClaimsProvider,
       final SearchClientsProxy searchClientsProxy,
       final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
     this.shutdownTimeout = shutdownTimeout;
@@ -146,6 +150,8 @@ public final class SystemContext {
     this.userServices = userServices;
     this.passwordEncoder = passwordEncoder;
     this.jwtDecoder = jwtDecoder;
+    this.oidcClaimsProvider =
+        Objects.requireNonNull(oidcClaimsProvider, "oidcClaimsProvider must not be null");
     this.searchClientsProxy = searchClientsProxy;
     this.brokerRequestAuthorizationConverter = brokerRequestAuthorizationConverter;
     initSystemContext();
@@ -161,6 +167,7 @@ public final class SystemContext {
       final UserServices userServices,
       final PasswordEncoder passwordEncoder,
       final JwtDecoder jwtDecoder,
+      final OidcClaimsProvider oidcClaimsProvider,
       final SearchClientsProxy searchClientsProxy,
       final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
     this(
@@ -175,6 +182,7 @@ public final class SystemContext {
         userServices,
         passwordEncoder,
         jwtDecoder,
+        oidcClaimsProvider,
         searchClientsProxy,
         brokerRequestAuthorizationConverter);
   }
@@ -582,6 +590,10 @@ public final class SystemContext {
 
   public JwtDecoder getJwtDecoder() {
     return jwtDecoder;
+  }
+
+  public OidcClaimsProvider getOidcClaimsProvider() {
+    return oidcClaimsProvider;
   }
 
   public SearchClientsProxy getSearchClientsProxy() {

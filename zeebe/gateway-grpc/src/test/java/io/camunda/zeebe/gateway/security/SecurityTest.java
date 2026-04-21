@@ -13,6 +13,7 @@ import static org.mockito.Mockito.mock;
 import io.atomix.cluster.AtomixCluster;
 import io.atomix.utils.net.Address;
 import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.security.oidc.NoopOidcClaimsProvider;
 import io.camunda.service.UserServices;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.client.api.BrokerClientRequestMetrics;
@@ -203,6 +204,7 @@ final class SecurityTest {
         mock(UserServices.class),
         mock(PasswordEncoder.class),
         meterRegistry,
-        mock(JwtDecoder.class));
+        mock(JwtDecoder.class),
+        new NoopOidcClaimsProvider());
   }
 }
