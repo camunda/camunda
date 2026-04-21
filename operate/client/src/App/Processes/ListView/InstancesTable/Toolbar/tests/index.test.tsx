@@ -10,7 +10,7 @@ import {render, screen, within} from 'modules/testing-library';
 import {Toolbar} from '../index';
 import {MemoryRouter} from 'react-router-dom';
 import {batchModificationStore} from 'modules/stores/batchModification';
-import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelection';
+import {processInstancesSelectionStore} from 'modules/stores/instancesSelection';
 import {panelStatesStore} from 'modules/stores/panelStates';
 import {notificationsStore} from 'modules/stores/notifications';
 import {variableFilterStore} from 'modules/stores/variableFilter';
@@ -85,13 +85,13 @@ describe('<ProcessOperations />', () => {
 
     processInstancesSelectionStore.init();
     processInstancesSelectionStore.setRuntime({
-      totalProcessInstancesCount: 2,
+      totalCount: 2,
       visibleIds: ['1', '2'],
       visibleRunningIds: ['1', '2'],
       visibleFinishedIds: [],
     });
-    processInstancesSelectionStore.selectProcessInstance('1');
-    processInstancesSelectionStore.selectProcessInstance('2');
+    processInstancesSelectionStore.select('1');
+    processInstancesSelectionStore.select('2');
   });
 
   afterEach(() => {
@@ -231,7 +231,7 @@ describe('<ProcessOperations />', () => {
     const trackSpy = vi.spyOn(tracking, 'track');
 
     processInstancesSelectionStore.setRuntime({
-      totalProcessInstancesCount: 2,
+      totalCount: 2,
       visibleIds: ['1', '2'],
       visibleRunningIds: [],
       visibleFinishedIds: ['1', '2'],

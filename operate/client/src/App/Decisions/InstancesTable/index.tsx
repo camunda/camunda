@@ -21,6 +21,9 @@ import {
   useDecisionInstancesSearchSort,
 } from 'modules/hooks/decisionInstancesSearch';
 import {getClientConfig} from 'modules/utils/getClientConfig';
+import {decisionInstancesSelectionStore} from 'modules/stores/instancesSelection';
+import {useEffect} from 'react';
+import {IS_DELETE_DI_BATCH_OPERATION_ENABLED} from 'modules/feature-flags';
 
 const InstancesTable: React.FC = observer(() => {
   const filter = useDecisionInstancesSearchFilter();
@@ -56,6 +59,15 @@ const InstancesTable: React.FC = observer(() => {
   const filteredDecisionInstancesCount = data?.totalCount ?? 0;
   const clientConfig = getClientConfig();
   const hasMoreTotalItems = data?.hasMoreTotalItems ?? false;
+
+  useEffect(() => {
+    decisionInstancesSelectionStore.setRuntime({
+      totalCount: data?.totalCount ?? 0,
+      visibleIds: (data?.decisionInstances ?? []).map(
+        (instance) => instance.decisionEvaluationInstanceKey,
+      ),
+    });
+  }, [data]);
 
   const getTableState = () => {
     switch (true) {
@@ -98,6 +110,19 @@ const InstancesTable: React.FC = observer(() => {
       <PaginatedSortableTable
         state={getTableState()}
         emptyMessage={getEmptyListMessage()}
+        selectionType={
+          IS_DELETE_DI_BATCH_OPERATION_ENABLED ? 'checkbox' : undefined
+        }
+        onSelectAll={decisionInstancesSelectionStore.selectAll}
+        onSelect={decisionInstancesSelectionStore.select}
+        checkIsAllSelected={() => decisionInstancesSelectionStore.isAllChecked}
+        checkIsIndeterminate={() =>
+          !decisionInstancesSelectionStore.isAllChecked &&
+          decisionInstancesSelectionStore.selectedCount > 0
+        }
+        checkIsRowSelected={(rowId) =>
+          decisionInstancesSelectionStore.checkedIds.includes(rowId)
+        }
         rows={decisionInstances.map(
           ({
             decisionEvaluationInstanceKey,

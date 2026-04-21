@@ -25,7 +25,7 @@ import {
   useDeleteBatchOperationMutationRequestBody,
 } from 'modules/hooks/useBatchOperationMutationRequestBody';
 import {useBatchOperationSuccessNotification} from 'modules/hooks/useBatchOperationSuccessNotification';
-import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelection';
+import {processInstancesSelectionStore} from 'modules/stores/instancesSelection';
 
 type Props = {
   selectedInstancesCount: number;
@@ -129,7 +129,7 @@ const Toolbar: React.FC<Props> = observer(({selectedInstancesCount}) => {
     }
 
     const runningInstancesCount =
-      processInstancesSelectionStore.checkedRunningProcessInstanceIds.length;
+      processInstancesSelectionStore.checkedRunningIds.length;
 
     const operationMessage = `${pluralSuffix(
       selectedInstancesCount,
