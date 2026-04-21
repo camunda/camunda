@@ -49,6 +49,7 @@ import io.camunda.spring.utils.ConditionalOnSecondaryStorageDisabled;
 import io.camunda.spring.utils.ConditionalOnSecondaryStorageEnabled;
 import io.micrometer.common.KeyValues;
 import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import io.micrometer.observation.ObservationRegistry;
 import jakarta.annotation.PostConstruct;
 import jakarta.servlet.FilterChain;
@@ -644,6 +645,18 @@ public class WebSecurityConfig {
         final TokenClaimsConverter tokenClaimsConverter,
         final OidcClaimsProvider oidcClaimsProvider) {
       return new OidcTokenAuthenticationConverter(tokenClaimsConverter, oidcClaimsProvider);
+    }
+
+    /**
+     * Fallback {@link MeterRegistry} for test / minimal Spring contexts that don't configure the
+     * standard Spring Boot auto-configured {@code CompositeMeterRegistry}. In real deployments the
+     * app-wide registry wins via {@link ConditionalOnMissingBean} and metrics land on a scraped
+     * backend (Prometheus / OTLP / etc.) rather than the in-memory sink.
+     */
+    @Bean
+    @ConditionalOnMissingBean(MeterRegistry.class)
+    public MeterRegistry oidcFallbackMeterRegistry() {
+      return new SimpleMeterRegistry();
     }
 
     /**

@@ -14,9 +14,6 @@ import io.camunda.service.GroupServices;
 import io.camunda.service.MappingRuleServices;
 import io.camunda.service.RoleServices;
 import io.camunda.service.TenantServices;
-import io.micrometer.core.instrument.MeterRegistry;
-import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -39,16 +36,5 @@ public class WebSecurityOidcTestContext {
       final SecurityConfiguration securityConfiguration) {
     return new DefaultMembershipService(
         mappingRuleServices, tenantServices, roleServices, groupServices, securityConfiguration);
-  }
-
-  /**
-   * Sliced @SpringBootTest contexts used for the OIDC ITs bypass Spring Boot's
-   * MetricsAutoConfiguration, so no {@link MeterRegistry} is otherwise available. Production wiring
-   * is unaffected — the Actuator-provided {@code CompositeMeterRegistry} owns metrics there.
-   */
-  @Bean
-  @ConditionalOnMissingBean(MeterRegistry.class)
-  public MeterRegistry testMeterRegistry() {
-    return new SimpleMeterRegistry();
   }
 }
