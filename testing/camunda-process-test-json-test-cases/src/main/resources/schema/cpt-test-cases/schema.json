@@ -1082,7 +1082,7 @@
           "$ref": "#/definitions/ElementSelector"
         },
         "threshold": {
-          "description": "The score threshold above which the judge assertion passes. Must be between 0.0 and 1.0; higher values are stricter. Overrides the preconfigured threshold. Optional; defaults to the preconfigured JudgeConfig threshold (0.5 unless otherwise configured) when omitted.",
+          "description": "The score threshold at or above which the judge assertion passes. Must be between 0.0 and 1.0; higher values are stricter. Overrides the preconfigured threshold. Optional; defaults to the preconfigured JudgeConfig threshold (0.5 unless otherwise configured) when omitted.",
           "type": "number",
           "minimum": 0.0,
           "maximum": 1.0
