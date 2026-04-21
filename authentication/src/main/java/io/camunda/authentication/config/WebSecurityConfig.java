@@ -668,10 +668,15 @@ public class WebSecurityConfig {
     @ConditionalOnMissingBean(name = "oidcUserInfoHttpClient")
     public HttpClient oidcUserInfoHttpClient(
         @Autowired(required = false) final SslBundles sslBundles) {
+      // Redirects are NOT followed. The JDK HttpClient would re-send the Authorization: Bearer
+      // header to the redirect target, which would leak the access token to an attacker-controlled
+      // URL if the IdP's /userinfo responded with a 3xx (misconfiguration, open-redirect vuln,
+      // hijacked CDN). OIDC Core does not require redirects on /userinfo; any 3xx surfaces as a
+      // non-2xx via OidcUserInfoClient.fetch() and degrades to JWT-only claims.
       final HttpClient.Builder builder =
           HttpClient.newBuilder()
               .connectTimeout(Duration.ofSeconds(2))
-              .followRedirects(HttpClient.Redirect.NORMAL);
+              .followRedirects(HttpClient.Redirect.NEVER);
       if (sslBundles != null) {
         try {
           final var bundle = sslBundles.getBundle("oidc-userinfo");
