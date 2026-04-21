@@ -43,7 +43,7 @@ public class CachingOidcClaimsProvider implements OidcClaimsProvider {
   private static final String FETCH_METRIC = "camunda.oidc.userinfo.fetch";
 
   private final OidcAuthenticationConfiguration oidcConfig;
-  private final URI userInfoUri;
+  private final Map<String, URI> userInfoUriByIssuer;
   private final OidcUserInfoClient userInfoClient;
   private final Cache<String, CacheEntry> cache;
   private final Counter hitCounter;
@@ -54,11 +54,12 @@ public class CachingOidcClaimsProvider implements OidcClaimsProvider {
 
   public CachingOidcClaimsProvider(
       final OidcAuthenticationConfiguration oidcConfig,
-      final URI userInfoUri,
+      final Map<String, URI> userInfoUriByIssuer,
       final OidcUserInfoClient userInfoClient,
       final MeterRegistry meterRegistry) {
     this.oidcConfig = Objects.requireNonNull(oidcConfig);
-    this.userInfoUri = userInfoUri; // may be null if augmentation disabled
+    this.userInfoUriByIssuer =
+        userInfoUriByIssuer == null ? Map.of() : Map.copyOf(userInfoUriByIssuer);
     this.userInfoClient = Objects.requireNonNull(userInfoClient);
     clockSkew = oidcConfig.getClockSkew();
     final OidcUserInfoAugmentationConfiguration aug = oidcConfig.getUserInfoAugmentation();
@@ -80,11 +81,18 @@ public class CachingOidcClaimsProvider implements OidcClaimsProvider {
     if (!oidcConfig.getUserInfoAugmentation().isEnabled()) {
       return jwtClaims;
     }
+
+    // Resolve the userinfo URI per-token by the JWT's 'iss' claim. This guarantees we always
+    // hand the token to the same IdP that signed it — critical in multi-provider setups where
+    // tokens from provider A must not be sent to provider B's /userinfo endpoint.
+    final Object issClaim = jwtClaims.get("iss");
+    final URI userInfoUri = issClaim instanceof final String s ? userInfoUriByIssuer.get(s) : null;
     if (userInfoUri == null) {
-      // Should have been caught at startup; degrade rather than 500 if we reach here.
+      // Either the JWT has no 'iss', or no registration matches it. Degrade rather than 500.
       LOG.error(
-          "UserInfo augmentation is enabled but no userinfo URI is available; "
-              + "returning JWT-only claims");
+          "UserInfo augmentation enabled but no userinfo URI is registered for issuer '{}'; "
+              + "returning JWT-only claims",
+          issClaim);
       return jwtClaims;
     }
 
@@ -94,7 +102,7 @@ public class CachingOidcClaimsProvider implements OidcClaimsProvider {
       // Bypass the cache entirely — fetch + merge once, don't store. Rare in practice
       // (every mainstream IdP emits at least sub+iat+exp on access tokens) but keeps
       // the feature correct for malformed JWTs.
-      return loadEntry(jwtClaims, tokenValue).claims();
+      return loadEntry(jwtClaims, tokenValue, userInfoUri).claims();
     }
     // Fast-path: was it already cached? If so, record the hit and return.
     // Narrow race: a concurrent thread may populate between this check and the load below,
@@ -113,12 +121,13 @@ public class CachingOidcClaimsProvider implements OidcClaimsProvider {
             key,
             k -> {
               missCounter.increment();
-              return loadEntry(jwtClaims, tokenValue);
+              return loadEntry(jwtClaims, tokenValue, userInfoUri);
             });
     return entry.claims();
   }
 
-  private CacheEntry loadEntry(final Map<String, Object> jwtClaims, final String tokenValue) {
+  private CacheEntry loadEntry(
+      final Map<String, Object> jwtClaims, final String tokenValue, final URI userInfoUri) {
     try {
       final Map<String, Object> userInfoClaims =
           fetchTimer.recordCallable(() -> userInfoClient.fetch(userInfoUri, tokenValue));

@@ -694,31 +694,31 @@ public class WebSecurityConfig {
       if (oidc == null || !oidc.getUserInfoAugmentation().isEnabled()) {
         return new NoopOidcClaimsProvider();
       }
-      // Read userinfo URI from the Spring-managed ClientRegistration. Spring populates
-      // ProviderDetails.UserInfoEndpoint.uri from the IdP's OIDC discovery document when
-      // ClientRegistrations.fromIssuerLocation(...) runs — so it's accurate even for IdPs
-      // whose userinfo path isn't {issuer}/userinfo. A null URI means either the IdP does
-      // not publish a userinfo endpoint or the operator set userInfoEnabled=false; both
-      // legitimately preclude augmentation.
-      // Multi-provider selection by 'iss' claim is a follow-up; single-provider setups are
-      // covered today by picking the first registration that exposes a userinfo endpoint.
-      final URI userInfoUri =
+      // Build a map of issuer -> userinfo URI from the Spring-managed ClientRegistrations.
+      // Each ClientRegistration's ProviderDetails.getIssuerUri() is the canonical 'iss' claim
+      // the IdP emits on its tokens, and UserInfoEndpoint.getUri() is the userinfo URL from
+      // the same discovery document. CachingOidcClaimsProvider uses this to route each
+      // token to its own issuer's userinfo endpoint — never cross-wired.
+      final Map<String, URI> userInfoUriByIssuer =
           oidcProviderRepository.getOidcAuthenticationConfigurations().keySet().stream()
               .map(clientRegistrationRepository::findByRegistrationId)
               .filter(Objects::nonNull)
-              .map(cr -> cr.getProviderDetails().getUserInfoEndpoint().getUri())
-              .filter(Objects::nonNull)
-              .findFirst()
-              .map(URI::create)
-              .orElseThrow(
-                  () ->
-                      new IllegalStateException(
-                          "UserInfo augmentation is enabled but no ClientRegistration exposes a"
-                              + " userinfo endpoint. Check the IdP's OIDC discovery document and"
-                              + " the userInfoEnabled flag."));
+              .filter(cr -> cr.getProviderDetails().getIssuerUri() != null)
+              .filter(cr -> cr.getProviderDetails().getUserInfoEndpoint().getUri() != null)
+              .collect(
+                  toMap(
+                      cr -> cr.getProviderDetails().getIssuerUri(),
+                      cr -> URI.create(cr.getProviderDetails().getUserInfoEndpoint().getUri()),
+                      (existing, replacement) -> existing));
+      if (userInfoUriByIssuer.isEmpty()) {
+        throw new IllegalStateException(
+            "UserInfo augmentation is enabled but no ClientRegistration exposes a userinfo "
+                + "endpoint. Check the IdP's OIDC discovery document and the userInfoEnabled "
+                + "flag.");
+      }
       return new CachingOidcClaimsProvider(
           oidc,
-          userInfoUri,
+          userInfoUriByIssuer,
           new OidcUserInfoClient(oidcUserInfoHttpClient, Duration.ofSeconds(2)),
           meterRegistry);
     }
