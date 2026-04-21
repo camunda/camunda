@@ -14,18 +14,24 @@ import org.jspecify.annotations.Nullable;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public record DecisionDefinitionEntity(
     Long decisionDefinitionKey,
-    @Nullable String decisionDefinitionId,
-    @Nullable String name,
-    @Nullable Integer version,
-    @Nullable String decisionRequirementsId,
-    @Nullable Long decisionRequirementsKey,
+    String decisionDefinitionId,
+    String name,
+    Integer version,
+    String decisionRequirementsId,
+    Long decisionRequirementsKey,
     @Nullable String decisionRequirementsName,
-    @Nullable Integer decisionRequirementsVersion,
+    Integer decisionRequirementsVersion,
     String tenantId)
     implements TenantOwnedEntity {
 
   public DecisionDefinitionEntity {
     Objects.requireNonNull(decisionDefinitionKey, "decisionDefinitionKey");
+    Objects.requireNonNull(decisionDefinitionId, "decisionDefinitionId");
+    Objects.requireNonNull(name, "name");
+    Objects.requireNonNull(version, "version");
+    Objects.requireNonNull(decisionRequirementsId, "decisionRequirementsId");
+    Objects.requireNonNull(decisionRequirementsKey, "decisionRequirementsKey");
+    Objects.requireNonNull(decisionRequirementsVersion, "decisionRequirementsVersion");
     Objects.requireNonNull(tenantId, "tenantId");
   }
 }

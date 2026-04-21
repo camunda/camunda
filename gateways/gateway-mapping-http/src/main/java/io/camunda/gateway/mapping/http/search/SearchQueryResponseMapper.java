@@ -1000,21 +1000,15 @@ public final class SearchQueryResponseMapper {
 
   public static DecisionDefinitionResult toDecisionDefinition(final DecisionDefinitionEntity d) {
     return new DecisionDefinitionResult()
-        .tenantId(requireNonNull(d.tenantId(), "tenantId"))
-        .decisionDefinitionKey(
-            requireNonNull(keyToStringOrNull(d.decisionDefinitionKey()), "decisionDefinitionKey"))
-        .name(requireNonNull(d.name(), "name"))
-        .version(requireNonNull(d.version(), "version"))
-        .decisionDefinitionId(requireNonNull(d.decisionDefinitionId(), "decisionDefinitionId"))
-        .decisionRequirementsKey(
-            requireNonNull(
-                keyToStringOrNull(d.decisionRequirementsKey()), "decisionRequirementsKey"))
-        .decisionRequirementsId(
-            requireNonNull(d.decisionRequirementsId(), "decisionRequirementsId"))
-        .decisionRequirementsName(
-            requireNonNull(d.decisionRequirementsName(), "decisionRequirementsName"))
-        .decisionRequirementsVersion(
-            requireNonNull(d.decisionRequirementsVersion(), "decisionRequirementsVersion"));
+        .tenantId(d.tenantId())
+        .decisionDefinitionKey(keyToString(d.decisionDefinitionKey()))
+        .name(d.name())
+        .version(d.version())
+        .decisionDefinitionId(d.decisionDefinitionId())
+        .decisionRequirementsKey(keyToString(d.decisionRequirementsKey()))
+        .decisionRequirementsId(d.decisionRequirementsId())
+        .decisionRequirementsName(ofNullable(d.decisionRequirementsName()).orElse(""))
+        .decisionRequirementsVersion(d.decisionRequirementsVersion());
   }
 
   public static DecisionRequirementsResult toDecisionRequirements(
