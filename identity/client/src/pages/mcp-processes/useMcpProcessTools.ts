@@ -6,14 +6,18 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import { useCallback, useMemo } from "react";
-import { usePaginatedApi } from "src/utility/api";
+import { useMemo } from "react";
+import { useApi, usePagination } from "src/utility/api";
 import {
   searchMessageSubscriptions,
   type MessageSubscription,
+  type QueryMessageSubscriptionsRequestBody,
 } from "src/utility/api/message-subscriptions";
 
 const TOOL_PURPOSE_KEY = "io.camunda.tool:purpose";
+
+type Sort = NonNullable<QueryMessageSubscriptionsRequestBody["sort"]>;
+const DEFAULT_SORT: Sort = [{ field: "toolName", order: "asc" }];
 
 export type McpProcessTool = {
   id: string;
@@ -29,7 +33,7 @@ export type McpProcessTool = {
 const mapSubscriptionToProcessTool = (
   sub: MessageSubscription,
 ): McpProcessTool | null => {
-  // `toolName` is expected to exists based on the filter supplied to the backend.
+  // `toolName` is expected to exist based on the filter supplied to the backend.
   if (!sub.toolName) return null;
 
   return {
@@ -45,33 +49,27 @@ const mapSubscriptionToProcessTool = (
 };
 
 export const useMcpProcessTools = () => {
-  const { data, setSearch, ...rest } = usePaginatedApi(
-    searchMessageSubscriptions,
-    {
-      filter: {
-        messageSubscriptionType: "START_EVENT",
-        messageSubscriptionState: { $neq: "DELETED" },
-        toolName: { $exists: true },
-      },
-    },
-  );
+  const { pageParams, page, ...paginationRest } = usePagination();
 
-  const handleSearch = useCallback(
-    (value: Record<string, string> | undefined) => {
-      const term = value?.toolName?.trim();
-      if (!term) {
-        setSearch(undefined);
-        return;
-      }
-      // `setSearch` is typed as `Record<string, string>`, but the value is
-      // merged into the request `filter`, which supports advanced string
-      // filters like `$like`.
-      setSearch({
-        toolName: { $like: `*${term}*` },
-      } as unknown as Record<string, string>);
+  const searchTermsFilter = useMemo(() => {
+    const term = pageParams.filter?.toolName?.trim();
+    if (!term) return undefined;
+    return { toolName: { $like: `*${term}*` } };
+  }, [pageParams.filter]);
+
+  const { data, ...apiRest } = useApi(searchMessageSubscriptions, {
+    sort: (pageParams.sort ?? DEFAULT_SORT) as Sort,
+    filter: {
+      messageSubscriptionType: "START_EVENT",
+      messageSubscriptionState: { $neq: "DELETED" },
+      toolName: { $exists: true },
+      ...searchTermsFilter,
     },
-    [setSearch],
-  );
+    page: {
+      from: pageParams.page.from,
+      limit: pageParams.page.limit,
+    },
+  });
 
   const processTools = useMemo<McpProcessTool[]>(() => {
     if (!data?.items || data.items.length === 0) {
@@ -85,7 +83,8 @@ export const useMcpProcessTools = () => {
 
   return {
     processTools,
-    setSearch: handleSearch,
-    ...rest,
+    page: { ...page, ...data?.page },
+    ...paginationRest,
+    ...apiRest,
   };
 };

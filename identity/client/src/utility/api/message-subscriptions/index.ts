@@ -48,6 +48,9 @@ type AdvancedStringFilter =
 type BaseMessageSubscriptionFilter = NonNullable<
   BaseQueryMessageSubscriptionsRequestBody["filter"]
 >;
+type BaseMessageSubscriptionSort = NonNullable<
+  BaseQueryMessageSubscriptionsRequestBody["sort"]
+>[number];
 
 interface MessageSubscriptionFilter extends BaseMessageSubscriptionFilter {
   messageSubscriptionType?: MessageSubscriptionType;
@@ -55,11 +58,19 @@ interface MessageSubscriptionFilter extends BaseMessageSubscriptionFilter {
   inboundConnectorType?: AdvancedStringFilter;
 }
 
+interface MessageSubscriptionSort extends Omit<
+  BaseMessageSubscriptionSort,
+  "field"
+> {
+  field: BaseMessageSubscriptionSort["field"] | "toolName";
+}
+
 export interface QueryMessageSubscriptionsRequestBody extends Omit<
   BaseQueryMessageSubscriptionsRequestBody,
-  "filter"
+  "filter" | "sort"
 > {
   filter?: MessageSubscriptionFilter;
+  sort?: MessageSubscriptionSort[];
 }
 
 export interface QueryMessageSubscriptionsResponseBody extends Omit<

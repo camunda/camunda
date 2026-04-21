@@ -25,7 +25,7 @@ const List: FC = () => {
 
   const headers = useMemo<DataTableHeader<McpProcessTool>[]>(() => {
     const columns: DataTableHeader<McpProcessTool>[] = [
-      { header: t("toolName"), key: "toolName" },
+      { header: t("toolName"), key: "toolName", isSortable: true },
       { header: t("toolDescription"), key: "toolDescription" },
       { header: t("processName"), key: "processDefinitionName" },
       { header: t("version"), key: "processDefinitionVersion" },
