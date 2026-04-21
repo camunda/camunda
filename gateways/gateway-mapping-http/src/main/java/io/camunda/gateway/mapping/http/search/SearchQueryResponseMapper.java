@@ -950,7 +950,7 @@ public final class SearchQueryResponseMapper {
         .claimName(mappingRuleEntity.claimName())
         .claimValue(mappingRuleEntity.claimValue())
         .mappingRuleId(mappingRuleEntity.mappingRuleId())
-        .name(requireNonNull(mappingRuleEntity.name(), "name"));
+        .name(mappingRuleEntity.name());
   }
 
   private static List<DecisionDefinitionResult> toDecisionDefinitions(
