@@ -1015,14 +1015,11 @@ public final class SearchQueryResponseMapper {
       final DecisionRequirementsEntity d) {
     return new DecisionRequirementsResult()
         .tenantId(d.tenantId())
-        .decisionRequirementsKey(
-            requireNonNull(
-                keyToStringOrNull(d.decisionRequirementsKey()), "decisionRequirementsKey"))
-        .decisionRequirementsName(requireNonNull(d.name(), "name"))
-        .version(requireNonNull(d.version(), "version"))
-        .resourceName(requireNonNull(d.resourceName(), "resourceName"))
-        .decisionRequirementsId(
-            requireNonNull(d.decisionRequirementsId(), "decisionRequirementsId"));
+        .decisionRequirementsKey(keyToString(d.decisionRequirementsKey()))
+        .decisionRequirementsName(d.name())
+        .version(d.version())
+        .resourceName(d.resourceName())
+        .decisionRequirementsId(d.decisionRequirementsId());
   }
 
   private static List<UserTaskResult> toUserTasks(final List<UserTaskEntity> tasks) {
