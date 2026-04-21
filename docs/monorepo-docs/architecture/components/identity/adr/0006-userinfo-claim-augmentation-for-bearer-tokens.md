@@ -137,7 +137,10 @@ values.
 ### Defences in OidcUserInfoClient
 
 - Response body size capped at 1 MiB (`OidcUserInfoClient.MAX_BODY_BYTES`). Oversized responses
-  are rejected before parsing.
+  are rejected before parsing. Note: `HttpResponse.BodyHandlers.ofByteArray()` buffers the full
+  response before the check, so worst-case heap is `MAX_BODY_BYTES` per concurrent uncached
+  fetch. A streaming `BodySubscriber` with an in-stream cap is a documented follow-up for a
+  future iteration.
 - `Content-Type: application/jwt` rejected with a clear error — signed UserInfo responses per
   OIDC Core §5.3.2 are not supported in this version.
 - Request + connect timeouts are 2 seconds each, tightened from an earlier 5-second default to
