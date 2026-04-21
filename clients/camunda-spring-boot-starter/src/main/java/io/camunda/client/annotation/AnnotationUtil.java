@@ -112,9 +112,7 @@ public class AnnotationUtil {
   }
 
   public static List<ParameterInfo> getVariableParameters(final MethodInfo methodInfo) {
-    final List<ParameterInfo> result = new ArrayList<>();
-    result.addAll(methodInfo.getParametersFilteredByAnnotation(Variable.class));
-    return result;
+    return methodInfo.getParametersFilteredByAnnotation(Variable.class);
   }
 
   public static List<ParameterInfo> getDocumentParameters(final MethodInfo methodInfo) {
@@ -122,9 +120,7 @@ public class AnnotationUtil {
   }
 
   public static List<ParameterInfo> getVariablesAsTypeParameters(final MethodInfo methodInfo) {
-    final List<ParameterInfo> result = new ArrayList<>();
-    result.addAll(methodInfo.getParametersFilteredByAnnotation(VariablesAsType.class));
-    return result;
+    return methodInfo.getParametersFilteredByAnnotation(VariablesAsType.class);
   }
 
   public static boolean isVariablesAsType(final ParameterInfo parameterInfo) {
