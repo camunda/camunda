@@ -58,6 +58,7 @@ abstract class App implements Runnable {
   protected PrometheusMeterRegistry registry;
   protected ClientInterceptor monitoringInterceptor;
   protected ObservationExecChainHandler observationExecChainHandler;
+  protected ConcurrentConnectionsMetric concurrentConnectionsMetric;
   private final AtomicInteger connected = new AtomicInteger(0);
 
   private HTTPServer monitoringServer;
@@ -113,6 +114,7 @@ abstract class App implements Runnable {
         .observationConfig()
         .observationHandler(new DefaultMeterObservationHandler(registry));
     observationExecChainHandler = new ObservationExecChainHandler(observationRegistry);
+    concurrentConnectionsMetric = new ConcurrentConnectionsMetric(registry);
     registerDefaultInstrumentation();
   }
 
@@ -185,7 +187,7 @@ abstract class App implements Runnable {
             .preferRestOverGrpc(config.isPreferRest())
             .withProperties(System.getProperties())
             .withInterceptors(monitoringInterceptor)
-            .withChainHandlers(observationExecChainHandler)
+            .withChainHandlers(observationExecChainHandler, concurrentConnectionsMetric)
             .useClientSideLoadBalancing(config.isClientSideLoadBalancing());
 
     final var auth = config.getAuth();
