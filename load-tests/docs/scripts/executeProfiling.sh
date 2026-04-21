@@ -7,8 +7,7 @@
 #   wall  - Wall clock time profiling
 #   alloc - Memory allocation profiling
 # DATABASE can be:
-#   elasticsearch (default)
-#   postgresql
+#   elasticsearch (default), opensearch, postgresql, oracle, mysql, mssql, mariadb, none
 # ADDITIONAL-OPTIONS: Optional additional flags to pass to async-profiler (e.g., "-t" to profile threads separately)
 # See https://github.com/async-profiler/async-profiler/blob/master/docs/ProfilerOptions.md for potential options
 set -oxe pipefail
@@ -19,21 +18,25 @@ if [ -z "$1" ]; then
   exit 1
 fi
 node=$1
-profiler_event=${2:-cpu}
-additional_options=${3:-}
-raw_database=${3:-}
-additional_options=${4:-}
-database=""
 
-# Validate database param — if it's not a known value, treat it as additional options
 valid_databases=("elasticsearch" "opensearch" "postgresql" "oracle" "mysql" "mssql" "mariadb" "none")
+is_database() { [[ -n "${1:-}" ]] && [[ " ${valid_databases[*]} " =~ " ${1} " ]]; }
 
-if [[ -n "$raw_database" ]] && [[ ! " ${valid_databases[*]} " =~ " ${raw_database} " ]]; then
-  # Not a known database — treat it as additional options
-  additional_options="$raw_database ${4:-}"
-  database=""
+if is_database "${2:-}"; then
+  # EVENT-TYPE omitted — $2 is DATABASE
+  profiler_event="cpu"
+  database="${2}"
+  additional_options="${3:-}"
 else
-  database="$raw_database"
+  profiler_event="${2:-cpu}"
+  if is_database "${3:-}"; then
+    database="${3}"
+    additional_options="${4:-}"
+  else
+    # $3 is not a known database — treat it as additional options
+    database=""
+    additional_options="${3:-} ${4:-}"
+  fi
 fi
 
 if [[ $profiler_event == "wall" ]]; then
