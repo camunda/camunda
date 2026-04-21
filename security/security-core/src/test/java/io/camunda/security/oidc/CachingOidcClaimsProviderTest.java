@@ -8,7 +8,6 @@
 package io.camunda.security.oidc;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
@@ -24,6 +23,10 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -46,37 +49,87 @@ class CachingOidcClaimsProviderTest {
     meterRegistry = new SimpleMeterRegistry();
   }
 
+  private CachingOidcClaimsProvider newProvider() {
+    return new CachingOidcClaimsProvider(
+        oidcConfig, URI.create("https://idp.example/userinfo"), userInfoClient, meterRegistry);
+  }
+
   @Test
   void returnsJwtClaimsUnchangedWhenAugmentationDisabled() {
     oidcConfig.getUserInfoAugmentation().setEnabled(false);
-    final var provider =
-        new CachingOidcClaimsProvider(
-            oidcConfig, URI.create("https://idp.example/userinfo"), userInfoClient, meterRegistry);
+    final var provider = newProvider();
 
     final Map<String, Object> jwtClaims = Map.of("sub", "alice");
-    final var result = provider.claimsFor(jwtClaims, "token-abc");
-
-    assertThat(result).isSameAs(jwtClaims);
+    assertThat(provider.claimsFor(jwtClaims, "token-abc")).isSameAs(jwtClaims);
     verify(userInfoClient, times(0)).fetch(any(), any());
   }
 
   @Test
-  void callsUserInfoOnceAndMergesClaimsOverJwt() {
+  void mergeIsAdditiveOnlyJwtWinsOnConflict() {
+    // UserInfo tries to override claims that should be JWT-authoritative.
     when(userInfoClient.fetch(any(), eq("token-abc")))
-        .thenReturn(Map.of("groups", List.of("eng"), "sub", "alice-from-userinfo"));
+        .thenReturn(
+            Map.of(
+                "sub",
+                "alice", // matches JWT — legitimate
+                "groups",
+                List.of("eng"), // absent from JWT — should be added
+                "exp",
+                Instant.now().plusSeconds(99_999).getEpochSecond(), // UserInfo MUST NOT override
+                "email",
+                "alice@example.com")); // absent from JWT — added
 
-    final var provider =
-        new CachingOidcClaimsProvider(
-            oidcConfig, URI.create("https://idp.example/userinfo"), userInfoClient, meterRegistry);
+    final var provider = newProvider();
+    final long exp = Instant.now().getEpochSecond() + 3600;
+    final Map<String, Object> jwtClaims =
+        Map.of("sub", "alice", "iss", "https://idp.example", "jti", "jti-1", "exp", exp);
 
+    final Map<String, Object> result = provider.claimsFor(jwtClaims, "token-abc");
+
+    assertThat(result)
+        .containsEntry("sub", "alice")
+        .containsEntry("iss", "https://idp.example")
+        .containsEntry("jti", "jti-1")
+        .containsEntry("exp", exp) // JWT's exp preserved; UserInfo's ignored
+        .containsEntry("groups", List.of("eng")) // additive
+        .containsEntry("email", "alice@example.com"); // additive
+  }
+
+  @Test
+  void fallsBackToJwtClaimsWhenUserInfoSubMismatchesJwtSub() {
+    // Spec §5.3.2 MUST — UserInfo sub must equal JWT sub. Mismatch means the IdP
+    // returned the wrong user's claims; treat as a degradation event, don't merge.
+    when(userInfoClient.fetch(any(), eq("token-abc")))
+        .thenReturn(Map.of("sub", "bob", "groups", List.of("admin")));
+
+    final var provider = newProvider();
+    final long exp = Instant.now().getEpochSecond() + 3600;
+    final Map<String, Object> jwtClaims = Map.of("sub", "alice", "jti", "jti-1", "exp", exp);
+
+    final Map<String, Object> result = provider.claimsFor(jwtClaims, "token-abc");
+
+    // groups from bob's response must NOT reach alice's authorization
+    assertThat(result).containsEntry("sub", "alice").doesNotContainKey("groups");
+    assertThat(
+            meterRegistry
+                .get("camunda.oidc.userinfo.fetch")
+                .tag("outcome", "failure")
+                .counter()
+                .count())
+        .isEqualTo(1.0);
+  }
+
+  @Test
+  void callsUserInfoOnceAndAddsMissingClaimsFromUserInfo() {
+    when(userInfoClient.fetch(any(), eq("token-abc"))).thenReturn(Map.of("groups", List.of("eng")));
+
+    final var provider = newProvider();
     final Map<String, Object> jwtClaims =
         Map.of("sub", "alice", "jti", "jti-1", "exp", Instant.now().getEpochSecond() + 3600);
 
-    final var result = provider.claimsFor(jwtClaims, "token-abc");
+    final Map<String, Object> result = provider.claimsFor(jwtClaims, "token-abc");
 
     assertThat(result).containsEntry("groups", List.of("eng"));
-    assertThat(result).containsEntry("sub", "alice-from-userinfo"); // userinfo overrides
-    assertThat(result).containsEntry("jti", "jti-1"); // jwt-only claim preserved
     verify(userInfoClient, times(1)).fetch(any(), any());
   }
 
@@ -84,10 +137,7 @@ class CachingOidcClaimsProviderTest {
   void cachesByJtiSoSecondCallDoesNotHitIdp() {
     when(userInfoClient.fetch(any(), any())).thenReturn(Map.of("groups", List.of("eng")));
 
-    final var provider =
-        new CachingOidcClaimsProvider(
-            oidcConfig, URI.create("https://idp.example/userinfo"), userInfoClient, meterRegistry);
-
+    final var provider = newProvider();
     final Map<String, Object> jwtClaims =
         Map.of("sub", "alice", "jti", "jti-1", "exp", Instant.now().getEpochSecond() + 3600);
 
@@ -101,10 +151,7 @@ class CachingOidcClaimsProviderTest {
   void distinctJtisResultInDistinctCacheEntries() {
     when(userInfoClient.fetch(any(), any())).thenReturn(Map.of("groups", List.of("eng")));
 
-    final var provider =
-        new CachingOidcClaimsProvider(
-            oidcConfig, URI.create("https://idp.example/userinfo"), userInfoClient, meterRegistry);
-
+    final var provider = newProvider();
     final long exp = Instant.now().getEpochSecond() + 3600;
     provider.claimsFor(Map.of("sub", "alice", "jti", "jti-1", "exp", exp), "token-a");
     provider.claimsFor(Map.of("sub", "alice", "jti", "jti-2", "exp", exp), "token-b");
@@ -116,10 +163,7 @@ class CachingOidcClaimsProviderTest {
   void fallsBackToTokenHashWhenJtiAbsent() {
     when(userInfoClient.fetch(any(), any())).thenReturn(Map.of("groups", List.of("eng")));
 
-    final var provider =
-        new CachingOidcClaimsProvider(
-            oidcConfig, URI.create("https://idp.example/userinfo"), userInfoClient, meterRegistry);
-
+    final var provider = newProvider();
     final long exp = Instant.now().getEpochSecond() + 3600;
     final Map<String, Object> claimsNoJti = Map.of("sub", "alice", "exp", exp);
 
@@ -131,37 +175,35 @@ class CachingOidcClaimsProviderTest {
   }
 
   @Test
-  void failsClosedWhenUserInfoThrows() {
-    when(userInfoClient.fetch(any(), any())).thenThrow(new OidcUserInfoException("boom"));
+  void fallsBackToJwtClaimsWhenUserInfoFetchThrows() {
+    when(userInfoClient.fetch(any(), any())).thenThrow(new OidcUserInfoException("IdP down"));
 
-    final var provider =
-        new CachingOidcClaimsProvider(
-            oidcConfig, URI.create("https://idp.example/userinfo"), userInfoClient, meterRegistry);
-
+    final var provider = newProvider();
     final Map<String, Object> jwtClaims =
         Map.of("sub", "alice", "jti", "jti-1", "exp", Instant.now().getEpochSecond() + 3600);
 
-    assertThatThrownBy(() -> provider.claimsFor(jwtClaims, "token-abc"))
-        .isInstanceOf(OidcUserInfoException.class);
+    // Fail-open: returns JWT claims unchanged, increments failure counter, does not throw.
+    final Map<String, Object> result = provider.claimsFor(jwtClaims, "token-abc");
+    assertThat(result).containsEntry("sub", "alice").doesNotContainKey("groups");
+    assertThat(
+            meterRegistry
+                .get("camunda.oidc.userinfo.fetch")
+                .tag("outcome", "failure")
+                .counter()
+                .count())
+        .isEqualTo(1.0);
   }
 
   @Test
-  void negativeCachePreventsHammeringDuringOutage() {
+  void degradedEntryPreventsRetrySpamDuringOutage() {
     when(userInfoClient.fetch(any(), any())).thenThrow(new OidcUserInfoException("IdP down"));
 
-    final var provider =
-        new CachingOidcClaimsProvider(
-            oidcConfig, URI.create("https://idp.example/userinfo"), userInfoClient, meterRegistry);
-
+    final var provider = newProvider();
     final Map<String, Object> jwtClaims =
         Map.of("sub", "alice", "jti", "jti-1", "exp", Instant.now().getEpochSecond() + 3600);
 
     for (int i = 0; i < 20; i++) {
-      try {
-        provider.claimsFor(jwtClaims, "token-abc");
-      } catch (final OidcUserInfoException ignored) {
-        // expected
-      }
+      provider.claimsFor(jwtClaims, "token-abc");
     }
 
     verify(userInfoClient, times(1)).fetch(any(), any());
@@ -172,9 +214,7 @@ class CachingOidcClaimsProviderTest {
     when(userInfoClient.fetch(any(), any())).thenReturn(Map.of("groups", List.of("eng")));
 
     oidcConfig.getUserInfoAugmentation().setCacheTtl(Duration.ofHours(1));
-    final var provider =
-        new CachingOidcClaimsProvider(
-            oidcConfig, URI.create("https://idp.example/userinfo"), userInfoClient, meterRegistry);
+    final var provider = newProvider();
 
     // exp is far enough in the past that after clockSkew the effective TTL is <= 0
     final long expPast = Instant.now().minusSeconds(120).getEpochSecond();
@@ -191,10 +231,7 @@ class CachingOidcClaimsProviderTest {
   void exposesHitAndMissCounters() {
     when(userInfoClient.fetch(any(), any())).thenReturn(Map.of("groups", List.of("eng")));
 
-    final var provider =
-        new CachingOidcClaimsProvider(
-            oidcConfig, URI.create("https://idp.example/userinfo"), userInfoClient, meterRegistry);
-
+    final var provider = newProvider();
     final Map<String, Object> jwtClaims =
         Map.of("sub", "alice", "jti", "jti-1", "exp", Instant.now().getEpochSecond() + 3600);
 
@@ -211,5 +248,77 @@ class CachingOidcClaimsProviderTest {
     assertThat(
             meterRegistry.get("camunda.oidc.userinfo.cache").tag("result", "hit").counter().count())
         .isEqualTo(1.0);
+  }
+
+  @Test
+  void concurrentRequestsForSameJtiTriggerSingleFetch() throws Exception {
+    final CountDownLatch startGate = new CountDownLatch(1);
+    final CountDownLatch finishGate = new CountDownLatch(10);
+    when(userInfoClient.fetch(any(), any()))
+        .thenAnswer(
+            invocation -> {
+              // slow fetch — simulates IdP latency so all threads race on the miss
+              Thread.sleep(50);
+              return Map.of("groups", List.of("eng"));
+            });
+
+    final var provider = newProvider();
+    final Map<String, Object> jwtClaims =
+        Map.of(
+            "sub", "alice", "jti", "jti-concurrent", "exp", Instant.now().getEpochSecond() + 3600);
+
+    final ExecutorService pool = Executors.newFixedThreadPool(10);
+    try {
+      for (int i = 0; i < 10; i++) {
+        pool.submit(
+            () -> {
+              try {
+                startGate.await();
+                provider.claimsFor(jwtClaims, "token-concurrent");
+              } catch (final InterruptedException e) {
+                Thread.currentThread().interrupt();
+              } finally {
+                finishGate.countDown();
+              }
+            });
+      }
+      startGate.countDown(); // release all threads
+      assertThat(finishGate.await(5, TimeUnit.SECONDS)).isTrue();
+    } finally {
+      pool.shutdownNow();
+    }
+
+    // Caffeine's atomic cache.get(key, loader) coalesces concurrent misses on the same key.
+    verify(userInfoClient, times(1)).fetch(any(), any());
+  }
+
+  @Test
+  void restoresInterruptFlagWhenFetchIsInterrupted() throws Exception {
+    when(userInfoClient.fetch(any(), any()))
+        .thenAnswer(
+            invocation -> {
+              throw new InterruptedException("simulated interrupt during fetch");
+            });
+
+    final var provider = newProvider();
+    final Map<String, Object> jwtClaims =
+        Map.of("sub", "alice", "jti", "jti-int", "exp", Instant.now().getEpochSecond() + 3600);
+
+    // Run in a dedicated thread so we can inspect its interrupt state.
+    final boolean[] interruptedAfter = {false};
+    final Map<String, Object>[] result = new Map[1];
+    final Thread t =
+        new Thread(
+            () -> {
+              result[0] = provider.claimsFor(jwtClaims, "token-int");
+              interruptedAfter[0] = Thread.interrupted();
+            });
+    t.start();
+    t.join(2_000);
+
+    assertThat(interruptedAfter[0])
+        .as("interrupt flag must be restored after swallowed InterruptedException")
+        .isTrue();
+    assertThat(result[0]).as("fail-open returns JWT claims").containsEntry("sub", "alice");
   }
 }
