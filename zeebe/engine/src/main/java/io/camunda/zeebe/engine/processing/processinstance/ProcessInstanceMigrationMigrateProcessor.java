@@ -30,7 +30,6 @@ import io.camunda.zeebe.engine.state.deployment.DeployedProcess;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.EventScopeInstanceState;
 import io.camunda.zeebe.engine.state.immutable.IncidentState;
-import io.camunda.zeebe.engine.state.immutable.JobState;
 import io.camunda.zeebe.engine.state.immutable.MessageState;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
@@ -75,7 +74,6 @@ public class ProcessInstanceMigrationMigrateProcessor
   private final TypedRejectionWriter rejectionWriter;
   private final ElementInstanceState elementInstanceState;
   private final ProcessState processState;
-  private final JobState jobState;
   private final UserTaskState userTaskState;
   private final VariableState variableState;
   private final IncidentState incidentState;
@@ -85,7 +83,7 @@ public class ProcessInstanceMigrationMigrateProcessor
   private final ProcessInstanceMigrationCatchEventBehavior migrationCatchEventBehaviour;
   private final ProcessInstanceMigrationJobBehavior migrationJobBehaviour;
   private final ProcessInstanceMigrationSequenceFlowBehavior migrationSequenceFlowBehaviour;
-  private final BpmnBehaviors bpmnBehaviors;
+  private final ProcessInstanceMigrationUserTaskBehavior migrationUserTaskBehaviour;
 
   public ProcessInstanceMigrationMigrateProcessor(
       final Writers writers,
@@ -101,8 +99,8 @@ public class ProcessInstanceMigrationMigrateProcessor
     rejectionWriter = writers.rejection();
     elementInstanceState = processingState.getElementInstanceState();
     processState = processingState.getProcessState();
-    jobState = processingState.getJobState();
     userTaskState = processingState.getUserTaskState();
+    final var jobState = processingState.getJobState();
     variableState = processingState.getVariableState();
     incidentState = processingState.getIncidentState();
     eventScopeInstanceState = processingState.getEventScopeInstanceState();
@@ -123,8 +121,8 @@ public class ProcessInstanceMigrationMigrateProcessor
 
     migrationJobBehaviour =
         new ProcessInstanceMigrationJobBehavior(stateWriter, jobState, incidentState);
-    this.bpmnBehaviors = bpmnBehaviors;
-
+    migrationUserTaskBehaviour =
+        new ProcessInstanceMigrationUserTaskBehavior(stateWriter, jobState, bpmnBehaviors);
     migrationSequenceFlowBehaviour =
         new ProcessInstanceMigrationSequenceFlowBehavior(
             keyGenerator, stateWriter, elementInstanceState);
@@ -322,18 +320,13 @@ public class ProcessInstanceMigrationMigrateProcessor
         ProcessInstanceMigrationUserTaskBehavior.isJobWorkerToZeebeUserTaskConversion(
             sourceProcessDefinition, targetProcessDefinition, targetElementId, elementInstance);
     if (isUserTaskConversion) {
-      final var migrationUserTaskBehavior =
-          new ProcessInstanceMigrationUserTaskBehavior(
-              processInstanceKey,
-              elementInstance,
-              sourceProcessDefinition,
-              targetProcessDefinition,
-              bpmnBehaviors,
-              targetElementId,
-              updatedElementInstanceRecord,
-              stateWriter,
-              jobState);
-      migrationUserTaskBehavior.tryMigrateJobWorkerToCamundaUserTask();
+      migrationUserTaskBehaviour.tryMigrateJobWorkerToCamundaUserTask(
+          processInstanceKey,
+          elementInstance,
+          sourceProcessDefinition,
+          targetProcessDefinition,
+          targetElementId,
+          updatedElementInstanceRecord);
     } else {
       migrationJobBehaviour.migrateJob(
           elementInstance,
