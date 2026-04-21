@@ -210,6 +210,26 @@ class CachingOidcClaimsProviderTest {
   }
 
   @Test
+  void ttlCapRespectsExpWhenExpIsInstant() {
+    // Spring's NimbusJwtDecoder + MappedJwtClaimSetConverter surfaces 'exp' as a
+    // java.time.Instant, not a Number. Regression guard against the earlier
+    // `instanceof Number` check that silently fell through to the 5-minute fallback
+    // in production.
+    when(userInfoClient.fetch(any(), any())).thenReturn(Map.of("groups", List.of("eng")));
+
+    oidcConfig.getUserInfoAugmentation().setCacheTtl(Duration.ofHours(1));
+    final var provider = newProvider();
+
+    final Instant expPast = Instant.now().minusSeconds(120);
+    final Map<String, Object> expired = Map.of("sub", "alice", "jti", "jti-i", "exp", expPast);
+
+    provider.claimsFor(expired, "token-abc");
+    provider.claimsFor(expired, "token-abc");
+
+    verify(userInfoClient, times(2)).fetch(any(), any());
+  }
+
+  @Test
   void ttlIsCappedByTokenExpiry() {
     when(userInfoClient.fetch(any(), any())).thenReturn(Map.of("groups", List.of("eng")));
 
