@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.db.rdbms.sql.BatchOperationMapper.BatchOperationErrorDto;
 import io.camunda.db.rdbms.write.domain.BatchOperationDbModel;
 import io.camunda.search.entities.AuditLogEntity.AuditLogActorType;
+import io.camunda.search.entities.BatchOperationEntity.BatchOperationState;
 import io.camunda.search.entities.BatchOperationType;
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -67,6 +68,8 @@ class BatchOperationEntityMapperTest {
     final var dbModel =
         new BatchOperationDbModel.Builder()
             .batchOperationKey("batch-1")
+            .state(BatchOperationState.ACTIVE)
+            .operationType(BatchOperationType.CANCEL_PROCESS_INSTANCE)
             .actorType(AuditLogActorType.USER)
             .actorId("user-123")
             .build();

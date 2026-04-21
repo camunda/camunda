@@ -199,16 +199,11 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.apache.commons.lang3.StringUtils;
 import org.jspecify.annotations.Nullable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public final class SearchQueryResponseMapper {
-  private static final Logger LOGGER = LoggerFactory.getLogger(SearchQueryResponseMapper.class);
 
   // Emitted as a sentinel for required date-time response fields when the data layer has no value.
   // Only surfaces in rare, transient edge cases (exporter cache miss, or conditional-write intents
@@ -793,10 +788,8 @@ public final class SearchQueryResponseMapper {
   public static BatchOperationResponse toBatchOperation(final BatchOperationEntity entity) {
     return new BatchOperationResponse()
         .batchOperationKey(entity.batchOperationKey())
-        .state(BatchOperationStateEnum.fromValue(requireNonNull(entity.state(), "state").name()))
-        .batchOperationType(
-            BatchOperationTypeEnum.fromValue(
-                requireNonNull(entity.operationType(), "operationType").name()))
+        .state(BatchOperationStateEnum.fromValue(entity.state().name()))
+        .batchOperationType(BatchOperationTypeEnum.fromValue(entity.operationType().name()))
         .startDate(formatDate(entity.startDate()))
         .endDate(formatDate(entity.endDate()))
         .actorType(
@@ -805,11 +798,9 @@ public final class SearchQueryResponseMapper {
                 .map(AuditLogActorTypeEnum::fromValue)
                 .orElse(null))
         .actorId(entity.actorId())
-        .operationsTotalCount(requireNonNull(entity.operationsTotalCount(), "operationsTotalCount"))
-        .operationsFailedCount(
-            requireNonNull(entity.operationsFailedCount(), "operationsFailedCount"))
-        .operationsCompletedCount(
-            requireNonNull(entity.operationsCompletedCount(), "operationsCompletedCount"))
+        .operationsTotalCount(entity.operationsTotalCount())
+        .operationsFailedCount(entity.operationsFailedCount())
+        .operationsCompletedCount(entity.operationsCompletedCount())
         .errors(
             ofNullable(entity.errors())
                 .map(
@@ -838,43 +829,23 @@ public final class SearchQueryResponseMapper {
       final BatchOperationItemEntity entity) {
     return new BatchOperationItemResponse()
         .batchOperationKey(entity.batchOperationKey())
-        .operationType(
-            requireNonNull(
-                entity.operationType() != null
-                    ? BatchOperationTypeEnum.fromValue(entity.operationType().name())
-                    : null,
-                "operationType"))
-        .itemKey(
-            requireNonNull(
-                warnIfNull(entity, BatchOperationItemEntity::itemKey, "itemKey")
-                    .map(Object::toString)
-                    .orElse(null),
-                "itemKey"))
-        .processInstanceKey(
-            requireNonNull(
-                warnIfNull(
-                        entity, BatchOperationItemEntity::processInstanceKey, "processInstanceKey")
-                    .map(Object::toString)
-                    .orElse(null),
-                "processInstanceKey"))
+        .operationType(BatchOperationTypeEnum.fromValue(entity.operationType().name()))
+        .itemKey(keyToString(entity.itemKey()))
+        // `processInstanceKey` is null for batch-op targets that are not process instances (e.g.
+        // DELETE_DECISION_INSTANCE, DELETE_DECISION_DEFINITION). Spec declares it nullable.
+        .processInstanceKey(keyToStringOrNull(entity.processInstanceKey()))
         .rootProcessInstanceKey(keyToStringOrNull(entity.rootProcessInstanceKey()))
         .processedDate(formatDate(entity.processedDate()))
         .errorMessage(entity.errorMessage())
-        .state(
-            requireNonNull(
-                warnIfNull(entity, BatchOperationItemEntity::state, "state")
-                    .map(Enum::name)
-                    .map(BatchOperationItemResponse.StateEnum::fromValue)
-                    .orElse(null),
-                "state"));
+        .state(BatchOperationItemResponse.StateEnum.fromValue(entity.state().name()));
   }
 
   private static BatchOperationError toBatchOperationError(
       final BatchOperationErrorEntity batchOperationErrorEntity) {
     return new BatchOperationError()
-        .partitionId(requireNonNull(batchOperationErrorEntity.partitionId(), "partitionId"))
-        .type(TypeEnum.fromValue(requireNonNull(batchOperationErrorEntity.type(), "type")))
-        .message(requireNonNull(batchOperationErrorEntity.message(), "message"));
+        .partitionId(batchOperationErrorEntity.partitionId())
+        .type(TypeEnum.fromValue(batchOperationErrorEntity.type()))
+        .message(batchOperationErrorEntity.message());
   }
 
   private static List<RoleResult> toRoles(final List<RoleEntity> roles) {
@@ -1823,18 +1794,6 @@ public final class SearchQueryResponseMapper {
         .priority(entity.priority())
         .source(
             GlobalListenerSourceEnum.fromValue(requireNonNull(entity.source(), "source").name()));
-  }
-
-  // sometimes we've seen null for properties that should not be null; log a warning if that happens
-  // so we can at least return data - rather than erroring out the whole response
-  private static <T, R> Optional<R> warnIfNull(
-      final T entity, final Function<T, @Nullable R> mapper, final String propertyName) {
-    final R value = mapper.apply(entity);
-    if (value == null) {
-      LOGGER.warn("{} value is null for entity: {}", propertyName, entity);
-      return Optional.empty();
-    }
-    return Optional.of(value);
   }
 
   private static @Nullable String emptyToNull(final @Nullable String value) {

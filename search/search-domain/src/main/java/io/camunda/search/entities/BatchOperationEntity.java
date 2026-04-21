@@ -21,8 +21,8 @@ public record BatchOperationEntity(
     // Operate BatchOperation Key is a UUID
     // Engine BatchOperation Key is a Long
     String batchOperationKey,
-    @Nullable BatchOperationState state,
-    @Nullable BatchOperationType operationType,
+    BatchOperationState state,
+    BatchOperationType operationType,
     @Nullable OffsetDateTime startDate,
     @Nullable OffsetDateTime endDate,
     /*
@@ -37,13 +37,18 @@ public record BatchOperationEntity(
      * @since 8.9.0 - so null for older versions
      */
     @Nullable String actorId,
-    @Nullable Integer operationsTotalCount,
-    @Nullable Integer operationsFailedCount,
-    @Nullable Integer operationsCompletedCount,
+    Integer operationsTotalCount,
+    Integer operationsFailedCount,
+    Integer operationsCompletedCount,
     List<BatchOperationErrorEntity> errors) {
 
   public BatchOperationEntity {
     Objects.requireNonNull(batchOperationKey, "batchOperationKey");
+    Objects.requireNonNull(state, "state");
+    Objects.requireNonNull(operationType, "operationType");
+    Objects.requireNonNull(operationsTotalCount, "operationsTotalCount");
+    Objects.requireNonNull(operationsFailedCount, "operationsFailedCount");
+    Objects.requireNonNull(operationsCompletedCount, "operationsCompletedCount");
     // Mutable collections are required: MyBatis hydrates collection-mapped fields (e.g. from a
     // <collection> result map or a LEFT JOIN) by calling .add() on the existing instance.
     // Immutable defaults (e.g. List.of()) would cause UnsupportedOperationException at runtime.
@@ -75,20 +80,29 @@ public record BatchOperationEntity(
       // Operate BatchOperation Key is a UUID
       // Engine BatchOperation Key is a Long
       String batchOperationKey,
-      @Nullable BatchOperationType operationType,
-      @Nullable Long itemKey,
+      BatchOperationType operationType,
+      Long itemKey,
+      // null for non-process-instance item targets (e.g. DELETE_DECISION_INSTANCE).
       @Nullable Long processInstanceKey,
       @Nullable Long rootProcessInstanceKey,
-      @Nullable BatchOperationItemState state,
+      BatchOperationItemState state,
       @Nullable OffsetDateTime processedDate,
       @Nullable String errorMessage) {
     public BatchOperationItemEntity {
       Objects.requireNonNull(batchOperationKey, "batchOperationKey");
+      Objects.requireNonNull(operationType, "operationType");
+      Objects.requireNonNull(itemKey, "itemKey");
+      Objects.requireNonNull(state, "state");
     }
   }
 
-  public record BatchOperationErrorEntity(
-      @Nullable Integer partitionId, @Nullable String type, @Nullable String message) {}
+  public record BatchOperationErrorEntity(Integer partitionId, String type, String message) {
+    public BatchOperationErrorEntity {
+      Objects.requireNonNull(partitionId, "partitionId");
+      Objects.requireNonNull(type, "type");
+      Objects.requireNonNull(message, "message");
+    }
+  }
 
   public enum BatchOperationState {
     CREATED,
