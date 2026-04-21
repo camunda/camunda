@@ -34,7 +34,7 @@ camunda:
     grpc-address: ${ZEEBE_GRPC_ADDRESS:http://localhost:26500}
     rest-address: ${ZEEBE_REST_ADDRESS:http://localhost:8080}
     prefer-rest-over-grpc: true
-    # Since starter dont need any job worker execution threads
+    # Since the starter doesn't need any job worker execution threads
     execution-threads: 0
     auth:
       method: ${ZEEBE_AUTH_METHOD:none}

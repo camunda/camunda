@@ -17,6 +17,7 @@ import io.camunda.zeebe.metrics.ConnectionMonitor;
 import io.camunda.zeebe.util.PayloadReader;
 import io.camunda.zeebe.util.logging.ThrottledLogger;
 import jakarta.annotation.PostConstruct;
+import jakarta.annotation.PreDestroy;
 import java.time.Duration;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
@@ -33,11 +34,13 @@ public class Worker {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(Worker.class);
   private static final Logger THROTTLED_LOGGER = new ThrottledLogger(LOGGER, Duration.ofSeconds(5));
+  private static final int REQUEST_FUTURES_CAPACITY = 10_000;
 
   private final CamundaClient client;
   private final WorkerProperties workerCfg;
   private final String variables;
-  private final BlockingQueue<Future<?>> requestFutures = new ArrayBlockingQueue<>(10_000);
+  private final BlockingQueue<Future<?>> requestFutures =
+      new ArrayBlockingQueue<>(REQUEST_FUTURES_CAPACITY);
   private final ResponseChecker responseChecker;
   private final ConnectionMonitor connectionMonitor;
 
@@ -65,6 +68,19 @@ public class Worker {
         workerCfg.getMessageName(),
         workerCfg.getCorrelationKeyVariableName(),
         workerCfg.getPayloadPath());
+  }
+
+  @PreDestroy
+  void shutdown() {
+    // ResponseChecker extends Thread with a default (non-daemon) factory, so without
+    // an explicit close() it keeps the JVM alive after the Spring context stops —
+    // tests appear to pass but the forked process never exits on IDE runners.
+    responseChecker.close();
+    try {
+      responseChecker.join(Duration.ofSeconds(5).toMillis());
+    } catch (final InterruptedException e) {
+      Thread.currentThread().interrupt();
+    }
   }
 
   @JobWorker(autoComplete = false)
@@ -96,7 +112,15 @@ public class Worker {
 
     final var command = jobClient.newCompleteCommand(job.getKey()).variables(variables);
     addDelayToCompletion(workerCfg.getCompletionDelay().toMillis(), startHandlingTime);
-    requestFutures.add(command.send());
+    if (!requestFutures.offer(command.send())) {
+      // Non-blocking: if the response-check queue is saturated, drop tracking for this
+      // completion rather than stalling the job handler thread (which would cascade into
+      // broker timeouts). We lose visibility into its eventual result — log throttled so
+      // the operator can notice sustained backpressure without flooding the log.
+      THROTTLED_LOGGER.warn(
+          "Completion-response queue full (capacity: {}); dropping future tracking",
+          REQUEST_FUTURES_CAPACITY);
+    }
   }
 
   private boolean publishMessage(final String correlationKey) {
