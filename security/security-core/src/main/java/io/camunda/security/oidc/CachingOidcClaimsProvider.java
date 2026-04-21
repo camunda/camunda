@@ -327,7 +327,7 @@ public class CachingOidcClaimsProvider implements OidcClaimsProvider {
 
     private long ttlNanos(final CacheEntry value) {
       if (value.degraded()) {
-        return OidcUserInfoAugmentationConfiguration.NEGATIVE_CACHE_TTL.toNanos();
+        return oidcConfig.getUserInfoAugmentation().getNegativeCacheTtl().toNanos();
       }
       final Duration untilExp = Duration.between(Instant.now(), value.tokenExp()).minus(clockSkew);
       final Duration effective =
