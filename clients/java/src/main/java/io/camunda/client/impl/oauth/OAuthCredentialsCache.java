@@ -69,12 +69,31 @@ public final class OAuthCredentialsCache {
    */
   private final AtomicLong refreshGeneration = new AtomicLong(0);
 
+  /**
+   * Creates an in-memory-only credentials cache. Equivalent to {@link #OAuthCredentialsCache(File)}
+   * with {@code null} — no filesystem persistence; tokens live only for the lifetime of this
+   * instance.
+   */
+  public OAuthCredentialsCache() {
+    this(null);
+  }
+
+  /**
+   * Creates a credentials cache backed by {@code cacheFile}. If {@code cacheFile} is {@code null},
+   * the cache operates in memory only: {@link #readCache()} and {@link #writeCache()} become no-ops
+   * and tokens are not persisted across restarts. If {@code cacheFile} is non-null, the file (and
+   * its parent directories, if missing) are created on first write and used to round-trip
+   * credentials between runs.
+   */
   public OAuthCredentialsCache(final File cacheFile) {
     this.cacheFile = cacheFile;
     credentialsByClientId = new AtomicReference<>(new HashMap<>());
   }
 
   public OAuthCredentialsCache readCache() throws IOException {
+    if (cacheFile == null) {
+      return this;
+    }
     READ_LOCK.lock();
     try {
       if (!cacheFile.exists() || cacheFile.length() == 0) {
@@ -91,6 +110,9 @@ public final class OAuthCredentialsCache {
   }
 
   public void writeCache() throws IOException {
+    if (cacheFile == null) {
+      return;
+    }
     final Map<String, OAuthCachedCredentials> values = credentialsByClientId.get();
 
     final Map<String, Map<String, OAuthCachedCredentials>> cache = new HashMap<>(values.size());
