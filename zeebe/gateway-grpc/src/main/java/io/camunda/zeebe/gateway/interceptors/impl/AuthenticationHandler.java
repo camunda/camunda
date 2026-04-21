@@ -24,6 +24,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
@@ -51,6 +53,7 @@ public sealed interface AuthenticationHandler {
         Context.key("io.camunda.zeebe:user_claim");
 
     public static final String BEARER_PREFIX = "Bearer ";
+    private static final Logger LOG = LoggerFactory.getLogger(Oidc.class);
     private final JwtDecoder jwtDecoder;
     private final OidcClaimsProvider claimsProvider;
     private final OidcAuthenticationConfiguration oidcAuthenticationConfiguration;
@@ -85,20 +88,19 @@ public sealed interface AuthenticationHandler {
       try {
         token = jwtDecoder.decode(tokenValue);
       } catch (final JwtException e) {
-        return Either.left(
-            Status.UNAUTHENTICATED
-                .augmentDescription("Expected a valid token, see cause for details")
-                .withCause(e));
+        // Exception details may include the IdP URL or issuer mismatch strings; log them
+        // server-side and return a generic status so API callers don't see them.
+        LOG.debug("Rejecting bearer token: JWT decode failed", e);
+        return Either.left(Status.UNAUTHENTICATED.augmentDescription("Invalid bearer token"));
       }
 
       final Map<String, Object> claims;
       try {
         claims = claimsProvider.claimsFor(token.getClaims(), tokenValue);
       } catch (final Exception e) {
+        LOG.warn("Rejecting bearer token: OIDC claims resolution failed", e);
         return Either.left(
-            Status.UNAUTHENTICATED
-                .augmentDescription("Failed to resolve OIDC claims, see cause for details")
-                .withCause(e));
+            Status.UNAUTHENTICATED.augmentDescription("Failed to resolve OIDC claims"));
       }
 
       var context = Context.current();
@@ -111,10 +113,9 @@ public sealed interface AuthenticationHandler {
         try {
           context = context.withValue(GROUPS_CLAIMS, oidcGroupsLoader.load(claims));
         } catch (final Exception e) {
+          LOG.warn("Rejecting bearer token: OIDC groups loader failed", e);
           return Either.left(
-              Status.UNAUTHENTICATED
-                  .augmentDescription("Failed to load OIDC groups, see cause for details")
-                  .withCause(e));
+              Status.UNAUTHENTICATED.augmentDescription("Failed to load OIDC groups"));
         }
       }
 
@@ -122,10 +123,9 @@ public sealed interface AuthenticationHandler {
       try {
         principals = oidcPrincipalLoader.load(claims);
       } catch (final Exception e) {
+        LOG.warn("Rejecting bearer token: OIDC principal loader failed", e);
         return Either.left(
-            Status.UNAUTHENTICATED
-                .augmentDescription("Failed to load OIDC principals, see cause for details")
-                .withCause(e));
+            Status.UNAUTHENTICATED.augmentDescription("Failed to load OIDC principals"));
       }
 
       if (principals.username() == null && principals.clientId() == null) {
