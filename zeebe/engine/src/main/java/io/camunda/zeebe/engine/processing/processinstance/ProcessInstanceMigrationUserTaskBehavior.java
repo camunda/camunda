@@ -20,11 +20,14 @@ import io.camunda.zeebe.engine.processing.deployment.model.element.AbstractFlowE
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableJobWorkerElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableMultiInstanceBody;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableUserTask;
+import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceMigrationMigrateProcessor.SafetyCheckFailedException;
 import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceMigrationPreconditions.ProcessInstanceMigrationPreconditionFailedException;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.state.deployment.DeployedProcess;
 import io.camunda.zeebe.engine.state.immutable.JobState;
+import io.camunda.zeebe.engine.state.immutable.UserTaskState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
+import io.camunda.zeebe.msgpack.spec.MsgPackHelper;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
@@ -36,6 +39,7 @@ import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.HashMap;
 import java.util.Map;
 import org.agrona.DirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 import org.slf4j.Logger;
 
 public class ProcessInstanceMigrationUserTaskBehavior {
@@ -61,19 +65,24 @@ public class ProcessInstanceMigrationUserTaskBehavior {
                   for process instance with key '%s'.
                   """;
 
+  private static final UnsafeBuffer NIL_VALUE = new UnsafeBuffer(MsgPackHelper.NIL);
+
   private static final Logger LOGGER = Loggers.ENGINE_PROCESSING_LOGGER;
   private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
   private final StateWriter stateWriter;
   private final BpmnUserTaskBehavior userTaskBehavior;
   private final JobState jobState;
+  private final UserTaskState userTaskState;
 
   public ProcessInstanceMigrationUserTaskBehavior(
       final StateWriter stateWriter,
       final JobState jobState,
+      final UserTaskState userTaskState,
       final BpmnBehaviors bpmnBehaviors) {
     this.stateWriter = stateWriter;
     this.jobState = jobState;
+    this.userTaskState = userTaskState;
     userTaskBehavior = bpmnBehaviors.userTaskBehavior();
   }
 
@@ -139,7 +148,8 @@ public class ProcessInstanceMigrationUserTaskBehavior {
             targetProcessDefinition,
             elementInstance);
 
-    assignUser(userTaskProperties, userTaskRecord, context, targetProperties, targetProcessDefinition);
+    assignUser(
+        userTaskProperties, userTaskRecord, context, targetProperties, targetProcessDefinition);
 
     job.setIsJobToUserTaskMigration(true);
     // Cancel previous job worker job
@@ -192,6 +202,34 @@ public class ProcessInstanceMigrationUserTaskBehavior {
     final boolean targetIsZeebeUserTask = targetUserTask.getUserTaskProperties() != null;
 
     return sourceIsJobWorker && targetIsZeebeUserTask;
+  }
+
+  public void migrateUserTask(
+      final ElementInstance elementInstance,
+      final DeployedProcess targetProcessDefinition,
+      final long processInstanceKey,
+      final String targetElementId) {
+    if (elementInstance.getUserTaskKey() > 0) {
+      final var userTask = userTaskState.getUserTask(elementInstance.getUserTaskKey());
+      if (userTask == null) {
+        throw new SafetyCheckFailedException(
+            String.format(
+                """
+                Expected to migrate a user task for process instance with key '%d', \
+                but could not find user task with key '%d'. \
+                Please report this as a bug""",
+                processInstanceKey, elementInstance.getUserTaskKey()));
+      }
+      stateWriter.appendFollowUpEvent(
+          elementInstance.getUserTaskKey(),
+          UserTaskIntent.MIGRATED,
+          userTask
+              .setProcessDefinitionKey(targetProcessDefinition.getKey())
+              .setProcessDefinitionVersion(targetProcessDefinition.getVersion())
+              .setBpmnProcessId(targetProcessDefinition.getBpmnProcessId())
+              .setElementId(targetElementId)
+              .setVariables(NIL_VALUE));
+    }
   }
 
   private void assignUser(
