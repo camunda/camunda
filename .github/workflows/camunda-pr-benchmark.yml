@@ -8,15 +8,18 @@
 # previous workflow run for the same PR.
 #
 # Event -> matrix mapping:
-#   labeled / unlabeled  : single-entry matrix for the DB whose label changed
-#                          (empty if the changed label is not a benchmark label)
-#   synchronize / closed : every benchmark-<db> label currently on the PR
+#   labeled:     single-entry matrix for the added DB
+#   unlabeled:   single-entry matrix for the removed DB (triggers cleanup)
+#   synchronize: all currently-labeled DBs (restarts all benchmarks)
+#   closed:      all currently-labeled DBs (cleanup for all)
 #
-# Isolation between DBs is provided by job-level concurrency keyed on matrix.db and
-# the PR number. cancel-in-progress applies only within the same DB+PR, so:
+# Job-level concurrency (keyed on matrix.db + PR) ensures:
 #   - adding/removing a label for one DB never cancels a benchmark for another DB
 #   - pushing a commit restarts each labeled DB's benchmark independently
-#   - unlabeling a DB cancels its in-progress run and triggers delete-benchmark cleanup
+#   - unlabeling a DB cancels its in-progress run; the reusable pipeline then runs cleanup
+#
+# No workflow-level concurrency: all event-triggered runs coexist independently. The reusable
+# pipeline's job conditions ensure correct create vs. delete behavior per DB per event.
 name: Camunda PR Benchmark
 on:
   pull_request:
@@ -73,9 +76,11 @@ jobs:
 
           case "$ACTION" in
             labeled|unlabeled)
+              # Single DB: the one whose label changed
               add_entry "$EVENT_LABEL"
               ;;
             synchronize|closed)
+              # All currently-labeled DBs
               while IFS= read -r label; do
                 [[ -n "$label" ]] && add_entry "$label"
               done < <(echo "$PR_LABELS" | jq -r '.[]?')

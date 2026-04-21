@@ -1,7 +1,5 @@
 # description: Reusable benchmark pipeline for PR load tests. Handles the full
-#              create→await→profile→comment cycle for a single benchmark type. Supports exact
-#              label matching (label) or wildcard matching (label-prefix), where the storage type
-#              is derived from the label suffix (e.g. benchmark-postgresql → postgresql).
+#              create→await→profile→comment cycle for a single benchmark type.
 #              Also handles cleanup on label removal/close.
 # called-by: camunda-pr-benchmark.yml
 # calls: camunda-load-test.yml, profile-load-test.yml
@@ -12,24 +10,17 @@ on:
   workflow_call:
     inputs:
       label:
-        description: 'Exact PR label for single-type benchmarks (e.g. benchmark). Mutually exclusive with label-prefix.'
-        required: false
+        description: 'PR label that triggered this benchmark (e.g., benchmark, benchmark-postgresql)'
+        required: true
         type: string
-        default: ''
-      label-prefix:
-        description: 'PR label prefix for wildcard matching (e.g. benchmark-). The storage type is derived from the label suffix. Mutually exclusive with label.'
-        required: false
-        type: string
-        default: ''
       ref:
         description: 'Branch ref to sanitize, deploy, and profile'
         required: true
         type: string
       secondary-storage-type:
-        description: 'Storage backend override. Only used with exact label; with label-prefix the type is derived from the label suffix.'
-        required: false
+        description: 'Storage backend (elasticsearch, opensearch, postgresql, mysql, mariadb, mssql, oracle, none)'
+        required: true
         type: string
-        default: 'elasticsearch'
       reuse-tag:
         description: 'Pre-built image tag from the internal registry. When set, skips the image build step.'
         required: false
@@ -50,60 +41,34 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       name: ${{ steps.assemble.outputs.name }}
-      storage-type: ${{ steps.label-info.outputs.storage-type }}
+      storage-type: ${{ inputs.secondary-storage-type }}
     steps:
       - name: Checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
-      - id: label-info
-        name: Extract storage type from label
+      - id: compute-suffix
+        name: Compute namespace suffix
         run: |
-          label_prefix="${{ inputs.label-prefix }}"
-          event_label="${{ github.event.label.name }}"
-          pr_labels='${{ toJSON(github.event.pull_request.labels.*.name) }}'
-
-          if [[ -n "$label_prefix" ]]; then
-            # Prefix mode: derive storage type from the matched label suffix
-            case "${{ github.event.action }}" in
-              labeled|unlabeled)
-                [[ "$event_label" == "${label_prefix}"* ]] && storage_type="${event_label#"$label_prefix"}" ;;
-              synchronize|closed)
-                match=$(echo "$pr_labels" | jq -r --arg p "$label_prefix" '.[] | select(startswith($p))' | head -1)
-                [[ -n "$match" ]] && storage_type="${match#"$label_prefix"}" ;;
-            esac
-          else
-            # Exact label mode: storage type is fixed from the input
-            storage_type="${{ inputs.secondary-storage-type }}"
-          fi
-
-          suffix=$([[ "$storage_type" == "elasticsearch" || -z "$storage_type" ]] && echo "" || echo "-${storage_type}")
+          storage_type="${{ inputs.secondary-storage-type }}"
+          suffix=$([[ "$storage_type" == "elasticsearch" ]] && echo "" || echo "-${storage_type}")
+          max_length=$((60 - ${#suffix}))
           {
-            echo "storage-type=$storage_type"
             echo "suffix=$suffix"
-            echo "max-length=$((60 - ${#suffix}))"
+            echo "max-length=$max_length"
           } >> "$GITHUB_OUTPUT"
 
-      - id: validate
-        name: Validate storage type
-        if: steps.label-info.outputs.storage-type != ''
-        run: |
-          valid_types="elasticsearch opensearch postgresql mysql mariadb mssql oracle none"
-          storage_type="${{ steps.label-info.outputs.storage-type }}"
-          if ! echo "$valid_types" | grep -wq "$storage_type"; then
-            echo "::error::Label suffix '${storage_type}' is not a supported storage type. Valid suffixes: ${valid_types// /, }"
-            exit 1
-          fi
-
       - id: sanitize
+        name: Sanitize branch name
         uses: camunda/infra-global-github-actions/sanitize-branch-name@main
         with:
           branch: ${{ inputs.ref }}
-          max_length: ${{ steps.label-info.outputs.max-length }}
+          max_length: ${{ steps.compute-suffix.outputs.max-length }}
 
       - id: assemble
+        name: Assemble namespace name
         run: |
           branch="${{ steps.sanitize.outputs.branch_name }}"
-          echo "name=c8-${branch%-}${{ steps.label-info.outputs.suffix }}" >> "$GITHUB_OUTPUT"
+          echo "name=c8-${branch%-}${{ steps.compute-suffix.outputs.suffix }}" >> "$GITHUB_OUTPUT"
 
       - name: Observe build status
         if: always()
@@ -119,14 +84,8 @@ jobs:
     name: Benchmark
     needs: compute-namespace
     if: >
-      (github.event.action == 'labeled' && (
-        (inputs.label != '' && github.event.label.name == inputs.label) ||
-        (inputs.label-prefix != '' && startsWith(github.event.label.name, inputs.label-prefix))
-      )) ||
-      (github.event.action == 'synchronize' && (
-        (inputs.label != '' && contains(github.event.pull_request.labels.*.name, inputs.label)) ||
-        (inputs.label-prefix != '' && needs.compute-namespace.outputs.storage-type != '')
-      ))
+      (github.event.action == 'labeled' && github.event.label.name == inputs.label) ||
+      (github.event.action == 'synchronize' && contains(github.event.pull_request.labels.*.name, inputs.label))
     uses: ./.github/workflows/camunda-load-test.yml
     secrets: inherit
     with:
@@ -244,14 +203,8 @@ jobs:
     name: Benchmark Cleanup
     needs: compute-namespace
     if: >
-      (github.event.action == 'unlabeled' && (
-        (inputs.label != '' && github.event.label.name == inputs.label) ||
-        (inputs.label-prefix != '' && startsWith(github.event.label.name, inputs.label-prefix))
-      )) ||
-      (github.event.action == 'closed' && (
-        (inputs.label != '' && contains(github.event.pull_request.labels.*.name, inputs.label)) ||
-        (inputs.label-prefix != '' && needs.compute-namespace.outputs.storage-type != '')
-      ))
+      (github.event.action == 'unlabeled' && github.event.label.name == inputs.label) ||
+      (github.event.action == 'closed' && contains(github.event.pull_request.labels.*.name, inputs.label))
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:
