@@ -41,15 +41,8 @@ function useElementInstanceVariables(
       }
 
       if (variable.variableKey !== undefined) {
-        const variableQueryKey = queryKeys.variable.get(variable.variableKey);
-
-        queryClient.removeQueries({
-          queryKey: variableQueryKey,
-          exact: true,
-        });
-
         await queryClient.fetchQuery({
-          queryKey: variableQueryKey,
+          queryKey: queryKeys.variable.get(variable.variableKey),
           queryFn: async () => {
             const {response, error} = await getVariable(variable.variableKey!);
 
@@ -63,7 +56,6 @@ function useElementInstanceVariables(
 
             return response;
           },
-          staleTime: 0,
           retry: true,
           retryDelay: 1000,
         });
