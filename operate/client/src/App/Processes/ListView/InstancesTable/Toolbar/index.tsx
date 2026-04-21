@@ -26,7 +26,6 @@ import {
 } from 'modules/hooks/useBatchOperationMutationRequestBody';
 import {useBatchOperationSuccessNotification} from 'modules/hooks/useBatchOperationSuccessNotification';
 import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelection';
-import {IS_DELETE_BATCH_OPERATION_ENABLED} from 'modules/feature-flags';
 
 type Props = {
   selectedInstancesCount: number;
@@ -184,26 +183,24 @@ const Toolbar: React.FC<Props> = observer(({selectedInstancesCount}) => {
         >
           <MoveAction />
           <MigrateAction />
-          {IS_DELETE_BATCH_OPERATION_ENABLED && (
-            <TableBatchAction
-              renderIcon={TrashCan}
-              onClick={() => setModalMode('DELETE_PROCESS_INSTANCE')}
-              disabled={
-                batchModificationStore.state.isEnabled ||
-                !processInstancesSelectionStore.hasSelectedFinishedInstances
-              }
-              title={
-                batchModificationStore.state.isEnabled
-                  ? 'Not available in batch modification mode'
-                  : !processInstancesSelectionStore.hasSelectedFinishedInstances
-                    ? 'No finished process instances selected. Please select at least one completed or canceled process instance to delete.'
-                    : undefined
-              }
-              data-testid="delete-batch-operation"
-            >
-              Delete
-            </TableBatchAction>
-          )}
+          <TableBatchAction
+            renderIcon={TrashCan}
+            onClick={() => setModalMode('DELETE_PROCESS_INSTANCE')}
+            disabled={
+              batchModificationStore.state.isEnabled ||
+              !processInstancesSelectionStore.hasSelectedFinishedInstances
+            }
+            title={
+              batchModificationStore.state.isEnabled
+                ? 'Not available in batch modification mode'
+                : !processInstancesSelectionStore.hasSelectedFinishedInstances
+                  ? 'No finished process instances selected. Please select at least one completed or canceled process instance to delete.'
+                  : undefined
+            }
+            data-testid="delete-batch-operation"
+          >
+            Delete
+          </TableBatchAction>
           <TableBatchAction
             renderIcon={Error}
             onClick={() => setModalMode('CANCEL_PROCESS_INSTANCE')}
