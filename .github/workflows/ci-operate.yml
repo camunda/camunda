@@ -437,12 +437,12 @@ jobs:
         run: npx playwright merge-reports --reporter junit ./all-blob-reports > vr-results.xml
       - name: Test Summary
         if: always()
-        uses: test-summary/action@v2
+        uses: test-summary/action@31493c76ec9e7aa675f1585d3ed6f1da69269a86 # v2.4
         with:
           paths: operate/client/vr-results.xml
       - name: Upload VR test results
         if: always()
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
         with:
           name: operate-visual-regression-test-results
           path: operate/client/vr-results.xml
