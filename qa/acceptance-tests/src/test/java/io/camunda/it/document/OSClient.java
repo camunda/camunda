@@ -47,6 +47,7 @@ public class OSClient implements DocumentClient {
                     httpClientBuilder.disableContentCompression();
                     return httpClientBuilder;
                   })
+              .setCompressionEnabled(true)
               .setMapper(new JacksonJsonpMapper())
               .build();
       opensearchClient = new OpenSearchClient(transport);

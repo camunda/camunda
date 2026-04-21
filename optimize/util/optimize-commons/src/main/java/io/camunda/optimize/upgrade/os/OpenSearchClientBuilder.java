@@ -171,6 +171,8 @@ public class OpenSearchClientBuilder {
           return requestConfigBuilder;
         });
 
+    builder.setCompressionEnabled(true);
+
     if (StringUtils.isNotBlank(configurationService.getOpenSearchConfiguration().getPathPrefix())) {
       builder.setPathPrefix(configurationService.getOpenSearchConfiguration().getPathPrefix());
     }
@@ -396,6 +398,10 @@ public class OpenSearchClientBuilder {
       final ConfigurationService configurationService,
       final HttpRequestInterceptor... requestInterceptors) {
     httpAsyncClientBuilder.disableContentCompression();
+    // Strip Accept-Encoding header to prevent OS <3.5.0 from sending gzip responses
+    // that httpclient5 can't decompress (disableContentCompression remove the decompressor)
+    httpAsyncClientBuilder.addRequestInterceptorLast(
+        (request, entity, context) -> request.removeHeaders("Accept-Encoding"));
     setupAuthentication(httpAsyncClientBuilder, configurationService);
 
     for (final HttpRequestInterceptor interceptor : requestInterceptors) {

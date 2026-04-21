@@ -148,8 +148,12 @@ public class BackupRestoreTest {
     builder.setHttpClientConfigCallback(
         httpClientBuilder -> {
           httpClientBuilder.disableContentCompression();
+          httpClientBuilder.addRequestInterceptorLast(
+              (request, entity, context) -> request.removeHeaders("Accept-Encoding"));
           return httpClientBuilder;
         });
+
+    builder.setCompressionEnabled(true);
 
     final org.opensearch.client.json.jackson.JacksonJsonpMapper jsonpMapper =
         new org.opensearch.client.json.jackson.JacksonJsonpMapper(CommonUtils.OBJECT_MAPPER);

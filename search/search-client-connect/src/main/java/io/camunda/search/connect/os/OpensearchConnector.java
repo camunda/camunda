@@ -133,6 +133,8 @@ public final class OpensearchConnector {
           return requestConfigBuilder;
         });
 
+    builder.setCompressionEnabled(true);
+
     final var jsonpMapper = new SearchRequestJacksonJsonpMapperWrapper(objectMapper);
     builder.setMapper(jsonpMapper);
 
@@ -186,6 +188,11 @@ public final class OpensearchConnector {
       final ConnectConfiguration osConfig,
       final HttpRequestInterceptor... interceptors) {
     httpAsyncClientBuilder.disableContentCompression();
+    // Strip Accept-Encoding header to prevent OS <3.5.0 from sending gzip responses
+    // that httpclient5 can't decompress (disableContentCompression remove the decompressor)
+    httpAsyncClientBuilder.addRequestInterceptorLast(
+        (request, entity, context) -> request.removeHeaders("Accept-Encoding"));
+
     setupAuthentication(httpAsyncClientBuilder, osConfig);
 
     for (final HttpRequestInterceptor interceptor : interceptors) {
