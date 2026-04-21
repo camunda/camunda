@@ -16,20 +16,20 @@ import org.jspecify.annotations.Nullable;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public record AuthorizationEntity(
-    @Nullable Long authorizationKey,
+    Long authorizationKey,
     String ownerId,
     String ownerType,
     String resourceType,
     @Nullable Short resourceMatcher,
-    String resourceId,
+    @Nullable String resourceId,
     @Nullable String resourcePropertyName,
     Set<PermissionType> permissionTypes) {
 
   public AuthorizationEntity {
+    Objects.requireNonNull(authorizationKey, "authorizationKey");
     Objects.requireNonNull(ownerId, "ownerId");
     Objects.requireNonNull(ownerType, "ownerType");
     Objects.requireNonNull(resourceType, "resourceType");
-    Objects.requireNonNull(resourceId, "resourceId");
     // Mutable collections are required: MyBatis hydrates collection-mapped fields (e.g. from a
     // <collection> result map or a LEFT JOIN) by calling .add() on the existing instance.
     // Immutable defaults (e.g. Set.of()) would cause UnsupportedOperationException at runtime.
