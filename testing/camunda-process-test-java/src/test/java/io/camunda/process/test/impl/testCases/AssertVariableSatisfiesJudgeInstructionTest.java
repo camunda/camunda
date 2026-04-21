@@ -26,6 +26,7 @@ import io.camunda.client.CamundaClient;
 import io.camunda.process.test.api.CamundaProcessTestContext;
 import io.camunda.process.test.api.assertions.ElementSelector;
 import io.camunda.process.test.api.assertions.ProcessInstanceAssert;
+import io.camunda.process.test.api.assertions.ProcessInstanceSelector;
 import io.camunda.process.test.api.judge.JudgeConfig;
 import io.camunda.process.test.api.testCases.ImmutableElementSelector;
 import io.camunda.process.test.api.testCases.ImmutableProcessInstanceSelector;
@@ -53,8 +54,10 @@ public class AssertVariableSatisfiesJudgeInstructionTest {
   @Mock private CamundaProcessTestContext processTestContext;
   @Mock private CamundaClient camundaClient;
 
+  @Mock private AssertionFacade assertionFacade;
+
   @Mock(answer = Answers.RETURNS_DEEP_STUBS)
-  private AssertionFacade assertionFacade;
+  private ProcessInstanceAssert processInstanceAssert;
 
   private final AssertVariableSatisfiesJudgeInstructionHandler instructionHandler =
       new AssertVariableSatisfiesJudgeInstructionHandler();
@@ -72,16 +75,14 @@ public class AssertVariableSatisfiesJudgeInstructionTest {
             .expectation(EXPECTATION)
             .build();
 
+    when(assertionFacade.assertThatProcessInstance(any(ProcessInstanceSelector.class)))
+        .thenReturn(processInstanceAssert);
+
     // when
     instructionHandler.execute(instruction, processTestContext, camundaClient, assertionFacade);
 
     // then
-    verify(assertionFacade).assertThatProcessInstance(any());
-
-    final ProcessInstanceAssert processInstanceAssert =
-        assertionFacade.assertThatProcessInstance(any());
     verify(processInstanceAssert).hasVariableSatisfiesJudge(eq(VARIABLE_NAME), eq(EXPECTATION));
-
     verifyNoMoreInteractions(camundaClient, processTestContext, processInstanceAssert);
   }
 
@@ -98,19 +99,16 @@ public class AssertVariableSatisfiesJudgeInstructionTest {
             .variableName(VARIABLE_NAME)
             .expectation(EXPECTATION)
             .build();
+    when(assertionFacade.assertThatProcessInstance(any(ProcessInstanceSelector.class)))
+        .thenReturn(processInstanceAssert);
 
     // when
     instructionHandler.execute(instruction, processTestContext, camundaClient, assertionFacade);
 
     // then
-    verify(assertionFacade).assertThatProcessInstance(any());
-
-    final ProcessInstanceAssert processInstanceAssert =
-        assertionFacade.assertThatProcessInstance(any());
     verify(processInstanceAssert)
         .hasLocalVariableSatisfiesJudge(
             any(ElementSelector.class), eq(VARIABLE_NAME), eq(EXPECTATION));
-
     verifyNoMoreInteractions(camundaClient, processTestContext, processInstanceAssert);
   }
 
@@ -127,15 +125,14 @@ public class AssertVariableSatisfiesJudgeInstructionTest {
             .variableName(VARIABLE_NAME)
             .expectation(EXPECTATION)
             .build();
+    when(assertionFacade.assertThatProcessInstance(any(ProcessInstanceSelector.class)))
+        .thenReturn(processInstanceAssert);
 
     // when
     instructionHandler.execute(instruction, processTestContext, camundaClient, assertionFacade);
 
     // then
     verify(assertionFacade).assertThatProcessInstance(any());
-
-    final ProcessInstanceAssert processInstanceAssert =
-        assertionFacade.assertThatProcessInstance(any());
     verify(processInstanceAssert)
         .hasLocalVariableSatisfiesJudge(
             any(ElementSelector.class), eq(VARIABLE_NAME), eq(EXPECTATION));
@@ -147,8 +144,10 @@ public class AssertVariableSatisfiesJudgeInstructionTest {
   @Test
   void shouldApplyThresholdOverride() {
     // given
-    final ProcessInstanceAssert mockAssert = assertionFacade.assertThatProcessInstance(any());
-    when(mockAssert.withJudgeConfig(any(UnaryOperator.class))).thenReturn(mockAssert);
+    when(assertionFacade.assertThatProcessInstance(any(ProcessInstanceSelector.class)))
+        .thenReturn(processInstanceAssert);
+    when(processInstanceAssert.withJudgeConfig(any(UnaryOperator.class)))
+        .thenReturn(processInstanceAssert);
 
     final AssertVariableSatisfiesJudgeInstruction instruction =
         ImmutableAssertVariableSatisfiesJudgeInstruction.builder()
@@ -167,22 +166,24 @@ public class AssertVariableSatisfiesJudgeInstructionTest {
     // then
     final ArgumentCaptor<UnaryOperator<JudgeConfig>> judgeConfigOverrideCaptor =
         ArgumentCaptor.forClass(UnaryOperator.class);
-    verify(mockAssert).withJudgeConfig(judgeConfigOverrideCaptor.capture());
+    verify(processInstanceAssert).withJudgeConfig(judgeConfigOverrideCaptor.capture());
 
     final JudgeConfig updatedConfig =
         judgeConfigOverrideCaptor.getValue().apply(new JudgeConfigImpl(s -> s, 0.0, null));
     assertThat(updatedConfig.getThreshold()).isEqualTo(0.8);
 
-    verify(mockAssert).hasVariableSatisfiesJudge(eq(VARIABLE_NAME), eq(EXPECTATION));
-    verifyNoMoreInteractions(camundaClient, processTestContext, mockAssert);
+    verify(processInstanceAssert).hasVariableSatisfiesJudge(eq(VARIABLE_NAME), eq(EXPECTATION));
+    verifyNoMoreInteractions(camundaClient, processTestContext, processInstanceAssert);
   }
 
   @SuppressWarnings("unchecked")
   @Test
   void shouldApplyCustomPromptOverride() {
     // given
-    final ProcessInstanceAssert mockAssert = assertionFacade.assertThatProcessInstance(any());
-    when(mockAssert.withJudgeConfig(any(UnaryOperator.class))).thenReturn(mockAssert);
+    when(assertionFacade.assertThatProcessInstance(any(ProcessInstanceSelector.class)))
+        .thenReturn(processInstanceAssert);
+    when(processInstanceAssert.withJudgeConfig(any(UnaryOperator.class)))
+        .thenReturn(processInstanceAssert);
 
     final AssertVariableSatisfiesJudgeInstruction instruction =
         ImmutableAssertVariableSatisfiesJudgeInstruction.builder()
@@ -201,22 +202,24 @@ public class AssertVariableSatisfiesJudgeInstructionTest {
     // then
     final ArgumentCaptor<UnaryOperator<JudgeConfig>> judgeConfigOverrideCaptor =
         ArgumentCaptor.forClass(UnaryOperator.class);
-    verify(mockAssert).withJudgeConfig(judgeConfigOverrideCaptor.capture());
+    verify(processInstanceAssert).withJudgeConfig(judgeConfigOverrideCaptor.capture());
 
     final JudgeConfig updatedConfig =
         judgeConfigOverrideCaptor.getValue().apply(new JudgeConfigImpl(s -> s, 0.0, null));
     assertThat(updatedConfig.getCustomPrompt()).hasValue("You are a financial data judge");
 
-    verify(mockAssert).hasVariableSatisfiesJudge(eq(VARIABLE_NAME), eq(EXPECTATION));
-    verifyNoMoreInteractions(camundaClient, processTestContext, mockAssert);
+    verify(processInstanceAssert).hasVariableSatisfiesJudge(eq(VARIABLE_NAME), eq(EXPECTATION));
+    verifyNoMoreInteractions(camundaClient, processTestContext, processInstanceAssert);
   }
 
   @SuppressWarnings("unchecked")
   @Test
   void shouldApplyBothOverrides() {
     // given
-    final ProcessInstanceAssert mockAssert = assertionFacade.assertThatProcessInstance(any());
-    when(mockAssert.withJudgeConfig(any(UnaryOperator.class))).thenReturn(mockAssert);
+    when(assertionFacade.assertThatProcessInstance(any(ProcessInstanceSelector.class)))
+        .thenReturn(processInstanceAssert);
+    when(processInstanceAssert.withJudgeConfig(any(UnaryOperator.class)))
+        .thenReturn(processInstanceAssert);
 
     final AssertVariableSatisfiesJudgeInstruction instruction =
         ImmutableAssertVariableSatisfiesJudgeInstruction.builder()
@@ -236,23 +239,25 @@ public class AssertVariableSatisfiesJudgeInstructionTest {
     // then
     final ArgumentCaptor<UnaryOperator<JudgeConfig>> judgeConfigOverrideCaptor =
         ArgumentCaptor.forClass(UnaryOperator.class);
-    verify(mockAssert).withJudgeConfig(judgeConfigOverrideCaptor.capture());
+    verify(processInstanceAssert).withJudgeConfig(judgeConfigOverrideCaptor.capture());
 
     final JudgeConfig updatedConfig =
         judgeConfigOverrideCaptor.getValue().apply(new JudgeConfigImpl(s -> s, 0.0, null));
     assertThat(updatedConfig.getThreshold()).isEqualTo(0.9);
     assertThat(updatedConfig.getCustomPrompt()).hasValue("Custom evaluation criteria");
 
-    verify(mockAssert).hasVariableSatisfiesJudge(eq(VARIABLE_NAME), eq(EXPECTATION));
-    verifyNoMoreInteractions(camundaClient, processTestContext, mockAssert);
+    verify(processInstanceAssert).hasVariableSatisfiesJudge(eq(VARIABLE_NAME), eq(EXPECTATION));
+    verifyNoMoreInteractions(camundaClient, processTestContext, processInstanceAssert);
   }
 
   @SuppressWarnings("unchecked")
   @Test
   void shouldApplyOverridesForLocalVariable() {
     // given
-    final ProcessInstanceAssert mockAssert = assertionFacade.assertThatProcessInstance(any());
-    when(mockAssert.withJudgeConfig(any(UnaryOperator.class))).thenReturn(mockAssert);
+    when(assertionFacade.assertThatProcessInstance(any(ProcessInstanceSelector.class)))
+        .thenReturn(processInstanceAssert);
+    when(processInstanceAssert.withJudgeConfig(any(UnaryOperator.class)))
+        .thenReturn(processInstanceAssert);
 
     final AssertVariableSatisfiesJudgeInstruction instruction =
         ImmutableAssertVariableSatisfiesJudgeInstruction.builder()
@@ -273,16 +278,16 @@ public class AssertVariableSatisfiesJudgeInstructionTest {
     // then
     final ArgumentCaptor<UnaryOperator<JudgeConfig>> judgeConfigOverrideCaptor =
         ArgumentCaptor.forClass(UnaryOperator.class);
-    verify(mockAssert).withJudgeConfig(judgeConfigOverrideCaptor.capture());
+    verify(processInstanceAssert).withJudgeConfig(judgeConfigOverrideCaptor.capture());
 
     final JudgeConfig updatedConfig =
         judgeConfigOverrideCaptor.getValue().apply(new JudgeConfigImpl(s -> s, 0.0, null));
     assertThat(updatedConfig.getThreshold()).isEqualTo(0.7);
     assertThat(updatedConfig.getCustomPrompt()).hasValue("Local variable evaluation criteria");
 
-    verify(mockAssert)
+    verify(processInstanceAssert)
         .hasLocalVariableSatisfiesJudge(
             any(ElementSelector.class), eq(VARIABLE_NAME), eq(EXPECTATION));
-    verifyNoMoreInteractions(camundaClient, processTestContext, mockAssert);
+    verifyNoMoreInteractions(camundaClient, processTestContext, processInstanceAssert);
   }
 }
