@@ -173,6 +173,50 @@ public final class ActivateJobsRestTest extends ClientRestTest {
     assertThat(request.getWorker()).isEqualTo("worker1");
   }
 
+  @Test
+  void shouldActivateJobWithBeforeAllListenerEventType() {
+    // given
+    final ActivatedJobResult activatedJob =
+        new ActivatedJobResult()
+            .jobKey("99")
+            .type("before-all-type")
+            .processInstanceKey("100")
+            .processDefinitionId("process1")
+            .processDefinitionVersion(1)
+            .processDefinitionKey("200")
+            .elementId("element1")
+            .elementInstanceKey("300")
+            .customHeaders(singletonMap("header", "value"))
+            .worker("worker1")
+            .retries(3)
+            .deadline(5000L)
+            .variables(singletonMap("var", "val"))
+            .tenantId("default")
+            .kind(JobKindEnum.EXECUTION_LISTENER)
+            .listenerEventType(JobListenerEventTypeEnum.BEFORE_ALL)
+            .rootProcessInstanceKey("100");
+
+    gatewayService.onActivateJobsRequest(new JobActivationResult().addJobsItem(activatedJob));
+
+    // when
+    final ActivateJobsResponse response =
+        client
+            .newActivateJobsCommand()
+            .jobType("before-all-type")
+            .maxJobsToActivate(1)
+            .timeout(Duration.ofMillis(1000))
+            .workerName("worker1")
+            .send()
+            .join();
+
+    // then
+    assertThat(response.getJobs()).hasSize(1);
+    final io.camunda.client.api.response.ActivatedJob job = response.getJobs().get(0);
+    assertThat(job.getListenerEventType()).isEqualTo(ListenerEventType.BEFORE_ALL);
+    assertThat(job.getListenerEventType())
+        .isEqualTo(EnumUtil.convert(activatedJob.getListenerEventType(), ListenerEventType.class));
+  }
+
   @ParameterizedTest
   @MethodSource("userTaskPropertiesProvider")
   public void shouldActivateJobsWithUserTaskProperties(
