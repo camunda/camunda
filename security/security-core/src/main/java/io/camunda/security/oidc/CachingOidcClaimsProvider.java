@@ -16,12 +16,9 @@ import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
 import java.net.URI;
-import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.HashMap;
-import java.util.HexFormat;
 import java.util.Map;
 import java.util.Objects;
 import org.slf4j.Logger;
@@ -91,7 +88,14 @@ public class CachingOidcClaimsProvider implements OidcClaimsProvider {
       return jwtClaims;
     }
 
-    final String key = cacheKey(jwtClaims, tokenValue);
+    final String key = cacheKey(jwtClaims);
+    if (key == null) {
+      // Neither 'jti' nor (sub+iat+exp) are usable as a cache key for this token.
+      // Bypass the cache entirely — fetch + merge once, don't store. Rare in practice
+      // (every mainstream IdP emits at least sub+iat+exp on access tokens) but keeps
+      // the feature correct for malformed JWTs.
+      return loadEntry(jwtClaims, tokenValue).claims();
+    }
     // Fast-path: was it already cached? If so, record the hit and return.
     // Narrow race: a concurrent thread may populate between this check and the load below,
     // in which case our load() sees the populated entry and returns without running the
@@ -157,21 +161,46 @@ public class CachingOidcClaimsProvider implements OidcClaimsProvider {
     return CacheEntry.augmented(Map.copyOf(merged), tokenExpiry(jwtClaims));
   }
 
-  private static String cacheKey(final Map<String, Object> jwtClaims, final String tokenValue) {
+  /**
+   * Build a cache key that is unique per (issuer, token) pair but stores no bearer-token material.
+   * Returns null when neither {@code jti} nor (sub + iat + exp) are usable — callers should bypass
+   * the cache for that request.
+   *
+   * <p>The {@code iss} prefix is required because {@code jti} is only required to be unique per
+   * issuer (RFC 7519); two providers can legitimately issue tokens with identical {@code jti}
+   * values, which would otherwise collide and leak claims across issuers.
+   *
+   * <p>When {@code jti} is absent the fallback uses {@code sub + iat + exp} — identifiers already
+   * present on every standard access token. This is a far better cache-key choice than {@code
+   * SHA-256(token)} because a heap dump or metrics leak of the key itself reveals only auth
+   * metadata ("alice had a token valid for this window"), not a token-correlatable fingerprint.
+   */
+  private static String cacheKey(final Map<String, Object> jwtClaims) {
+    final Object iss = jwtClaims.get("iss");
+    if (!(iss instanceof final String issuer) || issuer.isBlank()) {
+      return null;
+    }
     final Object jti = jwtClaims.get("jti");
     if (jti instanceof final String s && !s.isBlank()) {
-      return "jti:" + s;
+      return "jti:" + issuer + ":" + s;
     }
-    return "tok:" + sha256(tokenValue);
+    final Object sub = jwtClaims.get("sub");
+    final Long iat = epochSecond(jwtClaims.get("iat"));
+    final Long exp = epochSecond(jwtClaims.get("exp"));
+    if (sub instanceof String && iat != null && exp != null) {
+      return "sie:" + issuer + ":" + sub + ":" + iat + ":" + exp;
+    }
+    return null;
   }
 
-  private static String sha256(final String input) {
-    try {
-      final MessageDigest md = MessageDigest.getInstance("SHA-256");
-      return HexFormat.of().formatHex(md.digest(input.getBytes(StandardCharsets.UTF_8)));
-    } catch (final Exception e) {
-      throw new IllegalStateException("SHA-256 unavailable", e);
+  private static Long epochSecond(final Object value) {
+    if (value instanceof final Instant i) {
+      return i.getEpochSecond();
     }
+    if (value instanceof final Number n) {
+      return n.longValue();
+    }
+    return null;
   }
 
   private static Instant tokenExpiry(final Map<String, Object> jwtClaims) {
