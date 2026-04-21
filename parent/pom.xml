@@ -2238,6 +2238,14 @@
         <version>${version.nimbus-jose-jwt}</version>
       </dependency>
 
+      <!-- override transitive dependency in spring-boot-starter-thymeleaf until a
+           new version using thymeleaf-spring6:3.1.4.RELEASE is released -->
+      <dependency>
+        <groupId>org.thymeleaf</groupId>
+        <artifactId>thymeleaf-spring6</artifactId>
+        <version>${version.thymeleaf}</version>
+      </dependency>
+
       <!-- testcontainers and docker: see
         https://github.com/testcontainers/testcontainers-java/issues/3308 -->
 
