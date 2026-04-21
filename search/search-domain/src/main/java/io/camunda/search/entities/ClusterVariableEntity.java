@@ -15,7 +15,7 @@ import org.jspecify.annotations.Nullable;
 public record ClusterVariableEntity(
     String id,
     String name,
-    @Nullable String value,
+    String value,
     @Nullable String fullValue,
     @Nullable Boolean isPreview,
     ClusterVariableScope scope,
@@ -25,6 +25,7 @@ public record ClusterVariableEntity(
   public ClusterVariableEntity {
     Objects.requireNonNull(id, "id");
     Objects.requireNonNull(name, "name");
+    Objects.requireNonNull(value, "value");
     Objects.requireNonNull(scope, "scope");
   }
 
