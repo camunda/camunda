@@ -16,9 +16,9 @@ import org.jspecify.annotations.Nullable;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public record AuditLogEntity(
     String auditLogKey,
-    @Nullable String entityKey,
-    @Nullable AuditLogEntityType entityType,
-    @Nullable AuditLogOperationType operationType,
+    String entityKey,
+    AuditLogEntityType entityType,
+    AuditLogOperationType operationType,
     @Nullable Long batchOperationKey,
     @Nullable BatchOperationType batchOperationType,
     OffsetDateTime timestamp,
@@ -27,8 +27,8 @@ public record AuditLogEntity(
     @Nullable String agentElementId,
     @Nullable String tenantId,
     @Nullable AuditLogTenantScope tenantScope,
-    @Nullable AuditLogOperationResult result,
-    @Nullable AuditLogOperationCategory category,
+    AuditLogOperationResult result,
+    AuditLogOperationCategory category,
     @Nullable String processDefinitionId,
     @Nullable Long processDefinitionKey,
     @Nullable Long processInstanceKey,
@@ -52,7 +52,12 @@ public record AuditLogEntity(
 
   public AuditLogEntity {
     Objects.requireNonNull(auditLogKey, "auditLogKey");
+    Objects.requireNonNull(entityKey, "entityKey");
+    Objects.requireNonNull(entityType, "entityType");
+    Objects.requireNonNull(operationType, "operationType");
     Objects.requireNonNull(timestamp, "timestamp");
+    Objects.requireNonNull(result, "result");
+    Objects.requireNonNull(category, "category");
   }
 
   @Override

@@ -1570,21 +1570,9 @@ public final class SearchQueryResponseMapper {
   public static AuditLogResult toAuditLog(final AuditLogEntity auditLog) {
     return new AuditLogResult()
         .auditLogKey(auditLog.auditLogKey())
-        .entityKey(requireNonNull(auditLog.entityKey(), "entityKey"))
-        .entityType(
-            requireNonNull(
-                ofNullable(auditLog.entityType())
-                    .map(Enum::name)
-                    .map(AuditLogEntityTypeEnum::fromValue)
-                    .orElse(null),
-                "entityType"))
-        .operationType(
-            requireNonNull(
-                ofNullable(auditLog.operationType())
-                    .map(Enum::name)
-                    .map(AuditLogOperationTypeEnum::fromValue)
-                    .orElse(null),
-                "operationType"))
+        .entityKey(auditLog.entityKey())
+        .entityType(AuditLogEntityTypeEnum.fromValue(auditLog.entityType().name()))
+        .operationType(AuditLogOperationTypeEnum.fromValue(auditLog.operationType().name()))
         .batchOperationKey(KeyUtil.keyToString(auditLog.batchOperationKey()))
         .batchOperationType(
             ofNullable(auditLog.batchOperationType())
@@ -1600,20 +1588,8 @@ public final class SearchQueryResponseMapper {
                 .orElse(null))
         .agentElementId(auditLog.agentElementId())
         .tenantId(auditLog.tenantId())
-        .result(
-            requireNonNull(
-                ofNullable(auditLog.result())
-                    .map(Enum::name)
-                    .map(AuditLogResultEnum::fromValue)
-                    .orElse(null),
-                "result"))
-        .category(
-            requireNonNull(
-                ofNullable(auditLog.category())
-                    .map(Enum::name)
-                    .map(AuditLogCategoryEnum::fromValue)
-                    .orElse(null),
-                "category"))
+        .result(AuditLogResultEnum.fromValue(auditLog.result().name()))
+        .category(AuditLogCategoryEnum.fromValue(auditLog.category().name()))
         .processDefinitionId(auditLog.processDefinitionId())
         .processDefinitionKey(KeyUtil.keyToString(auditLog.processDefinitionKey()))
         .processInstanceKey(KeyUtil.keyToString(auditLog.processInstanceKey()))
