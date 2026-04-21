@@ -18,6 +18,7 @@ paths:
                 $ref: '#/components/schemas/LicenseResponse'
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+      x-added-in-version: "8.6"
 
 ## Schema definitions
 
