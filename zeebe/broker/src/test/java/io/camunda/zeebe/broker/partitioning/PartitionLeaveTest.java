@@ -237,6 +237,7 @@ final class PartitionLeaveTest {
             null,
             null,
             null,
+            null,
             NodeIdProvider.staticProvider(brokerCfg.getCluster().getNodeId()));
 
     return new Broker(systemContext, new SpringBrokerBridge(), List.of());

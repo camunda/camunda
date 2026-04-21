@@ -9,6 +9,8 @@ package io.camunda.zeebe.gateway;
 
 import com.google.rpc.Code;
 import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.security.oidc.NoopOidcClaimsProvider;
+import io.camunda.security.oidc.OidcClaimsProvider;
 import io.camunda.service.UserServices;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.gateway.health.GatewayHealthManager;
@@ -99,6 +101,7 @@ public final class Gateway implements CloseableSilently {
   private final UserServices userServices;
   private final PasswordEncoder passwordEncoder;
   private final JwtDecoder jwtDecoder;
+  private final OidcClaimsProvider oidcClaimsProvider;
   private final MeterRegistry meterRegistry;
   private final int maxVariableNameLength;
 
@@ -122,6 +125,7 @@ public final class Gateway implements CloseableSilently {
         userServices,
         passwordEncoder,
         jwtDecoder,
+        null,
         meterRegistry,
         VariableNameLengthValidator.DEFAULT_MAX_NAME_FIELD_LENGTH);
   }
@@ -147,6 +151,7 @@ public final class Gateway implements CloseableSilently {
         userServices,
         passwordEncoder,
         jwtDecoder,
+        null,
         meterRegistry,
         VariableNameLengthValidator.DEFAULT_MAX_NAME_FIELD_LENGTH);
   }
@@ -161,6 +166,7 @@ public final class Gateway implements CloseableSilently {
       final UserServices userServices,
       final PasswordEncoder passwordEncoder,
       final JwtDecoder jwtDecoder,
+      final OidcClaimsProvider oidcClaimsProvider,
       final MeterRegistry meterRegistry,
       final int maxVariableNameLength) {
     shutdownTimeout = shutdownDuration;
@@ -172,6 +178,7 @@ public final class Gateway implements CloseableSilently {
     this.userServices = userServices;
     this.passwordEncoder = passwordEncoder;
     this.jwtDecoder = jwtDecoder;
+    this.oidcClaimsProvider = oidcClaimsProvider;
     this.meterRegistry = meterRegistry;
     this.maxVariableNameLength = maxVariableNameLength;
 
@@ -450,7 +457,9 @@ public final class Gateway implements CloseableSilently {
             case BASIC -> basicAuth();
             case OIDC ->
                 new AuthenticationHandler.Oidc(
-                    jwtDecoder, securityConfiguration.getAuthentication().getOidc());
+                    jwtDecoder,
+                    oidcClaimsProvider != null ? oidcClaimsProvider : new NoopOidcClaimsProvider(),
+                    securityConfiguration.getAuthentication().getOidc());
           };
       interceptors.add(
           new AuthenticationInterceptor(

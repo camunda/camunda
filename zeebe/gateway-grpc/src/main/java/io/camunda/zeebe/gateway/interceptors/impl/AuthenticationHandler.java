@@ -14,6 +14,7 @@ import io.camunda.security.auth.OidcGroupsLoader;
 import io.camunda.security.auth.OidcPrincipalLoader;
 import io.camunda.security.auth.OidcPrincipalLoader.OidcPrincipals;
 import io.camunda.security.configuration.OidcAuthenticationConfiguration;
+import io.camunda.security.oidc.OidcClaimsProvider;
 import io.camunda.service.UserServices;
 import io.camunda.zeebe.util.Either;
 import io.grpc.Context;
@@ -51,14 +52,17 @@ public sealed interface AuthenticationHandler {
 
     public static final String BEARER_PREFIX = "Bearer ";
     private final JwtDecoder jwtDecoder;
+    private final OidcClaimsProvider claimsProvider;
     private final OidcAuthenticationConfiguration oidcAuthenticationConfiguration;
     private final OidcPrincipalLoader oidcPrincipalLoader;
     private final OidcGroupsLoader oidcGroupsLoader;
 
     public Oidc(
         final JwtDecoder jwtDecoder,
+        final OidcClaimsProvider claimsProvider,
         final OidcAuthenticationConfiguration oidcAuthenticationConfiguration) {
       this.jwtDecoder = Objects.requireNonNull(jwtDecoder);
+      this.claimsProvider = Objects.requireNonNull(claimsProvider);
       this.oidcAuthenticationConfiguration =
           Objects.requireNonNull(oidcAuthenticationConfiguration);
       oidcPrincipalLoader =
@@ -76,13 +80,24 @@ public sealed interface AuthenticationHandler {
                 "Expected authentication information to start with '%s'".formatted(BEARER_PREFIX)));
       }
 
+      final String tokenValue = authorizationHeader.substring(BEARER_PREFIX.length());
       final Jwt token;
       try {
-        token = jwtDecoder.decode(authorizationHeader.substring(BEARER_PREFIX.length()));
+        token = jwtDecoder.decode(tokenValue);
       } catch (final JwtException e) {
         return Either.left(
             Status.UNAUTHENTICATED
                 .augmentDescription("Expected a valid token, see cause for details")
+                .withCause(e));
+      }
+
+      final Map<String, Object> claims;
+      try {
+        claims = claimsProvider.claimsFor(token.getClaims(), tokenValue);
+      } catch (final Exception e) {
+        return Either.left(
+            Status.UNAUTHENTICATED
+                .augmentDescription("Failed to resolve OIDC claims, see cause for details")
                 .withCause(e));
       }
 
@@ -94,7 +109,7 @@ public sealed interface AuthenticationHandler {
               !oidcAuthenticationConfiguration.isGroupsClaimConfigured());
       if (oidcAuthenticationConfiguration.isGroupsClaimConfigured()) {
         try {
-          context = context.withValue(GROUPS_CLAIMS, oidcGroupsLoader.load(token.getClaims()));
+          context = context.withValue(GROUPS_CLAIMS, oidcGroupsLoader.load(claims));
         } catch (final Exception e) {
           return Either.left(
               Status.UNAUTHENTICATED
@@ -105,7 +120,7 @@ public sealed interface AuthenticationHandler {
 
       final OidcPrincipals principals;
       try {
-        principals = oidcPrincipalLoader.load(token.getClaims());
+        principals = oidcPrincipalLoader.load(claims);
       } catch (final Exception e) {
         return Either.left(
             Status.UNAUTHENTICATED
@@ -125,14 +140,10 @@ public sealed interface AuthenticationHandler {
       final var preferUsernameClaim = oidcAuthenticationConfiguration.isPreferUsernameClaim();
       if ((preferUsernameClaim && principals.username() != null) || principals.clientId() == null) {
         return Either.right(
-            context
-                .withValue(USERNAME, principals.username())
-                .withValue(USER_CLAIMS, token.getClaims()));
+            context.withValue(USERNAME, principals.username()).withValue(USER_CLAIMS, claims));
       } else {
         return Either.right(
-            context
-                .withValue(CLIENT_ID, principals.clientId())
-                .withValue(USER_CLAIMS, token.getClaims()));
+            context.withValue(CLIENT_ID, principals.clientId()).withValue(USER_CLAIMS, claims));
       }
     }
   }
