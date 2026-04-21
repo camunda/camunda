@@ -15,8 +15,8 @@ public record ProcessDefinitionEntity(
     @Nullable String name,
     String processDefinitionId,
     @Nullable String bpmnXml,
-    @Nullable String resourceName,
-    @Nullable Integer version,
+    String resourceName,
+    Integer version,
     @Nullable String versionTag,
     String tenantId,
     @Nullable String formId)
@@ -25,6 +25,8 @@ public record ProcessDefinitionEntity(
   public ProcessDefinitionEntity {
     Objects.requireNonNull(processDefinitionKey, "processDefinitionKey");
     Objects.requireNonNull(processDefinitionId, "processDefinitionId");
+    Objects.requireNonNull(resourceName, "resourceName");
+    Objects.requireNonNull(version, "version");
     Objects.requireNonNull(tenantId, "tenantId");
   }
 }

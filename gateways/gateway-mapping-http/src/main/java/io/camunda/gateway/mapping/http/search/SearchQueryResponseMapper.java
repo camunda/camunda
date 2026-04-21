@@ -706,8 +706,8 @@ public final class SearchQueryResponseMapper {
             requireNonNull(
                 keyToStringOrNull(entity.processDefinitionKey()), "processDefinitionKey"))
         .name(entity.name())
-        .resourceName(requireNonNull(entity.resourceName(), "resourceName"))
-        .version(requireNonNull(entity.version(), "version"))
+        .resourceName(entity.resourceName())
+        .version(entity.version())
         .versionTag(entity.versionTag())
         .processDefinitionId(entity.processDefinitionId())
         .tenantId(entity.tenantId())
