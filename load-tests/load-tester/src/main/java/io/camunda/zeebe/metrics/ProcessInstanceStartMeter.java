@@ -85,24 +85,22 @@ public class ProcessInstanceStartMeter implements AutoCloseable {
     }
 
     LOG.debug("Current instances awaiting {}", startedInstances.size());
+    final List<Long> availableInstances;
     final var startQueryTime = clock.getNanos();
-    availabilityChecker
-        .findAvailableInstances(List.copyOf(startedInstances.keySet()))
-        .whenCompleteAsync(
-            (availableInstances, error) -> {
-              final var endQueryTime = clock.getNanos();
-              dataAvailabilityQueryDurationTimer.record(
-                  endQueryTime - startQueryTime, TimeUnit.NANOSECONDS);
+    try {
+      availableInstances =
+          availabilityChecker
+              .findAvailableInstances(List.copyOf(startedInstances.keySet()))
+              .toCompletableFuture()
+              .join();
+    } finally {
+      final var endQueryTime = clock.getNanos();
+      dataAvailabilityQueryDurationTimer.record(
+          endQueryTime - startQueryTime, TimeUnit.NANOSECONDS);
+    }
 
-              if (error != null) {
-                LOG.error("Error while checking for available process instances", error);
-                return;
-              }
-
-              LOG.debug("Available process instances items: {}", availableInstances.size());
-              processAvailableInstances(availableInstances);
-            },
-            piCheckExecutorService);
+    LOG.debug("Available process instances items: {}", availableInstances.size());
+    processAvailableInstances(availableInstances);
   }
 
   private void processAvailableInstances(final List<Long> availableInstances) {
