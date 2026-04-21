@@ -13,6 +13,7 @@ import io.camunda.authentication.entity.CamundaUserDTO;
 import io.camunda.gateway.protocol.model.BatchOperationItemResponse;
 import io.camunda.gateway.protocol.model.BatchOperationItemResponse.StateEnum;
 import io.camunda.gateway.protocol.model.BatchOperationTypeEnum;
+import io.camunda.gateway.protocol.model.IncidentErrorTypeEnum;
 import io.camunda.gateway.protocol.model.IncidentStateEnum;
 import io.camunda.gateway.protocol.model.JobListenerEventTypeEnum;
 import io.camunda.gateway.protocol.model.JobSearchQueryResult;
@@ -259,6 +260,32 @@ class SearchQueryResponseMapperTest {
 
     // then
     assertThat(response.getState()).isEqualTo(IncidentStateEnum.UNKNOWN);
+  }
+
+  @Test
+  void shouldHandleNullIncidentErrorType() {
+    // given
+    final var entity =
+        new IncidentEntity(
+            123L, // incidentKey
+            456L, // processDefinitionKey
+            "processId", // processDefinitionId
+            789L, // processInstanceKey
+            999L, // rootProcessInstanceKey
+            null, // errorType
+            "Error message", // errorMessage
+            "flowNodeId", // flowNodeId
+            111L, // flowNodeInstanceKey
+            OffsetDateTime.now(), // creationTime
+            IncidentState.ACTIVE, // state
+            222L, // jobKey
+            "tenant"); // tenantId
+
+    // when
+    final var response = SearchQueryResponseMapper.toIncident(entity);
+
+    // then
+    assertThat(response.getErrorType()).isEqualTo(IncidentErrorTypeEnum.UNKNOWN);
   }
 
   @Test

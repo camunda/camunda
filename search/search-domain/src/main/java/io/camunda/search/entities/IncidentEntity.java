@@ -15,15 +15,15 @@ import org.jspecify.annotations.Nullable;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public record IncidentEntity(
     Long incidentKey,
-    @Nullable Long processDefinitionKey,
-    @Nullable String processDefinitionId,
-    @Nullable Long processInstanceKey,
+    Long processDefinitionKey,
+    String processDefinitionId,
+    Long processInstanceKey,
     @Nullable Long rootProcessInstanceKey,
     @Nullable ErrorType errorType,
-    @Nullable String errorMessage,
-    @Nullable String flowNodeId,
-    @Nullable Long flowNodeInstanceKey,
-    @Nullable OffsetDateTime creationTime,
+    String errorMessage,
+    String flowNodeId,
+    Long flowNodeInstanceKey,
+    OffsetDateTime creationTime,
     @Nullable IncidentState state,
     @Nullable Long jobKey,
     String tenantId)
@@ -31,6 +31,13 @@ public record IncidentEntity(
 
   public IncidentEntity {
     Objects.requireNonNull(incidentKey, "incidentKey");
+    Objects.requireNonNull(processDefinitionKey, "processDefinitionKey");
+    Objects.requireNonNull(processDefinitionId, "processDefinitionId");
+    Objects.requireNonNull(processInstanceKey, "processInstanceKey");
+    Objects.requireNonNull(errorMessage, "errorMessage");
+    Objects.requireNonNull(flowNodeId, "flowNodeId");
+    Objects.requireNonNull(flowNodeInstanceKey, "flowNodeInstanceKey");
+    Objects.requireNonNull(creationTime, "creationTime");
     Objects.requireNonNull(tenantId, "tenantId");
   }
 

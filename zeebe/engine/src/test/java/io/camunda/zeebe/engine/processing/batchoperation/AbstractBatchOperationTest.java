@@ -349,14 +349,14 @@ abstract class AbstractBatchOperationTest {
     return new IncidentEntity(
         incidentKey,
         -1L, // processDefinitionKey
-        null, // processDefinitionId
+        "fake-process-def-id", // processDefinitionId
         processInstanceKey, // processInstanceKey
         null, // rootProcessInstanceKey
         IncidentEntity.ErrorType.UNSPECIFIED,
         "Fake incident message",
         "flowNodeId",
         -1L, // flowNodeInstanceKey
-        null, // creationTime
+        java.time.OffsetDateTime.now(), // creationTime
         IncidentEntity.IncidentState.ACTIVE,
         -1L, // jobKey
         TenantOwned.DEFAULT_TENANT_IDENTIFIER // tenantId

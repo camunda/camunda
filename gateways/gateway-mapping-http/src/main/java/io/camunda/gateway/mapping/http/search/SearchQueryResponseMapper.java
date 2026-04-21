@@ -1036,24 +1036,25 @@ public final class SearchQueryResponseMapper {
 
   public static IncidentResult toIncident(final IncidentEntity t) {
     return new IncidentResult()
-        .incidentKey(requireNonNull(keyToStringOrNull(t.incidentKey()), "incidentKey"))
-        .processDefinitionKey(
-            requireNonNull(keyToStringOrNull(t.processDefinitionKey()), "processDefinitionKey"))
-        .processDefinitionId(requireNonNull(t.processDefinitionId(), "processDefinitionId"))
-        .processInstanceKey(
-            requireNonNull(keyToStringOrNull(t.processInstanceKey()), "processInstanceKey"))
+        .incidentKey(keyToString(t.incidentKey()))
+        .processDefinitionKey(keyToString(t.processDefinitionKey()))
+        .processDefinitionId(t.processDefinitionId())
+        .processInstanceKey(keyToString(t.processInstanceKey()))
         .rootProcessInstanceKey(keyToStringOrNull(t.rootProcessInstanceKey()))
         .errorType(
-            IncidentErrorTypeEnum.fromValue(requireNonNull(t.errorType(), "errorType").name()))
-        .errorMessage(requireNonNull(t.errorMessage(), "errorMessage"))
-        .elementId(requireNonNull(t.flowNodeId(), "flowNodeId"))
-        .elementInstanceKey(
-            requireNonNull(keyToStringOrNull(t.flowNodeInstanceKey()), "elementInstanceKey"))
+            ofNullable(t.errorType())
+                .map(Enum::name)
+                .map(IncidentErrorTypeEnum::fromValue)
+                .orElse(IncidentErrorTypeEnum.UNKNOWN))
+        .errorMessage(t.errorMessage())
+        .elementId(t.flowNodeId())
+        .elementInstanceKey(keyToString(t.flowNodeInstanceKey()))
         .creationTime(requireNonNull(formatDate(t.creationTime()), "creationTime"))
         .state(
-            t.state() != null
-                ? IncidentStateEnum.fromValue(t.state().name())
-                : IncidentStateEnum.UNKNOWN)
+            ofNullable(t.state())
+                .map(Enum::name)
+                .map(IncidentStateEnum::fromValue)
+                .orElse(IncidentStateEnum.UNKNOWN))
         .jobKey(keyToStringOrNull(t.jobKey()))
         .tenantId(t.tenantId());
   }
