@@ -309,6 +309,7 @@ jobs:
       shortname: ${{ inputs.shortname || 'kcor' }}
       always-delete-namespace: true
       flows: install
+      is_alwaysGreen: true
       extra-values: |
         orchestration:
           image:
