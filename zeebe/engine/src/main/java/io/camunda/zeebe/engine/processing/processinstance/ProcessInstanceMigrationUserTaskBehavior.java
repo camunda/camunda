@@ -64,38 +64,26 @@ public class ProcessInstanceMigrationUserTaskBehavior {
   private static final Logger LOGGER = Loggers.ENGINE_PROCESSING_LOGGER;
   private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
-  private final long processInstanceKey;
-  private final ElementInstance elementInstance;
-  private final DeployedProcess sourceProcessDefinition;
-  private final DeployedProcess targetProcessDefinition;
-  private final String targetElementId;
-  private final ProcessInstanceRecord updatedElementInstanceRecord;
   private final StateWriter stateWriter;
   private final BpmnUserTaskBehavior userTaskBehavior;
   private final JobState jobState;
 
   public ProcessInstanceMigrationUserTaskBehavior(
-      final long processInstanceKey,
-      final ElementInstance elementInstance,
-      final DeployedProcess sourceProcessDefinition,
-      final DeployedProcess targetProcessDefinition,
-      final BpmnBehaviors bpmnBehaviors,
-      final String targetElementId,
-      final ProcessInstanceRecord updatedElementInstanceRecord,
       final StateWriter stateWriter,
-      final JobState jobState) {
-    this.processInstanceKey = processInstanceKey;
-    this.elementInstance = elementInstance;
-    this.sourceProcessDefinition = sourceProcessDefinition;
-    this.targetProcessDefinition = targetProcessDefinition;
-    this.targetElementId = targetElementId;
-    this.updatedElementInstanceRecord = updatedElementInstanceRecord;
+      final JobState jobState,
+      final BpmnBehaviors bpmnBehaviors) {
     this.stateWriter = stateWriter;
     this.jobState = jobState;
     userTaskBehavior = bpmnBehaviors.userTaskBehavior();
   }
 
-  public void tryMigrateJobWorkerToCamundaUserTask() {
+  public void tryMigrateJobWorkerToCamundaUserTask(
+      final long processInstanceKey,
+      final ElementInstance elementInstance,
+      final DeployedProcess sourceProcessDefinition,
+      final DeployedProcess targetProcessDefinition,
+      final String targetElementId,
+      final ProcessInstanceRecord updatedElementInstanceRecord) {
     final var jobKey = elementInstance.getJobKey();
     final String elementId = elementInstance.getValue().getElementId();
 
@@ -131,7 +119,15 @@ public class ProcessInstanceMigrationUserTaskBehavior {
     context.init(
         elementInstance.getKey(), updatedElementInstanceRecord, elementInstance.getState());
 
-    migrateForm(sourceElement, customHeaders, targetProperties, context, userTaskProperties);
+    migrateForm(
+        sourceElement,
+        customHeaders,
+        targetProperties,
+        context,
+        userTaskProperties,
+        targetElementId,
+        targetProcessDefinition,
+        processInstanceKey);
 
     final var userTaskRecord =
         createNewUserTask(
@@ -139,9 +135,11 @@ public class ProcessInstanceMigrationUserTaskBehavior {
             context,
             userTaskProperties,
             targetUserTask.getId(),
-            getCustomHeaders(customHeaders));
+            getCustomHeaders(customHeaders),
+            targetProcessDefinition,
+            elementInstance);
 
-    assignUser(userTaskProperties, userTaskRecord, context, targetProperties);
+    assignUser(userTaskProperties, userTaskRecord, context, targetProperties, targetProcessDefinition);
 
     job.setIsJobToUserTaskMigration(true);
     // Cancel previous job worker job
@@ -201,7 +199,8 @@ public class ProcessInstanceMigrationUserTaskBehavior {
       final UserTaskRecord userTaskRecord,
       final BpmnElementContextImpl context,
       final io.camunda.zeebe.engine.processing.deployment.model.element.UserTaskProperties
-          targetProperties) {
+          targetProperties,
+      final DeployedProcess targetProcessDefinition) {
 
     if (targetProperties.getAssignee() != null) {
       userTaskBehavior
@@ -228,7 +227,9 @@ public class ProcessInstanceMigrationUserTaskBehavior {
       final BpmnElementContextImpl context,
       final UserTaskProperties userTaskProperties,
       final DirectBuffer id,
-      final Map<String, String> taskHeaders) {
+      final Map<String, String> taskHeaders,
+      final DeployedProcess targetProcessDefinition,
+      final ElementInstance elementInstance) {
 
     userTaskBehavior
         .evaluatePriorityExpression(
@@ -250,7 +251,10 @@ public class ProcessInstanceMigrationUserTaskBehavior {
       final io.camunda.zeebe.engine.processing.deployment.model.element.UserTaskProperties
           targetElementProperties,
       final BpmnElementContextImpl context,
-      final UserTaskProperties userTaskProperties) {
+      final UserTaskProperties userTaskProperties,
+      final String targetElementId,
+      final DeployedProcess targetProcessDefinition,
+      final long processInstanceKey) {
     final String jobFormKey = customHeaders.get(Protocol.USER_TASK_FORM_KEY_HEADER_NAME);
     final Expression workerFormId = sourceElement.getJobWorkerProperties().getFormId();
 
