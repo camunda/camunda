@@ -203,7 +203,8 @@ public class CamundaProcessTestExtension
 
   private CamundaManagementClient createManagementClient(
       final CamundaProcessTestRuntimeBuilder runtimeBuilder) {
-    return CamundaManagementClient.createClient(runtime.getCamundaMonitoringApiAddress());
+    return CamundaManagementClient.createClient(
+        runtime.getCamundaMonitoringApiAddress(), runtime.getCamundaClientBuilderFactory());
   }
 
   private void initializeJsonMapper(final JsonMapper jsonMapper) {
