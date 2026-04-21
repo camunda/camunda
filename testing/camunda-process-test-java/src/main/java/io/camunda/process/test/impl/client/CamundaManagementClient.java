@@ -17,10 +17,13 @@ package io.camunda.process.test.impl.client;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.client.CamundaClient;
+import io.camunda.client.api.response.PartitionBrokerHealth;
+import io.camunda.client.api.response.PartitionInfo;
+import io.camunda.client.api.response.Topology;
+import io.camunda.process.test.api.CamundaClientBuilderFactory;
 import io.camunda.process.test.impl.client.clock.CamundaAddClockRequestDto;
 import io.camunda.process.test.impl.client.clock.CamundaClockResponseDto;
-import io.camunda.process.test.impl.client.purge.ManagementClusterTopologyResponseDto;
-import io.camunda.process.test.impl.client.purge.MinimalPlannedOperationsResponseDto;
 import java.io.IOException;
 import java.net.URI;
 import java.time.Duration;
@@ -42,7 +45,6 @@ public final class CamundaManagementClient implements CamundaClockClient {
   private static final String CLOCK_ENDPOINT = "/actuator/clock";
   private static final String CLOCK_ADD_ENDPOINT = "/actuator/clock/add";
 
-  private static final String CLUSTER_TOPOLOGY_ENDPOINT = "/actuator/cluster";
   private static final String CLUSTER_PURGE_ENDPOINT = "/actuator/cluster/purge";
 
   private final ObjectMapper objectMapper =
@@ -51,13 +53,19 @@ public final class CamundaManagementClient implements CamundaClockClient {
   private final CloseableHttpClient httpClient = HttpClients.createDefault();
 
   private final URI camundaManagementApi;
+  private final CamundaClientBuilderFactory camundaClientBuilderFactory;
 
-  private CamundaManagementClient(final URI camundaManagementApi) {
+  private CamundaManagementClient(
+      final URI camundaManagementApi,
+      final CamundaClientBuilderFactory camundaClientBuilderFactory) {
     this.camundaManagementApi = camundaManagementApi;
+    this.camundaClientBuilderFactory = camundaClientBuilderFactory;
   }
 
-  public static CamundaManagementClient createClient(final URI camundaManagementApi) {
-    return new CamundaManagementClient(camundaManagementApi);
+  public static CamundaManagementClient createClient(
+      final URI camundaManagementApi,
+      final CamundaClientBuilderFactory camundaClientBuilderFactory) {
+    return new CamundaManagementClient(camundaManagementApi, camundaClientBuilderFactory);
   }
 
   @Override
@@ -139,13 +147,13 @@ public final class CamundaManagementClient implements CamundaClockClient {
    *     code
    */
   public void purgeCluster(final Duration timeout) {
-    final MinimalPlannedOperationsResponseDto startPurgeResponse = startPurge();
+    startPurge();
 
-    try {
+    try (final CamundaClient camundaClient = camundaClientBuilderFactory.get().build()) {
       Awaitility.await()
           .pollInterval(Duration.ofMillis(250))
           .atMost(timeout)
-          .until(() -> isPurgeComplete(startPurgeResponse.getChangeId()));
+          .until(() -> isPurgeComplete(camundaClient));
 
     } catch (final ConditionTimeoutException e) {
       throw new RuntimeException("Failed to purge the cluster, timeout expired.", e);
@@ -155,26 +163,29 @@ public final class CamundaManagementClient implements CamundaClockClient {
     }
   }
 
-  private MinimalPlannedOperationsResponseDto startPurge() {
+  private void startPurge() {
     final HttpPost purgeRequest = new HttpPost(camundaManagementApi + CLUSTER_PURGE_ENDPOINT);
 
     try {
-      return sendRequest(purgeRequest, MinimalPlannedOperationsResponseDto.class);
+      sendRequest(purgeRequest);
     } catch (final IOException e) {
       throw new RuntimeException("Failed to initiate cluster purge", e);
     }
   }
 
-  private boolean isPurgeComplete(final long changeId) {
-    final HttpGet clusterStatusRequest =
-        new HttpGet(camundaManagementApi + CLUSTER_TOPOLOGY_ENDPOINT);
-
+  private boolean isPurgeComplete(final CamundaClient camundaClient) {
     try {
-      final ManagementClusterTopologyResponseDto topologyResponse =
-          sendRequest(clusterStatusRequest, ManagementClusterTopologyResponseDto.class);
-
-      return topologyResponse.isTopologyChangeCompleted(changeId);
-    } catch (final IOException e) {
+      final Topology topology = camundaClient.newTopologyRequest().send().join();
+      final boolean hasAtLeastOnePartition =
+          topology.getBrokers().stream()
+              .anyMatch(brokerInfo -> !brokerInfo.getPartitions().isEmpty());
+      final boolean isHealthy =
+          topology.getBrokers().stream()
+              .flatMap(brokerInfo -> brokerInfo.getPartitions().stream())
+              .map(PartitionInfo::getHealth)
+              .allMatch(PartitionBrokerHealth.HEALTHY::equals);
+      return hasAtLeastOnePartition && isHealthy;
+    } catch (final Exception e) {
       // Ignore silently and wait for next status request; awaitility will abort after timeout
       // expires
       return false;
