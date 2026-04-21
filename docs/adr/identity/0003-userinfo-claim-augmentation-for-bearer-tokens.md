@@ -147,6 +147,11 @@ values.
   limit the synchronous blocking exposure on the gRPC interceptor thread.
 - Clients without `openid` scope (typically M2M / client-credentials tokens) skip augmentation
   silently — UserInfo is only defined for openid-scope tokens per OIDC Core §5.3.
+- `HttpClient.Redirect.NEVER`: the JDK HTTP client does not follow 3xx redirects on the
+  `/userinfo` request. Following a redirect would cause the client to re-send the
+  `Authorization: Bearer` header to the redirect target, leaking the access token on an open
+  redirect, hijacked CDN, or misconfigured IdP. OIDC Core does not require redirects on the
+  UserInfo endpoint; any 3xx surfaces as a non-2xx error and degrades to JWT-only claims.
 
 ### Configuration
 
