@@ -145,7 +145,14 @@ final class DataReadMeterTest {
     private final List<ScheduledFuture<?>> futures = new CopyOnWriteArrayList<>();
 
     TestScheduledExecutor() {
-      super(1);
+      // daemon thread factory so a leaked executor cannot hold the JVM alive after tests
+      super(
+          1,
+          r -> {
+            final Thread t = new Thread(r, "data-read-test");
+            t.setDaemon(true);
+            return t;
+          });
       setRemoveOnCancelPolicy(true);
     }
 
