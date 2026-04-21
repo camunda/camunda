@@ -129,6 +129,7 @@ public class DeserializationTest {
 
     final List<TestCaseInstruction> instructions = testCase.getInstructions();
     assertThat(instructions).hasSize(1);
+    assertThat(instructions.get(0)).isInstanceOf(AssertVariableSatisfiesJudgeInstruction.class);
 
     final AssertVariableSatisfiesJudgeInstruction judgeInstruction =
         (AssertVariableSatisfiesJudgeInstruction) instructions.get(0);
