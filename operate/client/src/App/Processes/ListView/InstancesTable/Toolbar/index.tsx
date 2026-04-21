@@ -71,7 +71,7 @@ const Toolbar: React.FC<Props> = observer(({selectedInstancesCount}) => {
         eventName: 'batch-operation',
         operationType: 'CANCEL_PROCESS_INSTANCE',
       });
-      processInstancesSelectionStore.reset();
+      processInstancesSelectionStore.resetState();
     },
     onError: (error) => {
       handleOperationError(error.response?.status);
@@ -85,7 +85,7 @@ const Toolbar: React.FC<Props> = observer(({selectedInstancesCount}) => {
         eventName: 'batch-operation',
         operationType: 'RESOLVE_INCIDENT',
       });
-      processInstancesSelectionStore.reset();
+      processInstancesSelectionStore.resetState();
     },
     onError: (error) => {
       handleOperationError(error.response?.status);
@@ -99,7 +99,7 @@ const Toolbar: React.FC<Props> = observer(({selectedInstancesCount}) => {
         eventName: 'batch-operation',
         operationType: 'DELETE_PROCESS_INSTANCE',
       });
-      processInstancesSelectionStore.reset();
+      processInstancesSelectionStore.resetState();
     },
     onError: (error) => {
       handleOperationError(error.response?.status);
@@ -124,7 +124,7 @@ const Toolbar: React.FC<Props> = observer(({selectedInstancesCount}) => {
 
   const handleCancelClick = () => {
     closeModal();
-    processInstancesSelectionStore.reset();
+    processInstancesSelectionStore.resetState();
   };
 
   const getBodyText = () => {
