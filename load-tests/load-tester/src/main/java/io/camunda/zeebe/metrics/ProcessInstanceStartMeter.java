@@ -24,7 +24,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class ProcessInstanceStartMeter implements AutoCloseable {
-  private static final long MAX_DURATION = Duration.ofSeconds(90).toNanos();
+  private static final int MAX_PENDING_INSTANCES = 1000;
   private static final Logger LOG = LoggerFactory.getLogger(ProcessInstanceStartMeter.class);
   private final ConcurrentHashMap<Integer, Timer> partitionToTimerMap;
   private final Map<Long, PiCreationResult> startedInstances;
@@ -96,33 +96,13 @@ public class ProcessInstanceStartMeter implements AutoCloseable {
 
               if (error != null) {
                 LOG.error("Error while checking for available process instances", error);
-                cleanUpStaleInstances();
                 return;
               }
 
               LOG.debug("Available process instances items: {}", availableInstances.size());
               processAvailableInstances(availableInstances);
-              cleanUpStaleInstances();
             },
             piCheckExecutorService);
-  }
-
-  private void cleanUpStaleInstances() {
-    // clean up stale instances which exceeded the max duration - to save memory
-    final long nanoTime = clock.getNanos();
-    final var instancesWhereTimeExceededDeadline =
-        startedInstances.values().stream()
-            .filter(piCreationResult -> nanoTime - piCreationResult.startTimeNanos > MAX_DURATION)
-            .toList();
-    instancesWhereTimeExceededDeadline.forEach(
-        piResults -> {
-          final long durationNanos = clock.getNanos() - piResults.startTimeNanos;
-          LOG.debug(
-              "Process instance {} was not retrieved after {} ms, removing it from the awaiting list.",
-              piResults.processInstanceKey,
-              TimeUnit.NANOSECONDS.toMillis(durationNanos));
-          recordInstanceAvailable(piResults, durationNanos);
-        });
   }
 
   private void processAvailableInstances(final List<Long> availableInstances) {
@@ -155,8 +135,14 @@ public class ProcessInstanceStartMeter implements AutoCloseable {
   }
 
   public void recordProcessInstanceStart(final long processInstanceKey, final long startTimeNanos) {
-    startedInstances.put(
-        processInstanceKey, new PiCreationResult(processInstanceKey, startTimeNanos));
+    // under load we'll drop new instances as we might as well
+    // focus on what we're already checking (and more instances will arrive pretty quickly anyway)
+    // otherwise with a max benchmark we can easily end up with 20 thousand instances to check
+    // within a minute or two
+    if (startedInstances.size() < MAX_PENDING_INSTANCES) {
+      startedInstances.put(
+          processInstanceKey, new PiCreationResult(processInstanceKey, startTimeNanos));
+    }
   }
 
   private record PiCreationResult(long processInstanceKey, long startTimeNanos) {}
