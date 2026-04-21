@@ -3,10 +3,7 @@
 #              label matching (label) or wildcard matching (label-prefix), where the storage type
 #              is derived from the label suffix (e.g. benchmark-postgresql → postgresql).
 #              Also handles cleanup on label removal/close.
-# called-by: camunda-pr-benchmark-elasticsearch.yml, camunda-pr-benchmark-opensearch.yml,
-#            camunda-pr-benchmark-postgresql.yml, camunda-pr-benchmark-mysql.yml,
-#            camunda-pr-benchmark-mariadb.yml, camunda-pr-benchmark-mssql.yml,
-#            camunda-pr-benchmark-oracle.yml, camunda-pr-benchmark-none.yml
+# called-by: camunda-pr-benchmark.yml
 # calls: camunda-load-test.yml, profile-load-test.yml
 # type: CI
 # owner: @camunda/reliability-testing
