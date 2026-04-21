@@ -1126,26 +1126,15 @@ public final class SearchQueryResponseMapper {
                 formatDate(correlatedMessageSubscription.correlationTime()), "correlationTime"))
         .elementId(correlatedMessageSubscription.flowNodeId())
         .elementInstanceKey(keyToStringOrNull(correlatedMessageSubscription.flowNodeInstanceKey()))
-        .messageKey(
-            requireNonNull(
-                keyToStringOrNull(correlatedMessageSubscription.messageKey()), "messageKey"))
+        .messageKey(keyToString(correlatedMessageSubscription.messageKey()))
         .messageName(correlatedMessageSubscription.messageName())
-        .partitionId(requireNonNull(correlatedMessageSubscription.partitionId(), "partitionId"))
+        .partitionId(correlatedMessageSubscription.partitionId())
         .processDefinitionId(correlatedMessageSubscription.processDefinitionId())
-        .processDefinitionKey(
-            requireNonNull(
-                keyToStringOrNull(correlatedMessageSubscription.processDefinitionKey()),
-                "processDefinitionKey"))
-        .processInstanceKey(
-            requireNonNull(
-                keyToStringOrNull(correlatedMessageSubscription.processInstanceKey()),
-                "processInstanceKey"))
+        .processDefinitionKey(keyToString(correlatedMessageSubscription.processDefinitionKey()))
+        .processInstanceKey(keyToString(correlatedMessageSubscription.processInstanceKey()))
         .rootProcessInstanceKey(
             keyToStringOrNull(correlatedMessageSubscription.rootProcessInstanceKey()))
-        .subscriptionKey(
-            requireNonNull(
-                keyToStringOrNull(correlatedMessageSubscription.subscriptionKey()),
-                "subscriptionKey"))
+        .subscriptionKey(keyToString(correlatedMessageSubscription.subscriptionKey()))
         .tenantId(correlatedMessageSubscription.tenantId());
   }
 

@@ -15,25 +15,31 @@ import org.jspecify.annotations.Nullable;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public record CorrelatedMessageSubscriptionEntity(
     @Nullable String correlationKey,
-    @Nullable OffsetDateTime correlationTime,
+    OffsetDateTime correlationTime,
     String flowNodeId,
     @Nullable Long flowNodeInstanceKey,
-    @Nullable Long messageKey,
+    Long messageKey,
     String messageName,
-    @Nullable Integer partitionId,
+    Integer partitionId,
     String processDefinitionId,
-    @Nullable Long processDefinitionKey,
-    @Nullable Long processInstanceKey,
+    Long processDefinitionKey,
+    Long processInstanceKey,
     @Nullable Long rootProcessInstanceKey,
-    @Nullable Long subscriptionKey,
+    Long subscriptionKey,
     @Nullable MessageSubscriptionType subscriptionType,
     String tenantId)
     implements TenantOwnedEntity {
 
   public CorrelatedMessageSubscriptionEntity {
+    Objects.requireNonNull(correlationTime, "correlationTime");
     Objects.requireNonNull(flowNodeId, "flowNodeId");
+    Objects.requireNonNull(messageKey, "messageKey");
     Objects.requireNonNull(messageName, "messageName");
+    Objects.requireNonNull(partitionId, "partitionId");
     Objects.requireNonNull(processDefinitionId, "processDefinitionId");
+    Objects.requireNonNull(processDefinitionKey, "processDefinitionKey");
+    Objects.requireNonNull(processInstanceKey, "processInstanceKey");
+    Objects.requireNonNull(subscriptionKey, "subscriptionKey");
     Objects.requireNonNull(tenantId, "tenantId");
   }
 
