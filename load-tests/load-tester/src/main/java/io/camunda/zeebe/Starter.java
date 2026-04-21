@@ -153,7 +153,7 @@ public class Starter extends App {
             Executors.newScheduledThreadPool(1),
             config.getMonitorDataAvailabilityInterval(),
             (listOfStartedInstances) -> {
-              final var limit = 100;
+              final var limit = 1000;
               final var instanceIds = listOfStartedInstances.stream().limit(limit).toList();
               final CamundaFuture<SearchResponse<ProcessInstance>> send =
                   client
