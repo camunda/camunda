@@ -398,7 +398,8 @@ jobs:
                       "operateVersion": "SNAPSHOT",
                       "tasklistVersion": "SNAPSHOT",
                       "connectorsVersion": "SNAPSHOT",
-                      "optimizeVersion": "8-SNAPSHOT"
+                      "optimizeVersion": "8-SNAPSHOT",
+                      "is_ag": true
                   }
                 }'
 
