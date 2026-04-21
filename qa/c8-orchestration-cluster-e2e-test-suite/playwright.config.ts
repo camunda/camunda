@@ -172,6 +172,57 @@ const normalProjects = [
     use: devices['Desktop Chrome'],
     testIgnore: ['v2-stateless-tests/**', 'tests/api/**/*.spec.ts'],
   },
+  // ── Optimize variable-export scope tests ──────────────────────────────────
+  // Each project targets a specific Optimize server configuration.
+  // Point OPTIMIZE_BASE_URL at an Optimize instance started with the matching
+  // service-config.yaml settings before running a project.
+  //
+  // Run a single project:
+  //   npx playwright test --project=optimize-default-config
+  //   npx playwright test --project=optimize-local-vars-disabled
+  //   npx playwright test --project=optimize-root-vars-disabled
+  //   npx playwright test --project=optimize-import-disabled
+  {
+    // TC-01, TC-02, TC-20, TC-21
+    // Optimize defaults: exportRootVariables=true, exportLocalVariables=true
+    name: 'optimize-default-config',
+    testMatch: ['tests/api/v2/optimize/**/*.spec.ts'],
+    use: {
+      ...devices['Desktop Chrome'],
+      // Both scope flags default to true — no special Optimize config required
+    },
+  },
+  {
+    // TC-04 to TC-16 (local variables disabled, optional whitelist)
+    // Requires Optimize started with:
+    //   zeebe.exportLocalVariables: false
+    //   zeebe.localVariableNameFilters: <comma-separated patterns>
+    name: 'optimize-local-vars-disabled',
+    testMatch: ['tests/api/v2/optimize/**/*.spec.ts'],
+    use: {
+      ...devices['Desktop Chrome'],
+    },
+    // Signal the test file that local export is disabled
+    grep: /local.*disabled|whitelist|pattern matching|whitelist.*updates/i,
+  },
+  {
+    // TC-07: root variables disabled, local enabled
+    // Requires Optimize started with:
+    //   zeebe.exportRootVariables: false
+    //   zeebe.exportLocalVariables: true
+    name: 'optimize-root-vars-disabled',
+    testMatch: ['tests/api/v2/optimize/**/*.spec.ts'],
+    grep: /root.*disabled|root-scope export while keeping local/i,
+  },
+  {
+    // TC-03, TC-08: variableImportEnabled=false or both flags = false
+    // Requires Optimize started with:
+    //   zeebe.variableImportEnabled: false  OR
+    //   zeebe.exportRootVariables: false + zeebe.exportLocalVariables: false
+    name: 'optimize-import-disabled',
+    testMatch: ['tests/api/v2/optimize/**/*.spec.ts'],
+    grep: /variableImportEnabled.*false|both.*disabled|no variable data/i,
+  },
 ];
 
 const v2StatelessProjects = [

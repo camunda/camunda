@@ -147,6 +147,14 @@ async function checkUpdateOnVersion(
   return !!item && item.processDefinitionVersion == targetVersion;
 }
 
+const setVariables = async (
+  elementInstanceKey: string,
+  variables: JSONDoc,
+  local: boolean = false,
+) => {
+  return zeebeGrpc.setVariables({elementInstanceKey, variables, local});
+};
+
 export {
   deploy,
   deployWithSubstitutions,
@@ -156,4 +164,5 @@ export {
   createSingleInstance,
   cancelProcessInstance,
   createWorker,
+  setVariables,
 };
