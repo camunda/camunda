@@ -725,33 +725,27 @@ public final class SearchQueryResponseMapper {
 
   private static JobSearchResult toJob(final JobEntity job) {
     return new JobSearchResult()
-        .jobKey(requireNonNull(keyToStringOrNull(job.jobKey()), "jobKey"))
-        .type(requireNonNull(job.type(), "type"))
-        .worker(requireNonNull(job.worker(), "worker"))
-        .state(JobStateEnum.fromValue(requireNonNull(job.state(), "state").name()))
-        .kind(JobKindEnum.fromValue(requireNonNull(job.kind(), "kind").name()))
-        .listenerEventType(
-            JobListenerEventTypeEnum.fromValue(
-                requireNonNull(job.listenerEventType(), "listenerEventType").name()))
-        .retries(requireNonNull(job.retries(), "retries"))
+        .jobKey(keyToString(job.jobKey()))
+        .type(job.type())
+        .worker(job.worker())
+        .state(JobStateEnum.fromValue(job.state().name()))
+        .kind(JobKindEnum.fromValue(job.kind().name()))
+        .listenerEventType(JobListenerEventTypeEnum.fromValue(job.listenerEventType().name()))
+        .retries(job.retries())
         .isDenied(job.isDenied())
         .deniedReason(job.deniedReason())
-        .hasFailedWithRetriesLeft(
-            requireNonNull(job.hasFailedWithRetriesLeft(), "hasFailedWithRetriesLeft"))
+        .hasFailedWithRetriesLeft(job.hasFailedWithRetriesLeft())
         .errorCode(job.errorCode())
         .errorMessage(job.errorMessage())
         .customHeaders(job.customHeaders())
         .deadline(formatDate(job.deadline()))
         .endTime(formatDate(job.endTime()))
-        .processDefinitionId(requireNonNull(job.processDefinitionId(), "processDefinitionId"))
-        .processDefinitionKey(
-            requireNonNull(keyToStringOrNull(job.processDefinitionKey()), "processDefinitionKey"))
-        .processInstanceKey(
-            requireNonNull(keyToStringOrNull(job.processInstanceKey()), "processInstanceKey"))
+        .processDefinitionId(job.processDefinitionId())
+        .processDefinitionKey(keyToString(job.processDefinitionKey()))
+        .processInstanceKey(keyToString(job.processInstanceKey()))
         .rootProcessInstanceKey(keyToStringOrNull(job.rootProcessInstanceKey()))
         .elementId(job.elementId())
-        .elementInstanceKey(
-            requireNonNull(keyToStringOrNull(job.elementInstanceKey()), "elementInstanceKey"))
+        .elementInstanceKey(keyToString(job.elementInstanceKey()))
         .tenantId(job.tenantId())
         .creationTime(formatDate(job.creationTime()))
         .lastUpdateTime(formatDate(job.lastUpdateTime()));

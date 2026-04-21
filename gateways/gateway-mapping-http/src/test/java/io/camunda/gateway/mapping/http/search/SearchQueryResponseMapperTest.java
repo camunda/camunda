@@ -391,6 +391,8 @@ class SearchQueryResponseMapperTest {
             .elementId("serviceTask1")
             .elementInstanceKey(111L)
             .tenantId("tenant")
+            .creationTime(OffsetDateTime.now())
+            .lastUpdateTime(OffsetDateTime.now())
             .build();
 
     // when
@@ -418,9 +420,12 @@ class SearchQueryResponseMapperTest {
             .processDefinitionId("processId")
             .processDefinitionKey(456L)
             .processInstanceKey(789L)
+            .elementId("serviceTask1")
             .elementInstanceKey(111L)
             .rootProcessInstanceKey(null)
             .tenantId("tenant")
+            .creationTime(OffsetDateTime.now())
+            .lastUpdateTime(OffsetDateTime.now())
             .build();
 
     // when
@@ -856,6 +861,8 @@ class SearchQueryResponseMapperTest {
             .elementId("element1")
             .elementInstanceKey(30L)
             .tenantId("default")
+            .creationTime(OffsetDateTime.now())
+            .lastUpdateTime(OffsetDateTime.now())
             .build();
     final SearchQueryResult<JobEntity> result =
         new SearchQueryResult<>(1, false, List.of(job), null, null);
@@ -890,6 +897,8 @@ class SearchQueryResponseMapperTest {
               .elementId("e1")
               .elementInstanceKey(3L)
               .tenantId("default")
+              .creationTime(OffsetDateTime.now())
+              .lastUpdateTime(OffsetDateTime.now())
               .build();
       final SearchQueryResult<JobEntity> result =
           new SearchQueryResult<>(1, false, List.of(job), null, null);

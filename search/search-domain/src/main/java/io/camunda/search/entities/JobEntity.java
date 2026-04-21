@@ -19,34 +19,48 @@ import org.jspecify.annotations.Nullable;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public record JobEntity(
     Long jobKey,
-    @Nullable String type,
-    @Nullable String worker,
-    @Nullable JobState state,
-    @Nullable JobKind kind,
-    @Nullable ListenerEventType listenerEventType,
-    @Nullable Integer retries,
+    String type,
+    String worker,
+    JobState state,
+    JobKind kind,
+    ListenerEventType listenerEventType,
+    Integer retries,
     @Nullable Boolean isDenied,
     @Nullable String deniedReason,
-    @Nullable Boolean hasFailedWithRetriesLeft,
+    Boolean hasFailedWithRetriesLeft,
     @Nullable String errorCode,
     @Nullable String errorMessage,
     Map<String, String> customHeaders,
     @Nullable OffsetDateTime deadline,
     @Nullable OffsetDateTime endTime,
-    @Nullable String processDefinitionId,
-    @Nullable Long processDefinitionKey,
-    @Nullable Long processInstanceKey,
+    String processDefinitionId,
+    Long processDefinitionKey,
+    Long processInstanceKey,
     @Nullable Long rootProcessInstanceKey,
-    @Nullable String elementId,
-    @Nullable Long elementInstanceKey,
+    String elementId,
+    Long elementInstanceKey,
     String tenantId,
-    @Nullable OffsetDateTime creationTime,
-    @Nullable OffsetDateTime lastUpdateTime)
+    OffsetDateTime creationTime,
+    OffsetDateTime lastUpdateTime)
     implements TenantOwnedEntity {
 
   public JobEntity {
     requireNonNull(jobKey, "jobKey");
+    requireNonNull(type, "type");
+    requireNonNull(worker, "worker");
+    requireNonNull(state, "state");
+    requireNonNull(kind, "kind");
+    requireNonNull(listenerEventType, "listenerEventType");
+    requireNonNull(retries, "retries");
+    requireNonNull(hasFailedWithRetriesLeft, "hasFailedWithRetriesLeft");
+    requireNonNull(processDefinitionId, "processDefinitionId");
+    requireNonNull(processDefinitionKey, "processDefinitionKey");
+    requireNonNull(processInstanceKey, "processInstanceKey");
+    requireNonNull(elementId, "elementId");
+    requireNonNull(elementInstanceKey, "elementInstanceKey");
     requireNonNull(tenantId, "tenantId");
+    requireNonNull(creationTime, "creationTime");
+    requireNonNull(lastUpdateTime, "lastUpdateTime");
     // Mutable collections are required: MyBatis hydrates collection-mapped fields (e.g. from a
     // <collection> result map or a LEFT JOIN) by calling .add() on the existing instance.
     // Immutable defaults (e.g. Map.of()) would cause UnsupportedOperationException at runtime.
