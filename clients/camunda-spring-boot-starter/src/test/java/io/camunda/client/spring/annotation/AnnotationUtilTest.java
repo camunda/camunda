@@ -41,6 +41,7 @@ import io.camunda.client.api.response.DocumentReferenceResponse;
 import io.camunda.client.bean.BeanInfo;
 import io.camunda.client.bean.MethodInfo;
 import io.camunda.client.bean.ParameterInfo;
+import io.camunda.client.jobhandling.DocumentContext;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
@@ -95,6 +96,45 @@ public class AnnotationUtilTest {
       assertThat(value.getFetchVariables()).containsExactly(new GeneratedFromMethodInfo<>("value"));
     }
 
+    @Test
+    void shouldExtractDocumentContextVariableName() {
+      // given
+      final MethodInfo methodInfo = methodInfo(this, "test", "sampleWorkerWithDocumentContext");
+      // when
+      final Optional<JobWorkerValue> jobWorkerValue = AnnotationUtil.getJobWorkerValue(methodInfo);
+      // then
+      assertThat(jobWorkerValue).isPresent();
+      final JobWorkerValue value = jobWorkerValue.get();
+      assertThat(value.getFetchVariables())
+          .containsExactly(new GeneratedFromMethodInfo<>("context"));
+    }
+
+    @Test
+    void shouldExtractDocumentReferenceListVariableName() {
+      // given
+      final MethodInfo methodInfo =
+          methodInfo(this, "test", "sampleWorkerWithDocumentReferenceList");
+      // when
+      final Optional<JobWorkerValue> jobWorkerValue = AnnotationUtil.getJobWorkerValue(methodInfo);
+      // then
+      assertThat(jobWorkerValue).isPresent();
+      final JobWorkerValue value = jobWorkerValue.get();
+      assertThat(value.getFetchVariables())
+          .containsExactly(new GeneratedFromMethodInfo<>("documents"));
+    }
+
+    @Test
+    void shouldExtractDocumentNamedVariableName() {
+      // given
+      final MethodInfo methodInfo = methodInfo(this, "test", "sampleWorkerWithNamedDocument");
+      // when
+      final Optional<JobWorkerValue> jobWorkerValue = AnnotationUtil.getJobWorkerValue(methodInfo);
+      // then
+      assertThat(jobWorkerValue).isPresent();
+      final JobWorkerValue value = jobWorkerValue.get();
+      assertThat(value.getFetchVariables()).containsExactly(new GeneratedFromMethodInfo<>("myDoc"));
+    }
+
     @io.camunda.client.annotation.JobWorker
     public void sampleWorkerWithEmptyJsonProperty(
         @VariablesAsType final PropertyAnnotatedClassEmptyValue annotatedClass) {}
@@ -109,6 +149,18 @@ public class AnnotationUtilTest {
     @io.camunda.client.annotation.JobWorker
     public void sampleWorkerWithJsonProperty(
         @VariablesAsType final PropertyAnnotatedClass annotatedClass) {}
+
+    @io.camunda.client.annotation.JobWorker
+    public void sampleWorkerWithDocumentContext(
+        @io.camunda.client.annotation.Document final DocumentContext context) {}
+
+    @io.camunda.client.annotation.JobWorker
+    public void sampleWorkerWithDocumentReferenceList(
+        @io.camunda.client.annotation.Document final List<DocumentReferenceResponse> documents) {}
+
+    @io.camunda.client.annotation.JobWorker
+    public void sampleWorkerWithNamedDocument(
+        @io.camunda.client.annotation.Document("myDoc") final DocumentContext context) {}
 
     private static final class PropertyAnnotatedClass {
       @JsonProperty("some_name")
