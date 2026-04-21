@@ -1387,11 +1387,13 @@ In `zeebe/gateway-grpc/src/main/java/io/camunda/zeebe/gateway/Gateway.java`:
 
 1. Add import: `import io.camunda.security.oidc.OidcClaimsProvider;`
 2. Add field near `private final JwtDecoder jwtDecoder;` (line 100):
+
    ```java
    private final OidcClaimsProvider oidcClaimsProvider;
    ```
 3. Update every constructor to take an `OidcClaimsProvider` parameter and assign it. Mirror the pattern used for `jwtDecoder` at lines 112, 135, 145.
 4. In `applyInterceptors()` (line 418), update:
+
    ```java
    case OIDC ->
        new AuthenticationHandler.Oidc(
@@ -1866,3 +1868,4 @@ git commit -m "docs(config): document OIDC userinfo augmentation properties"
 - **Fail-closed choice:** when userinfo fails, we reject the request. Alternative is fall-back to JWT-only claims — but that silently downgrades authorization and is a bigger security surprise. Recommend keeping fail-closed, but open to discussion for specific environments.
 - **`NEGATIVE_CACHE_TTL = 5s`:** hard-coded. Worth making configurable? I'd lean no — it's an implementation defence against IdP outages, not a product lever.
 - **Metric naming:** `camunda.oidc.userinfo.cache` and `camunda.oidc.userinfo.fetch`. Check against Camunda's micrometer naming convention — alignment may require adjustment.
+
