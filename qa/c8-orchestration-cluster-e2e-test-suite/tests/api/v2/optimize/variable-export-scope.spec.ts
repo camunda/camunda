@@ -13,15 +13,16 @@ import {
   createWorker,
   deploy,
   setVariables,
-} from '../../utils/zeebeClient';
-import {defaultAssertionOptions} from '../../utils/constants';
+} from '../../../../utils/zeebeClient';
+import {buildUrl} from '../../../../utils/http';
+import {defaultAssertionOptions} from '../../../../utils/constants';
 import {
   assertNoVariablesForProcessInstance,
   getAllProcessInstanceVariables,
   getLocalScopeVariables,
   getRootScopeVariables,
   getVariablesByName,
-} from '../../utils/requestHelpers/optimize-variable-requestHelpers';
+} from '../../../../utils/requestHelpers/optimize-variable-requestHelpers';
 
 const BPMN_PATH = './resources/optimize_scope_test_process.bpmn';
 const BPMN_MULTI_INSTANCE_PATH =
@@ -103,10 +104,6 @@ test.describe('Scope-Aware Variable Export Configuration for Optimize', () => {
       });
     });
 
-    /**
-     * TC-02
-     * Scenario: Explicitly enabling both root and local export behaves identically to the default
-     */
     test('should export all variables when exportRootVariables=true and exportLocalVariables=true', async ({
       request,
     }) => {
@@ -116,8 +113,6 @@ test.describe('Scope-Aware Variable Export Configuration for Optimize', () => {
       processInstanceKeys.push(processInstanceKey);
 
       const worker = createWorker(WORKER_TYPE, false, LOCAL_VARS);
-
-      // when
       const vars = await getAllProcessInstanceVariables(
         request,
         processInstanceKey,
@@ -125,7 +120,6 @@ test.describe('Scope-Aware Variable Export Configuration for Optimize', () => {
       );
       await worker.close();
 
-      // then — identical result to TC-01
       const rootVars = getRootScopeVariables(vars);
       const localVars = getLocalScopeVariables(vars);
       expect(rootVars.map((v) => v.name)).toContain('rootVar1');
@@ -145,7 +139,9 @@ test.describe('Scope-Aware Variable Export Configuration for Optimize', () => {
 
       await expect(async () => {
         const res = await request.get(
-          `/v2/process-instances/${processInstanceKey}`,
+          buildUrl('/process-instances/{processInstanceKey}', {
+            processInstanceKey,
+          }),
         );
         expect(res.status()).toBe(200);
       }).toPass(defaultAssertionOptions);
@@ -285,7 +281,9 @@ test.describe('Scope-Aware Variable Export Configuration for Optimize', () => {
 
       await expect(async () => {
         const res = await request.get(
-          `/v2/process-instances/${processInstanceKey}`,
+          buildUrl('/process-instances/{processInstanceKey}', {
+            processInstanceKey,
+          }),
         );
         expect(res.status()).toBe(200);
       }).toPass(defaultAssertionOptions);
@@ -607,7 +605,7 @@ test.describe('Scope-Aware Variable Export Configuration for Optimize', () => {
       }
     });
 
-    test('should treat call activity variables as local scope and suppress them when local export is disabled', async ({
+    test('should classify call activity propagated variables as local scope in the parent process', async ({
       request,
     }) => {
       const subWorker = createWorker(

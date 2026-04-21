@@ -104,18 +104,20 @@ export async function assertNoVariablesForProcessInstance(
   processInstanceKey: string,
   timeoutMs: number = 15_000,
 ): Promise<void> {
-  await expect(async () => {
-    const res = await request.post(buildUrl('/variables/search'), {
-      headers: jsonHeaders(),
-      data: {
-        page: {from: 0, limit: 10},
-        filter: {processInstanceKey},
-      },
-    });
-    await assertStatusCode(res, 200);
-    const json = await res.json();
-    expect(json.items).toHaveLength(0);
-  }).toPass({intervals: [3_000], timeout: timeoutMs});
+  // Wait the full stabilisation period before asserting absence, so that any
+  // async export/import lag has time to produce variables if they were going to.
+  // A toPass that exits on the first empty poll would be a false positive.
+  await new Promise((resolve) => setTimeout(resolve, timeoutMs));
+  const res = await request.post(buildUrl('/variables/search'), {
+    headers: jsonHeaders(),
+    data: {
+      page: {from: 0, limit: 10},
+      filter: {processInstanceKey},
+    },
+  });
+  await assertStatusCode(res, 200);
+  const json = await res.json();
+  expect(json.items).toHaveLength(0);
 }
 
 /**

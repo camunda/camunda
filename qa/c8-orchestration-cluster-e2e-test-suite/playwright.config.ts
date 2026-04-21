@@ -70,6 +70,7 @@ const apiTestIgnore = [
   'tests/api/v2/usage-metrics/*.spec.ts',
   'tests/api/v2/audit-log/*.spec.ts',
   'tests/api/v2/job/job-statistics-*.spec.ts',
+  'tests/api/v2/optimize/**/*.spec.ts',
 ];
 // Projects
 const normalProjects = [
@@ -174,8 +175,11 @@ const normalProjects = [
   },
   // ── Optimize variable-export scope tests ──────────────────────────────────
   // Each project targets a specific Optimize server configuration.
-  // Point OPTIMIZE_BASE_URL at an Optimize instance started with the matching
-  // service-config.yaml settings before running a project.
+  // These projects do not select an Optimize instance via OPTIMIZE_BASE_URL.
+  // Playwright uses PLAYWRIGHT_BASE_URL for its baseURL, and API helpers use
+  // CORE_APPLICATION_URL (via utils/http.ts buildUrl). Before running one of
+  // the projects below, make sure those URLs point to an environment whose
+  // Optimize instance was started with the matching service-config.yaml settings.
   //
   // Run a single project:
   //   npx playwright test --project=optimize-default-config
@@ -183,14 +187,15 @@ const normalProjects = [
   //   npx playwright test --project=optimize-root-vars-disabled
   //   npx playwright test --project=optimize-import-disabled
   {
-    // TC-01, TC-02, TC-20, TC-21
+    // TC-01, TC-02, TC-20, TC-21, TC-22, TC-23
     // Optimize defaults: exportRootVariables=true, exportLocalVariables=true
     name: 'optimize-default-config',
     testMatch: ['tests/api/v2/optimize/**/*.spec.ts'],
     use: {
       ...devices['Desktop Chrome'],
-      // Both scope flags default to true — no special Optimize config required
     },
+    // Only run tests that are valid against the default (all-enabled) configuration
+    grep: /Default.*Behaviour|Scope Classification/,
   },
   {
     // TC-04 to TC-16 (local variables disabled, optional whitelist)
@@ -202,17 +207,16 @@ const normalProjects = [
     use: {
       ...devices['Desktop Chrome'],
     },
-    // Signal the test file that local export is disabled
-    grep: /local.*disabled|whitelist|pattern matching|whitelist.*updates/i,
+    grep: /Root-Only Export|Local Variable Whitelisting|Whitelist Applied/,
   },
   {
-    // TC-07: root variables disabled, local enabled
+    // TC-06, TC-07: root variables disabled, local enabled
     // Requires Optimize started with:
     //   zeebe.exportRootVariables: false
     //   zeebe.exportLocalVariables: true
     name: 'optimize-root-vars-disabled',
     testMatch: ['tests/api/v2/optimize/**/*.spec.ts'],
-    grep: /root.*disabled|root-scope export while keeping local/i,
+    grep: /exportRootVariables=false/,
   },
   {
     // TC-03, TC-08: variableImportEnabled=false or both flags = false
@@ -221,7 +225,7 @@ const normalProjects = [
     //   zeebe.exportRootVariables: false + zeebe.exportLocalVariables: false
     name: 'optimize-import-disabled',
     testMatch: ['tests/api/v2/optimize/**/*.spec.ts'],
-    grep: /variableImportEnabled.*false|both.*disabled|no variable data/i,
+    grep: /variableImportEnabled=false|both exportRootVariables=false/,
   },
 ];
 
