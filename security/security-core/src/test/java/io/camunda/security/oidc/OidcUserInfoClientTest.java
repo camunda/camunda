@@ -61,4 +61,37 @@ class OidcUserInfoClientTest {
     assertThatThrownBy(() -> client.fetch(URI.create(idp.baseUrl() + "/userinfo"), "token-abc"))
         .isInstanceOf(OidcUserInfoException.class);
   }
+
+  @Test
+  void rejectsResponseLargerThanMaxBodyBytes() {
+    // Produce a payload that's just over the cap. StringBuilder is cheap; we're not
+    // exercising JSON parsing, just the size-cap branch.
+    final var oversized = new StringBuilder("{\"sub\":\"alice\",\"filler\":\"");
+    while (oversized.length() <= OidcUserInfoClient.MAX_BODY_BYTES) {
+      oversized.append('a');
+    }
+    oversized.append("\"}");
+    idp.stubFor(get("/userinfo").willReturn(okJson(oversized.toString())));
+
+    assertThatThrownBy(() -> client.fetch(URI.create(idp.baseUrl() + "/userinfo"), "token-abc"))
+        .isInstanceOf(OidcUserInfoException.class)
+        .hasMessageContaining("exceeds maximum accepted size");
+  }
+
+  @Test
+  void rejectsSignedUserInfoResponse() {
+    // OIDC Core §5.3.2 allows signed UserInfo responses (application/jwt). Not supported
+    // in this version — reject with a clear error rather than a confusing JSON parse failure.
+    idp.stubFor(
+        get("/userinfo")
+            .willReturn(
+                aResponse()
+                    .withStatus(200)
+                    .withHeader("Content-Type", "application/jwt")
+                    .withBody("eyJhbGciOiJSUzI1NiJ9.eyJzdWIiOiJhbGljZSJ9.sig")));
+
+    assertThatThrownBy(() -> client.fetch(URI.create(idp.baseUrl() + "/userinfo"), "token-abc"))
+        .isInstanceOf(OidcUserInfoException.class)
+        .hasMessageContaining("application/jwt");
+  }
 }

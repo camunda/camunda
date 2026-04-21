@@ -14,14 +14,32 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 
 /**
  * Thin wrapper around {@link HttpClient} for calling an OIDC provider's UserInfo endpoint with a
  * bearer token and parsing the JSON response into a claim map.
+ *
+ * <p>Defences against common IdP misbehaviour:
+ *
+ * <ul>
+ *   <li>Response body size capped at {@value #MAX_BODY_BYTES} bytes. A misconfigured or hostile
+ *       endpoint streaming unbounded data is rejected rather than consuming heap.
+ *   <li>{@code Content-Type} is checked before JSON parsing. Signed UserInfo responses ({@code
+ *       application/jwt}, per OIDC Core §5.3.2) are not supported in this version and are rejected
+ *       with a clear error rather than producing a confusing JSON parse failure.
+ * </ul>
  */
 public class OidcUserInfoClient {
+
+  /**
+   * Maximum accepted UserInfo response body size (bytes). OIDC UserInfo responses are typically
+   * well under 10 KiB; 1 MiB is generous for well-behaved IdPs and caps memory exposure under
+   * adversarial or misconfigured ones.
+   */
+  public static final int MAX_BODY_BYTES = 1 << 20; // 1 MiB
 
   private static final TypeReference<Map<String, Object>> CLAIMS_TYPE = new TypeReference<>() {};
 
@@ -55,8 +73,24 @@ public class OidcUserInfoClient {
       throw new OidcUserInfoException("UserInfo request returned HTTP " + response.statusCode());
     }
 
+    final byte[] body = response.body();
+    if (body != null && body.length > MAX_BODY_BYTES) {
+      throw new OidcUserInfoException(
+          "UserInfo response exceeds maximum accepted size ("
+              + MAX_BODY_BYTES
+              + " bytes); refusing to parse");
+    }
+
+    final String contentType =
+        response.headers().firstValue("Content-Type").orElse("").toLowerCase(Locale.ROOT);
+    if (contentType.contains("application/jwt")) {
+      throw new OidcUserInfoException(
+          "Signed UserInfo responses (application/jwt) are not supported in this version; "
+              + "configure the IdP to return application/json or disable userInfoAugmentation");
+    }
+
     try {
-      return objectMapper.readValue(response.body(), CLAIMS_TYPE);
+      return objectMapper.readValue(body, CLAIMS_TYPE);
     } catch (final Exception e) {
       throw new OidcUserInfoException("Failed to parse UserInfo JSON: " + e.getMessage(), e);
     }

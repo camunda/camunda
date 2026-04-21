@@ -93,7 +93,17 @@ class CachingOidcClaimsProviderTest {
     final var provider = newProvider();
     final long exp = Instant.now().getEpochSecond() + 3600;
     final Map<String, Object> jwtClaims =
-        Map.of("sub", "alice", "iss", "https://idp.example", "jti", "jti-1", "exp", exp);
+        Map.of(
+            "sub",
+            "alice",
+            "iss",
+            "https://idp.example",
+            "scope",
+            "openid",
+            "jti",
+            "jti-1",
+            "exp",
+            exp);
 
     final Map<String, Object> result = provider.claimsFor(jwtClaims, "token-abc");
 
@@ -116,7 +126,17 @@ class CachingOidcClaimsProviderTest {
     final var provider = newProvider();
     final long exp = Instant.now().getEpochSecond() + 3600;
     final Map<String, Object> jwtClaims =
-        Map.of("sub", "alice", "iss", "https://idp.example", "jti", "jti-1", "exp", exp);
+        Map.of(
+            "sub",
+            "alice",
+            "iss",
+            "https://idp.example",
+            "scope",
+            "openid",
+            "jti",
+            "jti-1",
+            "exp",
+            exp);
 
     final Map<String, Object> result = provider.claimsFor(jwtClaims, "token-abc");
 
@@ -142,6 +162,8 @@ class CachingOidcClaimsProviderTest {
             "alice",
             "iss",
             "https://idp.example",
+            "scope",
+            "openid",
             "jti",
             "jti-1",
             "exp",
@@ -164,6 +186,8 @@ class CachingOidcClaimsProviderTest {
             "alice",
             "iss",
             "https://idp.example",
+            "scope",
+            "openid",
             "jti",
             "jti-1",
             "exp",
@@ -182,10 +206,30 @@ class CachingOidcClaimsProviderTest {
     final var provider = newProvider();
     final long exp = Instant.now().getEpochSecond() + 3600;
     provider.claimsFor(
-        Map.of("sub", "alice", "iss", "https://idp.example", "jti", "jti-1", "exp", exp),
+        Map.of(
+            "sub",
+            "alice",
+            "iss",
+            "https://idp.example",
+            "scope",
+            "openid",
+            "jti",
+            "jti-1",
+            "exp",
+            exp),
         "token-a");
     provider.claimsFor(
-        Map.of("sub", "alice", "iss", "https://idp.example", "jti", "jti-2", "exp", exp),
+        Map.of(
+            "sub",
+            "alice",
+            "iss",
+            "https://idp.example",
+            "scope",
+            "openid",
+            "jti",
+            "jti-2",
+            "exp",
+            exp),
         "token-b");
 
     verify(userInfoClient, times(2)).fetch(any(), any());
@@ -202,9 +246,29 @@ class CachingOidcClaimsProviderTest {
     final long exp = Instant.now().getEpochSecond() + 3600;
 
     final Map<String, Object> issA =
-        Map.of("sub", "alice", "iss", "https://idp-a.example", "jti", "shared-jti", "exp", exp);
+        Map.of(
+            "sub",
+            "alice",
+            "iss",
+            "https://idp-a.example",
+            "scope",
+            "openid",
+            "jti",
+            "shared-jti",
+            "exp",
+            exp);
     final Map<String, Object> issB =
-        Map.of("sub", "alice", "iss", "https://idp-b.example", "jti", "shared-jti", "exp", exp);
+        Map.of(
+            "sub",
+            "alice",
+            "iss",
+            "https://idp-b.example",
+            "scope",
+            "openid",
+            "jti",
+            "shared-jti",
+            "exp",
+            exp);
 
     provider.claimsFor(issA, "token-a");
     provider.claimsFor(issB, "token-b");
@@ -220,7 +284,17 @@ class CachingOidcClaimsProviderTest {
     final long exp = Instant.now().getEpochSecond() + 3600;
     final long iat = Instant.now().getEpochSecond();
     final Map<String, Object> claimsNoJti =
-        Map.of("sub", "alice", "iss", "https://idp.example", "iat", iat, "exp", exp);
+        Map.of(
+            "sub",
+            "alice",
+            "iss",
+            "https://idp.example",
+            "scope",
+            "openid",
+            "iat",
+            iat,
+            "exp",
+            exp);
 
     provider.claimsFor(claimsNoJti, "token-abc");
     provider.claimsFor(claimsNoJti, "token-abc"); // same sub+iat+exp+iss -> cache hit
@@ -239,9 +313,29 @@ class CachingOidcClaimsProviderTest {
     final var provider = newProvider();
     final long exp = Instant.now().getEpochSecond() + 3600;
     final Map<String, Object> tokenA =
-        Map.of("sub", "alice", "iss", "https://idp-a.example", "jti", "jti-a", "exp", exp);
+        Map.of(
+            "sub",
+            "alice",
+            "iss",
+            "https://idp-a.example",
+            "scope",
+            "openid",
+            "jti",
+            "jti-a",
+            "exp",
+            exp);
     final Map<String, Object> tokenB =
-        Map.of("sub", "bob", "iss", "https://idp-b.example", "jti", "jti-b", "exp", exp);
+        Map.of(
+            "sub",
+            "bob",
+            "iss",
+            "https://idp-b.example",
+            "scope",
+            "openid",
+            "jti",
+            "jti-b",
+            "exp",
+            exp);
 
     final Map<String, Object> resultA = provider.claimsFor(tokenA, "token-from-a");
     final Map<String, Object> resultB = provider.claimsFor(tokenB, "token-from-b");
@@ -261,12 +355,72 @@ class CachingOidcClaimsProviderTest {
     final var provider = newProvider();
     final long exp = Instant.now().getEpochSecond() + 3600;
     final Map<String, Object> unknownIssToken =
-        Map.of("sub", "alice", "iss", "https://rogue.example", "jti", "jti-1", "exp", exp);
+        Map.of(
+            "sub",
+            "alice",
+            "iss",
+            "https://rogue.example",
+            "scope",
+            "openid",
+            "jti",
+            "jti-1",
+            "exp",
+            exp);
 
     final Map<String, Object> result = provider.claimsFor(unknownIssToken, "token-abc");
 
     assertThat(result).containsEntry("sub", "alice").doesNotContainKey("groups");
     verify(userInfoClient, times(0)).fetch(any(), any());
+  }
+
+  @Test
+  void skipsAugmentationForTokenWithoutOpenidScope() {
+    // M2M / client-credentials tokens typically lack 'openid' scope. Calling /userinfo with
+    // them is undefined per OIDC Core §5.3; skip silently and return JWT claims.
+    final var provider = newProvider();
+    final long exp = Instant.now().getEpochSecond() + 3600;
+    final Map<String, Object> m2mToken =
+        Map.of(
+            "sub",
+            "svc-account-1",
+            "iss",
+            "https://idp.example",
+            "jti",
+            "jti-m2m",
+            "exp",
+            exp,
+            "scope",
+            "write:jobs read:processes");
+
+    final Map<String, Object> result = provider.claimsFor(m2mToken, "token-abc");
+
+    assertThat(result).isSameAs(m2mToken);
+    verify(userInfoClient, times(0)).fetch(any(), any());
+  }
+
+  @Test
+  void acceptsOpenidScopeAsCollectionInAdditionToSpaceSeparatedString() {
+    when(userInfoClient.fetch(any(), any())).thenReturn(Map.of("groups", List.of("eng")));
+
+    final var provider = newProvider();
+    final long exp = Instant.now().getEpochSecond() + 3600;
+    final Map<String, Object> scopeAsList =
+        Map.of(
+            "sub",
+            "alice",
+            "iss",
+            "https://idp.example",
+            "jti",
+            "jti-coll",
+            "exp",
+            exp,
+            "scope",
+            List.of("openid", "profile"));
+
+    final Map<String, Object> result = provider.claimsFor(scopeAsList, "token-abc");
+
+    assertThat(result).containsEntry("groups", List.of("eng"));
+    verify(userInfoClient, times(1)).fetch(any(), any());
   }
 
   @Test
@@ -276,7 +430,8 @@ class CachingOidcClaimsProviderTest {
     when(userInfoClient.fetch(any(), any())).thenReturn(Map.of("groups", List.of("eng")));
 
     final var provider = newProvider();
-    final Map<String, Object> sparseClaims = Map.of("sub", "alice", "iss", "https://idp.example");
+    final Map<String, Object> sparseClaims =
+        Map.of("sub", "alice", "iss", "https://idp.example", "scope", "openid");
 
     provider.claimsFor(sparseClaims, "token-abc");
     provider.claimsFor(sparseClaims, "token-abc");
@@ -295,6 +450,8 @@ class CachingOidcClaimsProviderTest {
             "alice",
             "iss",
             "https://idp.example",
+            "scope",
+            "openid",
             "jti",
             "jti-1",
             "exp",
@@ -323,6 +480,8 @@ class CachingOidcClaimsProviderTest {
             "alice",
             "iss",
             "https://idp.example",
+            "scope",
+            "openid",
             "jti",
             "jti-1",
             "exp",
@@ -348,7 +507,17 @@ class CachingOidcClaimsProviderTest {
 
     final Instant expPast = Instant.now().minusSeconds(120);
     final Map<String, Object> expired =
-        Map.of("sub", "alice", "iss", "https://idp.example", "jti", "jti-i", "exp", expPast);
+        Map.of(
+            "sub",
+            "alice",
+            "iss",
+            "https://idp.example",
+            "scope",
+            "openid",
+            "jti",
+            "jti-i",
+            "exp",
+            expPast);
 
     provider.claimsFor(expired, "token-abc");
     provider.claimsFor(expired, "token-abc");
@@ -366,7 +535,17 @@ class CachingOidcClaimsProviderTest {
     // exp is far enough in the past that after clockSkew the effective TTL is <= 0
     final long expPast = Instant.now().minusSeconds(120).getEpochSecond();
     final Map<String, Object> expired =
-        Map.of("sub", "alice", "iss", "https://idp.example", "jti", "jti-1", "exp", expPast);
+        Map.of(
+            "sub",
+            "alice",
+            "iss",
+            "https://idp.example",
+            "scope",
+            "openid",
+            "jti",
+            "jti-1",
+            "exp",
+            expPast);
 
     provider.claimsFor(expired, "token-abc");
     provider.claimsFor(expired, "token-abc");
@@ -386,6 +565,8 @@ class CachingOidcClaimsProviderTest {
             "alice",
             "iss",
             "https://idp.example",
+            "scope",
+            "openid",
             "jti",
             "jti-1",
             "exp",
@@ -425,6 +606,8 @@ class CachingOidcClaimsProviderTest {
             "alice",
             "iss",
             "https://idp.example",
+            "scope",
+            "openid",
             "jti",
             "jti-concurrent",
             "exp",
@@ -470,6 +653,8 @@ class CachingOidcClaimsProviderTest {
             "alice",
             "iss",
             "https://idp.example",
+            "scope",
+            "openid",
             "jti",
             "jti-int",
             "exp",
