@@ -34,6 +34,7 @@ import {IdentityRolesPage} from '@pages/IdentityRolesPage';
 import {IdentityTenantsPage} from '@pages/IdentityTenantsPage';
 import {IdentityRolesDetailsPage} from '@pages/IdentityRolesDetailsPage';
 import {IdentityAuditLogPage} from '@pages/IdentityAuditLogPage';
+import {IdentityMcpProcessesPage} from '@pages/IdentityMcpProcessesPage';
 import {OperateOperationsDetailsPage} from '@pages/OperateOperationsDetailsPage';
 import {OperateOperationsLogPage} from '@pages/OperateOperationsLogPage';
 
@@ -68,6 +69,7 @@ type PlaywrightFixtures = {
   identityTenantsPage: IdentityTenantsPage;
   identityRolesDetailsPage: IdentityRolesDetailsPage;
   identityAuditLogPage: IdentityAuditLogPage;
+  identityMcpProcessesPage: IdentityMcpProcessesPage;
   suppressHelperModals: void;
 };
 
@@ -189,6 +191,9 @@ const test = base.extend<PlaywrightFixtures>({
   },
   identityAuditLogPage: async ({page}, use) => {
     await use(new IdentityAuditLogPage(page));
+  },
+  identityMcpProcessesPage: async ({page}, use) => {
+    await use(new IdentityMcpProcessesPage(page));
   },
 });
 

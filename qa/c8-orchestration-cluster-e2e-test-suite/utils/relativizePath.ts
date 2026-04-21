@@ -34,6 +34,9 @@ export const Paths = {
   operationsLog() {
     return '/admin/operations-log';
   },
+  mcpProcesses() {
+    return '/admin/mcp-processes';
+  },
   operateDashboard() {
     return '/operate';
   },
