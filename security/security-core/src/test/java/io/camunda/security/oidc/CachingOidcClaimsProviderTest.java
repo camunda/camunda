@@ -50,8 +50,19 @@ class CachingOidcClaimsProviderTest {
   }
 
   private CachingOidcClaimsProvider newProvider() {
+    return newProvider(
+        Map.of(
+            "https://idp.example",
+            URI.create("https://idp.example/userinfo"),
+            "https://idp-a.example",
+            URI.create("https://idp-a.example/userinfo"),
+            "https://idp-b.example",
+            URI.create("https://idp-b.example/userinfo")));
+  }
+
+  private CachingOidcClaimsProvider newProvider(final Map<String, URI> userInfoUriByIssuer) {
     return new CachingOidcClaimsProvider(
-        oidcConfig, URI.create("https://idp.example/userinfo"), userInfoClient, meterRegistry);
+        oidcConfig, userInfoUriByIssuer, userInfoClient, meterRegistry);
   }
 
   @Test
@@ -215,6 +226,47 @@ class CachingOidcClaimsProviderTest {
     provider.claimsFor(claimsNoJti, "token-abc"); // same sub+iat+exp+iss -> cache hit
 
     verify(userInfoClient, times(1)).fetch(any(), any());
+  }
+
+  @Test
+  void routesUserInfoFetchToUriMatchingJwtIssuer() {
+    // Multi-provider deployment: verify tokens go to their own issuer's userinfo URI.
+    when(userInfoClient.fetch(eq(URI.create("https://idp-a.example/userinfo")), eq("token-from-a")))
+        .thenReturn(Map.of("groups", List.of("team-a")));
+    when(userInfoClient.fetch(eq(URI.create("https://idp-b.example/userinfo")), eq("token-from-b")))
+        .thenReturn(Map.of("groups", List.of("team-b")));
+
+    final var provider = newProvider();
+    final long exp = Instant.now().getEpochSecond() + 3600;
+    final Map<String, Object> tokenA =
+        Map.of("sub", "alice", "iss", "https://idp-a.example", "jti", "jti-a", "exp", exp);
+    final Map<String, Object> tokenB =
+        Map.of("sub", "bob", "iss", "https://idp-b.example", "jti", "jti-b", "exp", exp);
+
+    final Map<String, Object> resultA = provider.claimsFor(tokenA, "token-from-a");
+    final Map<String, Object> resultB = provider.claimsFor(tokenB, "token-from-b");
+
+    assertThat(resultA).containsEntry("groups", List.of("team-a"));
+    assertThat(resultB).containsEntry("groups", List.of("team-b"));
+    verify(userInfoClient, times(1))
+        .fetch(eq(URI.create("https://idp-a.example/userinfo")), eq("token-from-a"));
+    verify(userInfoClient, times(1))
+        .fetch(eq(URI.create("https://idp-b.example/userinfo")), eq("token-from-b"));
+  }
+
+  @Test
+  void fallsBackToJwtClaimsWhenIssuerHasNoRegisteredUserInfoUri() {
+    // Token claims to be from an unknown issuer — no URL in the map. Degrade rather than
+    // send the bearer token to a wrong IdP or a guess.
+    final var provider = newProvider();
+    final long exp = Instant.now().getEpochSecond() + 3600;
+    final Map<String, Object> unknownIssToken =
+        Map.of("sub", "alice", "iss", "https://rogue.example", "jti", "jti-1", "exp", exp);
+
+    final Map<String, Object> result = provider.claimsFor(unknownIssToken, "token-abc");
+
+    assertThat(result).containsEntry("sub", "alice").doesNotContainKey("groups");
+    verify(userInfoClient, times(0)).fetch(any(), any());
   }
 
   @Test
