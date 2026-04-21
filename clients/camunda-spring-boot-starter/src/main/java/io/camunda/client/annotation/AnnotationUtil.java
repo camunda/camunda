@@ -239,7 +239,7 @@ public class AnnotationUtil {
             .map(Optional::get)
             .map(DocumentValue::getName)
             .toList());
-    return result;
+    return result.stream().distinct().toList();
   }
 
   private static String extractFieldName(final Field field) {
