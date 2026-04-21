@@ -360,7 +360,7 @@ class SearchQueryResponseMapperTest {
             456L, // scopeKey
             789L, // processInstanceKey
             999L, // rootProcessInstanceKey
-            null, // processDefinitionId
+            "processDefinitionId", // processDefinitionId
             "tenant"); // tenantId
 
     // when
@@ -758,7 +758,7 @@ class SearchQueryResponseMapperTest {
             456L, // scopeKey
             789L, // processInstanceKey
             null, // rootProcessInstanceKey
-            null, // processDefinitionId
+            "processDefinitionId", // processDefinitionId
             "tenant"); // tenantId
 
     // when

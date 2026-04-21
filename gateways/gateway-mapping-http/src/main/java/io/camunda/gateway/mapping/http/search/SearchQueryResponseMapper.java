@@ -1341,35 +1341,28 @@ public final class SearchQueryResponseMapper {
       final VariableEntity variableEntity, final boolean truncateValues) {
     return new VariableSearchResult()
         .variableKey(keyToString(variableEntity.variableKey()))
-        .name(requireNonNull(variableEntity.name(), "name"))
-        .value(
-            requireNonNull(
-                !truncateValues ? getFullValueIfPresent(variableEntity) : variableEntity.value(),
-                "value"))
-        .processInstanceKey(
-            requireNonNull(
-                keyToStringOrNull(variableEntity.processInstanceKey()), "processInstanceKey"))
+        .name(variableEntity.name())
+        .value(!truncateValues ? getFullValueIfPresent(variableEntity) : variableEntity.value())
+        .processInstanceKey(keyToString(variableEntity.processInstanceKey()))
         .rootProcessInstanceKey(keyToStringOrNull(variableEntity.rootProcessInstanceKey()))
         .tenantId(variableEntity.tenantId())
-        .isTruncated(truncateValues && requireNonNull(variableEntity.isPreview(), "isPreview"))
-        .scopeKey(requireNonNull(keyToStringOrNull(variableEntity.scopeKey()), "scopeKey"));
+        .isTruncated(truncateValues && variableEntity.isPreview())
+        .scopeKey(keyToString(variableEntity.scopeKey()));
   }
 
   public static VariableResult toVariableItem(final VariableEntity variableEntity) {
     return new VariableResult()
         .variableKey(keyToString(variableEntity.variableKey()))
-        .name(requireNonNull(variableEntity.name(), "name"))
-        .value(requireNonNull(getFullValueIfPresent(variableEntity), "value"))
-        .processInstanceKey(
-            requireNonNull(
-                keyToStringOrNull(variableEntity.processInstanceKey()), "processInstanceKey"))
+        .name(variableEntity.name())
+        .value(getFullValueIfPresent(variableEntity))
+        .processInstanceKey(keyToString(variableEntity.processInstanceKey()))
         .rootProcessInstanceKey(keyToStringOrNull(variableEntity.rootProcessInstanceKey()))
         .tenantId(variableEntity.tenantId())
-        .scopeKey(requireNonNull(keyToStringOrNull(variableEntity.scopeKey()), "scopeKey"));
+        .scopeKey(keyToString(variableEntity.scopeKey()));
   }
 
-  private static @Nullable String getFullValueIfPresent(final VariableEntity variableEntity) {
-    return Boolean.TRUE.equals(variableEntity.isPreview())
+  private static String getFullValueIfPresent(final VariableEntity variableEntity) {
+    return variableEntity.isPreview()
         ? requireNonNull(variableEntity.fullValue(), "fullValue")
         : variableEntity.value();
   }
