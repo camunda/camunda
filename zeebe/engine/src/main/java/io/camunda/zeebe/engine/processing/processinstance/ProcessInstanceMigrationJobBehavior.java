@@ -9,7 +9,6 @@ package io.camunda.zeebe.engine.processing.processinstance;
 
 import static io.camunda.zeebe.engine.state.immutable.IncidentState.MISSING_INCIDENT;
 
-import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceMigrationMigrateProcessor.SafetyCheckFailedException;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.state.deployment.DeployedProcess;
@@ -23,57 +22,35 @@ import io.camunda.zeebe.util.buffer.BufferUtil;
 
 public class ProcessInstanceMigrationJobBehavior {
 
-  private final BpmnBehaviors bpmnBehaviors;
   private final StateWriter stateWriter;
   private final JobState jobState;
   private final IncidentState incidentState;
 
   public ProcessInstanceMigrationJobBehavior(
-      final BpmnBehaviors bpmnBehaviors,
       final StateWriter stateWriter,
       final JobState jobState,
       final IncidentState incidentState) {
-    this.bpmnBehaviors = bpmnBehaviors;
     this.stateWriter = stateWriter;
     this.jobState = jobState;
     this.incidentState = incidentState;
   }
 
-  public void migrateOrConvertJob(
+  public void migrateJob(
       final ElementInstance elementInstance,
-      final DeployedProcess sourceProcessDefinition,
       final DeployedProcess targetProcessDefinition,
-      final boolean isUserTaskConversion,
       final long processInstanceKey,
       final String targetElementId,
       final ProcessInstanceRecord updatedElementInstanceRecord) {
-    if (isUserTaskConversion) {
-      final ProcessInstanceMigrationUserTaskBehavior migrationUserTaskBehavior =
-          new ProcessInstanceMigrationUserTaskBehavior(
-              processInstanceKey,
-              elementInstance,
-              sourceProcessDefinition,
-              targetProcessDefinition,
-              bpmnBehaviors,
-              targetElementId,
-              updatedElementInstanceRecord,
-              stateWriter,
-              jobState);
-      migrationUserTaskBehavior.tryMigrateJobWorkerToCamundaUserTask();
-      // TODO: there may be a bug related to migrating incidents for job-based user tasks to Camunda
-      // User Tasks. To write tests that cover this behaviour.
-    } else {
-      migrateJob(elementInstance, targetProcessDefinition, processInstanceKey, targetElementId);
+    migrateJobRecord(elementInstance, targetProcessDefinition, processInstanceKey, targetElementId);
 
-      final var jobIncidentKey = incidentState.getJobIncidentKey(elementInstance.getJobKey());
-      if (jobIncidentKey != MISSING_INCIDENT) {
-        appendIncidentMigratedEvent(
-            jobIncidentKey, targetProcessDefinition, targetElementId, updatedElementInstanceRecord);
-      }
+    final var jobIncidentKey = incidentState.getJobIncidentKey(elementInstance.getJobKey());
+    if (jobIncidentKey != MISSING_INCIDENT) {
+      appendIncidentMigratedEvent(
+          jobIncidentKey, targetProcessDefinition, targetElementId, updatedElementInstanceRecord);
     }
   }
 
-  private void migrateJob(
+  private void migrateJobRecord(
       final ElementInstance elementInstance,
       final DeployedProcess targetProcessDefinition,
       final long processInstanceKey,
