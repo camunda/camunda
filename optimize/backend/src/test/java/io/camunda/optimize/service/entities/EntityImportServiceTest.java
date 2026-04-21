@@ -75,6 +75,25 @@ public class EntityImportServiceTest {
   }
 
   @Test
+  public void shouldValidateCollectionBeforeProcessingEntitiesForInstantPreviewImport() {
+    // given: a management report that would cause OptimizeValidationException if entity processing
+    // ran before the collection check
+    final ProcessReportDataDto managementReportData = new ProcessReportDataDto();
+    managementReportData.setManagementReport(true);
+    final Set<OptimizeEntityExportDto> entities =
+        Set.of(new SingleProcessReportDefinitionExportDto(managementReportData));
+
+    when(collectionService.getCollectionDefinition(anyString()))
+        .thenThrow(new NotFoundException("Collection does not exist"));
+
+    // when / then: NotFoundException is thrown (not OptimizeValidationException), proving the
+    // collection check runs before entity pre-processing in the instant-preview path too
+    assertThatThrownBy(
+            () -> underTest.importInstantPreviewEntities(NON_EXISTENT_COLLECTION_ID, entities))
+        .isInstanceOf(NotFoundException.class);
+  }
+
+  @Test
   public void shouldNotFallBackToDirectCollectionLookupWhenAuthenticatedUserIsProvided() {
     // given: the authorized path succeeds
     when(authorizedCollectionService.getAuthorizedCollectionDefinitionOrFail(
