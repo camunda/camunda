@@ -290,16 +290,19 @@ public class ProcessInstanceMigrationMigrateProcessor
     final var elementId = elementInstanceRecord.getElementId();
     final String targetElementId = sourceElementIdToTargetElementId.get(elementId);
 
+    performValidation(
+        elementInstance,
+        sourceProcessDefinition,
+        targetProcessDefinition,
+        sourceElementIdToTargetElementId,
+        elementInstanceRecord,
+        processInstanceKey,
+        targetElementId,
+        elementId);
+
     final boolean isUserTaskConversion =
-        performValidation(
-            elementInstance,
-            sourceProcessDefinition,
-            targetProcessDefinition,
-            sourceElementIdToTargetElementId,
-            elementInstanceRecord,
-            processInstanceKey,
-            targetElementId,
-            elementId);
+        ProcessInstanceMigrationUserTaskBehavior.isJobWorkerToZeebeUserTaskConversion(
+            sourceProcessDefinition, targetProcessDefinition, targetElementId, elementInstance);
 
     final var updatedElementInstanceRecord =
         getUpdatedElementInstanceRecord(elementInstance, targetProcessDefinition, targetElementId);
@@ -439,7 +442,7 @@ public class ProcessInstanceMigrationMigrateProcessor
     }
   }
 
-  private boolean performValidation(
+  private void performValidation(
       final ElementInstance elementInstance,
       final DeployedProcess sourceProcessDefinition,
       final DeployedProcess targetProcessDefinition,
@@ -452,17 +455,13 @@ public class ProcessInstanceMigrationMigrateProcessor
     requireNonNullTargetElementId(targetElementId, processInstanceKey, elementId);
     requireSameElementType(
         targetProcessDefinition, targetElementId, elementInstance, processInstanceKey);
-    final boolean isUserTaskConversion =
-        requireSupportedUserTaskImplementation(
-            sourceProcessDefinition,
-            targetProcessDefinition,
-            targetElementId,
-            elementInstance,
-            processInstanceKey);
-    if (isUserTaskConversion) {
-      requireNoIncidentForJobWorkerUserTaskConversion(
-          incidentState, elementInstance, processInstanceKey);
-    }
+    requireSupportedUserTaskMigration(
+        sourceProcessDefinition,
+        targetProcessDefinition,
+        targetElementId,
+        elementInstance,
+        processInstanceKey,
+        incidentState);
     requireUnchangedFlowScope(
         elementInstanceState, elementInstanceRecord, targetProcessDefinition, targetElementId);
     requireNoEventSubprocessInSource(
@@ -532,7 +531,6 @@ public class ProcessInstanceMigrationMigrateProcessor
         processInstanceKey);
     requireNoConcurrentCommand(
         eventScopeInstanceState, elementInstanceState, elementInstance, processInstanceKey);
-    return isUserTaskConversion;
   }
 
   /**
