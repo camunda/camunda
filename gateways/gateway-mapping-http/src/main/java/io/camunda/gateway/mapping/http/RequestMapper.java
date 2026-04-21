@@ -7,6 +7,8 @@
  */
 package io.camunda.gateway.mapping.http;
 
+import static io.camunda.gateway.mapping.http.util.KeyUtil.keyToLong;
+import static io.camunda.gateway.mapping.http.util.KeyUtil.keyToLongOrNull;
 import static io.camunda.gateway.mapping.http.validator.AdHocSubProcessActivityRequestValidator.validateAdHocSubProcessActivationRequest;
 import static io.camunda.gateway.mapping.http.validator.ClockValidator.validateClockPinRequest;
 import static io.camunda.gateway.mapping.http.validator.ConditionalEvaluationRequestValidator.validateConditionalEvaluationRequest;
@@ -35,12 +37,10 @@ import static io.camunda.gateway.mapping.http.validator.UserTaskRequestValidator
 import static io.camunda.zeebe.protocol.record.RejectionType.INVALID_ARGUMENT;
 import static io.camunda.zeebe.protocol.record.value.JobResultType.AD_HOC_SUB_PROCESS;
 import static io.camunda.zeebe.protocol.record.value.JobResultType.USER_TASK;
-import static java.util.Objects.requireNonNull;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.document.api.DocumentMetadataModel;
 import io.camunda.gateway.mapping.http.search.SearchQueryFilterMapper;
-import io.camunda.gateway.mapping.http.util.KeyUtil;
 import io.camunda.gateway.mapping.http.validator.DocumentValidator;
 import io.camunda.gateway.protocol.model.AdHocSubProcessActivateActivitiesInstruction;
 import io.camunda.gateway.protocol.model.CamundaProblemDetail;
@@ -623,7 +623,7 @@ public class RequestMapper {
         expiresAt,
         file.getSize(),
         metadata.getProcessDefinitionId(),
-        KeyUtil.keyToLong(metadata.getProcessInstanceKey()),
+        keyToLongOrNull(metadata.getProcessInstanceKey()),
         metadata.getCustomProperties());
   }
 
@@ -763,7 +763,7 @@ public class RequestMapper {
         () ->
             new ProcessInstanceMigrateRequest(
                 processInstanceKey,
-                KeyUtil.keyToLong(request.getTargetProcessDefinitionKey()),
+                keyToLong(request.getTargetProcessDefinitionKey()),
                 request.getMappingInstructions().stream()
                     .map(
                         instruction ->
@@ -794,7 +794,7 @@ public class RequestMapper {
         () ->
             new ProcessInstanceMigrateBatchOperationRequest(
                 toRequiredProcessInstanceFilter(request.getFilter()).get(),
-                KeyUtil.keyToLong(migrationPlan.getTargetProcessDefinitionKey()),
+                keyToLong(migrationPlan.getTargetProcessDefinitionKey()),
                 migrationPlan.getMappingInstructions().stream()
                     .map(
                         instruction ->
@@ -823,7 +823,7 @@ public class RequestMapper {
                               instanceof
                               final ProcessInstanceModificationTerminateByKeyInstruction byKey) {
                             mappedInstruction.setElementInstanceKey(
-                                requireNonNull(KeyUtil.keyToLong(byKey.getElementInstanceKey())));
+                                keyToLong(byKey.getElementInstanceKey()));
                           } else {
                             mappedInstruction.setElementId(
                                 ((ProcessInstanceModificationTerminateByIdInstruction) instruction)
@@ -1018,7 +1018,7 @@ public class RequestMapper {
     if (ancestorElementInstanceKey == null) {
       return -1L;
     }
-    return requireNonNull(KeyUtil.keyToLong(ancestorElementInstanceKey));
+    return keyToLong(ancestorElementInstanceKey);
   }
 
   private static List<ProcessInstanceModificationMoveInstruction>
@@ -1037,7 +1037,7 @@ public class RequestMapper {
                     mappedInstruction.setSourceElementId(byId.getSourceElementId());
                 case final SourceElementInstanceKeyInstruction byKey ->
                     mappedInstruction.setSourceElementInstanceKey(
-                        requireNonNull(KeyUtil.keyToLong(byKey.getSourceElementInstanceKey())));
+                        keyToLong(byKey.getSourceElementInstanceKey()));
                 default ->
                     throw new IllegalStateException(
                         "Unexpected value: " + instruction.getSourceElementInstruction());

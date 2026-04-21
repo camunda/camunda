@@ -7,6 +7,7 @@
  */
 package io.camunda.gateway.mapping.http.validator;
 
+import static io.camunda.gateway.mapping.http.util.KeyUtil.tryParseLong;
 import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_DATE_PARSING;
 import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_DURATION_PARSING;
 import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_ILLEGAL_CHARACTER;
@@ -17,7 +18,6 @@ import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESS
 import static io.camunda.zeebe.protocol.record.RejectionType.INVALID_ARGUMENT;
 
 import io.camunda.gateway.mapping.http.GatewayErrorMapper;
-import io.camunda.gateway.mapping.http.util.KeyUtil;
 import io.camunda.gateway.protocol.model.Changeset;
 import java.time.Duration;
 import java.time.OffsetDateTime;
@@ -127,7 +127,7 @@ public final class RequestValidator {
    */
   public static void validateKeyFormat(
       final @Nullable String keyValue, final String fieldName, final List<String> violations) {
-    if (keyValue != null && KeyUtil.tryParseLong(keyValue).isEmpty()) {
+    if (keyValue != null && tryParseLong(keyValue).isEmpty()) {
       violations.add(ERROR_MESSAGE_INVALID_KEY_FORMAT.formatted(fieldName, keyValue));
     }
   }
