@@ -73,9 +73,13 @@ import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.actuate.autoconfigure.security.servlet.EndpointRequest;
 import org.springframework.boot.actuate.logging.LoggersEndpoint;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
+import org.springframework.boot.ssl.NoSuchSslBundleException;
+import org.springframework.boot.ssl.SslBundles;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
@@ -644,11 +648,47 @@ public class WebSecurityConfig {
       return new OidcTokenAuthenticationConverter(tokenClaimsConverter, oidcClaimsProvider);
     }
 
+    /**
+     * HTTP client used by {@link OidcClaimsProvider} implementations to call the IdP's {@code
+     * /userinfo} endpoint. Registered as a Spring-managed bean so its lifecycle is bound to the
+     * application context — {@code close()} on shutdown releases the JDK selector + executor
+     * threads. Can be overridden by registering a bean of the same name.
+     *
+     * <p>SSL context is sourced from the {@code oidc-userinfo} entry in {@link SslBundles} when
+     * present, so enterprise deployments with custom CA trust configured under {@code
+     * spring.ssl.bundle.*} apply automatically. Falls back to the JDK default {@link
+     * javax.net.ssl.SSLContext} when no such bundle is configured.
+     */
+    @Bean(destroyMethod = "close", name = "oidcUserInfoHttpClient")
+    @ConditionalOnMissingBean(name = "oidcUserInfoHttpClient")
+    public HttpClient oidcUserInfoHttpClient(
+        @Autowired(required = false) final SslBundles sslBundles) {
+      final HttpClient.Builder builder =
+          HttpClient.newBuilder()
+              .connectTimeout(Duration.ofSeconds(2))
+              .followRedirects(HttpClient.Redirect.NORMAL);
+      if (sslBundles != null) {
+        try {
+          final var bundle = sslBundles.getBundle("oidc-userinfo");
+          builder.sslContext(bundle.createSslContext());
+          LOG.info(
+              "OIDC UserInfo HTTP client using SSL bundle 'oidc-userinfo' "
+                  + "(custom truststore / trust material)");
+        } catch (final NoSuchSslBundleException e) {
+          LOG.debug(
+              "No 'oidc-userinfo' SSL bundle configured; OIDC UserInfo HTTP client "
+                  + "uses JDK default SSLContext");
+        }
+      }
+      return builder.build();
+    }
+
     @Bean
     public OidcClaimsProvider oidcClaimsProvider(
         final SecurityConfiguration securityConfiguration,
         final ClientRegistrationRepository clientRegistrationRepository,
         final OidcAuthenticationConfigurationRepository oidcProviderRepository,
+        @Qualifier("oidcUserInfoHttpClient") final HttpClient oidcUserInfoHttpClient,
         final MeterRegistry meterRegistry) {
       final var oidc = securityConfiguration.getAuthentication().getOidc();
       if (oidc == null || !oidc.getUserInfoAugmentation().isEnabled()) {
@@ -676,11 +716,10 @@ public class WebSecurityConfig {
                           "UserInfo augmentation is enabled but no ClientRegistration exposes a"
                               + " userinfo endpoint. Check the IdP's OIDC discovery document and"
                               + " the userInfoEnabled flag."));
-      final var httpClient = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(5)).build();
       return new CachingOidcClaimsProvider(
           oidc,
           userInfoUri,
-          new OidcUserInfoClient(httpClient, Duration.ofSeconds(5)),
+          new OidcUserInfoClient(oidcUserInfoHttpClient, Duration.ofSeconds(2)),
           meterRegistry);
     }
 
