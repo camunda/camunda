@@ -17,7 +17,7 @@ on:
         required: true
         default: "latest"
       dry_run:
-        description: "If true, artifacts are only uploaded to the workflow run, not to the GitHub release."
+        description: "Dry run only: artifacts are only uploaded to the workflow run, not to the GitHub release."
         type: boolean
         required: true
         default: true
