@@ -1548,22 +1548,22 @@ public class ResourceDeletionTest {
       final long processInstanceKey, final long processDefinitionKey) {
     return new ProcessInstanceEntity(
         processInstanceKey,
-        null,
-        null,
-        null,
-        -1,
-        null,
+        null, // rootProcessInstanceKey
+        "fake-process-def-id", // processDefinitionId
+        null, // processDefinitionName
+        -1, // processDefinitionVersion
+        null, // processDefinitionVersionTag
         processDefinitionKey,
-        -1L,
-        -1L,
-        null,
-        null,
-        null,
-        false,
+        -1L, // parentProcessInstanceKey
+        -1L, // parentFlowNodeInstanceKey
+        java.time.OffsetDateTime.now(), // startDate
+        null, // endDate
+        ProcessInstanceEntity.ProcessInstanceState.ACTIVE, // state
+        false, // hasIncident
         TenantOwned.DEFAULT_TENANT_IDENTIFIER,
-        null,
-        Set.of(),
-        null);
+        null, // treePath
+        Set.of(), // tags
+        null); // businessId
   }
 
   private DecisionInstanceEntity createDecisionInstanceEntity(final long decisionInstanceKey) {

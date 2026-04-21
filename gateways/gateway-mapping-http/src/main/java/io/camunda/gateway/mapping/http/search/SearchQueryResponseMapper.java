@@ -752,23 +752,28 @@ public final class SearchQueryResponseMapper {
   }
 
   public static ProcessInstanceResult toProcessInstance(final ProcessInstanceEntity p) {
+    // Several process-definition fields and `state` are @Nullable on the entity due to an
+    // empirically observed null on multi-partition batch-op-driven reads (root cause unidentified;
+    // tracked as follow-up). `startDate` is conditionally written on ELEMENT_ACTIVATING and absent
+    // on docs first created by a later intent. `hasIncident` is populated asynchronously by
+    // IncidentUpdateTask. Per 8.8 policy we fall back to spec-compliant sentinels rather than 500
+    // so rare data-layer gaps don't fail whole responses.
     return new ProcessInstanceResult()
-        .processInstanceKey(
-            requireNonNull(keyToStringOrNull(p.processInstanceKey()), "processInstanceKey"))
+        .processInstanceKey(keyToString(p.processInstanceKey()))
         .rootProcessInstanceKey(keyToStringOrNull(p.rootProcessInstanceKey()))
-        .processDefinitionId(requireNonNull(p.processDefinitionId(), "processDefinitionId"))
+        .processDefinitionId(requireNonNullElse(p.processDefinitionId(), ""))
         .processDefinitionName(p.processDefinitionName())
-        .processDefinitionVersion(
-            requireNonNull(p.processDefinitionVersion(), "processDefinitionVersion"))
+        .processDefinitionVersion(requireNonNullElse(p.processDefinitionVersion(), -1))
         .processDefinitionVersionTag(p.processDefinitionVersionTag())
-        .processDefinitionKey(
-            requireNonNull(keyToStringOrNull(p.processDefinitionKey()), "processDefinitionKey"))
+        .processDefinitionKey(requireNonNullElse(keyToStringOrNull(p.processDefinitionKey()), ""))
         .parentProcessInstanceKey(keyToStringOrNull(p.parentProcessInstanceKey()))
         .parentElementInstanceKey(keyToStringOrNull(p.parentFlowNodeInstanceKey()))
-        .startDate(requireNonNull(formatDate(p.startDate()), "startDate"))
+        .startDate(requireNonNullElse(formatDate(p.startDate()), EPOCH_DATE_SENTINEL))
         .endDate(formatDate(p.endDate()))
-        .state(requireNonNull(toProtocolState(p.state()), "state"))
-        .hasIncident(requireNonNull(p.hasIncident(), "hasIncident"))
+        .state(
+            toProtocolState(
+                requireNonNullElse(p.state(), ProcessInstanceEntity.ProcessInstanceState.ACTIVE)))
+        .hasIncident(Boolean.TRUE.equals(p.hasIncident()))
         .tenantId(p.tenantId())
         .tags(p.tags())
         .businessId(emptyToNull(p.businessId()));
@@ -1525,11 +1530,8 @@ public final class SearchQueryResponseMapper {
         .entityDescription(auditLog.entityDescription());
   }
 
-  private static @Nullable ProcessInstanceStateEnum toProtocolState(
-      final ProcessInstanceEntity.@Nullable ProcessInstanceState value) {
-    if (value == null) {
-      return null;
-    }
+  private static ProcessInstanceStateEnum toProtocolState(
+      final ProcessInstanceEntity.ProcessInstanceState value) {
     if (value == ProcessInstanceEntity.ProcessInstanceState.CANCELED) {
       return ProcessInstanceStateEnum.TERMINATED;
     }

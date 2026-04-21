@@ -326,22 +326,22 @@ abstract class AbstractBatchOperationTest {
   protected ProcessInstanceEntity fakeProcessInstanceEntity(final long processInstanceKey) {
     return new ProcessInstanceEntity(
         processInstanceKey,
-        null,
-        null,
-        null,
-        -1,
-        null,
-        -1L,
-        -1L,
-        -1L,
-        null,
-        null,
-        null,
-        false,
+        null, // rootProcessInstanceKey
+        "fake-process-def-id", // processDefinitionId
+        null, // processDefinitionName
+        -1, // processDefinitionVersion
+        null, // processDefinitionVersionTag
+        -1L, // processDefinitionKey
+        -1L, // parentProcessInstanceKey
+        -1L, // parentFlowNodeInstanceKey
+        java.time.OffsetDateTime.now(), // startDate
+        null, // endDate
+        ProcessInstanceEntity.ProcessInstanceState.ACTIVE, // state
+        false, // hasIncident
         TenantOwned.DEFAULT_TENANT_IDENTIFIER,
-        null,
-        Set.of(),
-        null);
+        null, // treePath
+        Set.of(), // tags
+        null); // businessId
   }
 
   protected IncidentEntity fakeIncidentEntity(

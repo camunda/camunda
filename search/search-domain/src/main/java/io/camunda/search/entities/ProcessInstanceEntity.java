@@ -18,16 +18,23 @@ import org.jspecify.annotations.Nullable;
 public record ProcessInstanceEntity(
     Long processInstanceKey,
     @Nullable Long rootProcessInstanceKey,
+    // empirically observed null in batch-op-driven reads on multi-partition clusters; root cause
+    // unidentified (exporter audit shows no write path producing null). Tracked as follow-up.
     @Nullable String processDefinitionId,
     @Nullable String processDefinitionName,
+    // see processDefinitionId.
     @Nullable Integer processDefinitionVersion,
     @Nullable String processDefinitionVersionTag,
+    // see processDefinitionId.
     @Nullable Long processDefinitionKey,
     @Nullable Long parentProcessInstanceKey,
     @Nullable Long parentFlowNodeInstanceKey,
+    // only written on ELEMENT_ACTIVATING; absent on docs first created by a later intent.
     @Nullable OffsetDateTime startDate,
     @Nullable OffsetDateTime endDate,
+    // see processDefinitionId.
     @Nullable ProcessInstanceState state,
+    // not set by the primary handler; populated asynchronously by IncidentUpdateTask.
     @Nullable Boolean hasIncident,
     String tenantId,
     @Nullable String treePath,
