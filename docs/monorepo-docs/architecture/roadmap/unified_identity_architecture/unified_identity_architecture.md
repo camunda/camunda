@@ -1,6 +1,8 @@
 # Unified Identity Architecture
 
-**IMPORTANT**: This document is a work in progress and reflects the current thinking on the unified identity architecture for Camunda Hub and Orchestration Clusters. It is intended to provide a high-level overview of the proposed design, including key components, interactions, and deployment models. The architecture is subject to change as we iterate on the design and gather feedback from stakeholders.
+**IMPORTANT**: This document is a work in progress and reflects the current thinking on the unified identity architecture for Camunda Hub and Orchestration Clusters. It is intended to provide a high-level overview of the proposed design, including key components, interactions, and deployment models.
+SCIM provisioning is part of the planned end-state target architecture, but it is intentionally out of scope in this document to get early feedback on the core model first; from the library perspective, SCIM is handled as an additional inbound port/adapter.
+The architecture is subject to change as we iterate on the design and gather feedback from stakeholders.
 
 ---
 
@@ -13,6 +15,7 @@ This document describes the planned Unified Identity Architecture for Camunda Hu
 - Shows how the architecture supports multiple Physical Tenants per broker/cluster and multi-tenancy.
 - Emphasizes that standalone Orchestration Cluster (without Hub) remains a first-class deployment option.
 - Outlines how a single shared frontend and pluggable backends (persistence, OC command creation, etc.) fit into the design.
+- Keeps SCIM out of this draft intentionally to focus early feedback; SCIM is planned as another inbound port/adapter on top of the same library.
 
 IMPORTANT: This document shows the final architecture, we won't be able to implement it by October.
 We need to break the project down into several iterations with interim goals until we actually reach the endgame.
