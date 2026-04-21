@@ -23,7 +23,7 @@ const Toolbar: React.FC<Props> = observer(({selectedCount}) => {
   return (
     <TableToolbar size="sm">
       <TableBatchActions
-        shouldShowBatchActions={selectedCount > 0}
+        shouldShowBatchActions
         totalSelected={selectedCount}
         onCancel={decisionInstancesSelectionStore.resetState}
         translateWithId={(id) => {
