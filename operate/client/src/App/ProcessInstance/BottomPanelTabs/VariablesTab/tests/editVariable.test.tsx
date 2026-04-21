@@ -119,7 +119,13 @@ describe('Edit variable', () => {
     });
 
     mockUpdateElementInstanceVariables('1').withDelay(null);
-    mockSearchVariables().withSuccess(mockVariables);
+    mockGetVariable().withSuccess(
+      createVariable({
+        name: 'firstVariable',
+        value: '"updated-value"',
+        isTruncated: false,
+      }),
+    );
     mockSearchVariables().withSuccess(mockVariables);
     mockSearchJobs().withSuccess({
       items: [],
