@@ -12,6 +12,7 @@ import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.Expiry;
 import io.camunda.security.configuration.OidcAuthenticationConfiguration;
 import io.camunda.security.configuration.OidcUserInfoAugmentationConfiguration;
+import io.camunda.zeebe.util.VisibleForTesting;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
@@ -147,6 +148,15 @@ public class CachingOidcClaimsProvider implements OidcClaimsProvider {
           e);
       return CacheEntry.degraded(jwtClaims);
     }
+  }
+
+  /**
+   * Drop every cached entry. Used by integration tests to isolate state between test methods when
+   * the provider is a Spring-managed singleton.
+   */
+  @VisibleForTesting
+  public void invalidateCache() {
+    cache.invalidateAll();
   }
 
   /**

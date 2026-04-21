@@ -630,7 +630,12 @@ public class WebSecurityConfig {
     }
 
     @Bean
+    @ConditionalOnMissingBean(MeterRegistry.class)
     public MeterRegistry meterRegistry() {
+      // Fallback MeterRegistry for test / minimal Spring contexts that don't configure
+      // the standard Spring Boot auto-configured CompositeMeterRegistry. In real
+      // deployments the app-wide registry wins and metrics published here land on a
+      // scraped backend (Prometheus / OTLP / etc.) rather than an in-memory-only sink.
       return new SimpleMeterRegistry();
     }
 
@@ -684,6 +689,7 @@ public class WebSecurityConfig {
     }
 
     @Bean
+    @ConditionalOnMissingBean(OidcClaimsProvider.class)
     public OidcClaimsProvider oidcClaimsProvider(
         final SecurityConfiguration securityConfiguration,
         final ClientRegistrationRepository clientRegistrationRepository,
