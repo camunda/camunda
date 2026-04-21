@@ -104,7 +104,8 @@ class CachingOidcClaimsProviderTest {
 
     final var provider = newProvider();
     final long exp = Instant.now().getEpochSecond() + 3600;
-    final Map<String, Object> jwtClaims = Map.of("sub", "alice", "jti", "jti-1", "exp", exp);
+    final Map<String, Object> jwtClaims =
+        Map.of("sub", "alice", "iss", "https://idp.example", "jti", "jti-1", "exp", exp);
 
     final Map<String, Object> result = provider.claimsFor(jwtClaims, "token-abc");
 
@@ -125,7 +126,15 @@ class CachingOidcClaimsProviderTest {
 
     final var provider = newProvider();
     final Map<String, Object> jwtClaims =
-        Map.of("sub", "alice", "jti", "jti-1", "exp", Instant.now().getEpochSecond() + 3600);
+        Map.of(
+            "sub",
+            "alice",
+            "iss",
+            "https://idp.example",
+            "jti",
+            "jti-1",
+            "exp",
+            Instant.now().getEpochSecond() + 3600);
 
     final Map<String, Object> result = provider.claimsFor(jwtClaims, "token-abc");
 
@@ -139,7 +148,15 @@ class CachingOidcClaimsProviderTest {
 
     final var provider = newProvider();
     final Map<String, Object> jwtClaims =
-        Map.of("sub", "alice", "jti", "jti-1", "exp", Instant.now().getEpochSecond() + 3600);
+        Map.of(
+            "sub",
+            "alice",
+            "iss",
+            "https://idp.example",
+            "jti",
+            "jti-1",
+            "exp",
+            Instant.now().getEpochSecond() + 3600);
 
     provider.claimsFor(jwtClaims, "token-abc");
     provider.claimsFor(jwtClaims, "token-abc");
@@ -153,23 +170,64 @@ class CachingOidcClaimsProviderTest {
 
     final var provider = newProvider();
     final long exp = Instant.now().getEpochSecond() + 3600;
-    provider.claimsFor(Map.of("sub", "alice", "jti", "jti-1", "exp", exp), "token-a");
-    provider.claimsFor(Map.of("sub", "alice", "jti", "jti-2", "exp", exp), "token-b");
+    provider.claimsFor(
+        Map.of("sub", "alice", "iss", "https://idp.example", "jti", "jti-1", "exp", exp),
+        "token-a");
+    provider.claimsFor(
+        Map.of("sub", "alice", "iss", "https://idp.example", "jti", "jti-2", "exp", exp),
+        "token-b");
 
     verify(userInfoClient, times(2)).fetch(any(), any());
   }
 
   @Test
-  void fallsBackToTokenHashWhenJtiAbsent() {
+  void cacheKeyIncludesIssSoSameJtiFromDifferentIssuersDoNotCollide() {
+    // Key invariant: jti is only unique per-issuer (RFC 7519); without the iss prefix,
+    // two providers could legitimately issue tokens with the same jti and collide in the
+    // cache, leaking one user's merged claims to the other.
     when(userInfoClient.fetch(any(), any())).thenReturn(Map.of("groups", List.of("eng")));
 
     final var provider = newProvider();
     final long exp = Instant.now().getEpochSecond() + 3600;
-    final Map<String, Object> claimsNoJti = Map.of("sub", "alice", "exp", exp);
+
+    final Map<String, Object> issA =
+        Map.of("sub", "alice", "iss", "https://idp-a.example", "jti", "shared-jti", "exp", exp);
+    final Map<String, Object> issB =
+        Map.of("sub", "alice", "iss", "https://idp-b.example", "jti", "shared-jti", "exp", exp);
+
+    provider.claimsFor(issA, "token-a");
+    provider.claimsFor(issB, "token-b");
+
+    verify(userInfoClient, times(2)).fetch(any(), any());
+  }
+
+  @Test
+  void fallsBackToSubIatExpKeyWhenJtiAbsent() {
+    when(userInfoClient.fetch(any(), any())).thenReturn(Map.of("groups", List.of("eng")));
+
+    final var provider = newProvider();
+    final long exp = Instant.now().getEpochSecond() + 3600;
+    final long iat = Instant.now().getEpochSecond();
+    final Map<String, Object> claimsNoJti =
+        Map.of("sub", "alice", "iss", "https://idp.example", "iat", iat, "exp", exp);
 
     provider.claimsFor(claimsNoJti, "token-abc");
-    provider.claimsFor(claimsNoJti, "token-abc"); // same token -> same cache entry
-    provider.claimsFor(claimsNoJti, "token-xyz"); // different token -> new entry
+    provider.claimsFor(claimsNoJti, "token-abc"); // same sub+iat+exp+iss -> cache hit
+
+    verify(userInfoClient, times(1)).fetch(any(), any());
+  }
+
+  @Test
+  void bypassesCacheWhenNeitherJtiNorSubIatExpAvailable() {
+    // Malformed/unusual JWT with no jti, no iat, no exp. Can't key safely — skip cache
+    // entirely so we never store the bearer-token material and every request re-fetches.
+    when(userInfoClient.fetch(any(), any())).thenReturn(Map.of("groups", List.of("eng")));
+
+    final var provider = newProvider();
+    final Map<String, Object> sparseClaims = Map.of("sub", "alice", "iss", "https://idp.example");
+
+    provider.claimsFor(sparseClaims, "token-abc");
+    provider.claimsFor(sparseClaims, "token-abc");
 
     verify(userInfoClient, times(2)).fetch(any(), any());
   }
@@ -180,7 +238,15 @@ class CachingOidcClaimsProviderTest {
 
     final var provider = newProvider();
     final Map<String, Object> jwtClaims =
-        Map.of("sub", "alice", "jti", "jti-1", "exp", Instant.now().getEpochSecond() + 3600);
+        Map.of(
+            "sub",
+            "alice",
+            "iss",
+            "https://idp.example",
+            "jti",
+            "jti-1",
+            "exp",
+            Instant.now().getEpochSecond() + 3600);
 
     // Fail-open: returns JWT claims unchanged, increments failure counter, does not throw.
     final Map<String, Object> result = provider.claimsFor(jwtClaims, "token-abc");
@@ -200,7 +266,15 @@ class CachingOidcClaimsProviderTest {
 
     final var provider = newProvider();
     final Map<String, Object> jwtClaims =
-        Map.of("sub", "alice", "jti", "jti-1", "exp", Instant.now().getEpochSecond() + 3600);
+        Map.of(
+            "sub",
+            "alice",
+            "iss",
+            "https://idp.example",
+            "jti",
+            "jti-1",
+            "exp",
+            Instant.now().getEpochSecond() + 3600);
 
     for (int i = 0; i < 20; i++) {
       provider.claimsFor(jwtClaims, "token-abc");
@@ -221,7 +295,8 @@ class CachingOidcClaimsProviderTest {
     final var provider = newProvider();
 
     final Instant expPast = Instant.now().minusSeconds(120);
-    final Map<String, Object> expired = Map.of("sub", "alice", "jti", "jti-i", "exp", expPast);
+    final Map<String, Object> expired =
+        Map.of("sub", "alice", "iss", "https://idp.example", "jti", "jti-i", "exp", expPast);
 
     provider.claimsFor(expired, "token-abc");
     provider.claimsFor(expired, "token-abc");
@@ -238,7 +313,8 @@ class CachingOidcClaimsProviderTest {
 
     // exp is far enough in the past that after clockSkew the effective TTL is <= 0
     final long expPast = Instant.now().minusSeconds(120).getEpochSecond();
-    final Map<String, Object> expired = Map.of("sub", "alice", "jti", "jti-1", "exp", expPast);
+    final Map<String, Object> expired =
+        Map.of("sub", "alice", "iss", "https://idp.example", "jti", "jti-1", "exp", expPast);
 
     provider.claimsFor(expired, "token-abc");
     provider.claimsFor(expired, "token-abc");
@@ -253,7 +329,15 @@ class CachingOidcClaimsProviderTest {
 
     final var provider = newProvider();
     final Map<String, Object> jwtClaims =
-        Map.of("sub", "alice", "jti", "jti-1", "exp", Instant.now().getEpochSecond() + 3600);
+        Map.of(
+            "sub",
+            "alice",
+            "iss",
+            "https://idp.example",
+            "jti",
+            "jti-1",
+            "exp",
+            Instant.now().getEpochSecond() + 3600);
 
     provider.claimsFor(jwtClaims, "token-abc"); // miss
     provider.claimsFor(jwtClaims, "token-abc"); // hit
@@ -285,7 +369,14 @@ class CachingOidcClaimsProviderTest {
     final var provider = newProvider();
     final Map<String, Object> jwtClaims =
         Map.of(
-            "sub", "alice", "jti", "jti-concurrent", "exp", Instant.now().getEpochSecond() + 3600);
+            "sub",
+            "alice",
+            "iss",
+            "https://idp.example",
+            "jti",
+            "jti-concurrent",
+            "exp",
+            Instant.now().getEpochSecond() + 3600);
 
     final ExecutorService pool = Executors.newFixedThreadPool(10);
     try {
@@ -322,7 +413,15 @@ class CachingOidcClaimsProviderTest {
 
     final var provider = newProvider();
     final Map<String, Object> jwtClaims =
-        Map.of("sub", "alice", "jti", "jti-int", "exp", Instant.now().getEpochSecond() + 3600);
+        Map.of(
+            "sub",
+            "alice",
+            "iss",
+            "https://idp.example",
+            "jti",
+            "jti-int",
+            "exp",
+            Instant.now().getEpochSecond() + 3600);
 
     // Run in a dedicated thread so we can inspect its interrupt state.
     final boolean[] interruptedAfter = {false};
