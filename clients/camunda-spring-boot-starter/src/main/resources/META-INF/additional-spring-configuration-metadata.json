@@ -179,8 +179,7 @@
       "defaultValue": "PT5S"
     },
     {
-      "name": "camunda.client.auth.credentials-cache-path",
-      "defaultValue": "$HOME/.camunda/credentials"
+      "name": "camunda.client.auth.credentials-cache-path"
     },
     {
       "name": "camunda.client.max-metadata-size",
