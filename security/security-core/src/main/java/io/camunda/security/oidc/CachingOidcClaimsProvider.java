@@ -83,6 +83,17 @@ public class CachingOidcClaimsProvider implements OidcClaimsProvider {
       return jwtClaims;
     }
 
+    // OIDC Core §5.3 — the UserInfo endpoint is only defined for tokens that were issued with
+    // the 'openid' scope. Tokens from a client-credentials / M2M flow typically lack it;
+    // calling /userinfo with them either fails or returns stub claims. Skip augmentation
+    // silently in that case.
+    if (!hasOpenidScope(jwtClaims)) {
+      LOG.debug(
+          "Skipping UserInfo augmentation: bearer token lacks 'openid' scope (likely a "
+              + "client-credentials / M2M token). Returning JWT-only claims.");
+      return jwtClaims;
+    }
+
     // Resolve the userinfo URI per-token by the JWT's 'iss' claim. This guarantees we always
     // hand the token to the same IdP that signed it — critical in multi-provider setups where
     // tokens from provider A must not be sent to provider B's /userinfo endpoint.
@@ -220,6 +231,29 @@ public class CachingOidcClaimsProvider implements OidcClaimsProvider {
       return n.longValue();
     }
     return null;
+  }
+
+  /**
+   * Best-effort check that the JWT was issued with the {@code openid} scope, regardless of how the
+   * decoder surfaces the scope claim. JWTs may carry scope under {@code scope} (space- separated
+   * string per RFC 8693 convention) or {@code scp} (array on some IdPs), and Spring's claim
+   * converter can surface the value as either a {@link String} or a {@link Collection}.
+   */
+  private static boolean hasOpenidScope(final Map<String, Object> jwtClaims) {
+    final Object scope =
+        jwtClaims.get("scope") != null ? jwtClaims.get("scope") : jwtClaims.get("scp");
+    if (scope instanceof final String s) {
+      for (final String candidate : s.split("\\s+")) {
+        if ("openid".equals(candidate)) {
+          return true;
+        }
+      }
+      return false;
+    }
+    if (scope instanceof final java.util.Collection<?> c) {
+      return c.contains("openid");
+    }
+    return false;
   }
 
   private static Instant tokenExpiry(final Map<String, Object> jwtClaims) {
