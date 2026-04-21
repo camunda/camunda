@@ -18,7 +18,7 @@ import {
   getProcessInstance,
   createWrapper,
 } from '../../tests/mocks';
-import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelection';
+import {processInstancesSelectionStore} from 'modules/stores/instancesSelection';
 import {batchModificationStore} from 'modules/stores/batchModification';
 
 const PROCESS_ID = 'MoveModificationProcess';
@@ -75,9 +75,7 @@ describe('<MoveAction />', () => {
     const instance = getProcessInstance('TERMINATED', mockProcessInstancesV2);
 
     act(() => {
-      processInstancesSelectionStore.selectProcessInstance(
-        instance.processInstanceKey,
-      );
+      processInstancesSelectionStore.select(instance.processInstanceKey);
     });
 
     const moveButton = screen.getByRole('button', {name: /move/i});
@@ -104,9 +102,7 @@ describe('<MoveAction />', () => {
     const instance = getProcessInstance('ACTIVE', mockProcessInstancesV2);
 
     act(() => {
-      processInstancesSelectionStore.selectProcessInstance(
-        instance.processInstanceKey,
-      );
+      processInstancesSelectionStore.select(instance.processInstanceKey);
     });
 
     const moveButton = screen.getByRole('button', {name: /move/i});
@@ -133,9 +129,7 @@ describe('<MoveAction />', () => {
     const instance = getProcessInstance('ACTIVE', mockProcessInstancesV2);
 
     act(() => {
-      processInstancesSelectionStore.selectProcessInstance(
-        instance.processInstanceKey,
-      );
+      processInstancesSelectionStore.select(instance.processInstanceKey);
     });
 
     const moveButton = screen.getByRole('button', {name: /move/i});
@@ -162,9 +156,7 @@ describe('<MoveAction />', () => {
     const instance = getProcessInstance('ACTIVE', mockProcessInstancesV2);
 
     act(() => {
-      processInstancesSelectionStore.selectProcessInstance(
-        instance.processInstanceKey,
-      );
+      processInstancesSelectionStore.select(instance.processInstanceKey);
     });
 
     const moveButton = screen.getByRole('button', {name: /move/i});
@@ -191,9 +183,7 @@ describe('<MoveAction />', () => {
     const instance = getProcessInstance('ACTIVE', mockProcessInstancesV2);
 
     act(() => {
-      processInstancesSelectionStore.selectProcessInstance(
-        instance.processInstanceKey,
-      );
+      processInstancesSelectionStore.select(instance.processInstanceKey);
     });
 
     const moveButton = screen.getByRole('button', {name: /move/i});
@@ -220,9 +210,7 @@ describe('<MoveAction />', () => {
     const instance = getProcessInstance('ACTIVE', mockProcessInstancesV2);
 
     act(() => {
-      processInstancesSelectionStore.selectProcessInstance(
-        instance.processInstanceKey,
-      );
+      processInstancesSelectionStore.select(instance.processInstanceKey);
     });
 
     const moveButton = screen.getByRole('button', {name: /move/i});
@@ -251,9 +239,7 @@ describe('<MoveAction />', () => {
     expect(screen.getByRole('button', {name: /move/i})).toBeDisabled();
 
     act(() => {
-      processInstancesSelectionStore.selectProcessInstance(
-        instance.processInstanceKey,
-      );
+      processInstancesSelectionStore.select(instance.processInstanceKey);
     });
 
     expect(screen.getByRole('button', {name: /move/i})).toBeEnabled();
@@ -381,9 +367,7 @@ describe('<MoveAction />', () => {
     const instance = getProcessInstance('ACTIVE', mockProcessInstancesV2);
 
     act(() => {
-      processInstancesSelectionStore.selectProcessInstance(
-        instance.processInstanceKey,
-      );
+      processInstancesSelectionStore.select(instance.processInstanceKey);
     });
 
     const moveButton = screen.getByRole('button', {name: /move/i});

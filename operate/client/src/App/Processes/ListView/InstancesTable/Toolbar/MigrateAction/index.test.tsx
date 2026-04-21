@@ -8,7 +8,7 @@
 
 import {act} from '@testing-library/react';
 import {render, screen, waitFor} from 'modules/testing-library';
-import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelection';
+import {processInstancesSelectionStore} from 'modules/stores/instancesSelection';
 import {MigrateAction} from '.';
 import {processInstanceMigrationStore} from 'modules/stores/processInstanceMigration';
 import {tracking} from 'modules/tracking';
@@ -85,9 +85,7 @@ describe('<MigrateAction />', () => {
     expect(screen.getByRole('button', {name: /migrate/i})).toBeDisabled();
 
     act(() => {
-      processInstancesSelectionStore.selectProcessInstance(
-        instance.processInstanceKey,
-      );
+      processInstancesSelectionStore.select(instance.processInstanceKey);
     });
 
     expect(screen.getByRole('button', {name: /migrate/i})).toBeEnabled();
@@ -105,9 +103,7 @@ describe('<MigrateAction />', () => {
     const instance = getProcessInstance('ACTIVE', mockCalledProcessInstancesV2);
 
     act(() => {
-      processInstancesSelectionStore.selectProcessInstance(
-        instance.processInstanceKey,
-      );
+      processInstancesSelectionStore.select(instance.processInstanceKey);
     });
 
     expect(screen.getByRole('button', {name: /migrate/i})).toBeEnabled();
@@ -127,9 +123,7 @@ describe('<MigrateAction />', () => {
     const instance = getProcessInstance('ACTIVE', mockProcessInstancesV2);
 
     act(() => {
-      processInstancesSelectionStore.selectProcessInstance(
-        instance.processInstanceKey,
-      );
+      processInstancesSelectionStore.select(instance.processInstanceKey);
     });
 
     await waitFor(() => {
@@ -149,9 +143,7 @@ describe('<MigrateAction />', () => {
     const instance = getProcessInstance('TERMINATED', mockProcessInstancesV2);
 
     act(() => {
-      processInstancesSelectionStore.selectProcessInstance(
-        instance.processInstanceKey,
-      );
+      processInstancesSelectionStore.select(instance.processInstanceKey);
     });
 
     expect(screen.getByRole('button', {name: /migrate/i})).toBeDisabled();
@@ -188,9 +180,7 @@ describe('<MigrateAction />', () => {
     const instance = getProcessInstance('ACTIVE', mockProcessInstancesV2);
 
     act(() => {
-      processInstancesSelectionStore.selectProcessInstance(
-        instance.processInstanceKey,
-      );
+      processInstancesSelectionStore.select(instance.processInstanceKey);
     });
 
     await user.click(screen.getByRole('button', {name: /migrate/i}));
@@ -229,9 +219,7 @@ describe('<MigrateAction />', () => {
     const instance = getProcessInstance('ACTIVE', mockProcessInstancesV2);
 
     act(() => {
-      processInstancesSelectionStore.selectProcessInstance(
-        instance.processInstanceKey,
-      );
+      processInstancesSelectionStore.select(instance.processInstanceKey);
     });
     await user.click(screen.getByRole('button', {name: /migrate/i}));
 
@@ -264,9 +252,7 @@ describe('<MigrateAction />', () => {
     const instance = getProcessInstance('ACTIVE', mockProcessInstancesV2);
 
     act(() => {
-      processInstancesSelectionStore.selectProcessInstance(
-        instance.processInstanceKey,
-      );
+      processInstancesSelectionStore.select(instance.processInstanceKey);
     });
     await user.click(screen.getByRole('button', {name: /migrate/i}));
 

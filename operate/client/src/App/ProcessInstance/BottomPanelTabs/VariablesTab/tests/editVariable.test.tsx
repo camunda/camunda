@@ -646,6 +646,7 @@ describe('Edit variable', () => {
     ).toBeInTheDocument();
     mockFetchProcessDefinitionXml().withSuccess('');
     await user.click(screen.getByRole('button', {name: /edit/i}));
+    mockGetVariable().withSuccess(createVariable());
     await user.click(screen.getByRole('button', {name: /open/i}));
 
     expect(

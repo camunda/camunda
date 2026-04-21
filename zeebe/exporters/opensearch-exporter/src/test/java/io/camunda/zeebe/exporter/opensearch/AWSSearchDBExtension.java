@@ -9,6 +9,7 @@ package io.camunda.zeebe.exporter.opensearch;
 
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+import java.time.Duration;
 import java.util.UUID;
 import org.junit.jupiter.api.extension.ExtensionContext;
 
@@ -20,7 +21,7 @@ import org.junit.jupiter.api.extension.ExtensionContext;
  * <p>To use this extension, preconditions from {@link SearchDBExtension} must be met.
  *
  * <p>This extension fetches the AWS URL from the {@link
- * SearchDBExtension#TEST_INTEGRATION_OPENSEARCH_AWS_URL} argument.
+ * SearchDBExtension#PROP_TEST_INTEGRATION_OPENSEARCH_AWS_URL} argument.
  *
  * <p>This extension uses the {@link
  * software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider} for implicit authentication.
@@ -30,6 +31,7 @@ public class AWSSearchDBExtension extends SearchDBExtension {
   private static final String PREFIX_AWS_OS_TESTS = "exportertests";
 
   private final String awsSearchDbUrl;
+  private final Duration dataAvailabilityTimeout;
 
   private ProtocolFactory recordFactory;
   private OpensearchExporterConfiguration config;
@@ -40,8 +42,9 @@ public class AWSSearchDBExtension extends SearchDBExtension {
   private TestClient testClient;
   private OpensearchClient client;
 
-  public AWSSearchDBExtension(final String awsSearchDbUrl) {
+  public AWSSearchDBExtension(final String awsSearchDbUrl, final Duration dataAvailabilityTimeout) {
     this.awsSearchDbUrl = awsSearchDbUrl;
+    this.dataAvailabilityTimeout = dataAvailabilityTimeout;
   }
 
   @Override
@@ -119,6 +122,12 @@ public class AWSSearchDBExtension extends SearchDBExtension {
   @Override
   public OpensearchClient client() {
     return client;
+  }
+
+  /** {@inheritDoc} */
+  @Override
+  Duration dataAvailabilityTimeout() {
+    return dataAvailabilityTimeout;
   }
 
   /** {@inheritDoc} */

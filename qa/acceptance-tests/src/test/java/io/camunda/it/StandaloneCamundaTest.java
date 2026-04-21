@@ -7,6 +7,7 @@
  */
 package io.camunda.it;
 
+import static io.camunda.it.util.TestHelper.waitForProcessInstance;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.CamundaClient;
@@ -16,8 +17,6 @@ import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.qa.util.multidb.MultiDbTestApplication;
 import io.camunda.security.entity.AuthenticationMethod;
 import io.camunda.zeebe.model.bpmn.Bpmn;
-import java.time.Duration;
-import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 
@@ -61,19 +60,19 @@ public class StandaloneCamundaTest {
             .join();
 
     // then
-    Awaitility.await("should receive data from ES")
-        .timeout(Duration.ofMinutes(1))
-        .untilAsserted(
-            () -> {
-              final ProcessInstance processInstance =
-                  camundaClient
-                      .newProcessInstanceGetRequest(processInstanceEvent.getProcessInstanceKey())
-                      .send()
-                      .join();
+    waitForProcessInstance(
+        camundaClient,
+        f -> f.processInstanceKey(processInstanceEvent.getProcessInstanceKey()),
+        f -> assertThat(f).hasSize(1));
 
-              assertThat(processInstance.getProcessInstanceKey())
-                  .withFailMessage("Expect to read the expected process instance from ES")
-                  .isEqualTo(processInstanceEvent.getProcessInstanceKey());
-            });
+    final ProcessInstance processInstance =
+        camundaClient
+            .newProcessInstanceGetRequest(processInstanceEvent.getProcessInstanceKey())
+            .send()
+            .join();
+
+    assertThat(processInstance.getProcessInstanceKey())
+        .withFailMessage("Expect to read the expected process instance from ES")
+        .isEqualTo(processInstanceEvent.getProcessInstanceKey());
   }
 }

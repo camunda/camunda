@@ -49,6 +49,10 @@ public class Engine implements RecordProcessor {
       "Expected to find processor for record '{}', but caught an exception. Skip this record.";
   private static final String ERROR_MESSAGE_PROCESSING_EXCEPTION_OCCURRED =
       "Expected to process record '%s' without errors, but exception occurred with message '%s'.";
+  private static final String DEBUG_MESSAGE_PI_KEY_NOT_FOUND =
+      "Expected to reject command for banned process instance, but could not extract process instance key from record '{}'. Skipping rejection response.";
+  private static final String ERROR_MESSAGE_BANNED_PI =
+      "Expected to process command for process instance with key '%d', but the process instance is banned due to previous errors. The process instance can't be recovered, but it can be cancelled.";
 
   private static final EnumSet<ValueType> SUPPORTED_VALUETYPES =
       EnumSet.range(ValueType.JOB, ValueType.SCALE);
@@ -177,6 +181,9 @@ public class Engine implements RecordProcessor {
         }
 
         currentProcessor.processRecord(record, processingResultBuilder);
+      } else {
+        // Reject commands for banned process instances
+        rejectBannedInstanceCommand(typedCommand);
       }
     }
     return processingResultBuilder.build();
@@ -233,9 +240,29 @@ public class Engine implements RecordProcessor {
     }
 
     // Commands allowed to be processed on banned instances
-    return intent == ProcessInstanceIntent.CANCEL
-        || intent == ProcessInstanceIntent.TERMINATE_ELEMENT
-        || intent == ProcessInstanceBatchIntent.TERMINATE;
+    final boolean isAllowedOnBannedInstance =
+        intent == ProcessInstanceIntent.CANCEL
+            || intent == ProcessInstanceIntent.TERMINATE_ELEMENT
+            || intent == ProcessInstanceBatchIntent.TERMINATE;
+
+    return isAllowedOnBannedInstance;
+  }
+
+  private void rejectBannedInstanceCommand(final TypedRecord<?> typedCommand) {
+    final long processInstanceKey =
+        typedCommand.getValue() instanceof ProcessInstanceRelated
+            ? ((ProcessInstanceRelated) typedCommand.getValue()).getProcessInstanceKey()
+            : -1;
+    if (processInstanceKey <= 0) {
+      LOG.debug(DEBUG_MESSAGE_PI_KEY_NOT_FOUND, typedCommand);
+      return;
+    }
+
+    final String rejectionReason = String.format(ERROR_MESSAGE_BANNED_PI, processInstanceKey);
+    writers.rejection().appendRejection(typedCommand, RejectionType.INVALID_STATE, rejectionReason);
+    writers
+        .response()
+        .writeRejectionOnCommand(typedCommand, RejectionType.INVALID_STATE, rejectionReason);
   }
 
   private void handleUnexpectedError(

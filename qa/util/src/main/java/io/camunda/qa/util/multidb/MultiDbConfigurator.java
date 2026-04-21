@@ -169,10 +169,10 @@ public class MultiDbConfigurator {
 
     /* Tasklist */
     opensearchProperties.put("camunda.tasklist.zeebeOpensearch.prefix", zeebeIndexPrefix());
-    opensearchProperties.put("camunda.tasklist.opensearch.aws.enabled", isAws);
+    opensearchProperties.put("camunda.tasklist.opensearch.aws-enabled", isAws);
 
     /* Operate */
-    opensearchProperties.put("camunda.operate.opensearch.aws.enabled", isAws);
+    opensearchProperties.put("camunda.operate.opensearch.aws-enabled", isAws);
 
     /* Camunda */
     opensearchProperties.put(CREATE_SCHEMA_PROPERTY, true);
