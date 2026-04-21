@@ -49,7 +49,10 @@ LoadTesterApplication.main()
   ├── Spring Boot auto-configuration
   │     ├── CamundaClient bean (auth, addresses, worker defaults)
   │     ├── MeterRegistry (Micrometer + Prometheus)
-  │     └── Actuator endpoints (/health, /actuator/prometheus)
+  │     └── Actuator endpoints (/health, /metrics — remapped from /actuator/*)
+  │
+  ├── ConnectionMonitor (shared @Component — owns the `app.connected` gauge
+  │                      and the topology-retry loop used by both roles)
   │
   ├── @Profile("starter") → Starter (CommandLineRunner)
   └── @Profile("worker")  → Worker (@JobWorker handler)
@@ -67,7 +70,7 @@ LoadTesterApplication.main()
 | Entry point | `Starter.main()` / `Worker.main()` → `App.createApp()` | Single `LoadTesterApplication` + Spring profiles |
 | Role selection | Baked into Docker image (different main class) | Runtime profile: `--spring.profiles.active=starter` |
 | Job subscription | `client.newWorker().jobType(t).handler(h).open()` | `@JobWorker(autoComplete = false)` annotation |
-| Metrics server | Custom `HTTPServer` on `/metrics` (port 9600) | Spring Boot Actuator on `/actuator/prometheus` (port 9600) |
+| Metrics server | Custom `HTTPServer` on `/metrics` (port 9600) | Spring Boot Actuator on `/metrics` (port 9600, remapped from `/actuator/prometheus`) |
 | JVM metrics | Manually registered (`ClassLoaderMetrics`, `JvmGcMetrics`, etc.) | Auto-registered by Actuator |
 | Logging | Log4j2 (`log4j2.xml`) | Logback (Spring Boot default) |
 | Dependency injection | None — manual wiring in constructors | Spring `@Component` + constructor injection |
@@ -323,21 +326,24 @@ public class Starter extends App {
 
 ### After
 
-`@Component @Profile("starter") implements CommandLineRunner`. Spring handles lifecycle:
+`@Component @Profile("starter") implements CommandLineRunner`. Spring handles lifecycle.
+Topology retry + the `app.connected` gauge were extracted into a shared
+`ConnectionMonitor` component so both Starter and Worker reuse the same code:
 
 ```java
 @Component
 @Profile("starter")
 public class Starter implements CommandLineRunner {
     public Starter(CamundaClient client, LoadTesterProperties properties,
-                   MeterRegistry registry, PayloadReader payloadReader) {
+                   MeterRegistry registry, PayloadReader payloadReader,
+                   ConnectionMonitor connectionMonitor) {
         // All dependencies injected by Spring
     }
 
     @Override
     public void run(String... args) {
-        printTopology();            // same logic, uses injected client
-        deployProcess();            // same retry loop
+        connectionMonitor.awaitAndPrintTopology();   // shared retry + gauge flip
+        deployProcess();                              // same retry loop as main
         scheduleProcessInstanceCreation();
         countDownLatch.await();
     }
@@ -398,15 +404,23 @@ The `handler(handleJob(...))` returned a `JobHandler` lambda that:
 
 ### After
 
-`@Component @Profile("worker")` with `@JobWorker(autoComplete = false)`:
+`@Component @Profile("worker")` with `@JobWorker(autoComplete = false)`. The `ConnectionMonitor`
+component is injected and called in `@PostConstruct`, so `app.connected` is flipped to 1
+**before** the `camunda-spring-boot-starter` opens the job stream:
 
 ```java
 @Component
 @Profile("worker")
 public class Worker {
+    public Worker(CamundaClient client, LoadTesterProperties properties,
+                  PayloadReader payloadReader,
+                  ConnectionMonitor connectionMonitor) { /* ... */ }
 
     @PostConstruct
-    void printTopology() { /* same retry loop */ }
+    void awaitTopologyAndLogConfig() {
+        connectionMonitor.awaitAndPrintTopology();   // shared retry + gauge flip
+        LOGGER.info("Worker config: completionDelay={}, sendMessage={}, ...", /* ... */);
+    }
 
     @JobWorker(autoComplete = false)
     public void handleJob(JobClient jobClient, ActivatedJob job) {
@@ -479,18 +493,37 @@ public class MetricsConfiguration {
 }
 ```
 
-Metrics are served at `http://localhost:9600/actuator/prometheus`.
+Metrics are served at `http://localhost:9600/metrics` (Actuator's Prometheus endpoint is
+remapped in `application.yaml` via `management.endpoints.web.base-path: /` +
+`path-mapping.prometheus: metrics` — health then lives at `/health`). This matches the
+old HOCON app's path so the Helm `ServiceMonitor` keeps scraping without a chart change.
 
 **What was removed:** ~30 lines of manual Prometheus HTTP server setup and JVM metric
 registration. The `PrometheusRenameFilter` and gRPC interceptor are kept because Actuator
 doesn't auto-configure them.
 
 **Application-level metrics are unchanged:**
-- `app.connected` (Gauge) — 1 when topology retrieved
+- `app.connected` (Gauge) — 1 when topology retrieved. Registered by the shared
+  `ConnectionMonitor` bean (owns the `AtomicInteger` behind it) so both starter and worker
+  pods publish the same metric without duplicating code.
 - `starter.response.latency` (Timer) — create-instance request/response time
 - `starter.data.availability.latency` (Timer, per partition) — time until instance is queryable
 - `starter.data.availability.query.duration` (Timer) — search query duration
 - `starter.read.benchmark` (Timer, per query) — read benchmark query latency
+
+**Verifying parity with `main`:** grep `/metrics` output from a HOCON pod and a Spring Boot
+pod, compare families:
+
+```bash
+kubectl exec -n <ns> <pod> -- wget -qO- http://localhost:9600/metrics \
+  | grep '^# HELP' | awk '{print $3}' | sort -u
+```
+
+All five JVM binders that were manually registered in the old `App.java`
+(`ClassLoaderMetrics`, `JvmMemoryMetrics`, `JvmGcMetrics`, `ProcessorMetrics`,
+`JvmThreadMetrics`) are produced by Actuator auto-config. 0 regressions; Actuator adds
+~29 extra metric families on top (uptime, fd count, executor stats, HTTP endpoint
+latency, logback events).
 
 > **Dashboard note:** Actuator is remapped in `application.yaml` so Prometheus is
 > served at `/metrics` (not `/actuator/prometheus`) and health at `/health`. This
@@ -507,27 +540,51 @@ doesn't auto-configure them.
 Log4j2 with `log4j2.xml`:
 
 ```xml
-<Root level="${env:LOG_LEVEL:-WARN}">
-  <AppenderRef ref="Console" />
-</Root>
-<Logger name="io.camunda" level="${env:CAMUNDA_LOG_LEVEL:-INFO}" />
+<Appenders>
+  <Console name="Console" target="SYSTEM_OUT">
+    <PatternLayout pattern="%d{HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg%n"/>
+  </Console>
+</Appenders>
+<Loggers>
+  <Root level="${env:LOG_LEVEL:-WARN}">
+    <AppenderRef ref="Console" />
+  </Root>
+  <Logger name="io.camunda" level="${env:CAMUNDA_LOG_LEVEL:-INFO}" />
+</Loggers>
 ```
 
 ### After
 
-Spring Boot Logback (no custom config file). Controlled via standard Spring Boot properties:
+Spring Boot Logback (no custom config file — Spring Boot's bundled `base.xml` wires up a
+`CONSOLE` appender writing to stdout, which is what Kubernetes tails via `kubectl logs`).
+Only the root level is configured in `application.yaml`:
 
 ```yaml
 logging:
   level:
-    # Suppress noisy HTTP retry messages during gateway startup
-    org.apache.hc.client5.http.impl.async.AsyncHttpRequestRetryExec: WARN
+    root: ${LOG_LEVEL:INFO}
 ```
 
-The Helm chart sets `LOGGING_LEVEL_IO_CAMUNDA_ZEEBE=INFO` for the `io.camunda.zeebe` package.
+### How env-var overrides reach the loggers
 
-**Dead env vars:** `LOG_LEVEL` and `CAMUNDA_LOG_LEVEL` from Log4j2 are no longer effective.
-The Helm chart already sets both old and new env vars.
+The Helm chart sets two env vars from the same user-facing value (so the same Helm knob
+works for log4j2 on `main` and for Spring Boot here):
+
+| Env var | Read by | Effect |
+|---|---|---|
+| `LOG_LEVEL` | Our `${LOG_LEVEL:INFO}` placeholder | Sets `logging.level.root` — framework noise (Apache HTTP, Netty, gRPC, Spring) |
+| `LOGGING_LEVEL_IO_CAMUNDA_ZEEBE` | Spring Boot's native relaxed binding on `logging.level.*` | Sets `logging.level.io.camunda.zeebe` — Camunda app code |
+
+We deliberately do **not** bridge `CAMUNDA_LOG_LEVEL` — nothing in the Helm chart sets
+it; it was a placeholder name invented by the old `log4j2.xml` itself. Adding a
+`${CAMUNDA_LOG_LEVEL:…}` line would be misleading plumbing with no source.
+
+### What about the console appender and log format?
+
+Spring Boot's default console appender writes to stdout with ISO-8601 timestamps and a
+thread/logger pattern that is functionally equivalent to the old log4j2 pattern, just
+cosmetically different. Grafana/Loki/kubectl all work identically because they tail
+lines, not formats. No custom `PatternLayout` needed.
 
 ---
 
@@ -646,9 +703,13 @@ with both old and new app versions because:
 | `JDK_JAVA_OPTIONS` `-Dapp.*` flags | No HOCON library on classpath |
 | `-Dconfig.override_with_env_vars=true` | Typesafe Config flag, no effect |
 | `CONFIG_FORCE_app_*` | HOCON env override convention |
-| `LOG_LEVEL` / `CAMUNDA_LOG_LEVEL` | Log4j2 env vars; Spring Boot uses `LOGGING_LEVEL_*` |
+| `CAMUNDA_LOG_LEVEL` | Placeholder named by the old `log4j2.xml`; nothing in the Helm chart actually sets it |
 
-These can be cleaned up in a future Helm chart update but cause no issues.
+**`LOG_LEVEL` is NOT dead** — `application.yaml` bridges it via `${LOG_LEVEL:INFO}` on
+`logging.level.root`, so the Helm-provided value continues to control framework log
+volume. `LOGGING_LEVEL_IO_CAMUNDA_ZEEBE` is read by Spring Boot natively.
+
+These dead entries can be cleaned up in a future Helm chart update but cause no issues.
 
 ---
 
@@ -682,19 +743,39 @@ public List<String> getExtraBpmnModels() {
 This is needed for realistic benchmarks where the Helm chart sets DMN/BPMN models via
 indexed env vars.
 
-### Quirk 2: Execution threads default is 1
+### Quirk 2: Execution threads must be profile-scoped
 
-**Problem:** The old app used `numJobWorkerExecutionThreads(10)` explicitly. The Spring Boot
-starter's default is **1 thread**, which is far too low for a load tester whose handler
-blocks with `Thread.sleep(completionDelay)`.
+**Problem A (worker pod):** the Spring Boot starter's default for `camunda.client.execution-threads`
+is 1, which is far too low for a load tester whose handler blocks with `Thread.sleep(completionDelay)`
+(~3.3 jobs/sec max with 300 ms delay).
 
-**Fix:** `application.yaml` bridges the Helm env var:
+**Problem B (starter pod):** on `main`, `Starter.createCamundaClient()` explicitly set
+`numJobWorkerExecutionThreads(0)` so the starter wouldn't hold a job-worker thread pool
+it never uses. Applying the same global value to both roles in Spring Boot would
+regress this — the starter pod would sit idle with 10 allocated threads.
+
+**Fix:** `application.yaml` uses profile-scoped config:
 
 ```yaml
-camunda.client.execution-threads: ${LOAD_TESTER_WORKER_THREADS:10}
+# Base — starter pod
+camunda:
+  client:
+    execution-threads: 0
+
+---
+spring.config.activate.on-profile: worker
+camunda:
+  client:
+    execution-threads: ${LOAD_TESTER_WORKER_THREADS:10}
 ```
 
-Without this, the worker can only process ~3.3 jobs/sec (1 thread ÷ 300ms sleep).
+**Why `0` is safe on JDK 21:** empirically verified — `Executors.newScheduledThreadPool(0)`
+does execute scheduled tasks. The `ScheduledThreadPoolExecutor` spins up one on-demand
+thread via the standard `ThreadPoolExecutor` worker-creation path. Scheduled work
+serializes through that one thread (since `ScheduledThreadPoolExecutor` ignores
+`maxPoolSize`), but that's plenty for the starter's occasional async-command retries.
+The "corePoolSize=0 hangs forever" folklore refers to a pre-JDK-8022027 bug (Java 7u39
+and earlier); no longer applies.
 
 ### Quirk 3: Worker timeout is static
 
@@ -737,21 +818,48 @@ No tests existed for the old HOCON-based load tester.
 
 ### After
 
-The migration added a full test suite:
+The migration added a full test suite.
 
-**Unit tests (18 tests):**
-- `ConfigTest` — verifies `@ConfigurationProperties` binding and env var overrides.
+**Unit tests (20 tests, all via `./mvnw test`):**
+- `ConfigTest` — verifies `@ConfigurationProperties` binding of defaults, plus a nested
+  `ExtraBpmnModelsFromPropertiesTest` that exercises the indexed-list Spring property
+  override (a separate `@Nested` class because it needs a different Spring context
+  with different properties — the bound properties are fixed at context-creation time).
+- `ConnectionMonitorTest` — unit tests for the shared `ConnectionMonitor` component:
+  happy-path topology success, retry-on-transient-failure path, and the invariant that
+  `app.connected` is registered at 0 before `awaitAndPrintTopology()` runs.
 - `ProcessInstanceStartMeterTest` — data availability metric recording.
 - `DataReadMeterTest` / `DataReadMeterQueryProviderTest` — read benchmark logic.
 
-**Integration tests (3 tests, using Testcontainers + `CamundaContainer`):**
-- `StarterIT` — deploys a process and creates instances via the starter.
-- `WorkerIT` — deploys a process, creates an instance, and verifies the `@JobWorker`
-  completes the job.
+**Integration tests (2 tests, using Testcontainers + `CamundaContainer`):**
+- `StarterWorkerIT` — activates both `starter` and `worker` profiles in the same Spring
+  context. Starter deploys the BPMN and creates a handful of instances; Worker
+  subscribes via `@JobWorker` and completes them. The test polls the broker's REST
+  API (via `client.newProcessInstanceSearchRequest()`) with Awaitility until at least
+  one instance reaches `COMPLETED`. This replaces the earlier separate `StarterIT`
+  + `WorkerIT` pair, which had a weaker metric-count assertion and a time-coupled
+  starter lifecycle.
 - `DataAvailabilityIT` — measures data availability latency end-to-end.
 
-Tests use two Spring profiles: `it` (enables the Camunda client with auth disabled) and
-the role profile (`starter` / `worker`).
+Tests use two Spring profiles: `it` (enables the Camunda client with auth disabled and
+forces gRPC to sidestep a REST compatibility gap in the `CamundaContainer` snapshot
+image) and the role profile (`starter` / `worker`).
+
+### Why the unit tests don't need `camunda.client.enabled=false` on every `@SpringBootTest`
+
+Two independent mechanisms disable the auto-configured `CamundaClient` for unit tests,
+either of which is sufficient:
+
+1. `src/test/resources/application.yaml` sets `camunda.client.enabled: false` (loaded
+   automatically on the test classpath). This is the safety net.
+2. `@SpringBootTest(classes = ConfigTest.TestConfig.class)` — because `TestConfig` is a
+   plain `@Configuration` (not `@SpringBootApplication`/`@SpringBootConfiguration`),
+   Spring Boot skips auto-configuration entirely. The `camunda-spring-boot-starter`'s
+   auto-config classes are never imported, so there's nothing to disable.
+
+The flag is kept in the test YAML as defensive layering (in case someone later changes
+`classes = ...` to a `@SpringBootApplication`), but is deliberately *not* repeated on
+every `@SpringBootTest` annotation — that would be redundant noise.
 
 ---
 
@@ -774,6 +882,7 @@ load-tester/
     metrics/
       Clock.java                        # Testable time abstraction
       AppMetricsDoc.java                # Shared metric names (CONNECTED gauge)
+      ConnectionMonitor.java            # Shared topology-retry + app.connected gauge
       StarterLatencyMetricsDoc.java     # Starter metric names (response, availability, read)
       ProcessInstanceStartMeter.java    # Data availability tracking
     read/
@@ -783,15 +892,21 @@ load-tester/
       PayloadReader.java                # JSON payload file reader
   src/main/resources/
     application.yaml                    # Spring Boot config (replaces application.conf)
+                                        # Includes a worker-profile override for
+                                        # camunda.client.execution-threads
     bpmn/                               # BPMN processes and payloads (unchanged)
   src/test/
     java/io/camunda/zeebe/
-      config/ConfigTest.java            # Config binding unit tests
-      it/StarterIT.java                 # Starter integration test
-      it/WorkerIT.java                  # Worker integration test
-      it/DataAvailabilityIT.java        # Data availability integration test
+      config/ConfigTest.java            # Config binding unit tests (+ @Nested override test)
+      metrics/ConnectionMonitorTest.java            # Unit tests for shared ConnectionMonitor
+      metrics/ProcessInstanceStartMeterTest.java    # Data availability meter
+      read/DataReadMeterTest.java                   # Read benchmark meter
+      read/DataReadMeterQueryProviderTest.java      # Read-benchmark query defaults
+      it/StarterWorkerIT.java           # End-to-end IT: starter + worker together,
+                                        # asserts via REST ProcessInstance search
+      it/DataAvailabilityIT.java        # Data availability IT
       it/CamundaContainerProvider.java  # Shared Testcontainers utility
     resources/
-      application.yaml                  # Test config (disables CamundaClient)
+      application.yaml                  # Test config (disables CamundaClient safety net)
       application-it.yaml              # IT config (enables client, uses gRPC)
 ```
