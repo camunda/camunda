@@ -38,6 +38,7 @@ import io.camunda.client.impl.util.AddressUtil;
 import io.camunda.configuration.beans.BrokerBasedProperties;
 import io.camunda.configuration.beans.GatewayBasedProperties;
 import io.camunda.security.configuration.SecurityConfigurations;
+import io.camunda.security.oidc.NoopOidcClaimsProvider;
 import io.camunda.zeebe.broker.Broker;
 import io.camunda.zeebe.broker.PartitionListener;
 import io.camunda.zeebe.broker.SpringBrokerBridge;
@@ -382,7 +383,7 @@ public class ClusteringRule extends ExternalResource {
             null,
             null,
             null,
-            null,
+            new NoopOidcClaimsProvider(),
             null,
             null,
             NodeIdProvider.staticProvider(brokerCfg.getCluster().getNodeId()));
