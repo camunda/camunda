@@ -77,8 +77,7 @@ test.describe.parallel('Unassign User Task Tests', () => {
     await assertUnauthorizedRequest(res);
   });
 
-  //Skipped due to bug #38880: https://github.com/camunda/camunda/issues/38880
-  test.skip('Unassign user task - not found', async ({request}) => {
+  test('Unassign user task - not found', async ({request}) => {
     const unknownUserTaskKey = '2251799813694876';
     const res = await request.delete(
       buildUrl(`/user-tasks/${unknownUserTaskKey}/assignee`),
@@ -86,9 +85,12 @@ test.describe.parallel('Unassign User Task Tests', () => {
         headers: jsonHeaders(),
       },
     );
+    // The rejection reads 'ASSIGN' (not 'UNASSIGN') by design: the engine has no
+    // separate UNASSIGN intent — unassignment is an ASSIGN command with an empty
+    // assignee. See issue #38880.
     await assertNotFoundRequest(
       res,
-      `Command 'UNASSIGN' rejected with code 'NOT_FOUND': Expected to unassign user task with key '${unknownUserTaskKey}', but no such user task was found`,
+      `Command 'ASSIGN' rejected with code 'NOT_FOUND': Expected to assign user task with key '${unknownUserTaskKey}', but no such user task was found`,
     );
   });
 
