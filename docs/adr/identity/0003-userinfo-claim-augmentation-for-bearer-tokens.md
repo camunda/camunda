@@ -124,3 +124,4 @@ camunda:
 
 - Implementation plan: `docs/superpowers/plans/2026-04-20-oidc-userinfo-claim-augmentation.md`
 - Failing-test baseline: `authentication/src/test/java/io/camunda/authentication/oidc/OidcBearerUserInfoClaimGapIT.java`
+
