@@ -44,15 +44,13 @@ import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 /**
- * Documents the customer's reported scenario: for bearer-token authentication, a JWT that does not
- * carry the configured {@code groups} claim cannot be augmented with the groups from the OIDC
- * {@code /userinfo} response. Authorizations that depend on {@code groups} therefore fail even
- * though the IdP would return the groups if asked.
+ * Regression test for the customer's reported bearer-token scenario: when a JWT does not carry the
+ * configured {@code groups} claim and UserInfo augmentation is enabled, the missing {@code groups}
+ * claim is obtained from the OIDC {@code /userinfo} response and merged into the claims passed to
+ * {@link TokenClaimsConverter}. Authorizations that depend on {@code groups} therefore work for
+ * bearer-token authentication as expected.
  *
- * <p>This test is expected to FAIL on current code (8.8). It encodes the behaviour we want after a
- * fix: {@link TokenClaimsConverter} should receive a merged claims map containing {@code groups}
- * from {@code /userinfo}. On current code, only the raw JWT claims are passed through, {@code
- * /userinfo} is never called, and the assertions below do not hold.
+ * <p>Also verifies the cache is consulted for repeated calls with the same token within the TTL.
  */
 @SuppressWarnings("SpringBootApplicationProperties")
 @SpringBootTest(

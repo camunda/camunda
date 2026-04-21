@@ -35,7 +35,8 @@ import org.slf4j.LoggerFactory;
  * <p>Runtime fail-open on IdP errors: a {@code /userinfo} fetch failure (network, non-2xx, parse
  * failure, or UserInfo {@code sub} mismatch per OIDC Core §5.3.2) is logged at ERROR and the
  * provider returns the JWT claims unchanged. Degraded entries are negatively cached for a short TTL
- * ({@link OidcUserInfoAugmentationConfiguration#NEGATIVE_CACHE_TTL}) to avoid hammering a down IdP.
+ * ({@link OidcUserInfoAugmentationConfiguration#getNegativeCacheTtl()}) to avoid hammering a down
+ * IdP.
  */
 public class CachingOidcClaimsProvider implements OidcClaimsProvider {
 
