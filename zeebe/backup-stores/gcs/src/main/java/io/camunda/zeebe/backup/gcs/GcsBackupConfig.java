@@ -13,12 +13,35 @@ import io.camunda.zeebe.backup.gcs.GcsBackupStoreException.ConfigurationExceptio
 import io.camunda.zeebe.backup.gcs.GcsConnectionConfig.Authentication.Auto;
 import io.camunda.zeebe.backup.gcs.GcsConnectionConfig.Authentication.None;
 
+<<<<<<< HEAD
 public record GcsBackupConfig(String bucketName, String basePath, GcsConnectionConfig connection) {
   public GcsBackupConfig(
       final String bucketName, final String basePath, final GcsConnectionConfig connection) {
     this.bucketName = requireBucketName(bucketName);
     this.basePath = sanitizeBasePath(basePath);
     this.connection = requireNonNull(connection);
+=======
+public record GcsBackupConfig(
+    String bucketName,
+    String basePath,
+    GcsConnectionConfig connection,
+    int maxConcurrentTransfers,
+    int bufferSize) {
+  public GcsBackupConfig(
+      final String bucketName,
+      final String basePath,
+      final GcsConnectionConfig connection,
+      final int maxConcurrentTransfers,
+      final int bufferSize) {
+    this.bucketName = requireBucketName(bucketName);
+    this.basePath = sanitizeBasePath(basePath);
+    this.connection = requireNonNull(connection);
+    this.maxConcurrentTransfers = maxConcurrentTransfers;
+    if (bufferSize <= 0) {
+      throw new IllegalArgumentException("Expected bufferSize to be > 0, but got " + bufferSize);
+    }
+    this.bufferSize = bufferSize;
+>>>>>>> 8c2a5756 (fix: reduce GCS upload buffer allocation by capping at file size)
   }
 
   private static String requireBucketName(final String bucketName) {
@@ -59,6 +82,8 @@ public record GcsBackupConfig(String bucketName, String basePath, GcsConnectionC
     private String basePath;
     private String host;
     private GcsConnectionConfig.Authentication auth;
+    // 2MiB matches the default used by the GCS library's Path-based upload
+    private int bufferSize = 2 * 1024 * 1024;
 
     public Builder withBucketName(final String bucketName) {
       this.bucketName = bucketName;
@@ -86,8 +111,22 @@ public record GcsBackupConfig(String bucketName, String basePath, GcsConnectionC
       return this;
     }
 
+    public Builder withBufferSize(final int bufferSize) {
+      this.bufferSize = bufferSize;
+      return this;
+    }
+
     public GcsBackupConfig build() {
+<<<<<<< HEAD
       return new GcsBackupConfig(bucketName, basePath, new GcsConnectionConfig(host, auth));
+=======
+      return new GcsBackupConfig(
+          bucketName,
+          basePath,
+          new GcsConnectionConfig(host, auth),
+          maxConcurrentTransfers,
+          bufferSize);
+>>>>>>> 8c2a5756 (fix: reduce GCS upload buffer allocation by capping at file size)
     }
   }
 }

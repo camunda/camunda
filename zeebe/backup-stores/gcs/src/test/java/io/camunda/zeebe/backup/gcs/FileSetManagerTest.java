@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import org.assertj.core.api.Assertions;
@@ -30,6 +31,27 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 final class FileSetManagerTest {
+<<<<<<< HEAD
+=======
+  private final Storage storage;
+  private final FileSetManager manager;
+  private final byte[] fileContent;
+
+  FileSetManagerTest(@Mock final Storage storage) {
+    this.storage = storage;
+    fileContent = new byte[1024];
+    Arrays.fill(fileContent, 0, 1024, (byte) 1);
+    manager =
+        new FileSetManager(
+            storage,
+            BucketInfo.of("bucket"),
+            "basePath",
+            Executors.newVirtualThreadPerTaskExecutor(),
+            50,
+            1024 * 1024);
+  }
+
+>>>>>>> 8c2a5756 (fix: reduce GCS upload buffer allocation by capping at file size)
   @Test
   void shouldSaveFileSet(@TempDir final Path tempDir) throws IOException {
     // given
@@ -44,8 +66,31 @@ final class FileSetManagerTest {
     // when
     manager.save(backupIdentifier, "filesetName", namedFileSet);
 
+<<<<<<< HEAD
     // then
     verify(mockClient, times(2)).createFrom(any(), any(InputStream.class), any());
+=======
+    // then - snapshots are uploaded in parallel using the executor
+    verify(storage, times(2)).createFrom(any(), any(InputStream.class), anyInt(), any());
+  }
+
+  @Test
+  void shouldUseFileSizeAsBufferSize(@TempDir final Path tempDir) throws IOException {
+    // given
+    final var backupIdentifier = new BackupIdentifierImpl(1, 2, 3);
+    final var file1 = Files.createFile(tempDir.resolve("file1"));
+    final var file2 = Files.createFile(tempDir.resolve("file2"));
+    final var namedFileSet =
+        new NamedFileSetImpl(Map.of("snapshotFile1", file1, "snapshotFile2", file2));
+    Files.write(file1, fileContent);
+    Files.write(file2, fileContent);
+
+    // when
+    manager.save(backupIdentifier, FileSetManager.SNAPSHOT_FILESET_NAME, namedFileSet);
+
+    // then - snapshots are uploaded in parallel using the executor
+    verify(storage, times(2)).createFrom(any(), any(InputStream.class), eq(1024), any());
+>>>>>>> 8c2a5756 (fix: reduce GCS upload buffer allocation by capping at file size)
   }
 
   @Test
@@ -58,12 +103,58 @@ final class FileSetManagerTest {
     final var file2 = Files.createFile(tempDir.resolve("file2"));
     final var namedFileSet =
         new NamedFileSetImpl(Map.of("snapshotFile1", file1, "snapshotFile2", file2));
+<<<<<<< HEAD
     when(mockClient.createFrom(any(), any(InputStream.class), any()))
         .thenThrow(new StorageException(412, "expected"));
 
     // when throw
     Assertions.assertThatThrownBy(() -> manager.save(backupIdentifier, "filesetName", namedFileSet))
         .isInstanceOf(StorageException.class)
+=======
+    when(storage.createFrom(any(), any(InputStream.class), anyInt(), any()))
+        .thenThrow(new StorageException(412, "expected"));
+
+    // when throw
+    Assertions.assertThatThrownBy(
+            () ->
+                manager.save(backupIdentifier, FileSetManager.SNAPSHOT_FILESET_NAME, namedFileSet))
+        .hasCauseInstanceOf(StorageException.class)
+        .hasMessageContaining("expected");
+  }
+
+  @Test
+  void shouldSaveSegmentFilesInParallel(@TempDir final Path tempDir) throws IOException {
+    // given
+    final var backupIdentifier = new BackupIdentifierImpl(1, 2, 3);
+    final var file1 = Files.createFile(tempDir.resolve("file1"));
+    final var file2 = Files.createFile(tempDir.resolve("file2"));
+    final var namedFileSet =
+        new NamedFileSetImpl(Map.of("segmentFile1", file1, "segmentFile2", file2));
+
+    // when
+    manager.save(backupIdentifier, FileSetManager.SEGMENTS_FILESET_NAME, namedFileSet);
+
+    // then - segments are uploaded in parallel using the executor
+    verify(storage, times(2)).createFrom(any(), any(InputStream.class), anyInt(), any());
+  }
+
+  @Test
+  void shouldThrowExceptionOnSaveSegments(@TempDir final Path tempDir) throws IOException {
+    // given
+    final var backupIdentifier = new BackupIdentifierImpl(1, 2, 3);
+    final var file1 = Files.createFile(tempDir.resolve("file1"));
+    final var file2 = Files.createFile(tempDir.resolve("file2"));
+    final var namedFileSet =
+        new NamedFileSetImpl(Map.of("segmentFile1", file1, "segmentFile2", file2));
+    when(storage.createFrom(any(), any(InputStream.class), anyInt(), any()))
+        .thenThrow(new StorageException(412, "expected"));
+
+    // when throw
+    Assertions.assertThatThrownBy(
+            () ->
+                manager.save(backupIdentifier, FileSetManager.SEGMENTS_FILESET_NAME, namedFileSet))
+        .hasCauseInstanceOf(StorageException.class)
+>>>>>>> 8c2a5756 (fix: reduce GCS upload buffer allocation by capping at file size)
         .hasMessageContaining("expected");
   }
 

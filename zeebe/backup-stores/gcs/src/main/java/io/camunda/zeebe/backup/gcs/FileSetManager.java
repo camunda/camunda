@@ -41,14 +41,35 @@ final class FileSetManager {
   private final Storage client;
   private final BucketInfo bucketInfo;
   private final String basePath;
+<<<<<<< HEAD
 
   FileSetManager(final Storage client, final BucketInfo bucketInfo, final String basePath) {
     this.client = client;
     this.bucketInfo = bucketInfo;
     this.basePath = basePath;
+=======
+  private final ExecutorService executor;
+  private final Semaphore concurrencyLimit;
+  private final int bufferSize;
+
+  FileSetManager(
+      final Storage client,
+      final BucketInfo bucketInfo,
+      final String basePath,
+      final ExecutorService executor,
+      final int maxConcurrentOperations,
+      final int bufferSize) {
+    this.client = client;
+    this.bucketInfo = bucketInfo;
+    this.basePath = basePath;
+    this.executor = executor;
+    concurrencyLimit = new Semaphore(maxConcurrentOperations);
+    this.bufferSize = bufferSize;
+>>>>>>> 8c2a5756 (fix: reduce GCS upload buffer allocation by capping at file size)
   }
 
   void save(final BackupIdentifier id, final String fileSetName, final NamedFileSet fileSet) {
+<<<<<<< HEAD
     for (final var namedFile : fileSet.namedFiles().entrySet()) {
       final var fileName = namedFile.getKey();
       final var filePath = namedFile.getValue();
@@ -62,6 +83,60 @@ final class FileSetManager {
       } catch (final IOException e) {
         throw new UncheckedIOException(e);
       }
+=======
+    final var uploadFutures =
+        fileSet.namedFiles().entrySet().stream()
+            .map(
+                namedFile ->
+                    schedule(
+                        () -> {
+                          uploadFile(id, fileSetName, namedFile.getKey(), namedFile.getValue());
+                          return null;
+                        }))
+            .toList();
+
+    // Wait for all uploads to complete
+    CompletableFuture.allOf(uploadFutures.toArray(new CompletableFuture[0])).join();
+  }
+
+  /**
+   * Schedules a task to be executed asynchronously using virtual threads, respecting the
+   * concurrency limit imposed by the semaphore.
+   */
+  private <T> CompletableFuture<T> schedule(final Supplier<T> task) {
+    final var result = new CompletableFuture<T>();
+    executor.execute(
+        () -> {
+          try {
+            concurrencyLimit.acquire();
+            result.complete(task.get());
+          } catch (final InterruptedException e) {
+            Thread.currentThread().interrupt();
+            result.completeExceptionally(e);
+          } catch (final Exception e) {
+            result.completeExceptionally(e);
+          } finally {
+            concurrencyLimit.release();
+          }
+        });
+    return result;
+  }
+
+  private void uploadFile(
+      final BackupIdentifier id,
+      final String fileSetName,
+      final String fileName,
+      final Path filePath) {
+    try (final var inputStream = Files.newInputStream(filePath)) {
+      final int effectiveBufferSize = Math.clamp(Files.size(filePath), 1, bufferSize);
+      client.createFrom(
+          blobInfo(id, fileSetName, fileName),
+          inputStream,
+          effectiveBufferSize,
+          BlobWriteOption.doesNotExist());
+    } catch (final IOException e) {
+      throw new UncheckedIOException(e);
+>>>>>>> 8c2a5756 (fix: reduce GCS upload buffer allocation by capping at file size)
     }
   }
 

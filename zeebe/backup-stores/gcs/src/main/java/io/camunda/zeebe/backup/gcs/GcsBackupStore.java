@@ -56,9 +56,22 @@ public final class GcsBackupStore implements BackupStore {
     final var bucketInfo = BucketInfo.of(config.bucketName());
     final var basePath = Optional.ofNullable(config.basePath()).map(s -> s + "/").orElse("");
     this.client = client;
+<<<<<<< HEAD
     executor = Executors.newWorkStealingPool(4);
     manifestManager = new ManifestManager(client, bucketInfo, basePath);
     fileSetManager = new FileSetManager(client, bucketInfo, basePath);
+=======
+    executor = Executors.newVirtualThreadPerTaskExecutor();
+    manifestManager = new ManifestManager(client, bucketInfo, basePath, executor);
+    fileSetManager =
+        new FileSetManager(
+            client,
+            bucketInfo,
+            basePath,
+            executor,
+            config.maxConcurrentTransfers(),
+            config.bufferSize());
+>>>>>>> 8c2a5756 (fix: reduce GCS upload buffer allocation by capping at file size)
   }
 
   public static BackupStore of(final GcsBackupConfig config) {
