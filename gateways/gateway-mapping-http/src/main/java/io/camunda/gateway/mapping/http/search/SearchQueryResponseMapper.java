@@ -1063,10 +1063,7 @@ public final class SearchQueryResponseMapper {
   private static MessageSubscriptionResult toMessageSubscription(
       final MessageSubscriptionEntity messageSubscription) {
     return new MessageSubscriptionResult()
-        .messageSubscriptionKey(
-            requireNonNull(
-                keyToStringOrNull(messageSubscription.messageSubscriptionKey()),
-                "messageSubscriptionKey"))
+        .messageSubscriptionKey(keyToString(messageSubscription.messageSubscriptionKey()))
         .processDefinitionId(messageSubscription.processDefinitionId())
         .processDefinitionKey(keyToStringOrNull(messageSubscription.processDefinitionKey()))
         .processInstanceKey(keyToStringOrNull(messageSubscription.processInstanceKey()))
@@ -1075,16 +1072,14 @@ public final class SearchQueryResponseMapper {
         .elementInstanceKey(keyToStringOrNull(messageSubscription.flowNodeInstanceKey()))
         .messageSubscriptionState(
             MessageSubscriptionStateEnum.fromValue(
-                requireNonNull(
-                        messageSubscription.messageSubscriptionState(), "messageSubscriptionState")
-                    .name()))
+                messageSubscription.messageSubscriptionState().name()))
         .messageSubscriptionType(
-            messageSubscription.messageSubscriptionType() != null
-                ? MessageSubscriptionTypeEnum.fromValue(
-                    messageSubscription.messageSubscriptionType().name())
-                : null)
+            MessageSubscriptionTypeEnum.fromValue(
+                messageSubscription.messageSubscriptionType().name()))
+        // `dateTime` can be absent on subscriptions that predate the field being populated;
+        // fall back to the epoch sentinel (see EPOCH_DATE_SENTINEL) rather than 500.
         .lastUpdatedDate(
-            requireNonNull(formatDate(messageSubscription.dateTime()), "lastUpdatedDate"))
+            requireNonNullElse(formatDate(messageSubscription.dateTime()), EPOCH_DATE_SENTINEL))
         .messageName(messageSubscription.messageName())
         .correlationKey(messageSubscription.correlationKey())
         .tenantId(messageSubscription.tenantId())

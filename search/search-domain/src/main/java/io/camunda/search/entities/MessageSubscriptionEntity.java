@@ -16,15 +16,16 @@ import org.jspecify.annotations.Nullable;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public record MessageSubscriptionEntity(
-    @Nullable Long messageSubscriptionKey,
+    Long messageSubscriptionKey,
     String processDefinitionId,
     @Nullable Long processDefinitionKey,
     @Nullable Long processInstanceKey,
     @Nullable Long rootProcessInstanceKey,
     String flowNodeId,
     @Nullable Long flowNodeInstanceKey,
-    @Nullable MessageSubscriptionState messageSubscriptionState,
+    MessageSubscriptionState messageSubscriptionState,
     MessageSubscriptionType messageSubscriptionType,
+    // absent on subscriptions that predate the dateTime field being populated by the handler.
     @Nullable OffsetDateTime dateTime,
     String messageName,
     @Nullable String correlationKey,
@@ -37,8 +38,10 @@ public record MessageSubscriptionEntity(
     implements TenantOwnedEntity {
 
   public MessageSubscriptionEntity {
+    Objects.requireNonNull(messageSubscriptionKey, "messageSubscriptionKey");
     Objects.requireNonNull(processDefinitionId, "processDefinitionId");
     Objects.requireNonNull(flowNodeId, "flowNodeId");
+    Objects.requireNonNull(messageSubscriptionState, "messageSubscriptionState");
     Objects.requireNonNull(messageName, "messageName");
     Objects.requireNonNull(tenantId, "tenantId");
     // Mutable collections are required: MyBatis hydrates collection-mapped fields (e.g. from a
