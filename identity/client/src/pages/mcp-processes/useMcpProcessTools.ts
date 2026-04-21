@@ -6,18 +6,14 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import { useMemo } from "react";
-import { z } from "zod";
+import { useCallback, useMemo } from "react";
 import { usePaginatedApi } from "src/utility/api";
 import {
   searchMessageSubscriptions,
   type MessageSubscription,
 } from "src/utility/api/message-subscriptions";
 
-const mcpExtensionPropertiesSchema = z.object({
-  "io.camunda.tool:name": z.string(),
-  "io.camunda.tool:purpose": z.string(),
-});
+const TOOL_PURPOSE_KEY = "io.camunda.tool:purpose";
 
 export type McpProcessTool = {
   id: string;
@@ -33,15 +29,13 @@ export type McpProcessTool = {
 const mapSubscriptionToProcessTool = (
   sub: MessageSubscription,
 ): McpProcessTool | null => {
-  const result = mcpExtensionPropertiesSchema.safeParse(
-    sub.extensionProperties,
-  );
-  if (!result.success) return null;
+  // `toolName` is expected to exists based on the filter supplied to the backend.
+  if (!sub.toolName) return null;
 
   return {
     id: sub.messageSubscriptionKey,
-    toolName: result.data["io.camunda.tool:name"],
-    toolDescription: result.data["io.camunda.tool:purpose"],
+    toolName: sub.toolName,
+    toolDescription: sub.extensionProperties?.[TOOL_PURPOSE_KEY] ?? "-",
     processDefinitionKey: sub.processDefinitionKey,
     processDefinitionId: sub.processDefinitionId,
     processDefinitionName: sub.processDefinitionName ?? sub.processDefinitionId,
@@ -51,9 +45,33 @@ const mapSubscriptionToProcessTool = (
 };
 
 export const useMcpProcessTools = () => {
-  const { data, ...rest } = usePaginatedApi(searchMessageSubscriptions, {
-    filter: { messageSubscriptionType: "START_EVENT" },
-  });
+  const { data, setSearch, ...rest } = usePaginatedApi(
+    searchMessageSubscriptions,
+    {
+      filter: {
+        messageSubscriptionType: "START_EVENT",
+        messageSubscriptionState: { $neq: "DELETED" },
+        toolName: { $exists: true },
+      },
+    },
+  );
+
+  const handleSearch = useCallback(
+    (value: Record<string, string> | undefined) => {
+      const term = value?.toolName?.trim();
+      if (!term) {
+        setSearch(undefined);
+        return;
+      }
+      // `setSearch` is typed as `Record<string, string>`, but the value is
+      // merged into the request `filter`, which supports advanced string
+      // filters like `$like`.
+      setSearch({
+        toolName: { $like: `*${term}*` },
+      } as unknown as Record<string, string>);
+    },
+    [setSearch],
+  );
 
   const processTools = useMemo<McpProcessTool[]>(() => {
     if (!data?.items || data.items.length === 0) {
@@ -67,6 +85,7 @@ export const useMcpProcessTools = () => {
 
   return {
     processTools,
+    setSearch: handleSearch,
     ...rest,
   };
 };
