@@ -68,4 +68,46 @@ class AuthenticationHandlerOidcUserInfoTest {
     assertThat(result.isLeft()).isTrue();
     assertThat(result.getLeft().getCode()).isEqualTo(io.grpc.Status.UNAUTHENTICATED.getCode());
   }
+
+  @Test
+  void bearerAuthFailureStatusDoesNotLeakIdpDetails() {
+    // Cause exceptions whose messages embed IdP URLs and internal error codes. The gRPC
+    // Status description returned to the client must NOT carry these through (no
+    // .withCause(e), no upstream error strings).
+    final var jwtDecoder = mock(JwtDecoder.class);
+    final var claimsProvider = mock(OidcClaimsProvider.class);
+    final var oidc = new OidcAuthenticationConfiguration();
+    oidc.setUsernameClaim("sub");
+
+    // (1) claims-provider failure with a URL-bearing cause
+    final var jwt =
+        Jwt.withTokenValue("token-abc").header("alg", "RS256").claim("sub", "alice").build();
+    when(jwtDecoder.decode("token-abc")).thenReturn(jwt);
+    when(claimsProvider.claimsFor(any(), eq("token-abc")))
+        .thenThrow(
+            new RuntimeException(
+                "UserInfo request to https://internal.idp.example/userinfo returned 502"));
+
+    final var handler = new Oidc(jwtDecoder, oidc, claimsProvider);
+    final var claimsFail = handler.authenticate("Bearer token-abc");
+
+    assertThat(claimsFail.isLeft()).isTrue();
+    final String claimsDescription = claimsFail.getLeft().getDescription();
+    assertThat(claimsDescription)
+        .doesNotContain("internal.idp.example")
+        .doesNotContain("502")
+        .doesNotContain("userinfo");
+    assertThat(claimsFail.getLeft().getCause()).isNull();
+
+    // (2) JWT decode failure with a diagnostic message
+    when(jwtDecoder.decode("token-bad"))
+        .thenThrow(
+            new org.springframework.security.oauth2.jwt.JwtException(
+                "Jwt expired at 2024-01-01; iss mismatch: https://wrong.example"));
+
+    final var decodeFail = handler.authenticate("Bearer token-bad");
+    final String decodeDescription = decodeFail.getLeft().getDescription();
+    assertThat(decodeDescription).doesNotContain("wrong.example").doesNotContain("2024-01-01");
+    assertThat(decodeFail.getLeft().getCause()).isNull();
+  }
 }
