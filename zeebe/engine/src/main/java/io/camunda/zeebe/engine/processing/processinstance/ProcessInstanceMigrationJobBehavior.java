@@ -27,9 +27,7 @@ public class ProcessInstanceMigrationJobBehavior {
   private final IncidentState incidentState;
 
   public ProcessInstanceMigrationJobBehavior(
-      final StateWriter stateWriter,
-      final JobState jobState,
-      final IncidentState incidentState) {
+      final StateWriter stateWriter, final JobState jobState, final IncidentState incidentState) {
     this.stateWriter = stateWriter;
     this.jobState = jobState;
     this.incidentState = incidentState;
@@ -86,7 +84,7 @@ public class ProcessInstanceMigrationJobBehavior {
       throw new SafetyCheckFailedException(
           String.format(
               """
-              Expected to migrate a user task for process instance with key '%d', \
+              Expected to migrate an incident for process instance with key '%d', \
               but could not find incident with key '%d'. \
               Please report this as a bug""",
               elementInstanceRecord.getProcessInstanceKey(), incidentKey));

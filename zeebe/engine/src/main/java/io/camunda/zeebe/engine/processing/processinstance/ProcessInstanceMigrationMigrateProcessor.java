@@ -28,7 +28,6 @@ import io.camunda.zeebe.engine.state.immutable.IncidentState;
 import io.camunda.zeebe.engine.state.immutable.MessageState;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
-import io.camunda.zeebe.engine.state.immutable.UserTaskState;
 import io.camunda.zeebe.engine.state.immutable.VariableState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
 import io.camunda.zeebe.engine.state.routing.RoutingInfo;
@@ -39,7 +38,6 @@ import io.camunda.zeebe.protocol.impl.record.value.variable.VariableRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceMigrationIntent;
-import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
@@ -69,7 +67,6 @@ public class ProcessInstanceMigrationMigrateProcessor
   private final TypedRejectionWriter rejectionWriter;
   private final ElementInstanceState elementInstanceState;
   private final ProcessState processState;
-  private final UserTaskState userTaskState;
   private final VariableState variableState;
   private final IncidentState incidentState;
   private final EventScopeInstanceState eventScopeInstanceState;
@@ -94,7 +91,6 @@ public class ProcessInstanceMigrationMigrateProcessor
     rejectionWriter = writers.rejection();
     elementInstanceState = processingState.getElementInstanceState();
     processState = processingState.getProcessState();
-    userTaskState = processingState.getUserTaskState();
     final var jobState = processingState.getJobState();
     variableState = processingState.getVariableState();
     incidentState = processingState.getIncidentState();
@@ -117,7 +113,8 @@ public class ProcessInstanceMigrationMigrateProcessor
     migrationJobBehaviour =
         new ProcessInstanceMigrationJobBehavior(stateWriter, jobState, incidentState);
     migrationUserTaskBehaviour =
-        new ProcessInstanceMigrationUserTaskBehavior(stateWriter, jobState, bpmnBehaviors);
+        new ProcessInstanceMigrationUserTaskBehavior(
+            stateWriter, jobState, processingState.getUserTaskState(), bpmnBehaviors);
     migrationSequenceFlowBehaviour =
         new ProcessInstanceMigrationSequenceFlowBehavior(
             keyGenerator, stateWriter, elementInstanceState);
@@ -289,7 +286,8 @@ public class ProcessInstanceMigrationMigrateProcessor
     migrateElementInstanceIncident(
         elementInstance, targetProcessDefinition, targetElementId, updatedElementInstanceRecord);
 
-    migrateUserTasks(elementInstance, targetProcessDefinition, processInstanceKey, targetElementId);
+    migrationUserTaskBehaviour.migrateUserTask(
+        elementInstance, targetProcessDefinition, processInstanceKey, targetElementId);
 
     migrateVariables(elementInstance, targetProcessDefinition);
 
@@ -364,34 +362,6 @@ public class ProcessInstanceMigrationMigrateProcessor
           targetProcessDefinition,
           targetElementId,
           updatedElementInstanceRecord);
-    }
-  }
-
-  private void migrateUserTasks(
-      final ElementInstance elementInstance,
-      final DeployedProcess targetProcessDefinition,
-      final long processInstanceKey,
-      final String targetElementId) {
-    if (elementInstance.getUserTaskKey() > 0) {
-      final var userTask = userTaskState.getUserTask(elementInstance.getUserTaskKey());
-      if (userTask == null) {
-        throw new SafetyCheckFailedException(
-            String.format(
-                """
-                Expected to migrate a user task for process instance with key '%d', \
-                but could not find user task with key '%d'. \
-                Please report this as a bug""",
-                processInstanceKey, elementInstance.getUserTaskKey()));
-      }
-      stateWriter.appendFollowUpEvent(
-          elementInstance.getUserTaskKey(),
-          UserTaskIntent.MIGRATED,
-          userTask
-              .setProcessDefinitionKey(targetProcessDefinition.getKey())
-              .setProcessDefinitionVersion(targetProcessDefinition.getVersion())
-              .setBpmnProcessId(targetProcessDefinition.getBpmnProcessId())
-              .setElementId(targetElementId)
-              .setVariables(NIL_VALUE));
     }
   }
 
