@@ -88,6 +88,40 @@ public class ExecutableFlowNode extends AbstractFlowElement {
         .toList();
   }
 
+  /**
+   * Returns the {@code beforeAll} execution listeners defined on this element.
+   *
+   * <p>{@code beforeAll} listeners are only meaningful on the enclosing body of a multi-instance
+   * element ({@link ExecutableMultiInstanceBody}). They fire before the input collection or loop
+   * cardinality is evaluated and before child element instances are created.
+   */
+  public List<ExecutionListener> getBeforeAllExecutionListeners() {
+    return executionListeners.stream()
+        .filter(el -> el.getEventType() == ZeebeExecutionListenerEventType.beforeAll)
+        .toList();
+  }
+
+  /**
+   * Removes and returns all {@code beforeAll} execution listeners from this element. Used by
+   * {@link
+   * io.camunda.zeebe.engine.processing.deployment.model.transformer.MultiInstanceActivityTransformer}
+   * to transfer {@code beforeAll} listeners from the inner activity to the enclosing multi-instance
+   * body.
+   */
+  public List<ExecutionListener> removeBeforeAllExecutionListeners() {
+    final List<ExecutionListener> beforeAll = getBeforeAllExecutionListeners();
+    executionListeners.removeAll(beforeAll);
+    return beforeAll;
+  }
+
+  /**
+   * Adds an already-constructed {@link ExecutionListener} directly to this element. Used when
+   * transferring listeners between elements (e.g., from inner activity to multi-instance body).
+   */
+  public void addExecutionListener(final ExecutionListener listener) {
+    executionListeners.add(listener);
+  }
+
   public boolean hasExecutionListeners() {
     return !executionListeners.isEmpty();
   }

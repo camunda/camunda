@@ -20,6 +20,7 @@ package io.camunda.zeebe.model.bpmn.instance.zeebe;
  * (beginning) or at the end (completion) of an element's processing.
  */
 public enum ZeebeExecutionListenerEventType {
+  beforeAll,
   start,
   end
 }

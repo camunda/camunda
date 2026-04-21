@@ -390,6 +390,7 @@ public final class BpmnJobBehavior {
     return switch (eventType) {
       case start -> JobListenerEventType.START;
       case end -> JobListenerEventType.END;
+      case beforeAll -> JobListenerEventType.BEFORE_ALL;
     };
   }
 
