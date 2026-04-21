@@ -25,12 +25,18 @@ jobs:
       options: --user 1001:1000
 
     steps:
+      - name: Verify snapshot push token is available
+        env:
+          OPERATE_VISUAL_SNAPSHOTS_TOKEN: ${{ secrets.OPERATE_VISUAL_SNAPSHOTS_TOKEN }}
+        run: |
+          test -n "$OPERATE_VISUAL_SNAPSHOTS_TOKEN"
       - name: Check out repository code
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           ref: ${{ github.head_ref }}
+          token: ${{ secrets.OPERATE_VISUAL_SNAPSHOTS_TOKEN }}
       - name: Setup NodeJS
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
         with:
           node-version: 24
       - name: Install node dependencies
@@ -46,7 +52,8 @@ jobs:
         working-directory: ./operate/client
         run: npm run test:visual -- --update-snapshots
       - name: Commit screenshots
-        uses: stefanzweifel/git-auto-commit-action@v7
+        uses: stefanzweifel/git-auto-commit-action@04702edda442b2e678b25b537cec683a1493fcb9 # v7.1.0
         with:
           commit_message: "test: updated operate snapshots"
           file_pattern: "operate/client/**/*.png"
+          token: ${{ secrets.OPERATE_VISUAL_SNAPSHOTS_TOKEN }}
