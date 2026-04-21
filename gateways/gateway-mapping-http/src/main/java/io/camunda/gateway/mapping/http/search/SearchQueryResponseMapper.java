@@ -975,26 +975,25 @@ public final class SearchQueryResponseMapper {
   }
 
   public static ElementInstanceResult toElementInstance(final FlowNodeInstanceEntity instance) {
+    // `flowNodeName` is null on exporter cache miss (process definition not yet cached when the
+    // event is handled); fall back to the BPMN element id, which is always present. `hasIncident`
+    // is populated asynchronously by IncidentUpdateTask. `startDate` is only written on
+    // AI_START_STATES intents and is absent on docs first created by a later intent. Per 8.8
+    // policy we fall back to spec-compliant sentinels rather than 500 on rare transient gaps.
     return new ElementInstanceResult()
-        .elementInstanceKey(
-            requireNonNull(keyToStringOrNull(instance.flowNodeInstanceKey()), "elementInstanceKey"))
+        .elementInstanceKey(keyToString(instance.flowNodeInstanceKey()))
         .elementId(instance.flowNodeId())
-        .elementName(requireNonNull(instance.flowNodeName(), "elementName"))
-        .processDefinitionKey(
-            requireNonNull(
-                keyToStringOrNull(instance.processDefinitionKey()), "processDefinitionKey"))
+        .elementName(requireNonNullElse(instance.flowNodeName(), instance.flowNodeId()))
+        .processDefinitionKey(keyToString(instance.processDefinitionKey()))
         .processDefinitionId(instance.processDefinitionId())
-        .processInstanceKey(
-            requireNonNull(keyToStringOrNull(instance.processInstanceKey()), "processInstanceKey"))
+        .processInstanceKey(keyToString(instance.processInstanceKey()))
         .rootProcessInstanceKey(keyToStringOrNull(instance.rootProcessInstanceKey()))
         .incidentKey(keyToStringOrNull(instance.incidentKey()))
-        .hasIncident(requireNonNull(instance.hasIncident(), "hasIncident"))
-        .startDate(requireNonNull(formatDate(instance.startDate()), "startDate"))
+        .hasIncident(Boolean.TRUE.equals(instance.hasIncident()))
+        .startDate(requireNonNullElse(formatDate(instance.startDate()), EPOCH_DATE_SENTINEL))
         .endDate(formatDate(instance.endDate()))
-        .state(ElementInstanceStateEnum.fromValue(requireNonNull(instance.state(), "state").name()))
-        .type(
-            ElementInstanceResult.TypeEnum.fromValue(
-                requireNonNull(instance.type(), "type").name()))
+        .state(ElementInstanceStateEnum.fromValue(instance.state().name()))
+        .type(ElementInstanceResult.TypeEnum.fromValue(instance.type().name()))
         .tenantId(instance.tenantId());
   }
 
