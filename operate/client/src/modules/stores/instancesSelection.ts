@@ -246,5 +246,7 @@ class InstancesSelection {
   };
 }
 
-export const processInstancesSelectionStore = new InstancesSelection();
-export const decisionInstancesSelectionStore = new InstancesSelection();
+const processInstancesSelectionStore = new InstancesSelection();
+const decisionInstancesSelectionStore = new InstancesSelection();
+
+export {processInstancesSelectionStore, decisionInstancesSelectionStore};
