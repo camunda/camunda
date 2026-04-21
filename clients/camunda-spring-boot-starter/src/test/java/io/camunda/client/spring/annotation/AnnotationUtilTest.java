@@ -158,9 +158,27 @@ public class AnnotationUtilTest {
     public void sampleWorkerWithDocumentReferenceList(
         @io.camunda.client.annotation.Document final List<DocumentReferenceResponse> documents) {}
 
+    @Test
+    void shouldDeduplicateVariableAndDocumentWithSameName() {
+      // given
+      final MethodInfo methodInfo =
+          methodInfo(this, "test", "sampleWorkerWithDuplicateVariableAndDocument");
+      // when
+      final Optional<JobWorkerValue> jobWorkerValue = AnnotationUtil.getJobWorkerValue(methodInfo);
+      // then
+      assertThat(jobWorkerValue).isPresent();
+      final JobWorkerValue value = jobWorkerValue.get();
+      assertThat(value.getFetchVariables()).containsExactly(new GeneratedFromMethodInfo<>("myVar"));
+    }
+
     @io.camunda.client.annotation.JobWorker
     public void sampleWorkerWithNamedDocument(
         @io.camunda.client.annotation.Document("myDoc") final DocumentContext context) {}
+
+    @io.camunda.client.annotation.JobWorker
+    public void sampleWorkerWithDuplicateVariableAndDocument(
+        @io.camunda.client.annotation.Variable("myVar") final String var1,
+        @io.camunda.client.annotation.Document("myVar") final DocumentContext context) {}
 
     private static final class PropertyAnnotatedClass {
       @JsonProperty("some_name")
