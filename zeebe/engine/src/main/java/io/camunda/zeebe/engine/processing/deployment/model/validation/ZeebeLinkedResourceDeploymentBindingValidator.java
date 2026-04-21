@@ -17,10 +17,14 @@ import org.camunda.bpm.model.xml.validation.ValidationResultCollector;
 public class ZeebeLinkedResourceDeploymentBindingValidator
     implements ModelElementValidator<ZeebeLinkedResource> {
 
+  private static final String FORM_RESOURCE_TYPE = "form";
+
   private final List<ResourceMetadataValue> resourceMetadata;
+  private final List<String> formIds;
 
   public ZeebeLinkedResourceDeploymentBindingValidator(final DeploymentRecord deployment) {
     resourceMetadata = deployment.getResourceMetadata();
+    formIds = deployment.formMetadata().stream().map(m -> m.getFormId()).toList();
   }
 
   @Override
@@ -37,11 +41,20 @@ public class ZeebeLinkedResourceDeploymentBindingValidator
       return;
     }
 
-    if (resourceMetadata.stream().noneMatch(r -> resourceId.equals(r.getResourceId()))) {
-      validationResultCollector.addError(
-          0,
-          "Expected to find resource with id '%s' in current deployment, but not found."
-              .formatted(resourceId));
+    if (FORM_RESOURCE_TYPE.equalsIgnoreCase(linkedResource.getResourceType())) {
+      if (!formIds.contains(resourceId)) {
+        validationResultCollector.addError(
+            0,
+            "Expected to find form with id '%s' in current deployment, but not found."
+                .formatted(resourceId));
+      }
+    } else {
+      if (resourceMetadata.stream().noneMatch(r -> resourceId.equals(r.getResourceId()))) {
+        validationResultCollector.addError(
+            0,
+            "Expected to find resource with id '%s' in current deployment, but not found."
+                .formatted(resourceId));
+      }
     }
   }
 }

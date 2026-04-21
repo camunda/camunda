@@ -51,7 +51,9 @@ public final class FormServices extends SearchQueryService<FormServices, FormQue
     return executeSearchRequest(
         () ->
             formSearchClient
-                .withSecurityContext(securityContextProvider.provideSecurityContext(authentication))
+                .withSecurityContext(
+                    securityContextProvider.provideSecurityContext(
+                        CamundaAuthentication.anonymous()))
                 .getForm(key));
   }
 
