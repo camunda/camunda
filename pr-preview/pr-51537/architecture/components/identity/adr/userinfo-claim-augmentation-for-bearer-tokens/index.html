@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="generator" content="Docusaurus v3.9.2">
 <title data-rh="true">ADR-0006: UserInfo Claim Augmentation for OIDC Bearer Tokens | Camunda Platform</title><meta data-rh="true" name="viewport" content="width=device-width,initial-scale=1"><meta data-rh="true" name="twitter:card" content="summary_large_image"><meta data-rh="true" property="og:url" content="https://camunda.github.io/camunda/pr-preview/pr-51537/architecture/components/identity/adr/userinfo-claim-augmentation-for-bearer-tokens/"><meta data-rh="true" property="og:locale" content="en"><meta data-rh="true" name="docusaurus_locale" content="en"><meta data-rh="true" name="docsearch:language" content="en"><meta data-rh="true" name="docusaurus_version" content="current"><meta data-rh="true" name="docusaurus_tag" content="docs-default-current"><meta data-rh="true" name="docsearch:version" content="current"><meta data-rh="true" name="docsearch:docusaurus_tag" content="docs-default-current"><meta data-rh="true" property="og:title" content="ADR-0006: UserInfo Claim Augmentation for OIDC Bearer Tokens | Camunda Platform"><meta data-rh="true" name="description" content="Status"><meta data-rh="true" property="og:description" content="Status"><link data-rh="true" rel="icon" href="/camunda/pr-preview/pr-51537/img/black-C.png"><link data-rh="true" rel="canonical" href="https://camunda.github.io/camunda/pr-preview/pr-51537/architecture/components/identity/adr/userinfo-claim-augmentation-for-bearer-tokens/"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/pr-preview/pr-51537/architecture/components/identity/adr/userinfo-claim-augmentation-for-bearer-tokens/" hreflang="en"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/pr-preview/pr-51537/architecture/components/identity/adr/userinfo-claim-augmentation-for-bearer-tokens/" hreflang="x-default"><link rel="stylesheet" href="/camunda/pr-preview/pr-51537/assets/css/styles.9181a4df.css">
-<script src="/camunda/pr-preview/pr-51537/assets/js/runtime~main.862cc582.js" defer="defer"></script>
-<script src="/camunda/pr-preview/pr-51537/assets/js/main.eebcdb73.js" defer="defer"></script>
+<script src="/camunda/pr-preview/pr-51537/assets/js/runtime~main.4e765c15.js" defer="defer"></script>
+<script src="/camunda/pr-preview/pr-51537/assets/js/main.9ab90574.js" defer="defer"></script>
 </head>
 <body class="navigation-with-keyboard">
 <svg style="display: none;"><defs>
@@ -134,7 +134,10 @@ values.</p>
 <h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="defences-in-oidcuserinfoclient">Defences in OidcUserInfoClient<a href="#defences-in-oidcuserinfoclient" class="hash-link" aria-label="Direct link to Defences in OidcUserInfoClient" title="Direct link to Defences in OidcUserInfoClient" translate="no">​</a></h3>
 <ul>
 <li class="">Response body size capped at 1 MiB (<code>OidcUserInfoClient.MAX_BODY_BYTES</code>). Oversized responses
-are rejected before parsing.</li>
+are rejected before parsing. Note: <code>HttpResponse.BodyHandlers.ofByteArray()</code> buffers the full
+response before the check, so worst-case heap is <code>MAX_BODY_BYTES</code> per concurrent uncached
+fetch. A streaming <code>BodySubscriber</code> with an in-stream cap is a documented follow-up for a
+future iteration.</li>
 <li class=""><code>Content-Type: application/jwt</code> rejected with a clear error — signed UserInfo responses per
 OIDC Core §5.3.2 are not supported in this version.</li>
 <li class="">Request + connect timeouts are 2 seconds each, tightened from an earlier 5-second default to
