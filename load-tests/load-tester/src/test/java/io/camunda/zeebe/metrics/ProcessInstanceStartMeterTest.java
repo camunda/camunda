@@ -19,7 +19,6 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import org.junit.jupiter.api.AfterEach;
@@ -40,7 +39,7 @@ class ProcessInstanceStartMeterTest {
         new ProcessInstanceStartMeter(
             System::nanoTime,
             meterRegistry,
-            newDaemonScheduler(),
+            Executors.newScheduledThreadPool(1),
             Duration.ofMillis(1),
             (list) -> availabilityChecker.findAvailableInstances(list));
   }
@@ -49,21 +48,6 @@ class ProcessInstanceStartMeterTest {
   void tearDown() {
     processInstanceStartMeter.stop();
     meterRegistry.close();
-  }
-
-  /**
-   * Returns a single-threaded scheduler backed by a daemon thread so a leaked scheduler (e.g. when
-   * a test overwrites the instance meter without disposing the original) cannot hold the JVM alive
-   * after the suite finishes. Surefire force-exits on timeout, but IDE runners usually don't.
-   */
-  private static ScheduledExecutorService newDaemonScheduler() {
-    return Executors.newScheduledThreadPool(
-        1,
-        r -> {
-          final Thread t = new Thread(r, "pi-check-test");
-          t.setDaemon(true);
-          return t;
-        });
   }
 
   @Test
@@ -242,7 +226,7 @@ class ProcessInstanceStartMeterTest {
         new ProcessInstanceStartMeter(
             System::nanoTime,
             meterRegistry,
-            newDaemonScheduler(),
+            Executors.newScheduledThreadPool(1),
             Duration.ZERO,
             CompletableFuture::completedFuture);
 
@@ -266,7 +250,7 @@ class ProcessInstanceStartMeterTest {
         new ProcessInstanceStartMeter(
             System::nanoTime,
             meterRegistry,
-            newDaemonScheduler(),
+            Executors.newScheduledThreadPool(1),
             Duration.ZERO,
             CompletableFuture::completedFuture);
 
@@ -291,7 +275,7 @@ class ProcessInstanceStartMeterTest {
         new ProcessInstanceStartMeter(
             time::get,
             meterRegistry,
-            newDaemonScheduler(),
+            Executors.newScheduledThreadPool(1),
             Duration.ofMillis(1),
             CompletableFuture::completedFuture);
     processInstanceStartMeter.start();
