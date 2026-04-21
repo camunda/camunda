@@ -240,6 +240,14 @@ jobs:
           path: qa/c8-orchestration-cluster-e2e-test-suite/json-report/**
           retention-days: 60
 
+      - name: Upload HTML report to GitHub Actions Artifacts
+        if: always()
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        with:
+          name: html-report-nightly-e2e-${{ steps.sanitize.outputs.safe_branch }}-${{ inputs.tasklist_mode }}
+          path: qa/c8-orchestration-cluster-e2e-test-suite/html-report/**
+          retention-days: 60
+
       - name: Observe build status
         if: always()
         continue-on-error: true
