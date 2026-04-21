@@ -21,7 +21,6 @@ import io.camunda.client.CamundaClient;
 import io.camunda.client.api.response.PartitionBrokerHealth;
 import io.camunda.client.api.response.PartitionInfo;
 import io.camunda.client.api.response.Topology;
-import io.camunda.process.test.api.CamundaClientBuilderFactory;
 import io.camunda.process.test.impl.client.clock.CamundaAddClockRequestDto;
 import io.camunda.process.test.impl.client.clock.CamundaClockResponseDto;
 import java.io.IOException;
@@ -53,19 +52,17 @@ public final class CamundaManagementClient implements CamundaClockClient {
   private final CloseableHttpClient httpClient = HttpClients.createDefault();
 
   private final URI camundaManagementApi;
-  private final CamundaClientBuilderFactory camundaClientBuilderFactory;
+  private final CamundaClient camundaClient;
 
   private CamundaManagementClient(
-      final URI camundaManagementApi,
-      final CamundaClientBuilderFactory camundaClientBuilderFactory) {
+      final URI camundaManagementApi, final CamundaClient camundaClient) {
     this.camundaManagementApi = camundaManagementApi;
-    this.camundaClientBuilderFactory = camundaClientBuilderFactory;
+    this.camundaClient = camundaClient;
   }
 
   public static CamundaManagementClient createClient(
-      final URI camundaManagementApi,
-      final CamundaClientBuilderFactory camundaClientBuilderFactory) {
-    return new CamundaManagementClient(camundaManagementApi, camundaClientBuilderFactory);
+      final URI camundaManagementApi, final CamundaClient camundaClient) {
+    return new CamundaManagementClient(camundaManagementApi, camundaClient);
   }
 
   @Override
@@ -149,7 +146,7 @@ public final class CamundaManagementClient implements CamundaClockClient {
   public void purgeCluster(final Duration timeout) {
     startPurge();
 
-    try (final CamundaClient camundaClient = camundaClientBuilderFactory.get().build()) {
+    try {
       Awaitility.await()
           .pollInterval(Duration.ofMillis(250))
           .atMost(timeout)
