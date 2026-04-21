@@ -57,6 +57,12 @@ public interface JobRecordValue
   int getRetries();
 
   /**
+   * @return the activation priority of this job. Higher value = higher priority; default 0.
+   *     Unbounded signed integer, matching C7 semantics.
+   */
+  long getPriority();
+
+  /**
    * @return the time of backoff in milliseconds. If backoff is disabled this method returns 0
    *     (default value).
    */
