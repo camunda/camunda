@@ -892,7 +892,7 @@ public final class SearchQueryResponseMapper {
 
   public static TenantResult toTenant(final TenantEntity tenantEntity) {
     return new TenantResult()
-        .name(requireNonNull(tenantEntity.name(), "name"))
+        .name(tenantEntity.name())
         .description(tenantEntity.description())
         .tenantId(tenantEntity.tenantId());
   }

@@ -12,10 +12,11 @@ import java.util.Objects;
 import org.jspecify.annotations.Nullable;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
-public record TenantEntity(
-    @Nullable Long key, String tenantId, @Nullable String name, @Nullable String description) {
+public record TenantEntity(Long key, String tenantId, String name, @Nullable String description) {
 
   public TenantEntity {
+    Objects.requireNonNull(key, "key");
     Objects.requireNonNull(tenantId, "tenantId");
+    Objects.requireNonNull(name, "name");
   }
 }
