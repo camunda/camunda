@@ -23,11 +23,14 @@ import io.grpc.ClientInterceptor;
 import io.grpc.Status.Code;
 import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.binder.grpc.MetricCollectingClientInterceptor;
+import io.micrometer.core.instrument.binder.httpcomponents.hc5.ObservationExecChainHandler;
 import io.micrometer.core.instrument.binder.jvm.ClassLoaderMetrics;
 import io.micrometer.core.instrument.binder.jvm.JvmGcMetrics;
 import io.micrometer.core.instrument.binder.jvm.JvmMemoryMetrics;
 import io.micrometer.core.instrument.binder.jvm.JvmThreadMetrics;
 import io.micrometer.core.instrument.binder.system.ProcessorMetrics;
+import io.micrometer.core.instrument.observation.DefaultMeterObservationHandler;
+import io.micrometer.observation.ObservationRegistry;
 import io.micrometer.prometheusmetrics.PrometheusConfig;
 import io.micrometer.prometheusmetrics.PrometheusMeterRegistry;
 import io.micrometer.prometheusmetrics.PrometheusRenameFilter;
@@ -54,6 +57,7 @@ abstract class App implements Runnable {
   protected final AppCfg config;
   protected PrometheusMeterRegistry registry;
   protected ClientInterceptor monitoringInterceptor;
+  protected ObservationExecChainHandler observationExecChainHandler;
   private final AtomicInteger connected = new AtomicInteger(0);
 
   private HTTPServer monitoringServer;
@@ -104,6 +108,11 @@ abstract class App implements Runnable {
     Gauge.builder(AppMetricsDoc.CONNECTED.getName(), connected, AtomicInteger::get)
         .description(AppMetricsDoc.CONNECTED.getDescription())
         .register(registry);
+    final var observationRegistry = ObservationRegistry.create();
+    observationRegistry
+        .observationConfig()
+        .observationHandler(new DefaultMeterObservationHandler(registry));
+    observationExecChainHandler = new ObservationExecChainHandler(observationRegistry);
     registerDefaultInstrumentation();
   }
 
@@ -176,6 +185,7 @@ abstract class App implements Runnable {
             .preferRestOverGrpc(config.isPreferRest())
             .withProperties(System.getProperties())
             .withInterceptors(monitoringInterceptor)
+            .withChainHandlers(observationExecChainHandler)
             .useClientSideLoadBalancing(config.isClientSideLoadBalancing());
 
     final var auth = config.getAuth();
