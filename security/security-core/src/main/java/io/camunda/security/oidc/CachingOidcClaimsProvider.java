@@ -29,9 +29,15 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Caching {@link OidcClaimsProvider} that, when UserInfo augmentation is enabled, calls the OIDC
- * UserInfo endpoint on cache miss, merges its response onto the JWT claims (UserInfo wins on
- * conflict), and caches by {@code jti} (falling back to SHA-256 of the token). Fails closed on
- * UserInfo errors and negatively caches failures to avoid hammering a down IdP.
+ * UserInfo endpoint on cache miss and <em>additively</em> merges claims onto the JWT: JWT wins on
+ * every conflict, UserInfo only contributes claims absent from the JWT. This preserves the
+ * cryptographic guarantee of the signed token — UserInfo cannot override {@code sub}, {@code iss},
+ * {@code aud}, {@code exp}, or any other JWT-supplied claim.
+ *
+ * <p>Runtime fail-open on IdP errors: a {@code /userinfo} fetch failure (network, non-2xx, parse
+ * failure, or UserInfo {@code sub} mismatch per OIDC Core §5.3.2) is logged at ERROR and the
+ * provider returns the JWT claims unchanged. Degraded entries are negatively cached for a short TTL
+ * ({@link OidcUserInfoAugmentationConfiguration#NEGATIVE_CACHE_TTL}) to avoid hammering a down IdP.
  */
 public class CachingOidcClaimsProvider implements OidcClaimsProvider {
 
@@ -78,47 +84,77 @@ public class CachingOidcClaimsProvider implements OidcClaimsProvider {
       return jwtClaims;
     }
     if (userInfoUri == null) {
-      throw new OidcUserInfoException(
-          "UserInfo augmentation is enabled but no userinfo URI is available for this provider");
+      // Should have been caught at startup; degrade rather than 500 if we reach here.
+      LOG.error(
+          "UserInfo augmentation is enabled but no userinfo URI is available; "
+              + "returning JWT-only claims");
+      return jwtClaims;
     }
 
     final String key = cacheKey(jwtClaims, tokenValue);
+    // Fast-path: was it already cached? If so, record the hit and return.
+    // Narrow race: a concurrent thread may populate between this check and the load below,
+    // in which case our load() sees the populated entry and returns without running the
+    // loader. Counter bookkeeping may skew by one under pure load but functional behaviour
+    // (single fetch per key) is preserved by Caffeine's atomic loading contract.
     final CacheEntry cached = cache.getIfPresent(key);
     if (cached != null) {
       hitCounter.increment();
-      if (cached.failure() != null) {
-        throw cached.failure();
-      }
       return cached.claims();
     }
-    missCounter.increment();
+    // Miss — use Caffeine's atomic cache.get(key, loader) so concurrent misses on the same
+    // key coalesce: exactly one thread runs the loader; the others wait for the result.
+    final CacheEntry entry =
+        cache.get(
+            key,
+            k -> {
+              missCounter.increment();
+              return loadEntry(jwtClaims, tokenValue);
+            });
+    return entry.claims();
+  }
 
-    final Map<String, Object> merged;
+  private CacheEntry loadEntry(final Map<String, Object> jwtClaims, final String tokenValue) {
     try {
       final Map<String, Object> userInfoClaims =
           fetchTimer.recordCallable(() -> userInfoClient.fetch(userInfoUri, tokenValue));
-      merged = merge(jwtClaims, userInfoClaims);
-    } catch (final OidcUserInfoException e) {
+      return mergeEntry(jwtClaims, userInfoClaims);
+    } catch (final InterruptedException e) {
+      // Restore interrupt flag so the calling thread can terminate cleanly.
+      Thread.currentThread().interrupt();
       fetchFailureCounter.increment();
-      LOG.debug("UserInfo fetch failed; caching negative entry", e);
-      cache.put(key, CacheEntry.failure(e));
-      throw e;
+      LOG.error("UserInfo fetch interrupted; returning JWT-only claims", e);
+      return CacheEntry.degraded(jwtClaims);
     } catch (final Exception e) {
       fetchFailureCounter.increment();
-      final var wrapped = new OidcUserInfoException("UserInfo fetch failed: " + e.getMessage(), e);
-      cache.put(key, CacheEntry.failure(wrapped));
-      throw wrapped;
+      LOG.error(
+          "UserInfo augmentation failed for bearer request; continuing with JWT-only claims. "
+              + "Authorization may be incomplete if required claims are only available via "
+              + "/userinfo. Ensure IdP availability is monitored.",
+          e);
+      return CacheEntry.degraded(jwtClaims);
     }
-
-    cache.put(key, CacheEntry.success(merged, tokenExpiry(jwtClaims)));
-    return merged;
   }
 
-  private static Map<String, Object> merge(
+  /**
+   * Apply additive merge: JWT wins on every conflict, UserInfo contributes only claims absent from
+   * the JWT. Before merging, enforce OIDC Core §5.3.2 — UserInfo {@code sub} MUST equal JWT {@code
+   * sub}. A mismatch is treated as a degradation event (fail-open, JWT-only claims).
+   */
+  private CacheEntry mergeEntry(
       final Map<String, Object> jwtClaims, final Map<String, Object> userInfoClaims) {
-    final Map<String, Object> merged = new HashMap<>(jwtClaims);
-    merged.putAll(userInfoClaims); // userinfo wins on conflict
-    return Map.copyOf(merged);
+    final Object userInfoSub = userInfoClaims.get("sub");
+    if (userInfoSub != null && !userInfoSub.equals(jwtClaims.get("sub"))) {
+      fetchFailureCounter.increment();
+      LOG.error(
+          "UserInfo 'sub' did not match JWT 'sub' (OIDC Core §5.3.2 violation); "
+              + "returning JWT-only claims. Possible IdP misconfiguration.");
+      return CacheEntry.degraded(jwtClaims);
+    }
+    // Start with UserInfo, let JWT overwrite — JWT wins on every key they share.
+    final Map<String, Object> merged = new HashMap<>(userInfoClaims);
+    merged.putAll(jwtClaims);
+    return CacheEntry.augmented(Map.copyOf(merged), tokenExpiry(jwtClaims));
   }
 
   private static String cacheKey(final Map<String, Object> jwtClaims, final String tokenValue) {
@@ -146,21 +182,25 @@ public class CachingOidcClaimsProvider implements OidcClaimsProvider {
     return Instant.now().plus(Duration.ofMinutes(5));
   }
 
-  private record CacheEntry(
-      Map<String, Object> claims, OidcUserInfoException failure, Instant tokenExp) {
+  /**
+   * Cache entry. A {@code degraded} entry represents a fail-open outcome: we couldn't fetch (or
+   * validate) UserInfo, so we returned JWT claims unchanged and cached that decision for the
+   * negative-cache TTL to prevent hammering the IdP.
+   */
+  private record CacheEntry(Map<String, Object> claims, Instant tokenExp, boolean degraded) {
 
-    static CacheEntry success(final Map<String, Object> claims, final Instant tokenExp) {
-      return new CacheEntry(claims, null, tokenExp);
+    static CacheEntry augmented(final Map<String, Object> claims, final Instant tokenExp) {
+      return new CacheEntry(claims, tokenExp, false);
     }
 
-    static CacheEntry failure(final OidcUserInfoException e) {
-      return new CacheEntry(null, e, null);
+    static CacheEntry degraded(final Map<String, Object> jwtClaims) {
+      return new CacheEntry(jwtClaims, null, true);
     }
   }
 
   /**
-   * Caffeine {@link Expiry} that expires successful entries at min(configured TTL, token exp − skew
-   * − now) and uses a short fixed TTL for failure entries.
+   * Caffeine {@link Expiry} that expires augmented entries at min(configured TTL, token exp − skew
+   * − now) and degraded entries at a short fixed negative-cache TTL.
    */
   private final class EntryExpiry implements Expiry<String, CacheEntry> {
     private final Duration configuredTtl;
@@ -194,7 +234,7 @@ public class CachingOidcClaimsProvider implements OidcClaimsProvider {
     }
 
     private long ttlNanos(final CacheEntry value) {
-      if (value.failure() != null) {
+      if (value.degraded()) {
         return OidcUserInfoAugmentationConfiguration.NEGATIVE_CACHE_TTL.toNanos();
       }
       final Duration untilExp = Duration.between(Instant.now(), value.tokenExp()).minus(clockSkew);
