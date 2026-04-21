@@ -49,6 +49,7 @@ import io.camunda.spring.utils.ConditionalOnSecondaryStorageDisabled;
 import io.camunda.spring.utils.ConditionalOnSecondaryStorageEnabled;
 import io.micrometer.common.KeyValues;
 import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import io.micrometer.observation.ObservationRegistry;
 import jakarta.annotation.PostConstruct;
 import jakarta.servlet.FilterChain;
@@ -69,8 +70,13 @@ import java.util.stream.StreamSupport;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.actuate.logging.LoggersEndpoint;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.security.autoconfigure.actuate.web.servlet.EndpointRequest;
+import org.springframework.boot.ssl.NoSuchSslBundleException;
+import org.springframework.boot.ssl.SslBundles;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
@@ -641,33 +647,90 @@ public class WebSecurityConfig {
       return new OidcTokenAuthenticationConverter(tokenClaimsConverter, oidcClaimsProvider);
     }
 
+    /**
+     * Fallback {@link MeterRegistry} for test / minimal Spring contexts that don't configure the
+     * standard Spring Boot auto-configured {@code CompositeMeterRegistry}. In real deployments the
+     * app-wide registry wins via {@link ConditionalOnMissingBean} and metrics land on a scraped
+     * backend (Prometheus / OTLP / etc.) rather than the in-memory sink.
+     */
     @Bean
+    @ConditionalOnMissingBean(MeterRegistry.class)
+    public MeterRegistry oidcFallbackMeterRegistry() {
+      return new SimpleMeterRegistry();
+    }
+
+    /**
+     * HTTP client used by {@link OidcClaimsProvider} implementations to call the IdP's {@code
+     * /userinfo} endpoint. Registered as a Spring-managed bean so its lifecycle is bound to the
+     * application context — {@code close()} on shutdown releases the JDK selector + executor
+     * threads. Can be overridden by registering a bean of the same name.
+     *
+     * <p>SSL context is sourced from the {@code oidc-userinfo} entry in {@link SslBundles} when
+     * present, so enterprise deployments with custom CA trust under {@code spring.ssl.bundle.*}
+     * apply automatically. Falls back to JDK default.
+     */
+    @Bean(destroyMethod = "close", name = "oidcUserInfoHttpClient")
+    @ConditionalOnMissingBean(name = "oidcUserInfoHttpClient")
+    public HttpClient oidcUserInfoHttpClient(
+        @Autowired(required = false) final SslBundles sslBundles) {
+      final HttpClient.Builder builder =
+          HttpClient.newBuilder()
+              .connectTimeout(Duration.ofSeconds(2))
+              .followRedirects(HttpClient.Redirect.NORMAL);
+      if (sslBundles != null) {
+        try {
+          final var bundle = sslBundles.getBundle("oidc-userinfo");
+          builder.sslContext(bundle.createSslContext());
+          LOG.info(
+              "OIDC UserInfo HTTP client using SSL bundle 'oidc-userinfo' "
+                  + "(custom truststore / trust material)");
+        } catch (final NoSuchSslBundleException e) {
+          LOG.debug(
+              "No 'oidc-userinfo' SSL bundle configured; OIDC UserInfo HTTP client "
+                  + "uses JDK default SSLContext");
+        }
+      }
+      return builder.build();
+    }
+
+    @Bean
+    @ConditionalOnMissingBean(OidcClaimsProvider.class)
     public OidcClaimsProvider oidcClaimsProvider(
         final SecurityConfiguration securityConfiguration,
+        final ClientRegistrationRepository clientRegistrationRepository,
         final OidcAuthenticationConfigurationRepository oidcProviderRepository,
+        @Qualifier("oidcUserInfoHttpClient") final HttpClient oidcUserInfoHttpClient,
         final MeterRegistry meterRegistry) {
       final var oidc = securityConfiguration.getAuthentication().getOidc();
       if (oidc == null || !oidc.getUserInfoAugmentation().isEnabled()) {
         return new NoopOidcClaimsProvider();
       }
-      // Resolve userinfo URI from the first matching provider's issuer.
-      // Multi-provider selection by 'iss' claim is a follow-up; single-provider
-      // setups are covered today.
-      final URI userInfoUri =
-          oidcProviderRepository.getOidcAuthenticationConfigurations().values().stream()
-              .map(OidcAuthenticationConfiguration::getIssuerUri)
+      // Build a map of issuer -> userinfo URI from the Spring-managed ClientRegistrations.
+      // Each ClientRegistration's ProviderDetails.getIssuerUri() is the canonical 'iss' claim
+      // the IdP emits on its tokens, and UserInfoEndpoint.getUri() is the userinfo URL from
+      // the same discovery document. CachingOidcClaimsProvider uses this to route each
+      // token to its own issuer's userinfo endpoint — never cross-wired.
+      final Map<String, URI> userInfoUriByIssuer =
+          oidcProviderRepository.getOidcAuthenticationConfigurations().keySet().stream()
+              .map(clientRegistrationRepository::findByRegistrationId)
               .filter(Objects::nonNull)
-              .findFirst()
-              .map(issuer -> URI.create(issuer.replaceAll("/$", "") + "/userinfo"))
-              .orElseThrow(
-                  () ->
-                      new IllegalStateException(
-                          "UserInfo augmentation enabled but no issuerUri configured"));
-      final var httpClient = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(5)).build();
+              .filter(cr -> cr.getProviderDetails().getIssuerUri() != null)
+              .filter(cr -> cr.getProviderDetails().getUserInfoEndpoint().getUri() != null)
+              .collect(
+                  toMap(
+                      cr -> cr.getProviderDetails().getIssuerUri(),
+                      cr -> URI.create(cr.getProviderDetails().getUserInfoEndpoint().getUri()),
+                      (existing, replacement) -> existing));
+      if (userInfoUriByIssuer.isEmpty()) {
+        throw new IllegalStateException(
+            "UserInfo augmentation is enabled but no ClientRegistration exposes a userinfo "
+                + "endpoint. Check the IdP's OIDC discovery document and the userInfoEnabled "
+                + "flag.");
+      }
       return new CachingOidcClaimsProvider(
           oidc,
-          userInfoUri,
-          new OidcUserInfoClient(httpClient, Duration.ofSeconds(5)),
+          userInfoUriByIssuer,
+          new OidcUserInfoClient(oidcUserInfoHttpClient, Duration.ofSeconds(2)),
           meterRegistry);
     }
 
