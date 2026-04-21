@@ -13,11 +13,12 @@ import java.util.Objects;
 import org.jspecify.annotations.Nullable;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
-public record RoleEntity(
-    @Nullable Long roleKey, String roleId, @Nullable String name, @Nullable String description)
+public record RoleEntity(Long roleKey, String roleId, String name, @Nullable String description)
     implements Serializable {
 
   public RoleEntity {
+    Objects.requireNonNull(roleKey, "roleKey");
     Objects.requireNonNull(roleId, "roleId");
+    Objects.requireNonNull(name, "name");
   }
 }

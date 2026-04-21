@@ -855,7 +855,7 @@ public final class SearchQueryResponseMapper {
     return new RoleResult()
         .roleId(roleEntity.roleId())
         .description(roleEntity.description())
-        .name(requireNonNull(roleEntity.name(), "name"));
+        .name(roleEntity.name());
   }
 
   private static List<GroupResult> toGroups(final List<GroupEntity> groups) {
