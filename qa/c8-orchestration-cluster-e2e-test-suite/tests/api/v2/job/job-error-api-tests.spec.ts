@@ -44,7 +44,6 @@ test.describe('Job Error API Tests', () => {
 
   test('Throw Error for Job - success', async ({request}) => {
     const jobKey = await activateJobToObtainAValidJobKey(request, taskType);
-    
     await expect(async () => {
       const errorRes = await request.post(buildUrl(`/jobs/${jobKey}/error`), {
         headers: jsonHeaders(),
