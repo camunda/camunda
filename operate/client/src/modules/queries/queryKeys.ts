@@ -12,6 +12,7 @@ import type {
   GetIncidentProcessInstanceStatisticsByErrorRequestBody,
   GetProcessDefinitionInstanceStatisticsRequestBody,
   GetProcessDefinitionInstanceVersionStatisticsRequestBody,
+  GetProcessDefinitionStatisticsRequestBody,
   ProcessInstance,
   QueryAuditLogsRequestBody,
   QueryBatchOperationItemsRequestBody,
@@ -94,6 +95,10 @@ const queryKeys = {
       'processDefinitionStatistics',
       'runningInstancesCount',
     ],
+    get: (
+      processDefinitionKey: string | undefined,
+      payload: GetProcessDefinitionStatisticsRequestBody,
+    ) => ['processDefinitionStatistics', processDefinitionKey, payload],
   },
   incidents: {
     get: (incidentKey: string) => ['incident', incidentKey],
