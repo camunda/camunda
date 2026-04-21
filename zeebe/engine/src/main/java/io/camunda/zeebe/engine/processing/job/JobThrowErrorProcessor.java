@@ -155,31 +155,31 @@ public class JobThrowErrorProcessor implements TypedRecordProcessor<JobRecord> {
         limitString(command.getValue().getErrorMessage(), DEFAULT_MAX_ERROR_MESSAGE_SIZE));
     job.setVariables(command.getValue().getVariablesBuffer());
 
-    final var serviceTaskInstanceKey = job.getElementInstanceKey();
-    final var serviceTaskInstance = elementInstanceState.getInstance(serviceTaskInstanceKey);
+    final var elementInstanceKey = job.getElementInstanceKey();
+    final var elementInstance = elementInstanceState.getInstance(elementInstanceKey);
 
     final var errorCode = job.getErrorCodeBuffer();
     final var foundCatchEvent =
         stateAnalyzer.findErrorCatchEvent(
-            errorCode, serviceTaskInstance, Optional.of(job.getErrorMessageBuffer()));
+            errorCode, elementInstance, Optional.of(job.getErrorMessageBuffer()));
     this.foundCatchEvent = foundCatchEvent;
 
     if (foundCatchEvent.isLeft()) {
       job.setElementId(NO_CATCH_EVENT_FOUND);
       writeThrowErrorEvent(jobKey, job, command);
       raiseIncident(jobKey, job, foundCatchEvent.getLeft());
-    } else if (!serviceTaskInstanceIsActive(serviceTaskInstance)) {
+    } else if (!elementInstanceIsActive(elementInstance)) {
       final var errorMessage =
-          "Expected to find active service task, but was %s".formatted(serviceTaskInstance);
+          "Expected to find active element instance, but was %s".formatted(elementInstance);
       rejectionWriter.appendRejection(command, RejectionType.INVALID_STATE, errorMessage);
       responseWriter.writeRejectionOnCommand(command, RejectionType.INVALID_STATE, errorMessage);
     } else if (!eventScopeInstanceState.canTriggerEvent(
         foundCatchEvent.get().getElementInstance().getKey(),
         foundCatchEvent.get().getCatchEvent().getId())) {
-      final var elementInstance = foundCatchEvent.get().getElementInstance();
+      final var catchEventInstance = foundCatchEvent.get().getElementInstance();
       final var errorMessage =
           "Expected to find event scope that is accepting events, but was %s"
-              .formatted(elementInstance);
+              .formatted(catchEventInstance);
       rejectionWriter.appendRejection(command, RejectionType.INVALID_STATE, errorMessage);
       responseWriter.writeRejectionOnCommand(command, RejectionType.INVALID_STATE, errorMessage);
     } else {
@@ -188,8 +188,8 @@ public class JobThrowErrorProcessor implements TypedRecordProcessor<JobRecord> {
     }
   }
 
-  private boolean serviceTaskInstanceIsActive(final ElementInstance serviceTaskInstance) {
-    return serviceTaskInstance != null && serviceTaskInstance.isActive();
+  private boolean elementInstanceIsActive(final ElementInstance elementInstance) {
+    return elementInstance != null && elementInstance.isActive();
   }
 
   private void writeThrowErrorEvent(
