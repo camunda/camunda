@@ -64,6 +64,7 @@ import java.net.InetSocketAddress;
 import java.time.Duration;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ExecutorService;
@@ -125,7 +126,7 @@ public final class Gateway implements CloseableSilently {
         userServices,
         passwordEncoder,
         jwtDecoder,
-        null,
+        new NoopOidcClaimsProvider(),
         meterRegistry,
         VariableNameLengthValidator.DEFAULT_MAX_NAME_FIELD_LENGTH);
   }
@@ -151,7 +152,7 @@ public final class Gateway implements CloseableSilently {
         userServices,
         passwordEncoder,
         jwtDecoder,
-        null,
+        new NoopOidcClaimsProvider(),
         meterRegistry,
         VariableNameLengthValidator.DEFAULT_MAX_NAME_FIELD_LENGTH);
   }
@@ -178,7 +179,7 @@ public final class Gateway implements CloseableSilently {
     this.userServices = userServices;
     this.passwordEncoder = passwordEncoder;
     this.jwtDecoder = jwtDecoder;
-    this.oidcClaimsProvider = oidcClaimsProvider;
+    this.oidcClaimsProvider = Objects.requireNonNull(oidcClaimsProvider);
     this.meterRegistry = meterRegistry;
     this.maxVariableNameLength = maxVariableNameLength;
 
@@ -458,7 +459,7 @@ public final class Gateway implements CloseableSilently {
             case OIDC ->
                 new AuthenticationHandler.Oidc(
                     jwtDecoder,
-                    oidcClaimsProvider != null ? oidcClaimsProvider : new NoopOidcClaimsProvider(),
+                    oidcClaimsProvider,
                     securityConfiguration.getAuthentication().getOidc());
           };
       interceptors.add(
