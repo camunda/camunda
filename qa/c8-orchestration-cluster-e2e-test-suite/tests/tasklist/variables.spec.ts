@@ -174,28 +174,33 @@ test.describe('variables page', () => {
   });
 
   test('loads all variables via infinite scroll pagination', async ({
-    page,
     taskPanelPage,
     taskDetailsPage,
   }) => {
     await taskPanelPage.filterBy('Unassigned');
     await expect(async () => {
       await expect(
-        taskPanelPage.availableTasks.getByText('usertask_with_many_variables'),
+        taskPanelPage.availableTasks
+          .getByText('usertask_with_many_variables')
+          .first(),
       ).toBeVisible();
     }).toPass();
     await taskPanelPage.openTask('usertask_with_many_variables');
 
     await expect(
-      taskDetailsPage.variablesTable.getByRole('cell', {name: 'variable_0'}),
-    ).toBeVisible();
+      taskDetailsPage.variablesTable
 
-    const scrollContainer = page.getByTestId('variables-scroll-container');
-    await scrollContainer.evaluate((el) => {
-      el.scrollTop = el.scrollHeight;
-    });
+        .getByRole('cell', {
+          name: /^variable_\d+$/,
+        })
+        .first(),
+    ).toBeVisible({timeout: 30000});
 
+    const scrollContainer = taskDetailsPage.variablesTable.locator('..');
     await expect(async () => {
+      await scrollContainer.evaluate((el) => {
+        el.scrollTop = el.scrollHeight;
+      });
       await expect(
         taskDetailsPage.variablesTable.getByRole('cell', {name: 'variable_59'}),
       ).toBeVisible();

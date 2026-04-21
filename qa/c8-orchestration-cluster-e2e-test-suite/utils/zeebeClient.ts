@@ -24,6 +24,10 @@ const c8 = new Camunda8({
   ZEEBE_REST_ADDRESS: process.env.ZEEBE_REST_ADDRESS,
   ZEEBE_GRPC_ADDRESS:
     process.env.ZEEBE_GRPC_ADDRESS || 'grpc://localhost:26500',
+  // Zeebe server rejects keepalive pings sent without active RPC calls
+  // (permitKeepAliveWithoutCalls=false). Setting this to 0 aligns the client
+  // with the server's expectation and prevents ENHANCE_YOUR_CALM / excess pings errors.
+  GRPC_KEEPALIVE_PERMIT_WITHOUT_CALLS: 0,
 });
 
 function generateManyVariables(): Record<string, string> {
