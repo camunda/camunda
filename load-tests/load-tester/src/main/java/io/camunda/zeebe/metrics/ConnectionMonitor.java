@@ -61,9 +61,11 @@ public class ConnectionMonitor {
       } catch (final ClientStatusException e) {
         final var statusCode = e.getStatusCode();
         if (statusCode.equals(Code.UNAUTHENTICATED) || statusCode.equals(Code.PERMISSION_DENIED)) {
-          LOG.error(
+          // Fail fast through Spring's error path so @PreDestroy hooks run and tests get
+          // a diagnosable stack trace. In production an uncaught exception out of this
+          // thread still terminates the app via SpringApplication's default handling.
+          throw new IllegalStateException(
               "Failed to retrieve topology due to authentication error; check your config", e);
-          System.exit(1);
         }
         THROTTLED_LOGGER.warn("Failed to retrieve topology due to client exception: ", e);
         sleep();
