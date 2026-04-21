@@ -345,8 +345,13 @@ jobs:
 
       - name: Override spring client version for compatibility testing
         run: |
-          # Inject an explicit <version> on camunda-spring-boot-starter to override the parent-managed version
-          sed -i '/<artifactId>camunda-spring-boot-starter<\/artifactId>/a\      <version>${{ matrix.client }}<\/version>' qa/compatibility-test/pom.xml
+          # Inject an explicit <version> on all Camunda client-side dependencies to override
+          # the parent-managed SNAPSHOT version. This ensures the entire client stack (starter,
+          # process-test framework, and client library) is at the released version being tested,
+          # while the server (Docker image) runs the SNAPSHOT version.
+          for artifact in camunda-spring-boot-starter camunda-process-test-spring camunda-process-test-java camunda-client-java; do
+            sed -i "/<artifactId>${artifact}<\/artifactId>/a\\      <version>${{ matrix.client }}<\/version>" qa/compatibility-test/pom.xml
+          done
 
       - name: Determine tests to exclude
         id: test-exclusions
