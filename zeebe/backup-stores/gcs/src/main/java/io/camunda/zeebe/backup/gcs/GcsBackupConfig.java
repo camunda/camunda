@@ -17,16 +17,22 @@ public record GcsBackupConfig(
     String bucketName,
     String basePath,
     GcsConnectionConfig connection,
-    int maxConcurrentTransfers) {
+    int maxConcurrentTransfers,
+    int bufferSize) {
   public GcsBackupConfig(
       final String bucketName,
       final String basePath,
       final GcsConnectionConfig connection,
-      final int maxConcurrentTransfers) {
+      final int maxConcurrentTransfers,
+      final int bufferSize) {
     this.bucketName = requireBucketName(bucketName);
     this.basePath = sanitizeBasePath(basePath);
     this.connection = requireNonNull(connection);
     this.maxConcurrentTransfers = maxConcurrentTransfers;
+    if (bufferSize <= 0) {
+      throw new IllegalArgumentException("Expected bufferSize to be > 0, but got " + bufferSize);
+    }
+    this.bufferSize = bufferSize;
   }
 
   private static String requireBucketName(final String bucketName) {
@@ -67,6 +73,8 @@ public record GcsBackupConfig(
     private String basePath;
     private String host;
     private GcsConnectionConfig.Authentication auth;
+    // 2MiB matches the default used by the GCS library's Path-based upload
+    private int bufferSize = 2 * 1024 * 1024;
 
     /** Default parallelism for file transfers (uploads and downloads) using virtual threads */
     private int maxConcurrentTransfers = 50;
@@ -102,9 +110,18 @@ public record GcsBackupConfig(
       return this;
     }
 
+    public Builder withBufferSize(final int bufferSize) {
+      this.bufferSize = bufferSize;
+      return this;
+    }
+
     public GcsBackupConfig build() {
       return new GcsBackupConfig(
-          bucketName, basePath, new GcsConnectionConfig(host, auth), maxConcurrentTransfers);
+          bucketName,
+          basePath,
+          new GcsConnectionConfig(host, auth),
+          maxConcurrentTransfers,
+          bufferSize);
     }
   }
 }
