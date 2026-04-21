@@ -6,8 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {TableToolbar, TableBatchAction} from '@carbon/react';
-import {TableBatchActions} from './styled';
+import {TableToolbar, TableBatchAction, TableBatchActions} from '@carbon/react';
 import {TrashCan} from '@carbon/react/icons';
 import {observer} from 'mobx-react';
 import {decisionInstancesSelectionStore} from 'modules/stores/instancesSelection';

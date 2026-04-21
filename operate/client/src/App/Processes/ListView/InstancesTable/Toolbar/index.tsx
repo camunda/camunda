@@ -6,8 +6,12 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {TableToolbar, Modal, TableBatchAction} from '@carbon/react';
-import {TableBatchActions} from './styled';
+import {
+  TableToolbar,
+  Modal,
+  TableBatchAction,
+  TableBatchActions,
+} from '@carbon/react';
 import pluralSuffix from 'modules/utils/pluralSuffix';
 import {useState} from 'react';
 import {RetryFailed, Error, TrashCan} from '@carbon/react/icons';
