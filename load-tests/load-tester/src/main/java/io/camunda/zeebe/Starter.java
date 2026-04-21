@@ -325,7 +325,7 @@ public class Starter extends App {
   private CamundaClient createCamundaClient() {
     return newClientBuilder()
         .numJobWorkerExecutionThreads(0)
-        .maxHttpConnections(maxHttpConnections())
+        .maxHttpConnections(500 /*maxHttpConnections()*/)
         .build();
   }
 
