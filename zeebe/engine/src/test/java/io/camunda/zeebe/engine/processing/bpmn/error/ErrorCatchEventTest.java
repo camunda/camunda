@@ -13,6 +13,7 @@ import static org.assertj.core.api.Assertions.tuple;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
+import io.camunda.zeebe.model.bpmn.builder.AbstractThrowEventBuilder;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
@@ -37,7 +38,7 @@ public final class ErrorCatchEventTest {
 
   @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
 
-  private static final String TASK_ELEMENT_ID = "task";
+  private static final String ERROR_THROWING_ELEMENT_ID = "error-throwing-element";
   private static final String PROCESS_ID = "wf";
   private static final String JOB_TYPE = "test";
   private static final String ERROR_CODE = "ERROR";
@@ -62,7 +63,7 @@ public final class ErrorCatchEventTest {
         "boundary event on service task",
         Bpmn.createExecutableProcess(PROCESS_ID)
             .startEvent()
-            .serviceTask(TASK_ELEMENT_ID, t -> t.zeebeJobType(JOB_TYPE))
+            .serviceTask(ERROR_THROWING_ELEMENT_ID, t -> t.zeebeJobType(JOB_TYPE))
             .boundaryEvent("error-boundary-event", b -> b.error(ERROR_CODE))
             .endEvent()
             .done(),
@@ -77,7 +78,7 @@ public final class ErrorCatchEventTest {
                 s ->
                     s.embeddedSubProcess()
                         .startEvent()
-                        .serviceTask(TASK_ELEMENT_ID, t -> t.zeebeJobType(JOB_TYPE))
+                        .serviceTask(ERROR_THROWING_ELEMENT_ID, t -> t.zeebeJobType(JOB_TYPE))
                         .endEvent())
             .boundaryEvent("error-boundary-event", b -> b.error(ERROR_CODE))
             .endEvent()
@@ -94,7 +95,7 @@ public final class ErrorCatchEventTest {
                     s.multiInstance(m -> m.zeebeInputCollectionExpression("[1]"))
                         .embeddedSubProcess()
                         .startEvent()
-                        .serviceTask(TASK_ELEMENT_ID, t -> t.zeebeJobType(JOB_TYPE))
+                        .serviceTask(ERROR_THROWING_ELEMENT_ID, t -> t.zeebeJobType(JOB_TYPE))
                         .endEvent())
             .boundaryEvent("error-boundary-event", b -> b.error(ERROR_CODE))
             .endEvent()
@@ -106,7 +107,7 @@ public final class ErrorCatchEventTest {
         Bpmn.createExecutableProcess(PROCESS_ID)
             .startEvent()
             .serviceTask(
-                TASK_ELEMENT_ID,
+                ERROR_THROWING_ELEMENT_ID,
                 t ->
                     t.zeebeJobType(JOB_TYPE)
                         .multiInstance(m -> m.zeebeInputCollectionExpression("[1]")))
@@ -126,7 +127,7 @@ public final class ErrorCatchEventTest {
                         .interrupting(true)
                         .endEvent())
             .startEvent()
-            .serviceTask(TASK_ELEMENT_ID, t -> t.zeebeJobType(JOB_TYPE))
+            .serviceTask(ERROR_THROWING_ELEMENT_ID, t -> t.zeebeJobType(JOB_TYPE))
             .endEvent()
             .done(),
         "error-event-subprocess"
@@ -140,7 +141,7 @@ public final class ErrorCatchEventTest {
                 s ->
                     s.embeddedSubProcess()
                         .startEvent()
-                        .serviceTask(TASK_ELEMENT_ID, t -> t.zeebeJobType(JOB_TYPE))
+                        .serviceTask(ERROR_THROWING_ELEMENT_ID, t -> t.zeebeJobType(JOB_TYPE))
                         .boundaryEvent("error-boundary-event", b -> b.error(ERROR_CODE))
                         .endEvent())
             .boundaryEvent("error-boundary-event-on-subprocess", b -> b.error(ERROR_CODE))
@@ -155,7 +156,7 @@ public final class ErrorCatchEventTest {
                 "error-event-subprocess",
                 s -> s.startEvent().error(ERROR_CODE).interrupting(true).endEvent())
             .startEvent()
-            .serviceTask("task", t -> t.zeebeJobType(JOB_TYPE))
+            .serviceTask(ERROR_THROWING_ELEMENT_ID, t -> t.zeebeJobType(JOB_TYPE))
             .boundaryEvent("error-boundary-event")
             .error(ERROR_CODE)
             .endEvent()
@@ -178,10 +179,45 @@ public final class ErrorCatchEventTest {
                                     .interrupting(true)
                                     .endEvent())
                         .startEvent()
-                        .serviceTask("task", t -> t.zeebeJobType(JOB_TYPE))
+                        .serviceTask(ERROR_THROWING_ELEMENT_ID, t -> t.zeebeJobType(JOB_TYPE))
                         .endEvent())
             .boundaryEvent("error", b -> b.error(ERROR_CODE))
             .endEvent()
+            .done(),
+        "error-event-subprocess"
+      },
+      {
+        "boundary event on message intermediate throw event in subprocess",
+        Bpmn.createExecutableProcess(PROCESS_ID)
+            .startEvent()
+            .subProcess(
+                "subprocess",
+                s ->
+                    s.embeddedSubProcess()
+                        .startEvent()
+                        .intermediateThrowEvent(
+                            ERROR_THROWING_ELEMENT_ID,
+                            AbstractThrowEventBuilder::messageEventDefinition)
+                        .zeebeJobType(JOB_TYPE)
+                        .endEvent())
+            .boundaryEvent("error-boundary", b -> b.error(ERROR_CODE))
+            .endEvent()
+            .done(),
+        "error-boundary"
+      },
+      {
+        "error event subprocess on message end event",
+        Bpmn.createExecutableProcess(PROCESS_ID)
+            .eventSubProcess(
+                "error-event-subprocess",
+                s ->
+                    s.startEvent("error-start-event")
+                        .error(ERROR_CODE)
+                        .interrupting(true)
+                        .endEvent())
+            .startEvent()
+            .endEvent(ERROR_THROWING_ELEMENT_ID, AbstractThrowEventBuilder::messageEventDefinition)
+            .zeebeJobType(JOB_TYPE)
             .done(),
         "error-event-subprocess"
       },
@@ -210,8 +246,8 @@ public final class ErrorCatchEventTest {
                 .limitToProcessInstanceCompleted())
         .extracting(r -> r.getValue().getElementId(), Record::getIntent)
         .containsSubsequence(
-            tuple(TASK_ELEMENT_ID, ProcessInstanceIntent.ELEMENT_TERMINATING),
-            tuple(TASK_ELEMENT_ID, ProcessInstanceIntent.ELEMENT_TERMINATED),
+            tuple(ERROR_THROWING_ELEMENT_ID, ProcessInstanceIntent.ELEMENT_TERMINATING),
+            tuple(ERROR_THROWING_ELEMENT_ID, ProcessInstanceIntent.ELEMENT_TERMINATED),
             tuple(expectedActivatedElement, ProcessInstanceIntent.ELEMENT_ACTIVATING),
             tuple(expectedActivatedElement, ProcessInstanceIntent.ELEMENT_COMPLETED),
             tuple(PROCESS_ID, ProcessInstanceIntent.ELEMENT_COMPLETED));
