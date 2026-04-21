@@ -41,7 +41,11 @@ jobs:
     timeout-minutes: 5
     permissions: {}
     outputs:
-      sanitized-name: c8-smoke-${{ steps.sanitize.outputs.branch_name }}
+      # Namespace is unique per run (run_id suffix) so a canceled run's lingering Helm/kubectl
+      # operations cannot stomp on the namespace of the next run that cancel-in-progress starts.
+      # Total length: "c8-smoke-" (9) + branch (≤30) + "-" (1) + run_id (~11) = ≤51, well under the
+      # 63-char DNS-1123 namespace limit.
+      sanitized-name: c8-smoke-${{ steps.sanitize.outputs.branch_name }}-${{ github.run_id }}
     steps:
       - name: Checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
@@ -49,8 +53,8 @@ jobs:
         uses: camunda/infra-global-github-actions/sanitize-branch-name@main
         with:
           branch: ${{ github.ref_name }}
-          # reduced to account for smoke-load-test prefix "c8-smoke-" and potential suffixes for uniqueness
-          max_length: 40
+          # reduced to account for "c8-smoke-" prefix (9) and "-<run_id>" suffix (~12)
+          max_length: 30
       - name: Observe build status
         if: always()
         continue-on-error: true
