@@ -17,11 +17,14 @@ import java.util.stream.IntStream;
 /**
  * Generates variable name→value pairs for one synthetic process instance.
  *
- * <p>Three categories are emitted:
+ * <p>Four categories are emitted, covering every Optimize variable type both with and without the
+ * {@code REPORTING_PROCESS_} prefix:
  *
  * <ul>
- *   <li>Business variables — stable string sentinels keyed by instance key
- *   <li>Core {@code REPORTING_PROCESS_*} metrics — always present, randomly valued
+ *   <li>Business string variables — stable string sentinels keyed by instance key
+ *   <li>Business typed variables — one Integer, one Double, one Boolean (no prefix)
+ *   <li>Core {@code REPORTING_PROCESS_*} metrics — always present, randomly valued (numeric + one
+ *       String so that every type has a prefixed representative)
  *   <li>Optional {@code REPORTING_PROCESS_*} metrics — each included with 60 % probability
  * </ul>
  *
@@ -72,6 +75,7 @@ class VariableCatalogue {
   List<Map.Entry<String, String>> generate(final long instanceKey) {
     final List<Map.Entry<String, String>> vars = new ArrayList<>();
     vars.addAll(businessVars(instanceKey));
+    vars.addAll(businessTypedVars());
     vars.addAll(coreReportingVars());
     vars.addAll(optionalReportingVars());
     return vars;
@@ -83,6 +87,22 @@ class VariableCatalogue {
         .collect(Collectors.toList());
   }
 
+  /**
+   * Non-prefixed typed variables — one per non-String type so that the Optimize variable view
+   * (which requires at least one numeric variable) is usable on this process definition.
+   *
+   * <p>Values are bare JSON (no quotes) so Optimize infers the correct type from the raw value.
+   */
+  private List<Map.Entry<String, String>> businessTypedVars() {
+    return List.of(
+        Map.entry("score", String.valueOf(round2(rng.nextDouble() * 100))), // Double
+        Map.entry("itemCount", String.valueOf(rng.nextInt(500))), // Integer
+        Map.entry("approved", String.valueOf(rng.nextBoolean()))); // Boolean
+  }
+
+  private static final List<String> PROCESS_LABELS =
+      List.of("\"standard\"", "\"express\"", "\"bulk\"", "\"priority\"");
+
   private List<Map.Entry<String, String>> coreReportingVars() {
     final double baselineCost = round2(400 + rng.nextDouble() * 1_600);
     final double llmCost = round2(20 + rng.nextDouble() * 280);
@@ -91,6 +111,10 @@ class VariableCatalogue {
     final long tokenUsage = 1_000L + (long) (rng.nextDouble() * 49_000);
 
     return List.of(
+        // String — ensures every type has a REPORTING_PROCESS_ representative
+        Map.entry(
+            "REPORTING_PROCESS_processLabel",
+            PROCESS_LABELS.get(rng.nextInt(PROCESS_LABELS.size()))),
         Map.entry("REPORTING_PROCESS_baselineCost", String.valueOf(baselineCost)),
         Map.entry("REPORTING_PROCESS_llmCost", String.valueOf(llmCost)),
         Map.entry("REPORTING_PROCESS_automationCost", String.valueOf(automationCost)),
