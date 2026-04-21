@@ -51,7 +51,6 @@ class StarterWorkerIT {
 
   @Container
   static final CamundaContainer CAMUNDA = CamundaContainerProvider.createCamundaContainer();
-  private static final Logger LOG = LoggerFactory.getLogger(StarterWorkerIT.class);
 
   @Autowired private ZeebeClient client;
 
