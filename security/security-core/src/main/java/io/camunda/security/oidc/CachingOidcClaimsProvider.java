@@ -175,10 +175,20 @@ public class CachingOidcClaimsProvider implements OidcClaimsProvider {
   }
 
   private static Instant tokenExpiry(final Map<String, Object> jwtClaims) {
+    // Spring's NimbusJwtDecoder + MappedJwtClaimSetConverter converts 'exp' to java.time.Instant,
+    // so that branch must come first. The Number branch covers test fixtures and decoders that
+    // surface the raw epoch-seconds value.
     final Object exp = jwtClaims.get("exp");
-    if (exp instanceof Number n) {
+    if (exp instanceof final Instant i) {
+      return i;
+    }
+    if (exp instanceof final Number n) {
       return Instant.ofEpochSecond(n.longValue());
     }
+    LOG.warn(
+        "JWT 'exp' claim is neither Instant nor Number (was {}); "
+            + "falling back to 5-minute cache TTL for this token",
+        exp == null ? "null" : exp.getClass().getSimpleName());
     return Instant.now().plus(Duration.ofMinutes(5));
   }
 
