@@ -122,6 +122,12 @@ public class AnnotationUtil {
     return result;
   }
 
+  public static List<ParameterInfo> getDocumentParameters(final MethodInfo methodInfo) {
+    final List<ParameterInfo> result = new ArrayList<>();
+    result.addAll(methodInfo.getParametersFilteredByAnnotation(Document.class));
+    return result;
+  }
+
   public static List<ParameterInfo> getVariablesAsTypeParameters(final MethodInfo methodInfo) {
     final List<ParameterInfo> result = new ArrayList<>();
     result.addAll(methodInfo.getParametersFilteredByAnnotation(VariablesAsType.class));
@@ -368,6 +374,13 @@ public class AnnotationUtil {
             .filter(Optional::isPresent)
             .map(Optional::get)
             .map(VariableValue::getName)
+            .toList());
+    result.addAll(
+        getDocumentParameters(methodInfo).stream()
+            .map(AnnotationUtil::getDocumentValue)
+            .filter(Optional::isPresent)
+            .map(Optional::get)
+            .map(DocumentValue::getName)
             .toList());
     return result;
   }
