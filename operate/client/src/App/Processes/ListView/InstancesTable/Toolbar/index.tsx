@@ -26,7 +26,7 @@ import {tracking} from 'modules/tracking';
 import {handleOperationError} from 'modules/utils/notifications';
 import {
   useBatchOperationMutationRequestBody,
-  useDeleteBatchOperationMutationRequestBody,
+  useDeleteProcessInstancesBatchOperationMutationRequestBody,
 } from 'modules/hooks/useBatchOperationMutationRequestBody';
 import {useBatchOperationSuccessNotification} from 'modules/hooks/useBatchOperationSuccessNotification';
 import {processInstancesSelectionStore} from 'modules/stores/instancesSelection';
@@ -62,7 +62,7 @@ const Toolbar: React.FC<Props> = observer(({selectedInstancesCount}) => {
     useBatchOperationMutationRequestBody();
 
   const deleteBatchOperationMutationRequestBody =
-    useDeleteBatchOperationMutationRequestBody();
+    useDeleteProcessInstancesBatchOperationMutationRequestBody();
 
   const cancelMutation = useCancelProcessInstancesBatchOperation({
     onSuccess: ({batchOperationKey, batchOperationType}) => {
