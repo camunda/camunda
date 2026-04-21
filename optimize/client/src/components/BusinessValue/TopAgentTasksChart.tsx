@@ -11,6 +11,7 @@ import type {TooltipItem} from 'chart.js';
 
 // @ts-expect-error no types available
 import ChartRenderer from 'components/ReportRenderer/visualizations/Chart/ChartRenderer';
+import {t} from 'translation';
 
 import type {AgentTask} from './types';
 
@@ -20,63 +21,63 @@ interface TopAgentTasksChartProps {
   agentTasks: AgentTask[];
 }
 
-export default function TopAgentTasksChart({agentTasks}: TopAgentTasksChartProps) {
-  const config = useMemo(
-    () => ({
-      type: 'bar' as const,
-      data: {
-        labels: agentTasks.map((t) => t.agentName),
-        datasets: [
-          {
-            label: 'Cost (€)',
-            data: agentTasks.map((t) => t.totalCost),
-            backgroundColor: agentTasks.map((_, i) => BAR_COLORS[i % BAR_COLORS.length]),
-            borderRadius: 4,
-            maxBarThickness: 40,
-          },
-        ],
-      },
-      options: {
-        indexAxis: 'y' as const,
-        responsive: true,
-        maintainAspectRatio: false,
-        scales: {
-          x: {
-            beginAtZero: true,
-            ticks: {
-              callback: (value: string | number) => {
-                const num = Number(value);
-                return num >= 1000 ? `${(num / 1000).toFixed(0)}k` : String(num);
-              },
+function buildConfig(agentTasks: AgentTask[]) {
+  return {
+    type: 'bar' as const,
+    data: {
+      labels: agentTasks.map((task) => task.agentName),
+      datasets: [
+        {
+          label: t('businessValue.chart.cost').toString(),
+          data: agentTasks.map((task) => task.totalCost),
+          backgroundColor: agentTasks.map((_, i) => BAR_COLORS[i % BAR_COLORS.length]),
+          borderRadius: 4,
+          maxBarThickness: 40,
+        },
+      ],
+    },
+    options: {
+      indexAxis: 'y' as const,
+      responsive: true,
+      maintainAspectRatio: false,
+      scales: {
+        x: {
+          beginAtZero: true,
+          ticks: {
+            callback: (value: string | number) => {
+              const num = Number(value);
+              return num >= 1000 ? `${(num / 1000).toFixed(0)}k` : String(num);
             },
           },
-          y: {
-            grid: {display: false},
-          },
         },
-        plugins: {
-          legend: {display: false},
-          datalabels: {display: false},
-          tooltip: {
-            callbacks: {
-              label: (context: TooltipItem<'bar'>) => {
-                const task = agentTasks[context.dataIndex];
-                if (!task) {
-                  return '';
-                }
-                return [
-                  `Cost: €${task.totalCost.toLocaleString()}`,
-                  `Invocations: ${task.invocationCount.toLocaleString()}`,
-                  `Tokens: ${(task.tokenUsage / 1_000_000).toFixed(1)}M`,
-                ];
-              },
+        y: {
+          grid: {display: false},
+        },
+      },
+      plugins: {
+        legend: {display: false},
+        datalabels: {display: false},
+        tooltip: {
+          callbacks: {
+            label: (context: TooltipItem<'bar'>) => {
+              const task = agentTasks[context.dataIndex];
+              if (!task) {
+                return '';
+              }
+              return [
+                `${t('businessValue.chart.tooltip.cost')}: €${task.totalCost.toLocaleString()}`,
+                `${t('businessValue.chart.tooltip.invocations')}: ${task.invocationCount.toLocaleString()}`,
+                `${t('businessValue.chart.tooltip.tokens')}: ${(task.tokenUsage / 1_000_000).toFixed(1)}M`,
+              ];
             },
           },
         },
       },
-    }),
-    [agentTasks]
-  );
+    },
+  };
+}
 
+export default function TopAgentTasksChart({agentTasks}: TopAgentTasksChartProps) {
+  const config = useMemo(() => buildConfig(agentTasks), [agentTasks]);
   return <ChartRenderer config={config} />;
 }

@@ -13,6 +13,7 @@
     "appSwitcher": "App Switcher",
     "dashboards": "Dashboards",
     "collections": "Sammlungen",
+    "businessValue": "Geschäftswert",
     "apps": {
       "zeebe": "Zeebe",
       "operate": "Operate",
@@ -1576,6 +1577,60 @@
       "p75Duration": "75. Perzentil der Dauer",
       "instanceTrends": "Wie oft läuft dieser Prozess?",
       "flownodeFrequency": "Wie oft laufen die einzelnen Schritte dieses Prozesses?"
+    }
+  },
+  "businessValue": {
+    "pageTitle": "Geschäftswert-Dashboard",
+    "kpi": {
+      "activeProcesses": "Aktive Prozesse",
+      "instancesCompleted": "Abgeschlossene Instanzen",
+      "valueCreated": "Erzeugter Wert",
+      "totalCost": "Gesamtkosten",
+      "automationRate": "Automatisierungsrate",
+      "platformRoi": "Plattform-ROI"
+    },
+    "tiles": {
+      "automationDistribution": "Automatisierungsverteilung",
+      "valueTrend": "Automatisierungswert-Trend",
+      "topProcesses": "Top-Prozesse nach Geschäftswert",
+      "aiUsageCost": "KI-Nutzung & Kosten"
+    },
+    "sections": {
+      "valueComparison": "Wertvergleich",
+      "costBreakdown": "Kostenaufschlüsselung",
+      "usageCostByModel": "Nutzungskosten nach Modell",
+      "topAgentTasksByCost": "Top-Agent-Aufgaben nach Kosten"
+    },
+    "aiMetrics": {
+      "totalLlmCost": "LLM-Gesamtkosten",
+      "aiAgentTasks": "KI-Agent-Aufgaben",
+      "aiShareOfCost": "KI-Kostenanteil",
+      "ofTotalCost": "der Gesamtkosten",
+      "valuePerAiDollar": "Wert pro KI-Dollar",
+      "returnOnAiSpend": "Rendite der KI-Ausgaben"
+    },
+    "table": {
+      "process": "Prozess",
+      "valueCreated": "Erzeugter Wert",
+      "costSaved": "Eingesparte Kosten",
+      "llmCost": "LLM-Kosten",
+      "instances": "Instanzen"
+    },
+    "chart": {
+      "humanTasks": "Manuelle Aufgaben",
+      "aiAgentTasks": "KI-Agent-Aufgaben",
+      "systemAutomation": "Systemautomatisierung",
+      "valueCreated": "Erzeugter Wert",
+      "baselineCostSaved": "Eingesparte Basiskosten",
+      "llmCost": "LLM-Kosten",
+      "cost": "Kosten",
+      "tooltip": {
+        "cost": "Kosten",
+        "invocations": "Aufrufe",
+        "tokens": "Tokens",
+        "instances": "Instanzen",
+        "valuePerInstance": "Wert pro Instanz"
+      }
     }
   }
 }

@@ -29,7 +29,7 @@ import './Header.scss';
 
 const orderedApps = ['console', 'modeler', 'tasklist', 'operate', 'optimize'];
 
-export default function Header({noActions}: {noActions?: boolean}) {
+export default function Header({noActions}: { noActions?: boolean }) {
   const [userToken, setUserToken] = useState<string | null>(null);
   const location = useLocation();
   const {mightFail} = useErrorHandling();
@@ -101,7 +101,7 @@ export default function Header({noActions}: {noActions?: boolean}) {
   );
 }
 
-function createAppProps(location: {pathname: string}): C3NavigationProps['app'] {
+function createAppProps(location: { pathname: string }): C3NavigationProps['app'] {
   return {
     name: t('appName').toString(),
     ariaLabel: t('appFullName').toString(),
@@ -156,6 +156,12 @@ function createNavBarProps(
       label: t('navigation.analysis').toString(),
       routeProps: {to: '/analysis'},
       isCurrentPage: isCurrentPage(['/analysis/', '/analysis/*'], pathname),
+    },
+    {
+      key: 'businessValue',
+      label: t('navigation.businessValue').toString(),
+      routeProps: {to: '/business-value'},
+      isCurrentPage: isCurrentPage(['/business-value/', '/business-value/*'], pathname),
     },
   ];
 
@@ -246,12 +252,12 @@ type NavbarWrapperProps = Omit<
 };
 
 function NavbarWrapper({
-  isCloud,
-  userToken,
-  organizationId,
-  children,
-  clusterId,
-}: NavbarWrapperProps) {
+                         isCloud,
+                         userToken,
+                         organizationId,
+                         children,
+                         clusterId,
+                       }: NavbarWrapperProps) {
   if (isCloud && userToken && organizationId && clusterId) {
     return (
       <C3UserConfigurationProvider

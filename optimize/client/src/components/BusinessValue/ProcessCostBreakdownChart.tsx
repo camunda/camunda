@@ -11,6 +11,7 @@ import type {TooltipItem} from 'chart.js';
 
 // @ts-expect-error no types available
 import ChartRenderer from 'components/ReportRenderer/visualizations/Chart/ChartRenderer';
+import {t} from 'translation';
 
 import type {TopProcess} from './types';
 
@@ -18,70 +19,70 @@ interface ProcessCostBreakdownChartProps {
   processes: TopProcess[];
 }
 
-export default function ProcessCostBreakdownChart({processes}: ProcessCostBreakdownChartProps) {
-  const config = useMemo(
-    () => ({
-      type: 'bar' as const,
-      data: {
-        labels: processes.map((p) => p.processLabel),
-        datasets: [
-          {
-            label: 'LLM Cost',
-            data: processes.map((p) => p.llmCost),
-            backgroundColor: '#ffbc72',
-            borderRadius: 4,
-            maxBarThickness: 60,
-          },
-          {
-            label: 'Baseline Cost Saved',
-            data: processes.map((p) => p.baselineCostSaved),
-            backgroundColor: '#aec7e9',
-            borderRadius: 4,
-            maxBarThickness: 60,
-          },
-        ],
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        scales: {
-          x: {
-            stacked: true,
-            grid: {display: false},
-          },
-          y: {
-            beginAtZero: true,
-            stacked: true,
-            ticks: {
-              callback: (value: string | number) => {
-                const num = Number(value);
-                return num >= 1000 ? `${(num / 1000).toFixed(0)}k` : String(num);
-              },
-            },
-          },
+function buildConfig(processes: TopProcess[]) {
+  return {
+    type: 'bar' as const,
+    data: {
+      labels: processes.map((p) => p.processLabel),
+      datasets: [
+        {
+          label: t('businessValue.chart.llmCost').toString(),
+          data: processes.map((p) => p.llmCost),
+          backgroundColor: '#ffbc72',
+          borderRadius: 4,
+          maxBarThickness: 60,
         },
-        plugins: {
-          legend: {
-            position: 'bottom' as const,
-            labels: {
-              usePointStyle: true,
-              padding: 16,
-            },
-          },
-          datalabels: {display: false},
-          tooltip: {
-            callbacks: {
-              label: (context: TooltipItem<'bar'>) => {
-                const value = context.parsed.y;
-                return `${context.dataset.label}: €${value.toLocaleString()}`;
-              },
+        {
+          label: t('businessValue.chart.baselineCostSaved').toString(),
+          data: processes.map((p) => p.baselineCostSaved),
+          backgroundColor: '#aec7e9',
+          borderRadius: 4,
+          maxBarThickness: 60,
+        },
+      ],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      scales: {
+        x: {
+          stacked: true,
+          grid: {display: false},
+        },
+        y: {
+          beginAtZero: true,
+          stacked: true,
+          ticks: {
+            callback: (value: string | number) => {
+              const num = Number(value);
+              return num >= 1000 ? `${(num / 1000).toFixed(0)}k` : String(num);
             },
           },
         },
       },
-    }),
-    [processes]
-  );
+      plugins: {
+        legend: {
+          position: 'bottom' as const,
+          labels: {
+            usePointStyle: true,
+            padding: 16,
+          },
+        },
+        datalabels: {display: false},
+        tooltip: {
+          callbacks: {
+            label: (context: TooltipItem<'bar'>) => {
+              const value = context.parsed.y;
+              return `${context.dataset.label}: €${value.toLocaleString()}`;
+            },
+          },
+        },
+      },
+    },
+  };
+}
 
+export default function ProcessCostBreakdownChart({processes}: ProcessCostBreakdownChartProps) {
+  const config = useMemo(() => buildConfig(processes), [processes]);
   return <ChartRenderer config={config} />;
 }
