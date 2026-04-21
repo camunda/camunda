@@ -165,7 +165,7 @@ const Toolbar: React.FC<Props> = observer(({selectedInstancesCount}) => {
         <TableBatchActions
           shouldShowBatchActions={selectedInstancesCount > 0}
           totalSelected={selectedInstancesCount}
-          onCancel={processInstancesSelectionStore.reset}
+          onCancel={processInstancesSelectionStore.resetState}
           translateWithId={(id) => {
             switch (id) {
               case 'carbon.table.batch.cancel':
