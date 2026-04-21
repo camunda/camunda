@@ -16,6 +16,7 @@ import {
   Report,
   Dashboard,
   Analysis,
+  BusinessValue,
   Sharing,
   Logout,
   Processes,
@@ -92,6 +93,7 @@ export default function App({error}) {
                         render={renderEntity}
                       />
                       <PrivateRoute exact path="/collections" component={Home} />
+                      <PrivateRoute exact path="/business-value" component={BusinessValue} />
                       <Route path="/logout" component={Logout} />
                       <PrivateRoute path="*" component={ErrorPage} />
                     </Switch>
