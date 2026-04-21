@@ -495,7 +495,7 @@ class UserTaskSearchIT {
   }
 
   @Test
-  public void shouldRetrieveTaskByBpmnDefinitionId() {
+  public void shouldRetrieveTaskByBpmnProcessId() {
     final var result =
         camundaClient
             .newUserTaskSearchRequest()
@@ -504,50 +504,6 @@ class UserTaskSearchIT {
             .join();
     assertThat(result.items()).hasSize(2);
     result.items().forEach(item -> assertThat(item.getBpmnProcessId()).isEqualTo("process"));
-  }
-
-  @Test
-  void shouldRetrieveTaskByProcessDefinitionKey() {
-    // given - use a process with exactly one task to get an unambiguous processDefinitionKey
-    final var taskSearch =
-        camundaClient
-            .newUserTaskSearchRequest()
-            .filter(f -> f.bpmnProcessId("process-2"))
-            .send()
-            .join();
-    assertThat(taskSearch.items()).hasSize(1);
-    final var processDefinitionKey = taskSearch.items().getFirst().getProcessDefinitionKey();
-
-    // when
-    final var result =
-        camundaClient
-            .newUserTaskSearchRequest()
-            .filter(f -> f.processDefinitionKey(processDefinitionKey))
-            .send()
-            .join();
-
-    // then
-    assertThat(result.items()).hasSize(1);
-    result
-        .items()
-        .forEach(
-            item -> assertThat(item.getProcessDefinitionKey()).isEqualTo(processDefinitionKey));
-  }
-
-  @Test
-  void shouldRetrieveTaskByProcessInstanceKey() {
-    // when - childProcessInstanceKey has exactly one user task
-    final var result =
-        camundaClient
-            .newUserTaskSearchRequest()
-            .filter(f -> f.processInstanceKey(childProcessInstanceKey))
-            .send()
-            .join();
-
-    // then
-    assertThat(result.items()).hasSize(1);
-    assertThat(result.items().getFirst().getProcessInstanceKey())
-        .isEqualTo(childProcessInstanceKey);
   }
 
   @Test
@@ -582,6 +538,117 @@ class UserTaskSearchIT {
     // then
     assertThat(result.items()).hasSize(2);
     result.items().forEach(item -> assertThat(item.getBpmnProcessId()).startsWith("process-"));
+  }
+
+  @Test
+  void shouldRetrieveTaskByProcessDefinitionKey() {
+    // given - use a process with exactly one task to get an unambiguous processDefinitionKey
+    final var taskSearch =
+        camundaClient
+            .newUserTaskSearchRequest()
+            .filter(f -> f.bpmnProcessId("process-2"))
+            .send()
+            .join();
+    assertThat(taskSearch.items()).hasSize(1);
+    final var processDefinitionKey = taskSearch.items().getFirst().getProcessDefinitionKey();
+
+    // when
+    final var result =
+        camundaClient
+            .newUserTaskSearchRequest()
+            .filter(f -> f.processDefinitionKey(processDefinitionKey))
+            .send()
+            .join();
+
+    // then
+    assertThat(result.items()).hasSize(1);
+    result
+        .items()
+        .forEach(
+            item -> assertThat(item.getProcessDefinitionKey()).isEqualTo(processDefinitionKey));
+  }
+
+  @Test
+  void shouldRetrieveTaskByProcessDefinitionKeyIn() {
+    // given - "process-2" and "process-3" each have exactly one task
+    final var key2 =
+        camundaClient
+            .newUserTaskSearchRequest()
+            .filter(f -> f.bpmnProcessId("process-2"))
+            .send()
+            .join()
+            .items()
+            .getFirst()
+            .getProcessDefinitionKey();
+    final var key3 =
+        camundaClient
+            .newUserTaskSearchRequest()
+            .filter(f -> f.bpmnProcessId("process-3"))
+            .send()
+            .join()
+            .items()
+            .getFirst()
+            .getProcessDefinitionKey();
+
+    // when
+    final var result =
+        camundaClient
+            .newUserTaskSearchRequest()
+            .filter(f -> f.processDefinitionKey(b -> b.in(key2, key3)))
+            .send()
+            .join();
+
+    // then
+    assertThat(result.items()).hasSize(2);
+    result.items().forEach(item -> assertThat(item.getProcessDefinitionKey()).isIn(key2, key3));
+  }
+
+  @Test
+  void shouldRetrieveTaskByProcessInstanceKey() {
+    // when - childProcessInstanceKey has exactly one user task
+    final var result =
+        camundaClient
+            .newUserTaskSearchRequest()
+            .filter(f -> f.processInstanceKey(childProcessInstanceKey))
+            .send()
+            .join();
+
+    // then
+    assertThat(result.items()).hasSize(1);
+    assertThat(result.items().getFirst().getProcessInstanceKey())
+        .isEqualTo(childProcessInstanceKey);
+  }
+
+  @Test
+  void shouldRetrieveTaskByProcessInstanceKeyIn() {
+    // given - "process-2" has exactly one task; childProcessInstanceKey also has exactly one task
+    final var process2InstanceKey =
+        camundaClient
+            .newUserTaskSearchRequest()
+            .filter(f -> f.bpmnProcessId("process-2"))
+            .send()
+            .join()
+            .items()
+            .getFirst()
+            .getProcessInstanceKey();
+
+    // when
+    final var result =
+        camundaClient
+            .newUserTaskSearchRequest()
+            .filter(
+                f -> f.processInstanceKey(b -> b.in(childProcessInstanceKey, process2InstanceKey)))
+            .send()
+            .join();
+
+    // then
+    assertThat(result.items()).hasSize(2);
+    result
+        .items()
+        .forEach(
+            item ->
+                assertThat(item.getProcessInstanceKey())
+                    .isIn(childProcessInstanceKey, process2InstanceKey));
   }
 
   @Test
