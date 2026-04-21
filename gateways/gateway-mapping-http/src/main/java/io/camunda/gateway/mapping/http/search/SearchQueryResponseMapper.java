@@ -1749,8 +1749,7 @@ public final class SearchQueryResponseMapper {
             entity.eventTypes().stream().map(GlobalTaskListenerEventTypeEnum::fromValue).toList())
         .afterNonGlobal(entity.afterNonGlobal())
         .priority(entity.priority())
-        .source(
-            GlobalListenerSourceEnum.fromValue(requireNonNull(entity.source(), "source").name()));
+        .source(GlobalListenerSourceEnum.fromValue(entity.source().name()));
   }
 
   private static @Nullable String emptyToNull(final @Nullable String value) {

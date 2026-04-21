@@ -19,15 +19,19 @@ public record GlobalListenerEntity(
     String listenerId,
     String type,
     List<String> eventTypes,
-    @Nullable Integer retries,
-    @Nullable Boolean afterNonGlobal,
-    @Nullable Integer priority,
-    @Nullable GlobalListenerSource source,
+    Integer retries,
+    Boolean afterNonGlobal,
+    Integer priority,
+    GlobalListenerSource source,
     @Nullable GlobalListenerType listenerType) {
   public GlobalListenerEntity {
     Objects.requireNonNull(id, "id");
     Objects.requireNonNull(listenerId, "listenerId");
     Objects.requireNonNull(type, "type");
+    Objects.requireNonNull(retries, "retries");
+    Objects.requireNonNull(afterNonGlobal, "afterNonGlobal");
+    Objects.requireNonNull(priority, "priority");
+    Objects.requireNonNull(source, "source");
     // Mutable collections are required: MyBatis hydrates collection-mapped fields (e.g. from a
     // <collection> result map or a LEFT JOIN) by calling .add() on the existing instance.
     // Immutable defaults (e.g. List.of()) would cause UnsupportedOperationException at runtime.
