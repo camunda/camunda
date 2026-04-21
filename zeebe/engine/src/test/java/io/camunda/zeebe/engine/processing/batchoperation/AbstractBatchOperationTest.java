@@ -395,7 +395,14 @@ abstract class AbstractBatchOperationTest {
     return new DecisionInstanceEntity.Builder()
         .decisionInstanceId(itemKey + "-1")
         .decisionInstanceKey(itemKey)
+        .state(DecisionInstanceEntity.DecisionInstanceState.EVALUATED)
+        .evaluationDate(java.time.OffsetDateTime.now())
         .processInstanceKey(itemKey)
+        .decisionDefinitionId("fake-decision-def-id")
+        .decisionDefinitionKey(-1L)
+        .decisionDefinitionName("Fake Decision")
+        .decisionDefinitionType(DecisionInstanceEntity.DecisionDefinitionType.DECISION_TABLE)
+        .result("{}")
         .tenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER)
         .build();
   }

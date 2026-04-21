@@ -1570,7 +1570,14 @@ public class ResourceDeletionTest {
     return new DecisionInstanceEntity.Builder()
         .decisionInstanceId(decisionInstanceKey + "-1")
         .decisionInstanceKey(decisionInstanceKey)
+        .state(DecisionInstanceEntity.DecisionInstanceState.EVALUATED)
+        .evaluationDate(java.time.OffsetDateTime.now())
         .processInstanceKey(decisionInstanceKey)
+        .decisionDefinitionId("fake-decision-def-id")
+        .decisionDefinitionKey(-1L)
+        .decisionDefinitionName("Fake Decision")
+        .decisionDefinitionType(DecisionInstanceEntity.DecisionDefinitionType.DECISION_TABLE)
+        .result("{}")
         .tenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER)
         .build();
   }

@@ -1213,66 +1213,50 @@ public final class SearchQueryResponseMapper {
 
   public static DecisionInstanceResult toDecisionInstance(final DecisionInstanceEntity entity) {
     return new DecisionInstanceResult()
-        .decisionEvaluationKey(
-            requireNonNull(
-                keyToStringOrNull(entity.decisionInstanceKey()), "decisionEvaluationKey"))
+        .decisionEvaluationKey(keyToString(entity.decisionInstanceKey()))
         .decisionEvaluationInstanceKey(entity.decisionInstanceId())
-        .state(requireNonNull(toDecisionInstanceStateEnum(entity.state()), "state"))
+        .state(toDecisionInstanceStateEnum(entity.state()))
         .evaluationDate(requireNonNull(formatDate(entity.evaluationDate()), "evaluationDate"))
         .evaluationFailure(entity.evaluationFailure())
         .processDefinitionKey(keyToStringOrNull(entity.processDefinitionKey()))
         .processInstanceKey(keyToStringOrNull(entity.processInstanceKey()))
         .rootProcessInstanceKey(keyToStringOrNull(entity.rootProcessInstanceKey()))
         .elementInstanceKey(keyToStringOrNull(entity.flowNodeInstanceKey()))
-        .decisionDefinitionKey(
-            requireNonNull(
-                keyToStringOrNull(entity.decisionDefinitionKey()), "decisionDefinitionKey"))
-        .decisionDefinitionId(requireNonNull(entity.decisionDefinitionId(), "decisionDefinitionId"))
-        .decisionDefinitionName(
-            requireNonNull(entity.decisionDefinitionName(), "decisionDefinitionName"))
+        .decisionDefinitionKey(keyToString(entity.decisionDefinitionKey()))
+        .decisionDefinitionId(entity.decisionDefinitionId())
+        .decisionDefinitionName(entity.decisionDefinitionName())
         .decisionDefinitionVersion(
             requireNonNull(entity.decisionDefinitionVersion(), "decisionDefinitionVersion"))
-        .decisionDefinitionType(
-            requireNonNull(
-                toDecisionDefinitionTypeEnum(entity.decisionDefinitionType()),
-                "decisionDefinitionType"))
+        .decisionDefinitionType(toDecisionDefinitionTypeEnum(entity.decisionDefinitionType()))
         .rootDecisionDefinitionKey(
             requireNonNull(
                 keyToStringOrNull(entity.rootDecisionDefinitionKey()), "rootDecisionDefinitionKey"))
-        .result(requireNonNull(entity.result(), "result"))
+        .result(entity.result())
         .tenantId(entity.tenantId());
   }
 
   public static DecisionInstanceGetQueryResult toDecisionInstanceGetQueryResponse(
       final DecisionInstanceEntity entity) {
     return new DecisionInstanceGetQueryResult()
-        .decisionEvaluationKey(
-            requireNonNull(
-                keyToStringOrNull(entity.decisionInstanceKey()), "decisionEvaluationKey"))
+        .decisionEvaluationKey(keyToString(entity.decisionInstanceKey()))
         .decisionEvaluationInstanceKey(entity.decisionInstanceId())
-        .state(requireNonNull(toDecisionInstanceStateEnum(entity.state()), "state"))
+        .state(toDecisionInstanceStateEnum(entity.state()))
         .evaluationDate(requireNonNull(formatDate(entity.evaluationDate()), "evaluationDate"))
         .evaluationFailure(entity.evaluationFailure())
         .processDefinitionKey(keyToStringOrNull(entity.processDefinitionKey()))
         .processInstanceKey(keyToStringOrNull(entity.processInstanceKey()))
         .rootProcessInstanceKey(keyToStringOrNull(entity.rootProcessInstanceKey()))
         .elementInstanceKey(keyToStringOrNull(entity.flowNodeInstanceKey()))
-        .decisionDefinitionKey(
-            requireNonNull(
-                keyToStringOrNull(entity.decisionDefinitionKey()), "decisionDefinitionKey"))
-        .decisionDefinitionId(requireNonNull(entity.decisionDefinitionId(), "decisionDefinitionId"))
-        .decisionDefinitionName(
-            requireNonNull(entity.decisionDefinitionName(), "decisionDefinitionName"))
+        .decisionDefinitionKey(keyToString(entity.decisionDefinitionKey()))
+        .decisionDefinitionId(entity.decisionDefinitionId())
+        .decisionDefinitionName(entity.decisionDefinitionName())
         .decisionDefinitionVersion(
             requireNonNull(entity.decisionDefinitionVersion(), "decisionDefinitionVersion"))
-        .decisionDefinitionType(
-            requireNonNull(
-                toDecisionDefinitionTypeEnum(entity.decisionDefinitionType()),
-                "decisionDefinitionType"))
+        .decisionDefinitionType(toDecisionDefinitionTypeEnum(entity.decisionDefinitionType()))
         .rootDecisionDefinitionKey(
             requireNonNull(
                 keyToStringOrNull(entity.rootDecisionDefinitionKey()), "rootDecisionDefinitionKey"))
-        .result(requireNonNull(entity.result(), "result"))
+        .result(entity.result())
         .evaluatedInputs(
             requireNonNull(toEvaluatedInputs(entity.evaluatedInputs()), "evaluatedInputs"))
         .matchedRules(requireNonNull(toMatchedRules(entity.evaluatedOutputs()), "matchedRules"))
@@ -1326,11 +1310,8 @@ public final class SearchQueryResponseMapper {
         .toList();
   }
 
-  private static @Nullable DecisionInstanceStateEnum toDecisionInstanceStateEnum(
-      final @Nullable DecisionInstanceState state) {
-    if (state == null) {
-      return null;
-    }
+  private static DecisionInstanceStateEnum toDecisionInstanceStateEnum(
+      final DecisionInstanceState state) {
     return switch (state) {
       case EVALUATED -> DecisionInstanceStateEnum.EVALUATED;
       case FAILED -> DecisionInstanceStateEnum.FAILED;
@@ -1339,11 +1320,8 @@ public final class SearchQueryResponseMapper {
     };
   }
 
-  private static @Nullable DecisionDefinitionTypeEnum toDecisionDefinitionTypeEnum(
-      final @Nullable DecisionDefinitionType decisionDefinitionType) {
-    if (decisionDefinitionType == null) {
-      return null;
-    }
+  private static DecisionDefinitionTypeEnum toDecisionDefinitionTypeEnum(
+      final DecisionDefinitionType decisionDefinitionType) {
     return switch (decisionDefinitionType) {
       case DECISION_TABLE -> DecisionDefinitionTypeEnum.DECISION_TABLE;
       case LITERAL_EXPRESSION -> DecisionDefinitionTypeEnum.LITERAL_EXPRESSION;

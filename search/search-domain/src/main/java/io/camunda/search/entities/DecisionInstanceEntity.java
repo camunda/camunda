@@ -16,9 +16,9 @@ import org.jspecify.annotations.Nullable;
 
 public record DecisionInstanceEntity(
     String decisionInstanceId, // this is the unique identifier of the decision instance
-    @Nullable Long decisionInstanceKey,
-    @Nullable DecisionInstanceState state,
-    @Nullable OffsetDateTime evaluationDate,
+    Long decisionInstanceKey,
+    DecisionInstanceState state,
+    OffsetDateTime evaluationDate,
     @Nullable String evaluationFailure,
     @Nullable String evaluationFailureMessage,
     @Nullable Long processDefinitionKey,
@@ -26,20 +26,29 @@ public record DecisionInstanceEntity(
     @Nullable Long rootProcessInstanceKey,
     @Nullable Long flowNodeInstanceKey,
     String tenantId,
-    @Nullable String decisionDefinitionId,
-    @Nullable Long decisionDefinitionKey,
-    @Nullable String decisionDefinitionName,
+    String decisionDefinitionId,
+    Long decisionDefinitionKey,
+    String decisionDefinitionName,
+    // null in legacy/partially-migrated rows.
     @Nullable Integer decisionDefinitionVersion,
-    @Nullable DecisionDefinitionType decisionDefinitionType,
+    DecisionDefinitionType decisionDefinitionType,
     @Nullable Long rootDecisionDefinitionKey,
-    @Nullable String result,
+    String result,
     List<DecisionInstanceInputEntity> evaluatedInputs,
     List<DecisionInstanceOutputEntity> evaluatedOutputs)
     implements TenantOwnedEntity {
 
   public DecisionInstanceEntity {
     Objects.requireNonNull(decisionInstanceId, "decisionInstanceId");
+    Objects.requireNonNull(decisionInstanceKey, "decisionInstanceKey");
+    Objects.requireNonNull(state, "state");
+    Objects.requireNonNull(evaluationDate, "evaluationDate");
     Objects.requireNonNull(tenantId, "tenantId");
+    Objects.requireNonNull(decisionDefinitionId, "decisionDefinitionId");
+    Objects.requireNonNull(decisionDefinitionKey, "decisionDefinitionKey");
+    Objects.requireNonNull(decisionDefinitionName, "decisionDefinitionName");
+    Objects.requireNonNull(decisionDefinitionType, "decisionDefinitionType");
+    Objects.requireNonNull(result, "result");
     // Mutable collections are required: MyBatis hydrates collection-mapped fields (e.g. from a
     // <collection> result map or a LEFT JOIN) by calling .add() on the existing instance.
     // Immutable defaults (e.g. List.of()) would cause UnsupportedOperationException at runtime.
