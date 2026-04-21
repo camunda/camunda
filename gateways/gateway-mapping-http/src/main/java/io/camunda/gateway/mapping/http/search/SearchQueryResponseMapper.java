@@ -1160,10 +1160,10 @@ public final class SearchQueryResponseMapper {
 
   public static FormResult toFormItem(final FormEntity f) {
     return new FormResult()
-        .formKey(requireNonNull(keyToStringOrNull(f.formKey()), "formKey"))
-        .formId(requireNonNull(f.formId(), "formId"))
-        .version(requireNonNull(f.version(), "version"))
-        .schema(requireNonNull(f.schema(), "schema"))
+        .formKey(keyToString(f.formKey()))
+        .formId(f.formId())
+        .version(f.version())
+        .schema(f.schema())
         .tenantId(f.tenantId());
   }
 
