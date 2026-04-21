@@ -82,22 +82,20 @@ export async function getAllProcessInstanceVariables(
     });
     await assertStatusCode(res, 200);
     const json = await res.json();
-    expect(json.items.length).toBeGreaterThanOrEqual(minCount);
-    state.variables = json.items as VariableRecord[];
+    const items: VariableRecord[] = json.items ?? [];
+    if (minCount > 0) {
+      expect(items.length).toBeGreaterThanOrEqual(minCount);
+    }
+    state.variables = items;
   }).toPass(defaultAssertionOptions);
 
   return state.variables;
 }
 
 /**
- * Waits up to `timeoutMs` milliseconds and then asserts that no variables are stored
- * for the given process instance. Intended for tests that verify variable import
- * suppression (e.g. variableImportEnabled=false or exportLocalVariables=false scenarios).
- *
- * NOTE: This helper asserts against the Camunda v2 REST API (/v2/variables/search).
- *       When Optimize-specific scope-filter configuration tests are implemented,
- *       assertions against the Optimize API (OPTIMIZE_BASE_URL/api/...) will be needed
- *       in addition to — or instead of — this helper.
+ * Waits the full `timeoutMs` then performs a single assertion that no variables
+ * exist for the given process instance.  Using a stabilisation wait avoids
+ * false positives caused by async export lag.
  */
 export async function assertNoVariablesForProcessInstance(
   request: APIRequestContext,
@@ -119,7 +117,6 @@ export async function assertNoVariablesForProcessInstance(
   const json = await res.json();
   expect(json.items).toHaveLength(0);
 }
-
 /**
  * Returns all variables for the given process instance that match the supplied name.
  */

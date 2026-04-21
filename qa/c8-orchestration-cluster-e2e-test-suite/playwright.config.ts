@@ -70,7 +70,6 @@ const apiTestIgnore = [
   'tests/api/v2/usage-metrics/*.spec.ts',
   'tests/api/v2/audit-log/*.spec.ts',
   'tests/api/v2/job/job-statistics-*.spec.ts',
-  'tests/api/v2/optimize/**/*.spec.ts',
 ];
 // Projects
 const normalProjects = [
@@ -187,45 +186,13 @@ const normalProjects = [
   //   npx playwright test --project=optimize-root-vars-disabled
   //   npx playwright test --project=optimize-import-disabled
   {
-    // TC-01, TC-02, TC-20, TC-21, TC-22, TC-23
+    // default-config.spec.ts — TC-01, TC-02, TC-20, TC-21, TC-22, TC-23
     // Optimize defaults: exportRootVariables=true, exportLocalVariables=true
     name: 'optimize-default-config',
-    testMatch: ['tests/api/v2/optimize/**/*.spec.ts'],
+    testMatch: ['tests/api/v2/optimize/default-config.spec.ts'],
     use: {
       ...devices['Desktop Chrome'],
     },
-    // Only run tests that are valid against the default (all-enabled) configuration
-    grep: /Default.*Behaviour|Scope Classification/,
-  },
-  {
-    // TC-04 to TC-16 (local variables disabled, optional whitelist)
-    // Requires Optimize started with:
-    //   zeebe.exportLocalVariables: false
-    //   zeebe.localVariableNameFilters: <comma-separated patterns>
-    name: 'optimize-local-vars-disabled',
-    testMatch: ['tests/api/v2/optimize/**/*.spec.ts'],
-    use: {
-      ...devices['Desktop Chrome'],
-    },
-    grep: /Root-Only Export|Local Variable Whitelisting|Whitelist Applied/,
-  },
-  {
-    // TC-06, TC-07: root variables disabled, local enabled
-    // Requires Optimize started with:
-    //   zeebe.exportRootVariables: false
-    //   zeebe.exportLocalVariables: true
-    name: 'optimize-root-vars-disabled',
-    testMatch: ['tests/api/v2/optimize/**/*.spec.ts'],
-    grep: /exportRootVariables=false/,
-  },
-  {
-    // TC-03, TC-08: variableImportEnabled=false or both flags = false
-    // Requires Optimize started with:
-    //   zeebe.variableImportEnabled: false  OR
-    //   zeebe.exportRootVariables: false + zeebe.exportLocalVariables: false
-    name: 'optimize-import-disabled',
-    testMatch: ['tests/api/v2/optimize/**/*.spec.ts'],
-    grep: /variableImportEnabled=false|both exportRootVariables=false/,
   },
 ];
 
