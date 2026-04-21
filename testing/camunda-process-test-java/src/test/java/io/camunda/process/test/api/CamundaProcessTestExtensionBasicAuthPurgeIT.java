@@ -18,56 +18,75 @@ package io.camunda.process.test.api;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.client.CredentialsProvider;
 import io.camunda.client.api.response.ProcessInstanceEvent;
 import io.camunda.client.api.search.response.ProcessInstance;
+import io.camunda.process.test.impl.client.CamundaManagementClient;
+import io.camunda.process.test.impl.containers.CamundaContainer;
+import io.camunda.process.test.impl.containers.CamundaContainer.MultiTenancyConfiguration;
+import io.camunda.process.test.impl.containers.ContainerFactory;
+import io.camunda.process.test.impl.runtime.CamundaProcessTestRuntimeDefaults;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.List;
 import org.awaitility.Awaitility;
-import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestMethodOrder;
+import org.junit.jupiter.api.extension.BeforeAllCallback;
+import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.RegisterExtension;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
 
 /**
- * Verifies that the cluster is purged between test methods when basic authorization is enabled via
- * environment variables. This test specifically covers the scenario described in the issue where
- * the purge completion check failed with an authentication error when auth was enabled, causing a
- * spurious 30-second timeout (even though the purge itself succeeded).
+ * Verifies that {@link CamundaManagementClient#purgeCluster()} completes promptly when basic
+ * authorization is enabled on the runtime. Without the fix, the purge completion check received
+ * HTTP 401 and kept returning {@code false} until the 30-second timeout expired.
  */
-@TestMethodOrder(MethodOrderer.OrderAnnotation.class)
+// We use Testcontainers to start a "remote" Camunda container that is not managed by the Camunda
+// process test extension.
+@Testcontainers
 public class CamundaProcessTestExtensionBasicAuthPurgeIT {
 
   private static final String PROCESS_ID = "process";
   private static final BpmnModelInstance PROCESS =
       Bpmn.createExecutableProcess(PROCESS_ID).startEvent().userTask().endEvent().done();
 
-  // Enable basic authorization using the managed runtime's multi-tenancy configuration, which
-  // internally sets CAMUNDA_SECURITY_AUTHENTICATION_UNPROTECTEDAPI=false and
-  // ZEEBE_GATEWAY_SECURITY_AUTHENTICATION_MODE=basic on the Camunda container. This is the
-  // established way to enable authentication on a managed CPT runtime. The configured
-  // CamundaClient (injected below) already carries the demo/demo credentials and will be
-  // used for both test requests and purge completion checks.
+  // 1: Start the Camunda container with basic authentication enabled.
+  @Order(0)
+  @Container
+  private static final CamundaContainer REMOTE_CAMUNDA_CONTAINER =
+      new ContainerFactory()
+          .createCamundaContainer(
+              CamundaProcessTestRuntimeDefaults.CAMUNDA_DOCKER_IMAGE_NAME,
+              CamundaProcessTestRuntimeDefaults.CAMUNDA_DOCKER_IMAGE_VERSION)
+          .withMultiTenancy();
+
+  // 2: Bind the extension to the Camunda container, configuring basic auth credentials.
+  @Order(1)
+  @RegisterExtension
+  private static final BindCamundaProcessTestExtension BIND_EXTENSION_TO_REMOTE =
+      new BindCamundaProcessTestExtension();
+
+  // 3: Start the extension and connect to the Camunda container.
+  @Order(2)
   @RegisterExtension
   private static final CamundaProcessTestExtension EXTENSION =
-      new CamundaProcessTestExtension().withMultiTenancyEnabled(true);
+      new CamundaProcessTestExtension().withRuntimeMode(CamundaProcessTestRuntimeMode.REMOTE);
 
   // to be injected
   private CamundaClient client;
 
   @Test
-  @Order(1)
-  void shouldCreateProcessInstance() {
+  void shouldPurgeClusterWithinTimeout() {
     // given
     client.newDeployResourceCommand().addProcessModel(PROCESS, "process.bpmn").send().join();
 
-    // when
     final ProcessInstanceEvent processInstance =
         client.newCreateInstanceCommand().bpmnProcessId(PROCESS_ID).latestVersion().send().join();
 
-    // then
     Awaitility.await("Wait until process instance is exported to secondary storage")
         .atMost(Duration.ofSeconds(30))
         .untilAsserted(
@@ -75,18 +94,51 @@ public class CamundaProcessTestExtensionBasicAuthPurgeIT {
               final List<ProcessInstance> instances =
                   client.newProcessInstanceSearchRequest().send().join().items();
               assertThat(instances)
-                  .hasSize(1)
                   .extracting(ProcessInstance::getProcessInstanceKey)
                   .contains(processInstance.getProcessInstanceKey());
             });
+
+    // when — purge using a new CamundaManagementClient (with the authenticated CamundaClient)
+    final Instant purgeStart = Instant.now();
+    final CamundaManagementClient managementClient =
+        CamundaManagementClient.createClient(
+            REMOTE_CAMUNDA_CONTAINER.getMonitoringApiAddress(),
+            CamundaClient.newClientBuilder()
+                .restAddress(REMOTE_CAMUNDA_CONTAINER.getRestApiAddress())
+                .grpcAddress(REMOTE_CAMUNDA_CONTAINER.getGrpcApiAddress())
+                .credentialsProvider(
+                    CredentialsProvider.newBasicAuthCredentialsProviderBuilder()
+                        .username(MultiTenancyConfiguration.MULTITENANCY_USER_USERNAME)
+                        .password(MultiTenancyConfiguration.MULTITENANCY_USER_PASSWORD)
+                        .build())
+                .build());
+    managementClient.purgeCluster();
+    final Duration purgeElapsed = Duration.between(purgeStart, Instant.now());
+
+    // then — data is gone
+    assertThat(client.newProcessInstanceSearchRequest().send().join().items()).isEmpty();
+
+    // and — purge completed well within the 30-second limit
+    assertThat(purgeElapsed).isLessThan(Duration.ofSeconds(10));
   }
 
-  @Test
-  @Order(2)
-  void shouldStartWithCleanClusterAfterPurge() {
-    // The cluster is purged automatically after each test method. If the purge failed (or timed
-    // out because the completion check couldn't authenticate with the runtime), the previous
-    // test's process instance would still be present here.
-    assertThat(client.newProcessInstanceSearchRequest().send().join().items()).isEmpty();
+  private static final class BindCamundaProcessTestExtension implements BeforeAllCallback {
+
+    @Override
+    public void beforeAll(final ExtensionContext context) {
+      EXTENSION
+          .withRemoteCamundaClientBuilderFactory(
+              () ->
+                  CamundaClient.newClientBuilder()
+                      .restAddress(REMOTE_CAMUNDA_CONTAINER.getRestApiAddress())
+                      .grpcAddress(REMOTE_CAMUNDA_CONTAINER.getGrpcApiAddress())
+                      .credentialsProvider(
+                          CredentialsProvider.newBasicAuthCredentialsProviderBuilder()
+                              .username(MultiTenancyConfiguration.MULTITENANCY_USER_USERNAME)
+                              .password(MultiTenancyConfiguration.MULTITENANCY_USER_PASSWORD)
+                              .build()))
+          .withRemoteCamundaMonitoringApiAddress(
+              REMOTE_CAMUNDA_CONTAINER.getMonitoringApiAddress());
+    }
   }
 }
