@@ -163,12 +163,13 @@ public class Starter implements CommandLineRunner {
             Executors.newScheduledThreadPool(1),
             properties.getMonitorDataAvailabilityInterval(),
             (listOfStartedInstances) -> {
+              final var limit = Math.min(listOfStartedInstances.size(), 1000);
               final CamundaFuture<SearchResponse<ProcessInstance>> send =
                   client
                       .newProcessInstanceSearchRequest()
                       .filter((f) -> f.processInstanceKey(key -> key.in(listOfStartedInstances)))
                       .sort(ProcessInstanceSort::startDate)
-                      .page(p -> p.limit(100))
+                      .page(p -> p.limit(limit))
                       .send();
 
               return send.thenApply(
