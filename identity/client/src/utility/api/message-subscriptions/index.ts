@@ -30,7 +30,20 @@ export interface MessageSubscription extends BaseMessageSubscription {
   extensionProperties: Record<string, string>;
   processDefinitionName: string | null;
   processDefinitionVersion: number | null;
+  toolName: string | null;
+  inboundConnectorType: string | null;
 }
+
+type AdvancedStringFilter =
+  | string
+  | {
+      $eq?: string;
+      $neq?: string;
+      $exists?: boolean;
+      $in?: string[];
+      $notIn?: string[];
+      $like?: string;
+    };
 
 type BaseMessageSubscriptionFilter = NonNullable<
   BaseQueryMessageSubscriptionsRequestBody["filter"]
@@ -38,6 +51,8 @@ type BaseMessageSubscriptionFilter = NonNullable<
 
 interface MessageSubscriptionFilter extends BaseMessageSubscriptionFilter {
   messageSubscriptionType?: MessageSubscriptionType;
+  toolName?: AdvancedStringFilter;
+  inboundConnectorType?: AdvancedStringFilter;
 }
 
 export interface QueryMessageSubscriptionsRequestBody extends Omit<
