@@ -25,6 +25,9 @@ import io.camunda.client.api.search.response.MappingRule;
 import io.camunda.client.api.search.response.Role;
 import io.camunda.client.api.search.response.RoleGroup;
 import io.camunda.client.api.search.response.RoleUser;
+import io.camunda.client.api.search.response.Tenant;
+import io.camunda.client.api.search.response.TenantGroup;
+import io.camunda.client.api.search.response.TenantUser;
 import io.camunda.client.api.search.response.User;
 import io.camunda.qa.util.auth.Membership;
 import io.camunda.qa.util.auth.Permissions;
@@ -39,6 +42,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -57,6 +61,7 @@ public final class EntityManager {
   final Map<String, TestGroup> groups = new ConcurrentHashMap<>();
   final Map<String, TestRole> roles = new ConcurrentHashMap<>();
   final Map<String, TestMappingRule> mappingRules = new ConcurrentHashMap<>();
+  final Map<String, TestTenant> tenants = new ConcurrentHashMap<>();
 
   private final Set<String> createdPermissionIdentifiers = ConcurrentHashMap.newKeySet();
 
@@ -356,6 +361,15 @@ public final class EntityManager {
             new MembershipSearch<>(
                 roleId -> wrap(defaultClient.newMappingRulesByRoleSearchRequest(roleId)),
                 MappingRule::getMappingRuleId)));
+
+    awaitSearchVisibility(
+        "tenants",
+        () -> wrap(defaultClient.newTenantsSearchRequest()),
+        extractField(Tenant::getTenantId),
+        tenants.keySet());
+
+    awaitTenantMembershipsVisibility();
+
     LOGGER.debug("Finished waiting for visibility of all entities and permissions.");
   }
 
@@ -466,72 +480,122 @@ public final class EntityManager {
   }
 
   public EntityManager withTenants(final List<TestTenant> tenants) {
-    tenants.forEach(
-        tenant -> {
-          defaultClient
-              .newCreateTenantCommand()
-              .tenantId(tenant.getId())
-              .name(tenant.getName())
-              .description(tenant.getDescription())
-              .send()
-              .join();
+    final var newTenants =
+        tenants.stream().filter(tenant -> !this.tenants.containsKey(tenant.getId())).toList();
 
-          tenant
-              .getUsers()
-              .forEach(
-                  user ->
-                      defaultClient
-                          .newAssignUserToTenantCommand()
-                          .username(user)
-                          .tenantId(tenant.getId())
-                          .send()
-                          .join());
+    // Create all tenants in parallel
+    final var creationFutures =
+        newTenants.stream()
+            .map(
+                tenant ->
+                    (CompletableFuture<?>)
+                        defaultClient
+                            .newCreateTenantCommand()
+                            .tenantId(tenant.getId())
+                            .name(tenant.getName())
+                            .description(tenant.getDescription())
+                            .send()
+                            .thenRun(() -> this.tenants.put(tenant.getId(), tenant)))
+            .toList();
+    CompletableFuture.allOf(creationFutures.toArray(CompletableFuture[]::new)).join();
 
-          tenant
-              .getGroups()
-              .forEach(
-                  groupId ->
-                      defaultClient
-                          .newAssignGroupToTenantCommand()
-                          .groupId(groupId)
-                          .tenantId(tenant.getId())
-                          .send()
-                          .join());
+    // Then assign memberships
+    newTenants.forEach(this::addTenantMemberships);
 
-          tenant
-              .getRoles()
-              .forEach(
-                  roleId ->
-                      defaultClient
-                          .newAssignRoleToTenantCommand()
-                          .roleId(roleId)
-                          .tenantId(tenant.getId())
-                          .send()
-                          .join());
-
-          tenant
-              .getClients()
-              .forEach(
-                  clientId ->
-                      defaultClient
-                          .newAssignClientToTenantCommand()
-                          .clientId(clientId)
-                          .tenantId(tenant.getId())
-                          .send()
-                          .join());
-
-          tenant
-              .getMappingRules()
-              .forEach(
-                  mappingRuleId ->
-                      defaultClient
-                          .newAssignMappingRuleToTenantCommand()
-                          .mappingRuleId(mappingRuleId)
-                          .tenantId(tenant.getId())
-                          .send()
-                          .join());
-        });
     return this;
+  }
+
+  private void addTenantMemberships(final TestTenant tenant) {
+    final var tenantId = tenant.getId();
+
+    tenant
+        .getUsers()
+        .forEach(
+            username ->
+                defaultClient
+                    .newAssignUserToTenantCommand()
+                    .username(username)
+                    .tenantId(tenantId)
+                    .send()
+                    .join());
+
+    tenant
+        .getGroups()
+        .forEach(
+            groupId ->
+                defaultClient
+                    .newAssignGroupToTenantCommand()
+                    .groupId(groupId)
+                    .tenantId(tenantId)
+                    .send()
+                    .join());
+
+    tenant
+        .getRoles()
+        .forEach(
+            roleId ->
+                defaultClient
+                    .newAssignRoleToTenantCommand()
+                    .roleId(roleId)
+                    .tenantId(tenantId)
+                    .send()
+                    .join());
+
+    tenant
+        .getClients()
+        .forEach(
+            clientId ->
+                defaultClient
+                    .newAssignClientToTenantCommand()
+                    .clientId(clientId)
+                    .tenantId(tenantId)
+                    .send()
+                    .join());
+
+    tenant
+        .getMappingRules()
+        .forEach(
+            mappingRuleId ->
+                defaultClient
+                    .newAssignMappingRuleToTenantCommand()
+                    .mappingRuleId(mappingRuleId)
+                    .tenantId(tenantId)
+                    .send()
+                    .join());
+  }
+
+  private void awaitTenantMembershipsVisibility() {
+    tenants
+        .values()
+        .forEach(
+            tenant -> {
+              final var tenantId = tenant.getId();
+              awaitSearchVisibility(
+                  "tenant users (tenantId=" + tenantId + ")",
+                  () -> wrap(defaultClient.newUsersByTenantSearchRequest(tenantId)),
+                  extractField(TenantUser::getUsername),
+                  tenant.getUsers());
+              awaitSearchVisibility(
+                  "tenant groups (tenantId=" + tenantId + ")",
+                  () -> wrap(defaultClient.newGroupsByTenantSearchRequest(tenantId)),
+                  extractField(TenantGroup::getGroupId),
+                  tenant.getGroups());
+              awaitSearchVisibility(
+                  "tenant roles (tenantId=" + tenantId + ")",
+                  () -> wrap(defaultClient.newRolesByTenantSearchRequest(tenantId)),
+                  extractField(Role::getRoleId),
+                  tenant.getRoles());
+              awaitSearchVisibility(
+                  "tenant clients (tenantId=" + tenantId + ")",
+                  () -> wrap(defaultClient.newClientsByTenantSearchRequest(tenantId)),
+                  extractField(Client::getClientId),
+                  tenant.getClients());
+              awaitSearchVisibility(
+                  "tenant mapping rules (tenantId=" + tenantId + ")",
+                  () -> wrap(defaultClient.newMappingRulesByTenantSearchRequest(tenantId)),
+                  extractField(MappingRule::getMappingRuleId),
+                  tenant.getMappingRules());
+            });
   }
 
   record MembershipSearch<T>(
