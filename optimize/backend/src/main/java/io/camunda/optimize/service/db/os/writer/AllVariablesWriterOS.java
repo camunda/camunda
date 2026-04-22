@@ -8,7 +8,6 @@
 package io.camunda.optimize.service.db.os.writer;
 
 import static io.camunda.optimize.service.db.DatabaseConstants.ALL_VARIABLES_INDEX_NAME;
-import static io.camunda.optimize.service.db.DatabaseConstants.NUMBER_OF_RETRIES_ON_CONFLICT;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.optimize.dto.optimize.ImportRequestDto;
@@ -42,11 +41,10 @@ public class AllVariablesWriterOS implements AllVariablesWriter {
             doc ->
                 ImportRequestDto.builder()
                     .importName("all variables")
-                    .type(RequestType.UPDATE)
+                    .type(RequestType.INDEX)
                     .id(doc.getVariableKey())
                     .indexName(ALL_VARIABLES_INDEX_NAME)
                     .source(doc)
-                    .retryNumberOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT)
                     .build())
         .collect(Collectors.toList());
   }

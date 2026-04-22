@@ -79,13 +79,13 @@ public class ZeebeVariableImportService
   @Override
   protected List<ProcessInstanceDto> filterAndMapZeebeRecordsToOptimizeEntities(
       final List<ZeebeVariableRecordDto> zeebeRecords) {
-    // All variables are imported into the separate all-variables index by
-    // ZeebeAllVariablesImportService. This pipeline no longer writes variables into
-    // the process_instance index.
-    LOG.debug(
-        "Skipping {} fetched zeebe variable records — variable import into process_instance is disabled.",
-        zeebeRecords.size());
-    return List.of();
+    final Map<Long, List<ZeebeVariableRecordDto>> recordsByInstanceKey =
+        zeebeRecords.stream()
+            .filter(record -> INTENTS_TO_IMPORT.contains(record.getIntent()))
+            .collect(Collectors.groupingBy(record -> record.getValue().getProcessInstanceKey()));
+    return recordsByInstanceKey.values().stream()
+        .map(this::createProcessInstanceForData)
+        .collect(Collectors.toList());
   }
 
   private ProcessInstanceDto createProcessInstanceForData(
