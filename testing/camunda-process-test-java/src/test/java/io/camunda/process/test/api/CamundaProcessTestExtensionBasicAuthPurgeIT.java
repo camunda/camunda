@@ -20,23 +20,21 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.CredentialsProvider;
 import io.camunda.client.api.response.ProcessInstanceEvent;
-import io.camunda.client.api.search.response.ProcessInstance;
 import io.camunda.process.test.impl.client.CamundaManagementClient;
 import io.camunda.process.test.impl.containers.CamundaContainer;
-import io.camunda.process.test.impl.containers.CamundaContainer.MultiTenancyConfiguration;
 import io.camunda.process.test.impl.containers.ContainerFactory;
 import io.camunda.process.test.impl.runtime.CamundaProcessTestRuntimeDefaults;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.List;
-import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.BeforeAllCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.RegisterExtension;
+import org.testcontainers.containers.wait.strategy.WaitAllStrategy;
+import org.testcontainers.containers.wait.strategy.WaitAllStrategy.Mode;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
@@ -50,11 +48,16 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 @Testcontainers
 public class CamundaProcessTestExtensionBasicAuthPurgeIT {
 
+  private static final String ADMIN_USERNAME = "admin";
+  private static final String ADMIN_PASSWORD = "admin";
+  private static final String ADMIN_NAME = "Admin";
+  private static final String ADMIN_EMAIL = "admin@camunda.com";
+
   private static final String PROCESS_ID = "process";
   private static final BpmnModelInstance PROCESS =
       Bpmn.createExecutableProcess(PROCESS_ID).startEvent().userTask().endEvent().done();
 
-  // 1: Start the Camunda container with basic authentication enabled.
+  // 1: Start the Camunda container with basic authentication enabled via env variables.
   @Order(0)
   @Container
   private static final CamundaContainer REMOTE_CAMUNDA_CONTAINER =
@@ -62,7 +65,20 @@ public class CamundaProcessTestExtensionBasicAuthPurgeIT {
           .createCamundaContainer(
               CamundaProcessTestRuntimeDefaults.CAMUNDA_DOCKER_IMAGE_NAME,
               CamundaProcessTestRuntimeDefaults.CAMUNDA_DOCKER_IMAGE_VERSION)
-          .withMultiTenancy();
+          .withEnv("CAMUNDA_SECURITY_AUTHORIZATIONS_ENABLED", "true")
+          .withEnv("CAMUNDA_SECURITY_AUTHENTICATION_UNPROTECTEDAPI", "false")
+          .withEnv("CAMUNDA_SECURITY_INITIALIZATION_USERS_0_NAME", ADMIN_NAME)
+          .withEnv("CAMUNDA_SECURITY_INITIALIZATION_USERS_0_EMAIL", ADMIN_EMAIL)
+          .withEnv("CAMUNDA_SECURITY_INITIALIZATION_USERS_0_USERNAME", ADMIN_USERNAME)
+          .withEnv("CAMUNDA_SECURITY_INITIALIZATION_USERS_0_PASSWORD", ADMIN_PASSWORD)
+          .withEnv("CAMUNDA_SECURITY_INITIALIZATION_DEFAULTROLES_ADMIN_USERS_0", ADMIN_USERNAME)
+          .waitingFor(
+              new WaitAllStrategy(Mode.WITH_OUTER_TIMEOUT)
+                  .withStrategy(CamundaContainer.newDefaultBrokerReadyCheck())
+                  .withStrategy(
+                      CamundaContainer.newDefaultTopologyReadyCheck()
+                          .withBasicCredentials(ADMIN_USERNAME, ADMIN_PASSWORD))
+                  .withStartupTimeout(Duration.ofMinutes(1)));
 
   // 2: Bind the extension to the Camunda container, configuring basic auth credentials.
   @Order(1)
@@ -87,31 +103,12 @@ public class CamundaProcessTestExtensionBasicAuthPurgeIT {
     final ProcessInstanceEvent processInstance =
         client.newCreateInstanceCommand().bpmnProcessId(PROCESS_ID).latestVersion().send().join();
 
-    Awaitility.await("Wait until process instance is exported to secondary storage")
-        .atMost(Duration.ofSeconds(30))
-        .untilAsserted(
-            () -> {
-              final List<ProcessInstance> instances =
-                  client.newProcessInstanceSearchRequest().send().join().items();
-              assertThat(instances)
-                  .extracting(ProcessInstance::getProcessInstanceKey)
-                  .contains(processInstance.getProcessInstanceKey());
-            });
+    CamundaAssert.assertThatProcessInstance(processInstance).isActive();
 
-    // when — purge using a new CamundaManagementClient (with the authenticated CamundaClient)
+    // when — purge using a new CamundaManagementClient (management API requires no auth)
     final Instant purgeStart = Instant.now();
     final CamundaManagementClient managementClient =
-        CamundaManagementClient.createClient(
-            REMOTE_CAMUNDA_CONTAINER.getMonitoringApiAddress(),
-            CamundaClient.newClientBuilder()
-                .restAddress(REMOTE_CAMUNDA_CONTAINER.getRestApiAddress())
-                .grpcAddress(REMOTE_CAMUNDA_CONTAINER.getGrpcApiAddress())
-                .credentialsProvider(
-                    CredentialsProvider.newBasicAuthCredentialsProviderBuilder()
-                        .username(MultiTenancyConfiguration.MULTITENANCY_USER_USERNAME)
-                        .password(MultiTenancyConfiguration.MULTITENANCY_USER_PASSWORD)
-                        .build())
-                .build());
+        CamundaManagementClient.createClient(REMOTE_CAMUNDA_CONTAINER.getMonitoringApiAddress());
     managementClient.purgeCluster();
     final Duration purgeElapsed = Duration.between(purgeStart, Instant.now());
 
@@ -134,8 +131,8 @@ public class CamundaProcessTestExtensionBasicAuthPurgeIT {
                       .grpcAddress(REMOTE_CAMUNDA_CONTAINER.getGrpcApiAddress())
                       .credentialsProvider(
                           CredentialsProvider.newBasicAuthCredentialsProviderBuilder()
-                              .username(MultiTenancyConfiguration.MULTITENANCY_USER_USERNAME)
-                              .password(MultiTenancyConfiguration.MULTITENANCY_USER_PASSWORD)
+                              .username(ADMIN_USERNAME)
+                              .password(ADMIN_PASSWORD)
                               .build()))
           .withRemoteCamundaMonitoringApiAddress(
               REMOTE_CAMUNDA_CONTAINER.getMonitoringApiAddress());
