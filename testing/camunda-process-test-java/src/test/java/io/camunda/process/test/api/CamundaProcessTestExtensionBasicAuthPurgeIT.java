@@ -19,6 +19,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.CredentialsProvider;
+import io.camunda.client.api.command.ClientException;
 import io.camunda.client.api.response.ProcessInstanceEvent;
 import io.camunda.process.test.impl.client.CamundaManagementClient;
 import io.camunda.process.test.impl.containers.CamundaContainer;
@@ -27,6 +28,7 @@ import io.camunda.process.test.impl.runtime.CamundaProcessTestRuntimeDefaults;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import java.time.Duration;
 import java.time.Instant;
+import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.BeforeAllCallback;
@@ -88,7 +90,7 @@ public class CamundaProcessTestExtensionBasicAuthPurgeIT {
   private CamundaClient client;
 
   @Test
-  void shouldPurgeClusterWithinTimeout() {
+  void shouldPurgeClusterWithinTimeout() throws InterruptedException {
     // given
     client
         .newDeployResourceCommand()
@@ -113,9 +115,15 @@ public class CamundaProcessTestExtensionBasicAuthPurgeIT {
     final Duration purgeElapsed = Duration.between(purgeStart, Instant.now());
 
     // then — data is gone
-    assertThat(client.newProcessInstanceSearchRequest().send().join().items())
-        .describedAs("The purge operation should delete all data.")
-        .isEmpty();
+    Awaitility.await("Verify data deletion after purge")
+        .atMost(Duration.ofSeconds(10))
+        .ignoreExceptionsInstanceOf(ClientException.class)
+        .untilAsserted(
+            () ->
+                // there can be a delay until the authorization is initialized
+                assertThat(client.newProcessInstanceSearchRequest().send().join().items())
+                    .describedAs("The purge operation should delete all data.")
+                    .isEmpty());
 
     // and — purge completed well within the 30-second limit
     assertThat(purgeElapsed)
