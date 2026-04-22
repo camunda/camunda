@@ -11,7 +11,7 @@
 
   <groupId>io.camunda.optimize</groupId>
   <artifactId>optimize-parent</artifactId>
-  <version>8.8.24-SNAPSHOT</version> <!-- todo: inform Optimize team that we bumped from 8.8.24-SNAPSHOT to 8.8.24-SNAPSHOT + MRM to update the GH release: https://camunda.slack.com/archives/C09PLKZG42H/p1770982545619319?thread_ts=1770812189.206739&cid=C09PLKZG42H  -->
+  <version>8.8.24-SNAPSHOT</version>
   <packaging>pom</packaging>
   <name>Optimize Parent</name>
 

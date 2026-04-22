@@ -76,8 +76,6 @@ env:
   RELEASE_BRANCH: ${{ inputs.releaseBranch != '' && inputs.releaseBranch || format('release-{0}', inputs.releaseVersion) }}
   RELEASE_VERSION: ${{ inputs.releaseVersion }}
   RELEASE_TAG: ${{ inputs.releaseProcessDryRun && format('dryrun-{0}', inputs.releaseVersion) || inputs.releaseVersion }}
-  # Always force includeOptimize to false to maintain consistent behavior - Optimize is always excluded
-  INCLUDE_OPTIMIZE: false
   GH_TOKEN: ${{ github.token }} # needs to be available for the gh CLI tool
 jobs:
   # Release job performs Maven prepare and perform release operations, managing release artifacts and repository changes.
@@ -253,7 +251,7 @@ jobs:
           echo "tagRevision=${TAG_REVISION}" >> "$GITHUB_OUTPUT"
           popd
       - name: Debug Optimize Versions after updating to development version
-        if: ${{ inputs.dryRun }}
+        if: ${{ inputs.includeOptimize && inputs.dryRun }}
         run: |
           echo "=== Optimize Version Information ==="
           echo "Optimize project.version:"
@@ -266,7 +264,7 @@ jobs:
           ./mvnw -f optimize/pom.xml help:evaluate -Dexpression=zeebe.version -q -DforceStdout || echo "Failed to get Zeebe version"
           echo ""
           echo "Identity version:"
-          ./mvnw -f optimize/pom.xml help:evaluate -Dexpression=version.identity -q -DforceStdout || echo "Failed to get Identity version"
+          ./mvnw help:effective-pom -pl optimize -DforceStdout | grep -oPm1 "(?<=<version.identity>)[^<]+" || echo "Failed to get Identity version"
           echo ""
       - name: Collect Release artifacts
         id: release-artifacts
@@ -685,7 +683,7 @@ jobs:
       PLATFORMS: "linux/amd64,linux/arm64"
       LOCAL_DOCKER_IMAGE: localhost:5000/camunda/optimize
       DOCKER_IMAGE: camunda/optimize
-      DOCKER_INFOSEC_REGISTRY_IMAGE: europe-west1-docker.pkg.dev/team-infosec/camunda/optimize-8 #todo check with InfoSec
+      DOCKER_INFOSEC_REGISTRY_IMAGE: europe-west1-docker.pkg.dev/team-infosec/camunda/optimize-8
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
