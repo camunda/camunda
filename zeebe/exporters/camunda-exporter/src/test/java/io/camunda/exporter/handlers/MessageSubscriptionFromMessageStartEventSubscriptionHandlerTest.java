@@ -67,7 +67,7 @@ final class MessageSubscriptionFromMessageStartEventSubscriptionHandlerTest {
 
   @ParameterizedTest
   @EnumSource(MessageStartEventSubscriptionIntent.class)
-  void shouldHandleCreatedAndDeletedIntents(final Intent intent) {
+  void shouldHandleIntents(final Intent intent) {
     // given
     final Record<MessageStartEventSubscriptionRecordValue> record = generateRecord(intent);
 
