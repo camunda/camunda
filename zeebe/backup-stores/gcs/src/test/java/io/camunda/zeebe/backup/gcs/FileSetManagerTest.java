@@ -84,7 +84,7 @@ final class FileSetManagerTest {
     // when
     manager.save(backupIdentifier, FileSetManager.SNAPSHOT_FILESET_NAME, namedFileSet);
 
-    // then - snapshots are uploaded in parallel using the executor
+    // then - the file size is used as the upload buffer size
     verify(storage, times(2)).createFrom(any(), any(InputStream.class), eq(1024), any());
   }
 

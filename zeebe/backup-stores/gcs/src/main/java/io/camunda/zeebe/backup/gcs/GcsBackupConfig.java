@@ -30,7 +30,7 @@ public record GcsBackupConfig(
     this.connection = requireNonNull(connection);
     this.maxConcurrentTransfers = maxConcurrentTransfers;
     if (bufferSize <= 0) {
-      throw new IllegalArgumentException("Expected bufferSize to be > 0, but got " + bufferSize);
+      throw new ConfigurationException("Expected bufferSize to be > 0, but got " + bufferSize);
     }
     this.bufferSize = bufferSize;
   }
