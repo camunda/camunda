@@ -34,7 +34,7 @@ export function generateMissingRequired(
     for (const prop of op.requiredProps) {
       if (opts.capPerOperation && count >= opts.capPerOperation) break;
       // build minimal body with all required except this one
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
       const body: Record<string, any> = {};
       for (const p of op.requiredProps) {
         if (p === prop) continue; // omit

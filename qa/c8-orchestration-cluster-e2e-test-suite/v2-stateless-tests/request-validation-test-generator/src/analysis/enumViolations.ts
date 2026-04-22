@@ -183,18 +183,6 @@ function findPath(root: any, node: any): string[] | undefined {
   return found;
 }
 
-function applyAtPath(obj: any, path: string[], value: any): boolean {
-  let t = obj;
-  for (let i = 0; i < path.length - 1; i++) {
-    const s = path[i];
-    if (!(s in t)) return false;
-    t = t[s];
-  }
-  const last = path[path.length - 1];
-  if (!(last in t)) return false;
-  t[last] = value;
-  return true;
-}
 function applyOrCreatePath(obj: any, path: string[], value: any): boolean {
   let t = obj;
   for (let i = 0; i < path.length - 1; i++) {

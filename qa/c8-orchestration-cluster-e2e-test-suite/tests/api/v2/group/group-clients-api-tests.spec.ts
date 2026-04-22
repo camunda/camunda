@@ -11,7 +11,6 @@ import {
   jsonHeaders,
   buildUrl,
   assertEqualsForKeys,
-  paginatedResponseFields,
   assertUnauthorizedRequest,
   assertNotFoundRequest,
   assertConflictRequest,

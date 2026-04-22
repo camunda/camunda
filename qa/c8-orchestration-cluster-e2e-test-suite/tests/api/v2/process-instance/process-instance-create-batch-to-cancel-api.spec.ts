@@ -15,10 +15,7 @@ import {
   jsonHeaders,
 } from '../../../../utils/http';
 import {createInstances, deploy} from '../../../../utils/zeebeClient';
-import {
-  validateResponse,
-  validateResponseShape,
-} from '../../../../json-body-assertions';
+import {validateResponse} from '../../../../json-body-assertions';
 import {defaultAssertionOptions} from '../../../../utils/constants';
 
 /* eslint-disable playwright/expect-expect */

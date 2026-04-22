@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {APIResponse, expect, test} from '@playwright/test';
+import {expect, test} from '@playwright/test';
 import {cancelProcessInstance, deploy} from '../../../../utils/zeebeClient';
 import {
   assertBadRequest,
@@ -73,10 +73,10 @@ test.describe.parallel('Get Process Instance Statistics Tests', () => {
         expect(json.items).toHaveLength(2);
 
         const userTask = json.items.find(
-          (item: any) => item.elementId === 'Activity_1xci2nh',
+          (item: {elementId: string}) => item.elementId === 'Activity_1xci2nh',
         );
         const startEvent = json.items.find(
-          (item: any) => item.elementId === 'StartEvent_1',
+          (item: {elementId: string}) => item.elementId === 'StartEvent_1',
         );
 
         expect(userTask).toBeDefined();

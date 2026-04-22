@@ -65,7 +65,6 @@ function planConstraintMutations(
   cons: Record<string, any>,
   type: string,
 ): {kind: string; value: any}[] {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const out: {kind: string; value: any}[] = [];
   if (type === 'string') {
     if (typeof cons.minLength === 'number') {
@@ -122,10 +121,9 @@ function planConstraintMutations(
   return out; // no slice; allow expansion
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function findPathFromRoot(root: any, node: any): string[] | undefined {
   let found: string[] | undefined;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
   function dfs(cur: any, path: string[]) {
     if (cur === node) {
       found = path;
@@ -143,7 +141,6 @@ function findPathFromRoot(root: any, node: any): string[] | undefined {
   return found;
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function applyAtPath(obj: any, path: string[], value: any): boolean {
   let target = obj;
   for (let i = 0; i < path.length - 1; i++) {

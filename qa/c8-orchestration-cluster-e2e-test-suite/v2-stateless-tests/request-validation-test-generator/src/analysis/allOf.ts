@@ -86,7 +86,7 @@ export function generateAllOfConflicts(
       }
     }
     const conflicts = Object.entries(typeMap)
-      .filter(([_, set]) => set.size > 1)
+      .filter(([, set]) => set.size > 1)
       .map(([k]) => k);
     if (!conflicts.length) continue;
     const baseline = buildBaselineBody(op);

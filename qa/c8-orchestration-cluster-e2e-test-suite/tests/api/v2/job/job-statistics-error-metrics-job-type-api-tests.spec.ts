@@ -8,10 +8,8 @@
 
 import {expect, test} from '@playwright/test';
 import {
-  assertBadRequest,
   assertInvalidArgument,
   assertStatusCode,
-  assertUnauthorizedRequest,
   buildUrl,
   encode,
   jsonHeaders,

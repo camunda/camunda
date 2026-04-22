@@ -10,13 +10,11 @@ import SwaggerParser from '@apidevtools/swagger-parser';
 import {OperationModel, ParameterModel, SpecModel} from '../model/types.js';
 
 export async function loadSpec(file: string): Promise<SpecModel> {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const api: any = await SwaggerParser.dereference(file);
   const operations: OperationModel[] = [];
   const paths = api.paths || {};
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
   for (const [p, methods] of Object.entries<any>(paths)) {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     for (const [m, op] of Object.entries<any>(methods)) {
       const method = m.toUpperCase();
       if (!op || !op.operationId) continue;
@@ -34,21 +32,21 @@ export async function loadSpec(file: string): Promise<SpecModel> {
           schema: pDef.schema || undefined,
         });
       }
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
       let requestBodySchema: any | undefined;
       let requiredProps: string[] | undefined;
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
       let rootOneOf: any[] | undefined;
       let discriminator:
         | {propertyName: string; mapping?: Record<string, string>}
         | undefined;
       let bodyRequired: boolean | undefined;
-      let multipartSchema: any | undefined; // eslint-disable-line @typescript-eslint/no-explicit-any
+      let multipartSchema: any | undefined;
       let multipartRequiredProps: string[] | undefined;
       let mediaTypes: string[] | undefined;
       if (op.requestBody && op.requestBody.content) {
         if (op.requestBody.required === true) bodyRequired = true; // OpenAPI requestBody.required
-        const content: Record<string, any> = op.requestBody.content; // eslint-disable-line @typescript-eslint/no-explicit-any
+        const content: Record<string, any> = op.requestBody.content;
         mediaTypes = Object.keys(content);
         const json = content['application/json'];
         const multipart = content['multipart/form-data'];

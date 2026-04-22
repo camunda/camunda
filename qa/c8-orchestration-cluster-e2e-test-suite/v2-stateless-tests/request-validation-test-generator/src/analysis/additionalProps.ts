@@ -7,7 +7,6 @@
  */
 
 import {OperationModel, ValidationScenario} from '../model/types.js';
-import {buildWalk} from '../schema/walker.js';
 import {buildBaselineBody} from '../schema/baseline.js';
 import {makeId} from './common.js';
 

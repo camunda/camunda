@@ -20,11 +20,11 @@ interface Opts {
 }
 
 interface ResolvedParamSchema {
-  schema: any; // eslint-disable-line @typescript-eslint/no-explicit-any
+  schema: any;
   pattern?: string;
   minLength?: number;
   maxLength?: number;
-  enumValues?: any[]; // eslint-disable-line @typescript-eslint/no-explicit-any
+  enumValues?: any[];
   type?: string;
 }
 
@@ -32,7 +32,7 @@ interface ResolvedParamSchema {
 function resolveParamSchema(
   p: ParameterModel,
 ): ResolvedParamSchema | undefined {
-  const schema: any = p.schema; // eslint-disable-line @typescript-eslint/no-explicit-any
+  const schema: any = p.schema;
   if (!schema) return undefined;
   const out: ResolvedParamSchema = {schema};
   function merge(s: any) {
@@ -147,9 +147,9 @@ export function generateParamConstraintViolations(
           headersAuth: true,
           source: p.in,
           // Additional metadata for emitter/title building
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
           constraintKind: v.kind as any,
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
           constraintOrigin: 'param' as any,
         });
         produced++;

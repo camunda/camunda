@@ -174,7 +174,6 @@ export function generateParamEnumViolation(
   return out;
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function wrongTypeValue(type: string): any {
   switch (type) {
     case 'integer':
