@@ -391,17 +391,33 @@ const EntityList = <D extends EntityData>({
                             {menuItems?.length > MAX_ICON_ACTIONS ? (
                               <OverflowMenu flipped>
                                 {getVisibleMenuItems(menuItems).map(
-                                  ({ label, onClick, isDangerous }) => (
-                                    <OverflowMenuItem
-                                      key={`${label}-${rowId}`}
-                                      itemText={<p>{label}</p>}
-                                      isDelete={isDangerous}
-                                      onClick={handleMenuItemClick(
-                                        rowId,
-                                        onClick,
-                                      )}
-                                    />
-                                  ),
+                                  ({
+                                    label,
+                                    onClick,
+                                    isDangerous,
+                                    disabled: disabledProp,
+                                  }) => {
+                                    const entity = index[rowId];
+                                    const disabled =
+                                      typeof disabledProp === "function"
+                                        ? entity !== undefined
+                                          ? disabledProp(entity)
+                                          : false
+                                        : disabledProp;
+
+                                    return (
+                                      <OverflowMenuItem
+                                        key={`${label}-${rowId}`}
+                                        itemText={<p>{label}</p>}
+                                        isDelete={isDangerous}
+                                        disabled={disabled}
+                                        onClick={handleMenuItemClick(
+                                          rowId,
+                                          onClick,
+                                        )}
+                                      />
+                                    );
+                                  },
                                 )}
                               </OverflowMenu>
                             ) : (
