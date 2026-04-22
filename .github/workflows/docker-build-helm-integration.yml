@@ -5,9 +5,8 @@
 name: Docker Build, Helm Deploy & E2E Tests (SaaS + Helm)
 
 on:
-  push:
-    branches:
-      - main
+  # push trigger removed — AlwaysGreen now runs as part of ci.yml on push to main.
+  # Keep workflow_dispatch for manual/parameterized runs.
   workflow_dispatch:
     inputs:
       version:

@@ -1691,7 +1691,7 @@ jobs:
       identifier: ${{ steps.format-identifier.outputs.identifier }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
       - name: Format identifier
         id: format-identifier
@@ -1720,6 +1720,8 @@ jobs:
 
       - name: Set semantic image tag
         id: set-image-tag
+        # For parameterized AlwaysGreen runs (custom version, helm branch, etc.),
+        # use the standalone docker-build-helm-integration.yml workflow_dispatch.
         run: |
           MAVEN_VERSION="${{ steps.maven-version.outputs.version }}"
           if [[ "${{ github.event_name }}" == "pull_request" ]]; then
@@ -1784,9 +1786,10 @@ jobs:
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+
   alwaysgreen-helm-deploy:
     name: "AlwaysGreen / Helm chart Integration Tests"
-    needs: [detect-changes, alwaysgreen-build-and-push]
+    needs: [alwaysgreen-build-and-push]
     uses: camunda/camunda-platform-helm/.github/workflows/test-integration-template.yaml@main
     secrets: inherit
     with:
@@ -1816,15 +1819,16 @@ jobs:
         secret/data/products/zeebe/ci/zeebe REGISTRY_HUB_DOCKER_COM_PSW | TEST_DOCKER_PASSWORD;
         secret/data/github.com/organizations/camunda NEXUS_USR | TEST_DOCKER_USERNAME_CAMUNDA_CLOUD;
         secret/data/github.com/organizations/camunda NEXUS_PSW | TEST_DOCKER_PASSWORD_CAMUNDA_CLOUD;
+
   alwaysgreen-helm-deploy-status:
     name: Observe Helm chart Integration Tests status
-    needs: [alwaysgreen-helm-deploy, detect-changes]
-    if: always()
+    needs: [alwaysgreen-helm-deploy]
+    if: always() && needs.alwaysgreen-helm-deploy.result != 'skipped'
     runs-on: ubuntu-latest
     timeout-minutes: 3
     permissions: { }
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - run: |
           # shellcheck disable=SC2242
           exit ${{ ((contains(needs.*.result, 'cancelled') || contains(needs.*.result, 'failure')) && 1) || 0 }}
@@ -1838,17 +1842,18 @@ jobs:
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+
   alwaysgreen-trigger-saas-e2e:
     name: "AlwaysGreen / Trigger SaaS E2E tests"
     runs-on: ubuntu-latest
-    needs: [detect-changes, alwaysgreen-build-and-push]
+    needs: [alwaysgreen-build-and-push]
     if: >
       needs.alwaysgreen-build-and-push.result == 'success'
-    timeout-minutes: 30
+    timeout-minutes: 35
     permissions: { }
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
       - name: Generate GitHub App Token (for dispatch)
         id: github-token
@@ -1873,7 +1878,6 @@ jobs:
           target_repo: camunda/c8-cross-component-e2e-tests
           event_type: run-saas-generation-smoke-mono
           workflow_file: playwright_saas_pr_trigger_monorepo.yml
-          since_minutes: "5"
           source_repo: ${{ github.repository }}
           source_sha: ${{ github.sha }}
           correlation_id: ${{ github.repository }}:${{ github.run_id }}:${{ github.run_attempt }}:${{ github.sha }}
@@ -1894,6 +1898,7 @@ jobs:
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+
   shell-script-tests:
     name: "Shell / Script Tests"
     needs: [ detect-changes ]

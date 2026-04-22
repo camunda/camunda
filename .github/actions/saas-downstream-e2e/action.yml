@@ -14,9 +14,6 @@ inputs:
   workflow_file:
     description: "Downstream workflow file name to watch (e.g. playwright_saas_pr_trigger_monorepo.yml)"
     required: true
-  since_minutes:
-    description: "How many minutes back to search for a downstream run"
-    required: true
   source_repo:
     description: "Source repository (owner/repo) for correlation payload"
     required: true
@@ -64,7 +61,6 @@ runs:
         TASKLIST_VERSION: ${{ inputs.tasklist_version }}
         CONNECTORS_VERSION: ${{ inputs.connectors_version }}
         OPTIMIZE_VERSION: ${{ inputs.optimize_version }}
-        SINCE_MINUTES: ${{ inputs.since_minutes }}
       run: |
         set -euo pipefail
         "${{ github.action_path }}/trigger-dispatch.sh"

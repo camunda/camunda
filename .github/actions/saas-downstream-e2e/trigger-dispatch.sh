@@ -14,16 +14,7 @@ set -euo pipefail
 # - TASKLIST_VERSION
 # - CONNECTORS_VERSION
 # - OPTIMIZE_VERSION
-# - SINCE_MINUTES
 
-DISPATCH_TIME="$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
-SINCE_TIME="$(date -u -d "$DISPATCH_TIME - ${SINCE_MINUTES} minutes" +"%Y-%m-%dT%H:%M:%SZ")"
-
-echo "dispatch_time=$DISPATCH_TIME" >>"$GITHUB_OUTPUT"
-echo "since_time=$SINCE_TIME" >>"$GITHUB_OUTPUT"
-
-echo "Dispatch time: $DISPATCH_TIME"
-echo "Search since:  $SINCE_TIME"
 echo "Dispatching to: $TARGET_REPO (event_type=$EVENT_TYPE)"
 
 # Build JSON safely (avoids quoting/injection issues)
@@ -45,6 +36,7 @@ PAYLOAD="$(
         correlation_id: $correlation_id,
         source_repo: $source_repo,
         source_sha: $source_sha,
+        gen_name: $zeebeVersion,
         c8Version: $c8Version,
         zeebeVersion: $zeebeVersion,
         operateVersion: $operateVersion,
