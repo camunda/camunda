@@ -167,7 +167,11 @@ public final class ResponseMapper {
           .parseStrict()
           .toFormatter();
 
-  public static @Nullable String formatDate(final @Nullable OffsetDateTime date) {
+  public static String formatDate(final OffsetDateTime date) {
+    return DATE_RESPONSE_MAPPER.format(date);
+  }
+
+  public static @Nullable String formatDateOrNull(final @Nullable OffsetDateTime date) {
     return date == null ? null : DATE_RESPONSE_MAPPER.format(date);
   }
 

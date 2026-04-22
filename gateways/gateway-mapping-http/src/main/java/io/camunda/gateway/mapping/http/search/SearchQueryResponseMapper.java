@@ -8,6 +8,7 @@
 package io.camunda.gateway.mapping.http.search;
 
 import static io.camunda.gateway.mapping.http.ResponseMapper.formatDate;
+import static io.camunda.gateway.mapping.http.ResponseMapper.formatDateOrNull;
 import static io.camunda.gateway.mapping.http.util.KeyUtil.keyToString;
 import static io.camunda.gateway.mapping.http.util.KeyUtil.keyToStringOrNull;
 import static java.util.Objects.requireNonNull;
@@ -738,8 +739,8 @@ public final class SearchQueryResponseMapper {
         .errorCode(job.errorCode())
         .errorMessage(job.errorMessage())
         .customHeaders(job.customHeaders())
-        .deadline(formatDate(job.deadline()))
-        .endTime(formatDate(job.endTime()))
+        .deadline(formatDateOrNull(job.deadline()))
+        .endTime(formatDateOrNull(job.endTime()))
         .processDefinitionId(job.processDefinitionId())
         .processDefinitionKey(keyToString(job.processDefinitionKey()))
         .processInstanceKey(keyToString(job.processInstanceKey()))
@@ -747,7 +748,7 @@ public final class SearchQueryResponseMapper {
         .elementId(job.elementId())
         .elementInstanceKey(keyToString(job.elementInstanceKey()))
         .tenantId(job.tenantId())
-        .creationTime(formatDate(job.creationTime()))
+        .creationTime(formatDateOrNull(job.creationTime()))
         .lastUpdateTime(formatDate(job.lastUpdateTime()));
   }
 
@@ -768,8 +769,8 @@ public final class SearchQueryResponseMapper {
         .processDefinitionKey(requireNonNullElse(keyToStringOrNull(p.processDefinitionKey()), ""))
         .parentProcessInstanceKey(keyToStringOrNull(p.parentProcessInstanceKey()))
         .parentElementInstanceKey(keyToStringOrNull(p.parentFlowNodeInstanceKey()))
-        .startDate(requireNonNullElse(formatDate(p.startDate()), EPOCH_DATE_SENTINEL))
-        .endDate(formatDate(p.endDate()))
+        .startDate(requireNonNullElse(formatDateOrNull(p.startDate()), EPOCH_DATE_SENTINEL))
+        .endDate(formatDateOrNull(p.endDate()))
         .state(
             toProtocolState(
                 requireNonNullElse(p.state(), ProcessInstanceEntity.ProcessInstanceState.ACTIVE)))
@@ -789,8 +790,8 @@ public final class SearchQueryResponseMapper {
         .batchOperationKey(entity.batchOperationKey())
         .state(BatchOperationStateEnum.fromValue(entity.state().name()))
         .batchOperationType(BatchOperationTypeEnum.fromValue(entity.operationType().name()))
-        .startDate(formatDate(entity.startDate()))
-        .endDate(formatDate(entity.endDate()))
+        .startDate(formatDateOrNull(entity.startDate()))
+        .endDate(formatDateOrNull(entity.endDate()))
         .actorType(
             ofNullable(entity.actorType())
                 .map(Enum::name)
@@ -834,7 +835,7 @@ public final class SearchQueryResponseMapper {
         // DELETE_DECISION_INSTANCE, DELETE_DECISION_DEFINITION). Spec declares it nullable.
         .processInstanceKey(keyToStringOrNull(entity.processInstanceKey()))
         .rootProcessInstanceKey(keyToStringOrNull(entity.rootProcessInstanceKey()))
-        .processedDate(formatDate(entity.processedDate()))
+        .processedDate(formatDateOrNull(entity.processedDate()))
         .errorMessage(entity.errorMessage())
         .state(BatchOperationItemResponse.StateEnum.fromValue(entity.state().name()));
   }
@@ -989,8 +990,8 @@ public final class SearchQueryResponseMapper {
         .rootProcessInstanceKey(keyToStringOrNull(instance.rootProcessInstanceKey()))
         .incidentKey(keyToStringOrNull(instance.incidentKey()))
         .hasIncident(Boolean.TRUE.equals(instance.hasIncident()))
-        .startDate(requireNonNullElse(formatDate(instance.startDate()), EPOCH_DATE_SENTINEL))
-        .endDate(formatDate(instance.endDate()))
+        .startDate(requireNonNullElse(formatDateOrNull(instance.startDate()), EPOCH_DATE_SENTINEL))
+        .endDate(formatDateOrNull(instance.endDate()))
         .state(ElementInstanceStateEnum.fromValue(instance.state().name()))
         .type(ElementInstanceResult.TypeEnum.fromValue(instance.type().name()))
         .tenantId(instance.tenantId());
@@ -1048,7 +1049,7 @@ public final class SearchQueryResponseMapper {
         .errorMessage(t.errorMessage())
         .elementId(t.flowNodeId())
         .elementInstanceKey(keyToString(t.flowNodeInstanceKey()))
-        .creationTime(requireNonNull(formatDate(t.creationTime()), "creationTime"))
+        .creationTime(formatDate(t.creationTime()))
         .state(
             ofNullable(t.state())
                 .map(Enum::name)
@@ -1084,7 +1085,8 @@ public final class SearchQueryResponseMapper {
         // `dateTime` can be absent on subscriptions that predate the field being populated;
         // fall back to the epoch sentinel (see EPOCH_DATE_SENTINEL) rather than 500.
         .lastUpdatedDate(
-            requireNonNullElse(formatDate(messageSubscription.dateTime()), EPOCH_DATE_SENTINEL))
+            requireNonNullElse(
+                formatDateOrNull(messageSubscription.dateTime()), EPOCH_DATE_SENTINEL))
         .messageName(messageSubscription.messageName())
         .correlationKey(messageSubscription.correlationKey())
         .tenantId(messageSubscription.tenantId())
@@ -1106,9 +1108,7 @@ public final class SearchQueryResponseMapper {
       final CorrelatedMessageSubscriptionEntity correlatedMessageSubscription) {
     return new CorrelatedMessageSubscriptionResult()
         .correlationKey(correlatedMessageSubscription.correlationKey())
-        .correlationTime(
-            requireNonNull(
-                formatDate(correlatedMessageSubscription.correlationTime()), "correlationTime"))
+        .correlationTime(formatDate(correlatedMessageSubscription.correlationTime()))
         .elementId(correlatedMessageSubscription.flowNodeId())
         .elementInstanceKey(keyToStringOrNull(correlatedMessageSubscription.flowNodeInstanceKey()))
         .messageKey(keyToString(correlatedMessageSubscription.messageKey()))
@@ -1141,9 +1141,9 @@ public final class SearchQueryResponseMapper {
         .formKey(keyToStringOrNull(t.formKey()))
         .elementId(t.elementId())
         .creationDate(formatDate(t.creationDate()))
-        .completionDate(formatDate(t.completionDate()))
-        .dueDate(formatDate(t.dueDate()))
-        .followUpDate(formatDate(t.followUpDate()))
+        .completionDate(formatDateOrNull(t.completionDate()))
+        .dueDate(formatDateOrNull(t.dueDate()))
+        .followUpDate(formatDateOrNull(t.followUpDate()))
         .externalFormReference(t.externalFormReference())
         .processDefinitionVersion(t.processDefinitionVersion())
         .customHeaders(t.customHeaders())
@@ -1207,7 +1207,7 @@ public final class SearchQueryResponseMapper {
         .decisionEvaluationKey(keyToString(entity.decisionInstanceKey()))
         .decisionEvaluationInstanceKey(entity.decisionInstanceId())
         .state(toDecisionInstanceStateEnum(entity.state()))
-        .evaluationDate(requireNonNull(formatDate(entity.evaluationDate()), "evaluationDate"))
+        .evaluationDate(formatDate(entity.evaluationDate()))
         .evaluationFailure(entity.evaluationFailure())
         .processDefinitionKey(keyToStringOrNull(entity.processDefinitionKey()))
         .processInstanceKey(keyToStringOrNull(entity.processInstanceKey()))
@@ -1232,7 +1232,7 @@ public final class SearchQueryResponseMapper {
         .decisionEvaluationKey(keyToString(entity.decisionInstanceKey()))
         .decisionEvaluationInstanceKey(entity.decisionInstanceId())
         .state(toDecisionInstanceStateEnum(entity.state()))
-        .evaluationDate(requireNonNull(formatDate(entity.evaluationDate()), "evaluationDate"))
+        .evaluationDate(formatDate(entity.evaluationDate()))
         .evaluationFailure(entity.evaluationFailure())
         .processDefinitionKey(keyToStringOrNull(entity.processDefinitionKey()))
         .processInstanceKey(keyToStringOrNull(entity.processInstanceKey()))
@@ -1488,7 +1488,7 @@ public final class SearchQueryResponseMapper {
                 .map(Enum::name)
                 .map(BatchOperationTypeEnum::fromValue)
                 .orElse(null))
-        .timestamp(requireNonNull(formatDate(auditLog.timestamp()), "timestamp"))
+        .timestamp(formatDate(auditLog.timestamp()))
         .actorId(auditLog.actorId())
         .actorType(
             ofNullable(auditLog.actorType())
@@ -1671,7 +1671,7 @@ public final class SearchQueryResponseMapper {
     }
 
     return new JobTimeSeriesStatisticsItem()
-        .time(requireNonNull(formatDate(entity.time()), "time"))
+        .time(formatDate(entity.time()))
         .created(toStatusMetric(entity.created()))
         .completed(toStatusMetric(entity.completed()))
         .failed(toStatusMetric(entity.failed()));
@@ -1706,7 +1706,7 @@ public final class SearchQueryResponseMapper {
     }
     return new StatusMetric()
         .count(metric.count())
-        .lastUpdatedAt(formatDate(metric.lastUpdatedAt()));
+        .lastUpdatedAt(formatDateOrNull(metric.lastUpdatedAt()));
   }
 
   public static GlobalTaskListenerSearchQueryResult toGlobalTaskListenerSearchQueryResponse(
