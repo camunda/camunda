@@ -100,9 +100,9 @@ export class OperateProcessInstanceViewModificationModePage {
     this.cancelAllButtonPopup = page.getByTitle(
       'Cancel all running element instances in this element',
     );
-    this.reviewModificationsButton = page.getByTestId(
-      'review-modifications-button',
-    );
+    this.reviewModificationsButton = page
+      .getByTestId('review-modifications-button')
+      .or(page.getByTestId('apply-modifications-button'));
     this.discardAllModificationsButton = page.getByTestId('discard-all-button');
     this.cancelButtonModificationDialog = page
       .getByRole('dialog')
@@ -363,6 +363,8 @@ export class OperateProcessInstanceViewModificationModePage {
   }
 
   async clickReviewModificationsButton(): Promise<void> {
+    await expect(this.reviewModificationsButton).toBeVisible();
+    await expect(this.reviewModificationsButton).toBeEnabled();
     await this.reviewModificationsButton.click();
   }
 

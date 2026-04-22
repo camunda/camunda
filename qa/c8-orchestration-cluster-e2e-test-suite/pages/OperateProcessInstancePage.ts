@@ -230,9 +230,15 @@ class OperateProcessInstancePage {
       hasText: /^Migrated/,
     });
     this.continueButton = page.getByRole('button', {name: 'Continue'});
-    this.reviewModificationsButton = page.getByRole('button', {
-      name: 'Review Modifications',
-    });
+    this.reviewModificationsButton = page
+      .getByRole('button', {
+        name: 'Review Modifications',
+      })
+      .or(
+        page.getByRole('button', {
+          name: 'Apply Modifications',
+        }),
+      );
     this.applyButton = page.getByRole('button', {name: 'Apply', exact: true});
     this.addSingleFlowNodeInstanceButton = page.getByRole('button', {
       name: 'Add single element instance',
