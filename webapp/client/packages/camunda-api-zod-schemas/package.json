@@ -23,7 +23,8 @@
 		"build": "vite build",
 		"format": "prettier --write .",
 		"prepublish": "npm run build",
-		"typecheck": "tsc"
+		"typecheck": "tsc",
+		"postinstall": "npm run build"
 	},
 	"sideEffects": false,
 	"files": [
