@@ -14,7 +14,9 @@ import EntityList, {
 } from "src/components/entityList/EntityList";
 import { TranslatedErrorInlineNotification } from "src/components/notifications/InlineNotification";
 import { isTenantsApiEnabled } from "src/configuration";
+import { useEntityModal } from "src/components/modal";
 import { useMcpProcessTools, type McpProcessTool } from "./useMcpProcessTools";
+import DetailsModal from "./modals/DetailsModal";
 
 const List: FC = () => {
   const { t } = useTranslate("mcpProcesses");
@@ -22,6 +24,8 @@ const List: FC = () => {
 
   const { processTools, loading, success, reload, ...paginationProps } =
     useMcpProcessTools();
+
+  const [viewTool, viewToolModal] = useEntityModal(DetailsModal, () => {});
 
   const headers = useMemo<DataTableHeader<McpProcessTool>[]>(() => {
     const columns: DataTableHeader<McpProcessTool>[] = [
@@ -51,6 +55,7 @@ const List: FC = () => {
         loading={loading}
         searchKey="toolName"
         searchPlaceholder={t("searchByToolName")}
+        menuItems={[{ label: t("viewDetails"), onClick: viewTool }]}
         {...paginationProps}
       />
       {!loading && !success && (
@@ -59,6 +64,7 @@ const List: FC = () => {
           actionButton={{ label: tComponents("retry"), onClick: reload }}
         />
       )}
+      {viewToolModal}
     </Page>
   );
 };
