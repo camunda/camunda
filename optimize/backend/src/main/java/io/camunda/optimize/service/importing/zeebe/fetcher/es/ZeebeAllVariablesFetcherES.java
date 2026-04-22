@@ -5,17 +5,16 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.optimize.service.importing.zeebe.fetcher.os;
+package io.camunda.optimize.service.importing.zeebe.fetcher.es;
 
 import static io.camunda.optimize.service.db.DatabaseConstants.ZEEBE_VARIABLE_INDEX_NAME;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.optimize.dto.zeebe.variable.ZeebeVariableRecordDto;
-import io.camunda.optimize.service.db.os.OptimizeOpenSearchClient;
-import io.camunda.optimize.service.importing.zeebe.db.ZeebeReportingMetricsFetcher;
+import io.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
+import io.camunda.optimize.service.importing.zeebe.db.ZeebeAllVariablesFetcher;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
-import io.camunda.optimize.service.util.configuration.condition.OpenSearchCondition;
-import org.slf4j.Logger;
+import io.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.Scope;
@@ -23,20 +22,17 @@ import org.springframework.stereotype.Component;
 
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
-@Conditional(OpenSearchCondition.class)
-public class ZeebeReportingMetricsFetcherOS
-    extends AbstractZeebeRecordFetcherOS<ZeebeVariableRecordDto>
-    implements ZeebeReportingMetricsFetcher {
+@Conditional(ElasticSearchCondition.class)
+public class ZeebeAllVariablesFetcherES
+    extends AbstractZeebeRecordFetcherES<ZeebeVariableRecordDto>
+    implements ZeebeAllVariablesFetcher {
 
-  private static final Logger LOG =
-      org.slf4j.LoggerFactory.getLogger(ZeebeReportingMetricsFetcherOS.class);
-
-  public ZeebeReportingMetricsFetcherOS(
+  public ZeebeAllVariablesFetcherES(
       final int partitionId,
-      final OptimizeOpenSearchClient osClient,
+      final OptimizeElasticsearchClient esClient,
       final ObjectMapper objectMapper,
       final ConfigurationService configurationService) {
-    super(partitionId, osClient, objectMapper, configurationService);
+    super(partitionId, esClient, objectMapper, configurationService);
   }
 
   @Override

@@ -59,7 +59,7 @@ public final class DatabaseConstants {
   public static final String BUSINESS_KEY_INDEX_NAME = "business-key";
   public static final String SETTINGS_INDEX_NAME = "settings";
   public static final String EXTERNAL_PROCESS_VARIABLE_INDEX_NAME = "external-process-variable";
-  public static final String REPORTING_METRICS_INDEX_NAME = "reporting-metrics";
+  public static final String ALL_VARIABLES_INDEX_NAME = "all-variables";
   // Before 8.8, Optimize indices could be templated and rolled over, and would have a numbered
   // suffix. External variable indices were created with such a suffix, but otherwise they are not
   // present

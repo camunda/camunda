@@ -11,7 +11,6 @@ import static io.camunda.optimize.dto.optimize.ReportConstants.BOOLEAN_TYPE;
 import static io.camunda.optimize.dto.optimize.ReportConstants.DOUBLE_TYPE;
 import static io.camunda.optimize.dto.optimize.ReportConstants.OBJECT_TYPE;
 import static io.camunda.optimize.dto.optimize.ReportConstants.STRING_TYPE;
-import static io.camunda.optimize.dto.optimize.importing.ReportingMetricsMappings.REPORTING_PREFIX;
 import static io.camunda.optimize.service.db.DatabaseConstants.ZEEBE_VARIABLE_INDEX_NAME;
 import static io.camunda.optimize.service.db.schema.index.ExternalProcessVariableIndex.SERIALIZATION_DATA_FORMAT;
 
@@ -80,22 +79,13 @@ public class ZeebeVariableImportService
   @Override
   protected List<ProcessInstanceDto> filterAndMapZeebeRecordsToOptimizeEntities(
       final List<ZeebeVariableRecordDto> zeebeRecords) {
-    final List<ProcessInstanceDto> optimizeDtos =
-        zeebeRecords.stream()
-            .filter(zeebeRecord -> INTENTS_TO_IMPORT.contains(zeebeRecord.getIntent()))
-            .filter(zeebeRecord -> !zeebeRecord.getValue().getName().startsWith(REPORTING_PREFIX))
-            .collect(
-                Collectors.groupingBy(
-                    zeebeRecord -> zeebeRecord.getValue().getProcessInstanceKey()))
-            .values()
-            .stream()
-            .map(this::createProcessInstanceForData)
-            .toList();
+    // All variables are imported into the separate all-variables index by
+    // ZeebeAllVariablesImportService. This pipeline no longer writes variables into
+    // the process_instance index.
     LOG.debug(
-        "Processing {} fetched zeebe variable records, of which {} are relevant to Optimize and will be imported.",
-        zeebeRecords.size(),
-        optimizeDtos.size());
-    return optimizeDtos;
+        "Skipping {} fetched zeebe variable records — variable import into process_instance is disabled.",
+        zeebeRecords.size());
+    return List.of();
   }
 
   private ProcessInstanceDto createProcessInstanceForData(

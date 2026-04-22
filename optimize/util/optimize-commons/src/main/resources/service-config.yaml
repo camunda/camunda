@@ -622,8 +622,6 @@ ui:
   consoleUrl: ${CAMUNDA_OPTIMIZE_CLOUD_CONSOLE_URL:}
   # The URL for Optimize to use to navigate to modeler in the sidebar
   modelerUrl: ${CAMUNDA_OPTIMIZE_CLOUD_MODELER_URL:}
-  # Flag to disable/enable mock usage for businessValue dashboard
-  businessValueMockEnabled: ${CAMUNDA_OPTIMIZE_UI_BUSINESS_VALUE_MOCK_ENABLED:true}
 
 telemetry:
   # Is telemetry initialized

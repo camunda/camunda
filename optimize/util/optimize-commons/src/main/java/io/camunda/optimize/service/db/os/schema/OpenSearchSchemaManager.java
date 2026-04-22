@@ -27,12 +27,12 @@ import io.camunda.optimize.service.db.os.schema.index.DashboardIndexOS;
 import io.camunda.optimize.service.db.os.schema.index.DashboardShareIndexOS;
 import io.camunda.optimize.service.db.os.schema.index.DecisionDefinitionIndexOS;
 import io.camunda.optimize.service.db.os.schema.index.ExternalProcessVariableIndexOS;
+import io.camunda.optimize.service.db.os.schema.index.AllVariablesIndexOS;
 import io.camunda.optimize.service.db.os.schema.index.InstantPreviewDashboardMetadataIndexOS;
 import io.camunda.optimize.service.db.os.schema.index.MetadataIndexOS;
 import io.camunda.optimize.service.db.os.schema.index.ProcessDefinitionIndexOS;
 import io.camunda.optimize.service.db.os.schema.index.ProcessOverviewIndexOS;
 import io.camunda.optimize.service.db.os.schema.index.ReportShareIndexOS;
-import io.camunda.optimize.service.db.os.schema.index.ReportingMetricsIndexOS;
 import io.camunda.optimize.service.db.os.schema.index.SettingsIndexOS;
 import io.camunda.optimize.service.db.os.schema.index.TenantIndexOS;
 import io.camunda.optimize.service.db.os.schema.index.TerminatedUserSessionIndexOS;
@@ -569,6 +569,6 @@ public class OpenSearchSchemaManager
         new VariableLabelIndexOS(),
         new ProcessOverviewIndexOS(),
         new InstantPreviewDashboardMetadataIndexOS(),
-        new ReportingMetricsIndexOS());
+        new AllVariablesIndexOS());
   }
 }

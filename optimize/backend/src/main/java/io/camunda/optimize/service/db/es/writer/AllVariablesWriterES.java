@@ -7,15 +7,14 @@
  */
 package io.camunda.optimize.service.db.es.writer;
 
+import static io.camunda.optimize.service.db.DatabaseConstants.ALL_VARIABLES_INDEX_NAME;
 import static io.camunda.optimize.service.db.DatabaseConstants.NUMBER_OF_RETRIES_ON_CONFLICT;
-import static io.camunda.optimize.service.db.DatabaseConstants.REPORTING_METRICS_INDEX_NAME;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.optimize.dto.optimize.ImportRequestDto;
 import io.camunda.optimize.dto.optimize.RequestType;
-import io.camunda.optimize.dto.optimize.importing.ReportingMetricsDto;
-import io.camunda.optimize.service.db.writer.ReportingMetricsWriter;
-import io.camunda.optimize.service.db.writer.ReportingMetricsWriterSupport;
+import io.camunda.optimize.dto.optimize.importing.AllVariablesDto;
+import io.camunda.optimize.service.db.writer.AllVariablesWriter;
 import io.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -25,30 +24,28 @@ import org.springframework.stereotype.Component;
 
 @Component
 @Conditional(ElasticSearchCondition.class)
-public class ReportingMetricsWriterES implements ReportingMetricsWriter {
+public class AllVariablesWriterES implements AllVariablesWriter {
 
-  private static final Logger LOG =
-      org.slf4j.LoggerFactory.getLogger(ReportingMetricsWriterES.class);
+  private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(AllVariablesWriterES.class);
 
   private final ObjectMapper objectMapper;
 
-  public ReportingMetricsWriterES(final ObjectMapper objectMapper) {
+  public AllVariablesWriterES(final ObjectMapper objectMapper) {
     this.objectMapper = objectMapper;
   }
 
   @Override
-  public List<ImportRequestDto> generateImports(final List<ReportingMetricsDto> metricsDocuments) {
-    LOG.debug("Creating reporting-metrics imports for {} documents.", metricsDocuments.size());
-    return metricsDocuments.stream()
+  public List<ImportRequestDto> generateImports(final List<AllVariablesDto> documents) {
+    LOG.debug("Creating all-variables imports for {} documents.", documents.size());
+    return documents.stream()
         .map(
             doc ->
                 ImportRequestDto.builder()
-                    .importName("reporting metrics")
+                    .importName("all variables")
                     .type(RequestType.UPDATE)
-                    .id(doc.getProcessInstanceKey())
-                    .indexName(REPORTING_METRICS_INDEX_NAME)
+                    .id(doc.getVariableKey())
+                    .indexName(ALL_VARIABLES_INDEX_NAME)
                     .source(doc)
-                    .scriptData(ReportingMetricsWriterSupport.buildScriptData(doc, objectMapper))
                     .retryNumberOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT)
                     .build())
         .collect(Collectors.toList());

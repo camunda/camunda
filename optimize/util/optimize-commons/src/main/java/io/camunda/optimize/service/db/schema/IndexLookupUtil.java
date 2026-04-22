@@ -15,13 +15,13 @@ import io.camunda.optimize.service.db.es.schema.index.DashboardShareIndexES;
 import io.camunda.optimize.service.db.es.schema.index.DecisionDefinitionIndexES;
 import io.camunda.optimize.service.db.es.schema.index.DecisionInstanceIndexES;
 import io.camunda.optimize.service.db.es.schema.index.ExternalProcessVariableIndexES;
+import io.camunda.optimize.service.db.es.schema.index.AllVariablesIndexES;
 import io.camunda.optimize.service.db.es.schema.index.InstantPreviewDashboardMetadataIndexES;
 import io.camunda.optimize.service.db.es.schema.index.MetadataIndexES;
 import io.camunda.optimize.service.db.es.schema.index.ProcessDefinitionIndexES;
 import io.camunda.optimize.service.db.es.schema.index.ProcessInstanceIndexES;
 import io.camunda.optimize.service.db.es.schema.index.ProcessOverviewIndexES;
 import io.camunda.optimize.service.db.es.schema.index.ReportShareIndexES;
-import io.camunda.optimize.service.db.es.schema.index.ReportingMetricsIndexES;
 import io.camunda.optimize.service.db.es.schema.index.SettingsIndexES;
 import io.camunda.optimize.service.db.es.schema.index.TenantIndexES;
 import io.camunda.optimize.service.db.es.schema.index.TerminatedUserSessionIndexES;
@@ -39,13 +39,13 @@ import io.camunda.optimize.service.db.os.schema.index.DashboardShareIndexOS;
 import io.camunda.optimize.service.db.os.schema.index.DecisionDefinitionIndexOS;
 import io.camunda.optimize.service.db.os.schema.index.DecisionInstanceIndexOS;
 import io.camunda.optimize.service.db.os.schema.index.ExternalProcessVariableIndexOS;
+import io.camunda.optimize.service.db.os.schema.index.AllVariablesIndexOS;
 import io.camunda.optimize.service.db.os.schema.index.InstantPreviewDashboardMetadataIndexOS;
 import io.camunda.optimize.service.db.os.schema.index.MetadataIndexOS;
 import io.camunda.optimize.service.db.os.schema.index.ProcessDefinitionIndexOS;
 import io.camunda.optimize.service.db.os.schema.index.ProcessInstanceIndexOS;
 import io.camunda.optimize.service.db.os.schema.index.ProcessOverviewIndexOS;
 import io.camunda.optimize.service.db.os.schema.index.ReportShareIndexOS;
-import io.camunda.optimize.service.db.os.schema.index.ReportingMetricsIndexOS;
 import io.camunda.optimize.service.db.os.schema.index.SettingsIndexOS;
 import io.camunda.optimize.service.db.os.schema.index.TenantIndexOS;
 import io.camunda.optimize.service.db.os.schema.index.TerminatedUserSessionIndexOS;
@@ -150,8 +150,7 @@ public class IndexLookupUtil {
         index -> new InstantPreviewDashboardMetadataIndexOS());
     lookupMap.put(DecisionInstanceIndexES.class.getSimpleName(), DecisionInstanceIndexOS::new);
     lookupMap.put(ProcessInstanceIndexES.class.getSimpleName(), ProcessInstanceIndexOS::new);
-    lookupMap.put(
-        ReportingMetricsIndexES.class.getSimpleName(), index -> new ReportingMetricsIndexOS());
+    lookupMap.put(AllVariablesIndexES.class.getSimpleName(), index -> new AllVariablesIndexOS());
     return lookupMap;
   }
 
@@ -201,8 +200,7 @@ public class IndexLookupUtil {
         index -> new InstantPreviewDashboardMetadataIndexES());
     lookupMap.put(DecisionInstanceIndexOS.class.getSimpleName(), DecisionInstanceIndexES::new);
     lookupMap.put(ProcessInstanceIndexOS.class.getSimpleName(), ProcessInstanceIndexES::new);
-    lookupMap.put(
-        ReportingMetricsIndexOS.class.getSimpleName(), index -> new ReportingMetricsIndexES());
+    lookupMap.put(AllVariablesIndexOS.class.getSimpleName(), index -> new AllVariablesIndexES());
     return lookupMap;
   }
 

@@ -10,12 +10,12 @@ package io.camunda.optimize.service.importing.zeebe.mediator.factory;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.optimize.dto.optimize.datasource.ZeebeDataSourceDto;
 import io.camunda.optimize.service.db.DatabaseClient;
-import io.camunda.optimize.service.db.writer.ReportingMetricsWriter;
+import io.camunda.optimize.service.db.writer.AllVariablesWriter;
 import io.camunda.optimize.service.importing.ImportIndexHandlerRegistry;
 import io.camunda.optimize.service.importing.ImportMediator;
-import io.camunda.optimize.service.importing.engine.service.zeebe.ZeebeReportingMetricsImportService;
-import io.camunda.optimize.service.importing.zeebe.db.ZeebeReportingMetricsFetcher;
-import io.camunda.optimize.service.importing.zeebe.mediator.ZeebeReportingMetricsImportMediator;
+import io.camunda.optimize.service.importing.engine.service.zeebe.ZeebeAllVariablesImportService;
+import io.camunda.optimize.service.importing.zeebe.db.ZeebeAllVariablesFetcher;
+import io.camunda.optimize.service.importing.zeebe.mediator.ZeebeAllVariablesImportMediator;
 import io.camunda.optimize.service.util.BackoffCalculator;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import java.util.Collections;
@@ -24,40 +24,40 @@ import org.springframework.beans.factory.BeanFactory;
 import org.springframework.stereotype.Component;
 
 @Component
-public class ZeebeReportingMetricsMediatorFactory extends AbstractZeebeImportMediatorFactory {
+public class ZeebeAllVariablesMediatorFactory extends AbstractZeebeImportMediatorFactory {
 
-  private final ReportingMetricsWriter reportingMetricsWriter;
+  private final AllVariablesWriter allVariablesWriter;
 
-  public ZeebeReportingMetricsMediatorFactory(
+  public ZeebeAllVariablesMediatorFactory(
       final BeanFactory beanFactory,
       final ImportIndexHandlerRegistry importIndexHandlerRegistry,
       final ConfigurationService configurationService,
       final ObjectMapper objectMapper,
       final DatabaseClient databaseClient,
-      final ReportingMetricsWriter reportingMetricsWriter) {
+      final AllVariablesWriter allVariablesWriter) {
     super(
         beanFactory,
         importIndexHandlerRegistry,
         configurationService,
         objectMapper,
         databaseClient);
-    this.reportingMetricsWriter = reportingMetricsWriter;
+    this.allVariablesWriter = allVariablesWriter;
   }
 
   @Override
   public List<ImportMediator> createMediators(final ZeebeDataSourceDto zeebeDataSourceDto) {
     return Collections.singletonList(
-        new ZeebeReportingMetricsImportMediator(
-            importIndexHandlerRegistry.getZeebeReportingMetricsImportIndexHandler(
+        new ZeebeAllVariablesImportMediator(
+            importIndexHandlerRegistry.getZeebeAllVariablesImportIndexHandler(
                 zeebeDataSourceDto.getPartitionId()),
             beanFactory.getBean(
-                ZeebeReportingMetricsFetcher.class,
+                ZeebeAllVariablesFetcher.class,
                 zeebeDataSourceDto.getPartitionId(),
                 databaseClient,
                 objectMapper,
                 configurationService),
-            new ZeebeReportingMetricsImportService(
-                configurationService, reportingMetricsWriter, databaseClient),
+            new ZeebeAllVariablesImportService(
+                configurationService, allVariablesWriter, databaseClient),
             configurationService,
             new BackoffCalculator(configurationService)));
   }

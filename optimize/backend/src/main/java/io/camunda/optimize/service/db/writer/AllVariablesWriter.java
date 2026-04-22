@@ -8,11 +8,11 @@
 package io.camunda.optimize.service.db.writer;
 
 import io.camunda.optimize.dto.optimize.ImportRequestDto;
-import io.camunda.optimize.dto.optimize.importing.ReportingMetricsDto;
+import io.camunda.optimize.dto.optimize.importing.AllVariablesDto;
 import java.util.List;
 
-/** Generates bulk-upsert requests for the {@code optimize-reporting-metrics} index. */
-public interface ReportingMetricsWriter {
+/** Generates bulk-upsert requests for the {@code optimize-all-variables} index. */
+public interface AllVariablesWriter {
 
-  List<ImportRequestDto> generateImports(List<ReportingMetricsDto> metricsDocuments);
+  List<ImportRequestDto> generateImports(List<AllVariablesDto> documents);
 }

@@ -13,7 +13,7 @@ import io.camunda.optimize.service.importing.zeebe.handler.ZeebeImportIndexHandl
 import io.camunda.optimize.service.importing.zeebe.handler.ZeebeIncidentImportIndexHandler;
 import io.camunda.optimize.service.importing.zeebe.handler.ZeebeProcessDefinitionImportIndexHandler;
 import io.camunda.optimize.service.importing.zeebe.handler.ZeebeProcessInstanceImportIndexHandler;
-import io.camunda.optimize.service.importing.zeebe.handler.ZeebeReportingMetricsImportIndexHandler;
+import io.camunda.optimize.service.importing.zeebe.handler.ZeebeAllVariablesImportIndexHandler;
 import io.camunda.optimize.service.importing.zeebe.handler.ZeebeUserTaskImportIndexHandler;
 import io.camunda.optimize.service.importing.zeebe.handler.ZeebeVariableImportIndexHandler;
 import java.util.Collection;
@@ -79,9 +79,9 @@ public class ImportIndexHandlerRegistry {
     return getZeebeImportIndexHandler(partitionId, ZeebeUserTaskImportIndexHandler.class);
   }
 
-  public ZeebeReportingMetricsImportIndexHandler getZeebeReportingMetricsImportIndexHandler(
+  public ZeebeAllVariablesImportIndexHandler getZeebeAllVariablesImportIndexHandler(
       final Integer partitionId) {
-    return getZeebeImportIndexHandler(partitionId, ZeebeReportingMetricsImportIndexHandler.class);
+    return getZeebeImportIndexHandler(partitionId, ZeebeAllVariablesImportIndexHandler.class);
   }
 
   public ExternalVariableUpdateImportIndexHandler getExternalVariableUpdateImportIndexHandler() {

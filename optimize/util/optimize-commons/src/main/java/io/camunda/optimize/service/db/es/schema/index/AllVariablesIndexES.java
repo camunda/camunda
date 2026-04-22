@@ -8,10 +8,10 @@
 package io.camunda.optimize.service.db.es.schema.index;
 
 import co.elastic.clients.elasticsearch.indices.IndexSettings;
-import io.camunda.optimize.service.db.schema.index.ReportingMetricsIndex;
+import io.camunda.optimize.service.db.schema.index.AllVariablesIndex;
 import java.io.IOException;
 
-public class ReportingMetricsIndexES extends ReportingMetricsIndex<IndexSettings.Builder> {
+public class AllVariablesIndexES extends AllVariablesIndex<IndexSettings.Builder> {
 
   @Override
   public IndexSettings.Builder addStaticSetting(

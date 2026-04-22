@@ -14,23 +14,23 @@ import io.camunda.optimize.OptimizeMetrics;
 import io.camunda.optimize.dto.zeebe.variable.ZeebeVariableRecordDto;
 import io.camunda.optimize.service.importing.PositionBasedImportMediator;
 import io.camunda.optimize.service.importing.engine.mediator.MediatorRank;
-import io.camunda.optimize.service.importing.engine.service.zeebe.ZeebeReportingMetricsImportService;
-import io.camunda.optimize.service.importing.zeebe.db.ZeebeReportingMetricsFetcher;
-import io.camunda.optimize.service.importing.zeebe.handler.ZeebeReportingMetricsImportIndexHandler;
+import io.camunda.optimize.service.importing.engine.service.zeebe.ZeebeAllVariablesImportService;
+import io.camunda.optimize.service.importing.zeebe.db.ZeebeAllVariablesFetcher;
+import io.camunda.optimize.service.importing.zeebe.handler.ZeebeAllVariablesImportIndexHandler;
 import io.camunda.optimize.service.util.BackoffCalculator;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import java.util.List;
 
-public class ZeebeReportingMetricsImportMediator
+public class ZeebeAllVariablesImportMediator
     extends PositionBasedImportMediator<
-        ZeebeReportingMetricsImportIndexHandler, ZeebeVariableRecordDto> {
+        ZeebeAllVariablesImportIndexHandler, ZeebeVariableRecordDto> {
 
-  private final ZeebeReportingMetricsFetcher fetcher;
+  private final ZeebeAllVariablesFetcher fetcher;
 
-  public ZeebeReportingMetricsImportMediator(
-      final ZeebeReportingMetricsImportIndexHandler importIndexHandler,
-      final ZeebeReportingMetricsFetcher fetcher,
-      final ZeebeReportingMetricsImportService importService,
+  public ZeebeAllVariablesImportMediator(
+      final ZeebeAllVariablesImportIndexHandler importIndexHandler,
+      final ZeebeAllVariablesFetcher fetcher,
+      final ZeebeAllVariablesImportService importService,
       final ConfigurationService configurationService,
       final BackoffCalculator idleBackoffCalculator) {
     this.importIndexHandler = importIndexHandler;

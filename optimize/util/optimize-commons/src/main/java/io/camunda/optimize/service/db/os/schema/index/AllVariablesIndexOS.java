@@ -8,10 +8,10 @@
 package io.camunda.optimize.service.db.os.schema.index;
 
 import io.camunda.optimize.service.db.os.OptimizeOpenSearchUtil;
-import io.camunda.optimize.service.db.schema.index.ReportingMetricsIndex;
+import io.camunda.optimize.service.db.schema.index.AllVariablesIndex;
 import org.opensearch.client.opensearch.indices.IndexSettings;
 
-public class ReportingMetricsIndexOS extends ReportingMetricsIndex<IndexSettings.Builder> {
+public class AllVariablesIndexOS extends AllVariablesIndex<IndexSettings.Builder> {
 
   @Override
   public IndexSettings.Builder addStaticSetting(

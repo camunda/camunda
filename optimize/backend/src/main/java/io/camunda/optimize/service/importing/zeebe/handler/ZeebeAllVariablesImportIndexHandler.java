@@ -15,17 +15,17 @@ import org.springframework.stereotype.Component;
 
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
-public class ZeebeReportingMetricsImportIndexHandler extends PositionBasedImportIndexHandler {
+public class ZeebeAllVariablesImportIndexHandler extends PositionBasedImportIndexHandler {
 
-  private static final String ZEEBE_REPORTING_METRICS_IMPORT_INDEX_DOC_ID =
-      "zeebeReportingMetricsImportIndex";
+  private static final String ZEEBE_ALL_VARIABLES_IMPORT_INDEX_DOC_ID =
+      "zeebeAllVariablesImportIndex";
 
-  public ZeebeReportingMetricsImportIndexHandler(final ZeebeDataSourceDto dataSourceDto) {
+  public ZeebeAllVariablesImportIndexHandler(final ZeebeDataSourceDto dataSourceDto) {
     this.dataSource = dataSourceDto;
   }
 
   @Override
   protected String getDatabaseDocID() {
-    return ZEEBE_REPORTING_METRICS_IMPORT_INDEX_DOC_ID;
+    return ZEEBE_ALL_VARIABLES_IMPORT_INDEX_DOC_ID;
   }
 }

@@ -12,11 +12,11 @@ import io.camunda.optimize.service.importing.page.PositionBasedImportPage;
 import java.util.List;
 
 /**
- * Fetcher for the reporting-metrics import pipeline. Reads Zeebe variable records from the same
- * source index as {@link ZeebeVariableFetcher} but uses an independent position tracker so the two
- * pipelines advance independently.
+ * Fetcher for the all-variables import pipeline. Reads Zeebe variable records from the same source
+ * index as {@link ZeebeVariableFetcher} but uses an independent position tracker so this pipeline
+ * advances independently.
  */
-public interface ZeebeReportingMetricsFetcher extends ZeebeFetcher {
+public interface ZeebeAllVariablesFetcher extends ZeebeFetcher {
   List<ZeebeVariableRecordDto> getZeebeRecordsForPrefixAndPartitionFrom(
       PositionBasedImportPage positionBasedImportPage);
 }

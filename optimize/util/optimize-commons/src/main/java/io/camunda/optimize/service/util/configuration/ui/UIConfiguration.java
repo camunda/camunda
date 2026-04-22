@@ -21,7 +21,6 @@ public class UIConfiguration {
   private boolean userTaskAssigneeAnalyticsEnabled;
   private String consoleUrl;
   private String modelerUrl;
-  private boolean businessValueMockEnabled;
 
   public UIConfiguration() {}
 
@@ -90,28 +89,8 @@ public class UIConfiguration {
     this.modelerUrl = modelerUrl;
   }
 
-  public boolean isBusinessValueMockEnabled() {
-    return businessValueMockEnabled;
-  }
-
-  public void setBusinessValueMockEnabled(final boolean businessValueMockEnabled) {
-    this.businessValueMockEnabled = businessValueMockEnabled;
-  }
-
   protected boolean canEqual(final Object other) {
     return other instanceof UIConfiguration;
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(
-        logoutHidden,
-        mixpanelToken,
-        maxNumDataSourcesForReport,
-        userTaskAssigneeAnalyticsEnabled,
-        consoleUrl,
-        modelerUrl,
-        businessValueMockEnabled);
   }
 
   @Override
@@ -125,8 +104,18 @@ public class UIConfiguration {
         && userTaskAssigneeAnalyticsEnabled == that.userTaskAssigneeAnalyticsEnabled
         && Objects.equals(mixpanelToken, that.mixpanelToken)
         && Objects.equals(consoleUrl, that.consoleUrl)
-        && Objects.equals(modelerUrl, that.modelerUrl)
-        && businessValueMockEnabled == that.businessValueMockEnabled;
+        && Objects.equals(modelerUrl, that.modelerUrl);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(
+        logoutHidden,
+        mixpanelToken,
+        maxNumDataSourcesForReport,
+        userTaskAssigneeAnalyticsEnabled,
+        consoleUrl,
+        modelerUrl);
   }
 
   @Override
@@ -143,8 +132,6 @@ public class UIConfiguration {
         + getConsoleUrl()
         + ", modelerUrl="
         + getModelerUrl()
-        + ", businessValueMockEnabled="
-        + isBusinessValueMockEnabled()
         + ")";
   }
 }

@@ -33,7 +33,6 @@ public class UIConfigurationResponseDto {
   private String licenseType;
   private boolean isCommercial;
   private String expiresAt;
-  private boolean businessValueMockEnabled;
 
   private MixpanelConfigResponseDto mixpanel = new MixpanelConfigResponseDto();
 
@@ -58,8 +57,7 @@ public class UIConfigurationResponseDto {
       final boolean validLicense,
       final String licenseType,
       final MixpanelConfigResponseDto mixpanel,
-      final OnboardingResponseDto onboarding,
-      final boolean businessValueMockEnabled) {
+      final OnboardingResponseDto onboarding) {
     this.emailEnabled = emailEnabled;
     this.sharingEnabled = sharingEnabled;
     this.tenantsAvailable = tenantsAvailable;
@@ -79,7 +77,6 @@ public class UIConfigurationResponseDto {
     this.licenseType = licenseType;
     this.mixpanel = mixpanel;
     this.onboarding = onboarding;
-    this.businessValueMockEnabled = businessValueMockEnabled;
   }
 
   public UIConfigurationResponseDto() {}
@@ -252,14 +249,6 @@ public class UIConfigurationResponseDto {
     this.onboarding = onboarding;
   }
 
-  public boolean isBusinessValueMockEnabled() {
-    return businessValueMockEnabled;
-  }
-
-  public void setBusinessValueMockEnabled(final boolean businessValueMockEnabled) {
-    this.businessValueMockEnabled = businessValueMockEnabled;
-  }
-
   protected boolean canEqual(final Object other) {
     return other instanceof UIConfigurationResponseDto;
   }
@@ -281,8 +270,7 @@ public class UIConfigurationResponseDto {
         isCommercial,
         expiresAt,
         notificationsUrl,
-        webappsLinks,
-        businessValueMockEnabled);
+        webappsLinks);
   }
 
   @Override
@@ -306,8 +294,7 @@ public class UIConfigurationResponseDto {
         && Objects.equals(optimizeVersion, that.optimizeVersion)
         && Objects.equals(optimizeProfile, that.optimizeProfile)
         && Objects.equals(notificationsUrl, that.notificationsUrl)
-        && Objects.equals(webappsLinks, that.webappsLinks)
-        && businessValueMockEnabled == that.businessValueMockEnabled;
+        && Objects.equals(webappsLinks, that.webappsLinks);
   }
 
   @Override
@@ -350,8 +337,6 @@ public class UIConfigurationResponseDto {
         + getMixpanel()
         + ", onboarding="
         + getOnboarding()
-        + ", businessValueMockEnabled="
-        + isBusinessValueMockEnabled()
         + ")";
   }
 }

@@ -85,8 +85,6 @@ public class UIConfigurationService {
     uiConfigurationDto.setValidLicense(isCamundaLicenseValid());
     uiConfigurationDto.setLicenseType(getLicenseType().getName());
     uiConfigurationDto.setCommercial(isCommercialCamundaLicense());
-    uiConfigurationDto.setBusinessValueMockEnabled(
-        configurationService.getUiConfiguration().isBusinessValueMockEnabled());
     final OffsetDateTime expirationDate = getCamundaLicenseExpiresAt();
     uiConfigurationDto.setExpiresAt(
         expirationDate == null ? null : DATE_TIME_FORMATTER.format(getCamundaLicenseExpiresAt()));
