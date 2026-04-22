@@ -617,6 +617,105 @@ public class JwtDecoderTest extends AbstractWebSecurityConfigTest {
     }
   }
 
+  /**
+   * Regression test for <a href="https://github.com/camunda/camunda/issues/50801">#50801</a>:
+   * additional-jwk-set-uris must work when issuer-uri is NOT configured (explicit endpoints only).
+   */
+  @Nested
+  @TestPropertySource(
+      properties = {
+        "camunda.security.authentication.unprotected-api=false",
+        "camunda.security.authentication.method=oidc",
+        "camunda.security.authentication.oidc.client-id=example",
+        "camunda.security.authentication.oidc.redirect-uri=redirect.example.com",
+        "camunda.security.authentication.oidc.authorization-uri=authorization.example.com",
+        "camunda.security.authentication.oidc.token-uri=token.example.com",
+      })
+  class SingleOidcProviderWithAdditionalJwksWithoutIssuerUri {
+
+    @RegisterExtension
+    static WireMockExtension wireMock =
+        WireMockExtension.newInstance().configureStaticDsl(true).build();
+
+    @Autowired private JwtDecoder decoder;
+
+    @DynamicPropertySource
+    static void registerWireMockProperties(final DynamicPropertyRegistry registry) {
+      // No issuer-uri — only explicit jwk-set-uri and additional-jwk-set-uris
+      registry.add(
+          "camunda.security.authentication.oidc.jwk-set-uri",
+          () -> "http://localhost:" + wireMock.getPort() + "/primary/jwks");
+      registry.add(
+          "camunda.security.authentication.oidc.additional-jwk-set-uris[0]",
+          () -> "http://localhost:" + wireMock.getPort() + "/additional/jwks");
+    }
+
+    @Test
+    void shouldDecodeTokenSignedWithAdditionalJwksKeyWithoutIssuerUri() throws JOSEException {
+      // given
+      final var additionalKey =
+          new RSAKeyGenerator(2048)
+              .keyID("additional-no-issuer")
+              .keyUse(KeyUse.SIGNATURE)
+              .algorithm(JWSAlgorithm.RS256)
+              .generate();
+
+      mockJwksEndpoint("/primary/jwks", "{\"keys\":[]}");
+      mockJwksEndpoint("/additional/jwks", additionalKey.toPublicJWK().toJSONString());
+
+      final var jwt = signAndSerialize(additionalKey, "additional-no-issuer");
+
+      // when // then
+      assertThatCode(() -> decoder.decode(jwt)).doesNotThrowAnyException();
+    }
+
+    @Test
+    void shouldDecodeTokenSignedWithPrimaryJwksKeyWithoutIssuerUri() throws JOSEException {
+      // given
+      final var primaryKey =
+          new RSAKeyGenerator(2048)
+              .keyID("primary-no-issuer")
+              .keyUse(KeyUse.SIGNATURE)
+              .algorithm(JWSAlgorithm.RS256)
+              .generate();
+
+      mockJwksEndpoint("/primary/jwks", primaryKey.toPublicJWK().toJSONString());
+      mockJwksEndpoint("/additional/jwks", "{\"keys\":[]}");
+
+      final var jwt = signAndSerialize(primaryKey, "primary-no-issuer");
+
+      // when // then
+      assertThatCode(() -> decoder.decode(jwt)).doesNotThrowAnyException();
+    }
+
+    private void mockJwksEndpoint(final String path, final String keyJson) {
+      final String body;
+      if (keyJson.startsWith("{\"keys\"")) {
+        body = keyJson;
+      } else {
+        body = "{\"keys\":[" + keyJson + "]}";
+      }
+      wireMock
+          .getRuntimeInfo()
+          .getWireMock()
+          .register(
+              WireMock.get(WireMock.urlEqualTo(path))
+                  .willReturn(WireMock.jsonResponse(body, HttpStatus.OK.value())));
+    }
+
+    private String signAndSerialize(final RSAKey key, final String kid) throws JOSEException {
+      final var jwt =
+          new SignedJWT(
+              new JWSHeader.Builder(JWSAlgorithm.RS256).type(JWT).keyID(kid).build(),
+              new Builder()
+                  .subject("alice")
+                  .expirationTime(new Date(new Date().getTime() + 60 * 1000))
+                  .build());
+      jwt.sign(new RSASSASigner(key));
+      return jwt.serialize();
+    }
+  }
+
   @Nested
   @TestPropertySource(
       properties = {
