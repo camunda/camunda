@@ -28,6 +28,17 @@ public class ManagementClusterTopologyResponseDto {
   private Object pendingChange;
 
   /**
+   * Returns true if the cluster is ready to accept new operations: all brokers are active and there
+   * is no pending topology change.
+   */
+  public boolean isClusterReady() {
+    return pendingChange == null
+        && brokers != null
+        && !brokers.isEmpty()
+        && brokers.stream().allMatch(ManagementBrokerStateDto::isActive);
+  }
+
+  /**
    * Returns true if the topology change identified by {@code changeId} has completed and the
    * cluster is healthy.
    */

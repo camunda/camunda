@@ -145,6 +145,9 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
 
   @Override
   public void beforeTestMethod(final TestContext testContext) {
+    // wait until the cluster is ready (e.g. after a purge the cluster may still be recovering)
+    camundaManagementClient.waitForClusterReady();
+
     client = createClient(camundaProcessTestContext);
     zeebeClient = createZeebeClient(camundaProcessTestContext);
 
