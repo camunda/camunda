@@ -1,0 +1,159 @@
+#!/bin/bash
+
+# Pre-push hook for Camunda repository
+# This hook automatically formats code and runs build checks before pushing
+#
+# Setup (one-time): git config core.hooksPath .githooks
+# To bypass this hook (emergency only), use: git push --no-verify
+
+set -e  # Exit on any error
+
+# Colors for output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+NC='\033[0m' # No Color
+
+echo -e "${BLUE}========================================${NC}"
+echo -e "${BLUE}Running pre-push checks...${NC}"
+echo -e "${BLUE}========================================${NC}"
+
+# Source SDKMAN if available to ensure correct Java version
+if [ -f "$HOME/.sdkman/bin/sdkman-init.sh" ]; then
+    source "$HOME/.sdkman/bin/sdkman-init.sh"
+fi
+
+# Ensure Java 21 is available
+if ! command -v java &> /dev/null; then
+    echo -e "${RED}❌ Java not found. Please install Java 21.${NC}"
+    exit 1
+fi
+
+# Verify Java version
+JAVA_VERSION=$(java -version 2>&1 | awk -F '"' '/version/ {print $2}' | cut -d'.' -f1)
+if [ "$JAVA_VERSION" -lt 21 ]; then
+    echo -e "${RED}❌ Java 21+ required. Current version: $JAVA_VERSION${NC}"
+    echo -e "${YELLOW}   Install Java 21 with: sdk install java 21.0.10-tem${NC}"
+    exit 1
+fi
+
+echo -e "${GREEN}✓ Java ${JAVA_VERSION} detected${NC}"
+
+# Determine base ref for diffing changed files
+BASE_REF="origin/main"
+if ! git rev-parse --verify "${BASE_REF}" &>/dev/null; then
+    echo -e "${YELLOW}⚠ ${BASE_REF} not found, falling back to HEAD~1${NC}"
+    BASE_REF="HEAD~1"
+fi
+
+# ============================================================
+# Step 1/3: Format code
+# ============================================================
+echo -e "\n${BLUE}Step 1/3: Formatting code...${NC}"
+if ./mvnw license:format spotless:apply -T1C -q; then
+    echo -e "${GREEN}✓ Code formatting completed${NC}"
+else
+    echo -e "${RED}❌ Code formatting failed${NC}"
+    exit 1
+fi
+
+# Check if formatting created any changes
+if ! git diff --quiet; then
+    echo -e "${YELLOW}⚠ Formatting made changes. Stage them and amend your commit:${NC}"
+    echo -e "${YELLOW}   git add -u && git commit --amend --no-edit${NC}"
+    exit 1
+fi
+
+# ============================================================
+# Step 2/3: License check
+# ============================================================
+echo -e "\n${BLUE}Step 2/3: Checking license headers...${NC}"
+if ./mvnw license:check -T1C -q; then
+    echo -e "${GREEN}✓ License check passed${NC}"
+else
+    echo -e "${RED}❌ License check failed${NC}"
+    echo -e "${YELLOW}   Run: ./mvnw license:format${NC}"
+    exit 1
+fi
+
+# ============================================================
+# Step 3/3: Build changed modules
+# ============================================================
+echo -e "\n${BLUE}Step 3/3: Building changed modules...${NC}"
+
+# Detect changed Maven modules using native git + filesystem checks.
+#
+# For each changed file, walks up the directory tree to find the nearest
+# ancestor directory containing a pom.xml — that directory is the Maven module.
+#
+# This correctly handles:
+#   - Source file changes (not just pom.xml edits)
+#   - Nested modules (e.g. gateways/gateway-model, zeebe/gateway-rest)
+#   - Non-module files (e.g. docs/, .github/) are naturally skipped
+detect_changed_modules() {
+    local changed_files
+    changed_files=$(git diff --name-only "${BASE_REF}...HEAD" 2>/dev/null) || {
+        echo -e "${YELLOW}⚠ Could not diff against ${BASE_REF}${NC}" >&2
+        changed_files=$(git diff --name-only HEAD~1 HEAD)
+    }
+
+    if [ -z "$changed_files" ]; then
+        return
+    fi
+
+    # If root pom.xml itself changed, signal a full reactor build
+    if echo "$changed_files" | grep -qE '^pom\.xml$'; then
+        echo "ROOT"
+        return
+    fi
+
+    # For each changed file, find its owning Maven module
+    echo "$changed_files" | while IFS= read -r file; do
+        dir=$(dirname "$file")
+        while [ "$dir" != "." ]; do
+            if [ -f "$dir/pom.xml" ]; then
+                echo "$dir"
+                break
+            fi
+            dir=$(dirname "$dir")
+        done
+    done | sort -u
+}
+
+CHANGED_MODULES=$(detect_changed_modules)
+
+if [ -z "$CHANGED_MODULES" ]; then
+    echo -e "${GREEN}✓ No Maven module changes detected, skipping build${NC}"
+elif echo "$CHANGED_MODULES" | grep -q "^ROOT$"; then
+    echo -e "${YELLOW}⚠ Root pom.xml changed, running full reactor build${NC}"
+    if ./mvnw clean install -Dquickly -T1C; then
+        echo -e "${GREEN}✓ Full build passed${NC}"
+    else
+        echo -e "${RED}❌ Full build failed${NC}"
+        exit 1
+    fi
+else
+    # Build comma-separated module list for Maven -pl
+    MODULE_LIST=$(echo "$CHANGED_MODULES" | paste -sd ',' -)
+    echo -e "${BLUE}Changed modules:${NC}"
+    echo "$CHANGED_MODULES" | while IFS= read -r mod; do
+        echo -e "${BLUE}  - ${mod}${NC}"
+    done
+    echo -e "${BLUE}Building changed modules and upstream dependencies (-am)...${NC}"
+
+    if ./mvnw clean install -pl "${MODULE_LIST}" -am -Dquickly -T1C; then
+        echo -e "${GREEN}✓ Build passed${NC}"
+    else
+        echo -e "${RED}❌ Build failed${NC}"
+        echo -e "${YELLOW}   Fix build errors before pushing${NC}"
+        exit 1
+    fi
+fi
+
+# All checks passed
+echo -e "\n${GREEN}========================================${NC}"
+echo -e "${GREEN}✓ All pre-push checks passed!${NC}"
+echo -e "${GREEN}========================================${NC}"
+
+exit 0

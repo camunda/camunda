@@ -93,6 +93,24 @@
           </markdown>
         </configuration>
       </plugin>
+      <plugin>
+        <groupId>com.rudikershaw.gitbuildhook</groupId>
+        <artifactId>git-build-hook-maven-plugin</artifactId>
+        <version>3.6.0</version>
+        <inherited>false</inherited>
+        <configuration>
+          <installHooks>
+            <pre-push>.githooks/pre-push</pre-push>
+          </installHooks>
+        </configuration>
+        <executions>
+          <execution>
+            <goals>
+              <goal>install</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
     </plugins>
   </build>
 
