@@ -71,6 +71,7 @@ class TaskDetailsPage {
   readonly historyTableActorHeader: Locator;
   readonly historyTableDateHeader: Locator;
   readonly historyTableAssignCell: Locator;
+  readonly variablesScrollContainer: Locator;
 
   constructor(page: Page) {
     this.page = page;
@@ -148,6 +149,7 @@ class TaskDetailsPage {
     this.historyTableAssignCell = this.historyTable.getByRole('cell', {
       name: 'Assign task',
     });
+    this.variablesScrollContainer = this.variablesTable.locator('..');
   }
 
   async clickAssignToMeButton() {
@@ -428,6 +430,25 @@ class TaskDetailsPage {
     await this.clickCompleteTaskButton();
     await expect(this.taskCompletedBanner).toBeVisible();
     await expect(this.taskCompletedBanner).toBeHidden({timeout: 15000});
+  }
+
+  getVariableByText(text: string): Locator {
+    return this.page.getByText(text);
+  }
+
+  async scrollToVariable(variableName: string, timeout = 60000): Promise<void> {
+    // Target the scrollable container that wraps the variables table
+    const scrollContainer = this.variablesScrollContainer;
+
+    await expect(async () => {
+      await scrollContainer.hover();
+      await scrollContainer.evaluate((element) => {
+        element.scrollBy(0, 10000);
+      });
+      await expect(
+        this.variablesTable.getByRole('cell', {name: variableName}),
+      ).toBeVisible();
+    }).toPass({timeout});
   }
 }
 
