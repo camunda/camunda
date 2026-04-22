@@ -172,6 +172,28 @@ const normalProjects = [
     use: devices['Desktop Chrome'],
     testIgnore: ['v2-stateless-tests/**', 'tests/api/**/*.spec.ts'],
   },
+  // ── Optimize variable-export scope tests ──────────────────────────────────
+  // Each project targets a specific Optimize server configuration.
+  // These projects do not select an Optimize instance via OPTIMIZE_BASE_URL.
+  // Playwright uses PLAYWRIGHT_BASE_URL for its baseURL, and API helpers use
+  // CORE_APPLICATION_URL (via utils/http.ts buildUrl). Before running one of
+  // the projects below, make sure those URLs point to an environment whose
+  // Optimize instance was started with the matching service-config.yaml settings.
+  //
+  // Run a single project:
+  //   npx playwright test --project=optimize-default-config
+  //   npx playwright test --project=optimize-local-vars-disabled
+  //   npx playwright test --project=optimize-root-vars-disabled
+  //   npx playwright test --project=optimize-import-disabled
+  {
+    // default-config.spec.ts — TC-01, TC-02, TC-20, TC-21, TC-22, TC-23
+    // Optimize defaults: exportRootVariables=true, exportLocalVariables=true
+    name: 'optimize-default-config',
+    testMatch: ['tests/api/v2/optimize/default-config.spec.ts'],
+    use: {
+      ...devices['Desktop Chrome'],
+    },
+  },
 ];
 
 const v2StatelessProjects = [
