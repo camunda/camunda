@@ -61,12 +61,12 @@ public class Worker {
     workerCfg = properties.getWorker();
     variables = payloadReader.readPayload(workerCfg.getPayloadPath());
     responseChecker = new ResponseChecker(requestFutures);
-    responseChecker.start();
     this.connectionMonitor = connectionMonitor;
   }
 
   @PostConstruct
   void awaitTopologyAndLogConfig() {
+    responseChecker.start();
     connectionMonitor.awaitAndPrintTopology();
     LOGGER.info(
         "Worker config: completionDelay={}, sendMessage={}, messageName={}, "
