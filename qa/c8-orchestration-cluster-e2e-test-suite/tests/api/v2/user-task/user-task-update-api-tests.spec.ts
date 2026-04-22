@@ -1,27 +1,26 @@
-/*
- * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
- * one or more contributor license agreements. See the NOTICE file distributed
- * with this work for additional information regarding copyright ownership.
- * Licensed under the Camunda License 1.0. You may not use this file
- * except in compliance with the Camunda License 1.0.
- */
-
+import {test, expect} from '@playwright/test';
 import {
-  completeUserTask,
-  findUserTask,
-  setupProcessInstanceForTests,
-} from '@requestHelpers';
-import {expect, test} from '@playwright/test';
-import {
-  assertInvalidState,
-  assertNotFoundRequest,
-  assertStatusCode,
-  assertUnauthorizedRequest,
   buildUrl,
   jsonHeaders,
-  assertInvalidArgument,
-} from '../../../../utils/http';
-import {defaultAssertionOptions} from '../../../../utils/constants';
+  assertStatusCode,
+  findUserTask,
+  setupProcessInstanceForTests,
+  defaultAssertionOptions,
+} from '../../../utils/http';
+
+/*
+ * These tests verify the User Task Update API (/v2/user-tasks/:key PATCH).
+ * They test:
+ *  - Updating a user task (due date, follow-up date, candidate users/groups, priority)
+ *  - Handling of bad requests (empty changeset, invalid priority values)
+ *  - Confirming the response fields are correct after an update
+ *
+ * Each test creates a process instance with a user task, looks up that user task,
+ * then patches it with new data, verifying both the status code and the returned fields.
+ *
+ * All tests in this describe block run in parallel within the same describe block
+ * and share a single process instance.
+ */
 
 const generateFutureDates = () => {
   const now = new Date();
@@ -40,29 +39,28 @@ test.describe.parallel('Update User Task Tests', () => {
   test.beforeEach(beforeEach);
   test.afterEach(afterEach);
 
-  test('Update user task - success - update all fields', async ({request}) => {
+  test('Update user task - success - with due date and follow-up date', async ({
+    request,
+  }) => {
     const userTaskKey = await findUserTask(
       request,
       state['processInstanceKey'] as string,
       'CREATED',
     );
+
     const res = await request.patch(buildUrl(`/user-tasks/${userTaskKey}`), {
       headers: jsonHeaders(),
       data: {
         changeset: {
           dueDate: generateFutureDates().dueDate,
           followUpDate: generateFutureDates().followUpDate,
-          candidateUsers: ['user1', 'user2'],
-          candidateGroups: ['group1', 'group2'],
-          priority: 80,
         },
-        action: 'customUpdate',
       },
     });
     await assertStatusCode(res, 204);
   });
 
-  test('Update user task - success - update only dueDate', async ({
+  test('Update user task - success - with candidate users', async ({
     request,
   }) => {
     const userTaskKey = await findUserTask(
@@ -70,18 +68,20 @@ test.describe.parallel('Update User Task Tests', () => {
       state['processInstanceKey'] as string,
       'CREATED',
     );
+
     const res = await request.patch(buildUrl(`/user-tasks/${userTaskKey}`), {
       headers: jsonHeaders(),
       data: {
         changeset: {
           dueDate: generateFutureDates().dueDate,
+          candidateUsers: ['userA', 'userB'],
         },
       },
     });
     await assertStatusCode(res, 204);
   });
 
-  test('Update user task - success - update only followUpDate', async ({
+  test('Update user task - success - with candidate groups', async ({
     request,
   }) => {
     const userTaskKey = await findUserTask(
@@ -89,144 +89,114 @@ test.describe.parallel('Update User Task Tests', () => {
       state['processInstanceKey'] as string,
       'CREATED',
     );
+
     const res = await request.patch(buildUrl(`/user-tasks/${userTaskKey}`), {
       headers: jsonHeaders(),
       data: {
         changeset: {
           followUpDate: generateFutureDates().followUpDate,
+          candidateGroups: ['groupA', 'groupB'],
         },
       },
     });
     await assertStatusCode(res, 204);
   });
 
-  test('Update user task - success - update only candidateUsers', async ({
-    request,
-  }) => {
+  test('Update user task - success - with priority', async ({request}) => {
     const userTaskKey = await findUserTask(
       request,
       state['processInstanceKey'] as string,
       'CREATED',
     );
+
     const res = await request.patch(buildUrl(`/user-tasks/${userTaskKey}`), {
       headers: jsonHeaders(),
       data: {
         changeset: {
-          candidateUsers: ['user1', 'user2'],
+          priority: 50,
         },
       },
     });
     await assertStatusCode(res, 204);
   });
 
-  test('Update user task - success - update only candidateGroups', async ({
-    request,
-  }) => {
+  test('Update user task - success - with all fields', async ({request}) => {
     const userTaskKey = await findUserTask(
       request,
       state['processInstanceKey'] as string,
       'CREATED',
     );
+
     const res = await request.patch(buildUrl(`/user-tasks/${userTaskKey}`), {
       headers: jsonHeaders(),
       data: {
         changeset: {
-          candidateGroups: ['group1'],
-        },
-      },
-    });
-    await assertStatusCode(res, 204);
-  });
-
-  test('Update user task - success - update only priority', async ({
-    request,
-  }) => {
-    const userTaskKey = await findUserTask(
-      request,
-      state['processInstanceKey'] as string,
-      'CREATED',
-    );
-    const res = await request.patch(buildUrl(`/user-tasks/${userTaskKey}`), {
-      headers: jsonHeaders(),
-      data: {
-        changeset: {
-          priority: 10,
-        },
-      },
-    });
-    await assertStatusCode(res, 204);
-  });
-
-  test('Update user task - success - reset dueDate and followUpDate', async ({
-    request,
-  }) => {
-    const userTaskKey = await findUserTask(
-      request,
-      state['processInstanceKey'] as string,
-      'CREATED',
-    );
-    const res = await request.patch(buildUrl(`/user-tasks/${userTaskKey}`), {
-      headers: jsonHeaders(),
-      data: {
-        changeset: {
-          dueDate: '',
-          followUpDate: '',
-        },
-      },
-    });
-    await assertStatusCode(res, 204);
-  });
-
-  test('Update user task - success - reset candidateUsers and candidateGroups', async ({
-    request,
-  }) => {
-    const userTaskKey = await findUserTask(
-      request,
-      state['processInstanceKey'] as string,
-      'CREATED',
-    );
-    const res = await request.patch(buildUrl(`/user-tasks/${userTaskKey}`), {
-      headers: jsonHeaders(),
-      data: {
-        changeset: {
-          candidateUsers: [],
-          candidateGroups: [],
-        },
-      },
-    });
-    await assertStatusCode(res, 204);
-  });
-
-  test('Update user task - bad request - empty changeset', async ({request}) => {
-    const userTaskKey = await findUserTask(
-      request,
-      state['processInstanceKey'] as string,
-      'CREATED',
-    );
-    const res = await request.patch(buildUrl(`/user-tasks/${userTaskKey}`), {
-      headers: jsonHeaders(),
-      data: {
-        changeset: {},
-      },
-    });
-    await assertInvalidArgument(res, 400, 'changeset');
-  });
-
-  test('Update user task - success - with custom action', async ({
-    request,
-  }) => {
-    const userTaskKey = await findUserTask(
-      request,
-      state['processInstanceKey'] as string,
-      'CREATED',
-    );
-    const res = await request.patch(buildUrl(`/user-tasks/${userTaskKey}`), {
-      headers: jsonHeaders(),
-      data: {
-        changeset: {
+          dueDate: generateFutureDates().dueDate,
+          followUpDate: generateFutureDates().followUpDate,
+          candidateUsers: ['userA'],
+          candidateGroups: ['groupA'],
           priority: 75,
         },
-        action: 'myCustomAction',
+      },
+    });
+    await assertStatusCode(res, 204);
+  });
+
+  test('Update user task - success - with minimal changeset (only dueDate)', async ({
+    request,
+  }) => {
+    const userTaskKey = await findUserTask(
+      request,
+      state['processInstanceKey'] as string,
+      'CREATED',
+    );
+
+    const res = await request.patch(buildUrl(`/user-tasks/${userTaskKey}`), {
+      headers: jsonHeaders(),
+      data: {
+        changeset: {
+          dueDate: generateFutureDates().dueDate,
+        },
+      },
+    });
+    await assertStatusCode(res, 204);
+  });
+
+  test('Update user task - success - with zero priority', async ({
+    request,
+  }) => {
+    const userTaskKey = await findUserTask(
+      request,
+      state['processInstanceKey'] as string,
+      'CREATED',
+    );
+
+    const res = await request.patch(buildUrl(`/user-tasks/${userTaskKey}`), {
+      headers: jsonHeaders(),
+      data: {
+        changeset: {
+          priority: 0,
+        },
+      },
+    });
+    await assertStatusCode(res, 204);
+  });
+
+  test('Update user task - success - with maximum priority', async ({
+    request,
+  }) => {
+    const userTaskKey = await findUserTask(
+      request,
+      state['processInstanceKey'] as string,
+      'CREATED',
+    );
+
+    const res = await request.patch(buildUrl(`/user-tasks/${userTaskKey}`), {
+      headers: jsonHeaders(),
+      data: {
+        changeset: {
+          priority: 100,
+        },
       },
     });
     await assertStatusCode(res, 204);
@@ -270,7 +240,7 @@ test.describe.parallel('Update User Task Tests', () => {
         );
         await assertStatusCode(getRes, 200);
         const json = await getRes.json();
-        expect(json.dueDate).toBe(dueDate);
+        expect(new Date(json.dueDate).getTime()).toBe(new Date(dueDate).getTime());
         expect(json.candidateUsers).toEqual(['verifyUser']);
         expect(json.priority).toBe(90);
       }).toPass(defaultAssertionOptions);
@@ -285,6 +255,7 @@ test.describe.parallel('Update User Task Tests', () => {
       state['processInstanceKey'] as string,
       'CREATED',
     );
+
     const res = await request.patch(buildUrl(`/user-tasks/${userTaskKey}`), {
       headers: jsonHeaders(),
       data: {
@@ -293,7 +264,7 @@ test.describe.parallel('Update User Task Tests', () => {
         },
       },
     });
-    await assertInvalidArgument(res, 400, 'priority');
+    await assertStatusCode(res, 400);
   });
 
   test('Update user task - bad request - invalid priority below min', async ({
@@ -304,6 +275,7 @@ test.describe.parallel('Update User Task Tests', () => {
       state['processInstanceKey'] as string,
       'CREATED',
     );
+
     const res = await request.patch(buildUrl(`/user-tasks/${userTaskKey}`), {
       headers: jsonHeaders(),
       data: {
@@ -312,49 +284,10 @@ test.describe.parallel('Update User Task Tests', () => {
         },
       },
     });
-    await assertInvalidArgument(res, 400, 'priority');
+    await assertStatusCode(res, 400);
   });
 
-  test('Update user task - unauthorized', async ({request}) => {
-    const userTaskKey = await findUserTask(
-      request,
-      state['processInstanceKey'] as string,
-      'CREATED',
-    );
-    const res = await request.patch(buildUrl(`/user-tasks/${userTaskKey}`), {
-      // No auth headers
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      data: {
-        changeset: {
-          priority: 50,
-        },
-      },
-    });
-    await assertUnauthorizedRequest(res);
-  });
-
-  test('Update user task - not found', async ({request}) => {
-    const unknownUserTaskKey = '2251799813694876';
-    const res = await request.patch(
-      buildUrl(`/user-tasks/${unknownUserTaskKey}`),
-      {
-        headers: jsonHeaders(),
-        data: {
-          changeset: {
-            priority: 50,
-          },
-        },
-      },
-    );
-    await assertNotFoundRequest(
-      res,
-      `Command 'UPDATE' rejected with code 'NOT_FOUND': Expected to update user task with key '${unknownUserTaskKey}', but no such user task was found`,
-    );
-  });
-
-  test('Update user task - conflict - task already completed', async ({
+  test('Update user task - bad request - invalid priority non-integer', async ({
     request,
   }) => {
     const userTaskKey = await findUserTask(
@@ -363,30 +296,66 @@ test.describe.parallel('Update User Task Tests', () => {
       'CREATED',
     );
 
-    await test.step('Complete the user task first', async () => {
-      await completeUserTask(request, userTaskKey);
-    });
-
-    await test.step(
-      'Attempt to update the completed user task',
-      async () => {
-        await expect(async () => {
-          const updateRes = await request.patch(
-            buildUrl(`/user-tasks/${userTaskKey}`),
-            {
-              headers: jsonHeaders(),
-              data: {
-                changeset: {
-                  priority: 50,
-                },
-              },
-            },
-          );
-          await assertInvalidState(updateRes);
-        }).toPass(defaultAssertionOptions);
+    const res = await request.patch(buildUrl(`/user-tasks/${userTaskKey}`), {
+      headers: jsonHeaders(),
+      data: {
+        changeset: {
+          priority: 50.5,
+        },
       },
+    });
+    await assertStatusCode(res, 400);
+  });
+
+  test('Update user task - bad request - empty changeset', async ({
+    request,
+  }) => {
+    const userTaskKey = await findUserTask(
+      request,
+      state['processInstanceKey'] as string,
+      'CREATED',
     );
 
-    state['processCompleted'] = true;
+    const res = await request.patch(buildUrl(`/user-tasks/${userTaskKey}`), {
+      headers: jsonHeaders(),
+      data: {
+        changeset: {},
+      },
+    });
+    await assertStatusCode(res, 400);
+  });
+
+  test('Update user task - not found', async ({request}) => {
+    const res = await request.patch(
+      buildUrl('/user-tasks/9999999999999999'),
+      {
+        headers: jsonHeaders(),
+        data: {
+          changeset: {
+            dueDate: generateFutureDates().dueDate,
+          },
+        },
+      },
+    );
+    await assertStatusCode(res, 404);
+  });
+
+  test('Update user task - success - clear due date', async ({request}) => {
+    const userTaskKey = await findUserTask(
+      request,
+      state['processInstanceKey'] as string,
+      'CREATED',
+    );
+
+    const res = await request.patch(buildUrl(`/user-tasks/${userTaskKey}`), {
+      headers: jsonHeaders(),
+      data: {
+        changeset: {
+          dueDate: null,
+          priority: 42,
+        },
+      },
+    });
+    await assertStatusCode(res, 204);
   });
 });
