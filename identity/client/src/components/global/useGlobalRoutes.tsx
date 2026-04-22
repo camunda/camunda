@@ -25,7 +25,6 @@ import {
   isTenantsApiEnabled,
 } from "src/configuration";
 import { Paths } from "src/components/global/routePaths";
-import { IS_MCP_PROCESSES_VIEW_ENABLED } from "src/feature-flags";
 
 export const useGlobalRoutes = () => {
   const { t } = useTranslate();
@@ -73,17 +72,6 @@ export const useGlobalRoutes = () => {
       ]
     : [];
 
-  const mcpProcessesRoutes = IS_MCP_PROCESSES_VIEW_ENABLED
-    ? [
-        {
-          path: `${Paths.mcpProcesses()}/*`,
-          key: Paths.mcpProcesses(),
-          label: t("mcpProcesses"),
-          element: <McpProcesses />,
-        },
-      ]
-    : [];
-
   const routes = [
     ...OIDCDependentRoutes,
     ...camundaGroupsDependentRoutes,
@@ -112,7 +100,12 @@ export const useGlobalRoutes = () => {
       label: t("clusterVariables"),
       element: <ClusterVariables />,
     },
-    ...mcpProcessesRoutes,
+    {
+      path: `${Paths.mcpProcesses()}/*`,
+      key: Paths.mcpProcesses(),
+      label: t("mcpProcesses"),
+      element: <McpProcesses />,
+    },
     {
       path: `${Paths.operationsLog()}/*`,
       key: Paths.operationsLog(),
