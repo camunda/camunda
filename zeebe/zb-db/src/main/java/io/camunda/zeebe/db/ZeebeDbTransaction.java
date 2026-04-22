@@ -38,4 +38,16 @@ public interface ZeebeDbTransaction {
    * @throws Exception if the underlying database has a non recoverable exception thrown
    */
   void rollback() throws Exception;
+
+  /**
+   * Returns the total serialized size in bytes of all pending writes accumulated so far in this
+   * transaction's write batch, as reported by RocksDB's {@code WriteBatch::GetDataSize()}. This
+   * includes framing overhead (type tags and length prefixes per entry) on top of the raw key and
+   * value bytes.
+   *
+   * <p>Returns 0 by default; implementations backed by RocksDB provide the actual value.
+   */
+  default long getWriteBatchDataSize() {
+    return 0;
+  }
 }

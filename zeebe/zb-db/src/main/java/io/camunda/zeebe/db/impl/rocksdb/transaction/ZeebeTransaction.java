@@ -18,6 +18,7 @@ import org.rocksdb.ReadOptions;
 import org.rocksdb.RocksDBException;
 import org.rocksdb.RocksIterator;
 import org.rocksdb.Transaction;
+import org.rocksdb.WriteBatch;
 
 public class ZeebeTransaction implements ZeebeDbTransaction, AutoCloseable {
 
@@ -111,6 +112,29 @@ public class ZeebeTransaction implements ZeebeDbTransaction, AutoCloseable {
 
   public RocksIterator newIterator(final ReadOptions options, final ColumnFamilyHandle handle) {
     return transaction.getIterator(options, handle);
+  }
+
+  /**
+   * Returns the total serialized size in bytes of all pending writes accumulated in this
+   * transaction's write batch, including RocksDB framing (type tag and length prefixes per entry).
+   *
+   * <p>Implemented via reflection: {@code Transaction.getWriteBatch(long)} retrieves the native
+   * handle of the transaction's internal {@code WriteBatchWithIndex*}, then {@code
+   * WriteBatchWithIndex.getWriteBatchJni(long)} returns a non-owning {@code WriteBatch} view of its
+   * inner {@code WriteBatch*}, and finally {@code WriteBatch.getDataSize()} reads the C++ {@code
+   * WriteBatch::GetDataSize()}.
+   */
+  @Override
+  public long getWriteBatchDataSize() {
+    try {
+      final long wbwiHandle =
+          (long) RocksDbInternal.getTransactionWriteBatch.invokeExact(nativeHandle);
+      final WriteBatch wb = (WriteBatch) RocksDbInternal.getInnerWriteBatch.invokeExact(wbwiHandle);
+      return wb.getDataSize();
+    } catch (final Throwable e) {
+      LangUtil.rethrowUnchecked(e);
+      return 0; // unreachable
+    }
   }
 
   void resetTransaction() {

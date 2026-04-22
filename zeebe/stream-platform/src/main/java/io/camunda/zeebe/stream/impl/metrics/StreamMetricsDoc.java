@@ -108,6 +108,33 @@ public enum StreamMetricsDoc implements ExtendedMeterDocumentation {
     }
   },
 
+  /** Distribution of total RocksDB write batch sizes (in bytes) produced per batch */
+  BATCH_PROCESSING_TRANSACTION_SIZE {
+    private static final double[] BUCKETS = {
+      1_024, 4_096, 16_384, 65_536, 262_144, 1_048_576, 4_194_304
+    };
+
+    @Override
+    public String getDescription() {
+      return "Distribution of total RocksDB write batch sizes (in bytes) produced per batch";
+    }
+
+    @Override
+    public String getName() {
+      return "zeebe.stream.processor.batch.processing.transaction.size";
+    }
+
+    @Override
+    public Type getType() {
+      return Type.DISTRIBUTION_SUMMARY;
+    }
+
+    @Override
+    public double[] getDistributionSLOs() {
+      return BUCKETS;
+    }
+  },
+
   /** Number of times batch processing failed due to reaching batch limit and was retried */
   BATCH_PROCESSING_RETRIES {
     @Override

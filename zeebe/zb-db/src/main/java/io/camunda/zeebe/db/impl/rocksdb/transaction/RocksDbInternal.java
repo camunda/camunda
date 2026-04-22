@@ -26,6 +26,7 @@ import org.rocksdb.RocksObject;
 import org.rocksdb.Status;
 import org.rocksdb.Status.Code;
 import org.rocksdb.Transaction;
+import org.rocksdb.WriteBatchWithIndex;
 
 public final class RocksDbInternal {
 
@@ -37,6 +38,20 @@ public final class RocksDbInternal {
   static MethodHandle putWithHandle;
   static MethodHandle getWithHandle;
   static MethodHandle removeWithHandle;
+
+  /**
+   * Reflects {@code Transaction.getWriteBatch(long)}: private static native, takes the transaction
+   * native handle, returns the native handle of the transaction's internal {@code
+   * WriteBatchWithIndex*}.
+   */
+  static MethodHandle getTransactionWriteBatch;
+
+  /**
+   * Reflects {@code WriteBatchWithIndex.getWriteBatchJni(long)}: private static native, takes the
+   * {@code WriteBatchWithIndex*} handle, returns a non-owning {@code WriteBatch} Java wrapper
+   * around the inner {@code WriteBatch*}.
+   */
+  static MethodHandle getInnerWriteBatch;
 
   static {
     RocksDB.loadLibrary();
@@ -54,6 +69,8 @@ public final class RocksDbInternal {
     putWithHandle();
     getWithHandle();
     removeWithHandle();
+    getTransactionWriteBatch();
+    getInnerWriteBatch();
   }
 
   private static void nativeHandles() throws NoSuchFieldException {
@@ -111,6 +128,32 @@ public final class RocksDbInternal {
     method.setAccessible(true);
     try {
       removeWithHandle = MethodHandles.lookup().unreflect(method);
+    } catch (final IllegalAccessException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  /*
+   private static native long getWriteBatch(final long handle);
+  */
+  private static void getTransactionWriteBatch() throws NoSuchMethodException {
+    final var method = Transaction.class.getDeclaredMethod("getWriteBatch", Long.TYPE);
+    method.setAccessible(true);
+    try {
+      getTransactionWriteBatch = MethodHandles.lookup().unreflect(method);
+    } catch (final IllegalAccessException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  /*
+   private static native WriteBatch getWriteBatchJni(final long handle);
+  */
+  private static void getInnerWriteBatch() throws NoSuchMethodException {
+    final var method = WriteBatchWithIndex.class.getDeclaredMethod("getWriteBatchJni", Long.TYPE);
+    method.setAccessible(true);
+    try {
+      getInnerWriteBatch = MethodHandles.lookup().unreflect(method);
     } catch (final IllegalAccessException e) {
       throw new RuntimeException(e);
     }
