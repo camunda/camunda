@@ -115,9 +115,6 @@ final class MessageSubscriptionFromMessageStartEventSubscriptionExportHandlerTes
     // given
     final long recordKey = 100L;
     final long pdKey = 200L;
-    final long processInstanceKey = 300L;
-    final long rootProcessInstanceKey = 400L;
-    final long flowNodeInstanceKey = 500L;
     final int partitionId = 3;
     final long timestamp = Instant.now().toEpochMilli();
     final String elementId = "startEvent1";
