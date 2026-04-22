@@ -4,6 +4,10 @@
 //
 // Applied to each operation object under paths (get, post, put, patch, delete).
 
+// $.paths[*][*] matches all keys under a path item, including non-operation
+// entries like "parameters", "summary", "$ref", etc. Only check actual HTTP methods.
+const HTTP_METHODS = new Set(['get', 'post', 'put', 'patch', 'delete']);
+
 module.exports = (input, _opts, context) => {
   const errors = [];
 
@@ -14,10 +18,7 @@ module.exports = (input, _opts, context) => {
   const pathString = context.path[1];
   const method = context.path[2];
 
-  // $.paths[*][*] matches all keys under a path item, including non-operation
-  // entries like "parameters", "summary", "$ref", etc. Only check actual HTTP methods.
-  const httpMethods = new Set(['get', 'post', 'put', 'patch', 'delete']);
-  if (!httpMethods.has(method)) {
+  if (!HTTP_METHODS.has(method)) {
     return errors;
   }
 
