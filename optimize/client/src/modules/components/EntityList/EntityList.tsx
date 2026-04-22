@@ -17,6 +17,7 @@ import React, {
 import {Link} from 'react-router-dom';
 import {
   DataTable,
+  type DataTableSortState,
   Table,
   TableBody,
   TableCell,
@@ -295,7 +296,9 @@ export default function EntityList({
                           key={key}
                           {...headerProps}
                           isSortHeader={formattedHeader.key === sorting?.key}
-                          sortDirection={sorting?.order?.toUpperCase()}
+                          sortDirection={
+                            sorting?.order?.toUpperCase() as DataTableSortState | undefined
+                          }
                           className="tableHeader"
                         >
                           {formattedHeader.header}

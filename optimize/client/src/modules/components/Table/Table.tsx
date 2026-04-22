@@ -52,7 +52,8 @@ import TableCell from './TableCell';
 import './Table.scss';
 
 export interface Header<T extends object = object>
-  extends ColumnInstance<T>,
+  extends
+    ColumnInstance<T>,
     UseSortByColumnProps<T>,
     UseSortByOptions<T>,
     UseResizeColumnsColumnProps<T> {
@@ -279,8 +280,6 @@ export default function Table<T extends object>({
                 headers={headers.map(getHeaderPlaceholder)}
                 columnCount={MAX_LOADING_COLUMNS_COUNT}
                 rowCount={MAX_LOADING_ROWS_COUNT}
-                // TODO: Remove this when carbon fixes their type declarations
-                compact={undefined}
                 className={undefined}
               />
             )}

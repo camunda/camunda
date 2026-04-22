@@ -4,7 +4,7 @@ exports[`should match snapshot 1`] = `
 <div
   className="ZoomControls"
 >
-  <ForwardRef(IconButton)
+  <ForwardRef
     align="left"
     className="reset"
     key="reset"
@@ -14,8 +14,8 @@ exports[`should match snapshot 1`] = `
     size="sm"
   >
     <ForwardRef(CenterCircle) />
-  </ForwardRef(IconButton)>
-  <ForwardRef(IconButton)
+  </ForwardRef>
+  <ForwardRef
     align="left"
     className="zoomIn"
     key="zoomIn"
@@ -25,8 +25,8 @@ exports[`should match snapshot 1`] = `
     size="sm"
   >
     <ForwardRef(Add) />
-  </ForwardRef(IconButton)>
-  <ForwardRef(IconButton)
+  </ForwardRef>
+  <ForwardRef
     align="left"
     className="zoomOut"
     key="zoomOut"
@@ -36,6 +36,6 @@ exports[`should match snapshot 1`] = `
     size="sm"
   >
     <ForwardRef(Subtract) />
-  </ForwardRef(IconButton)>
+  </ForwardRef>
 </div>
 `;

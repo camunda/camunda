@@ -139,6 +139,9 @@
   "resolutions": {
     "**/jpeg-js": "^0.4.0",
     "**/kind-of": "^6.0.3",
+    "**/@types/react": "^18",
+    "@types/minimatch": "^5",
+    "undici": "^6",
     "react-is": "^19.0.0"
   },
   "jest": {
@@ -148,6 +151,7 @@
     ],
     "moduleNameMapper": {
       "\\.(css|scss)$": "<rootDir>/src/__mocks__/styleMock.js",
+      "^@carbon/react/lib/components/ListBox$": "<rootDir>/src/__mocks__/carbon-listbox.js",
       "^react-dom((\\/.*)?)$": "react-dom-18$1",
       "^react((\\/.*)?)$": "react-18$1",
       "^react-is((\\/.*)?)$": "react-is-18$1"

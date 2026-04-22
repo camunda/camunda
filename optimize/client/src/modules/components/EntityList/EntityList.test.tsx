@@ -195,8 +195,8 @@ it('disable rows without actions', () => {
   const node = shallow(<EntityList {...props} headers={['Name']} />);
 
   const rows = node.find(DataTable).prop('rows');
-  expect(rows[0].disabled).toBe(false);
-  expect(rows[1].disabled).toBe(true);
+  expect(rows[0]!.disabled).toBe(false);
+  expect(rows[1]!.disabled).toBe(true);
 });
 
 it('should render description', () => {

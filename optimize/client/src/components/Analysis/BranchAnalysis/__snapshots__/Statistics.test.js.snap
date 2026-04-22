@@ -1,7 +1,7 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
 exports[`should create two Charts 1`] = `
-<ForwardRef(Stack)
+<ForwardRef
   className="Statistics"
   gap={4}
 >
@@ -98,7 +98,7 @@ exports[`should create two Charts 1`] = `
   >
     <canvas />
   </div>
-</ForwardRef(Stack)>
+</ForwardRef>
 `;
 
 exports[`should show a loading indicator while stuff is loading 1`] = `
@@ -134,7 +134,7 @@ exports[`should show a placeholder text initially 1`] = `
 `;
 
 exports[`should show a summary after loading is complete 1`] = `
-<ForwardRef(Stack)
+<ForwardRef
   className="Statistics"
   gap={4}
 >
@@ -231,5 +231,5 @@ exports[`should show a summary after loading is complete 1`] = `
   >
     <canvas />
   </div>
-</ForwardRef(Stack)>
+</ForwardRef>
 `;

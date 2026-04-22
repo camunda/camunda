@@ -25,13 +25,13 @@ exports[`should render a user task duration selection for user task duration rep
   }
 >
   <Form>
-    <ForwardRef(Stack)
+    <ForwardRef
       gap={3}
     >
       <FormGroup
         legendText="User task duration"
       >
-        <ForwardRef(Stack)
+        <ForwardRef
           gap={3}
         >
           <Toggle
@@ -64,12 +64,12 @@ exports[`should render a user task duration selection for user task duration rep
             size="sm"
             toggled={true}
           />
-        </ForwardRef(Stack)>
+        </ForwardRef>
       </FormGroup>
       <FormGroup
         legendText="Basic aggregations"
       >
-        <ForwardRef(Stack)
+        <ForwardRef
           gap={3}
         >
           <Toggle
@@ -112,12 +112,12 @@ exports[`should render a user task duration selection for user task duration rep
             size="sm"
             toggled={false}
           />
-        </ForwardRef(Stack)>
+        </ForwardRef>
       </FormGroup>
       <FormGroup
         legendText="Percentile aggregations"
       >
-        <ForwardRef(Stack)
+        <ForwardRef
           gap={3}
         >
           <Toggle
@@ -180,9 +180,9 @@ exports[`should render a user task duration selection for user task duration rep
             size="sm"
             toggled={false}
           />
-        </ForwardRef(Stack)>
+        </ForwardRef>
       </FormGroup>
-    </ForwardRef(Stack)>
+    </ForwardRef>
   </Form>
 </Popover>
 `;
@@ -212,13 +212,13 @@ exports[`should render an aggregation selection for duration reports 1`] = `
   }
 >
   <Form>
-    <ForwardRef(Stack)
+    <ForwardRef
       gap={3}
     >
       <FormGroup
         legendText="Basic aggregations"
       >
-        <ForwardRef(Stack)
+        <ForwardRef
           gap={3}
         >
           <Toggle
@@ -261,12 +261,12 @@ exports[`should render an aggregation selection for duration reports 1`] = `
             size="sm"
             toggled={false}
           />
-        </ForwardRef(Stack)>
+        </ForwardRef>
       </FormGroup>
       <FormGroup
         legendText="Percentile aggregations"
       >
-        <ForwardRef(Stack)
+        <ForwardRef
           gap={3}
         >
           <Toggle
@@ -329,9 +329,9 @@ exports[`should render an aggregation selection for duration reports 1`] = `
             size="sm"
             toggled={false}
           />
-        </ForwardRef(Stack)>
+        </ForwardRef>
       </FormGroup>
-    </ForwardRef(Stack)>
+    </ForwardRef>
   </Form>
 </Popover>
 `;
