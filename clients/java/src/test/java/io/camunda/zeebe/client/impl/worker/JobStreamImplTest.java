@@ -225,7 +225,7 @@ final class JobStreamImplTest {
   }
 
   @Test
-  void shouldLogProxy504AsWarnWithoutExceptionAndDebugWithException() {
+  void shouldLogProxy504AtDebugOnlyWithException() {
     // given - a realistic UNAVAILABLE status produced when an intermediary proxy (e.g. nginx)
     // terminates the idle streaming connection with HTTP 504.
     jobStreamer.openStreamer(ignored -> {});
@@ -244,23 +244,16 @@ final class JobStreamImplTest {
     scheduler.runUntilIdle();
 
     // then
-    final List<LogEvent> warns = eventsAt(Level.WARN);
-    assertThat(warns).hasSize(1);
-    final LogEvent warn = warns.get(0);
-    assertThat(warn.getMessage().getFormattedMessage())
-        .contains("upstream proxy")
-        .contains("504")
-        .contains("streamTimeout");
-    assertThat(warn.getThrown())
-        .as("WARN should not dump the raw gRPC exception for proxy 504")
-        .isNull();
+    assertThat(eventsAt(Level.WARN)).as("proxy 504 should not produce a WARN").isEmpty();
 
-    final List<LogEvent> debugs = eventsAt(Level.DEBUG);
-    assertThat(debugs)
-        .as("DEBUG should retain the full gRPC exception for investigation")
+    assertThat(eventsAt(Level.DEBUG))
+        .as("DEBUG should carry the hint message and the full gRPC exception")
         .anySatisfy(
             e -> {
-              assertThat(e.getMessage().getFormattedMessage()).contains("Failed to stream jobs");
+              assertThat(e.getMessage().getFormattedMessage())
+                  .contains("upstream proxy")
+                  .contains("504")
+                  .contains("streamTimeout");
               assertThat(e.getThrown()).isInstanceOf(StatusRuntimeException.class);
             });
   }
