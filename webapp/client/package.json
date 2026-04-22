@@ -10,7 +10,8 @@
 		"url": "git+https://github.com/camunda/camunda.git"
 	},
 	"workspaces": [
-		"packages/*"
+		"packages/*",
+		"apps/*"
 	],
 	"scripts": {
 		"lint": "eslint .",
