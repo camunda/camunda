@@ -21,6 +21,7 @@ import Tabs from "src/components/tabs";
 import { getRoleDetails } from "src/utility/api/roles";
 import { useEntityModal } from "src/components/modal";
 import DeleteModal from "src/pages/roles/modals/DeleteModal";
+import EditModal from "src/pages/roles/modals/EditModal";
 import { Description } from "src/components/layout/DetailsPageDescription";
 import Members from "src/pages/roles/detail/members";
 import Groups from "src/pages/roles/detail/groups";
@@ -36,10 +37,15 @@ const Details: FC = () => {
     tab: string;
   }>();
 
-  const { data: role, loading } = useApi(getRoleDetails, {
+  const {
+    data: role,
+    loading,
+    reload,
+  } = useApi(getRoleDetails, {
     roleId: id,
   });
 
+  const [editRole, editModal] = useEntityModal(EditModal, reload);
   const [deleteRole, deleteModal] = useEntityModal(DeleteModal, () =>
     navigate("..", { replace: true }),
   );
@@ -60,6 +66,10 @@ const Details: FC = () => {
                   <Stack orientation="horizontal" gap={spacing01}>
                     <PageHeadline>{role.name}</PageHeadline>
                     <OverflowMenu ariaLabel={t("openRoleContextMenu")}>
+                      <OverflowMenuItem
+                        itemText={t("editRole")}
+                        onClick={() => editRole(role)}
+                      />
                       <OverflowMenuItem
                         itemText={t("delete")}
                         isDelete
@@ -117,6 +127,7 @@ const Details: FC = () => {
           </Section>
         )}
       </>
+      {editModal}
       {deleteModal}
     </StackPage>
   );
