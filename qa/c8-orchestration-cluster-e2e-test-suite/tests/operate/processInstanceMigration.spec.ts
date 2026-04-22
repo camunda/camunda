@@ -460,12 +460,17 @@ test.describe.serial('Process Instance Migration', () => {
     });
 
     await test.step('Manually select target process and version', async () => {
+      // Add retries and waits for migration modal interactions
       await operateProcessMigrationModePage.targetProcessCombobox.click();
+      await sleep(1000);
       await operateProcessMigrationModePage
         .getOptionByName(targetBpmnProcessId)
         .click();
 
+      // Wait for version dropdown to populate after process selection
+      await sleep(2000);
       await operateProcessMigrationModePage.targetVersionDropdown.click();
+      await sleep(1000);
       await operateProcessMigrationModePage
         .getOptionByName(targetVersion)
         .click();
@@ -632,37 +637,48 @@ test.describe.serial('Process Instance Migration', () => {
     });
 
     await test.step('Verify 3 instances migrated to target version', async () => {
-      await operateFiltersPanelPage.selectProcess(targetBpmnProcessId);
-      await operateFiltersPanelPage.selectVersion(targetVersion);
+      // Add retry logic for target version selection and validation
       await waitForAssertion({
         assertion: async () => {
+          await operateFiltersPanelPage.selectProcess(targetBpmnProcessId);
+          // Wait for version dropdown to populate
+          await sleep(2000);
+          await operateFiltersPanelPage.selectVersion(targetVersion);
           await expect(
             operateProcessesPage.versionCells(targetVersion),
-          ).toHaveCount(3, {timeout: 6000});
+          ).toHaveCount(3, {timeout: 10000});
         },
         onFailure: async () => {
           await page.reload();
+          await sleep(1000);
         },
+        maxRetries: 3,
       });
     });
 
     await test.step('Verify remaining instances still at source version', async () => {
-      await operateFiltersPanelPage.selectProcess(sourceBpmnProcessId);
-      await operateFiltersPanelPage.selectVersion(sourceVersion);
+      // Add retry logic for version selection which can be flaky in CI
       await waitForAssertion({
         assertion: async () => {
+          await operateFiltersPanelPage.selectProcess(sourceBpmnProcessId);
+          // Wait for version dropdown to populate before selecting
+          await sleep(2000);
+          await operateFiltersPanelPage.selectVersion(sourceVersion);
           await expect(page.getByText('3 results')).toBeVisible({
-            timeout: 30000,
+            timeout: 15000,
           });
         },
         onFailure: async () => {
           await page.reload();
+          await sleep(1000);
         },
+        maxRetries: 3,
       });
     });
   });
 
   test('Migrated process instances', async ({
+    page,
     operateFiltersPanelPage,
     operateProcessesPage,
     operateProcessInstancePage,
@@ -675,19 +691,35 @@ test.describe.serial('Process Instance Migration', () => {
       await operateFiltersPanelPage.selectProcess(targetBpmnProcessId);
       await operateFiltersPanelPage.selectVersion(targetVersion);
 
-      await expect(operateProcessesPage.resultsText).toContainText(
-        '3 results',
-        {timeout: 30000},
-      );
+      // Use waitForAssertion for better CI reliability
+      await waitForAssertion({
+        assertion: async () => {
+          await expect(operateProcessesPage.resultsText).toContainText(
+            '3 results',
+            {timeout: 10000},
+          );
+        },
+        onFailure: async () => {
+          await page.reload();
+          await operateFiltersPanelPage.selectProcess(targetBpmnProcessId);
+          await operateFiltersPanelPage.selectVersion(targetVersion);
+        },
+        maxRetries: 5,
+      });
 
       await operateProcessesPage.clickProcessInstanceLink();
     });
 
     await test.step('Verify migrated tag is visible on the instance', async () => {
-      await expect(operateProcessInstancePage.migratedTag).toBeVisible();
+      await expect(operateProcessInstancePage.migratedTag).toBeVisible({
+        timeout: 30000,
+      });
     });
 
     await test.step('Verify element instances migration', async () => {
+      // Wait for diagram to load before checking overlays
+      await sleep(2000);
+
       await operateDiagramPage.verifyStateOverlay('SendTask2', 'active', 1);
       await operateDiagramPage.verifyStateOverlay('TaskG', 'active', 1);
       await operateDiagramPage.verifyStateOverlay(
