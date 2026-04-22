@@ -24,13 +24,11 @@ public final class ExportersState {
 
   private static final UnsafeBuffer METADATA_NOT_FOUND = new UnsafeBuffer();
 
-  private final TransactionContext transactionContext;
   private final DbString exporterId;
   private final ColumnFamily<DbString, ExporterStateEntry> exporterPositionColumnFamily;
 
   public ExportersState(
       final ZeebeDb<ZbColumnFamilies> zeebeDb, final TransactionContext transactionContext) {
-    this.transactionContext = transactionContext;
     exporterId = new DbString();
     exporterPositionColumnFamily =
         zeebeDb.createColumnFamily(
@@ -43,16 +41,15 @@ public final class ExportersState {
 
   public void setExporterState(
       final String exporterId, final long position, final DirectBuffer metadata) {
-    transactionContext.runInTransaction(
-        () -> {
-          final var exporterStateEntry =
-              findExporterStateEntry(exporterId).orElseGet(ExporterStateEntry::new);
-          exporterStateEntry.setPosition(position);
-          if (metadata != null) {
-            exporterStateEntry.setMetadata(metadata);
-          }
-          exporterPositionColumnFamily.upsert(this.exporterId, exporterStateEntry);
-        });
+    this.exporterId.wrapString(exporterId);
+
+    final var exporterStateEntry =
+        findExporterStateEntry(exporterId).orElse(new ExporterStateEntry());
+    exporterStateEntry.setPosition(position);
+    if (metadata != null) {
+      exporterStateEntry.setMetadata(metadata);
+    }
+    exporterPositionColumnFamily.upsert(this.exporterId, exporterStateEntry);
   }
 
   public void initializeExporterState(
