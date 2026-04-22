@@ -60,7 +60,7 @@
   },
   "devDependencies": {
     "@axe-core/playwright": "4.11.1",
-    "@camunda/lint-config": "file:../../client-components/packages/lint-config",
+    "@camunda/lint-config": "file:../../webapp/client/packages/lint-config",
     "@eslint/js": "9.39.4",
     "@playwright/test": "1.58.2",
     "@tanstack/react-query-devtools": "5.91.3",

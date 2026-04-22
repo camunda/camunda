@@ -207,14 +207,14 @@ outputs:
         steps.ci-github-actions.outputs.ci-relevant == 'true' ||
         steps.filter-common.outputs.renovate-config-change == 'true'
       }}
-  client-components-changes:
-    description: Output whether Client Components tests should be run based on GitHub event and files changed
+  webapp-client-changes:
+    description: Output whether Webapp Client tests should be run based on GitHub event and files changed
     value: >-
       ${{
         github.event_name == 'push' ||
         github.event_name == 'schedule' ||
         steps.ci-github-actions.outputs.ci-relevant == 'true' ||
-        steps.filter-client-components.outputs.client-components-change == 'true'
+        steps.filter-webapp-client.outputs.webapp-client-change == 'true'
       }}
   docs-changes:
     description: Output whether Documentation tests should be run based on GitHub event and files changed
@@ -394,13 +394,13 @@ runs:
           - optimize/backend/src/main/resources/localization/**
 
   - uses: dorny/paths-filter@fbd0ab8f3e69293af611ebaee6363fc25e6d187d # v4.0.1
-    id: filter-client-components
+    id: filter-webapp-client
     with:
       base: ${{ github.event.merge_group.base_ref || '' }}
       ref: ${{ github.event.merge_group.head_ref || github.ref }}
       filters: |
-        client-components-change:
-          - 'client-components/**'
+        webapp-client-change:
+          - 'webapp/client/**'
 
   - uses: dorny/paths-filter@fbd0ab8f3e69293af611ebaee6363fc25e6d187d # v4.0.1
     id: filter-docs

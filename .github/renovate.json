@@ -443,18 +443,18 @@
       "groupSlug": "optimize-patch"
     },
     {
-      "description": "Group patch updates per project (Client components).",
+      "description": "Group patch updates per project (Webapp client).",
       "matchManagers": [
         "npm"
       ],
       "matchFileNames": [
-        "client-components/**"
+        "webapp/client/**"
       ],
       "matchUpdateTypes": [
         "patch"
       ],
-      "groupName": "client-components patch dependencies",
-      "groupSlug": "client-components-patch"
+      "groupName": "webapp-client patch dependencies",
+      "groupSlug": "webapp-client-patch"
     },
     {
       "description": "Group patch updates per project (Docs site).",

@@ -22,7 +22,7 @@ lint-config/
 
 ### 1. Add `.npmrc` to the consumer project
 
-Because this package lives in a separate workspace (`client-components/packages/lint-config`) from the consumer projects (`operate/client`, `tasklist/client`, `identity/client`), npm uses a **symlink** by default when installing via `file:` references. This causes Node to resolve imports from the physical path of the package rather than the consumer's `node_modules`, breaking peer dependency resolution.
+Because this package lives in a separate workspace (`webapp/client/packages/lint-config`) from the consumer projects (`operate/client`, `tasklist/client`, `identity/client`), npm uses a **symlink** by default when installing via `file:` references. This causes Node to resolve imports from the physical path of the package rather than the consumer's `node_modules`, breaking peer dependency resolution.
 
 To fix this, add an `.npmrc` file to the consumer project with the following setting:
 
@@ -39,7 +39,7 @@ In the consumer's `package.json`:
 ```json
 {
   "devDependencies": {
-    "@camunda/lint-config": "file:../../client-components/packages/lint-config"
+    "@camunda/lint-config": "file:../../webapp/client/packages/lint-config"
   }
 }
 ```

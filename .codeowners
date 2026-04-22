@@ -240,8 +240,8 @@ optimize.Dockerfile         @camunda/core-features
 /document/                  @camunda/core-features
 /service/                   @camunda/core-features
 
-# Client Components (shared UI library)
-/client-components/         @camunda/core-features
+# Webapp Client (shared UI library)
+/webapp/client/         @camunda/core-features
 
 # Gateways
 /gateways/gateway-mapping-http/ @camunda/core-features
@@ -277,7 +277,7 @@ optimize.Dockerfile         @camunda/core-features
 /.github/workflows/operate-release-*.yml @camunda/core-features
 /.github/workflows/ci-operate.yml @camunda/core-features
 /.github/workflows/ci-tasklist.yml @camunda/core-features
-/.github/workflows/ci-client-components.yml @camunda/core-features
+/.github/workflows/ci-webapp-client.yml @camunda/core-features
 /.github/workflows/ci-webapp-run-ut-reuseable.yml @camunda/core-features
 /.github/workflows/tasklist* @camunda/core-features
 /.github/workflows/ci-optimize.yml @camunda/core-features
