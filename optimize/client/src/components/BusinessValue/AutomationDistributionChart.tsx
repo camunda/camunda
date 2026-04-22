@@ -6,11 +6,11 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useMemo} from 'react';
 import type {TooltipItem} from 'chart.js';
 
 // @ts-expect-error no types available
 import ChartRenderer from 'components/ReportRenderer/visualizations/Chart/ChartRenderer';
+import {t} from 'translation';
 
 import './AutomationDistributionChart.scss';
 
@@ -20,54 +20,58 @@ interface AutomationDistributionChartProps {
   autoTaskCount: number;
 }
 
+function buildSegments(humanTaskCount: number, agentTaskCount: number, autoTaskCount: number) {
+  return [
+    {label: t('businessValue.chart.humanTasks').toString(), value: humanTaskCount, color: '#aec7e9'},
+    {label: t('businessValue.chart.aiAgentTasks').toString(), value: agentTaskCount, color: '#6391d2'},
+    {label: t('businessValue.chart.systemAutomation').toString(), value: autoTaskCount, color: '#ffbc72'},
+  ];
+}
+
+function buildConfig(
+  segments: ReturnType<typeof buildSegments>,
+  total: number
+) {
+  return {
+    type: 'doughnut' as const,
+    data: {
+      labels: segments.map((s) => s.label),
+      datasets: [
+        {
+          data: segments.map((s) => s.value),
+          backgroundColor: segments.map((s) => s.color),
+          borderWidth: 1,
+        },
+      ],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {display: false},
+        datalabels: {display: false},
+        tooltip: {
+          callbacks: {
+            label: (context: TooltipItem<'doughnut'>) => {
+              const value = context.parsed;
+              const pct = total > 0 ? ((value / total) * 100).toFixed(1) : '0';
+              return `${context.label}: ${value.toLocaleString()} (${pct}%)`;
+            },
+          },
+        },
+      },
+    },
+  };
+}
+
 export default function AutomationDistributionChart({
   humanTaskCount,
   agentTaskCount,
   autoTaskCount,
 }: AutomationDistributionChartProps) {
-  const segments = useMemo(
-    () => [
-      {label: 'Human Tasks', value: humanTaskCount, color: '#aec7e9'},
-      {label: 'AI Agent Tasks', value: agentTaskCount, color: '#6391d2'},
-      {label: 'System Automation', value: autoTaskCount, color: '#ffbc72'},
-    ],
-    [humanTaskCount, agentTaskCount, autoTaskCount]
-  );
+  const segments = buildSegments(humanTaskCount, agentTaskCount, autoTaskCount);
   const total = humanTaskCount + agentTaskCount + autoTaskCount;
-
-  const config = useMemo(
-    () => ({
-      type: 'doughnut' as const,
-      data: {
-        labels: segments.map((s) => s.label),
-        datasets: [
-          {
-            data: segments.map((s) => s.value),
-            backgroundColor: segments.map((s) => s.color),
-            borderWidth: 1,
-          },
-        ],
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-          legend: {display: false},
-          datalabels: {display: false},
-          tooltip: {
-            callbacks: {
-              label: (context: TooltipItem<'doughnut'>) => {
-                const value = context.parsed;
-                const pct = total > 0 ? ((value / total) * 100).toFixed(1) : '0';
-                return `${context.label}: ${value.toLocaleString()} (${pct}%)`;
-              },
-            },
-          },
-        },
-      },
-    }),
-    [segments, total]
-  );
+  const config = buildConfig(segments, total);
 
   return (
     <div className="AutomationDistributionChart">

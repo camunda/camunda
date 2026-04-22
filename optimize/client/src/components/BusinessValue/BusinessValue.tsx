@@ -11,6 +11,7 @@ import {Column, Grid} from '@carbon/react';
 
 import {Loading, PageTitle} from 'components';
 import {showError} from 'notifications';
+import {t} from 'translation';
 import {withErrorHandling, WithErrorHandlingProps} from 'HOC';
 
 import {loadSummary} from './service';
@@ -46,35 +47,35 @@ function BusinessValue({mightFail}: WithErrorHandlingProps) {
   return (
     <Grid condensed className="BusinessValue" fullWidth>
       <Column sm={4} md={8} lg={16}>
-        <PageTitle pageName="Business Value Dashboard" />
-        <h1 className="businessValueDashboard">Business Value Dashboard</h1>
+        <PageTitle pageName={t('businessValue.pageTitle').toString()} />
+        <h1 className="businessValueDashboard">{t('businessValue.pageTitle')}</h1>
       </Column>
 
       {/* Row 1 – 6 KPI number tiles */}
       <Column sm={4} md={8} lg={16}>
         <div className="kpiRow">
           <div className="tile kpiTile">
-            <div className="tileTitle">Active Processes</div>
+            <div className="tileTitle">{t('businessValue.kpi.activeProcesses')}</div>
             <div className="tileNumber">{kpis.activeProcesses}</div>
           </div>
           <div className="tile kpiTile">
-            <div className="tileTitle">Instances Completed</div>
+            <div className="tileTitle">{t('businessValue.kpi.instancesCompleted')}</div>
             <div className="tileNumber">{kpis.completedInstances.toLocaleString()}</div>
           </div>
           <div className="tile kpiTile">
-            <div className="tileTitle">Value Created</div>
+            <div className="tileTitle">{t('businessValue.kpi.valueCreated')}</div>
             <div className="tileNumber">€ {kpis.totalValueCreated.toLocaleString()}</div>
           </div>
           <div className="tile kpiTile">
-            <div className="tileTitle">Total Cost</div>
+            <div className="tileTitle">{t('businessValue.kpi.totalCost')}</div>
             <div className="tileNumber">€ {kpis.totalCost.toLocaleString()}</div>
           </div>
           <div className="tile kpiTile">
-            <div className="tileTitle">Automation Rate</div>
+            <div className="tileTitle">{t('businessValue.kpi.automationRate')}</div>
             <div className="tileNumber">{Math.round(kpis.automationRate * 100)}%</div>
           </div>
           <div className="tile kpiTile">
-            <div className="tileTitle">Platform ROI</div>
+            <div className="tileTitle">{t('businessValue.kpi.platformRoi')}</div>
             <div className="tileNumber">{kpis.platformRoi}x</div>
           </div>
         </div>
@@ -84,7 +85,7 @@ function BusinessValue({mightFail}: WithErrorHandlingProps) {
       <Column sm={4} md={8} lg={16}>
         <div className="chartRow">
           <div className="tile chartTile">
-            <div className="tileTitle">Automation Distribution</div>
+            <div className="tileTitle">{t('businessValue.tiles.automationDistribution')}</div>
             <div className="tileContent">
               <AutomationDistributionChart
                 humanTaskCount={kpis.humanTaskCount}
@@ -94,7 +95,7 @@ function BusinessValue({mightFail}: WithErrorHandlingProps) {
             </div>
           </div>
           <div className="tile chartTile">
-            <div className="tileTitle">Automation Value Trend</div>
+            <div className="tileTitle">{t('businessValue.tiles.valueTrend')}</div>
             <div className="tileContent">
               <ValueTrendChart trend={data.trend} />
             </div>
@@ -106,16 +107,18 @@ function BusinessValue({mightFail}: WithErrorHandlingProps) {
       <Column sm={4} md={8} lg={16}>
         <div className="fullRow">
           <div className="tile chartTile">
-            <div className="tileTitle">Top Processes by Business Value</div>
+            <div className="tileTitle">{t('businessValue.tiles.topProcesses')}</div>
             <div className="tileContent">
               <TopProcessesTable processes={data.topProcesses} />
               <div className="processChartsRow">
                 <div className="processChartSection">
-                  <div className="aiSectionLabel">Value Comparison</div>
+                  <div className="aiSectionLabel">
+                    {t('businessValue.sections.valueComparison')}
+                  </div>
                   <ProcessValueChart processes={data.topProcesses} />
                 </div>
                 <div className="processChartSection">
-                  <div className="aiSectionLabel">Cost Breakdown</div>
+                  <div className="aiSectionLabel">{t('businessValue.sections.costBreakdown')}</div>
                   <ProcessCostBreakdownChart processes={data.topProcesses} />
                 </div>
               </div>
@@ -128,45 +131,59 @@ function BusinessValue({mightFail}: WithErrorHandlingProps) {
       <Column sm={4} md={8} lg={16}>
         <div className="fullRow">
           <div className="tile chartTile">
-            <div className="tileTitle">AI Usage & Cost</div>
+            <div className="tileTitle">{t('businessValue.tiles.aiUsageCost')}</div>
             <div className="tileContent">
               <div className="aiLayout">
                 <div className="aiMetrics aiMetricsLeft">
                   <div className="aiMetric">
-                    <span className="aiMetricLabel">Total LLM Cost</span>
+                    <span className="aiMetricLabel">
+                      {t('businessValue.aiMetrics.totalLlmCost')}
+                    </span>
                     <span className="aiMetricValue">€{kpis.totalLlmCost.toLocaleString()}</span>
                   </div>
                   <div className="aiMetric">
-                    <span className="aiMetricLabel">AI Agent Tasks</span>
+                    <span className="aiMetricLabel">
+                      {t('businessValue.aiMetrics.aiAgentTasks')}
+                    </span>
                     <span className="aiMetricValue">{kpis.agentTaskCount.toLocaleString()}</span>
                   </div>
                 </div>
                 <div className="aiChartSection aiChartCostByModel">
-                  <div className="aiSectionLabel">Usage Cost by Model</div>
+                  <div className="aiSectionLabel">
+                    {t('businessValue.sections.usageCostByModel')}
+                  </div>
                   <CostByModelChart costByModel={data.costByModel} />
                 </div>
                 <div className="aiChartSection aiChartAgentTasks">
-                  <div className="aiSectionLabel">Top Agent Tasks by Cost</div>
+                  <div className="aiSectionLabel">
+                    {t('businessValue.sections.topAgentTasksByCost')}
+                  </div>
                   <TopAgentTasksChart agentTasks={data.topAgentTasks} />
                 </div>
                 <div className="aiMetrics aiMetricsRight">
                   <div className="aiMetric">
-                    <span className="aiMetricLabel">AI Share of Cost</span>
+                    <span className="aiMetricLabel">
+                      {t('businessValue.aiMetrics.aiShareOfCost')}
+                    </span>
                     <span className="aiMetricValue">
                       {kpis.totalCost > 0
                         ? `${Math.round((kpis.totalLlmCost / kpis.totalCost) * 100)}%`
                         : '—'}
                     </span>
-                    <span className="aiMetricSub">of total cost</span>
+                    <span className="aiMetricSub">{t('businessValue.aiMetrics.ofTotalCost')}</span>
                   </div>
                   <div className="aiMetric">
-                    <span className="aiMetricLabel">Value per AI Dollar</span>
+                    <span className="aiMetricLabel">
+                      {t('businessValue.aiMetrics.valuePerAiDollar')}
+                    </span>
                     <span className="aiMetricValue">
                       {kpis.totalLlmCost > 0
                         ? `${(kpis.totalValueCreated / kpis.totalLlmCost).toFixed(1)}x`
                         : '—'}
                     </span>
-                    <span className="aiMetricSub">return on AI spend</span>
+                    <span className="aiMetricSub">
+                      {t('businessValue.aiMetrics.returnOnAiSpend')}
+                    </span>
                   </div>
                 </div>
               </div>

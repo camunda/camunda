@@ -13,6 +13,7 @@
     "appSwitcher": "App switcher",
     "dashboards": "Dashboards",
     "collections": "Collections",
+    "businessValue": "Business Value",
     "apps": {
       "zeebe": "Zeebe",
       "operate": "Operate",
@@ -1576,6 +1577,60 @@
       "p75Duration": "75th percentile duration",
       "instanceTrends": "How frequently is this process run?",
       "flownodeFrequency": "How often is each process step run?"
+    }
+  },
+  "businessValue": {
+    "pageTitle": "Business Value Dashboard",
+    "kpi": {
+      "activeProcesses": "Active Processes",
+      "instancesCompleted": "Instances Completed",
+      "valueCreated": "Value Created",
+      "totalCost": "Total Cost",
+      "automationRate": "Automation Rate",
+      "platformRoi": "Platform ROI"
+    },
+    "tiles": {
+      "automationDistribution": "Automation Distribution",
+      "valueTrend": "Automation Value Trend",
+      "topProcesses": "Top Processes by Business Value",
+      "aiUsageCost": "AI Usage & Cost"
+    },
+    "sections": {
+      "valueComparison": "Value Comparison",
+      "costBreakdown": "Cost Breakdown",
+      "usageCostByModel": "Usage Cost by Model",
+      "topAgentTasksByCost": "Top Agent Tasks by Cost"
+    },
+    "aiMetrics": {
+      "totalLlmCost": "Total LLM Cost",
+      "aiAgentTasks": "AI Agent Tasks",
+      "aiShareOfCost": "AI Share of Cost",
+      "ofTotalCost": "of total cost",
+      "valuePerAiDollar": "Value per AI Dollar",
+      "returnOnAiSpend": "return on AI spend"
+    },
+    "table": {
+      "process": "Process",
+      "valueCreated": "Value Created",
+      "costSaved": "Cost Saved",
+      "llmCost": "LLM Cost",
+      "instances": "Instances"
+    },
+    "chart": {
+      "humanTasks": "Human Tasks",
+      "aiAgentTasks": "AI Agent Tasks",
+      "systemAutomation": "System Automation",
+      "valueCreated": "Value Created",
+      "baselineCostSaved": "Baseline Cost Saved",
+      "llmCost": "LLM Cost",
+      "cost": "Cost",
+      "tooltip": {
+        "cost": "Cost",
+        "invocations": "Invocations",
+        "tokens": "Tokens",
+        "instances": "Instances",
+        "valuePerInstance": "Value per Instance"
+      }
     }
   }
 }

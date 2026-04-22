@@ -16,6 +16,8 @@ import {
   TableRow,
 } from '@carbon/react';
 
+import {t} from 'translation';
+
 import type {TopProcess} from './types';
 
 import './TopProcessesTable.scss';
@@ -23,14 +25,6 @@ import './TopProcessesTable.scss';
 interface TopProcessesTableProps {
   processes: TopProcess[];
 }
-
-const headers = [
-  {key: 'processLabel', header: 'Process'},
-  {key: 'valueCreated', header: 'Value Created'},
-  {key: 'baselineCostSaved', header: 'Cost Saved'},
-  {key: 'llmCost', header: 'LLM Cost'},
-  {key: 'instanceCount', header: 'Instances'},
-];
 
 const formatCurrency = (value: number) => `€${value.toLocaleString()}`;
 const formatNumber = (value: number) => value.toLocaleString();
@@ -42,7 +36,19 @@ const formatters: Record<string, (value: number) => string> = {
   instanceCount: formatNumber,
 };
 
+function buildHeaders() {
+  return [
+    {key: 'processLabel', header: t('businessValue.table.process').toString()},
+    {key: 'valueCreated', header: t('businessValue.table.valueCreated').toString()},
+    {key: 'baselineCostSaved', header: t('businessValue.table.costSaved').toString()},
+    {key: 'llmCost', header: t('businessValue.table.llmCost').toString()},
+    {key: 'instanceCount', header: t('businessValue.table.instances').toString()},
+  ];
+}
+
 export default function TopProcessesTable({processes}: TopProcessesTableProps) {
+  const headers = buildHeaders();
+
   const rows = processes.map((process) => ({
     id: process.processDefinitionKey,
     processLabel: process.processLabel,
