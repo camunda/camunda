@@ -29,10 +29,10 @@ import io.camunda.zeebe.qa.util.actuator.JobStreamActuator;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.jobstream.JobStreamActuatorAssert;
 import java.time.Duration;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
@@ -62,7 +62,7 @@ public class JobStreamAuthorizationIT {
   private static final String USER1_USERNAME = "user1";
   private static final String USER2_USERNAME = "user2";
 
-  private static final Set<Long> STARTED_PROCESS_INSTANCES = new HashSet<>();
+  private static final Set<Long> STARTED_PROCESS_INSTANCES = ConcurrentHashMap.<Long>newKeySet();
 
   @UserDefinition
   private static final TestUser USER1_USER =
@@ -113,7 +113,7 @@ public class JobStreamAuthorizationIT {
     // given
     final var jobType = uniqueJobType();
     // a job set for collecting jobs in the client
-    final var jobCollector = new HashSet<ActivatedJob>();
+    final var jobCollector = ConcurrentHashMap.<ActivatedJob>newKeySet();
     // and a job stream command created by the user1 client, with their authorizations
     final var command =
         camundaClient
@@ -139,7 +139,7 @@ public class JobStreamAuthorizationIT {
     deployProcess(PROCESS_ID_1, jobType, TENANT_A);
     deployProcess(PROCESS_ID_1, jobType, TENANT_B);
     // a job set for collecting jobs in the client
-    final var jobCollector = new HashSet<ActivatedJob>();
+    final var jobCollector = ConcurrentHashMap.<ActivatedJob>newKeySet();
     // and a job stream created by the user1 client, with their authorizations
     final var stream =
         user1Client
@@ -175,7 +175,7 @@ public class JobStreamAuthorizationIT {
     deployProcess(PROCESS_ID_1, jobType, TENANT_B);
     deployProcess(PROCESS_ID_2, jobType, TENANT_B);
     // a job set for collecting jobs in the client
-    final var jobCollector = new HashSet<ActivatedJob>();
+    final var jobCollector = ConcurrentHashMap.<ActivatedJob>newKeySet();
     // and a job stream created by the user2 client, with their authorizations
     final var stream =
         user2Client
@@ -217,7 +217,7 @@ public class JobStreamAuthorizationIT {
     final var jobType = uniqueJobType();
     deployProcess(PROCESS_ID_3, jobType, TENANT_A);
     deployProcess(PROCESS_ID_3, jobType, TENANT_B);
-    final var jobCollector = new HashSet<ActivatedJob>();
+    final var jobCollector = ConcurrentHashMap.<ActivatedJob>newKeySet();
     // a job stream created by user1 with ASSIGNED tenant filter (resolves to tenantA only)
     final var stream =
         user1Client
@@ -250,7 +250,7 @@ public class JobStreamAuthorizationIT {
     deployProcess(PROCESS_ID_3, jobType, TENANT_A);
     deployProcess(PROCESS_ID_3, jobType, TENANT_B);
     deployProcess(PROCESS_ID_4, jobType, TENANT_B);
-    final var jobCollector = new HashSet<ActivatedJob>();
+    final var jobCollector = ConcurrentHashMap.<ActivatedJob>newKeySet();
     // a job stream created by user2 with ASSIGNED tenant filter (resolves to tenantA and tenantB)
     final var stream =
         user2Client
@@ -288,7 +288,7 @@ public class JobStreamAuthorizationIT {
     // given
     final var jobType = uniqueJobType();
     deployProcess(PROCESS_ID_5, jobType, TENANT_B);
-    final var jobCollector = new HashSet<ActivatedJob>();
+    final var jobCollector = ConcurrentHashMap.<ActivatedJob>newKeySet();
     // a job stream with ASSIGNED filter AND an explicit tenantId(TENANT_A) —
     // the ASSIGNED filter should override the provided tenant IDs, so the broker
     // resolves from all assigned tenants (both A and B), not just tenantA
