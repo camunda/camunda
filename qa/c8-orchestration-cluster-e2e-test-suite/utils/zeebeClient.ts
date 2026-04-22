@@ -6,10 +6,10 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {readFileSync} from 'fs';
-import {basename} from 'path';
+import {readFileSync} from 'node:fs';
+import {basename} from 'node:path';
 import {Camunda8} from '@camunda8/sdk';
-import {JSONDoc} from '@camunda8/sdk/dist/zeebe/types.js';
+import {JSONDoc, ZBWorkerTaskHandler} from '@camunda8/sdk/dist/zeebe/types.js';
 
 const c8 = new Camunda8({
   CAMUNDA_AUTH_STRATEGY: process.env.CAMUNDA_AUTH_STRATEGY as
@@ -55,21 +55,18 @@ const deploy = async (processFilePaths: string[]) => {
 };
 
 const deployWithSubstitutions = async (
-  bpmnFilePath: string,
+  filePath: string,
   substitutions: Record<string, string>,
-): Promise<void> => {
-  let content = readFileSync(bpmnFilePath, 'utf-8');
-  for (const [placeholder, replacement] of Object.entries(substitutions)) {
-    if (!content.includes(placeholder)) {
-      throw new Error(
-        `Placeholder '${placeholder}' not found in BPMN file '${bpmnFilePath}'`,
-      );
-    }
-    content = content.split(placeholder).join(replacement);
+) => {
+  let content = readFileSync(filePath, 'utf-8');
+  for (const [key, value] of Object.entries(substitutions)) {
+    content = content.split(key).join(value);
   }
-  const name = basename(bpmnFilePath);
   try {
-    await zeebe.deployResources([{content, name}]);
+    const results = await zeebe.deployResources([
+      {content, name: basename(filePath)},
+    ]);
+    return results;
   } catch (error) {
     console.error('Deployment failed:', error);
     throw error;
