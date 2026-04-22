@@ -187,10 +187,22 @@ public class SearchClientAdapter {
 
   public String index(final String id, final String index, final Object document)
       throws IOException {
+    return index(id, null, index, document);
+  }
+
+  public String index(
+      final String id, final String routing, final String index, final Object document)
+      throws IOException {
     if (elsClient != null) {
-      return elsClient.index(i -> i.index(index).id(id).document(document)).result().jsonValue();
+      return elsClient
+          .index(i -> i.index(index).id(id).routing(routing).document(document))
+          .result()
+          .jsonValue();
     } else if (osClient != null) {
-      return osClient.index(i -> i.index(index).id(id).document(document)).result().jsonValue();
+      return osClient
+          .index(i -> i.index(index).id(id).routing(routing).document(document))
+          .result()
+          .jsonValue();
     }
     return "";
   }
