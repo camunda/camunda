@@ -22,8 +22,9 @@ module.exports = (input, _opts, context) => {
   }
 
   const operationId = input.operationId || '?';
+  const addedInVersion = input['x-added-in-version'];
 
-  if (input['x-added-in-version'] == null) {
+  if (typeof addedInVersion !== 'string' || addedInVersion.trim().length === 0) {
     errors.push({
       message: `Operation "${operationId}" (${method.toUpperCase()} ${pathString}) is missing x-added-in-version. Every endpoint must declare the Camunda version in which it was introduced.`,
       path: [...context.path],
