@@ -36,7 +36,7 @@ test.describe('Correlate Message API Tests', () => {
   test.beforeAll(async () => {
     await deploy(['./resources/messageCatchEvent4.bpmn']);
     const processes = await createInstances('messageCatchEvent4', 1, 1);
-    expect(processes.length).toBe(1);
+    expect(processes).toHaveLength(1);
     state['processInstanceKey'] = processes[0].processInstanceKey;
   });
 

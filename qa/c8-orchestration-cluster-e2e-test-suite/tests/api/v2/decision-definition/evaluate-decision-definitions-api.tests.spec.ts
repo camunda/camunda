@@ -96,7 +96,7 @@ test.describe.parallel('Evaluate Decision Definitions API Tests', () => {
       );
       const json = await res.json();
       assertEqualsForKeys(json, expectedBody, Object.keys(expectedBody));
-      expect(json['evaluatedDecisions'].length).toBe(1);
+      expect(json['evaluatedDecisions']).toHaveLength(1);
       const evaluatedDecisionActualBody = json['evaluatedDecisions'][0];
       assertEqualsForKeys(
         evaluatedDecisionActualBody,
@@ -154,7 +154,7 @@ test.describe.parallel('Evaluate Decision Definitions API Tests', () => {
       );
       const json = await res.json();
       assertEqualsForKeys(json, expectedBody, Object.keys(expectedBody));
-      expect(json['evaluatedDecisions'].length).toBe(1);
+      expect(json['evaluatedDecisions']).toHaveLength(1);
       const evaluatedDecisionActualBody = json['evaluatedDecisions'][0];
       assertEqualsForKeys(
         evaluatedDecisionActualBody,
@@ -212,7 +212,7 @@ test.describe.parallel('Evaluate Decision Definitions API Tests', () => {
       );
       const json = await res.json();
       assertEqualsForKeys(json, expectedBody, Object.keys(expectedBody));
-      expect(json['evaluatedDecisions'].length).toBe(1);
+      expect(json['evaluatedDecisions']).toHaveLength(1);
       const evaluatedDecisionActualBody = json['evaluatedDecisions'][0];
       assertEqualsForKeys(
         evaluatedDecisionActualBody,
@@ -272,7 +272,7 @@ test.describe.parallel('Evaluate Decision Definitions API Tests', () => {
       );
       const json = await res.json();
       assertEqualsForKeys(json, expectedBody, Object.keys(expectedBody));
-      expect(json['evaluatedDecisions'].length).toBe(1);
+      expect(json['evaluatedDecisions']).toHaveLength(1);
       const evaluatedDecisionActualBody = json['evaluatedDecisions'][0];
       assertEqualsForKeys(
         evaluatedDecisionActualBody,
@@ -350,7 +350,7 @@ test.describe.parallel('Evaluate Decision Definitions API Tests', () => {
       );
       const json = await res.json();
       assertEqualsForKeys(json, expectedBody, Object.keys(expectedBody));
-      expect(json['evaluatedDecisions'].length).toBe(1);
+      expect(json['evaluatedDecisions']).toHaveLength(1);
       const evaluatedDecisionActualBody = json['evaluatedDecisions'][0];
       assertEqualsForKeys(
         evaluatedDecisionActualBody,
@@ -428,7 +428,7 @@ test.describe.parallel('Evaluate Decision Definitions API Tests', () => {
       );
       const json = await res.json();
       assertEqualsForKeys(json, expectedBody, Object.keys(expectedBody));
-      expect(json['evaluatedDecisions'].length).toBe(1);
+      expect(json['evaluatedDecisions']).toHaveLength(1);
       const evaluatedDecisionActualBody = json['evaluatedDecisions'][0];
       assertEqualsForKeys(
         evaluatedDecisionActualBody,
@@ -488,7 +488,7 @@ test.describe.parallel('Evaluate Decision Definitions API Tests', () => {
       );
       const json = await res.json();
       assertEqualsForKeys(json, expectedBody, Object.keys(expectedBody));
-      expect(json['evaluatedDecisions'].length).toBe(1);
+      expect(json['evaluatedDecisions']).toHaveLength(1);
       const evaluatedDecisionActualBody = json['evaluatedDecisions'][0];
       assertEqualsForKeys(
         evaluatedDecisionActualBody,

@@ -160,7 +160,7 @@ test.describe.parallel('Search Variables API Tests', () => {
       const body = await res.json();
 
       expect(body.page.totalItems).toBeGreaterThanOrEqual(1);
-      expect(body.items.length).toBe(1);
+      expect(body.items).toHaveLength(1);
     }).toPass(defaultAssertionOptions);
   });
 
@@ -269,13 +269,15 @@ test.describe.parallel('Search Variables API Tests', () => {
           },
         },
       });
-      await assertInvalidArgument(res, 400, "The value for page.limit is '-1' but must be a non-negative number.");
+      await assertInvalidArgument(
+        res,
+        400,
+        "The value for page.limit is '-1' but must be a non-negative number.",
+      );
     }).toPass(defaultAssertionOptions);
   });
 
-  test('Search Variables with 0 pagination parameters', async ({
-    request,
-  }) => {
+  test('Search Variables with 0 pagination parameters', async ({request}) => {
     await expect(async () => {
       const res = await request.post(buildUrl('/variables/search'), {
         headers: jsonHeaders(),
@@ -296,7 +298,7 @@ test.describe.parallel('Search Variables API Tests', () => {
       );
       const body = await res.json();
       expect(body.page.totalItems).toBeGreaterThanOrEqual(0);
-      expect(body.items.length).toBe(0);
+      expect(body.items).toHaveLength(0);
     }).toPass(defaultAssertionOptions);
   });
 });

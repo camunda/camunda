@@ -23,7 +23,7 @@ import {
   StatisticsJobItem,
 } from '@requestHelpers';
 import {cleanupUsers} from 'utils/usersCleanup';
-import { defaultAssertionOptions } from 'utils/constants';
+import {defaultAssertionOptions} from 'utils/constants';
 
 test.describe.parallel('Job Statistics By Type API Tests', () => {
   let userWithResourcesAuthorizationToSendRequest: {
@@ -124,10 +124,14 @@ test.describe.parallel('Job Statistics By Type API Tests', () => {
       const extendedResponseBody = await extendedSearchRes.json();
       const extendedItem = extendedResponseBody.items[0];
       if (!extendedItem || !extendedItem.jobType) {
-        test.info().annotations.push({ type: 'blocked', description: 'No job statistics data available to verify the response with jobType filter' });
+        test.info().annotations.push({
+          type: 'blocked',
+          description:
+            'No job statistics data available to verify the response with jobType filter',
+        });
         return;
       }
-      
+
       expect(extendedItem).toBeDefined();
       expect(extendedItem.jobType).toBe(jobType);
       expect(extendedItem.created.count).toBe(item.created.count);
@@ -195,7 +199,7 @@ test.describe.parallel('Job Statistics By Type API Tests', () => {
       res,
     );
     const body = await res.json();
-    expect(body.items.length).toBe(0);
+    expect(body.items).toHaveLength(0);
     expect(body.page.totalItems).toBe(0);
   });
 
@@ -237,7 +241,7 @@ test.describe.parallel('Job Statistics By Type API Tests', () => {
       res,
     );
     const body = await res.json();
-    expect(body.items.length).toBe(0);
+    expect(body.items).toHaveLength(0);
     expect(body.page.totalItems).toBe(0);
   });
 });

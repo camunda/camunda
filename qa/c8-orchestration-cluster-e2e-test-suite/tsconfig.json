@@ -14,8 +14,5 @@
       "@pages/*": ["pages/*"],
       "@requestHelpers": ["utils/requestHelpers/index.ts"]
     }
-  },
-  "exclude": [
-    "v2-stateless-tests/request-validation-test-generator/scripts/**"
-  ]
+  }
 }
