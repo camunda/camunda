@@ -18,6 +18,5 @@
   "org.opencontainers.image.url": "https://docs.camunda.io/docs/components/optimize/what-is-optimize/",
   "org.opencontainers.image.vendor": "Camunda Services GmbH",
   "org.opencontainers.image.version": $VERSION,
-  "io.minimus.images.line": "21",
-  "io.minimus.images.version": "21.0.10-dev"
+  "io.minimus.images.line": "21"
 }
