@@ -1,6 +1,7 @@
 global:
   image:
     repository: registry.camunda.cloud/team-zeebe
+    tag: SNAPSHOT
     pullSecrets:
       - name: harbor-registry
 

@@ -406,7 +406,7 @@ jobs:
 
   build-load-test-images:
     name: Build Starter and Worker
-    if: ${{ inputs.reuse-tag == '' || inputs.orchestration-tag != '' }}
+    if: ${{ inputs.reuse-tag == '' && inputs.orchestration-tag == '' }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
     needs: calculate-image-tag
@@ -492,7 +492,10 @@ jobs:
           cd load-tests/setup/${{ env.NAMESPACE }}
 
           # Build load test configuration
-          load_test_config="--set global.image.tag=${{ needs.calculate-image-tag.outputs.image-tag }} \
+          # Use SNAPSHOT tag for starter/worker when using official Docker Hub images (orchestration-tag),
+          # otherwise use the built/reused image tag from the internal registry.
+          load_test_image_tag="${{ inputs.orchestration-tag != '' && 'SNAPSHOT' || needs.calculate-image-tag.outputs.image-tag }}"
+          load_test_config="--set global.image.tag=${load_test_image_tag} \
                             --set global.image.repository=${{ env.IMAGE_REPOSITORY }} \
                             --set global.image.pullSecrets[0].name=harbor-registry \
                             --set global.extraEnvVars[0].name=CONFIG_FORCE_app_performReadBenchmarks \
