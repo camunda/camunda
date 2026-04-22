@@ -1789,7 +1789,7 @@ jobs:
 
   alwaysgreen-helm-deploy:
     name: "AlwaysGreen / Helm chart Integration Tests"
-    needs: [alwaysgreen-build-and-push]
+    needs: [detect-changes, alwaysgreen-build-and-push]
     uses: camunda/camunda-platform-helm/.github/workflows/test-integration-template.yaml@main
     secrets: inherit
     with:
@@ -1822,7 +1822,7 @@ jobs:
 
   alwaysgreen-helm-deploy-status:
     name: Observe Helm chart Integration Tests status
-    needs: [alwaysgreen-helm-deploy]
+    needs: [detect-changes, alwaysgreen-helm-deploy]
     if: always() && needs.alwaysgreen-helm-deploy.result != 'skipped'
     runs-on: ubuntu-latest
     timeout-minutes: 3
@@ -1846,7 +1846,7 @@ jobs:
   alwaysgreen-trigger-saas-e2e:
     name: "AlwaysGreen / Trigger SaaS E2E tests"
     runs-on: ubuntu-latest
-    needs: [alwaysgreen-build-and-push]
+    needs: [detect-changes, alwaysgreen-build-and-push]
     if: >
       needs.alwaysgreen-build-and-push.result == 'success'
     timeout-minutes: 35
