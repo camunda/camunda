@@ -61,6 +61,7 @@ jobs:
       renovate-config-changes: ${{ steps.filter.outputs.renovate-config-changes }}
       webapp-client-changes: ${{ steps.filter.outputs.webapp-client-changes }}
       docs-changes: ${{ steps.filter.outputs.docs-changes }}
+      c8-e2e-test-suite-changes: ${{ steps.filter.outputs.c8-e2e-test-suite-changes }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
@@ -1483,6 +1484,14 @@ jobs:
     secrets: inherit
     permissions: { }
 
+  c8-e2e-test-suite:
+    if: needs.detect-changes.outputs.c8-e2e-test-suite-changes == 'true'
+    name: "C8 E2E Test Suite Lint"
+    needs: [ detect-changes ]
+    uses: ./.github/workflows/ci-c8-e2e-test-suite.yml
+    secrets: inherit
+    permissions: { }
+
   protobuf-checks:
     name: "Protobuf Backwards Compatibility"
     needs: [ detect-changes ]
@@ -1646,6 +1655,7 @@ jobs:
       - actionlint
       - archunit-tests
       - build-platform-frontend
+      - c8-e2e-test-suite
       - webapp-client
       - codeowners-check
       - commitlint
