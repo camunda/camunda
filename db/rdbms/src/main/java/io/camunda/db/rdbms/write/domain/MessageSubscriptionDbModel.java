@@ -7,7 +7,7 @@
  */
 package io.camunda.db.rdbms.write.domain;
 
-import io.camunda.db.rdbms.write.util.CustomHeaderSerializer;
+import io.camunda.db.rdbms.write.util.MapSerializer;
 import io.camunda.search.entities.MessageSubscriptionEntity.MessageSubscriptionState;
 import io.camunda.search.entities.MessageSubscriptionEntity.MessageSubscriptionType;
 import io.camunda.util.ObjectBuilder;
@@ -73,7 +73,7 @@ public class MessageSubscriptionDbModel implements Copyable<MessageSubscriptionD
     this.partitionId = partitionId;
     this.processDefinitionName = processDefinitionName;
     this.processDefinitionVersion = processDefinitionVersion;
-    serializedExtensionProperties = CustomHeaderSerializer.serialize(extensionProperties);
+    serializedExtensionProperties = MapSerializer.serialize(extensionProperties);
     this.extensionProperties = extensionProperties;
   }
 
@@ -171,7 +171,7 @@ public class MessageSubscriptionDbModel implements Copyable<MessageSubscriptionD
 
   public void setSerializedExtensionProperties(final String serializedExtensionProperties) {
     this.serializedExtensionProperties = serializedExtensionProperties;
-    extensionProperties = CustomHeaderSerializer.deserialize(serializedExtensionProperties);
+    extensionProperties = MapSerializer.deserialize(serializedExtensionProperties);
   }
 
   public Map<String, String> extensionProperties() {

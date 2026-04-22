@@ -7,7 +7,7 @@
  */
 package io.camunda.db.rdbms.write.domain;
 
-import io.camunda.db.rdbms.write.util.CustomHeaderSerializer;
+import io.camunda.db.rdbms.write.util.MapSerializer;
 import io.camunda.db.rdbms.write.util.TruncateUtil;
 import io.camunda.search.entities.JobEntity.JobKind;
 import io.camunda.search.entities.JobEntity.JobState;
@@ -92,7 +92,7 @@ public class JobDbModel implements Copyable<JobDbModel> {
     this.hasFailedWithRetriesLeft = hasFailedWithRetriesLeft;
     this.errorCode = errorCode;
     this.errorMessage = errorMessage;
-    serializedCustomHeaders = CustomHeaderSerializer.serialize(customHeaders);
+    serializedCustomHeaders = MapSerializer.serialize(customHeaders);
     this.customHeaders = customHeaders;
     this.deadline = deadline;
     this.endTime = endTime;
@@ -263,7 +263,7 @@ public class JobDbModel implements Copyable<JobDbModel> {
 
   public void setSerializedCustomHeaders(final String serializedCustomHeaders) {
     this.serializedCustomHeaders = serializedCustomHeaders;
-    customHeaders = CustomHeaderSerializer.deserialize(serializedCustomHeaders);
+    customHeaders = MapSerializer.deserialize(serializedCustomHeaders);
   }
 
   public Map<String, String> customHeaders() {

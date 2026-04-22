@@ -117,6 +117,12 @@
         <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
       </foreach>
     </if>
+    <if test="filter.messageSubscriptionTypeOperations != null and !filter.messageSubscriptionTypeOperations.isEmpty()">
+      <foreach collection="filter.messageSubscriptionTypeOperations" item="operation">
+        AND MESSAGE_SUBSCRIPTION_TYPE
+        <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+      </foreach>
+    </if>
     <if test="filter.dateTimeOperations != null and !filter.dateTimeOperations.isEmpty()">
       <foreach collection="filter.dateTimeOperations" item="operation">
         AND DATE_TIME
@@ -138,12 +144,6 @@
     <if test="filter.tenantIdOperations != null and !filter.tenantIdOperations.isEmpty()">
       <foreach collection="filter.tenantIdOperations" item="operation">
         AND TENANT_ID
-        <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
-      </foreach>
-    </if>
-    <if test="filter.messageSubscriptionTypeOperations != null and !filter.messageSubscriptionTypeOperations.isEmpty()">
-      <foreach collection="filter.messageSubscriptionTypeOperations" item="operation">
-        AND MESSAGE_SUBSCRIPTION_TYPE
         <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
       </foreach>
     </if>
