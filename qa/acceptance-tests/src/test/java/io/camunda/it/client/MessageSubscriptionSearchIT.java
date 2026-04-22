@@ -9,6 +9,7 @@ package io.camunda.it.client;
 
 import static io.camunda.it.util.TestHelper.deployResource;
 import static io.camunda.it.util.TestHelper.startProcessInstance;
+import static io.camunda.it.util.TestHelper.startProcessInstanceWithMessage;
 import static io.camunda.it.util.TestHelper.waitForMessageSubscriptions;
 import static io.camunda.it.util.TestHelper.waitForProcessInstancesToStart;
 import static io.camunda.it.util.TestHelper.waitForProcessesToBeDeployed;
@@ -16,6 +17,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.search.enums.MessageSubscriptionState;
+import io.camunda.client.api.search.enums.MessageSubscriptionType;
 import io.camunda.client.api.search.response.MessageSubscription;
 import io.camunda.qa.util.compatibility.CompatibilityTest;
 import io.camunda.qa.util.multidb.MultiDbTest;
@@ -28,14 +30,17 @@ import org.junit.jupiter.api.Test;
 @CompatibilityTest
 public class MessageSubscriptionSearchIT {
 
-  private static final int NUMBER_OF_MESSAGE_SUBSCRIPTIONS = 3;
+  private static final int NUMBER_OF_MESSAGE_SUBSCRIPTIONS = 5;
   private static List<MessageSubscription> orderedMessageSubscriptions;
 
   private static CamundaClient camundaClient;
 
   @BeforeAll
   static void beforeAll() {
-    final var processes = List.of("process_with_parallel_receive_tasks.bpmn");
+    final var processes =
+        List.of(
+            "process_with_parallel_receive_tasks.bpmn",
+            "process_with_message_start_zeebe_properties.bpmn");
     processes.forEach(
         process ->
             deployResource(camundaClient, String.format("process/%s", process)).getProcesses());
@@ -43,8 +48,10 @@ public class MessageSubscriptionSearchIT {
     waitForProcessesToBeDeployed(camundaClient, processes.size());
 
     startProcessInstance(camundaClient, "process_with_parallel_receive_tasks");
+    startProcessInstanceWithMessage(
+        camundaClient, "process_with_message_start_zeebe_properties_Start");
 
-    waitForProcessInstancesToStart(camundaClient, 1);
+    waitForProcessInstancesToStart(camundaClient, 2);
 
     waitForMessageSubscriptions(camundaClient, NUMBER_OF_MESSAGE_SUBSCRIPTIONS);
 
@@ -118,11 +125,12 @@ public class MessageSubscriptionSearchIT {
         camundaClient
             .newMessageSubscriptionSearchRequest()
             .filter(f -> f.messageSubscriptionState(MessageSubscriptionState.CORRELATED))
+            .sort(s -> s.messageName().asc())
             .send()
             .join();
 
     // Then
-    assertThat(searchResponse.items()).hasSize(1);
+    assertThat(searchResponse.items()).hasSize(2);
     assertThat(searchResponse.items().getFirst())
         .extracting("messageName", "messageSubscriptionState")
         .containsExactly("Message1", MessageSubscriptionState.CORRELATED);
@@ -165,6 +173,104 @@ public class MessageSubscriptionSearchIT {
 
     assertThat(response2.page().totalItems()).isEqualTo(NUMBER_OF_MESSAGE_SUBSCRIPTIONS);
     assertThat(response2.items())
-        .containsExactly(orderedMessageSubscriptions.get(1), orderedMessageSubscriptions.get(2));
+        .containsExactly(
+            orderedMessageSubscriptions.get(1),
+            orderedMessageSubscriptions.get(2),
+            orderedMessageSubscriptions.get(3),
+            orderedMessageSubscriptions.get(4));
+  }
+
+  @Test
+  void shouldReturnStartEventSubscriptionWhenFilteredByType() {
+    // when
+    final var result =
+        camundaClient
+            .newMessageSubscriptionSearchRequest()
+            .filter(f -> f.messageSubscriptionType(MessageSubscriptionType.START_EVENT))
+            .send()
+            .join();
+
+    // then
+    assertThat(result.items()).hasSize(1);
+    assertThat(result.items().getFirst().getMessageSubscriptionType())
+        .isEqualTo(MessageSubscriptionType.START_EVENT);
+    assertThat(result.items().getFirst().getElementId()).isEqualTo("StartEvent_msg");
+    assertThat(result.items().getFirst().getMessageName())
+        .isEqualTo("process_with_message_start_zeebe_properties_Start");
+    assertThat(result.items().getFirst().getProcessInstanceKey()).isNull();
+    assertThat(result.items().getFirst().getElementInstanceKey()).isNull();
+  }
+
+  @Test
+  void shouldReturnIntermediateEventSubscriptionWhenFilteredByType() {
+    // when
+    final var result =
+        camundaClient
+            .newMessageSubscriptionSearchRequest()
+            .filter(
+                f ->
+                    f.messageSubscriptionType(MessageSubscriptionType.PROCESS_EVENT)
+                        .messageName("process_with_message_start_zeebe_properties_Intermediate"))
+            .send()
+            .join();
+
+    // then
+    assertThat(result.items()).hasSize(1);
+    assertThat(result.items().getFirst().getMessageSubscriptionType())
+        .isEqualTo(MessageSubscriptionType.PROCESS_EVENT);
+    assertThat(result.items().getFirst().getElementId()).isEqualTo("IntermediateCatch_1");
+    assertThat(result.items().getFirst().getMessageName())
+        .isEqualTo("process_with_message_start_zeebe_properties_Intermediate");
+  }
+
+  @Test
+  void shouldReturnExtensionPropertiesForStartEventSubscription() {
+    // when
+    final var result =
+        camundaClient
+            .newMessageSubscriptionSearchRequest()
+            .filter(f -> f.messageSubscriptionType(MessageSubscriptionType.START_EVENT))
+            .send()
+            .join();
+
+    // then
+    assertThat(result.items()).hasSize(1);
+    final var sub = result.items().getFirst();
+    assertThat(sub.getExtensionProperties())
+        .containsEntry("customKey", "customValue")
+        .containsEntry("env", "test");
+  }
+
+  @Test
+  void shouldReturnProcessDefinitionNameForStartEventSubscription() {
+    // when
+    final var result =
+        camundaClient
+            .newMessageSubscriptionSearchRequest()
+            .filter(f -> f.messageSubscriptionType(MessageSubscriptionType.START_EVENT))
+            .send()
+            .join();
+
+    // then
+    assertThat(result.items()).hasSize(1);
+    final var sub = result.items().getFirst();
+    assertThat(sub.getProcessDefinitionName()).isEqualTo("Phase 2 Test Process");
+    assertThat(sub.getProcessDefinitionVersion()).isEqualTo(1);
+  }
+
+  @Test
+  void shouldFilterByProcessDefinitionName() {
+    // when
+    final var result =
+        camundaClient
+            .newMessageSubscriptionSearchRequest()
+            .filter(f -> f.processDefinitionName("Phase 2 Test Process"))
+            .send()
+            .join();
+
+    // then — both subscriptions (start and intermediate) belong to this process
+    assertThat(result.items()).hasSize(2);
+    assertThat(result.items())
+        .allMatch(s -> "Phase 2 Test Process".equals(s.getProcessDefinitionName()));
   }
 }
