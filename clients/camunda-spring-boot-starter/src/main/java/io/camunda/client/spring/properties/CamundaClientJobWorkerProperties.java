@@ -23,7 +23,7 @@ import static io.camunda.client.impl.CamundaClientBuilderImpl.DEFAULT_JOB_WORKER
 import static io.camunda.client.impl.CamundaClientBuilderImpl.DEFAULT_MAX_JOBS_ACTIVE;
 import static io.camunda.client.impl.CamundaClientBuilderImpl.DEFAULT_REQUEST_TIMEOUT;
 import static io.camunda.client.impl.CamundaClientBuilderImpl.DEFAULT_STREAM_ENABLED;
-import static io.camunda.client.impl.worker.JobWorkerBuilderImpl.DEFAULT_STREAMING_TIMEOUT;
+import static io.camunda.client.impl.worker.JobWorkerBuilderImpl.DEFAULT_STREAM_TIMEOUT;
 
 import io.camunda.client.api.command.enums.TenantFilter;
 import java.time.Duration;
@@ -137,7 +137,7 @@ public class CamundaClientJobWorkerProperties {
       retryBackoff = Duration.ZERO;
       forceFetchAllVariables = DEFAULT_FORCE_FETCH_ALL_VARIABLES;
       maxRetries = DEFAULT_MAX_RETRIES;
-      streamTimeout = DEFAULT_STREAMING_TIMEOUT;
+      streamTimeout = DEFAULT_STREAM_TIMEOUT;
     }
   }
 
