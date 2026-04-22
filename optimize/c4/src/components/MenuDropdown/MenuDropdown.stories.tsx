@@ -34,7 +34,7 @@ export const mainStory: Story = {
 		size: "sm",
 		disabled: false,
 	},
-	play: async ({ canvasElement }) => {
+	play: async ({ canvasElement }: { canvasElement: HTMLCanvasElement }) => {
 		const canvas = within(canvasElement)
 
 		const triggerBtn = canvas.getByText("Dropdown with submenu")
@@ -61,7 +61,7 @@ export const invalidInput: Story = {
 		invalid: true,
 		invalidText: "Something went wrong",
 	},
-	play: async ({ canvasElement }) => {
+  play: async ({ canvasElement }: { canvasElement: HTMLCanvasElement }) => {
 		const canvas = within(canvasElement)
 		const triggerBtn = canvas.getByText("Dropdown with submenu")
 		await triggerBtn.click()
@@ -90,7 +90,7 @@ export const tooManyOptions: Story = {
 		size: "sm",
 		disabled: false,
 	},
-	play: async ({ canvasElement }) => {
+  play: async ({ canvasElement }: { canvasElement: HTMLCanvasElement }) => {
 		const canvas = within(canvasElement)
 		const triggerBtn = canvas.getByText("Dropdown with submenu")
 		await triggerBtn.click()

@@ -26,7 +26,7 @@ export const mainStory: Story = {
 		placeholder: "Placeholder text",
 		helperText: "Some additional helper text",
 	},
-	play: async ({ args, canvasElement }) => {
+	play: async ({ args, canvasElement }: { args: typeof mainStory.args; canvasElement: HTMLCanvasElement }) => {
 		const canvas = within(canvasElement)
 
 		const triggerBtn = canvas.getAllByTitle("testButton").at(2)

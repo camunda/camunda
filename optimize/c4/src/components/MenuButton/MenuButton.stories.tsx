@@ -39,7 +39,7 @@ export const mainStory: Story = {
 		size: "sm",
 		disabled: false,
 	},
-	play: async ({ canvasElement }) => {
+  play: async ({ canvasElement }: { canvasElement: HTMLCanvasElement }) => {
 		const canvas = within(canvasElement)
 
 		const triggerBtn = canvas.getByText("Menu button label")
@@ -58,7 +58,7 @@ export const labelWithIcon: Story = {
 		menuLabel: "Menu label",
 		size: "sm",
 	},
-	play: async ({ canvasElement }) => {
+	play: async ({ canvasElement }: { canvasElement: HTMLCanvasElement }) => {
 		const canvas = within(canvasElement)
 
 		const triggerBtn = canvas.getByText("label")
@@ -75,7 +75,7 @@ export const labelWithIconOnly: Story = {
 		iconDescription: "icon",
 		size: "sm",
 	},
-	play: async ({ canvasElement }) => {
+  play: async ({ canvasElement }: { canvasElement: HTMLCanvasElement }) => {
 		const canvas = within(canvasElement)
 
 		const triggerBtn = canvas.getByRole("button")
