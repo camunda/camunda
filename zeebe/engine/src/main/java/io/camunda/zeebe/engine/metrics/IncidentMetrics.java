@@ -39,6 +39,10 @@ public final class IncidentMetrics {
     pendingIncidents.decrement();
   }
 
+  public void setPendingIncidents(final long count) {
+    pendingIncidents.set(count);
+  }
+
   private Counter registerCounter(final MeterRegistry meterRegistry, final IncidentAction action) {
     return Counter.builder(EngineMetricsDoc.INCIDENT_EVENTS.getName())
         .description(EngineMetricsDoc.INCIDENT_EVENTS.getDescription())

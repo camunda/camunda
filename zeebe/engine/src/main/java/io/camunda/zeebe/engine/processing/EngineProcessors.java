@@ -15,6 +15,7 @@ import io.camunda.zeebe.dmn.DecisionEngineFactory;
 import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.metrics.BatchOperationMetrics;
 import io.camunda.zeebe.engine.metrics.DistributionMetrics;
+import io.camunda.zeebe.engine.metrics.IncidentMetrics;
 import io.camunda.zeebe.engine.metrics.JobProcessingMetrics;
 import io.camunda.zeebe.engine.metrics.ProcessEngineMetrics;
 import io.camunda.zeebe.engine.processing.batchoperation.BatchOperationSetupProcessors;
@@ -122,6 +123,7 @@ public final class EngineProcessors {
         new DistributionMetrics(typedRecordProcessorContext.getMeterRegistry());
     final var batchOperationMetrics =
         new BatchOperationMetrics(typedRecordProcessorContext.getMeterRegistry(), partitionId);
+    final var incidentMetrics = new IncidentMetrics(typedRecordProcessorContext.getMeterRegistry());
 
     subscriptionCommandSender.setWriters(writers);
 
@@ -147,7 +149,10 @@ public final class EngineProcessors {
             clock,
             authCheckBehavior,
             transientProcessMessageSubscriptionState,
-            config);
+            config,
+            incidentMetrics);
+
+    typedRecordProcessors.withListener(bpmnBehaviors.incidentBehavior());
 
     final var commandDistributionBehavior =
         new CommandDistributionBehavior(
@@ -221,7 +226,8 @@ public final class EngineProcessors {
         jobMetrics,
         config,
         clock,
-        authCheckBehavior);
+        authCheckBehavior,
+        incidentMetrics);
 
     final var userTaskProcessor =
         createUserTaskProcessor(
@@ -235,7 +241,8 @@ public final class EngineProcessors {
         typedRecordProcessors,
         writers,
         bpmnBehaviors.jobActivationBehavior(),
-        authCheckBehavior);
+        authCheckBehavior,
+        incidentMetrics);
     addResourceDeletionProcessors(
         typedRecordProcessors,
         writers,
@@ -377,7 +384,8 @@ public final class EngineProcessors {
       final InstantSource clock,
       final AuthorizationCheckBehavior authCheckBehavior,
       final TransientPendingSubscriptionState transientProcessMessageSubscriptionState,
-      final EngineConfiguration config) {
+      final EngineConfiguration config,
+      final IncidentMetrics incidentMetrics) {
     return new BpmnBehaviorsImpl(
         processingState,
         writers,
@@ -390,7 +398,8 @@ public final class EngineProcessors {
         clock,
         authCheckBehavior,
         transientProcessMessageSubscriptionState,
-        config);
+        config,
+        incidentMetrics);
   }
 
   private static TypedRecordProcessor<ProcessInstanceRecord> addProcessProcessors(
@@ -491,7 +500,8 @@ public final class EngineProcessors {
       final TypedRecordProcessors typedRecordProcessors,
       final Writers writers,
       final BpmnJobActivationBehavior jobActivationBehavior,
-      final AuthorizationCheckBehavior authCheckBehavior) {
+      final AuthorizationCheckBehavior authCheckBehavior,
+      final IncidentMetrics incidentMetrics) {
     IncidentEventProcessors.addProcessors(
         typedRecordProcessors,
         processingState,
@@ -499,7 +509,8 @@ public final class EngineProcessors {
         userTaskProcessor,
         writers,
         jobActivationBehavior,
-        authCheckBehavior);
+        authCheckBehavior,
+        incidentMetrics);
   }
 
   private static void addMessageProcessors(

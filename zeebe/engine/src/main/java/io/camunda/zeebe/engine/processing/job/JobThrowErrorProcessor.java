@@ -11,6 +11,7 @@ import static io.camunda.zeebe.engine.EngineConfiguration.DEFAULT_MAX_ERROR_MESS
 import static io.camunda.zeebe.util.StringUtil.limitString;
 
 import io.camunda.zeebe.engine.metrics.EngineMetricsDoc.JobAction;
+import io.camunda.zeebe.engine.metrics.IncidentMetrics;
 import io.camunda.zeebe.engine.metrics.JobProcessingMetrics;
 import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnEventPublicationBehavior;
@@ -80,6 +81,7 @@ public class JobThrowErrorProcessor implements TypedRecordProcessor<JobRecord> {
   private final TypedResponseWriter responseWriter;
   private final TypedRejectionWriter rejectionWriter;
   private final StateWriter stateWriter;
+  private final IncidentMetrics incidentMetrics;
 
   public JobThrowErrorProcessor(
       final ProcessingState state,
@@ -87,7 +89,8 @@ public class JobThrowErrorProcessor implements TypedRecordProcessor<JobRecord> {
       final KeyGenerator keyGenerator,
       final JobProcessingMetrics jobMetrics,
       final AuthorizationCheckBehavior authCheckBehavior,
-      final Writers writers) {
+      final Writers writers,
+      final IncidentMetrics incidentMetrics) {
     this.keyGenerator = keyGenerator;
     jobState = state.getJobState();
     elementInstanceState = state.getElementInstanceState();
@@ -109,6 +112,7 @@ public class JobThrowErrorProcessor implements TypedRecordProcessor<JobRecord> {
 
     this.eventPublicationBehavior = eventPublicationBehavior;
     this.jobMetrics = jobMetrics;
+    this.incidentMetrics = incidentMetrics;
   }
 
   @Override
@@ -221,6 +225,7 @@ public class JobThrowErrorProcessor implements TypedRecordProcessor<JobRecord> {
         .setCallingElementPath(treePathProperties.callingElementPath());
 
     stateWriter.appendFollowUpEvent(keyGenerator.nextKey(), IncidentIntent.CREATED, incidentEvent);
+    incidentMetrics.incidentCreated();
   }
 
   private DirectBuffer getElementId(final JobRecord job) {

@@ -84,6 +84,37 @@ public class IncidentMetricsTest {
     assertThat(resolvedIncidentsMetric()).describedAs("Resolved incidents metric").isOne();
   }
 
+  @Test
+  public void shouldRebuildPendingIncidentsMetricOnRecovery() {
+    // given - process with a call activity referencing a non-existing process
+    engine
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .callActivity("call", a -> a.zeebeProcessId("non-existing"))
+                .endEvent()
+                .done())
+        .deploy();
+
+    final long processInstanceKey = engine.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    RecordingExporter.incidentRecords(IncidentIntent.CREATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .await();
+    assertThat(pendingIncidentsMetric()).describedAs("Pending incidents before restart").isOne();
+
+    // when - restart the engine (triggers recovery)
+    engine.snapshot();
+    engine.stop();
+    engine.start();
+
+    // then - pending incidents metric should be rebuilt from state, not double-counted
+    assertThat(pendingIncidentsMetric())
+        .describedAs("Pending incidents after restart should still be 1, not inflated")
+        .isOne();
+  }
+
   private Double createdIncidentsMetric() {
     return engine
         .getMeterRegistry()
