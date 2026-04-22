@@ -17,7 +17,6 @@ package io.camunda.process.test.impl.client;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.client.CamundaClient;
 import io.camunda.process.test.impl.client.clock.CamundaAddClockRequestDto;
 import io.camunda.process.test.impl.client.clock.CamundaClockResponseDto;
 import io.camunda.process.test.impl.client.purge.ManagementClusterTopologyResponseDto;
@@ -52,17 +51,13 @@ public final class CamundaManagementClient implements CamundaClockClient {
   private final CloseableHttpClient httpClient = HttpClients.createDefault();
 
   private final URI camundaManagementApi;
-  private final CamundaClient camundaClient;
 
-  private CamundaManagementClient(
-      final URI camundaManagementApi, final CamundaClient camundaClient) {
+  private CamundaManagementClient(final URI camundaManagementApi) {
     this.camundaManagementApi = camundaManagementApi;
-    this.camundaClient = camundaClient;
   }
 
-  public static CamundaManagementClient createClient(
-      final URI camundaManagementApi, final CamundaClient camundaClient) {
-    return new CamundaManagementClient(camundaManagementApi, camundaClient);
+  public static CamundaManagementClient createClient(final URI camundaManagementApi) {
+    return new CamundaManagementClient(camundaManagementApi);
   }
 
   @Override
@@ -171,17 +166,8 @@ public final class CamundaManagementClient implements CamundaClockClient {
   }
 
   private boolean isPurgeComplete(final long changeId) {
-    // Use the Camunda client to verify the cluster is reachable and authentication is working.
-    try {
-      camundaClient.newTopologyRequest().send().join();
-    } catch (final Exception e) {
-      // Ignore silently and wait for next status request; awaitility will abort after timeout
-      // expires
-      return false;
-    }
-
-    // Compare the lastCompletedChangeId from the management cluster topology with the change ID
-    // returned by the purge request to confirm the specific purge operation has completed.
+    // Use the management cluster topology (no auth required) to check if the purge operation
+    // identified by changeId has completed and the cluster is healthy.
     try {
       final HttpGet clusterStatusRequest =
           new HttpGet(camundaManagementApi + CLUSTER_TOPOLOGY_ENDPOINT);
