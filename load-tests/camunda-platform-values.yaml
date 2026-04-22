@@ -275,9 +275,6 @@ orchestration:
         zeebe.broker.flowControl.write.enabled: "true"
         zeebe.broker.flowControl.write.limit: 10000
         zeebe.broker.flowControl.write.throttling.enabled: "true"
-        # RocksDB memory limit setting, limits the overall RocksDB memory usage
-        # ZEEBE_BROKER_EXPERIMENTAL_ROCKSDB_MEMORYLIMIT
-        zeebe.broker.experimental.rocksdb.memoryLimit: "64MB"
     # This file is loaded after application.yml (higher priority). It is empty by default,
     # but can be overridden via --set-file for specific scenarios (e.g. max) to change settings
     # like disabling consistency checks without duplicating the full application.yml content.
