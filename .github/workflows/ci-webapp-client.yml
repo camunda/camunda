@@ -1,9 +1,9 @@
-# description: Workflow for running Client Components tests. Does linting and basic build validation for the JS/TS client library monorepo.
+# description: Workflow for running Webapp Client tests. Does linting and basic build validation for the JS/TS client library monorepo.
 # test location: /webapp/client
 # called by: ci.yml
 # type: CI
 # owner: @camunda/monorepo-devops-team
-name: Client Components Jobs
+name: Webapp Client Jobs
 
 on:
   workflow_call: {}

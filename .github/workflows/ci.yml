@@ -59,7 +59,7 @@ jobs:
       stable-branch-changes: ${{ steps.filter.outputs.stable-branch-changes }}
       rdbms-integration-tests: ${{steps.filter.outputs.rdbms-integration-tests}}
       renovate-config-changes: ${{ steps.filter.outputs.renovate-config-changes }}
-      client-components-changes: ${{ steps.filter.outputs.client-components-changes }}
+      webapp-client-changes: ${{ steps.filter.outputs.webapp-client-changes }}
       docs-changes: ${{ steps.filter.outputs.docs-changes }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -1475,11 +1475,11 @@ jobs:
     with:
       stable-branch: ${{ needs.detect-changes.outputs.stable-branch-changes == 'true' }}
 
-  client-components:
-    if: needs.detect-changes.outputs.client-components-changes == 'true'
-    name: "Client Components"
+  webapp-client:
+    if: needs.detect-changes.outputs.webapp-client-changes == 'true'
+    name: "Webapp Client"
     needs: [ detect-changes ]
-    uses: ./.github/workflows/ci-client-components.yml
+    uses: ./.github/workflows/ci-webapp-client.yml
     secrets: inherit
     permissions: { }
 
@@ -1646,7 +1646,7 @@ jobs:
       - actionlint
       - archunit-tests
       - build-platform-frontend
-      - client-components
+      - webapp-client
       - codeowners-check
       - commitlint
       - database-integration-tests

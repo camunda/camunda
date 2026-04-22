@@ -277,7 +277,7 @@ optimize.Dockerfile         @camunda/core-features
 /.github/workflows/operate-release-*.yml @camunda/core-features
 /.github/workflows/ci-operate.yml @camunda/core-features
 /.github/workflows/ci-tasklist.yml @camunda/core-features
-/.github/workflows/ci-client-components.yml @camunda/core-features
+/.github/workflows/ci-webapp-client.yml @camunda/core-features
 /.github/workflows/ci-webapp-run-ut-reuseable.yml @camunda/core-features
 /.github/workflows/tasklist* @camunda/core-features
 /.github/workflows/ci-optimize.yml @camunda/core-features
