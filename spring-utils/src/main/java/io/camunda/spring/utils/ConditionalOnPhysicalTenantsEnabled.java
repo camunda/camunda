@@ -25,9 +25,9 @@ import org.springframework.core.type.AnnotatedTypeMetadata;
  * physical-tenant feature (config model, validation, per-tenant client construction, etc.) is in
  * place.
  *
- * <p>For now this condition always evaluates to {@code false}. Once the feature flag wiring lands,
- * this class will be updated to read it from configuration (e.g. {@code
- * camunda.physical-tenants.enabled}).
+ * <p>The condition matches when the property {@code camunda.physical-tenants.enabled} is set to
+ * {@code true}. It defaults to {@code false} so production wiring is unchanged until the feature is
+ * complete; tests that exercise the per-tenant beans can opt in by setting the property.
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.TYPE, ElementType.METHOD})
@@ -35,12 +35,13 @@ import org.springframework.core.type.AnnotatedTypeMetadata;
 @Conditional(ConditionalOnPhysicalTenantsEnabled.OnPhysicalTenantsEnabledCondition.class)
 public @interface ConditionalOnPhysicalTenantsEnabled {
 
+  String PROPERTY_NAME = "camunda.physical-tenants.enabled";
+
   class OnPhysicalTenantsEnabledCondition implements Condition {
 
     @Override
     public boolean matches(final ConditionContext context, final AnnotatedTypeMetadata metadata) {
-      // Physical tenant isolation is not yet feature-complete; keep all per-tenant beans disabled.
-      return false;
+      return Boolean.parseBoolean(context.getEnvironment().getProperty(PROPERTY_NAME, "false"));
     }
   }
 }
