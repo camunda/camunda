@@ -8,18 +8,18 @@
 
 import {useMutation, type UseMutationOptions} from '@tanstack/react-query';
 import type {
-  CreateDeletionBatchOperationRequestBody,
-  CreateDeletionBatchOperationResponseBody,
+  CreateDecisionInstancesDeletionBatchOperationRequestBody,
+  CreateDecisionInstancesDeletionBatchOperationResponseBody,
 } from '@camunda/camunda-api-zod-schemas/8.10';
-import {createDeletionBatchOperation} from 'modules/api/v2/processInstances/createDeletionBatchOperation';
+import {createDeletionBatchOperation} from 'modules/api/v2/decisionInstances/createDeletionBatchOperation';
 import type {RequestError} from 'modules/request';
 
-const useDeleteProcessInstancesBatchOperation = (
+const useDeleteDecisionInstancesBatchOperation = (
   options?: Partial<
     UseMutationOptions<
-      CreateDeletionBatchOperationResponseBody,
+      CreateDecisionInstancesDeletionBatchOperationResponseBody,
       RequestError,
-      CreateDeletionBatchOperationRequestBody
+      CreateDecisionInstancesDeletionBatchOperationRequestBody
     >
   >,
 ) => {
@@ -35,4 +35,4 @@ const useDeleteProcessInstancesBatchOperation = (
   });
 };
 
-export {useDeleteProcessInstancesBatchOperation};
+export {useDeleteDecisionInstancesBatchOperation};
