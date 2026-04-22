@@ -1793,7 +1793,7 @@ jobs:
       identifier: ${{ needs.alwaysgreen-build-and-push.outputs.identifier }}
       platforms: gke
       camunda-helm-git-ref: main
-      camunda-helm-dir: camunda-platform-8.9
+      camunda-helm-dir: camunda-platform-8.10
       namespace-prefix: monorepo
       test-enabled: true
       e2e-enabled: true
