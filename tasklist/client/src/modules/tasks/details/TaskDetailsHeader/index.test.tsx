@@ -7,7 +7,7 @@
  */
 
 import {render, screen} from 'modules/testing/testing-library';
-import * as userMocks from 'modules/mocks/current-user';
+import * as userMocks from '@camunda/c8-mocks';
 import {TaskDetailsHeader} from './index';
 
 const mockTasks = {

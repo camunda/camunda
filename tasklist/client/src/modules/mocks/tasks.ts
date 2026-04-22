@@ -10,7 +10,7 @@ import type {
   QueryUserTasksResponseBody,
   UserTask,
 } from '@camunda/camunda-api-zod-schemas/8.10';
-import {currentUser} from 'modules/mocks/current-user';
+import {currentUser} from '@camunda/c8-mocks';
 import {assignedTask} from './task';
 
 const tasks: UserTask[] = [

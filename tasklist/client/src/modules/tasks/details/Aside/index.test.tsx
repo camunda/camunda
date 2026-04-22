@@ -10,7 +10,7 @@ import {render, screen} from 'modules/testing/testing-library';
 import {Route, MemoryRouter, Routes} from 'react-router-dom';
 import {nodeMockServer} from 'modules/testing/nodeMockServer';
 import {http, HttpResponse} from 'msw';
-import * as userMocks from 'modules/mocks/current-user';
+import * as userMocks from '@camunda/c8-mocks';
 import {useCurrentUser} from 'modules/api/useCurrentUser.query';
 import {QueryClientProvider} from '@tanstack/react-query';
 import {getMockQueryClient} from 'modules/testing/getMockQueryClient';

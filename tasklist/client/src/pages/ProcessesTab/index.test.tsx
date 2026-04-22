@@ -21,7 +21,7 @@ import {MemoryRouter} from 'react-router-dom';
 import {Component} from './index';
 import {notificationsStore} from 'modules/notifications/notifications.store';
 import * as formMocks from 'modules/mocks/form';
-import * as userMocks from 'modules/mocks/current-user';
+import * as userMocks from '@camunda/c8-mocks';
 import {
   getProcessDefinitionMock,
   getQueryProcessDefinitionsResponseMock,

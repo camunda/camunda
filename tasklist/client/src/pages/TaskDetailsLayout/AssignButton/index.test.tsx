@@ -9,7 +9,7 @@
 import {render, screen, waitFor} from 'modules/testing/testing-library';
 import {AssignButton} from './index';
 import {assignedTask, unassignedTask} from 'modules/mocks/task';
-import {currentUser} from 'modules/mocks/current-user';
+import {currentUser} from '@camunda/c8-mocks';
 import {getMockQueryClient} from 'modules/testing/getMockQueryClient';
 import {QueryClientProvider} from '@tanstack/react-query';
 import {nodeMockServer} from 'modules/testing/nodeMockServer';

@@ -17,8 +17,8 @@ import {authenticationStore} from 'modules/auth/authentication';
 import {http, HttpResponse} from 'msw';
 import {Header} from '..';
 import {getWrapper} from './mocks';
-import * as userMocks from 'modules/mocks/current-user';
-import * as licenseMocks from 'modules/mocks/license';
+import * as userMocks from '@camunda/c8-mocks';
+import * as licenseMocks from '@camunda/c8-mocks';
 import * as clientConfig from 'modules/config/getClientConfig';
 
 describe('User info', () => {

@@ -13,7 +13,7 @@ import {render, screen, waitFor} from 'modules/testing/testing-library';
 import {getMockQueryClient} from 'modules/testing/getMockQueryClient';
 import {nodeMockServer} from 'modules/testing/nodeMockServer';
 import {LocationLog} from 'modules/testing/LocationLog';
-import * as userMocks from 'modules/mocks/current-user';
+import * as userMocks from '@camunda/c8-mocks';
 import * as taskMocks from 'modules/mocks/task';
 import {Component} from '.';
 

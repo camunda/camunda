@@ -16,7 +16,7 @@ import {MemoryRouter} from 'react-router-dom';
 import {Component} from './index';
 import {http, HttpResponse} from 'msw';
 import {nodeMockServer} from 'modules/testing/nodeMockServer';
-import * as userMocks from 'modules/mocks/current-user';
+import * as userMocks from '@camunda/c8-mocks';
 import {QueryClientProvider} from '@tanstack/react-query';
 import {getMockQueryClient} from 'modules/testing/getMockQueryClient';
 import {LocationLog} from 'modules/testing/LocationLog';

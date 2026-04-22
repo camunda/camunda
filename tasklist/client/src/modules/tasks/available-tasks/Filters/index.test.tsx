@@ -13,7 +13,7 @@ import {MemoryRouter} from 'react-router-dom';
 import {Filters} from './index';
 import {nodeMockServer} from 'modules/testing/nodeMockServer';
 import {HttpResponse, http} from 'msw';
-import * as userMocks from 'modules/mocks/current-user';
+import * as userMocks from '@camunda/c8-mocks';
 
 const createWrapper = (
   initialEntries: React.ComponentProps<

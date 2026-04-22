@@ -13,7 +13,7 @@ import {http, HttpResponse} from 'msw';
 import noop from 'lodash/noop';
 import * as formMocks from 'modules/mocks/form';
 import * as variableMocks from 'modules/mocks/variables';
-import * as userMocks from 'modules/mocks/current-user';
+import * as userMocks from '@camunda/c8-mocks';
 import {assignedTaskWithForm, unassignedTaskWithForm} from 'modules/mocks/task';
 import {QueryClientProvider} from '@tanstack/react-query';
 import {getMockQueryClient} from 'modules/testing/getMockQueryClient';
