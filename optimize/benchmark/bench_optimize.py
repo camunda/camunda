@@ -615,3 +615,308 @@ def wait_for_import(
         print(f"[import] Progress endpoint unavailable — sleeping {remaining}s …")
         time.sleep(remaining)
     print("[import] Import wait complete")
+
+
+# ── Phase: evaluate ───────────────────────────────────────────────────────────
+
+def evaluate_once(
+    report_id: str,
+    optimize_url: str,
+    session: requests.Session,
+) -> tuple[float, int, int]:
+    """
+    Call POST /api/report/{id}/evaluate once.
+    Returns (wall_ms, http_status, es_took_ms).
+    es_took_ms is -1 if not present in the response.
+    """
+    t0 = time.perf_counter()
+    resp = session.post(
+        f"{optimize_url}/api/report/{report_id}/evaluate",
+        json={},
+        timeout=120,
+    )
+    wall_ms = (time.perf_counter() - t0) * 1000
+
+    es_took = -1
+    if resp.ok:
+        try:
+            body = resp.json()
+            # Try common paths where ES took might surface
+            es_took = (
+                body.get("took")
+                or body.get("data", {}).get("took")
+                or -1
+            )
+        except Exception:
+            pass
+
+    return wall_ms, resp.status_code, int(es_took)
+
+
+def evaluate_plan(
+    plan_name: str,
+    report_id: str,
+    optimize_url: str,
+    session: requests.Session,
+    n_warmup: int,
+    n_measured: int,
+) -> dict:
+    """
+    Run n_warmup discarded calls then n_measured timed calls.
+    Returns a result dict with p50_ms, p95_ms, es_took_ms, status.
+    """
+    # Warmup
+    for _ in range(n_warmup):
+        evaluate_once(report_id, optimize_url, session)
+
+    # Measured
+    times = []
+    es_tooks = []
+    last_status = 0
+    for _ in range(n_measured):
+        wall_ms, status, es_took = evaluate_once(report_id, optimize_url, session)
+        times.append(wall_ms)
+        if es_took >= 0:
+            es_tooks.append(es_took)
+        last_status = status
+
+    times.sort()
+    p50 = statistics.median(times)
+    p95 = times[int(len(times) * 0.95)] if len(times) >= 20 else max(times)
+    es_avg = int(statistics.mean(es_tooks)) if es_tooks else -1
+
+    return {
+        "plan":       plan_name,
+        "p50_ms":     round(p50),
+        "p95_ms":     round(p95),
+        "es_took_ms": es_avg,
+        "status":     last_status,
+    }
+
+
+# ── Verdict ───────────────────────────────────────────────────────────────────
+
+def compute_verdict(p95_ms: int, growth_factor: float | None) -> str:
+    if p95_ms > RED_P95_MS:
+        return "RED"
+    if growth_factor is not None and growth_factor > RED_GROWTH:
+        return "RED"
+    if p95_ms > YELLOW_P95_MS:
+        return "YELLOW"
+    if growth_factor is not None and growth_factor > YELLOW_GROWTH:
+        return "YELLOW"
+    return "GREEN"
+
+
+# ── CSV helpers ───────────────────────────────────────────────────────────────
+
+CSV_FIELDS = ["plan", "dataset", "p50_ms", "p95_ms", "es_took_ms", "status", "cost", "verdict"]
+
+
+def load_csv(path: Path) -> list[dict]:
+    if not path.exists():
+        return []
+    with path.open() as f:
+        return list(csv.DictReader(f))
+
+
+def save_csv(path: Path, rows: list[dict]):
+    with path.open("w", newline="") as f:
+        w = csv.DictWriter(f, fieldnames=CSV_FIELDS)
+        w.writeheader()
+        w.writerows(rows)
+
+
+def already_done(rows: list[dict], plan: str, dataset: str) -> bool:
+    return any(r["plan"] == plan and r["dataset"] == dataset for r in rows)
+
+
+def print_summary(rows: list[dict]):
+    """Print results sorted by p95_ms at M descending."""
+    m_rows = [r for r in rows if r["dataset"] == "M"]
+    if not m_rows:
+        print("\n[summary] No M-dataset results yet.")
+        return
+
+    m_rows.sort(key=lambda r: int(r["p95_ms"]), reverse=True)
+    print(f"\n{'plan':<70} {'p50':>7} {'p95':>7} {'verdict':<8} {'cost'}")
+    print("-" * 105)
+    for r in m_rows:
+        flag = {"RED": "🔴", "YELLOW": "🟡", "GREEN": "🟢"}.get(r["verdict"], "  ")
+        print(
+            f"{r['plan']:<70} {r['p50_ms']:>6}ms {r['p95_ms']:>6}ms "
+            f" {flag} {r['verdict']:<6}  {r['cost']}"
+        )
+
+
+# ── Discover process keys from Optimize ──────────────────────────────────────
+
+def discover_process_keys(optimize_url: str, session: requests.Session) -> list[str]:
+    """
+    Query Optimize for all imported process definitions and return their keys.
+    Falls back to the static DEFAULT_PROCESS_KEYS list if the endpoint fails.
+    """
+    try:
+        resp = session.get(
+            f"{optimize_url}/api/process-definition",
+            timeout=30,
+        )
+        if resp.ok:
+            defs = resp.json()
+            keys = list({d["key"] for d in defs if "key" in d})
+            if keys:
+                print(f"[discover] Found {len(keys)} process definition(s): {keys}")
+                return keys
+    except Exception as exc:
+        print(f"[discover] Could not query process definitions: {exc}")
+
+    print(f"[discover] Falling back to default process keys: {DEFAULT_PROCESS_KEYS}")
+    return DEFAULT_PROCESS_KEYS
+
+
+# ── Main orchestration ────────────────────────────────────────────────────────
+
+def run(args):
+    optimize_url = args.optimize_url.rstrip("/")
+    es_url       = args.es_url.rstrip("/")
+    repo_root    = Path(args.repo_root)
+    ids_file     = Path(args.ids_file)
+    csv_path     = Path(args.output)
+    datasets     = [args.dataset] if args.dataset != "all" else ["S", "M", "L"]
+    phase        = args.phase
+
+    username, password = args.auth.split(":", 1)
+    es_auth = (args.es_user, args.es_password) if args.es_user else None
+
+    # ── Phase: seed ───────────────────────────────────────────────────────────
+    if phase in ("seed", "all"):
+        for ds in datasets:
+            seed_dataset(ds, args.es_host, args.es_port, args.es_user or "",
+                         args.es_password or "", repo_root)
+            es_flush_and_merge(es_url, es_auth)
+
+        session = make_session(optimize_url, username, password)
+        wait_for_import(optimize_url, session, args.import_wait)
+
+        if phase == "seed":
+            return
+
+    # ── Phase: create-reports ─────────────────────────────────────────────────
+    if phase in ("create-reports", "all"):
+        session = make_session(optimize_url, username, password)
+        process_keys = discover_process_keys(optimize_url, session)
+        create_reports(optimize_url, session, process_keys, ids_file)
+
+        if phase == "create-reports":
+            return
+
+    # ── Phase: evaluate ───────────────────────────────────────────────────────
+    if phase in ("evaluate", "all"):
+        if not ids_file.exists():
+            print(f"[ERROR] {ids_file} not found — run --phase create-reports first.",
+                  file=sys.stderr)
+            sys.exit(1)
+
+        report_ids: dict = json.loads(ids_file.read_text())
+        rows = load_csv(csv_path)
+        session = make_session(optimize_url, username, password)
+
+        total = len(PLANS) * len(datasets)
+        done  = 0
+
+        for ds in datasets:
+            print(f"\n{'='*60}")
+            print(f"  Dataset {ds}  ({DATASET_CONFIGS[ds]['instances']:,} instances)")
+            print(f"{'='*60}")
+
+            for plan_name, plan_cfg in PLANS.items():
+                if already_done(rows, plan_name, ds):
+                    done += 1
+                    print(f"[skip] {plan_name} / {ds} (already in CSV)")
+                    continue
+
+                report_id = report_ids.get(plan_name)
+                if not report_id:
+                    print(f"[skip] {plan_name} — no report ID, skipping")
+                    done += 1
+                    continue
+
+                print(f"[eval {done+1}/{total}] {plan_name} / {ds} …", end=" ", flush=True)
+                result = evaluate_plan(
+                    plan_name, report_id, optimize_url, session,
+                    args.warmups, args.measured,
+                )
+
+                _, _, _, result_type, cost, *_ = plan_cfg
+                result["dataset"] = ds
+                result["cost"]    = cost
+
+                # Compute growth factor vs M if L result and M exists
+                growth = None
+                if ds == "L":
+                    m_row = next(
+                        (r for r in rows if r["plan"] == plan_name and r["dataset"] == "M"),
+                        None,
+                    )
+                    if m_row and int(m_row["p95_ms"]) > 0:
+                        growth = result["p95_ms"] / int(m_row["p95_ms"])
+
+                result["verdict"] = compute_verdict(result["p95_ms"], growth)
+                rows.append(result)
+                save_csv(csv_path, rows)
+                done += 1
+
+                growth_str = f"  growth={growth:.1f}x" if growth else ""
+                print(
+                    f"p50={result['p50_ms']}ms  p95={result['p95_ms']}ms  "
+                    f"status={result['status']}  {result['verdict']}{growth_str}"
+                )
+
+        print_summary(rows)
+        print(f"\n[done] Results written to {csv_path}")
+
+
+# ── CLI ───────────────────────────────────────────────────────────────────────
+
+def main():
+    parser = argparse.ArgumentParser(
+        description="Benchmark all Optimize ProcessExecutionPlan entries end-to-end.",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+    )
+    parser.add_argument("--phase", choices=["all", "seed", "create-reports", "evaluate"],
+                        default="all", help="Which phase to run")
+    parser.add_argument("--dataset", choices=["S", "M", "L", "all"],
+                        default="all", help="Dataset size(s) to seed/evaluate")
+    parser.add_argument("--optimize-url", default="http://localhost:8090",
+                        help="Base URL of the Optimize instance")
+    parser.add_argument("--es-url", default="http://localhost:9200",
+                        help="Base URL of Elasticsearch (for flush/merge)")
+    parser.add_argument("--es-host", default="localhost",
+                        help="ES host passed to the Java generator")
+    parser.add_argument("--es-port", type=int, default=9200,
+                        help="ES port passed to the Java generator")
+    parser.add_argument("--es-user", default="",
+                        help="ES basic-auth username (optional)")
+    parser.add_argument("--es-password", default="",
+                        help="ES basic-auth password (optional)")
+    parser.add_argument("--auth", default="demo:demo",
+                        help="Optimize credentials as user:password")
+    parser.add_argument("--repo-root", default=str(Path(__file__).parent.parent.parent),
+                        help="Path to the camunda monorepo root (for mvnw)")
+    parser.add_argument("--ids-file", default="report_ids.json",
+                        help="Path to persist report IDs between runs")
+    parser.add_argument("--output", default="results.csv",
+                        help="Path for the benchmark CSV output")
+    parser.add_argument("--warmups", type=int, default=5,
+                        help="Warmup calls per report (discarded)")
+    parser.add_argument("--measured", type=int, default=10,
+                        help="Measured calls per report")
+    parser.add_argument("--import-wait", type=int, default=120,
+                        help="Max seconds to wait for Optimize import after seeding")
+
+    args = parser.parse_args()
+    run(args)
+
+
+if __name__ == "__main__":
+    main()
