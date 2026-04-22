@@ -25,7 +25,6 @@ import io.camunda.process.test.impl.containers.CamundaContainer;
 import io.camunda.process.test.impl.containers.ContainerFactory;
 import io.camunda.process.test.impl.runtime.CamundaProcessTestRuntimeDefaults;
 import io.camunda.zeebe.model.bpmn.Bpmn;
-import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import java.time.Duration;
 import java.time.Instant;
 import org.junit.jupiter.api.Order;
@@ -39,12 +38,9 @@ import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 /**
- * Verifies that {@link CamundaManagementClient#purgeCluster()} completes promptly when basic
- * authorization is enabled on the runtime. Without the fix, the purge completion check received
- * HTTP 401 and kept returning {@code false} until the 30-second timeout expired.
+ * Verifies that the cluster purge completes successfully when basic authorization is enabled on the
+ * runtime.
  */
-// We use Testcontainers to start a "remote" Camunda container that is not managed by the Camunda
-// process test extension.
 @Testcontainers
 public class CamundaProcessTestExtensionBasicAuthPurgeIT {
 
@@ -52,10 +48,6 @@ public class CamundaProcessTestExtensionBasicAuthPurgeIT {
   private static final String ADMIN_PASSWORD = "admin";
   private static final String ADMIN_NAME = "Admin";
   private static final String ADMIN_EMAIL = "admin@camunda.com";
-
-  private static final String PROCESS_ID = "process";
-  private static final BpmnModelInstance PROCESS =
-      Bpmn.createExecutableProcess(PROCESS_ID).startEvent().userTask().endEvent().done();
 
   // 1: Start the Camunda container with basic authentication enabled via env variables.
   @Order(0)
@@ -86,7 +78,7 @@ public class CamundaProcessTestExtensionBasicAuthPurgeIT {
   private static final BindCamundaProcessTestExtension BIND_EXTENSION_TO_REMOTE =
       new BindCamundaProcessTestExtension();
 
-  // 3: Start the extension and connect to the Camunda container.
+  // 3: Start the extension and connect to the Camunda container as a remote runtime.
   @Order(2)
   @RegisterExtension
   private static final CamundaProcessTestExtension EXTENSION =
@@ -98,25 +90,37 @@ public class CamundaProcessTestExtensionBasicAuthPurgeIT {
   @Test
   void shouldPurgeClusterWithinTimeout() {
     // given
-    client.newDeployResourceCommand().addProcessModel(PROCESS, "process.bpmn").send().join();
+    client
+        .newDeployResourceCommand()
+        .addProcessModel(
+            Bpmn.createExecutableProcess("process").startEvent().userTask().endEvent().done(),
+            "process.bpmn")
+        .send()
+        .join();
 
     final ProcessInstanceEvent processInstance =
-        client.newCreateInstanceCommand().bpmnProcessId(PROCESS_ID).latestVersion().send().join();
+        client.newCreateInstanceCommand().bpmnProcessId("process").latestVersion().send().join();
 
     CamundaAssert.assertThatProcessInstance(processInstance).isActive();
 
     // when — purge using a new CamundaManagementClient (management API requires no auth)
     final Instant purgeStart = Instant.now();
+
     final CamundaManagementClient managementClient =
         CamundaManagementClient.createClient(REMOTE_CAMUNDA_CONTAINER.getMonitoringApiAddress());
     managementClient.purgeCluster();
+
     final Duration purgeElapsed = Duration.between(purgeStart, Instant.now());
 
     // then — data is gone
-    assertThat(client.newProcessInstanceSearchRequest().send().join().items()).isEmpty();
+    assertThat(client.newProcessInstanceSearchRequest().send().join().items())
+        .describedAs("The purge operation should delete all data.")
+        .isEmpty();
 
     // and — purge completed well within the 30-second limit
-    assertThat(purgeElapsed).isLessThan(Duration.ofSeconds(10));
+    assertThat(purgeElapsed)
+        .describedAs("The purge operation should take less than 10 seconds to complete.")
+        .isLessThan(Duration.ofSeconds(10));
   }
 
   private static final class BindCamundaProcessTestExtension implements BeforeAllCallback {
@@ -124,7 +128,7 @@ public class CamundaProcessTestExtensionBasicAuthPurgeIT {
     @Override
     public void beforeAll(final ExtensionContext context) {
       EXTENSION
-          .withRemoteCamundaClientBuilderFactory(
+          .withCamundaClientBuilderFactory(
               () ->
                   CamundaClient.newClientBuilder()
                       .restAddress(REMOTE_CAMUNDA_CONTAINER.getRestApiAddress())
