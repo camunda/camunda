@@ -297,6 +297,9 @@ public class CamundaProcessTestExtension
               + "Make sure that you registering the extension on a static field.");
     }
 
+    // wait until the cluster is ready (e.g. after a purge the cluster may still be recovering)
+    camundaManagementClient.waitForClusterReady();
+
     // inject fields
     try {
       injectField(context, CamundaClient.class, camundaProcessTestContext::createClient);
