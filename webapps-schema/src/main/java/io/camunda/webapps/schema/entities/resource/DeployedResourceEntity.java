@@ -26,6 +26,9 @@ public final class DeployedResourceEntity implements ExporterEntity<DeployedReso
   private String resourceName;
 
   @SinceVersion(value = "8.10.0", requireDefault = false)
+  private String resourceType;
+
+  @SinceVersion(value = "8.10.0", requireDefault = false)
   private int version;
 
   @SinceVersion(value = "8.10.0", requireDefault = false)
@@ -75,6 +78,15 @@ public final class DeployedResourceEntity implements ExporterEntity<DeployedReso
 
   public DeployedResourceEntity setResourceName(final String resourceName) {
     this.resourceName = resourceName;
+    return this;
+  }
+
+  public String getResourceType() {
+    return resourceType;
+  }
+
+  public DeployedResourceEntity setResourceType(final String resourceType) {
+    this.resourceType = resourceType;
     return this;
   }
 
@@ -130,6 +142,7 @@ public final class DeployedResourceEntity implements ExporterEntity<DeployedReso
         resourceKey,
         resourceId,
         resourceName,
+        resourceType,
         version,
         versionTag,
         deploymentKey,
@@ -149,6 +162,7 @@ public final class DeployedResourceEntity implements ExporterEntity<DeployedReso
         && Objects.equals(id, that.id)
         && Objects.equals(resourceId, that.resourceId)
         && Objects.equals(resourceName, that.resourceName)
+        && Objects.equals(resourceType, that.resourceType)
         && Objects.equals(versionTag, that.versionTag)
         && Objects.equals(tenantId, that.tenantId)
         && Objects.equals(resourceContent, that.resourceContent);
@@ -167,6 +181,9 @@ public final class DeployedResourceEntity implements ExporterEntity<DeployedReso
         + '\''
         + ", resourceName='"
         + resourceName
+        + '\''
+        + ", resourceType='"
+        + resourceType
         + '\''
         + ", version="
         + version
