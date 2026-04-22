@@ -290,14 +290,14 @@ final class JobStreamerImpl implements JobStreamer {
       }
       if (isProxyGatewayTimeout(statusRuntimeException)) {
         // An intermediary proxy (e.g. nginx) closed the idle streaming connection with HTTP 504.
-        // Log a concise hint at WARN; keep the raw gRPC details at DEBUG for investigation.
-        LOGGER.warn(
+        // The stream is transparently reopened, so only log at DEBUG.
+        LOGGER.debug(
             "Job stream for type '{}' to worker '{}' was closed by an upstream proxy (HTTP 504 Gateway Timeout). "
                 + "The stream will be reopened. To avoid this, configure a shorter stream timeout "
                 + "(JobWorkerBuilder#streamTimeout) below your ingress/proxy idle timeout.",
             jobType,
-            workerName);
-        LOGGER.debug(errorMsg, jobType, workerName, error);
+            workerName,
+            error);
         return;
       }
     }
