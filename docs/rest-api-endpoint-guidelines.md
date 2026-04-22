@@ -85,6 +85,7 @@ All descriptive text (summaries, descriptions, property docs) should follow the 
 - `description` — full sentence(s) with period. First line must be a complete sentence (used as `meta description` in docs)
 - `tags` — exactly one tag matching the resource
 - `x-eventually-consistent` — explicitly `true` or `false` (see §2.5)
+- `x-added-in-version` — the Camunda version in which the operation was introduced, e.g., `"8.9"` (see §2.17)
 
 **Path patterns:**
 
@@ -789,6 +790,36 @@ If you add `@RequiresSecondaryStorage` to a method, verify the spec counterpart 
 
 > **Note:** There is currently no automated CI check that cross-references `@RequiresSecondaryStorage` against `x-eventually-consistent`. This is a manual review responsibility. [#36469](https://github.com/camunda/camunda/issues/36469) tracks the aspiration to add such static analysis.
 
+### 2.17 Operation versioning annotation (`x-added-in-version`)
+
+Every operation **must** declare the Camunda version in which it was introduced via the `x-added-in-version` extension. This enables generated docs and SDKs to surface endpoint version availability to consumers.
+
+```yaml
+/process-instances/{processInstanceKey}/sequence-flows:
+  get:
+    operationId: getProcessInstanceSequenceFlows
+    summary: Get sequence flows of a process instance
+    description: Returns the sequence flows traversed by the given process instance.
+    x-added-in-version: "8.9"
+    tags:
+      - Process instance
+```
+
+#### Rules
+
+- The value is a **string** containing the minor version (e.g., `"8.6"`, `"8.9"`). Patch versions are not used.
+- Set the value to the version in which the endpoint **first** ships. Do **not** update it on subsequent changes — that's what changelogs and the breaking-change rules in §2.7 are for.
+
+#### What the Spectral rule enforces
+
+The `require-added-in-version` rule (severity `error`) checks every operation under `paths` (`get`, `post`, `put`, `patch`, `delete`) and fails the build if `x-added-in-version` is missing. The rule does **not** validate the version string format — that's a reviewer responsibility.
+
+If you add a new endpoint without this annotation, CI will fail with a message such as:
+
+```
+Operation "createMyResource" (POST /my-resources) is missing x-added-in-version. Every endpoint must declare the Camunda version in which it was introduced.
+```
+
 ---
 
 ## 3. Spectral linting & custom rules
@@ -834,6 +865,7 @@ The ruleset lives in `zeebe/gateway-protocol/.spectral.yaml`. Custom functions a
 | `array-properties-must-be-required`        | error    | Response array properties must be `required` and not `nullable`                                   |
 | `no-eventually-consistent-on-commands`     | error    | Command operations must not have `x-eventually-consistent: true`                                  |
 | `valid-deprecated-enum-members`            | error    | `x-deprecated-enum-members` must be well-formed                                                   |
+| `require-added-in-version`                 | error    | Every operation must declare `x-added-in-version` (see §2.17)                                     |
 | `oas3-valid-schema-example`                | error    | Schemas must be valid per OpenAPI 3.0 JSON Schema rules                                           |
 
 ### 3.4 Adding new Spectral rules
@@ -1122,6 +1154,7 @@ Before opening a PR:
 - [ ] **All properties have descriptions**
 - [ ] **Key properties are `type: string`**
 - [ ] **`x-eventually-consistent`** set correctly (`true` for queries, `false` for commands)
+- [ ] **`x-added-in-version`** field present on every new operation (see §2.17)
 - [ ] **Response arrays** are `required` and not `nullable`
 - [ ] **`required` entries** all exist in `properties`
 - [ ] **Controller implemented** following conventions (§4)
@@ -1211,6 +1244,32 @@ properties:
 ```
 
 **Fix:** Change to `x-eventually-consistent: false`. Only search/statistics/GET endpoints use `true`.
+
+---
+
+### ❌ Missing `x-added-in-version` on a new operation
+
+```yaml
+# Wrong — Spectral error: require-added-in-version
+/my-resources:
+  post:
+    operationId: createMyResource
+    summary: Create a my-resource
+    tags: [My resource]
+```
+
+**Fix:** Add `x-added-in-version` set to the version in which the endpoint first ships:
+
+```yaml
+/my-resources:
+  post:
+    operationId: createMyResource
+    summary: Create a my-resource
+    x-added-in-version: "8.9"
+    tags: [My resource]
+```
+
+See §2.17 for full conventions.
 
 ---
 
