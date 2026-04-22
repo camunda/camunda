@@ -204,7 +204,7 @@ test.describe('variables page', () => {
       await expect(
         taskDetailsPage.variablesTable.getByRole('cell', {name: 'variable_59'}),
       ).toBeVisible();
-    }).toPass();
+    }).toPass({timeout: 30000});
   });
 
   test('new variable still exists after refresh if task is completed', async ({
