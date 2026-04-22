@@ -14,11 +14,15 @@ import io.camunda.db.rdbms.write.service.MessageSubscriptionWriter;
 import io.camunda.exporter.rdbms.RdbmsExportHandler;
 import io.camunda.search.entities.MessageSubscriptionEntity.MessageSubscriptionState;
 import io.camunda.search.entities.MessageSubscriptionEntity.MessageSubscriptionType;
+import io.camunda.zeebe.exporter.common.cache.ExporterEntityCache;
+import io.camunda.zeebe.exporter.common.cache.process.CachedProcessEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.value.ProcessMessageSubscriptionRecordValue;
 import java.time.Instant;
+import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 public class MessageSubscriptionExportHandler
@@ -31,10 +35,13 @@ public class MessageSubscriptionExportHandler
           ProcessMessageSubscriptionIntent.DELETED,
           ProcessMessageSubscriptionIntent.MIGRATED);
   private final MessageSubscriptionWriter messageSubscriptionWriter;
+  private final ExporterEntityCache<Long, CachedProcessEntity> processCache;
 
   public MessageSubscriptionExportHandler(
-      final MessageSubscriptionWriter messageSubscriptionWriter) {
+      final MessageSubscriptionWriter messageSubscriptionWriter,
+      final ExporterEntityCache<Long, CachedProcessEntity> processCache) {
     this.messageSubscriptionWriter = messageSubscriptionWriter;
+    this.processCache = processCache;
   }
 
   @Override
@@ -61,6 +68,8 @@ public class MessageSubscriptionExportHandler
   private MessageSubscriptionDbModel map(
       final Record<ProcessMessageSubscriptionRecordValue> record) {
     final ProcessMessageSubscriptionRecordValue value = record.getValue();
+    final long pdKey = value.getProcessDefinitionKey();
+    final Optional<CachedProcessEntity> cached = processCache.get(pdKey);
     return new MessageSubscriptionDbModel.Builder()
         .messageSubscriptionKey(record.getKey())
         .processDefinitionId(value.getBpmnProcessId())
@@ -76,6 +85,14 @@ public class MessageSubscriptionExportHandler
         .correlationKey(value.getCorrelationKey())
         .tenantId(value.getTenantId())
         .partitionId(record.getPartitionId())
+        .processDefinitionName(
+            cached.map(CachedProcessEntity::name).filter(s -> !s.isBlank()).orElse(null))
+        .processDefinitionVersion(cached.map(CachedProcessEntity::version).orElse(null))
+        .extensionProperties(
+            cached
+                .map(CachedProcessEntity::elementExtensionProperties)
+                .map(p -> p.get(value.getElementId()))
+                .orElse(Map.of()))
         .build();
   }
 }
