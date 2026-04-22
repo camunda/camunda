@@ -1,0 +1,38 @@
+{
+	"name": "@camunda/orchestration-cluster-webapp",
+	"private": true,
+	"type": "module",
+	"imports": {
+		"#/*": "./src/*"
+	},
+	"scripts": {
+		"dev": "vite dev --port 3000",
+		"build": "vite build",
+		"test": "vitest run"
+	},
+	"dependencies": {
+		"@tanstack/react-query": "5.99.2",
+		"@tanstack/react-query-devtools": "5.99.2",
+		"@tanstack/react-router": "1.168.23",
+		"@tanstack/react-router-devtools": "1.166.13",
+		"@tanstack/router-plugin": "1.167.22",
+		"react": "19.2.5",
+		"react-dom": "19.2.5"
+	},
+	"devDependencies": {
+		"@tanstack/devtools-vite": "0.6.0",
+		"@tanstack/react-devtools": "0.10.2",
+		"@types/node": "25.6.0",
+		"@types/react": "19.2.14",
+		"@types/react-dom": "19.2.3",
+		"@vitejs/plugin-react": "6.0.1",
+		"typescript": "6.0.3",
+		"vite": "8.0.0"
+	},
+	"pnpm": {
+		"onlyBuiltDependencies": [
+			"esbuild",
+			"lightningcss"
+		]
+	}
+}
