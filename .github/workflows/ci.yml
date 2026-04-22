@@ -1656,7 +1656,6 @@ jobs:
       - archunit-tests
       - build-platform-frontend
       - c8-e2e-test-suite
-      - webapp-client
       - codeowners-check
       - commitlint
       - database-integration-tests
@@ -1681,6 +1680,7 @@ jobs:
       - shell-script-tests
       - tasklist-ci
       - validate-pom-metadata
+      - webapp-client
       - zeebe-ci
       - zeebe-unit-tests
     steps:
