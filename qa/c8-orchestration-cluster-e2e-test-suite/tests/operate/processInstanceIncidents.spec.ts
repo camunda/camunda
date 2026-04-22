@@ -457,6 +457,10 @@ test.describe('Process Instance Incident', () => {
 
     await test.step('Open incidents tab', async () => {
       await operateProcessInstancePage.clickIncidentsTab();
+      await expect(operateProcessInstancePage.incidentsTab).toHaveAttribute(
+        'aria-selected',
+        'true',
+      );
     });
 
     await test.step('Click on the Business Rule Task in the diagram that triggered the decision', async () => {
