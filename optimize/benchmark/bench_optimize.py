@@ -398,3 +398,220 @@ PLANS = {
     "PROCESS_VARIABLE_GROUP_BY_NONE":
         (VAR_VIEW, GB_NONE, DB_NONE, NUMBER, TRIVIAL),
 }
+
+# ── Auth / Session ────────────────────────────────────────────────────────────
+
+def make_session(optimize_url: str, username: str, password: str) -> requests.Session:
+    """Login to Optimize and return a session with the auth cookie set."""
+    session = requests.Session()
+    resp = session.post(
+        f"{optimize_url}/api/authentication",
+        json={"username": username, "password": password},
+        timeout=30,
+    )
+    if resp.status_code not in (200, 204):
+        print(f"[ERROR] Login failed ({resp.status_code}): {resp.text[:200]}", file=sys.stderr)
+        sys.exit(1)
+    print(f"[auth] Logged in as {username}")
+    return session
+
+
+# ── Report payload builder ────────────────────────────────────────────────────
+
+def build_report_payload(plan_name: str, plan_cfg: tuple, process_keys: list) -> dict:
+    """Construct the POST /api/report/process/single request body for one plan."""
+    view, group_by, distributed_by, result_type, cost, *rest = plan_cfg
+    is_process_part = bool(rest and rest[0])
+
+    definitions = (
+        [{"key": PROCESS_PART_KEY, "versions": ["all"]}]
+        if is_process_part
+        else [{"key": k, "versions": ["all"]} for k in process_keys]
+    )
+
+    configuration = {}
+    if is_process_part:
+        configuration["processPart"] = {
+            "start": PROCESS_PART_START,
+            "end":   PROCESS_PART_END,
+        }
+
+    return {
+        "name": f"BENCH_{plan_name}",
+        "combined": False,
+        "reportType": "process",
+        "data": {
+            "definitions":   definitions,
+            "view":          view,
+            "groupBy":       group_by,
+            "distributedBy": distributed_by,
+            "visualization": _viz(result_type),
+            "filter":        [],
+            "configuration": configuration,
+        },
+    }
+
+
+# ── Phase: create-reports ─────────────────────────────────────────────────────
+
+def create_reports(
+    optimize_url: str,
+    session: requests.Session,
+    process_keys: list,
+    ids_file: Path,
+) -> dict:
+    """
+    Create one saved report per plan.  Returns {plan_name: report_id}.
+    Skips plans whose IDs already exist in ids_file (idempotent).
+    """
+    existing: dict = {}
+    if ids_file.exists():
+        existing = json.loads(ids_file.read_text())
+        print(f"[create] Loaded {len(existing)} existing report IDs from {ids_file}")
+
+    report_ids = dict(existing)
+    plans_to_create = [p for p in PLANS if p not in report_ids]
+    print(f"[create] Creating {len(plans_to_create)} reports "
+          f"({len(existing)} already exist) …")
+
+    for plan_name in plans_to_create:
+        payload = build_report_payload(plan_name, PLANS[plan_name], process_keys)
+        resp = session.post(
+            f"{optimize_url}/api/report/process/single",
+            json=payload,
+            timeout=30,
+        )
+        if resp.status_code not in (200, 201):
+            print(f"[WARN] {plan_name}: creation failed ({resp.status_code}) — "
+                  f"{resp.text[:200]}")
+            continue
+        report_id = resp.json().get("id") or resp.json().get("reportId")
+        if not report_id:
+            print(f"[WARN] {plan_name}: no id in response: {resp.text[:200]}")
+            continue
+        report_ids[plan_name] = report_id
+        ids_file.write_text(json.dumps(report_ids, indent=2))
+        print(f"[create] {plan_name} -> {report_id}")
+
+    print(f"[create] Done. {len(report_ids)} reports ready.")
+    return report_ids
+
+
+# ── Phase: seed ───────────────────────────────────────────────────────────────
+
+def seed_dataset(
+    dataset: str,
+    es_host: str,
+    es_port: int,
+    es_user: str,
+    es_password: str,
+    repo_root: Path,
+):
+    """Compile IT sources (if needed) then run ZeebeDataGeneratorCli."""
+    cfg = DATASET_CONFIGS[dataset]
+    instances = cfg["instances"]
+    defs      = cfg["defs"]
+
+    print(f"\n[seed] Dataset {dataset}: {instances:,} instances, {defs} process defs")
+
+    # Build args string for exec:java
+    generator_args = (
+        f"--instances {instances} "
+        f"--defs {defs} "
+        f"--host {es_host} "
+        f"--port {es_port} "
+        f"--batch-size 1000 "
+        f"--update-rate 0.25"
+    )
+    if es_user:
+        generator_args += f" --username {es_user} --password {es_password}"
+
+    mvnw = str(repo_root / "mvnw")
+
+    # Step 1: compile IT sources so the generator class is on the classpath
+    print("[seed] Compiling IT sources …")
+    subprocess.run(
+        [mvnw, "-pl", "optimize/backend", "test-compile", "-Dquickly", "-T1C"],
+        cwd=repo_root,
+        check=True,
+    )
+
+    # Step 2: run the generator
+    print(f"[seed] Running generator ({instances:,} instances) …")
+    start = time.time()
+    subprocess.run(
+        [
+            mvnw,
+            "-pl", "optimize/backend",
+            "exec:java",
+            f"-Dexec.mainClass={GENERATOR_CLASS}",
+            "-Dexec.classpathScope=test",
+            f"-Dexec.args={generator_args}",
+        ],
+        cwd=repo_root,
+        check=True,
+    )
+    elapsed = time.time() - start
+    print(f"[seed] Dataset {dataset} seeded in {elapsed:.0f}s")
+
+
+# ── ES flush + force-merge ────────────────────────────────────────────────────
+
+def es_flush_and_merge(es_url: str, es_auth: tuple | None):
+    """Flush and force-merge all indices to avoid cache bleed between datasets."""
+    kwargs = {"auth": es_auth} if es_auth else {}
+    print("[es] Flushing indices …")
+    requests.post(f"{es_url}/_flush", timeout=120, **kwargs).raise_for_status()
+    print("[es] Force-merging indices (max_num_segments=1) …")
+    requests.post(
+        f"{es_url}/_forcemerge",
+        params={"max_num_segments": 1},
+        timeout=600,
+        **kwargs,
+    ).raise_for_status()
+    print("[es] Flush + force-merge complete")
+
+
+# ── Wait for Optimize import ──────────────────────────────────────────────────
+
+def wait_for_import(
+    optimize_url: str,
+    session: requests.Session,
+    wait_secs: int,
+    poll_interval: int = 10,
+):
+    """
+    Poll the Optimize import progress endpoint until idle, or fall back to a
+    fixed sleep if the endpoint is unavailable.
+    """
+    print(f"[import] Waiting up to {wait_secs}s for Optimize to finish importing …")
+    deadline = time.time() + wait_secs
+
+    while time.time() < deadline:
+        try:
+            resp = session.get(
+                f"{optimize_url}/api/status/import-progress",
+                timeout=10,
+            )
+            if resp.status_code == 200:
+                body = resp.json()
+                # The endpoint returns a map of importer -> % complete (0-100)
+                values = list(body.values()) if isinstance(body, dict) else []
+                if values and all(v >= 100 for v in values):
+                    print("[import] All importers at 100% — proceeding")
+                    return
+                pct = sum(values) / len(values) if values else 0
+                print(f"[import] Progress: {pct:.0f}% avg — waiting …")
+            else:
+                # Endpoint not available; fall through to timed wait
+                break
+        except requests.RequestException:
+            break
+        time.sleep(poll_interval)
+
+    # Fallback: just sleep the full wait time
+    remaining = max(0, int(deadline - time.time()))
+    if remaining > 0:
+        print(f"[import] Progress endpoint unavailable — sleeping {remaining}s …")
+        time.sleep(remaining)
+    print("[import] Import wait complete")
