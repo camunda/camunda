@@ -24,7 +24,7 @@ public record GcsBackupConfig(
     this.basePath = sanitizeBasePath(basePath);
     this.connection = requireNonNull(connection);
     if (bufferSize <= 0) {
-      throw new IllegalArgumentException("Expected bufferSize to be > 0, but got " + bufferSize);
+      throw new ConfigurationException("Expected bufferSize to be > 0, but got " + bufferSize);
     }
     this.bufferSize = bufferSize;
   }
