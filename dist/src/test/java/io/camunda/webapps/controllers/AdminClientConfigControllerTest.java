@@ -21,9 +21,14 @@ import io.camunda.security.configuration.OidcAuthenticationConfiguration;
 import io.camunda.security.configuration.SaasConfiguration;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.security.entity.AuthenticationMethod;
+import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
+import io.camunda.zeebe.protocol.record.value.PermissionType;
+import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -134,7 +139,7 @@ public class AdminClientConfigControllerTest {
             .getContentAsString();
 
     // Extract JSON configuration from JavaScript response
-    final Map<String, String> configResponse = extractConfigFromResponse(response);
+    final Map<String, Object> configResponse = extractConfigFromResponse(response);
 
     // Assert all configuration values
     assertThat(configResponse)
@@ -180,7 +185,96 @@ public class AdminClientConfigControllerTest {
     return securityConfiguration;
   }
 
-  private Map<String, String> extractConfigFromResponse(final String response) throws Exception {
+  @Test
+  void shouldIncludeResourcePermissionsInClientConfig() throws Exception {
+    // given
+    final var controller =
+        new AdminClientConfigController(
+            createSecurityConfiguration(AuthenticationMethod.BASIC, null, false, null, null));
+    mockMvc = MockMvcBuilders.standaloneSetup(controller).build();
+
+    // when
+    final String response =
+        mockMvc.perform(get("/admin/config.js")).andReturn().getResponse().getContentAsString();
+    final var config = extractConfigFromResponse(response);
+
+    // then
+    assertThat(config).containsKey("resourcePermissions");
+    assertThat(config.get("resourcePermissions")).isInstanceOf(Map.class);
+  }
+
+  @Test
+  void shouldContainExactlyAllUserProvidedResourceTypesInResourcePermissions() throws Exception {
+    // given
+    final var controller =
+        new AdminClientConfigController(
+            createSecurityConfiguration(AuthenticationMethod.BASIC, null, false, null, null));
+    mockMvc = MockMvcBuilders.standaloneSetup(controller).build();
+
+    // when
+    final String response =
+        mockMvc.perform(get("/admin/config.js")).andReturn().getResponse().getContentAsString();
+    final var resourcePermissions = extractResourcePermissions(extractConfigFromResponse(response));
+
+    // then
+    final var expectedKeys =
+        AuthorizationResourceType.getUserProvidedResourceTypes().stream()
+            .map(Enum::name)
+            .collect(Collectors.toSet());
+    assertThat(resourcePermissions.keySet()).containsExactlyInAnyOrderElementsOf(expectedKeys);
+    assertThat(resourcePermissions).doesNotContainKey(AuthorizationResourceType.UNSPECIFIED.name());
+  }
+
+  @Test
+  void shouldReturnPermissionsMatchingAuthorizationResourceTypeDefinition() throws Exception {
+    // given
+    final var controller =
+        new AdminClientConfigController(
+            createSecurityConfiguration(AuthenticationMethod.BASIC, null, false, null, null));
+    mockMvc = MockMvcBuilders.standaloneSetup(controller).build();
+
+    // when
+    final String response =
+        mockMvc.perform(get("/admin/config.js")).andReturn().getResponse().getContentAsString();
+    final var resourcePermissions = extractResourcePermissions(extractConfigFromResponse(response));
+
+    // then
+    for (final var resourceType : AuthorizationResourceType.getUserProvidedResourceTypes()) {
+      final var expectedPermissions =
+          resourceType.getSupportedPermissionTypes().stream()
+              .map(PermissionType::name)
+              .collect(Collectors.toSet());
+      assertThat(resourcePermissions.get(resourceType.name()))
+          .as("permissions for resource type %s", resourceType.name())
+          .containsExactlyInAnyOrderElementsOf(expectedPermissions);
+    }
+  }
+
+  @Test
+  void shouldReturnPermissionsSortedAlphabetically() throws Exception {
+    // given
+    final var controller =
+        new AdminClientConfigController(
+            createSecurityConfiguration(AuthenticationMethod.BASIC, null, false, null, null));
+    mockMvc = MockMvcBuilders.standaloneSetup(controller).build();
+
+    // when
+    final String response =
+        mockMvc.perform(get("/admin/config.js")).andReturn().getResponse().getContentAsString();
+    final var resourcePermissions = extractResourcePermissions(extractConfigFromResponse(response));
+
+    // then
+    resourcePermissions.forEach(
+        (resourceType, permissions) ->
+            assertThat(permissions)
+                .as(
+                    "permissions for resource type %s should be sorted alphabetically",
+                    resourceType)
+                .isSortedAccordingTo(String::compareTo));
+  }
+
+  @SuppressWarnings("unchecked")
+  private Map<String, Object> extractConfigFromResponse(final String response) throws Exception {
     final var jsonConfigBodyStartIdx = response.indexOf('{');
     assertThat(jsonConfigBodyStartIdx).isNotEqualTo(-1);
     final var jsonConfigBodyEndIdx = response.lastIndexOf('}');
@@ -188,5 +282,10 @@ public class AdminClientConfigControllerTest {
 
     return objectMapper.readValue(
         response.substring(jsonConfigBodyStartIdx, jsonConfigBodyEndIdx + 1), Map.class);
+  }
+
+  @SuppressWarnings("unchecked")
+  private Map<String, List<String>> extractResourcePermissions(final Map<String, Object> config) {
+    return (Map<String, List<String>>) config.get("resourcePermissions");
   }
 }
