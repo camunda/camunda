@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.processing.bpmn.behavior;
 
 import io.camunda.zeebe.el.ExpressionLanguageFactory;
 import io.camunda.zeebe.engine.EngineConfiguration;
+import io.camunda.zeebe.engine.metrics.IncidentMetrics;
 import io.camunda.zeebe.engine.metrics.JobProcessingMetrics;
 import io.camunda.zeebe.engine.processing.bpmn.ProcessInstanceStateTransitionGuard;
 import io.camunda.zeebe.engine.processing.bpmn.clock.ZeebeFeelEngineClock;
@@ -65,7 +66,8 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
       final JobStreamer jobStreamer,
       final InstantSource clock,
       final TransientPendingSubscriptionState transientProcessMessageSubscriptionState,
-      final EngineConfiguration config) {
+      final EngineConfiguration config,
+      final IncidentMetrics incidentMetrics) {
     expressionBehavior =
         new ExpressionProcessor(
             ExpressionLanguageFactory.createExpressionLanguage(new ZeebeFeelEngineClock(clock)),
@@ -117,7 +119,7 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
 
     incidentBehavior =
         new BpmnIncidentBehavior(
-            processingState, processingState.getKeyGenerator(), writers.state());
+            processingState, processingState.getKeyGenerator(), writers.state(), incidentMetrics);
 
     eventPublicationBehavior =
         new BpmnEventPublicationBehavior(

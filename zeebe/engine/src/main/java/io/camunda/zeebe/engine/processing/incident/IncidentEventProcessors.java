@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.incident;
 
+import io.camunda.zeebe.engine.metrics.IncidentMetrics;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnJobActivationBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
@@ -23,11 +24,12 @@ public final class IncidentEventProcessors {
       final ProcessingState processingState,
       final TypedRecordProcessor<ProcessInstanceRecord> bpmnStreamProcessor,
       final Writers writers,
-      final BpmnJobActivationBehavior jobActivationBehavior) {
+      final BpmnJobActivationBehavior jobActivationBehavior,
+      final IncidentMetrics incidentMetrics) {
     typedRecordProcessors.onCommand(
         ValueType.INCIDENT,
         IncidentIntent.RESOLVE,
         new IncidentResolveProcessor(
-            processingState, bpmnStreamProcessor, writers, jobActivationBehavior));
+            processingState, bpmnStreamProcessor, writers, jobActivationBehavior, incidentMetrics));
   }
 }

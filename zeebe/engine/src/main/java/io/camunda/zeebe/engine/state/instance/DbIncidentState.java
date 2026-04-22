@@ -13,7 +13,6 @@ import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.impl.DbForeignKey;
 import io.camunda.zeebe.db.impl.DbLong;
-import io.camunda.zeebe.engine.metrics.IncidentMetrics;
 import io.camunda.zeebe.engine.state.immutable.IncidentState;
 import io.camunda.zeebe.engine.state.mutable.MutableIncidentState;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
@@ -46,12 +45,8 @@ public final class DbIncidentState implements MutableIncidentState {
   private final ColumnFamily<DbForeignKey<DbLong>, IncidentKey> jobIncidentColumnFamily;
   private final IncidentKey incidentKeyValue = new IncidentKey();
 
-  private final IncidentMetrics metrics;
-
   public DbIncidentState(
-      final ZeebeDb<ZbColumnFamilies> zeebeDb,
-      final TransactionContext transactionContext,
-      final int partitionId) {
+      final ZeebeDb<ZbColumnFamilies> zeebeDb, final TransactionContext transactionContext) {
     incidentKey = new DbLong();
     incidentColumnFamily =
         zeebeDb.createColumnFamily(
@@ -69,8 +64,6 @@ public final class DbIncidentState implements MutableIncidentState {
     jobIncidentColumnFamily =
         zeebeDb.createColumnFamily(
             ZbColumnFamilies.INCIDENT_JOBS, transactionContext, jobKey, incidentKeyValue);
-
-    metrics = new IncidentMetrics(zeebeDb.getMeterRegistry());
   }
 
   @Override
@@ -87,8 +80,6 @@ public final class DbIncidentState implements MutableIncidentState {
       elementInstanceKey.inner().wrapLong(incident.getElementInstanceKey());
       processInstanceIncidentColumnFamily.insert(elementInstanceKey, incidentKeyValue);
     }
-
-    metrics.incidentCreated();
   }
 
   @Override
@@ -105,8 +96,6 @@ public final class DbIncidentState implements MutableIncidentState {
         elementInstanceKey.inner().wrapLong(incidentRecord.getElementInstanceKey());
         processInstanceIncidentColumnFamily.deleteExisting(elementInstanceKey);
       }
-
-      metrics.incidentResolved();
     }
   }
 
@@ -178,6 +167,11 @@ public final class DbIncidentState implements MutableIncidentState {
       final IncidentRecord incidentRecord = getIncidentRecord(processIncidentKey);
       resolver.accept(incidentRecord, processIncidentKey);
     }
+  }
+
+  @Override
+  public long getIncidentCount() {
+    return incidentColumnFamily.count();
   }
 
   private List<String> getAuthorizedTenantIds(final Map<String, Object> authorizations) {
