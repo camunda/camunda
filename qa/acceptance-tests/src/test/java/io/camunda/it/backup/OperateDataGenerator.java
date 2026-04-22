@@ -12,15 +12,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.search.enums.ProcessInstanceState;
 import io.camunda.client.api.search.response.ProcessInstance;
-import io.camunda.it.document.DocumentClient;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
-import java.io.IOException;
 import java.time.Duration;
-import java.time.Instant;
 import java.time.OffsetDateTime;
-import java.time.ZoneId;
-import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
@@ -30,20 +25,19 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.LongConsumer;
 import org.awaitility.Awaitility;
-import org.awaitility.core.ConditionTimeoutException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 final class OperateDataGenerator implements AutoCloseable {
 
   static final String PROCESS_BPMN_PROCESS_ID = "basicProcess";
-  static final int PROCESS_INSTANCE_COUNT = 20;
-  static final int INCIDENT_COUNT = 12;
-  static final int COUNT_OF_CANCEL_OPERATION = 4;
-  static final int COUNT_OF_RESOLVE_OPERATION = 5;
+  static final int PROCESS_INSTANCE_COUNT = 51;
+  static final int INCIDENT_COUNT = 32;
+  static final int COUNT_OF_CANCEL_OPERATION = 9;
+  static final int COUNT_OF_RESOLVE_OPERATION = 8;
   static final String NEW_BPMN_PROCESS_ID = "testProcess2";
   static final int CANCELLED_PROCESS_INSTANCES = 3;
-  static final int NEW_PROCESS_INSTANCES_COUNT = 2;
+  static final int NEW_PROCESS_INSTANCES_COUNT = 13;
   private static final int MIN_ACTIVE_PROCESS_INSTANCE_COUNT_AFTER_INITIAL_OPERATIONS =
       PROCESS_INSTANCE_COUNT - COUNT_OF_CANCEL_OPERATION;
   private static final int MIN_ACTIVE_PROCESS_INSTANCE_COUNT_AFTER_CHANGE =
@@ -52,27 +46,17 @@ final class OperateDataGenerator implements AutoCloseable {
           - CANCELLED_PROCESS_INSTANCES;
 
   private static final Logger LOGGER = LoggerFactory.getLogger(OperateDataGenerator.class);
-  private static final DateTimeFormatter ARCHIVER_DATE_TIME_FORMATTER =
-      DateTimeFormatter.ofPattern("yyyy-MM-dd").withZone(ZoneId.systemDefault());
   private static final Duration DATA_TIMEOUT = Duration.ofSeconds(90);
-  private static final Duration ARCHIVE_TIMEOUT = Duration.ofSeconds(45);
   private static final int SEARCH_LIMIT = 200;
   private static final int SEQUENCE_FLOW_COUNT_PER_PROCESS_INSTANCE = 2;
 
-  private final DocumentClient webappsDbClient;
-  private final String indexPrefix;
   private final Random random = new Random();
 
   private CamundaClient camundaClient;
   private List<Long> processInstanceKeys = new ArrayList<>();
 
-  OperateDataGenerator(
-      final CamundaClient camundaClient,
-      final DocumentClient webappsDbClient,
-      final String indexPrefix) {
+  OperateDataGenerator(final CamundaClient camundaClient) {
     this.camundaClient = camundaClient;
-    this.webappsDbClient = webappsDbClient;
-    this.indexPrefix = indexPrefix;
   }
 
   void setCamundaClient(final CamundaClient camundaClient) {
@@ -99,8 +83,6 @@ final class OperateDataGenerator implements AutoCloseable {
       createResolveIncidentOperation(processInstanceKeys.size() * 10);
     }
     LOGGER.info("{} operations of type RESOLVE_INCIDENT started", COUNT_OF_RESOLVE_OPERATION);
-
-    waitUntilSomeInstancesAreArchived();
 
     LOGGER.info(
         "Data generation completed in: {} s",
@@ -188,21 +170,6 @@ final class OperateDataGenerator implements AutoCloseable {
             INCIDENT_COUNT);
   }
 
-  private void waitUntilSomeInstancesAreArchived() {
-    waitUntilAllDataAreImported();
-    try {
-      Awaitility.await("should archive some process instances")
-          .atMost(ARCHIVE_TIMEOUT)
-          .ignoreExceptions()
-          .until(this::someInstancesAreArchived);
-    } catch (final ConditionTimeoutException timeoutException) {
-      LOGGER.warn(
-          "Historical indices were not created within {}. Continuing with backup/restore validation.",
-          ARCHIVE_TIMEOUT,
-          timeoutException);
-    }
-  }
-
   private void waitUntilAllDataAreImported() {
     LOGGER.info("Wait until all data is imported.");
     Awaitility.await("should import all active process instances")
@@ -212,16 +179,6 @@ final class OperateDataGenerator implements AutoCloseable {
             () ->
                 assertThat(searchProcessInstances(PROCESS_BPMN_PROCESS_ID))
                     .hasSize(PROCESS_INSTANCE_COUNT));
-  }
-
-  private boolean someInstancesAreArchived() {
-    final String archivedIndexPattern =
-        indexPrefix + "-operate-*_" + ARCHIVER_DATE_TIME_FORMATTER.format(Instant.now());
-    try {
-      return !webappsDbClient.cat(archivedIndexPattern).isEmpty();
-    } catch (final IOException e) {
-      throw new RuntimeException("Exception occurred while checking archived indices", e);
-    }
   }
 
   private void createCancelOperation(final int maxAttempts) {

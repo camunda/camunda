@@ -207,7 +207,7 @@ public class OperateBackupRestoreIT {
     historyBackupClient = HistoryBackupClient.of(testStandaloneApplication);
     webappsDbClient = DocumentClient.create(dbUrl, databaseType, EXECUTOR);
     webappsDbClient.createRepository(REPOSITORY_NAME);
-    generator = new OperateDataGenerator(camundaClient, webappsDbClient, INDEX_PREFIX);
+    generator = new OperateDataGenerator(camundaClient);
     workingDirectory = testStandaloneApplication.bean(WorkingDirectory.class);
   }
 
@@ -234,42 +234,12 @@ public class OperateBackupRestoreIT {
           .getElasticsearch()
           .getBackup()
           .setRepositoryName(REPOSITORY_NAME);
-      cfg.getData()
-          .getSecondaryStorage()
-          .getElasticsearch()
-          .getHistory()
-          .setWaitPeriodBeforeArchiving("0s");
-      cfg.getData()
-          .getSecondaryStorage()
-          .getElasticsearch()
-          .getHistory()
-          .setDelayBetweenRuns(Duration.ofSeconds(1));
-      cfg.getData()
-          .getSecondaryStorage()
-          .getElasticsearch()
-          .getHistory()
-          .setMaxDelayBetweenRuns(Duration.ofSeconds(1));
     } else {
       cfg.getData()
           .getSecondaryStorage()
           .getOpensearch()
           .getBackup()
           .setRepositoryName(REPOSITORY_NAME);
-      cfg.getData()
-          .getSecondaryStorage()
-          .getOpensearch()
-          .getHistory()
-          .setWaitPeriodBeforeArchiving("0s");
-      cfg.getData()
-          .getSecondaryStorage()
-          .getOpensearch()
-          .getHistory()
-          .setDelayBetweenRuns(Duration.ofSeconds(1));
-      cfg.getData()
-          .getSecondaryStorage()
-          .getOpensearch()
-          .getHistory()
-          .setMaxDelayBetweenRuns(Duration.ofSeconds(1));
     }
   }
 
