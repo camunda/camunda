@@ -146,6 +146,7 @@ public final class RdbmsCacheRegistry {
         processDefinitionEntity.versionTag(),
         processDiagramData.callActivityIds(),
         processDiagramData.flowNodesMap(),
-        processDiagramData.hasUserTasks());
+        processDiagramData.hasUserTasks(),
+        processDiagramData.elementExtensionProperties());
   }
 }
