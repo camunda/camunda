@@ -21,7 +21,7 @@ import {useDeleteDecisionInstancesBatchOperationRequestBody} from 'modules/hooks
 import {useBatchOperationSuccessNotification} from 'modules/hooks/useBatchOperationSuccessNotification';
 import {handleOperationError} from 'modules/utils/notifications';
 import {tracking} from 'modules/tracking';
-import pluralSuffix from 'modules/utils/pluralSuffix';
+import {pluralSuffix} from 'modules/utils/pluralSuffix';
 import {IS_DELETE_DI_BATCH_OPERATION_ENABLED} from 'modules/feature-flags';
 
 type Props = {
