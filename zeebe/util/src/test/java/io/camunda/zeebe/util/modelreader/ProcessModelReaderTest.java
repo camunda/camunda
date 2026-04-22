@@ -280,6 +280,63 @@ public class ProcessModelReaderTest {
     assertThat(isPublic).isFalse();
   }
 
+  @Test
+  void shouldExtractZeebePropertiesForElementWithProperties() throws IOException {
+    // given
+    final String processId = "formProcess";
+    final var bpmnBytes = parseBpmnResourceXml("process-with-form-key-reference.bpmn");
+
+    // when
+    final var reader = ProcessModelReader.of(bpmnBytes, processId);
+    assertThat(reader).isPresent();
+    final var allProps =
+        ProcessModelReader.extractExtensionProperties(reader.get().extractFlowNodes());
+
+    // then — StartEvent_1 has publicAccess=true
+    assertThat(allProps).containsKey("StartEvent_1");
+    assertThat(allProps.get("StartEvent_1")).containsEntry("publicAccess", "true");
+    // and elements without extension properties don't appear in the map
+    assertThat(allProps).doesNotContainKey("processStartedByForm_user_task");
+    assertThat(allProps).doesNotContainKey("Event_1cu4vf1");
+  }
+
+  @Test
+  void shouldReturnEmptyMapForProcessWithoutZeebeProperties() throws IOException {
+    // given — process-without-form-reference.bpmn has no zeebe:properties on any flow node
+    final String processId = "formProcess";
+    final var bpmnBytes = parseBpmnResourceXml("process-without-form-reference.bpmn");
+
+    // when
+    final var reader = ProcessModelReader.of(bpmnBytes, processId);
+    assertThat(reader).isPresent();
+    final var allProps =
+        ProcessModelReader.extractExtensionProperties(reader.get().extractFlowNodes());
+
+    // then
+    assertThat(allProps).isEmpty();
+  }
+
+  @Test
+  void shouldIgnoreEmptyPropertiesInExtractExtensionProperties() throws IOException {
+    // given — process-with-empty-property.bpmn has <zeebe:property /> and <zeebe:property
+    // name="publicAccess" value="true" />
+    final String processId = "test-empty-property";
+    final var bpmnBytes = parseBpmnResourceXml("process-with-empty-property.bpmn");
+
+    // when
+    final var reader = ProcessModelReader.of(bpmnBytes, processId);
+    assertThat(reader).isPresent();
+    final var allProps =
+        ProcessModelReader.extractExtensionProperties(reader.get().extractFlowNodes());
+
+    // then — only the valid publicAccess property should be present
+    assertThat(allProps).containsKey("StartEvent_1");
+    final var startEventProps = allProps.get("StartEvent_1");
+    assertThat(startEventProps).containsEntry("publicAccess", "true");
+    assertThat(startEventProps).hasSize(1); // only one property, the empty one is ignored
+    assertThat(startEventProps).doesNotContainKey(null); // no null keys
+  }
+
   private String formOneJson() {
     return
 """
