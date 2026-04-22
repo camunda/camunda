@@ -283,10 +283,7 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
 
   private CamundaManagementClient createManagementClient(
       final CamundaProcessTestRuntimeConfiguration runtimeConfiguration) {
-    final CamundaClient camundaClient = runtime.getCamundaClientBuilderFactory().get().build();
-    createdClients.add(camundaClient);
-    return CamundaManagementClient.createClient(
-        runtime.getCamundaMonitoringApiAddress(), camundaClient);
+    return CamundaManagementClient.createClient(runtime.getCamundaMonitoringApiAddress());
   }
 
   private void printTestResults() {
