@@ -7,5 +7,3 @@
  */
 
 export const featureFlags = [];
-
-export const IS_MCP_PROCESSES_VIEW_ENABLED = true;
