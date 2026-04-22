@@ -19,7 +19,7 @@ import java.util.Set;
 
 public class OidcAuthenticationConfiguration {
   public static final String GROUPS_CLAIM_PROPERTY =
-      "camunda.security.authentication.oidc.groupsClaim";
+      "camunda.security.authentication.oidc.groups-claim";
 
   public static final String CLIENT_AUTHENTICATION_METHOD_CLIENT_SECRET_BASIC =
       "client_secret_basic";

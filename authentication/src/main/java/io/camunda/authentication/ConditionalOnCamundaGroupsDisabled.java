@@ -21,20 +21,20 @@ import org.springframework.context.annotation.Conditional;
 import org.springframework.core.type.AnnotatedTypeMetadata;
 
 /**
- * Condition that matches when the OIDC groups-claim property is <b>not</b> configured, meaning the
- * platform should manage groups internally (Groups API enabled, Groups UI visible).
+ * Condition that matches when the OIDC groups-claim property <b>is</b> configured, meaning groups
+ * are managed externally via the identity provider (Groups API disabled).
  */
 @Target({TYPE, METHOD})
 @Retention(RUNTIME)
 @Documented
-@Conditional(ConditionalOnCamundaGroupsEnabled.OnGroupsClaimAbsentCondition.class)
-public @interface ConditionalOnCamundaGroupsEnabled {
+@Conditional(ConditionalOnCamundaGroupsDisabled.OnGroupsClaimPresentCondition.class)
+public @interface ConditionalOnCamundaGroupsDisabled {
 
-  class OnGroupsClaimAbsentCondition implements Condition {
+  class OnGroupsClaimPresentCondition implements Condition {
     @Override
     public boolean matches(final ConditionContext context, final AnnotatedTypeMetadata metadata) {
       final String groupsClaim = context.getEnvironment().getProperty(GROUPS_CLAIM_PROPERTY);
-      return groupsClaim == null || groupsClaim.isEmpty();
+      return groupsClaim != null && !groupsClaim.isEmpty();
     }
   }
 }

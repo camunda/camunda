@@ -12,6 +12,7 @@ import static io.camunda.security.configuration.OidcAuthenticationConfiguration.
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.authentication.ConditionalOnAuthenticationMethod;
+import io.camunda.authentication.ConditionalOnCamundaGroupsDisabled;
 import io.camunda.security.entity.AuthenticationMethod;
 import io.camunda.zeebe.gateway.rest.controller.EndpointAccessErrorFilter;
 import io.camunda.zeebe.util.VisibleForTesting;
@@ -37,7 +38,7 @@ public class ApiFiltersConfiguration {
       "Tenants API is disabled. Enable the API by setting '%s' to true."
           .formatted(API_ENABLED_PROPERTY);
 
-  @ConditionalOnExpression("'${camunda.security.authentication.oidc.groupsClaim:}' != ''")
+  @ConditionalOnCamundaGroupsDisabled
   @Bean
   public FilterRegistrationBean<EndpointAccessErrorFilter> disableGroupApiFilter(
       final ObjectMapper objectMapper) {
