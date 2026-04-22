@@ -255,7 +255,7 @@ jobs:
           #   Additional arguments to pass to the Maven executions, separated by spaces.
           #   Per default it is not required, but the release plugin is configured in the camunda release plugin (and this property is used)
           #   This is the reason why we have to set it at least as empty string.
-          
+
           # Conditionally set profile flags based on includeOptimize input
           if [[ "${{ inputs.includeOptimize }}" == "true" ]]; then
             PROFILE_FLAGS=""
@@ -264,7 +264,7 @@ jobs:
             PROFILE_FLAGS="-P\!include-optimize"
             ARGUMENTS_PROFILE="-P!include-optimize"
           fi
-          
+
           ./mvnw release:prepare -B \
             -Dresume=false \
             -Dtag="${RELEASE_TAG}" \
@@ -299,7 +299,7 @@ jobs:
           #   In order to disable QA/IT and the auto formatting during the release.
           #   It is unnecessary to release integration tests, and we don't want to run the auto-formatting unnecessarily.
 
-          
+
 
           # Conditionally set profile flags based on includeOptimize input
           if [[ "${{ inputs.includeOptimize }}" == "true" ]]; then
@@ -357,12 +357,12 @@ jobs:
           cp target/checkout/dist/target/camunda-zeebe-"${RELEASE_VERSION}".tar.gz "${ARTIFACT_DIR}/"
           cp target/checkout/dist/target/camunda-zeebe-"${RELEASE_VERSION}".zip "${ARTIFACT_DIR}/"
           cp target/checkout/db/rdbms-schema/target/camunda-db-rdbms-schema-"${RELEASE_VERSION}".zip "${ARTIFACT_DIR}/"
-          
+
           # Include Optimize artifacts if Optimize is included in the release
           if [[ "${{ inputs.includeOptimize }}" == "true" ]]; then
             cp target/checkout/optimize-distro/target/camunda-optimize-"${RELEASE_VERSION}"-production.tar.gz "${ARTIFACT_DIR}/"
           fi
-          
+
           echo "dir=${ARTIFACT_DIR}" >> "$GITHUB_OUTPUT"
       - name: Upload Release Artifacts
         uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
@@ -1035,7 +1035,7 @@ jobs:
       releaseBodyUpdateOutcome: ${{ steps.update-github-release-body.outcome }}
     # Minor releases take more time since a lot of issues are included in the changelog
     timeout-minutes: 30
-    if: ${{ always() && !cancelled() && 
+    if: ${{ always() && !cancelled() &&
       needs.release.result == 'success' &&
       needs.zeebe-docker.result == 'success' &&
       needs.operate-docker.result == 'success' &&
@@ -1190,7 +1190,7 @@ jobs:
     name: Create FOSSA releases and generate attribution/SBOM reports
     runs-on: ubuntu-latest
     needs: [release, github, zeebe-docker, operate-docker, tasklist-docker, optimize-docker, camunda-docker]
-    if: ${{ always() && !cancelled() && 
+    if: ${{ always() && !cancelled() &&
       needs.release.result == 'success' &&
       needs.github.result == 'success' &&
       needs.zeebe-docker.result == 'success' &&
@@ -1297,8 +1297,9 @@ jobs:
           variables: |
             {
               "is_camunda_release_successful": "true",
-              "camunda_workflow_run_url": "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-            }      
+              "camunda_workflow_run_url": "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}",
+              "camunda_repository": "${{ github.repository }}"
+            }
       - name: Send success Slack notification
         if: ${{ !inputs.dryRun && !inputs.releaseProcessDryRun && needs.github.outputs.releaseBodyUpdateOutcome != 'failure' }}
         uses: slackapi/slack-github-action@af78098f536edbc4de71162a307590698245be95 # v3.0.1
@@ -1390,8 +1391,9 @@ jobs:
           variables: |
             {
               "is_camunda_release_successful": "false",
-              "camunda_workflow_run_url": "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-            }            
+              "camunda_workflow_run_url": "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}",
+              "camunda_repository": "${{ github.repository }}"
+            }
       - name: Send failure Slack notification
         if: ${{ !inputs.dryRun && !inputs.releaseProcessDryRun }}
         uses: slackapi/slack-github-action@af78098f536edbc4de71162a307590698245be95 # v3.0.1
