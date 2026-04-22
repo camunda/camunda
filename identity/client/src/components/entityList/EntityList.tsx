@@ -392,9 +392,12 @@ const EntityList = <D extends EntityData>({
                                       isDangerous,
                                       disabled: disabledProp,
                                     } = menuItem as MenuItem<D>;
+                                    const entity = index[rowId];
                                     const disabled =
                                       typeof disabledProp === "function"
-                                        ? disabledProp(index[rowId])
+                                        ? entity !== undefined
+                                          ? disabledProp(entity)
+                                          : false
                                         : disabledProp;
 
                                     const kind: ButtonKind = isDangerous
