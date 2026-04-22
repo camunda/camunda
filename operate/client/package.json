@@ -63,7 +63,7 @@
   },
   "devDependencies": {
     "@camunda/lint-config": "file:../../webapp/client/packages/lint-config",
-    "@camunda/mock-server-utils": "file:../../webapp/client/packages/mock-server-utils",
+    "@camunda/c8-mocks": "file:../../webapp/client/packages/c8-mocks",
     "@eslint/js": "9.39.4",
     "@playwright/test": "1.58.2",
     "@testing-library/dom": "10.4.1",

@@ -12,4 +12,4 @@ export {
   invalidLicense,
   commercialExpired,
   validNonCommercial,
-} from '@camunda/mock-server-utils';
+} from '@camunda/c8-mocks';

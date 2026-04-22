@@ -1,5 +1,5 @@
 {
-	"name": "@camunda/mock-server-utils",
+	"name": "@camunda/c8-mocks",
 	"version": "0.0.1",
 	"private": true,
 	"type": "module",

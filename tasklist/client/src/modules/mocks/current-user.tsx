@@ -12,4 +12,4 @@ export {
   currentUserWithTenants,
   currentUserWithGroups,
   currentUnauthorizedUser,
-} from '@camunda/mock-server-utils';
+} from '@camunda/c8-mocks';
