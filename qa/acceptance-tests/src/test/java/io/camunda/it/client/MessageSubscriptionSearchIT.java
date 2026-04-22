@@ -63,7 +63,7 @@ public class MessageSubscriptionSearchIT {
         .join();
 
     waitForMessageSubscriptions(
-        camundaClient, f -> f.messageSubscriptionState(MessageSubscriptionState.CORRELATED), 1);
+        camundaClient, f -> f.messageSubscriptionState(MessageSubscriptionState.CORRELATED), 2);
 
     orderedMessageSubscriptions =
         camundaClient
