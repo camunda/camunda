@@ -479,9 +479,9 @@ test.describe('Process Instance Incident', () => {
         name: /Decision C \(Root Cause\)/i,
       });
       await expect(decisionLink).toBeVisible();
-      const linkText = await decisionLink.textContent();
-      expect(linkText).toMatch(/Decision C \(Root Cause\)/i);
-      expect(linkText).toMatch(/\d+/);
+      await expect(decisionLink).toHaveAccessibleName(
+        /Decision C \(Root Cause\).*?\d+/i,
+      );
     });
 
     await test.step('Click the link to navigate to the decision that caused the incident', async () => {
