@@ -11,7 +11,7 @@ import {getError} from './getError';
 import {useFieldError} from 'modules/hooks/useFieldError';
 import {Button} from '@carbon/react';
 import {Checkmark, Close} from '@carbon/react/icons';
-import {Loading} from './EditButtons.styled';
+import {Loading, LoadingContainer} from './EditButtons.styled';
 import type {VariableFormValues} from 'modules/types/variables';
 
 const EditButtons: React.FC = () => {
@@ -43,7 +43,13 @@ const EditButtons: React.FC = () => {
       />
 
       {form.getState().submitting ? (
-        <Loading small withOverlay={false} data-testid="full-variable-loader" />
+        <LoadingContainer>
+          <Loading
+            small
+            withOverlay={false}
+            data-testid="full-variable-loader"
+          />
+        </LoadingContainer>
       ) : (
         <Button
           kind="ghost"
