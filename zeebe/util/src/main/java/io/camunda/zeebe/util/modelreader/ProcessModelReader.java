@@ -23,7 +23,9 @@ import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeUserTaskForm;
 import java.io.ByteArrayInputStream;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import org.camunda.bpm.model.xml.instance.ModelElementInstance;
 import org.slf4j.Logger;
@@ -88,6 +90,42 @@ public final class ProcessModelReader {
 
   public static boolean hasUserTasks(final Collection<FlowNode> flowNodes) {
     return flowNodes.stream().anyMatch(UserTask.class::isInstance);
+  }
+
+  /**
+   * Returns a map of elementId → zeebe:properties (name→value) for all flow nodes that carry
+   * zeebe:properties extension elements.
+   */
+  public static Map<String, Map<String, String>> extractExtensionProperties(
+      final Collection<FlowNode> flowNodes) {
+    final Map<String, Map<String, String>> result = new HashMap<>();
+    for (final FlowNode flowNode : flowNodes) {
+      final var props = zeebePropertiesAsMap(flowNode);
+      if (!props.isEmpty()) {
+        result.put(flowNode.getId(), props);
+      }
+    }
+    return result;
+  }
+
+  private static Map<String, String> zeebePropertiesAsMap(final BaseElement element) {
+    return getExtensionElementQuery(element, ZeebeProperties.class)
+        .flatMap(Query::findSingleResult)
+        .map(
+            zp -> {
+              final Map<String, String> map = new HashMap<>();
+              zp.getProperties()
+                  .forEach(
+                      p -> {
+                        final String name = p.getName();
+                        final String value = p.getValue();
+                        if (name != null && !name.isBlank() && value != null && !value.isBlank()) {
+                          map.put(name, value);
+                        }
+                      });
+              return map;
+            })
+        .orElseGet(HashMap::new);
   }
 
   private boolean isPublic(final ZeebeProperties properties) {
@@ -176,14 +214,14 @@ public final class ProcessModelReader {
         .map(l -> l.count() > 0 ? l.list() : null);
   }
 
-  private <T extends ModelElementInstance> Optional<Query<T>> getExtensionElementQuery(
+  private static <T extends ModelElementInstance> Optional<Query<T>> getExtensionElementQuery(
       final BaseElement element, final Class<T> cls) {
     return getExtensionElements(element)
         .map(ExtensionElements::getElementsQuery)
         .map(q -> q.filterByType(cls));
   }
 
-  private Optional<ExtensionElements> getExtensionElements(final BaseElement element) {
+  private static Optional<ExtensionElements> getExtensionElements(final BaseElement element) {
     return Optional.ofNullable(element.getExtensionElements());
   }
 
