@@ -105,8 +105,8 @@ public enum AuthorizationResourceType {
   }
 
   /**
-   * Builds a map with the key as the name of the resource type and the value is a list of permission
-   * types allowed for that resource type.
+   * Builds a map with the key as the name of the resource type and the value is a list of
+   * permission types allowed for that resource type.
    *
    * @return
    */
@@ -124,5 +124,4 @@ public enum AuthorizationResourceType {
                 (e1, e2) -> e1,
                 LinkedHashMap::new));
   }
-
 }
