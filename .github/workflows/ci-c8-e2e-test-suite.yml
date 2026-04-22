@@ -1,0 +1,44 @@
+# description: TypeScript lint check for the C8 Orchestration Cluster E2E test suite. Runs tsc + eslint to catch broken imports and type errors on PRs.
+# test location: /qa/c8-orchestration-cluster-e2e-test-suite
+# called by: ci.yml
+# type: CI
+# owner: @camunda/test-automation-team
+name: C8 E2E Test Suite Lint
+
+on:
+  workflow_call: {}
+
+env:
+  GHA_BEST_PRACTICES_LINTER: enabled
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  lint:
+    name: "Lint"
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions: {} # GITHUB_TOKEN unused in this job
+    defaults:
+      run:
+        working-directory: qa/c8-orchestration-cluster-e2e-test-suite
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
+        with:
+          node-version: 24
+      - name: Install dependencies
+        run: npm ci
+      - name: Lint (tsc + eslint)
+        run: npm run lint
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
