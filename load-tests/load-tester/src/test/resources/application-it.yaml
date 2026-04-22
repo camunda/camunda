@@ -1,14 +1,10 @@
-# Integration test configuration - overrides application.yaml to enable the Camunda client
+# Test-only overrides on top of application.yaml.
+# mode is nulled so the SDK installs NoopCredentialsProvider and skips OIDC,
+# matching the unauthenticated test cluster booted by CamundaContainerProvider.
 camunda:
   client:
-    mode: selfManaged
-    auth:
-      method: none
+    mode: ~
     zeebe:
       enabled: true
-      # Switch ITs to REST. The REST API added new fields (e.g. tenantFilter)
-      # but the camunda-process-test-java image is now refreshed periodically (12h)
-      # to keep up with backend changes.
-      prefer-rest-over-grpc: true
       defaults:
         type: benchmark-task

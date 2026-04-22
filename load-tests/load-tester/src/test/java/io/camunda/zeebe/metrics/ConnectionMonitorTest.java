@@ -1,9 +1,17 @@
 /*
- * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
- * one or more contributor license agreements. See the NOTICE file distributed
- * with this work for additional information regarding copyright ownership.
- * Licensed under the Camunda License 1.0. You may not use this file
- * except in compliance with the Camunda License 1.0.
+ * Copyright © 2017 camunda services GmbH (info@camunda.com)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 package io.camunda.zeebe.metrics;
 
@@ -11,10 +19,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import io.camunda.client.CamundaClient;
-import io.camunda.client.api.CamundaFuture;
-import io.camunda.client.api.command.TopologyRequestStep1;
-import io.camunda.client.api.response.Topology;
+import io.camunda.zeebe.client.ZeebeClient;
+import io.camunda.zeebe.client.api.ZeebeFuture;
+import io.camunda.zeebe.client.api.command.TopologyRequestStep1;
+import io.camunda.zeebe.client.api.response.Topology;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.util.Collections;
 import org.junit.jupiter.api.Test;
@@ -49,16 +57,16 @@ class ConnectionMonitorTest {
     final var topology = mock(Topology.class);
     when(topology.getBrokers()).thenReturn(Collections.emptyList());
 
-    final CamundaFuture<Topology> firstAttempt = mock(CamundaFuture.class);
+    final ZeebeFuture<Topology> firstAttempt = mock(ZeebeFuture.class);
     when(firstAttempt.join()).thenThrow(new RuntimeException("transient"));
 
-    final CamundaFuture<Topology> secondAttempt = mock(CamundaFuture.class);
+    final ZeebeFuture<Topology> secondAttempt = mock(ZeebeFuture.class);
     when(secondAttempt.join()).thenReturn(topology);
 
     final var request = mock(TopologyRequestStep1.class);
     when(request.send()).thenReturn(firstAttempt, secondAttempt);
 
-    final var client = mock(CamundaClient.class);
+    final var client = mock(ZeebeClient.class);
     when(client.newTopologyRequest()).thenReturn(request);
 
     final var monitor = new ConnectionMonitor(client, registry);
@@ -76,7 +84,7 @@ class ConnectionMonitorTest {
   void shouldInitializeConnectedGaugeAtZeroBeforeTopologyCompletes() {
     // given
     final var registry = new SimpleMeterRegistry();
-    final var client = mock(CamundaClient.class);
+    final var client = mock(ZeebeClient.class);
 
     // when — just construct, do not call awaitAndPrintTopology
     new ConnectionMonitor(client, registry);
@@ -87,19 +95,19 @@ class ConnectionMonitorTest {
         .isEqualTo(0.0);
   }
 
-  /** Returns a completed {@link CamundaFuture} whose {@link Topology} has no brokers. */
-  private static CamundaFuture<Topology> topologySuccess() {
+  /** Returns a completed {@link ZeebeFuture} whose {@link Topology} has no brokers. */
+  private static ZeebeFuture<Topology> topologySuccess() {
     final var topology = mock(Topology.class);
     when(topology.getBrokers()).thenReturn(Collections.emptyList());
-    final CamundaFuture<Topology> future = mock(CamundaFuture.class);
+    final ZeebeFuture<Topology> future = mock(ZeebeFuture.class);
     when(future.join()).thenReturn(topology);
     return future;
   }
 
-  private static CamundaClient mockClientReturning(final CamundaFuture<Topology> future) {
+  private static ZeebeClient mockClientReturning(final ZeebeFuture<Topology> future) {
     final var request = mock(TopologyRequestStep1.class);
     when(request.send()).thenReturn(future);
-    final var client = mock(CamundaClient.class);
+    final var client = mock(ZeebeClient.class);
     when(client.newTopologyRequest()).thenReturn(request);
     return client;
   }

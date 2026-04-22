@@ -10,9 +10,9 @@
     <relativePath>../../parent/pom.xml</relativePath>
   </parent>
 
-  <artifactId>zeebe-benchmark</artifactId>
+  <artifactId>camunda-load-tester</artifactId>
 
-  <name>Zeebe Benchmark</name>
+  <name>Camunda Load Tester</name>
 
   <licenses>
     <license>
@@ -69,6 +69,12 @@
       <artifactId>spring-context</artifactId>
     </dependency>
 
+    <!-- Required at runtime by Spring Boot autoconfig (BeanFactoryPostProcessor etc.).
+         No production source class imports spring-beans symbols directly; jib needs
+         it on the compile classpath so the fat layer includes it (otherwise the
+         deployed jar throws NoClassDefFoundError at startup). The analyze-only
+         "non-test scoped test only" false positive is suppressed globally in
+         parent/pom.xml's <ignoredNonTestScopedDependencies>. -->
     <dependency>
       <groupId>org.springframework</groupId>
       <artifactId>spring-beans</artifactId>
@@ -92,11 +98,6 @@
     <dependency>
       <groupId>com.google.guava</groupId>
       <artifactId>guava</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>org.apache.commons</groupId>
-      <artifactId>commons-lang3</artifactId>
     </dependency>
 
     <dependency>
@@ -193,18 +194,8 @@
       <scope>test</scope>
     </dependency>
 
-    <dependency>
-      <groupId>org.testcontainers</groupId>
-      <artifactId>testcontainers</artifactId>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>org.testcontainers</groupId>
-      <artifactId>testcontainers-junit-jupiter</artifactId>
-      <scope>test</scope>
-    </dependency>
-
+    <!-- Testcontainers types come transitively through camunda-process-test-java which
+         orchestrates the Camunda + Elasticsearch containers via CamundaContainerRuntime. -->
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>camunda-process-test-java</artifactId>

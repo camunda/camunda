@@ -16,38 +16,30 @@
 package io.camunda.zeebe.it;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.awaitility.Awaitility.await;
 
 import io.camunda.process.test.impl.containers.CamundaContainer;
 import io.camunda.zeebe.LoadTesterApplication;
 import io.camunda.zeebe.metrics.StarterLatencyMetricsDoc;
 import io.micrometer.core.instrument.MeterRegistry;
+import java.time.Duration;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
 
 /**
- * Integration test for the data availability monitoring. Verifies that the starter can measure how
- * long it takes for a created process instance to become queryable via the search API.
- *
- * <p>This test relies on the {@link CamundaContainer}'s built-in H2 database and RDBMS exporter,
- * which flush immediately (PT0S), making process instances queryable almost instantly.
- *
- * <p>The starter runs for {@code duration-limit} seconds (blocking Spring Boot startup). During
- * that time, it creates instances and the {@link
- * io.camunda.zeebe.metrics.ProcessInstanceStartMeter} periodically checks if they are queryable. By
- * the time this test method executes, the data availability latency metric should have recordings.
+ * Verifies that the starter measures how long it takes for a created process instance to become
+ * queryable via the search API. ProcessInstanceStartMeter polls every 500ms while the starter is
+ * running; once operate indexes a record, it lands on the data-availability timer.
  */
-@Testcontainers
 @SpringBootTest(
     classes = LoadTesterApplication.class,
     properties = {
       "load-tester.starter.rate=1",
-      "load-tester.starter.duration-limit=30",
+      "load-tester.starter.duration-limit=120",
       "load-tester.starter.threads=1",
       "load-tester.starter.payload-path=bpmn/small_payload.json",
       "load-tester.monitor-data-availability=true",
@@ -56,8 +48,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 @ActiveProfiles({"starter", "it"})
 class DataAvailabilityIT {
 
-  @Container
-  static final CamundaContainer CAMUNDA = CamundaContainerProvider.createCamundaContainer();
+  static final CamundaContainer CAMUNDA = CamundaContainerProvider.getCamundaContainer();
 
   @Autowired private MeterRegistry meterRegistry;
 
@@ -68,16 +59,22 @@ class DataAvailabilityIT {
 
   @Test
   void shouldMeasureDataAvailabilityLatency() {
-    // given - starter has run for duration-limit seconds with data availability monitoring
-
-    // then - verify that data availability latency was recorded
-    final var timer =
-        meterRegistry.find(StarterLatencyMetricsDoc.DATA_AVAILABILITY_LATENCY.getName()).timer();
-    assertThat(timer)
-        .describedAs("Data availability latency timer should be registered")
-        .isNotNull();
-    assertThat(timer.count())
-        .describedAs("At least one data availability measurement should be recorded")
-        .isGreaterThan(0);
+    // Long timeout: operate's first ES import on a cold testcontainer can take a few minutes.
+    await()
+        .atMost(Duration.ofMinutes(5))
+        .pollInterval(Duration.ofSeconds(5))
+        .untilAsserted(
+            () -> {
+              final var timer =
+                  meterRegistry
+                      .find(StarterLatencyMetricsDoc.DATA_AVAILABILITY_LATENCY.getName())
+                      .timer();
+              assertThat(timer)
+                  .describedAs("Data availability latency timer should be registered")
+                  .isNotNull();
+              assertThat(timer.count())
+                  .describedAs("At least one data availability measurement should be recorded")
+                  .isGreaterThan(0);
+            });
   }
 }

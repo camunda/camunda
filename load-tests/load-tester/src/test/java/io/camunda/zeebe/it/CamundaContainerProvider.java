@@ -16,24 +16,48 @@
 package io.camunda.zeebe.it;
 
 import io.camunda.process.test.impl.containers.CamundaContainer;
-import io.camunda.process.test.impl.runtime.ContainerRuntimeDefaults;
-import java.time.Duration;
+import io.camunda.process.test.impl.runtime.CamundaContainerRuntime;
 import org.springframework.test.context.DynamicPropertyRegistry;
-import org.testcontainers.images.PullPolicy;
-import org.testcontainers.utility.DockerImageName;
 
 /**
- * Shared utilities for creating and configuring a {@link CamundaContainer} in integration tests.
+ * Boots a Camunda + Elasticsearch stack for the integration tests.
+ *
+ * <p>On 8.7, the Camunda image runs operate, tasklist, and the broker as separate components and
+ * uses Elasticsearch as backing storage. {@link CamundaContainerRuntime} wires both containers
+ * together on a shared Docker network. We disable the {@code auth} Spring profile so the cluster
+ * accepts unauthenticated traffic — the load-tester app's {@code mode: ~} config in {@code
+ * application-it.yaml} matches this with a no-op credentials provider.
+ *
+ * <p>The runtime is started once and reused across every IT in the failsafe fork; a JVM shutdown
+ * hook closes it when the process exits.
  */
 final class CamundaContainerProvider {
 
+  private static volatile CamundaContainerRuntime runtime;
+
   private CamundaContainerProvider() {}
 
-  static CamundaContainer createCamundaContainer() {
-    return new CamundaContainer(
-            DockerImageName.parse(ContainerRuntimeDefaults.CAMUNDA_DOCKER_IMAGE_NAME)
-                .withTag(ContainerRuntimeDefaults.CAMUNDA_DOCKER_IMAGE_VERSION))
-        .withImagePullPolicy(PullPolicy.ageBased(Duration.ofHours(12)));
+  static synchronized CamundaContainer getCamundaContainer() {
+    if (runtime == null) {
+      final CamundaContainerRuntime started =
+          CamundaContainerRuntime.newBuilder()
+              .withConnectorsEnabled(false)
+              .withCamundaEnv("SPRING_PROFILES_ACTIVE", "operate,tasklist,broker")
+              .build();
+      started.start();
+      runtime = started;
+      Runtime.getRuntime()
+          .addShutdownHook(
+              new Thread(
+                  () -> {
+                    try {
+                      started.close();
+                    } catch (final Exception ignored) {
+                      // best effort
+                    }
+                  }));
+    }
+    return runtime.getCamundaContainer();
   }
 
   static void registerClientProperties(

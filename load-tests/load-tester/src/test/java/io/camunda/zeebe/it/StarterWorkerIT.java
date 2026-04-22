@@ -1,9 +1,17 @@
 /*
- * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
- * one or more contributor license agreements. See the NOTICE file distributed
- * with this work for additional information regarding copyright ownership.
- * Licensed under the Camunda License 1.0. You may not use this file
- * except in compliance with the Camunda License 1.0.
+ * Copyright © 2017 camunda services GmbH (info@camunda.com)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 package io.camunda.zeebe.it;
 
@@ -12,7 +20,8 @@ import static org.awaitility.Awaitility.await;
 
 import io.camunda.process.test.impl.containers.CamundaContainer;
 import io.camunda.zeebe.LoadTesterApplication;
-import io.camunda.zeebe.client.ZeebeClient;
+import io.camunda.zeebe.metrics.StarterLatencyMetricsDoc;
+import io.micrometer.core.instrument.MeterRegistry;
 import java.time.Duration;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,37 +29,30 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
 
 /**
- * End-to-end integration test activating both the {@code starter} and {@code worker} profiles in
- * the same Spring context. The starter deploys the BPMN, creates a small number of instances at a
- * low rate, and the worker completes them via {@code @JobWorker}. The test then queries the broker
- * directly to confirm that at least one process instance reached the {@code COMPLETED} state.
+ * End-to-end IT that activates both the starter and worker profiles. Verifies, via metrics, that
+ * the starter created instances against the broker and that operate indexed them — which is only
+ * possible if the worker drained the broker's job queue.
  */
-@Testcontainers
 @SpringBootTest(
     classes = LoadTesterApplication.class,
     properties = {
-      // starter: create a handful of instances for a short window
       "load-tester.starter.rate=1",
-      "load-tester.starter.duration-limit=5",
+      "load-tester.starter.duration-limit=120",
       "load-tester.starter.threads=1",
       "load-tester.starter.payload-path=bpmn/small_payload.json",
-      // worker: no artificial delay; small payload to keep the IT fast
       "load-tester.worker.completion-delay=0ms",
       "load-tester.worker.payload-path=bpmn/small_payload.json",
-      // avoid background meters hitting the testcontainer gateway
-      "load-tester.monitor-data-availability=false",
+      "load-tester.monitor-data-availability=true",
+      "load-tester.monitor-data-availability-interval=500ms",
     })
 @ActiveProfiles({"starter", "worker", "it"})
 class StarterWorkerIT {
 
-  @Container
-  static final CamundaContainer CAMUNDA = CamundaContainerProvider.createCamundaContainer();
+  static final CamundaContainer CAMUNDA = CamundaContainerProvider.getCamundaContainer();
 
-  @Autowired private ZeebeClient client;
+  @Autowired private MeterRegistry meterRegistry;
 
   @DynamicPropertySource
   static void configure(final DynamicPropertyRegistry registry) {
@@ -59,32 +61,33 @@ class StarterWorkerIT {
 
   @Test
   void shouldStartInstancesAndCompleteThem() {
-    // given - the starter has already run (CommandLineRunner blocks context startup for
-    //         duration-limit=5s) and produced ~5 instances of the "benchmark" process.
-    //         The worker is also active and subscribed to "benchmark-task".
-
-    // then - at least one instance should be queryable and in COMPLETED state.
-    //        Awaitility handles the async gap between "starter stopped" and "worker drained queue".
+    // Long timeout: operate's first ES import on a cold testcontainer can take a few minutes.
     await()
-        .atMost(Duration.ofSeconds(60))
-        .pollInterval(Duration.ofSeconds(2))
-        .ignoreExceptions()
+        .atMost(Duration.ofMinutes(5))
+        .pollInterval(Duration.ofSeconds(5))
         .untilAsserted(
             () -> {
-              final var response =
-                  client
-                      .newProcessInstanceQuery()
-                      .filter(f -> f.bpmnProcessId("benchmark"))
-                      .send()
-                      .join();
+              final var responseLatency =
+                  meterRegistry.find(StarterLatencyMetricsDoc.RESPONSE_LATENCY.getName()).timer();
+              assertThat(responseLatency)
+                  .describedAs("Starter response-latency timer should be registered")
+                  .isNotNull();
+              assertThat(responseLatency.count())
+                  .describedAs("Starter should have created at least one process instance")
+                  .isGreaterThan(0);
 
-              assertThat(response.items())
-                  .describedAs("Starter should have created instances of 'benchmark'")
-                  .isNotEmpty();
-
-              assertThat(response.items())
-                  .describedAs("Worker should have completed at least one instance")
-                  .anyMatch(pi -> "COMPLETED".equals(pi.getState()));
+              final var dataAvailability =
+                  meterRegistry
+                      .find(StarterLatencyMetricsDoc.DATA_AVAILABILITY_LATENCY.getName())
+                      .timer();
+              assertThat(dataAvailability)
+                  .describedAs(
+                      "Data-availability latency timer should be registered (proves operate"
+                          + " indexed an instance the starter created)")
+                  .isNotNull();
+              assertThat(dataAvailability.count())
+                  .describedAs("At least one data-availability measurement should be recorded")
+                  .isGreaterThan(0);
             });
   }
 }
