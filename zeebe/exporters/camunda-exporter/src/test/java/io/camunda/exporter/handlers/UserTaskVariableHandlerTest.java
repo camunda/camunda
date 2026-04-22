@@ -81,7 +81,8 @@ public class UserTaskVariableHandlerTest {
     // given
     final long processDefinitionKey = 789L;
     processCache.put(
-        processDefinitionKey, new CachedProcessEntity("test", 1, null, List.of(), Map.of(), false));
+        processDefinitionKey,
+        new CachedProcessEntity("test", 1, null, List.of(), Map.of(), false, Map.of()));
 
     final Record<VariableRecordValue> variableRecord =
         factory.generateRecord(
@@ -103,7 +104,8 @@ public class UserTaskVariableHandlerTest {
     // given
     final long processDefKey = 123L;
     processCache.put(
-        processDefKey, new CachedProcessEntity("test", 1, null, List.of(), Map.of(), true));
+        processDefKey,
+        new CachedProcessEntity("test", 1, null, List.of(), Map.of(), true, Map.of()));
 
     final Record<VariableRecordValue> variableRecord =
         factory.generateRecord(
@@ -128,7 +130,8 @@ public class UserTaskVariableHandlerTest {
 
     final long processDefinitionKey = 789L;
     processCache.put(
-        processDefinitionKey, new CachedProcessEntity("test", 1, null, List.of(), Map.of(), false));
+        processDefinitionKey,
+        new CachedProcessEntity("test", 1, null, List.of(), Map.of(), false, Map.of()));
 
     final Record<VariableRecordValue> variableRecord =
         factory.generateRecord(

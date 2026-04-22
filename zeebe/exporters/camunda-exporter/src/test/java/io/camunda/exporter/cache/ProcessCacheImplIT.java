@@ -34,6 +34,7 @@ import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.IOException;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.AfterEach;
@@ -110,7 +111,13 @@ class ProcessCacheImplIT {
     expectedFlowNodesMap.put(startEventId, null);
     final var expectedCachedProcessEntity =
         new CachedProcessEntity(
-            "test", 1, "v1", List.of("Banana", "Cherry", "apple"), expectedFlowNodesMap, false);
+            "test",
+            1,
+            "v1",
+            List.of("Banana", "Cherry", "apple"),
+            expectedFlowNodesMap,
+            false,
+            Map.of());
     assertThat(process).isPresent().get().isEqualTo(expectedCachedProcessEntity);
   }
 
