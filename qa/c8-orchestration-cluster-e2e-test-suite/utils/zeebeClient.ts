@@ -6,8 +6,10 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import {readFileSync} from 'fs';
+import {basename} from 'path';
 import {Camunda8} from '@camunda8/sdk';
-import {JSONDoc, ZBWorkerTaskHandler} from '@camunda8/sdk/dist/zeebe/types.js';
+import {JSONDoc} from '@camunda8/sdk/dist/zeebe/types.js';
 
 const c8 = new Camunda8({
   CAMUNDA_AUTH_STRATEGY: process.env.CAMUNDA_AUTH_STRATEGY as
@@ -45,6 +47,28 @@ const deploy = async (processFilePaths: string[]) => {
   try {
     const results = await zeebe.deployResourcesFromFiles(processFilePaths);
     return results;
+  } catch (error) {
+    console.error('Deployment failed:', error);
+    throw error;
+  }
+};
+
+const deployWithSubstitutions = async (
+  bpmnFilePath: string,
+  substitutions: Record<string, string>,
+): Promise<void> => {
+  let content = readFileSync(bpmnFilePath, 'utf-8');
+  for (const [placeholder, replacement] of Object.entries(substitutions)) {
+    if (!content.includes(placeholder)) {
+      throw new Error(
+        `Placeholder '${placeholder}' not found in BPMN file '${bpmnFilePath}'`,
+      );
+    }
+    content = content.split(placeholder).join(replacement);
+  }
+  const name = basename(bpmnFilePath);
+  try {
+    await zeebe.deployResources([{content, name}]);
   } catch (error) {
     console.error('Deployment failed:', error);
     throw error;
@@ -97,7 +121,8 @@ const createWorker = (
   taskType: string,
   shouldFail: boolean = false,
   variables: JSONDoc = {},
-  handler?: ZBWorkerTaskHandler,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  handler?: (job: any) => any,
   timeout?: number,
 ) => {
   return zeebeGrpc.createWorker({
@@ -126,21 +151,13 @@ async function checkUpdateOnVersion(
   return !!item && item.processDefinitionVersion == targetVersion;
 }
 
-const setVariables = async (
-  elementInstanceKey: string,
-  variables: JSONDoc,
-  local: boolean = false,
-) => {
-  return zeebeGrpc.setVariables({elementInstanceKey, variables, local});
-};
-
 export {
   deploy,
+  deployWithSubstitutions,
   createInstances,
   generateManyVariables,
   checkUpdateOnVersion,
   createSingleInstance,
   cancelProcessInstance,
   createWorker,
-  setVariables,
 };
