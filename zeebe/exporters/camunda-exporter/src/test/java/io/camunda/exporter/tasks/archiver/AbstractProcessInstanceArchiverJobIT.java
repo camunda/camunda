@@ -9,12 +9,13 @@ package io.camunda.exporter.tasks.archiver;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.exporter.ExporterResourceProvider;
 import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.search.test.utils.SearchClientAdapter;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
+import io.camunda.webapps.schema.descriptors.template.FlowNodeInstanceTemplate;
 import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
 import io.camunda.webapps.schema.entities.ExporterEntity;
+import io.camunda.webapps.schema.entities.flownode.FlowNodeInstanceEntity;
 import io.camunda.webapps.schema.entities.listview.FlowNodeInstanceForListViewEntity;
 import io.camunda.webapps.schema.entities.listview.ProcessInstanceForListViewEntity;
 import java.io.IOException;
@@ -35,10 +36,13 @@ public abstract class AbstractProcessInstanceArchiverJobIT<T extends ProcessInst
         config,
         (job, resourceProvider) -> {
           // given
+          final var listViewTemplate =
+              resourceProvider.getIndexTemplateDescriptor(ListViewTemplate.class);
+
           final ProcessInstanceForListViewEntity processInstance =
               processInstanceForListViewEntity("2020-01-01T00:00:00+00:00");
 
-          storeInListView(resourceProvider, client, processInstance);
+          store(listViewTemplate, client, processInstance);
 
           client.refresh();
 
@@ -49,8 +53,6 @@ public abstract class AbstractProcessInstanceArchiverJobIT<T extends ProcessInst
           assertThat(archived).succeedsWithin(Duration.ofSeconds(5L)).isEqualTo(1);
 
           // check that the process is no longer in the main index
-          final var listViewTemplate =
-              resourceProvider.getIndexTemplateDescriptor(ListViewTemplate.class);
           verifyMoved(listViewTemplate, client, processInstance, "2020-01-01");
         });
   }
@@ -62,13 +64,16 @@ public abstract class AbstractProcessInstanceArchiverJobIT<T extends ProcessInst
         config,
         (job, resourceProvider) -> {
           // given
+          final var listViewTemplate =
+              resourceProvider.getIndexTemplateDescriptor(ListViewTemplate.class);
+
           final ProcessInstanceForListViewEntity finishedInstance =
               processInstanceForListViewEntity("2020-01-01T00:00:00+00:00");
           final ProcessInstanceForListViewEntity unfinishedInstance =
               processInstanceForListViewEntity(null);
 
-          storeInListView(resourceProvider, client, finishedInstance);
-          storeInListView(resourceProvider, client, unfinishedInstance);
+          store(listViewTemplate, client, finishedInstance);
+          store(listViewTemplate, client, unfinishedInstance);
 
           client.refresh();
 
@@ -79,8 +84,6 @@ public abstract class AbstractProcessInstanceArchiverJobIT<T extends ProcessInst
           assertThat(archived).succeedsWithin(Duration.ofSeconds(5L)).isEqualTo(1);
 
           // check that the finished process is no longer in the main index
-          final var listViewTemplate =
-              resourceProvider.getIndexTemplateDescriptor(ListViewTemplate.class);
           verifyMoved(listViewTemplate, client, finishedInstance, "2020-01-01");
           verifyNotMoved(listViewTemplate, client, unfinishedInstance);
         });
@@ -93,13 +96,16 @@ public abstract class AbstractProcessInstanceArchiverJobIT<T extends ProcessInst
         config,
         (job, resourceProvider) -> {
           // given
+          final var listViewTemplate =
+              resourceProvider.getIndexTemplateDescriptor(ListViewTemplate.class);
+
           final ProcessInstanceForListViewEntity finishedInstance =
               processInstanceForListViewEntity("2020-01-01T00:00:00+00:00");
           final ProcessInstanceForListViewEntity unfinishedInstance =
               processInstanceForListViewEntity("2099-01-01T00:00:00+00:00");
 
-          storeInListView(resourceProvider, client, finishedInstance);
-          storeInListView(resourceProvider, client, unfinishedInstance);
+          store(listViewTemplate, client, finishedInstance);
+          store(listViewTemplate, client, unfinishedInstance);
 
           client.refresh();
 
@@ -110,20 +116,21 @@ public abstract class AbstractProcessInstanceArchiverJobIT<T extends ProcessInst
           assertThat(archived).succeedsWithin(Duration.ofSeconds(5L)).isEqualTo(1);
 
           // check that the finished process is no longer in the main index
-          final var listViewTemplate =
-              resourceProvider.getIndexTemplateDescriptor(ListViewTemplate.class);
           verifyMoved(listViewTemplate, client, finishedInstance, "2020-01-01");
           verifyNotMoved(listViewTemplate, client, unfinishedInstance);
         });
   }
 
   @TestTemplate
-  void shouldArchiveProcessInstanceAndDependentFlowNodes(
+  void shouldArchiveProcessInstanceAndDependentListViewFlowNodes(
       final ExporterConfiguration config, final SearchClientAdapter client) throws Exception {
     withArchiverJob(
         config,
         (job, resourceProvider) -> {
           // given
+          final var listViewTemplate =
+              resourceProvider.getIndexTemplateDescriptor(ListViewTemplate.class);
+
           final ProcessInstanceForListViewEntity processInstance =
               processInstanceForListViewEntity("2020-01-01T00:00:00+00:00");
 
@@ -133,9 +140,9 @@ public abstract class AbstractProcessInstanceArchiverJobIT<T extends ProcessInst
                   flowNodeInstanceForListViewEntity(processInstance),
                   flowNodeInstanceForListViewEntity(processInstance));
 
-          storeInListView(resourceProvider, client, processInstance);
+          store(listViewTemplate, client, processInstance);
           for (final var flowNode : flowNodes) {
-            storeInListView(resourceProvider, client, processInstance, flowNode);
+            store(listViewTemplate, client, processInstance, flowNode);
           }
 
           client.refresh();
@@ -147,8 +154,6 @@ public abstract class AbstractProcessInstanceArchiverJobIT<T extends ProcessInst
           assertThat(archived).succeedsWithin(Duration.ofSeconds(5L)).isEqualTo(1);
 
           // check that the process is no longer in the main index
-          final var listViewTemplate =
-              resourceProvider.getIndexTemplateDescriptor(ListViewTemplate.class);
           verifyMoved(listViewTemplate, client, processInstance, "2020-01-01");
           for (final var flowNode : flowNodes) {
             verifyMoved(listViewTemplate, client, flowNode, "2020-01-01");
@@ -156,28 +161,63 @@ public abstract class AbstractProcessInstanceArchiverJobIT<T extends ProcessInst
         });
   }
 
-  private void storeInListView(
-      final ExporterResourceProvider resourceProvider,
+  @TestTemplate
+  void shouldArchiveProcessInstanceAndDependentFlowNodeInstances(
+      final ExporterConfiguration config, final SearchClientAdapter client) throws Exception {
+    withArchiverJob(
+        config,
+        (job, resourceProvider) -> {
+          // given
+          final var listViewTemplate =
+              resourceProvider.getIndexTemplateDescriptor(ListViewTemplate.class);
+          final var flowNodeInstanceTemplate =
+              resourceProvider.getIndexTemplateDescriptor(FlowNodeInstanceTemplate.class);
+
+          final ProcessInstanceForListViewEntity processInstance =
+              processInstanceForListViewEntity("2020-01-01T00:00:00+00:00");
+
+          final List<FlowNodeInstanceEntity> flowNodes =
+              List.of(
+                  flowNodeInstanceEntity(processInstance),
+                  flowNodeInstanceEntity(processInstance),
+                  flowNodeInstanceEntity(processInstance));
+
+          store(listViewTemplate, client, processInstance);
+          for (final var flowNode : flowNodes) {
+            store(flowNodeInstanceTemplate, client, processInstance, flowNode);
+          }
+
+          client.refresh();
+
+          // when
+          final var archived = job.execute();
+
+          // then
+          assertThat(archived).succeedsWithin(Duration.ofSeconds(5L)).isEqualTo(1);
+
+          // check that the process is no longer in the main index
+          verifyMoved(listViewTemplate, client, processInstance, "2020-01-01");
+          for (final var flowNode : flowNodes) {
+            verifyMoved(flowNodeInstanceTemplate, client, flowNode, "2020-01-01");
+          }
+        });
+  }
+
+  private void store(
+      final IndexTemplateDescriptor template,
       final SearchClientAdapter client,
       final ExporterEntity<?> entity)
       throws IOException {
-    client.index(
-        entity.getId(),
-        resourceProvider.getIndexTemplateDescriptor(ListViewTemplate.class).getFullQualifiedName(),
-        entity);
+    client.index(entity.getId(), template.getFullQualifiedName(), entity);
   }
 
-  private void storeInListView(
-      final ExporterResourceProvider resourceProvider,
+  private void store(
+      final IndexTemplateDescriptor template,
       final SearchClientAdapter client,
       final ExporterEntity<?> parent,
       final ExporterEntity<?> child)
       throws IOException {
-    client.index(
-        child.getId(),
-        parent.getId(),
-        resourceProvider.getIndexTemplateDescriptor(ListViewTemplate.class).getFullQualifiedName(),
-        child);
+    client.index(child.getId(), parent.getId(), template.getFullQualifiedName(), child);
   }
 
   private ProcessInstanceForListViewEntity processInstanceForListViewEntity(final String endDate) {
@@ -202,6 +242,18 @@ public abstract class AbstractProcessInstanceArchiverJobIT<T extends ProcessInst
     flowNode.setPartitionId(PARTITION_ID);
     flowNode.setProcessInstanceKey(processInstance.getKey());
     flowNode.getJoinRelation().setParent(processInstance.getKey());
+
+    return flowNode;
+  }
+
+  private FlowNodeInstanceEntity flowNodeInstanceEntity(
+      final ProcessInstanceForListViewEntity processInstance) {
+    final FlowNodeInstanceEntity flowNode = new FlowNodeInstanceEntity();
+    final long id = ID_GENERATOR.incrementAndGet();
+    flowNode.setId(String.valueOf(id));
+    flowNode.setKey(id);
+    flowNode.setPartitionId(PARTITION_ID);
+    flowNode.setProcessInstanceKey(processInstance.getKey());
 
     return flowNode;
   }
