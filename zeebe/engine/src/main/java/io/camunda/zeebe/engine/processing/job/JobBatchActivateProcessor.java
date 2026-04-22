@@ -10,6 +10,7 @@ package io.camunda.zeebe.engine.processing.job;
 import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 
 import io.camunda.zeebe.engine.metrics.EngineMetricsDoc.JobAction;
+import io.camunda.zeebe.engine.metrics.IncidentMetrics;
 import io.camunda.zeebe.engine.metrics.JobProcessingMetrics;
 import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.Rejection;
@@ -53,6 +54,7 @@ public final class JobBatchActivateProcessor implements TypedRecordProcessor<Job
   private final ElementInstanceState elementInstanceState;
   private final ProcessState processState;
   private final AuthorizationCheckBehavior authorizationCheckBehavior;
+  private final IncidentMetrics incidentMetrics;
 
   public JobBatchActivateProcessor(
       final Writers writers,
@@ -60,7 +62,8 @@ public final class JobBatchActivateProcessor implements TypedRecordProcessor<Job
       final KeyGenerator keyGenerator,
       final JobProcessingMetrics jobMetrics,
       final AuthorizationCheckBehavior authCheckBehavior,
-      final InstantSource clock) {
+      final InstantSource clock,
+      final IncidentMetrics incidentMetrics) {
 
     stateWriter = writers.state();
     rejectionWriter = writers.rejection();
@@ -73,6 +76,7 @@ public final class JobBatchActivateProcessor implements TypedRecordProcessor<Job
     this.jobMetrics = jobMetrics;
     elementInstanceState = state.getElementInstanceState();
     processState = state.getProcessState();
+    this.incidentMetrics = incidentMetrics;
   }
 
   @Override
@@ -185,5 +189,6 @@ public final class JobBatchActivateProcessor implements TypedRecordProcessor<Job
             .setCallingElementPath(treePathProperties.callingElementPath());
 
     stateWriter.appendFollowUpEvent(keyGenerator.nextKey(), IncidentIntent.CREATED, incidentEvent);
+    incidentMetrics.incidentCreated();
   }
 }

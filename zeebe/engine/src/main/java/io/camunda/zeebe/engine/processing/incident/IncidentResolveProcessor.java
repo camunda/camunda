@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.incident;
 
+import io.camunda.zeebe.engine.metrics.IncidentMetrics;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnJobActivationBehavior;
 import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.identity.authorization.request.AuthorizationRequest;
@@ -61,6 +62,7 @@ public final class IncidentResolveProcessor implements TypedRecordProcessor<Inci
   private final BpmnJobActivationBehavior jobActivationBehavior;
   private final JobState jobState;
   private final AuthorizationCheckBehavior authCheckBehavior;
+  private final IncidentMetrics incidentMetrics;
 
   public IncidentResolveProcessor(
       final ProcessingState processingState,
@@ -68,7 +70,8 @@ public final class IncidentResolveProcessor implements TypedRecordProcessor<Inci
       final TypedRecordProcessor<UserTaskRecord> userTaskProcessor,
       final Writers writers,
       final BpmnJobActivationBehavior jobActivationBehavior,
-      final AuthorizationCheckBehavior authCheckBehavior) {
+      final AuthorizationCheckBehavior authCheckBehavior,
+      final IncidentMetrics incidentMetrics) {
     this.bpmnStreamProcessor = bpmnStreamProcessor;
     this.userTaskProcessor = userTaskProcessor;
     stateWriter = writers.state();
@@ -80,6 +83,7 @@ public final class IncidentResolveProcessor implements TypedRecordProcessor<Inci
     this.jobActivationBehavior = jobActivationBehavior;
     jobState = processingState.getJobState();
     this.authCheckBehavior = authCheckBehavior;
+    this.incidentMetrics = incidentMetrics;
   }
 
   @Override
@@ -118,6 +122,7 @@ public final class IncidentResolveProcessor implements TypedRecordProcessor<Inci
 
     stateWriter.appendFollowUpEvent(key, IncidentIntent.RESOLVED, incident);
     responseWriter.writeEventOnCommand(key, IncidentIntent.RESOLVED, incident, command);
+    incidentMetrics.incidentResolved();
 
     publishIncidentRelatedJob(jobKey);
 
