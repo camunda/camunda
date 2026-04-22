@@ -13,7 +13,7 @@
 
   <groupId>io.camunda</groupId>
   <artifactId>camunda-bom</artifactId>
-  <version>8.9.1-SNAPSHOT</version>
+  <version>8.9.2-SNAPSHOT</version>
   <packaging>pom</packaging>
 
   <name>Camunda BOM</name>
