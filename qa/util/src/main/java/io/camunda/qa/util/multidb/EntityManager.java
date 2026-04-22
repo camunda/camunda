@@ -32,6 +32,7 @@ import io.camunda.qa.util.auth.TestClient;
 import io.camunda.qa.util.auth.TestGroup;
 import io.camunda.qa.util.auth.TestMappingRule;
 import io.camunda.qa.util.auth.TestRole;
+import io.camunda.qa.util.auth.TestTenant;
 import io.camunda.qa.util.auth.TestUser;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import java.util.List;
@@ -462,6 +463,75 @@ public final class EntityManager {
       final var response = request.page(p -> p.limit(expected)).send().join();
       return response.items();
     };
+  }
+
+  public EntityManager withTenants(final List<TestTenant> tenants) {
+    tenants.forEach(
+        tenant -> {
+          defaultClient
+              .newCreateTenantCommand()
+              .tenantId(tenant.getId())
+              .name(tenant.getName())
+              .description(tenant.getDescription())
+              .send()
+              .join();
+
+          tenant
+              .getUsers()
+              .forEach(
+                  user ->
+                      defaultClient
+                          .newAssignUserToTenantCommand()
+                          .username(user)
+                          .tenantId(tenant.getId())
+                          .send()
+                          .join());
+
+          tenant
+              .getGroups()
+              .forEach(
+                  groupId ->
+                      defaultClient
+                          .newAssignGroupToTenantCommand()
+                          .groupId(groupId)
+                          .tenantId(tenant.getId())
+                          .send()
+                          .join());
+
+          tenant
+              .getRoles()
+              .forEach(
+                  roleId ->
+                      defaultClient
+                          .newAssignRoleToTenantCommand()
+                          .roleId(roleId)
+                          .tenantId(tenant.getId())
+                          .send()
+                          .join());
+
+          tenant
+              .getClients()
+              .forEach(
+                  clientId ->
+                      defaultClient
+                          .newAssignClientToTenantCommand()
+                          .clientId(clientId)
+                          .tenantId(tenant.getId())
+                          .send()
+                          .join());
+
+          tenant
+              .getMappingRules()
+              .forEach(
+                  mappingRuleId ->
+                      defaultClient
+                          .newAssignMappingRuleToTenantCommand()
+                          .mappingRuleId(mappingRuleId)
+                          .tenantId(tenant.getId())
+                          .send()
+                          .join());
+        });
+    return this;
   }
 
   record MembershipSearch<T>(
