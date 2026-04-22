@@ -6,10 +6,5 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-export {
-  validLicense,
-  saasLicense,
-  invalidLicense,
-  commercialExpired,
-  validNonCommercial,
-} from '@camunda/c8-mocks';
+export * from './mocks/currentUser';
+export * from './mocks/license';
