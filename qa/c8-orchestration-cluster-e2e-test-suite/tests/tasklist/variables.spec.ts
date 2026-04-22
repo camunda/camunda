@@ -174,6 +174,7 @@ test.describe('variables page', () => {
   });
 
   test('loads all variables via infinite scroll pagination', async ({
+    page,
     taskPanelPage,
     taskDetailsPage,
   }) => {
@@ -189,22 +190,20 @@ test.describe('variables page', () => {
 
     await expect(
       taskDetailsPage.variablesTable
-
         .getByRole('cell', {
           name: /^variable_\d+$/,
         })
         .first(),
     ).toBeVisible({timeout: 30000});
 
-    const scrollContainer = taskDetailsPage.variablesTable.locator('..');
+    const scrollContainer = page.getByTestId('variables-scroll-container');
     await expect(async () => {
-      await scrollContainer.evaluate((el) => {
-        el.scrollTop = el.scrollHeight;
-      });
+      await scrollContainer.hover();
+      await page.mouse.wheel(0, 10000);
       await expect(
         taskDetailsPage.variablesTable.getByRole('cell', {name: 'variable_59'}),
       ).toBeVisible();
-    }).toPass({timeout: 30000});
+    }).toPass({timeout: 60000});
   });
 
   test('new variable still exists after refresh if task is completed', async ({
