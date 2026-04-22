@@ -21,11 +21,20 @@ import io.camunda.zeebe.model.bpmn.instance.EventDefinition;
 import io.camunda.zeebe.model.bpmn.instance.StartEvent;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeExecutionListener;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeExecutionListenerEventType;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeFormDefinition;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeProperties;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeProperty;
 import java.util.Collection;
+import java.util.Objects;
 import org.camunda.bpm.model.xml.validation.ModelElementValidator;
 import org.camunda.bpm.model.xml.validation.ValidationResultCollector;
 
 public class StartEventValidator implements ModelElementValidator<StartEvent> {
+
+  private static final String PUBLIC_ACCESS_PROPERTY_NAME = "publicAccess";
+  private static final String PUBLIC_ACCESS_ERROR_MESSAGE =
+      "Start event forms with public access enabled are not supported";
+
   @Override
   public Class<StartEvent> getElementType() {
     return StartEvent.class;
@@ -38,6 +47,13 @@ public class StartEventValidator implements ModelElementValidator<StartEvent> {
     final Collection<EventDefinition> eventDefinitions = element.getEventDefinitions();
     if (eventDefinitions.size() > 1) {
       validationResultCollector.addError(0, "Start event can't have more than one type");
+    }
+
+    final ZeebeFormDefinition formDefinition =
+        element.getSingleExtensionElement(ZeebeFormDefinition.class);
+
+    if (formDefinition != null && hasPublicAccessEnabled(element)) {
+      validationResultCollector.addError(0, PUBLIC_ACCESS_ERROR_MESSAGE);
     }
 
     validateExecutionListenersDefinitionForElement(
@@ -53,5 +69,17 @@ public class StartEventValidator implements ModelElementValidator<StartEvent> {
                 0, "Execution listeners of type 'start' are not supported by start events");
           }
         });
+  }
+
+  private boolean hasPublicAccessEnabled(final StartEvent element) {
+    final ZeebeProperties zeebeProperties =
+        element.getSingleExtensionElement(ZeebeProperties.class);
+
+    return zeebeProperties != null
+        && zeebeProperties.getProperties().stream()
+            .filter(property -> PUBLIC_ACCESS_PROPERTY_NAME.equals(property.getName()))
+            .map(ZeebeProperty::getValue)
+            .filter(Objects::nonNull)
+            .anyMatch(Boolean::parseBoolean);
   }
 }
