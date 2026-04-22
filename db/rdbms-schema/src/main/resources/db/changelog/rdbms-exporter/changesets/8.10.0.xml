@@ -32,4 +32,32 @@
     </createTable>
   </changeSet>
 
+  <changeSet id="create_process_instance_end_date_index" author="camunda" context="async" runInTransaction="false">
+    <!-- Index for ACTOR_ID - optimizes querying audit log entries by actor -->
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <indexExists indexName="${prefix}IDX_PROCESS_INSTANCE_END_DATE" tableName="${prefix}PROCESS_INSTANCE"/>
+      </not>
+    </preConditions>
+
+    <sql dbms="h2">
+      CREATE INDEX ${prefix}IDX_PROCESS_INSTANCE_END_DATE ON PROCESS_INSTANCE (END_DATE)
+    </sql>
+
+    <sql dbms="postgresql">
+      CREATE INDEX CONCURRENTLY ${prefix}IDX_PROCESS_INSTANCE_END_DATE ON PROCESS_INSTANCE (END_DATE)
+    </sql>
+
+    <sql dbms="mssql">
+      CREATE INDEX ${prefix}IDX_PROCESS_INSTANCE_END_DATE ON PROCESS_INSTANCE (END_DATE) WITH (ONLINE = ON)
+    </sql>
+
+    <sql dbms="oracle">
+      ALTER TABLE ${prefix}IDX_PROCESS_INSTANCE_END_DATE
+        ADD INDEX PROCESS_INSTANCE (END_DATE)
+        ALGORITHM=INPLACE,
+        LOCK=NONE
+    </sql>
+  </changeSet>
+
 </databaseChangeLog>

@@ -18,4 +18,9 @@ public class NoopSchemaManager implements RdbmsSchemaManager {
   public boolean isInitialized() {
     return true;
   }
+
+  @Override
+  public void migrateAsync() {
+    // no-op
+  }
 }
