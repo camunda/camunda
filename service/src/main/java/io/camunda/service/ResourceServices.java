@@ -172,6 +172,7 @@ public final class ResourceServices extends ApiServices<ResourceServices> {
                     record.getResourceKey(),
                     record.getResourceId(),
                     record.getResourceName(),
+                    null,
                     record.getVersion(),
                     record.getVersionTag(),
                     record.getDeploymentKey(),
