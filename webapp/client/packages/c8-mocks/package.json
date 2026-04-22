@@ -19,6 +19,6 @@
 	},
 	"devDependencies": {
 		"@camunda/camunda-api-zod-schemas": "0.0.60",
-		"typescript": "5.9.3"
+		"typescript": "6.0.3"
 	}
 }

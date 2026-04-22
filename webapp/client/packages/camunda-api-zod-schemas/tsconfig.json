@@ -16,8 +16,10 @@
 		"declaration": true,
 
 		"module": "preserve",
+		"moduleResolution": "bundler",
+		"rootDir": "lib",
 
-		"lib": ["ES2022"],
+		"lib": ["ES2022", "DOM"],
 
 		"outDir": "dist",
 		"emitDeclarationOnly": true,
