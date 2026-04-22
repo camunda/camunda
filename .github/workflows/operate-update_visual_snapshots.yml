@@ -1,4 +1,4 @@
-# description: This is a Workflow runs tests and created updated screenshots of Operate
+# description: Runs Operate visual regression tests and updates baseline screenshots.
 # test location: /operate/client/
 # type: CI Helper
 # owner: @camunda/fe-operate
