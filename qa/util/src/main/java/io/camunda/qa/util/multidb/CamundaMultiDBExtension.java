@@ -16,10 +16,12 @@ import io.camunda.qa.util.auth.ClientDefinition;
 import io.camunda.qa.util.auth.GroupDefinition;
 import io.camunda.qa.util.auth.MappingRuleDefinition;
 import io.camunda.qa.util.auth.RoleDefinition;
+import io.camunda.qa.util.auth.TenantDefinition;
 import io.camunda.qa.util.auth.TestClient;
 import io.camunda.qa.util.auth.TestGroup;
 import io.camunda.qa.util.auth.TestMappingRule;
 import io.camunda.qa.util.auth.TestRole;
+import io.camunda.qa.util.auth.TestTenant;
 import io.camunda.qa.util.auth.TestUser;
 import io.camunda.qa.util.auth.UserDefinition;
 import io.camunda.webapps.schema.descriptors.IndexDescriptors;
@@ -517,6 +519,7 @@ public class CamundaMultiDBExtension
 
   private void createEntities(final Class<?> testClass, final Boolean shouldSetupKeycloak) {
     final var users = findUsers(testClass, null, ModifierSupport::isStatic);
+    final var tenants = findTenants(testClass, null, ModifierSupport::isStatic);
     final var mappingRules = findMappingRules(testClass, null, ModifierSupport::isStatic);
     final var clients = findClients(testClass, null, ModifierSupport::isStatic);
     final var groups = findGroups(testClass, null, ModifierSupport::isStatic);
@@ -527,6 +530,7 @@ public class CamundaMultiDBExtension
         .withMappingRules(mappingRules)
         .withGroups(groups)
         .withRoles(roles)
+        .withTenants(tenants)
         .await();
     users.forEach(
         user -> {
@@ -669,6 +673,11 @@ public class CamundaMultiDBExtension
   private List<TestUser> findUsers(
       final Class<?> testClass, final Object testInstance, final Predicate<Field> predicate) {
     return findFields(testClass, testInstance, predicate, TestUser.class, UserDefinition.class);
+  }
+
+  private List<TestTenant> findTenants(
+      final Class<?> testClass, final Object testInstance, final Predicate<Field> predicate) {
+    return findFields(testClass, testInstance, predicate, TestTenant.class, TenantDefinition.class);
   }
 
   private List<TestGroup> findGroups(
