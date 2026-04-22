@@ -485,6 +485,7 @@ public class CamundaMultiDBExtension
           config.getMappingRules().addAll(configuredEntities.mappingRules());
           config.getGroups().addAll(configuredEntities.groups());
           config.getAuthorizations().addAll(configuredEntities.authorizations());
+          config.getTenants().addAll(configuredEntities.tenants());
         });
 
     if (applicationUnderTest.shouldBeManaged) {

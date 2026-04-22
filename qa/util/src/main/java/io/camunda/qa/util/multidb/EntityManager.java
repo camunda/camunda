@@ -23,8 +23,6 @@ import io.camunda.client.api.search.response.Role;
 import io.camunda.client.api.search.response.RoleGroup;
 import io.camunda.client.api.search.response.RoleUser;
 import io.camunda.client.api.search.response.Tenant;
-import io.camunda.client.api.search.response.TenantGroup;
-import io.camunda.client.api.search.response.TenantUser;
 import io.camunda.client.api.search.response.User;
 import io.camunda.qa.util.multidb.TestEntityConfigurer.ConfigurationTestEntities;
 import io.camunda.security.configuration.ConfiguredAuthorization;
@@ -134,6 +132,12 @@ public final class EntityManager {
                 ConfiguredRole::mappingRules,
                 roleId -> wrap(defaultClient.newMappingRulesByRoleSearchRequest(roleId)),
                 MappingRule::getMappingRuleId)));
+
+    awaitSearchVisibility(
+        "tenants",
+        () -> wrap(defaultClient.newTenantsSearchRequest()),
+        extractField(Tenant::getTenantId),
+        testEntities.tenantIds());
 
     LOGGER.debug("Finished waiting for visibility of all entities and permissions.");
   }

@@ -11,10 +11,12 @@ import io.camunda.qa.util.auth.ClientDefinition;
 import io.camunda.qa.util.auth.GroupDefinition;
 import io.camunda.qa.util.auth.MappingRuleDefinition;
 import io.camunda.qa.util.auth.RoleDefinition;
+import io.camunda.qa.util.auth.TenantDefinition;
 import io.camunda.qa.util.auth.TestClient;
 import io.camunda.qa.util.auth.TestGroup;
 import io.camunda.qa.util.auth.TestMappingRule;
 import io.camunda.qa.util.auth.TestRole;
+import io.camunda.qa.util.auth.TestTenant;
 import io.camunda.qa.util.auth.TestUser;
 import io.camunda.qa.util.auth.UserDefinition;
 import java.lang.annotation.Annotation;
@@ -43,8 +45,10 @@ public class TestEntityCollector {
         findAnnotatedStaticFieldValues(testClass, GroupDefinition.class, TestGroup.class);
     final var roles =
         findAnnotatedStaticFieldValues(testClass, RoleDefinition.class, TestRole.class);
+    final var tenants =
+        findAnnotatedStaticFieldValues(testClass, TenantDefinition.class, TestTenant.class);
 
-    return new TestEntityCollection(users, groups, roles, clients, mappingRules);
+    return new TestEntityCollection(users, groups, roles, clients, mappingRules, tenants);
   }
 
   private <T> List<T> findAnnotatedStaticFieldValues(
@@ -100,5 +104,6 @@ public class TestEntityCollector {
       List<TestGroup> groups,
       List<TestRole> roles,
       List<TestClient> clients,
-      List<TestMappingRule> mappingRules) {}
+      List<TestMappingRule> mappingRules,
+      List<TestTenant> tenants) {}
 }

@@ -14,12 +14,14 @@ import io.camunda.qa.util.auth.TestClient;
 import io.camunda.qa.util.auth.TestGroup;
 import io.camunda.qa.util.auth.TestMappingRule;
 import io.camunda.qa.util.auth.TestRole;
+import io.camunda.qa.util.auth.TestTenant;
 import io.camunda.qa.util.auth.TestUser;
 import io.camunda.qa.util.multidb.TestEntityCollector.TestEntityCollection;
 import io.camunda.security.configuration.ConfiguredAuthorization;
 import io.camunda.security.configuration.ConfiguredGroup;
 import io.camunda.security.configuration.ConfiguredMappingRule;
 import io.camunda.security.configuration.ConfiguredRole;
+import io.camunda.security.configuration.ConfiguredTenant;
 import io.camunda.security.configuration.ConfiguredUser;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
@@ -40,6 +42,7 @@ public class TestEntityConfigurer {
         configuredGroups(entities.groups()),
         configuredRoles(entities.roles()),
         configuredMappingRules(entities.mappingRules()),
+        configuredTenants(entities.tenants()),
         configuredAuthorizations(
             entities.users(),
             entities.mappingRules(),
@@ -89,6 +92,22 @@ public class TestEntityConfigurer {
     final List<String> mappingRules = typedMembers(r.memberships(), EntityType.MAPPING_RULE);
     final List<String> groups = typedMembers(r.memberships(), EntityType.GROUP);
     return new ConfiguredRole(r.id(), r.name(), null, users, clients, mappingRules, groups);
+  }
+
+  private List<ConfiguredTenant> configuredTenants(final List<TestTenant> testTenants) {
+    return testTenants.stream().map(TestEntityConfigurer::configuredTenant).toList();
+  }
+
+  private static @NonNull ConfiguredTenant configuredTenant(final TestTenant t) {
+    return new ConfiguredTenant(
+        t.getId(),
+        t.getName(),
+        t.getDescription(),
+        t.getUsers().stream().toList(),
+        t.getClients().stream().toList(),
+        t.getGroups().stream().toList(),
+        t.getRoles().stream().toList(),
+        t.getMappingRules().stream().toList());
   }
 
   private static @NonNull List<String> typedMembers(
@@ -147,22 +166,20 @@ public class TestEntityConfigurer {
         p.resourceIds().stream()
             .map(
                 resourceId ->
-                    new ConfiguredAuthorization(
+                    ConfiguredAuthorization.idBased(
                         ownerType,
                         ownerId,
                         configuredResourceType(p),
                         resourceId,
-                        null,
                         configuredPermissionType(p)));
     final var propertyBasedAuthorizations =
         p.resourcePropertyNames().stream()
             .map(
                 resourcePropertyName ->
-                    new ConfiguredAuthorization(
+                    ConfiguredAuthorization.propertyBased(
                         ownerType,
                         ownerId,
                         configuredResourceType(p),
-                        null,
                         resourcePropertyName,
                         configuredPermissionType(p)));
     return Stream.concat(idBasedAuthorizations, propertyBasedAuthorizations);
@@ -198,6 +215,7 @@ public class TestEntityConfigurer {
       List<ConfiguredGroup> groups,
       List<ConfiguredRole> roles,
       List<ConfiguredMappingRule> mappingRules,
+      List<ConfiguredTenant> tenants,
       List<ConfiguredAuthorization> authorizations) {
 
     public Set<String> usernames() {
@@ -210,6 +228,10 @@ public class TestEntityConfigurer {
 
     public Set<String> roleIds() {
       return roles.stream().map(ConfiguredRole::roleId).collect(Collectors.toSet());
+    }
+
+    public Set<String> tenantIds() {
+      return tenants.stream().map(ConfiguredTenant::tenantId).collect(Collectors.toSet());
     }
 
     public Set<String> mappingRuleIds() {
