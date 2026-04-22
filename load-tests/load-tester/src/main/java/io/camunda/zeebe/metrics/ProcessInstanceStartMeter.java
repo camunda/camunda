@@ -25,6 +25,7 @@ import org.slf4j.LoggerFactory;
 
 public class ProcessInstanceStartMeter implements AutoCloseable {
   private static final int MAX_PENDING_INSTANCES = 1000;
+  private static final long STALE_THRESHOLD_NANOS = Duration.ofSeconds(90).toNanos();
   private static final Logger LOG = LoggerFactory.getLogger(ProcessInstanceStartMeter.class);
   private final ConcurrentHashMap<Integer, Timer> partitionToTimerMap;
   private final Map<Long, PiCreationResult> startedInstances;
@@ -97,10 +98,24 @@ public class ProcessInstanceStartMeter implements AutoCloseable {
       final var endQueryTime = clock.getNanos();
       dataAvailabilityQueryDurationTimer.record(
           endQueryTime - startQueryTime, TimeUnit.NANOSECONDS);
+      checkForStaleProcesses();
     }
 
     LOG.debug("Available process instances items: {}", availableInstances.size());
     processAvailableInstances(availableInstances);
+  }
+
+  private void checkForStaleProcesses() {
+    final long nanoTime = clock.getNanos();
+    for (final var piCreationResult : startedInstances.values()) {
+      final long ageNanos = nanoTime - piCreationResult.startTimeNanos;
+      if (ageNanos > STALE_THRESHOLD_NANOS) {
+        // NB not actually removing it as we want to ensure it's obvious we
+        // have instances that are not available still (as that implies something
+        // is broken)
+        recordDataAvailabilityLatency(piCreationResult, ageNanos);
+      }
+    }
   }
 
   private void processAvailableInstances(final List<Long> availableInstances) {
@@ -114,11 +129,17 @@ public class ProcessInstanceStartMeter implements AutoCloseable {
                   "Process instance {} retrieved in {} ms",
                   piResults.processInstanceKey,
                   TimeUnit.NANOSECONDS.toMillis(durationNanos));
-              recordInstanceAvailable(piResults, durationNanos);
+              recordInstanceAvailableAndRemove(piResults, durationNanos);
             });
   }
 
-  private void recordInstanceAvailable(
+  private void recordInstanceAvailableAndRemove(
+      final PiCreationResult awaitingPI, final long durationNanos) {
+    recordDataAvailabilityLatency(awaitingPI, durationNanos);
+    startedInstances.remove(awaitingPI.processInstanceKey);
+  }
+
+  private void recordDataAvailabilityLatency(
       final PiCreationResult awaitingPI, final long durationNanos) {
     final int partitionId = Protocol.decodePartitionId(awaitingPI.processInstanceKey);
     partitionToTimerMap
@@ -129,7 +150,6 @@ public class ProcessInstanceStartMeter implements AutoCloseable {
                     .tag(StarterMetricKeyNames.PARTITION.asString(), Integer.toString(key))
                     .register(registry))
         .record(durationNanos, TimeUnit.NANOSECONDS);
-    startedInstances.remove(awaitingPI.processInstanceKey);
   }
 
   public void recordProcessInstanceStart(final long processInstanceKey, final long startTimeNanos) {
