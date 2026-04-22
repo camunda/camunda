@@ -66,6 +66,42 @@ public abstract class AbstractProcessInstanceArchiverJobIT<T extends ProcessInst
           final ProcessInstanceForListViewEntity finishedInstance =
               processInstanceForListViewEntity(1234L, "2020-01-01T00:00:00+00:00");
           final ProcessInstanceForListViewEntity unfinishedInstance =
+              processInstanceForListViewEntity(1235L, null);
+
+          store(resourceProvider, client, finishedInstance);
+          store(resourceProvider, client, unfinishedInstance);
+
+          client.refresh();
+
+          // when
+          final var archived = job.execute();
+
+          // then
+          assertThat(archived).succeedsWithin(Duration.ofSeconds(5L)).isEqualTo(1);
+
+          // check that the finished process is no longer in the main index
+          final var listViewTemplate =
+              resourceProvider.getIndexTemplateDescriptor(ListViewTemplate.class);
+          final var oldIndexFinishedPI =
+              get(client, finishedInstance, listViewTemplate.getFullQualifiedName());
+          assertThat(oldIndexFinishedPI).isNull();
+
+          final var oldIndexUnfinishedPI =
+              get(client, unfinishedInstance, listViewTemplate.getFullQualifiedName());
+          assertThat(oldIndexUnfinishedPI).isEqualTo(unfinishedInstance);
+        });
+  }
+
+  @TestTemplate
+  void shouldOnlyArchiveProcessInstancesCompletedAfterAWhile(
+      final ExporterConfiguration config, final SearchClientAdapter client) throws Exception {
+    withArchiverJob(
+        config,
+        (job, resourceProvider) -> {
+          // given
+          final ProcessInstanceForListViewEntity finishedInstance =
+              processInstanceForListViewEntity(1234L, "2020-01-01T00:00:00+00:00");
+          final ProcessInstanceForListViewEntity unfinishedInstance =
               processInstanceForListViewEntity(1235L, "2099-01-01T00:00:00+00:00");
 
           store(resourceProvider, client, finishedInstance);
@@ -117,7 +153,9 @@ public abstract class AbstractProcessInstanceArchiverJobIT<T extends ProcessInst
     processInstance.setId(String.valueOf(id));
     processInstance.setKey(id);
     processInstance.setPartitionId(PARTITION_ID);
-    processInstance.setEndDate(OffsetDateTime.parse(endDate));
+    if (endDate != null) {
+      processInstance.setEndDate(OffsetDateTime.parse(endDate));
+    }
 
     return processInstance;
   }
