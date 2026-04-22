@@ -17,6 +17,7 @@ import {captureScreenshot, captureFailureVideo} from '@setup';
 test.beforeAll(async () => {
   await deploy([
     './resources/usertask_to_be_completed.bpmn',
+    './resources/usertask_for_assign_unassign.bpmn',
     './resources/user_task_with_form.bpmn',
     './resources/user_task_form.form',
     './resources/user_task_with_form_and_vars.bpmn',
@@ -51,6 +52,7 @@ test.beforeAll(async () => {
 
   await Promise.all([
     createInstances('usertask_to_be_completed', 1, 1),
+    createInstances('usertask_for_assign_unassign', 1, 1),
     createInstances('user_registration', 1, 2),
     createInstances('user_registration_assigned_filter', 1, 1),
     createInstances('user_registration_with_vars', 1, 2, {
@@ -131,7 +133,7 @@ test.describe('task details page', () => {
   });
 
   test('assign and unassign task', async ({taskPanelPage, taskDetailsPage}) => {
-    await taskPanelPage.openTask('usertask_to_be_completed');
+    await taskPanelPage.openTask('usertask_for_assign_unassign');
 
     await expect(taskDetailsPage.assignToMeButton).toBeVisible({
       timeout: 60000,
