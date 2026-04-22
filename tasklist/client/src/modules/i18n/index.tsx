@@ -26,7 +26,7 @@ type LocaleConfig = {
   translationFile: Resource;
 };
 
-export type SelectionOption = {
+type SelectionOption = {
   id: string;
   label: string;
 };
@@ -78,4 +78,5 @@ const translationResources: Resource = Object.entries(
 const getCurrentDateLocale = () =>
   localeDefinitions[i18n.language]?.dateLocale ?? dateLocaleEnUS;
 
+export type {SelectionOption};
 export {languageItems, translationResources, getCurrentDateLocale};
