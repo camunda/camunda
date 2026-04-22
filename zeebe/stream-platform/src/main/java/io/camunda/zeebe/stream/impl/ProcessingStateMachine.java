@@ -343,8 +343,9 @@ public final class ProcessingStateMachine {
    *
    * <p>Should be called after processing or error handling is done.
    */
-  private void finalizeCommandProcessing() {
-    lastProcessedPositionState.markAsProcessed(typedCommand.getPosition());
+  private void finalizeCommandProcessing() throws Exception {
+    zeebeDbTransaction.run(
+        () -> lastProcessedPositionState.markAsProcessed(typedCommand.getPosition()));
     processedCommandsCount = 0;
   }
 
@@ -463,6 +464,7 @@ public final class ProcessingStateMachine {
         updateStateRetryStrategy.runWithRetry(
             () -> {
               zeebeDbTransaction.rollback();
+              zeebeDbTransaction = transactionContext.getCurrentTransaction();
               return true;
             },
             abortCondition);
@@ -551,7 +553,7 @@ public final class ProcessingStateMachine {
     updateErrorHandlingPhase(nextPhase);
   }
 
-  private void tryRejectingIfUserCommand(final String errorMessage) {
+  private void tryRejectingIfUserCommand(final String errorMessage) throws Exception {
     final var rejectionReason = errorMessage != null ? errorMessage : "";
     final ProcessingResultBuilder processingResultBuilder =
         newProcessingResultBuilder(typedCommand);

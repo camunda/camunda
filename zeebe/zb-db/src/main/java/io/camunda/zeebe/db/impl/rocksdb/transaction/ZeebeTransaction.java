@@ -164,7 +164,6 @@ public class ZeebeTransaction implements ZeebeDbTransaction, AutoCloseable {
   void commitInternal() throws RocksDBException {
     inCurrentTransaction = false;
     transaction.commit();
-    transaction = transactionRenovator.renewTransaction(transaction);
   }
 
   void rollbackInternal() throws RocksDBException {

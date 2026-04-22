@@ -168,8 +168,9 @@ public class RocksDBSnapshotCopyTest {
       final var fromCtx = fromDB.createContext();
       fromCtx.runInTransaction(
           () -> {
-            final var ctx = (ZeebeTransaction) fromCtx.getCurrentTransaction();
             for (final ZbColumnFamilies cf : ZbColumnFamilies.values()) {
+              // renews the transaction on every loop
+              final var ctx = (ZeebeTransaction) fromCtx.getCurrentTransaction();
               final var transactionalColumnFamily = new RawTransactionalColumnFamily(fromDB, cf);
               for (int i = 0; i < rowsPerCF; i++) {
                 // the key must be big enough to avoid generating duplicates.
