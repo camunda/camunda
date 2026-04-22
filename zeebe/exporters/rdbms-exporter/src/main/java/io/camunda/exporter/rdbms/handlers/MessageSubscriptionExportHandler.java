@@ -13,6 +13,7 @@ import io.camunda.db.rdbms.write.domain.MessageSubscriptionDbModel;
 import io.camunda.db.rdbms.write.service.MessageSubscriptionWriter;
 import io.camunda.exporter.rdbms.RdbmsExportHandler;
 import io.camunda.search.entities.MessageSubscriptionEntity.MessageSubscriptionState;
+import io.camunda.search.entities.MessageSubscriptionEntity.MessageSubscriptionType;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
@@ -69,6 +70,7 @@ public class MessageSubscriptionExportHandler
         .flowNodeInstanceKey(value.getElementInstanceKey())
         .processDefinitionKey(value.getProcessDefinitionKey())
         .messageSubscriptionState(MessageSubscriptionState.valueOf(record.getIntent().name()))
+        .messageSubscriptionType(MessageSubscriptionType.PROCESS_EVENT)
         .dateTime(toOffsetDateTime(Instant.ofEpochMilli(record.getTimestamp())))
         .messageName(value.getMessageName())
         .correlationKey(value.getCorrelationKey())

@@ -17,10 +17,13 @@ public enum MessageSubscriptionColumn implements SearchColumn<MessageSubscriptio
   FLOW_NODE_ID("flowNodeId"),
   FLOW_NODE_INSTANCE_KEY("flowNodeInstanceKey"),
   MESSAGE_SUBSCRIPTION_STATE("messageSubscriptionState"),
+  MESSAGE_SUBSCRIPTION_TYPE("messageSubscriptionType"),
   DATE_TIME("dateTime"),
   MESSAGE_NAME("messageName"),
   CORRELATION_KEY("correlationKey"),
-  TENANT_ID("tenantId");
+  TENANT_ID("tenantId"),
+  PROCESS_DEFINITION_NAME("processDefinitionName"),
+  PROCESS_DEFINITION_VERSION("processDefinitionVersion");
 
   private final String property;
 

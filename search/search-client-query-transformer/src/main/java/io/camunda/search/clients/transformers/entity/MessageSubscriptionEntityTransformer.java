@@ -8,8 +8,10 @@
 package io.camunda.search.clients.transformers.entity;
 
 import io.camunda.search.clients.transformers.ServiceTransformer;
+import io.camunda.search.entities.MessageSubscriptionEntity.MessageSubscriptionType;
 import io.camunda.webapps.schema.entities.messagesubscription.MessageSubscriptionEntity;
 import io.camunda.webapps.schema.entities.messagesubscription.MessageSubscriptionState;
+import org.apache.commons.lang3.EnumUtils;
 
 public class MessageSubscriptionEntityTransformer
     implements ServiceTransformer<
@@ -27,10 +29,14 @@ public class MessageSubscriptionEntityTransformer
         value.getFlowNodeId(),
         value.getFlowNodeInstanceKey(),
         toMessageSubscriptionState(value.getEventType()),
+        toMessageSubscriptionType(value.getMessageSubscriptionType()),
         value.getDateTime(),
         value.getMetadata().getMessageName(),
         value.getMetadata().getCorrelationKey(),
-        value.getTenantId());
+        value.getTenantId(),
+        value.getProcessDefinitionName(),
+        value.getProcessDefinitionVersion(),
+        value.getExtensionProperties());
   }
 
   private io.camunda.search.entities.MessageSubscriptionEntity.MessageSubscriptionState
@@ -47,7 +53,20 @@ public class MessageSubscriptionEntityTransformer
           io.camunda.search.entities.MessageSubscriptionEntity.MessageSubscriptionState.MIGRATED;
       case DELETED ->
           io.camunda.search.entities.MessageSubscriptionEntity.MessageSubscriptionState.DELETED;
-      default -> throw new IllegalArgumentException("Unknown EventType: " + value);
+      default -> throw new IllegalArgumentException("Unknown MessageSubscriptionState: " + value);
     };
+  }
+
+  private MessageSubscriptionType toMessageSubscriptionType(final String messageSubscriptionType) {
+    if (messageSubscriptionType == null) {
+      return null;
+    }
+    final MessageSubscriptionType type =
+        EnumUtils.getEnum(MessageSubscriptionType.class, messageSubscriptionType);
+    if (type == null) {
+      throw new IllegalArgumentException(
+          "Unknown MessageSubscriptionType: " + messageSubscriptionType);
+    }
+    return type;
   }
 }

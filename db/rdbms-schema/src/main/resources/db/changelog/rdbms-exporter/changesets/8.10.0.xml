@@ -32,4 +32,48 @@
     </createTable>
   </changeSet>
 
+  <changeSet id="add_message_subscription_type_column" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <columnExists tableName="${prefix}MESSAGE_SUBSCRIPTION" columnName="MESSAGE_SUBSCRIPTION_TYPE"/>
+      </not>
+    </preConditions>
+    <addColumn tableName="${prefix}MESSAGE_SUBSCRIPTION">
+      <column name="MESSAGE_SUBSCRIPTION_TYPE" type="VARCHAR(50)"/>
+    </addColumn>
+  </changeSet>
+
+  <changeSet id="add_message_subscription_process_definition_name_column" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <columnExists tableName="${prefix}MESSAGE_SUBSCRIPTION" columnName="PROCESS_DEFINITION_NAME"/>
+      </not>
+    </preConditions>
+    <addColumn tableName="${prefix}MESSAGE_SUBSCRIPTION">
+      <column name="PROCESS_DEFINITION_NAME" type="NVARCHAR(${userCharColumnSize})"/>
+    </addColumn>
+  </changeSet>
+
+  <changeSet id="add_message_subscription_process_definition_version_column" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <columnExists tableName="${prefix}MESSAGE_SUBSCRIPTION" columnName="PROCESS_DEFINITION_VERSION"/>
+      </not>
+    </preConditions>
+    <addColumn tableName="${prefix}MESSAGE_SUBSCRIPTION">
+      <column name="PROCESS_DEFINITION_VERSION" type="SMALLINT"/>
+    </addColumn>
+  </changeSet>
+
+  <changeSet id="add_message_subscription_extension_properties_column" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <columnExists tableName="${prefix}MESSAGE_SUBSCRIPTION" columnName="EXTENSION_PROPERTIES"/>
+      </not>
+    </preConditions>
+    <addColumn tableName="${prefix}MESSAGE_SUBSCRIPTION">
+      <column name="EXTENSION_PROPERTIES" type="CLOB"/>
+    </addColumn>
+  </changeSet>
+
 </databaseChangeLog>

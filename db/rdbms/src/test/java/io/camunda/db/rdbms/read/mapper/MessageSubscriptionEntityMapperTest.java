@@ -11,7 +11,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.db.rdbms.write.domain.MessageSubscriptionDbModel;
 import io.camunda.search.entities.MessageSubscriptionEntity.MessageSubscriptionState;
+import io.camunda.search.entities.MessageSubscriptionEntity.MessageSubscriptionType;
 import java.time.OffsetDateTime;
+import java.util.Map;
 import org.junit.jupiter.api.Test;
 
 public class MessageSubscriptionEntityMapperTest {
@@ -28,10 +30,14 @@ public class MessageSubscriptionEntityMapperTest {
             .flowNodeId("flowNodeId")
             .flowNodeInstanceKey(1L)
             .messageSubscriptionState(MessageSubscriptionState.CREATED)
+            .messageSubscriptionType(MessageSubscriptionType.PROCESS_EVENT)
             .dateTime(OffsetDateTime.now().plusDays(1))
             .messageName("testMessageName")
             .correlationKey("testCorrelationKey")
             .tenantId("tenantId")
+            .processDefinitionName("My Process")
+            .processDefinitionVersion(2)
+            .extensionProperties(Map.of("key1", "value1"))
             .build();
 
     // When
@@ -53,10 +59,14 @@ public class MessageSubscriptionEntityMapperTest {
             .flowNodeId(null)
             .flowNodeInstanceKey(1L)
             .messageSubscriptionState(MessageSubscriptionState.CREATED)
+            .messageSubscriptionType(MessageSubscriptionType.PROCESS_EVENT)
             .dateTime(null)
             .messageName(null)
             .correlationKey(null)
             .tenantId(null)
+            .processDefinitionName(null)
+            .processDefinitionVersion(null)
+            .extensionProperties(null)
             .build();
 
     // When
@@ -75,5 +85,9 @@ public class MessageSubscriptionEntityMapperTest {
         .isEqualTo(""); // Oracle treats empty strings as NULL, mapper converts back to ""
     assertThat(entity.tenantId())
         .isEqualTo(""); // Oracle treats empty strings as NULL, mapper converts back to ""
+    assertThat(entity.processDefinitionName())
+        .isEqualTo(""); // Oracle treats empty strings as NULL, mapper converts back to ""
+    assertThat(entity.processDefinitionVersion()).isNull();
+    assertThat(entity.extensionProperties()).isEqualTo(Map.of());
   }
 }

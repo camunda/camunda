@@ -9,6 +9,8 @@ package io.camunda.search.entities;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import java.time.OffsetDateTime;
+import java.util.HashMap;
+import java.util.Map;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public record MessageSubscriptionEntity(
@@ -20,11 +22,28 @@ public record MessageSubscriptionEntity(
     String flowNodeId,
     Long flowNodeInstanceKey,
     MessageSubscriptionState messageSubscriptionState,
+    MessageSubscriptionType messageSubscriptionType,
     OffsetDateTime dateTime,
     String messageName,
     String correlationKey,
-    String tenantId)
+    String tenantId,
+    String processDefinitionName,
+    Integer processDefinitionVersion,
+    Map<String, String> extensionProperties)
     implements TenantOwnedEntity {
+
+  public MessageSubscriptionEntity {
+    // Mutable collections are required: MyBatis hydrates collection-mapped fields (e.g. from a
+    // <collection> result map or a LEFT JOIN) by calling .add() on the existing instance.
+    // Immutable defaults (e.g. Map.of()) would cause UnsupportedOperationException at runtime.
+    extensionProperties = extensionProperties != null ? extensionProperties : new HashMap<>();
+    // Pre-8.10 rows have no messageSubscriptionType stored; default them to PROCESS_EVENT.
+    messageSubscriptionType =
+        messageSubscriptionType != null
+            ? messageSubscriptionType
+            : MessageSubscriptionType.PROCESS_EVENT;
+  }
+
   public static Builder builder() {
     return new Builder();
   }
@@ -38,10 +57,14 @@ public record MessageSubscriptionEntity(
     private String flowNodeId;
     private Long flowNodeInstanceKey;
     private MessageSubscriptionState messageSubscriptionState;
+    private MessageSubscriptionType messageSubscriptionType;
     private OffsetDateTime dateTime;
     private String messageName;
     private String correlationKey;
     private String tenantId;
+    private String processDefinitionName;
+    private Integer processDefinitionVersion;
+    private Map<String, String> extensionProperties;
 
     public Builder messageSubscriptionKey(final Long messageSubscriptionKey) {
       this.messageSubscriptionKey = messageSubscriptionKey;
@@ -84,6 +107,26 @@ public record MessageSubscriptionEntity(
       return this;
     }
 
+    public Builder messageSubscriptionType(final MessageSubscriptionType messageSubscriptionType) {
+      this.messageSubscriptionType = messageSubscriptionType;
+      return this;
+    }
+
+    public Builder processDefinitionName(final String processDefinitionName) {
+      this.processDefinitionName = processDefinitionName;
+      return this;
+    }
+
+    public Builder processDefinitionVersion(final Integer processDefinitionVersion) {
+      this.processDefinitionVersion = processDefinitionVersion;
+      return this;
+    }
+
+    public Builder extensionProperties(final Map<String, String> extensionProperties) {
+      this.extensionProperties = extensionProperties;
+      return this;
+    }
+
     public Builder dateTime(final OffsetDateTime dateTime) {
       this.dateTime = dateTime;
       return this;
@@ -114,10 +157,14 @@ public record MessageSubscriptionEntity(
           flowNodeId,
           flowNodeInstanceKey,
           messageSubscriptionState,
+          messageSubscriptionType,
           dateTime,
           messageName,
           correlationKey,
-          tenantId);
+          tenantId,
+          processDefinitionName,
+          processDefinitionVersion,
+          extensionProperties);
     }
   }
 
@@ -126,5 +173,10 @@ public record MessageSubscriptionEntity(
     CREATED,
     DELETED,
     MIGRATED
+  }
+
+  public enum MessageSubscriptionType {
+    START_EVENT,
+    PROCESS_EVENT
   }
 }

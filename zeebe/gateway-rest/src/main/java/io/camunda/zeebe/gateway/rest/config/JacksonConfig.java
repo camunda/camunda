@@ -37,6 +37,7 @@ import io.camunda.gateway.protocol.model.JobKindFilterProperty;
 import io.camunda.gateway.protocol.model.JobListenerEventTypeFilterProperty;
 import io.camunda.gateway.protocol.model.JobStateFilterProperty;
 import io.camunda.gateway.protocol.model.MessageSubscriptionStateFilterProperty;
+import io.camunda.gateway.protocol.model.MessageSubscriptionTypeFilterProperty;
 import io.camunda.gateway.protocol.model.OperationTypeFilterProperty;
 import io.camunda.gateway.protocol.model.ProcessInstanceCreationInstruction;
 import io.camunda.gateway.protocol.model.ProcessInstanceModificationTerminateInstruction;
@@ -66,6 +67,7 @@ import io.camunda.zeebe.gateway.rest.deserializer.JobKindFilterPropertyDeseriali
 import io.camunda.zeebe.gateway.rest.deserializer.JobListenerEventTypeFilterPropertyDeserializer;
 import io.camunda.zeebe.gateway.rest.deserializer.JobStateFilterPropertyDeserializer;
 import io.camunda.zeebe.gateway.rest.deserializer.MessageSubscriptionStatePropertyDeserializer;
+import io.camunda.zeebe.gateway.rest.deserializer.MessageSubscriptionTypePropertyDeserializer;
 import io.camunda.zeebe.gateway.rest.deserializer.ProcessInstanceCreationInstructionDeserializer;
 import io.camunda.zeebe.gateway.rest.deserializer.ProcessInstanceModificationTerminateInstructionDeserializer;
 import io.camunda.zeebe.gateway.rest.deserializer.ProcessInstanceStateFilterPropertyDeserializer;
@@ -113,6 +115,9 @@ public class JacksonConfig {
     module.addDeserializer(
         MessageSubscriptionStateFilterProperty.class,
         new MessageSubscriptionStatePropertyDeserializer());
+    module.addDeserializer(
+        MessageSubscriptionTypeFilterProperty.class,
+        new MessageSubscriptionTypePropertyDeserializer());
     module.addDeserializer(
         UserTaskStateFilterProperty.class, new UserTaskStateFilterPropertyDeserializer());
     module.addDeserializer(SearchQueryPageRequest.class, new SearchQueryPageRequestDeserializer());
