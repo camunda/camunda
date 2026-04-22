@@ -6,13 +6,13 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import {
+  MessageSubscription,
+  QueryMessageSubscriptionsRequestBody,
+} from "@camunda/camunda-api-zod-schemas/8.10";
 import { useMemo } from "react";
 import { useApi, usePagination } from "src/utility/api";
-import {
-  searchMessageSubscriptions,
-  type MessageSubscription,
-  type QueryMessageSubscriptionsRequestBody,
-} from "src/utility/api/message-subscriptions";
+import { searchMessageSubscriptions } from "src/utility/api/message-subscriptions";
 
 const TOOL_PURPOSE_KEY = "io.camunda.tool:purpose";
 

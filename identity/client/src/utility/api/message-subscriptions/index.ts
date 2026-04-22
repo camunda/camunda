@@ -7,9 +7,8 @@
  */
 
 import type {
-  MessageSubscription as BaseMessageSubscription,
-  QueryMessageSubscriptionsRequestBody as BaseQueryMessageSubscriptionsRequestBody,
-  QueryMessageSubscriptionsResponseBody as BaseQueryMessageSubscriptionsResponseBody,
+  QueryMessageSubscriptionsRequestBody,
+  QueryMessageSubscriptionsResponseBody,
 } from "@camunda/camunda-api-zod-schemas/8.10";
 import { ApiDefinition, apiPost } from "src/utility/api/request";
 
@@ -19,63 +18,3 @@ export const searchMessageSubscriptions: ApiDefinition<
   QueryMessageSubscriptionsResponseBody,
   QueryMessageSubscriptionsRequestBody | undefined
 > = (params) => apiPost(`${MESSAGE_SUBSCRIPTIONS_ENDPOINT}/search`, params);
-
-// TODO: Remove extended types once API is stabilized and schema merged back into @camunda/camunda-api-zod-schemas.
-// https://github.com/camunda/camunda/issues/51241
-
-type MessageSubscriptionType = "START_EVENT" | "PROCESS_EVENT";
-
-export interface MessageSubscription extends BaseMessageSubscription {
-  messageSubscriptionType: MessageSubscriptionType;
-  extensionProperties: Record<string, string>;
-  processDefinitionName: string | null;
-  processDefinitionVersion: number | null;
-  toolName: string | null;
-  inboundConnectorType: string | null;
-}
-
-type AdvancedStringFilter =
-  | string
-  | {
-      $eq?: string;
-      $neq?: string;
-      $exists?: boolean;
-      $in?: string[];
-      $notIn?: string[];
-      $like?: string;
-    };
-
-type BaseMessageSubscriptionFilter = NonNullable<
-  BaseQueryMessageSubscriptionsRequestBody["filter"]
->;
-type BaseMessageSubscriptionSort = NonNullable<
-  BaseQueryMessageSubscriptionsRequestBody["sort"]
->[number];
-
-interface MessageSubscriptionFilter extends BaseMessageSubscriptionFilter {
-  messageSubscriptionType?: MessageSubscriptionType;
-  toolName?: AdvancedStringFilter;
-  inboundConnectorType?: AdvancedStringFilter;
-}
-
-interface MessageSubscriptionSort extends Omit<
-  BaseMessageSubscriptionSort,
-  "field"
-> {
-  field: BaseMessageSubscriptionSort["field"] | "toolName";
-}
-
-export interface QueryMessageSubscriptionsRequestBody extends Omit<
-  BaseQueryMessageSubscriptionsRequestBody,
-  "filter" | "sort"
-> {
-  filter?: MessageSubscriptionFilter;
-  sort?: MessageSubscriptionSort[];
-}
-
-export interface QueryMessageSubscriptionsResponseBody extends Omit<
-  BaseQueryMessageSubscriptionsResponseBody,
-  "items"
-> {
-  items: MessageSubscription[];
-}
