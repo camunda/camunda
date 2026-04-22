@@ -30,7 +30,7 @@ import {deploy} from '../../../../utils/zeebeClient';
 
 const USAGE_METRICS_GET_ENDPOINT = '/system/usage-metrics';
 const CREATE_USER_ENDPOINT = '/users';
-const USAGE_METRICS_PROCESS_DEFINITION_ID = 'clock_api_test_process';
+const USAGE_METRICS_PROCESS_DEFINITION_ID = 'clockApiTestProcess';
 const USAGE_METRICS_EXPORT_TIMEOUT_MS = 6 * 60_000;
 const USAGE_METRICS_WINDOW_START_OFFSET_MS = 60_000;
 const USAGE_METRICS_WINDOW_END_OFFSET_MS = 15 * 60_000;
@@ -162,7 +162,6 @@ test.describe.serial('Get usage metrics API Tests', () => {
     await deploy(['./resources/clock_api_test_process.bpmn']);
   });
 
-  //Skipped due to bug 49032: https://github.com/camunda/camunda/issues/49032
   test('Get Usage Metrics Success', async ({request}) => {
     const calibrationInstance = await createCompletedProcessInstance(request);
     const {startTime, endTime} = buildUsageMetricsWindow(
