@@ -295,6 +295,7 @@ public final class ProcessingStateMachine {
       try (final var timer = processingMetrics.startBatchProcessingDurationTimer()) {
         zeebeDbTransaction.run(() -> batchProcessing(typedCommand));
         processingMetrics.observeCommandCount(processedCommandsCount);
+        processingMetrics.observeTransactionSize(zeebeDbTransaction.getWriteBatchDataSize());
       }
 
       finalizeCommandProcessing();

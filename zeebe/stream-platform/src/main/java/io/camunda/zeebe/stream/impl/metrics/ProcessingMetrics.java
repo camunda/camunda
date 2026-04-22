@@ -40,6 +40,7 @@ public class ProcessingMetrics {
   private final Timer batchProcessingDuration;
   private final Timer batchProcessingPostCommitTasks;
   private final DistributionSummary batchProcessingCommands;
+  private final DistributionSummary batchProcessingTransactionSize;
   private final Counter batchProcessingRetries;
   private final EnumMeter<ErrorHandlingPhase> errorHandlingPhase;
   private final Timer processingLatency;
@@ -52,6 +53,7 @@ public class ProcessingMetrics {
     batchProcessingPostCommitTasks =
         registerTimer(StreamMetricsDoc.BATCH_PROCESSING_POST_COMMIT_TASKS);
     batchProcessingCommands = registerBatchProcessingCommands();
+    batchProcessingTransactionSize = registerBatchProcessingTransactionSize();
     batchProcessingRetries = registerBatchProcessingRetries();
     errorHandlingPhase =
         EnumMeter.register(
@@ -71,6 +73,10 @@ public class ProcessingMetrics {
 
   public void observeCommandCount(final int commandCount) {
     batchProcessingCommands.record(commandCount);
+  }
+
+  public void observeTransactionSize(final long bytes) {
+    batchProcessingTransactionSize.record(bytes);
   }
 
   public void countRetry() {
@@ -133,6 +139,15 @@ public class ProcessingMetrics {
             .serviceLevelObjectives(commandsDoc.getDistributionSLOs())
             .register(registry);
     return batchProcessingCommands;
+  }
+
+  private DistributionSummary registerBatchProcessingTransactionSize() {
+    final var doc = StreamMetricsDoc.BATCH_PROCESSING_TRANSACTION_SIZE;
+    return DistributionSummary.builder(doc.getName())
+        .description(doc.getDescription())
+        .baseUnit("bytes")
+        .serviceLevelObjectives(doc.getDistributionSLOs())
+        .register(registry);
   }
 
   private Counter registerBatchProcessingRetries() {
