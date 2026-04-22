@@ -76,6 +76,12 @@ public class ExecutableFlowNode extends AbstractFlowElement {
     executionListeners.add(listener);
   }
 
+  public List<ExecutionListener> getBeforeAllExecutionListeners() {
+    return executionListeners.stream()
+        .filter(el -> el.getEventType() == ZeebeExecutionListenerEventType.beforeAll)
+        .toList();
+  }
+
   public List<ExecutionListener> getStartExecutionListeners() {
     return executionListeners.stream()
         .filter(el -> el.getEventType() == ZeebeExecutionListenerEventType.start)
@@ -90,5 +96,24 @@ public class ExecutableFlowNode extends AbstractFlowElement {
 
   public boolean hasExecutionListeners() {
     return !executionListeners.isEmpty();
+  }
+
+  /**
+   * Adds an already-constructed {@link ExecutionListener} to this flow node. Used when re-attaching
+   * listeners between flow nodes (e.g., moving {@code beforeAll} listeners from the inner activity
+   * to the multi-instance body during transformation).
+   */
+  public void addExecutionListener(final ExecutionListener listener) {
+    executionListeners.add(listener);
+  }
+
+  /**
+   * Removes all {@code beforeAll} execution listeners from this flow node and returns them. Used
+   * during multi-instance body transformation to re-attach them to the body.
+   */
+  public List<ExecutionListener> removeBeforeAllExecutionListeners() {
+    final List<ExecutionListener> removed = getBeforeAllExecutionListeners();
+    executionListeners.removeAll(removed);
+    return removed;
   }
 }
