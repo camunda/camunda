@@ -124,7 +124,7 @@ test.describe.serial('Task visible to assignee with READ permission', () => {
 });
 
 test.describe
-  .serial('Assignee cannot see their task without READ permission', () => {
+  .serial('Assignee  cannot see their task without READ permission', () => {
   test.beforeAll(async ({request}) => {
     authorizationKeys.length = 0;
     createdUsernames.length = 0;
