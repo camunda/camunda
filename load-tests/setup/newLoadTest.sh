@@ -113,22 +113,10 @@ if ! kubectl get namespace $namespace >/dev/null 2>&1; then
   fi
 else
   echo "Namespace '$namespace' already exists"
-  existing_zone="$(kubectl get ns "$namespace" -o json | jq --raw-output ".metadata.annotations[\"$single_zone_annotation_name\"]")"
 
-  if [[ "$existing_zone" == "null" ]]
-  then
-    # Existing namespace, but not labelled. Don't change scheduling there.
-    # This is for backward compatibility reasons and prevent already running
-    # tests, scheduled over multiple zones, from being forcefully rescheduled
-    # on a new single zone.
-    # Once all the namespaces have the annotation, this backward compatibility
-    # step can be removed.
-    availability_zone="~"
-    echo "Namespace ${namespace} is NOT configured to run on a single availability zone ; scheduling will not be changed."
-  else
-    availability_zone="$existing_zone"
-    echo "Namespace ${namespace} has previously been configured to run on the single availability zone: $availability_zone"
-  fi
+  existing_zone="$(kubectl get ns "$namespace" -o json | jq --raw-output ".metadata.annotations[\"$single_zone_annotation_name\"]")"
+  availability_zone="$existing_zone"
+  echo "Namespace ${namespace} has previously been configured to run on the single availability zone: $availability_zone"
 fi
 
 # Sanitize a string to be a valid Kubernetes label value
