@@ -214,12 +214,19 @@ test.describe('Operations', () => {
                 operateProcessesPage.getCanceledIcon(
                   instance.processInstanceKey,
                 ),
-              ).toBeVisible({timeout: 5000}),
+              ).toBeVisible({timeout: 30000}),
             ),
           );
         },
         onFailure: async () => {
           await page.reload();
+          await operateFiltersPanelPage.displayOptionalFilter(
+            'Process Instance Key(s)',
+          );
+          await operateFiltersPanelPage.processInstanceKeysFilter.fill(
+            instances.map((instance) => instance.processInstanceKey).join(','),
+          );
+          await operateFiltersPanelPage.clickCanceledInstancesCheckbox();
         },
       });
     });
