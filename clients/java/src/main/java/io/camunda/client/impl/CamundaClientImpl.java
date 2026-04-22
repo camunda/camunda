@@ -467,6 +467,7 @@ public final class CamundaClientImpl implements CamundaClient {
     asyncStub = gatewayStub;
     this.executorResource = executorResource;
     this.httpClient = httpClient;
+    warnIfInsecureRestAddress(config);
 
     if (config.getCredentialsProvider() != null) {
       credentialsProvider = config.getCredentialsProvider();
@@ -479,6 +480,15 @@ public final class CamundaClientImpl implements CamundaClient {
 
   private static HttpClient buildHttpClient(final CamundaClientConfiguration config) {
     return new HttpClientFactory(config).createClient();
+  }
+
+  private static void warnIfInsecureRestAddress(final CamundaClientConfiguration config) {
+    final URI restAddress = config.getRestAddress();
+    if (restAddress != null && "http".equalsIgnoreCase(restAddress.getScheme())) {
+      Loggers.LOGGER.warn(
+          "Using the Camunda Client with an insecure REST address [{}]; traffic, including authentication credentials, will not be encrypted. Configure an HTTPS REST address for production use.",
+          restAddress);
+    }
   }
 
   public static ManagedChannel buildChannel(final CamundaClientConfiguration config) {
