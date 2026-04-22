@@ -19,6 +19,7 @@
         typeHandler="io.camunda.db.rdbms.sql.typehandler.NullToEmptyStringTypeHandler"/>
       <arg column="RESOURCE_NAME" javaType="java.lang.String"
         typeHandler="io.camunda.db.rdbms.sql.typehandler.NullToEmptyStringTypeHandler"/>
+      <arg column="RESOURCE_TYPE" javaType="java.lang.String"/>
       <arg column="VERSION" javaType="int"/>
       <arg column="VERSION_TAG" javaType="java.lang.String"/>
       <arg column="DEPLOYMENT_KEY" javaType="java.lang.Long"/>
@@ -29,9 +30,11 @@
   </resultMap>
 
   <insert id="insert" parameterType="io.camunda.db.rdbms.write.domain.DeployedResourceDbModel">
-    INSERT INTO ${prefix}DEPLOYED_RESOURCE (RESOURCE_KEY, RESOURCE_ID, RESOURCE_NAME, VERSION, VERSION_TAG,
-                                   DEPLOYMENT_KEY, TENANT_ID, RESOURCE_CONTENT)
-    VALUES (#{resourceKey}, #{resourceId}, #{resourceName}, #{version}, #{versionTag},
+    INSERT INTO ${prefix}DEPLOYED_RESOURCE (RESOURCE_KEY, RESOURCE_ID, RESOURCE_NAME, RESOURCE_TYPE,
+                                            VERSION, VERSION_TAG,
+                                            DEPLOYMENT_KEY, TENANT_ID, RESOURCE_CONTENT)
+    VALUES (#{resourceKey}, #{resourceId}, #{resourceName}, #{resourceType}, #{version},
+            #{versionTag},
             #{deploymentKey}, #{tenantId}, #{resourceContent})
   </insert>
 
@@ -47,6 +50,7 @@
       RESOURCE_KEY,
       RESOURCE_ID,
       RESOURCE_NAME,
+      RESOURCE_TYPE,
       VERSION,
       VERSION_TAG,
       DEPLOYMENT_KEY,
@@ -62,6 +66,7 @@
       RESOURCE_KEY,
       RESOURCE_ID,
       RESOURCE_NAME,
+      RESOURCE_TYPE,
       VERSION,
       VERSION_TAG,
       DEPLOYMENT_KEY,

@@ -24,6 +24,7 @@
       </column>
       <column name="RESOURCE_ID" type="NVARCHAR(${userCharColumnSize})"/>
       <column name="RESOURCE_NAME" type="NVARCHAR(${userCharColumnSize})"/>
+      <column name="RESOURCE_TYPE" type="NVARCHAR(${userCharColumnSize})"/>
       <column name="VERSION" type="SMALLINT"/>
       <column name="VERSION_TAG" type="NVARCHAR(${userCharColumnSize})"/>
       <column name="DEPLOYMENT_KEY" type="BIGINT"/>
