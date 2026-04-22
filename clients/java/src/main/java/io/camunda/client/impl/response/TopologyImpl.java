@@ -41,6 +41,8 @@ public final class TopologyImpl implements Topology {
     partitionsCount = grpcResponse.getPartitionsCount();
     replicationFactor = grpcResponse.getReplicationFactor();
     gatewayVersion = grpcResponse.getGatewayVersion();
+    // The gRPC TopologyResponse proto does not include lastCompletedChangeId;
+    // this field is only available via the REST API.
     lastCompletedChangeId = null;
   }
 
