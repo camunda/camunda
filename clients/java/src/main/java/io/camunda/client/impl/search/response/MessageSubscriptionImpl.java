@@ -16,11 +16,13 @@
 package io.camunda.client.impl.search.response;
 
 import io.camunda.client.api.search.enums.MessageSubscriptionState;
+import io.camunda.client.api.search.enums.MessageSubscriptionType;
 import io.camunda.client.api.search.response.MessageSubscription;
 import io.camunda.client.impl.util.EnumUtil;
 import io.camunda.client.impl.util.ParseUtil;
 import io.camunda.client.protocol.rest.MessageSubscriptionResult;
 import java.time.OffsetDateTime;
+import java.util.Map;
 import java.util.Objects;
 
 public class MessageSubscriptionImpl implements MessageSubscription {
@@ -33,10 +35,14 @@ public class MessageSubscriptionImpl implements MessageSubscription {
   private final String elementId;
   private final Long elementInstanceKey;
   private final MessageSubscriptionState messageSubscriptionState;
+  private final MessageSubscriptionType messageSubscriptionType;
   private final OffsetDateTime lastUpdatedDate;
   private final String messageName;
   private final String correlationKey;
   private final String tenantId;
+  private final String processDefinitionName;
+  private final Integer processDefinitionVersion;
+  private final Map<String, String> extensionProperties;
 
   public MessageSubscriptionImpl(final MessageSubscriptionResult item) {
     messageSubscriptionKey = ParseUtil.parseLongOrNull(item.getMessageSubscriptionKey());
@@ -48,10 +54,15 @@ public class MessageSubscriptionImpl implements MessageSubscription {
     elementInstanceKey = ParseUtil.parseLongOrNull(item.getElementInstanceKey());
     messageSubscriptionState =
         EnumUtil.convert(item.getMessageSubscriptionState(), MessageSubscriptionState.class);
+    messageSubscriptionType =
+        EnumUtil.convert(item.getMessageSubscriptionType(), MessageSubscriptionType.class);
     lastUpdatedDate = ParseUtil.parseOffsetDateTimeOrNull(item.getLastUpdatedDate());
     messageName = item.getMessageName();
     correlationKey = item.getCorrelationKey();
     tenantId = item.getTenantId();
+    processDefinitionName = item.getProcessDefinitionName();
+    processDefinitionVersion = item.getProcessDefinitionVersion();
+    extensionProperties = item.getExtensionProperties();
   }
 
   @Override
@@ -95,6 +106,11 @@ public class MessageSubscriptionImpl implements MessageSubscription {
   }
 
   @Override
+  public MessageSubscriptionType getMessageSubscriptionType() {
+    return messageSubscriptionType;
+  }
+
+  @Override
   public OffsetDateTime getLastUpdatedDate() {
     return lastUpdatedDate;
   }
@@ -115,6 +131,21 @@ public class MessageSubscriptionImpl implements MessageSubscription {
   }
 
   @Override
+  public String getProcessDefinitionName() {
+    return processDefinitionName;
+  }
+
+  @Override
+  public Integer getProcessDefinitionVersion() {
+    return processDefinitionVersion;
+  }
+
+  @Override
+  public Map<String, String> getExtensionProperties() {
+    return extensionProperties;
+  }
+
+  @Override
   public int hashCode() {
     return Objects.hash(
         messageSubscriptionKey,
@@ -125,10 +156,14 @@ public class MessageSubscriptionImpl implements MessageSubscription {
         elementId,
         elementInstanceKey,
         messageSubscriptionState,
+        messageSubscriptionType,
         lastUpdatedDate,
         messageName,
         correlationKey,
-        tenantId);
+        tenantId,
+        processDefinitionName,
+        processDefinitionVersion,
+        extensionProperties);
   }
 
   @Override
@@ -148,9 +183,13 @@ public class MessageSubscriptionImpl implements MessageSubscription {
         && Objects.equals(elementId, subscription.elementId)
         && Objects.equals(elementInstanceKey, subscription.elementInstanceKey)
         && messageSubscriptionState == subscription.messageSubscriptionState
+        && messageSubscriptionType == subscription.messageSubscriptionType
         && Objects.equals(lastUpdatedDate, subscription.lastUpdatedDate)
         && Objects.equals(messageName, subscription.messageName)
         && Objects.equals(correlationKey, subscription.correlationKey)
-        && Objects.equals(tenantId, subscription.tenantId);
+        && Objects.equals(tenantId, subscription.tenantId)
+        && Objects.equals(processDefinitionName, subscription.processDefinitionName)
+        && Objects.equals(processDefinitionVersion, subscription.processDefinitionVersion)
+        && Objects.equals(extensionProperties, subscription.extensionProperties);
   }
 }

@@ -12,7 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 
-public class CustomHeaderSerializerTest {
+public class MapSerializerTest {
 
   @Test
   public void testSerializeAndDeserialize() {
@@ -20,8 +20,8 @@ public class CustomHeaderSerializerTest {
     final Map<String, String> headers = Map.of("key1", "value1", "key2", "value2");
 
     // when
-    final String serialized = CustomHeaderSerializer.serialize(headers);
-    final Map<String, String> deserializedHeaders = CustomHeaderSerializer.deserialize(serialized);
+    final String serialized = MapSerializer.serialize(headers);
+    final Map<String, String> deserializedHeaders = MapSerializer.deserialize(serialized);
 
     // then
     assertThat(headers).containsAllEntriesOf(deserializedHeaders);
@@ -34,7 +34,7 @@ public class CustomHeaderSerializerTest {
     final String expectedJson = "{}";
 
     // when
-    final String serialized = CustomHeaderSerializer.serialize(headers);
+    final String serialized = MapSerializer.serialize(headers);
 
     // then
     assertThat(serialized).isEqualTo(expectedJson);
@@ -46,7 +46,7 @@ public class CustomHeaderSerializerTest {
     final Map<String, String> headers = null;
 
     // when
-    final String serialized = CustomHeaderSerializer.serialize(headers);
+    final String serialized = MapSerializer.serialize(headers);
 
     // then
     assertThat(serialized).isNull();
@@ -59,7 +59,7 @@ public class CustomHeaderSerializerTest {
     final Map<String, String> expectedHeaders = Map.of();
 
     // when
-    final Map<String, String> deserialized = CustomHeaderSerializer.deserialize(json);
+    final Map<String, String> deserialized = MapSerializer.deserialize(json);
 
     // then
     assertThat(deserialized).isEqualTo(expectedHeaders);
@@ -71,7 +71,7 @@ public class CustomHeaderSerializerTest {
     final String json = null;
 
     // when
-    final Map<String, String> deserialized = CustomHeaderSerializer.deserialize(json);
+    final Map<String, String> deserialized = MapSerializer.deserialize(json);
 
     // then
     assertThat(deserialized).isNull();

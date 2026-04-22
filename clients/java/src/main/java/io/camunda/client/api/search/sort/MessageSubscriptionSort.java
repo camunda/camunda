@@ -38,4 +38,10 @@ public interface MessageSubscriptionSort extends SearchRequestSort<MessageSubscr
   MessageSubscriptionSort correlationKey();
 
   MessageSubscriptionSort tenantId();
+
+  MessageSubscriptionSort messageSubscriptionType();
+
+  MessageSubscriptionSort processDefinitionName();
+
+  MessageSubscriptionSort processDefinitionVersion();
 }

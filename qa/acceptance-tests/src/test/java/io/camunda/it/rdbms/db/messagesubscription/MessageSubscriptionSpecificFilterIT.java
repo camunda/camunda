@@ -17,6 +17,7 @@ import io.camunda.it.rdbms.db.fixtures.CommonFixtures;
 import io.camunda.it.rdbms.db.fixtures.MessageSubscriptionFixtures;
 import io.camunda.it.rdbms.db.util.RdbmsTestConfiguration;
 import io.camunda.search.entities.MessageSubscriptionEntity.MessageSubscriptionState;
+import io.camunda.search.entities.MessageSubscriptionEntity.MessageSubscriptionType;
 import io.camunda.search.filter.MessageSubscriptionFilter;
 import io.camunda.search.filter.Operation;
 import io.camunda.search.page.SearchQueryPage;
@@ -52,6 +53,8 @@ public class MessageSubscriptionSpecificFilterIT {
   private static final String FLOW_NODE_ID = CommonFixtures.nextStringId();
   private static final String PROCESS_DEFINITION_ID = CommonFixtures.nextStringId();
   private static final Long PROCESS_INSTANCE_KEY = CommonFixtures.nextKey();
+  private static final String PROCESS_DEFINITION_NAME = "processDefinitionName";
+  private static final Integer PROCESS_DEFINITION_VERSION = 15;
 
   @Autowired private RdbmsService rdbmsService;
 
@@ -67,7 +70,12 @@ public class MessageSubscriptionSpecificFilterIT {
   @ParameterizedTest
   @MethodSource("shouldFindWithSpecificFilterParameters")
   public void shouldFindWithSpecificFilter(final MessageSubscriptionFilter filter) {
-    MessageSubscriptionFixtures.createAndSaveRandomMessageSubscriptions(rdbmsWriters);
+    MessageSubscriptionFixtures.createAndSaveRandomMessageSubscriptions(
+        rdbmsWriters,
+        b ->
+            b.messageSubscriptionState(MessageSubscriptionState.CREATED)
+                .messageSubscriptionType(MessageSubscriptionType.PROCESS_EVENT)
+                .processDefinitionVersion(1));
     MessageSubscriptionFixtures.createAndSaveMessageSubscription(
         rdbmsWriters,
         MessageSubscriptionFixtures.createRandomized(
@@ -79,7 +87,10 @@ public class MessageSubscriptionSpecificFilterIT {
                     .flowNodeId(FLOW_NODE_ID)
                     .processDefinitionId(PROCESS_DEFINITION_ID)
                     .processInstanceKey(PROCESS_INSTANCE_KEY)
-                    .messageSubscriptionState(MessageSubscriptionState.CORRELATED)));
+                    .messageSubscriptionState(MessageSubscriptionState.CORRELATED)
+                    .messageSubscriptionType(MessageSubscriptionType.START_EVENT)
+                    .processDefinitionName(PROCESS_DEFINITION_NAME)
+                    .processDefinitionVersion(PROCESS_DEFINITION_VERSION)));
 
     final var searchResult =
         messageSubscriptionDbReader.search(
@@ -127,8 +138,25 @@ public class MessageSubscriptionSpecificFilterIT {
             .processInstanceKeyOperations(Operation.eq(PROCESS_INSTANCE_KEY))
             .build(),
         new MessageSubscriptionFilter.Builder().tenantIds(TENANT_ID).build(),
+        new MessageSubscriptionFilter.Builder().tenantIdOperations(Operation.eq(TENANT_ID)).build(),
         new MessageSubscriptionFilter.Builder()
-            .tenantIdOperations(Operation.eq(TENANT_ID))
+            .processDefinitionNames(PROCESS_DEFINITION_NAME)
+            .build(),
+        new MessageSubscriptionFilter.Builder()
+            .processDefinitionNameOperations(Operation.eq(PROCESS_DEFINITION_NAME))
+            .build(),
+        new MessageSubscriptionFilter.Builder()
+            .processDefinitionVersions(PROCESS_DEFINITION_VERSION)
+            .build(),
+        new MessageSubscriptionFilter.Builder()
+            .processDefinitionVersionOperations(Operation.eq(PROCESS_DEFINITION_VERSION))
+            .build(),
+        new MessageSubscriptionFilter.Builder()
+            .messageSubscriptionTypes(MessageSubscriptionType.START_EVENT.name())
+            .build(),
+        new MessageSubscriptionFilter.Builder()
+            .messageSubscriptionTypeOperations(
+                Operation.eq(MessageSubscriptionType.START_EVENT.name()))
             .build());
   }
 }

@@ -252,6 +252,7 @@ final class MessageSubscriptionFromProcessMessageSubscriptionHandlerTest {
     assertThat(entity.getEventSourceType()).isEqualTo(EventSourceType.PROCESS_MESSAGE_SUBSCRIPTION);
     assertThat(entity.getEventType())
         .isEqualTo(MessageSubscriptionState.fromZeebeIntent(intent.name()));
+    assertThat(entity.getMessageSubscriptionType()).isEqualTo("PROCESS_EVENT");
     assertThat(entity.getProcessInstanceKey()).isEqualTo(processInstanceKey);
     assertThat(entity.getFlowNodeInstanceKey()).isEqualTo(elementInstanceKey);
     assertThat(entity.getFlowNodeId()).isEqualTo(elementId);
@@ -310,6 +311,7 @@ final class MessageSubscriptionFromProcessMessageSubscriptionHandlerTest {
     expectedUpdateFields.put("flowNodeId", null);
     expectedUpdateFields.put("eventSourceType", null);
     expectedUpdateFields.put("eventType", null);
+    expectedUpdateFields.put("messageSubscriptionType", null);
     expectedUpdateFields.put("bpmnProcessId", null);
     expectedUpdateFields.put("processDefinitionKey", null);
 

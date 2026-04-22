@@ -1061,6 +1061,15 @@ public class SearchQueryFilterMapper {
       ofNullable(filter.getTenantId())
           .map(mapToStringOperations())
           .ifPresent(builder::tenantIdOperations);
+      ofNullable(filter.getMessageSubscriptionType())
+          .map(mapToStringOperations())
+          .ifPresent(builder::messageSubscriptionTypeOperations);
+      ofNullable(filter.getProcessDefinitionName())
+          .map(mapToStringOperations())
+          .ifPresent(builder::processDefinitionNameOperations);
+      ofNullable(filter.getProcessDefinitionVersion())
+          .map(mapToIntegerOperations("processDefinitionVersion", validationErrors))
+          .ifPresent(builder::processDefinitionVersionOperations);
     }
     return validationErrors.isEmpty()
         ? Either.right(builder.build())

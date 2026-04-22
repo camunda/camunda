@@ -90,7 +90,8 @@ public class MessageSubscriptionFromProcessMessageSubscriptionHandler
         .setBpmnProcessId(recordValue.getBpmnProcessId())
         .setFlowNodeId(recordValue.getElementId())
         .setTenantId(tenantOrDefault(recordValue.getTenantId()))
-        .setPositionProcessMessageSubscription(record.getPosition());
+        .setPositionProcessMessageSubscription(record.getPosition())
+        .setMessageSubscriptionType("PROCESS_EVENT");
 
     final long activityInstanceKey = recordValue.getElementInstanceKey();
     if (activityInstanceKey > 0) {

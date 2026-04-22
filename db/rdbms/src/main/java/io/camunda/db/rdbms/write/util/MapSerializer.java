@@ -13,39 +13,39 @@ import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class CustomHeaderSerializer {
+public class MapSerializer {
 
-  private static final Logger LOG = LoggerFactory.getLogger(CustomHeaderSerializer.class);
+  private static final Logger LOG = LoggerFactory.getLogger(MapSerializer.class);
 
-  public static String serialize(final Map<String, String> headers) {
-    if (headers == null) {
+  public static String serialize(final Map<String, String> map) {
+    if (map == null) {
       return null;
     }
 
     final ObjectMapper mapper = new ObjectMapper();
-    String serializedCustomHeaders = null;
+    String serialized = null;
     try {
-      serializedCustomHeaders = mapper.writeValueAsString(headers);
+      serialized = mapper.writeValueAsString(map);
     } catch (final JsonProcessingException e) {
-      LOG.error("Failed to serialize custom headers!", e);
+      LOG.error("Failed to serialize map!", e);
     }
 
-    return serializedCustomHeaders;
+    return serialized;
   }
 
-  public static Map<String, String> deserialize(final String serializedCustomHeader) {
+  public static Map<String, String> deserialize(final String serialized) {
     final ObjectMapper mapper = new ObjectMapper();
-    if (serializedCustomHeader == null || serializedCustomHeader.isEmpty()) {
+    if (serialized == null || serialized.isEmpty()) {
       return null;
     }
 
-    Map<String, String> customHeaders = null;
+    Map<String, String> map = null;
     try {
-      customHeaders = mapper.readValue(serializedCustomHeader, Map.class);
+      map = mapper.readValue(serialized, Map.class);
     } catch (final JsonProcessingException e) {
-      LOG.error("Failed to deserialize custom headers!", e);
+      LOG.error("Failed to deserialize map!", e);
     }
 
-    return customHeaders;
+    return map;
   }
 }
