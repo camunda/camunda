@@ -71,24 +71,9 @@ public class AdminClientConfigController {
     config.put(ORGANIZATION_ID, saasConfiguration.getOrganizationId());
     config.put(CLUSTER_ID, saasConfiguration.getClusterId());
     config.put(ID_PATTERN, securityConfiguration.getIdValidationPattern());
-    config.put(RESOURCE_PERMISSIONS, buildResourcePermissionsMap());
+    config.put(RESOURCE_PERMISSIONS, AuthorizationResourceType.buildResourcePermissionsMap());
 
     return config;
-  }
-
-  private Map<String, List<String>> buildResourcePermissionsMap() {
-    return AuthorizationResourceType.getUserProvidedResourceTypes().stream()
-        .sorted(Comparator.comparing(Enum::name))
-        .collect(
-            Collectors.toMap(
-                Enum::name,
-                resourceType ->
-                    resourceType.getSupportedPermissionTypes().stream()
-                        .map(PermissionType::name)
-                        .sorted()
-                        .collect(Collectors.toList()),
-                (e1, e2) -> e1,
-                LinkedHashMap::new));
   }
 
   private boolean isOidcAuthentication(final SecurityConfiguration securityConfiguration) {
