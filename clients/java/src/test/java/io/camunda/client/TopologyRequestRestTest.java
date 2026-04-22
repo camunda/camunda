@@ -54,6 +54,7 @@ public final class TopologyRequestRestTest extends ClientRestTest {
             .clusterSize(3)
             .replicationFactor(3)
             .partitionsCount(2)
+            .lastCompletedChangeId("-1")
             .addBrokersItem(
                 new BrokerInfo()
                     .nodeId(0)
@@ -95,6 +96,7 @@ public final class TopologyRequestRestTest extends ClientRestTest {
     assertThat(topology.getPartitionsCount()).isEqualTo(2);
     assertThat(topology.getReplicationFactor()).isEqualTo(3);
     assertThat(topology.getGatewayVersion()).isEqualTo("1.22.3-SNAPSHOT");
+    assertThat(topology.getLastCompletedChangeId()).isEqualTo("-1");
 
     final List<io.camunda.client.api.response.BrokerInfo> brokers = topology.getBrokers();
     assertThat(brokers).hasSize(3);
