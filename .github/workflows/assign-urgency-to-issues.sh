@@ -359,26 +359,32 @@ if [[ "$DIRECT" == "true" ]]; then
       continue
     fi
 
-    if [[ "$HAS_LOCKED" == "true" ]]; then
-      echo "  🔒 #$ISSUE_NUM ($ISSUE_REPO): urgency-locked"
-      read P U S < "$COUNTER_FILE"; echo "$P $U $((S+1))" > "$COUNTER_FILE"
-      continue
-    fi
-
     # Check current org-level urgency
     CURRENT=$(echo "$ROW" | jq -r --arg fid "$URGENCY_FIELD_ID" \
       '.issueFieldValues.nodes[] | select(.field.id==$fid) | .name // empty')
 
-    LABEL_INFO="→ $NEW_URGENCY"
-    [[ -n "$CURRENT" ]] && LABEL_INFO="$CURRENT → $NEW_URGENCY"
+    if [[ "$HAS_LOCKED" == "true" ]]; then
+      # urgency-locked: skip org-level update but still sync existing value to project
+      SYNC_URGENCY="${CURRENT:-$NEW_URGENCY}"
+      if [[ -n "$SYNC_URGENCY" ]]; then
+        echo "  🔒 #$ISSUE_NUM ($ISSUE_REPO): urgency-locked (syncing '$SYNC_URGENCY' to project)"
+        NEW_URGENCY="$SYNC_URGENCY"
+      else
+        echo "  🔒 #$ISSUE_NUM ($ISSUE_REPO): urgency-locked, no value to sync"
+        read P U S < "$COUNTER_FILE"; echo "$P $U $((S+1))" > "$COUNTER_FILE"
+        continue
+      fi
+    else
+      LABEL_INFO="→ $NEW_URGENCY"
+      [[ -n "$CURRENT" ]] && LABEL_INFO="$CURRENT → $NEW_URGENCY"
 
-    if [[ "$DRY_RUN" == "true" ]]; then
-      echo "  🔬 #$ISSUE_NUM ($ISSUE_REPO): $LABEL_INFO (dry run)"
-      continue
-    fi
+      if [[ "$DRY_RUN" == "true" ]]; then
+        echo "  🔬 #$ISSUE_NUM ($ISSUE_REPO): $LABEL_INFO (dry run)"
+        continue
+      fi
 
-    # Update org-level urgency if changed
-    if [[ "$CURRENT" != "$NEW_URGENCY" ]]; then
+      # Update org-level urgency if changed
+      if [[ "$CURRENT" != "$NEW_URGENCY" ]]; then
       OPTION_ID=$(get_urgency_option_id "$NEW_URGENCY")
       gh api graphql --silent -H "Content-Type: application/json" --input - <<< "$(jq -n \
         --arg issueId "$ISSUE_ID" \
@@ -391,6 +397,7 @@ if [[ "$DIRECT" == "true" ]]; then
         echo "  ⚠️ #$ISSUE_NUM ($ISSUE_REPO): org-level update failed"
       }
     fi
+    fi # end of non-locked branch
 
     # Sync to project-level urgency field if issue is in project
     PROJECT_ITEM=$(echo "$ROW" | jq -c --argjson pn "$PROJECT_ID" \
@@ -425,7 +432,7 @@ if [[ "$DIRECT" == "true" ]]; then
       fi
     fi
 
-    echo "  ✅ #$ISSUE_NUM ($ISSUE_REPO): $LABEL_INFO"
+    echo "  ✅ #$ISSUE_NUM ($ISSUE_REPO): ${LABEL_INFO:-→ $NEW_URGENCY}"
     read P U S < "$COUNTER_FILE"; echo "$P $((U+1)) $S" > "$COUNTER_FILE"
 
     if [[ "$DELAY" -gt 0 ]]; then
