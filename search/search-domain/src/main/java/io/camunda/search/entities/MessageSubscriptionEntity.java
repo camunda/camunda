@@ -29,7 +29,9 @@ public record MessageSubscriptionEntity(
     String tenantId,
     String processDefinitionName,
     Integer processDefinitionVersion,
-    Map<String, String> extensionProperties)
+    Map<String, String> extensionProperties,
+    String toolName,
+    String inboundConnectorType)
     implements TenantOwnedEntity {
 
   public MessageSubscriptionEntity {
@@ -65,6 +67,8 @@ public record MessageSubscriptionEntity(
     private String processDefinitionName;
     private Integer processDefinitionVersion;
     private Map<String, String> extensionProperties;
+    private String toolName;
+    private String inboundConnectorType;
 
     public Builder messageSubscriptionKey(final Long messageSubscriptionKey) {
       this.messageSubscriptionKey = messageSubscriptionKey;
@@ -127,6 +131,16 @@ public record MessageSubscriptionEntity(
       return this;
     }
 
+    public Builder toolName(final String toolName) {
+      this.toolName = toolName;
+      return this;
+    }
+
+    public Builder inboundConnectorType(final String inboundConnectorType) {
+      this.inboundConnectorType = inboundConnectorType;
+      return this;
+    }
+
     public Builder dateTime(final OffsetDateTime dateTime) {
       this.dateTime = dateTime;
       return this;
@@ -164,7 +178,9 @@ public record MessageSubscriptionEntity(
           tenantId,
           processDefinitionName,
           processDefinitionVersion,
-          extensionProperties);
+          extensionProperties,
+          toolName,
+          inboundConnectorType);
     }
   }
 

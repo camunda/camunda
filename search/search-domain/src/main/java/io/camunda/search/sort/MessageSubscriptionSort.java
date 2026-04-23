@@ -92,6 +92,16 @@ public record MessageSubscriptionSort(List<FieldSorting> orderings) implements S
       return this;
     }
 
+    public Builder toolName() {
+      currentOrdering = new FieldSorting("toolName", null);
+      return this;
+    }
+
+    public Builder inboundConnectorType() {
+      currentOrdering = new FieldSorting("inboundConnectorType", null);
+      return this;
+    }
+
     @Override
     protected MessageSubscriptionSort.Builder self() {
       return this;
