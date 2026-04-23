@@ -12669,7 +12669,7 @@
               },
               "expr": "histogram_quantile(0.90, sum(rate(atomix_append_entries_latency_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\", partition=~\"$partition\"}[$__rate_interval]) or rate(atomix_append_entries_latency_seconds_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\", partition=~\"$partition\"}[$__rate_interval])) by (le,partition))",
               "interval": "",
-              "legendFormat": "Median - ({{partition}})",
+              "legendFormat": "p90 - ({{partition}})",
               "refId": "C"
             }
           ],
@@ -12766,7 +12766,7 @@
               },
               "expr": "histogram_quantile(0.99, sum(rate(atomix_append_entries_latency_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\", partition=~\"$partition\"}[$__rate_interval]) or rate(atomix_append_entries_latency_seconds_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\", partition=~\"$partition\"}[$__rate_interval])) by (le,partition))",
               "interval": "",
-              "legendFormat": "Median - ({{partition}})",
+              "legendFormat": "p99 - ({{partition}})",
               "refId": "C"
             }
           ],
@@ -14211,7 +14211,7 @@
               "editorMode": "code",
               "expr": "histogram_quantile(0.90, sum(rate(atomix_journal_flush_time_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\", partition=~\"$partition\"}[$__rate_interval]) or rate(atomix_journal_flush_time_seconds_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\", partition=~\"$partition\"}[$__rate_interval])) by (le,partition))",
               "interval": "",
-              "legendFormat": "Median - ({{partition}})",
+              "legendFormat": "p90 - ({{partition}})",
               "range": true,
               "refId": "C"
             }
@@ -14311,7 +14311,7 @@
               "editorMode": "code",
               "expr": "histogram_quantile(0.99, sum(rate(atomix_journal_flush_time_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\", partition=~\"$partition\"}[$__rate_interval]) or rate(atomix_journal_flush_time_seconds_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\", partition=~\"$partition\"}[$__rate_interval])) by (le,partition))",
               "interval": "",
-              "legendFormat": "Median - ({{partition}})",
+              "legendFormat": "p99 - ({{partition}})",
               "range": true,
               "refId": "C"
             }
@@ -15069,7 +15069,7 @@
               },
               "expr": "histogram_quantile(0.90, sum(rate(atomix_segment_flush_time_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\", partition=~\"$partition\"}[$__rate_interval]) or rate(atomix_segment_flush_time_seconds_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\", partition=~\"$partition\"}[$__rate_interval])) by (le,partition))",
               "interval": "",
-              "legendFormat": "Median - ({{partition}})",
+              "legendFormat": "p90 - ({{partition}})",
               "refId": "C"
             }
           ],
@@ -15167,7 +15167,7 @@
               },
               "expr": "histogram_quantile(0.99, sum(rate(atomix_segment_flush_time_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\", partition=~\"$partition\"}[$__rate_interval]) or rate(atomix_segment_flush_time_seconds_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\", partition=~\"$partition\"}[$__rate_interval])) by (le,partition))",
               "interval": "",
-              "legendFormat": "Median - ({{partition}})",
+              "legendFormat": "p99 - ({{partition}})",
               "refId": "C"
             }
           ],
