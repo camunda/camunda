@@ -207,7 +207,8 @@ final class MessageSubscriptionFromMessageStartEventSubscriptionHandlerTest {
                     List.of(),
                     Map.of(),
                     false,
-                    Map.of(startEventId, extProps))));
+                    Map.of(startEventId, extProps),
+                    Map.of())));
 
     final ImmutableMessageStartEventSubscriptionRecordValue value =
         ImmutableMessageStartEventSubscriptionRecordValue.builder()

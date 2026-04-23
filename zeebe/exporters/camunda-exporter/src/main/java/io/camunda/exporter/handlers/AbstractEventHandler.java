@@ -35,6 +35,7 @@ import static io.camunda.webapps.schema.descriptors.template.MessageSubscription
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.entities.messagesubscription.EventSourceType;
 import io.camunda.webapps.schema.entities.messagesubscription.MessageSubscriptionEntity;
+import io.camunda.webapps.schema.entities.messagesubscription.MessageSubscriptionEntity.InputSpecItem;
 import io.camunda.webapps.schema.entities.messagesubscription.MessageSubscriptionState;
 import io.camunda.zeebe.exporter.common.cache.ExporterEntityCache;
 import io.camunda.zeebe.exporter.common.cache.process.CachedProcessEntity;
@@ -43,6 +44,7 @@ import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import java.time.Instant;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public abstract class AbstractEventHandler<R extends RecordValue>
@@ -151,6 +153,25 @@ public abstract class AbstractEventHandler<R extends RecordValue>
           .setExtensionProperties(ext)
           .setToolName(ProcessCacheUtil.getToolName(ext))
           .setInboundConnectorType(ProcessCacheUtil.getInboundConnectorType(ext));
+
+      final var cachedSpecs =
+          cached
+              .map(CachedProcessEntity::elementInputSpecifications)
+              .map(m -> m.get(elementId))
+              .orElse(List.of());
+      if (!cachedSpecs.isEmpty()) {
+        entity.setInputSpecification(
+            cachedSpecs.stream()
+                .map(
+                    s ->
+                        new InputSpecItem()
+                            .setName(s.name())
+                            .setDescription(s.description())
+                            .setType(s.type())
+                            .setRequired(s.required())
+                            .setSchema(s.schema()))
+                .toList());
+      }
     }
   }
 }
