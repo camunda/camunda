@@ -48,7 +48,7 @@ public class BatchOperationCreatedExportHandler
 
   @Override
   public void export(final Record<BatchOperationCreationRecordValue> record) {
-    batchOperationWriter.createIfNotAlreadyExists(map(record));
+    batchOperationWriter.create(map(record));
     batchOperationCache.put(
         String.valueOf(record.getKey()),
         new CachedBatchOperationEntity(

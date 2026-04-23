@@ -8,7 +8,6 @@
 package io.camunda.db.rdbms.write;
 
 import io.camunda.db.rdbms.config.VendorDatabaseProperties;
-import io.camunda.db.rdbms.read.service.BatchOperationDbReader;
 import io.camunda.db.rdbms.sql.AuditLogMapper;
 import io.camunda.db.rdbms.sql.BatchOperationMapper;
 import io.camunda.db.rdbms.sql.ClusterVariableMapper;
@@ -53,7 +52,6 @@ public class RdbmsWriterFactory {
   private final UserTaskMapper userTaskMapper;
   private final VariableMapper variableMapper;
   private final MeterRegistry meterRegistry;
-  private final BatchOperationDbReader batchOperationReader;
   private final JobMapper jobMapper;
   private final JobMetricsBatchMapper jobMetricsBatchMapper;
   private final SequenceFlowMapper sequenceFlowMapper;
@@ -81,7 +79,6 @@ public class RdbmsWriterFactory {
       final UserTaskMapper userTaskMapper,
       final VariableMapper variableMapper,
       final MeterRegistry meterRegistry,
-      final BatchOperationDbReader batchOperationReader,
       final JobMapper jobMapper,
       final JobMetricsBatchMapper jobMetricsBatchMapper,
       final SequenceFlowMapper sequenceFlowMapper,
@@ -109,7 +106,6 @@ public class RdbmsWriterFactory {
     this.jobMapper = jobMapper;
     this.jobMetricsBatchMapper = jobMetricsBatchMapper;
     this.meterRegistry = meterRegistry;
-    this.batchOperationReader = batchOperationReader;
     this.sequenceFlowMapper = sequenceFlowMapper;
     this.usageMetricMapper = usageMetricMapper;
     this.usageMetricTUMapper = usageMetricTUMapper;
@@ -146,7 +142,6 @@ public class RdbmsWriterFactory {
         userTaskMapper,
         variableMapper,
         vendorDatabaseProperties,
-        batchOperationReader,
         jobMapper,
         jobMetricsBatchMapper,
         sequenceFlowMapper,
