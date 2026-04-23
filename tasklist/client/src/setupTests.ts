@@ -14,6 +14,23 @@ import en from 'modules/i18n/locales/en.json';
 import i18n, {t} from 'i18next';
 import ResizeObserverPolyfill from 'resize-observer-polyfill';
 
+vi.mock('react-i18next', () => ({
+  Trans: ({children}: {children: React.ReactNode}) => children,
+  useTranslation: () => {
+    return {
+      t,
+      i18n: {
+        changeLanguage: () => new Promise<void>(() => {}),
+        resolvedLanguage: 'en',
+      },
+    };
+  },
+  initReactI18next: {
+    type: '3rdParty',
+    init: () => {},
+  },
+}));
+
 function initTestI18next() {
   i18n.init({
     lng: 'en',
@@ -70,23 +87,6 @@ beforeAll(() => {
   nodeMockServer.listen({
     onUnhandledRequest: 'error',
   });
-
-  vi.mock('react-i18next', () => ({
-    Trans: ({children}: {children: React.ReactNode}) => children,
-    useTranslation: () => {
-      return {
-        t,
-        i18n: {
-          changeLanguage: () => new Promise<void>(() => {}),
-          resolvedLanguage: 'en',
-        },
-      };
-    },
-    initReactI18next: {
-      type: '3rdParty',
-      init: () => {},
-    },
-  }));
 
   Object.defineProperty(window, 'localStorage', {
     value: (function () {
