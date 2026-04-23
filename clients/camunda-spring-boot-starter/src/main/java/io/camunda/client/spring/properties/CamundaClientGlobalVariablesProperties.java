@@ -50,8 +50,10 @@ public class CamundaClientGlobalVariablesProperties {
     return "CamundaClientGlobalVariablesProperties{"
         + "enabled="
         + enabled
-        + ", variables="
-        + variables
+        + ", variablesCount="
+        + variables.size()
+        + ", variableKeys="
+        + variables.keySet()
         + '}';
   }
 }

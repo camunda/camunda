@@ -140,7 +140,8 @@ public class AnnotationUtil {
   public static boolean isGlobalVariables(final BeanInfo beanInfo) {
     return beanInfo.hasClassAnnotation(GlobalVariablesContainer.class)
         || beanInfo.hasClassAnnotation(GlobalVariables.class)
-        || beanInfo.hasMethodAnnotation(GlobalVariables.class);
+        || beanInfo.hasMethodAnnotation(GlobalVariables.class)
+        || beanInfo.hasMethodAnnotation(GlobalVariablesContainer.class);
   }
 
   public static List<ResourceGlobalVariablesValue> getGlobalVariablesValuesFromClass(
