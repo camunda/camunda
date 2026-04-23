@@ -55,9 +55,9 @@ on:
   workflow_call:
     inputs:
       issue_number:
-        description: 'Issue number to process'
+        description: 'Issue number to process (must be numeric)'
         required: true
-        type: string
+        type: string # workflow_call only supports string/boolean; GraphQL -F coerces to Int
       repo:
         description: 'Repository name (e.g. web-modeler)'
         required: true
@@ -114,6 +114,12 @@ jobs:
             echo "🔬 DRY RUN MODE - No changes will be made"
           fi
 
+          # Validate issue number is numeric
+          if ! [[ "$ISSUE_NUMBER" =~ ^[0-9]+$ ]]; then
+            echo "❌ Invalid issue number: '$ISSUE_NUMBER' (must be numeric)"
+            exit 1
+          fi
+
           echo "🔍 Fetching issue #${ISSUE_NUMBER} from ${OWNER}/${REPO}"
 
           # Fetch issue labels, type, current org-level urgency, and project memberships
@@ -157,6 +163,11 @@ jobs:
           }
 
           ISSUE_DATA=$(echo "$RESP" | jq -c '.data.repository.issue')
+
+          if [[ "$ISSUE_DATA" == "null" || -z "$ISSUE_DATA" ]]; then
+            echo "❌ Issue #${ISSUE_NUMBER} not found in ${OWNER}/${REPO}"
+            exit 1
+          fi
 
           echo "✅ Fetched issue data"
 
