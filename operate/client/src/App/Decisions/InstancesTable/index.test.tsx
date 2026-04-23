@@ -379,7 +379,7 @@ describe('<InstancesTable />', () => {
     await user.click(firstRowCheckbox!);
 
     expect(screen.getByText('1 item selected')).toBeInTheDocument();
-    expect(screen.getByRole('button', {name: /delete/i})).toBeInTheDocument();
+    expect(screen.getByRole('button', {name: 'Delete'})).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', {name: 'Discard'}));
 

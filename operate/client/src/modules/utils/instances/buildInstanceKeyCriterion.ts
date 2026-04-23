@@ -8,7 +8,7 @@
 
 type IdCriterion = {$in?: string[]; $notIn?: string[]};
 
-const buildProcessInstanceKeyCriterion = (
+const buildInstanceKeyCriterion = (
   includeIds: string[] = [],
   excludeIds: string[] = [],
 ): IdCriterion | undefined => {
@@ -22,4 +22,4 @@ const buildProcessInstanceKeyCriterion = (
   return Object.keys(criterion).length > 0 ? criterion : undefined;
 };
 
-export {buildProcessInstanceKeyCriterion};
+export {buildInstanceKeyCriterion};
