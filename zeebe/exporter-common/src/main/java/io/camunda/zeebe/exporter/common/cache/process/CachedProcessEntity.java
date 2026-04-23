@@ -17,4 +17,5 @@ public record CachedProcessEntity(
     List<String> callElementIds,
     Map<String, String> flowNodesMap,
     boolean hasUserTasks,
-    Map<String, Map<String, String>> elementExtensionProperties) {}
+    Map<String, Map<String, String>> elementExtensionProperties,
+    Map<String, List<CachedInputSpecItem>> elementInputSpecifications) {}
