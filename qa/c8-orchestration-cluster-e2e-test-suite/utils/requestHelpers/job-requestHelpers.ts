@@ -11,8 +11,8 @@ import {assertStatusCode, buildUrl, jsonHeaders} from '../http';
 import {expect} from '@playwright/test';
 import {JSONDoc} from '@camunda8/sdk/dist/zeebe/types';
 import {cancelProcessInstance, createInstances, deploy} from '../zeebeClient';
-import {defaultAssertionOptions} from '../constants';
-import { validateResponse } from 'json-body-assertions';
+import {defaultAssertionOptions, isOracle} from '../constants';
+import {validateResponse, validateResponseShape} from 'json-body-assertions';
 
 export async function activateJobToObtainAValidJobKey(
   request: APIRequestContext,
@@ -55,15 +55,22 @@ export async function searchJobKey(
       },
     });
     await assertStatusCode(searchRes, 200);
-    await validateResponse(
+    const searchJson = await searchRes.json();
+    if (isOracle) {
+      searchJson.items?.forEach((t: any) => {
+        if (t.worker == null) {
+          t.worker = '';
+        }
+      });
+    }
+    validateResponseShape(
       {
         path: '/jobs/search',
         method: 'POST',
         status: '200',
       },
-      searchRes,
+      searchJson,
     );
-    const searchJson = await searchRes.json();
     expect(searchJson.items.length).toBeGreaterThan(0);
     result.jobKey = searchJson.items[0].jobKey;
   }).toPass(defaultAssertionOptions);

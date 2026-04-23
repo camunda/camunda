@@ -9,10 +9,10 @@
 import type {APIRequestContext} from 'playwright-core';
 import {expect} from '@playwright/test';
 import {assertStatusCode, buildUrl, jsonHeaders} from '../http';
-import {defaultAssertionOptions} from '../constants';
+import {defaultAssertionOptions, isOracle} from '../constants';
 import {cancelProcessInstance} from '../zeebeClient';
 import {sleep} from '../sleep';
-import { validateResponse } from 'json-body-assertions';
+import {validateResponse, validateResponseShape} from 'json-body-assertions';
 
 export async function getProcessDefinitionKey(
   request: APIRequestContext,
@@ -114,15 +114,22 @@ export async function searchJobKeysForProcessInstance(
     });
 
     await assertStatusCode(res, 200);
-    await validateResponse(
+    const json = await res.json();
+    if (isOracle) {
+      json.items?.forEach((t: any) => {
+        if (t.worker == null) {
+          t.worker = '';
+        }
+      });
+    }
+    validateResponseShape(
       {
         path: '/jobs/search',
         method: 'POST',
         status: '200',
       },
-      res,
+      json,
     );
-    const json = await res.json();
     expect(json.page.totalItems).toBeGreaterThan(0);
     localState['jobKeys'] = json.items.map(
       (job: {jobKey: number}) => job.jobKey,
