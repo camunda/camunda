@@ -18,7 +18,6 @@ import io.camunda.client.api.response.ProcessInstanceEvent;
 import io.camunda.client.api.search.response.ProcessInstance;
 import io.camunda.client.api.search.response.SearchResponse;
 import io.camunda.client.api.search.sort.ProcessInstanceSort;
-import io.camunda.client.impl.CamundaClientBuilderImpl;
 import io.camunda.zeebe.config.LoadTesterProperties;
 import io.camunda.zeebe.config.StarterProperties;
 import io.camunda.zeebe.metrics.ConnectionMonitor;
@@ -100,7 +99,7 @@ public class Starter implements CommandLineRunner {
     this.registry = registry;
     this.payloadReader = payloadReader;
     this.connectionMonitor = connectionMonitor;
-    processStartingSemaphore = new Semaphore(maxProcessStartingConcurrency());
+    processStartingSemaphore = new Semaphore(starterCfg.getProcessStarterConcurrency());
   }
 
   @Override
@@ -333,10 +332,6 @@ public class Starter implements CommandLineRunner {
       LOG.error("Failed to parse variables '{}'.", variablesString, e);
       throw new RuntimeException(e);
     }
-  }
-
-  private int maxProcessStartingConcurrency() {
-    return CamundaClientBuilderImpl.DEFAULT_MAX_HTTP_CONNECTIONS;
   }
 
   private void deployProcess() {

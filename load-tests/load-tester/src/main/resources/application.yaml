@@ -45,6 +45,7 @@ camunda:
     use-client-side-load-balancing: true
     # Since the starter doesn't need any job worker execution threads
     execution-threads: 0
+    max-http-connections: 105 # more than process-starter-concurrency to allow for monitoring availability calls
     auth:
       method: ${ZEEBE_AUTH_METHOD:none}
       username: ${ZEEBE_AUTH_USERNAME:demo}
@@ -91,6 +92,7 @@ load-tester:
     duration-limit: ${LOAD_TESTER_STARTER_DURATION_LIMIT:0}
     msg-name: msg
     start-via-message: false
+    process-starter-concurrency: 100 # less than the number of http connections to avoid saturating the pool and causing timeouts
   # Worker-specific properties consumed by Worker.java.
   # These control what the job handler does (completion delay, message publishing, payload).
   # Connection properties (type, name, threads, capacity, polling, streaming, timeout)

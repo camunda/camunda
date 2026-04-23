@@ -16,6 +16,7 @@ public class StarterProperties {
   private String processId = "benchmark";
   private double rate = 300;
   private Duration rateDuration = Duration.ofSeconds(1);
+  private int processStarterConcurrency = 100;
   private int threads = 2;
   private String bpmnXmlPath = "bpmn/one_task.bpmn";
   private List<String> extraBpmnModels = List.of();
@@ -53,6 +54,14 @@ public class StarterProperties {
 
   public double getRatePerSecond() {
     return rate / (rateDuration.toNanos() / 1_000_000_000.0);
+  }
+
+  public int getProcessStarterConcurrency() {
+    return processStarterConcurrency;
+  }
+
+  public void setProcessStarterConcurrency(final int processStarterConcurrency) {
+    this.processStarterConcurrency = processStarterConcurrency;
   }
 
   public int getThreads() {
