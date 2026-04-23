@@ -72,6 +72,7 @@ import io.camunda.gateway.protocol.model.IncidentProcessInstanceStatisticsByErro
 import io.camunda.gateway.protocol.model.IncidentResult;
 import io.camunda.gateway.protocol.model.IncidentSearchQueryResult;
 import io.camunda.gateway.protocol.model.IncidentStateEnum;
+import io.camunda.gateway.protocol.model.InputSpecItem;
 import io.camunda.gateway.protocol.model.JobErrorStatisticsItem;
 import io.camunda.gateway.protocol.model.JobErrorStatisticsQueryResult;
 import io.camunda.gateway.protocol.model.JobKindEnum;
@@ -1070,7 +1071,22 @@ public final class SearchQueryResponseMapper {
         .processDefinitionVersion(messageSubscription.processDefinitionVersion())
         .extensionProperties(messageSubscription.extensionProperties())
         .toolName(messageSubscription.toolName())
-        .inboundConnectorType(messageSubscription.inboundConnectorType());
+        .inboundConnectorType(messageSubscription.inboundConnectorType())
+        .inputSpecification(toInputSpecItems(messageSubscription.inputSpecification()));
+  }
+
+  private static List<InputSpecItem> toInputSpecItems(
+      final List<io.camunda.search.entities.MessageSubscriptionEntity.InputSpecItem> items) {
+    return items.stream()
+        .map(
+            i ->
+                new InputSpecItem()
+                    .name(i.name())
+                    .description(i.description())
+                    .type(i.type())
+                    .required(i.required())
+                    .schema(i.schema()))
+        .toList();
   }
 
   private static List<CorrelatedMessageSubscriptionResult> toCorrelatedMessageSubscriptions(
