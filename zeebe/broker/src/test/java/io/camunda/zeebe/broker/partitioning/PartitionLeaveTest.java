@@ -32,8 +32,10 @@ import java.util.function.Consumer;
 import org.assertj.core.api.Assertions;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.io.TempDir;
 
+@Timeout(120)
 final class PartitionLeaveTest {
   private static final MeterRegistry METER_REGISTRY = new SimpleMeterRegistry();
 
