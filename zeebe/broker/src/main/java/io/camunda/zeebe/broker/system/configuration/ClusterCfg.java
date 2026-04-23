@@ -59,6 +59,7 @@ public final class ClusterCfg implements ConfigurationEntry {
   private RaftCfg raft = new RaftCfg();
   private CompressionAlgorithm messageCompression = CompressionAlgorithm.NONE;
   private ConfigManagerCfg configManager = ConfigManagerCfg.defaultConfig();
+  private String zone;
 
   @Override
   public void init(final BrokerCfg globalConfig, final String brokerBase) {
@@ -212,6 +213,14 @@ public final class ClusterCfg implements ConfigurationEntry {
     configManager = configManagerCfg;
   }
 
+  public String getZone() {
+    return zone;
+  }
+
+  public void setZone(final String zone) {
+    this.zone = zone;
+  }
+
   @Override
   public int hashCode() {
     return Objects.hash(
@@ -227,7 +236,8 @@ public final class ClusterCfg implements ConfigurationEntry {
         membership,
         raft,
         messageCompression,
-        configManager);
+        configManager,
+        zone);
   }
 
   @Override
@@ -251,7 +261,8 @@ public final class ClusterCfg implements ConfigurationEntry {
         && Objects.equals(membership, that.membership)
         && Objects.equals(raft, that.raft)
         && messageCompression == that.messageCompression
-        && Objects.equals(configManager, that.configManager);
+        && Objects.equals(configManager, that.configManager)
+        && Objects.equals(zone, that.zone);
   }
 
   @Override
@@ -284,6 +295,9 @@ public final class ClusterCfg implements ConfigurationEntry {
         + messageCompression
         + ", configManagerCfg="
         + configManager
+        + ", zone='"
+        + zone
+        + '\''
         + '}';
   }
 

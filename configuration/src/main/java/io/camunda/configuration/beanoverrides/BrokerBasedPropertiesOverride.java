@@ -410,6 +410,7 @@ public class BrokerBasedPropertiesOverride {
     override.getCluster().setClusterSize(cluster.getSize());
     override.getCluster().setClusterName(cluster.getName());
     override.getCluster().setClusterId(cluster.getClusterId());
+    override.getCluster().setZone(cluster.getZone());
 
     populateFromMembership(override);
     populateFromRaftProperties(override);
