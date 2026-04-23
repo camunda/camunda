@@ -25,8 +25,8 @@
       "description": "Properties for automatic deployment at startup."
     },
     {
-      "name": "camunda.client.global-variables",
-      "description": "Properties for setting global cluster variables at startup."
+      "name": "camunda.client.cluster-variables",
+      "description": "Properties for setting cluster variables at startup."
     },
     {
       "name": "camunda.client.worker.defaults",

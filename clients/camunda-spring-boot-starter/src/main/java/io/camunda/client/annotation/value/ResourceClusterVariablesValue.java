@@ -15,21 +15,20 @@
  */
 package io.camunda.client.annotation.value;
 
+import java.util.List;
 import java.util.Objects;
-import java.util.function.Supplier;
 
-public final class MethodGlobalVariablesValue implements GlobalVariablesValue {
-  private final Supplier<Object> variableSupplier;
+public final class ResourceClusterVariablesValue implements ClusterVariablesValue {
+  private final List<String> resources;
   private final String tenantId;
 
-  public MethodGlobalVariablesValue(
-      final Supplier<Object> variableSupplier, final String tenantId) {
-    this.variableSupplier = variableSupplier;
+  public ResourceClusterVariablesValue(final List<String> resources, final String tenantId) {
+    this.resources = resources;
     this.tenantId = tenantId;
   }
 
-  public Supplier<Object> getVariableSupplier() {
-    return variableSupplier;
+  public List<String> getResources() {
+    return resources;
   }
 
   @Override
@@ -39,7 +38,7 @@ public final class MethodGlobalVariablesValue implements GlobalVariablesValue {
 
   @Override
   public int hashCode() {
-    return Objects.hash(variableSupplier, tenantId);
+    return Objects.hash(resources, tenantId);
   }
 
   @Override
@@ -47,13 +46,18 @@ public final class MethodGlobalVariablesValue implements GlobalVariablesValue {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    final MethodGlobalVariablesValue that = (MethodGlobalVariablesValue) o;
-    return Objects.equals(variableSupplier, that.variableSupplier)
-        && Objects.equals(tenantId, that.tenantId);
+    final ResourceClusterVariablesValue that = (ResourceClusterVariablesValue) o;
+    return Objects.equals(resources, that.resources) && Objects.equals(tenantId, that.tenantId);
   }
 
   @Override
   public String toString() {
-    return "MethodGlobalVariablesValue{" + "tenantId='" + tenantId + '\'' + '}';
+    return "ResourceClusterVariablesValue{"
+        + "resources="
+        + resources
+        + ", tenantId='"
+        + tenantId
+        + '\''
+        + '}';
   }
 }
