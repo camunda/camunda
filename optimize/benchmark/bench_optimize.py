@@ -420,14 +420,14 @@ def make_session(
 
     # ── Strategy 1: bare token provided by caller ──────────────────────────
     if token:
-        session.cookies.set("X-Optimize-Authorization_0", token)
+        _set_auth_cookie(session, token, optimize_url)
         print("[auth] Using supplied token")
         return session
 
     # ── Strategy 2: Keycloak password grant ───────────────────────────────
     if keycloak_url:
         token = _keycloak_token(keycloak_url, username, password)
-        _set_auth_cookie(session, token)
+        _set_auth_cookie(session, token, optimize_url)
         print(f"[auth] Keycloak token obtained for {username}")
         return session
 
@@ -476,17 +476,38 @@ def _keycloak_token(token_url: str, username: str, password: str) -> str:
     return resp.json()["access_token"]
 
 
-def _set_auth_cookie(session: requests.Session, token: str):
+def _set_auth_cookie(session: requests.Session, token: str, optimize_url: str = ""):
     """
     Chunk the token into ≤4096-byte cookies matching Optimize's naming scheme:
     X-Optimize-Authorization_0, X-Optimize-Authorization_1, …
+
+    The domain must be set explicitly — requests won't send cookies that have
+    no domain attached, causing silent 403s on every request.
     """
+    from urllib.parse import urlparse
+    domain = urlparse(optimize_url).hostname or "localhost" if optimize_url else "localhost"
     chunk = 4096
     for i, start in enumerate(range(0, len(token), chunk)):
         session.cookies.set(
             f"X-Optimize-Authorization_{i}",
             token[start : start + chunk],
+            domain=domain,
+            path="/",
         )
+
+
+def _check_auth(optimize_url: str, session: requests.Session):
+    """Make one cheap request to verify auth is working before the full run."""
+    resp = session.get(f"{optimize_url}/api/collection", timeout=10)
+    if resp.status_code == 403:
+        print(
+            "[ERROR] Auth check failed (403) — cookie is not being accepted.\n"
+            "Make sure you are using --keycloak-url (not --token) so tokens\n"
+            "are fetched fresh automatically.",
+            file=sys.stderr,
+        )
+        sys.exit(1)
+    print(f"[auth] Pre-flight check passed (status {resp.status_code})")
 
 
 # ── Report payload builder ────────────────────────────────────────────────────
@@ -909,6 +930,7 @@ def run(args):
         report_ids: dict = json.loads(ids_file.read_text())
         rows = load_csv(csv_path)
         session = make_session(optimize_url, username, password, args.keycloak_url, args.token)
+        _check_auth(optimize_url, session)
 
         total = len(PLANS) * len(datasets)
         done  = 0
