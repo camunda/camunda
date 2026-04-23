@@ -52,6 +52,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
+import org.awaitility.Awaitility;
 import org.junit.jupiter.api.extension.AfterAllCallback;
 import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.BeforeAllCallback;
@@ -169,7 +170,7 @@ public class CamundaProcessTestExtension
     runtime = runtimeBuilder.build();
     runtime.start();
 
-    camundaManagementClient = createManagementClient(runtimeBuilder);
+    camundaManagementClient = createManagementClient();
 
     camundaProcessTestContext =
         new CamundaProcessTestContextImpl(
@@ -201,9 +202,23 @@ public class CamundaProcessTestExtension
     initializeSemanticSimilarityConfig();
   }
 
-  private CamundaManagementClient createManagementClient(
-      final CamundaProcessTestRuntimeBuilder runtimeBuilder) {
+  private CamundaManagementClient createManagementClient() {
     return CamundaManagementClient.createClient(runtime.getCamundaMonitoringApiAddress());
+  }
+
+  private void waitForClusterReady() {
+    Awaitility.await("Wait for cluster to be ready")
+        .atMost(Duration.ofSeconds(10))
+        .pollInterval(Duration.ofMillis(500))
+        .ignoreExceptions()
+        .until(
+            () -> {
+              try (final CamundaClient camundaClient =
+                  runtime.getCamundaClientBuilderFactory().get().build()) {
+                camundaClient.newTopologyRequest().send().join();
+                return true;
+              }
+            });
   }
 
   private void initializeJsonMapper(final JsonMapper jsonMapper) {
@@ -297,8 +312,8 @@ public class CamundaProcessTestExtension
               + "Make sure that you registering the extension on a static field.");
     }
 
-    // wait until the cluster is ready (e.g. after a purge the cluster may still be recovering)
-    camundaManagementClient.waitForClusterReady();
+    // wait until the cluster is ready to accept new operations, retrying until success or timeout
+    waitForClusterReady();
 
     // inject fields
     try {
