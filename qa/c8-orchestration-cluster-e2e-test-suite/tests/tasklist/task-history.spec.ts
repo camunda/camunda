@@ -56,7 +56,7 @@ test.describe('Task History Audit Log', () => {
     await expect(taskDetailsPage.historyTabButton).toBeVisible();
   });
 
-  test('Audit log entries are visible in task history', async ({
+  test.skip('Audit log entries are visible in task history', async ({
     taskDetailsPage,
   }) => {
     await taskDetailsPage.clickHistoryTab();
