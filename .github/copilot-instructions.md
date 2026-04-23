@@ -131,7 +131,11 @@ Types: `build`, `ci`, `deps`, `docs`, `feat`, `fix`, `merge`, `perf`, `refactor`
 
 ## Before Submitting
 
-1. Format code: `./mvnw license:format spotless:apply -T1C`
+Always run these steps before every commit — never skip them, even for "obvious" or single-line
+changes. Skipping formatting reliably breaks the `Java checks` CI job.
+
+1. Format code: `./mvnw license:format spotless:apply -T1C` — **mandatory** before every commit
+   that touches Java sources, markdown or `pom.xml` files. Run it again after any subsequent edit.
 2. Build the changed module (see "Module-scoped builds" above for commands)
 3. Run module tests and verify zero failures
 4. Commit with conventional commit format
