@@ -359,4 +359,23 @@ public class DataBackupGcsTest {
           .isEqualTo(100);
     }
   }
+
+  @Nested
+  @TestPropertySource(
+      properties = {
+        "camunda.data.primary-storage.backup.gcs.bucket-name=test-bucket",
+        "camunda.data.primary-storage.backup.gcs.buffer-size=4194304",
+      })
+  class WithCustomBufferSize {
+    final BrokerBasedProperties brokerCfg;
+
+    WithCustomBufferSize(@Autowired final BrokerBasedProperties brokerCfg) {
+      this.brokerCfg = brokerCfg;
+    }
+
+    @Test
+    void shouldSetBufferSize() {
+      assertThat(brokerCfg.getData().getBackup().getGcs().getBufferSize()).isEqualTo(4194304);
+    }
+  }
 }
