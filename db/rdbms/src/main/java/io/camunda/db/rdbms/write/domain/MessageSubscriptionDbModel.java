@@ -34,6 +34,8 @@ public class MessageSubscriptionDbModel implements Copyable<MessageSubscriptionD
   private Integer processDefinitionVersion;
   private String serializedExtensionProperties;
   private Map<String, String> extensionProperties;
+  private String toolName;
+  private String inboundConnectorType;
 
   public MessageSubscriptionDbModel(final Long messageSubscriptionKey) {
     this.messageSubscriptionKey = messageSubscriptionKey;
@@ -56,7 +58,9 @@ public class MessageSubscriptionDbModel implements Copyable<MessageSubscriptionD
       final int partitionId,
       final String processDefinitionName,
       final Integer processDefinitionVersion,
-      final Map<String, String> extensionProperties) {
+      final Map<String, String> extensionProperties,
+      final String toolName,
+      final String inboundConnectorType) {
     this.messageSubscriptionKey = messageSubscriptionKey;
     this.processDefinitionId = processDefinitionId;
     this.processDefinitionKey = processDefinitionKey;
@@ -75,6 +79,8 @@ public class MessageSubscriptionDbModel implements Copyable<MessageSubscriptionD
     this.processDefinitionVersion = processDefinitionVersion;
     serializedExtensionProperties = MapSerializer.serialize(extensionProperties);
     this.extensionProperties = extensionProperties;
+    this.toolName = toolName;
+    this.inboundConnectorType = inboundConnectorType;
   }
 
   public Long messageSubscriptionKey() {
@@ -178,6 +184,22 @@ public class MessageSubscriptionDbModel implements Copyable<MessageSubscriptionD
     return extensionProperties;
   }
 
+  public String toolName() {
+    return toolName;
+  }
+
+  public void toolName(final String toolName) {
+    this.toolName = toolName;
+  }
+
+  public String inboundConnectorType() {
+    return inboundConnectorType;
+  }
+
+  public void inboundConnectorType(final String inboundConnectorType) {
+    this.inboundConnectorType = inboundConnectorType;
+  }
+
   public OffsetDateTime dateTime() {
     return dateTime;
   }
@@ -245,7 +267,9 @@ public class MessageSubscriptionDbModel implements Copyable<MessageSubscriptionD
         .partitionId(partitionId)
         .processDefinitionName(processDefinitionName)
         .processDefinitionVersion(processDefinitionVersion)
-        .extensionProperties(extensionProperties);
+        .extensionProperties(extensionProperties)
+        .toolName(toolName)
+        .inboundConnectorType(inboundConnectorType);
   }
 
   public static class Builder implements ObjectBuilder<MessageSubscriptionDbModel> {
@@ -266,6 +290,8 @@ public class MessageSubscriptionDbModel implements Copyable<MessageSubscriptionD
     private String processDefinitionName;
     private Integer processDefinitionVersion;
     private Map<String, String> extensionProperties;
+    private String toolName;
+    private String inboundConnectorType;
 
     public Builder messageSubscriptionKey(final Long messageSubscriptionKey) {
       this.messageSubscriptionKey = messageSubscriptionKey;
@@ -328,6 +354,16 @@ public class MessageSubscriptionDbModel implements Copyable<MessageSubscriptionD
       return this;
     }
 
+    public Builder toolName(final String toolName) {
+      this.toolName = toolName;
+      return this;
+    }
+
+    public Builder inboundConnectorType(final String inboundConnectorType) {
+      this.inboundConnectorType = inboundConnectorType;
+      return this;
+    }
+
     public Builder dateTime(final OffsetDateTime dateTime) {
       this.dateTime = dateTime;
       return this;
@@ -372,7 +408,9 @@ public class MessageSubscriptionDbModel implements Copyable<MessageSubscriptionD
           partitionId,
           processDefinitionName,
           processDefinitionVersion,
-          extensionProperties);
+          extensionProperties,
+          toolName,
+          inboundConnectorType);
     }
   }
 }
