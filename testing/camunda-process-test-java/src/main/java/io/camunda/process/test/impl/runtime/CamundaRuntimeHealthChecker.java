@@ -22,6 +22,7 @@ import io.camunda.client.api.response.Topology;
 import io.camunda.process.test.api.CamundaClientBuilderFactory;
 import java.time.Duration;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicReference;
 import org.awaitility.Awaitility;
 import org.awaitility.core.ConditionTimeoutException;
 
@@ -39,10 +40,11 @@ public class CamundaRuntimeHealthChecker {
    * not become ready within the timeout.
    *
    * @param camundaClientBuilderFactory factory used to create a short-lived {@link CamundaClient}
+   * @return the cluster {@link Topology} once ready
    */
-  public static void waitUntilClusterReady(
+  public static Topology waitUntilClusterReady(
       final CamundaClientBuilderFactory camundaClientBuilderFactory) {
-    waitUntilClusterReady(camundaClientBuilderFactory, DEFAULT_TIMEOUT);
+    return waitUntilClusterReady(camundaClientBuilderFactory, DEFAULT_TIMEOUT);
   }
 
   /**
@@ -51,26 +53,31 @@ public class CamundaRuntimeHealthChecker {
    *
    * @param camundaClientBuilderFactory factory used to create a short-lived {@link CamundaClient}
    * @param timeout maximum time to wait
+   * @return the cluster {@link Topology} once ready
    */
-  public static void waitUntilClusterReady(
+  public static Topology waitUntilClusterReady(
       final CamundaClientBuilderFactory camundaClientBuilderFactory, final Duration timeout) {
+    final AtomicReference<Topology> topologyRef = new AtomicReference<>();
     try {
       Awaitility.await("Wait for cluster to be ready")
           .atMost(timeout)
-          .pollInterval(Duration.ofMillis(500))
+          .pollInterval(Duration.ofSeconds(1))
           .pollDelay(Duration.ZERO)
           .ignoreExceptions()
-          .untilAsserted(() -> checkClusterHealth(camundaClientBuilderFactory));
+          .untilAsserted(() -> topologyRef.set(checkClusterHealth(camundaClientBuilderFactory)));
     } catch (final ConditionTimeoutException e) {
       throw new RuntimeException(
           Optional.ofNullable(e.getCause())
               .map(Throwable::getMessage)
-              .orElse("Cluster did not become ready within the timeout."),
+              .orElse(
+                  String.format(
+                      "Cluster did not become ready within %s seconds.", timeout.getSeconds())),
           e);
     }
+    return topologyRef.get();
   }
 
-  private static void checkClusterHealth(
+  private static Topology checkClusterHealth(
       final CamundaClientBuilderFactory camundaClientBuilderFactory) {
     try (final CamundaClient camundaClient = camundaClientBuilderFactory.get().build()) {
       final Topology topology = camundaClient.newTopologyRequest().send().join();
@@ -95,6 +102,7 @@ public class CamundaRuntimeHealthChecker {
         throw new IllegalStateException(
             String.format("Cluster is unhealthy. [topology: %s]", topology));
       }
+      return topology;
     }
   }
 }
