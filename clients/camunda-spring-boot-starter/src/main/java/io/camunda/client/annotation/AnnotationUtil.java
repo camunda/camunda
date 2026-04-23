@@ -153,12 +153,12 @@ public class AnnotationUtil {
         .ifPresent(
             container -> {
               for (final GlobalVariables annotation : container.value()) {
-                values.add(fromGlobalVariablesAnnotation(annotation));
+                values.add(fromGlobalVariablesAnnotation(annotation, null));
               }
             });
     beanInfo
         .getAnnotation(GlobalVariables.class)
-        .ifPresent(annotation -> values.add(fromGlobalVariablesAnnotation(annotation)));
+        .ifPresent(annotation -> values.add(fromGlobalVariablesAnnotation(annotation, null)));
     return values;
   }
 
@@ -171,25 +171,21 @@ public class AnnotationUtil {
     }
     final List<GlobalVariablesValue> values = new ArrayList<>();
     for (final GlobalVariables annotation : annotations) {
-      final String resolvedTenantId =
-          StringUtils.isEmpty(annotation.tenantId()) ? null : annotation.tenantId();
       if (annotation.resources().length > 0) {
-        values.add(
-            new GlobalVariablesValue(
-                Arrays.asList(annotation.resources()), resolvedTenantId, null));
+        values.add(fromGlobalVariablesAnnotation(annotation, null));
       } else {
-        values.add(new GlobalVariablesValue(Collections.emptyList(), resolvedTenantId, methodInfo));
+        values.add(fromGlobalVariablesAnnotation(annotation, methodInfo));
       }
     }
     return values;
   }
 
   private static GlobalVariablesValue fromGlobalVariablesAnnotation(
-      final GlobalVariables annotation) {
+      final GlobalVariables annotation, final MethodInfo methodInfo) {
     return new GlobalVariablesValue(
         Arrays.asList(annotation.resources()),
         StringUtils.isEmpty(annotation.tenantId()) ? null : annotation.tenantId(),
-        null);
+        methodInfo);
   }
 
   public static boolean isJobWorker(final BeanInfo beanInfo) {
