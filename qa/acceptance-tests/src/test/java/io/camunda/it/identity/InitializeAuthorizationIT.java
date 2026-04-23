@@ -59,7 +59,7 @@ class InitializeAuthorizationIT {
           .withAuthorizationsEnabled()
           .withSecurityConfig(
               conf -> {
-                conf.getInitialization().setAuthorizations(List.of(CONFIGURED_AUTH_1));
+                conf.getInitialization().getAuthorizations().add(CONFIGURED_AUTH_1);
                 conf.getInitialization().getUsers().add(RESTRICTED_USER);
               });
 

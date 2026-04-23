@@ -81,7 +81,7 @@ class InitializeEntityRelationsIT {
           .withAuthorizationsEnabled()
           .withSecurityConfig(
               conf -> {
-                conf.getInitialization().setGroups(List.of(CONFIGURED_GROUP_1));
+                conf.getInitialization().getGroups().add(CONFIGURED_GROUP_1);
                 conf.getInitialization().getUsers().add(CONFIGURED_USER);
                 conf.getInitialization().getRoles().add(CONFIGURED_ROLE_1);
                 conf.getInitialization().getTenants().add(CONFIGURED_TENANT_1);

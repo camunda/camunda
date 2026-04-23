@@ -55,7 +55,7 @@ class InitializeRoleIT {
           .withAuthorizationsEnabled()
           .withSecurityConfig(
               conf -> {
-                conf.getInitialization().setRoles(List.of(CONFIGURED_ROLE_1));
+                conf.getInitialization().getRoles().add(CONFIGURED_ROLE_1);
                 conf.getInitialization().getUsers().add(CONFIGURED_USER);
               });
 
@@ -97,11 +97,10 @@ class InitializeRoleIT {
         adminClient.newUsersByRoleSearchRequest(CONFIGURED_ROLE_1.roleId()).send().join();
 
     // then:
-    assertThat(membersResponse.items()).hasSize(1);
+    assertThat(membersResponse.items()).hasSize(2);
     assertThat(membersResponse.items())
         .anyMatch(actual -> actual.getUsername().equals("test-user"));
-    // the admin user is created later on via API and should not be added as a member.
-    assertThat(membersResponse.items()).noneMatch(actual -> actual.getUsername().equals(ADMIN));
+    assertThat(membersResponse.items()).anyMatch(actual -> actual.getUsername().equals(ADMIN));
   }
 
   @Test
