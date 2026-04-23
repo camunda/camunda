@@ -92,7 +92,6 @@ const getCurlCommandTextForProcessDefinition = async (page: Page) => {
   await expect(executeButton).toBeVisible({timeout: 10_000});
   await executeButton.click();
 
-  // Validate the generated curl command does not include a CSRF header.
   const curlCommand = processDefinitionOperation.locator(
     '.responses-wrapper .curl-command pre.curl code.language-bash',
   );
