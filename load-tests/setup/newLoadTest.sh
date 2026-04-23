@@ -7,7 +7,7 @@ set -exo pipefail
 
 usage() {
   cat <<'EOF'
-Usage: newBenchmark.sh <namespace> [secondaryStorage] [ttl_days] [enable_optimize] [enable_single_zone]
+Usage: newLoadTest.sh <namespace> [secondaryStorage] [ttl_days] [enable_optimize] [enable_single_zone]
 
 Arguments:
   namespace          Base namespace name. Will be prefixed with "c8-" if missing.
@@ -20,8 +20,8 @@ Options:
   -h, --help         Show this help message.
 
 Examples:
-  ./newBenchmark.sh demo
-  ./newBenchmark.sh perf opensearch 3 true
+  ./newLoadTest.sh demo
+  ./newLoadTest.sh perf opensearch 3 true
 
 EOF
 }
