@@ -103,10 +103,7 @@ public record GcsBackupConfig(
 
     public GcsBackupConfig build() {
       return new GcsBackupConfig(
-          bucketName,
-          basePath,
-          new GcsConnectionConfig(host, auth),
-          bufferSize);
+          bucketName, basePath, new GcsConnectionConfig(host, auth), bufferSize);
     }
   }
 }
