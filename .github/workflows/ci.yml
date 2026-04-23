@@ -1497,6 +1497,7 @@ jobs:
       - docker-checks
       - general-unit-tests
       - history-tests
+      - identity-frontend-sbom-snyk
       - identity-frontend-tests
       - identity-tests
       - integration-tests
