@@ -40,6 +40,7 @@
     <module>testing/camunda-process-test-example</module>
     <module>document</module>
     <module>debug-cli</module>
+    <module>load-tests/load-tester</module>
   </modules>
 
   <scm>
