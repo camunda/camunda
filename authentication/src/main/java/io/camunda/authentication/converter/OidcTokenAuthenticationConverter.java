@@ -34,7 +34,7 @@ public class OidcTokenAuthenticationConverter
     return Optional.of(authentication)
         .map(AbstractOAuth2TokenAuthenticationToken.class::cast)
         .map(AbstractOAuth2TokenAuthenticationToken::getTokenAttributes)
-        .map(tokenClaimsConverter::convert)
+        .map(tokenClaimsConverter::convertLazy)
         .orElseThrow(
             () ->
                 new IllegalStateException(

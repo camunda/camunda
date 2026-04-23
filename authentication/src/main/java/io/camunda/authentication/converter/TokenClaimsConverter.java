@@ -36,6 +36,11 @@ public class TokenClaimsConverter {
     oidcPrincipalLoader = new OidcPrincipalLoader(usernameClaim, clientIdClaim);
   }
 
+  /**
+   * Converts token claims to a {@link CamundaAuthentication} with memberships resolved eagerly.
+   * Use this for session-based authentication (browser OIDC flows) where the full auth must be
+   * available before the HTTP session is persisted.
+   */
   public CamundaAuthentication convert(final Map<String, Object> tokenClaims) {
     final var principals = oidcPrincipalLoader.load(tokenClaims);
     final var username = principals.username();
@@ -60,5 +65,60 @@ public class TokenClaimsConverter {
     }
 
     return membershipService.resolveMemberships(tokenClaims, principalName, principalType);
+  }
+
+  /**
+   * Converts token claims to a {@link CamundaAuthentication} with memberships deferred until first
+   * access. Use this for M2M bearer-token authentication where the same token is reused across many
+   * requests and membership data (groups, roles, tenants, mapping rules) may never be needed (e.g.
+   * on broker-only paths with authorization disabled).
+   *
+   * <p>The four secondary-storage queries are triggered on the first call to any of
+   * {@code authenticatedGroupIds()}, {@code authenticatedRoleIds()},
+   * {@code authenticatedTenantIds()}, or {@code authenticatedMappingRuleIds()}.
+   */
+  public CamundaAuthentication convertLazy(final Map<String, Object> tokenClaims) {
+    final var principals = oidcPrincipalLoader.load(tokenClaims);
+    final var username = principals.username();
+    final var clientId = principals.clientId();
+
+    if (username == null && clientId == null) {
+      throw new OAuth2AuthenticationException(
+          new OAuth2Error(OAuth2ErrorCodes.INVALID_CLIENT),
+          "Neither username claim (%s) nor clientId claim (%s) could be found in the claims. Please check your OIDC configuration."
+              .formatted(usernameClaim, clientIdClaim));
+    }
+
+    final String principalName;
+    final PrincipalType principalType;
+
+    if ((preferUsernameClaim && username != null) || clientId == null) {
+      principalName = username;
+      principalType = PrincipalType.USER;
+    } else {
+      principalName = clientId;
+      principalType = PrincipalType.CLIENT;
+    }
+
+    return CamundaAuthentication.of(
+        b -> {
+          if (principalType == PrincipalType.CLIENT) {
+            b.clientId(principalName);
+          } else {
+            b.user(principalName);
+          }
+          return b.claims(tokenClaims)
+              .lazyMemberships(
+                  () -> {
+                    final CamundaAuthentication full =
+                        membershipService.resolveMemberships(
+                            tokenClaims, principalName, principalType);
+                    return new CamundaAuthentication.MembershipData(
+                        full.authenticatedGroupIds(),
+                        full.authenticatedRoleIds(),
+                        full.authenticatedTenantIds(),
+                        full.authenticatedMappingRuleIds());
+                  });
+        });
   }
 }
