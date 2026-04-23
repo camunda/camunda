@@ -1,0 +1,480 @@
+# Unified CI for Tasklist. Runs backend unit tests, front end unit tests, backup restore tests on ES and OS, and docker tests
+# test location: /tasklist, tasklist/qa/backup-restore-tests, tasklist/qa/integration-tests
+# called by: ci.yml
+# type: CI
+# owner: @camunda/core-features
+name: Tasklist CI
+
+on:
+  workflow_dispatch:
+    inputs:
+      runFeTests:
+        description: "Set to true to run front end tests for Tasklist"
+        type: boolean
+        required: true
+      runBeTests:
+        description: "Set to true to run back end tests for Tasklist"
+        type: boolean
+        required: true
+  workflow_call:
+    inputs:
+      runFeTests:
+        description: "Set to true if Tasklist front-end code was changed"
+        type: boolean
+        required: true
+      runBeTests:
+        description: "Set to true if Tasklist back-end code was changed"
+        type: boolean
+        required: true
+
+defaults:
+  run:
+    # use bash shell by default to ensure pipefail behavior is the default
+    # see https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#exit-codes-and-error-action-preference
+    shell: bash
+
+env:
+  GHA_BEST_PRACTICES_LINTER: enabled
+  TEST_PRODUCT: Tasklist
+
+jobs:
+  # run this test every time the workflow is triggered
+  tasklist-backend-unit-tests:
+    name: "Unit"
+    uses: ./.github/workflows/ci-webapp-run-ut-reuseable.yml
+    permissions: { }  # GITHUB_TOKEN unused in this job
+    secrets: inherit
+    strategy:
+      fail-fast: false
+      matrix:
+        suite: [ DataLayer, CoreFeatures ]
+        include:
+          - suite: DataLayer
+            suiteName: Data Layer
+          - suite: CoreFeatures
+            suiteName: Core Features
+    with:
+      componentName: "Tasklist"
+      suite: ${{ matrix.suite }}
+      suiteName: ${{ matrix.suiteName }}
+
+  fe-type-check:
+    if: inputs.runFeTests
+    name: "Tool /  Front End - Type check"
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions: {} # GITHUB_TOKEN unused in this job
+    env:
+      TEST_TYPE: Tool
+      TEST_OWNER: Core Features
+    defaults:
+      run:
+        working-directory: tasklist/client
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Print metadata
+        uses: ./.github/actions/print-metadata
+      - uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
+        with:
+          node-version: 24
+      - run: npm ci
+        name: Install dependencies
+      - run: npm run ts-check
+        name: Type checks
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          user_description: "team-core-features"
+
+  fe-eslint:
+    if: inputs.runFeTests
+    name: "Tool / Front End - ESLint"
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions: {} # GITHUB_TOKEN unused in this job
+    env:
+      TEST_TYPE: Tool
+      TEST_OWNER: Core Features
+    defaults:
+      run:
+        working-directory: tasklist/client
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Print metadata
+        uses: ./.github/actions/print-metadata
+      - uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
+        with:
+          node-version: 24
+      - run: npm ci
+        name: Install dependencies
+      - run: npm run eslint
+        name: ESLint
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          user_description: "team-core-features"
+
+  fe-stylelint:
+    if: inputs.runFeTests
+    name: "Tool / Front End - Stylelint"
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions: {} # GITHUB_TOKEN unused in this job
+    env:
+      TEST_TYPE: Tool
+      TEST_OWNER: Core Features
+    defaults:
+      run:
+        working-directory: tasklist/client
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Print metadata
+        uses: ./.github/actions/print-metadata
+      - uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
+        with:
+          node-version: 24
+      - run: npm ci
+        name: Install dependencies
+      - run: npm run stylelint
+        name: Stylelint
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          user_description: "team-core-features"
+
+  fe-tests:
+    if: inputs.runFeTests
+    name: "Unit - Front End"
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions: {} # GITHUB_TOKEN unused in this job
+    env:
+      TEST_TYPE: Unit
+      TEST_OWNER: Core Features
+    defaults:
+      run:
+        working-directory: tasklist/client
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Print metadata
+        uses: ./.github/actions/print-metadata
+      - uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
+        with:
+          node-version: 24
+      - run: npm ci
+        name: Install dependencies
+      - run: npm run test:ci
+        name: Unit & Integration tests
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          user_description: "team-core-features"
+
+  fe-sbom-snyk:
+    if: inputs.runFeTests
+    name: "Tool / Front End - Snyk SBOM"
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions: {} # GITHUB_TOKEN unused in this job
+    env:
+      TEST_TYPE: Tool
+      TEST_OWNER: Core Features
+      SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+    defaults:
+      run:
+        working-directory: tasklist/client
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Print metadata
+        uses: ./.github/actions/print-metadata
+      - name: Generate and scan frontend SBOM
+        uses: ./.github/actions/frontend-sbom-snyk
+        with:
+          directory: tasklist/client
+          sbom-file: tasklist/client/build/cyclonedx/bom.json
+          project-name: Tasklist frontend
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          user_description: "team-core-features"
+
+  fe-visual-regression-tests:
+    if: inputs.runFeTests
+    name: "Unit - Front End - Visual Regression"
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions: {} # GITHUB_TOKEN unused in this job
+    env:
+      TEST_TYPE: visual-regression
+      TEST_OWNER: Core Features
+    container:
+      image: mcr.microsoft.com/playwright:v1.58.2
+      options: --user 1001:1000
+    defaults:
+      run:
+        working-directory: tasklist/client
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Print metadata
+        uses: ./.github/actions/print-metadata
+      - name: Setup NodeJS
+        uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
+        with:
+          node-version: 24
+      - name: Install node dependencies
+        run: npm ci
+      - name: Build frontend
+        run: npm run build:visual-regression
+      - name: Run Playwright tests
+        run: npm run test:visual
+      - uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        if: always()
+        with:
+          name: tasklist-visual-regression-report
+          path: tasklist/client/playwright-report/
+          retention-days: 30
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          user_description: "team-core-features"
+
+  fe-a11y-tests:
+    if: inputs.runFeTests
+    name: "Tool / Front End - a11y"
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions: {} # GITHUB_TOKEN unused in this job
+    env:
+      TEST_TYPE: Tool
+      TEST_OWNER: Core Features
+    container:
+      image: mcr.microsoft.com/playwright:v1.58.2
+      options: --user 1001:1000
+    defaults:
+      run:
+        working-directory: tasklist/client
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Print metadata
+        uses: ./.github/actions/print-metadata
+      - name: Setup NodeJS
+        uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
+        with:
+          node-version: 24
+      - name: Install node dependencies
+        run: npm ci
+      - name: Build frontend
+        run: npm run build
+      - name: Run A11y tests
+        run: npm run test:a11y
+      - uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        if: always()
+        with:
+          name: tasklist-a11y-report
+          path: tasklist/client/playwright-report/
+          retention-days: 30
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          user_description: "team-core-features"
+
+# As part of the V1 API cleanup, the backup restore tests have been disabled
+# and need to be reinstated before 8.10 releases.
+#  run-backup-restore-tests:
+#    if: inputs.runBeTests
+#    name: "Integration / Backup Restore ITs"
+#    timeout-minutes: 30
+#    runs-on: ubuntu-latest
+#    permissions: {}  # GITHUB_TOKEN unused in this job
+#    env:
+#      TASKLIST_TEST_DOCKER_IMAGE: localhost:5000/camunda/tasklist
+#      TASKLIST_TEST_DOCKER_IMAGE_TAG: current-test
+#      TEST_TYPE: Integration
+#      TEST_OWNER: Data Layer
+#    strategy:
+#      fail-fast: false
+#      matrix:
+#        database: [ opensearch, elasticsearch ]
+#    services:
+#      registry:
+#        image: registry:3
+#        ports:
+#          - 5000:5000
+#    steps:
+#      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+#      - name: Print metadata
+#        uses: ./.github/actions/print-metadata
+#      - name: Create build output log file
+#        run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> "$GITHUB_ENV"
+#      - uses: ./.github/actions/setup-build
+#        with:
+#          vault-address: ${{ secrets.VAULT_ADDR }}
+#          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+#          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+#          minimus: true
+#      - uses: ./.github/actions/build-zeebe
+#        id: build-zeebe
+#        with:
+#          maven-extra-args: -T1C -PskipFrontendBuild
+#      - uses: ./.github/actions/build-platform-docker
+#        id: build-tasklist-docker
+#        with:
+#          repository: ${{ env.TASKLIST_TEST_DOCKER_IMAGE }}
+#          version: ${{ env.TASKLIST_TEST_DOCKER_IMAGE_TAG }}
+#          dockerfile: tasklist.Dockerfile
+#          push: true
+#          distball: ${{ steps.build-zeebe.outputs.distball }}
+#      - name: Run Tasklist backup restore Tests
+#        shell: bash
+#        run: >
+#          ./mvnw
+#          -B
+#          -pl tasklist/qa/backup-restore-tests
+#          -DskipChecks
+#          -DtasklistDatabase=${{ matrix.database }}
+#          -DskipTests=false
+#          -Dtasklist.currentVersion.docker.tag=${{ env.TASKLIST_TEST_DOCKER_IMAGE_TAG }}
+#          -Dtasklist.currentVersion.docker.repo=${{ env.TASKLIST_TEST_DOCKER_IMAGE }}
+#          verify
+#          | tee "${BUILD_OUTPUT_FILE_PATH}"
+#      - name: Upload Test Report
+#        if: failure()
+#        uses: ./.github/actions/collect-test-artifacts
+#        with:
+#          name: "Tasklist Test Backup Restore"
+#      - name: Analyze Test Runs
+#        id: analyze-test-run
+#        if: always()
+#        uses: ./.github/actions/analyze-test-runs
+#        with:
+#          buildOutputFilePath: ${{ env.BUILD_OUTPUT_FILE_PATH }}
+#          # workaround to avoid https://github.com/camunda/camunda/issues/16604
+#          skipSummary: true
+#      - name: Observe build status
+#        if: always()
+#        continue-on-error: true
+#        uses: ./.github/actions/observe-build-status
+#        with:
+#          job_name: "tasklist-ci/backup-restore-${{ matrix.database }}"
+#          build_status: ${{ job.status }}
+#          user_reason: ${{ (steps.analyze-test-run.outputs.flakyTests != '') && 'flaky-tests' || '' }}
+#          user_description: "team-data-layer"
+#          detailed_junit_tests: true
+#          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+#          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+#          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+
+  integration-tests:
+    if: inputs.runBeTests
+    # Currently only runs Tasklist Docker tests but should be extended in future to also include backend tests
+    name: "Integration / Docker ITs"
+    runs-on: gcp-core-4-default
+    timeout-minutes: 30
+    permissions: {}  # GITHUB_TOKEN unused in this job
+    env:
+      TEST_TYPE: Integration
+      TEST_OWNER: Core Features
+      TASKLIST_TEST_DOCKER_IMAGE: localhost:5000/camunda/tasklist
+      TASKLIST_TEST_DOCKER_IMAGE_TAG: current-test
+    services:
+      registry:
+        image: registry:3
+        ports:
+          - 5000:5000
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Print metadata
+        uses: ./.github/actions/print-metadata
+      - uses: hadolint/hadolint-action@2332a7b74a6de0dda2e2221d575162eba76ba5e5 # v3.3.0
+        with:
+          ignore: DL3018 # redundant when pinning the base image
+          dockerfile: tasklist.Dockerfile
+      - uses: ./.github/actions/setup-build
+        with:
+          dockerhub-readonly: true
+          vault-address: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+          minimus: true
+      - id: build-backend
+        uses: ./.github/actions/build-zeebe
+        with:
+          maven-extra-args: -D skip.fe.build -D skipOptimize
+      - uses: ./.github/actions/build-platform-docker
+        with:
+          repository: ${{ env.TASKLIST_TEST_DOCKER_IMAGE }}
+          version: ${{ env.TASKLIST_TEST_DOCKER_IMAGE_TAG }}
+          push: true
+          distball: ${{ steps.build-backend.outputs.distball }}
+          dockerfile: tasklist.Dockerfile
+      - name: Run Docker tests
+        run: |
+          ./mvnw \
+            --no-snapshot-updates \
+            -pl tasklist/qa/integration-tests \
+            -DskipChecks \
+            -Dtest=StartupIT \
+            -Dsurefire.failIfNoSpecifiedTests=false \
+            -Dspring.profiles.active=docker-test \
+            -Dtasklist.currentVersion.docker.tag=${{ env.TASKLIST_TEST_DOCKER_IMAGE_TAG }} \
+            -Dtasklist.currentVersion.docker.repo=${{ env.TASKLIST_TEST_DOCKER_IMAGE }} \
+            test
+      - name: Upload Test Report
+        if: failure()
+        uses: ./.github/actions/collect-test-artifacts
+        with:
+          name: "tasklist docker tests"
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          user_description: "team-core-features"

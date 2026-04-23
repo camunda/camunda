@@ -179,9 +179,335 @@ jobs:
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
 
+<<<<<<< HEAD
   optimize-frontend-unit-tests:
     if: needs.detect-changes.outputs.optimize-frontend-changes == 'true'
     needs: [detect-changes]
+=======
+  docker-checks:
+    if: needs.detect-changes.outputs.camunda-docker-tests == 'true'
+    name: "Docker / Tool / Checks"
+    needs: [ detect-changes ]
+    runs-on: ubuntu-latest
+    outputs:
+      flakyTests: ${{ steps.analyze-test-run.outputs.flakyTests }}
+    timeout-minutes: 30
+    permissions:
+      security-events: write
+    services:
+      # local registry is used as this job needs to push as it builds multi-platform images
+      registry:
+        image: registry:3
+        ports:
+          - 5000:5000
+    env:
+      LOCAL_DOCKER_IMAGE: localhost:5000/camunda/camunda
+      TEST_ELASTICSEARCH_IMAGE: docker.elastic.co/elasticsearch/elasticsearch:8.19.11
+      DOCKER_PLATFORMS: "linux/arm64,linux/amd64" # build AMD64 last so it gets picked up by the test
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: hadolint/hadolint-action@2332a7b74a6de0dda2e2221d575162eba76ba5e5 # v3.3.0
+        with:
+          config: ./.hadolint.yaml
+          dockerfile: ./camunda.Dockerfile
+          format: sarif
+          output-file: ./hadolint.sarif
+          no-color: true
+          verbose: true
+      - name: Upload Hadolint Results
+        if: always()
+        continue-on-error: ${{ github.event_name == 'merge_group' }}
+        uses: github/codeql-action/upload-sarif@c10b8064de6f491fea524254123dbe5e09572f13 # v4.35.1
+        with:
+          sarif_file: ./hadolint.sarif
+      - uses: ./.github/actions/setup-build
+        with:
+          maven-cache-key-modifier: docker-checks
+          dockerhub-readonly: true
+          vault-address: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+          minimus: true
+      - uses: ./.github/actions/build-zeebe
+        id: build-camunda
+        with:
+          maven-extra-args: -PskipFrontendBuild,-include-optimize
+      - uses: ./.github/actions/build-platform-docker
+        id: build-camunda-docker
+        with:
+          # we use a local registry for pushing
+          repository: ${{ env.LOCAL_DOCKER_IMAGE }}
+          distball: ${{ steps.build-camunda.outputs.distball }}
+          platforms: ${{ env.DOCKER_PLATFORMS }}
+          dockerfile: camunda.Dockerfile
+          # push is needed for multi-arch images as buildkit does not support loading them locally
+          push: true
+
+      # Since subsequent steps of this job need a lot of disk space for downloaded
+      # database Docker images, we try to clean all unused caches and free space here.
+      - name: Cleanup docker images
+        run: |
+          docker buildx prune -f
+          docker system prune -af
+
+      - name: Verify Docker image
+        # Skip verification on fork PRs as there public base images are used that don't match our golden labels
+        if: github.event_name != 'pull_request' || !github.event.pull_request.head.repo.fork
+        uses: ./.github/actions/verify-platform-docker
+        with:
+          imageName: ${{ env.LOCAL_DOCKER_IMAGE }}
+          date: ${{ steps.build-camunda-docker.outputs.date }}
+          revision: ${{ github.sha }}
+          version: ${{ steps.build-camunda-docker.outputs.version }}
+          platforms: ${{ env.DOCKER_PLATFORMS }}
+          goldenfile: camunda-docker-labels.golden.json
+          dockerfile: camunda.Dockerfile
+      - name: Create build output log file
+        run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> "$GITHUB_ENV"
+      - name: Pull local docker image
+        # We pull the image to ensure that we have the right platform image locally,
+        # as the runner might be on the arm64 if that was pulled last by the verify step
+        run: docker pull ${{ env.LOCAL_DOCKER_IMAGE }}:${{ steps.build-camunda-docker.outputs.version }}
+      - name: Run Docker tests
+        shell: bash
+        # we use the verify goal here as flaky test extraction is bound to the post-integration-test
+        # phase of Maven https://maven.apache.org/guides/introduction/introduction-to-the-lifecycle.html#default-lifecycle
+        run: >
+          ./mvnw -pl dist/ --no-snapshot-updates -DskipChecks -Dassembly.skipAssembly=true
+          -DskipUTs -Dit.test=*DockerIT -Dfailsafe.rerunFailingTestsCount=${{ env.FLAKY_TEST_RERUN_COUNT }}
+          -P parallel-tests,extract-flaky-tests
+          -Dcamunda.docker.test.enabled=true
+          -Dcamunda.docker.test.image="${{ env.LOCAL_DOCKER_IMAGE }}:${{ steps.build-camunda-docker.outputs.version }}"
+          -Dcamunda.docker.test.elasticsearch.image="${{ env.TEST_ELASTICSEARCH_IMAGE }}"
+          verify
+          | tee "${BUILD_OUTPUT_FILE_PATH}"
+      - name: Analyze Test Runs
+        id: analyze-test-run
+        if: always()
+        uses: ./.github/actions/analyze-test-runs
+        with:
+          buildOutputFilePath: ${{ env.BUILD_OUTPUT_FILE_PATH }}
+      - name: Upload test artifacts
+        uses: ./.github/actions/collect-test-artifacts
+        if: ${{ failure() || cancelled() || steps.analyze-test-run.outputs.flakyTests != '' }}
+        with:
+          name: "[IT] Camunda Docker Tests"
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          detailed_junit_tests: true
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          user_description: "General"
+          user_reason: ${{ (steps.analyze-test-run.outputs.flakyTests != '') && 'flaky-tests' || '' }}
+
+  utils-flaky-tests-summary:
+    name: flaky tests summary comment
+    if: always() && github.event_name == 'pull_request' && !github.event.pull_request.head.repo.fork
+    needs:
+      - archunit-tests
+      - database-integration-tests
+      - docker-checks
+      - general-unit-tests
+      - history-tests
+      - identity-tests
+      - integration-tests
+      - rdbms-integration-tests
+      - zeebe-unit-tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      pull-requests: write
+      contents: read
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Read Zeebe unit tests matrix outputs
+        uses: cloudposse/github-action-matrix-outputs-read@33cac12fa9282a7230a418d859b93fdbc4f27b5a # 1.0.0
+        id: zeebe-matrix-read
+        with:
+          matrix-step-name: zeebe-unit-tests
+      - name: Read Integration tests matrix outputs
+        uses: cloudposse/github-action-matrix-outputs-read@33cac12fa9282a7230a418d859b93fdbc4f27b5a # 1.0.0
+        id: integration-matrix-read
+        with:
+          matrix-step-name: integration-tests
+      - name: Read Database integration tests matrix outputs
+        uses: cloudposse/github-action-matrix-outputs-read@33cac12fa9282a7230a418d859b93fdbc4f27b5a # 1.0.0
+        id: database-integration-matrix-read
+        with:
+          matrix-step-name: database-integration-tests
+      - name: Read history tests matrix outputs
+        uses: cloudposse/github-action-matrix-outputs-read@33cac12fa9282a7230a418d859b93fdbc4f27b5a # 1.0.0
+        id: history-matrix-read
+        with:
+          matrix-step-name: history-tests
+      - name: Read identity tests matrix outputs
+        uses: cloudposse/github-action-matrix-outputs-read@33cac12fa9282a7230a418d859b93fdbc4f27b5a # 1.0.0
+        id: identity-matrix-read
+        with:
+          matrix-step-name: identity-tests
+      - name: Collect flaky test results
+        id: collect-results
+        uses: ./.github/actions/collect-flaky-tests
+        with:
+          general-unit-tests-result: ${{ needs.general-unit-tests.result }}
+          general-unit-tests-flaky: ${{ needs.general-unit-tests.outputs.flakyTests }}
+          database-integration-tests-result: ${{ needs.database-integration-tests.result }}
+          database-matrix-output-result: ${{ steps.database-integration-matrix-read.outputs.result }}
+          history-tests-result: ${{ needs.history-tests.result }}
+          history-matrix-output-result: ${{ steps.history-matrix-read.outputs.result }}
+          identity-tests-result: ${{ needs.identity-tests.result }}
+          identity-matrix-output-result: ${{ steps.identity-matrix-read.outputs.result }}
+          rdbms-tests-result: ${{ needs.rdbms-integration-tests.result }}
+          rdbms-tests-flaky: ${{ needs.rdbms-integration-tests.outputs.flakyTests }}
+          docker-checks-result: ${{ needs.docker-checks.result }}
+          docker-checks-flaky: ${{ needs.docker-checks.outputs.flakyTests }}
+          zeebe-tests-result: ${{ needs.zeebe-unit-tests.result }}
+          zeebe-matrix-output-result: ${{ steps.zeebe-matrix-read.outputs.result }}
+          integration-tests-result: ${{ needs.integration-tests.result }}
+          integration-matrix-output-result: ${{ steps.integration-matrix-read.outputs.result }}
+      - name: Update flaky tests comment
+        uses: ./.github/actions/flaky-tests-summary-comment
+        with:
+          flaky-tests-data: '${{ steps.collect-results.outputs.flaky_tests_data }}'
+          pr-number: ${{ github.event.pull_request.number }}
+          branch-name: ${{ github.event.pull_request.head.ref }}
+      - name: Delete matrix job generated artifacts
+        uses: geekyeggo/delete-artifact@176a747ab7e287e3ff4787bf8a148716375ca118 # v6.0.0
+        with:
+          name: |
+            zeebe-unit-tests-*
+            integration-tests-*
+
+  identity-frontend-tests:
+    if: needs.detect-changes.outputs.identity-frontend-tests == 'true'
+    name: "Identity / Unit - Front End"
+    needs: [ detect-changes ]
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions: { }  # GITHUB_TOKEN unused in this job
+    defaults:
+      run:
+        working-directory: identity/client
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
+        with:
+          node-version: 24
+          cache: 'npm'
+          cache-dependency-path: 'identity/client/package-lock.json'
+      - name: Install dependencies
+        run: npm ci
+      - name: Check formatting
+        run: npm run test:format
+      - name: Lint code
+        run: npm run test:lint
+      - name: Unit & Integration tests
+        run: npm run test:unit
+      - name: Check licenses
+        run: npm run test:licenses
+      - name: Build frontend
+        run: npm run build
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          user_description: "Identity"
+
+  identity-frontend-sbom-snyk:
+    if: needs.detect-changes.outputs.identity-frontend-tests == 'true'
+    name: "Identity / Tool - Front End - Snyk SBOM"
+    needs: [ detect-changes ]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions: { }  # GITHUB_TOKEN unused in this job
+    env:
+      SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+    defaults:
+      run:
+        working-directory: identity/client
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: ./.github/actions/frontend-sbom-snyk
+        with:
+          directory: identity/client
+          sbom-file: identity/client/dist/cyclonedx/bom.json
+          project-name: Identity frontend
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          user_description: "Identity"
+
+  tasklist-ci:
+    if: needs.detect-changes.outputs.java-code-changes == 'true' || needs.detect-changes.outputs.frontend-changes == 'true'
+    name: "Tasklist"
+    needs: [ detect-changes ]
+    uses: ./.github/workflows/ci-tasklist.yml
+    secrets: inherit
+    permissions: { }
+    with:
+      runFeTests: ${{ needs.detect-changes.outputs.tasklist-frontend-changes  == 'true' }}
+      runBeTests: ${{ needs.detect-changes.outputs.tasklist-backend-changes == 'true' || needs.detect-changes.outputs.zeebe-changes == 'true' }}
+
+  operate-ci:
+    if: needs.detect-changes.outputs.java-code-changes == 'true' || needs.detect-changes.outputs.frontend-changes == 'true'
+    name: "Operate"
+    needs: [ detect-changes ]
+    uses: ./.github/workflows/ci-operate.yml
+    secrets: inherit
+    permissions: { }
+    with:
+      runFeTests: ${{ needs.detect-changes.outputs.operate-frontend-changes == 'true' }}
+      runBeTests: ${{ needs.detect-changes.outputs.operate-backend-changes == 'true' || needs.detect-changes.outputs.zeebe-changes == 'true'}}
+
+  optimize-ci:
+    if: ${{ needs.detect-changes.outputs.java-code-changes == 'true' || needs.detect-changes.outputs.frontend-changes == 'true' }}
+    name: "Optimize"
+    needs: [ detect-changes ]
+    uses: ./.github/workflows/ci-optimize.yml
+    secrets: inherit
+    permissions: { }
+    with:
+      runFeTests: ${{ needs.detect-changes.outputs.optimize-frontend-changes == 'true' }}
+      runBeTests: ${{ needs.detect-changes.outputs.optimize-backend-changes == 'true' || needs.detect-changes.outputs.zeebe-changes == 'true' }}
+
+  zeebe-ci:
+    if: needs.detect-changes.outputs.zeebe-changes == 'true'
+    name: "Zeebe"
+    needs: [ detect-changes ]
+    uses: ./.github/workflows/ci-zeebe.yml
+    secrets: inherit
+    with:
+      stable-branch: ${{ needs.detect-changes.outputs.stable-branch-changes == 'true' }}
+
+  webapp-client:
+    if: needs.detect-changes.outputs.webapp-client-changes == 'true'
+    name: "Webapp Client"
+    needs: [ detect-changes ]
+    uses: ./.github/workflows/ci-webapp-client.yml
+    secrets: inherit
+    permissions: { }
+
+  c8-e2e-test-suite:
+    if: needs.detect-changes.outputs.c8-e2e-test-suite-changes == 'true'
+    name: "Lint / C8 E2E Test Suite"
+    needs: [ detect-changes ]
+>>>>>>> bd3420d1 (ci: add FE SBOM scanning)
     runs-on: ubuntu-latest
     timeout-minutes: 10
     defaults:
