@@ -62,7 +62,7 @@ class OperateProcessesPage {
     rowIndex?: number,
     cellIndex?: number,
   ) => Locator;
-  readonly deleteButton: Locator;
+  readonly deleteBatchOperationButton: Locator;
   readonly deleteBatchOperationConfirmButton: Locator;
   readonly batchOperationStartedMessage: (
     batchOperationType:

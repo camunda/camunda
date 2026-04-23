@@ -199,30 +199,29 @@ test.describe('Operations', () => {
   });
 });
 
-let deleteTestData: {
-  instances: ProcessInstance[];
-};
-
-const batchDeleteProcessId = `batchDeleteProcess-${runSuffix}`;
-
-test.beforeAll(async () => {
-  await deployWithSubstitutions('./resources/batch_delete_process.bpmn', {
-    batchDeleteProcess: batchDeleteProcessId,
-  });
-
-  const instances = await createInstances(batchDeleteProcessId, 1, 5);
-  deleteTestData = {
-    instances: instances.map((instance) => ({
-      processInstanceKey: instance.processInstanceKey,
-      bpmnProcessId: batchDeleteProcessId,
-    })),
+test.describe('Delete Operations', () => {
+  let deleteTestData: {
+    instances: ProcessInstance[];
   };
 
-  // Allow time for all instances to auto-complete
-  await sleep(5000);
-});
+  const batchDeleteProcessId = `batchDeleteProcess-${runSuffix}`;
 
-test.describe('Delete Operations', () => {
+  test.beforeAll(async () => {
+    await deployWithSubstitutions('./resources/batch_delete_process.bpmn', {
+      batchDeleteProcess: batchDeleteProcessId,
+    });
+
+    const instances = await createInstances(batchDeleteProcessId, 1, 5);
+    deleteTestData = {
+      instances: instances.map((instance) => ({
+        processInstanceKey: instance.processInstanceKey,
+        bpmnProcessId: batchDeleteProcessId,
+      })),
+    };
+
+    // Allow time for all instances to auto-complete
+    await sleep(5000);
+  });
   test.beforeEach(async ({page, loginPage, operateHomePage}) => {
     await navigateToApp(page, 'operate');
     await loginPage.login('demo', 'demo');
