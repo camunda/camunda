@@ -20,6 +20,7 @@ on:
       - 'pom.xml'
       - 'webapps-common/**'
   pull_request:
+    types: [opened, synchronize, reopened, labeled]
     paths:
       - '.ci/**'
       - '.github/actions/**'
@@ -38,9 +39,28 @@ concurrency:
   group: ${{ format('{0}-{1}', github.workflow, github.ref == 'refs/heads/main' && github.sha || github.ref) }}
 
 jobs:
+  ci-gate:
+    name: "CI Gate"
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    permissions:
+      pull-requests: write
+    outputs:
+      should-run: ${{ steps.gate.outputs.should-run }}
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          sparse-checkout: .github/actions/ci-gate
+      - uses: ./.github/actions/ci-gate
+        id: gate
+        with:
+          github-token: ${{ github.token }}
+
   # does not meet the 10 minute runtime as required by the unified CI
   integration-tests:
     name: "Container Tests"
+    needs: [ci-gate]
+    if: needs.ci-gate.outputs.should-run == 'true'
     runs-on: gcp-core-4-default
     timeout-minutes: 40
     permissions: { }

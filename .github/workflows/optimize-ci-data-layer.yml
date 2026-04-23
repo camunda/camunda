@@ -5,6 +5,7 @@
 name: "[Legacy] Optimize / Data Layer"
 on:
   pull_request:
+    types: [opened, synchronize, reopened, labeled]
     paths:
       - ".github/actions/**"
       - ".github/workflows/optimize-*"
@@ -42,6 +43,23 @@ permissions:
   pull-requests: write
 
 jobs:
+  ci-gate:
+    name: "CI Gate"
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    permissions:
+      pull-requests: write
+    outputs:
+      should-run: ${{ steps.gate.outputs.should-run }}
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          sparse-checkout: .github/actions/ci-gate
+      - uses: ./.github/actions/ci-gate
+        id: gate
+        with:
+          github-token: ${{ github.token }}
+
   detect-changes:
     name: Get changed directories
     runs-on: ubuntu-latest
@@ -61,8 +79,8 @@ jobs:
     strategy:
       matrix:
         database: [ elasticsearch, opensearch ]
-    needs: detect-changes
-    if: ${{ needs.detect-changes.outputs.backend-changes == 'true' }}
+    needs: [ci-gate, detect-changes]
+    if: needs.ci-gate.outputs.should-run == 'true' && needs.detect-changes.outputs.backend-changes == 'true'
     steps:
       - name: Checkout repository
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
