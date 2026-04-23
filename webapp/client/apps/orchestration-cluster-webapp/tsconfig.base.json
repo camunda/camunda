@@ -1,0 +1,23 @@
+{
+	"compilerOptions": {
+		"target": "ES2022",
+		"lib": ["ES2022", "DOM", "DOM.Iterable"],
+		"verbatimModuleSyntax": true,
+		"isolatedModules": true,
+		"noUncheckedSideEffectImports": true,
+		"erasableSyntaxOnly": true,
+		"noEmit": true,
+		"skipLibCheck": true,
+		"strict": true,
+		"noUnusedLocals": true,
+		"noUnusedParameters": true,
+		"noFallthroughCasesInSwitch": true,
+		"noImplicitOverride": true,
+		"noImplicitReturns": true,
+		"noUncheckedIndexedAccess": true,
+		"allowUnreachableCode": false,
+		"noPropertyAccessFromIndexSignature": true,
+		"allowJs": false,
+		"exactOptionalPropertyTypes": true
+	}
+}
