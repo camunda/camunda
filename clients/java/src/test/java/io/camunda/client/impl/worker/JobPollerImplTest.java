@@ -86,28 +86,18 @@ public final class JobPollerImplTest extends ClientTest {
   }
 
   @Test
-  public void shouldCallbackWhenPollFailed() {
-    // given
-    gatewayService.onActivateJobsRequest(new StatusRuntimeException(Status.RESOURCE_EXHAUSTED));
-
-    // when
-    getJobPoller().poll(123, jobConsumer, doneCallback, errorCallback, () -> true);
-
-    // then
-    Awaitility.await()
-        .atMost(Duration.ofSeconds(5))
-        .untilAsserted(
-            () -> {
-              verify(jobConsumer, never()).accept(any(ActivatedJob.class));
-              verify(doneCallback, never()).accept(any(Integer.class));
-              verify(errorCallback).accept(any(StatusRuntimeException.class));
-            });
+  public void shouldCallbackWhenPollFailedWithResourceExhausted() {
+    shouldCallbackWhenPollFailedWithStatus(Status.RESOURCE_EXHAUSTED);
   }
 
   @Test
   public void shouldCallbackWhenPollFailedWithDeadlineExceeded() {
+    shouldCallbackWhenPollFailedWithStatus(Status.DEADLINE_EXCEEDED);
+  }
+
+  private void shouldCallbackWhenPollFailedWithStatus(final Status status) {
     // given
-    gatewayService.onActivateJobsRequest(new StatusRuntimeException(Status.DEADLINE_EXCEEDED));
+    gatewayService.onActivateJobsRequest(new StatusRuntimeException(status));
 
     // when
     getJobPoller().poll(123, jobConsumer, doneCallback, errorCallback, () -> true);
