@@ -14,6 +14,7 @@ DRY_RUN=false
 ISSUE_TYPE=""
 LABEL=""
 DELAY=0
+UPDATED_SINCE=""
 
 URGENCY_FIELD_ID="IFSS_kgDNKAw"
 
@@ -32,6 +33,10 @@ Options:
   --type <type>        Filter by issue type: Bug, Task, Feature, Epic, etc.
   --label <name>       Filter by label (e.g. "severity/high", "component/tasklist")
   --skip-assigned      Skip issues that already have org-level urgency set
+  --updated-since <duration|ISO>
+                       Only issues updated within the given window. Accepts
+                       ISO 8601 timestamp (2026-04-23T05:00:00Z) or a
+                       relative duration: 1h, 2d, 1w (hours, days, weeks)
   --delay <seconds>    Delay between workflow dispatches (default: 0)
   --dry-run            Show what would be triggered without running anything
   -h, --help           Show this help
@@ -42,6 +47,7 @@ Examples:
   $0 --project 187 --type Bug --limit 50 --dry-run
   $0 --label "severity/high" --limit 10
   $0 --repo web-modeler --project 187 --skip-assigned
+  $0 --project 187 --updated-since 1h --skip-assigned  # For hourly cron
 EOF
   exit 0
 }
@@ -61,6 +67,7 @@ while [[ $# -gt 0 ]]; do
     --type)       require_arg "$@"; ISSUE_TYPE="$2"; shift 2 ;;
     --label)      require_arg "$@"; LABEL="$2"; shift 2 ;;
     --skip-assigned) SKIP_ASSIGNED=true; shift ;;
+    --updated-since) require_arg "$@"; UPDATED_SINCE="$2"; shift 2 ;;
     --delay)      require_arg "$@"; DELAY="$2"; shift 2 ;;
     --dry-run)    DRY_RUN=true; shift ;;
     -h|--help)    usage ;;
@@ -77,11 +84,35 @@ for var_name in LIMIT DELAY PROJECT_ID; do
   fi
 done
 
+# --- Resolve --updated-since to ISO timestamp ---
+if [[ -n "$UPDATED_SINCE" ]]; then
+  if [[ "$UPDATED_SINCE" =~ ^[0-9]+[hdw]$ ]]; then
+    NUM="${UPDATED_SINCE%[hdw]}"
+    UNIT="${UPDATED_SINCE: -1}"
+    case "$UNIT" in
+      h) SECS=$((NUM * 3600)) ;;
+      d) SECS=$((NUM * 86400)) ;;
+      w) SECS=$((NUM * 604800)) ;;
+    esac
+    UPDATED_SINCE=$(date -u -v-${SECS}S +"%Y-%m-%dT%H:%M:%SZ" 2>/dev/null \
+      || date -u -d "-${SECS} seconds" +"%Y-%m-%dT%H:%M:%SZ")
+  fi
+  # Validate ISO format
+  if ! [[ "$UPDATED_SINCE" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}T ]]; then
+    echo "Error: --updated-since must be ISO 8601 (2026-04-23T05:00:00Z) or relative (1h, 2d, 1w)"
+    exit 1
+  fi
+fi
+
 # --- Build search query ---
 SEARCH_QUERY="repo:${ORG_NAME}/${REPO_NAME} is:issue is:open project:${ORG_NAME}/${PROJECT_ID}"
 
 if [[ -n "$LABEL" ]]; then
   SEARCH_QUERY="$SEARCH_QUERY label:\"$LABEL\""
+fi
+
+if [[ -n "$UPDATED_SINCE" ]]; then
+  SEARCH_QUERY="$SEARCH_QUERY updated:>$UPDATED_SINCE"
 fi
 
 # --- Summary ---
@@ -90,8 +121,9 @@ echo "  Repository:    ${ORG_NAME}/${REPO_NAME}"
 echo "  Project:       #$PROJECT_ID"
 echo "  Branch:        $BRANCH"
 echo "  Limit:         $LIMIT"
-[[ -n "$ISSUE_TYPE" ]] && echo "  Type filter:   $ISSUE_TYPE"
-[[ -n "$LABEL" ]]      && echo "  Label filter:  $LABEL"
+[[ -n "$ISSUE_TYPE" ]]    && echo "  Type filter:   $ISSUE_TYPE"
+[[ -n "$LABEL" ]]         && echo "  Label filter:  $LABEL"
+[[ -n "$UPDATED_SINCE" ]] && echo "  Updated since: $UPDATED_SINCE"
 [[ "$SKIP_ASSIGNED" == "true" ]] && echo "  Skip assigned: yes"
 [[ "$DRY_RUN" == "true" ]] && echo "  Mode:          DRY RUN"
 [[ "$DELAY" -gt 0 ]] && echo "  Delay:         ${DELAY}s between dispatches"
