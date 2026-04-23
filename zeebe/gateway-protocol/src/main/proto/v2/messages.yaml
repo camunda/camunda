@@ -273,6 +273,7 @@ components:
         - elementInstanceKey
         - extensionProperties
         - inboundConnectorType
+        - inputSpecification
         - lastUpdatedDate
         - messageName
         - messageSubscriptionKey
@@ -379,6 +380,12 @@ components:
 
     InputSpecItem:
       type: object
+      required:
+        - description
+        - name
+        - required
+        - schema
+        - type
       properties:
         name:
           type: string
@@ -389,7 +396,6 @@ components:
           description: Human-readable description of the parameter.
         type:
           type: string
-          nullable: true
           description: The data type (e.g. "string", "integer", "boolean").
         required:
           type: boolean

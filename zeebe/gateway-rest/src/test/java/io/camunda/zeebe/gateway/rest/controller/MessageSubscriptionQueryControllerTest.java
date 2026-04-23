@@ -54,7 +54,8 @@ public class MessageSubscriptionQueryControllerTest extends RestControllerTest {
                   "processDefinitionName": null,
                   "processDefinitionVersion": null,
                   "toolName": null,
-                  "inboundConnectorType": null
+                  "inboundConnectorType": null,
+                  "inputSpecification": []
                 }
             ],
             "page": {
