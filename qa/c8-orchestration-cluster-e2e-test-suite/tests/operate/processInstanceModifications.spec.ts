@@ -741,11 +741,14 @@ test.describe('Process Instance Modifications - Add Variable', () => {
       ),
     ).toHaveText('1');
 
-    // undo again: variable field is removed
+    // undo again: variable field is removed, only the add-token modification remains
     await operateProcessInstancePage.undoModification();
     await expect(
       operateProcessInstancePage.getVariableTestId('newVariables[0]'),
     ).toBeHidden();
+    await expect(
+      operateProcessInstancePage.lastAddedModificationText,
+    ).toBeVisible();
   });
 
   test('Should add variables to different scopes and remove one from summary', async ({
