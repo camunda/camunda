@@ -197,10 +197,13 @@ test.describe('Identity User Flows', () => {
     });
 
     await test.step(`Logout, login with demo and delete the created authorization`, async () => {
-      await navigateToApp(page, 'admin');
+      await identityAuthorizationsPage.navigateToAuthorizations();
+      await identityHeader.openSettingsButton.waitFor({
+        state: 'visible',
+        timeout: 30000,
+      });
       await identityHeader.logout();
       await loginPage.login('demo', 'demo');
-      await identityAuthorizationsPage.navigateToAuthorizations();
       await expect(page).toHaveURL(relativizePath(Paths.authorizations()));
 
       await identityAuthorizationsPage.selectResourceTypeTab('Component');
