@@ -79,13 +79,22 @@ public class GlobalVariablesAnnotationProcessor extends AbstractCamundaAnnotatio
     doWithMethods(
         beanInfo.getTargetClass(),
         method -> {
-          if (method.isAnnotationPresent(GlobalVariables.class)) {
-            final GlobalVariables annotation = method.getAnnotation(GlobalVariables.class);
+          final GlobalVariables[] annotations = method.getAnnotationsByType(GlobalVariables.class);
+          if (annotations.length > 0) {
             final MethodInfo methodInfo = beanInfo.toMethodInfo(method);
-            final String tenantId = annotation.tenantId();
-            methodValues.add(
-                new GlobalVariablesValue(
-                    Collections.emptyList(), tenantId.isEmpty() ? null : tenantId, methodInfo));
+            for (final GlobalVariables annotation : annotations) {
+              final String tenantId = annotation.tenantId();
+              final String resolvedTenantId = tenantId.isEmpty() ? null : tenantId;
+              if (annotation.resources().length > 0) {
+                methodValues.add(
+                    new GlobalVariablesValue(
+                        Arrays.asList(annotation.resources()), resolvedTenantId, null));
+              } else {
+                methodValues.add(
+                    new GlobalVariablesValue(
+                        Collections.emptyList(), resolvedTenantId, methodInfo));
+              }
+            }
           }
         },
         ReflectionUtils.USER_DECLARED_METHODS);
@@ -124,18 +133,25 @@ public class GlobalVariablesAnnotationProcessor extends AbstractCamundaAnnotatio
 
   private Map<String, Object> loadVariablesFromResources(final List<String> resourcePatterns) {
     final Map<String, Object> variables = new LinkedHashMap<>();
-    for (final String pattern : resourcePatterns) {
-      for (final Resource resource : getResources(pattern)) {
-        try (final InputStream inputStream = resource.getInputStream()) {
-          final String json = new String(inputStream.readAllBytes(), StandardCharsets.UTF_8);
-          final Map<String, Object> loaded = jsonMapper.fromJsonAsMap(json);
-          LOGGER.debug(
-              "Loaded {} variable(s) from resource '{}'", loaded.size(), resource.getFilename());
-          variables.putAll(loaded);
-        } catch (final Exception e) {
-          throw new RuntimeException(
-              "Error reading global variables from resource: " + resource.getFilename(), e);
-        }
+    final List<Resource> allResources =
+        resourcePatterns.stream()
+            .flatMap(pattern -> Arrays.stream(getResources(pattern)))
+            .distinct()
+            .toList();
+    if (allResources.isEmpty()) {
+      throw new IllegalArgumentException(
+          "No resources found for global variables patterns: " + resourcePatterns);
+    }
+    for (final Resource resource : allResources) {
+      try (final InputStream inputStream = resource.getInputStream()) {
+        final String json = new String(inputStream.readAllBytes(), StandardCharsets.UTF_8);
+        final Map<String, Object> loaded = jsonMapper.fromJsonAsMap(json);
+        LOGGER.debug(
+            "Loaded {} variable(s) from resource '{}'", loaded.size(), resource.getFilename());
+        variables.putAll(loaded);
+      } catch (final Exception e) {
+        throw new RuntimeException(
+            "Error reading global variables from resource: " + resource.getFilename(), e);
       }
     }
     return variables;
