@@ -102,31 +102,37 @@ test.describe('Dashboard', () => {
     });
   });
 
- test('Navigation to Processes View', async ({page, operateDashboardPage}) => {
-  const ensureDashboardReady = async () => {
-    await operateDashboardPage.gotoDashboardPage();
+  test('Navigation to Processes View', async ({page, operateDashboardPage}) => {
+    const ensureDashboardReady = async () => {
+      await operateDashboardPage.gotoDashboardPage();
 
-    await expect(operateDashboardPage.activeInstancesBadge).toBeVisible();
-    await expect(operateDashboardPage.incidentInstancesBadge).toBeVisible();
+      await expect(operateDashboardPage.activeInstancesBadge).toBeVisible();
+      await expect(operateDashboardPage.incidentInstancesBadge).toBeVisible();
 
-    await expect(operateDashboardPage.activeInstancesBadge).toHaveText(/\d+/);
-    await expect(operateDashboardPage.incidentInstancesBadge).toHaveText(/\d+/);
-  };
+      await expect(operateDashboardPage.activeInstancesBadge).toHaveText(/\d+/);
+      await expect(operateDashboardPage.incidentInstancesBadge).toHaveText(
+        /\d+/,
+      );
+    };
 
-  await test.step('Navigate to active instances (view opens)', async () => {
-    await ensureDashboardReady();
+    await test.step('Navigate to active instances (view opens)', async () => {
+      await ensureDashboardReady();
 
-    await operateDashboardPage.clickActiveInstancesLink();
-    await expect(page.getByRole('heading', {name: /process instances/i})).toBeVisible();
+      await operateDashboardPage.clickActiveInstancesLink();
+      await expect(
+        page.getByRole('heading', {name: /process instances/i}),
+      ).toBeVisible();
+    });
+
+    await test.step('Navigate to incident instances (view opens)', async () => {
+      await ensureDashboardReady();
+
+      await operateDashboardPage.clickIncidentInstancesLink();
+      await expect(
+        page.getByRole('heading', {name: /process instances/i}),
+      ).toBeVisible();
+    });
   });
-
-  await test.step('Navigate to incident instances (view opens)', async () => {
-    await ensureDashboardReady();
-
-    await operateDashboardPage.clickIncidentInstancesLink();
-    await expect(page.getByRole('heading', {name: /process instances/i})).toBeVisible();
-  });
-});
 
   // skipped due to bug 45129: https://github.com/camunda/camunda/issues/45129
   test.skip('Navigate to processes view (same truncated error message)', async ({

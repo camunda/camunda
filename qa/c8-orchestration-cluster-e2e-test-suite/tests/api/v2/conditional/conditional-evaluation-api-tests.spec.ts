@@ -114,7 +114,7 @@ test.describe.parallel('Conditional Evaluation API Tests', () => {
     );
     const json = await res.json();
     expect(Array.isArray(json.processInstances)).toBe(true);
-    expect(json.processInstances.length).toBe(1);
+    expect(json.processInstances).toHaveLength(1);
 
     const instance = json.processInstances[0];
     expect(instance.processDefinitionKey).toBeDefined();
@@ -142,7 +142,7 @@ test.describe.parallel('Conditional Evaluation API Tests', () => {
     );
     const json = await res.json();
     expect(Array.isArray(json.processInstances)).toBe(true);
-    expect(json.processInstances.length).toBe(0);
+    expect(json.processInstances).toHaveLength(0);
   });
 
   test('Evaluate Conditional With Tenant ID', async ({request}) => {

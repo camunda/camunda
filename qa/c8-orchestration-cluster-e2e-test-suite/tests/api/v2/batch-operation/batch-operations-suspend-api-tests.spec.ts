@@ -10,7 +10,6 @@ import {test} from '@playwright/test';
 import {deploy} from '../../../../utils/zeebeClient';
 import {
   assertBadRequest,
-  assertConflictRequest,
   assertInvalidState,
   assertNotFoundRequest,
   assertStatusCode,

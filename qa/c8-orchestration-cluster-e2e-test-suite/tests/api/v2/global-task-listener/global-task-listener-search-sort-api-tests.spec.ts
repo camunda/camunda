@@ -93,7 +93,7 @@ test.describe.serial('Global Task Listener API Tests - Search and Sort', () => {
         res,
       );
       const body = await res.json();
-      expect(body.items.length).toBe(3);
+      expect(body.items).toHaveLength(3);
 
       const priorities = body.items.map(
         (item: GlobalTaskListenerItem) => item.priority,
@@ -125,7 +125,7 @@ test.describe.serial('Global Task Listener API Tests - Search and Sort', () => {
         res,
       );
       const body = await res.json();
-      expect(body.items.length).toBe(3);
+      expect(body.items).toHaveLength(3);
 
       const priorities = body.items.map(
         (item: GlobalTaskListenerItem) => item.priority,
@@ -155,7 +155,7 @@ test.describe.serial('Global Task Listener API Tests - Search and Sort', () => {
         res,
       );
       const body = await res.json();
-      expect(body.items.length).toBe(3);
+      expect(body.items).toHaveLength(3);
 
       const ids = body.items.map((item: GlobalTaskListenerItem) => item.id);
       // IDs end in -a, -b, -c so lexicographic ASC order is deterministic
@@ -184,7 +184,7 @@ test.describe.serial('Global Task Listener API Tests - Search and Sort', () => {
         res,
       );
       const body = await res.json();
-      expect(body.items.length).toBe(3);
+      expect(body.items).toHaveLength(3);
 
       const ids = body.items.map((item: GlobalTaskListenerItem) => item.id);
       expect(ids[0]).toBe(`${prefix}-c`);
@@ -217,7 +217,7 @@ test.describe.serial('Global Task Listener API Tests - Search and Sort', () => {
         res,
       );
       const body = await res.json();
-      expect(body.items.length).toBe(3);
+      expect(body.items).toHaveLength(3);
 
       // priority 10 → -a, priority 20 → -b, priority 30 → -c
       expect(body.items[0].id).toBe(`${prefix}-a`);

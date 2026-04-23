@@ -249,6 +249,7 @@ test.describe.parallel('Delete Batch Process Instance API Tests', () => {
   }) => {
     const processInstanceKeyToDelete = activeProcessInstanceKeysToDelete[0];
     let batchOperationKey = '';
+
     await test.step('Verify Process Instance Key to Delete has state ACTIVE', async () => {
       await expect(async () => {
         const response = await request.get(
@@ -329,11 +330,14 @@ test.describe.parallel('Delete Batch Process Instance API Tests', () => {
           },
         );
         await assertStatusCode(response, 200);
-        await validateResponse({
-          path: '/process-instances/{processInstanceKey}',
-          method: 'GET',
-          status: '200',
-        }, response);
+        await validateResponse(
+          {
+            path: '/process-instances/{processInstanceKey}',
+            method: 'GET',
+            status: '200',
+          },
+          response,
+        );
         const responseBody = await response.json();
         expect(responseBody.state).toBe('ACTIVE');
       }).toPass(defaultAssertionOptions);
@@ -345,6 +349,7 @@ test.describe.parallel('Delete Batch Process Instance API Tests', () => {
   }) => {
     const processInstancesToDelete = activeProcessInstanceKeysToDelete.slice(1);
     let batchOperationKey = '';
+
     await test.step('Verify Process Instance Key to Delete has state ACTIVE', async () => {
       for (const processInstanceKey of processInstancesToDelete) {
         await expect(async () => {
@@ -428,14 +433,17 @@ test.describe.parallel('Delete Batch Process Instance API Tests', () => {
             },
           );
           await assertStatusCode(response, 200);
-          await validateResponse({
-            path: '/process-instances/{processInstanceKey}',
-            method: 'GET',
-            status: '200',
-          }, response);
+          await validateResponse(
+            {
+              path: '/process-instances/{processInstanceKey}',
+              method: 'GET',
+              status: '200',
+            },
+            response,
+          );
           const responseBody = await response.json();
           expect(responseBody.state).toBe('ACTIVE');
-      }).toPass(defaultAssertionOptions);
+        }).toPass(defaultAssertionOptions);
       }
     });
   });

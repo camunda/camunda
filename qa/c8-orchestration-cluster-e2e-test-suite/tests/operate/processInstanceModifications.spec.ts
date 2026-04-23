@@ -86,7 +86,6 @@ test.beforeAll(async () => {
       testVariableString: 'bar',
     },
   );
-
 });
 
 //Skipping tests as need to be optimized and refactored. Ticket created https://github.com/camunda/camunda/issues/51164
@@ -143,7 +142,8 @@ test.describe.skip('Process Instance Modifications', () => {
     });
 
     await test.step('Edit variable foo to value 1', async () => {
-      await operateProcessInstancePage.editVariableValueModificationMode('foo', '"bar"',
+      await operateProcessInstancePage.editVariableValueModificationMode(
+        'foo',
         '1',
       );
 
@@ -156,8 +156,9 @@ test.describe.skip('Process Instance Modifications', () => {
     });
 
     await test.step('Edit variable test to value 2', async () => {
-      await operateProcessInstancePage.editVariableValueModificationMode('test', '123',
-        '2', false
+      await operateProcessInstancePage.editVariableValueModificationMode(
+        'test',
+        '2',
       );
 
       await expect(
@@ -170,7 +171,8 @@ test.describe.skip('Process Instance Modifications', () => {
 
     await test.step('Edit variable foo again to value 3', async () => {
       await operateProcessInstancePage.editVariableValueModificationMode(
-        'foo', "1", '3'
+        'foo',
+        '3',
       );
 
       await expect(
@@ -250,8 +252,14 @@ test.describe.skip('Process Instance Modifications', () => {
     });
 
     await test.step('Edit variable and remove from summary modal', async () => {
-      await operateProcessInstancePage.editVariableValueModificationMode( 'foo', '2', '2');
-      await operateProcessInstancePage.editVariableValueModificationMode('test', '123', '1234', false);
+      await operateProcessInstancePage.editVariableValueModificationMode(
+        'foo',
+        '2',
+      );
+      await operateProcessInstancePage.editVariableValueModificationMode(
+        'test',
+        '1234',
+      );
 
       await operateProcessInstancePage.clickReviewModifications();
 

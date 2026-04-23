@@ -410,9 +410,9 @@ test.describe('Process Instance History', () => {
           nestedParentName,
         );
       await expect(nestedParentGroupLocator).toBeVisible();
-      expect(
-        await nestedParentGroupLocator.getByLabel(activityCollectMoney).count(),
-      ).toBe(2);
+      await expect(
+        nestedParentGroupLocator.getByLabel(activityCollectMoney),
+      ).toHaveCount(2);
     });
 
     await test.step('Verify First Subprocess has state overlay 1', async () => {
@@ -456,9 +456,9 @@ test.describe('Process Instance History', () => {
           nestedParentName,
         );
       await expect(nestedParentGroupLocator).toBeVisible();
-      expect(
-        await nestedParentGroupLocator.getByLabel(activitySendItems).count(),
-      ).toBe(1);
+      await expect(
+        nestedParentGroupLocator.getByLabel(activitySendItems),
+      ).toHaveCount(1);
     });
 
     await test.step('Enter modification mode and assert results', async () => {

@@ -11,7 +11,6 @@ import {
   jsonHeaders,
   buildUrl,
   assertEqualsForKeys,
-  paginatedResponseFields,
   assertNotFoundRequest,
   assertUnauthorizedRequest,
   assertConflictRequest,
@@ -156,7 +155,7 @@ test.describe.parallel('Group Mapping Rules API Tests', () => {
     );
     const json = await res.json();
     expect(json.page.totalItems).toBe(0);
-    expect(json.items.length).toBe(0);
+    expect(json.items).toHaveLength(0);
   });
 
   test('Unassign Mapping Rule From Group', async ({request}) => {
@@ -198,7 +197,7 @@ test.describe.parallel('Group Mapping Rules API Tests', () => {
       );
       const json = await res.json();
       expect(json.page.totalItems).toBe(0);
-      expect(json.items.length).toBe(0);
+      expect(json.items).toHaveLength(0);
     });
   });
 

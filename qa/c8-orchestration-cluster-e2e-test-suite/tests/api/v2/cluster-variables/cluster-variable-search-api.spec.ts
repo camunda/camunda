@@ -276,7 +276,7 @@ test.describe.parallel('Search Cluster Variables API Tests', () => {
         body,
       );
       expect(body.page.totalItems).toBeGreaterThanOrEqual(1);
-      expect(body.items.length).toBe(1);
+      expect(body.items).toHaveLength(1);
     }).toPass(defaultAssertionOptions);
   });
 

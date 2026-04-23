@@ -27,6 +27,7 @@ const c8 = new Camunda8({
   // Zeebe server rejects keepalive pings sent without active RPC calls
   // (permitKeepAliveWithoutCalls=false). Setting this to 0 aligns the client
   // with the server's expectation and prevents ENHANCE_YOUR_CALM / excess pings errors.
+  // @ts-expect-error -- GRPC_KEEPALIVE_PERMIT_WITHOUT_CALLS is a valid gRPC channel option but not yet typed in the SDK
   GRPC_KEEPALIVE_PERMIT_WITHOUT_CALLS: 0,
 });
 
