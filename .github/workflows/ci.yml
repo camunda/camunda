@@ -86,6 +86,7 @@ jobs:
       # renovate: datasource=github-tags depName=open-policy-agent/conftest
       CONFTEST_VERSION: '0.67.1'
     steps:
+      # TODO: combine with checkout into checkout-and-start-analytics?
       - uses: camunda/infra-global-github-actions/monitor-start@cn-poc-cpu-mem-utilization-analytics
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - uses: camunda/infra-global-github-actions/actionlint@main
@@ -151,6 +152,7 @@ jobs:
     timeout-minutes: 10
     permissions: { }  # GITHUB_TOKEN unused in this job
     steps:
+      - uses: camunda/infra-global-github-actions/monitor-start@cn-poc-cpu-mem-utilization-analytics
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - uses: ./.github/actions/setup-build
         with:
@@ -308,6 +310,7 @@ jobs:
             -Dquickly=true
             -DskipQaBuild=true
     steps:
+      - uses: camunda/infra-global-github-actions/monitor-start@cn-poc-cpu-mem-utilization-analytics
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - uses: ./.github/actions/setup-build
         with:
@@ -358,6 +361,7 @@ jobs:
     timeout-minutes: 20
     permissions: { }  # GITHUB_TOKEN unused in this job
     steps:
+      - uses: camunda/infra-global-github-actions/monitor-start@cn-poc-cpu-mem-utilization-analytics
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - uses: ./.github/actions/build-frontend
         id: build-operate-fe
@@ -674,6 +678,7 @@ jobs:
     outputs:
       flakyTests: ${{ steps.analyze-test-run.outputs.flakyTests }}
     steps:
+      - uses: camunda/infra-global-github-actions/monitor-start@cn-poc-cpu-mem-utilization-analytics
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - uses: ./.github/actions/setup-build
         with:
