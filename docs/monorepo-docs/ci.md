@@ -654,6 +654,43 @@ job-with-notification:
                 text: "Hello World"
 ```
 
+## On-Demand CI
+
+By default, Pull Requests only run lightweight linters on GitHub-hosted runners. The expensive test jobs that run on self-hosted runners (SHR) are gated behind the **`ci:run`** label. This applies to both the [Unified CI](#unified-ci) (`ci.yml`) and the [License Checks](#license-checks) (`check-licenses.yml`) workflows.
+
+### How it works
+
+1. **Open or push to a PR** — only cheap linter/check jobs run automatically (GitHub-hosted runners).
+2. **Add the `ci:run` label** — the full CI test matrix runs on self-hosted runners.
+3. **Label is auto-removed** — after the gate evaluates the label it is automatically removed, making it a *one-shot trigger*.
+4. **Push again** — only linters run (no label present). Add `ci:run` again when you are ready for another full CI run.
+
+### Exceptions (always run full CI)
+
+The gate is bypassed and the full CI matrix always runs for:
+
+* **Non-PR events:** merge queue (`merge_group`), pushes to `main`/`stable/*`, scheduled builds, manual `workflow_dispatch`.
+* **Bot PRs:** PRs authored by `renovate[bot]` or `camunda-platform-release[bot]`.
+
+### Interaction with other labels
+
+* **`ci:stress-test`** — stress testing is independent; add it alongside `ci:run` when needed (see [Stress Testing](#stress-testing)).
+* **`ci:no-cache`** — cache control is orthogonal to the CI gate and works as before.
+
+### FAQ
+
+**Q: Do I need to add `ci:run` every time I push?**
+
+> A: Only when you want the full test suite to run. Linters always run on every push.
+
+**Q: What happens in the merge queue?**
+
+> A: The merge queue triggers the `merge_group` event which bypasses the gate entirely. Full CI always runs in the merge queue.
+
+**Q: Do bot (Renovate) PRs need the label?**
+
+> A: No. Bot PRs are automatically exempted and always run the full CI matrix.
+
 ## ChatOps
 
 In the [camunda/camunda monorepo](https://github.com/camunda/camunda) certain automated workflows can be triggered by posting comments with commands on GitHub Issues and/or Pull Requests. Those commands are then processed by a [GitHub Actions workflow](https://github.com/camunda/camunda/blob/main/.github/workflows/chatops-command-dispatch.yml).

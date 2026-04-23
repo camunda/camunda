@@ -1,0 +1,69 @@
+---
+name: CI Gate
+# owner: @camunda/monorepo-devops-team
+description: |
+  On-demand CI gate that controls whether expensive self-hosted runner (SHR) jobs
+  should run. The gate opens automatically for non-PR events, bot PRs, and PRs
+  with the `ci:run` label. The label is auto-removed after consumption (one-shot).
+
+  See docs/monorepo-docs/ci.md § "On-Demand CI" for full documentation.
+
+inputs:
+  github-token:
+    description: "GitHub token with pull-requests:write permission (for label removal)"
+    required: true
+
+outputs:
+  should-run:
+    description: "'true' if SHR jobs should run, 'false' if they should be skipped"
+    value: ${{ steps.gate.outputs.run }}
+
+runs:
+  using: composite
+  steps:
+    - name: Evaluate CI gate
+      id: gate
+      shell: bash
+      env:
+        EVENT_NAME: ${{ github.event_name }}
+        HAS_LABEL: ${{ github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'ci:run') }}
+        PR_AUTHOR: ${{ github.event.pull_request.user.login }}
+      run: |
+        # Always run SHR jobs for non-PR events (merge queue, push, schedule, dispatch)
+        if [[ "${EVENT_NAME}" != "pull_request" ]]; then
+          echo "run=true" >> "$GITHUB_OUTPUT"
+          echo "::notice::CI gate: OPEN (event=${EVENT_NAME}, not a pull_request)"
+          exit 0
+        fi
+
+        # Run if PR has the ci:run label
+        if [[ "${HAS_LABEL}" == "true" ]]; then
+          echo "run=true" >> "$GITHUB_OUTPUT"
+          echo "::notice::CI gate: OPEN (ci:run label present)"
+          exit 0
+        fi
+
+        # Auto-run for bot PRs (Renovate, release bot) to preserve existing behavior
+        if [[ "${PR_AUTHOR}" == "renovate[bot]" || "${PR_AUTHOR}" == "camunda-platform-release[bot]" ]]; then
+          echo "run=true" >> "$GITHUB_OUTPUT"
+          echo "::notice::CI gate: OPEN (bot PR, author=${PR_AUTHOR})"
+          exit 0
+        fi
+
+        # Gate is closed: skip SHR jobs
+        echo "run=false" >> "$GITHUB_OUTPUT"
+        echo "::notice::CI gate: CLOSED — add the 'ci:run' label to trigger the CI"
+
+    # Remove the ci:run label after consuming it so the next push doesn't
+    # automatically re-trigger the full CI matrix. This makes the label a
+    # one-shot trigger: add it → CI runs → label removed → next push is cheap.
+    - name: Remove ci:run label (one-shot trigger)
+      if: steps.gate.outputs.run == 'true' && github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'ci:run')
+      shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.github-token }}
+      run: |
+        gh pr edit "${{ github.event.pull_request.number }}" \
+          --repo "${{ github.repository }}" \
+          --remove-label "ci:run"
+        echo "::notice::Removed ci:run label (one-shot consumed)"
