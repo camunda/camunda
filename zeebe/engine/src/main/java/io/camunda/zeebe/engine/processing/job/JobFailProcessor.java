@@ -12,6 +12,7 @@ import static io.camunda.zeebe.util.StringUtil.limitString;
 import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 
 import io.camunda.zeebe.engine.metrics.EngineMetricsDoc.JobAction;
+import io.camunda.zeebe.engine.metrics.IncidentMetrics;
 import io.camunda.zeebe.engine.metrics.JobProcessingMetrics;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnJobActivationBehavior;
@@ -60,6 +61,7 @@ public final class JobFailProcessor implements TypedRecordProcessor<JobRecord> {
   private final JobCommandPreconditionChecker preconditionChecker;
   private final ElementInstanceState elementInstanceState;
   private final ProcessState processState;
+  private final IncidentMetrics incidentMetrics;
 
   public JobFailProcessor(
       final ProcessingState state,
@@ -67,7 +69,8 @@ public final class JobFailProcessor implements TypedRecordProcessor<JobRecord> {
       final KeyGenerator keyGenerator,
       final JobProcessingMetrics jobMetrics,
       final JobBackoffChecker jobBackoffChecker,
-      final BpmnBehaviors bpmnBehaviors) {
+      final BpmnBehaviors bpmnBehaviors,
+      final IncidentMetrics incidentMetrics) {
     jobState = state.getJobState();
     elementInstanceState = state.getElementInstanceState();
     processState = state.getProcessState();
@@ -82,6 +85,7 @@ public final class JobFailProcessor implements TypedRecordProcessor<JobRecord> {
     this.keyGenerator = keyGenerator;
     this.jobBackoffChecker = jobBackoffChecker;
     this.jobMetrics = jobMetrics;
+    this.incidentMetrics = incidentMetrics;
   }
 
   @Override
@@ -195,5 +199,6 @@ public final class JobFailProcessor implements TypedRecordProcessor<JobRecord> {
         .setCallingElementPath(treePathProperties.callingElementPath());
 
     stateWriter.appendFollowUpEvent(keyGenerator.nextKey(), IncidentIntent.CREATED, incidentEvent);
+    incidentMetrics.incidentCreated();
   }
 }

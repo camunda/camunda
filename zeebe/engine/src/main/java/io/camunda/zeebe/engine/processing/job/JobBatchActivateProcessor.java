@@ -10,6 +10,7 @@ package io.camunda.zeebe.engine.processing.job;
 import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 
 import io.camunda.zeebe.engine.metrics.EngineMetricsDoc.JobAction;
+import io.camunda.zeebe.engine.metrics.IncidentMetrics;
 import io.camunda.zeebe.engine.metrics.JobProcessingMetrics;
 import io.camunda.zeebe.engine.processing.common.ElementTreePathBuilder;
 import io.camunda.zeebe.engine.processing.job.JobBatchCollector.TooLargeJob;
@@ -48,13 +49,15 @@ public final class JobBatchActivateProcessor implements TypedRecordProcessor<Job
   private final JobProcessingMetrics jobMetrics;
   private final ElementInstanceState elementInstanceState;
   private final ProcessState processState;
+  private final IncidentMetrics incidentMetrics;
 
   public JobBatchActivateProcessor(
       final Writers writers,
       final ProcessingState state,
       final KeyGenerator keyGenerator,
       final JobProcessingMetrics jobMetrics,
-      final InstantSource clock) {
+      final InstantSource clock,
+      final IncidentMetrics incidentMetrics) {
 
     stateWriter = writers.state();
     rejectionWriter = writers.rejection();
@@ -70,6 +73,7 @@ public final class JobBatchActivateProcessor implements TypedRecordProcessor<Job
     this.jobMetrics = jobMetrics;
     elementInstanceState = state.getElementInstanceState();
     processState = state.getProcessState();
+    this.incidentMetrics = incidentMetrics;
   }
 
   @Override
@@ -179,5 +183,6 @@ public final class JobBatchActivateProcessor implements TypedRecordProcessor<Job
             .setCallingElementPath(treePathProperties.callingElementPath());
 
     stateWriter.appendFollowUpEvent(keyGenerator.nextKey(), IncidentIntent.CREATED, incidentEvent);
+    incidentMetrics.incidentCreated();
   }
 }

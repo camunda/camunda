@@ -11,6 +11,7 @@ import static io.camunda.zeebe.protocol.record.intent.DeploymentIntent.CREATE;
 
 import io.camunda.zeebe.dmn.DecisionEngineFactory;
 import io.camunda.zeebe.engine.EngineConfiguration;
+import io.camunda.zeebe.engine.metrics.IncidentMetrics;
 import io.camunda.zeebe.engine.metrics.JobProcessingMetrics;
 import io.camunda.zeebe.engine.metrics.ProcessEngineMetrics;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
@@ -98,6 +99,7 @@ public final class EngineProcessors {
             scheduledTaskStateFactory.get().getTimerState(), featureFlags, clock);
 
     final var jobMetrics = new JobProcessingMetrics(typedRecordProcessorContext.getMeterRegistry());
+    final var incidentMetrics = new IncidentMetrics(typedRecordProcessorContext.getMeterRegistry());
     final var processEngineMetrics =
         new ProcessEngineMetrics(typedRecordProcessorContext.getMeterRegistry());
 
@@ -120,7 +122,10 @@ public final class EngineProcessors {
             decisionBehavior,
             clock,
             transientProcessMessageSubscriptionState,
-            config);
+            config,
+            incidentMetrics);
+
+    typedRecordProcessors.withListener(bpmnBehaviors.incidentBehavior());
 
     final var commandDistributionBehavior =
         new CommandDistributionBehavior(
@@ -184,14 +189,16 @@ public final class EngineProcessors {
         writers,
         jobMetrics,
         config,
-        clock);
+        clock,
+        incidentMetrics);
 
     addIncidentProcessors(
         processingState,
         bpmnStreamProcessor,
         typedRecordProcessors,
         writers,
-        bpmnBehaviors.jobActivationBehavior());
+        bpmnBehaviors.jobActivationBehavior(),
+        incidentMetrics);
     addResourceDeletionProcessors(
         typedRecordProcessors,
         writers,
@@ -246,7 +253,8 @@ public final class EngineProcessors {
       final DecisionBehavior decisionBehavior,
       final InstantSource clock,
       final TransientPendingSubscriptionState transientProcessMessageSubscriptionState,
-      final EngineConfiguration config) {
+      final EngineConfiguration config,
+      final IncidentMetrics incidentMetrics) {
     return new BpmnBehaviorsImpl(
         processingState,
         writers,
@@ -258,7 +266,8 @@ public final class EngineProcessors {
         jobStreamer,
         clock,
         transientProcessMessageSubscriptionState,
-        config);
+        config,
+        incidentMetrics);
   }
 
   private static TypedRecordProcessor<ProcessInstanceRecord> addProcessProcessors(
@@ -348,13 +357,15 @@ public final class EngineProcessors {
       final TypedRecordProcessor<ProcessInstanceRecord> bpmnStreamProcessor,
       final TypedRecordProcessors typedRecordProcessors,
       final Writers writers,
-      final BpmnJobActivationBehavior jobActivationBehavior) {
+      final BpmnJobActivationBehavior jobActivationBehavior,
+      final IncidentMetrics incidentMetrics) {
     IncidentEventProcessors.addProcessors(
         typedRecordProcessors,
         processingState,
         bpmnStreamProcessor,
         writers,
-        jobActivationBehavior);
+        jobActivationBehavior,
+        incidentMetrics);
   }
 
   private static void addMessageProcessors(
