@@ -15,7 +15,10 @@ export async function verifyAccess(
   appName?: string,
 ) {
   if (appName) {
-    await page.goto(`${process.env.CORE_APPLICATION_URL}/${appName}/`);
+    await page.goto(`${process.env.CORE_APPLICATION_URL}/${appName}/`, {
+      waitUntil: 'domcontentloaded',
+      timeout: 60000,
+    });
   }
 
   if (shouldHaveAccess) {
