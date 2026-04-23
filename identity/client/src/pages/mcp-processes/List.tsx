@@ -47,7 +47,7 @@ const List: FC = () => {
       <PageHeader
         title={tComponents("mcpProcesses")}
         linkText={tComponents("mcpProcesses").toLowerCase()}
-        shouldShowDocumentationLink={false}
+        docsLinkPath="/components/admin/mcp-processes/"
       />
       <EntityList
         data={processTools}
