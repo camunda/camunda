@@ -3,13 +3,14 @@
 ---
 # Urgency Field Automation
 #
-# This workflow automatically calculates and updates the Urgency field for issues in GitHub Projects.
+# This workflow automatically calculates and updates the Urgency field for issues.
 #
 # How it works:
 # - Triggers when issues are opened, labeled, unlabeled, reopened, or transferred
 # - Calculates urgency based on severity/likelihood OR impact/when labels using risk matrices
-# - Updates the Urgency field in ProjectV2 with values: immediate, next, planned, someday
-# - Applies to any issue with a severity label OR impact label
+# - Updates the org-level Urgency issue field with values: immediate, next, planned, someday
+# - Syncs urgency to project-level Urgency fields for configured projects (e.g. #187)
+# - Can be called from other repos via workflow_call for cross-repo support
 #
 # Labels (Option 1 - Risk-based):
 # - severity/{low,mid,high,critical} - Required to trigger severity/likelihood calculation
@@ -22,10 +23,19 @@
 # Other labels:
 # - urgency-locked - Prevents automatic urgency updates while showing calculated value
 #
-# Note: If both severity and impact labels are present, impact/when takes precedence
+# Note: If both severity and impact labels are present, the higher urgency wins
 #
 # Manual usage:
-#   gh workflow run assign-urgency-to-issue.yml -f issue_number=123 -f project_id=173
+#   gh workflow run assign-urgency-to-issue.yml -f issue_number=123
+#
+# Cross-repo usage (add to other repos in the org):
+#   jobs:
+#     urgency:
+#       uses: camunda/camunda/.github/workflows/assign-urgency-to-issue.yml@main
+#       with:
+#         issue_number: ${{ github.event.issue.number }}
+#         repo: ${{ github.event.repository.name }}
+#       secrets: inherit
 #
 name: Assign urgency field when issue is updated
 
@@ -35,19 +45,26 @@ on:
   workflow_dispatch:
     inputs:
       issue_number:
-        description: 'Issue number to process (optional)'
-        required: false
-      project_id:
-        description: 'Target project ID (optional, defaults to job env)'
-        required: false
+        description: 'Issue number to process'
+        required: true
       dry_run:
         description: 'Dry run mode - calculate urgency but do not update field'
         required: false
         type: boolean
         default: false
+  workflow_call:
+    inputs:
+      issue_number:
+        description: 'Issue number to process (must be numeric)'
+        required: true
+        type: string # workflow_call only supports string/boolean; GraphQL -F coerces to Int
+      repo:
+        description: 'Repository name (e.g. web-modeler)'
+        required: true
+        type: string
 
 concurrency:
-  group: update-urgency-${{ github.event.inputs.issue_number || github.event.issue.number }}
+  group: update-urgency-${{ inputs.issue_number || github.event.inputs.issue_number || github.event.issue.number }}-${{ inputs.repo || github.event.repository.name }}
   cancel-in-progress: true
 
 jobs:
@@ -57,10 +74,12 @@ jobs:
     timeout-minutes: 10
     env:
       OWNER: ${{ github.repository_owner }}
-      REPO: ${{ github.event.repository.name }}
-      ISSUE_NUMBER: ${{ github.event.inputs.issue_number || github.event.issue.number }}
-      PROJECT_NUMBER: ${{ github.event.inputs.project_id || '173' }}
-      URGENCY_FIELD_NAME: 'Urgency'
+      REPO: ${{ inputs.repo || github.event.repository.name }}
+      ISSUE_NUMBER: ${{ inputs.issue_number || github.event.inputs.issue_number || github.event.issue.number }}
+      URGENCY_FIELD_ID: 'IFSS_kgDNKAw'
+      # Projects whose project-level Urgency field should be kept in sync
+      # (for public projects where org-level fields are not visible)
+      SYNC_PROJECT_NUMBERS: '187'
       DRY_RUN: ${{ github.event.inputs.dry_run || 'false' }}
     defaults:
       run:
@@ -84,7 +103,7 @@ jobs:
           cat << 'EOF'
           ${{ toJSON(github.event.issue) }}
           EOF
-      - name: Fetch issue and project data
+      - name: Fetch issue data
         id: fetch_data
         env:
           GH_TOKEN: ${{ steps.github-token.outputs.token }}
@@ -95,20 +114,30 @@ jobs:
             echo "🔬 DRY RUN MODE - No changes will be made"
           fi
 
-          echo "🔍 Fetching issue #${ISSUE_NUMBER} and project ${PROJECT_NUMBER} data"
+          # Validate issue number is numeric
+          if ! [[ "$ISSUE_NUMBER" =~ ^[0-9]+$ ]]; then
+            echo "❌ Invalid issue number: '$ISSUE_NUMBER' (must be numeric)"
+            exit 1
+          fi
 
-          # Single GraphQL query fetches: project info, project item, labels, issue type, and current urgency value
-          # projectItems section is needed to:
-          #   - Get PROJECT_ITEM_ID (required for updating the urgency field)
-          #   - Verify the issue is in the target project (filter by project.number)
-          #   - Fetch current urgency value (from fieldValues to check if update is needed)
-          # Note: Limited to first 100 projects - if issue is in 100+ projects, target might be missed
-          QUERY="query(\$owner:String!,\$repo:String!,\$issueNumber:Int!,\$projectNumber:Int!){
+          echo "🔍 Fetching issue #${ISSUE_NUMBER} from ${OWNER}/${REPO}"
+
+          # Fetch issue labels, type, current org-level urgency, and project memberships
+          QUERY="query(\$owner:String!,\$repo:String!,\$issueNumber:Int!){
             repository(owner:\$owner,name:\$repo){
               issue(number:\$issueNumber){
                 id
                 issueType { name }
                 labels(first:100){ nodes { name } }
+                issueFieldValues(first:50){
+                  nodes{
+                    ... on IssueFieldSingleSelectValue {
+                      field { ... on IssueFieldSingleSelect { id name } }
+                      name
+                      optionId
+                    }
+                  }
+                }
                 projectItems(first:100){
                   nodes{
                     id
@@ -125,75 +154,31 @@ jobs:
                 }
               }
             }
-            organization(login:\$owner){
-              projectV2(number:\$projectNumber){ id }
-            }
           }"
 
-          RESP=$(gh api graphql -f query="$QUERY" -F owner="$OWNER" -F repo="$REPO" -F issueNumber="$ISSUE_NUMBER" -F projectNumber="$PROJECT_NUMBER") || {
+          RESP=$(gh api graphql -f query="$QUERY" -F owner="$OWNER" -F repo="$REPO" -F issueNumber="$ISSUE_NUMBER") || {
             echo "❌ GraphQL query failed:"
             echo "$RESP"
             exit 1
           }
 
-          # Store raw response parts in outputs for extraction where needed
           ISSUE_DATA=$(echo "$RESP" | jq -c '.data.repository.issue')
-          PROJECT_DATA=$(echo "$RESP" | jq -c '.data.organization.projectV2')
 
-          echo "✅ Fetched issue and project data"
+          if [[ "$ISSUE_DATA" == "null" || -z "$ISSUE_DATA" ]]; then
+            echo "❌ Issue #${ISSUE_NUMBER} not found in ${OWNER}/${REPO}"
+            exit 1
+          fi
 
-          # Store raw data in outputs for next steps
+          echo "✅ Fetched issue data"
+
           {
             echo "issue_data<<EOF"
             echo "$ISSUE_DATA"
             echo "EOF"
-            echo "project_data<<EOF"
-            echo "$PROJECT_DATA"
-            echo "EOF"
-          } >> "$GITHUB_OUTPUT"
-
-      - name: Validate project membership
-        id: validate_project
-        run: |
-          set -euo pipefail
-
-          ISSUE_DATA='${{ steps.fetch_data.outputs.issue_data }}'
-          PROJECT_DATA='${{ steps.fetch_data.outputs.project_data }}'
-
-          # Extract project information
-          TARGET_PROJECT_NODE_ID=$(echo "$PROJECT_DATA" | jq -r '.id // empty')
-          PROJECT_ITEM_ID=$(echo "$ISSUE_DATA" | jq -r --argjson pn "$PROJECT_NUMBER" \
-            '.projectItems.nodes[] | select(.project.number==$pn) | .id // empty')
-
-          echo "📦 Project: #${PROJECT_NUMBER} (id: ${TARGET_PROJECT_NODE_ID:-not found})"
-          echo "🔗 Project item: ${PROJECT_ITEM_ID:-not found}"
-
-          # Check if project exists
-          if [[ -z "$TARGET_PROJECT_NODE_ID" ]]; then
-            echo "❌ Target project #${PROJECT_NUMBER} not found in organization ${OWNER}"
-            echo "💡 Check that the project exists and PROJECT_NUMBER is correct"
-            exit 1
-          fi
-
-          # Check if issue is in the project
-          if [[ -z "$PROJECT_ITEM_ID" ]]; then
-            echo "⏭️ Issue #${ISSUE_NUMBER} is not in target project #${PROJECT_NUMBER}; skipping"
-            echo "in_target_project=false" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-
-          echo "✅ Issue is in target project (item: $PROJECT_ITEM_ID)"
-
-          # Store extracted IDs for later use
-          {
-            echo "in_target_project=true"
-            echo "project_v2_id=$TARGET_PROJECT_NODE_ID"
-            echo "project_item_id=$PROJECT_ITEM_ID"
           } >> "$GITHUB_OUTPUT"
 
       - name: Check labels
         id: check_labels
-        if: steps.validate_project.outputs.in_target_project == 'true'
         run: |
           set -euo pipefail
 
@@ -375,28 +360,35 @@ jobs:
 
           echo "urgency=$URGENCY" >> "$GITHUB_OUTPUT"
 
-      - name: Update Urgency
-        if: steps.validate_project.outputs.in_target_project == 'true'
+      - name: Update org-level Urgency field
+        if: steps.validate_urgency.outputs.urgency != ''
         env:
           GH_TOKEN: ${{ steps.github-token.outputs.token }}
         run: |
           set -euo pipefail
 
           ISSUE_DATA='${{ steps.fetch_data.outputs.issue_data }}'
-          PROJECT_ITEM_ID='${{ steps.validate_project.outputs.project_item_id }}'
-          PROJECT_V2_ID='${{ steps.validate_project.outputs.project_v2_id }}'
+          ISSUE_ID=$(echo "$ISSUE_DATA" | jq -r '.id')
           NEW_URGENCY='${{ steps.validate_urgency.outputs.urgency }}'
           HAS_URGENCY_LOCKED='${{ steps.check_labels.outputs.has_urgency_locked }}'
 
-          # Extract current urgency value
-          CURRENT_URGENCY=$(echo "$ISSUE_DATA" | jq -r --argjson pn "$PROJECT_NUMBER" --arg fieldName "$URGENCY_FIELD_NAME" \
-            '.projectItems.nodes[] | select(.project.number==$pn) | .fieldValues.nodes[] | select(.field.name==$fieldName) | .name // empty')
+          # Org-level urgency field option IDs
+          declare -A OPTION_IDS=(
+            [immediate]="IFSSO_kgDNOUI"
+            [next]="IFSSO_kgDNOUM"
+            [planned]="IFSSO_kgDNOUQ"
+            [someday]="IFSSO_kgDNOUU"
+          )
 
-          echo "🔄 Update urgency: '${CURRENT_URGENCY:-(empty)}' → '${NEW_URGENCY:-(empty)}'"
+          # Extract current urgency value from org-level issue field
+          CURRENT_URGENCY=$(echo "$ISSUE_DATA" | jq -r --arg fieldId "$URGENCY_FIELD_ID" \
+            '.issueFieldValues.nodes[] | select(.field.id==$fieldId) | .name // empty')
+
+          echo "🔄 Org-level urgency: '${CURRENT_URGENCY:-(empty)}' → '${NEW_URGENCY}'"
 
           # Check if urgency would change
           if [[ "$CURRENT_URGENCY" == "$NEW_URGENCY" ]]; then
-            echo "⏭️ Urgency already set to '$NEW_URGENCY'"
+            echo "⏭️ Org-level urgency already set to '$NEW_URGENCY'"
             exit 0
           fi
 
@@ -412,60 +404,119 @@ jobs:
             exit 0
           fi
 
-          # Fetch project fields
-          FIELD_DATA=$(gh api graphql -f query="
-            query(\$projectId:ID!){
-              node(id:\$projectId){
-                ... on ProjectV2 {
-                  fields(first:100){
-                    nodes{
-                      ... on ProjectV2SingleSelectField { id name options { id name } }
-                    }
-                  }
-                }
-              }
-            }" -F projectId="$PROJECT_V2_ID") || {
-            echo "❌ Failed to fetch project fields"
-            exit 1
-          }
+          OPTION_ID="${OPTION_IDS[$NEW_URGENCY]:-}"
 
-          FIELD_ID=$(echo "$FIELD_DATA" | jq -r --arg name "$URGENCY_FIELD_NAME" \
-            '.data.node.fields.nodes[] | select(.name==$name) | .id // empty')
-
-          if [[ -z "$FIELD_ID" ]]; then
-            echo "❌ Field '$URGENCY_FIELD_NAME' does not exist in project '$PROJECT_V2_ID'"
-            echo "   Expected: A ProjectV2 single-select field named '$URGENCY_FIELD_NAME' with options: immediate, next, planned, someday"
-            echo "   Verify: The field exists in the target project and URGENCY_FIELD_NAME is configured correctly"
+          if [[ -z "$OPTION_ID" ]]; then
+            echo "❌ No option ID mapped for urgency value '$NEW_URGENCY'"
             exit 1
           fi
 
-          # Build mutation based on whether we're clearing or updating
-          if [[ -z "$NEW_URGENCY" ]]; then
-            JSON_PAYLOAD=$(jq -n \
-              --arg projectId "$PROJECT_V2_ID" \
-              --arg itemId "$PROJECT_ITEM_ID" \
-              --arg fieldId "$FIELD_ID" \
-              '{
-                "query": "mutation($input: ClearProjectV2ItemFieldValueInput!) { clearProjectV2ItemFieldValue(input: $input) { projectV2Item { id } } }",
-                "variables": {
-                  "input": {
-                    "projectId": $projectId,
-                    "itemId": $itemId,
-                    "fieldId": $fieldId
+          JSON_PAYLOAD=$(jq -n \
+            --arg issueId "$ISSUE_ID" \
+            --arg fieldId "$URGENCY_FIELD_ID" \
+            --arg optionId "$OPTION_ID" \
+            '{
+              "query": "mutation($input: SetIssueFieldValueInput!) { setIssueFieldValue(input: $input) { issue { id } } }",
+              "variables": {
+                "input": {
+                  "issueId": $issueId,
+                  "issueFields": [{
+                    "fieldId": $fieldId,
+                    "singleSelectOptionId": $optionId
+                  }]
+                }
+              }
+            }')
+
+          MUTATION_RESP=$(gh api graphql -H "Content-Type: application/json" --input - <<< "$JSON_PAYLOAD" 2>&1) || {
+            echo "❌ GraphQL mutation failed:"
+            echo "$MUTATION_RESP"
+            exit 1
+          }
+
+          if echo "$MUTATION_RESP" | jq -e '.errors' > /dev/null 2>&1; then
+            echo "❌ GraphQL mutation returned errors:"
+            echo "$MUTATION_RESP" | jq '.errors'
+            exit 1
+          fi
+
+          echo "✅ Updated org-level urgency: '${CURRENT_URGENCY:-(empty)}' → '${NEW_URGENCY}'"
+
+      - name: Sync urgency to project-level fields
+        if: steps.validate_urgency.outputs.urgency != '' && steps.check_labels.outputs.has_urgency_locked != 'true'
+        env:
+          GH_TOKEN: ${{ steps.github-token.outputs.token }}
+        run: |
+          set -euo pipefail
+
+          ISSUE_DATA='${{ steps.fetch_data.outputs.issue_data }}'
+          NEW_URGENCY='${{ steps.validate_urgency.outputs.urgency }}'
+          URGENCY_FIELD_NAME='Urgency'
+
+          if [[ "$DRY_RUN" == "true" ]]; then
+            echo "🔬 DRY RUN: Project sync skipped"
+            exit 0
+          fi
+
+          # Iterate over configured projects to sync
+          for PROJECT_NUM in $SYNC_PROJECT_NUMBERS; do
+            # Find the project item for this project
+            PROJECT_ITEM=$(echo "$ISSUE_DATA" | jq -c --argjson pn "$PROJECT_NUM" \
+              '.projectItems.nodes[] | select(.project.number==$pn)')
+
+            if [[ -z "$PROJECT_ITEM" || "$PROJECT_ITEM" == "null" ]]; then
+              echo "⏭️ Issue not in project #${PROJECT_NUM} — skipping sync"
+              continue
+            fi
+
+            PROJECT_ITEM_ID=$(echo "$PROJECT_ITEM" | jq -r '.id')
+            PROJECT_V2_ID=$(echo "$PROJECT_ITEM" | jq -r '.project.id')
+
+            # Check current project-level urgency
+            CURRENT_PROJECT_URGENCY=$(echo "$PROJECT_ITEM" | jq -r --arg fn "$URGENCY_FIELD_NAME" \
+              '.fieldValues.nodes[] | select(.field.name==$fn) | .name // empty')
+
+            if [[ "$CURRENT_PROJECT_URGENCY" == "$NEW_URGENCY" ]]; then
+              echo "⏭️ Project #${PROJECT_NUM}: already set to '$NEW_URGENCY'"
+              continue
+            fi
+
+            echo "🔄 Project #${PROJECT_NUM}: '${CURRENT_PROJECT_URGENCY:-(empty)}' → '${NEW_URGENCY}'"
+
+            # Fetch project field and option IDs
+            FIELD_DATA=$(gh api graphql -f query="
+              query(\$projectId:ID!){
+                node(id:\$projectId){
+                  ... on ProjectV2 {
+                    fields(first:100){
+                      nodes{
+                        ... on ProjectV2SingleSelectField { id name options { id name } }
+                      }
+                    }
                   }
                 }
-              }')
-          else
+              }" -F projectId="$PROJECT_V2_ID") || {
+              echo "⚠️ Project #${PROJECT_NUM}: failed to fetch fields — skipping"
+              continue
+            }
+
+            FIELD_ID=$(echo "$FIELD_DATA" | jq -r --arg name "$URGENCY_FIELD_NAME" \
+              '.data.node.fields.nodes[] | select(.name==$name) | .id // empty')
+
+            if [[ -z "$FIELD_ID" ]]; then
+              echo "⏭️ Project #${PROJECT_NUM}: no '$URGENCY_FIELD_NAME' field — skipping"
+              continue
+            fi
+
             OPTION_ID=$(echo "$FIELD_DATA" | jq -r --arg name "$URGENCY_FIELD_NAME" --arg value "$NEW_URGENCY" \
               '.data.node.fields.nodes[] | select(.name==$name) | .options[]? | select(.name==$value) | .id // empty')
 
             if [[ -z "$OPTION_ID" ]]; then
-              echo "❌ Option '$NEW_URGENCY' not found in field '$URGENCY_FIELD_NAME'"
-              echo "   Expected options: immediate, next, planned, someday"
-              echo "   Verify: The field has all required options configured in the project"
-              exit 1
+              echo "⚠️ Project #${PROJECT_NUM}: option '$NEW_URGENCY' not found — skipping"
+              continue
             fi
 
+            # Update project-level field
             JSON_PAYLOAD=$(jq -n \
               --arg projectId "$PROJECT_V2_ID" \
               --arg itemId "$PROJECT_ITEM_ID" \
@@ -482,19 +533,17 @@ jobs:
                   }
                 }
               }')
-          fi
 
-          # Execute mutation
-          MUTATION_RESP=$(gh api graphql -H "Content-Type: application/json" --input - <<< "$JSON_PAYLOAD" 2>&1) || {
-            echo "❌ GraphQL mutation failed:"
-            echo "$MUTATION_RESP"
-            exit 1
-          }
+            MUTATION_RESP=$(gh api graphql -H "Content-Type: application/json" --input - <<< "$JSON_PAYLOAD" 2>&1) || {
+              echo "⚠️ Project #${PROJECT_NUM}: mutation failed — skipping"
+              continue
+            }
 
-          if echo "$MUTATION_RESP" | jq -e '.errors' > /dev/null 2>&1; then
-            echo "❌ GraphQL mutation returned errors:"
-            echo "$MUTATION_RESP" | jq '.errors'
-            exit 1
-          fi
+            if echo "$MUTATION_RESP" | jq -e '.errors' > /dev/null 2>&1; then
+              echo "⚠️ Project #${PROJECT_NUM}: mutation errors:"
+              echo "$MUTATION_RESP" | jq '.errors'
+              continue
+            fi
 
-          echo "✅ Updated urgency: '${CURRENT_URGENCY:-(empty)}' → '${NEW_URGENCY:-(empty)}'"
+            echo "✅ Project #${PROJECT_NUM}: synced to '${NEW_URGENCY}'"
+          done
