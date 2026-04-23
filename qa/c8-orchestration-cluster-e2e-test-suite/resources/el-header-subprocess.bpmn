@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"
+  xmlns:dc="http://www.omg.org/spec/DD/20100524/DC"
+  xmlns:di="http://www.omg.org/spec/DD/20100524/DI"
+  xmlns:zeebe="http://camunda.org/schema/zeebe/1.0"
+  xmlns:modeler="http://camunda.org/schema/modeler/1.0"
+  id="Definitions_10"
+  targetNamespace="http://bpmn.io/schema/bpmn"
+  modeler:executionPlatform="Camunda Cloud"
+  modeler:executionPlatformVersion="8.10.0">
+  <bpmn:process id="el-header-subprocess" name="EL Header Subprocess" isExecutable="true">
+    <bpmn:startEvent id="start" name="Start">
+      <bpmn:outgoing>sf1</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:sequenceFlow id="sf1" sourceRef="start" targetRef="subprocess"/>
+    <bpmn:subProcess id="subprocess" name="Sub Process">
+      <bpmn:extensionElements>
+        <zeebe:executionListeners>
+          <zeebe:executionListener eventType="start" type="el-subprocess-start" retries="3">
+            <zeebe:taskHeaders>
+              <zeebe:header key="scope" value="subprocess-init"/>
+            </zeebe:taskHeaders>
+          </zeebe:executionListener>
+          <zeebe:executionListener eventType="end" type="el-subprocess-end" retries="3">
+            <zeebe:taskHeaders>
+              <zeebe:header key="scope" value="subprocess-cleanup"/>
+            </zeebe:taskHeaders>
+          </zeebe:executionListener>
+        </zeebe:executionListeners>
+      </bpmn:extensionElements>
+      <bpmn:incoming>sf1</bpmn:incoming>
+      <bpmn:outgoing>sf2</bpmn:outgoing>
+      <bpmn:startEvent id="subStart">
+        <bpmn:outgoing>sfsub1</bpmn:outgoing>
+      </bpmn:startEvent>
+      <bpmn:sequenceFlow id="sfsub1" sourceRef="subStart" targetRef="subTask"/>
+      <bpmn:serviceTask id="subTask" name="Inner Task">
+        <bpmn:extensionElements>
+          <zeebe:taskDefinition type="inner-task" retries="3"/>
+        </bpmn:extensionElements>
+        <bpmn:incoming>sfsub1</bpmn:incoming>
+        <bpmn:outgoing>sfsub2</bpmn:outgoing>
+      </bpmn:serviceTask>
+      <bpmn:sequenceFlow id="sfsub2" sourceRef="subTask" targetRef="subEnd"/>
+      <bpmn:endEvent id="subEnd">
+        <bpmn:incoming>sfsub2</bpmn:incoming>
+      </bpmn:endEvent>
+    </bpmn:subProcess>
+    <bpmn:sequenceFlow id="sf2" sourceRef="subprocess" targetRef="end"/>
+    <bpmn:endEvent id="end" name="End">
+      <bpmn:incoming>sf2</bpmn:incoming>
+    </bpmn:endEvent>
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="el-header-subprocess">
+      <bpmndi:BPMNShape id="start_di" bpmnElement="start"><dc:Bounds x="150" y="118" width="36" height="36"/></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="subprocess_di" bpmnElement="subprocess" isExpanded="true"><dc:Bounds x="240" y="60" width="350" height="150"/></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="subStart_di" bpmnElement="subStart"><dc:Bounds x="272" y="118" width="36" height="36"/></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="subTask_di" bpmnElement="subTask"><dc:Bounds x="360" y="96" width="100" height="80"/></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="subEnd_di" bpmnElement="subEnd"><dc:Bounds x="512" y="118" width="36" height="36"/></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="end_di" bpmnElement="end"><dc:Bounds x="652" y="118" width="36" height="36"/></bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="sf1_di" bpmnElement="sf1"><di:waypoint x="186" y="136"/><di:waypoint x="240" y="136"/></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="sfsub1_di" bpmnElement="sfsub1"><di:waypoint x="308" y="136"/><di:waypoint x="360" y="136"/></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="sfsub2_di" bpmnElement="sfsub2"><di:waypoint x="460" y="136"/><di:waypoint x="512" y="136"/></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="sf2_di" bpmnElement="sf2"><di:waypoint x="590" y="136"/><di:waypoint x="652" y="136"/></bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>
