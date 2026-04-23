@@ -13,6 +13,9 @@ import type {
 } from '@camunda/camunda-api-zod-schemas/8.8';
 
 const queryKeys = {
+  variable: {
+    get: (variableKey: string) => ['variable', variableKey],
+  },
   variables: {
     search: () => ['searchVariables'],
     searchWithFilter: (params: {

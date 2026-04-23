@@ -9,7 +9,7 @@
 import {render, screen, within, waitFor} from 'modules/testing-library';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
 import {getWrapper, mockProcessInstance} from './mocks';
-import {createInstance} from 'modules/testUtils';
+import {createInstance, createVariable} from 'modules/testUtils';
 import {mockFetchProcessInstance as mockFetchProcessInstanceDeprecated} from 'modules/mocks/api/processInstances/fetchProcessInstance';
 import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
@@ -17,6 +17,14 @@ import {mockSearchVariables} from 'modules/mocks/api/v2/variables/searchVariable
 import {mockSearchJobs} from 'modules/mocks/api/v2/jobs/searchJobs';
 import {mockvariables} from './index.setup';
 import {VariablePanel} from '../index';
+import {notificationsStore} from 'modules/stores/notifications';
+import {mockUpdateElementInstanceVariables} from 'modules/mocks/api/v2/elementInstances/updateElementInstanceVariables';
+
+vi.mock('modules/stores/notifications', () => ({
+  notificationsStore: {
+    displayNotification: vi.fn(() => () => {}),
+  },
+}));
 
 const instanceMock = createInstance({id: '1'});
 
@@ -579,5 +587,59 @@ describe('Add variable', () => {
     expect(
       within(screen.getByRole('dialog')).getByTestId('monaco-editor'),
     ).toBeInTheDocument();
+  });
+
+  it('should save a large new variable even when search response is truncated', async () => {
+    processInstanceDetailsStore.setProcessInstance(instanceMock);
+    mockFetchProcessInstance().withSuccess(mockProcessInstance);
+    mockSearchVariables().withSuccess(mockvariables);
+    mockSearchVariables().withSuccess(mockvariables);
+
+    const {user} = render(
+      <VariablePanel setListenerTabVisibility={vi.fn()} />,
+      {wrapper: getWrapper()},
+    );
+    await waitFor(() => {
+      expect(screen.getByTestId('variables-list')).toBeInTheDocument();
+    });
+
+    await user.click(screen.getByRole('button', {name: /add variable/i}));
+    await user.type(
+      screen.getByRole('textbox', {name: /name/i}),
+      'largeVariable',
+    );
+    await user.type(
+      screen.getByRole('textbox', {name: /value/i}),
+      '"large-value"',
+    );
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', {name: /save/i})).toBeEnabled();
+    });
+
+    mockUpdateElementInstanceVariables(':1').withDelay(
+      null as unknown as never,
+    );
+    mockSearchVariables().withSuccess({
+      items: [
+        createVariable({
+          name: 'largeVariable',
+          value: '"truncated-preview"',
+          isTruncated: true,
+        }),
+      ],
+      page: {totalItems: 1},
+    });
+    mockSearchJobs().withSuccess({items: [], page: {totalItems: 0}});
+
+    await user.click(screen.getByRole('button', {name: /save/i}));
+
+    await waitFor(() => {
+      expect(notificationsStore.displayNotification).toHaveBeenCalledWith({
+        kind: 'success',
+        title: 'Variable added',
+        isDismissable: true,
+      });
+    });
   });
 });

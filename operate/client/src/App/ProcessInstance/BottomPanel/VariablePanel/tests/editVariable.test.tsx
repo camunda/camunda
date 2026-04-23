@@ -126,7 +126,13 @@ describe('Edit variable', () => {
     });
 
     mockUpdateElementInstanceVariables('1').withDelay(null as unknown as never);
-    mockSearchVariables().withSuccess(mockVariables);
+    mockGetVariable().withSuccess(
+      createVariable({
+        name: 'firstVariable',
+        value: '"updated-value"',
+        isTruncated: false,
+      }),
+    );
     mockSearchVariables().withSuccess(mockVariables);
     mockSearchJobs().withSuccess({items: [], page: {totalItems: 0}});
 
@@ -373,6 +379,105 @@ describe('Edit variable', () => {
     ).toBeEnabled();
 
     expect(notificationsStore.displayNotification).not.toHaveBeenCalled();
+  });
+
+  it('should save an edited truncated variable using full variable verification', async () => {
+    processInstanceDetailsStore.setProcessInstance(instanceMock);
+    mockFetchProcessDefinitionXml().withSuccess('');
+    mockSearchVariables().withSuccess({
+      items: [
+        createVariable({
+          name: 'clientNo',
+          value: '"value-preview"',
+          isTruncated: true,
+        }),
+      ],
+      page: {totalItems: 1},
+    });
+    mockSearchVariables().withSuccess({
+      items: [
+        createVariable({
+          name: 'clientNo',
+          value: '"value-preview"',
+          isTruncated: true,
+        }),
+      ],
+      page: {totalItems: 1},
+    });
+
+    const {user} = render(
+      <VariablePanel setListenerTabVisibility={vi.fn()} />,
+      {wrapper: getWrapper()},
+    );
+    await waitFor(() => {
+      expect(screen.getByTestId('variables-list')).toBeInTheDocument();
+    });
+    await waitFor(() => {
+      expect(screen.getByText('"value-preview"')).toBeInTheDocument();
+    });
+
+    mockGetVariable().withSuccess(
+      createVariable({
+        name: 'clientNo',
+        value: '"full-value-before-edit"',
+        isTruncated: false,
+      }),
+    );
+
+    const variableRow = await screen.findByTestId('variable-clientNo');
+    await user.click(
+      within(variableRow).getByRole('button', {
+        name: /edit/i,
+      }),
+    );
+
+    await waitFor(() => {
+      expect(
+        within(variableRow).getByTestId('edit-variable-value'),
+      ).toHaveValue('"full-value-before-edit"');
+    });
+    const input = within(variableRow).getByTestId('edit-variable-value');
+    await user.clear(input);
+    await user.type(input, '"updated-full-value"');
+
+    await waitFor(() => {
+      expect(
+        within(variableRow).getByRole('button', {name: /save/i}),
+      ).toBeEnabled();
+    });
+
+    mockUpdateElementInstanceVariables('1').withDelay(null);
+    mockGetVariable().withSuccess(
+      createVariable({
+        name: 'clientNo',
+        value: '"updated-full-value"',
+        isTruncated: false,
+      }),
+    );
+    mockSearchVariables().withSuccess({
+      items: [
+        createVariable({
+          name: 'clientNo',
+          value: '"updated-preview"',
+          isTruncated: true,
+        }),
+      ],
+      page: {totalItems: 1},
+    });
+    mockSearchJobs().withSuccess({
+      items: [],
+      page: {totalItems: 0},
+    });
+
+    await user.click(within(variableRow).getByRole('button', {name: /save/i}));
+
+    await waitFor(() => {
+      expect(notificationsStore.displayNotification).toHaveBeenCalledWith({
+        kind: 'success',
+        title: 'Variable updated',
+        isDismissable: true,
+      });
+    });
   });
 
   it('should display notification if error occurs when getting single variable details', async () => {
