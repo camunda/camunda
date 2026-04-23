@@ -7,8 +7,6 @@
  */
 package io.camunda.zeebe.broker.partitioning;
 
-import static io.camunda.zeebe.broker.partitioning.RocksDbSharedCache.allocateSharedCache;
-
 import io.atomix.cluster.MemberId;
 import io.atomix.primitive.partition.PartitionId;
 import io.atomix.primitive.partition.PartitionMetadata;
@@ -121,7 +119,7 @@ public final class PartitionManagerImpl
 
     final List<PartitionListener> listeners = new ArrayList<>(partitionListeners);
     listeners.add(topologyManager);
-    sharedRocksDbResources = allocateSharedCache(brokerCfg, meterRegistry);
+    sharedRocksDbResources = new SharedRocksDbResources();
 
     zeebePartitionFactory =
         new ZeebePartitionFactory(
@@ -143,7 +141,8 @@ public final class PartitionManagerImpl
             searchClientsProxy,
             brokerRequestAuthorizationConverter,
             sharedRocksDbResources,
-            clusterConfigurationService);
+            clusterConfigurationService,
+            meterRegistry);
     managementService =
         new DefaultPartitionManagementService(
             clusterServices.getMembershipService(), clusterServices.getCommunicationService());
@@ -153,10 +152,7 @@ public final class PartitionManagerImpl
   public void start() {
     actorSchedulingService.submitActor(topologyManager);
     final var localMemberId = managementService.getMembershipService().getLocalMember().id();
-    final var memberPartitions =
-        clusterConfigurationService.getPartitionDistribution().partitions().stream()
-            .filter(p -> p.members().contains(localMemberId))
-            .toList();
+    final var memberPartitions = clusterConfigurationService.getMemberPartitions(localMemberId);
 
     healthCheckService.registerBootstrapPartitions(memberPartitions);
     for (final var partitionMetadata : memberPartitions) {
