@@ -23,10 +23,12 @@ import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeUserTaskForm;
 import java.io.ByteArrayInputStream;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import org.camunda.bpm.model.xml.instance.DomElement;
 import org.camunda.bpm.model.xml.instance.ModelElementInstance;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -106,6 +108,40 @@ public final class ProcessModelReader {
       }
     }
     return result;
+  }
+
+  public Map<String, List<InputSpecItem>> extractAllElementInputSpecs() {
+    final Map<String, List<InputSpecItem>> result = new HashMap<>();
+    for (final FlowNode flowNode : extractFlowNodes()) {
+      final List<InputSpecItem> specs = extractInputSpecItems(flowNode);
+      if (!specs.isEmpty()) {
+        result.put(flowNode.getId(), specs);
+      }
+    }
+    return result;
+  }
+
+  private List<InputSpecItem> extractInputSpecItems(final BaseElement element) {
+    return getExtensionElements(element)
+        .map(ext -> ext.getDomElement().getChildElements())
+        .orElse(Collections.emptyList())
+        .stream()
+        .filter(child -> "ioSpecification".equals(child.getLocalName()))
+        .flatMap(
+            ioSpec ->
+                ioSpec.getChildElements().stream()
+                    .filter(specEl -> "inputSpecification".equals(specEl.getLocalName()))
+                    .map(this::domElementToInputSpecItem))
+        .toList();
+  }
+
+  private InputSpecItem domElementToInputSpecItem(final DomElement el) {
+    return new InputSpecItem(
+        el.getAttribute(null, "name"),
+        el.getAttribute(null, "description"),
+        el.getAttribute(null, "type"),
+        Boolean.parseBoolean(el.getAttribute(null, "required")),
+        el.getAttribute(null, "schema"));
   }
 
   private static Map<String, String> zeebePropertiesAsMap(final BaseElement element) {
@@ -246,4 +282,7 @@ public final class ProcessModelReader {
   public record EmbeddedForm(String id, String schema) {}
 
   public record StartFormLink(String formId, String formKey) {}
+
+  public record InputSpecItem(
+      String name, String description, String type, boolean required, String schema) {}
 }
