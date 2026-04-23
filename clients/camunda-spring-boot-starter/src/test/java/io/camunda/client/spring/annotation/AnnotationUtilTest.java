@@ -26,6 +26,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import io.camunda.client.annotation.AnnotationUtil;
 import io.camunda.client.annotation.Deployment.Deployments;
 import io.camunda.client.annotation.ElementInstanceKey;
+import io.camunda.client.annotation.GlobalVariables;
 import io.camunda.client.annotation.JobKey;
 import io.camunda.client.annotation.ProcessDefinitionKey;
 import io.camunda.client.annotation.ProcessInstanceKey;
@@ -33,7 +34,10 @@ import io.camunda.client.annotation.RootProcessInstanceKey;
 import io.camunda.client.annotation.VariablesAsType;
 import io.camunda.client.annotation.value.DeploymentValue;
 import io.camunda.client.annotation.value.DocumentValue;
+import io.camunda.client.annotation.value.GlobalVariablesValue;
 import io.camunda.client.annotation.value.JobWorkerValue;
+import io.camunda.client.annotation.value.MethodGlobalVariablesValue;
+import io.camunda.client.annotation.value.ResourceGlobalVariablesValue;
 import io.camunda.client.annotation.value.SourceAware.GeneratedFromMethodInfo;
 import io.camunda.client.annotation.value.VariableValue;
 import io.camunda.client.api.response.ActivatedJob;
@@ -42,6 +46,7 @@ import io.camunda.client.bean.BeanInfo;
 import io.camunda.client.bean.MethodInfo;
 import io.camunda.client.bean.ParameterInfo;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
 import org.junit.jupiter.api.Nested;
@@ -402,5 +407,173 @@ public class AnnotationUtilTest {
     public void testElementInstanceKey(@ElementInstanceKey final String key) {}
 
     public void testRootProcessInstanceKey(@RootProcessInstanceKey final String key) {}
+  }
+
+  @Nested
+  class GlobalVariablesAnnotation {
+
+    @Test
+    void shouldDetectClassAnnotation() {
+      // given
+      final BeanInfo beanInfo = beanInfo(new SingleResourceBean());
+      // when / then
+      assertThat(AnnotationUtil.isGlobalVariables(beanInfo)).isTrue();
+    }
+
+    @Test
+    void shouldDetectMethodAnnotation() {
+      // given
+      final BeanInfo beanInfo = beanInfo(new MethodVariablesBean());
+      // when / then
+      assertThat(AnnotationUtil.isGlobalVariables(beanInfo)).isTrue();
+    }
+
+    @Test
+    void shouldNotDetectUnannotatedBean() {
+      // given
+      final BeanInfo beanInfo = beanInfo(new UnannotatedBean());
+      // when / then
+      assertThat(AnnotationUtil.isGlobalVariables(beanInfo)).isFalse();
+    }
+
+    @Test
+    void shouldExtractResourceValueFromClass() {
+      // given
+      final BeanInfo beanInfo = beanInfo(new SingleResourceBean());
+      // when
+      final List<ResourceGlobalVariablesValue> values =
+          AnnotationUtil.getGlobalVariablesValuesFromClass(beanInfo);
+      // then
+      assertThat(values).hasSize(1);
+      assertThat(values.get(0).getResources()).containsExactly("classpath:variables.json");
+      assertThat(values.get(0).getTenantId()).isNull();
+    }
+
+    @Test
+    void shouldExtractResourceValueWithTenantFromClass() {
+      // given
+      final BeanInfo beanInfo = beanInfo(new TenantScopedResourceBean());
+      // when
+      final List<ResourceGlobalVariablesValue> values =
+          AnnotationUtil.getGlobalVariablesValuesFromClass(beanInfo);
+      // then
+      assertThat(values).hasSize(1);
+      assertThat(values.get(0).getResources()).containsExactly("classpath:vars.json");
+      assertThat(values.get(0).getTenantId()).isEqualTo("my-tenant");
+    }
+
+    @Test
+    void shouldExtractMultipleResourceValuesFromClass() {
+      // given
+      final BeanInfo beanInfo = beanInfo(new RepeatableResourceBean());
+      // when
+      final List<ResourceGlobalVariablesValue> values =
+          AnnotationUtil.getGlobalVariablesValuesFromClass(beanInfo);
+      // then
+      assertThat(values).hasSize(2);
+      assertThat(values.get(0).getResources()).containsExactly("classpath:v1.json");
+      assertThat(values.get(1).getResources()).containsExactly("classpath:v2.json");
+    }
+
+    @Test
+    void shouldReturnEmptyForUnannotatedClass() {
+      // given
+      final BeanInfo beanInfo = beanInfo(new UnannotatedBean());
+      // when
+      final List<ResourceGlobalVariablesValue> values =
+          AnnotationUtil.getGlobalVariablesValuesFromClass(beanInfo);
+      // then
+      assertThat(values).isEmpty();
+    }
+
+    @Test
+    void shouldExtractMethodValueAsMethodGlobalVariablesValue() {
+      // given
+      final MethodInfo methodInfo = methodInfo(new MethodVariablesBean(), "test", "variables");
+      // when
+      final List<GlobalVariablesValue> values =
+          AnnotationUtil.getGlobalVariablesValuesFromMethods(methodInfo);
+      // then
+      assertThat(values).hasSize(1);
+      assertThat(values.get(0)).isInstanceOf(MethodGlobalVariablesValue.class);
+      assertThat(values.get(0).getTenantId()).isNull();
+      final MethodGlobalVariablesValue methodValue = (MethodGlobalVariablesValue) values.get(0);
+      assertThat(methodValue.getVariableSupplier().get()).isEqualTo(Map.of("key", "value"));
+    }
+
+    @Test
+    void shouldExtractTenantScopedMethodValue() {
+      // given
+      final MethodInfo methodInfo =
+          methodInfo(new TenantScopedMethodBean(), "test", "tenantVariables");
+      // when
+      final List<GlobalVariablesValue> values =
+          AnnotationUtil.getGlobalVariablesValuesFromMethods(methodInfo);
+      // then
+      assertThat(values).hasSize(1);
+      assertThat(values.get(0)).isInstanceOf(MethodGlobalVariablesValue.class);
+      assertThat(values.get(0).getTenantId()).isEqualTo("my-tenant");
+    }
+
+    @Test
+    void shouldExtractResourceValueFromMethodAnnotation() {
+      // given
+      final MethodInfo methodInfo = methodInfo(new MethodWithResourcesBean(), "test", "unused");
+      // when
+      final List<GlobalVariablesValue> values =
+          AnnotationUtil.getGlobalVariablesValuesFromMethods(methodInfo);
+      // then
+      assertThat(values).hasSize(1);
+      assertThat(values.get(0)).isInstanceOf(ResourceGlobalVariablesValue.class);
+      final ResourceGlobalVariablesValue resourceValue =
+          (ResourceGlobalVariablesValue) values.get(0);
+      assertThat(resourceValue.getResources()).containsExactly("classpath:from-method.json");
+    }
+
+    @Test
+    void shouldReturnEmptyForUnannotatedMethod() {
+      // given
+      final MethodInfo methodInfo = methodInfo(new UnannotatedBean(), "test", "noAnnotation");
+      // when
+      final List<GlobalVariablesValue> values =
+          AnnotationUtil.getGlobalVariablesValuesFromMethods(methodInfo);
+      // then
+      assertThat(values).isEmpty();
+    }
+
+    @GlobalVariables(resources = "classpath:variables.json")
+    static class SingleResourceBean {}
+
+    @GlobalVariables(resources = "classpath:vars.json", tenantId = "my-tenant")
+    static class TenantScopedResourceBean {}
+
+    @GlobalVariables(resources = "classpath:v1.json")
+    @GlobalVariables(resources = "classpath:v2.json")
+    static class RepeatableResourceBean {}
+
+    // Public to allow reflective method invocation from SpringMethodInfo
+    public static class MethodVariablesBean {
+      @GlobalVariables
+      public Map<String, Object> variables() {
+        return Map.of("key", "value");
+      }
+    }
+
+    // Public to allow reflective method invocation from SpringMethodInfo
+    public static class TenantScopedMethodBean {
+      @GlobalVariables(tenantId = "my-tenant")
+      public Map<String, Object> tenantVariables() {
+        return Map.of("key", "value");
+      }
+    }
+
+    public static class MethodWithResourcesBean {
+      @GlobalVariables(resources = "classpath:from-method.json")
+      public void unused() {}
+    }
+
+    static class UnannotatedBean {
+      public void noAnnotation() {}
+    }
   }
 }
