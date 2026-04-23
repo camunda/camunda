@@ -164,19 +164,37 @@ for ((page=1; page<=MAX_PAGES; page++)); do
                 }
               }
             }
+            projectItems(first: 20) {
+              nodes {
+                project { number }
+                fieldValues(first: 20) {
+                  nodes {
+                    ... on ProjectV2ItemFieldSingleSelectValue {
+                      field { ... on ProjectV2SingleSelectField { name } }
+                      name
+                    }
+                  }
+                }
+              }
+            }
           }
         }
       }
     }" -F searchQuery="$SEARCH_QUERY")
 
   # Apply client-side filters via jq (values passed safely via --arg)
+  # --skip-assigned: skip issues that have BOTH org-level urgency AND project-level urgency set
   PAGE_ISSUES=$(echo "$RESPONSE" | jq -r \
     --arg issueType "$ISSUE_TYPE" \
     --arg skipAssigned "$SKIP_ASSIGNED" \
     --arg fieldId "$URGENCY_FIELD_ID" \
+    --argjson projectId "$PROJECT_ID" \
     '.data.search.nodes[]
      | if $issueType != "" then select(.issueType.name == $issueType) else . end
-     | if $skipAssigned == "true" then select(.issueFieldValues.nodes | map(select(.field.id == $fieldId)) | length == 0) else . end
+     | if $skipAssigned == "true" then select(
+         (.issueFieldValues.nodes | map(select(.field.id == $fieldId)) | length == 0)
+         or (.projectItems.nodes[] | select(.project.number == $projectId) | .fieldValues.nodes | map(select(.field.name == "Urgency")) | length == 0)
+       ) else . end
      | .number')
 
   if [[ -n "$PAGE_ISSUES" ]]; then
