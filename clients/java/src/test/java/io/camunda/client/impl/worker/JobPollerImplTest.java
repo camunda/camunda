@@ -105,6 +105,25 @@ public final class JobPollerImplTest extends ClientTest {
   }
 
   @Test
+  public void shouldCallbackWhenPollFailedWithDeadlineExceeded() {
+    // given
+    gatewayService.onActivateJobsRequest(new StatusRuntimeException(Status.DEADLINE_EXCEEDED));
+
+    // when
+    getJobPoller().poll(123, jobConsumer, doneCallback, errorCallback, () -> true);
+
+    // then
+    Awaitility.await()
+        .atMost(Duration.ofSeconds(5))
+        .untilAsserted(
+            () -> {
+              verify(jobConsumer, never()).accept(any(ActivatedJob.class));
+              verify(doneCallback, never()).accept(any(Integer.class));
+              verify(errorCallback).accept(any(StatusRuntimeException.class));
+            });
+  }
+
+  @Test
   public void shouldUseProvidedTenantFilterWithTenantIds() {
     // given
     gatewayService.onActivateJobsRequest(TestData.job(), TestData.job());
