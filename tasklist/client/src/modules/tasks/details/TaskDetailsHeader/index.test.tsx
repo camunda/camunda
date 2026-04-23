@@ -7,14 +7,14 @@
  */
 
 import {render, screen} from 'modules/testing/testing-library';
-import * as userMocks from '@camunda/c8-mocks';
+import {currentUser} from '@camunda/c8-mocks';
 import {TaskDetailsHeader} from './index';
 
 const mockTasks = {
   completedTask: {
     name: 'My Task',
     processName: 'Nice Process',
-    assignee: userMocks.currentUser.username,
+    assignee: currentUser.username,
     taskState: 'COMPLETED',
   },
   unassignedTask: {
@@ -26,7 +26,7 @@ const mockTasks = {
   assignedTask: {
     name: 'My Task',
     processName: 'Nice Process',
-    assignee: userMocks.currentUser.username,
+    assignee: currentUser.username,
     taskState: 'CREATED',
   },
 } as const;
@@ -39,7 +39,7 @@ describe('<TaskDetailsHeader />', () => {
         processName={mockTasks.completedTask.processName}
         assignee={mockTasks.completedTask.assignee}
         taskState={mockTasks.completedTask.taskState}
-        user={userMocks.currentUser}
+        user={currentUser}
         assignButton={<button type="button">Assign to me</button>}
       />,
     );
@@ -59,7 +59,7 @@ describe('<TaskDetailsHeader />', () => {
         processName={mockTasks.unassignedTask.processName}
         assignee={mockTasks.unassignedTask.assignee}
         taskState={mockTasks.unassignedTask.taskState}
-        user={userMocks.currentUser}
+        user={currentUser}
         assignButton={<button type="button">Assign to me</button>}
       />,
     );
@@ -79,7 +79,7 @@ describe('<TaskDetailsHeader />', () => {
         processName={mockTasks.assignedTask.processName}
         assignee={mockTasks.assignedTask.assignee}
         taskState={mockTasks.assignedTask.taskState}
-        user={userMocks.currentUser}
+        user={currentUser}
         assignButton={<button type="button">Unassign task</button>}
       />,
     );
@@ -101,7 +101,7 @@ describe('<TaskDetailsHeader />', () => {
         processName={mockTasks.assignedTask.processName}
         assignee={MOCK_OTHER_ASSIGNEE}
         taskState={mockTasks.assignedTask.taskState}
-        user={userMocks.currentUser}
+        user={currentUser}
         assignButton={<button type="button">Assign Button</button>}
       />,
     );

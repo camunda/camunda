@@ -11,7 +11,7 @@ import {nodeMockServer} from 'modules/testing/nodeMockServer';
 import {http, HttpResponse} from 'msw';
 import {Header} from '..';
 import {getWrapper} from './mocks';
-import * as userMocks from '@camunda/c8-mocks';
+import {currentUser, saasLicense} from '@camunda/c8-mocks';
 
 describe('Info bar', () => {
   beforeEach(() => {
@@ -19,7 +19,7 @@ describe('Info bar', () => {
       http.get(
         '/v2/license',
         () => {
-          return HttpResponse.json(userMocks.saasLicense);
+          return HttpResponse.json(saasLicense);
         },
         {
           once: true,
@@ -37,7 +37,7 @@ describe('Info bar', () => {
       http.get(
         '/v2/authentication/me',
         () => {
-          return HttpResponse.json(userMocks.currentUser);
+          return HttpResponse.json(currentUser);
         },
         {
           once: true,
@@ -98,7 +98,7 @@ describe('Info bar', () => {
         '/v2/authentication/me',
         () => {
           return HttpResponse.json({
-            ...userMocks.currentUser,
+            ...currentUser,
             salesPlanType: 'free',
           });
         },
@@ -161,7 +161,7 @@ describe('Info bar', () => {
         '/v2/authentication/me',
         () => {
           return HttpResponse.json({
-            ...userMocks.currentUser,
+            ...currentUser,
             salesPlanType: 'paid-cc',
           });
         },
@@ -228,7 +228,7 @@ describe('Info bar', () => {
         '/v2/authentication/me',
         () => {
           return HttpResponse.json({
-            ...userMocks.currentUser,
+            ...currentUser,
             salesPlanType: 'enterprise',
           });
         },

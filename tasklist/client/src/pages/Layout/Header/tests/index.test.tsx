@@ -11,7 +11,7 @@ import {nodeMockServer} from 'modules/testing/nodeMockServer';
 import {http, HttpResponse} from 'msw';
 import {Header} from '..';
 import {getWrapper} from './mocks';
-import * as userMocks from '@camunda/c8-mocks';
+import {currentUser, invalidLicense} from '@camunda/c8-mocks';
 
 describe('<Header />', () => {
   it('should render a header', async () => {
@@ -19,7 +19,7 @@ describe('<Header />', () => {
       http.get(
         '/v2/authentication/me',
         () => {
-          return HttpResponse.json(userMocks.currentUser);
+          return HttpResponse.json(currentUser);
         },
         {
           once: true,
@@ -31,7 +31,7 @@ describe('<Header />', () => {
       http.get(
         '/v2/license',
         () => {
-          return HttpResponse.json(userMocks.invalidLicense);
+          return HttpResponse.json(invalidLicense);
         },
         {
           once: true,

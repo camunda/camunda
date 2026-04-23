@@ -16,7 +16,7 @@ import {MemoryRouter} from 'react-router-dom';
 import {Component} from './index';
 import {http, HttpResponse} from 'msw';
 import {nodeMockServer} from 'modules/testing/nodeMockServer';
-import * as userMocks from '@camunda/c8-mocks';
+import {currentUser} from '@camunda/c8-mocks';
 import {QueryClientProvider} from '@tanstack/react-query';
 import {getMockQueryClient} from 'modules/testing/getMockQueryClient';
 import {LocationLog} from 'modules/testing/LocationLog';
@@ -81,7 +81,7 @@ describe('<Tasks />', () => {
       http.get(
         '/v2/authentication/me',
         () => {
-          return HttpResponse.json(userMocks.currentUser);
+          return HttpResponse.json(currentUser);
         },
         {once: true},
       ),
@@ -132,7 +132,7 @@ describe('<Tasks />', () => {
   it('should use tasklist api raw filters', async () => {
     nodeMockServer.use(
       http.get('/v2/authentication/me', () => {
-        return HttpResponse.json(userMocks.currentUser);
+        return HttpResponse.json(currentUser);
       }),
       http.post<never, QueryUserTasksRequestBody & {foo: unknown}>(
         endpoints.queryUserTasks.getUrl(),
@@ -159,7 +159,7 @@ describe('<Tasks />', () => {
   it('should select the first open task when auto-select is enabled and tasks are in the list', async () => {
     nodeMockServer.use(
       http.get('/v2/authentication/me', () => {
-        return HttpResponse.json(userMocks.currentUser);
+        return HttpResponse.json(currentUser);
       }),
       http.post(endpoints.queryUserTasks.getUrl(), async () => {
         return HttpResponse.json(
@@ -196,7 +196,7 @@ describe('<Tasks />', () => {
   it('should go to the inital page when auto-select is enabled and no tasks are available', async () => {
     nodeMockServer.use(
       http.get('/v2/authentication/me', () => {
-        return HttpResponse.json(userMocks.currentUser);
+        return HttpResponse.json(currentUser);
       }),
       http.post(endpoints.queryUserTasks.getUrl(), async () => {
         return HttpResponse.json(getQueryTasksResponseMock([], 0));

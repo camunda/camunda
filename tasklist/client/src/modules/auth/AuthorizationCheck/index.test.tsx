@@ -12,7 +12,7 @@ import {AuthorizationCheck} from './index';
 import {pages} from 'modules/routing';
 import {nodeMockServer} from 'modules/testing/nodeMockServer';
 import {http, HttpResponse} from 'msw';
-import * as userMocks from '@camunda/c8-mocks';
+import {currentUser, currentUnauthorizedUser} from '@camunda/c8-mocks';
 import {QueryClientProvider} from '@tanstack/react-query';
 import {getMockQueryClient} from 'modules/testing/getMockQueryClient';
 
@@ -55,7 +55,7 @@ describe('<AuthorizationCheck />', () => {
       http.get(
         '/v2/license',
         () => {
-          return HttpResponse.json(userMocks.currentUser);
+          return HttpResponse.json(currentUser);
         },
         {
           once: true,
@@ -69,7 +69,7 @@ describe('<AuthorizationCheck />', () => {
       http.get(
         '/v2/authentication/me',
         () => {
-          return HttpResponse.json(userMocks.currentUser);
+          return HttpResponse.json(currentUser);
         },
         {
           once: true,
@@ -92,7 +92,7 @@ describe('<AuthorizationCheck />', () => {
       http.get(
         '/v2/authentication/me',
         () => {
-          return HttpResponse.json(userMocks.currentUnauthorizedUser);
+          return HttpResponse.json(currentUnauthorizedUser);
         },
         {
           once: true,

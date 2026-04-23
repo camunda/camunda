@@ -17,7 +17,7 @@ import {Link, MemoryRouter} from 'react-router-dom';
 import {nodeMockServer} from 'modules/testing/nodeMockServer';
 import {http, HttpResponse} from 'msw';
 import * as tasksMocks from 'modules/mocks/tasks';
-import * as userMocks from '@camunda/c8-mocks';
+import {currentUser} from '@camunda/c8-mocks';
 import {QueryClientProvider} from '@tanstack/react-query';
 import {getMockQueryClient} from 'modules/testing/getMockQueryClient';
 
@@ -52,7 +52,7 @@ describe('<AvailableTasks />', () => {
       http.get(
         '/v2/authentication/me',
         () => {
-          return HttpResponse.json(userMocks.currentUser);
+          return HttpResponse.json(currentUser);
         },
         {once: true},
       ),

@@ -11,7 +11,6 @@ import {AvailableTaskItem} from './index';
 import {MemoryRouter} from 'react-router-dom';
 import {currentUser} from '@camunda/c8-mocks';
 import {LocationLog} from 'modules/testing/LocationLog';
-import * as userMocks from '@camunda/c8-mocks';
 
 const createWrapper = (
   initialEntries: React.ComponentProps<
@@ -51,7 +50,7 @@ describe('<Task />', () => {
         dueDate={null}
         completionDate={null}
         priority={50}
-        currentUser={userMocks.currentUser}
+        currentUser={currentUser}
         position={0}
       />,
       {
@@ -83,7 +82,7 @@ describe('<Task />', () => {
         dueDate={null}
         completionDate={null}
         priority={50}
-        currentUser={userMocks.currentUser}
+        currentUser={currentUser}
         position={0}
       />,
       {
@@ -107,7 +106,7 @@ describe('<Task />', () => {
         dueDate={null}
         completionDate={null}
         priority={50}
-        currentUser={userMocks.currentUser}
+        currentUser={currentUser}
         position={0}
       />,
       {
@@ -131,7 +130,7 @@ describe('<Task />', () => {
         dueDate={null}
         completionDate={null}
         priority={50}
-        currentUser={userMocks.currentUser}
+        currentUser={currentUser}
         position={0}
       />,
       {
@@ -156,7 +155,7 @@ describe('<Task />', () => {
         dueDate={null}
         completionDate={null}
         priority={50}
-        currentUser={userMocks.currentUser}
+        currentUser={currentUser}
         position={0}
       />,
       {
@@ -184,7 +183,7 @@ describe('<Task />', () => {
         dueDate="2025-05-29T14:00:00.000Z"
         completionDate={null}
         priority={50}
-        currentUser={userMocks.currentUser}
+        currentUser={currentUser}
         position={0}
       />,
       {
@@ -208,7 +207,7 @@ describe('<Task />', () => {
         dueDate="2025-05-29T14:00:00.000Z"
         completionDate={null}
         priority={50}
-        currentUser={userMocks.currentUser}
+        currentUser={currentUser}
         position={0}
       />,
       {
@@ -234,7 +233,7 @@ describe('<Task />', () => {
         dueDate="2025-05-29T14:00:00.000Z"
         completionDate={null}
         priority={50}
-        currentUser={userMocks.currentUser}
+        currentUser={currentUser}
         position={0}
       />,
       {
@@ -262,7 +261,7 @@ describe('<Task />', () => {
         dueDate="2025-05-29T14:00:00.000Z"
         completionDate="2025-05-28T14:00:00.000Z"
         priority={50}
-        currentUser={userMocks.currentUser}
+        currentUser={currentUser}
         position={0}
       />,
       {
@@ -289,7 +288,7 @@ describe('<Task />', () => {
         dueDate="2024-05-29T00:00:00.000Z"
         completionDate={null}
         priority={50}
-        currentUser={userMocks.currentUser}
+        currentUser={currentUser}
         position={0}
       />,
       {

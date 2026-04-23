@@ -17,7 +17,11 @@ import {authenticationStore} from 'modules/auth/authentication';
 import {http, HttpResponse} from 'msw';
 import {Header} from '..';
 import {getWrapper} from './mocks';
-import * as userMocks from '@camunda/c8-mocks';
+import {
+  currentUser,
+  currentUnauthorizedUser,
+  saasLicense,
+} from '@camunda/c8-mocks';
 import * as clientConfig from 'modules/config/getClientConfig';
 
 describe('User info', () => {
@@ -26,7 +30,7 @@ describe('User info', () => {
       http.get(
         '/v2/license',
         () => {
-          return HttpResponse.json(userMocks.saasLicense);
+          return HttpResponse.json(saasLicense);
         },
         {
           once: true,
@@ -40,7 +44,7 @@ describe('User info', () => {
       http.get(
         '/v2/authentication/me',
         () => {
-          return HttpResponse.json(userMocks.currentUser);
+          return HttpResponse.json(currentUser);
         },
         {
           once: true,
@@ -66,7 +70,7 @@ describe('User info', () => {
       http.get(
         '/v2/authentication/me',
         () => {
-          return HttpResponse.json(userMocks.currentUser);
+          return HttpResponse.json(currentUser);
         },
         {
           once: true,
@@ -102,7 +106,7 @@ describe('User info', () => {
       http.get(
         '/v2/authentication/me',
         () => {
-          return HttpResponse.json(userMocks.currentUser);
+          return HttpResponse.json(currentUser);
         },
         {
           once: true,
@@ -136,7 +140,7 @@ describe('User info', () => {
       http.get(
         '/v2/authentication/me',
         () => {
-          return HttpResponse.json(userMocks.currentUser);
+          return HttpResponse.json(currentUser);
         },
         {
           once: true,
@@ -188,7 +192,7 @@ describe('User info', () => {
       http.get(
         '/v2/authentication/me',
         () => {
-          return HttpResponse.json(userMocks.currentUser);
+          return HttpResponse.json(currentUser);
         },
         {
           once: true,
@@ -251,7 +255,7 @@ describe('User info', () => {
       http.get(
         '/v2/authentication/me',
         () => {
-          return HttpResponse.json(userMocks.currentUser);
+          return HttpResponse.json(currentUser);
         },
         {
           once: true,
@@ -286,7 +290,7 @@ describe('User info', () => {
       http.get(
         '/v2/authentication/me',
         () => {
-          return HttpResponse.json(userMocks.currentUnauthorizedUser);
+          return HttpResponse.json(currentUnauthorizedUser);
         },
         {
           once: true,

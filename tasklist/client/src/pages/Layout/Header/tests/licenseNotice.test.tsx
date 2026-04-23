@@ -11,7 +11,14 @@ import {nodeMockServer} from 'modules/testing/nodeMockServer';
 import {http, HttpResponse} from 'msw';
 import {Header} from '..';
 import {getWrapper} from './mocks';
-import * as userMocks from '@camunda/c8-mocks';
+import {
+  currentUser,
+  invalidLicense,
+  saasLicense,
+  validLicense,
+  commercialExpired,
+  validNonCommercial,
+} from '@camunda/c8-mocks';
 
 describe('license note', () => {
   beforeEach(() => {
@@ -19,7 +26,7 @@ describe('license note', () => {
       http.get(
         '/v2/authentication/me',
         () => {
-          return HttpResponse.json(userMocks.currentUser);
+          return HttpResponse.json(currentUser);
         },
         {
           once: true,
@@ -33,7 +40,7 @@ describe('license note', () => {
       http.get(
         '/v2/license',
         () => {
-          return HttpResponse.json(userMocks.invalidLicense);
+          return HttpResponse.json(invalidLicense);
         },
         {
           once: true,
@@ -61,7 +68,7 @@ describe('license note', () => {
       http.get(
         '/v2/license',
         () => {
-          return HttpResponse.json(userMocks.invalidLicense);
+          return HttpResponse.json(invalidLicense);
         },
         {
           once: true,
@@ -83,7 +90,7 @@ describe('license note', () => {
       http.get(
         '/v2/license',
         () => {
-          return HttpResponse.json(userMocks.saasLicense);
+          return HttpResponse.json(saasLicense);
         },
         {
           once: true,
@@ -106,7 +113,7 @@ describe('license note', () => {
       http.get(
         '/v2/license',
         () => {
-          return HttpResponse.json(userMocks.validLicense);
+          return HttpResponse.json(validLicense);
         },
         {
           once: true,
@@ -127,7 +134,7 @@ describe('license note', () => {
       http.get(
         '/v2/license',
         () => {
-          return HttpResponse.json(userMocks.commercialExpired);
+          return HttpResponse.json(commercialExpired);
         },
         {
           once: true,
@@ -151,7 +158,7 @@ describe('license note', () => {
       http.get(
         '/v2/license',
         () => {
-          return HttpResponse.json(userMocks.validNonCommercial);
+          return HttpResponse.json(validNonCommercial);
         },
         {
           once: true,

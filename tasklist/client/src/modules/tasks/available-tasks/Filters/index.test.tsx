@@ -13,7 +13,7 @@ import {MemoryRouter} from 'react-router-dom';
 import {Filters} from './index';
 import {nodeMockServer} from 'modules/testing/nodeMockServer';
 import {HttpResponse, http} from 'msw';
-import * as userMocks from '@camunda/c8-mocks';
+import {currentUser} from '@camunda/c8-mocks';
 
 const createWrapper = (
   initialEntries: React.ComponentProps<
@@ -38,7 +38,7 @@ describe('<Filters />', () => {
       http.get(
         '/v2/authentication/me',
         () => {
-          return HttpResponse.json(userMocks.currentUser);
+          return HttpResponse.json(currentUser);
         },
         {once: true},
       ),
