@@ -39,6 +39,7 @@
     "start": "cross-env TSC_COMPILE_ON_ERROR=true GENERATE_SOURCEMAP=false react-app-rewired start",
     "start:e2e": "cross-env GENERATE_SOURCEMAP=false BROWSER=none PORT=3001 IS_E2E=true react-app-rewired start",
     "build": "cross-env GENERATE_SOURCEMAP=false react-app-rewired build && node license-build.js",
+    "extract-sbom": "yarn build",
     "test": "react-scripts test --env=jsdom --resetMocks=false --clearMocks=true",
     "test:ci": "cross-env CI=true react-scripts test --env=jsdom --resetMocks=false --ci --testTimeout 7000 --clearMocks=true",
     "eject": "react-scripts eject",

@@ -1,0 +1,71 @@
+---
+name: Frontend SBOM Snyk
+
+# owner: @camunda/monorepo-devops-team
+
+description: Generate a frontend SBOM and scan it with Snyk
+
+inputs:
+  directory:
+    description: Frontend directory containing package.json
+    required: true
+  sbom-file:
+    description: Path to the generated CycloneDX JSON SBOM file
+    required: true
+  node-version:
+    description: Node.js version to use
+    required: false
+    default: "20"
+  project-name:
+    description: Human readable project name for logging
+    required: true
+  snyk-org:
+    description: Snyk organization to scan against
+    required: false
+    default: "team-zeebe"
+  severity-threshold:
+    description: Minimum vulnerability severity that fails the job
+    required: false
+    default: "high"
+
+runs:
+  using: composite
+  steps:
+    - name: Setup Node
+      uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
+      with:
+        node-version: ${{ inputs.node-version }}
+
+    - name: Setup Yarn cache
+      uses: camunda/infra-global-github-actions/setup-yarn-cache@main
+      with:
+        directory: ${{ inputs.directory }}
+
+    - name: Install Snyk CLI
+      uses: snyk/actions/setup@9adf32b1121593767fc3c057af55b55db032dc04 # v1.0.0
+
+    - name: Install dependencies
+      working-directory: ${{ inputs.directory }}
+      shell: bash
+      run: yarn install --frozen-lockfile
+
+    - name: Generate SBOM
+      working-directory: ${{ inputs.directory }}
+      shell: bash
+      run: yarn run extract-sbom
+
+    - name: Verify generated SBOM path
+      shell: bash
+      run: |
+        test -f "${{ inputs.sbom-file }}"
+        printf 'Using SBOM for %s: %s\n' "${{ inputs.project-name }}" "${{ inputs.sbom-file }}"
+
+    - name: Scan SBOM with Snyk
+      shell: bash
+      env:
+        SNYK_TOKEN: ${{ env.SNYK_TOKEN }}
+      run: |
+        snyk sbom test \
+          --file="${{ inputs.sbom-file }}" \
+          --org="${{ inputs.snyk-org }}" \
+          --severity-threshold="${{ inputs.severity-threshold }}"
