@@ -173,10 +173,6 @@ test.describe('Process Instance Modifications', () => {
         'foo',
         '2',
       );
-      await operateProcessInstancePage.editVariableValueModificationMode(
-        'test',
-        '1234',
-      );
       await operateProcessInstancePage.clickReviewModifications();
       await expect(
         operateProcessInstancePage.getVariableModificationSummaryText(
