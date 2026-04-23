@@ -435,11 +435,6 @@ export const RESPONSE_INDEX = {
       '200': 1,
     },
   },
-  '/resources/{resourceKey}/content': {
-    GET: {
-      '200': 1,
-    },
-  },
   '/resources/{resourceKey}/deletion': {
     POST: {
       '200': 1,

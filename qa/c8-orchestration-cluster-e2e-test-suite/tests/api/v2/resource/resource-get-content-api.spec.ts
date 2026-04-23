@@ -16,6 +16,7 @@ import {
 } from '../../../../utils/http';
 import {getExpectedContent} from '../../../../utils/beans/requestBeans';
 import {deployResourceAndGetMetadata} from '@requestHelpers';
+import {defaultAssertionOptions} from '../../../../utils/constants';
 
 test.describe.parallel('Resource Get Content API', () => {
   test('Get Resource Content - RPA Success 200', async ({request}) => {
@@ -27,18 +28,19 @@ test.describe.parallel('Resource Get Content API', () => {
     );
     const expectedContent = getExpectedContent(resourceName);
 
-    const res = await request.get(
-      buildUrl('/resources/{resourceKey}/content', {
-        resourceKey: metadata.resourceKey,
-      }),
-      {
-        headers: defaultHeaders(),
-      },
-    );
+    await expect(async () => {
+      const res = await request.get(
+        buildUrl('/resources/{resourceKey}/content', {
+          resourceKey: metadata.resourceKey,
+        }),
+        {
+          headers: defaultHeaders(),
+        },
+      );
 
-    await assertStatusCode(res, 200);
-    const content = await res.text();
-    expect(content).toBe(expectedContent);
+      await assertStatusCode(res, 200);
+      expect(await res.text()).toBe(expectedContent);
+    }).toPass(defaultAssertionOptions);
   });
 
   // eslint-disable-next-line playwright/expect-expect

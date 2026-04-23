@@ -24,6 +24,7 @@ export async function findUserTask(
   procKey: string,
   state: string,
   elementId?: string,
+  assertionOptions = defaultAssertionOptions,
 ) {
   const localState: Record<string, unknown> = {};
   await expect(async () => {
@@ -54,7 +55,7 @@ export async function findUserTask(
       expect(searchJson.items[0].elementId).toBe(elementId);
     }
     localState['userTaskKey'] = searchJson.items[0].userTaskKey;
-  }).toPass(defaultAssertionOptions);
+  }).toPass(assertionOptions);
   return localState['userTaskKey'] as string;
 }
 export async function completeUserTask(
