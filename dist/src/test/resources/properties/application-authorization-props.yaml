@@ -1,0 +1,40 @@
+camunda:
+  security:
+    initialization:
+      authorizations:
+        # [0] Valid ID-based authorization with wildcard
+        - ownerType: USER
+          ownerId: john.doe
+          resourceType: PROCESS_DEFINITION
+          resourceId: "*"
+          permissions:
+            - READ_PROCESS_INSTANCE
+            - CREATE_PROCESS_INSTANCE
+
+        # [1] Valid ID-based authorization with specific resource
+        - ownerType: ROLE
+          ownerId: developers
+          resourceType: PROCESS_DEFINITION
+          resourceId: order-process
+          permissions:
+            - UPDATE_PROCESS_INSTANCE
+
+        # [2] Trailing comma in permissions (e.g. PERMISSIONS=READ,UPDATE,)
+        - ownerType: USER
+          ownerId: trailing.comma
+          resourceType: PROCESS_DEFINITION
+          resourceId: "*"
+          permissions:
+            - READ
+            - UPDATE
+            - ""
+
+        # [3] Whitespace-only permission entry (e.g. PERMISSIONS=READ, ,UPDATE)
+        - ownerType: USER
+          ownerId: whitespace.entry
+          resourceType: PROCESS_DEFINITION
+          resourceId: "*"
+          permissions:
+            - READ
+            - "  "
+            - UPDATE
