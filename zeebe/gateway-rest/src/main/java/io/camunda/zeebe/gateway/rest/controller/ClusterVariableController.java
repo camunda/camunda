@@ -39,7 +39,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
 @CamundaRestController
-@RequiresSecondaryStorage
 @RequestMapping("/v2/cluster-variables")
 public class ClusterVariableController {
 
@@ -110,8 +109,9 @@ public class ClusterVariableController {
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::updateTenantClusterVariable);
   }
 
+  @RequiresSecondaryStorage
   @CamundaPostMapping(path = "/search")
-  private ResponseEntity<Object> search(
+  public ResponseEntity<Object> search(
       @RequestBody final ClusterVariableSearchQueryRequest query,
       @RequestParam(name = "truncateValues", required = false, defaultValue = "true")
           final boolean truncateValues) {
@@ -131,6 +131,7 @@ public class ClusterVariableController {
     }
   }
 
+  @RequiresSecondaryStorage
   @CamundaGetMapping(path = "/global/{name}")
   public ResponseEntity<Object> getGlobalClusterVariable(@PathVariable("name") final String name) {
     return clusterVariableMapper
@@ -138,6 +139,7 @@ public class ClusterVariableController {
         .fold(RestErrorMapper::mapProblemToResponse, this::getGlobalClusterVariable);
   }
 
+  @RequiresSecondaryStorage
   @CamundaGetMapping(path = "/tenants/{tenantId}/{name}")
   public ResponseEntity<Object> getTenantClusterVariable(
       @PathVariable("tenantId") final String tenantId, @PathVariable("name") final String name) {
