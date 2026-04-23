@@ -10,6 +10,7 @@ from camunda_load_test_mcp.server import (
     stop_load_test,
     discover_load_tests,
     profile_load_test,
+    get_load_test_configuration,
 )
 
 
@@ -486,3 +487,19 @@ def test_update_load_test_passes_orchestration_tag_when_not_reusing():
     assert inputs.get("reuse-tag", "") == ""
 
 
+# ── get_load_test_configuration ──────────────────────────────────────────────
+
+def test_get_load_test_configuration_returns_platform_values():
+    result = get_load_test_configuration()
+    assert "orchestration" in result
+    assert "platform_helm_values" in result or "platform-helm-values" in result or "platform" in result.lower()
+
+
+def test_get_load_test_configuration_returns_load_test_values():
+    result = get_load_test_configuration()
+    assert "starter" in result or "load-test" in result.lower()
+
+
+def test_get_load_test_configuration_includes_override_hints():
+    result = get_load_test_configuration()
+    assert "--set" in result

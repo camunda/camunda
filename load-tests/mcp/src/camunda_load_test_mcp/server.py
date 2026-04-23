@@ -43,6 +43,7 @@ def create_server() -> FastMCP:
     mcp.tool()(discover_load_tests)
     mcp.tool()(profile_load_test)
     mcp.tool()(stop_load_test)
+    mcp.tool()(get_load_test_configuration)
     return mcp
 
 
@@ -66,6 +67,7 @@ def start_load_test(
     """
     Trigger a new Camunda load test via GitHub Actions.
 
+    Call get_load_test_configuration first to see what Helm values can be overridden
     via platform_helm_values and load_test_helm_values.
 
     Args:
@@ -179,6 +181,7 @@ def update_load_test(
     """
     Redeploy an existing load test namespace with updated config or a fresh image.
 
+    Call get_load_test_configuration first to see what Helm values can be overridden
     via platform_helm_values and load_test_helm_values.
 
     Args:
@@ -486,3 +489,40 @@ def stop_load_test(namespace: str) -> str:
     )
 
 
+def get_load_test_configuration() -> str:
+    """
+    Show the default Helm values used for load test deployments.
+
+    Call this before using platform_helm_values or load_test_helm_values so you know
+    what keys are already configured and what the valid override paths are.
+
+    Returns the platform chart defaults (overridden via platform_helm_values in
+    start_load_test / update_load_test) and the load test chart defaults (overridden
+    via load_test_helm_values when scenario=custom).
+
+    Common platform override examples after reading these values:
+      --set orchestration.resources.limits.memory=4Gi   # increase broker memory
+      --set orchestration.clusterSize=1                  # single-broker cluster
+      --set orchestration.partitionCount=1               # single partition
+      --set elasticsearch.master.replicaCount=1          # smaller ES cluster
+    """
+    platform_path = _LOAD_TESTS_DIR / "camunda-platform-values.yaml"
+    load_test_path = _LOAD_TESTS_DIR / "load-test-values.yaml"
+
+    sections = []
+
+    if platform_path.exists():
+        sections.append(
+            "=== Platform Chart Defaults (load-tests/camunda-platform-values.yaml) ===\n"
+            "Override via platform_helm_values, e.g. --set orchestration.resources.limits.memory=4Gi\n\n"
+            + platform_path.read_text()
+        )
+
+    if load_test_path.exists():
+        sections.append(
+            "=== Load Test Chart Defaults (load-tests/load-test-values.yaml) ===\n"
+            "Override via load_test_helm_values when scenario=custom, e.g. --set starter.rate=100\n\n"
+            + load_test_path.read_text()
+        )
+
+    return "\n\n".join(sections) if sections else "Values files not found."
