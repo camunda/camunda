@@ -1,0 +1,204 @@
+# description: Create a Camunda load test for an individual PR. When a PR is closed, the test is cleaned up and removed
+# type: CI
+# owner @camunda/reliability-testing
+name: Camunda Pull Request Benchmark
+on:
+  pull_request:
+    types:
+      - labeled
+      - unlabeled
+      - synchronize
+      - closed
+
+defaults:
+  run:
+    # use bash shell by default to ensure pipefail behavior is the default
+    # see https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#exit-codes-and-error-action-preference
+    shell: bash
+
+env:
+  CLUSTER: camunda-benchmark-prod
+  TELEPORT_JOIN_TOKEN: infra-benchmark-prod-github-action-zeebe
+
+jobs:
+  sanitize-branch-name:
+    name: Sanitize Branch Name
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions: {}
+    outputs:
+      sanitized-name: c8-${{ steps.sanitize.outputs.branch_name }}
+    steps:
+      - id: sanitize
+        uses: camunda/infra-global-github-actions/sanitize-branch-name@main
+        with:
+          branch: ${{ github.event.pull_request.head.ref }}
+          max_length: 50  # reduced to account for load-test prefix "c8-" and potential suffixes for uniqueness
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+
+  create-benchmark:
+    name: Benchmark
+    needs: sanitize-branch-name
+    if: >
+      (github.event.action == 'labeled' && github.event.label.name == 'benchmark') ||
+      (github.event.action == 'synchronize' && contains(github.event.pull_request.labels.*.name, 'benchmark'))
+    uses: ./.github/workflows/camunda-load-test.yml
+    secrets: inherit
+    with:
+      name: ${{ needs.sanitize-branch-name.outputs.sanitized-name }}
+      ref: ${{ github.event.pull_request.head.ref }}
+      scenario: 'max'
+
+  await-benchmark:
+    name: Await Benchmark
+    needs: [sanitize-branch-name, create-benchmark]
+    if: >
+      (github.event.action == 'labeled' && github.event.label.name == 'benchmark') ||
+      (github.event.action == 'synchronize' && contains(github.event.pull_request.labels.*.name, 'benchmark'))
+    runs-on: ubuntu-latest
+    permissions: {}
+    steps:
+      - name: Wait for load test to stabilize
+        run: sleep 900  # 15 minutes
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+
+  run-profiling:
+    name: Run Profiling
+    needs: [sanitize-branch-name, await-benchmark]
+    if: >
+      (github.event.action == 'labeled' && github.event.label.name == 'benchmark') ||
+      (github.event.action == 'synchronize' && contains(github.event.pull_request.labels.*.name, 'benchmark'))
+    uses: ./.github/workflows/profile-load-test.yml
+    secrets: inherit
+    with:
+      name: ${{ needs.sanitize-branch-name.outputs.sanitized-name }}
+      pod: ''
+
+  comment-pr:
+    name: Comment on PR with profiling results
+    needs: [sanitize-branch-name, run-profiling]
+    if: >
+      (github.event.action == 'labeled' && github.event.label.name == 'benchmark') ||
+      (github.event.action == 'synchronize' && contains(github.event.pull_request.labels.*.name, 'benchmark'))
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: 'read'
+      pull-requests: 'write'
+    steps:
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          path: artifacts
+      - name: Comment PR with profiling results
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8.0.0
+        with:
+          script: |
+            const fs = require('fs');
+            const path = require('path');
+
+            // List all downloaded artifacts
+            const artifactPath = 'artifacts';
+            const artifacts = fs.readdirSync(artifactPath);
+
+            // Get artifact IDs from GitHub API
+            const { data: workflowArtifacts } = await github.rest.actions.listWorkflowRunArtifacts({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              run_id: context.runId,
+            });
+
+            let comment = '## Profiling Results\n\n';
+            comment += 'The benchmark has been profiled with the following events:\n\n';
+            comment += '| Event | Pod | Artifact |\n';
+            comment += '|-------|-----|----------|\n';
+
+            artifacts.forEach(artifact => {
+              const match = artifact.match(/flamegraph-(\w+)-(\w+-\d+)/);
+              if (match) {
+                const event = match[1];
+                const pod = match[2];
+
+                // Find the artifact ID for this artifact name
+                const artifactInfo = workflowArtifacts.artifacts.find(a => a.name === artifact);
+                if (artifactInfo) {
+                  const downloadUrl = `https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts/${artifactInfo.id}`;
+                  comment += `| ${event} | ${pod} | [Download](${downloadUrl}) |\n`;
+                } else {
+                  comment += `| ${event} | ${pod} | N/A |\n`;
+                }
+              }
+            });
+
+            comment += '\n📊 [View all artifacts and workflow summary](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})\n';
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment
+            });
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+
+  delete-benchmark:
+    name: Benchmark Cleanup
+    needs: sanitize-branch-name
+    if: >
+      (github.event.action == 'unlabeled' && github.event.label.name == 'benchmark') ||
+      (github.event.action == 'closed' && contains(github.event.pull_request.labels.*.name, 'benchmark'))
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: 'read'
+      id-token: 'write'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Set up Teleport
+        uses: teleport-actions/setup@b638ff596557cc3959eb6b5287d5e58e0c8ac6a6 # v1.1.1
+        with:
+          proxy: camunda.teleport.sh:443
+          version: auto
+
+      - name: Authenticate to Cluster using Teleport
+        uses: teleport-actions/auth-k8s@0f46164469ae4fcd4d359d40e06bab17d4be17c9 # v2.0.6
+        with:
+          proxy: camunda.teleport.sh:443
+          token: ${{ env.TELEPORT_JOIN_TOKEN }}
+          kubernetes-cluster: ${{ env.CLUSTER }}
+
+      - name: Delete benchmarks
+        run: |
+          kubectl delete ns "${{ needs.sanitize-branch-name.outputs.sanitized-name }}"
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
