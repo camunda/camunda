@@ -10,9 +10,11 @@ package io.camunda.db.rdbms.read.mapper;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.db.rdbms.write.domain.MessageSubscriptionDbModel;
+import io.camunda.search.entities.MessageSubscriptionEntity.InputSpecItem;
 import io.camunda.search.entities.MessageSubscriptionEntity.MessageSubscriptionState;
 import io.camunda.search.entities.MessageSubscriptionEntity.MessageSubscriptionType;
 import java.time.OffsetDateTime;
+import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 
@@ -38,6 +40,8 @@ public class MessageSubscriptionEntityMapperTest {
             .processDefinitionName("My Process")
             .processDefinitionVersion(2)
             .extensionProperties(Map.of("key1", "value1"))
+            .inputSpecification(
+                List.of(new InputSpecItem("name1", "desc1", "type1", true, "schema1")))
             .build();
 
     // When
@@ -67,6 +71,7 @@ public class MessageSubscriptionEntityMapperTest {
             .processDefinitionName(null)
             .processDefinitionVersion(null)
             .extensionProperties(null)
+            .inputSpecification(null)
             .build();
 
     // When
@@ -89,5 +94,6 @@ public class MessageSubscriptionEntityMapperTest {
         .isEqualTo(""); // Oracle treats empty strings as NULL, mapper converts back to ""
     assertThat(entity.processDefinitionVersion()).isNull();
     assertThat(entity.extensionProperties()).isEqualTo(Map.of());
+    assertThat(entity.inputSpecification()).isEqualTo(List.of());
   }
 }
