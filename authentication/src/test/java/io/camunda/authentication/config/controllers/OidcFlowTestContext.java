@@ -16,8 +16,6 @@ import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.security.reader.ResourceAccessProvider;
-import java.util.List;
-import java.util.Map;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -42,9 +40,7 @@ public class OidcFlowTestContext {
 
   @Bean
   public CamundaAuthenticationProvider createCamundaAuthenticationProvider() {
-    return () ->
-        new CamundaAuthentication(
-            "dummyUsername", null, false, List.of(), List.of(), List.of(), List.of(), Map.of());
+    return () -> CamundaAuthentication.of(b -> b.user("dummyUsername"));
   }
 
   @Bean

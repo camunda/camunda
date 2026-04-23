@@ -24,8 +24,6 @@ import io.camunda.service.RoleServices;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -164,15 +162,7 @@ public class SessionAuthenticationRefreshTest {
     }
 
     private CamundaAuthentication createMockAuthentication() {
-      return new CamundaAuthentication(
-          TestUserDetailsService.DEMO_USERNAME,
-          null,
-          false,
-          Collections.emptyList(),
-          Collections.emptyList(),
-          Collections.emptyList(),
-          Collections.emptyList(),
-          new HashMap<>());
+      return CamundaAuthentication.of(b -> b.user(TestUserDetailsService.DEMO_USERNAME));
     }
 
     private void setSessionRefreshAttribute(
