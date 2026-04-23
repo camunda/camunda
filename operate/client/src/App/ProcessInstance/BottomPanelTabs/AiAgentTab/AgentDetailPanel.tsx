@@ -706,6 +706,7 @@ function ExpandableMessageBlock({
   borderColor,
   contents,
   modalHeading,
+  expandedJson,
   children,
 }: {
   role: string;
@@ -713,11 +714,23 @@ function ExpandableMessageBlock({
   borderColor: string;
   contents: string[];
   modalHeading: string;
+  /**
+   * When provided, the expand-to-modal view shows the full message payload as
+   * formatted JSON (matching the shape the agent decision trail records). When
+   * omitted, the modal falls back to the joined markdown content (used for
+   * non-message blocks like the System prompt).
+   */
+  expandedJson?: unknown;
   children?: React.ReactNode;
 }) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const segments = contents.filter((c) => c.length > 0);
   const fullContent = segments.join('\n\n');
+  const modalLanguage = expandedJson !== undefined ? 'json' : 'markdown';
+  const modalValue =
+    expandedJson !== undefined
+      ? JSON.stringify(expandedJson, null, 2)
+      : fullContent;
 
   return (
     <>
@@ -733,6 +746,8 @@ function ExpandableMessageBlock({
           style={{
             display: 'flex',
             alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: 'var(--cds-spacing-03)',
             marginBottom: 'var(--cds-spacing-02)',
           }}
         >
@@ -753,7 +768,6 @@ function ExpandableMessageBlock({
             label="Expand"
             align="left"
             onClick={() => setIsModalOpen(true)}
-            style={{marginLeft: 'auto', flexShrink: 0}}
           >
             <Maximize size={16} />
           </IconButton>
@@ -790,8 +804,8 @@ function ExpandableMessageBlock({
         >
           <MonacoEditor
             height="60vh"
-            language="markdown"
-            value={fullContent}
+            language={modalLanguage}
+            value={modalValue}
             options={{
               readOnly: true,
               minimap: {enabled: false},
@@ -806,6 +820,34 @@ function ExpandableMessageBlock({
       </Modal>
     </>
   );
+}
+
+/**
+ * Reshape a conversation message into the agent decision-trail JSON shape
+ * (content is an array of `{type: "text", text: ...}` blocks, matching what
+ * the backend records). Used by the expand-to-modal view so operators can see
+ * the raw payload behind each message.
+ */
+function messageToDecisionTrailShape(msg: ConversationMessage) {
+  const out: Record<string, unknown> = {
+    role: msg.role,
+    content: msg.content
+      .filter((text) => text.length > 0)
+      .map((text) => ({type: 'text', text})),
+  };
+  if (msg.timestamp) {
+    out.timestamp = msg.timestamp;
+  }
+  if (msg.documents && msg.documents.length > 0) {
+    out.documents = msg.documents;
+  }
+  if (msg.toolCalls && msg.toolCalls.length > 0) {
+    out.toolCalls = msg.toolCalls;
+  }
+  if (msg.toolResults && msg.toolResults.length > 0) {
+    out.toolResults = msg.toolResults;
+  }
+  return out;
 }
 
 function ConversationHistory({
@@ -872,6 +914,7 @@ function ConversationHistory({
               borderColor="var(--cds-interactive)"
               contents={msg.content}
               modalHeading="User message"
+              expandedJson={messageToDecisionTrailShape(msg)}
             >
               {msg.documents && msg.documents.length > 0 && (
                 <div
@@ -905,6 +948,7 @@ function ConversationHistory({
               borderColor="#8a3ffc"
               contents={msg.content}
               modalHeading="Assistant message"
+              expandedJson={messageToDecisionTrailShape(msg)}
             >
               {msg.toolCalls && msg.toolCalls.length > 0 && (
                 <div
