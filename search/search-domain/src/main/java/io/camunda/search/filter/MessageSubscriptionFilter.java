@@ -31,7 +31,9 @@ public record MessageSubscriptionFilter(
     List<Operation<String>> correlationKeyOperations,
     List<Operation<String>> tenantIdOperations,
     List<Operation<String>> processDefinitionNameOperations,
-    List<Operation<Integer>> processDefinitionVersionOperations)
+    List<Operation<Integer>> processDefinitionVersionOperations,
+    List<Operation<String>> toolNameOperations,
+    List<Operation<String>> inboundConnectorTypeOperations)
     implements FilterBase {
 
   public static final class Builder implements ObjectBuilder<MessageSubscriptionFilter> {
@@ -50,6 +52,8 @@ public record MessageSubscriptionFilter(
     private List<Operation<String>> tenantIdOperations;
     private List<Operation<String>> processDefinitionNameOperations;
     private List<Operation<Integer>> processDefinitionVersionOperations;
+    private List<Operation<String>> toolNameOperations;
+    private List<Operation<String>> inboundConnectorTypeOperations;
 
     public Builder messageSubscriptionKeys(final Long value, final Long... values) {
       return messageSubscriptionKeyOperations(FilterUtil.mapDefaultToOperation(value, values));
@@ -265,6 +269,36 @@ public record MessageSubscriptionFilter(
       return correlationKeyOperations(collectValues(operation, operations));
     }
 
+    public Builder toolNames(final String value, final String... values) {
+      return toolNameOperations(FilterUtil.mapDefaultToOperation(value, values));
+    }
+
+    @SafeVarargs
+    public final Builder toolNameOperations(
+        final Operation<String> operation, final Operation<String>... operations) {
+      return toolNameOperations(collectValues(operation, operations));
+    }
+
+    public Builder toolNameOperations(final List<Operation<String>> operations) {
+      toolNameOperations = addValuesToList(toolNameOperations, operations);
+      return this;
+    }
+
+    public Builder inboundConnectorTypes(final String value, final String... values) {
+      return inboundConnectorTypeOperations(FilterUtil.mapDefaultToOperation(value, values));
+    }
+
+    @SafeVarargs
+    public final Builder inboundConnectorTypeOperations(
+        final Operation<String> operation, final Operation<String>... operations) {
+      return inboundConnectorTypeOperations(collectValues(operation, operations));
+    }
+
+    public Builder inboundConnectorTypeOperations(final List<Operation<String>> operations) {
+      inboundConnectorTypeOperations = addValuesToList(inboundConnectorTypeOperations, operations);
+      return this;
+    }
+
     @Override
     public MessageSubscriptionFilter build() {
       return new MessageSubscriptionFilter(
@@ -281,7 +315,9 @@ public record MessageSubscriptionFilter(
           Objects.requireNonNullElse(correlationKeyOperations, Collections.emptyList()),
           Objects.requireNonNullElse(tenantIdOperations, Collections.emptyList()),
           Objects.requireNonNullElse(processDefinitionNameOperations, Collections.emptyList()),
-          Objects.requireNonNullElse(processDefinitionVersionOperations, Collections.emptyList()));
+          Objects.requireNonNullElse(processDefinitionVersionOperations, Collections.emptyList()),
+          Objects.requireNonNullElse(toolNameOperations, Collections.emptyList()),
+          Objects.requireNonNullElse(inboundConnectorTypeOperations, Collections.emptyList()));
     }
   }
 }
