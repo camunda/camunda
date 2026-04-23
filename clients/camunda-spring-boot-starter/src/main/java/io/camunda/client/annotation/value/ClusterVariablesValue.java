@@ -15,8 +15,8 @@
  */
 package io.camunda.client.annotation.value;
 
-public sealed interface GlobalVariablesValue
-    permits ResourceGlobalVariablesValue, MethodGlobalVariablesValue {
+public sealed interface ClusterVariablesValue
+    permits ResourceClusterVariablesValue, MethodClusterVariablesValue {
 
   String getTenantId();
 }

@@ -21,13 +21,13 @@ import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 import io.camunda.client.CamundaClient;
-import io.camunda.client.annotation.GlobalVariables;
+import io.camunda.client.annotation.ClusterVariables;
 import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.command.GloballyScopedClusterVariableCreationCommandStep1;
 import io.camunda.client.api.command.TenantScopedClusterVariableCreationCommandStep1;
 import io.camunda.client.impl.CamundaObjectMapper;
-import io.camunda.client.spring.annotation.processor.GlobalVariablesAnnotationProcessor;
-import io.camunda.client.spring.properties.CamundaClientGlobalVariablesProperties;
+import io.camunda.client.spring.annotation.processor.ClusterVariablesAnnotationProcessor;
+import io.camunda.client.spring.properties.CamundaClientClusterVariablesProperties;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -42,7 +42,7 @@ import org.springframework.core.io.Resource;
 import org.springframework.core.io.support.ResourcePatternResolver;
 
 @ExtendWith(MockitoExtension.class)
-public class GlobalVariablesAnnotationProcessorTest {
+public class ClusterVariablesAnnotationProcessorTest {
 
   @Mock private CamundaClient client;
 
@@ -55,10 +55,10 @@ public class GlobalVariablesAnnotationProcessorTest {
   @Spy private JsonMapper jsonMapper = new CamundaObjectMapper();
 
   @Spy
-  private CamundaClientGlobalVariablesProperties properties =
-      new CamundaClientGlobalVariablesProperties();
+  private CamundaClientClusterVariablesProperties properties =
+      new CamundaClientClusterVariablesProperties();
 
-  @InjectMocks private GlobalVariablesAnnotationProcessor processor;
+  @InjectMocks private ClusterVariablesAnnotationProcessor processor;
 
   @Test
   void shouldCreateSingleVariableFromResource() throws IOException {
@@ -294,26 +294,26 @@ public class GlobalVariablesAnnotationProcessorTest {
     return resource;
   }
 
-  @GlobalVariables(resources = "classpath:variables.json")
+  @ClusterVariables(resources = "classpath:variables.json")
   private static final class WithSingleResource {}
 
-  @GlobalVariables(resources = {"classpath:vars1.json", "classpath:vars2.json"})
+  @ClusterVariables(resources = {"classpath:vars1.json", "classpath:vars2.json"})
   private static final class WithMultipleResources {}
 
-  @GlobalVariables(resources = "classpath:tenant-variables.json", tenantId = "my-tenant")
+  @ClusterVariables(resources = "classpath:tenant-variables.json", tenantId = "my-tenant")
   private static final class WithTenantScopedResource {}
 
   // Public to allow reflective method invocation from SpringMethodInfo (different package)
   public static final class WithMethodVariables {
-    @GlobalVariables
-    public Map<String, Object> globalVariables() {
+    @ClusterVariables
+    public Map<String, Object> clusterVariables() {
       return Map.of("environment", "production", "version", "1.0");
     }
   }
 
   // Public to allow reflective method invocation from SpringMethodInfo (different package)
   public static final class WithTenantScopedMethod {
-    @GlobalVariables(tenantId = "my-tenant")
+    @ClusterVariables(tenantId = "my-tenant")
     public Map<String, Object> tenantVariables() {
       return Map.of("key", "value");
     }
@@ -321,7 +321,7 @@ public class GlobalVariablesAnnotationProcessorTest {
 
   // Public to allow reflective method invocation from SpringMethodInfo (different package)
   public static final class WithPojoMethod {
-    @GlobalVariables
+    @ClusterVariables
     public MyVariables variables() {
       return new MyVariables("staging", 5);
     }

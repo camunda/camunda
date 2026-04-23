@@ -15,27 +15,27 @@
  */
 package io.camunda.client.annotation;
 
-import io.camunda.client.annotation.GlobalVariables.GlobalVariablesContainer;
+import io.camunda.client.annotation.ClusterVariables.ClusterVariablesContainer;
 import java.lang.annotation.*;
 
 /**
- * Annotation to define global variables for Camunda Client operations. Can be applied at both class
- * and method levels.
+ * Annotation to define cluster variables for Camunda Client operations. Can be applied at both
+ * class and method levels.
  *
  * <p>When applied at the class level, the resources added as parameter are loaded.
  *
  * <p>When applied at method level, the method is invoked to produce the according variables.
  */
-@Repeatable(GlobalVariablesContainer.class)
+@Repeatable(ClusterVariablesContainer.class)
 @Target({ElementType.TYPE, ElementType.METHOD})
 @Retention(RetentionPolicy.RUNTIME)
 @Documented
 @Inherited // has to be inherited to work on spring aop beans
-public @interface GlobalVariables {
+public @interface ClusterVariables {
 
   /**
-   * JSON resource files to load global variables from. Supports Spring resource pattern resolver
-   * mechanisms (e.g., {@code "classpath:global-variables.json"}).
+   * JSON resource files to load cluster variables from. Supports Spring resource pattern resolver
+   * mechanisms (e.g., {@code "classpath:cluster-variables.json"}).
    *
    * <p>Each JSON file should contain a flat JSON object where each key becomes a variable name and
    * the corresponding value becomes the variable value.
@@ -51,7 +51,7 @@ public @interface GlobalVariables {
   @Inherited
   @Retention(RetentionPolicy.RUNTIME)
   @Target({ElementType.TYPE, ElementType.METHOD})
-  public @interface GlobalVariablesContainer {
-    GlobalVariables[] value();
+  public @interface ClusterVariablesContainer {
+    ClusterVariables[] value();
   }
 }

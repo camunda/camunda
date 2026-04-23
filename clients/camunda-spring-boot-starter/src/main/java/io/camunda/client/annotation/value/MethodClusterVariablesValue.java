@@ -15,20 +15,21 @@
  */
 package io.camunda.client.annotation.value;
 
-import java.util.List;
 import java.util.Objects;
+import java.util.function.Supplier;
 
-public final class ResourceGlobalVariablesValue implements GlobalVariablesValue {
-  private final List<String> resources;
+public final class MethodClusterVariablesValue implements ClusterVariablesValue {
+  private final Supplier<Object> variableSupplier;
   private final String tenantId;
 
-  public ResourceGlobalVariablesValue(final List<String> resources, final String tenantId) {
-    this.resources = resources;
+  public MethodClusterVariablesValue(
+      final Supplier<Object> variableSupplier, final String tenantId) {
+    this.variableSupplier = variableSupplier;
     this.tenantId = tenantId;
   }
 
-  public List<String> getResources() {
-    return resources;
+  public Supplier<Object> getVariableSupplier() {
+    return variableSupplier;
   }
 
   @Override
@@ -38,7 +39,7 @@ public final class ResourceGlobalVariablesValue implements GlobalVariablesValue 
 
   @Override
   public int hashCode() {
-    return Objects.hash(resources, tenantId);
+    return Objects.hash(variableSupplier, tenantId);
   }
 
   @Override
@@ -46,18 +47,13 @@ public final class ResourceGlobalVariablesValue implements GlobalVariablesValue 
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    final ResourceGlobalVariablesValue that = (ResourceGlobalVariablesValue) o;
-    return Objects.equals(resources, that.resources) && Objects.equals(tenantId, that.tenantId);
+    final MethodClusterVariablesValue that = (MethodClusterVariablesValue) o;
+    return Objects.equals(variableSupplier, that.variableSupplier)
+        && Objects.equals(tenantId, that.tenantId);
   }
 
   @Override
   public String toString() {
-    return "ResourceGlobalVariablesValue{"
-        + "resources="
-        + resources
-        + ", tenantId='"
-        + tenantId
-        + '\''
-        + '}';
+    return "MethodClusterVariablesValue{" + "tenantId='" + tenantId + '\'' + '}';
   }
 }

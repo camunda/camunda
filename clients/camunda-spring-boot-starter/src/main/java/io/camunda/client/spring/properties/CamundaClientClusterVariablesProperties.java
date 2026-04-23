@@ -18,15 +18,15 @@ package io.camunda.client.spring.properties;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-public class CamundaClientGlobalVariablesProperties {
+public class CamundaClientClusterVariablesProperties {
 
   /**
-   * Indicates if the <code>@GlobalVariables</code> annotation is processed and configured variables
-   * are applied.
+   * Indicates if the <code>@ClusterVariables</code> annotation is processed and configured
+   * variables are applied.
    */
   private boolean enabled = true;
 
-  /** Global cluster variables to set at startup as key-value pairs. */
+  /** Cluster variables to set at startup as key-value pairs. */
   private Map<String, Object> variables = new LinkedHashMap<>();
 
   public boolean isEnabled() {
@@ -47,7 +47,7 @@ public class CamundaClientGlobalVariablesProperties {
 
   @Override
   public String toString() {
-    return "CamundaClientGlobalVariablesProperties{"
+    return "CamundaClientClusterVariablesProperties{"
         + "enabled="
         + enabled
         + ", variables="
