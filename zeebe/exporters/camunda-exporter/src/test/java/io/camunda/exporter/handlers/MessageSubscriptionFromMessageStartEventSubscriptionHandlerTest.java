@@ -191,6 +191,53 @@ final class MessageSubscriptionFromMessageStartEventSubscriptionHandlerTest {
   }
 
   @Test
+  void shouldExtractToolNameAndInboundConnectorTypeFromCache() {
+    // given
+    final long processDefinitionKey = 100L;
+    final String startEventId = "StartEvent_1";
+    final Map<String, String> extProps =
+        Map.of("io.camunda.tool:name", "myTool", "inbound.type", "io.camunda:http-webhook:1");
+    Mockito.when(processCache.get(processDefinitionKey))
+        .thenReturn(
+            Optional.of(
+                new CachedProcessEntity(
+                    "Process",
+                    1,
+                    null,
+                    List.of(),
+                    Map.of(),
+                    false,
+                    Map.of(startEventId, extProps))));
+
+    final ImmutableMessageStartEventSubscriptionRecordValue value =
+        ImmutableMessageStartEventSubscriptionRecordValue.builder()
+            .withProcessDefinitionKey(processDefinitionKey)
+            .withBpmnProcessId("proc")
+            .withStartEventId(startEventId)
+            .withMessageName("msg")
+            .withTenantId("<default>")
+            .withProcessInstanceKey(-1L)
+            .withCorrelationKey("")
+            .withMessageKey(-1L)
+            .build();
+
+    final Record<MessageStartEventSubscriptionRecordValue> record =
+        factory.generateRecord(
+            ValueType.MESSAGE_START_EVENT_SUBSCRIPTION,
+            r -> r.withIntent(MessageStartEventSubscriptionIntent.CREATED).withValue(value));
+
+    final MessageSubscriptionEntity entity = new MessageSubscriptionEntity();
+
+    // when
+    underTest.updateEntity(record, entity);
+
+    // then
+    assertThat(entity.getToolName()).isEqualTo("myTool");
+    assertThat(entity.getInboundConnectorType()).isEqualTo("io.camunda:http-webhook:1");
+    assertThat(entity.getExtensionProperties()).isEqualTo(extProps);
+  }
+
+  @Test
   void shouldHandleMissingProcessCacheGracefully() {
     // given
     Mockito.when(processCache.get(Mockito.anyLong())).thenReturn(Optional.empty());
@@ -218,6 +265,8 @@ final class MessageSubscriptionFromMessageStartEventSubscriptionHandlerTest {
     underTest.updateEntity(record, entity);
     assertThat(entity.getProcessDefinitionName()).isNull();
     assertThat(entity.getProcessDefinitionVersion()).isNull();
+    assertThat(entity.getToolName()).isNull();
+    assertThat(entity.getInboundConnectorType()).isNull();
   }
 
   @Test
@@ -255,6 +304,8 @@ final class MessageSubscriptionFromMessageStartEventSubscriptionHandlerTest {
     expectedUpdateFields.put("processDefinitionName", null);
     expectedUpdateFields.put("processDefinitionVersion", null);
     expectedUpdateFields.put("extensionProperties", null);
+    expectedUpdateFields.put("toolName", null);
+    expectedUpdateFields.put("inboundConnectorType", null);
     expectedUpdateFields.put("metadata", metadataMap);
     final BatchRequest mockRequest = Mockito.mock(BatchRequest.class);
 
