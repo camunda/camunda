@@ -36,12 +36,8 @@ import org.apache.hc.core5.http.HttpStatus;
 import org.apache.hc.core5.http.io.entity.HttpEntities;
 import org.awaitility.Awaitility;
 import org.awaitility.core.ConditionTimeoutException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public final class CamundaManagementClient implements CamundaClockClient {
-
-  private static final Logger LOG = LoggerFactory.getLogger(CamundaManagementClient.class);
 
   private static final String CLOCK_ENDPOINT = "/actuator/clock";
   private static final String CLOCK_ADD_ENDPOINT = "/actuator/clock/add";
@@ -118,49 +114,6 @@ public final class CamundaManagementClient implements CamundaClockClient {
         ? "Failed to increase the time. Please double-check that the Clock endpoint is enabled by "
             + "setting 'zeebe-clock-controlled' to true."
         : "Failed to increase the time.";
-  }
-
-  /**
-   * Waits until the cluster is ready to accept new operations: all brokers are active and there is
-   * no pending topology change. Uses a default timeout of thirty seconds.
-   *
-   * @throws RuntimeException if the timeout expired or a request completed with a non-2XX status
-   *     code
-   */
-  public void waitForClusterReady() {
-    waitForClusterReady(Duration.ofSeconds(30));
-  }
-
-  /**
-   * Waits until the cluster is ready to accept new operations: all brokers are active and there is
-   * no pending topology change.
-   *
-   * @param timeout maximum time to wait
-   * @throws RuntimeException if the timeout expired or a request completed with a non-2XX status
-   *     code
-   */
-  public void waitForClusterReady(final Duration timeout) {
-    try {
-      Awaitility.await()
-          .pollInterval(Duration.ofMillis(500))
-          .atMost(timeout)
-          .until(this::isClusterReady);
-    } catch (final ConditionTimeoutException e) {
-      throw new RuntimeException("Cluster did not become ready within the timeout.", e);
-    }
-  }
-
-  private boolean isClusterReady() {
-    try {
-      final HttpGet clusterStatusRequest =
-          new HttpGet(camundaManagementApi + CLUSTER_TOPOLOGY_ENDPOINT);
-      final ManagementClusterTopologyResponseDto topologyResponse =
-          sendRequest(clusterStatusRequest, ManagementClusterTopologyResponseDto.class);
-      return topologyResponse.isClusterReady();
-    } catch (final Exception e) {
-      LOG.debug("Cluster is not ready yet: {}", e.getMessage());
-      return false;
-    }
   }
 
   /**
