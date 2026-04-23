@@ -82,7 +82,7 @@ jobs:
           kubectl config set-context --current --namespace=${{ inputs.name }}
       - name: Execute profiling
         run: >
-          ./zeebe/benchmarks/docs/scripts/executeProfiling.sh ${{ matrix.pod }} ${{ matrix.event }} "${{ inputs.profiler_options }}"
+          ./load-tests/docs/scripts/executeProfiling.sh ${{ matrix.pod }} ${{ matrix.event }} "${{ inputs.profiler_options }}"
       - uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
         with:
           name: flamegraph-${{ matrix.event }}-${{ matrix.pod }}
@@ -132,7 +132,7 @@ jobs:
           kubectl config set-context --current --namespace=${{ inputs.name }}
       - name: Execute profiling
         run: >
-          ./zeebe/benchmarks/docs/scripts/executeProfiling.sh ${{ inputs.pod }} cpu "${{ inputs.profiler_options }}"
+          ./load-tests/docs/scripts/executeProfiling.sh ${{ inputs.pod }} cpu "${{ inputs.profiler_options }}"
       - uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
         with:
           name: flamegraph-cpu-${{ inputs.pod }}
