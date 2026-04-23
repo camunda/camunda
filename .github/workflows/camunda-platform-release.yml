@@ -1055,8 +1055,9 @@ jobs:
           variables: |
             {
               "is_camunda_release_successful": "true",
-              "camunda_workflow_run_url": "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-            }      
+              "camunda_workflow_run_url": "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}",
+              "camunda_repository": "${{ github.repository }}"
+            }
       - name: Send success Slack notification
         if: ${{ !inputs.dryRun && !inputs.releaseProcessDryRun && needs.github.outputs.releaseBodyUpdateOutcome != 'failure' }}
         uses: slackapi/slack-github-action@af78098f536edbc4de71162a307590698245be95 # v3.0.1
@@ -1146,8 +1147,9 @@ jobs:
           variables: |
             {
               "is_camunda_release_successful": "false",
-              "camunda_workflow_run_url": "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-            }            
+              "camunda_workflow_run_url": "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}",
+              "camunda_repository": "${{ github.repository }}"
+            }
       - name: Send failure Slack notification
         if: ${{ !inputs.dryRun && !inputs.releaseProcessDryRun }}
         uses: slackapi/slack-github-action@af78098f536edbc4de71162a307590698245be95 # v3.0.1
