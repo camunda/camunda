@@ -18,7 +18,6 @@ import io.camunda.application.commons.security.CamundaSecurityConfiguration.Camu
 import io.camunda.application.initializers.McpGatewayInitializer;
 import io.camunda.application.initializers.WebappsConfigurationInitializer;
 import io.camunda.authentication.config.AuthenticationProperties;
-import io.camunda.client.CredentialsProvider;
 import io.camunda.configuration.Camunda;
 import io.camunda.configuration.EngineJob;
 import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
@@ -380,14 +379,6 @@ public final class TestCamundaApplication extends TestSpringApplication<TestCamu
       }
     }
     return copy;
-  }
-
-  public TestRestTasklistClient newTasklistClient() {
-    return new TestRestTasklistClient(restAddress());
-  }
-
-  public TestRestTasklistClient newTasklistClient(final CredentialsProvider credentialsProvider) {
-    return new TestRestTasklistClient(restAddress(), credentialsProvider);
   }
 
   public TestWebappClient newWebappClient() {
