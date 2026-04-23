@@ -18,6 +18,7 @@ package io.camunda.client.spring.configuration;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.client.api.JsonMapper;
 import io.camunda.client.bean.BeanInfo;
 import io.camunda.client.jobhandling.JobCallbackCommandWrapperFactory;
 import io.camunda.client.jobhandling.JobWorkerManager;
@@ -42,9 +43,10 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
       AnnotationProcessorConfigurationTest.TestConfig.class
     })
 public class AnnotationProcessorConfigurationTest {
-  // required to auto-wire with the job worker annotation processor configuration
+  // required to auto-wire with the annotation processor configurations
   @MockitoBean JobWorkerManager jobWorkerManager;
   @MockitoBean CamundaClient camundaClient;
+  @MockitoBean JsonMapper jsonMapper;
   @MockitoBean JobCallbackCommandWrapperFactory jobCallbackCommandWrapperFactory;
   @MockitoBean MetricsRecorder metricsRecorder;
   @MockitoBean ParameterResolverStrategy parameterResolverStrategy;

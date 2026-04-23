@@ -194,6 +194,22 @@ public class GlobalVariablesAnnotationProcessorTest {
   }
 
   @Test
+  void shouldThrowWhenNoResourcesFound() throws IOException {
+    // given
+    when(resourcePatternResolver.getResources("classpath:variables.json"))
+        .thenReturn(new Resource[0]);
+
+    // when / then
+    assertThatExceptionOfType(IllegalArgumentException.class)
+        .isThrownBy(
+            () -> {
+              processor.configureFor(beanInfo(new WithSingleResource()));
+              processor.start(client);
+            })
+        .withMessageContaining("No resources found");
+  }
+
+  @Test
   void shouldLoadVariablesFromMultipleResources() throws IOException {
     // given
     final Resource resource1 = mockJsonResource("{\"var1\": \"value1\"}");
