@@ -21,6 +21,9 @@ export class IdentityGlobalTaskListenersPage {
   readonly closeCreateGlobalTaskListenerModal: Locator;
   readonly createGlobalTaskListenerIdField: Locator;
   readonly createGlobalTaskListenerTypeField: Locator;
+  readonly createGlobalTaskListenerEventTypeToggle: Locator;
+  readonly createGlobalTaskListenerEventTypeMenu: Locator;
+  readonly createGlobalTaskListenerInlineError: Locator;
   readonly createGlobalTaskListenerModalCancelButton: Locator;
   readonly createGlobalTaskListenerModalCreateButton: Locator;
 
@@ -72,6 +75,18 @@ export class IdentityGlobalTaskListenersPage {
       this.createGlobalTaskListenerModal.getByRole('textbox', {
         name: 'Listener type',
       });
+    this.createGlobalTaskListenerEventTypeToggle =
+      this.createGlobalTaskListenerModal.locator(
+        '#event-type-multiselect button',
+      );
+    this.createGlobalTaskListenerEventTypeMenu =
+      this.createGlobalTaskListenerModal.locator(
+        '#event-type-multiselect .cds--list-box__menu',
+      );
+    this.createGlobalTaskListenerInlineError =
+      this.createGlobalTaskListenerModal.locator(
+        '.cds--inline-notification--error',
+      );
     this.createGlobalTaskListenerModalCancelButton =
       this.createGlobalTaskListenerModal.getByRole('button', {name: 'Cancel'});
     this.createGlobalTaskListenerModalCreateButton =
@@ -122,14 +137,8 @@ export class IdentityGlobalTaskListenersPage {
     await this.createGlobalTaskListenerIdField.fill(listenerId);
     await this.createGlobalTaskListenerTypeField.fill(listenerType);
     await this.createGlobalTaskListenerTypeField.blur();
-    const createEventTypeToggle = this.createGlobalTaskListenerModal.locator(
-      '#event-type-multiselect button',
-    );
-    await createEventTypeToggle.click();
-    const createEventTypeMenu = this.createGlobalTaskListenerModal.locator(
-      '#event-type-multiselect .cds--list-box__menu',
-    );
-    await expect(createEventTypeMenu).toBeVisible();
+    await this.createGlobalTaskListenerEventTypeToggle.click();
+    await expect(this.createGlobalTaskListenerEventTypeMenu).toBeVisible();
     await this.page
       .locator('[role="option"]', {hasText: eventTypeLabel})
       .click();

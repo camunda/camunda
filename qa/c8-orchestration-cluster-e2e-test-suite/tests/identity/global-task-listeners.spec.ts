@@ -54,85 +54,91 @@ test.describe.serial('global task listeners CRUD', () => {
   test('tries to create a global task listener with invalid type', async ({
     identityGlobalTaskListenersPage,
   }) => {
-    await identityGlobalTaskListenersPage.createGlobalTaskListenerButton.click();
-    await identityGlobalTaskListenersPage.createGlobalTaskListenerTypeField.fill(
-      'invalid type with spaces',
-    );
-    await expect(
-      identityGlobalTaskListenersPage.createGlobalTaskListenerModal,
-    ).toContainText(
-      'Please enter a valid listener type (letters, digits, dots, dashes, and underscores only)',
-    );
-    await expect(
-      identityGlobalTaskListenersPage.createGlobalTaskListenerTypeField,
-    ).toHaveAttribute('data-invalid', 'true');
+    await test.step('Open create modal and fill invalid listener type', async () => {
+      await identityGlobalTaskListenersPage.createGlobalTaskListenerButton.click();
+      await identityGlobalTaskListenersPage.createGlobalTaskListenerTypeField.fill(
+        'invalid type with spaces',
+      );
+    });
+
+    await test.step('Verify validation error is shown', async () => {
+      await expect(
+        identityGlobalTaskListenersPage.createGlobalTaskListenerModal,
+      ).toContainText(
+        'Please enter a valid listener type (letters, digits, dots, dashes, and underscores only)',
+      );
+      await expect(
+        identityGlobalTaskListenersPage.createGlobalTaskListenerTypeField,
+      ).toHaveAttribute('data-invalid', 'true');
+    });
   });
 
   test('creates a global task listener', async ({
     page,
     identityGlobalTaskListenersPage,
   }) => {
-    await identityGlobalTaskListenersPage.createGlobalTaskListener(
-      NEW_LISTENER.id,
-      NEW_LISTENER.type,
-      NEW_LISTENER.eventType,
-    );
-
-    const item = identityGlobalTaskListenersPage.globalTaskListenerCell(
-      NEW_LISTENER.id,
-    );
-
-    await waitForItemInList(page, item, {
-      clickNext: true,
-      timeout: 30000,
+    await test.step('Create the listener', async () => {
+      await identityGlobalTaskListenersPage.createGlobalTaskListener(
+        NEW_LISTENER.id,
+        NEW_LISTENER.type,
+        NEW_LISTENER.eventType,
+      );
     });
-    await expect(item).toBeVisible();
+
+    await test.step('Verify the listener appears in the list', async () => {
+      const item = identityGlobalTaskListenersPage.globalTaskListenerCell(
+        NEW_LISTENER.id,
+      );
+      await waitForItemInList(page, item, {
+        clickNext: true,
+        timeout: 30000,
+      });
+      await expect(item).toBeVisible();
+    });
   });
 
   test('rejects creating a duplicate global task listener', async ({
     page,
     identityGlobalTaskListenersPage,
   }) => {
-    await identityGlobalTaskListenersPage.createGlobalTaskListenerButton.click();
-    await expect(
-      identityGlobalTaskListenersPage.createGlobalTaskListenerModal,
-    ).toBeVisible();
+    await test.step('Open create modal and fill duplicate data', async () => {
+      await identityGlobalTaskListenersPage.createGlobalTaskListenerButton.click();
+      await expect(
+        identityGlobalTaskListenersPage.createGlobalTaskListenerModal,
+      ).toBeVisible();
 
-    await identityGlobalTaskListenersPage.createGlobalTaskListenerIdField.fill(
-      NEW_LISTENER.id,
-    );
-    await identityGlobalTaskListenersPage.createGlobalTaskListenerTypeField.fill(
-      NEW_LISTENER.type,
-    );
-    await identityGlobalTaskListenersPage.createGlobalTaskListenerTypeField.blur();
-    const createEventTypeToggle =
-      identityGlobalTaskListenersPage.createGlobalTaskListenerModal.locator(
-        '#event-type-multiselect button',
+      await identityGlobalTaskListenersPage.createGlobalTaskListenerIdField.fill(
+        NEW_LISTENER.id,
       );
-    await createEventTypeToggle.click();
-    const createEventTypeMenu =
-      identityGlobalTaskListenersPage.createGlobalTaskListenerModal.locator(
-        '#event-type-multiselect .cds--list-box__menu',
+      await identityGlobalTaskListenersPage.createGlobalTaskListenerTypeField.fill(
+        NEW_LISTENER.type,
       );
-    await expect(createEventTypeMenu).toBeVisible();
-    await page
-      .locator('[role="option"]', {hasText: NEW_LISTENER.eventType})
-      .click();
-    await identityGlobalTaskListenersPage.createGlobalTaskListenerModalCreateButton.click();
+      await identityGlobalTaskListenersPage.createGlobalTaskListenerTypeField.blur();
+      await identityGlobalTaskListenersPage.createGlobalTaskListenerEventTypeToggle.click();
+      await expect(
+        identityGlobalTaskListenersPage.createGlobalTaskListenerEventTypeMenu,
+      ).toBeVisible();
+      await page
+        .locator('[role="option"]', {hasText: NEW_LISTENER.eventType})
+        .click();
+    });
 
-    await expect(
-      identityGlobalTaskListenersPage.createGlobalTaskListenerModal,
-    ).toBeVisible();
-    await expect(
-      identityGlobalTaskListenersPage.createGlobalTaskListenerModal.locator(
-        '.cds--inline-notification--error',
-      ),
-    ).toBeVisible();
+    await test.step('Submit and verify duplicate error is shown', async () => {
+      await identityGlobalTaskListenersPage.createGlobalTaskListenerModalCreateButton.click();
+      await expect(
+        identityGlobalTaskListenersPage.createGlobalTaskListenerModal,
+      ).toBeVisible();
+      await expect(
+        identityGlobalTaskListenersPage.createGlobalTaskListenerInlineError,
+      ).toBeVisible();
+    });
 
-    await identityGlobalTaskListenersPage.createGlobalTaskListenerModalCancelButton.click();
-    await expect(
-      identityGlobalTaskListenersPage.createGlobalTaskListenerModal,
-    ).toBeHidden();
+    await test.step('Close the modal', async () => {
+      await identityGlobalTaskListenersPage.createGlobalTaskListenerModalCancelButton.click();
+      await expect(
+        identityGlobalTaskListenersPage.createGlobalTaskListenerModal,
+      ).toBeHidden();
+    });
   });
 
   test('edits a global task listener', async ({
@@ -142,26 +148,32 @@ test.describe.serial('global task listeners CRUD', () => {
     const item = identityGlobalTaskListenersPage.globalTaskListenerCell(
       NEW_LISTENER.id,
     );
-    await waitForItemInList(page, item, {
-      clickNext: true,
-      timeout: 30000,
+
+    await test.step('Find the listener in the list', async () => {
+      await waitForItemInList(page, item, {
+        clickNext: true,
+        timeout: 30000,
+      });
+      await expect(item).toBeVisible();
     });
-    await expect(item).toBeVisible();
 
-    await identityGlobalTaskListenersPage.editGlobalTaskListener(
-      NEW_LISTENER.id,
-      EDITED_LISTENER.type,
-      EDITED_LISTENER.eventType,
-    );
-
-    const updatedTypeCell =
-      identityGlobalTaskListenersPage.globalTaskListenerCell(
+    await test.step('Edit the listener', async () => {
+      await identityGlobalTaskListenersPage.editGlobalTaskListener(
+        NEW_LISTENER.id,
         EDITED_LISTENER.type,
+        EDITED_LISTENER.eventType,
       );
+    });
 
-    await waitForItemInList(page, updatedTypeCell, {
-      clickNext: true,
-      timeout: 30000,
+    await test.step('Verify updated type is visible in the list', async () => {
+      const updatedTypeCell =
+        identityGlobalTaskListenersPage.globalTaskListenerCell(
+          EDITED_LISTENER.type,
+        );
+      await waitForItemInList(page, updatedTypeCell, {
+        clickNext: true,
+        timeout: 30000,
+      });
     });
   });
 
@@ -172,32 +184,39 @@ test.describe.serial('global task listeners CRUD', () => {
     const item = identityGlobalTaskListenersPage.globalTaskListenerCell(
       NEW_LISTENER.id,
     );
-    await waitForItemInList(page, item, {
-      clickNext: true,
-      timeout: 30000,
+
+    await test.step('Find the listener in the list', async () => {
+      await waitForItemInList(page, item, {
+        clickNext: true,
+        timeout: 30000,
+      });
+      await expect(item).toBeVisible();
     });
-    await expect(item).toBeVisible();
 
-    await identityGlobalTaskListenersPage.deleteGlobalTaskListener(
-      NEW_LISTENER.id,
-    );
+    await test.step('Delete the listener', async () => {
+      await identityGlobalTaskListenersPage.deleteGlobalTaskListener(
+        NEW_LISTENER.id,
+      );
+    });
 
-    await waitForItemInList(page, item, {
-      shouldBeVisible: false,
-      timeout: 60000,
-      clickNext: true,
-      emptyStateLocator: identityGlobalTaskListenersPage.emptyStateLocator,
-      onAfterReload: async () => {
-        await page.goto(relativizePath(Paths.globalTaskListeners()));
-        await Promise.race([
-          identityGlobalTaskListenersPage.globalTaskListenersList.waitFor({
-            timeout: 15000,
-          }),
-          identityGlobalTaskListenersPage.emptyStateLocator.waitFor({
-            timeout: 15000,
-          }),
-        ]);
-      },
+    await test.step('Verify the listener is removed from the list', async () => {
+      await waitForItemInList(page, item, {
+        shouldBeVisible: false,
+        timeout: 60000,
+        clickNext: true,
+        emptyStateLocator: identityGlobalTaskListenersPage.emptyStateLocator,
+        onAfterReload: async () => {
+          await page.goto(relativizePath(Paths.globalTaskListeners()));
+          await Promise.race([
+            identityGlobalTaskListenersPage.globalTaskListenersList.waitFor({
+              timeout: 15000,
+            }),
+            identityGlobalTaskListenersPage.emptyStateLocator.waitFor({
+              timeout: 15000,
+            }),
+          ]);
+        },
+      });
     });
   });
 });
