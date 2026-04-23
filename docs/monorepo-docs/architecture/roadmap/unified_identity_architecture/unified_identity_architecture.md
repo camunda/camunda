@@ -231,9 +231,9 @@ Short- to midterm target: Admins configure cluster policies (including Physical 
   1. Admin signs into Hub and navigates to the Admin UI.
   2. Admin selects a specific Orchestration Cluster and opens its policy configuration.
   3. Admin edits tenants, roles, groups, mapping rules, and authorizations for that cluster, including:
-    - Cluster-wide permissions (for example cluster admins).
-    - Tenant-scoped permissions (for example `retail` vs `wholesale`).
-    - Physical Tenant-scoped (`PHYSICAL_TENANT`).
+  - Cluster-wide permissions (for example cluster admins).
+  - Tenant-scoped permissions (for example `retail` vs `wholesale`).
+  - Physical Tenant-scoped (`PHYSICAL_TENANT`).
   4. Hub Security Gateway Framework validates and persists the changes in the selected organization scope, producing a new `PolicyVersion` for the target cluster.
   5. The outbox dispatcher propagates the updated policy to the target OC; OC Security Gateway Framework applies it and updates the Physical Tenant-scoped (`PHYSICAL_TENANT`) projections.
   6. OC Admin UI (read-only in full mode) allows cluster operators to view the effective policies per engine and tenant, including the applied policy version.
@@ -293,7 +293,7 @@ Long-term target: Org-level IdP setup and cluster provisioning are performed cen
   3. Org admin creates or imports tenants (for example `default`, `retail`, `wholesale`) in the Hub Admin UI.
   4. Org admin defines mapping rules (claims → roles/tenants) and assigns baseline roles and groups for key personas (for example Cluster Admins, Developers, Support).
   5. Org admin provisions (or selects) an Orchestration Cluster and associates it with the organization/tenants.
-     - Cluster selection is resolved via the `ClusterRegistryPort`; the host application (Hub) provides the adapter implementation that enumerates available clusters.
+  - Cluster selection is resolved via the `ClusterRegistryPort`; the host application (Hub) provides the adapter implementation that enumerates available clusters.
   6. Hub Security Gateway Framework persists this configuration in the organization-scoped Hub partition, produces a new `PolicyVersion`, and starts outbox-based propagation to the relevant OC(s).
 
 Outcome: The organization’s IdP is connected, tenants and roles exist, and cluster-local policy is projected to the associated OCs. Cluster admins and developers can authenticate via the Enterprise IdP and start using cluster UIs and APIs, with Hub acting as the central identity and policy entry point.
@@ -1419,9 +1419,9 @@ graph TB
 
 On each request, the Security Gateway Framework:
 
- 1. Resolves the logical-tenant context from token claims and/or headers.
- 2. Loads the logical-tenant-specific policy view (roles, mappings, authorizations).
- 3. Enforces permissions within the logical-tenant boundary, preventing cross-tenant data access.
+1. Resolves the logical-tenant context from token claims and/or headers.
+2. Loads the logical-tenant-specific policy view (roles, mappings, authorizations).
+3. Enforces permissions within the logical-tenant boundary, preventing cross-tenant data access.
 
 #### 5.8.3 Global vs scoped policies (logical Tenant and Physical Tenant)
 
@@ -1451,16 +1451,16 @@ This section illustrates selected runtime flows as concrete user journeys, focus
 2. Hub Security Gateway Framework authenticates the user against the configured IdP for the Hub organization and derives roles/tenants via mapping rules.
 3. Admin creates or updates tenants, roles, mapping rules, and authorizations for a specific Orchestration Cluster in the Admin UI.
 4. Hub Security Gateway Framework:
-  - Resolves the organization and target cluster context via `ClusterRegistryPort`.
-  - Validates and persists the changes in the Hub DB under that organization scope.
-  - Writes a new `PolicyVersion` and associated `EntityRevision` and `PolicyVersionChange` rows.
-  - Writes one or more `OutboxEvent`s in status `PENDING` for the affected OCs.
+- Resolves the organization and target cluster context via `ClusterRegistryPort`.
+- Validates and persists the changes in the Hub DB under that organization scope.
+- Writes a new `PolicyVersion` and associated `EntityRevision` and `PolicyVersionChange` rows.
+- Writes one or more `OutboxEvent`s in status `PENDING` for the affected OCs.
 5. Outbox Dispatcher picks up the new events:
-  - Builds a full `POLICY_SNAPSHOT` for the target `PolicyVersion`.
-  - Posts the payload to `/identity/policies/apply` on each target OC.
+- Builds a full `POLICY_SNAPSHOT` for the target `PolicyVersion`.
+- Posts the payload to `/identity/policies/apply` on each target OC.
 6. OC Security Gateway Framework:
-  - Applies the full policy snapshot to its local projection and updates `last_applied_version`.
-  - Propagates engine-scoped changes to engines via the engine command path / Security Engine Framework.
+- Applies the full policy snapshot to its local projection and updates `last_applied_version`.
+- Propagates engine-scoped changes to engines via the engine command path / Security Engine Framework.
 
 From the admin’s perspective, all policy changes are made centrally in Hub; the OC and engines converge asynchronously.
 
@@ -1496,17 +1496,17 @@ sequenceDiagram
 1. User opens Operate in the browser.
 2. Operate delegate authentication to the OC's Security Gateway Framework (for example via OAuth2 login flow or existing session cookie).
 3. OC Security Gateway Framework:
-  - Redirects or talks to the configured IdP for the user's logical Tenant.
-  - Validates the returned OIDC/SAML token and derives the principal's roles, groups, and logical-Tenant assignments from mapping rules and direct assignments.
+- Redirects or talks to the configured IdP for the user's logical Tenant.
+- Validates the returned OIDC/SAML token and derives the principal's roles, groups, and logical-Tenant assignments from mapping rules and direct assignments.
 4. For each incoming request from Operate:
-  - OC resolves the logical-Tenant context (from token claims and/or headers).
-  - Loads the logical-Tenant- and Physical-Tenant-scoped policy view from its local projection (which is synchronized from Hub).
-  - Evaluates whether the principal has the required permissions on the requested resource (for example reading process instances in a given logical Tenant).
+- OC resolves the logical-Tenant context (from token claims and/or headers).
+- Loads the logical-Tenant- and Physical-Tenant-scoped policy view from its local projection (which is synchronized from Hub).
+- Evaluates whether the principal has the required permissions on the requested resource (for example reading process instances in a given logical Tenant).
 5. If the check passes:
-  - OC forwards or executes the corresponding operation against the engine(s).
-  - Engines apply their own runtime-level checks (for example engine-level authorization filters) based on the OC-provided projections.
+- OC forwards or executes the corresponding operation against the engine(s).
+- Engines apply their own runtime-level checks (for example engine-level authorization filters) based on the OC-provided projections.
 6. If the check fails:
-  - OC denies the request and returns an appropriate error to Operate.
+- OC denies the request and returns an appropriate error to Operate.
 
 The user never interacts directly with Hub; Hub’s role is to define the policy that OC enforces.
 
@@ -1543,8 +1543,8 @@ sequenceDiagram
 1. A worker application gets a token from the customer’s IdP using the configured client credentials (machine principal).
 2. The worker calls OC gRPC/REST APIs with the token.
 3. OC Security Gateway Framework:
-  - Validates the token against the IdP.
-  - Maps its claims to machine principal permissions via mapping rules and authorizations (for example which tenants and which process instances the worker can access).
+- Validates the token against the IdP.
+- Maps its claims to machine principal permissions via mapping rules and authorizations (for example which tenants and which process instances the worker can access).
 4. If authorized, the worker’s request is executed against the engine(s); otherwise it is rejected.
 
 The same unified policy model governs both human users and machine principals.
@@ -1807,8 +1807,8 @@ The unified identity architecture must support SaaS deployments at significant s
 1. **Policy propagation scale**: Hub must reliably propagate policy changes to 43k+ clusters without overwhelming either Hub or OC infrastructure.
 2. **Visibility and monitoring**: At this scale, operators must be able to track policy rollout state across thousands of clusters in real time. Hub must surface which clusters are on which policy versions, and what delivery state each cluster is in (pending, delivered, failed, retrying).
 3. **Rate limiting and backpressure**: Both push-based and pull-based propagation require careful handling of load spikes:
-   - Push: Hub outbox dispatcher must respect OC capacity and not flood clusters with simultaneous policy updates.
-   - Pull: OCs must not synchronize polling (thundering herd problem) to avoid overwhelming Hub with simultaneous policy version queries.
+- Push: Hub outbox dispatcher must respect OC capacity and not flood clusters with simultaneous policy updates.
+- Pull: OCs must not synchronize polling (thundering herd problem) to avoid overwhelming Hub with simultaneous policy version queries.
 4. **Idempotency**: At this scale, retries are frequent and necessary. All policy applies must be idempotent per `policyVersionId` to ensure correctness despite network failures and replay scenarios.
 5. **Observability requirements**: Logs, metrics, and traces must emit at a reasonable volume even with 43k+ clusters. Per-cluster granular logging is necessary for debugging but must be carefully sampled or aggregated for operational dashboards.
 
@@ -1838,8 +1838,9 @@ This section contains detailed Architectural Decision Records (ADRs) for the Sec
 
 - [ADR-0001: PolicyVersion commits and full-policy propagation](adr/0001-policy-version-change-sets.md)
 - [ADR-0002: Placement of the Security Gateway Framework (embedded vs standalone service)](adr/0002-placement-of-the-security-gateway-framework.md)
-- [ADR-0003: Push vs Pull Policy Propagation (Hub ↔ Orchestration Clusters)](adr/0003-Push-vs-Pull-Policy-Propagation.md)
+- [ADR-0003: Push vs Pull Policy Propagation (Hub ↔ Orchestration Clusters)](adr/0003-push-vs-pull-policy-propagation.md)
 - [ADR-0004: Identity data persistence in the Orchestration Cluster (Open)](adr/0004-oc-identity-data-persistence-and-engine-command-scope.md)
+- [ADR-0005: Frontend integration approach for Hub and Orchestration Cluster Admin UI](adr/0005-frontend-integration-for-hub-and-oc.md)
 
 ---
 

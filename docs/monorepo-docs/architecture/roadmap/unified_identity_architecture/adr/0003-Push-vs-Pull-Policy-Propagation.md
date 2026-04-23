@@ -1,9 +1,8 @@
-
 # ADR-0003: Push vs Pull Policy Propagation (Hub ↔ Orchestration Clusters)
 
 ## Status
 
-Proposed
+Accepted
 
 ## Context
 
@@ -39,7 +38,7 @@ The only fixed constraint is that Hub is the policy SoT. Using a transactional o
 
 ## Options considered
 
-### Option A – Push-based propagation from Hub to OCs (chosen)
+### Option 1 – Push-based propagation from Hub to OCs (chosen)
 
 Shape:
 
@@ -72,7 +71,7 @@ Cons:
 - Snapshot-based propagation (without diffs) increases per-call payload size and apply time:
   - Larger payloads can increase latency per delivery and require stronger timeout, batching, and throughput controls.
 
-### Option B – Pull-based propagation (OC asks Hub for new versions and changes)
+### Option 2 – Pull-based propagation (OC asks Hub for new versions and changes)
 
 Shape:
 
@@ -115,12 +114,12 @@ Cons:
 - Pull clients and Hub polling endpoints both require rate limiting and circuit breaking:
   - OCs should back off when Hub is degraded; Hub should protect itself from abusive or accidental poll bursts.
 
-### Option C – Hybrid: push as default, pull only for recovery
+### Option 3 – Hybrid: push as default, pull only for recovery
 
 Shape:
 
 - Normal operation:
-  - Same as Option A: Hub records policy changes and pushes snapshots or diffs to OCs.
+  - Same as Option 1: Hub records policy changes and pushes snapshots or diffs to OCs.
 - Exceptional cases:
   - An OC can explicitly request a full snapshot from Hub if it detects that its state is inconsistent or too far behind.
   - This is used for recovery and bootstrapping, not as the main propagation path.
@@ -136,7 +135,7 @@ Cons:
 
 ## Decision outcome
 
-We choose push-based propagation from Hub to OCs (Option A), with an optional recovery mechanism (Option C). We do not implement a generic pull-based propagation model for policy.
+We choose push-based propagation from Hub to OCs (Option 1), with an optional recovery mechanism (Option 3). We do not implement a generic pull-based propagation model for policy.
 
 Rationale:
 
@@ -172,4 +171,3 @@ Rationale:
   - Keep apply idempotent by `policyVersionId`.
   - Scope propagation to the affected organization/cluster.
   - Provide operational runbooks for rollout stalls, forced re-sync, and version-gap recovery.
-

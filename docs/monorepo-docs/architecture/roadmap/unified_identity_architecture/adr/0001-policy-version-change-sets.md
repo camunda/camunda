@@ -1,12 +1,12 @@
 ---
-status: Proposed
+status: Accepted
 ---
 
 # ADR-0001: PolicyVersion commits with full-policy propagation (iteration one)
 
 ## Status
 
-Proposed
+Accepted
 
 ## Context
 
@@ -15,7 +15,9 @@ Proposed
 - The primary requirement is current-state correctness, not historical reconstruction.
 - New OC joins are expected to be rare and only require the current state.
 
-## Decision (Option 1)
+## Decision
+
+We choose Option 1.
 
 - Use `PolicyVersion` as a delivery-neutral organization + cluster-scoped commit in Hub (`version_number`).
 - In iteration one, always propagate full policy payloads (`POLICY_SNAPSHOT`) to OCs for every new `PolicyVersion`.
@@ -24,7 +26,7 @@ Proposed
 - Build `POLICY_SNAPSHOT` from latest non-deleted revisions per entity/scope up to a target version.
 - Keep `PolicyVersionChange`/`base_version` optional and reserved for a potential later diff optimization, not required for first-iteration apply.
 
-## Alternatives Considered
+## Options considered
 
 ### Option 2 – Incremental diff propagation
 
@@ -46,4 +48,3 @@ Proposed
 - No patch/merge ambiguity and no base-version mismatch handling in iteration one.
 - Higher payload size and potentially higher network/DB write load; rollout needs payload limits, batching, and observability.
 - Diff-based propagation remains a deliberate future optimization that can be added if operational metrics justify it.
-

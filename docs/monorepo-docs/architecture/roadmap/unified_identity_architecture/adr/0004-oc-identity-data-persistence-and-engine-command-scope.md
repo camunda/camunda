@@ -1,12 +1,12 @@
 ---
-status: Open
+status: Accepted
 ---
 
 # ADR-0004: Identity data persistence in the Orchestration Cluster
 
 ## Status
 
-Open
+Accepted
 
 ## Context
 
@@ -80,29 +80,33 @@ To make this work correctly, the engine commands must carry the full scope metad
 
 ## Decision
 
-**Open — not yet decided.**
+Choose **Option 2**.
 
-Option 1 has correctness and consistency problems that make it impractical without significant
-additional design work. Option 2 is the preferred direction, but the following questions must still
-be resolved:
+Identity data persistence in the OC follows the existing engine command + exporter flow:
 
-- Exact schema extensions required for ES/OS/RDBMS to store scope metadata on authorization
-  records.
-- Whether the originating `PolicyVersion` reference should also be stored in primary storage, or
-  only the effective identity state.
-- Reset and re-apply semantics: how a full `POLICY_SNAPSHOT` re-apply atomically resets both
-  primary and secondary storage identity state.
+- The OC SGF forwards identity updates via `EngineCommandPort`.
+- The Security Engine Framework persists scope-aware state in primary storage (RocksDB).
+- The exporter writes scoped identity records to secondary storage (ES/OS/RDBMS).
 
-## Alternatives Considered
+Option 1 is rejected due to the additional consistency and operational complexity of maintaining a second direct-write path.
 
-See Option 1 and Option 2 in the Context section above.
+Follow-up design work remains, but does not change the selected direction:
 
-## Consequences (if Option 2 is chosen)
+- Exact schema extensions required for ES/OS/RDBMS to store scope metadata on authorization records.
+- Whether the originating `PolicyVersion` reference should also be stored in primary storage, or only the effective identity state.
+- Reset and re-apply semantics: how a full `POLICY_SNAPSHOT` re-apply atomically resets both primary and secondary storage identity state.
 
-- Engine and exporter are extended to handle scoped identity records.
-- Secondary storage schemas (ES/OS/RDBMS) are extended with scope columns for authorization
-  entities. This is a one-time schema migration applicable to both options.
-- The Security Engine Framework takes on scope-aware authorization evaluation inside the engine.
-- The exporter-based data flow is preserved, keeping operational behaviour consistent with the
-  current system and avoiding a new direct-write path from the OC SGF to secondary storage.
+## Options considered
 
+### Option 1 — OC Security Gateway Framework writes directly to secondary storage
+
+- The OC SGF writes identity state changes directly to secondary storage (ES/OS/RDBMS) after applying a received policy payload, bypassing the engine and the exporter.
+- This introduces a second write path and raises consistency, schema ownership, and reset/re-apply complexity concerns.
+- Not chosen.
+
+### Option 2 — Route through engine commands and exporter (chosen)
+
+- The OC SGF forwards identity state changes as commands to the engine (via `EngineCommandPort`).
+- The Security Engine Framework persists scope-aware state in primary storage (RocksDB).
+- The exporter writes scoped records to secondary storage (ES/OS/RDBMS), preserving the existing end-to-end flow.
+- Chosen for a single consistent write path.
