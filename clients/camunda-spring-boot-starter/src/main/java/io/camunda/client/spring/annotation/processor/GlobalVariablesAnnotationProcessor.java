@@ -21,14 +21,16 @@ import static org.springframework.util.ReflectionUtils.doWithMethods;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.annotation.AnnotationUtil;
 import io.camunda.client.annotation.value.GlobalVariablesValue;
+import io.camunda.client.annotation.value.MethodGlobalVariablesValue;
+import io.camunda.client.annotation.value.ResourceGlobalVariablesValue;
 import io.camunda.client.api.JsonMapper;
 import io.camunda.client.bean.BeanInfo;
-import io.camunda.client.bean.MethodInfo;
 import io.camunda.client.spring.properties.CamundaClientGlobalVariablesProperties;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
+import java.util.function.Supplier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.io.Resource;
@@ -67,7 +69,7 @@ public class GlobalVariablesAnnotationProcessor extends AbstractCamundaAnnotatio
 
   @Override
   public void configureFor(final BeanInfo beanInfo) {
-    final List<GlobalVariablesValue> classValues =
+    final List<? extends GlobalVariablesValue> classValues =
         AnnotationUtil.getGlobalVariablesValuesFromClass(beanInfo);
     if (!classValues.isEmpty()) {
       LOGGER.debug("Configuring global variables from class annotations: {}", classValues);
@@ -100,10 +102,12 @@ public class GlobalVariablesAnnotationProcessor extends AbstractCamundaAnnotatio
     // Process variables from annotations
     for (final GlobalVariablesValue value : globalVariablesValues) {
       final Map<String, Object> variables;
-      if (value.isResourceBased()) {
-        variables = loadVariablesFromResources(value.getResources());
+      if (value instanceof ResourceGlobalVariablesValue resourceValue) {
+        variables = loadVariablesFromResources(resourceValue.getResources());
+      } else if (value instanceof MethodGlobalVariablesValue methodValue) {
+        variables = loadVariablesFromSupplier(methodValue.getVariableSupplier());
       } else {
-        variables = loadVariablesFromMethod(value.getMethodInfo());
+        continue;
       }
       createClusterVariables(client, variables, value.getTenantId());
     }
@@ -140,21 +144,12 @@ public class GlobalVariablesAnnotationProcessor extends AbstractCamundaAnnotatio
     return variables;
   }
 
-  private Map<String, Object> loadVariablesFromMethod(final MethodInfo methodInfo) {
-    try {
-      final Object result = methodInfo.invoke();
-      if (result == null) {
-        throw new IllegalStateException(
-            String.format(
-                "@GlobalVariables method '%s' must not return null", methodInfo.getMethodName()));
-      }
-      return jsonMapper.fromJsonAsMap(jsonMapper.toJson(result));
-    } catch (final IllegalStateException e) {
-      throw e;
-    } catch (final Exception e) {
-      throw new RuntimeException(
-          "Error invoking @GlobalVariables method: " + methodInfo.getMethodName(), e);
+  private Map<String, Object> loadVariablesFromSupplier(final Supplier<Object> variableSupplier) {
+    final Object result = variableSupplier.get();
+    if (result == null) {
+      throw new IllegalStateException("@GlobalVariables method must not return null");
     }
+    return jsonMapper.fromJsonAsMap(jsonMapper.toJson(result));
   }
 
   private void createClusterVariables(
