@@ -194,15 +194,11 @@ test.describe('Operations', () => {
         assertion: async () => {
           await expect(operateProcessesPage.dataList).toBeVisible();
           // Verify at least one canceled icon is visible
-          const canceledIconsVisibility = await Promise.all(
-            instances.map((instance) =>
-              operateProcessesPage
-                .getCanceledIcon(instance.processInstanceKey)
-                .isVisible(),
+          await expect(
+            operateProcessesPage.getCanceledIcon(
+              instances[0].processInstanceKey,
             ),
-          );
-
-          expect(canceledIconsVisibility.some(Boolean)).toBe(true);
+          ).toBeVisible({timeout: 5000});
         },
         onFailure: async () => {
           await page.reload();
