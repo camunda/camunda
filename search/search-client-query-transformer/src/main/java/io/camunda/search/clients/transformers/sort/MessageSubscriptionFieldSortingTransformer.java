@@ -13,11 +13,13 @@ import static io.camunda.webapps.schema.descriptors.template.MessageSubscription
 import static io.camunda.webapps.schema.descriptors.template.MessageSubscriptionTemplate.DATE_TIME;
 import static io.camunda.webapps.schema.descriptors.template.MessageSubscriptionTemplate.FLOW_NODE_ID;
 import static io.camunda.webapps.schema.descriptors.template.MessageSubscriptionTemplate.FLOW_NODE_INSTANCE_KEY;
+import static io.camunda.webapps.schema.descriptors.template.MessageSubscriptionTemplate.INBOUND_CONNECTOR_TYPE;
 import static io.camunda.webapps.schema.descriptors.template.MessageSubscriptionTemplate.KEY;
 import static io.camunda.webapps.schema.descriptors.template.MessageSubscriptionTemplate.MESSAGE_SUBSCRIPTION_STATE;
 import static io.camunda.webapps.schema.descriptors.template.MessageSubscriptionTemplate.MESSAGE_SUBSCRIPTION_TYPE;
 import static io.camunda.webapps.schema.descriptors.template.MessageSubscriptionTemplate.PROCESS_DEFINITION_NAME;
 import static io.camunda.webapps.schema.descriptors.template.MessageSubscriptionTemplate.PROCESS_DEFINITION_VERSION;
+import static io.camunda.webapps.schema.descriptors.template.MessageSubscriptionTemplate.TOOL_NAME;
 
 public class MessageSubscriptionFieldSortingTransformer implements FieldSortingTransformer {
 
@@ -37,6 +39,8 @@ public class MessageSubscriptionFieldSortingTransformer implements FieldSortingT
       case "messageName" -> "metadata.messageName";
       case "correlationKey" -> "metadata.correlationKey";
       case "tenantId" -> TENANT_ID;
+      case "toolName" -> TOOL_NAME;
+      case "inboundConnectorType" -> INBOUND_CONNECTOR_TYPE;
       default -> throw new IllegalArgumentException("Unknown field: " + domainField);
     };
   }

@@ -110,6 +110,8 @@ public class MessageSubscriptionTemplate extends AbstractTemplateDescriptor
   public static final String PROCESS_DEFINITION_VERSION = "processDefinitionVersion";
   public static final String EXTENSION_PROPERTIES = "extensionProperties";
   public static final String MESSAGE_SUBSCRIPTION_TYPE = "messageSubscriptionType";
+  public static final String TOOL_NAME = "toolName";
+  public static final String INBOUND_CONNECTOR_TYPE = "inboundConnectorType";
 
   public MessageSubscriptionTemplate(final String indexPrefix, final boolean isElasticsearch) {
     super(indexPrefix, isElasticsearch);
