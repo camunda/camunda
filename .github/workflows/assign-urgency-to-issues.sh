@@ -46,20 +46,35 @@ EOF
   exit 0
 }
 
+require_arg() {
+  if [[ $# -lt 2 || -z "$2" || "$2" == --* ]]; then
+    echo "Error: $1 requires a value"; exit 1
+  fi
+}
+
 while [[ $# -gt 0 ]]; do
   case "$1" in
-    --repo)       REPO_NAME="$2"; shift 2 ;;
-    --project)    PROJECT_ID="$2"; shift 2 ;;
-    --branch)     BRANCH="$2"; shift 2 ;;
-    --limit)      LIMIT="$2"; shift 2 ;;
-    --type)       ISSUE_TYPE="$2"; shift 2 ;;
-    --label)      LABEL="$2"; shift 2 ;;
+    --repo)       require_arg "$@"; REPO_NAME="$2"; shift 2 ;;
+    --project)    require_arg "$@"; PROJECT_ID="$2"; shift 2 ;;
+    --branch)     require_arg "$@"; BRANCH="$2"; shift 2 ;;
+    --limit)      require_arg "$@"; LIMIT="$2"; shift 2 ;;
+    --type)       require_arg "$@"; ISSUE_TYPE="$2"; shift 2 ;;
+    --label)      require_arg "$@"; LABEL="$2"; shift 2 ;;
     --skip-assigned) SKIP_ASSIGNED=true; shift ;;
-    --delay)      DELAY="$2"; shift 2 ;;
+    --delay)      require_arg "$@"; DELAY="$2"; shift 2 ;;
     --dry-run)    DRY_RUN=true; shift ;;
     -h|--help)    usage ;;
     *) echo "Unknown option: $1"; exit 1 ;;
   esac
+done
+
+# Validate numeric arguments
+for var_name in LIMIT DELAY PROJECT_ID; do
+  eval "val=\$$var_name"
+  if ! [[ "$val" =~ ^[0-9]+$ ]]; then
+    echo "Error: --${var_name,,} must be a positive integer, got '$val'"
+    exit 1
+  fi
 done
 
 # --- Build search query ---
