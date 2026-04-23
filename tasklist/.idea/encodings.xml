@@ -71,8 +71,8 @@
     <file url="file://$PROJECT_DIR$/zeebe/backup-stores/testkit/src/main/resources" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/zeebe/backup/src/main/java" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/zeebe/backup/src/main/resources" charset="UTF-8" />
-    <file url="file://$PROJECT_DIR$/zeebe/benchmarks/project/src/main/java" charset="UTF-8" />
-    <file url="file://$PROJECT_DIR$/zeebe/benchmarks/project/src/main/resources" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/load-tests/load-tester/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/load-tests/load-tester/src/main/resources" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/zeebe/bpmn-model/src/main/java" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/zeebe/bpmn-model/src/main/resources" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/zeebe/broker-client/src/main/java" charset="UTF-8" />

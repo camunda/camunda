@@ -7,8 +7,8 @@ This project contains code for the starter and worker, which are used during our
 To build the docker images for the benchmark application, run the following command:
 
 ```bash
-./mvnw -am -pl zeebe/benchmarks/project package -DskipTests -DskipChecks
-./mvnw -pl zeebe/benchmarks/project jib:build -Pstarter
-./mvnw -pl zeebe/benchmarks/project jib:build -Pworker
+./mvnw -am -pl load-tests/load-tester package -DskipTests -DskipChecks
+./mvnw -pl load-tests/load-tester jib:build -Pstarter
+./mvnw -pl load-tests/load-tester jib:build -Pworker
 ```
 
