@@ -59,7 +59,7 @@ beforeEach(() => {
   vi.stubGlobal('Notification', {permission: 'denied'});
   vi.stubGlobal('ResizeObserver', ResizeObserverPolyfill);
   vi.stubGlobal('requestAnimationFrame', (fn: FrameRequestCallback) => {
-    return setTimeout(() => fn(Date.now()), 1) as unknown as number;
+    return setTimeout(() => fn(Date.now()), 1);
   });
   vi.stubGlobal('cancelAnimationFrame', (id: number) => {
     clearTimeout(id);
