@@ -86,6 +86,7 @@ jobs:
       # renovate: datasource=github-tags depName=open-policy-agent/conftest
       CONFTEST_VERSION: '0.67.1'
     steps:
+      - uses: camunda/infra-global-github-actions/monitor-start@cn-poc-cpu-mem-utilization-analytics
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - uses: camunda/infra-global-github-actions/actionlint@main
         with:
@@ -261,6 +262,7 @@ jobs:
     runs-on: gcp-perf-core-8-default
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: camunda/infra-global-github-actions/monitor-start@cn-poc-cpu-mem-utilization-analytics
       - uses: ./.github/actions/setup-build
         with:
           maven-cache-key-modifier: java-checks

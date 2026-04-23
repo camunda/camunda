@@ -95,7 +95,7 @@ runs:
         job_name_override: "${{ inputs.job_name }}"
         gcp_credentials_json: "${{ steps.secrets.outputs.gcloud_sa_key }}"   
    ######################## Report build result #############################
-    - uses: camunda/infra-global-github-actions/submit-build-status@main
+    - uses: camunda/infra-global-github-actions/submit-build-status@cn-poc-cpu-mem-utilization-analytics
       if: ${{ always() && steps.secrets.outputs.gcloud_sa_key != '' }}
       with:
         job_name_override: "${{ inputs.job_name }}"
