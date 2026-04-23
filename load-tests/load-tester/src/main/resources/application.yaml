@@ -25,7 +25,7 @@ management:
       path-mapping:
         prometheus: metrics
       exposure:
-        include: health,prometheus,metrics
+        include: health,prometheus
 
 # Camunda client configuration (auto-configured by camunda-spring-boot-starter)
 camunda:
