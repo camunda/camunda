@@ -19,9 +19,11 @@ import static java.util.Optional.ofNullable;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.camunda.client.annotation.Deployment.Deployments;
+import io.camunda.client.annotation.GlobalVariables.GlobalVariablesContainer;
 import io.camunda.client.annotation.value.DeploymentValue;
 import io.camunda.client.annotation.value.DocumentValue;
 import io.camunda.client.annotation.value.DocumentValue.ParameterType;
+import io.camunda.client.annotation.value.GlobalVariablesValue;
 import io.camunda.client.annotation.value.JobWorkerValue;
 import io.camunda.client.annotation.value.SourceAware;
 import io.camunda.client.annotation.value.SourceAware.*;
@@ -131,6 +133,41 @@ public class AnnotationUtil {
   public static boolean isDeployment(final BeanInfo beanInfo) {
     return beanInfo.hasClassAnnotation(Deployments.class)
         || beanInfo.hasClassAnnotation(Deployment.class);
+  }
+
+  public static boolean isGlobalVariables(final BeanInfo beanInfo) {
+    return beanInfo.hasClassAnnotation(GlobalVariablesContainer.class)
+        || beanInfo.hasClassAnnotation(GlobalVariables.class)
+        || beanInfo.hasMethodAnnotation(GlobalVariables.class);
+  }
+
+  public static List<GlobalVariablesValue> getGlobalVariablesValuesFromClass(
+      final BeanInfo beanInfo) {
+    if (!beanInfo.hasClassAnnotation(GlobalVariablesContainer.class)
+        && !beanInfo.hasClassAnnotation(GlobalVariables.class)) {
+      return Collections.emptyList();
+    }
+    final List<GlobalVariablesValue> values = new ArrayList<>();
+    beanInfo
+        .getAnnotation(GlobalVariablesContainer.class)
+        .ifPresent(
+            container -> {
+              for (final GlobalVariables annotation : container.value()) {
+                values.add(fromGlobalVariablesAnnotation(annotation));
+              }
+            });
+    beanInfo
+        .getAnnotation(GlobalVariables.class)
+        .ifPresent(annotation -> values.add(fromGlobalVariablesAnnotation(annotation)));
+    return values;
+  }
+
+  private static GlobalVariablesValue fromGlobalVariablesAnnotation(
+      final GlobalVariables annotation) {
+    return new GlobalVariablesValue(
+        Arrays.asList(annotation.resources()),
+        StringUtils.isEmpty(annotation.tenantId()) ? null : annotation.tenantId(),
+        null);
   }
 
   public static boolean isJobWorker(final BeanInfo beanInfo) {
