@@ -18,6 +18,7 @@ package io.camunda.process.test.impl.runtime;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.CamundaClientBuilder;
 import io.camunda.client.CamundaClientConfiguration;
+import io.camunda.client.api.response.Topology;
 import io.camunda.process.test.api.CamundaClientBuilderFactory;
 import java.net.URI;
 import java.time.Duration;
@@ -69,9 +70,14 @@ public class CamundaProcessTestRemoteRuntime implements CamundaProcessTestRuntim
         connectorsRestApiAddress);
 
     // check connection to remote runtime
-    CamundaRuntimeHealthChecker.waitUntilClusterReady(
-        camundaClientBuilderFactory, runtimeConnectionTimeout);
-    LOGGER.info("Remote Camunda runtime connected.");
+    try {
+      final Topology topology =
+          CamundaRuntimeHealthChecker.waitUntilClusterReady(
+              camundaClientBuilderFactory, runtimeConnectionTimeout);
+      LOGGER.info("Remote Camunda runtime connected. [version: {}]", topology.getGatewayVersion());
+    } catch (final RuntimeException e) {
+      throw new RuntimeException("Failed to connect to remote Camunda runtime.", e);
+    }
   }
 
   @Override
