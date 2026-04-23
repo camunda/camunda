@@ -29,7 +29,8 @@ public class ExporterPositionIT {
   private static final LocalDateTime NOW = LocalDateTime.now();
 
   @TestTemplate
-  public void shouldGetAuditLogById(final CamundaRdbmsTestApplication testApplication) {
+  public void shouldFindExporterPositionByPartitionId(
+      final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
     final ExporterPositionService exporterPositionService =
@@ -66,5 +67,7 @@ public class ExporterPositionIT {
 
     exporterPositionService.create(position2);
     rdbmsWriters.flush();
+
+    // no exception
   }
 }
