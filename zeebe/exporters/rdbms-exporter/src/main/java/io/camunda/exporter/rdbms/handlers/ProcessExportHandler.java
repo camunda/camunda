@@ -60,6 +60,8 @@ public class ProcessExportHandler implements RdbmsExportHandler<Process> {
       final var flowNodesMap = ProcessCacheUtil.getFlowNodesMap(flowNodes);
       final var hasUserTasks = ProcessModelReader.hasUserTasks(flowNodes);
       final var extensionProperties = ProcessModelReader.extractExtensionProperties(flowNodes);
+      final var elementInputSpecifications =
+          ProcessCacheUtil.toCachedInputSpecMap(processModelReader.extractAllElementInputSpecs());
       cachedProcessEntity =
           new CachedProcessEntity(
               dbModel.name(),
@@ -68,7 +70,8 @@ public class ProcessExportHandler implements RdbmsExportHandler<Process> {
               callActivities,
               flowNodesMap,
               hasUserTasks,
-              extensionProperties);
+              extensionProperties,
+              elementInputSpecifications);
     } else {
       cachedProcessEntity =
           new CachedProcessEntity(
@@ -78,6 +81,7 @@ public class ProcessExportHandler implements RdbmsExportHandler<Process> {
               List.of(),
               Map.of(),
               true,
+              Map.of(),
               Map.of());
     }
     processCache.put(value.getProcessDefinitionKey(), cachedProcessEntity);
