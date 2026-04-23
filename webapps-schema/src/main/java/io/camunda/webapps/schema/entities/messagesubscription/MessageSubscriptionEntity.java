@@ -13,6 +13,7 @@ import io.camunda.webapps.schema.entities.PartitionedEntity;
 import io.camunda.webapps.schema.entities.SinceVersion;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import java.time.OffsetDateTime;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
@@ -71,6 +72,9 @@ public class MessageSubscriptionEntity
 
   @SinceVersion(value = "8.10.0", requireDefault = false)
   private String inboundConnectorType;
+
+  @SinceVersion(value = "8.10.0", requireDefault = false)
+  private List<InputSpecItem> inputSpecification;
 
   /**
    * @deprecated since 8.9
@@ -276,6 +280,16 @@ public class MessageSubscriptionEntity
     return this;
   }
 
+  public List<InputSpecItem> getInputSpecification() {
+    return inputSpecification;
+  }
+
+  public MessageSubscriptionEntity setInputSpecification(
+      final List<InputSpecItem> inputSpecification) {
+    this.inputSpecification = inputSpecification;
+    return this;
+  }
+
   /**
    * @deprecated since 8.9
    */
@@ -370,7 +384,8 @@ public class MessageSubscriptionEntity
         extensionProperties,
         messageSubscriptionType,
         toolName,
-        inboundConnectorType);
+        inboundConnectorType,
+        inputSpecification);
   }
 
   @Override
@@ -406,6 +421,60 @@ public class MessageSubscriptionEntity
         && Objects.equals(extensionProperties, that.extensionProperties)
         && Objects.equals(messageSubscriptionType, that.messageSubscriptionType)
         && Objects.equals(toolName, that.toolName)
-        && Objects.equals(inboundConnectorType, that.inboundConnectorType);
+        && Objects.equals(inboundConnectorType, that.inboundConnectorType)
+        && Objects.equals(inputSpecification, that.inputSpecification);
+  }
+
+  public static class InputSpecItem {
+    private String name;
+    private String description;
+    private String type;
+    private boolean required;
+    private String schema;
+
+    public String getName() {
+      return name;
+    }
+
+    public InputSpecItem setName(final String name) {
+      this.name = name;
+      return this;
+    }
+
+    public String getDescription() {
+      return description;
+    }
+
+    public InputSpecItem setDescription(final String description) {
+      this.description = description;
+      return this;
+    }
+
+    public String getType() {
+      return type;
+    }
+
+    public InputSpecItem setType(final String type) {
+      this.type = type;
+      return this;
+    }
+
+    public boolean isRequired() {
+      return required;
+    }
+
+    public InputSpecItem setRequired(final boolean required) {
+      this.required = required;
+      return this;
+    }
+
+    public String getSchema() {
+      return schema;
+    }
+
+    public InputSpecItem setSchema(final String schema) {
+      this.schema = schema;
+      return this;
+    }
   }
 }
