@@ -6,8 +6,6 @@
   "tenant": "Tenant",
   "searchByToolName": "Search by tool name",
   "mcpProcessesCouldNotLoad": "MCP Processes could not be loaded.",
-  "viewDetails": "View details",
-  "detailsHeadline": "MCP Tool \"{{toolName}}\"",
   "informationMissing": "No information provided.",
   "toolPurpose": "Purpose",
   "toolResults": "Results",
