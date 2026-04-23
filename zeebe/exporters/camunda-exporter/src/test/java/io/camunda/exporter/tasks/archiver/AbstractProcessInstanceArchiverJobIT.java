@@ -101,11 +101,11 @@ public abstract class AbstractProcessInstanceArchiverJobIT<T extends ProcessInst
 
           final ProcessInstanceForListViewEntity finishedInstance =
               processInstanceForListViewEntity("2020-01-01T00:00:00+00:00");
-          final ProcessInstanceForListViewEntity unfinishedInstance =
+          final ProcessInstanceForListViewEntity notOldEnoughInstance =
               processInstanceForListViewEntity("2099-01-01T00:00:00+00:00");
 
           store(listViewTemplate, client, finishedInstance);
-          store(listViewTemplate, client, unfinishedInstance);
+          store(listViewTemplate, client, notOldEnoughInstance);
 
           client.refresh();
 
@@ -117,7 +117,7 @@ public abstract class AbstractProcessInstanceArchiverJobIT<T extends ProcessInst
 
           // check that the finished process is no longer in the main index
           verifyMoved(listViewTemplate, client, finishedInstance, "2020-01-01");
-          verifyNotMoved(listViewTemplate, client, unfinishedInstance);
+          verifyNotMoved(listViewTemplate, client, notOldEnoughInstance);
         });
   }
 
