@@ -363,3 +363,126 @@ def test_profile_load_test_includes_run_url_in_result():
         result = profile_load_test(namespace="c8-my-test-20260423")
 
     assert "actions/runs/202" in result
+
+
+# ── start_load_test: extended inputs ────────────────────────────────────────
+
+def test_start_load_test_passes_stable_vms():
+    with patch("camunda_load_test_mcp.server.github.dispatch_workflow") as mock_dispatch, \
+         patch("camunda_load_test_mcp.server._find_run_after_dispatch", return_value=None):
+        start_load_test(branch="feature/x", stable_vms=True)
+
+    inputs = mock_dispatch.call_args.args[1]
+    assert inputs["stable-vms"] == "true"
+
+
+def test_start_load_test_omits_stable_vms_when_false():
+    with patch("camunda_load_test_mcp.server.github.dispatch_workflow") as mock_dispatch, \
+         patch("camunda_load_test_mcp.server._find_run_after_dispatch", return_value=None):
+        start_load_test(branch="feature/x", stable_vms=False)
+
+    inputs = mock_dispatch.call_args.args[1]
+    assert "stable-vms" not in inputs
+
+
+def test_start_load_test_passes_perform_read_benchmarks():
+    with patch("camunda_load_test_mcp.server.github.dispatch_workflow") as mock_dispatch, \
+         patch("camunda_load_test_mcp.server._find_run_after_dispatch", return_value=None):
+        start_load_test(branch="feature/x", perform_read_benchmarks=True)
+
+    inputs = mock_dispatch.call_args.args[1]
+    assert inputs["perform-read-benchmarks"] == "true"
+
+
+def test_start_load_test_passes_load_test_helm_values():
+    with patch("camunda_load_test_mcp.server.github.dispatch_workflow") as mock_dispatch, \
+         patch("camunda_load_test_mcp.server._find_run_after_dispatch", return_value=None):
+        start_load_test(
+            branch="feature/x",
+            scenario="custom",
+            load_test_helm_values="--set starter.rate=100",
+        )
+
+    inputs = mock_dispatch.call_args.args[1]
+    assert inputs["load-test-load"] == "--set starter.rate=100"
+
+
+def test_start_load_test_passes_component_tags():
+    with patch("camunda_load_test_mcp.server.github.dispatch_workflow") as mock_dispatch, \
+         patch("camunda_load_test_mcp.server._find_run_after_dispatch", return_value=None):
+        start_load_test(
+            branch="feature/x",
+            orchestration_tag="8.9.0",
+            optimize_tag="8.9.0",
+            identity_tag="8.9.0",
+            connectors_tag="8.9.0",
+        )
+
+    inputs = mock_dispatch.call_args.args[1]
+    assert inputs["orchestration-tag"] == "8.9.0"
+    assert inputs["optimize-tag"] == "8.9.0"
+    assert inputs["identity-tag"] == "8.9.0"
+    assert inputs["connectors-tag"] == "8.9.0"
+
+
+def test_start_load_test_omits_empty_component_tags():
+    with patch("camunda_load_test_mcp.server.github.dispatch_workflow") as mock_dispatch, \
+         patch("camunda_load_test_mcp.server._find_run_after_dispatch", return_value=None):
+        start_load_test(branch="feature/x")
+
+    inputs = mock_dispatch.call_args.args[1]
+    assert "orchestration-tag" not in inputs
+    assert "optimize-tag" not in inputs
+    assert "identity-tag" not in inputs
+    assert "connectors-tag" not in inputs
+
+
+# ── update_load_test: extended inputs ────────────────────────────────────────
+
+def test_update_load_test_passes_stable_vms():
+    state_module.write_entry("c8-test-20260416", {
+        "run_id": 1, "branch": "feature/x", "scenario": "typical",
+        "image_tag": "1.0", "started_at": "2026-04-16T10:00:00Z", "ttl_days": 1,
+    })
+
+    with patch("camunda_load_test_mcp.server.github.dispatch_workflow") as mock_dispatch, \
+         patch("camunda_load_test_mcp.server._find_run_after_dispatch", return_value=None):
+        update_load_test(namespace="c8-test-20260416", reuse_image=False, stable_vms=True)
+
+    inputs = mock_dispatch.call_args.args[1]
+    assert inputs["stable-vms"] == "true"
+
+
+def test_update_load_test_raises_when_orchestration_tag_and_reuse_image():
+    state_module.write_entry("c8-test-20260416", {
+        "run_id": 1, "branch": "feature/x", "scenario": "typical",
+        "image_tag": "1.0", "started_at": "2026-04-16T10:00:00Z", "ttl_days": 1,
+    })
+
+    with pytest.raises(ValueError, match="orchestration_tag"):
+        update_load_test(
+            namespace="c8-test-20260416",
+            reuse_image=True,
+            orchestration_tag="8.9.0",
+        )
+
+
+def test_update_load_test_passes_orchestration_tag_when_not_reusing():
+    state_module.write_entry("c8-test-20260416", {
+        "run_id": 1, "branch": "feature/x", "scenario": "typical",
+        "image_tag": "", "started_at": "2026-04-16T10:00:00Z", "ttl_days": 1,
+    })
+
+    with patch("camunda_load_test_mcp.server.github.dispatch_workflow") as mock_dispatch, \
+         patch("camunda_load_test_mcp.server._find_run_after_dispatch", return_value=None):
+        update_load_test(
+            namespace="c8-test-20260416",
+            reuse_image=False,
+            orchestration_tag="8.9.0",
+        )
+
+    inputs = mock_dispatch.call_args.args[1]
+    assert inputs["orchestration-tag"] == "8.9.0"
+    assert inputs.get("reuse-tag", "") == ""
+
+
