@@ -10,6 +10,7 @@
 # - Calculates urgency based on severity/likelihood OR impact/when labels using risk matrices
 # - Updates the Urgency field in ProjectV2 with values: immediate, next, planned, someday
 # - Applies to any issue with a severity label OR impact label
+# - Runs against projects #173 and #187 (or a single project when triggered manually)
 #
 # Labels (Option 1 - Risk-based):
 # - severity/{low,mid,high,critical} - Required to trigger severity/likelihood calculation
@@ -22,7 +23,7 @@
 # Other labels:
 # - urgency-locked - Prevents automatic urgency updates while showing calculated value
 #
-# Note: If both severity and impact labels are present, impact/when takes precedence
+# Note: If both severity and impact labels are present, the higher urgency wins
 #
 # Manual usage:
 #   gh workflow run assign-urgency-to-issue.yml -f issue_number=123 -f project_id=173
@@ -35,8 +36,8 @@ on:
   workflow_dispatch:
     inputs:
       issue_number:
-        description: 'Issue number to process (optional)'
-        required: false
+        description: 'Issue number to process'
+        required: true
       project_id:
         description: 'Target project ID (optional, defaults to job env)'
         required: false
@@ -55,11 +56,15 @@ jobs:
     runs-on: ubuntu-latest
     permissions: {}
     timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        project_number: ${{ github.event.inputs.project_id && fromJSON(format('["{0}"]', github.event.inputs.project_id)) || fromJSON('["173", "187"]') }}
     env:
       OWNER: ${{ github.repository_owner }}
       REPO: ${{ github.event.repository.name }}
       ISSUE_NUMBER: ${{ github.event.inputs.issue_number || github.event.issue.number }}
-      PROJECT_NUMBER: ${{ github.event.inputs.project_id || '173' }}
+      PROJECT_NUMBER: ${{ matrix.project_number }}
       URGENCY_FIELD_NAME: 'Urgency'
       DRY_RUN: ${{ github.event.inputs.dry_run || 'false' }}
     defaults:
@@ -376,7 +381,7 @@ jobs:
           echo "urgency=$URGENCY" >> "$GITHUB_OUTPUT"
 
       - name: Update Urgency
-        if: steps.validate_project.outputs.in_target_project == 'true'
+        if: steps.validate_project.outputs.in_target_project == 'true' && steps.validate_urgency.outputs.urgency != ''
         env:
           GH_TOKEN: ${{ steps.github-token.outputs.token }}
         run: |
