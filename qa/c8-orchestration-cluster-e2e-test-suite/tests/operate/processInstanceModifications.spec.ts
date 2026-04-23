@@ -611,7 +611,6 @@ test.describe('Process Instance Modifications', () => {
       });
 
       test('New variable can be deleted via trash icon before applying', async ({
-        page,
         operateProcessInstancePage,
         operateProcessInstanceViewModificationModePage,
       }) => {
@@ -625,7 +624,9 @@ test.describe('Process Instance Modifications', () => {
           .newVariableByIndex(0)
           .deleteButton.click();
 
-        await expect(page.getByTestId('variable-newVariables[0]')).toBeHidden();
+        await expect(
+          operateProcessInstancePage.getVariableTestId('newVariables[0]'),
+        ).toBeHidden();
 
         await operateProcessInstanceViewModificationModePage.clickReviewModificationsButton();
         await operateProcessInstanceViewModificationModePage.expectVariableNotPresentInDialog(
