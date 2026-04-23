@@ -29,14 +29,16 @@ public class AuthorizationCheckReportEvaluationHandler extends ReportEvaluationH
       final ReportAuthorizationService authorizationService,
       final ProcessVariableService processVariableService,
       final DefinitionService definitionService,
-      final CollapsedSubprocessNodesService collapsedSubprocessNodesService) {
+      final CollapsedSubprocessNodesService collapsedSubprocessNodesService,
+      final ExecutionPlanExtractor executionPlanExtractor) {
     super(
         reportService,
         singleReportEvaluator,
         combinedReportEvaluator,
         processVariableService,
         definitionService,
-        collapsedSubprocessNodesService);
+        collapsedSubprocessNodesService,
+        executionPlanExtractor);
     this.authorizationService = authorizationService;
   }
 

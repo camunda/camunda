@@ -25,14 +25,16 @@ public class PlainReportEvaluationHandler extends ReportEvaluationHandler {
       final CombinedReportEvaluator combinedReportEvaluator,
       final ProcessVariableService processVariableService,
       final DefinitionService definitionService,
-      final CollapsedSubprocessNodesService collapsedSubprocessNodesService) {
+      final CollapsedSubprocessNodesService collapsedSubprocessNodesService,
+      final ExecutionPlanExtractor executionPlanExtractor) {
     super(
         reportService,
         singleReportEvaluator,
         combinedReportEvaluator,
         processVariableService,
         definitionService,
-        collapsedSubprocessNodesService);
+        collapsedSubprocessNodesService,
+        executionPlanExtractor);
   }
 
   @Override

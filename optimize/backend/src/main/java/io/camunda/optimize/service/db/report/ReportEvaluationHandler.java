@@ -41,6 +41,7 @@ import io.camunda.optimize.dto.optimize.query.variable.VariableType;
 import io.camunda.optimize.dto.optimize.rest.AuthorizedReportDefinitionResponseDto;
 import io.camunda.optimize.rest.exceptions.ForbiddenException;
 import io.camunda.optimize.service.DefinitionService;
+import io.camunda.optimize.service.db.report.plan.ExecutionPlan;
 import io.camunda.optimize.service.exceptions.OptimizeException;
 import io.camunda.optimize.service.exceptions.OptimizeValidationException;
 import io.camunda.optimize.service.exceptions.evaluation.ReportEvaluationException;
@@ -79,6 +80,7 @@ public abstract class ReportEvaluationHandler {
   private final ProcessVariableService processVariableService;
   private final DefinitionService definitionService;
   private final CollapsedSubprocessNodesService collapsedSubprocessNodesService;
+  private final ExecutionPlanExtractor executionPlanExtractor;
 
   public ReportEvaluationHandler(
       final ReportService reportService,
@@ -86,13 +88,15 @@ public abstract class ReportEvaluationHandler {
       final CombinedReportEvaluator combinedReportEvaluator,
       final ProcessVariableService processVariableService,
       final DefinitionService definitionService,
-      final CollapsedSubprocessNodesService collapsedSubprocessNodesService) {
+      final CollapsedSubprocessNodesService collapsedSubprocessNodesService,
+      final ExecutionPlanExtractor executionPlanExtractor) {
     this.reportService = reportService;
     this.singleReportEvaluator = singleReportEvaluator;
     this.combinedReportEvaluator = combinedReportEvaluator;
     this.processVariableService = processVariableService;
     this.definitionService = definitionService;
     this.collapsedSubprocessNodesService = collapsedSubprocessNodesService;
+    this.executionPlanExtractor = executionPlanExtractor;
   }
 
   public AuthorizedReportEvaluationResult evaluateReport(
@@ -132,10 +136,12 @@ public abstract class ReportEvaluationHandler {
         Optional.ofNullable(report).map(ReportDefinitionDto::getName).orElse("Unknown");
     final String reportId =
         Optional.ofNullable(report).map(ReportDefinitionDto::getId).orElse("Unsaved");
+    final String executionPlanKey = resolveExecutionPlanKey(report);
     logger.debug(
-        "Recording report latency - reportId: {}, reportName: {}, duration: {}ms",
+        "Recording report latency - reportId: {}, reportName: {}, executionPlan: {}, duration: {}ms",
         reportId,
         reportName,
+        executionPlanKey,
         durationMillis);
     if (reportLatencyEnabled) {
       OptimizeMetrics.registerTimer(
@@ -144,8 +150,29 @@ public abstract class ReportEvaluationHandler {
                   OptimizeMetrics.REPORT_ID_TAG,
                   reportId,
                   OptimizeMetrics.REPORT_NAME_TAG,
-                  reportName))
+                  reportName,
+                  OptimizeMetrics.EXECUTION_PLAN_TAG,
+                  executionPlanKey))
           .record(durationMillis, MILLISECONDS);
+    }
+  }
+
+  private String resolveExecutionPlanKey(final ReportDefinitionDto<?> report) {
+    if (report == null) {
+      return "unknown";
+    }
+    if (report.isCombined()) {
+      return "combined";
+    }
+    try {
+      final List<ExecutionPlan> plans = executionPlanExtractor.extractExecutionPlans(report);
+      if (plans.isEmpty()) {
+        return "unknown";
+      }
+      final ExecutionPlan plan = plans.get(0);
+      return plan instanceof final Enum<?> e ? e.name() : plan.getCommandKey();
+    } catch (final Exception e) {
+      return "unknown";
     }
   }
 
