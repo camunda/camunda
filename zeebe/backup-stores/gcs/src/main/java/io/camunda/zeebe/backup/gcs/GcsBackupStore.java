@@ -58,8 +58,7 @@ public final class GcsBackupStore implements BackupStore {
     this.client = client;
     executor = Executors.newWorkStealingPool(4);
     manifestManager = new ManifestManager(client, bucketInfo, basePath);
-    fileSetManager = new FileSetManager(client, bucketInfo, basePath,
-        config.bufferSize());
+    fileSetManager = new FileSetManager(client, bucketInfo, basePath, config.bufferSize());
   }
 
   public static BackupStore of(final GcsBackupConfig config) {
