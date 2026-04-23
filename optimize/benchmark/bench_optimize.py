@@ -930,6 +930,11 @@ def run(args):
                     done += 1
                     continue
 
+                # Refresh session before every plan to avoid token expiry mid-run
+                session = make_session(
+                    optimize_url, username, password, args.keycloak_url, args.token
+                )
+
                 print(f"[eval {done+1}/{total}] {plan_name} / {ds} …", end=" ", flush=True)
                 result = evaluate_plan(
                     plan_name, report_id, optimize_url, session,
