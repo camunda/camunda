@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import { expect, test } from '../test.ts';
+import {expect, test} from '../test.ts';
 
 test('adds two numbers', () => {
   expect(1 + 1).toBe(2);

@@ -6,12 +6,14 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import type { Config } from 'prettier';
+import type {Config} from 'prettier';
 
 const config: Config = {
   plugins: ['prettier-plugin-organize-imports'],
   proseWrap: 'always',
   singleQuote: true,
+  bracketSpacing: false,
+  trailingComma: 'all',
 };
 
 export default config;

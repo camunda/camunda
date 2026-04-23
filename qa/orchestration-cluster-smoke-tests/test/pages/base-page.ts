@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import type { Page, Response } from '@playwright/test';
+import type {Page, Response} from '@playwright/test';
 
 export abstract class View {
   protected readonly page: Page;

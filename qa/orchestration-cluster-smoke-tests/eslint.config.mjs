@@ -8,7 +8,7 @@
 
 import js from '@eslint/js';
 import licenseHeader from 'eslint-plugin-license-header';
-import { defineConfig, globalIgnores } from 'eslint/config';
+import {defineConfig, globalIgnores} from 'eslint/config';
 import ts from 'typescript-eslint';
 
 export default defineConfig(
@@ -16,14 +16,14 @@ export default defineConfig(
   js.configs.recommended,
   {
     files: ['**/*.ts'],
-    languageOptions: { parserOptions: { projectService: true } },
+    languageOptions: {parserOptions: {projectService: true}},
     extends: [
       ts.configs.recommendedTypeChecked,
       ts.configs.stylisticTypeChecked,
     ],
   },
   {
-    plugins: { 'license-header': licenseHeader },
+    plugins: {'license-header': licenseHeader},
     rules: {
       'license-header/header': ['error', './license-header.txt'],
     },

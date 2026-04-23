@@ -6,21 +6,21 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import { defineConfig, type ReporterDescription } from '@playwright/test';
+import {defineConfig, type ReporterDescription} from '@playwright/test';
 
 const CI = !!process.env['CI'];
 const REPORTS_BASE_DIR = './reports';
 
 const localReporters: ReporterDescription[] = [
   ['list'],
-  ['html', { outputFolder: `${REPORTS_BASE_DIR}/html` }],
+  ['html', {outputFolder: `${REPORTS_BASE_DIR}/html`}],
 ];
 
 const ciReporters: ReporterDescription[] = [
   ['dot'],
   ['github'],
-  ['html', { outputFolder: `${REPORTS_BASE_DIR}/html` }],
-  ['junit', { outputFile: `${REPORTS_BASE_DIR}/results.xml` }],
+  ['html', {outputFolder: `${REPORTS_BASE_DIR}/html`}],
+  ['junit', {outputFile: `${REPORTS_BASE_DIR}/results.xml`}],
 ];
 
 export default defineConfig({
