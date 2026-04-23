@@ -25,6 +25,8 @@ import io.camunda.client.annotation.value.DocumentValue;
 import io.camunda.client.annotation.value.DocumentValue.ParameterType;
 import io.camunda.client.annotation.value.GlobalVariablesValue;
 import io.camunda.client.annotation.value.JobWorkerValue;
+import io.camunda.client.annotation.value.MethodGlobalVariablesValue;
+import io.camunda.client.annotation.value.ResourceGlobalVariablesValue;
 import io.camunda.client.annotation.value.SourceAware;
 import io.camunda.client.annotation.value.SourceAware.*;
 import io.camunda.client.annotation.value.VariableValue;
@@ -141,24 +143,24 @@ public class AnnotationUtil {
         || beanInfo.hasMethodAnnotation(GlobalVariables.class);
   }
 
-  public static List<GlobalVariablesValue> getGlobalVariablesValuesFromClass(
+  public static List<ResourceGlobalVariablesValue> getGlobalVariablesValuesFromClass(
       final BeanInfo beanInfo) {
     if (!beanInfo.hasClassAnnotation(GlobalVariablesContainer.class)
         && !beanInfo.hasClassAnnotation(GlobalVariables.class)) {
       return Collections.emptyList();
     }
-    final List<GlobalVariablesValue> values = new ArrayList<>();
+    final List<ResourceGlobalVariablesValue> values = new ArrayList<>();
     beanInfo
         .getAnnotation(GlobalVariablesContainer.class)
         .ifPresent(
             container -> {
               for (final GlobalVariables annotation : container.value()) {
-                values.add(fromGlobalVariablesAnnotation(annotation, null));
+                values.add(resourceValueFromAnnotation(annotation));
               }
             });
     beanInfo
         .getAnnotation(GlobalVariables.class)
-        .ifPresent(annotation -> values.add(fromGlobalVariablesAnnotation(annotation, null)));
+        .ifPresent(annotation -> values.add(resourceValueFromAnnotation(annotation)));
     return values;
   }
 
@@ -171,21 +173,32 @@ public class AnnotationUtil {
     }
     final List<GlobalVariablesValue> values = new ArrayList<>();
     for (final GlobalVariables annotation : annotations) {
+      final String resolvedTenantId =
+          StringUtils.isEmpty(annotation.tenantId()) ? null : annotation.tenantId();
       if (annotation.resources().length > 0) {
-        values.add(fromGlobalVariablesAnnotation(annotation, null));
+        values.add(resourceValueFromAnnotation(annotation));
       } else {
-        values.add(fromGlobalVariablesAnnotation(annotation, methodInfo));
+        values.add(
+            new MethodGlobalVariablesValue(() -> invokeMethod(methodInfo), resolvedTenantId));
       }
     }
     return values;
   }
 
-  private static GlobalVariablesValue fromGlobalVariablesAnnotation(
-      final GlobalVariables annotation, final MethodInfo methodInfo) {
-    return new GlobalVariablesValue(
+  private static ResourceGlobalVariablesValue resourceValueFromAnnotation(
+      final GlobalVariables annotation) {
+    return new ResourceGlobalVariablesValue(
         Arrays.asList(annotation.resources()),
-        StringUtils.isEmpty(annotation.tenantId()) ? null : annotation.tenantId(),
-        methodInfo);
+        StringUtils.isEmpty(annotation.tenantId()) ? null : annotation.tenantId());
+  }
+
+  private static Object invokeMethod(final MethodInfo methodInfo) {
+    try {
+      return methodInfo.invoke();
+    } catch (final Exception e) {
+      throw new RuntimeException(
+          "Error invoking @GlobalVariables method: " + methodInfo.getMethodName(), e);
+    }
   }
 
   public static boolean isJobWorker(final BeanInfo beanInfo) {

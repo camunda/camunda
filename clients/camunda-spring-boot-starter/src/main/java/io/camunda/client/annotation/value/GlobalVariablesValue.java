@@ -15,64 +15,8 @@
  */
 package io.camunda.client.annotation.value;
 
-import io.camunda.client.bean.MethodInfo;
-import java.util.List;
-import java.util.Objects;
+public sealed interface GlobalVariablesValue
+    permits ResourceGlobalVariablesValue, MethodGlobalVariablesValue {
 
-public final class GlobalVariablesValue {
-  private final List<String> resources;
-  private final String tenantId;
-  private final MethodInfo methodInfo;
-
-  public GlobalVariablesValue(
-      final List<String> resources, final String tenantId, final MethodInfo methodInfo) {
-    this.resources = resources;
-    this.tenantId = tenantId;
-    this.methodInfo = methodInfo;
-  }
-
-  public List<String> getResources() {
-    return resources;
-  }
-
-  public String getTenantId() {
-    return tenantId;
-  }
-
-  public MethodInfo getMethodInfo() {
-    return methodInfo;
-  }
-
-  public boolean isResourceBased() {
-    return methodInfo == null;
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(resources, tenantId, methodInfo);
-  }
-
-  @Override
-  public boolean equals(final Object o) {
-    if (o == null || getClass() != o.getClass()) {
-      return false;
-    }
-    final GlobalVariablesValue that = (GlobalVariablesValue) o;
-    return Objects.equals(resources, that.resources)
-        && Objects.equals(tenantId, that.tenantId)
-        && Objects.equals(methodInfo, that.methodInfo);
-  }
-
-  @Override
-  public String toString() {
-    return "GlobalVariablesValue{"
-        + "resources="
-        + resources
-        + ", tenantId='"
-        + tenantId
-        + '\''
-        + ", methodInfo="
-        + methodInfo
-        + '}';
-  }
+  String getTenantId();
 }
