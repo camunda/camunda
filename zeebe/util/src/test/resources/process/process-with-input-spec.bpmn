@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+                  xmlns:zeebe="http://camunda.org/schema/zeebe/1.0"
+                  xmlns:ccon="http://camunda.org/schema/ccon/1.0"
+                  id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn">
+  <bpmn:process id="inputSpecProcess" name="Process With Input Spec" isExecutable="true">
+    <bpmn:startEvent id="start_via_agent" name="Start via Agent">
+      <bpmn:extensionElements>
+        <ccon:ioSpecification>
+          <ccon:inputSpecification name="firstName" description="The first name" type="string" required="false" schema="" />
+          <ccon:inputSpecification name="amount" description="The amount to withdraw" type="integer" required="true" schema="" />
+        </ccon:ioSpecification>
+        <zeebe:properties>
+          <zeebe:property name="io.camunda.tool:name" value="money_withdrawal" />
+        </zeebe:properties>
+      </bpmn:extensionElements>
+      <bpmn:outgoing>Flow_1</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:endEvent id="end_event">
+      <bpmn:incoming>Flow_1</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_1" sourceRef="start_via_agent" targetRef="end_event" />
+  </bpmn:process>
+</bpmn:definitions>

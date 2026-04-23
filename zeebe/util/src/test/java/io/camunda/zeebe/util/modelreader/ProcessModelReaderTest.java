@@ -337,6 +337,50 @@ public class ProcessModelReaderTest {
     assertThat(startEventProps).doesNotContainKey(null); // no null keys
   }
 
+  @Test
+  void shouldExtractInputSpecification() throws IOException {
+    // given
+    final String processId = "inputSpecProcess";
+    final var bpmnBytes = parseBpmnResourceXml("process-with-input-spec.bpmn");
+
+    // when
+    final var reader = ProcessModelReader.of(bpmnBytes, processId);
+    assertThat(reader).isPresent();
+    final var allSpecs = reader.get().extractAllElementInputSpecs();
+
+    // then
+    assertThat(allSpecs).containsKey("start_via_agent");
+    final var specs = allSpecs.get("start_via_agent");
+    assertThat(specs).hasSize(2);
+
+    final var firstName = specs.getFirst();
+    assertThat(firstName.name()).isEqualTo("firstName");
+    assertThat(firstName.description()).isEqualTo("The first name");
+    assertThat(firstName.type()).isEqualTo("string");
+    assertThat(firstName.required()).isFalse();
+
+    final var amount = specs.get(1);
+    assertThat(amount.name()).isEqualTo("amount");
+    assertThat(amount.description()).isEqualTo("The amount to withdraw");
+    assertThat(amount.type()).isEqualTo("integer");
+    assertThat(amount.required()).isTrue();
+  }
+
+  @Test
+  void shouldReturnEmptyMapWhenNoInputSpecification() throws IOException {
+    // given — process-with-form-key-reference.bpmn has no ccon:inputSpecification
+    final String processId = "formProcess";
+    final var bpmnBytes = parseBpmnResourceXml("process-with-form-key-reference.bpmn");
+
+    // when
+    final var reader = ProcessModelReader.of(bpmnBytes, processId);
+    assertThat(reader).isPresent();
+    final var allSpecs = reader.get().extractAllElementInputSpecs();
+
+    // then
+    assertThat(allSpecs).isEmpty();
+  }
+
   private String formOneJson() {
     return
 """
