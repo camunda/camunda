@@ -227,6 +227,14 @@ public interface CamundaClient extends AutoCloseable, JobClient {
   }
 
   /**
+   * @return a builder to configure and create a new {@link CamundaClient} based on an existing
+   *     configuration.
+   */
+  static CamundaClientBuilder newClientBuilder(final CamundaClientConfiguration configuration) {
+    return new CamundaClientBuilderImpl().withConfiguration(configuration);
+  }
+
+  /**
    * @return a builder with convenient methods to connect to the Camunda Cloud cluster.
    */
   static CamundaClientCloudBuilderStep1 newCloudClientBuilder() {
