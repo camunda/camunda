@@ -443,15 +443,28 @@ jobs:
           echo "✅ Updated org-level urgency: '${CURRENT_URGENCY:-(empty)}' → '${NEW_URGENCY}'"
 
       - name: Sync urgency to project-level fields
-        if: steps.validate_urgency.outputs.urgency != '' && steps.check_labels.outputs.has_urgency_locked != 'true'
+        if: steps.validate_urgency.outputs.urgency != ''
         env:
           GH_TOKEN: ${{ steps.github-token.outputs.token }}
         run: |
           set -euo pipefail
 
           ISSUE_DATA='${{ steps.fetch_data.outputs.issue_data }}'
-          NEW_URGENCY='${{ steps.validate_urgency.outputs.urgency }}'
           URGENCY_FIELD_NAME='Urgency'
+          HAS_URGENCY_LOCKED='${{ steps.check_labels.outputs.has_urgency_locked }}'
+
+          # For locked issues, use the current org-level value instead of the calculated one
+          if [[ "$HAS_URGENCY_LOCKED" == "true" ]]; then
+            NEW_URGENCY=$(echo "$ISSUE_DATA" | jq -r --arg fieldId "$URGENCY_FIELD_ID" \
+              '.issueFieldValues.nodes[] | select(.field.id==$fieldId) | .name // empty')
+            if [[ -z "$NEW_URGENCY" ]]; then
+              echo "🔒 urgency-locked but no org-level value to sync — skipping"
+              exit 0
+            fi
+            echo "🔒 urgency-locked — syncing org-level value '$NEW_URGENCY' to project"
+          else
+            NEW_URGENCY='${{ steps.validate_urgency.outputs.urgency }}'
+          fi
 
           if [[ "$DRY_RUN" == "true" ]]; then
             echo "🔬 DRY RUN: Project sync skipped"
