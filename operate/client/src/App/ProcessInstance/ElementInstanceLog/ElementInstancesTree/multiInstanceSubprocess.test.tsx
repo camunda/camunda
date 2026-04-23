@@ -9,7 +9,7 @@
 import {render, screen, within} from 'modules/testing-library';
 import {multiInstanceProcess, searchResult} from 'modules/testUtils';
 import {ElementInstancesTree} from './index';
-import {Wrapper, mockMultiInstanceProcessInstance} from './mocks';
+import {getWrapper, mockMultiInstanceProcessInstance} from './mocks';
 import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 import {mockFetchElementInstancesStatistics} from 'modules/mocks/api/v2/elementInstances/elementInstancesStatistics/fetchElementInstancesStatistics';
@@ -98,7 +98,7 @@ describe('ElementInstancesTree - Multi Instance Subprocess', () => {
         businessObjects={businessObjects}
       />,
       {
-        wrapper: Wrapper,
+        wrapper: getWrapper(),
       },
     );
 
@@ -123,7 +123,7 @@ describe('ElementInstancesTree - Multi Instance Subprocess', () => {
         businessObjects={businessObjects}
       />,
       {
-        wrapper: Wrapper,
+        wrapper: getWrapper(),
       },
     );
 
@@ -226,7 +226,7 @@ describe('ElementInstancesTree - Multi Instance Subprocess', () => {
         businessObjects={businessObjects}
       />,
       {
-        wrapper: Wrapper,
+        wrapper: getWrapper(),
       },
     );
 

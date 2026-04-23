@@ -15,7 +15,7 @@ import {ElementInstancesTree} from './index';
 import {
   multipleSubprocessesWithNoRunningScopeMock,
   multipleSubprocessesWithOneRunningScopeMock,
-  Wrapper,
+  getWrapper,
   mockMultiInstanceProcessInstance,
   mockNestedSubProcessInstance,
 } from './mocks';
@@ -67,7 +67,7 @@ describe('ElementInstancesTree - Modification placeholders', () => {
         businessObjects={nestedSubprocessBusinessObjects}
       />,
       {
-        wrapper: Wrapper,
+        wrapper: getWrapper(),
       },
     );
 
@@ -293,7 +293,7 @@ describe('ElementInstancesTree - Modification placeholders', () => {
         businessObjects={multiInstanceProcessBusinessObjects}
       />,
       {
-        wrapper: Wrapper,
+        wrapper: getWrapper(),
       },
     );
 
@@ -408,7 +408,7 @@ describe('ElementInstancesTree - Modification placeholders', () => {
         businessObjects={multiInstanceProcessBusinessObjects}
       />,
       {
-        wrapper: Wrapper,
+        wrapper: getWrapper(),
       },
     );
 
@@ -457,7 +457,7 @@ describe('ElementInstancesTree - Modification placeholders', () => {
         businessObjects={nestedSubprocessBusinessObjects}
       />,
       {
-        wrapper: Wrapper,
+        wrapper: getWrapper(),
       },
     );
 
