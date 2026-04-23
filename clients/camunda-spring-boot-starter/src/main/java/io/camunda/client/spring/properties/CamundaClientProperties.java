@@ -100,8 +100,8 @@ public class CamundaClientProperties {
   private CamundaClientDeploymentProperties deployment = new CamundaClientDeploymentProperties();
 
   @NestedConfigurationProperty
-  private CamundaClientGlobalVariablesProperties globalVariables =
-      new CamundaClientGlobalVariablesProperties();
+  private CamundaClientClusterVariablesProperties clusterVariables =
+      new CamundaClientClusterVariablesProperties();
 
   /** The tenant ID used for tenant-aware commands when no tenant ID is set. */
   private String tenantId = CommandWithTenantStep.DEFAULT_TENANT_IDENTIFIER;
@@ -256,12 +256,12 @@ public class CamundaClientProperties {
     this.deployment = deployment;
   }
 
-  public CamundaClientGlobalVariablesProperties getGlobalVariables() {
-    return globalVariables;
+  public CamundaClientClusterVariablesProperties getClusterVariables() {
+    return clusterVariables;
   }
 
-  public void setGlobalVariables(final CamundaClientGlobalVariablesProperties globalVariables) {
-    this.globalVariables = globalVariables;
+  public void setClusterVariables(final CamundaClientClusterVariablesProperties clusterVariables) {
+    this.clusterVariables = clusterVariables;
   }
 
   public ClientMode getMode() {
@@ -345,8 +345,8 @@ public class CamundaClientProperties {
         + restAddress
         + ", deployment="
         + deployment
-        + ", globalVariables="
-        + globalVariables
+        + ", clusterVariables="
+        + clusterVariables
         + ", tenantId='"
         + tenantId
         + '\''

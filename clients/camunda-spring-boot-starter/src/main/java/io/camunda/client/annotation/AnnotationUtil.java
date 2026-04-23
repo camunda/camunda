@@ -18,15 +18,15 @@ package io.camunda.client.annotation;
 import static java.util.Optional.ofNullable;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import io.camunda.client.annotation.ClusterVariables.ClusterVariablesContainer;
 import io.camunda.client.annotation.Deployment.Deployments;
-import io.camunda.client.annotation.GlobalVariables.GlobalVariablesContainer;
+import io.camunda.client.annotation.value.ClusterVariablesValue;
 import io.camunda.client.annotation.value.DeploymentValue;
 import io.camunda.client.annotation.value.DocumentValue;
 import io.camunda.client.annotation.value.DocumentValue.ParameterType;
-import io.camunda.client.annotation.value.GlobalVariablesValue;
 import io.camunda.client.annotation.value.JobWorkerValue;
-import io.camunda.client.annotation.value.MethodGlobalVariablesValue;
-import io.camunda.client.annotation.value.ResourceGlobalVariablesValue;
+import io.camunda.client.annotation.value.MethodClusterVariablesValue;
+import io.camunda.client.annotation.value.ResourceClusterVariablesValue;
 import io.camunda.client.annotation.value.SourceAware;
 import io.camunda.client.annotation.value.SourceAware.*;
 import io.camunda.client.annotation.value.VariableValue;
@@ -137,58 +137,58 @@ public class AnnotationUtil {
         || beanInfo.hasClassAnnotation(Deployment.class);
   }
 
-  public static boolean isGlobalVariables(final BeanInfo beanInfo) {
-    return beanInfo.hasClassAnnotation(GlobalVariablesContainer.class)
-        || beanInfo.hasClassAnnotation(GlobalVariables.class)
-        || beanInfo.hasMethodAnnotation(GlobalVariables.class)
-        || beanInfo.hasMethodAnnotation(GlobalVariablesContainer.class);
+  public static boolean isClusterVariables(final BeanInfo beanInfo) {
+    return beanInfo.hasClassAnnotation(ClusterVariablesContainer.class)
+        || beanInfo.hasClassAnnotation(ClusterVariables.class)
+        || beanInfo.hasMethodAnnotation(ClusterVariables.class)
+        || beanInfo.hasMethodAnnotation(ClusterVariablesContainer.class);
   }
 
-  public static List<ResourceGlobalVariablesValue> getGlobalVariablesValuesFromClass(
+  public static List<ResourceClusterVariablesValue> getClusterVariablesValuesFromClass(
       final BeanInfo beanInfo) {
-    if (!beanInfo.hasClassAnnotation(GlobalVariablesContainer.class)
-        && !beanInfo.hasClassAnnotation(GlobalVariables.class)) {
+    if (!beanInfo.hasClassAnnotation(ClusterVariablesContainer.class)
+        && !beanInfo.hasClassAnnotation(ClusterVariables.class)) {
       return Collections.emptyList();
     }
-    final List<ResourceGlobalVariablesValue> values = new ArrayList<>();
+    final List<ResourceClusterVariablesValue> values = new ArrayList<>();
     beanInfo
-        .getAnnotation(GlobalVariablesContainer.class)
+        .getAnnotation(ClusterVariablesContainer.class)
         .ifPresent(
             container -> {
-              for (final GlobalVariables annotation : container.value()) {
+              for (final ClusterVariables annotation : container.value()) {
                 values.add(resourceValueFromAnnotation(annotation));
               }
             });
     beanInfo
-        .getAnnotation(GlobalVariables.class)
+        .getAnnotation(ClusterVariables.class)
         .ifPresent(annotation -> values.add(resourceValueFromAnnotation(annotation)));
     return values;
   }
 
-  public static List<GlobalVariablesValue> getGlobalVariablesValuesFromMethods(
+  public static List<ClusterVariablesValue> getClusterVariablesValuesFromMethods(
       final MethodInfo methodInfo) {
-    final GlobalVariables[] annotations =
-        methodInfo.getMethod().getAnnotationsByType(GlobalVariables.class);
+    final ClusterVariables[] annotations =
+        methodInfo.getMethod().getAnnotationsByType(ClusterVariables.class);
     if (annotations.length == 0) {
       return Collections.emptyList();
     }
-    final List<GlobalVariablesValue> values = new ArrayList<>();
-    for (final GlobalVariables annotation : annotations) {
+    final List<ClusterVariablesValue> values = new ArrayList<>();
+    for (final ClusterVariables annotation : annotations) {
       final String resolvedTenantId =
           StringUtils.isEmpty(annotation.tenantId()) ? null : annotation.tenantId();
       if (annotation.resources().length > 0) {
         values.add(resourceValueFromAnnotation(annotation));
       } else {
         values.add(
-            new MethodGlobalVariablesValue(() -> invokeMethod(methodInfo), resolvedTenantId));
+            new MethodClusterVariablesValue(() -> invokeMethod(methodInfo), resolvedTenantId));
       }
     }
     return values;
   }
 
-  private static ResourceGlobalVariablesValue resourceValueFromAnnotation(
-      final GlobalVariables annotation) {
-    return new ResourceGlobalVariablesValue(
+  private static ResourceClusterVariablesValue resourceValueFromAnnotation(
+      final ClusterVariables annotation) {
+    return new ResourceClusterVariablesValue(
         Arrays.asList(annotation.resources()),
         StringUtils.isEmpty(annotation.tenantId()) ? null : annotation.tenantId());
   }
@@ -198,7 +198,7 @@ public class AnnotationUtil {
       return methodInfo.invoke();
     } catch (final Exception e) {
       throw new RuntimeException(
-          "Error invoking @GlobalVariables method: " + methodInfo.getMethodName(), e);
+          "Error invoking @ClusterVariables method: " + methodInfo.getMethodName(), e);
     }
   }
 

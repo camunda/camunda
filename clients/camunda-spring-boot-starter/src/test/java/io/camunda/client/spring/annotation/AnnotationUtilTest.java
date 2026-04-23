@@ -24,20 +24,20 @@ import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.camunda.client.annotation.AnnotationUtil;
+import io.camunda.client.annotation.ClusterVariables;
 import io.camunda.client.annotation.Deployment.Deployments;
 import io.camunda.client.annotation.ElementInstanceKey;
-import io.camunda.client.annotation.GlobalVariables;
 import io.camunda.client.annotation.JobKey;
 import io.camunda.client.annotation.ProcessDefinitionKey;
 import io.camunda.client.annotation.ProcessInstanceKey;
 import io.camunda.client.annotation.RootProcessInstanceKey;
 import io.camunda.client.annotation.VariablesAsType;
+import io.camunda.client.annotation.value.ClusterVariablesValue;
 import io.camunda.client.annotation.value.DeploymentValue;
 import io.camunda.client.annotation.value.DocumentValue;
-import io.camunda.client.annotation.value.GlobalVariablesValue;
 import io.camunda.client.annotation.value.JobWorkerValue;
-import io.camunda.client.annotation.value.MethodGlobalVariablesValue;
-import io.camunda.client.annotation.value.ResourceGlobalVariablesValue;
+import io.camunda.client.annotation.value.MethodClusterVariablesValue;
+import io.camunda.client.annotation.value.ResourceClusterVariablesValue;
 import io.camunda.client.annotation.value.SourceAware.GeneratedFromMethodInfo;
 import io.camunda.client.annotation.value.VariableValue;
 import io.camunda.client.api.response.ActivatedJob;
@@ -410,14 +410,14 @@ public class AnnotationUtilTest {
   }
 
   @Nested
-  class GlobalVariablesAnnotation {
+  class ClusterVariablesAnnotation {
 
     @Test
     void shouldDetectClassAnnotation() {
       // given
       final BeanInfo beanInfo = beanInfo(new SingleResourceBean());
       // when / then
-      assertThat(AnnotationUtil.isGlobalVariables(beanInfo)).isTrue();
+      assertThat(AnnotationUtil.isClusterVariables(beanInfo)).isTrue();
     }
 
     @Test
@@ -425,7 +425,7 @@ public class AnnotationUtilTest {
       // given
       final BeanInfo beanInfo = beanInfo(new MethodVariablesBean());
       // when / then
-      assertThat(AnnotationUtil.isGlobalVariables(beanInfo)).isTrue();
+      assertThat(AnnotationUtil.isClusterVariables(beanInfo)).isTrue();
     }
 
     @Test
@@ -433,7 +433,7 @@ public class AnnotationUtilTest {
       // given
       final BeanInfo beanInfo = beanInfo(new UnannotatedBean());
       // when / then
-      assertThat(AnnotationUtil.isGlobalVariables(beanInfo)).isFalse();
+      assertThat(AnnotationUtil.isClusterVariables(beanInfo)).isFalse();
     }
 
     @Test
@@ -441,8 +441,8 @@ public class AnnotationUtilTest {
       // given
       final BeanInfo beanInfo = beanInfo(new SingleResourceBean());
       // when
-      final List<ResourceGlobalVariablesValue> values =
-          AnnotationUtil.getGlobalVariablesValuesFromClass(beanInfo);
+      final List<ResourceClusterVariablesValue> values =
+          AnnotationUtil.getClusterVariablesValuesFromClass(beanInfo);
       // then
       assertThat(values).hasSize(1);
       assertThat(values.get(0).getResources()).containsExactly("classpath:variables.json");
@@ -454,8 +454,8 @@ public class AnnotationUtilTest {
       // given
       final BeanInfo beanInfo = beanInfo(new TenantScopedResourceBean());
       // when
-      final List<ResourceGlobalVariablesValue> values =
-          AnnotationUtil.getGlobalVariablesValuesFromClass(beanInfo);
+      final List<ResourceClusterVariablesValue> values =
+          AnnotationUtil.getClusterVariablesValuesFromClass(beanInfo);
       // then
       assertThat(values).hasSize(1);
       assertThat(values.get(0).getResources()).containsExactly("classpath:vars.json");
@@ -467,8 +467,8 @@ public class AnnotationUtilTest {
       // given
       final BeanInfo beanInfo = beanInfo(new RepeatableResourceBean());
       // when
-      final List<ResourceGlobalVariablesValue> values =
-          AnnotationUtil.getGlobalVariablesValuesFromClass(beanInfo);
+      final List<ResourceClusterVariablesValue> values =
+          AnnotationUtil.getClusterVariablesValuesFromClass(beanInfo);
       // then
       assertThat(values).hasSize(2);
       assertThat(values.get(0).getResources()).containsExactly("classpath:v1.json");
@@ -480,24 +480,24 @@ public class AnnotationUtilTest {
       // given
       final BeanInfo beanInfo = beanInfo(new UnannotatedBean());
       // when
-      final List<ResourceGlobalVariablesValue> values =
-          AnnotationUtil.getGlobalVariablesValuesFromClass(beanInfo);
+      final List<ResourceClusterVariablesValue> values =
+          AnnotationUtil.getClusterVariablesValuesFromClass(beanInfo);
       // then
       assertThat(values).isEmpty();
     }
 
     @Test
-    void shouldExtractMethodValueAsMethodGlobalVariablesValue() {
+    void shouldExtractMethodValueAsMethodClusterVariablesValue() {
       // given
       final MethodInfo methodInfo = methodInfo(new MethodVariablesBean(), "test", "variables");
       // when
-      final List<GlobalVariablesValue> values =
-          AnnotationUtil.getGlobalVariablesValuesFromMethods(methodInfo);
+      final List<ClusterVariablesValue> values =
+          AnnotationUtil.getClusterVariablesValuesFromMethods(methodInfo);
       // then
       assertThat(values).hasSize(1);
-      assertThat(values.get(0)).isInstanceOf(MethodGlobalVariablesValue.class);
+      assertThat(values.get(0)).isInstanceOf(MethodClusterVariablesValue.class);
       assertThat(values.get(0).getTenantId()).isNull();
-      final MethodGlobalVariablesValue methodValue = (MethodGlobalVariablesValue) values.get(0);
+      final MethodClusterVariablesValue methodValue = (MethodClusterVariablesValue) values.get(0);
       assertThat(methodValue.getVariableSupplier().get()).isEqualTo(Map.of("key", "value"));
     }
 
@@ -507,11 +507,11 @@ public class AnnotationUtilTest {
       final MethodInfo methodInfo =
           methodInfo(new TenantScopedMethodBean(), "test", "tenantVariables");
       // when
-      final List<GlobalVariablesValue> values =
-          AnnotationUtil.getGlobalVariablesValuesFromMethods(methodInfo);
+      final List<ClusterVariablesValue> values =
+          AnnotationUtil.getClusterVariablesValuesFromMethods(methodInfo);
       // then
       assertThat(values).hasSize(1);
-      assertThat(values.get(0)).isInstanceOf(MethodGlobalVariablesValue.class);
+      assertThat(values.get(0)).isInstanceOf(MethodClusterVariablesValue.class);
       assertThat(values.get(0).getTenantId()).isEqualTo("my-tenant");
     }
 
@@ -520,13 +520,13 @@ public class AnnotationUtilTest {
       // given
       final MethodInfo methodInfo = methodInfo(new MethodWithResourcesBean(), "test", "unused");
       // when
-      final List<GlobalVariablesValue> values =
-          AnnotationUtil.getGlobalVariablesValuesFromMethods(methodInfo);
+      final List<ClusterVariablesValue> values =
+          AnnotationUtil.getClusterVariablesValuesFromMethods(methodInfo);
       // then
       assertThat(values).hasSize(1);
-      assertThat(values.get(0)).isInstanceOf(ResourceGlobalVariablesValue.class);
-      final ResourceGlobalVariablesValue resourceValue =
-          (ResourceGlobalVariablesValue) values.get(0);
+      assertThat(values.get(0)).isInstanceOf(ResourceClusterVariablesValue.class);
+      final ResourceClusterVariablesValue resourceValue =
+          (ResourceClusterVariablesValue) values.get(0);
       assertThat(resourceValue.getResources()).containsExactly("classpath:from-method.json");
     }
 
@@ -535,25 +535,25 @@ public class AnnotationUtilTest {
       // given
       final MethodInfo methodInfo = methodInfo(new UnannotatedBean(), "test", "noAnnotation");
       // when
-      final List<GlobalVariablesValue> values =
-          AnnotationUtil.getGlobalVariablesValuesFromMethods(methodInfo);
+      final List<ClusterVariablesValue> values =
+          AnnotationUtil.getClusterVariablesValuesFromMethods(methodInfo);
       // then
       assertThat(values).isEmpty();
     }
 
-    @GlobalVariables(resources = "classpath:variables.json")
+    @ClusterVariables(resources = "classpath:variables.json")
     static class SingleResourceBean {}
 
-    @GlobalVariables(resources = "classpath:vars.json", tenantId = "my-tenant")
+    @ClusterVariables(resources = "classpath:vars.json", tenantId = "my-tenant")
     static class TenantScopedResourceBean {}
 
-    @GlobalVariables(resources = "classpath:v1.json")
-    @GlobalVariables(resources = "classpath:v2.json")
+    @ClusterVariables(resources = "classpath:v1.json")
+    @ClusterVariables(resources = "classpath:v2.json")
     static class RepeatableResourceBean {}
 
     // Public to allow reflective method invocation from SpringMethodInfo
     public static class MethodVariablesBean {
-      @GlobalVariables
+      @ClusterVariables
       public Map<String, Object> variables() {
         return Map.of("key", "value");
       }
@@ -561,14 +561,14 @@ public class AnnotationUtilTest {
 
     // Public to allow reflective method invocation from SpringMethodInfo
     public static class TenantScopedMethodBean {
-      @GlobalVariables(tenantId = "my-tenant")
+      @ClusterVariables(tenantId = "my-tenant")
       public Map<String, Object> tenantVariables() {
         return Map.of("key", "value");
       }
     }
 
     public static class MethodWithResourcesBean {
-      @GlobalVariables(resources = "classpath:from-method.json")
+      @ClusterVariables(resources = "classpath:from-method.json")
       public void unused() {}
     }
 
