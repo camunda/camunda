@@ -170,15 +170,42 @@ test.describe('Operations', () => {
       await operateProcessesPage.cancelButton.click();
       await operateProcessesPage.applyButton.click();
 
-      await operateFiltersPanelPage.clickIncidentsInstancesCheckbox();
-      await operateFiltersPanelPage.clickCanceledInstancesCheckbox();
-
       await expect(
         operateProcessesPage.batchOperationStartedMessage(
           'Cancel Process Instance',
         ),
       ).toBeVisible({timeout: 60000});
 
+      // Apply filters to show canceled instances with retries
+      await waitForAssertion({
+        assertion: async () => {
+          await operateFiltersPanelPage.clickCanceledInstancesCheckbox();
+          await expect(
+            operateFiltersPanelPage.canceledInstancesCheckbox,
+          ).toBeChecked();
+        },
+        onFailure: async () => {
+          await page.reload();
+        },
+      });
+
+      // Wait for canceled instances to load in the filtered view
+      await waitForAssertion({
+        assertion: async () => {
+          await expect(operateProcessesPage.dataList).toBeVisible();
+          // Verify at least one canceled icon is visible
+          await expect(
+            operateProcessesPage.getCanceledIcon(
+              instances[0].processInstanceKey,
+            ),
+          ).toBeVisible({timeout: 5000});
+        },
+        onFailure: async () => {
+          await page.reload();
+        },
+      });
+
+      // Verify all instances have canceled icons
       await waitForAssertion({
         assertion: async () => {
           await Promise.all(
