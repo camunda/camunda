@@ -7,11 +7,14 @@
  */
 package io.camunda.db.rdbms.write.domain;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import io.camunda.db.rdbms.write.util.MapSerializer;
+import io.camunda.search.entities.MessageSubscriptionEntity.InputSpecItem;
 import io.camunda.search.entities.MessageSubscriptionEntity.MessageSubscriptionState;
 import io.camunda.search.entities.MessageSubscriptionEntity.MessageSubscriptionType;
 import io.camunda.util.ObjectBuilder;
 import java.time.OffsetDateTime;
+import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 
@@ -36,6 +39,8 @@ public class MessageSubscriptionDbModel implements Copyable<MessageSubscriptionD
   private Map<String, String> extensionProperties;
   private String toolName;
   private String inboundConnectorType;
+  private String serializedInputSpecification;
+  private List<InputSpecItem> inputSpecification;
 
   public MessageSubscriptionDbModel(final Long messageSubscriptionKey) {
     this.messageSubscriptionKey = messageSubscriptionKey;
@@ -60,7 +65,8 @@ public class MessageSubscriptionDbModel implements Copyable<MessageSubscriptionD
       final Integer processDefinitionVersion,
       final Map<String, String> extensionProperties,
       final String toolName,
-      final String inboundConnectorType) {
+      final String inboundConnectorType,
+      final List<InputSpecItem> inputSpecification) {
     this.messageSubscriptionKey = messageSubscriptionKey;
     this.processDefinitionId = processDefinitionId;
     this.processDefinitionKey = processDefinitionKey;
@@ -81,6 +87,8 @@ public class MessageSubscriptionDbModel implements Copyable<MessageSubscriptionD
     this.extensionProperties = extensionProperties;
     this.toolName = toolName;
     this.inboundConnectorType = inboundConnectorType;
+    serializedInputSpecification = serializeInputSpecification(inputSpecification);
+    this.inputSpecification = inputSpecification;
   }
 
   public Long messageSubscriptionKey() {
@@ -200,6 +208,19 @@ public class MessageSubscriptionDbModel implements Copyable<MessageSubscriptionD
     this.inboundConnectorType = inboundConnectorType;
   }
 
+  public String serializedInputSpecification() {
+    return serializedInputSpecification;
+  }
+
+  public void setSerializedInputSpecification(final String serializedInputSpecification) {
+    this.serializedInputSpecification = serializedInputSpecification;
+    inputSpecification = deserializeInputSpecification(serializedInputSpecification);
+  }
+
+  public List<InputSpecItem> inputSpecification() {
+    return inputSpecification;
+  }
+
   public OffsetDateTime dateTime() {
     return dateTime;
   }
@@ -269,7 +290,22 @@ public class MessageSubscriptionDbModel implements Copyable<MessageSubscriptionD
         .processDefinitionVersion(processDefinitionVersion)
         .extensionProperties(extensionProperties)
         .toolName(toolName)
-        .inboundConnectorType(inboundConnectorType);
+        .inboundConnectorType(inboundConnectorType)
+        .inputSpecification(inputSpecification);
+  }
+
+  private static String serializeInputSpecification(final List<InputSpecItem> items) {
+    if (items == null || items.isEmpty()) {
+      return null;
+    }
+    return MapSerializer.serialize(items);
+  }
+
+  private static List<InputSpecItem> deserializeInputSpecification(final String serialized) {
+    if (serialized == null || serialized.isEmpty()) {
+      return null;
+    }
+    return MapSerializer.deserialize(serialized, new TypeReference<>() {});
   }
 
   public static class Builder implements ObjectBuilder<MessageSubscriptionDbModel> {
@@ -292,6 +328,7 @@ public class MessageSubscriptionDbModel implements Copyable<MessageSubscriptionD
     private Map<String, String> extensionProperties;
     private String toolName;
     private String inboundConnectorType;
+    private List<InputSpecItem> inputSpecification;
 
     public Builder messageSubscriptionKey(final Long messageSubscriptionKey) {
       this.messageSubscriptionKey = messageSubscriptionKey;
@@ -364,6 +401,11 @@ public class MessageSubscriptionDbModel implements Copyable<MessageSubscriptionD
       return this;
     }
 
+    public Builder inputSpecification(final List<InputSpecItem> inputSpecification) {
+      this.inputSpecification = inputSpecification;
+      return this;
+    }
+
     public Builder dateTime(final OffsetDateTime dateTime) {
       this.dateTime = dateTime;
       return this;
@@ -410,7 +452,8 @@ public class MessageSubscriptionDbModel implements Copyable<MessageSubscriptionD
           processDefinitionVersion,
           extensionProperties,
           toolName,
-          inboundConnectorType);
+          inboundConnectorType,
+          inputSpecification);
     }
   }
 }

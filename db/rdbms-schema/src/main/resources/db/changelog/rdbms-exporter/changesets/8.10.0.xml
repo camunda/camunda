@@ -98,4 +98,15 @@
     </addColumn>
   </changeSet>
 
+  <changeSet id="add_message_subscription_input_specification_column" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <columnExists tableName="${prefix}MESSAGE_SUBSCRIPTION" columnName="INPUT_SPECIFICATION"/>
+      </not>
+    </preConditions>
+    <addColumn tableName="${prefix}MESSAGE_SUBSCRIPTION">
+      <column name="INPUT_SPECIFICATION" type="CLOB"/>
+    </addColumn>
+  </changeSet>
+
 </databaseChangeLog>
