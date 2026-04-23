@@ -160,6 +160,7 @@ get_jobs_without_cihealth(jobInput) = jobs_without_cihealth {
         # not enforced on "special" jobs needed for control flow in Unified CI
         job_id != "detect-changes"
         job_id != "check-results"
+        job_id != "ci-gate"
         job_id != "test-summary"
         job_id != "get-concurrency-group-dynamically"
         job_id != "get-snapshot-docker-version-tag"
@@ -203,6 +204,7 @@ get_jobs_not_needing_detectchanges(jobInput) = jobs_not_needing_detectchanges {
         # not enforced on Unified CI jobs that are part of change detection control flow structure
         job_id != "detect-changes"
         job_id != "check-results"
+        job_id != "ci-gate"
 
         # not enforced on Unified CI jobs running after "check-results" job
         not startswith(job_id, "deploy-")
@@ -256,6 +258,7 @@ get_jobs_without_printmetadata(jobInput) = jobs_without_printmetadata {
         job_id != "detect-changes"
         job_id != "setup-tests"
         job_id != "check-results"
+        job_id != "ci-gate"
 
         # not enforced on Unified CI jobs running after "check-results" job
         not startswith(job_id, "deploy-")
