@@ -20,7 +20,6 @@ import static org.springframework.util.ReflectionUtils.doWithMethods;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.annotation.AnnotationUtil;
-import io.camunda.client.annotation.GlobalVariables;
 import io.camunda.client.annotation.value.GlobalVariablesValue;
 import io.camunda.client.api.JsonMapper;
 import io.camunda.client.bean.BeanInfo;
@@ -78,25 +77,9 @@ public class GlobalVariablesAnnotationProcessor extends AbstractCamundaAnnotatio
     final List<GlobalVariablesValue> methodValues = new ArrayList<>();
     doWithMethods(
         beanInfo.getTargetClass(),
-        method -> {
-          final GlobalVariables[] annotations = method.getAnnotationsByType(GlobalVariables.class);
-          if (annotations.length > 0) {
-            final MethodInfo methodInfo = beanInfo.toMethodInfo(method);
-            for (final GlobalVariables annotation : annotations) {
-              final String tenantId = annotation.tenantId();
-              final String resolvedTenantId = tenantId.isEmpty() ? null : tenantId;
-              if (annotation.resources().length > 0) {
-                methodValues.add(
-                    new GlobalVariablesValue(
-                        Arrays.asList(annotation.resources()), resolvedTenantId, null));
-              } else {
-                methodValues.add(
-                    new GlobalVariablesValue(
-                        Collections.emptyList(), resolvedTenantId, methodInfo));
-              }
-            }
-          }
-        },
+        method ->
+            methodValues.addAll(
+                AnnotationUtil.getGlobalVariablesValuesFromMethods(beanInfo.toMethodInfo(method))),
         ReflectionUtils.USER_DECLARED_METHODS);
 
     if (!methodValues.isEmpty()) {

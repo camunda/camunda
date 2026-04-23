@@ -162,6 +162,28 @@ public class AnnotationUtil {
     return values;
   }
 
+  public static List<GlobalVariablesValue> getGlobalVariablesValuesFromMethods(
+      final MethodInfo methodInfo) {
+    final GlobalVariables[] annotations =
+        methodInfo.getMethod().getAnnotationsByType(GlobalVariables.class);
+    if (annotations.length == 0) {
+      return Collections.emptyList();
+    }
+    final List<GlobalVariablesValue> values = new ArrayList<>();
+    for (final GlobalVariables annotation : annotations) {
+      final String resolvedTenantId =
+          StringUtils.isEmpty(annotation.tenantId()) ? null : annotation.tenantId();
+      if (annotation.resources().length > 0) {
+        values.add(
+            new GlobalVariablesValue(
+                Arrays.asList(annotation.resources()), resolvedTenantId, null));
+      } else {
+        values.add(new GlobalVariablesValue(Collections.emptyList(), resolvedTenantId, methodInfo));
+      }
+    }
+    return values;
+  }
+
   private static GlobalVariablesValue fromGlobalVariablesAnnotation(
       final GlobalVariables annotation) {
     return new GlobalVariablesValue(
