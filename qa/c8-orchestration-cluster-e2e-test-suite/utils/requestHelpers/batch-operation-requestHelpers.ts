@@ -119,5 +119,10 @@ export async function expectBatchState(
   });
 }
 
+export const postMigrationAssertionOptions = {
+  intervals: [5_000, 10_000, 15_000, 25_000, 35_000],
+  timeout: 90_000,
+};
+
 export const notFoundDetail = (key: string) =>
   `Command 'SUSPEND' rejected with code 'NOT_FOUND': Expected to suspend a batch operation with key '${key}', but no such batch operation was found`;

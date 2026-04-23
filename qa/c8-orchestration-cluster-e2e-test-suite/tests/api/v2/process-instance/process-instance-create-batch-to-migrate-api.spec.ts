@@ -22,7 +22,11 @@ import {
 import {defaultAssertionOptions} from '../../../../utils/constants';
 import {APIRequestContext} from 'playwright-core';
 import {JSONDoc} from '@camunda8/sdk/dist/zeebe/types.js';
-import {expectBatchState, findUserTask} from '@requestHelpers';
+import {
+  expectBatchState,
+  findUserTask,
+  postMigrationAssertionOptions,
+} from '@requestHelpers';
 import {validateResponse} from 'json-body-assertions';
 
 /* eslint-disable playwright/expect-expect */
@@ -349,11 +353,6 @@ test.describe.serial('Create Process Instance Batch to Migrate Tests', () => {
       );
     });
   });
-
-  const postMigrationAssertionOptions = {
-    intervals: [5_000, 10_000, 15_000, 25_000, 35_000],
-    timeout: 90_000,
-  };
 
   const verifyBothInstancesAreAtElementId = async (
     request: APIRequestContext,
