@@ -18,6 +18,14 @@ package io.camunda.client.annotation;
 import io.camunda.client.annotation.GlobalVariables.GlobalVariablesContainer;
 import java.lang.annotation.*;
 
+/**
+ * Annotation to define global variables for Camunda Client operations. Can be applied at both class
+ * and method levels.
+ *
+ * <p>When applied at the class level, the resources added as parameter are loaded.
+ *
+ * <p>When applied at method level, the method is invoked to produce the according variables.
+ */
 @Repeatable(GlobalVariablesContainer.class)
 @Target({ElementType.TYPE, ElementType.METHOD})
 @Retention(RetentionPolicy.RUNTIME)
@@ -31,6 +39,8 @@ public @interface GlobalVariables {
    *
    * <p>Each JSON file should contain a flat JSON object where each key becomes a variable name and
    * the corresponding value becomes the variable value.
+   *
+   * <p>Only effective on class level.
    */
   String[] resources() default {};
 
