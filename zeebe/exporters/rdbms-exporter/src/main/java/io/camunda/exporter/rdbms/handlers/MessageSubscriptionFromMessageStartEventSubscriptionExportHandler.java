@@ -69,6 +69,11 @@ public class MessageSubscriptionFromMessageStartEventSubscriptionExportHandler
     final var value = record.getValue();
     final long pdKey = value.getProcessDefinitionKey();
     final Optional<CachedProcessEntity> cached = processCache.get(pdKey);
+    final var ext =
+        cached
+            .map(CachedProcessEntity::elementExtensionProperties)
+            .map(p -> p.get(value.getStartEventId()))
+            .orElse(Map.of());
     return new MessageSubscriptionDbModel.Builder()
         .messageSubscriptionKey(record.getKey())
         .processDefinitionId(value.getBpmnProcessId())
@@ -87,11 +92,9 @@ public class MessageSubscriptionFromMessageStartEventSubscriptionExportHandler
         .processDefinitionName(
             cached.map(CachedProcessEntity::name).filter(s -> !s.isBlank()).orElse(null))
         .processDefinitionVersion(cached.map(CachedProcessEntity::version).orElse(null))
-        .extensionProperties(
-            cached
-                .map(CachedProcessEntity::elementExtensionProperties)
-                .map(p -> p.get(value.getStartEventId()))
-                .orElse(Map.of()))
+        .extensionProperties(ext)
+        .toolName(ext.get("io.camunda.tool:name"))
+        .inboundConnectorType(ext.get("inbound.type"))
         .build();
   }
 }
