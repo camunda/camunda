@@ -9,6 +9,7 @@
 type VariableFormValues = {
   name: string;
   value: string;
+  variableKey?: string;
   newVariables?: {id: string; name: string; value: string}[];
   [key: `#${string}`]: string;
 };
