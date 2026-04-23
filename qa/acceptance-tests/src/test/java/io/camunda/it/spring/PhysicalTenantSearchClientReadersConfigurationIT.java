@@ -7,12 +7,13 @@
  */
 package io.camunda.it.spring;
 
+import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
+import static com.github.tomakehurst.wiremock.client.WireMock.post;
+import static com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching;
+import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.options;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import co.elastic.clients.elasticsearch.ElasticsearchClient;
-import co.elastic.clients.elasticsearch._types.Refresh;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import com.github.tomakehurst.wiremock.WireMockServer;
 import io.camunda.application.commons.search.NativeSearchClientsConfiguration;
 import io.camunda.application.commons.search.PhysicalTenantSearchClientReadersConfiguration;
 import io.camunda.application.commons.search.SearchClientConfiguration;
@@ -25,22 +26,14 @@ import io.camunda.search.connect.tenant.SearchClients;
 import io.camunda.search.connect.tenant.TenantConnectConfigResolver;
 import io.camunda.search.entities.ProcessInstanceEntity;
 import io.camunda.search.query.ProcessInstanceQuery;
-import io.camunda.search.schema.SchemaManager;
-import io.camunda.search.schema.config.SearchEngineConfiguration;
-import io.camunda.search.schema.elasticsearch.ElasticsearchEngineClient;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.SecurityContext;
 import io.camunda.security.reader.ResourceAccessController;
 import io.camunda.webapps.schema.descriptors.IndexDescriptors;
-import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
-import io.camunda.webapps.schema.entities.listview.ProcessInstanceForListViewEntity;
-import io.camunda.webapps.schema.entities.listview.ProcessInstanceState;
 import io.camunda.zeebe.gateway.rest.config.GatewayRestConfiguration;
-import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
 import jakarta.annotation.Resource;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
@@ -49,7 +42,6 @@ import org.springframework.context.annotation.Import;
 import org.springframework.context.annotation.Primary;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
-import org.testcontainers.elasticsearch.ElasticsearchContainer;
 
 @SpringJUnitConfig
 @TestPropertySource(
@@ -104,51 +96,41 @@ public class PhysicalTenantSearchClientReadersConfigurationIT {
         .containsExactly(PROCESS_INSTANCE_KEY_B);
   }
 
-  /**
-   * Attaches an anonymous security context so that {@link CamundaSearchClients} can execute a read.
-   * Authentication/authorization are not under test here, but the production wiring requires a
-   * non-null security context to drive the {@link
-   * io.camunda.search.clients.auth.ResourceAccessDelegatingController}.
-   */
   private static CamundaSearchClients anonymous(final CamundaSearchClients clients) {
     return clients.withSecurityContext(
         SecurityContext.of(b -> b.withAuthentication(CamundaAuthentication.anonymous())));
   }
 
-  // ---------------------------------------------------------------------------------------------
-  // Test-only Spring configuration: supplies what the imported production configs cannot, namely
-  // the Testcontainers, the multi-tenant TenantConnectConfigResolver override, and the schema
-  // bootstrap. Everything else (per-tenant SearchClients, IndexDescriptors map, executors, readers,
-  // and the tenant-aware CamundaSearchClients) is wired by Spring from the production configs.
-  // ---------------------------------------------------------------------------------------------
-
   @Configuration(proxyBeanMethods = false)
   static class TestConfig {
 
-    private static final ObjectMapper OBJECT_MAPPER =
-        new ObjectMapper().registerModule(new JavaTimeModule());
+    private static final String ELASTIC_PRODUCT_HEADER = "X-Elastic-Product";
+
+    private static final String ELASTIC_PRODUCT_VALUE = "Elasticsearch";
 
     @Bean(initMethod = "start", destroyMethod = "stop")
-    ElasticsearchContainer esTenantA() {
-      return TestSearchContainers.createDefeaultElasticsearchContainer();
+    WireMockServer wmTenantA() {
+      return new WireMockServer(options().dynamicPort());
     }
 
     @Bean(initMethod = "start", destroyMethod = "stop")
-    ElasticsearchContainer esTenantB() {
-      return TestSearchContainers.createDefeaultElasticsearchContainer();
+    WireMockServer wmTenantB() {
+      return new WireMockServer(options().dynamicPort());
     }
 
     @Bean
-    ConnectConfiguration connectConfiguration(final ElasticsearchContainer esTenantA) {
-      return connectConfig(esTenantA, TENANT_A);
+    ConnectConfiguration connectConfiguration(final WireMockServer wmTenantA) {
+      stubFakeEs(wmTenantA, PROCESS_INSTANCE_KEY_A);
+      return connectConfig(wmTenantA, TENANT_A);
     }
 
     @Bean
     @Primary
     TenantConnectConfigResolver tenantConnectConfigResolverOverride(
-        final ConnectConfiguration tenantAConfig, final ElasticsearchContainer esTenantB) {
+        final ConnectConfiguration tenantAConfig, final WireMockServer wmTenantB) {
+      stubFakeEs(wmTenantB, PROCESS_INSTANCE_KEY_B);
       return new TenantConnectConfigResolver(
-          Map.of(TENANT_A, tenantAConfig, TENANT_B, connectConfig(esTenantB, TENANT_B)));
+          Map.of(TENANT_A, tenantAConfig, TENANT_B, connectConfig(wmTenantB, TENANT_B)));
     }
 
     /** {@link GatewayRestConfiguration} is a plain POJO; register it as a bean for injection. */
@@ -166,82 +148,32 @@ public class PhysicalTenantSearchClientReadersConfigurationIT {
       return new AnonymousResourceAccessController();
     }
 
-    /**
-     * Bootstraps the schema and seeds one process-instance document per tenant after all per-tenant
-     * beans are wired. Returned as an {@link InitializingBean} so Spring drives initialization
-     * after dependency injection.
-     */
-    @Bean
-    InitializingBean schemaBootstrap(
-        final SearchClients searchClients,
-        final TenantConnectConfigResolver resolver,
-        @Qualifier("physicalTenantScopedIndexDescriptors")
-            final Map<String, IndexDescriptors> tenantDescriptors) {
-      return () -> {
-        for (final var entry : resolver.tenantConfigs().entrySet()) {
-          final var tenantId = entry.getKey();
-          startSchema(
-              entry.getValue(),
-              tenantDescriptors.get(tenantId),
-              searchClients.esClients().get(tenantId));
-        }
-        seedProcessInstance(
-            searchClients.esClients().get(TENANT_A),
-            tenantDescriptors.get(TENANT_A),
-            PROCESS_INSTANCE_KEY_A);
-        seedProcessInstance(
-            searchClients.esClients().get(TENANT_B),
-            tenantDescriptors.get(TENANT_B),
-            PROCESS_INSTANCE_KEY_B);
-      };
-    }
-
     private static ConnectConfiguration connectConfig(
-        final ElasticsearchContainer container, final String indexPrefix) {
+        final WireMockServer wm, final String indexPrefix) {
       final var cfg = new ConnectConfiguration();
-      cfg.setUrl("http://" + container.getHttpHostAddress());
+      cfg.setUrl("http://localhost:" + wm.port());
       cfg.setIndexPrefix(indexPrefix);
       cfg.setType(DatabaseType.ELASTICSEARCH.toString());
       return cfg;
     }
 
-    private static void startSchema(
-        final ConnectConfiguration connect,
-        final IndexDescriptors descriptors,
-        final ElasticsearchClient esClient) {
-      new SchemaManager(
-              new ElasticsearchEngineClient(esClient, OBJECT_MAPPER),
-              descriptors.indices(),
-              descriptors.templates(),
-              SearchEngineConfiguration.of(b -> b.connect(connect)),
-              OBJECT_MAPPER)
-          .startup();
+    private static void stubFakeEs(final WireMockServer wm, final long processInstanceKey) {
+      wm.stubFor(
+          post(urlPathMatching("/.*/_search"))
+              .willReturn(
+                  aResponse()
+                      .withStatus(200)
+                      .withHeader("Content-Type", "application/json")
+                      .withHeader(ELASTIC_PRODUCT_HEADER, ELASTIC_PRODUCT_VALUE)
+                      .withBody(searchHitsJson(processInstanceKey))));
     }
 
-    private static void seedProcessInstance(
-        final ElasticsearchClient esClient,
-        final IndexDescriptors descriptors,
-        final long processInstanceKey)
-        throws Exception {
-      final var listView = descriptors.get(ListViewTemplate.class);
-      final var entity =
-          new ProcessInstanceForListViewEntity()
-              .setId(String.valueOf(processInstanceKey))
-              .setKey(processInstanceKey)
-              .setProcessInstanceKey(processInstanceKey)
-              .setPartitionId(1)
-              .setProcessDefinitionKey(processInstanceKey + 1)
-              .setBpmnProcessId("process-" + processInstanceKey)
-              .setProcessVersion(1)
-              .setState(ProcessInstanceState.ACTIVE)
-              .setTenantId(ProcessInstanceForListViewEntity.DEFAULT_TENANT_IDENTIFIER);
-
-      esClient.index(
-          b ->
-              b.index(listView.getFullQualifiedName())
-                  .id(entity.getId())
-                  .document(entity)
-                  .refresh(Refresh.True));
+    private static String searchHitsJson(final long processInstanceKey) {
+      return """
+          {"took":1,"timed_out":false,"_shards":{"total":1,"successful":1,"failed":0},\
+          "hits":{"hits":[{"_index":"i","_id":"%d","_source":{"processInstanceKey":%d}}]}}
+          """
+          .formatted(processInstanceKey, processInstanceKey);
     }
   }
 }
