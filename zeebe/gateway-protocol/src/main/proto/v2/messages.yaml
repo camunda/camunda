@@ -272,6 +272,7 @@ components:
         - elementId
         - elementInstanceKey
         - extensionProperties
+        - inboundConnectorType
         - lastUpdatedDate
         - messageName
         - messageSubscriptionKey
@@ -283,6 +284,7 @@ components:
         - processDefinitionVersion
         - processInstanceKey
         - tenantId
+        - toolName
       properties:
         messageSubscriptionKey:
           allOf:
@@ -354,6 +356,18 @@ components:
           format: int32
           nullable: true
           description: The version of the process definition associated with this message subscription.
+        toolName:
+          type: string
+          nullable: true
+          description: |
+            Tool name extracted from the `io.camunda.tool:name` zeebe:property.
+            Null when the property is absent.
+        inboundConnectorType:
+          type: string
+          nullable: true
+          description: |
+            Inbound connector type extracted from the `inbound.type` zeebe:property.
+            Null when the property is absent.
         tenantId:
           $ref: 'identifiers.yaml#/components/schemas/TenantId'
 
@@ -377,6 +391,8 @@ components:
             - messageName
             - correlationKey
             - tenantId
+            - toolName
+            - inboundConnectorType
         order:
           $ref: 'search-models.yaml#/components/schemas/SortOrderEnum'
       required:
@@ -461,6 +477,14 @@ components:
           allOf:
             - $ref: 'filters.yaml#/components/schemas/IntegerFilterProperty'
           description: The version of the process definition associated with this message subscription.
+        toolName:
+          allOf:
+            - $ref: 'filters.yaml#/components/schemas/StringFilterProperty'
+          description: Filter by tool name extracted from the `io.camunda.tool:name` zeebe:property.
+        inboundConnectorType:
+          allOf:
+            - $ref: 'filters.yaml#/components/schemas/StringFilterProperty'
+          description: Filter by inbound connector type extracted from the `inbound.type` zeebe:property.
 
     CorrelatedMessageSubscriptionSearchQueryResult:
       required:
