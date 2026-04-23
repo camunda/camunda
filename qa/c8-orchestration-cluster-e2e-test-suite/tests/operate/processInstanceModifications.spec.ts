@@ -306,7 +306,6 @@ test.describe('Process Instance Modifications', () => {
     });
 
     test('Variables with the same name in different scopes are tracked as separate modifications', async ({
-      page,
       operateProcessInstancePage,
     }) => {
       await operateProcessInstancePage.addNewVariableModificationMode(
@@ -316,9 +315,7 @@ test.describe('Process Instance Modifications', () => {
       );
       const addedTokenInHistory = `${neverFailsHistoryItem}, this element instance is planned to be added`;
       await operateProcessInstancePage.clickTreeItem(addedTokenInHistory);
-      await expect(
-        page.getByText(/The element has no Variables/i),
-      ).toBeVisible();
+      await expect(operateProcessInstancePage.noVariablesText).toBeVisible();
 
       await operateProcessInstancePage.addNewVariableModificationMode(
         'newVariables[0]',
