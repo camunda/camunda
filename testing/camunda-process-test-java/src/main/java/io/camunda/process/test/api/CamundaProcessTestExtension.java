@@ -26,6 +26,7 @@ import io.camunda.process.test.impl.extension.CamundaProcessTestContextImpl;
 import io.camunda.process.test.impl.runtime.CamundaProcessTestContainerRuntime;
 import io.camunda.process.test.impl.runtime.CamundaProcessTestRuntime;
 import io.camunda.process.test.impl.runtime.CamundaProcessTestRuntimeBuilder;
+import io.camunda.process.test.impl.runtime.CamundaRuntimeHealthChecker;
 import io.camunda.process.test.impl.testresult.CamundaProcessTestResultCollector;
 import io.camunda.process.test.impl.testresult.CamundaProcessTestResultPrinter;
 import io.camunda.process.test.impl.testresult.ProcessTestResult;
@@ -41,7 +42,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
-import org.awaitility.Awaitility;
 import org.junit.jupiter.api.extension.AfterAllCallback;
 import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.BeforeAllCallback;
@@ -196,18 +196,7 @@ public class CamundaProcessTestExtension
   }
 
   private void waitForClusterReady() {
-    Awaitility.await("Wait for cluster to be ready")
-        .atMost(Duration.ofSeconds(10))
-        .pollInterval(Duration.ofMillis(500))
-        .ignoreExceptions()
-        .until(
-            () -> {
-              try (final CamundaClient camundaClient =
-                  runtime.getCamundaClientBuilderFactory().get().build()) {
-                camundaClient.newTopologyRequest().send().join();
-                return true;
-              }
-            });
+    CamundaRuntimeHealthChecker.waitUntilClusterReady(runtime.getCamundaClientBuilderFactory());
   }
 
   private boolean hasProcessTestExtension(final ExtensionContext context) {
