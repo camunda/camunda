@@ -106,6 +106,12 @@
       },
       "messageSubscriptionType": {
         "type": "keyword"
+      },
+      "toolName": {
+        "type": "keyword"
+      },
+      "inboundConnectorType": {
+        "type": "keyword"
       }
 		}
 	}

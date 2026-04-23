@@ -163,7 +163,17 @@ public class MessageSubscriptionQueryTransformerTest extends AbstractTransformer
                     b.messageSubscriptionTypeOperations(
                         Operation.in(MessageSubscriptionType.PROCESS_EVENT.name())),
             "messageSubscriptionType",
-            "PROCESS_EVENT"));
+            "PROCESS_EVENT"),
+        Arguments.of(
+            (Function<MessageSubscriptionFilter.Builder, ObjectBuilder<MessageSubscriptionFilter>>)
+                b -> b.toolNames("myTool"),
+            "toolName",
+            "myTool"),
+        Arguments.of(
+            (Function<MessageSubscriptionFilter.Builder, ObjectBuilder<MessageSubscriptionFilter>>)
+                b -> b.inboundConnectorTypes("io.camunda:http-webhook:1"),
+            "inboundConnectorType",
+            "io.camunda:http-webhook:1"));
   }
 
   @Test

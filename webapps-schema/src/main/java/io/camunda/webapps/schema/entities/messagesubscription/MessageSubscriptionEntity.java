@@ -66,6 +66,12 @@ public class MessageSubscriptionEntity
   @SinceVersion(value = "8.10.0", requireDefault = false)
   private String messageSubscriptionType;
 
+  @SinceVersion(value = "8.10.0", requireDefault = false)
+  private String toolName;
+
+  @SinceVersion(value = "8.10.0", requireDefault = false)
+  private String inboundConnectorType;
+
   /**
    * @deprecated since 8.9
    */
@@ -252,6 +258,24 @@ public class MessageSubscriptionEntity
     return this;
   }
 
+  public String getToolName() {
+    return toolName;
+  }
+
+  public MessageSubscriptionEntity setToolName(final String toolName) {
+    this.toolName = toolName;
+    return this;
+  }
+
+  public String getInboundConnectorType() {
+    return inboundConnectorType;
+  }
+
+  public MessageSubscriptionEntity setInboundConnectorType(final String inboundConnectorType) {
+    this.inboundConnectorType = inboundConnectorType;
+    return this;
+  }
+
   /**
    * @deprecated since 8.9
    */
@@ -344,7 +368,9 @@ public class MessageSubscriptionEntity
         processDefinitionName,
         processDefinitionVersion,
         extensionProperties,
-        messageSubscriptionType);
+        messageSubscriptionType,
+        toolName,
+        inboundConnectorType);
   }
 
   @Override
@@ -378,6 +404,8 @@ public class MessageSubscriptionEntity
         && Objects.equals(processDefinitionName, that.processDefinitionName)
         && Objects.equals(processDefinitionVersion, that.processDefinitionVersion)
         && Objects.equals(extensionProperties, that.extensionProperties)
-        && Objects.equals(messageSubscriptionType, that.messageSubscriptionType);
+        && Objects.equals(messageSubscriptionType, that.messageSubscriptionType)
+        && Objects.equals(toolName, that.toolName)
+        && Objects.equals(inboundConnectorType, that.inboundConnectorType);
   }
 }

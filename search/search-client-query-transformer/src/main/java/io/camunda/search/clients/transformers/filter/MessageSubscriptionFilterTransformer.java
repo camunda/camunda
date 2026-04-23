@@ -19,12 +19,14 @@ import static io.camunda.webapps.schema.descriptors.template.MessageSubscription
 import static io.camunda.webapps.schema.descriptors.template.MessageSubscriptionTemplate.EVENT_SOURCE_TYPE;
 import static io.camunda.webapps.schema.descriptors.template.MessageSubscriptionTemplate.FLOW_NODE_ID;
 import static io.camunda.webapps.schema.descriptors.template.MessageSubscriptionTemplate.FLOW_NODE_INSTANCE_KEY;
+import static io.camunda.webapps.schema.descriptors.template.MessageSubscriptionTemplate.INBOUND_CONNECTOR_TYPE;
 import static io.camunda.webapps.schema.descriptors.template.MessageSubscriptionTemplate.KEY;
 import static io.camunda.webapps.schema.descriptors.template.MessageSubscriptionTemplate.MESSAGE_SUBSCRIPTION_STATE;
 import static io.camunda.webapps.schema.descriptors.template.MessageSubscriptionTemplate.MESSAGE_SUBSCRIPTION_TYPE;
 import static io.camunda.webapps.schema.descriptors.template.MessageSubscriptionTemplate.PROCESS_DEFINITION_NAME;
 import static io.camunda.webapps.schema.descriptors.template.MessageSubscriptionTemplate.PROCESS_DEFINITION_VERSION;
 import static io.camunda.webapps.schema.descriptors.template.MessageSubscriptionTemplate.PROCESS_KEY;
+import static io.camunda.webapps.schema.descriptors.template.MessageSubscriptionTemplate.TOOL_NAME;
 
 import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.filter.MessageSubscriptionFilter;
@@ -60,7 +62,9 @@ public class MessageSubscriptionFilterTransformer
         stringOperations("metadata.correlationKey", filter.correlationKeyOperations()),
         stringOperations(TENANT_ID, filter.tenantIdOperations()),
         stringOperations(PROCESS_DEFINITION_NAME, filter.processDefinitionNameOperations()),
-        intOperations(PROCESS_DEFINITION_VERSION, filter.processDefinitionVersionOperations()));
+        intOperations(PROCESS_DEFINITION_VERSION, filter.processDefinitionVersionOperations()),
+        stringOperations(TOOL_NAME, filter.toolNameOperations()),
+        stringOperations(INBOUND_CONNECTOR_TYPE, filter.inboundConnectorTypeOperations()));
   }
 
   @Override
