@@ -156,7 +156,7 @@ public abstract class AbstractProcessInstanceArchiverJobIT<T extends ProcessInst
           // check that the process is no longer in the main index
           verifyMoved(listViewTemplate, client, processInstance, "2020-01-01");
           for (final var flowNode : flowNodes) {
-            verifyMoved(listViewTemplate, client, flowNode, "2020-01-01");
+            verifyMoved(listViewTemplate, client, flowNode, processInstance, "2020-01-01");
           }
         });
   }
@@ -184,7 +184,7 @@ public abstract class AbstractProcessInstanceArchiverJobIT<T extends ProcessInst
 
           store(listViewTemplate, client, processInstance);
           for (final var flowNode : flowNodes) {
-            store(flowNodeInstanceTemplate, client, processInstance, flowNode);
+            store(flowNodeInstanceTemplate, client, flowNode);
           }
 
           client.refresh();
@@ -266,14 +266,35 @@ public abstract class AbstractProcessInstanceArchiverJobIT<T extends ProcessInst
       final ExporterEntity<?> entity,
       final String datedIndexSuffix)
       throws IOException {
+    verifyMoved(templateDescriptor, client, entity, (String) null, datedIndexSuffix);
+  }
+
+  private void verifyMoved(
+      final IndexTemplateDescriptor templateDescriptor,
+      final SearchClientAdapter client,
+      final ExporterEntity<?> parent,
+      final ExporterEntity<?> entity,
+      final String datedIndexSuffix)
+      throws IOException {
+    verifyMoved(templateDescriptor, client, entity, parent.getId(), datedIndexSuffix);
+  }
+
+  private void verifyMoved(
+      final IndexTemplateDescriptor templateDescriptor,
+      final SearchClientAdapter client,
+      final ExporterEntity<?> entity,
+      final String routing,
+      final String datedIndexSuffix)
+      throws IOException {
     // should no longer be in the original index
     final var originalIndexEntity =
-        client.get(entity.getId(), templateDescriptor.getFullQualifiedName(), entity.getClass());
+        client.get(
+            entity.getId(), routing, templateDescriptor.getFullQualifiedName(), entity.getClass());
     assertThat(originalIndexEntity).isNull();
 
     // should now be in the dated index
     final var dateIndex = templateDescriptor.getFullQualifiedName() + datedIndexSuffix;
-    final var newIndexEntity = client.get(entity.getId(), dateIndex, entity.getClass());
+    final var newIndexEntity = client.get(entity.getId(), routing, dateIndex, entity.getClass());
     assertThat(newIndexEntity).isEqualTo(entity);
   }
 
