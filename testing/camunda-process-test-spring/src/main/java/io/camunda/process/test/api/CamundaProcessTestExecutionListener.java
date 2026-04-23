@@ -39,6 +39,7 @@ import io.camunda.process.test.impl.proxy.ZeebeClientProxy;
 import io.camunda.process.test.impl.runtime.CamundaProcessTestContainerRuntime;
 import io.camunda.process.test.impl.runtime.CamundaProcessTestRuntime;
 import io.camunda.process.test.impl.runtime.CamundaProcessTestRuntimeBuilder;
+import io.camunda.process.test.impl.runtime.CamundaRuntimeHealthChecker;
 import io.camunda.process.test.impl.runtime.CamundaSpringProcessTestRuntimeBuilder;
 import io.camunda.process.test.impl.testCases.CamundaTestCaseRunner;
 import io.camunda.process.test.impl.testresult.CamundaProcessTestResultCollector;
@@ -53,7 +54,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
-import org.awaitility.Awaitility;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.Ordered;
@@ -300,18 +300,7 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
   }
 
   private void waitForClusterReady() {
-    Awaitility.await("Wait for cluster to be ready")
-        .atMost(Duration.ofSeconds(10))
-        .pollInterval(Duration.ofMillis(500))
-        .ignoreExceptions()
-        .until(
-            () -> {
-              try (final CamundaClient camundaClient =
-                  runtime.getCamundaClientBuilderFactory().get().build()) {
-                camundaClient.newTopologyRequest().send().join();
-                return true;
-              }
-            });
+    CamundaRuntimeHealthChecker.waitUntilClusterReady(runtime.getCamundaClientBuilderFactory());
   }
 
   private void printTestResults() {
