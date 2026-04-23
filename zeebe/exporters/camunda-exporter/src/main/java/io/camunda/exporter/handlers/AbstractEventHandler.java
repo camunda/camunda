@@ -14,6 +14,7 @@ import static io.camunda.webapps.schema.descriptors.template.MessageSubscription
 import static io.camunda.webapps.schema.descriptors.template.MessageSubscriptionTemplate.EVENT_SOURCE_TYPE;
 import static io.camunda.webapps.schema.descriptors.template.MessageSubscriptionTemplate.EXTENSION_PROPERTIES;
 import static io.camunda.webapps.schema.descriptors.template.MessageSubscriptionTemplate.FLOW_NODE_ID;
+import static io.camunda.webapps.schema.descriptors.template.MessageSubscriptionTemplate.INBOUND_CONNECTOR_TYPE;
 import static io.camunda.webapps.schema.descriptors.template.MessageSubscriptionTemplate.INCIDENT_ERROR_MSG;
 import static io.camunda.webapps.schema.descriptors.template.MessageSubscriptionTemplate.INCIDENT_ERROR_TYPE;
 import static io.camunda.webapps.schema.descriptors.template.MessageSubscriptionTemplate.JOB_CUSTOM_HEADERS;
@@ -29,6 +30,7 @@ import static io.camunda.webapps.schema.descriptors.template.MessageSubscription
 import static io.camunda.webapps.schema.descriptors.template.MessageSubscriptionTemplate.PROCESS_DEFINITION_NAME;
 import static io.camunda.webapps.schema.descriptors.template.MessageSubscriptionTemplate.PROCESS_DEFINITION_VERSION;
 import static io.camunda.webapps.schema.descriptors.template.MessageSubscriptionTemplate.PROCESS_KEY;
+import static io.camunda.webapps.schema.descriptors.template.MessageSubscriptionTemplate.TOOL_NAME;
 
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.entities.messagesubscription.EventSourceType;
@@ -97,6 +99,8 @@ public abstract class AbstractEventHandler<R extends RecordValue>
     jsonMap.put(PROCESS_DEFINITION_NAME, entity.getProcessDefinitionName());
     jsonMap.put(PROCESS_DEFINITION_VERSION, entity.getProcessDefinitionVersion());
     jsonMap.put(EXTENSION_PROPERTIES, entity.getExtensionProperties());
+    jsonMap.put(TOOL_NAME, entity.getToolName());
+    jsonMap.put(INBOUND_CONNECTOR_TYPE, entity.getInboundConnectorType());
     jsonMap.put(positionFieldName, positionFieldValue);
     if (entity.getMetadata() != null) {
       final Map<String, Object> metadataMap = new HashMap<>();
@@ -137,11 +141,15 @@ public abstract class AbstractEventHandler<R extends RecordValue>
       entity.setProcessDefinitionName(
           cached.map(CachedProcessEntity::name).filter(s -> !s.isBlank()).orElse(null));
       entity.setProcessDefinitionVersion(cached.map(CachedProcessEntity::version).orElse(null));
-      entity.setExtensionProperties(
+      final Map<String, String> ext =
           cached
               .map(CachedProcessEntity::elementExtensionProperties)
               .map(p -> p.get(elementId))
-              .orElse(Map.of()));
+              .orElse(Map.of());
+      entity
+          .setExtensionProperties(ext)
+          .setToolName(ext.get("io.camunda.tool:name"))
+          .setInboundConnectorType(ext.get("inbound.type"));
     }
   }
 }
