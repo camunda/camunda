@@ -20,5 +20,5 @@ export const Route = createFileRoute('/')({
 });
 
 function App() {
-	return <main></main>;
+	return null;
 }

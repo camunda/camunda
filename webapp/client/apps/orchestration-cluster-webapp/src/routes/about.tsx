@@ -13,9 +13,5 @@ export const Route = createFileRoute('/about')({
 });
 
 function About() {
-	return (
-		<main>
-			<h1>about</h1>
-		</main>
-	);
+	return null;
 }
