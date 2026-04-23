@@ -214,6 +214,7 @@ mwnw*                       @camunda/monorepo-devops-team
 # Zeebe QA
 /zeebe/qa/util/             @camunda/core-features
 /zeebe/qa/update-tests/     @camunda/core-features
+/zeebe/qa/update-tests/src/test/java/io/camunda/zeebe/test/backup/ @camunda/zeebe-distributed-platform
 /zeebe/qa/integration-tests/ @camunda/core-features
 /zeebe/qa/integration-tests/src/test/java/io/camunda/zeebe/it/engine/ @camunda/core-features
 
