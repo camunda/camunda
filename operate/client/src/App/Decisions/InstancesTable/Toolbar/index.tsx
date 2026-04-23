@@ -22,7 +22,6 @@ import {useBatchOperationSuccessNotification} from 'modules/hooks/useBatchOperat
 import {handleOperationError} from 'modules/utils/notifications';
 import {tracking} from 'modules/tracking';
 import {pluralSuffix} from 'modules/utils/pluralSuffix';
-import {IS_DELETE_DI_BATCH_OPERATION_ENABLED} from 'modules/feature-flags';
 
 type Props = {
   selectedCount: number;
@@ -74,14 +73,12 @@ const Toolbar: React.FC<Props> = observer(({selectedCount}) => {
             }
           }}
         >
-          {IS_DELETE_DI_BATCH_OPERATION_ENABLED && (
-            <TableBatchAction
-              renderIcon={TrashCan}
-              onClick={() => setShowDeleteModal(true)}
-            >
-              Delete
-            </TableBatchAction>
-          )}
+          <TableBatchAction
+            renderIcon={TrashCan}
+            onClick={() => setShowDeleteModal(true)}
+          >
+            Delete
+          </TableBatchAction>
         </TableBatchActions>
       </TableToolbar>
 
