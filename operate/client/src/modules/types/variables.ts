@@ -7,8 +7,14 @@
  */
 
 type VariableFormValues = {
+<<<<<<< HEAD
   [key: string]: string;
 } & {
+=======
+  name: string;
+  value: string;
+  variableKey?: string;
+>>>>>>> dbca852b (fix: truncated variables create/update stuck in loading state)
   newVariables?: {id: string; name: string; value: string}[];
 };
 
