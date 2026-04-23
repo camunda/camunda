@@ -3,9 +3,9 @@ set -euo pipefail
 
 # --- Constants ---
 ORG_NAME="camunda"
-REPO_NAME="camunda"
 
 # --- Defaults ---
+REPO_NAME="camunda"
 PROJECT_ID="173"
 BRANCH="main"
 LIMIT=20
@@ -23,6 +23,7 @@ Usage: $0 [OPTIONS]
 Batch-trigger the urgency automation workflow for issues in a project.
 
 Options:
+  --repo <name>        Repository name (default: camunda)
   --project <id>       Project number to scope issue search (default: 173)
   --branch <ref>       Branch to trigger workflow on (default: main)
   --limit <n>          Max issues to process (default: 20)
@@ -38,13 +39,14 @@ Examples:
   $0 --type Bug --skip-assigned         # Only bugs without urgency
   $0 --project 187 --type Bug --limit 50 --dry-run
   $0 --label "severity/high" --limit 10
-  $0 --type Task --delay 2 --branch my-feature-branch
+  $0 --repo web-modeler --project 187 --skip-assigned
 EOF
   exit 0
 }
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
+    --repo)       REPO_NAME="$2"; shift 2 ;;
     --project)    PROJECT_ID="$2"; shift 2 ;;
     --branch)     BRANCH="$2"; shift 2 ;;
     --limit)      LIMIT="$2"; shift 2 ;;
@@ -67,6 +69,7 @@ fi
 
 # --- Summary ---
 echo "Configuration:"
+echo "  Repository:    ${ORG_NAME}/${REPO_NAME}"
 echo "  Project:       #$PROJECT_ID"
 echo "  Branch:        $BRANCH"
 echo "  Limit:         $LIMIT"
