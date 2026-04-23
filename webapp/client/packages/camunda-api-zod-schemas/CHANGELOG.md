@@ -1,5 +1,26 @@
 # Changelog
 
+## v0.0.59
+
+### 🚀 Enhancements
+
+- Sync new properties to `MessageSubscription` that result in support for MCP Tools ([#51241](https://github.com/camunda/camunda/issues/51241))
+  - `messageSubscriptionType` enum
+  - `extensionProperties` (is a new loosely typed record)
+  - `processDefinitionName`
+  - `processDefinitionVersion`
+  - `toolName`
+  - `inboundConnectorType`
+
+### 🩹 Fixes
+
+- Mark `elementInstanceKey` and `correlationKey` as `nullable` in `CorrelatedMessageSubscription`
+- Mark `elementInstanceKey`, `correlationKey`, `processDefinitionKey`, and `processInstanceKey` as `nullable` in `MessageSubscription`
+
+### ❤️ Contributors
+
+- Christoph Fricke ([@christoph-fricke](https://github.com/christoph-fricke))
+
 ## v0.0.58
 
 ### 🚀 Enhancements
