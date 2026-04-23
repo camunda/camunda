@@ -401,19 +401,92 @@ PLANS = {
 
 # ── Auth / Session ────────────────────────────────────────────────────────────
 
-def make_session(optimize_url: str, username: str, password: str) -> requests.Session:
-    """Login to Optimize and return a session with the auth cookie set."""
+def make_session(
+    optimize_url: str,
+    username: str,
+    password: str,
+    keycloak_url: str = "",
+    token: str = "",
+) -> requests.Session:
+    """
+    Return an authenticated requests.Session for the Optimize API.
+
+    Auth strategy (first that succeeds):
+      1. --token  supplied directly — set as X-Optimize-Authorization_0 cookie
+      2. --keycloak-url  — fetch token via Keycloak password grant, set as cookie
+      3. POST /api/authentication  — classic embedded-mode username/password login
+    """
     session = requests.Session()
+
+    # ── Strategy 1: bare token provided by caller ──────────────────────────
+    if token:
+        session.cookies.set("X-Optimize-Authorization_0", token)
+        print("[auth] Using supplied token")
+        return session
+
+    # ── Strategy 2: Keycloak password grant ───────────────────────────────
+    if keycloak_url:
+        token = _keycloak_token(keycloak_url, username, password)
+        _set_auth_cookie(session, token)
+        print(f"[auth] Keycloak token obtained for {username}")
+        return session
+
+    # ── Strategy 3: classic POST /api/authentication (embedded / test mode) ─
     resp = session.post(
         f"{optimize_url}/api/authentication",
         json={"username": username, "password": password},
         timeout=30,
     )
-    if resp.status_code not in (200, 204):
-        print(f"[ERROR] Login failed ({resp.status_code}): {resp.text[:200]}", file=sys.stderr)
+    if resp.status_code in (200, 204):
+        print(f"[auth] Logged in as {username} (classic auth)")
+        return session
+
+    # Classic auth not available — give a helpful error
+    print(
+        f"[ERROR] Login failed ({resp.status_code}).\n"
+        "If Optimize is running in CCSM (self-managed with Identity/Keycloak) mode, "
+        "use one of:\n"
+        "  --keycloak-url http://localhost:18080/auth/realms/camunda-platform"
+        "/protocol/openid-connect/token\n"
+        "  --token <your-keycloak-access-token>",
+        file=sys.stderr,
+    )
+    sys.exit(1)
+
+
+def _keycloak_token(token_url: str, username: str, password: str) -> str:
+    """Obtain an access token from Keycloak using the resource-owner password grant."""
+    resp = requests.post(
+        token_url,
+        data={
+            "grant_type": "password",
+            "client_id":  "optimize",
+            "username":   username,
+            "password":   password,
+            "scope":      "openid",
+        },
+        timeout=30,
+    )
+    if not resp.ok:
+        print(
+            f"[ERROR] Keycloak token request failed ({resp.status_code}): {resp.text[:300]}",
+            file=sys.stderr,
+        )
         sys.exit(1)
-    print(f"[auth] Logged in as {username}")
-    return session
+    return resp.json()["access_token"]
+
+
+def _set_auth_cookie(session: requests.Session, token: str):
+    """
+    Chunk the token into ≤4096-byte cookies matching Optimize's naming scheme:
+    X-Optimize-Authorization_0, X-Optimize-Authorization_1, …
+    """
+    chunk = 4096
+    for i, start in enumerate(range(0, len(token), chunk)):
+        session.cookies.set(
+            f"X-Optimize-Authorization_{i}",
+            token[start : start + chunk],
+        )
 
 
 # ── Report payload builder ────────────────────────────────────────────────────
@@ -797,7 +870,7 @@ def run(args):
                          args.es_password or "", repo_root)
             es_flush_and_merge(es_url, es_auth)
 
-        session = make_session(optimize_url, username, password)
+        session = make_session(optimize_url, username, password, args.keycloak_url, args.token)
         wait_for_import(optimize_url, session, args.import_wait)
 
         if phase == "seed":
@@ -805,7 +878,7 @@ def run(args):
 
     # ── Phase: create-reports ─────────────────────────────────────────────────
     if phase in ("create-reports", "all"):
-        session = make_session(optimize_url, username, password)
+        session = make_session(optimize_url, username, password, args.keycloak_url, args.token)
         process_keys = discover_process_keys(optimize_url, session)
         create_reports(optimize_url, session, process_keys, ids_file)
 
@@ -821,7 +894,7 @@ def run(args):
 
         report_ids: dict = json.loads(ids_file.read_text())
         rows = load_csv(csv_path)
-        session = make_session(optimize_url, username, password)
+        session = make_session(optimize_url, username, password, args.keycloak_url, args.token)
 
         total = len(PLANS) * len(datasets)
         done  = 0
@@ -903,6 +976,18 @@ def main():
                         help="ES basic-auth password (optional)")
     parser.add_argument("--auth", default="demo:demo",
                         help="Optimize credentials as user:password")
+    parser.add_argument(
+        "--keycloak-url", default="",
+        help=(
+            "Keycloak token endpoint for CCSM mode, e.g. "
+            "http://localhost:18080/auth/realms/camunda-platform"
+            "/protocol/openid-connect/token"
+        ),
+    )
+    parser.add_argument(
+        "--token", default="",
+        help="Pre-obtained Keycloak/Identity access token (skips login entirely)",
+    )
     parser.add_argument("--repo-root", default=str(Path(__file__).parent.parent.parent),
                         help="Path to the camunda monorepo root (for mvnw)")
     parser.add_argument("--ids-file", default="report_ids.json",
