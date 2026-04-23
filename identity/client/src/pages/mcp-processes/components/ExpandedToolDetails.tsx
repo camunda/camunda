@@ -9,9 +9,8 @@
 import { FC } from "react";
 import { heading01, spacing06 } from "@carbon/elements";
 import styled from "styled-components";
-import Modal, { UseEntityModalProps } from "src/components/modal";
 import useTranslate from "src/utility/localization";
-import { type McpProcessTool } from "../useMcpProcessTools";
+import type { McpProcessTool } from "../useMcpProcessTools";
 
 const SectionHeading = styled.h3`
   font-size: ${heading01.fontSize};
@@ -23,44 +22,43 @@ const SectionHeading = styled.h3`
 const SectionBody = styled.p`
   white-space: pre-wrap;
   word-break: break-word;
+  max-inline-size: 80ch; // Keep descriptions at a readable line length
+
+  &[data-fallback="true"] {
+    font-style: italic;
+    color: var(--cds-text-secondary);
+  }
 
   &:not(:last-child) {
     margin-block-end: ${spacing06};
   }
 `;
 
-const DetailsModal: FC<UseEntityModalProps<McpProcessTool>> = ({
-  open,
-  onClose,
-  entity,
-}) => {
+export const ExpandedToolDetails: FC<{ tool: McpProcessTool }> = ({ tool }) => {
   const { t } = useTranslate("mcpProcesses");
-  const tool = entity.toolData;
+  const data = tool.toolData;
 
   return (
-    <Modal
-      passiveModal
-      preventCloseOnClickOutside
-      open={open}
-      onClose={onClose}
-      headline={t("detailsHeadline", { toolName: entity.toolName })}
-      size="md"
-    >
-      {/* Flat content to make use of Carbon's built-in modal content alignment:
-      https://carbondesignsystem.com/components/modal/usage/#alignment */}
+    <>
       <SectionHeading>{t("toolPurpose")}</SectionHeading>
-      <SectionBody>{tool.purpose ?? t("informationMissing")}</SectionBody>
+      <SectionBody data-fallback={!data.purpose}>
+        {data.purpose ?? t("informationMissing")}
+      </SectionBody>
 
       <SectionHeading>{t("toolResults")}</SectionHeading>
-      <SectionBody>{tool.results ?? t("informationMissing")}</SectionBody>
+      <SectionBody data-fallback={!data.results}>
+        {data.results ?? t("informationMissing")}
+      </SectionBody>
 
       <SectionHeading>{t("toolWhenToUse")}</SectionHeading>
-      <SectionBody>{tool.whenToUse ?? t("informationMissing")}</SectionBody>
+      <SectionBody data-fallback={!data.whenToUse}>
+        {data.whenToUse ?? t("informationMissing")}
+      </SectionBody>
 
       <SectionHeading>{t("toolWhenNotToUse")}</SectionHeading>
-      <SectionBody>{tool.whenNotToUse ?? t("informationMissing")}</SectionBody>
-    </Modal>
+      <SectionBody data-fallback={!data.whenNotToUse}>
+        {data.whenNotToUse ?? t("informationMissing")}
+      </SectionBody>
+    </>
   );
 };
-
-export default DetailsModal;
