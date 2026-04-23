@@ -8,6 +8,7 @@ from camunda_load_test_mcp.server import (
     get_load_test_status,
     list_load_tests,
     stop_load_test,
+    discover_load_tests,
 )
 
 
@@ -223,3 +224,80 @@ def test_stop_load_test_result_contains_warning():
         result = stop_load_test(namespace="c8-test-20260416")
 
     assert "all" in result.lower() or "namespaces" in result.lower()
+
+
+# ── discover_load_tests ──────────────────────────────────────────────────────
+
+_RUN_SUMMARY = {
+    "id": 101,
+    "status": "completed",
+    "conclusion": "success",
+    "created_at": "2026-04-23T10:00:00Z",
+}
+_RUN_DETAIL = {
+    "id": 101,
+    "status": "completed",
+    "conclusion": "success",
+    "inputs": {"name": "my-test-20260423", "ref": "feature/x", "scenario": "typical", "ttl": "2"},
+}
+
+
+def test_discover_load_tests_shows_gha_runs():
+    with patch("camunda_load_test_mcp.server.github.get_current_user", return_value="ChrisKujawa"), \
+         patch("camunda_load_test_mcp.server.github.list_runs_by_actor", return_value=[_RUN_SUMMARY]), \
+         patch("camunda_load_test_mcp.server.github.get_run_by_id", return_value=_RUN_DETAIL):
+        result = discover_load_tests(limit=20)
+
+    assert "c8-my-test-20260423" in result
+    assert "ChrisKujawa" in result
+    assert "feature/x" in result
+
+
+def test_discover_load_tests_merges_local_state():
+    state_module.write_entry("c8-my-test-20260423", {
+        "run_id": 101,
+        "branch": "feature/x",
+        "scenario": "latency",  # local override
+        "image_tag": "",
+        "started_at": "2026-04-23T10:00:00Z",
+        "ttl_days": 2,
+    })
+
+    with patch("camunda_load_test_mcp.server.github.get_current_user", return_value="ChrisKujawa"), \
+         patch("camunda_load_test_mcp.server.github.list_runs_by_actor", return_value=[_RUN_SUMMARY]), \
+         patch("camunda_load_test_mcp.server.github.get_run_by_id", return_value=_RUN_DETAIL):
+        result = discover_load_tests(limit=20)
+
+    assert "c8-my-test-20260423" in result
+    assert "latency" in result  # local state scenario preferred
+
+
+def test_discover_load_tests_empty_when_no_runs():
+    with patch("camunda_load_test_mcp.server.github.get_current_user", return_value="ChrisKujawa"), \
+         patch("camunda_load_test_mcp.server.github.list_runs_by_actor", return_value=[]):
+        result = discover_load_tests()
+
+    assert "ChrisKujawa" in result
+    assert "no" in result.lower()
+
+
+def test_discover_load_tests_skips_runs_without_name_input():
+    run_without_name = {**_RUN_SUMMARY}
+    detail_without_name = {"id": 101, "inputs": {}}
+
+    with patch("camunda_load_test_mcp.server.github.get_current_user", return_value="ChrisKujawa"), \
+         patch("camunda_load_test_mcp.server.github.list_runs_by_actor", return_value=[run_without_name]), \
+         patch("camunda_load_test_mcp.server.github.get_run_by_id", return_value=detail_without_name):
+        result = discover_load_tests(limit=20)
+
+    assert "no" in result.lower()
+
+
+def test_discover_load_tests_uses_list_runs_by_actor_not_recent_runs():
+    with patch("camunda_load_test_mcp.server.github.get_current_user", return_value="ChrisKujawa") as mock_user, \
+         patch("camunda_load_test_mcp.server.github.list_runs_by_actor", return_value=[]) as mock_list, \
+         patch("camunda_load_test_mcp.server.github.list_recent_runs") as mock_recent:
+        discover_load_tests(limit=15)
+
+    mock_list.assert_called_once_with(github_module.WORKFLOW_LOAD_TEST, "ChrisKujawa", limit=15)
+    mock_recent.assert_not_called()

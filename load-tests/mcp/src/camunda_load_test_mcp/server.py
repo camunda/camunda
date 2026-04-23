@@ -37,6 +37,7 @@ def create_server() -> FastMCP:
     mcp.tool()(update_load_test)
     mcp.tool()(get_load_test_status)
     mcp.tool()(list_load_tests)
+    mcp.tool()(discover_load_tests)
     mcp.tool()(stop_load_test)
     return mcp
 
@@ -253,6 +254,62 @@ def list_load_tests(limit: int = 10) -> str:
             f"{namespace:<40} {branch:<30} {entry.get('scenario', ''):<12} "
             f"{status_str:<20} {expiry}"
         )
+
+    return "\n".join(lines)
+
+
+def discover_load_tests(limit: int = 20) -> str:
+    """
+    Discover load tests started by the current GitHub user, including runs not
+    tracked in local state (e.g. started via gh CLI or the GitHub UI).
+
+    Queries GitHub Actions directly and merges with local state where available.
+
+    Args:
+        limit: Maximum number of recent GHA runs to inspect (default: 20).
+    """
+    user = github.get_current_user()
+    runs = github.list_runs_by_actor(github.WORKFLOW_LOAD_TEST, user, limit=limit)
+
+    if not runs:
+        return f"No recent load test runs found for {user}."
+
+    local = dict(state.list_entries(limit=10000))
+
+    header = f"{'Namespace':<42} {'Branch':<30} {'Scenario':<12} {'Status':<25} Started"
+    separator = "-" * 130
+    lines = [f"Recent load test runs by {user}:", "", header, separator]
+
+    found = 0
+    for run in runs:
+        try:
+            detail = github.get_run_by_id(run["id"])
+            inputs = detail.get("inputs") or {}
+        except Exception:
+            inputs = {}
+
+        name = inputs.get("name", "")
+        if not name:
+            continue
+
+        namespace = f"c8-{name}"
+        found += 1
+
+        status = run.get("status", "unknown")
+        conclusion = run.get("conclusion") or ""
+        status_str = status + (f"/{conclusion}" if conclusion else "")
+
+        local_entry = local.get(namespace, {})
+        branch = (local_entry.get("branch") or inputs.get("ref", ""))[:28]
+        scenario = local_entry.get("scenario") or inputs.get("scenario", "")
+        started_at = run.get("created_at", "")[:16].replace("T", " ")
+
+        lines.append(
+            f"{namespace:<42} {branch:<30} {scenario:<12} {status_str:<25} {started_at}"
+        )
+
+    if found == 0:
+        return f"No load test runs with a tracked namespace found for {user}."
 
     return "\n".join(lines)
 
