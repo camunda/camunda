@@ -20,6 +20,7 @@ import io.camunda.search.exception.CamundaSearchException;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.exception.ErrorMapper;
+import io.camunda.service.exception.ServiceException;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerDeleteResourceRequest;
@@ -161,18 +162,34 @@ public final class ResourceServices extends ApiServices<ResourceServices> {
     } else {
       return sendBrokerRequest(
               new BrokerFetchResourceRequest().setResourceKey(resourceKey), authentication)
-          .thenApply(
-              record ->
-                  new DeployedResourceEntity(
-                      record.getResourceKey(),
-                      record.getResourceId(),
-                      record.getResourceName(),
-                      record.getVersion(),
-                      record.getVersionTag(),
-                      record.getDeploymentKey(),
-                      record.getTenantId(),
-                      includeContent ? record.getResourceProp() : null));
+          .handle(
+              (record, error) -> {
+                if (error != null) {
+                  // Normalize error message to match secondary storage format
+                  throw mapResourceNotFoundError(error, resourceKey);
+                }
+                return new DeployedResourceEntity(
+                    record.getResourceKey(),
+                    record.getResourceId(),
+                    record.getResourceName(),
+                    record.getVersion(),
+                    record.getVersionTag(),
+                    record.getDeploymentKey(),
+                    record.getTenantId(),
+                    includeContent ? record.getResourceProp() : null);
+              });
     }
+  }
+
+  // Normalizes NOT_FOUND errors to match secondary storage format
+  private ServiceException mapResourceNotFoundError(final Throwable error, final long resourceKey) {
+    final ServiceException mappedException = ErrorMapper.mapError(error);
+    if (mappedException.getStatus() == ServiceException.Status.NOT_FOUND) {
+      return new ServiceException(
+          String.format("Resource with key '%d' not found", resourceKey),
+          ServiceException.Status.NOT_FOUND);
+    }
+    return mappedException;
   }
 
   public record DeployResourcesRequest(Map<String, byte[]> resources, String tenantId) {}
