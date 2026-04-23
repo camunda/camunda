@@ -33,12 +33,13 @@ deprecate a stable branch, verify that this workflow is updated accordingly.
 
 ## Backporting Load Test Changes
 
-The load test infrastructure was restructured in 8.9. When backporting changes to
-stable/8.6, 8.7, or 8.8, you must adapt paths and references manually.
+The load test infrastructure was originally restructured in 8.9. `stable/8.7` and
+`stable/8.8` have since been retroactively aligned to use `load-tests/` as well.
+When backporting changes to stable/8.6, you must adapt paths and references manually.
 
 ### Directory mapping
 
-| Component            | stable/8.6, 8.7, 8.8          | stable/8.9+ / main       |
+| Component            | stable/8.6                     | stable/8.7+ / main       |
 |----------------------|--------------------------------|--------------------------|
 | Helm values files    | `zeebe/benchmarks/`            | `load-tests/`            |
 | Load tester code     | `zeebe/benchmarks/project/`    | `load-tests/load-tester/`|
@@ -55,6 +56,6 @@ stable/8.6, 8.7, or 8.8, you must adapt paths and references manually.
 | PR-triggered load test workflow       | `zeebe-pr-benchmark.yaml` | `zeebe-pr-benchmark.yaml` | `camunda-pr-load-test.yaml` (renamed) |
 | Cloud load test setup scripts         | absent              | absent              | present              |
 
-Cherry-picks from main to 8.6–8.8 will hit modify/delete conflicts because files
+Cherry-picks from main to stable/8.6 will hit modify/delete conflicts because files
 were renamed. Always resolve by applying the intended change to the correct path
 on the target branch rather than accepting the cherry-pick output as-is.
