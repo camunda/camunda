@@ -28,7 +28,6 @@ test.describe.parallel('Resource Get Content API', () => {
     );
     const expectedContent = getExpectedContent(resourceName);
 
-    let content: string = '';
     await expect(async () => {
       const res = await request.get(
         buildUrl('/resources/{resourceKey}/content', {
@@ -40,10 +39,8 @@ test.describe.parallel('Resource Get Content API', () => {
       );
 
       await assertStatusCode(res, 200);
-      content = await res.text();
+      expect(await res.text()).toBe(expectedContent);
     }).toPass(defaultAssertionOptions);
-
-    expect(content).toBe(expectedContent);
   });
 
   // eslint-disable-next-line playwright/expect-expect

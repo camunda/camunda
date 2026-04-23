@@ -54,7 +54,6 @@ test.describe.parallel('Resource Get API', () => {
       0,
     );
 
-    let body: JSONDoc = {};
     await expect(async () => {
       const res = await request.get(
         buildUrl('/resources/{resourceKey}', {
@@ -74,10 +73,8 @@ test.describe.parallel('Resource Get API', () => {
         },
         res,
       );
-      body = await res.json();
+      validateResourceResponse(await res.json(), metadata);
     }).toPass(defaultAssertionOptions);
-
-    validateResourceResponse(body, metadata);
   });
 
   // eslint-disable-next-line playwright/expect-expect
