@@ -35,7 +35,8 @@ final class SegmentLoaderTest {
         new SegmentLoader(
             segmentSize * 2,
             new JournalMetrics(meterRegistry),
-            SegmentAllocator.defaultAllocator());
+            SegmentAllocator.defaultAllocator(),
+            null);
     final var segmentFile = tmpDir.resolve("segment.log");
 
     // when - "unused" segment can happen if we crashed in the middle of creating the new segment

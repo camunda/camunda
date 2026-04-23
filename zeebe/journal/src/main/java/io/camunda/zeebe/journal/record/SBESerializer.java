@@ -143,10 +143,13 @@ public final class SBESerializer implements JournalRecordSerializer {
         && headerDecoder.templateId() == metadataDecoder.sbeTemplateId());
   }
 
-  private int getSerializedLength(final int entryLength) {
+  public int getSerializedHeaderLength() {
     return headerEncoder.encodedLength()
         + recordEncoder.sbeBlockLength()
-        + RecordDataEncoder.dataHeaderLength()
-        + entryLength;
+        + RecordDataEncoder.dataHeaderLength();
+  }
+
+  private int getSerializedLength(final int entryLength) {
+    return getSerializedHeaderLength() + entryLength;
   }
 }

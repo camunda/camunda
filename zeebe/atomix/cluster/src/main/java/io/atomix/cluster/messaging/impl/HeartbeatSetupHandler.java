@@ -209,7 +209,7 @@ public abstract sealed class HeartbeatSetupHandler extends ChannelDuplexHandler 
     public void channelRead(final ChannelHandlerContext ctx, final Object msg) throws Exception {
       // check if it's the response to our HeartbeatRequest
       if (msg instanceof final ProtocolReply reply && reply.id() == heartbeatRequestId) {
-        final var decoder = responseDecoder(reply.payload());
+        final var decoder = responseDecoder(reply.payloadAsBytes());
         boolean isHeartbeatEnabled = false;
         boolean isPayloadEnabled = false;
         if (decoder != null) {
@@ -368,7 +368,7 @@ public abstract sealed class HeartbeatSetupHandler extends ChannelDuplexHandler 
       // check if it's a heartbeat request
       if (msg instanceof final ProtocolRequest request
           && request.subject().equals(HEARTBEAT_SETUP_SUBJECT)) {
-        final var decoder = heartbeatTimeout(request.payload());
+        final var decoder = heartbeatTimeout(request.payloadAsBytes());
         long timeout = 0;
         boolean sendPayloadInRequest = false;
         if (decoder != null) {

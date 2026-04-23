@@ -10,10 +10,13 @@ package io.camunda.eventbridge.broker.partitioning;
 import io.atomix.cluster.messaging.MessagingService;
 import io.atomix.raft.RaftServer.Role;
 import io.atomix.raft.partition.RaftPartition;
-import io.camunda.eventbridge.broker.partitioning.steps.CoordinationStep;
+import io.camunda.eventbridge.broker.partitioning.steps.CoordinatorRequestHandlerStep;
+import io.camunda.eventbridge.broker.partitioning.steps.EventStreamFetcherStep;
 import io.camunda.eventbridge.broker.partitioning.steps.EventStreamStep;
+import io.camunda.eventbridge.broker.partitioning.steps.FetchPurgatoryStep;
+import io.camunda.eventbridge.broker.partitioning.steps.HighWatermarkStep;
 import io.camunda.eventbridge.broker.partitioning.steps.LogStorageStep;
-import io.camunda.eventbridge.broker.partitioning.steps.PublishHandlerStep;
+import io.camunda.eventbridge.broker.partitioning.steps.PublishRequestHandlerStep;
 import io.camunda.eventbridge.broker.partitioning.steps.TopologyStep;
 import io.camunda.eventbridge.broker.transport.RequestHandlerRegistry;
 import io.camunda.zeebe.broker.partitioning.topology.TopologyManagerImpl;
@@ -21,6 +24,7 @@ import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import java.time.InstantSource;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
 import org.agrona.concurrent.IdGenerator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -49,7 +53,8 @@ public final class PartitionLifecycle extends Actor {
       final MessagingService messagingService,
       final InstantSource clock,
       final IdGenerator idGenerator,
-      final TopologyManagerImpl topologyManager) {
+      final TopologyManagerImpl topologyManager,
+      final ExecutorService executorService) {
     context =
         new PartitionContext(
             partitionId,
@@ -58,14 +63,18 @@ public final class PartitionLifecycle extends Actor {
             actorScheduler,
             messagingService,
             clock,
-            idGenerator);
+            idGenerator,
+            executorService);
     context.setRequestHandlerRegistry(new RequestHandlerRegistry(partitionId, messagingService));
     leaderSteps =
         List.of(
             new LogStorageStep(),
+            new HighWatermarkStep(),
             new EventStreamStep(),
-            new CoordinationStep(),
-            new PublishHandlerStep(),
+            new FetchPurgatoryStep(),
+            new CoordinatorRequestHandlerStep(),
+            new EventStreamFetcherStep(),
+            new PublishRequestHandlerStep(),
             new TopologyStep(topologyManager));
   }
 

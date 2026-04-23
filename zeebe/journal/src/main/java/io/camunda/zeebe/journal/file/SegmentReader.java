@@ -113,4 +113,8 @@ final class SegmentReader implements Iterator<JournalRecord> {
     Preconditions.checkState(
         segment.isOpen(), "Segment is already closed. Reader must reset to a valid index.");
   }
+
+  ByteBuffer buffer() {
+    return buffer;
+  }
 }

@@ -31,6 +31,7 @@ import io.camunda.zeebe.journal.record.RecordMetadata;
 import io.camunda.zeebe.journal.record.SBESerializer;
 import io.camunda.zeebe.journal.util.ChecksumGenerator;
 import io.camunda.zeebe.util.Either;
+import io.camunda.zeebe.util.JournalIndexCursor;
 import io.camunda.zeebe.util.buffer.BufferWriter;
 import io.camunda.zeebe.util.buffer.DirectBufferWriter;
 import java.nio.BufferUnderflowException;
@@ -60,13 +61,15 @@ final class SegmentWriter {
   private final MutableDirectBuffer writeBuffer = new UnsafeBuffer();
   private final int descriptorLength;
   private final JournalMetrics metrics;
+  private final JournalIndexCursor journalIndexCursor;
 
   SegmentWriter(
       final MappedByteBuffer buffer,
       final Segment segment,
       final JournalIndex index,
       final long lastWrittenAsqn,
-      final JournalMetrics metrics) {
+      final JournalMetrics metrics,
+      final JournalIndexCursor journalIndexCursor) {
     this.segment = segment;
     descriptorLength = segment.descriptor().encodingLength();
     recordUtil = new JournalRecordReaderUtil(serializer);
@@ -76,6 +79,7 @@ final class SegmentWriter {
     writeBuffer.wrap(buffer);
     firstAsqn = lastWrittenAsqn + 1;
     lastAsqn = lastWrittenAsqn;
+    this.journalIndexCursor = journalIndexCursor;
     lastEntryPosition = segment.descriptor().lastPosition();
     this.metrics = metrics;
     if (lastEntryPosition > 0) {
@@ -207,9 +211,16 @@ final class SegmentWriter {
       final Either<SegmentFull, Integer> writeResult) {
     return writeResult
         .map(
-            recordLength ->
-                finalizeAppend(
-                    expectedChecksum, startPosition, frameLength, metadataLength, recordLength))
+            recordLength -> {
+              finalizeAppend(
+                  expectedChecksum, startPosition, frameLength, metadataLength, recordLength);
+              return lastEntry;
+            })
+        .map(
+            entry -> {
+              tryUpdateIndex(entry, startPosition, frameLength, metadataLength);
+              return entry;
+            })
         .mapLeft(
             segmentFull -> {
               buffer.position(startPosition);
@@ -217,11 +228,36 @@ final class SegmentWriter {
             });
   }
 
-  /**
-   * Writes record metadata and header. Update lastWrittenEntry. Update JournalIndex
-   *
-   * @return the written entry (equal to lastEntry) but guaranteed to be non-null
-   */
+  private void tryUpdateIndex(
+      final JournalRecord record,
+      final int startPosition,
+      final int frameLength,
+      final int metadataLength) {
+
+    if (journalIndexCursor == null) {
+      return;
+    }
+
+    final var index = record.index();
+    final var headerLength = ((SBESerializer) serializer).getSerializedHeaderLength();
+    final int baseOffset = startPosition + frameLength + metadataLength + headerLength;
+
+    journalIndexCursor.wrap(record.data(), baseOffset);
+    while (journalIndexCursor.hasNext()) {
+      journalIndexCursor.next();
+
+      segment
+          .segmentIndex()
+          .appendEntry(
+              journalIndexCursor.currentLowestAsqn(),
+              journalIndexCursor.currentHighestAsqn(),
+              index,
+              journalIndexCursor.currentOffset(),
+              journalIndexCursor.currentLength());
+    }
+  }
+
+  /** Writes record metadata and header. Update lastWrittenEntry. Update JournalIndex */
   private JournalRecord finalizeAppend(
       final @Nullable Long expectedChecksum,
       final int startPosition,

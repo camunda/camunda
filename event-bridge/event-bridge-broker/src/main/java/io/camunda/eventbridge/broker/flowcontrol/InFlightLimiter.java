@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.eventbridge.broker.publish.flowcontrol;
+package io.camunda.eventbridge.broker.flowcontrol;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -19,17 +19,21 @@ public final class InFlightLimiter implements FlowControl {
   }
 
   @Override
-  public boolean tryAcquire(final int entryCount, final int bytesLength) {
-    final int current = inFlightEntries.get();
-    if (current + entryCount > maxInFlightEntries) {
-      return false;
+  public boolean tryAcquire(final int entryCount) {
+    while (true) {
+      final int current = inFlightEntries.get();
+      if (current + entryCount > maxInFlightEntries) {
+        return false;
+      }
+      if (inFlightEntries.compareAndSet(current, current + entryCount)) {
+        return true;
+      }
+      // CAS failed — another won. Retry with fresh value.
     }
-    inFlightEntries.addAndGet(entryCount);
-    return true;
   }
 
   @Override
-  public void onCompleted(final int entryCount, final int bytesLength) {
+  public void release(final int entryCount) {
     inFlightEntries.addAndGet(-entryCount);
   }
 }

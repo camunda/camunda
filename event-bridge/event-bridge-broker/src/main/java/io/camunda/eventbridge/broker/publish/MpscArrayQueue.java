@@ -7,27 +7,23 @@
  */
 package io.camunda.eventbridge.broker.publish;
 
-import java.util.List;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.atomic.AtomicReferenceArray;
+import java.util.Objects;
 
 /**
  * Bounded lock-free multi-producer single-consumer (MPSC) array queue.
  *
  * <p>Multiple producer threads can {@link #offer} elements concurrently. A single consumer thread
- * {@link #poll polls} or {@link #drain drains} elements sequentially. No locks, no allocation on
- * the hot path.
- *
- * <p>Capacity must be a power of two for efficient index computation via bitmask.
+ * {@link #poll polls} elements sequentially. No locks, no allocation on the hot path.
  *
  * <h3>Concurrency model</h3>
  *
  * <ul>
- *   <li><b>Producers</b> compete via CAS on a shared {@code tail} counter to claim slots. Once a
- *       slot is claimed, the producer writes the element and returns. If the queue is full, {@link
- *       #offer} returns {@code false} immediately (backpressure).
+ *   <li><b>Producers</b> compete via CAS on a shared {@code tail} counter to claim slots. A cached
+ *       {@code producerLimit} avoids reading the volatile {@code head} on every offer — producers
+ *       only refresh when the limit is reached, amortizing the volatile read cost across {@code
+ *       capacity} offers.
  *   <li><b>Consumer</b> reads from the {@code head} position. Since there is exactly one consumer,
- *       the head counter is a plain {@code long} — no CAS needed.
+ *       a cached tail ({@code cachedTail}) avoids a volatile read of {@code tail} on every poll.
  * </ul>
  *
  * <h3>Race window</h3>
@@ -36,55 +32,70 @@ import java.util.concurrent.atomic.AtomicReferenceArray;
  * element. If the consumer polls during this window, it sees {@code null} and returns — the element
  * is not lost, it will be picked up on the next poll/drain cycle.
  *
- * <h3>Memory visibility</h3>
+ * <h3>Null elements</h3>
  *
- * <p>{@link AtomicReferenceArray} provides volatile read/write semantics per slot, guaranteeing
- * that a producer's write is visible to the consumer without explicit synchronization.
+ * <p>Null elements are not permitted. The queue uses {@code null} as a sentinel to detect the
+ * producer mid-write race window. Offering {@code null} would permanently brick the queue.
  *
- * @param <E> element type
+ * <h3>False sharing prevention</h3>
+ *
+ * <p>Producer and consumer fields are separated into different classes in the inheritance
+ * hierarchy. The JVM guarantees that fields from different classes are not interleaved in memory,
+ * ensuring they reside on different cache lines (64 bytes on x86).
+ *
+ * @param <E> element type (must not be null)
  */
-public final class MpscArrayQueue<E> {
+public final class MpscArrayQueue<E> extends MpscArrayQueueConsumerField<E> {
 
-  private final AtomicReferenceArray<E> buffer;
-  private final int mask;
-
-  /** Shared producer counter. Producers CAS to claim the next available slot. */
-  private final AtomicLong tail = new AtomicLong(0);
-
-  /** Consumer-only counter. Incremented after each successful poll. */
-  private long head = 0;
+  /** Maximum allowed capacity. Must be a power of two to fit in an int. */
+  private static final int MAX_CAPACITY = 1 << 30;
 
   /**
    * Creates a new queue with the given capacity, rounded up to the next power of two.
    *
    * @param capacity desired capacity (will be rounded up to the next power of two)
+   * @throws IllegalArgumentException if capacity is ≤ 0 or > 2^30
    */
   public MpscArrayQueue(final int capacity) {
-    final int actualCapacity = nextPowerOfTwo(capacity);
-    buffer = new AtomicReferenceArray<>(actualCapacity);
-    mask = actualCapacity - 1;
+    super(nextPowerOfTwo(capacity));
   }
 
   /**
    * Offers an element to the queue. Called by producer threads.
    *
-   * <p>Producers compete via CAS to claim a slot. If the CAS fails (another producer claimed the
-   * slot first), the producer retries with the next position. If the queue is full, returns {@code
-   * false} immediately — no blocking, no spinning.
+   * <p>Uses a {@code producerLimit} to avoid reading the volatile {@code head} on every call.
+   * Producers only refresh the limit when they've exhausted the cached range — amortizing the
+   * volatile head read across {@code capacity} offers.
    *
    * @param element the element to enqueue (must not be null)
    * @return {@code true} if the element was accepted, {@code false} if the queue is full
+   * @throws NullPointerException if element is null
    */
   public boolean offer(final E element) {
-    while (true) {
-      final long currentTail = tail.get();
+    Objects.requireNonNull(element, "Element must not be null");
+    final int capacity = buffer.length;
 
-      if (currentTail - head >= buffer.length()) {
-        return false;
+    while (true) {
+      final long currentTail = (long) TAIL_HANDLE.getVolatile(this);
+
+      // Fast path: check against cached limit
+      if (currentTail >= producerLimit) {
+        final long currentHead = head;
+
+        if (currentTail - currentHead >= capacity) {
+          return false; // genuinely full
+        }
+
+        producerLimit = currentHead + capacity;
       }
 
-      if (tail.compareAndSet(currentTail, currentTail + 1)) {
-        buffer.set((int) (currentTail & mask), element);
+      if (TAIL_HANDLE.compareAndSet(this, currentTail, currentTail + 1)) {
+        final int index = (int) (currentTail & mask);
+
+        // Write the element. Since TAIL_HANDLE CAS acts as a full memory barrier,
+        // a plain write here is technically safe, but using setRelease guarantees
+        // the element is visible to the consumer polling this index.
+        ARRAY_HANDLE.setRelease(buffer, index, element);
         return true;
       }
     }
@@ -92,6 +103,9 @@ public final class MpscArrayQueue<E> {
 
   /**
    * Polls an element from the queue. Called by the single consumer thread only.
+   *
+   * <p>Uses a cached tail value to avoid a volatile read on every call. The cache is only refreshed
+   * when the consumer has caught up to the cached tail (cache miss).
    *
    * <p>Returns {@code null} in two cases:
    *
@@ -105,64 +119,55 @@ public final class MpscArrayQueue<E> {
    * @return the next element, or {@code null} if empty or producer mid-write
    */
   public E poll() {
-    if (head >= tail.get()) {
-      return null;
+    final long currentHead = head;
+
+    // Fast path: check cached tail
+    if (currentHead >= cachedTail) {
+      cachedTail = (long) TAIL_HANDLE.getVolatile(this);
+      if (currentHead >= cachedTail) {
+        return null; // genuinely empty
+      }
     }
 
-    final int index = (int) (head & mask);
-    final E element = buffer.get(index);
+    final int index = (int) (currentHead & mask);
+
+    // Volatile read of the element directly from the array
+    @SuppressWarnings("unchecked")
+    final E element = (E) ARRAY_HANDLE.getVolatile(buffer, index);
 
     if (element == null) {
+      // Producer claimed this slot but hasn't stored the element yet.
       return null;
     }
 
-    buffer.set(index, null);
-    head++;
+    // Release semantics: avoiding expensive store fences
+    ARRAY_HANDLE.setRelease(buffer, index, null);
+
+    // Advance the head (single writer, plain volatile write is sufficient)
+    head = currentHead + 1;
     return element;
   }
 
-  /**
-   * Drains up to {@code limit} elements into the provided list. Called by the single consumer
-   * thread only.
-   *
-   * <p>Stops when the queue is empty, a producer is mid-write, or the limit is reached.
-   *
-   * @param target list to drain elements into
-   * @param limit maximum number of elements to drain
-   * @return the number of elements drained
-   */
-  public int drain(final List<E> target, final int limit) {
-    int count = 0;
-
-    while (count < limit) {
-      final E element = poll();
-      if (element == null) {
-        break;
-      }
-      target.add(element);
-      count++;
-    }
-
-    return count;
-  }
-
-  /**
-   * Returns {@code true} if the queue appears empty. May return {@code false} briefly while a
-   * producer is mid-write (slot claimed but element not yet written).
-   */
+  /** Returns {@code true} if the queue appears empty. */
   public boolean isEmpty() {
-    return head >= tail.get();
+    return head >= (long) TAIL_HANDLE.getVolatile(this);
   }
 
-  /**
-   * Returns the approximate number of elements in the queue. May be temporarily inaccurate during
-   * concurrent offers.
-   */
+  /** Returns the approximate number of elements in the queue. */
   int size() {
-    return (int) (tail.get() - head);
+    return (int) ((long) TAIL_HANDLE.getVolatile(this) - head);
   }
 
   private static int nextPowerOfTwo(final int value) {
-    return 1 << (32 - Integer.numberOfLeadingZeros(value - 1));
+    if (value <= 0) {
+      throw new IllegalArgumentException("Capacity must be positive, got " + value);
+    }
+    if (value > MAX_CAPACITY) {
+      throw new IllegalArgumentException("Capacity " + value + " exceeds maximum " + MAX_CAPACITY);
+    }
+    if ((value & (value - 1)) == 0) {
+      return value; // already a power of two
+    }
+    return 1 << (32 - Integer.numberOfLeadingZeros(value));
   }
 }

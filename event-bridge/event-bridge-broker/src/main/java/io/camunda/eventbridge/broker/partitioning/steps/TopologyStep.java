@@ -34,11 +34,6 @@ public final class TopologyStep implements PartitionStartupStep {
   }
 
   @Override
-  public void prepare(final PartitionContext context) {
-    // nothing to prepare
-  }
-
-  @Override
   public ActorFuture<Void> activate(final PartitionContext context) {
     final var partitionId = context.getPartitionId();
     final var term = context.getRaftPartition().getServer().getTerm();

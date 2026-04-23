@@ -7,10 +7,11 @@
  */
 package io.camunda.eventbridge.broker.logstreams;
 
-import io.camunda.eventbridge.broker.publish.EventStreamAppender;
+import io.camunda.eventbridge.broker.flowcontrol.FlowControl;
+import io.camunda.eventbridge.broker.flowcontrol.InFlightLimiter;
+import io.camunda.eventbridge.broker.publish.EventStreamPublisher;
 import io.camunda.eventbridge.broker.publish.InboundQueue;
-import io.camunda.eventbridge.broker.publish.flowcontrol.FlowControl;
-import io.camunda.eventbridge.broker.publish.flowcontrol.InFlightLimiter;
+import io.camunda.eventbridge.broker.watermark.HighWatermark;
 import io.camunda.zeebe.logstreams.storage.LogStorage;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
@@ -32,9 +33,10 @@ public final class EventBridgeEventStream implements AutoCloseable {
   private final int queueCapacity;
   private final int maxInFlightAppends;
   private final FlowControl flowControl;
+  private final HighWatermark highWatermark;
 
   private InboundQueue inbound;
-  private EventStreamAppender appender;
+  private EventStreamPublisher appender;
   private EventStreamWriter writer;
 
   public EventBridgeEventStream(final Builder builder) {
@@ -48,6 +50,7 @@ public final class EventBridgeEventStream implements AutoCloseable {
     queueCapacity = builder.queueCapacity;
     maxInFlightAppends = builder.maxInFlightAppends;
     flowControl = builder.flowControl;
+    highWatermark = builder.highWatermark;
   }
 
   public ActorFuture<Void> openAsync() {
@@ -56,16 +59,18 @@ public final class EventBridgeEventStream implements AutoCloseable {
     inbound = new InboundQueue(queueCapacity, flowControl);
 
     appender =
-        new EventStreamAppender(
+        new EventStreamPublisher(
             partitionId,
             logStorage,
             listener,
+            flowControl,
             nextPosition,
             clock,
             maxBatchesPerDrain,
             lingerInterval,
             maxInFlightAppends,
-            inbound);
+            inbound,
+            highWatermark);
 
     final var submitFuture = actorScheduler.submitActor(appender);
 
@@ -143,6 +148,7 @@ public final class EventBridgeEventStream implements AutoCloseable {
     private int queueCapacity = 4096;
     private int maxInFlightAppends = 1;
     private FlowControl flowControl;
+    private HighWatermark highWatermark;
 
     private Builder() {}
 
@@ -196,6 +202,11 @@ public final class EventBridgeEventStream implements AutoCloseable {
       return this;
     }
 
+    public Builder highWatermark(final HighWatermark highWatermark) {
+      this.highWatermark = highWatermark;
+      return this;
+    }
+
     public EventBridgeEventStream build() {
       if (logStorage == null) {
         throw new IllegalArgumentException("logStorage is required");
@@ -211,6 +222,9 @@ public final class EventBridgeEventStream implements AutoCloseable {
       }
       if (flowControl == null) {
         flowControl = new InFlightLimiter(8192);
+      }
+      if (highWatermark == null) {
+        throw new IllegalArgumentException("hight watermark is required");
       }
 
       return new EventBridgeEventStream(this);

@@ -12,6 +12,7 @@ import io.camunda.eventbridge.service.PublishService;
 import java.util.concurrent.CompletableFuture;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -30,6 +31,20 @@ public class PublishController {
       final PublishService publishService, final ResponseMapper responseMapper) {
     this.publishService = publishService;
     this.responseMapper = responseMapper;
+  }
+
+  @GetMapping(value = "/{partitionId}/fetch")
+  public CompletableFuture<ResponseEntity<Object>> publish() {
+
+    return publishService
+        .fetch()
+        .handleAsync(
+            (res, error) -> {
+              if (error != null) {
+                return ResponseEntity.ok(null);
+              }
+              return ResponseEntity.ok(null);
+            });
   }
 
   @PostMapping(

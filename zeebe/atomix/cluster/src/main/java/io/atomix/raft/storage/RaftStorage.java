@@ -29,6 +29,7 @@ import io.camunda.zeebe.journal.file.SegmentAllocator;
 import io.camunda.zeebe.snapshots.PersistedSnapshotStore;
 import io.camunda.zeebe.snapshots.ReceivableSnapshotStore;
 import io.camunda.zeebe.util.FileUtil;
+import io.camunda.zeebe.util.JournalIndexCursor;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.io.File;
 import java.io.IOException;
@@ -68,6 +69,7 @@ public final class RaftStorage {
   private final SegmentAllocator segmentAllocator;
   private final MeterRegistry meterRegistry;
   private final RaftLogFlusher.Factory flusherFactory;
+  private final JournalIndexCursor journalIndexCursor;
 
   private RaftStorage(
       final String prefix,
@@ -79,7 +81,8 @@ public final class RaftStorage {
       final ReceivableSnapshotStore persistedSnapshotStore,
       final int journalIndexDensity,
       final SegmentAllocator segmentAllocator,
-      final MeterRegistry meterRegistry) {
+      final MeterRegistry meterRegistry,
+      final JournalIndexCursor journalIndexCursor) {
     this.prefix = prefix;
     this.partitionId = partitionId;
     this.directory = directory;
@@ -90,6 +93,7 @@ public final class RaftStorage {
     this.journalIndexDensity = journalIndexDensity;
     this.segmentAllocator = segmentAllocator;
     this.meterRegistry = meterRegistry;
+    this.journalIndexCursor = journalIndexCursor;
 
     try {
       FileUtil.ensureDirectoryExists(directory.toPath());
@@ -200,6 +204,7 @@ public final class RaftStorage {
         .withSegmentAllocator(segmentAllocator)
         .withMetaStore(metaStore)
         .withFlusher(flusherFactory.createFlusher(threadFactory))
+        .withIndexEntrySupplier(journalIndexCursor)
         .build();
   }
 
@@ -268,6 +273,7 @@ public final class RaftStorage {
     private SegmentAllocator segmentAllocator = SegmentAllocator.defaultAllocator();
     private int partitionId = DEFAULT_PARTITION_ID;
     private final MeterRegistry meterRegistry;
+    private JournalIndexCursor journalIndexCursor;
 
     private Builder(final MeterRegistry meterRegistry) {
       this.meterRegistry = Objects.requireNonNull(meterRegistry, "meterRegistry cannot be null");
@@ -384,6 +390,11 @@ public final class RaftStorage {
       return this;
     }
 
+    public Builder withIndexSupplier(final JournalIndexCursor supplier) {
+      journalIndexCursor = supplier;
+      return this;
+    }
+
     /**
      * Builds the {@link RaftStorage} object.
      *
@@ -401,7 +412,8 @@ public final class RaftStorage {
           persistedSnapshotStore,
           journalIndexDensity,
           segmentAllocator,
-          meterRegistry);
+          meterRegistry,
+          journalIndexCursor);
     }
   }
 }

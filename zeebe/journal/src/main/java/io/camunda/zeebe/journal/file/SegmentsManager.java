@@ -13,6 +13,7 @@ import static java.util.Objects.requireNonNull;
 import io.camunda.zeebe.journal.CorruptedJournalException;
 import io.camunda.zeebe.journal.JournalException;
 import io.camunda.zeebe.journal.JournalMetaStore;
+import io.camunda.zeebe.util.JournalIndexCursor;
 import io.camunda.zeebe.util.logging.ThrottledLogger;
 import java.io.File;
 import java.io.IOException;
@@ -57,6 +58,7 @@ final class SegmentsManager implements AutoCloseable {
   private final SegmentLoader segmentLoader;
   private final String name;
   private final JournalMetaStore metaStore;
+  private final JournalIndexCursor journalIndexCursor;
 
   private volatile @Nullable Segment currentSegment;
 
@@ -67,7 +69,8 @@ final class SegmentsManager implements AutoCloseable {
       final String name,
       final SegmentLoader segmentLoader,
       final JournalMetrics journalMetrics,
-      final JournalMetaStore metaStore) {
+      final JournalMetaStore metaStore,
+      final JournalIndexCursor journalIndexCursor) {
     this.name = checkNotNull(name, "name cannot be null");
     this.journalIndex = journalIndex;
     this.maxSegmentSize = maxSegmentSize;
@@ -75,6 +78,7 @@ final class SegmentsManager implements AutoCloseable {
     this.segmentLoader = segmentLoader;
     this.journalMetrics = journalMetrics;
     this.metaStore = metaStore;
+    this.journalIndexCursor = journalIndexCursor;
   }
 
   @Override

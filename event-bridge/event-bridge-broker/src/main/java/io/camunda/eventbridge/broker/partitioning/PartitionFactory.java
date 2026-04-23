@@ -15,6 +15,7 @@ import io.atomix.raft.partition.RaftPartitionConfig;
 import io.atomix.raft.partition.RaftStorageConfig;
 import io.atomix.raft.storage.log.RaftLogFlusher;
 import io.atomix.raft.zeebe.EntryValidator.NoopEntryValidator;
+import io.camunda.eventbridge.broker.logstreams.ApplicationEntryCursorAdapter;
 import io.camunda.eventbridge.core.config.EventBridgeProperties;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.util.FileUtil;
@@ -84,7 +85,11 @@ public final class PartitionFactory {
     final var metadata = buildMetadata(partitionId, members, localMemberId);
 
     return new RaftPartition(
-        metadata, partitionConfig, partitionDirectory.toFile(), new SimpleMeterRegistry());
+        metadata,
+        partitionConfig,
+        partitionDirectory.toFile(),
+        new SimpleMeterRegistry(),
+        new ApplicationEntryCursorAdapter());
   }
 
   private RaftStorageConfig buildStorageConfig() {

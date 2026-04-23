@@ -47,16 +47,19 @@ public class RaftEntrySBESerializer implements RaftEntrySerializer {
   final ApplicationEntryDecoder applicationEntryDecoder = new ApplicationEntryDecoder();
   final ConfigurationEntryDecoder configurationEntryDecoder = new ConfigurationEntryDecoder();
 
-  @Override
-  public int getApplicationEntrySerializedLength(final ApplicationEntry entry) {
-    // raft frame length
+  public int getApplicationEntrySerializedHeaderLength() {
     return headerEncoder.encodedLength()
         + raftLogEntryEncoder.sbeBlockLength()
         // + application entry length
         + headerEncoder.encodedLength()
         + applicationEntryEncoder.sbeBlockLength()
-        + RecordDataEncoder.dataHeaderLength()
-        + entry.dataWriter().getLength();
+        + RecordDataEncoder.dataHeaderLength();
+  }
+
+  @Override
+  public int getApplicationEntrySerializedLength(final ApplicationEntry entry) {
+    // raft frame length
+    return getApplicationEntrySerializedHeaderLength() + entry.dataWriter().getLength();
   }
 
   @Override

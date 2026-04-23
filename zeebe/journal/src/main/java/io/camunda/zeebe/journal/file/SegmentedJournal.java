@@ -26,6 +26,7 @@ import io.camunda.zeebe.journal.JournalMetaStore;
 import io.camunda.zeebe.journal.JournalReader;
 import io.camunda.zeebe.journal.JournalRecord;
 import io.camunda.zeebe.journal.SegmentInfo;
+import io.camunda.zeebe.util.JournalIndexCursor;
 import io.camunda.zeebe.util.VisibleForTesting;
 import io.camunda.zeebe.util.buffer.BufferWriter;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -51,18 +52,21 @@ public final class SegmentedJournal implements Journal {
   private final StampedLock rwlock = new StampedLock();
   private final SegmentsManager segments;
   private final JournalMetaStore metaStore;
+  private final JournalIndexCursor journalIndexCursor;
 
   SegmentedJournal(
       final JournalIndex journalIndex,
       final SegmentsManager segments,
       final JournalMetrics journalMetrics,
-      final JournalMetaStore metaStore) {
+      final JournalMetaStore metaStore,
+      final JournalIndexCursor journalIndexCursor) {
     this.journalMetrics = Objects.requireNonNull(journalMetrics, "must specify journal metrics");
     this.journalIndex = Objects.requireNonNull(journalIndex, "must specify a journal index");
     this.segments = Objects.requireNonNull(segments, "must specify a journal segments manager");
     this.metaStore = Objects.requireNonNull(metaStore, "must specify a journal meta store");
     this.segments.open();
     writer = new SegmentedJournalWriter(segments, metaStore, journalMetrics);
+    this.journalIndexCursor = journalIndexCursor;
   }
 
   /**

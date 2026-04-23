@@ -21,6 +21,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static java.util.Objects.requireNonNull;
 
 import io.camunda.zeebe.journal.JournalMetaStore;
+import io.camunda.zeebe.util.JournalIndexCursor;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.io.File;
 import org.jspecify.annotations.Nullable;
@@ -49,6 +50,7 @@ public class SegmentedJournalBuilder {
 
   private @Nullable JournalMetaStore journalMetaStore;
   private final MeterRegistry meterRegistry;
+  private JournalIndexCursor indexSupplier;
   private SegmentAllocator segmentAllocator = SegmentAllocator.defaultAllocator();
 
   SegmentedJournalBuilder(final MeterRegistry meterRegistry) {
@@ -167,10 +169,16 @@ public class SegmentedJournalBuilder {
     return this;
   }
 
+  public SegmentedJournalBuilder withIndexSupplier(final JournalIndexCursor supplier) {
+    indexSupplier = supplier;
+    return this;
+  }
+
   public SegmentedJournal build() {
     final var journalIndex = new SparseJournalIndex(journalIndexDensity);
     final var journalMetrics = new JournalMetrics(meterRegistry);
-    final var segmentLoader = new SegmentLoader(freeDiskSpace, journalMetrics, segmentAllocator);
+    final var segmentLoader =
+        new SegmentLoader(freeDiskSpace, journalMetrics, segmentAllocator, indexSupplier);
     final var metaStore = requireNonNull(journalMetaStore, "must specify a journal meta store");
     final var segmentsManager =
         new SegmentsManager(
@@ -180,8 +188,10 @@ public class SegmentedJournalBuilder {
             name,
             segmentLoader,
             journalMetrics,
-            metaStore);
+            metaStore,
+            indexSupplier);
 
-    return new SegmentedJournal(journalIndex, segmentsManager, journalMetrics, metaStore);
+    return new SegmentedJournal(
+        journalIndex, segmentsManager, journalMetrics, journalMetaStore, indexSupplier);
   }
 }

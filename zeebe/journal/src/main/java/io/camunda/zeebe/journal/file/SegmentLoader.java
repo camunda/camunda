@@ -11,7 +11,9 @@ import static java.util.Objects.requireNonNull;
 
 import io.camunda.zeebe.journal.CorruptedJournalException;
 import io.camunda.zeebe.journal.JournalException;
+import io.camunda.zeebe.journal.JournalRecord;
 import io.camunda.zeebe.util.FileUtil;
+import io.camunda.zeebe.util.JournalIndexCursor;
 import java.io.FileDescriptor;
 import java.io.IOException;
 import java.io.RandomAccessFile;
@@ -36,12 +38,17 @@ final class SegmentLoader {
   private final SegmentAllocator allocator;
   private final long minFreeDiskSpace;
   private final JournalMetrics metrics;
+  private final JournalIndexCursor journalIndexCursor;
 
   SegmentLoader(
-      final long minFreeDiskSpace, final JournalMetrics metrics, final SegmentAllocator allocator) {
+      final long minFreeDiskSpace,
+      final JournalMetrics metrics,
+      final SegmentAllocator allocator,
+      final JournalIndexCursor journalIndexCursor) {
     this.minFreeDiskSpace = minFreeDiskSpace;
     this.metrics = metrics;
     this.allocator = allocator;
+    this.journalIndexCursor = journalIndexCursor;
   }
 
   Segment createSegment(
@@ -49,41 +56,43 @@ final class SegmentLoader {
       final SegmentDescriptor descriptor,
       final long lastWrittenAsqn,
       final JournalIndex journalIndex) {
-    final MappedByteBuffer mappedSegment;
 
+    final MappedAllocation allocation;
     final var descriptorSerializer = SegmentDescriptorSerializer.currentSerializer();
+
     try {
-      mappedSegment = mapNewSegment(segmentFile, descriptor);
+      allocation = mapNewSegment(segmentFile, descriptor);
     } catch (final IOException e) {
       throw new JournalException(
           String.format("Failed to create new segment file %s", segmentFile), e);
     }
 
     try {
-      descriptorSerializer.writeTo(descriptor, mappedSegment);
-      mappedSegment.force();
+      descriptorSerializer.writeTo(descriptor, allocation.buffer());
+      allocation.buffer().force();
     } catch (final InternalError e) {
-      throw new JournalException(
-          String.format(
-              "Failed to ensure durability of segment %s with descriptor %s, rolling back",
-              segmentFile, descriptor),
-          e);
+      // Clean up the open channel if forcing fails
+      try {
+        allocation.channel().close();
+      } catch (final Exception ignored) {
+      }
+      throw new JournalException("Failed to ensure durability...", e);
     }
 
-    // while flushing the file's contents ensures its data is present on disk on recovery, it's also
-    // necessary to flush the directory to ensure that the file itself is visible as an entry of
-    // that directory after recovery
     try {
       FileUtil.flushDirectory(segmentFile.getParent());
     } catch (final IOException e) {
-      throw new JournalException(
-          String.format("Failed to flush journal directory after creating segment %s", segmentFile),
-          e);
+      try {
+        allocation.channel().close();
+      } catch (final Exception ignored) {
+      }
+      throw new JournalException("Failed to flush journal directory...", e);
     }
 
     return loadSegment(
         segmentFile,
-        mappedSegment,
+        allocation.buffer(),
+        allocation.channel(), // Pass the open channel!
         descriptor,
         descriptorSerializer,
         lastWrittenAsqn,
@@ -92,10 +101,10 @@ final class SegmentLoader {
 
   UninitializedSegment createUninitializedSegment(
       final Path segmentFile, final SegmentDescriptor descriptor, final JournalIndex journalIndex) {
-    final MappedByteBuffer mappedSegment;
+    final MappedAllocation mappedAllocation;
 
     try {
-      mappedSegment = mapNewSegment(segmentFile, descriptor);
+      mappedAllocation = mapNewSegment(segmentFile, descriptor);
     } catch (final IOException e) {
       throw new JournalException(
           String.format("Failed to create new segment file %s", segmentFile), e);
@@ -115,35 +124,59 @@ final class SegmentLoader {
         new SegmentFile(segmentFile.toFile()),
         descriptor.id(),
         descriptor.maxSegmentSize(),
-        mappedSegment,
-        journalIndex);
+        mappedAllocation.buffer(),
+        mappedAllocation.channel(),
+        journalIndex,
+        journalIndexCursor);
   }
 
   Segment loadExistingSegment(
       final Path segmentFile, final long lastWrittenAsqn, final JournalIndex journalIndex) {
+
     final var descriptorSerializer = SegmentDescriptorSerializer.currentSerializer();
-    try (final var channel =
-        FileChannel.open(segmentFile, StandardOpenOption.READ, StandardOpenOption.WRITE)) {
-      MappedByteBuffer mappedSegment;
+    FileChannel channel = null;
+
+    try {
+      // Open the channel and keep it open
+      channel = FileChannel.open(segmentFile, StandardOpenOption.READ, StandardOpenOption.WRITE);
+
       final var initialMappedLength = Files.size(segmentFile);
-      mappedSegment = mapSegment(channel, initialMappedLength);
+      MappedByteBuffer mappedSegment = mapSegment(channel, initialMappedLength);
       final var descriptor =
           readDescriptor(descriptorSerializer, mappedSegment, segmentFile.getFileName().toString());
 
       if (descriptor.maxSegmentSize() > initialMappedLength) {
-        // remap with actual size
         IoUtil.unmap(mappedSegment);
         mappedSegment = mapSegment(channel, descriptor.maxSegmentSize());
       }
 
-      return loadSegment(
-          segmentFile,
-          mappedSegment,
-          descriptor,
-          descriptorSerializer,
-          lastWrittenAsqn,
-          journalIndex);
-    } catch (final IOException e) {
+      final Segment segment =
+          loadSegment(
+              segmentFile,
+              mappedSegment,
+              channel, // Pass the open channel!
+              descriptor,
+              descriptorSerializer,
+              lastWrittenAsqn,
+              journalIndex);
+
+      // --------------------------------------------------------------------------------
+      // STARTUP RECOVERY: Ensure the lazy-flushed Index matches the durable Log
+      // --------------------------------------------------------------------------------
+      repairIndex(segment);
+
+      return segment;
+
+    } catch (
+        final Exception
+            e) { // Catch Exception to cover IOException and RuntimeExceptions from readDescriptor
+      // Prevent FD leak on corruption/failure
+      if (channel != null) {
+        try {
+          channel.close();
+        } catch (final Exception ignored) {
+        }
+      }
       throw new JournalException(
           String.format("Failed to load existing segment %s", segmentFile), e);
     }
@@ -153,19 +186,73 @@ final class SegmentLoader {
   private Segment loadSegment(
       final Path file,
       final MappedByteBuffer buffer,
+      final FileChannel channel, // <--- New parameter
       final SegmentDescriptor descriptor,
       final SegmentDescriptorSerializer descriptorSerializer,
       final long lastWrittenAsqn,
       final JournalIndex journalIndex) {
+
+    // 1. Initialize the Memory-Mapped SegmentIndex
+    final SegmentIndex segmentIndex;
+    try {
+      segmentIndex = new SegmentIndex(file, descriptor.maxSegmentSize());
+    } catch (final IOException e) {
+      throw new JournalException(
+          String.format("Failed to initialize SegmentIndex for %s", file), e);
+    }
+
     final SegmentFile segmentFile = new SegmentFile(file.toFile());
+
+    // 2. Inject the index and the file channel into the Segment
     return new Segment(
         segmentFile,
         descriptor,
         descriptorSerializer,
         buffer,
+        channel, // <--- Hand it over to the Segment
         lastWrittenAsqn,
         journalIndex,
-        metrics);
+        segmentIndex, // <--- Hand the index over to the Segment
+        metrics,
+        journalIndexCursor);
+  }
+
+  /**
+   * Scans the durable log file to repair the SegmentIndex if the OS crashed before flushing it, or
+   * if the index flushed garbage ahead of a torn log write.
+   */
+  private void repairIndex(final Segment segment) {
+    final SegmentIndex index = segment.segmentIndex();
+    final SegmentReader reader = segment.createReader();
+
+    try {
+      long lastValidLogAsqn = -1;
+
+      while (reader.hasNext()) {
+        final JournalRecord record = reader.next();
+        final long asqn = record.asqn();
+
+        if (asqn != SegmentedJournal.ASQN_IGNORE) {
+          lastValidLogAsqn = asqn;
+
+          // TODO: use the cursor to create the missing asqn index entries
+          // If the log has data that the index missed (lazy flush power loss),
+          // append it back to the index now!
+          if (asqn > index.getLastIndexedAsqn()) {
+            final int dataOffset = reader.buffer().position() - record.data().capacity();
+            index.appendEntry(asqn, asqn, record.index(), dataOffset, record.data().capacity());
+          }
+        }
+      }
+
+      // If the index has data that the log doesn't have (index flushed, but log tore),
+      // truncate the garbage from the index.
+      if (index.getLastIndexedAsqn() > lastValidLogAsqn) {
+        index.truncate(lastValidLogAsqn);
+      }
+    } finally {
+      reader.close();
+    }
   }
 
   private MappedByteBuffer mapSegment(final FileChannel channel, final long segmentSize)
@@ -193,10 +280,9 @@ final class SegmentLoader {
     }
   }
 
-  private MappedByteBuffer mapNewSegment(final Path segmentPath, final SegmentDescriptor descriptor)
+  private MappedAllocation mapNewSegment(final Path segmentPath, final SegmentDescriptor descriptor)
       throws IOException {
     final var maxSegmentSize = descriptor.maxSegmentSize();
-
     checkDiskSpace(segmentPath, maxSegmentSize);
 
     try {
@@ -210,11 +296,29 @@ final class SegmentLoader {
       return mapNewSegment(segmentPath, descriptor);
     }
 
-    try (final var raf = new RandomAccessFile(segmentPath.toFile(), "rw");
-        final var channel = raf.getChannel(); ) {
+    final var raf = new RandomAccessFile(segmentPath.toFile(), "rw");
+    final var channel = raf.getChannel();
+
+    boolean success = false;
+    try {
       allocateSegment(maxSegmentSize, channel, raf.getFD());
       raf.setLength(maxSegmentSize);
-      return mapSegment(channel, maxSegmentSize);
+      final var mappedSegment = mapSegment(channel, maxSegmentSize);
+
+      success = true;
+      return new MappedAllocation(mappedSegment, channel);
+    } finally {
+      // If anything fails during allocation or mapping, prevent FD leak
+      if (!success) {
+        try {
+          channel.close();
+        } catch (final Exception ignored) {
+        }
+        try {
+          raf.close();
+        } catch (final Exception ignored) {
+        }
+      }
     }
   }
 
@@ -239,4 +343,6 @@ final class SegmentLoader {
       allocator.allocate(channel, fileDescriptor, maxSegmentSize);
     }
   }
+
+  private record MappedAllocation(MappedByteBuffer buffer, FileChannel channel) {}
 }

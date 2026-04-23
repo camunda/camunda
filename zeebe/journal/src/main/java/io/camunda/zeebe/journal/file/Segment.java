@@ -23,13 +23,18 @@ import com.google.common.collect.Sets;
 import io.camunda.zeebe.journal.CheckedJournalException.FlushException;
 import io.camunda.zeebe.journal.JournalException;
 import io.camunda.zeebe.util.FileUtil;
+import io.camunda.zeebe.util.JournalIndexCursor;
+import io.camunda.zeebe.util.ResourceLease;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.MappedByteBuffer;
+import java.nio.channels.FileChannel;
 import java.nio.file.Files;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.agrona.IoUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -44,34 +49,45 @@ final class Segment implements AutoCloseable, FlushableSegment {
   private static final ByteOrder ENDIANNESS = ByteOrder.LITTLE_ENDIAN;
   private static final Logger LOG = LoggerFactory.getLogger(Segment.class);
 
+  private final SegmentIndex segmentIndex;
   private final SegmentFile file;
   private SegmentDescriptor descriptor;
   private final SegmentDescriptorSerializer descriptorSerializer;
   private final JournalIndex index;
   private final SegmentWriter writer;
   private final Set<SegmentReader> readers = Sets.newConcurrentHashSet();
+  private final AtomicInteger refCnt = new AtomicInteger(0);
   private final MappedByteBuffer buffer;
+  private final FileChannel channel;
   private final JournalMetrics metrics;
 
   // This needs to be volatile in case the flushing is asynchronous
   private volatile boolean open = true;
   // This need to be volatile because both the writer and the readers access it concurrently
   private volatile boolean markedForDeletion = false;
+  private final AtomicBoolean deleted = new AtomicBoolean(false);
+  private final JournalIndexCursor journalIndexCursor;
 
   Segment(
       final SegmentFile file,
       final SegmentDescriptor descriptor,
       final SegmentDescriptorSerializer descriptorSerializer,
       final MappedByteBuffer buffer,
+      final FileChannel channel,
       final long lastWrittenAsqn,
       final JournalIndex index,
-      final JournalMetrics metrics) {
+      final SegmentIndex segmentIndex,
+      final JournalMetrics metrics,
+      final JournalIndexCursor journalIndexCursor) {
     this.file = file;
     this.descriptor = descriptor;
     this.descriptorSerializer = descriptorSerializer;
     this.buffer = buffer;
+    this.channel = channel;
     this.index = index;
+    this.segmentIndex = segmentIndex;
     this.metrics = metrics;
+    this.journalIndexCursor = journalIndexCursor;
 
     writer = createWriter(lastWrittenAsqn, metrics);
   }
@@ -194,7 +210,7 @@ final class Segment implements AutoCloseable, FlushableSegment {
   }
 
   private SegmentWriter createWriter(final long lastWrittenAsqn, final JournalMetrics metrics) {
-    return new SegmentWriter(buffer, this, index, lastWrittenAsqn, metrics);
+    return new SegmentWriter(buffer, this, index, lastWrittenAsqn, metrics, journalIndexCursor);
   }
 
   /**
@@ -204,12 +220,7 @@ final class Segment implements AutoCloseable, FlushableSegment {
    */
   void onReaderClosed(final SegmentReader reader) {
     readers.remove(reader);
-    // When multiple readers are closed simultaneously, both readers might try to delete the file.
-    // This is ok, as safeDelete is idempotent. Hence we keep it simple, and doesn't add more
-    // concurrency control.
-    if (markedForDeletion && readers.isEmpty()) {
-      safeDelete();
-    }
+    tryExecuteDeletion();
   }
 
   /** Checks whether the segment is open. */
@@ -231,20 +242,39 @@ final class Segment implements AutoCloseable, FlushableSegment {
   public void close() {
     open = false;
     readers.forEach(SegmentReader::close);
-    IoUtil.unmap(buffer);
+
+    // Unmapping memory while external references to exist triggers SIGSEGV.
+    if (refCnt.get() == 0) {
+      IoUtil.unmap(buffer);
+
+      try {
+        segmentIndex.close();
+      } catch (final Exception e) {
+        LOG.warn("Failed to close index for segment {}", file(), e);
+      }
+
+      if (channel != null && channel.isOpen()) {
+        try {
+          channel.close();
+        } catch (final IOException e) {
+          LOG.warn("Failed to close file channel for segment {}", file(), e);
+        }
+      }
+
+    } else {
+      LOG.debug("Deferred unmapping of segment {}, refCnt {}", id(), refCnt.get());
+    }
   }
 
   /** Deletes the segment. */
   void delete() {
     open = false;
     markForDeletion();
-    if (readers.isEmpty()) {
-      safeDelete();
-    }
+    tryExecuteDeletion();
   }
 
   private void safeDelete() {
-    if (!readers.isEmpty()) {
+    if (refCnt.get() > 0 || !readers.isEmpty()) {
       throw new JournalException(
           String.format(
               "Cannot delete segment file. There are %d readers referring to this segment.",
@@ -253,6 +283,7 @@ final class Segment implements AutoCloseable, FlushableSegment {
     try {
       IoUtil.unmap(buffer);
       Files.deleteIfExists(file.getFileMarkedForDeletion());
+      segmentIndex.delete();
     } catch (final IOException e) {
       LOG.warn(
           "Could not delete segment {}. File to delete {}. This can lead to increased disk usage.",
@@ -292,5 +323,43 @@ final class Segment implements AutoCloseable, FlushableSegment {
     descriptorSerializer.writeTo(descriptor, buffer);
     // flush immediately to prevent inconsistencies between descriptor and actual last written entry
     buffer.force(0, descriptor.encodingLength());
+  }
+
+  /**
+   * Retains this segment for an external zero-copy view.
+   *
+   * <p>Increments the external reference count, guaranteeing that the underlying memory-mapped file
+   * will not be unmapped or deleted by compaction until {@link #release()} is called.
+   */
+  ResourceLease retain() {
+    refCnt.incrementAndGet();
+    return this::release;
+  }
+
+  /**
+   * Releases an external zero-copy reference.
+   *
+   * <p>If the segment is pending deletion and no internal readers or external references remain
+   * active, this method executes the physical file deletion.
+   */
+  void release() {
+    refCnt.decrementAndGet();
+    tryExecuteDeletion();
+  }
+
+  private void tryExecuteDeletion() {
+    if (markedForDeletion && refCnt.get() == 0 && readers.isEmpty()) {
+      if (deleted.compareAndSet(false, true)) {
+        safeDelete();
+      }
+    }
+  }
+
+  FileChannel channel() {
+    return channel;
+  }
+
+  SegmentIndex segmentIndex() {
+    return segmentIndex;
   }
 }

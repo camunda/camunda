@@ -10,14 +10,18 @@ package io.camunda.eventbridge.broker.partitioning;
 import io.atomix.cluster.messaging.MessagingService;
 import io.atomix.raft.partition.RaftPartition;
 import io.camunda.eventbridge.broker.coordinator.CoordinationManager;
+import io.camunda.eventbridge.broker.fetch.FetchPurgatory;
 import io.camunda.eventbridge.broker.logstreams.EventBridgeEventStream;
 import io.camunda.eventbridge.broker.transport.RequestHandlerRegistry;
 import io.camunda.eventbridge.broker.transport.coordinator.CoordinationRequestHandler;
+import io.camunda.eventbridge.broker.transport.fetch.FetchRequestHandler;
 import io.camunda.eventbridge.broker.transport.publish.PublishRequestCorrelator;
 import io.camunda.eventbridge.broker.transport.publish.PublishRequestHandler;
+import io.camunda.eventbridge.broker.watermark.HighWatermark;
 import io.camunda.zeebe.logstreams.storage.LogStorage;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import java.time.InstantSource;
+import java.util.concurrent.ExecutorService;
 import org.agrona.concurrent.IdGenerator;
 
 public final class PartitionContext {
@@ -29,6 +33,7 @@ public final class PartitionContext {
   private final MessagingService messagingService;
   private final InstantSource clock;
   private final IdGenerator idGenerator;
+  private final ExecutorService executorService;
 
   private LogStorage logStorage;
   private PublishRequestCorrelator correlator;
@@ -36,7 +41,10 @@ public final class PartitionContext {
   private CoordinationManager coordinationManager;
   private CoordinationRequestHandler coordinationRequestHandler;
   private PublishRequestHandler publishRequestHandler;
+  private FetchRequestHandler fetchRequestHandler;
   private RequestHandlerRegistry requestHandlerRegistry;
+  private HighWatermark highWatermark;
+  private FetchPurgatory fetchPurgatory;
 
   public PartitionContext(
       final int partitionId,
@@ -45,7 +53,8 @@ public final class PartitionContext {
       final ActorSchedulingService actorScheduler,
       final MessagingService messagingService,
       final InstantSource clock,
-      final IdGenerator idGenerator) {
+      final IdGenerator idGenerator,
+      final ExecutorService executorService) {
     this.partitionId = partitionId;
     this.partitionCount = partitionCount;
     this.raftPartition = raftPartition;
@@ -53,6 +62,7 @@ public final class PartitionContext {
     this.messagingService = messagingService;
     this.clock = clock;
     this.idGenerator = idGenerator;
+    this.executorService = executorService;
   }
 
   public int getPartitionId() {
@@ -87,55 +97,84 @@ public final class PartitionContext {
     return logStorage;
   }
 
-  public void setLogStorage(final LogStorage v) {
-    logStorage = v;
+  public void setLogStorage(final LogStorage logStorage) {
+    this.logStorage = logStorage;
   }
 
   public PublishRequestCorrelator getCorrelator() {
     return correlator;
   }
 
-  public void setCorrelator(final PublishRequestCorrelator v) {
-    correlator = v;
+  public void setCorrelator(final PublishRequestCorrelator requestCorrelator) {
+    correlator = requestCorrelator;
   }
 
   public EventBridgeEventStream getEventStream() {
     return eventStream;
   }
 
-  public void setEventStream(final EventBridgeEventStream v) {
-    eventStream = v;
+  public void setEventStream(final EventBridgeEventStream eventStream) {
+    this.eventStream = eventStream;
   }
 
   public CoordinationManager getCoordinationManager() {
     return coordinationManager;
   }
 
-  public void setCoordinationManager(final CoordinationManager v) {
-    coordinationManager = v;
+  public void setCoordinationManager(final CoordinationManager coordinationManager) {
+    this.coordinationManager = coordinationManager;
   }
 
   public CoordinationRequestHandler getCoordinationRequestHandler() {
     return coordinationRequestHandler;
   }
 
-  public void setCoordinationRequestHandler(final CoordinationRequestHandler v) {
-    coordinationRequestHandler = v;
+  public void setCoordinationRequestHandler(
+      final CoordinationRequestHandler coordinationRequestHandler) {
+    this.coordinationRequestHandler = coordinationRequestHandler;
   }
 
   public PublishRequestHandler getPublishRequestHandler() {
     return publishRequestHandler;
   }
 
-  public void setPublishRequestHandler(final PublishRequestHandler v) {
-    publishRequestHandler = v;
+  public void setPublishRequestHandler(final PublishRequestHandler publishRequestHandler) {
+    this.publishRequestHandler = publishRequestHandler;
+  }
+
+  public FetchRequestHandler getFetchRequestHandler() {
+    return fetchRequestHandler;
+  }
+
+  public void setFetchRequestHandler(final FetchRequestHandler fetchRequestHandler) {
+    this.fetchRequestHandler = fetchRequestHandler;
   }
 
   public RequestHandlerRegistry getRequestHandlerRegistry() {
     return requestHandlerRegistry;
   }
 
-  public void setRequestHandlerRegistry(final RequestHandlerRegistry v) {
-    requestHandlerRegistry = v;
+  public void setRequestHandlerRegistry(final RequestHandlerRegistry requestHandlerRegistry) {
+    this.requestHandlerRegistry = requestHandlerRegistry;
+  }
+
+  public ExecutorService getExecutorService() {
+    return executorService;
+  }
+
+  public HighWatermark getHighWatermark() {
+    return highWatermark;
+  }
+
+  public void setHighWatermark(final HighWatermark highWatermark) {
+    this.highWatermark = highWatermark;
+  }
+
+  public FetchPurgatory getFetchPurgatory() {
+    return fetchPurgatory;
+  }
+
+  public void setFetchPurgatory(final FetchPurgatory fetchPurgatory) {
+    this.fetchPurgatory = fetchPurgatory;
   }
 }

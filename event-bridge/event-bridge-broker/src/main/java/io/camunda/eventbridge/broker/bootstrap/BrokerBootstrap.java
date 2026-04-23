@@ -9,6 +9,7 @@ package io.camunda.eventbridge.broker.bootstrap;
 
 import io.atomix.cluster.AtomixCluster;
 import io.camunda.eventbridge.broker.partitioning.PartitionDistributor;
+import io.camunda.eventbridge.broker.threading.ExecutorServiceFactory;
 import io.camunda.eventbridge.core.config.EventBridgeProperties;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -34,9 +35,18 @@ public final class BrokerBootstrap {
 
   private static final Logger LOG = LoggerFactory.getLogger(BrokerBootstrap.class);
 
-  private final MessagingServiceSetup messagingServiceSetup;
-  private final TopologySetup topologySetup;
-  private final PartitionBootstrapper partitionBootstrapper;
+  private final AtomixCluster cluster;
+  private final ActorSchedulingService actorScheduler;
+  private final EventBridgeProperties properties;
+  private final PartitionDistributor distributor;
+  private final ExecutorServiceFactory executorServiceFactory;
+  private final IdGenerator idGenerator;
+  private final MeterRegistry meterRegistry;
+
+  private MessagingServiceSetup messagingServiceSetup;
+  private TopologySetup topologySetup;
+  private PartitionBootstrapper partitionBootstrapper;
+  private ExecutorServiceSetup executorServiceSetup;
 
   private volatile boolean started = false;
 
@@ -45,16 +55,16 @@ public final class BrokerBootstrap {
       final ActorSchedulingService actorScheduler,
       final EventBridgeProperties properties,
       final PartitionDistributor distributor,
+      final ExecutorServiceFactory executorServiceFactory,
       final IdGenerator idGenerator,
       final MeterRegistry meterRegistry) {
-
-    messagingServiceSetup = new MessagingServiceSetup(properties, meterRegistry);
-
-    topologySetup = new TopologySetup(cluster.getMembershipService(), actorScheduler, properties);
-
-    partitionBootstrapper =
-        new PartitionBootstrapper(
-            cluster, actorScheduler, properties, distributor, InstantSource.system(), idGenerator);
+    this.cluster = cluster;
+    this.actorScheduler = actorScheduler;
+    this.properties = properties;
+    this.distributor = distributor;
+    this.executorServiceFactory = executorServiceFactory;
+    this.idGenerator = idGenerator;
+    this.meterRegistry = meterRegistry;
   }
 
   public void start() {
@@ -67,12 +77,27 @@ public final class BrokerBootstrap {
     LOG.info("Starting EventBridge broker");
 
     // 1. Start broker messaging service — handlers are registered here
+    messagingServiceSetup = new MessagingServiceSetup(properties, meterRegistry);
     final var brokerMessagingService = messagingServiceSetup.start();
 
     // 2. Start topology — BrokerInfo + SWIM gossip
+    topologySetup = new TopologySetup(cluster.getMembershipService(), actorScheduler, properties);
     final var topologyManager = topologySetup.start();
 
-    // 3. Start partitions — raft + lifecycle actors (uses broker messaging service)
+    // 3. Start Fetch Stream Executor Service
+    executorServiceSetup = new ExecutorServiceSetup(executorServiceFactory);
+    final var executorService = executorServiceSetup.start();
+
+    // 4. Start partitions — raft + lifecycle actors (uses broker messaging service)
+    partitionBootstrapper =
+        new PartitionBootstrapper(
+            cluster,
+            actorScheduler,
+            properties,
+            distributor,
+            InstantSource.system(),
+            idGenerator,
+            executorService);
     partitionBootstrapper.start(topologyManager, brokerMessagingService);
 
     LOG.info("EventBridge broker started — waiting for raft elections");
@@ -87,6 +112,7 @@ public final class BrokerBootstrap {
 
     // Reverse order
     partitionBootstrapper.stop();
+    executorServiceSetup.stop();
     topologySetup.stop();
     messagingServiceSetup.stop();
 

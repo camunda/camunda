@@ -46,6 +46,7 @@ import io.camunda.zeebe.journal.SegmentInfo;
 import io.camunda.zeebe.snapshots.PersistedSnapshotStore;
 import io.camunda.zeebe.snapshots.ReceivableSnapshotStore;
 import io.camunda.zeebe.util.FileUtil;
+import io.camunda.zeebe.util.JournalIndexCursor;
 import io.camunda.zeebe.util.VisibleForTesting;
 import io.camunda.zeebe.util.health.FailureListener;
 import io.camunda.zeebe.util.health.HealthMonitorable;
@@ -78,6 +79,7 @@ public class RaftPartitionServer implements HealthMonitorable {
   private final ReceivableSnapshotStore persistedSnapshotStore;
   private final RaftServer server;
   private final MeterRegistry meterRegistry;
+  private final JournalIndexCursor journalIndexCursor;
 
   public RaftPartitionServer(
       final RaftPartition partition,
@@ -99,6 +101,32 @@ public class RaftPartitionServer implements HealthMonitorable {
     requestTimeout = config.getRequestTimeout();
     snapshotRequestTimeout = config.getSnapshotRequestTimeout();
     configurationChangeTimeout = config.getConfigurationChangeTimeout();
+    server = buildServer(meterRegistry);
+    journalIndexCursor = null;
+  }
+
+  public RaftPartitionServer(
+      final RaftPartition partition,
+      final RaftPartitionConfig config,
+      final MemberId localMemberId,
+      final ClusterMembershipService membershipService,
+      final ClusterCommunicationService clusterCommunicator,
+      final ReceivableSnapshotStore persistedSnapshotStore,
+      final PartitionMetadata partitionMetadata,
+      final MeterRegistry meterRegistry,
+      final JournalIndexCursor journalIndexCursor) {
+    this.partition = partition;
+    this.config = config;
+    this.localMemberId = localMemberId;
+    this.membershipService = membershipService;
+    this.clusterCommunicator = clusterCommunicator;
+    this.meterRegistry = meterRegistry;
+    this.persistedSnapshotStore = persistedSnapshotStore;
+    this.partitionMetadata = partitionMetadata;
+    requestTimeout = config.getRequestTimeout();
+    snapshotRequestTimeout = config.getSnapshotRequestTimeout();
+    configurationChangeTimeout = config.getConfigurationChangeTimeout();
+    this.journalIndexCursor = journalIndexCursor;
     server = buildServer(meterRegistry);
   }
 
@@ -315,6 +343,7 @@ public class RaftPartitionServer implements HealthMonitorable {
         .withSnapshotStore(persistedSnapshotStore)
         .withJournalIndexDensity(storageConfig.getJournalIndexDensity())
         .withSegmentAllocator(storageConfig.getSegmentAllocator())
+        .withIndexSupplier(journalIndexCursor)
         .build();
   }
 

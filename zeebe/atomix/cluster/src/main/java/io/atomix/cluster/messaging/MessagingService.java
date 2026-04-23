@@ -329,6 +329,12 @@ public interface MessagingService {
    */
   void registerHandler(String type, BiFunction<Address, byte[], CompletableFuture<byte[]>> handler);
 
+  default void registerHandlerWithManagedPayload(
+      final String type,
+      final BiFunction<Address, byte[], CompletableFuture<ManagedPayload>> handler) {
+    throw new UnsupportedOperationException();
+  }
+
   /**
    * Unregister current handler, if one exists for message type.
    *

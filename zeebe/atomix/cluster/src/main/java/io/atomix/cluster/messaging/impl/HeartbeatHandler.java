@@ -190,11 +190,12 @@ abstract sealed class HeartbeatHandler extends ChannelDuplexHandler {
       boolean heartbeatReceived = forwardHeartbeats;
       if (msg instanceof final ProtocolReply reply) {
         var isHeartbeat = false;
-        if (sendHeartbeatPayload && reply.payload().length == HEARTBEAT_RESPONSE_SIZE) {
-          messageHeaderDecoder.wrap(new UnsafeBuffer(reply.payload()), 0);
+        if (sendHeartbeatPayload && reply.payloadAsBytes().length == HEARTBEAT_RESPONSE_SIZE) {
+          messageHeaderDecoder.wrap(new UnsafeBuffer(reply.payloadAsBytes()), 0);
           isHeartbeat = messageHeaderDecoder.schemaId() == HeartbeatResponseDecoder.SCHEMA_ID;
         } else {
-          isHeartbeat = reply.payload().length == 0 && outstandingHeartbeats.contains(reply.id());
+          isHeartbeat =
+              reply.payloadAsBytes().length == 0 && outstandingHeartbeats.contains(reply.id());
         }
         // remove all heartbeats sent before (and equal) to the last ProtocolReply received.
         // Note that all ProtocolReply messages (not just heartbeat messages) can indicate that

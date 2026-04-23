@@ -16,6 +16,7 @@
  */
 package io.atomix.cluster.messaging.impl;
 
+import io.atomix.cluster.messaging.ManagedPayload;
 import io.atomix.cluster.messaging.impl.ProtocolReply.Status;
 import io.netty.channel.Channel;
 import java.util.Optional;
@@ -35,6 +36,12 @@ final class RemoteServerConnection extends AbstractServerConnection {
   public void reply(final long messageId, final Status status, final Optional<byte[]> payload) {
     final ProtocolReply response =
         new ProtocolReply(messageId, payload.orElse(EMPTY_PAYLOAD), status);
+    channel.writeAndFlush(response, channel.voidPromise());
+  }
+
+  @Override
+  public void reply(final long messageId, final Status status, final ManagedPayload payload) {
+    final ProtocolReply response = new ProtocolReply(messageId, payload, status);
     channel.writeAndFlush(response, channel.voidPromise());
   }
 }

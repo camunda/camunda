@@ -12,18 +12,15 @@ import io.camunda.zeebe.util.buffer.BufferWriter;
 import java.util.List;
 import org.agrona.MutableDirectBuffer;
 
-/**
- * Writes multiple {@link InflightBatchEntry} references into LogStorage's buffer. Patches position
- * and timestamp during the write — copy and patch in one pass. The only copy in the pipeline.
- */
+/** Serializes multiple {@link InflightBatchEntry} instances into a contiguous memory buffer. */
 public final class BatchBufferWriter implements BufferWriter {
 
-  private final List<InflightBatchEntry> entries;
-  private final int totalLength;
-  private final long firstBatchPosition;
-  private final long timestamp;
+  private List<InflightBatchEntry> entries;
+  private int totalLength;
+  private long firstBatchPosition;
+  private long timestamp;
 
-  public BatchBufferWriter(
+  void reset(
       final List<InflightBatchEntry> entries,
       final int totalLength,
       final long firstBatchPosition,
@@ -44,15 +41,21 @@ public final class BatchBufferWriter implements BufferWriter {
     int writePos = offset;
     long batchPosition = firstBatchPosition;
 
-    for (final var entry : entries) {
-      buffer.putBytes(writePos, entry.requestBytes(), entry.batchOffset(), entry.batchLength());
+    for (int i = 0; i < entries.size(); i++) {
+      final var entry = entries.get(i);
 
-      EventBridgeBatch.patchBatchPosition(buffer, writePos, batchPosition);
+      buffer.putBytes(writePos, entry.requestBytes(), entry.batchOffset(), entry.batchLength());
+      EventBridgeBatch.patchPosition(buffer, writePos, batchPosition);
       EventBridgeBatch.patchTimestamp(buffer, writePos, timestamp);
 
       batchPosition += entry.entryCount();
       writePos += entry.batchLength();
     }
-    return getLength();
+
+    final int bytesWritten = writePos - offset;
+    assert bytesWritten == totalLength
+        : "BatchBufferWriter length mismatch: expected " + totalLength + ", wrote " + bytesWritten;
+
+    return bytesWritten;
   }
 }

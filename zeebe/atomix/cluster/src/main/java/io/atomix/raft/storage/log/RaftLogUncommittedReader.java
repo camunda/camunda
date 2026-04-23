@@ -16,11 +16,11 @@
  */
 package io.atomix.raft.storage.log;
 
-import io.atomix.raft.storage.log.entry.RaftLogEntry;
 import io.atomix.raft.storage.serializer.RaftEntrySBESerializer;
 import io.atomix.raft.storage.serializer.RaftEntrySerializer;
 import io.camunda.zeebe.journal.JournalReader;
 import io.camunda.zeebe.journal.JournalRecord;
+import io.camunda.zeebe.util.IndexScanResult;
 import java.util.NoSuchElementException;
 
 /**
@@ -47,9 +47,7 @@ public class RaftLogUncommittedReader implements RaftLogReader {
     }
 
     final JournalRecord journalRecord = journalReader.next();
-    final RaftLogEntry entry = serializer.readRaftLogEntry(journalRecord.data());
-
-    return new IndexedRaftLogEntryImpl(entry.term(), entry.entry(), journalRecord);
+    return toRaftEntry(journalRecord);
   }
 
   @Override
@@ -73,8 +71,23 @@ public class RaftLogUncommittedReader implements RaftLogReader {
   }
 
   @Override
+  public IndexScanResult scanFromAsqn(final long fromAsqn, final int maxBytes) {
+    return scan(fromAsqn, maxBytes, Long.MAX_VALUE);
+  }
+
+  @Override
   public void close() {
     journalReader.close();
+  }
+
+  private IndexedRaftLogEntry toRaftEntry(final JournalRecord journalRecord) {
+    final var data = journalRecord.data();
+    final var entry = serializer.readRaftLogEntry(data);
+    return new IndexedRaftLogEntryImpl(entry.term(), entry.entry(), journalRecord);
+  }
+
+  public IndexScanResult scan(final long fromAsqn, final int maxBytes, final long indexUpperBound) {
+    return journalReader.scanIndex(fromAsqn, maxBytes, indexUpperBound);
   }
 
   public long seekToAsqn(final long asqn, final long indexUpperBound) {

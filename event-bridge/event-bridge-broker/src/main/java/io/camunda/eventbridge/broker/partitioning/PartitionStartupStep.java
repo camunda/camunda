@@ -14,7 +14,7 @@ public interface PartitionStartupStep {
 
   String getName();
 
-  void prepare(PartitionContext context);
+  default void prepare(final PartitionContext context) {}
 
   ActorFuture<Void> activate(PartitionContext context);
 

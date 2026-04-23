@@ -27,6 +27,7 @@ public enum RequestType {
 
   COORDINATE("coordinate"),
   PUBLISH("publish"),
+  FETCH("fetch"),
 
   // All other request types are considered unknown
   // This value exists mainly for testing purposes

@@ -14,7 +14,7 @@ import io.camunda.eventbridge.broker.transport.coordinator.CoordinationRequestHa
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 
-public final class CoordinationStep implements PartitionStartupStep {
+public final class CoordinatorRequestHandlerStep implements PartitionStartupStep {
 
   @Override
   public String getName() {

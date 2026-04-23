@@ -12,6 +12,8 @@ import io.camunda.eventbridge.broker.bootstrap.BrokerBootstrap;
 import io.camunda.eventbridge.broker.partitioning.PartitionDistributor;
 import io.camunda.eventbridge.broker.partitioning.PartitionFactory;
 import io.camunda.eventbridge.broker.partitioning.RoundRobinPartitionDistributor;
+import io.camunda.eventbridge.broker.threading.ExecutorServiceFactory;
+import io.camunda.eventbridge.broker.threading.VirtualThreadExecutorFactory;
 import io.camunda.eventbridge.core.config.EventBridgeProperties;
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -22,6 +24,11 @@ import org.springframework.context.annotation.Configuration;
 
 @Configuration(proxyBeanMethods = false)
 public class EventBridgeBrokerConfiguration {
+
+  @Bean
+  ExecutorServiceFactory executorServiceFactory() {
+    return new VirtualThreadExecutorFactory();
+  }
 
   @Bean
   IdGenerator idGenerator(final EventBridgeProperties properties) {
@@ -40,10 +47,17 @@ public class EventBridgeBrokerConfiguration {
       final ActorScheduler actorScheduler,
       final EventBridgeProperties properties,
       final PartitionDistributor distributor,
+      final ExecutorServiceFactory executorServiceFactory,
       final IdGenerator idGenerator,
       final MeterRegistry meterRegistry) {
     return new BrokerBootstrap(
-        cluster, actorScheduler, properties, distributor, idGenerator, meterRegistry);
+        cluster,
+        actorScheduler,
+        properties,
+        distributor,
+        executorServiceFactory,
+        idGenerator,
+        meterRegistry);
   }
 
   @Bean

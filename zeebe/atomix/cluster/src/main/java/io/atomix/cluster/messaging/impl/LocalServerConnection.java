@@ -16,6 +16,8 @@
  */
 package io.atomix.cluster.messaging.impl;
 
+import io.atomix.cluster.messaging.ManagedPayload;
+import io.atomix.cluster.messaging.impl.ProtocolReply.Status;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -35,5 +37,10 @@ final class LocalServerConnection extends AbstractServerConnection {
   public void reply(
       final long messageId, final ProtocolReply.Status status, final Optional<byte[]> payload) {
     clientConnection.dispatch(new ProtocolReply(messageId, payload.orElse(EMPTY_PAYLOAD), status));
+  }
+
+  @Override
+  public void reply(final long messageId, final Status status, final ManagedPayload payload) {
+    clientConnection.dispatch(new ProtocolReply(messageId, payload, status));
   }
 }

@@ -39,7 +39,7 @@ abstract class AbstractClientConnection implements ClientConnection {
     final CompletableFuture<byte[]> responseFuture = responseFutures.remove(message.id());
     if (responseFuture != null) {
       if (message.status() == ProtocolReply.Status.OK) {
-        responseFuture.complete(message.payload());
+        responseFuture.complete(message.payloadAsBytes());
       } else if (message.status() == ProtocolReply.Status.ERROR_NO_HANDLER) {
         final String subject = extractMessage(message);
         responseFuture.completeExceptionally(new MessagingException.NoRemoteHandler(subject));
@@ -58,7 +58,7 @@ abstract class AbstractClientConnection implements ClientConnection {
   }
 
   private String extractMessage(final ProtocolReply message) {
-    final byte[] payload = message.payload();
+    final byte[] payload = message.payloadAsBytes();
     String exceptionMessage = null;
 
     if (payload != null && payload.length > 0) {

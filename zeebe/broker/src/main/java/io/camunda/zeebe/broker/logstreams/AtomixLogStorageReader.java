@@ -12,6 +12,7 @@ import io.atomix.raft.storage.log.RaftLogReader;
 import io.atomix.raft.storage.log.entry.ApplicationEntry;
 import io.atomix.raft.storage.log.entry.SerializedApplicationEntry;
 import io.camunda.zeebe.logstreams.storage.LogStorageReader;
+import io.camunda.zeebe.util.IndexScanResult;
 import java.util.NoSuchElementException;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -59,6 +60,11 @@ public final class AtomixLogStorageReader implements LogStorageReader {
     reader.seekToAsqn(boundedPosition);
     reset();
     readNextBlock();
+  }
+
+  @Override
+  public IndexScanResult scan(final long fromPosition, final int maxBytes) {
+    return reader.scanFromAsqn(fromPosition, maxBytes);
   }
 
   @Override

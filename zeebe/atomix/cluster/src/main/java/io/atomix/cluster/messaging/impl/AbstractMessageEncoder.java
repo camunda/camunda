@@ -20,13 +20,14 @@ import io.atomix.utils.net.Address;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufUtil;
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.handler.codec.MessageToByteEncoder;
+import io.netty.handler.codec.MessageToMessageEncoder;
 import java.io.IOException;
+import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /** Encode InternalMessage out into a byte buffer. */
-abstract class AbstractMessageEncoder extends MessageToByteEncoder<Object> {
+abstract class AbstractMessageEncoder extends MessageToMessageEncoder<Object> {
   // Effectively MessageToByteEncoder<InternalMessage>,
   // had to specify <Object> to avoid Class Loader not being able to find some classes.
 
@@ -41,7 +42,7 @@ abstract class AbstractMessageEncoder extends MessageToByteEncoder<Object> {
 
   protected abstract void encodeAddress(ProtocolMessage message, ByteBuf buffer);
 
-  protected abstract void encodeMessage(ProtocolMessage message, ByteBuf buffer);
+  protected abstract void encodeMessage(ProtocolMessage message, ByteBuf buffer, List<Object> out);
 
   protected abstract void encodeRequest(ProtocolRequest request, ByteBuf out);
 
@@ -58,7 +59,7 @@ abstract class AbstractMessageEncoder extends MessageToByteEncoder<Object> {
     }
   }
 
-  static void writeInt(final ByteBuf buf, final int value) {
+  public static void writeInt(final ByteBuf buf, final int value) {
     if (value >>> 7 == 0) {
       buf.writeByte(value);
     } else if (value >>> 14 == 0) {
@@ -161,13 +162,63 @@ abstract class AbstractMessageEncoder extends MessageToByteEncoder<Object> {
 
   @Override
   protected void encode(
+      final ChannelHandlerContext context, final Object message, final List<Object> out)
+      throws Exception {
+
+    // Only encode actual ProtocolMessages.
+    // If Netty sends internal control objects down the pipeline, we ignore them.
+    if (!(message instanceof final ProtocolMessage protocolMessage)) {
+      out.add(message);
+      return;
+    }
+
+    // 1. Allocate a ByteBuf for the Atomix/Netty protocol headers
+    final ByteBuf headerBuffer = context.alloc().buffer(128);
+    final ByteBuf footerBuffer = context.alloc().buffer(128);
+    boolean addedToOut = false;
+
+    try {
+      if (!addressWritten) {
+        encodeAddress(protocolMessage, headerBuffer);
+        addressWritten = true;
+      }
+
+      // 3. Write the message headers (V1/V2 specific)
+      encodeMessage(protocolMessage, headerBuffer, out);
+
+      if (headerBuffer.isReadable()) {
+        out.add(headerBuffer);
+        addedToOut = true;
+      }
+
+      if (protocolMessage.payload() != null) {
+        protocolMessage.payload().encode(headerBuffer, out);
+      }
+
+      if (protocolMessage instanceof ProtocolRequest) {
+        encodeRequest((ProtocolRequest) protocolMessage, footerBuffer);
+      } else if (protocolMessage instanceof ProtocolReply) {
+        encodeReply((ProtocolReply) protocolMessage, footerBuffer);
+      }
+
+      if (footerBuffer.isReadable()) {
+        out.add(footerBuffer);
+      }
+    } finally {
+      if (!addedToOut) {
+        headerBuffer.release();
+      }
+    }
+  }
+
+  protected void encode(
       final ChannelHandlerContext context, final Object rawMessage, final ByteBuf out) {
     if (!addressWritten) {
       encodeAddress((ProtocolMessage) rawMessage, out);
       addressWritten = true;
     }
 
-    encodeMessage((ProtocolMessage) rawMessage, out);
+    encodeMessage((ProtocolMessage) rawMessage, out, null);
 
     if (rawMessage instanceof ProtocolRequest) {
       encodeRequest((ProtocolRequest) rawMessage, out);

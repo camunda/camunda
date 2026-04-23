@@ -7,11 +7,11 @@
  */
 package io.camunda.eventbridge.broker.partitioning.steps;
 
+import io.camunda.eventbridge.broker.flowcontrol.CompositeFlowControl;
+import io.camunda.eventbridge.broker.flowcontrol.InFlightLimiter;
 import io.camunda.eventbridge.broker.logstreams.EventBridgeEventStream;
 import io.camunda.eventbridge.broker.partitioning.PartitionContext;
 import io.camunda.eventbridge.broker.partitioning.PartitionStartupStep;
-import io.camunda.eventbridge.broker.publish.flowcontrol.CompositeFlowControl;
-import io.camunda.eventbridge.broker.publish.flowcontrol.InFlightLimiter;
 import io.camunda.eventbridge.broker.transport.publish.PublishRequestCorrelator;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
@@ -36,6 +36,7 @@ public final class EventStreamStep implements PartitionStartupStep {
             .actorScheduler(context.getActorScheduler())
             .clock(context.getClock())
             .flowControl(new CompositeFlowControl(new InFlightLimiter(8192)))
+            .highWatermark(context.getHighWatermark())
             .build());
   }
 

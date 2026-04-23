@@ -22,6 +22,7 @@ import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import java.time.InstantSource;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import org.agrona.concurrent.IdGenerator;
 import org.slf4j.Logger;
@@ -42,6 +43,7 @@ final class PartitionBootstrapper {
   private final PartitionDistributor distributor;
   private final InstantSource clock;
   private final IdGenerator idGenerator;
+  private final ExecutorService executorService;
 
   private final List<CreatedPartition> createdPartitions = new ArrayList<>();
   private final List<PartitionLifecycle> lifecycles = new ArrayList<>();
@@ -52,13 +54,15 @@ final class PartitionBootstrapper {
       final EventBridgeProperties properties,
       final PartitionDistributor distributor,
       final InstantSource clock,
-      final IdGenerator idGenerator) {
+      final IdGenerator idGenerator,
+      final ExecutorService executorService) {
     this.cluster = cluster;
     this.actorScheduler = actorScheduler;
     this.properties = properties;
     this.distributor = distributor;
     this.clock = clock;
     this.idGenerator = idGenerator;
+    this.executorService = executorService;
   }
 
   void start(
@@ -152,7 +156,8 @@ final class PartitionBootstrapper {
             brokerMessagingService,
             clock,
             idGenerator,
-            topologyManager);
+            topologyManager,
+            executorService);
     lifecycles.add(lifecycle);
     actorScheduler.submitActor(lifecycle);
 

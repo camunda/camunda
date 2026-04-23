@@ -23,6 +23,7 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.google.common.util.concurrent.MoreExecutors;
 import io.atomix.cluster.messaging.ManagedMessagingService;
+import io.atomix.cluster.messaging.ManagedPayload;
 import io.atomix.cluster.messaging.MessagingConfig;
 import io.atomix.cluster.messaging.MessagingException;
 import io.atomix.cluster.messaging.MessagingService;
@@ -320,7 +321,7 @@ public final class NettyMessagingService implements ManagedMessagingService {
     handlers.register(
         type,
         (message, connection) ->
-            executor.execute(() -> handler.accept(message.sender(), message.payload())));
+            executor.execute(() -> handler.accept(message.sender(), message.payloadAsBytes())));
   }
 
   @Override
@@ -336,7 +337,7 @@ public final class NettyMessagingService implements ManagedMessagingService {
                   byte[] responsePayload = null;
                   ProtocolReply.Status status = ProtocolReply.Status.OK;
                   try {
-                    responsePayload = handler.apply(message.sender(), message.payload());
+                    responsePayload = handler.apply(message.sender(), message.payloadAsBytes());
                   } catch (final Exception e) {
                     log.warn(
                         "Unexpected error while handling message {} from {}",
@@ -366,7 +367,7 @@ public final class NettyMessagingService implements ManagedMessagingService {
           final var id = message.id();
           final var subject = message.subject();
           final var sender = message.sender();
-          final var payload = message.payload();
+          final var payload = message.payloadAsBytes();
           handler
               .apply(sender, payload)
               .whenComplete(
@@ -391,6 +392,47 @@ public final class NettyMessagingService implements ManagedMessagingService {
                       }
                     }
                     connection.reply(id, status, Optional.ofNullable(responsePayload));
+                  });
+        });
+  }
+
+  @Override
+  public void registerHandlerWithManagedPayload(
+      final String type, final BiFunction<Address, byte[], CompletableFuture<ManagedPayload>> handler) {
+    handlers.register(
+        type,
+        (message, connection) -> {
+          // Extract message components here to avoid retaining a reference to the entire message.
+          // This means we don't need to retain the message payload until the response callback is
+          // completed.
+          final var id = message.id();
+          final var subject = message.subject();
+          final var sender = message.sender();
+          final var payload = message.payloadAsBytes();
+          handler
+              .apply(sender, payload)
+              .whenComplete(
+                  (result, error) -> {
+                    ManagedPayload responsePayload = null;
+                    final ProtocolReply.Status status;
+
+                    if (error == null) {
+                      status = ProtocolReply.Status.OK;
+                      responsePayload = result;
+                    } else {
+                      log.warn(
+                          "Unexpected error while handling message {} from {}",
+                          subject,
+                          sender,
+                          error);
+
+                      status = ProtocolReply.Status.ERROR_HANDLER_EXCEPTION;
+                      final String exceptionMessage = error.getMessage();
+                      if (exceptionMessage != null) {
+                        responsePayload = new ByteArrayPayload(StringUtil.getBytes(error.getMessage()));
+                      }
+                    }
+                    connection.reply(id, status, responsePayload);
                   });
         });
   }

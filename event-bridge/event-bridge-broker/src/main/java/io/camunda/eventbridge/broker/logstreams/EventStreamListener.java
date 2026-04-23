@@ -7,9 +7,9 @@
  */
 package io.camunda.eventbridge.broker.logstreams;
 
-import io.camunda.eventbridge.broker.publish.EventStreamAppender;
+import io.camunda.eventbridge.broker.publish.EventStreamPublisher;
 
-/** Callback for batch completion events from the {@link EventStreamAppender}. */
+/** Callback for batch completion events from the {@link EventStreamPublisher}. */
 public interface EventStreamListener {
 
   void onCommitted(long requestId, long firstPosition, long lastPosition);

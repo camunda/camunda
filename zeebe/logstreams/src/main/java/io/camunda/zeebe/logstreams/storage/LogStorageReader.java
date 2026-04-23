@@ -9,6 +9,7 @@ package io.camunda.zeebe.logstreams.storage;
 
 import io.camunda.zeebe.logstreams.log.LoggedEvent;
 import io.camunda.zeebe.logstreams.storage.LogStorage.AppendListener;
+import io.camunda.zeebe.util.IndexScanResult;
 import java.io.Closeable;
 import java.nio.ByteBuffer;
 import java.util.Iterator;
@@ -40,6 +41,10 @@ public interface LogStorageReader extends Iterator<DirectBuffer>, Closeable {
    * @param position the position to seek to
    */
   void seek(final long position);
+
+  default IndexScanResult scan(final long fromPosition, final int maxBytes) {
+    throw new UnsupportedOperationException();
+  }
 
   @Override
   void close();

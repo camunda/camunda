@@ -7,6 +7,7 @@
  */
 package io.camunda.eventbridge.service;
 
+import io.camunda.eventbridge.broker.request.publish.BrokerFetchRequest;
 import io.camunda.eventbridge.broker.request.publish.BrokerPublishRequest;
 import io.camunda.eventbridge.protocol.request.PublishBatchResponse;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
@@ -43,6 +44,12 @@ public class PublishService {
         .sendRequest(new BrokerPublishRequest().wrapBatch(body))
         .handleAsync(handleBrokerResponse(), executor)
         .thenApplyAsync(BrokerResponse::getResponse, executor);
+  }
+
+  public CompletableFuture<BrokerResponse<Void>> fetch() {
+    return brokerClient
+        .sendRequest(new BrokerFetchRequest())
+        .handleAsync(handleBrokerResponse(), executor);
   }
 
   private <R> BiFunction<BrokerResponse<R>, Throwable, BrokerResponse<R>> handleBrokerResponse() {

@@ -10,6 +10,7 @@ package io.camunda.zeebe.broker.logstreams;
 import io.atomix.raft.RaftCommitListener;
 import io.atomix.raft.zeebe.ZeebeLogAppender;
 import io.camunda.zeebe.logstreams.storage.LogStorage;
+import io.camunda.zeebe.util.JournalIndexCursor;
 import io.camunda.zeebe.util.buffer.BufferWriter;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArraySet;
@@ -26,16 +27,32 @@ public class AtomixLogStorage implements LogStorage, RaftCommitListener {
   private final AtomixReaderFactory readerFactory;
   private final ZeebeLogAppender logAppender;
   private final Set<CommitListener> commitListeners = new CopyOnWriteArraySet<>();
+  private final JournalIndexCursor journalIndexCursor;
 
   public AtomixLogStorage(
       final AtomixReaderFactory readerFactory, final ZeebeLogAppender logAppender) {
+    this(readerFactory, logAppender, null);
+  }
+
+  public AtomixLogStorage(
+      final AtomixReaderFactory readerFactory,
+      final ZeebeLogAppender logAppender,
+      final JournalIndexCursor journalIndexCursor) {
     this.readerFactory = readerFactory;
     this.logAppender = logAppender;
+    this.journalIndexCursor = journalIndexCursor;
   }
 
   public static AtomixLogStorage ofPartition(
       final AtomixReaderFactory readerFactory, final ZeebeLogAppender appender) {
     return new AtomixLogStorage(readerFactory, appender);
+  }
+
+  public static AtomixLogStorage ofPartition(
+      final AtomixReaderFactory readerFactory,
+      final ZeebeLogAppender appender,
+      final JournalIndexCursor journalIndexCursor) {
+    return new AtomixLogStorage(readerFactory, appender, journalIndexCursor);
   }
 
   @Override

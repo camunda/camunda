@@ -18,6 +18,7 @@ package io.atomix.raft.storage.log;
 
 import io.atomix.raft.storage.serializer.RaftEntrySBESerializer;
 import io.atomix.raft.storage.serializer.RaftEntrySerializer;
+import io.camunda.zeebe.util.IndexScanResult;
 import java.util.NoSuchElementException;
 
 /** Raft log reader that reads only committed entries. */
@@ -53,11 +54,13 @@ public class RaftLogCommittedReader implements RaftLogReader {
     return entry;
   }
 
+  @Override
   public long reset() {
     nextIndex = reader.reset();
     return nextIndex;
   }
 
+  @Override
   public long seek(final long index) {
     // allow seeking one past the commit index to simulate being at the end of the log
     final long upperBoundIndex = log.getCommitIndex() + 1;
@@ -67,14 +70,21 @@ public class RaftLogCommittedReader implements RaftLogReader {
     return nextIndex;
   }
 
+  @Override
   public long seekToLast() {
     seek(log.getCommitIndex());
     return nextIndex;
   }
 
+  @Override
   public long seekToAsqn(final long asqn) {
     nextIndex = reader.seekToAsqn(asqn, log.getCommitIndex());
     return nextIndex;
+  }
+
+  @Override
+  public IndexScanResult scanFromAsqn(final long fromAsqn, final int maxBytes) {
+    return reader.scan(fromAsqn, maxBytes, log.getCommitIndex());
   }
 
   @Override

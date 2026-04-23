@@ -20,6 +20,9 @@ import static io.camunda.zeebe.journal.file.SegmentedJournal.ASQN_IGNORE;
 
 import io.camunda.zeebe.journal.JournalReader;
 import io.camunda.zeebe.journal.JournalRecord;
+import io.camunda.zeebe.util.IndexEntry;
+import io.camunda.zeebe.util.IndexScanResult;
+import java.util.List;
 import java.util.NoSuchElementException;
 
 class SegmentedJournalReader implements JournalReader {
@@ -159,6 +162,17 @@ class SegmentedJournalReader implements JournalReader {
   }
 
   @Override
+  public IndexScanResult scanIndex(
+      final long fromAsqn, final int maxBytes, final long upperBoundIndex) {
+    final var stamp = journal.acquireReadlock();
+    try {
+      return unsafeScanIndex(fromAsqn, maxBytes, upperBoundIndex);
+    } finally {
+      journal.releaseReadlock(stamp);
+    }
+  }
+
+  @Override
   public long getNextIndex() {
     return currentReader.getNextIndex();
   }
@@ -167,6 +181,88 @@ class SegmentedJournalReader implements JournalReader {
   public void close() {
     currentReader.close();
     journal.closeReader(this);
+  }
+
+  private boolean isFirstSegment(final Segment segment) {
+    return journal.getFirstSegment() == segment;
+  }
+
+  private boolean isLastSegment(final Segment segment) {
+    return journal.getLastSegment() == segment;
+  }
+
+  private Segment forwardToCorrectSegment(final Segment segment, final long asqn) {
+    Segment currentSegment = segment;
+    while (currentSegment != null && currentSegment.isOpen()) {
+      final var segmentIndex = currentSegment.segmentIndex();
+      final var segmentIndexEntryCount = segmentIndex.getEntryCount();
+
+      // Skip segments that have no out-of-band index or are empty
+      if (segmentIndex == null || segmentIndexEntryCount == 0) {
+        currentSegment = journal.getNextSegment(currentSegment.index());
+        continue;
+      }
+
+      // If this segment's highest ASQN is >= requested ASQN, we found the right one!
+      // We also stop if it's the absolute last segment to prevent over-shooting.
+      if (isLastSegment(currentSegment) || segmentIndex.getLastIndexedAsqn() >= asqn) {
+        return currentSegment;
+      }
+
+      // Still behind, move to the next segment
+      currentSegment = journal.getNextSegment(currentSegment.index());
+    }
+
+    return null; // Reached end of log
+  }
+
+  private IndexScanResult unsafeScanIndex(
+      final long fromAsqn, final int maxBytes, final long upperBoundIndex) {
+    final var index = journal.getJournalIndex().lookupAsqn(fromAsqn, upperBoundIndex);
+
+    final Segment initialSegment;
+    if (index == null) {
+      initialSegment = journal.getFirstSegment();
+    } else {
+      initialSegment = journal.getSegment(index);
+    }
+
+    final var finalSegment = forwardToCorrectSegment(initialSegment, fromAsqn);
+
+    // If we skipped an empty last segment, or ran completely out of segments
+    if (finalSegment == null) {
+      return IndexScanResult.EndOfLog.INSTANCE;
+    }
+
+    final var segmentIndex = finalSegment.segmentIndex();
+    final long firstIndexedAsqn = segmentIndex.getFirstIndexedAsqn();
+    final long lastIndexedAsqn = segmentIndex.getLastIndexedAsqn();
+
+    // Truncation Check
+    if (isFirstSegment(finalSegment) && firstIndexedAsqn > fromAsqn) {
+      return IndexScanResult.Truncated.INSTANCE;
+    }
+
+    List<IndexEntry> entries = null;
+    final var lease = finalSegment.retain();
+    try {
+      entries = segmentIndex.scanEntries(fromAsqn, maxBytes, upperBoundIndex);
+
+      if (entries.isEmpty()) {
+        if (fromAsqn > lastIndexedAsqn) {
+          return IndexScanResult.EndOfLog.INSTANCE;
+        } else {
+          return IndexScanResult.FutureOffset.INSTANCE;
+        }
+      }
+
+      return new IndexScanResult.Success(finalSegment.channel(), entries, lease);
+
+    } finally {
+      if (entries == null || entries.isEmpty()) {
+        lease.close(); // Release lease on failure/empty paths
+      }
+    }
   }
 
   long unsafeSeek(final long index) {

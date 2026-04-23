@@ -17,7 +17,7 @@
 package io.atomix.cluster.messaging.impl;
 
 import com.google.common.base.MoreObjects;
-import io.atomix.utils.misc.ArraySizeHashPrinter;
+import io.atomix.cluster.messaging.ManagedPayload;
 
 /** Internal reply message. */
 public final class ProtocolReply extends ProtocolMessage {
@@ -25,6 +25,11 @@ public final class ProtocolReply extends ProtocolMessage {
   private final Status status;
 
   public ProtocolReply(final long id, final byte[] payload, final Status status) {
+    super(id, new ByteArrayPayload(payload));
+    this.status = status;
+  }
+
+  public ProtocolReply(final long id, final ManagedPayload payload, final Status status) {
     super(id, payload);
     this.status = status;
   }
@@ -43,7 +48,6 @@ public final class ProtocolReply extends ProtocolMessage {
     return MoreObjects.toStringHelper(this)
         .add("id", id())
         .add("status", status())
-        .add("payload", ArraySizeHashPrinter.of(payload()))
         .toString();
   }
 

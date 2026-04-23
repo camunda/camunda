@@ -16,6 +16,7 @@
  */
 package io.atomix.cluster.messaging.impl;
 
+import io.atomix.cluster.messaging.ManagedPayload;
 import java.util.Optional;
 
 /** Server-side connection interface which handles replying to messages. */
@@ -29,6 +30,8 @@ interface ServerConnection extends Connection<ProtocolRequest> {
    * @param payload the response payload
    */
   void reply(long messageId, ProtocolReply.Status status, Optional<byte[]> payload);
+
+  void reply(long messageId, ProtocolReply.Status status, ManagedPayload payload);
 
   /** Closes the connection. */
   @Override

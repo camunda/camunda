@@ -15,6 +15,8 @@
  */
 package io.atomix.raft.storage.log;
 
+import io.camunda.zeebe.util.IndexScanResult;
+
 public interface RaftLogReader extends java.util.Iterator<IndexedRaftLogEntry>, AutoCloseable {
 
   /**
@@ -46,6 +48,8 @@ public interface RaftLogReader extends java.util.Iterator<IndexedRaftLogEntry>, 
    * @return the index of the record that will be returned by {@link #next()}
    */
   long seekToAsqn(final long asqn);
+
+  IndexScanResult scanFromAsqn(final long fromAsqn, final int maxBytes);
 
   @Override
   void close();

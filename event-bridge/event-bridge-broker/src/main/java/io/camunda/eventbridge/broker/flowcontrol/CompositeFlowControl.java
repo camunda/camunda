@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.eventbridge.broker.publish.flowcontrol;
+package io.camunda.eventbridge.broker.flowcontrol;
 
 public final class CompositeFlowControl implements FlowControl {
 
@@ -16,11 +16,11 @@ public final class CompositeFlowControl implements FlowControl {
   }
 
   @Override
-  public boolean tryAcquire(final int entryCount, final int bytesLength) {
+  public boolean tryAcquire(final int permits) {
     for (int i = 0; i < controls.length; i++) {
-      if (!controls[i].tryAcquire(entryCount, bytesLength)) {
+      if (!controls[i].tryAcquire(permits)) {
         for (int j = 0; j < i; j++) {
-          controls[j].onCompleted(entryCount, bytesLength);
+          controls[j].release(permits);
         }
         return false;
       }
@@ -29,9 +29,9 @@ public final class CompositeFlowControl implements FlowControl {
   }
 
   @Override
-  public void onCompleted(final int entryCount, final int bytesLength) {
+  public void release(final int permits) {
     for (final var control : controls) {
-      control.onCompleted(entryCount, bytesLength);
+      control.release(permits);
     }
   }
 }

@@ -36,6 +36,13 @@ public final class RequestHandlerRegistry implements AutoCloseable {
     LOG.info("Partition {} — registered handler: {}", partitionId, topic);
   }
 
+  public void registerWithManagedPayload(final String topic, final RequestHandler handler) {
+    registeredTopics.put(topic, handler);
+    messagingService.registerHandlerWithManagedPayload(
+        topic, (sender, requestBytes) -> handler.handleWithManagedPayload(requestBytes));
+    LOG.info("Partition {} — registered handler: {}", partitionId, topic);
+  }
+
   public void unregister(final String topic) {
     registeredTopics.remove(topic);
     try {

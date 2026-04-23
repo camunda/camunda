@@ -9,46 +9,31 @@ package io.camunda.eventbridge.broker.partitioning.steps;
 
 import io.camunda.eventbridge.broker.partitioning.PartitionContext;
 import io.camunda.eventbridge.broker.partitioning.PartitionStartupStep;
-import io.camunda.eventbridge.broker.transport.publish.PublishRequestHandler;
+import io.camunda.eventbridge.broker.watermark.CommittedByteWatermark;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 
-public final class PublishHandlerStep implements PartitionStartupStep {
+public class HighWatermarkStep implements PartitionStartupStep {
 
   @Override
   public String getName() {
-    return "PublishHandler";
+    return "High Watermark";
   }
 
   @Override
   public void prepare(final PartitionContext context) {
-    // Writer not available until EventStreamStep.activate — nothing to prepare
+    final var tracker = new CommittedByteWatermark(context.getPartitionId());
+    context.setHighWatermark(tracker);
   }
 
   @Override
   public ActorFuture<Void> activate(final PartitionContext context) {
-    final var handler =
-        new PublishRequestHandler(
-            context.getPartitionId(),
-            context.getEventStream().getWriter(),
-            context.getCorrelator());
-    context.setPublishRequestHandler(handler);
-
-    final var topic = PublishRequestHandler.topicName(context.getPartitionId());
-    context.getRequestHandlerRegistry().register(topic, handler);
-
     return CompletableActorFuture.completed(null);
   }
 
   @Override
   public ActorFuture<Void> deactivate(final PartitionContext context) {
-    final var topic = PublishRequestHandler.topicName(context.getPartitionId());
-    if (context.getRequestHandlerRegistry() != null) {
-      context.getRequestHandlerRegistry().unregister(topic);
-    }
-
-    context.setPublishRequestHandler(null);
-
+    context.setHighWatermark(null);
     return CompletableActorFuture.completed(null);
   }
 }

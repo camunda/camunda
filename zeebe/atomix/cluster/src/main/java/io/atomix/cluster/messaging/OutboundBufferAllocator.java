@@ -5,12 +5,9 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.eventbridge.broker.publish.flowcontrol;
+package io.atomix.cluster.messaging;
 
-/** Admission control for the inbound publish path. Must be thread-safe. */
-public interface FlowControl {
+public interface OutboundBufferAllocator {
 
-  boolean tryAcquire(int entryCount, int bytesLength);
-
-  void onCompleted(int entryCount, int bytesLength);
+  OutboundBuffer allocate();
 }

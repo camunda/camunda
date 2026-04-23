@@ -8,32 +8,89 @@
 package io.camunda.eventbridge.broker.publish;
 
 import io.camunda.zeebe.logstreams.storage.LogStorage.AppendListener;
-import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
+import java.util.ArrayList;
 import java.util.List;
 
-/** Tracks a single raft entry that contains multiple batches (batch of batches). */
-final class PendingAppend implements AppendListener {
+/** Reusable execution context for a single Raft append operation. */
+final class PendingAppend implements AppendListener, Runnable {
 
-  private final List<ResolvedEntry> entries;
-  private final CompletableActorFuture<Void> commitFuture = new CompletableActorFuture<>();
+  private final EventStreamPublisher publisher;
+  private final BatchBufferWriter writer;
 
-  PendingAppend(final List<ResolvedEntry> entries) {
-    this.entries = entries;
+  private final List<InflightBatchEntry> entries;
+
+  private int capturedEntryCount;
+  private int capturedBatchLength;
+  private long firstBatchPosition;
+  private Throwable commitError;
+
+  PendingAppend(final EventStreamPublisher publisher, final int maxBatchesPerDrain) {
+    this.publisher = publisher;
+    writer = new BatchBufferWriter();
+    entries = new ArrayList<>(maxBatchesPerDrain);
   }
+
+  /** Clears previous state and prepares the context for a new append. */
+  void reset(final long firstPosition) {
+    entries.clear();
+    capturedEntryCount = 0;
+    capturedBatchLength = 0;
+    commitError = null;
+    firstBatchPosition = firstPosition;
+  }
+
+  /** Encapsulates the accumulation of entries and their respective metrics. */
+  void addEntry(final InflightBatchEntry entry) {
+    entries.add(entry);
+    capturedEntryCount += entry.entryCount();
+    capturedBatchLength += entry.batchLength();
+  }
+
+  /** Readies the internal writer with the current state and returns it for serialization. */
+  BatchBufferWriter getWriter(final long timestamp) {
+    writer.reset(entries, capturedBatchLength, firstBatchPosition, timestamp);
+    return writer;
+  }
+
+  // --- Accessors ---
+
+  int entryCount() {
+    return capturedEntryCount;
+  }
+
+  int batchLength() {
+    return capturedBatchLength;
+  }
+
+  long firstPosition() {
+    return firstBatchPosition;
+  }
+
+  long lastPosition() {
+    return firstBatchPosition + capturedEntryCount - 1;
+  }
+
+  Throwable commitError() {
+    return commitError;
+  }
+
+  int entriesSize() {
+    return entries.size();
+  }
+
+  InflightBatchEntry getEntry(final int index) {
+    return entries.get(index);
+  }
+
+  // --- AppendListener Callbacks ---
 
   @Override
   public void onCommit(final long index, final long highestPosition) {
-    commitFuture.complete(null);
+    publisher.submitAppendCompletion(this);
   }
 
-  List<ResolvedEntry> getEntries() {
-    return entries;
+  @Override
+  public void run() {
+    publisher.onAppendCompleted(this);
   }
-
-  CompletableActorFuture<Void> getCommitFuture() {
-    return commitFuture;
-  }
-
-  /** An inflight entry with its assigned positions. Computed once during flush. */
-  record ResolvedEntry(long requestId, long firstPosition, long lastPosition) {}
 }

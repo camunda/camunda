@@ -195,11 +195,13 @@ final class NettyMessagingServiceTest {
               public void channelRead(final ChannelHandlerContext ctx, final Object msg)
                   throws Exception {
                 if (msg instanceof final ProtocolReply reply) {
-                  if (reply.payload() != null && reply.payload().length > 0) {
+                  if (reply.payloadAsBytes() != null && reply.payloadAsBytes().length > 0) {
                     heartbeatResponseFromServer.set(
                         new HeartbeatResponseDecoder()
                             .wrapAndApplyHeader(
-                                new UnsafeBuffer(reply.payload()), 0, new MessageHeaderDecoder()));
+                                new UnsafeBuffer(reply.payloadAsBytes()),
+                                0,
+                                new MessageHeaderDecoder()));
                   } else {
                     emptyHeartbeatResponseFromServerReceived.set(true);
                   }

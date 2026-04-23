@@ -18,7 +18,7 @@ package io.atomix.cluster.messaging.impl;
 
 import io.atomix.utils.net.Address;
 import io.netty.handler.codec.ByteToMessageDecoder;
-import io.netty.handler.codec.MessageToByteEncoder;
+import io.netty.handler.codec.MessageToMessageEncoder;
 
 /** V1 messaging protocol. */
 public class MessagingProtocolV1 implements MessagingProtocol {
@@ -34,7 +34,7 @@ public class MessagingProtocolV1 implements MessagingProtocol {
   }
 
   @Override
-  public MessageToByteEncoder<Object> newEncoder() {
+  public MessageToMessageEncoder<Object> newEncoder() {
     return new MessageEncoderV1(address);
   }
 

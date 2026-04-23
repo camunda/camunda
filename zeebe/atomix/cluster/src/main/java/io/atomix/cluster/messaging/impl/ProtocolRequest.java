@@ -17,7 +17,7 @@
 package io.atomix.cluster.messaging.impl;
 
 import com.google.common.base.MoreObjects;
-import io.atomix.utils.misc.ArraySizeHashPrinter;
+import io.atomix.cluster.messaging.ManagedPayload;
 import io.atomix.utils.net.Address;
 
 /** Internal request message. */
@@ -27,6 +27,13 @@ public final class ProtocolRequest extends ProtocolMessage {
 
   public ProtocolRequest(
       final long id, final Address sender, final String subject, final byte[] payload) {
+    super(id, new ByteArrayPayload(payload));
+    this.sender = sender;
+    this.subject = subject;
+  }
+
+  public ProtocolRequest(
+      final long id, final Address sender, final String subject, final ManagedPayload payload) {
     super(id, payload);
     this.sender = sender;
     this.subject = subject;
@@ -51,7 +58,6 @@ public final class ProtocolRequest extends ProtocolMessage {
         .add("id", id())
         .add("subject", subject)
         .add("sender", sender)
-        .add("payload", ArraySizeHashPrinter.of(payload()))
         .toString();
   }
 }

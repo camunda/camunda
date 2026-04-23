@@ -243,7 +243,8 @@ class SegmentsManagerTest {
                 (channel, fd, segmentSize) -> {
                   SegmentAllocator.posixOrFill().allocate(channel, fd, segmentSize);
                   throw expectedRootCause;
-                }))) {
+                },
+                null))) {
       failingSegments.open();
       // will allocate the next segment
       failingSegments.getNextSegment();

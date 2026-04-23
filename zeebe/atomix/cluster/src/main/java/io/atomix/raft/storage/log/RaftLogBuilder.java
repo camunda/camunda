@@ -22,6 +22,7 @@ import io.camunda.zeebe.journal.JournalMetaStore;
 import io.camunda.zeebe.journal.file.SegmentAllocator;
 import io.camunda.zeebe.journal.file.SegmentedJournal;
 import io.camunda.zeebe.journal.file.SegmentedJournalBuilder;
+import io.camunda.zeebe.util.JournalIndexCursor;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.io.File;
 
@@ -147,6 +148,11 @@ public class RaftLogBuilder implements io.atomix.utils.Builder<RaftLog> {
    */
   public RaftLogBuilder withMetaStore(final JournalMetaStore metaStore) {
     journalBuilder.withMetaStore(metaStore);
+    return this;
+  }
+
+  public RaftLogBuilder withIndexEntrySupplier(final JournalIndexCursor journalIndexCursor) {
+    journalBuilder.withIndexSupplier(journalIndexCursor);
     return this;
   }
 

@@ -16,13 +16,15 @@
  */
 package io.atomix.cluster.messaging.impl;
 
+import io.atomix.cluster.messaging.ManagedPayload;
+
 /** Base class for internal messages. */
 public abstract class ProtocolMessage {
 
+  protected final ManagedPayload payload;
   private final long id;
-  private final byte[] payload;
 
-  protected ProtocolMessage(final long id, final byte[] payload) {
+  protected ProtocolMessage(final long id, final ManagedPayload payload) {
     this.id = id;
     this.payload = payload;
   }
@@ -41,7 +43,11 @@ public abstract class ProtocolMessage {
     return id;
   }
 
-  public byte[] payload() {
+  public byte[] payloadAsBytes() {
+    return ((ByteArrayPayload) payload).getBytes();
+  }
+
+  public ManagedPayload payload() {
     return payload;
   }
 

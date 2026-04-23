@@ -19,6 +19,7 @@ package io.atomix.cluster.messaging.impl;
 import io.atomix.utils.net.Address;
 import io.netty.buffer.ByteBuf;
 import java.net.InetAddress;
+import java.util.List;
 
 /** V1 message encoder. */
 class MessageEncoderV1 extends AbstractMessageEncoder {
@@ -36,13 +37,14 @@ class MessageEncoderV1 extends AbstractMessageEncoder {
   }
 
   @Override
-  protected void encodeMessage(final ProtocolMessage message, final ByteBuf buffer) {
+  protected void encodeMessage(
+      final ProtocolMessage message, final ByteBuf buffer, final List<Object> out) {
     buffer.writeByte(message.type().id());
     writeLong(buffer, message.id());
 
-    final byte[] payload = message.payload();
-    writeInt(buffer, payload.length);
-    buffer.writeBytes(payload);
+    final var payload = message.payload();
+    final var length = payload.length();
+    writeInt(buffer, length);
   }
 
   @Override

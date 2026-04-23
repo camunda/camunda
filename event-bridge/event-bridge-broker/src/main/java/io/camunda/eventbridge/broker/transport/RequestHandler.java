@@ -7,6 +7,7 @@
  */
 package io.camunda.eventbridge.broker.transport;
 
+import io.atomix.cluster.messaging.ManagedPayload;
 import java.util.concurrent.CompletableFuture;
 
 /** Handles a request for a specific partition topic. */
@@ -14,4 +15,8 @@ import java.util.concurrent.CompletableFuture;
 public interface RequestHandler {
 
   CompletableFuture<byte[]> handle(byte[] requestBytes);
+
+  default CompletableFuture<ManagedPayload> handleWithManagedPayload(final byte[] requestBytes) {
+    throw new UnsupportedOperationException();
+  }
 }

@@ -15,6 +15,7 @@
  */
 package io.camunda.zeebe.journal;
 
+import io.camunda.zeebe.util.IndexScanResult;
 import java.util.Iterator;
 
 public interface JournalReader extends Iterator<JournalRecord>, AutoCloseable {
@@ -103,6 +104,8 @@ public interface JournalReader extends Iterator<JournalRecord>, AutoCloseable {
    * @return the index of the record that will be returned by {@link #next()}
    */
   long seekToAsqn(long asqn, long indexUpperBound);
+
+  IndexScanResult scanIndex(final long asqn, final int maxBytes, final long upperBoundIndex);
 
   /** Get the index of the next record to be read. */
   long getNextIndex();

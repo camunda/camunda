@@ -7,24 +7,39 @@
  */
 package io.camunda.eventbridge.client;
 
-import io.camunda.eventbridge.protocol.EventBridgeRecordBuilder;
-
 public class EventBridgePublishClientTest {
 
   public static void main(final String[] args) {
 
-    try (final var client = new EventBridgePublishClient("http://localhost:8080")) {
-      // Build records separately
-      final var record1 =
-          new EventBridgeRecordBuilder().key("device-1").payload("foo".getBytes()).build();
+    //    try (final var client = new EventBridgePublishClient("http://localhost:8080")) {
+    //
+    //      for (int i = 0; i < 10000; i++) {
+    //        // Build records separately
+    //        final var entry1 =
+    //            new EventBridgeEntryBuilder().key("device-1").value("foo".getBytes()).build();
+    //
+    //        final var entry2 =
+    //            new EventBridgeEntryBuilder().key("device-2").value("bar".getBytes()).build();
+    //
+    //        // Publish as raw entries
+    //        final var result =
+    // client.newBatch().addEntry(entry1).addEntry(entry2).publish(1).join();
+    //
+    //        System.out.println(result);
+    //      }
+    //    }
 
-      final var record2 =
-          new EventBridgeRecordBuilder().key("device-2").payload("bar".getBytes()).build();
+    try (final var client1 = new EventBridgePublishClient("http://localhost:8080")) {
+      final var fetchResult = client1.fetch(1, 1, 1024).join();
 
-      // Publish as raw entries
-      final var result = client.newBatch().addEntry(record1).addEntry(record2).publish(0).join();
+      for (final var entry : fetchResult.entries(1)) {
+        System.out.println("Position: " + entry.getPosition());
+        System.out.println("Value: " + new String(entry.getValueCopy()));
+      }
 
-      System.out.println(result);
+      // Track progress
+      final long nextOffset = fetchResult.nextOffset(1);
+      final long lag = fetchResult.lag();
     }
   }
 }
