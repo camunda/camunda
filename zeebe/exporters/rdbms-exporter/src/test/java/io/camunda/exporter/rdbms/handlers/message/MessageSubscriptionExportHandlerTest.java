@@ -157,7 +157,14 @@ final class MessageSubscriptionExportHandlerTest {
 
     final CachedProcessEntity cached =
         new CachedProcessEntity(
-            processName, processVersion, null, null, null, false, Map.of(elementId, extProps));
+            processName,
+            processVersion,
+            null,
+            null,
+            null,
+            false,
+            Map.of(elementId, extProps),
+            Map.of());
     when(processCache.get(pdKey)).thenReturn(Optional.of(cached));
 
     // when

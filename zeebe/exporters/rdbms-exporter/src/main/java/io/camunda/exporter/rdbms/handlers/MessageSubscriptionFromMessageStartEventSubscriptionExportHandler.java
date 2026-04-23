@@ -12,6 +12,7 @@ import static io.camunda.exporter.rdbms.utils.DateUtil.toOffsetDateTime;
 import io.camunda.db.rdbms.write.domain.MessageSubscriptionDbModel;
 import io.camunda.db.rdbms.write.service.MessageSubscriptionWriter;
 import io.camunda.exporter.rdbms.RdbmsExportHandler;
+import io.camunda.search.entities.MessageSubscriptionEntity.InputSpecItem;
 import io.camunda.search.entities.MessageSubscriptionEntity.MessageSubscriptionState;
 import io.camunda.search.entities.MessageSubscriptionEntity.MessageSubscriptionType;
 import io.camunda.zeebe.exporter.common.cache.ExporterEntityCache;
@@ -21,6 +22,7 @@ import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.MessageStartEventSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.value.MessageStartEventSubscriptionRecordValue;
 import java.time.Instant;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -95,6 +97,19 @@ public class MessageSubscriptionFromMessageStartEventSubscriptionExportHandler
         .extensionProperties(ext)
         .toolName(ext.get("io.camunda.tool:name"))
         .inboundConnectorType(ext.get("inbound.type"))
+        .inputSpecification(
+            toInputSpecItems(
+                cached
+                    .map(CachedProcessEntity::elementInputSpecifications)
+                    .map(m -> m.get(value.getStartEventId()))
+                    .orElse(List.of())))
         .build();
+  }
+
+  private List<InputSpecItem> toInputSpecItems(
+      final List<io.camunda.zeebe.exporter.common.cache.process.CachedInputSpecItem> cached) {
+    return cached.stream()
+        .map(s -> new InputSpecItem(s.name(), s.description(), s.type(), s.required(), s.schema()))
+        .toList();
   }
 }
