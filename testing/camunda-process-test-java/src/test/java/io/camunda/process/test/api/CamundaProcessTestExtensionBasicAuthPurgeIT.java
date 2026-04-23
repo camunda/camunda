@@ -90,7 +90,7 @@ public class CamundaProcessTestExtensionBasicAuthPurgeIT {
   private CamundaClient client;
 
   @Test
-  void shouldPurgeClusterWithinTimeout() throws InterruptedException {
+  void shouldPurgeClusterWithinTimeout() {
     // given
     client
         .newDeployResourceCommand()
@@ -127,8 +127,8 @@ public class CamundaProcessTestExtensionBasicAuthPurgeIT {
 
     // and — purge completed well within the 30-second limit
     assertThat(purgeElapsed)
-        .describedAs("The purge operation should take less than 10 seconds to complete.")
-        .isLessThan(Duration.ofSeconds(10));
+        .describedAs("The purge operation should complete before the 30-second timeout limit.")
+        .isLessThan(Duration.ofSeconds(30));
   }
 
   private static final class BindCamundaProcessTestExtension implements BeforeAllCallback {

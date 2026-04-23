@@ -44,6 +44,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
+import org.awaitility.Awaitility;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.Ordered;
@@ -117,7 +118,7 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
     runtime = buildRuntime(testContext, runtimeConfiguration);
     runtime.start();
 
-    camundaManagementClient = createManagementClient(runtimeConfiguration);
+    camundaManagementClient = createManagementClient();
 
     camundaProcessTestContext =
         new CamundaProcessTestContextImpl(
@@ -145,8 +146,8 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
 
   @Override
   public void beforeTestMethod(final TestContext testContext) {
-    // wait until the cluster is ready (e.g. after a purge the cluster may still be recovering)
-    camundaManagementClient.waitForClusterReady();
+    // wait until the cluster is ready to accept new operations, retrying until success or timeout
+    waitForClusterReady();
 
     client = createClient(camundaProcessTestContext);
     zeebeClient = createZeebeClient(camundaProcessTestContext);
@@ -242,9 +243,23 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
     }
   }
 
-  private CamundaManagementClient createManagementClient(
-      final CamundaProcessTestRuntimeConfiguration runtimeConfiguration) {
+  private CamundaManagementClient createManagementClient() {
     return CamundaManagementClient.createClient(runtime.getCamundaMonitoringApiAddress());
+  }
+
+  private void waitForClusterReady() {
+    Awaitility.await("Wait for cluster to be ready")
+        .atMost(Duration.ofSeconds(10))
+        .pollInterval(Duration.ofMillis(500))
+        .ignoreExceptions()
+        .until(
+            () -> {
+              try (final CamundaClient camundaClient =
+                  runtime.getCamundaClientBuilderFactory().get().build()) {
+                camundaClient.newTopologyRequest().send().join();
+                return true;
+              }
+            });
   }
 
   private void printTestResults() {
