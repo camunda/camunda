@@ -37,7 +37,7 @@ vi.mock('modules/stores/notifications', () => ({
   },
 }));
 
-const Wrapper = ({children}: Props) => {
+const Wrapper: React.FC<Props> = ({children}) => {
   return (
     <QueryClientProvider client={getMockQueryClient()}>
       <MemoryRouter initialEntries={['/decisions?evaluated=true&failed=true']}>
@@ -49,8 +49,6 @@ const Wrapper = ({children}: Props) => {
 
 describe('<Toolbar />', () => {
   beforeEach(() => {
-    vi.clearAllMocks();
-
     mockDeleteDecisionInstancesBatchOperation().withSuccess({
       batchOperationKey: 'delete-operation-123',
       batchOperationType: 'DELETE_DECISION_INSTANCE',
@@ -74,7 +72,6 @@ describe('<Toolbar />', () => {
   });
 
   afterEach(() => {
-    vi.resetAllMocks();
     decisionInstancesSelectionStore.reset();
   });
 
