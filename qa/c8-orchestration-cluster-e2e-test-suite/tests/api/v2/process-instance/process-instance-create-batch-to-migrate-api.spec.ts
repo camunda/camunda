@@ -193,6 +193,7 @@ test.describe.serial('Create Process Instance Batch to Migrate Tests', () => {
         localState.processInstanceKey1,
         localState.processInstanceKey2,
         'do_something_else',
+        postMigrationAssertionOptions,
       );
     });
   });
@@ -269,6 +270,7 @@ test.describe.serial('Create Process Instance Batch to Migrate Tests', () => {
         localState.processInstanceKey2,
         'CREATED',
         'do_something_else',
+        postMigrationAssertionOptions,
       );
     });
   });
@@ -343,19 +345,38 @@ test.describe.serial('Create Process Instance Batch to Migrate Tests', () => {
         localState.processInstanceKey1,
         localState.processInstanceKey2,
         'do_something_else',
+        postMigrationAssertionOptions,
       );
     });
   });
+
+  const postMigrationAssertionOptions = {
+    intervals: [5_000, 10_000, 15_000, 25_000, 35_000],
+    timeout: 90_000,
+  };
 
   const verifyBothInstancesAreAtElementId = async (
     request: APIRequestContext,
     processInstanceKey1: string,
     processInstanceKey2: string,
     elementId: string,
+    assertionOptions = defaultAssertionOptions,
   ) => {
-    await findUserTask(request, processInstanceKey1, 'CREATED', elementId);
+    await findUserTask(
+      request,
+      processInstanceKey1,
+      'CREATED',
+      elementId,
+      assertionOptions,
+    );
 
-    await findUserTask(request, processInstanceKey2, 'CREATED', elementId);
+    await findUserTask(
+      request,
+      processInstanceKey2,
+      'CREATED',
+      elementId,
+      assertionOptions,
+    );
   };
 
   const prepareTestCases = async (
