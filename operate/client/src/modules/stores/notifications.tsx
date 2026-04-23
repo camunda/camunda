@@ -28,7 +28,7 @@ type Notification = {
 class Notifications {
   notifications: Notification[] = [];
   #notificationsQueue: Notification[] = [];
-  #activeIntervalIds: Set<ReturnType<typeof setInterval>> = new Set();
+  #activeIntervalIds: Map<string, ReturnType<typeof setInterval>> = new Map();
 
   constructor() {
     makeObservable(this, {
@@ -75,10 +75,9 @@ class Notifications {
 
   #addAutoRemovalInterval = (notification: Notification) => {
     const delta = 100;
-    let intervalId: ReturnType<typeof setInterval>;
     let time = NOTIFICATION_TIMEOUT;
 
-    intervalId = setInterval(() => {
+    const intervalId = setInterval(() => {
       if (document.hidden) {
         return;
       }
@@ -87,14 +86,20 @@ class Notifications {
 
       if (time <= 0) {
         clearInterval(intervalId);
-        this.#activeIntervalIds.delete(intervalId);
+        this.#activeIntervalIds.delete(notification.id);
         notification.hideNotification();
       }
     }, delta);
-    this.#activeIntervalIds.add(intervalId);
+    this.#activeIntervalIds.set(notification.id, intervalId);
   };
 
   hideNotification = (notificationId: string) => {
+    const intervalId = this.#activeIntervalIds.get(notificationId);
+    if (intervalId !== undefined) {
+      clearInterval(intervalId);
+      this.#activeIntervalIds.delete(notificationId);
+    }
+
     const queuedNotification = this.#dequeueNotification();
 
     this.notifications = this.notifications.filter(
