@@ -17,6 +17,8 @@ import {
   Add,
   Chat,
   DocumentAttachment,
+  SortAscending,
+  SortDescending,
 } from '@carbon/icons-react';
 import type {
   AgentElementData,
@@ -25,7 +27,7 @@ import type {
   ConversationMessage,
 } from 'modules/mock-server/agentDemoData';
 import {useProcessInstanceElementSelection} from 'modules/hooks/useProcessInstanceElementSelection';
-import {MetaLabel, DetailSection} from './styled';
+import {MetaLabel, DetailSection, AgentAccordionContainer} from './styled';
 
 const MonacoEditor = lazy(async () => {
   const [{loadMonaco}, Editor] = await Promise.all([
@@ -36,15 +38,6 @@ const MonacoEditor = lazy(async () => {
   return Editor;
 });
 
-function formatTime(iso: string): string {
-  return new Date(iso).toLocaleTimeString('en-US', {
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit',
-    hour12: false,
-  });
-}
-
 const statCardStyle: React.CSSProperties = {
   padding: 'var(--cds-spacing-05)',
   background: 'var(--cds-layer-02)',
@@ -52,6 +45,7 @@ const statCardStyle: React.CSSProperties = {
   display: 'flex',
   flexDirection: 'column',
   gap: 'var(--cds-spacing-03)',
+  width: '100%',
   minHeight: '100%',
 };
 
@@ -114,8 +108,10 @@ function TokensStatCard({
               display: 'flex',
               alignItems: 'center',
               gap: 'var(--cds-spacing-03)',
-              fontSize: 'var(--cds-body-compact-01-font-size)',
-              lineHeight: 'var(--cds-body-compact-01-line-height)',
+              fontSize: 'var(--cds-helper-text-01-font-size, 0.75rem)',
+              lineHeight: 'var(--cds-helper-text-01-line-height, 1.33333)',
+              letterSpacing:
+                'var(--cds-helper-text-01-letter-spacing, 0.32px)',
               color: 'var(--cds-text-secondary)',
             }}
           >
@@ -128,7 +124,7 @@ function TokensStatCard({
                 flexShrink: 0,
               }}
             />
-            <span style={{flex: 1}}>{swatch.label}</span>
+            <span>{swatch.label}</span>
             <span
               style={{
                 color: 'var(--cds-text-primary)',
@@ -389,113 +385,115 @@ function ToolCallDetail({
         </div>
       </DetailSection>
 
-      <Accordion align="start">
-        <AccordionItem title="Input">
-          {inputText ? (
-            <div
-              style={{
-                width: '100%',
-                display: 'flex',
-                alignItems: 'flex-start',
-                gap: 'var(--cds-spacing-03)',
-              }}
-            >
-              <pre
+      <AgentAccordionContainer>
+        <Accordion align="start">
+          <AccordionItem title="Input">
+            {inputText ? (
+              <div
                 style={{
-                  flex: 1,
-                  minWidth: 0,
-                  margin: 0,
-                  padding: 'var(--cds-spacing-05)',
-                  fontFamily:
-                    "var(--cds-code-01-font-family, 'IBM Plex Mono', monospace)",
-                  fontSize: 13,
-                  lineHeight: '1.5',
-                  whiteSpace: 'pre-wrap',
-                  wordBreak: 'break-word',
-                  maxHeight: 260,
-                  overflowY: 'auto',
-                  background: 'var(--cds-layer-02)',
-                  borderRadius: 4,
+                  width: '100%',
+                  display: 'flex',
+                  alignItems: 'flex-start',
+                  gap: 'var(--cds-spacing-03)',
                 }}
               >
-                {inputText}
-              </pre>
-              <IconButton
-                kind="ghost"
-                size="sm"
-                label="Expand input"
-                onClick={() => setIsInputModalOpen(true)}
-                style={{flexShrink: 0}}
+                <pre
+                  style={{
+                    flex: 1,
+                    minWidth: 0,
+                    margin: 0,
+                    padding: 'var(--cds-spacing-05)',
+                    fontFamily:
+                      "var(--cds-code-01-font-family, 'IBM Plex Mono', monospace)",
+                    fontSize: 13,
+                    lineHeight: '1.5',
+                    whiteSpace: 'pre-wrap',
+                    wordBreak: 'break-word',
+                    maxHeight: 260,
+                    overflowY: 'auto',
+                    background: 'var(--cds-layer-02)',
+                    borderRadius: 4,
+                  }}
+                >
+                  {inputText}
+                </pre>
+                <IconButton
+                  kind="ghost"
+                  size="sm"
+                  label="Expand input"
+                  onClick={() => setIsInputModalOpen(true)}
+                  style={{flexShrink: 0}}
+                >
+                  <Maximize size={16} />
+                </IconButton>
+              </div>
+            ) : (
+              <div
+                style={{
+                  fontSize: 'var(--cds-body-compact-01-font-size)',
+                  color: 'var(--cds-text-secondary)',
+                }}
               >
-                <Maximize size={16} />
-              </IconButton>
-            </div>
-          ) : (
-            <div
-              style={{
-                fontSize: 'var(--cds-body-compact-01-font-size)',
-                color: 'var(--cds-text-secondary)',
-              }}
-            >
-              No input parameters
-            </div>
-          )}
-        </AccordionItem>
+                No input parameters
+              </div>
+            )}
+          </AccordionItem>
 
-        <AccordionItem title="Output">
-          {outputText ? (
-            <div
-              style={{
-                width: '100%',
-                display: 'flex',
-                alignItems: 'flex-start',
-                gap: 'var(--cds-spacing-03)',
-              }}
-            >
-              <pre
+          <AccordionItem title="Output">
+            {outputText ? (
+              <div
                 style={{
-                  flex: 1,
-                  minWidth: 0,
-                  margin: 0,
-                  padding: 'var(--cds-spacing-05)',
-                  fontFamily:
-                    "var(--cds-code-01-font-family, 'IBM Plex Mono', monospace)",
-                  fontSize: 13,
-                  lineHeight: '1.5',
-                  whiteSpace: 'pre-wrap',
-                  wordBreak: 'break-word',
-                  maxHeight: 260,
-                  overflowY: 'auto',
-                  background: 'var(--cds-layer-02)',
-                  borderRadius: 4,
+                  width: '100%',
+                  display: 'flex',
+                  alignItems: 'flex-start',
+                  gap: 'var(--cds-spacing-03)',
                 }}
               >
-                {outputText}
-              </pre>
-              <IconButton
-                kind="ghost"
-                size="sm"
-                label="Expand output"
-                onClick={() => setIsOutputModalOpen(true)}
-                style={{flexShrink: 0}}
+                <pre
+                  style={{
+                    flex: 1,
+                    minWidth: 0,
+                    margin: 0,
+                    padding: 'var(--cds-spacing-05)',
+                    fontFamily:
+                      "var(--cds-code-01-font-family, 'IBM Plex Mono', monospace)",
+                    fontSize: 13,
+                    lineHeight: '1.5',
+                    whiteSpace: 'pre-wrap',
+                    wordBreak: 'break-word',
+                    maxHeight: 260,
+                    overflowY: 'auto',
+                    background: 'var(--cds-layer-02)',
+                    borderRadius: 4,
+                  }}
+                >
+                  {outputText}
+                </pre>
+                <IconButton
+                  kind="ghost"
+                  size="sm"
+                  label="Expand output"
+                  onClick={() => setIsOutputModalOpen(true)}
+                  style={{flexShrink: 0}}
+                >
+                  <Maximize size={16} />
+                </IconButton>
+              </div>
+            ) : (
+              <div
+                style={{
+                  fontSize: 'var(--cds-body-compact-01-font-size)',
+                  color: 'var(--cds-text-secondary)',
+                }}
               >
-                <Maximize size={16} />
-              </IconButton>
-            </div>
-          ) : (
-            <div
-              style={{
-                fontSize: 'var(--cds-body-compact-01-font-size)',
-                color: 'var(--cds-text-secondary)',
-              }}
-            >
-              {tool.status === 'ACTIVE'
-                ? 'Output will appear once the tool completes.'
-                : 'No output available.'}
-            </div>
-          )}
-        </AccordionItem>
-      </Accordion>
+                {tool.status === 'ACTIVE'
+                  ? 'Output will appear once the tool completes.'
+                  : 'No output available.'}
+              </div>
+            )}
+          </AccordionItem>
+        </Accordion>
+      </AgentAccordionContainer>
 
       <Modal
         open={isInputModalOpen}
@@ -679,50 +677,95 @@ function ElementDetailsSection({
 
 function ExpandableSegment({
   content,
-  modalHeading,
   isFirst,
 }: {
   content: string;
-  modalHeading: string;
   isFirst: boolean;
 }) {
+  return (
+    <div
+      style={{
+        fontSize: 'var(--cds-body-compact-01-font-size)',
+        lineHeight: '1.5',
+        color: 'var(--cds-text-primary)',
+        whiteSpace: 'pre-wrap',
+        wordBreak: 'break-word',
+        maxHeight: 160,
+        overflowY: 'auto',
+        marginTop: isFirst ? 0 : 'var(--cds-spacing-04)',
+      }}
+    >
+      {content}
+    </div>
+  );
+}
+
+function ExpandableMessageBlock({
+  role,
+  roleColor,
+  borderColor,
+  contents,
+  modalHeading,
+  children,
+}: {
+  role: string;
+  roleColor: string;
+  borderColor: string;
+  contents: string[];
+  modalHeading: string;
+  children?: React.ReactNode;
+}) {
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const segments = contents.filter((c) => c.length > 0);
+  const fullContent = segments.join('\n\n');
 
   return (
     <>
       <div
         style={{
-          display: 'flex',
-          alignItems: 'flex-start',
-          gap: 'var(--cds-spacing-03)',
-          marginTop: isFirst ? 0 : 'var(--cds-spacing-04)',
+          padding: 'var(--cds-spacing-04)',
+          background: 'var(--cds-layer-02)',
+          borderRadius: 4,
+          borderLeft: `3px solid ${borderColor}`,
         }}
       >
         <div
           style={{
-            flex: 1,
-            minWidth: 0,
-            fontSize: 'var(--cds-body-compact-01-font-size)',
-            lineHeight: '1.5',
-            color: 'var(--cds-text-primary)',
-            whiteSpace: 'pre-wrap',
-            wordBreak: 'break-word',
-            maxHeight: 160,
-            overflowY: 'auto',
+            display: 'flex',
+            alignItems: 'center',
+            marginBottom: 'var(--cds-spacing-02)',
           }}
         >
-          {content}
+          <span
+            style={{
+              fontWeight: 600,
+              textTransform: 'uppercase' as const,
+              letterSpacing: '0.32px',
+              fontSize: 10,
+              color: roleColor,
+            }}
+          >
+            {role}
+          </span>
+          <IconButton
+            kind="ghost"
+            size="sm"
+            label="Expand"
+            align="left"
+            onClick={() => setIsModalOpen(true)}
+            style={{marginLeft: 'auto', flexShrink: 0}}
+          >
+            <Maximize size={16} />
+          </IconButton>
         </div>
-        <IconButton
-          kind="ghost"
-          size="sm"
-          label="Expand"
-          align="bottom"
-          onClick={() => setIsModalOpen(true)}
-          style={{flexShrink: 0}}
-        >
-          <Maximize size={16} />
-        </IconButton>
+        {segments.map((segment, index) => (
+          <ExpandableSegment
+            key={index}
+            content={segment}
+            isFirst={index === 0}
+          />
+        ))}
+        {children}
       </div>
       <Modal
         open={isModalOpen}
@@ -748,7 +791,7 @@ function ExpandableSegment({
           <MonacoEditor
             height="60vh"
             language="markdown"
-            value={content}
+            value={fullContent}
             options={{
               readOnly: true,
               minimap: {enabled: false},
@@ -765,84 +808,6 @@ function ExpandableSegment({
   );
 }
 
-function ExpandableMessageBlock({
-  role,
-  roleColor,
-  borderColor,
-  timestamp,
-  contents,
-  modalHeading,
-  children,
-}: {
-  role: string;
-  roleColor: string;
-  borderColor: string;
-  timestamp?: string;
-  contents: string[];
-  modalHeading: string;
-  children?: React.ReactNode;
-}) {
-  const segments = contents.filter((c) => c.length > 0);
-
-  return (
-    <div
-      style={{
-        padding: 'var(--cds-spacing-04)',
-        background: 'var(--cds-layer-02)',
-        borderRadius: 4,
-        borderLeft: `3px solid ${borderColor}`,
-      }}
-    >
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: 'var(--cds-spacing-03)',
-          marginBottom: 'var(--cds-spacing-02)',
-        }}
-      >
-        <span
-          style={{
-            fontWeight: 600,
-            textTransform: 'uppercase' as const,
-            letterSpacing: '0.32px',
-            fontSize: 10,
-            color: roleColor,
-          }}
-        >
-          {role}
-        </span>
-        {timestamp && (
-          <span
-            style={{
-              fontSize: 10,
-              color: 'var(--cds-text-secondary)',
-              fontFamily:
-                "var(--cds-code-01-font-family, 'IBM Plex Mono', monospace)",
-              marginLeft: 'auto',
-            }}
-          >
-            {timestamp}
-          </span>
-        )}
-      </div>
-      {segments.map((segment, index) => (
-        <ExpandableSegment
-          key={index}
-          content={segment}
-          modalHeading={
-            segments.length > 1
-              ? `${modalHeading} — part ${index + 1}`
-              : modalHeading
-          }
-          isFirst={index === 0}
-        />
-      ))}
-      {children}
-    </div>
-  );
-}
-
 function ConversationHistory({
   messages,
   agentData,
@@ -851,8 +816,8 @@ function ConversationHistory({
   agentData: AgentElementData;
 }) {
   const {selectElement} = useProcessInstanceElementSelection();
+  const [isNewestFirst, setIsNewestFirst] = useState(true);
 
-  // Build lookup: tool element ID → display name (from iterations)
   const toolDisplayNames = new Map<string, string>();
   for (const iter of agentData.iterations) {
     for (const tc of iter.toolCalls) {
@@ -860,13 +825,15 @@ function ConversationHistory({
     }
   }
 
-  // Filter out system messages and tool_call_result (tools shown inline on
-  // assistant), then show the most recent message first. A header above the
-  // list makes the sort direction explicit.
   const filtered = messages
     .filter((msg) => msg.role !== 'system' && msg.role !== 'tool_call_result')
-    .slice()
-    .reverse();
+    .slice();
+
+  if (isNewestFirst) {
+    filtered.reverse();
+  }
+
+  const SortIcon = isNewestFirst ? SortDescending : SortAscending;
 
   return (
     <div
@@ -877,18 +844,25 @@ function ConversationHistory({
         width: '100%',
       }}
     >
-      <div
+      <button
+        type="button"
+        onClick={() => setIsNewestFirst((prev) => !prev)}
         style={{
+          all: 'unset',
+          cursor: 'pointer',
+          display: 'inline-flex',
+          alignItems: 'center',
+          alignSelf: 'flex-start',
+          gap: 'var(--cds-spacing-02)',
           fontSize: 'var(--cds-helper-text-01-font-size, 0.75rem)',
           lineHeight: 'var(--cds-helper-text-01-line-height, 1.33333)',
           color: 'var(--cds-text-secondary)',
         }}
       >
-        Most recent first
-      </div>
+        {isNewestFirst ? 'Most recent first' : 'Oldest first'}
+        <SortIcon size={12} />
+      </button>
       {filtered.map((msg, i) => {
-        const timestamp = msg.timestamp ? formatTime(msg.timestamp) : undefined;
-
         if (msg.role === 'user') {
           return (
             <ExpandableMessageBlock
@@ -896,7 +870,6 @@ function ConversationHistory({
               role="User"
               roleColor="var(--cds-interactive)"
               borderColor="var(--cds-interactive)"
-              timestamp={timestamp}
               contents={msg.content}
               modalHeading="User message"
             >
@@ -930,9 +903,8 @@ function ConversationHistory({
               role="Assistant"
               roleColor="#8a3ffc"
               borderColor="#8a3ffc"
-              timestamp={timestamp}
               contents={msg.content}
-              modalHeading={`Assistant message${timestamp ? ` — ${timestamp}` : ''}`}
+              modalHeading="Assistant message"
             >
               {msg.toolCalls && msg.toolCalls.length > 0 && (
                 <div
@@ -954,21 +926,10 @@ function ConversationHistory({
                         type="button"
                         onClick={() => selectElement({elementId: tc.name})}
                         style={{
-                          ...tagStyle,
                           all: 'unset',
                           cursor: 'pointer',
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: 4,
-                          padding: '1px 8px',
-                          borderRadius: 24,
-                          fontSize: 'var(--cds-label-01-font-size)',
-                          lineHeight: 'var(--cds-label-01-line-height)',
-                          letterSpacing: 'var(--cds-label-01-letter-spacing)',
+                          ...tagStyle,
                           color: 'var(--cds-link-primary)',
-                          background: 'var(--cds-layer-02)',
-                          border: '1px solid var(--cds-border-subtle-01)',
-                          whiteSpace: 'nowrap',
                         }}
                       >
                         {displayName}
@@ -989,48 +950,9 @@ function ConversationHistory({
 
 function DefaultAgentDetail({agentData}: {agentData: AgentElementData}) {
   return (
-    <Accordion align="start">
-      <StatusAccordion agentData={agentData} />
-      <AccordionItem
-        title={
-          <span
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: 'var(--cds-spacing-03)',
-            }}
-          >
-            <MeterAlt size={16} />
-            Usage
-          </span>
-        }
-      >
-        <div
-          style={{
-            display: 'flex',
-            gap: 'var(--cds-spacing-05)',
-            alignItems: 'stretch',
-            width: '100%',
-          }}
-        >
-          <div style={{flex: 1, display: 'flex'}}>
-            <ModelCallsStatCard
-              current={agentData.usage.modelCalls.current}
-              limit={agentData.usage.modelCalls.limit}
-            />
-          </div>
-          <div style={{flex: 1, display: 'flex'}}>
-            <TokensStatCard usage={agentData.usage.tokensUsed} />
-          </div>
-          <div style={{flex: 1, display: 'flex'}}>
-            <ToolsCalledStatCard
-              current={agentData.usage.toolsCalled.current}
-            />
-          </div>
-        </div>
-      </AccordionItem>
-
-      {agentData.conversation && agentData.conversation.length > 0 && (
+    <AgentAccordionContainer>
+      <Accordion align="start">
+        <StatusAccordion agentData={agentData} />
         <AccordionItem
           title={
             <span
@@ -1040,83 +962,124 @@ function DefaultAgentDetail({agentData}: {agentData: AgentElementData}) {
                 gap: 'var(--cds-spacing-03)',
               }}
             >
-              <Chat size={16} />
-              Conversation history
+              <MeterAlt size={16} />
+              Usage
+            </span>
+          }
+        >
+          <div
+            style={{
+              display: 'flex',
+              gap: 'var(--cds-spacing-05)',
+              alignItems: 'stretch',
+              width: '100%',
+            }}
+          >
+            <div style={{flex: 1, display: 'flex'}}>
+              <ModelCallsStatCard
+                current={agentData.usage.modelCalls.current}
+                limit={agentData.usage.modelCalls.limit}
+              />
+            </div>
+            <div style={{flex: 1, display: 'flex'}}>
+              <TokensStatCard usage={agentData.usage.tokensUsed} />
+            </div>
+            <div style={{flex: 1, display: 'flex'}}>
+              <ToolsCalledStatCard
+                current={agentData.usage.toolsCalled.current}
+              />
+            </div>
+          </div>
+        </AccordionItem>
+
+        {agentData.conversation && agentData.conversation.length > 0 && (
+          <AccordionItem
+            title={
+              <span
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 'var(--cds-spacing-03)',
+                }}
+              >
+                <Chat size={16} />
+                Conversation history
+              </span>
+            }
+          >
+            <div style={{width: '100%'}}>
+              <ConversationHistory
+                messages={agentData.conversation}
+                agentData={agentData}
+              />
+            </div>
+          </AccordionItem>
+        )}
+
+        <AccordionItem
+          title={
+            <span
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 'var(--cds-spacing-03)',
+              }}
+            >
+              <DocumentBlank size={16} />
+              System prompt
             </span>
           }
         >
           <div style={{width: '100%'}}>
-            <ConversationHistory
-              messages={agentData.conversation}
-              agentData={agentData}
+            <ExpandableMessageBlock
+              role="System"
+              roleColor="var(--cds-text-secondary)"
+              borderColor="var(--cds-border-subtle-01)"
+              contents={[agentData.systemPrompt]}
+              modalHeading="System prompt"
             />
           </div>
         </AccordionItem>
-      )}
 
-      <AccordionItem
-        title={
-          <span
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: 'var(--cds-spacing-03)',
-            }}
-          >
-            <DocumentBlank size={16} />
-            System prompt
-          </span>
-        }
-      >
-        <div style={{width: '100%'}}>
-          <ExpandableMessageBlock
-            role="System"
-            roleColor="var(--cds-text-secondary)"
-            borderColor="var(--cds-border-subtle-01)"
-            contents={[agentData.systemPrompt]}
-            modalHeading="System prompt"
-          />
-        </div>
-      </AccordionItem>
-
-      <AccordionItem
-        title={
-          <span
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: 'var(--cds-spacing-03)',
-            }}
-          >
-            <Chip size={16} />
-            Model
-          </span>
-        }
-      >
-        <div
-          style={{
-            display: 'flex',
-            flexDirection: 'column',
-            gap: 'var(--cds-spacing-02)',
-            fontSize: 'var(--cds-body-compact-01-font-size)',
-            lineHeight: '1.5',
-            color: 'var(--cds-text-secondary)',
-            width: '100%',
-          }}
+        <AccordionItem
+          title={
+            <span
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 'var(--cds-spacing-03)',
+              }}
+            >
+              <Chip size={16} />
+              Model
+            </span>
+          }
         >
-          <div>
-            <strong style={{color: 'var(--cds-text-primary)'}}>
-              Provider:
-            </strong>{' '}
-            {agentData.modelProvider}
+          <div
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 'var(--cds-spacing-02)',
+              fontSize: 'var(--cds-body-compact-01-font-size)',
+              lineHeight: '1.5',
+              color: 'var(--cds-text-secondary)',
+              width: '100%',
+            }}
+          >
+            <div>
+              <strong style={{color: 'var(--cds-text-primary)'}}>
+                Provider:
+              </strong>{' '}
+              {agentData.modelProvider}
+            </div>
+            <div>
+              <strong style={{color: 'var(--cds-text-primary)'}}>Model:</strong>{' '}
+              {agentData.modelId}
+            </div>
           </div>
-          <div>
-            <strong style={{color: 'var(--cds-text-primary)'}}>Model:</strong>{' '}
-            {agentData.modelId}
-          </div>
-        </div>
-      </AccordionItem>
-    </Accordion>
+        </AccordionItem>
+      </Accordion>
+    </AgentAccordionContainer>
   );
 }
 

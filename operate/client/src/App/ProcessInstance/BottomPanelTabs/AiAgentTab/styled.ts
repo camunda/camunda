@@ -27,26 +27,32 @@ export const TimelinePane = styled.div`
   min-width: 0;
 `;
 
-export const DetailPane = styled.div`
-  flex: 1;
-  overflow-y: auto;
-  padding: var(--cds-spacing-05);
-  min-width: 0;
+// Shared accordion styling for the agent Details views (DefaultAgentDetail,
+// IterationDetail, ToolCallDetail). These views render directly inside the
+// generic DetailsTab Container, so we wrap the accordion in this styled div to
+// scope Carbon overrides — most importantly the semibold accordion title
+// matching the Carbon heading-compact-01 type token.
+export const AgentAccordionContainer = styled.div`
+  width: 100%;
 
-  .cds--accordion__content {
-    padding-right: 0.2rem;
+  .cds--accordion__title,
+  .cds--accordion__title > span {
+    font-size: var(--cds-heading-compact-01-font-size);
+    font-weight: var(--cds-heading-compact-01-font-weight, 600);
+    line-height: var(--cds-heading-compact-01-line-height);
+    letter-spacing: var(--cds-heading-compact-01-letter-spacing);
+  }
+
+  .cds--accordion__title {
+    width: 100%;
   }
 
   .cds--accordion__item:first-child {
     border-top: none;
   }
 
-  .cds--accordion__title {
-    font-size: var(--cds-heading-compact-01-font-size);
-    font-weight: var(--cds-heading-compact-01-font-weight);
-    line-height: var(--cds-heading-compact-01-line-height);
-    letter-spacing: var(--cds-heading-compact-01-letter-spacing);
-    width: 100%;
+  .cds--accordion__content {
+    padding-right: 0.2rem;
   }
 
   .cds--progress-bar__track {

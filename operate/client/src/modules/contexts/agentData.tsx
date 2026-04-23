@@ -213,7 +213,7 @@ function makeContextValue(args: {
       // One generic label on the canvas — multiple element instances may be
       // doing different things simultaneously, so the specific per-state
       // label belongs in the Details-tab Status accordion, not on the canvas.
-      return 'Calling tools';
+      return 'Calling tools...';
     },
   };
 }
