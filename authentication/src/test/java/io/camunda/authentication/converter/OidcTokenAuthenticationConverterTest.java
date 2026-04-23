@@ -58,22 +58,21 @@ public class OidcTokenAuthenticationConverterTest {
   }
 
   @Test
-  public void shouldConvertAccessToken() {
+  public void shouldConvertAccessTokenLazily() {
     // given
-
     final Map<String, Object> accessTokenClaims =
         Map.of("access_token", "test-access-token", "token_type", "Bearer", "expires_in", 3600);
     final var authentication = mock(JwtAuthenticationToken.class);
     when(authentication.getTokenAttributes()).thenReturn(accessTokenClaims);
 
     final var expectedAuthentication = CamundaAuthentication.of(b -> b.user("foo"));
-    when(tokenClaimsConverter.convert(eq(accessTokenClaims))).thenReturn(expectedAuthentication);
+    when(tokenClaimsConverter.convertLazy(eq(accessTokenClaims))).thenReturn(expectedAuthentication);
 
     // when
     final var userToken = authenticationConverter.convert(authentication);
 
-    // then
+    // then — converter is called lazily to defer the 4 membership DB queries
     assertThat(userToken).isEqualTo(expectedAuthentication);
-    verify(tokenClaimsConverter).convert(eq(accessTokenClaims));
+    verify(tokenClaimsConverter).convertLazy(eq(accessTokenClaims));
   }
 }
