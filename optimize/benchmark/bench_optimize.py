@@ -728,6 +728,20 @@ def evaluate_once(
     return wall_ms, resp.status_code, int(es_took)
 
 
+def _percentile(sorted_data: list[float], p: float) -> float:
+    """
+    Linear interpolation percentile (same method as numpy percentile).
+    Works correctly for any sample size — with N=10, P95 lands between
+    the 9th and 10th value rather than always returning max(data).
+    """
+    n = len(sorted_data)
+    if n == 1:
+        return sorted_data[0]
+    idx = (p / 100) * (n - 1)
+    lo, hi = int(idx), min(int(idx) + 1, n - 1)
+    return sorted_data[lo] + (idx - lo) * (sorted_data[hi] - sorted_data[lo])
+
+
 def evaluate_plan(
     plan_name: str,
     report_id: str,
@@ -757,7 +771,7 @@ def evaluate_plan(
 
     times.sort()
     p50 = statistics.median(times)
-    p95 = times[int(len(times) * 0.95)] if len(times) >= 20 else max(times)
+    p95 = _percentile(times, 95)
     es_avg = int(statistics.mean(es_tooks)) if es_tooks else -1
 
     return {
@@ -996,7 +1010,7 @@ def main():
                         help="Path for the benchmark CSV output")
     parser.add_argument("--warmups", type=int, default=5,
                         help="Warmup calls per report (discarded)")
-    parser.add_argument("--measured", type=int, default=10,
+    parser.add_argument("--measured", type=int, default=20,
                         help="Measured calls per report")
     parser.add_argument("--import-wait", type=int, default=120,
                         help="Max seconds to wait for Optimize import after seeding")
