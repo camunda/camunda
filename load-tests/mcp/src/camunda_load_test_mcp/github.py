@@ -59,6 +59,8 @@ def dispatch_workflow(workflow_file: str, inputs: dict) -> None:
     """Trigger a workflow_dispatch event. inputs values must be strings."""
     url = f"{_API_BASE}/repos/{REPO}/actions/workflows/{workflow_file}/dispatches"
     str_inputs = {k: str(v) for k, v in inputs.items() if v != "" and v is not None}
+    # ref here is the branch the workflow YAML is read from, not the branch under test.
+    # Always using main ensures we run the stable workflow definition.
     _request("post", url, json={"ref": "main", "inputs": str_inputs})
 
 
@@ -67,6 +69,21 @@ def get_run_by_id(run_id: int) -> dict:
     return _request("get", url).json()
 
 
+def get_current_user() -> str:
+    """Return the authenticated GitHub user's login."""
+    return _request("get", f"{_API_BASE}/user").json()["login"]
+
+
 def list_recent_runs(workflow_file: str, limit: int = 20) -> list[dict]:
     url = f"{_API_BASE}/repos/{REPO}/actions/workflows/{workflow_file}/runs"
     return _request("get", url, params={"per_page": limit}).json().get("workflow_runs", [])
+
+
+def list_runs_by_actor(workflow_file: str, actor: str, limit: int = 20) -> list[dict]:
+    """List workflow runs triggered by a specific GitHub user."""
+    url = f"{_API_BASE}/repos/{REPO}/actions/workflows/{workflow_file}/runs"
+    return (
+        _request("get", url, params={"actor": actor, "per_page": limit})
+        .json()
+        .get("workflow_runs", [])
+    )

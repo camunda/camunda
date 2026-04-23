@@ -96,3 +96,46 @@ def test_dispatch_workflow_raises_on_network_error(fake_token, mocker: MockerFix
 
     with pytest.raises(RuntimeError, match="network/timeout"):
         github_module.dispatch_workflow("camunda-load-test.yml", inputs={})
+
+
+def test_get_current_user_returns_login(fake_token, mocker: MockerFixture):
+    mock_get = mocker.patch("httpx.get")
+    mock_get.return_value.status_code = 200
+    mock_get.return_value.is_success = True
+    mock_get.return_value.json.return_value = {"login": "ChrisKujawa", "id": 123}
+
+    user = github_module.get_current_user()
+
+    assert user == "ChrisKujawa"
+    mock_get.assert_called_once()
+    assert mock_get.call_args.args[0].endswith("/user")
+
+
+def test_list_runs_by_actor_passes_actor_param(fake_token, mocker: MockerFixture):
+    mock_get = mocker.patch("httpx.get")
+    mock_get.return_value.status_code = 200
+    mock_get.return_value.is_success = True
+    mock_get.return_value.json.return_value = {"workflow_runs": []}
+
+    github_module.list_runs_by_actor("camunda-load-test.yml", "ChrisKujawa", limit=10)
+
+    mock_get.assert_called_once()
+    assert mock_get.call_args.kwargs["params"]["actor"] == "ChrisKujawa"
+    assert mock_get.call_args.kwargs["params"]["per_page"] == 10
+
+
+def test_list_runs_by_actor_returns_runs(fake_token, mocker: MockerFixture):
+    mock_get = mocker.patch("httpx.get")
+    mock_get.return_value.status_code = 200
+    mock_get.return_value.is_success = True
+    mock_get.return_value.json.return_value = {
+        "workflow_runs": [
+            {"id": 10, "status": "completed", "actor": {"login": "ChrisKujawa"}},
+            {"id": 11, "status": "in_progress", "actor": {"login": "ChrisKujawa"}},
+        ]
+    }
+
+    runs = github_module.list_runs_by_actor("camunda-load-test.yml", "ChrisKujawa")
+
+    assert len(runs) == 2
+    assert runs[0]["id"] == 10
