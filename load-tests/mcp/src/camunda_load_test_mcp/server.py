@@ -38,6 +38,7 @@ def create_server() -> FastMCP:
     mcp.tool()(get_load_test_status)
     mcp.tool()(list_load_tests)
     mcp.tool()(discover_load_tests)
+    mcp.tool()(profile_load_test)
     mcp.tool()(stop_load_test)
     return mcp
 
@@ -312,6 +313,62 @@ def discover_load_tests(limit: int = 20) -> str:
         return f"No load test runs with a tracked namespace found for {user}."
 
     return "\n".join(lines)
+
+
+def profile_load_test(
+    namespace: str,
+    pod: str = "",
+    profiler_options: str = "",
+) -> str:
+    """
+    Profile a running load test cluster using async-profiler.
+
+    When no pod is specified, profiles all 3 broker pods in parallel:
+      - camunda-0: cpu event
+      - camunda-1: wall event
+      - camunda-2: alloc event
+
+    When a pod is specified, profiles only that pod with cpu event.
+
+    Flamegraph artifacts are uploaded to the GHA run and downloadable once complete.
+
+    Args:
+        namespace: Full namespace name (e.g. c8-my-test-20260416).
+        pod: Pod to profile (camunda-0, camunda-1, camunda-2). Empty = all three.
+        profiler_options: Extra async-profiler flags (e.g. "-t" for flamegraph format).
+    """
+    inputs: dict[str, str] = {"name": namespace}
+    if pod:
+        inputs["pod"] = pod
+    if profiler_options:
+        inputs["profiler_options"] = profiler_options
+
+    triggered_at = datetime.now(timezone.utc)
+    github.dispatch_workflow(github.WORKFLOW_PROFILE, inputs)
+    run_id = _find_run_after_dispatch(github.WORKFLOW_PROFILE, triggered_at)
+
+    run_url = (
+        f"https://github.com/camunda/camunda/actions/runs/{run_id}"
+        if run_id
+        else "https://github.com/camunda/camunda/actions/workflows/profile-load-test.yml"
+    )
+
+    if pod:
+        mode = f"cpu profiling on pod {pod}"
+        artifacts = f"flamegraph-cpu-{pod}"
+    else:
+        mode = "parallel profiling on all 3 pods (cpu/wall/alloc)"
+        artifacts = (
+            "flamegraph-cpu-camunda-0, flamegraph-wall-camunda-1, flamegraph-alloc-camunda-2"
+        )
+
+    return (
+        f"Profiling triggered ({mode}).\n\n"
+        f"Namespace:  {namespace}\n"
+        f"GHA run:    {run_url}\n"
+        f"Artifacts:  {artifacts}\n\n"
+        f"Download flamegraph(s) from the GHA run artifacts once complete (~5 min)."
+    )
 
 
 def stop_load_test(namespace: str) -> str:

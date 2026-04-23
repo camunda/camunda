@@ -6,6 +6,7 @@ import httpx
 REPO = "camunda/camunda"
 WORKFLOW_LOAD_TEST = "camunda-load-test.yml"
 WORKFLOW_CLEANUP = "camunda-load-test-clean-up.yml"
+WORKFLOW_PROFILE = "profile-load-test.yml"
 _API_BASE = "https://api.github.com"
 _HEADERS_BASE = {
     "Accept": "application/vnd.github+json",

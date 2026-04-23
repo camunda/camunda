@@ -9,6 +9,7 @@ from camunda_load_test_mcp.server import (
     list_load_tests,
     stop_load_test,
     discover_load_tests,
+    profile_load_test,
 )
 
 
@@ -301,3 +302,64 @@ def test_discover_load_tests_uses_list_runs_by_actor_not_recent_runs():
 
     mock_list.assert_called_once_with(github_module.WORKFLOW_LOAD_TEST, "ChrisKujawa", limit=15)
     mock_recent.assert_not_called()
+
+
+# ── profile_load_test ────────────────────────────────────────────────────────
+
+def test_profile_load_test_dispatches_workflow_all_pods():
+    with patch("camunda_load_test_mcp.server.github.dispatch_workflow") as mock_dispatch, \
+         patch("camunda_load_test_mcp.server._find_run_after_dispatch", return_value=200):
+        result = profile_load_test(namespace="c8-my-test-20260423")
+
+    mock_dispatch.assert_called_once()
+    assert mock_dispatch.call_args.args[0] == github_module.WORKFLOW_PROFILE
+    inputs = mock_dispatch.call_args.args[1]
+    assert inputs["name"] == "c8-my-test-20260423"
+    assert "pod" not in inputs or inputs.get("pod") == ""
+
+
+def test_profile_load_test_dispatches_with_specific_pod():
+    with patch("camunda_load_test_mcp.server.github.dispatch_workflow") as mock_dispatch, \
+         patch("camunda_load_test_mcp.server._find_run_after_dispatch", return_value=201):
+        result = profile_load_test(namespace="c8-my-test-20260423", pod="camunda-1")
+
+    inputs = mock_dispatch.call_args.args[1]
+    assert inputs["name"] == "c8-my-test-20260423"
+    assert inputs["pod"] == "camunda-1"
+
+
+def test_profile_load_test_result_describes_all_pods_mode():
+    with patch("camunda_load_test_mcp.server.github.dispatch_workflow"), \
+         patch("camunda_load_test_mcp.server._find_run_after_dispatch", return_value=None):
+        result = profile_load_test(namespace="c8-my-test-20260423")
+
+    assert "cpu" in result.lower()
+    assert "wall" in result.lower()
+    assert "alloc" in result.lower()
+    assert "c8-my-test-20260423" in result
+
+
+def test_profile_load_test_result_describes_single_pod_mode():
+    with patch("camunda_load_test_mcp.server.github.dispatch_workflow"), \
+         patch("camunda_load_test_mcp.server._find_run_after_dispatch", return_value=None):
+        result = profile_load_test(namespace="c8-my-test-20260423", pod="camunda-2")
+
+    assert "camunda-2" in result
+    assert "cpu" in result.lower()
+
+
+def test_profile_load_test_passes_profiler_options():
+    with patch("camunda_load_test_mcp.server.github.dispatch_workflow") as mock_dispatch, \
+         patch("camunda_load_test_mcp.server._find_run_after_dispatch", return_value=None):
+        profile_load_test(namespace="c8-my-test-20260423", profiler_options="-t")
+
+    inputs = mock_dispatch.call_args.args[1]
+    assert inputs["profiler_options"] == "-t"
+
+
+def test_profile_load_test_includes_run_url_in_result():
+    with patch("camunda_load_test_mcp.server.github.dispatch_workflow"), \
+         patch("camunda_load_test_mcp.server._find_run_after_dispatch", return_value=202):
+        result = profile_load_test(namespace="c8-my-test-20260423")
+
+    assert "actions/runs/202" in result
