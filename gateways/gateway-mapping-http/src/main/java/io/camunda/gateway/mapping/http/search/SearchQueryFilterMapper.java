@@ -1070,6 +1070,12 @@ public class SearchQueryFilterMapper {
       ofNullable(filter.getProcessDefinitionVersion())
           .map(mapToIntegerOperations("processDefinitionVersion", validationErrors))
           .ifPresent(builder::processDefinitionVersionOperations);
+      ofNullable(filter.getToolName())
+          .map(mapToStringOperations())
+          .ifPresent(builder::toolNameOperations);
+      ofNullable(filter.getInboundConnectorType())
+          .map(mapToStringOperations())
+          .ifPresent(builder::inboundConnectorTypeOperations);
     }
     return validationErrors.isEmpty()
         ? Either.right(builder.build())

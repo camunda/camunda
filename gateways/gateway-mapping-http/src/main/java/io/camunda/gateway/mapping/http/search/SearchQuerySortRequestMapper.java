@@ -797,6 +797,8 @@ public class SearchQuerySortRequestMapper {
         case TENANT_ID -> builder.tenantId();
         case PROCESS_DEFINITION_NAME -> builder.processDefinitionName();
         case PROCESS_DEFINITION_VERSION -> builder.processDefinitionVersion();
+        case TOOL_NAME -> builder.toolName();
+        case INBOUND_CONNECTOR_TYPE -> builder.inboundConnectorType();
         default -> validationErrors.add(ERROR_UNKNOWN_SORT_BY.formatted(field));
       }
     }
