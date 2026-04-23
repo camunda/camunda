@@ -32,10 +32,6 @@ import {
 import * as clientConfig from 'modules/utils/getClientConfig';
 import {decisionInstancesSelectionStore} from 'modules/stores/instancesSelection';
 
-vi.mock('modules/feature-flags', () => ({
-  IS_DELETE_DI_BATCH_OPERATION_ENABLED: true,
-}));
-
 const createWrapper = (
   initialPath: string = `${Paths.decisions()}?evaluated=true`,
 ) => {
