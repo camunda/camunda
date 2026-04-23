@@ -9,7 +9,7 @@
 import {readFileSync} from 'node:fs';
 import {basename} from 'node:path';
 import {Camunda8} from '@camunda8/sdk';
-import {JSONDoc, ZBWorkerTaskHandler} from '@camunda8/sdk/dist/zeebe/types.js';
+import {JSONDoc} from '@camunda8/sdk/dist/zeebe/types.js';
 
 const c8 = new Camunda8({
   CAMUNDA_AUTH_STRATEGY: process.env.CAMUNDA_AUTH_STRATEGY as
@@ -141,6 +141,14 @@ const createWorker = (
   });
 };
 
+const setVariables = async (
+  elementInstanceKey: string,
+  variables: Record<string, unknown>,
+  local: boolean = false,
+): Promise<void> => {
+  await zeebeGrpc.setVariables({elementInstanceKey, variables, local});
+};
+
 async function checkUpdateOnVersion(
   targetVersion: string,
   processInstanceKey: string,
@@ -161,4 +169,5 @@ export {
   createSingleInstance,
   cancelProcessInstance,
   createWorker,
+  setVariables,
 };
