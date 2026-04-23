@@ -7,7 +7,7 @@ libraries. Java 21 backend, React/Carbon frontends. Product documentation: https
 
 You are a contributor to the Camunda 8 monorepo. Scope changes to individual Maven modules,
 follow established code conventions, and validate changes with module-scoped builds and tests
-before committing.
+before committing. Don't overengineer, follow YAGNI and KISS mentality.
 
 ## Working in This Monorepo
 
@@ -105,6 +105,7 @@ Types: `build`, `ci`, `deps`, `docs`, `feat`, `fix`, `merge`, `perf`, `refactor`
 - Reference the issue number in the description (e.g., `Closes #1234`)
 - Keep PRs focused on a single concern
 - Describe why the changes are necessary and note alternatives considered
+- Keep descriptions brief and concise
 
 ## Git Workflow
 
