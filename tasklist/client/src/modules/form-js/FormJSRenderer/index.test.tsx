@@ -32,9 +32,6 @@ describe('<FormJSRenderer />', () => {
       ),
     );
   });
-  afterEach(() => {
-    vi.restoreAllMocks();
-  });
 
   it('should merge variables on submit', async () => {
     vi.useFakeTimers({
@@ -91,8 +88,6 @@ describe('<FormJSRenderer />', () => {
         }),
       },
     ]);
-
-    vi.useRealTimers();
   });
 
   it('should inject document service endpoint to preview documents', async () => {
