@@ -118,7 +118,7 @@ If you used `.` before `./newLoadTest.sh`, the script will change your directory
 
 You can specify a secondary storage type as the second argument:
 
-```
+```sh
 . ./newLoadTest.sh my-load-test-name elasticsearch  # Default - uses Elasticsearch
 . ./newLoadTest.sh my-load-test-name opensearch     # Uses OpenSearch
 . ./newLoadTest.sh my-load-test-name postgresql     # Uses PostgreSQL (RDBMS)
@@ -238,7 +238,7 @@ make template-load-test scenario=max  # renders load test manifests
 After you're done with your load test, you should remove the remaining namespace.
 In order to do this easily, just run:
 
-```
+```sh
 ./deleteLoadTest.sh my-load-test-name
 ```
 
@@ -294,7 +294,7 @@ make install-load-test
 By default, we will run an artificial load against the configured SaaS cluster. If you want to change this to some more realistic or typical workload, you can use the following targets.
 
 ```sh
-# Run typical workload, with 10 tasks 
+# Run typical workload, with 10 tasks
 make typical
 
 # Run a realistic workload with multi-instance call activities, etc.

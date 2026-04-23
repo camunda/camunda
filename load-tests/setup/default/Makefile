@@ -48,19 +48,20 @@ platform_values := -f camunda-platform-values.yaml
 
 # Add secondary storage values
 ifeq ($(secondary_storage),postgresql)
-platform_values += -f camunda-platform-values-rdbms.yaml
+    platform_values += -f camunda-platform-values-rdbms.yaml
 else ifeq ($(secondary_storage),opensearch)
-platform_values += -f camunda-platform-values-opensearch.yaml
+	platform_values += -f camunda-platform-values-opensearch.yaml
 else ifeq ($(secondary_storage),none)
-platform_values += -f camunda-platform-no-secondary-storage.yaml
+	platform_values += -f camunda-platform-no-secondary-storage.yaml
 endif
 
 # Disable Optimize if not enabled
 ifneq ($(enable_optimize),true)
-platform_values += --set optimize.enabled=false
-ifeq ($(secondary_storage),postgresql)
-platform_values += --set elasticsearch.enabled=false
-endif
+	platform_values += --set optimize.enabled=false
+
+	ifeq ($(secondary_storage),postgresql)
+		platform_values += --set elasticsearch.enabled=false
+	endif
 endif
 
 # Platform values with stable configuration
@@ -81,7 +82,7 @@ install-storage:
 ifeq ($(secondary_storage),postgresql)
 	@echo "Installing PostgreSQL database for namespace $(namespace)..."
 	# Install Postgres database - configuration provided via camunda-platform-values.yaml and camunda-platform-values-rdbms.yaml
-	helm upgrade --install postgres oci://registry-1.docker.io/bitnamicharts/postgresql \
+	helm upgrade --install postgresql oci://registry-1.docker.io/bitnamicharts/postgresql \
 		--namespace $(namespace) \
 		$(platform_values)
 else ifeq ($(secondary_storage),opensearch)
@@ -223,9 +224,9 @@ clean:
 	-kubectl delete -n $(namespace) pvc -l app=elasticsearch-master
 	-kubectl delete -n $(namespace) cronjob leader-balancer
 ifeq ($(secondary_storage),postgresql)
-	@echo "Cleaning up PostgreSQL database for namespace $(namespace)..."
-	-helm --namespace $(namespace) uninstall postgres
-	-kubectl delete -n $(namespace) pvc -l app.kubernetes.io/name=postgresql
+	@echo "Cleaning up $(secondary_storage) database for namespace $(namespace)..."
+	-helm --namespace $(namespace) uninstall $(secondary_storage)
+	-kubectl delete -n $(namespace) pvc -l app.kubernetes.io/name=$(secondary_storage)
 else ifeq ($(secondary_storage),opensearch)
 	@echo "Cleaning up OpenSearch cluster for namespace $(namespace)..."
 	-helm --namespace $(namespace) uninstall opensearch
