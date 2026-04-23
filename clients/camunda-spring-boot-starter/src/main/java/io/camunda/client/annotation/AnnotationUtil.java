@@ -20,7 +20,6 @@ import static java.util.Optional.ofNullable;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.camunda.client.annotation.ClusterVariables.ClusterVariablesContainer;
 import io.camunda.client.annotation.Deployment.Deployments;
-import io.camunda.client.annotation.value.ClusterVariablesValue;
 import io.camunda.client.annotation.value.DeploymentValue;
 import io.camunda.client.annotation.value.DocumentValue;
 import io.camunda.client.annotation.value.DocumentValue.ParameterType;
@@ -165,23 +164,24 @@ public class AnnotationUtil {
     return values;
   }
 
-  public static List<ClusterVariablesValue> getClusterVariablesValuesFromMethods(
+  public static List<MethodClusterVariablesValue> getClusterVariablesValuesFromMethods(
       final MethodInfo methodInfo) {
     final ClusterVariables[] annotations =
         methodInfo.getMethod().getAnnotationsByType(ClusterVariables.class);
     if (annotations.length == 0) {
       return Collections.emptyList();
     }
-    final List<ClusterVariablesValue> values = new ArrayList<>();
+    final List<MethodClusterVariablesValue> values = new ArrayList<>();
     for (final ClusterVariables annotation : annotations) {
       final String resolvedTenantId =
           StringUtils.isEmpty(annotation.tenantId()) ? null : annotation.tenantId();
       if (annotation.resources().length > 0) {
-        values.add(resourceValueFromAnnotation(annotation));
-      } else {
-        values.add(
-            new MethodClusterVariablesValue(() -> invokeMethod(methodInfo), resolvedTenantId));
+        LOG.warn(
+            "@ClusterVariables.resources() on {}.{} is ignored",
+            methodInfo.getMethod().getDeclaringClass().getName(),
+            methodInfo.getMethod().getName());
       }
+      values.add(new MethodClusterVariablesValue(() -> invokeMethod(methodInfo), resolvedTenantId));
     }
     return values;
   }

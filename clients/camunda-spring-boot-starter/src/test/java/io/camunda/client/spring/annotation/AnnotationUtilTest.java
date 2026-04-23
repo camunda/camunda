@@ -32,7 +32,6 @@ import io.camunda.client.annotation.ProcessDefinitionKey;
 import io.camunda.client.annotation.ProcessInstanceKey;
 import io.camunda.client.annotation.RootProcessInstanceKey;
 import io.camunda.client.annotation.VariablesAsType;
-import io.camunda.client.annotation.value.ClusterVariablesValue;
 import io.camunda.client.annotation.value.DeploymentValue;
 import io.camunda.client.annotation.value.DocumentValue;
 import io.camunda.client.annotation.value.JobWorkerValue;
@@ -491,7 +490,7 @@ public class AnnotationUtilTest {
       // given
       final MethodInfo methodInfo = methodInfo(new MethodVariablesBean(), "test", "variables");
       // when
-      final List<ClusterVariablesValue> values =
+      final List<MethodClusterVariablesValue> values =
           AnnotationUtil.getClusterVariablesValuesFromMethods(methodInfo);
       // then
       assertThat(values).hasSize(1);
@@ -507,7 +506,7 @@ public class AnnotationUtilTest {
       final MethodInfo methodInfo =
           methodInfo(new TenantScopedMethodBean(), "test", "tenantVariables");
       // when
-      final List<ClusterVariablesValue> values =
+      final List<MethodClusterVariablesValue> values =
           AnnotationUtil.getClusterVariablesValuesFromMethods(methodInfo);
       // then
       assertThat(values).hasSize(1);
@@ -516,40 +515,15 @@ public class AnnotationUtilTest {
     }
 
     @Test
-    void shouldExtractResourceValueFromMethodAnnotation() {
-      // given
-      final MethodInfo methodInfo = methodInfo(new MethodWithResourcesBean(), "test", "unused");
-      // when
-      final List<ClusterVariablesValue> values =
-          AnnotationUtil.getClusterVariablesValuesFromMethods(methodInfo);
-      // then
-      assertThat(values).hasSize(1);
-      assertThat(values.get(0)).isInstanceOf(ResourceClusterVariablesValue.class);
-      final ResourceClusterVariablesValue resourceValue =
-          (ResourceClusterVariablesValue) values.get(0);
-      assertThat(resourceValue.getResources()).containsExactly("classpath:from-method.json");
-    }
-
-    @Test
     void shouldReturnEmptyForUnannotatedMethod() {
       // given
       final MethodInfo methodInfo = methodInfo(new UnannotatedBean(), "test", "noAnnotation");
       // when
-      final List<ClusterVariablesValue> values =
+      final List<MethodClusterVariablesValue> values =
           AnnotationUtil.getClusterVariablesValuesFromMethods(methodInfo);
       // then
       assertThat(values).isEmpty();
     }
-
-    @ClusterVariables(resources = "classpath:variables.json")
-    static class SingleResourceBean {}
-
-    @ClusterVariables(resources = "classpath:vars.json", tenantId = "my-tenant")
-    static class TenantScopedResourceBean {}
-
-    @ClusterVariables(resources = "classpath:v1.json")
-    @ClusterVariables(resources = "classpath:v2.json")
-    static class RepeatableResourceBean {}
 
     // Public to allow reflective method invocation from SpringMethodInfo
     public static class MethodVariablesBean {
@@ -571,6 +545,16 @@ public class AnnotationUtilTest {
       @ClusterVariables(resources = "classpath:from-method.json")
       public void unused() {}
     }
+
+    @ClusterVariables(resources = "classpath:variables.json")
+    static class SingleResourceBean {}
+
+    @ClusterVariables(resources = "classpath:vars.json", tenantId = "my-tenant")
+    static class TenantScopedResourceBean {}
+
+    @ClusterVariables(resources = "classpath:v1.json")
+    @ClusterVariables(resources = "classpath:v2.json")
+    static class RepeatableResourceBean {}
 
     static class UnannotatedBean {
       public void noAnnotation() {}
