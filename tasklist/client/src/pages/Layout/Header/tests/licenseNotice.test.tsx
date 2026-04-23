@@ -12,7 +12,6 @@ import {http, HttpResponse} from 'msw';
 import {Header} from '..';
 import {getWrapper} from './mocks';
 import * as userMocks from '@camunda/c8-mocks';
-import * as licenseMocks from '@camunda/c8-mocks';
 
 describe('license note', () => {
   beforeEach(() => {
@@ -34,7 +33,7 @@ describe('license note', () => {
       http.get(
         '/v2/license',
         () => {
-          return HttpResponse.json(licenseMocks.invalidLicense);
+          return HttpResponse.json(userMocks.invalidLicense);
         },
         {
           once: true,
@@ -62,7 +61,7 @@ describe('license note', () => {
       http.get(
         '/v2/license',
         () => {
-          return HttpResponse.json(licenseMocks.invalidLicense);
+          return HttpResponse.json(userMocks.invalidLicense);
         },
         {
           once: true,
@@ -84,7 +83,7 @@ describe('license note', () => {
       http.get(
         '/v2/license',
         () => {
-          return HttpResponse.json(licenseMocks.saasLicense);
+          return HttpResponse.json(userMocks.saasLicense);
         },
         {
           once: true,
@@ -107,7 +106,7 @@ describe('license note', () => {
       http.get(
         '/v2/license',
         () => {
-          return HttpResponse.json(licenseMocks.validLicense);
+          return HttpResponse.json(userMocks.validLicense);
         },
         {
           once: true,
@@ -128,7 +127,7 @@ describe('license note', () => {
       http.get(
         '/v2/license',
         () => {
-          return HttpResponse.json(licenseMocks.commercialExpired);
+          return HttpResponse.json(userMocks.commercialExpired);
         },
         {
           once: true,
@@ -152,7 +151,7 @@ describe('license note', () => {
       http.get(
         '/v2/license',
         () => {
-          return HttpResponse.json(licenseMocks.validNonCommercial);
+          return HttpResponse.json(userMocks.validNonCommercial);
         },
         {
           once: true,

@@ -12,7 +12,6 @@ import {http, HttpResponse} from 'msw';
 import {Header} from '..';
 import {getWrapper} from './mocks';
 import * as userMocks from '@camunda/c8-mocks';
-import * as licenseMocks from '@camunda/c8-mocks';
 
 describe('Info bar', () => {
   beforeEach(() => {
@@ -20,7 +19,7 @@ describe('Info bar', () => {
       http.get(
         '/v2/license',
         () => {
-          return HttpResponse.json(licenseMocks.saasLicense);
+          return HttpResponse.json(userMocks.saasLicense);
         },
         {
           once: true,

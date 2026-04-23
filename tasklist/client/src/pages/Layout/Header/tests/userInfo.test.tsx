@@ -18,7 +18,6 @@ import {http, HttpResponse} from 'msw';
 import {Header} from '..';
 import {getWrapper} from './mocks';
 import * as userMocks from '@camunda/c8-mocks';
-import * as licenseMocks from '@camunda/c8-mocks';
 import * as clientConfig from 'modules/config/getClientConfig';
 
 describe('User info', () => {
@@ -27,7 +26,7 @@ describe('User info', () => {
       http.get(
         '/v2/license',
         () => {
-          return HttpResponse.json(licenseMocks.saasLicense);
+          return HttpResponse.json(userMocks.saasLicense);
         },
         {
           once: true,
