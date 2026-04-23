@@ -527,12 +527,15 @@ def seed_dataset(
         generator_args += f" --username {es_user} --password {es_password}"
 
     mvnw = str(repo_root / "mvnw")
+    # Run Maven from optimize/backend directly — the root pom excludes the
+    # optimize module when -Dquickly is set, so -pl optimize/backend fails.
+    backend_dir = repo_root / "optimize" / "backend"
 
     # Step 1: compile IT sources so the generator class is on the classpath
     print("[seed] Compiling IT sources …")
     subprocess.run(
-        [mvnw, "-pl", "optimize/backend", "test-compile", "-Dquickly", "-T1C"],
-        cwd=repo_root,
+        [mvnw, "test-compile", "-Dquickly", "-T1C"],
+        cwd=backend_dir,
         check=True,
     )
 
@@ -542,13 +545,12 @@ def seed_dataset(
     subprocess.run(
         [
             mvnw,
-            "-pl", "optimize/backend",
             "exec:java",
             f"-Dexec.mainClass={GENERATOR_CLASS}",
             "-Dexec.classpathScope=test",
             f"-Dexec.args={generator_args}",
         ],
-        cwd=repo_root,
+        cwd=backend_dir,
         check=True,
     )
     elapsed = time.time() - start
