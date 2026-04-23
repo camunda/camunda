@@ -586,21 +586,6 @@ describe('Add variable', () => {
         hasMoreTotalItems: false,
       },
     });
-    mockSearchVariables().withSuccess({
-      items: [
-        createVariable({
-          name: 'largeVariable',
-          value: '"truncated-preview"',
-          isTruncated: true,
-        }),
-      ],
-      page: {
-        totalItems: 1,
-        startCursor: null,
-        endCursor: null,
-        hasMoreTotalItems: false,
-      },
-    });
     mockSearchJobs().withSuccess({
       items: [],
       page: {

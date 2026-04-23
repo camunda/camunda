@@ -375,21 +375,6 @@ describe('Edit variable', () => {
         hasMoreTotalItems: false,
       },
     });
-    mockSearchVariables().withSuccess({
-      items: [
-        createVariable({
-          name: 'clientNo',
-          value: '"value-preview"',
-          isTruncated: true,
-        }),
-      ],
-      page: {
-        totalItems: 1,
-        startCursor: null,
-        endCursor: null,
-        hasMoreTotalItems: false,
-      },
-    });
 
     const {user} = render(<VariablesTab />, {wrapper: getWrapper()});
     await waitFor(() => {
