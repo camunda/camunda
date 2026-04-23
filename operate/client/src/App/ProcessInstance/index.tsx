@@ -15,7 +15,7 @@ import {useEffect, useRef, useState} from 'react';
 import {getStateLocally} from 'modules/utils/localStorage';
 import {ProcessInstanceHelperModal} from './ProcessInstanceHelperModal';
 import {modificationsStore} from 'modules/stores/modifications';
-import {reaction, when} from 'mobx';
+import {reaction} from 'mobx';
 import {instanceHistoryModificationStore} from 'modules/stores/instanceHistoryModification';
 import {elementTimeStampStore} from 'modules/stores/elementTimeStamp';
 import {ProcessInstanceHeader} from './ProcessInstanceHeader';
@@ -181,17 +181,10 @@ const ProcessInstance: React.FC = observer(() => {
   }, [processInstanceId]);
 
   useEffect(() => {
-    let processTitleDisposer = when(
-      () => !!processTitle,
-      () => {
-        document.title = processTitle ?? '';
-      },
-    );
-
-    return () => {
-      processTitleDisposer();
-    };
-  });
+    if (processTitle) {
+      document.title = processTitle;
+    }
+  }, [processTitle]);
 
   const {
     isModificationModeEnabled,
