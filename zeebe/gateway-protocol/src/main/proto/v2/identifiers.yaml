@@ -137,3 +137,42 @@ components:
             $ref: '#/components/schemas/ElementId'
         $like:
           $ref: 'filters.yaml#/components/schemas/LikeFilter'
+
+    ProcessDefinitionIdFilterProperty:
+      description: ProcessDefinitionId property with full advanced search capabilities.
+      oneOf:
+        - type: string
+          title: Exact match
+          description: Matches the value exactly.
+          allOf:
+            - $ref: '#/components/schemas/ProcessDefinitionId'
+        - $ref: '#/components/schemas/AdvancedProcessDefinitionIdFilter'
+
+    AdvancedProcessDefinitionIdFilter:
+      title: Advanced filter
+      description: Advanced ProcessDefinitionId filter.
+      type: object
+      properties:
+        $eq:
+          description: Checks for equality with the provided value.
+          allOf:
+            - $ref: '#/components/schemas/ProcessDefinitionId'
+        $neq:
+          description: Checks for inequality with the provided value.
+          allOf:
+            - $ref: '#/components/schemas/ProcessDefinitionId'
+        $exists:
+          description: Checks if the current property exists.
+          type: boolean
+        $in:
+          description: Checks if the property matches any of the provided values.
+          type: array
+          items:
+            $ref: '#/components/schemas/ProcessDefinitionId'
+        $notIn:
+          description: Checks if the property matches none of the provided values.
+          type: array
+          items:
+            $ref: '#/components/schemas/ProcessDefinitionId'
+        $like:
+          $ref: 'filters.yaml#/components/schemas/LikeFilter'

@@ -329,6 +329,7 @@
             <typeMapping>FormKeyFilterProperty=BasicStringFilterProperty</typeMapping>
             <typeMapping>JobKeyFilterProperty=BasicStringFilterProperty</typeMapping>
             <typeMapping>MessageSubscriptionKeyFilterProperty=BasicStringFilterProperty</typeMapping>
+            <typeMapping>ProcessDefinitionIdFilterProperty=StringFilterProperty</typeMapping>
             <typeMapping>ProcessDefinitionKeyFilterProperty=BasicStringFilterProperty</typeMapping>
             <typeMapping>ProcessInstanceKeyFilterProperty=BasicStringFilterProperty</typeMapping>
             <typeMapping>ResourceKeyFilterProperty=BasicStringFilterProperty</typeMapping>

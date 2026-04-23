@@ -105,6 +105,7 @@
                 <typeMapping>FormKeyFilterProperty=BasicStringFilterProperty</typeMapping>
                 <typeMapping>JobKeyFilterProperty=BasicStringFilterProperty</typeMapping>
                 <typeMapping>MessageSubscriptionKeyFilterProperty=BasicStringFilterProperty</typeMapping>
+                <typeMapping>ProcessDefinitionIdFilterProperty=StringFilterProperty</typeMapping>
                 <typeMapping>ProcessDefinitionKeyFilterProperty=BasicStringFilterProperty</typeMapping>
                 <typeMapping>ProcessInstanceKeyFilterProperty=BasicStringFilterProperty</typeMapping>
                 <typeMapping>ResourceKeyFilterProperty=BasicStringFilterProperty</typeMapping>
@@ -167,6 +168,7 @@
                 <typeMapping>IntegerFilterProperty=Integer</typeMapping>
                 <typeMapping>JobKeyFilterProperty=String</typeMapping>
                 <typeMapping>MessageSubscriptionKeyFilterProperty=String</typeMapping>
+                <typeMapping>ProcessDefinitionIdFilterProperty=String</typeMapping>
                 <typeMapping>ProcessDefinitionKeyFilterProperty=String</typeMapping>
                 <typeMapping>ProcessInstanceKeyFilterProperty=String</typeMapping>
                 <typeMapping>ResourceKeyFilterProperty=String</typeMapping>
