@@ -44,4 +44,8 @@ public interface MessageSubscriptionSort extends SearchRequestSort<MessageSubscr
   MessageSubscriptionSort processDefinitionName();
 
   MessageSubscriptionSort processDefinitionVersion();
+
+  MessageSubscriptionSort toolName();
+
+  MessageSubscriptionSort inboundConnectorType();
 }

@@ -258,4 +258,36 @@ public interface MessageSubscriptionFilter extends SearchRequestFilter {
    * @return the updated filter
    */
   MessageSubscriptionFilter processDefinitionVersion(Consumer<IntegerProperty> fn);
+
+  /**
+   * Filter by tool name.
+   *
+   * @param toolName the tool name
+   * @return the updated filter
+   */
+  MessageSubscriptionFilter toolName(String toolName);
+
+  /**
+   * Filter by tool name using a {@link StringProperty} consumer.
+   *
+   * @param fn the tool name {@link StringProperty} consumer
+   * @return the updated filter
+   */
+  MessageSubscriptionFilter toolName(Consumer<StringProperty> fn);
+
+  /**
+   * Filter by inbound connector type.
+   *
+   * @param inboundConnectorType the inbound connector type
+   * @return the updated filter
+   */
+  MessageSubscriptionFilter inboundConnectorType(String inboundConnectorType);
+
+  /**
+   * Filter by inbound connector type using a {@link StringProperty} consumer.
+   *
+   * @param fn the inbound connector type {@link StringProperty} consumer
+   * @return the updated filter
+   */
+  MessageSubscriptionFilter inboundConnectorType(Consumer<StringProperty> fn);
 }

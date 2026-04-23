@@ -43,6 +43,8 @@ public class MessageSubscriptionImpl implements MessageSubscription {
   private final String processDefinitionName;
   private final Integer processDefinitionVersion;
   private final Map<String, String> extensionProperties;
+  private final String toolName;
+  private final String inboundConnectorType;
 
   public MessageSubscriptionImpl(final MessageSubscriptionResult item) {
     messageSubscriptionKey = ParseUtil.parseLongOrNull(item.getMessageSubscriptionKey());
@@ -63,6 +65,8 @@ public class MessageSubscriptionImpl implements MessageSubscription {
     processDefinitionName = item.getProcessDefinitionName();
     processDefinitionVersion = item.getProcessDefinitionVersion();
     extensionProperties = item.getExtensionProperties();
+    toolName = item.getToolName();
+    inboundConnectorType = item.getInboundConnectorType();
   }
 
   @Override
@@ -146,6 +150,16 @@ public class MessageSubscriptionImpl implements MessageSubscription {
   }
 
   @Override
+  public String getToolName() {
+    return toolName;
+  }
+
+  @Override
+  public String getInboundConnectorType() {
+    return inboundConnectorType;
+  }
+
+  @Override
   public int hashCode() {
     return Objects.hash(
         messageSubscriptionKey,
@@ -163,7 +177,9 @@ public class MessageSubscriptionImpl implements MessageSubscription {
         tenantId,
         processDefinitionName,
         processDefinitionVersion,
-        extensionProperties);
+        extensionProperties,
+        toolName,
+        inboundConnectorType);
   }
 
   @Override
@@ -190,6 +206,8 @@ public class MessageSubscriptionImpl implements MessageSubscription {
         && Objects.equals(tenantId, subscription.tenantId)
         && Objects.equals(processDefinitionName, subscription.processDefinitionName)
         && Objects.equals(processDefinitionVersion, subscription.processDefinitionVersion)
-        && Objects.equals(extensionProperties, subscription.extensionProperties);
+        && Objects.equals(extensionProperties, subscription.extensionProperties)
+        && Objects.equals(toolName, subscription.toolName)
+        && Objects.equals(inboundConnectorType, subscription.inboundConnectorType);
   }
 }

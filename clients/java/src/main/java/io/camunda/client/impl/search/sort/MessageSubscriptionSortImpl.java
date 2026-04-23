@@ -87,6 +87,16 @@ public class MessageSubscriptionSortImpl extends SearchRequestSortBase<MessageSu
   }
 
   @Override
+  public MessageSubscriptionSort toolName() {
+    return field("toolName");
+  }
+
+  @Override
+  public MessageSubscriptionSort inboundConnectorType() {
+    return field("inboundConnectorType");
+  }
+
+  @Override
   protected MessageSubscriptionSort self() {
     return this;
   }
