@@ -1,59 +1,98 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# --- Configuration with CLI arguments and fallbacks ---
-ORG_NAME="camunda"                                    # Hardcoded organization
-REPO_NAME="camunda"                                   # Hardcoded repository
-PROJECT_ID="${1:-173}"                                # Numeric Project V2 number
-BRANCH="${2:-main}"        # Branch to trigger workflow on
-LIMIT="${3:-20}"                                      # Number of issues to process
-SKIP_ASSIGNED="${4:-false}"                           # Skip issues that already have urgency assigned (true/false)
-DRY_RUN="${5:-false}"                                 # Dry run mode - don't trigger workflows (true/false)
+# --- Constants ---
+ORG_NAME="camunda"
+REPO_NAME="camunda"
 
-# Display usage if help is requested
-if [[ "${1:-}" == "-h" || "${1:-}" == "--help" ]]; then
+# --- Defaults ---
+PROJECT_ID="173"
+BRANCH="main"
+LIMIT=20
+SKIP_ASSIGNED=false
+DRY_RUN=false
+ISSUE_TYPE=""
+LABEL=""
+DELAY=0
+
+# --- Parse flags ---
+usage() {
   cat <<EOF
-Usage: $0 [PROJECT_ID] [BRANCH] [LIMIT] [SKIP_ASSIGNED] [DRY_RUN]
+Usage: $0 [OPTIONS]
 
-Arguments (all optional, with defaults):
-  PROJECT_ID       Numeric Project V2 number (default: 173)
-  BRANCH           Branch to trigger workflow on (default: eppdot-urgency-field-automation)
-  LIMIT            Number of issues to process (default: 20)
-  SKIP_ASSIGNED    Skip issues that already have urgency assigned (default: false)
-  DRY_RUN          Don't trigger workflows, just show what would be done (default: false)
+Batch-trigger the urgency automation workflow for issues in a project.
+
+Options:
+  --project <id>       Project number to scope issue search (default: 173)
+  --branch <ref>       Branch to trigger workflow on (default: main)
+  --limit <n>          Max issues to process (default: 20)
+  --type <type>        Filter by issue type: Bug, Task, Feature, Epic, etc.
+  --label <name>       Filter by label (e.g. "severity/high", "component/tasklist")
+  --skip-assigned      Skip issues that already have urgency assigned in the project
+  --delay <seconds>    Delay between workflow dispatches (default: 0)
+  --dry-run            Show what would be triggered without running anything
+  -h, --help           Show this help
 
 Examples:
-  $0                        # Use all defaults - process all issues in project 173
-  $0 173                    # Specify project
-  $0 173 main 50            # All parameters except skip filter and dry run
-  $0 173 main 50 true       # Only process issues without urgency
-  $0 173 main 50 true true  # Dry run - show what would be processed
+  $0                                    # Defaults: project 173, limit 20
+  $0 --type Bug --skip-assigned         # Only bugs without urgency
+  $0 --project 187 --type Bug --limit 50 --dry-run
+  $0 --label "severity/high" --limit 10
+  $0 --type Task --delay 2 --branch my-feature-branch
 EOF
   exit 0
+}
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --project)    PROJECT_ID="$2"; shift 2 ;;
+    --branch)     BRANCH="$2"; shift 2 ;;
+    --limit)      LIMIT="$2"; shift 2 ;;
+    --type)       ISSUE_TYPE="$2"; shift 2 ;;
+    --label)      LABEL="$2"; shift 2 ;;
+    --skip-assigned) SKIP_ASSIGNED=true; shift ;;
+    --delay)      DELAY="$2"; shift 2 ;;
+    --dry-run)    DRY_RUN=true; shift ;;
+    -h|--help)    usage ;;
+    *) echo "Unknown option: $1"; exit 1 ;;
+  esac
+done
+
+# --- Build search query ---
+SEARCH_QUERY="repo:${ORG_NAME}/${REPO_NAME} is:issue is:open project:${ORG_NAME}/${PROJECT_ID}"
+
+if [[ -n "$LABEL" ]]; then
+  SEARCH_QUERY="$SEARCH_QUERY label:\"$LABEL\""
 fi
 
-# --- Fetch first N issues from the project ---
-echo "Fetching up to $LIMIT issues from project (with pagination)..."
+# --- Summary ---
+echo "Configuration:"
+echo "  Project:       #$PROJECT_ID"
+echo "  Branch:        $BRANCH"
+echo "  Limit:         $LIMIT"
+[[ -n "$ISSUE_TYPE" ]] && echo "  Type filter:   $ISSUE_TYPE"
+[[ -n "$LABEL" ]]      && echo "  Label filter:  $LABEL"
+[[ "$SKIP_ASSIGNED" == "true" ]] && echo "  Skip assigned: yes"
+[[ "$DRY_RUN" == "true" ]] && echo "  Mode:          DRY RUN"
+[[ "$DELAY" -gt 0 ]] && echo "  Delay:         ${DELAY}s between dispatches"
+echo ""
 
-# Initialize variables for pagination
+# --- Fetch issues with pagination ---
+echo "Fetching up to $LIMIT issues from project $PROJECT_ID..."
+
 ISSUE_NUMBERS=""
 ISSUE_COUNT=0
 CURSOR="null"
 PAGE_SIZE=50
-MAX_PAGES=20  # Safety limit to avoid infinite loops
-
-# Build search query - search for open issues in the repo and project
-SEARCH_QUERY="repo:${ORG_NAME}/${REPO_NAME} is:issue is:open project:${ORG_NAME}/${PROJECT_ID}"
+MAX_PAGES=20
 
 for ((page=1; page<=MAX_PAGES; page++)); do
-  # Build query with pagination cursor
   if [[ "$CURSOR" == "null" ]]; then
     CURSOR_ARG=""
   else
     CURSOR_ARG=", after: \"$CURSOR\""
   fi
 
-  # Search for issues - project filtering is done server-side via search query
   RESPONSE=$(gh api graphql -f query="
     query(\$searchQuery: String!) {
       search(query: \$searchQuery, type: ISSUE, first: $PAGE_SIZE$CURSOR_ARG) {
@@ -64,6 +103,7 @@ for ((page=1; page<=MAX_PAGES; page++)); do
         nodes {
           ... on Issue {
             number
+            issueType { name }
             projectItems(first: 5) {
               nodes {
                 fieldValues(first: 20) {
@@ -84,17 +124,15 @@ for ((page=1; page<=MAX_PAGES; page++)); do
       }
     }" -F searchQuery="$SEARCH_QUERY")
 
-  # Optionally filter out issues that already have urgency assigned
-  if [[ "$SKIP_ASSIGNED" == "true" ]]; then
-    PAGE_ISSUES=$(echo "$RESPONSE" | jq -r '
-      .data.search.nodes[]
-      | select(.projectItems.nodes[0].fieldValues.nodes | map(select(.field.name == "Urgency")) | length == 0)
-      | .number')
-  else
-    PAGE_ISSUES=$(echo "$RESPONSE" | jq -r '.data.search.nodes[].number')
-  fi
+  # Apply client-side filters via jq (values passed safely via --arg)
+  PAGE_ISSUES=$(echo "$RESPONSE" | jq -r \
+    --arg issueType "$ISSUE_TYPE" \
+    --arg skipAssigned "$SKIP_ASSIGNED" \
+    '.data.search.nodes[]
+     | if $issueType != "" then select(.issueType.name == $issueType) else . end
+     | if $skipAssigned == "true" then select(.projectItems.nodes[0].fieldValues.nodes | map(select(.field.name == "Urgency")) | length == 0) else . end
+     | .number')
 
-  # Add issues from this page
   if [[ -n "$PAGE_ISSUES" ]]; then
     if [[ -z "$ISSUE_NUMBERS" ]]; then
       ISSUE_NUMBERS="$PAGE_ISSUES"
@@ -106,47 +144,50 @@ for ((page=1; page<=MAX_PAGES; page++)); do
 
   echo "  Page $page: Found $ISSUE_COUNT issue(s) so far..."
 
-  # Check if we have enough issues
   if [[ $ISSUE_COUNT -ge $LIMIT ]]; then
     echo "  Reached target of $LIMIT issues"
     ISSUE_NUMBERS=$(echo "$ISSUE_NUMBERS" | head -n "$LIMIT")
     break
   fi
 
-  # Check if there are more pages
   HAS_NEXT=$(echo "$RESPONSE" | jq -r '.data.search.pageInfo.hasNextPage')
   if [[ "$HAS_NEXT" != "true" ]]; then
     echo "  No more pages available"
     break
   fi
 
-  # Get cursor for next page
   CURSOR=$(echo "$RESPONSE" | jq -r '.data.search.pageInfo.endCursor')
 done
 
 if [[ -z "$ISSUE_NUMBERS" ]]; then
-  echo "⚠️  No issues found in the project (or missing permissions)."
+  echo "⚠️  No issues found matching the filters."
   exit 1
 fi
 
 ISSUE_COUNT=$(echo "$ISSUE_NUMBERS" | wc -l | tr -d ' ')
 echo "✅ Found $ISSUE_COUNT issue(s) to process"
+echo ""
 
-# --- Run the workflow for each issue ---
+# --- Dispatch workflows ---
 if [[ "$DRY_RUN" == "true" ]]; then
-  echo "🔍 DRY RUN MODE - Would trigger workflow for these issues:"
+  echo "🔍 DRY RUN — would trigger workflow for:"
   for ISSUE_NUMBER in $ISSUE_NUMBERS; do
-    echo "  → Would run for issue #$ISSUE_NUMBER"
+    echo "  → #$ISSUE_NUMBER"
   done
-  echo "ℹ️  Dry run complete. Would have triggered workflow for $ISSUE_COUNT issue(s)."
+  echo "ℹ️  Dry run complete. Would have triggered $ISSUE_COUNT workflow(s)."
 else
-  echo "Running workflow 'assign-urgency-to-issue.yml' for issues:"
+  echo "Triggering 'assign-urgency-to-issue.yml' for $ISSUE_COUNT issue(s):"
+  DISPATCHED=0
   for ISSUE_NUMBER in $ISSUE_NUMBERS; do
-    echo "→ Running for issue #$ISSUE_NUMBER"
+    echo "→ #$ISSUE_NUMBER"
     gh workflow run assign-urgency-to-issue.yml \
       --ref "$BRANCH" \
       -f issue_number="$ISSUE_NUMBER" \
       -f project_id="$PROJECT_ID"
+    ((DISPATCHED++))
+    if [[ "$DELAY" -gt 0 && $DISPATCHED -lt $ISSUE_COUNT ]]; then
+      sleep "$DELAY"
+    fi
   done
-  echo "✅ Done! Triggered workflow for $ISSUE_COUNT issue(s)."
+  echo "✅ Done! Triggered $ISSUE_COUNT workflow(s)."
 fi
