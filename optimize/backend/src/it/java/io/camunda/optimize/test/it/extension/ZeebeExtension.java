@@ -123,14 +123,8 @@ public class ZeebeExtension implements BeforeEachCallback, AfterEachCallback {
                       Map.of("prefix", zeebeRecordPrefix),
                       "bulk",
                       Map.of("size", 1),
-                      "connect",
-                      Map.of(
-                          "url",
-                          "http://localhost:9200",
-                          "indexPrefix",
-                          zeebeRecordPrefix,
-                          "type",
-                          dbType.toString())));
+                      "url",
+                      "http://localhost:9200"));
             })
         .withCreateSchema(true)
         .withAdditionalProperties(
