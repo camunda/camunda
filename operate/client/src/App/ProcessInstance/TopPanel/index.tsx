@@ -34,6 +34,7 @@ import {StateOverlay} from 'modules/components/StateOverlay';
 import {executionCountToggleStore} from 'modules/stores/executionCountToggle';
 import {useAgentData} from 'modules/contexts/agentData';
 import {AgentStatusOverlay} from './AgentStatusOverlay';
+import {ShineBorderOverlay} from './ShineBorderOverlay';
 import {useElementStatistics} from 'modules/queries/elementInstancesStatistics/useElementStatistics';
 import {useSelectableElements} from 'modules/queries/elementInstancesStatistics/useSelectableElements';
 import {useExecutedElements} from 'modules/queries/elementInstancesStatistics/useExecutedElements';
@@ -65,6 +66,7 @@ import {getAncestorScopeType} from 'modules/utils/processInstanceDetailsDiagram'
 const OVERLAY_TYPE_STATE = 'elementState';
 const OVERLAY_TYPE_MODIFICATIONS_BADGE = 'modificationsBadge';
 const OVERLAY_TYPE_AGENT_STATUS = 'agentStatus';
+const OVERLAY_TYPE_AGENT_SHINE = 'agentShineBorder';
 
 const overlayPositions = {
   active: ACTIVE_BADGE,
@@ -120,7 +122,7 @@ const TopPanel: React.FC = observer(() => {
     useProcessSequenceFlows(processInstanceId);
   const processDefinitionKey = useProcessDefinitionKeyContext();
   const {isExecutionCountVisible} = executionCountToggleStore.state;
-  const {isAgentInstance, getAgentStatusLabel} = useAgentData();
+  const {isAgentInstance, getAgentStatusLabel, agentElementId} = useAgentData();
 
   const {data: selectedElementRunningInstancesCount} =
     useTotalRunningInstancesForElement(selectedElementId ?? undefined);
@@ -175,16 +177,32 @@ const TopPanel: React.FC = observer(() => {
 
   const agentStatusLabel = isAgentInstance ? getAgentStatusLabel() : null;
   const agentStatusOverlays = useMemo(() => {
-    if (!agentStatusLabel) return [];
+    if (!agentStatusLabel || !agentElementId) {
+      return [];
+    }
     return [
       {
         payload: {label: agentStatusLabel},
         type: OVERLAY_TYPE_AGENT_STATUS,
-        elementId: 'AI_Agent',
+        elementId: agentElementId,
         position: AGENT_STATUS_TAG,
       },
     ];
-  }, [agentStatusLabel]);
+  }, [agentStatusLabel, agentElementId]);
+
+  const agentShineOverlays = useMemo(() => {
+    if (!agentStatusLabel || !agentElementId) {
+      return [];
+    }
+    return [
+      {
+        payload: {elementId: agentElementId},
+        type: OVERLAY_TYPE_AGENT_SHINE,
+        elementId: agentElementId,
+        position: {top: 0, left: 0},
+      },
+    ];
+  }, [agentStatusLabel, agentElementId]);
 
   const selectedElementIds = useMemo(() => {
     return selectedAnchorElementId
@@ -249,6 +267,9 @@ const TopPanel: React.FC = observer(() => {
   );
   const agentOverlays = diagramOverlaysStore.state.overlays.filter(
     ({type}) => type === OVERLAY_TYPE_AGENT_STATUS,
+  );
+  const agentShineOverlayElements = diagramOverlaysStore.state.overlays.filter(
+    ({type}) => type === OVERLAY_TYPE_AGENT_SHINE,
   );
 
   const modifiableElements = useModifiableElements();
@@ -397,8 +418,13 @@ const TopPanel: React.FC = observer(() => {
                         ...(elementStateOverlays ?? []),
                         ...modificationBadgesPerElement.get(),
                         ...agentStatusOverlays,
+                        ...agentShineOverlays,
                       ]
-                    : [...(elementStateOverlays ?? []), ...agentStatusOverlays]
+                    : [
+                        ...(elementStateOverlays ?? []),
+                        ...agentStatusOverlays,
+                        ...agentShineOverlays,
+                      ]
                 }
                 selectedElementOverlay={
                   isModificationModeEnabled && <ModificationDropdown />
@@ -466,6 +492,16 @@ const TopPanel: React.FC = observer(() => {
                       key={overlay.elementId}
                       container={overlay.container}
                       label={payload.label}
+                    />
+                  );
+                })}
+                {agentShineOverlayElements.map((overlay) => {
+                  const payload = overlay.payload as {elementId: string};
+                  return (
+                    <ShineBorderOverlay
+                      key={`shine-${overlay.elementId}`}
+                      container={overlay.container}
+                      elementId={payload.elementId}
                     />
                   );
                 })}

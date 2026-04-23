@@ -7,10 +7,12 @@
  */
 
 import {observer} from 'mobx-react';
+import {Stack} from '@carbon/react';
 import {Container, PanelHeader, ErrorMessage} from './styled';
 import {TimeStampPill} from './TimeStampPill';
 import {modificationsStore} from 'modules/stores/modifications';
 import {Skeleton} from './Skeleton';
+import {ExecutionCountToggle} from './ExecutionCountToggle';
 import {ElementInstancesTree} from './ElementInstancesTree';
 import {useProcessInstance} from 'modules/queries/processInstance/useProcessInstance';
 import {useBusinessObjects} from 'modules/queries/processDefinitions/useBusinessObjects';
@@ -28,7 +30,10 @@ const Layout: React.FC<{children: React.ReactNode; isPanel: boolean}> =
       <Container data-testid="instance-history">
         <PanelHeader title="Instance History" size="sm">
           {!modificationsStore.isModificationModeEnabled && (
-            <TimeStampPill />
+            <Stack orientation="horizontal" gap={5}>
+              <ExecutionCountToggle />
+              <TimeStampPill />
+            </Stack>
           )}
         </PanelHeader>
         {children}

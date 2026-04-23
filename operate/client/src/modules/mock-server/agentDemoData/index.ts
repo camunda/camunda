@@ -17,10 +17,7 @@ export {
   MOCK_AGENT_SUBPROCESS_ELEMENT_IDS,
 } from './constants';
 
-import {
-  MOCK_AGENT_INSTANCE_KEY,
-  MOCK_AGENT_DEFINITION_KEY,
-} from './constants';
+import {MOCK_AGENT_INSTANCE_KEY, MOCK_AGENT_DEFINITION_KEY} from './constants';
 
 export function isAgentDemoInstance(processInstanceKey: string): boolean {
   return processInstanceKey === MOCK_AGENT_INSTANCE_KEY;
@@ -47,4 +44,5 @@ export type {
   AgentIteration,
   AgentUsage,
   AgentElementData,
+  ConversationMessage,
 } from './agentEnrichmentData';

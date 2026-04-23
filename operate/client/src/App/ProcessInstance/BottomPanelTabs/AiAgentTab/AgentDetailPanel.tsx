@@ -7,43 +7,25 @@
  */
 
 import {lazy, Suspense, useState} from 'react';
+import {Accordion, AccordionItem, IconButton, Modal} from '@carbon/react';
 import {
-  Accordion,
-  AccordionItem,
-  IconButton,
-  Modal,
-  Tag,
-  Tooltip,
-} from '@carbon/react';
-import {
-  WatsonHealthAiResults,
-  Tools,
+  Maximize,
   Time,
-  Checkmark,
-  WarningAlt,
-  UserAvatar,
-  Bot,
-  Settings,
   MeterAlt,
   DocumentBlank,
-  Maximize,
+  Chip,
+  Add,
+  Chat,
+  DocumentAttachment,
 } from '@carbon/icons-react';
 import type {
   AgentElementData,
   AgentIteration,
   AgentToolCall,
+  ConversationMessage,
 } from 'modules/mock-server/agentDemoData';
-import {
-  MetaLabel,
-  CodeBlock,
-  DetailSection,
-  PropertyRow,
-  PropertyLabel,
-  PropertyValue,
-  UsageBar,
-  UsageBarTrack,
-  UsageBarFill,
-} from './styled';
+import {useProcessInstanceElementSelection} from 'modules/hooks/useProcessInstanceElementSelection';
+import {MetaLabel, DetailSection} from './styled';
 
 const MonacoEditor = lazy(async () => {
   const [{loadMonaco}, Editor] = await Promise.all([
@@ -63,89 +45,224 @@ function formatTime(iso: string): string {
   });
 }
 
-function AgentUsageBarComponent({
-  label,
-  current,
-  limit,
+const statCardStyle: React.CSSProperties = {
+  padding: 'var(--cds-spacing-05)',
+  background: 'var(--cds-layer-02)',
+  borderRadius: 4,
+  display: 'flex',
+  flexDirection: 'column',
+  gap: 'var(--cds-spacing-03)',
+  minHeight: '100%',
+};
+
+const statLabelStyle: React.CSSProperties = {
+  fontSize: 'var(--cds-label-01-font-size)',
+  lineHeight: 'var(--cds-label-01-line-height)',
+  letterSpacing: 'var(--cds-label-01-letter-spacing)',
+  textTransform: 'uppercase',
+  color: 'var(--cds-text-secondary)',
+  fontWeight: 600,
+};
+
+const statValueStyle: React.CSSProperties = {
+  fontSize: 'var(--cds-productive-heading-03-font-size, 1.25rem)',
+  lineHeight: 'var(--cds-productive-heading-03-line-height, 1.4)',
+  fontWeight: 400,
+  color: 'var(--cds-text-primary)',
+};
+
+function TokensStatCard({
+  usage,
 }: {
-  label: string;
-  current: number;
-  limit: number;
+  usage: {
+    inputTokens: number;
+    outputTokens: number;
+    reasoningTokens?: number;
+    totalTokens: number;
+  };
 }) {
-  const pct = Math.min(100, (current / limit) * 100);
+  const {inputTokens, outputTokens, reasoningTokens = 0, totalTokens} = usage;
+  const total = totalTokens || inputTokens + outputTokens + reasoningTokens;
+
+  const swatches: Array<{color: string; label: string; value: number}> = [
+    {color: 'var(--cds-interactive)', label: 'Input', value: inputTokens},
+    {color: 'var(--cds-support-warning)', label: 'Output', value: outputTokens},
+  ];
+  if (reasoningTokens > 0) {
+    swatches.push({
+      color: 'var(--cds-support-info)',
+      label: 'Reasoning',
+      value: reasoningTokens,
+    });
+  }
+
   return (
-    <UsageBar>
+    <div style={statCardStyle}>
+      <div style={statLabelStyle}>Tokens used</div>
+      <div style={statValueStyle}>{total.toLocaleString()}</div>
       <div
         style={{
           display: 'flex',
-          justifyContent: 'space-between',
-          fontSize: 'var(--cds-label-01-font-size)',
+          flexDirection: 'column',
+          gap: 'var(--cds-spacing-02)',
         }}
       >
-        <span style={{color: 'var(--cds-text-secondary)'}}>{label}</span>
-        <span
-          style={{
-            fontFamily:
-              "var(--cds-code-01-font-family, 'IBM Plex Mono', monospace)",
-          }}
-        >
-          {current.toLocaleString()} / {limit.toLocaleString()}
-        </span>
+        {swatches.map((swatch) => (
+          <div
+            key={swatch.label}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 'var(--cds-spacing-03)',
+              fontSize: 'var(--cds-body-compact-01-font-size)',
+              lineHeight: 'var(--cds-body-compact-01-line-height)',
+              color: 'var(--cds-text-secondary)',
+            }}
+          >
+            <span
+              style={{
+                width: 8,
+                height: 8,
+                borderRadius: '50%',
+                background: swatch.color,
+                flexShrink: 0,
+              }}
+            />
+            <span style={{flex: 1}}>{swatch.label}</span>
+            <span
+              style={{
+                color: 'var(--cds-text-primary)',
+                fontVariantNumeric: 'tabular-nums',
+              }}
+            >
+              {swatch.value.toLocaleString()}
+            </span>
+          </div>
+        ))}
       </div>
-      <UsageBarTrack>
-        <UsageBarFill $percent={pct} />
-      </UsageBarTrack>
-    </UsageBar>
+    </div>
   );
 }
 
-function StatusBanner({
-  agentData,
-  showModel = false,
+function ToolsCalledStatCard({current}: {current: number}) {
+  return (
+    <div style={statCardStyle}>
+      <div style={statLabelStyle}>Tools called</div>
+      <div style={statValueStyle}>{current.toLocaleString()}</div>
+      <div
+        style={{
+          fontSize: 'var(--cds-helper-text-01-font-size, 0.75rem)',
+          color: 'var(--cds-text-secondary)',
+        }}
+      >
+        Across all model calls in this instance.
+      </div>
+    </div>
+  );
+}
+
+function ModelCallsStatCard({
+  current,
+  limit,
 }: {
-  agentData: AgentElementData;
-  showModel?: boolean;
+  current: number;
+  limit: number;
 }) {
-  const statusConfig: Record<
-    string,
-    {label: string; icon: React.ReactNode; tagType: string}
-  > = {
-    INITIALIZING: {
-      label: 'Initializing',
-      icon: <Settings size={16} />,
-      tagType: 'gray',
-    },
-    TOOL_DISCOVERY: {
-      label: 'Discovering tools...',
-      icon: <Tools size={16} />,
-      tagType: 'blue',
-    },
-    THINKING: {
-      label: 'Thinking...',
-      icon: <WatsonHealthAiResults size={16} />,
-      tagType: 'blue',
-    },
-    WAITING_FOR_TOOL: {
-      label: 'Waiting for tool results',
-      icon: <Time size={16} />,
-      tagType: 'blue',
-    },
-    COMPLETED: {
-      label: 'Completed',
-      icon: <Checkmark size={16} />,
-      tagType: 'green',
-    },
-    FAILED: {
-      label: 'Failed',
-      icon: <WarningAlt size={16} />,
-      tagType: 'red',
-    },
+  const safeLimit = limit > 0 ? limit : 1;
+  const percent = Math.min(100, Math.round((current / safeLimit) * 100));
+
+  return (
+    <div style={statCardStyle}>
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: 'var(--cds-spacing-03)',
+        }}
+      >
+        <div style={statLabelStyle}>Model calls</div>
+        <IconButton
+          kind="ghost"
+          size="sm"
+          label="Extend limit"
+          align="top"
+          className="reset-usage-btn"
+        >
+          <Add size={16} />
+        </IconButton>
+      </div>
+      <div style={statValueStyle}>{current.toLocaleString()}</div>
+      <div
+        style={{
+          height: 4,
+          background: 'var(--cds-border-subtle-01)',
+          borderRadius: 2,
+          overflow: 'hidden',
+        }}
+      >
+        <div
+          style={{
+            height: '100%',
+            width: `${percent}%`,
+            background: 'var(--cds-interactive)',
+            transition: 'width 300ms',
+          }}
+        />
+      </div>
+      <div
+        style={{
+          fontSize: 'var(--cds-helper-text-01-font-size, 0.75rem)',
+          color: 'var(--cds-text-secondary)',
+        }}
+      >
+        of {limit.toLocaleString()} limit
+      </div>
+    </div>
+  );
+}
+
+const attachmentLabelStyle: React.CSSProperties = {
+  fontSize: 'var(--cds-label-01-font-size)',
+  lineHeight: 'var(--cds-label-01-line-height)',
+  letterSpacing: 'var(--cds-label-01-letter-spacing)',
+  color: 'var(--cds-text-secondary)',
+};
+
+const tagStyle: React.CSSProperties = {
+  display: 'inline-flex',
+  alignItems: 'center',
+  gap: 4,
+  padding: '1px 8px',
+  borderRadius: 24,
+  fontSize: 'var(--cds-label-01-font-size)',
+  lineHeight: 'var(--cds-label-01-line-height)',
+  letterSpacing: 'var(--cds-label-01-letter-spacing)',
+  color: 'var(--cds-text-primary)',
+  background: 'var(--cds-layer-02)',
+  border: '1px solid var(--cds-border-subtle-01)',
+  whiteSpace: 'nowrap',
+};
+
+function StatusAccordion({agentData}: {agentData: AgentElementData}) {
+  const {selectElement} = useProcessInstanceElementSelection();
+
+  const statusLabels: Record<string, string> = {
+    INITIALIZING: 'Initializing',
+    TOOL_DISCOVERY: 'Discovering tools...',
+    THINKING: 'Thinking...',
+    WAITING_FOR_TOOL: 'Calling tools',
+    COMPLETED: 'Completed',
+    FAILED: 'Failed',
   };
 
-  const cfg = statusConfig[agentData.status] ?? statusConfig.INITIALIZING;
+  const statusLabel =
+    statusLabels[agentData.status] ?? statusLabels.INITIALIZING;
 
-  const currentReasoning = (() => {
-    if (!agentData.iterations.length) return null;
+  const currentMessage = (() => {
+    if (!agentData.iterations.length) {
+      return null;
+    }
     const lastIteration =
       agentData.iterations[agentData.iterations.length - 1]!;
     if (
@@ -163,77 +280,82 @@ function StatusBanner({
     return lastIteration.reasoning;
   })();
 
+  const activeTools = (() => {
+    if (
+      agentData.status !== 'WAITING_FOR_TOOL' ||
+      !agentData.iterations.length
+    ) {
+      return [];
+    }
+    const lastIteration =
+      agentData.iterations[agentData.iterations.length - 1]!;
+    return lastIteration.toolCalls.filter((t) => t.status === 'ACTIVE');
+  })();
+
+  const accordionTitle = (
+    <span
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: 'var(--cds-spacing-03)',
+      }}
+    >
+      <Time size={16} />
+      Status: {statusLabel}
+    </span>
+  );
+
   return (
-    <DetailSection>
-      <MetaLabel>Status</MetaLabel>
+    <AccordionItem title={accordionTitle} open>
       <div
         style={{
           display: 'flex',
-          alignItems: 'center',
-          gap: 'var(--cds-spacing-03)',
-          padding: 'var(--cds-spacing-04)',
-          background: 'var(--cds-layer-02)',
-          borderRadius: 4,
-          border: '1px solid var(--cds-border-subtle)',
+          flexDirection: 'column',
+          gap: 'var(--cds-spacing-04)',
+          fontSize: 'var(--cds-body-compact-01-font-size)',
+          lineHeight: '1.5',
+          color: 'var(--cds-text-secondary)',
+          width: '100%',
         }}
       >
-        {cfg.icon}
-        <div style={{flex: 1, minWidth: 0}}>
+        {activeTools.length > 0 && (
           <div
             style={{
-              fontSize: 'var(--cds-body-compact-01-font-size)',
-              fontWeight: 600,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 'var(--cds-spacing-02)',
+              flexWrap: 'wrap',
             }}
           >
-            {cfg.label}
-          </div>
-          {agentData.status === 'WAITING_FOR_TOOL' &&
-            agentData.statusDetail && (
-              <div
+            <span style={attachmentLabelStyle}>
+              {activeTools.length} tool{activeTools.length > 1 ? 's' : ''}{' '}
+              called
+            </span>
+            {activeTools.map((t) => (
+              <button
+                key={t.toolElementId}
+                type="button"
+                onClick={() => selectElement({elementId: t.toolElementId})}
                 style={{
-                  fontSize: 'var(--cds-label-01-font-size)',
-                  color: 'var(--cds-text-secondary)',
-                  marginTop: 2,
+                  all: 'unset',
+                  cursor: 'pointer',
+                  ...tagStyle,
+                  color: 'var(--cds-link-primary)',
                 }}
               >
-                Calling {agentData.statusDetail}
-              </div>
-            )}
-        </div>
-      </div>
-      {currentReasoning && (
-        <div style={{marginTop: 'var(--cds-spacing-03)'}}>
-          <MetaLabel>Reasoning</MetaLabel>
-          <div
-            style={{
-              fontSize: 'var(--cds-body-compact-01-font-size)',
-              color: 'var(--cds-text-secondary)',
-              fontStyle: 'italic',
-              lineHeight: '1.5',
-            }}
-          >
-            {currentReasoning}
+                {t.toolName}
+              </button>
+            ))}
           </div>
-        </div>
-      )}
-      {showModel && (
-        <div style={{marginTop: 'var(--cds-spacing-03)'}}>
-          <MetaLabel>Model</MetaLabel>
-          <code
-            style={{
-              fontSize: 12,
-              fontFamily:
-                "var(--cds-code-01-font-family, 'IBM Plex Mono', monospace)",
-              background: 'var(--cds-layer-02)',
-              padding: '2px 6px',
-              borderRadius: 3,
-            }}
-          >
-            {agentData.modelId}
-          </code>
-        </div>
-      )}
-    </DetailSection>
+        )}
+        {currentMessage && (
+          <div>
+            <strong style={{color: 'var(--cds-text-primary)'}}>Message:</strong>{' '}
+            {currentMessage}
+          </div>
+        )}
+      </div>
+    </AccordionItem>
   );
 }
 
@@ -243,6 +365,15 @@ function ToolCallDetail({
   tool: AgentToolCall;
   iteration: AgentIteration;
 }) {
+  const [isInputModalOpen, setIsInputModalOpen] = useState(false);
+  const [isOutputModalOpen, setIsOutputModalOpen] = useState(false);
+
+  const inputText =
+    Object.keys(tool.input).length > 0
+      ? JSON.stringify(tool.input, null, 2)
+      : null;
+  const outputText = tool.output ? JSON.stringify(tool.output, null, 2) : null;
+
   return (
     <>
       <DetailSection>
@@ -251,509 +382,30 @@ function ToolCallDetail({
           style={{
             fontSize: 'var(--cds-body-compact-01-font-size)',
             lineHeight: '1.5',
+            color: 'var(--cds-text-secondary)',
           }}
         >
           {tool.toolDescription}
         </div>
       </DetailSection>
 
-      <DetailSection>
-        <MetaLabel>Input</MetaLabel>
-        {Object.keys(tool.input).length > 0 ? (
-          <CodeBlock>{JSON.stringify(tool.input, null, 2)}</CodeBlock>
-        ) : (
-          <div
-            style={{
-              fontSize: 'var(--cds-body-compact-01-font-size)',
-              color: 'var(--cds-text-secondary)',
-              fontStyle: 'italic',
-            }}
-          >
-            No input parameters
-          </div>
-        )}
-      </DetailSection>
-
-      <DetailSection>
-        <MetaLabel>Output</MetaLabel>
-        {tool.output ? (
-          <CodeBlock>
-            {typeof tool.output === 'string'
-              ? tool.output
-              : JSON.stringify(tool.output, null, 2)}
-          </CodeBlock>
-        ) : (
-          <div
-            style={{
-              fontSize: 'var(--cds-body-compact-01-font-size)',
-              color: 'var(--cds-text-secondary)',
-              fontStyle: 'italic',
-            }}
-          >
-            {tool.status === 'ACTIVE' ? 'Waiting for result...' : 'No output'}
-          </div>
-        )}
-      </DetailSection>
-    </>
-  );
-}
-
-function IterationDetail({iteration}: {iteration: AgentIteration}) {
-  return (
-    <>
-      <DetailSection>
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 'var(--cds-spacing-03)',
-            marginBottom: 'var(--cds-spacing-04)',
-          }}
-        >
-          <WatsonHealthAiResults size={16} />
-          <span
-            style={{
-              fontSize: 'var(--cds-body-compact-01-font-size)',
-              fontWeight: 600,
-              flex: 1,
-            }}
-          >
-            Agent iteration {iteration.iterationNumber}
-          </span>
-          {iteration.finishReason && (
-            <Tag
-              type={
-                iteration.finishReason === 'TOOL_EXECUTION'
-                  ? 'blue'
-                  : iteration.finishReason === 'STOP'
-                    ? 'green'
-                    : iteration.finishReason === 'ERROR'
-                      ? 'red'
-                      : 'gray'
-              }
-              size="sm"
-            >
-              {iteration.finishReason === 'TOOL_EXECUTION'
-                ? 'Tool call'
-                : iteration.finishReason === 'STOP'
-                  ? 'Done'
-                  : iteration.finishReason === 'MAX_TOKENS'
-                    ? 'Max tokens'
-                    : 'Error'}
-            </Tag>
-          )}
-          <span
-            style={{
-              fontSize: 10,
-              color: 'var(--cds-text-secondary)',
-              fontFamily:
-                "var(--cds-code-01-font-family, 'IBM Plex Mono', monospace)",
-            }}
-          >
-            {formatTime(iteration.startTimestamp)}
-          </span>
-        </div>
-      </DetailSection>
-
-      {iteration.userMessage && (
-        <DetailSection>
-          <MetaLabel>
-            <UserAvatar
-              size={12}
-              style={{marginRight: 4, verticalAlign: -2}}
-            />
-            User Message
-          </MetaLabel>
-          <div
-            style={{
-              fontSize: 'var(--cds-body-compact-01-font-size)',
-              lineHeight: '1.5',
-              background: 'var(--cds-layer-02)',
-              borderRadius: 4,
-              padding: 'var(--cds-spacing-03) var(--cds-spacing-04)',
-            }}
-          >
-            {iteration.userMessage}
-          </div>
-        </DetailSection>
-      )}
-
-      <DetailSection>
-        <MetaLabel>
-          <WatsonHealthAiResults
-            size={12}
-            style={{marginRight: 4, verticalAlign: -2}}
-          />
-          Reasoning
-        </MetaLabel>
-        <div
-          style={{
-            fontSize: 'var(--cds-body-compact-01-font-size)',
-            lineHeight: '1.5',
-            background: 'var(--cds-layer-02)',
-            borderRadius: 4,
-            padding: 'var(--cds-spacing-03) var(--cds-spacing-04)',
-            fontStyle: 'italic',
-            color: 'var(--cds-text-secondary)',
-          }}
-        >
-          {iteration.reasoning}
-        </div>
-      </DetailSection>
-
-      {iteration.agentMessage && (
-        <DetailSection>
-          <MetaLabel>
-            <Bot size={12} style={{marginRight: 4, verticalAlign: -2}} />
-            Assistant Response
-          </MetaLabel>
-          <div
-            style={{
-              fontSize: 'var(--cds-body-compact-01-font-size)',
-              lineHeight: '1.5',
-            }}
-          >
-            {iteration.agentMessage}
-          </div>
-        </DetailSection>
-      )}
-
-      {iteration.toolCalls.length > 0 && (
-        <DetailSection>
-          <MetaLabel>
-            <Tools size={12} style={{marginRight: 4, verticalAlign: -2}} />
-            Tool{iteration.toolCalls.length > 1 ? 's' : ''} Called
-          </MetaLabel>
-          <div style={{display: 'flex', flexDirection: 'column', gap: 8}}>
-            {iteration.toolCalls.map((tool, idx) => (
-              <div
-                key={idx}
-                style={{
-                  fontSize: 'var(--cds-body-compact-01-font-size)',
-                  background:
-                    tool.status === 'FAILED'
-                      ? 'var(--cds-notification-background-error)'
-                      : 'var(--cds-layer-02)',
-                  borderRadius: 4,
-                  padding: 'var(--cds-spacing-03) var(--cds-spacing-04)',
-                }}
-              >
-                <div
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 'var(--cds-spacing-03)',
-                  }}
-                >
-                  <span
-                    style={{
-                      fontWeight: 600,
-                      fontFamily:
-                        "var(--cds-code-01-font-family, 'IBM Plex Mono', monospace)",
-                    }}
-                  >
-                    {tool.toolName}
-                  </span>
-                  {tool.duration && (
-                    <span
-                      style={{
-                        fontSize: 10,
-                        color: 'var(--cds-text-secondary)',
-                        marginLeft: 'auto',
-                      }}
-                    >
-                      {tool.duration}
-                    </span>
-                  )}
-                  {tool.status === 'FAILED' && (
-                    <Tag type="red" size="sm">
-                      Failed
-                    </Tag>
-                  )}
-                </div>
-                <div
-                  style={{
-                    color: 'var(--cds-text-secondary)',
-                    marginTop: 2,
-                    lineHeight: '1.4',
-                  }}
-                >
-                  {tool.rationale}
-                </div>
-              </div>
-            ))}
-          </div>
-        </DetailSection>
-      )}
-
-      {/* Token usage */}
-      <DetailSection>
-        <MetaLabel>Token Usage</MetaLabel>
-        <div style={{display: 'flex', gap: 'var(--cds-spacing-04)'}}>
-          <div
-            style={{
-              flex: 1,
-              textAlign: 'center',
-              background: 'var(--cds-layer-02)',
-              borderRadius: 4,
-              padding: 'var(--cds-spacing-03)',
-            }}
-          >
-            <div
-              style={{
-                fontFamily:
-                  "var(--cds-code-01-font-family, 'IBM Plex Mono', monospace)",
-                fontWeight: 600,
-              }}
-            >
-              {(
-                iteration.tokenUsage.input + iteration.tokenUsage.output
-              ).toLocaleString()}
-            </div>
-            <div
-              style={{
-                fontSize: 10,
-                color: 'var(--cds-text-secondary)',
-              }}
-            >
-              Total
-            </div>
-          </div>
-          <div
-            style={{
-              flex: 1,
-              textAlign: 'center',
-              background: 'var(--cds-layer-02)',
-              borderRadius: 4,
-              padding: 'var(--cds-spacing-03)',
-            }}
-          >
-            <div
-              style={{
-                fontFamily:
-                  "var(--cds-code-01-font-family, 'IBM Plex Mono', monospace)",
-                fontWeight: 600,
-              }}
-            >
-              {iteration.tokenUsage.input.toLocaleString()}
-            </div>
-            <div
-              style={{
-                fontSize: 10,
-                color: 'var(--cds-text-secondary)',
-              }}
-            >
-              Input
-            </div>
-          </div>
-          <div
-            style={{
-              flex: 1,
-              textAlign: 'center',
-              background: 'var(--cds-layer-02)',
-              borderRadius: 4,
-              padding: 'var(--cds-spacing-03)',
-            }}
-          >
-            <div
-              style={{
-                fontFamily:
-                  "var(--cds-code-01-font-family, 'IBM Plex Mono', monospace)",
-                fontWeight: 600,
-              }}
-            >
-              {iteration.tokenUsage.output.toLocaleString()}
-            </div>
-            <div
-              style={{
-                fontSize: 10,
-                color: 'var(--cds-text-secondary)',
-              }}
-            >
-              Output
-            </div>
-          </div>
-        </div>
-      </DetailSection>
-
-      {iteration.messageId && (
-        <DetailSection>
-          <MetaLabel>Message ID</MetaLabel>
-          <div
-            style={{
-              fontSize: 11,
-              fontFamily:
-                "var(--cds-code-01-font-family, 'IBM Plex Mono', monospace)",
-              color: 'var(--cds-text-secondary)',
-              background: 'var(--cds-layer-02)',
-              borderRadius: 4,
-              padding: 'var(--cds-spacing-02) var(--cds-spacing-03)',
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-              whiteSpace: 'nowrap',
-            }}
-          >
-            {iteration.messageId}
-          </div>
-        </DetailSection>
-      )}
-    </>
-  );
-}
-
-type ElementDetailsProps = {
-  elementInstanceKey: string;
-  executionDuration: string;
-  retriesLeft?: number;
-};
-
-function ElementDetailsSection({
-  details,
-}: {
-  details: ElementDetailsProps;
-}) {
-  return (
-    <DetailSection>
-      <PropertyRow>
-        <PropertyLabel>Element Instance Key</PropertyLabel>
-        <PropertyValue
-          style={{
-            fontFamily:
-              "var(--cds-code-01-font-family, 'IBM Plex Mono', monospace)",
-            fontSize: 12,
-          }}
-        >
-          {details.elementInstanceKey}
-        </PropertyValue>
-      </PropertyRow>
-      <PropertyRow>
-        <PropertyLabel>Execution Duration</PropertyLabel>
-        <PropertyValue>{details.executionDuration}</PropertyValue>
-      </PropertyRow>
-      {details.retriesLeft !== undefined && (
-        <PropertyRow>
-          <PropertyLabel>Retries Left</PropertyLabel>
-          <PropertyValue>{details.retriesLeft}</PropertyValue>
-        </PropertyRow>
-      )}
-    </DetailSection>
-  );
-}
-
-function DefaultAgentDetail({
-  agentData,
-  elementDetails,
-}: {
-  agentData: AgentElementData;
-  elementDetails?: ElementDetailsProps;
-}) {
-  const [isPromptModalOpen, setIsPromptModalOpen] = useState(false);
-
-  return (
-    <>
-      {elementDetails && <ElementDetailsSection details={elementDetails} />}
-
-      <StatusBanner agentData={agentData} showModel />
-
       <Accordion align="start">
-        <AccordionItem
-          title={
-            <span style={{display: 'flex', alignItems: 'center', gap: 'var(--cds-spacing-03)'}}>
-              <MeterAlt size={16} />
-              Usage &amp; Limits
-            </span>
-          }
-          open
-        >
-          <div
-            style={{
-              display: 'flex',
-              flexDirection: 'column',
-              gap: 'var(--cds-spacing-04)',
-              width: '100%',
-            }}
-          >
-            <div style={{display: 'flex', gap: 'var(--cds-spacing-05)'}}>
-              <div style={{flex: 1}}>
-                <AgentUsageBarComponent
-                  label="Model calls"
-                  current={agentData.usage.modelCalls.current}
-                  limit={agentData.usage.modelCalls.limit}
-                />
-              </div>
-              <div style={{flex: 1}}>
-                <AgentUsageBarComponent
-                  label="Tools called"
-                  current={agentData.usage.toolsCalled.current}
-                  limit={agentData.usage.toolsCalled.limit}
-                />
-              </div>
-            </div>
-            <div style={{display: 'flex', gap: 'var(--cds-spacing-05)'}}>
-              <div style={{flex: 1}}>
-                <AgentUsageBarComponent
-                  label="Tokens used"
-                  current={agentData.usage.tokensUsed.current}
-                  limit={agentData.usage.tokensUsed.limit}
-                />
-                <div
-                  style={{
-                    fontSize: 10,
-                    color: 'var(--cds-text-secondary)',
-                    fontFamily:
-                      "var(--cds-code-01-font-family, 'IBM Plex Mono', monospace)",
-                    marginTop: 2,
-                  }}
-                >
-                  {agentData.usage.tokensUsed.inputTokens.toLocaleString()}{' '}
-                  input &middot;{' '}
-                  {agentData.usage.tokensUsed.outputTokens.toLocaleString()}{' '}
-                  output
-                </div>
-              </div>
-              <div style={{flex: 1}} />
-            </div>
-          </div>
-        </AccordionItem>
-
-        <AccordionItem
-          title={
-            <span style={{display: 'flex', alignItems: 'center', gap: 'var(--cds-spacing-03)'}}>
-              <DocumentBlank size={16} />
-              System Prompt
-            </span>
-          }
-        >
-          <div style={{width: '100%', position: 'relative'}}>
+        <AccordionItem title="Input">
+          {inputText ? (
             <div
               style={{
-                position: 'relative',
-                background: 'var(--cds-layer-02)',
-                border: '1px solid var(--cds-border-subtle)',
-                borderRadius: 4,
+                width: '100%',
+                display: 'flex',
+                alignItems: 'flex-start',
+                gap: 'var(--cds-spacing-03)',
               }}
             >
-              <Tooltip label="Open system prompt" align="left">
-                <IconButton
-                  kind="ghost"
-                  size="sm"
-                  label="Open system prompt"
-                  onClick={() => setIsPromptModalOpen(true)}
-                  style={{
-                    position: 'absolute',
-                    top: 4,
-                    right: 4,
-                    zIndex: 1,
-                  }}
-                >
-                  <Maximize size={16} />
-                </IconButton>
-              </Tooltip>
               <pre
                 style={{
+                  flex: 1,
+                  minWidth: 0,
                   margin: 0,
                   padding: 'var(--cds-spacing-05)',
-                  paddingRight: 'calc(var(--cds-spacing-05) + 32px)',
                   fontFamily:
                     "var(--cds-code-01-font-family, 'IBM Plex Mono', monospace)",
                   fontSize: 13,
@@ -762,33 +414,152 @@ function DefaultAgentDetail({
                   wordBreak: 'break-word',
                   maxHeight: 260,
                   overflowY: 'auto',
+                  background: 'var(--cds-layer-02)',
+                  borderRadius: 4,
                 }}
               >
-                {agentData.systemPrompt}
+                {inputText}
               </pre>
+              <IconButton
+                kind="ghost"
+                size="sm"
+                label="Expand input"
+                onClick={() => setIsInputModalOpen(true)}
+                style={{flexShrink: 0}}
+              >
+                <Maximize size={16} />
+              </IconButton>
             </div>
-          </div>
+          ) : (
+            <div
+              style={{
+                fontSize: 'var(--cds-body-compact-01-font-size)',
+                color: 'var(--cds-text-secondary)',
+              }}
+            >
+              No input parameters
+            </div>
+          )}
+        </AccordionItem>
+
+        <AccordionItem title="Output">
+          {outputText ? (
+            <div
+              style={{
+                width: '100%',
+                display: 'flex',
+                alignItems: 'flex-start',
+                gap: 'var(--cds-spacing-03)',
+              }}
+            >
+              <pre
+                style={{
+                  flex: 1,
+                  minWidth: 0,
+                  margin: 0,
+                  padding: 'var(--cds-spacing-05)',
+                  fontFamily:
+                    "var(--cds-code-01-font-family, 'IBM Plex Mono', monospace)",
+                  fontSize: 13,
+                  lineHeight: '1.5',
+                  whiteSpace: 'pre-wrap',
+                  wordBreak: 'break-word',
+                  maxHeight: 260,
+                  overflowY: 'auto',
+                  background: 'var(--cds-layer-02)',
+                  borderRadius: 4,
+                }}
+              >
+                {outputText}
+              </pre>
+              <IconButton
+                kind="ghost"
+                size="sm"
+                label="Expand output"
+                onClick={() => setIsOutputModalOpen(true)}
+                style={{flexShrink: 0}}
+              >
+                <Maximize size={16} />
+              </IconButton>
+            </div>
+          ) : (
+            <div
+              style={{
+                fontSize: 'var(--cds-body-compact-01-font-size)',
+                color: 'var(--cds-text-secondary)',
+              }}
+            >
+              {tool.status === 'ACTIVE'
+                ? 'Output will appear once the tool completes.'
+                : 'No output available.'}
+            </div>
+          )}
         </AccordionItem>
       </Accordion>
 
       <Modal
-        open={isPromptModalOpen}
-        modalHeading="System Prompt"
-        onRequestClose={() => setIsPromptModalOpen(false)}
+        open={isInputModalOpen}
+        modalHeading="Input"
+        onRequestClose={() => setIsInputModalOpen(false)}
         size="lg"
         passiveModal
       >
         <Suspense
           fallback={
-            <div style={{height: '60vh', display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
+            <div
+              style={{
+                height: '60vh',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
               Loading editor...
             </div>
           }
         >
           <MonacoEditor
             height="60vh"
-            language="markdown"
-            value={agentData.systemPrompt}
+            language="json"
+            value={inputText ?? ''}
+            options={{
+              readOnly: true,
+              minimap: {enabled: false},
+              fontSize: 13,
+              lineHeight: 20,
+              tabSize: 2,
+              wordWrap: 'on',
+              scrollBeyondLastLine: false,
+            }}
+          />
+        </Suspense>
+      </Modal>
+
+      <Modal
+        open={isOutputModalOpen}
+        modalHeading="Output"
+        onRequestClose={() => setIsOutputModalOpen(false)}
+        size="lg"
+        passiveModal
+      >
+        <Suspense
+          fallback={
+            <div
+              style={{
+                height: '60vh',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              Loading editor...
+            </div>
+          }
+        >
+          <MonacoEditor
+            height="60vh"
+            language="json"
+            value={outputText ?? ''}
             options={{
               readOnly: true,
               minimap: {enabled: false},
@@ -802,6 +573,550 @@ function DefaultAgentDetail({
         </Suspense>
       </Modal>
     </>
+  );
+}
+
+function IterationDetail({iteration}: {iteration: AgentIteration}) {
+  const input = iteration.tokenUsage.input;
+  const output = iteration.tokenUsage.output;
+  const reasoning = iteration.tokenUsage.reasoning ?? 0;
+  const total = input + output + reasoning;
+
+  return (
+    <>
+      <DetailSection>
+        <MetaLabel>Reasoning</MetaLabel>
+        <div
+          style={{
+            fontSize: 'var(--cds-body-compact-01-font-size)',
+            lineHeight: '1.5',
+            color: 'var(--cds-text-secondary)',
+          }}
+        >
+          {iteration.reasoning}
+        </div>
+      </DetailSection>
+
+      <DetailSection
+        style={{maxWidth: 'calc(50% - var(--cds-spacing-07) / 2)'}}
+      >
+        <TokensStatCard
+          usage={{
+            inputTokens: input,
+            outputTokens: output,
+            reasoningTokens: reasoning,
+            totalTokens: total,
+          }}
+        />
+      </DetailSection>
+    </>
+  );
+}
+
+type ElementDetailsProps = {
+  elementInstanceKey: string;
+  executionDuration: string;
+  retriesLeft?: number;
+};
+
+function ElementDetailsSection({
+  details,
+  extraItems,
+}: {
+  details: ElementDetailsProps;
+  extraItems?: {label: string; value: React.ReactNode}[];
+}) {
+  const items: {label: string; value: React.ReactNode}[] = [
+    {label: 'Instance key', value: details.elementInstanceKey},
+    {label: 'Duration', value: details.executionDuration},
+  ];
+  if (details.retriesLeft !== undefined) {
+    items.push({label: 'Retries left', value: String(details.retriesLeft)});
+  }
+  if (extraItems) {
+    items.push(...extraItems);
+  }
+
+  const columnCount = items.length <= 2 ? 2 : 3;
+
+  return (
+    <DetailSection>
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: `repeat(${columnCount}, 1fr)`,
+          gap: 'var(--cds-spacing-05)',
+        }}
+      >
+        {items.map((item) => (
+          <div key={item.label}>
+            <div
+              style={{
+                fontSize: 'var(--cds-label-01-font-size)',
+                lineHeight: 'var(--cds-label-01-line-height)',
+                letterSpacing: 'var(--cds-label-01-letter-spacing)',
+                color: 'var(--cds-text-secondary)',
+                marginBottom: 'var(--cds-spacing-02)',
+              }}
+            >
+              {item.label}
+            </div>
+            <div
+              style={{
+                fontSize: 'var(--cds-body-compact-01-font-size)',
+                color: 'var(--cds-text-primary)',
+                wordBreak: 'break-all',
+              }}
+            >
+              {item.value}
+            </div>
+          </div>
+        ))}
+      </div>
+    </DetailSection>
+  );
+}
+
+function ExpandableSegment({
+  content,
+  modalHeading,
+  isFirst,
+}: {
+  content: string;
+  modalHeading: string;
+  isFirst: boolean;
+}) {
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  return (
+    <>
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'flex-start',
+          gap: 'var(--cds-spacing-03)',
+          marginTop: isFirst ? 0 : 'var(--cds-spacing-04)',
+        }}
+      >
+        <div
+          style={{
+            flex: 1,
+            minWidth: 0,
+            fontSize: 'var(--cds-body-compact-01-font-size)',
+            lineHeight: '1.5',
+            color: 'var(--cds-text-primary)',
+            whiteSpace: 'pre-wrap',
+            wordBreak: 'break-word',
+            maxHeight: 160,
+            overflowY: 'auto',
+          }}
+        >
+          {content}
+        </div>
+        <IconButton
+          kind="ghost"
+          size="sm"
+          label="Expand"
+          align="bottom"
+          onClick={() => setIsModalOpen(true)}
+          style={{flexShrink: 0}}
+        >
+          <Maximize size={16} />
+        </IconButton>
+      </div>
+      <Modal
+        open={isModalOpen}
+        modalHeading={modalHeading}
+        onRequestClose={() => setIsModalOpen(false)}
+        size="lg"
+        passiveModal
+      >
+        <Suspense
+          fallback={
+            <div
+              style={{
+                height: '60vh',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              Loading editor...
+            </div>
+          }
+        >
+          <MonacoEditor
+            height="60vh"
+            language="markdown"
+            value={content}
+            options={{
+              readOnly: true,
+              minimap: {enabled: false},
+              fontSize: 13,
+              lineHeight: 20,
+              tabSize: 2,
+              wordWrap: 'on',
+              scrollBeyondLastLine: false,
+            }}
+          />
+        </Suspense>
+      </Modal>
+    </>
+  );
+}
+
+function ExpandableMessageBlock({
+  role,
+  roleColor,
+  borderColor,
+  timestamp,
+  contents,
+  modalHeading,
+  children,
+}: {
+  role: string;
+  roleColor: string;
+  borderColor: string;
+  timestamp?: string;
+  contents: string[];
+  modalHeading: string;
+  children?: React.ReactNode;
+}) {
+  const segments = contents.filter((c) => c.length > 0);
+
+  return (
+    <div
+      style={{
+        padding: 'var(--cds-spacing-04)',
+        background: 'var(--cds-layer-02)',
+        borderRadius: 4,
+        borderLeft: `3px solid ${borderColor}`,
+      }}
+    >
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 'var(--cds-spacing-03)',
+          marginBottom: 'var(--cds-spacing-02)',
+        }}
+      >
+        <span
+          style={{
+            fontWeight: 600,
+            textTransform: 'uppercase' as const,
+            letterSpacing: '0.32px',
+            fontSize: 10,
+            color: roleColor,
+          }}
+        >
+          {role}
+        </span>
+        {timestamp && (
+          <span
+            style={{
+              fontSize: 10,
+              color: 'var(--cds-text-secondary)',
+              fontFamily:
+                "var(--cds-code-01-font-family, 'IBM Plex Mono', monospace)",
+              marginLeft: 'auto',
+            }}
+          >
+            {timestamp}
+          </span>
+        )}
+      </div>
+      {segments.map((segment, index) => (
+        <ExpandableSegment
+          key={index}
+          content={segment}
+          modalHeading={
+            segments.length > 1
+              ? `${modalHeading} — part ${index + 1}`
+              : modalHeading
+          }
+          isFirst={index === 0}
+        />
+      ))}
+      {children}
+    </div>
+  );
+}
+
+function ConversationHistory({
+  messages,
+  agentData,
+}: {
+  messages: ConversationMessage[];
+  agentData: AgentElementData;
+}) {
+  const {selectElement} = useProcessInstanceElementSelection();
+
+  // Build lookup: tool element ID → display name (from iterations)
+  const toolDisplayNames = new Map<string, string>();
+  for (const iter of agentData.iterations) {
+    for (const tc of iter.toolCalls) {
+      toolDisplayNames.set(tc.toolElementId, tc.toolName);
+    }
+  }
+
+  // Filter out system messages and tool_call_result (tools shown inline on
+  // assistant), then show the most recent message first. A header above the
+  // list makes the sort direction explicit.
+  const filtered = messages
+    .filter((msg) => msg.role !== 'system' && msg.role !== 'tool_call_result')
+    .slice()
+    .reverse();
+
+  return (
+    <div
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 'var(--cds-spacing-04)',
+        width: '100%',
+      }}
+    >
+      <div
+        style={{
+          fontSize: 'var(--cds-helper-text-01-font-size, 0.75rem)',
+          lineHeight: 'var(--cds-helper-text-01-line-height, 1.33333)',
+          color: 'var(--cds-text-secondary)',
+        }}
+      >
+        Most recent first
+      </div>
+      {filtered.map((msg, i) => {
+        const timestamp = msg.timestamp ? formatTime(msg.timestamp) : undefined;
+
+        if (msg.role === 'user') {
+          return (
+            <ExpandableMessageBlock
+              key={i}
+              role="User"
+              roleColor="var(--cds-interactive)"
+              borderColor="var(--cds-interactive)"
+              timestamp={timestamp}
+              contents={msg.content}
+              modalHeading="User message"
+            >
+              {msg.documents && msg.documents.length > 0 && (
+                <div
+                  style={{
+                    marginTop: 'var(--cds-spacing-05)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 'var(--cds-spacing-02)',
+                    flexWrap: 'wrap',
+                  }}
+                >
+                  <span style={attachmentLabelStyle}>Documents</span>
+                  {msg.documents.map((doc) => (
+                    <span key={doc.name} style={tagStyle}>
+                      <DocumentAttachment size={12} />
+                      {doc.name}
+                    </span>
+                  ))}
+                </div>
+              )}
+            </ExpandableMessageBlock>
+          );
+        }
+
+        if (msg.role === 'assistant') {
+          return (
+            <ExpandableMessageBlock
+              key={i}
+              role="Assistant"
+              roleColor="#8a3ffc"
+              borderColor="#8a3ffc"
+              timestamp={timestamp}
+              contents={msg.content}
+              modalHeading={`Assistant message${timestamp ? ` — ${timestamp}` : ''}`}
+            >
+              {msg.toolCalls && msg.toolCalls.length > 0 && (
+                <div
+                  style={{
+                    marginTop: 'var(--cds-spacing-05)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 'var(--cds-spacing-02)',
+                    flexWrap: 'wrap',
+                  }}
+                >
+                  <span style={attachmentLabelStyle}>Tool calls</span>
+                  {msg.toolCalls.map((tc) => {
+                    const displayName =
+                      toolDisplayNames.get(tc.name) ?? tc.name;
+                    return (
+                      <button
+                        key={tc.id}
+                        type="button"
+                        onClick={() => selectElement({elementId: tc.name})}
+                        style={{
+                          ...tagStyle,
+                          all: 'unset',
+                          cursor: 'pointer',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: 4,
+                          padding: '1px 8px',
+                          borderRadius: 24,
+                          fontSize: 'var(--cds-label-01-font-size)',
+                          lineHeight: 'var(--cds-label-01-line-height)',
+                          letterSpacing: 'var(--cds-label-01-letter-spacing)',
+                          color: 'var(--cds-link-primary)',
+                          background: 'var(--cds-layer-02)',
+                          border: '1px solid var(--cds-border-subtle-01)',
+                          whiteSpace: 'nowrap',
+                        }}
+                      >
+                        {displayName}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </ExpandableMessageBlock>
+          );
+        }
+
+        return null;
+      })}
+    </div>
+  );
+}
+
+function DefaultAgentDetail({agentData}: {agentData: AgentElementData}) {
+  return (
+    <Accordion align="start">
+      <StatusAccordion agentData={agentData} />
+      <AccordionItem
+        title={
+          <span
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 'var(--cds-spacing-03)',
+            }}
+          >
+            <MeterAlt size={16} />
+            Usage
+          </span>
+        }
+      >
+        <div
+          style={{
+            display: 'flex',
+            gap: 'var(--cds-spacing-05)',
+            alignItems: 'stretch',
+            width: '100%',
+          }}
+        >
+          <div style={{flex: 1, display: 'flex'}}>
+            <ModelCallsStatCard
+              current={agentData.usage.modelCalls.current}
+              limit={agentData.usage.modelCalls.limit}
+            />
+          </div>
+          <div style={{flex: 1, display: 'flex'}}>
+            <TokensStatCard usage={agentData.usage.tokensUsed} />
+          </div>
+          <div style={{flex: 1, display: 'flex'}}>
+            <ToolsCalledStatCard
+              current={agentData.usage.toolsCalled.current}
+            />
+          </div>
+        </div>
+      </AccordionItem>
+
+      {agentData.conversation && agentData.conversation.length > 0 && (
+        <AccordionItem
+          title={
+            <span
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 'var(--cds-spacing-03)',
+              }}
+            >
+              <Chat size={16} />
+              Conversation history
+            </span>
+          }
+        >
+          <div style={{width: '100%'}}>
+            <ConversationHistory
+              messages={agentData.conversation}
+              agentData={agentData}
+            />
+          </div>
+        </AccordionItem>
+      )}
+
+      <AccordionItem
+        title={
+          <span
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 'var(--cds-spacing-03)',
+            }}
+          >
+            <DocumentBlank size={16} />
+            System prompt
+          </span>
+        }
+      >
+        <div style={{width: '100%'}}>
+          <ExpandableMessageBlock
+            role="System"
+            roleColor="var(--cds-text-secondary)"
+            borderColor="var(--cds-border-subtle-01)"
+            contents={[agentData.systemPrompt]}
+            modalHeading="System prompt"
+          />
+        </div>
+      </AccordionItem>
+
+      <AccordionItem
+        title={
+          <span
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 'var(--cds-spacing-03)',
+            }}
+          >
+            <Chip size={16} />
+            Model
+          </span>
+        }
+      >
+        <div
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 'var(--cds-spacing-02)',
+            fontSize: 'var(--cds-body-compact-01-font-size)',
+            lineHeight: '1.5',
+            color: 'var(--cds-text-secondary)',
+            width: '100%',
+          }}
+        >
+          <div>
+            <strong style={{color: 'var(--cds-text-primary)'}}>
+              Provider:
+            </strong>{' '}
+            {agentData.modelProvider}
+          </div>
+          <div>
+            <strong style={{color: 'var(--cds-text-primary)'}}>Model:</strong>{' '}
+            {agentData.modelId}
+          </div>
+        </div>
+      </AccordionItem>
+    </Accordion>
   );
 }
 

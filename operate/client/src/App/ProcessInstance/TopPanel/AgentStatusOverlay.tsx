@@ -8,7 +8,6 @@
 
 import {createPortal} from 'react-dom';
 import styled, {keyframes} from 'styled-components';
-import {WatsonHealthAiResults} from '@carbon/icons-react';
 
 const shimmer = keyframes`
   0% { background-position: 200% 0; }
@@ -18,26 +17,15 @@ const shimmer = keyframes`
 const TagContainer = styled.div`
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 4px 10px;
-  border-radius: 12px;
-  font-size: 12px;
+  padding: 6px 12px;
+  border-radius: 14px;
+  font-size: 14px;
   font-weight: 600;
   color: white;
   white-space: nowrap;
-  background: linear-gradient(
-    110deg,
-    #8a3ffc 30%,
-    #a56eff 50%,
-    #8a3ffc 70%
-  );
+  background: linear-gradient(110deg, #8a3ffc 30%, #a56eff 50%, #8a3ffc 70%);
   background-size: 200% 100%;
   animation: ${shimmer} 3s linear infinite;
-
-  svg {
-    fill: white;
-    flex-shrink: 0;
-  }
 `;
 
 type Props = {
@@ -48,7 +36,6 @@ type Props = {
 const AgentStatusOverlay: React.FC<Props> = ({container, label}) => {
   return createPortal(
     <TagContainer>
-      <WatsonHealthAiResults size={14} />
       <span>{label}</span>
     </TagContainer>,
     container,

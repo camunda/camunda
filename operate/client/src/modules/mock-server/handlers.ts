@@ -6,20 +6,25 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+/*
+ * Mock handlers for the AI agent visibility prototype.
+ *
+ * The mock scenarios are NOT injected into the processes list or the
+ * process-definitions list — they only intercept requests that are already
+ * scoped to one of the mock keys (typically when the URL is
+ * `/processes/<mock-instance-key>` or when the frontend fetches data for a
+ * mock element instance). The regular processes list shows real backend data.
+ *
+ * To reach the mock demo, navigate directly to the URLs printed by the
+ * `browser.ts` setup on dev-server startup.
+ */
+
 import {type RequestHandler, http, HttpResponse, passthrough} from 'msw';
 import {
-  MOCK_AGENT_INSTANCE_KEY,
-  MOCK_AGENT_DEFINITION_KEY,
-  MOCK_AGENT_DEFINITION_ID,
-  AGENT_BPMN_XML,
-  MOCK_AGENT_PROCESS_INSTANCE,
-  MOCK_AGENT_PROCESS_DEFINITION,
-  MOCK_AGENT_ELEMENT_INSTANCES,
-  MOCK_AGENT_ELEMENT_STATISTICS,
-  MOCK_AGENT_SEQUENCE_FLOWS,
-  MOCK_AGENT_VARIABLES,
-  MOCK_AGENT_JOBS,
-} from './agentDemoData';
+  SCENARIOS,
+  getScenarioByInstanceKey,
+  getScenarioByDefinitionKey,
+} from './scenarioRegistry';
 
 const PAGE_DEFAULTS = {
   totalItems: 0,
@@ -28,118 +33,48 @@ const PAGE_DEFAULTS = {
   hasMoreTotalItems: false,
 };
 
+const allMockElementInstances = () =>
+  SCENARIOS.flatMap((s) => s.elementInstances);
+
+const findScenarioByElementInstanceKey = (key: string | undefined) =>
+  key
+    ? SCENARIOS.find((s) =>
+        s.elementInstances.some((el) => el.elementInstanceKey === key),
+      )
+    : undefined;
+
 const handlers: RequestHandler[] = [
   // GET single process instance
   http.get('*/v2/process-instances/:processInstanceKey', ({params}) => {
-    if (params.processInstanceKey === MOCK_AGENT_INSTANCE_KEY) {
-      return HttpResponse.json(MOCK_AGENT_PROCESS_INSTANCE);
+    const scenario = getScenarioByInstanceKey(
+      params.processInstanceKey as string,
+    );
+    if (scenario) {
+      return HttpResponse.json(scenario.processInstance);
     }
     return passthrough();
   }),
 
-  // POST process instances search — inject mock instance at the top
-  http.post('*/v2/process-instances/search', async ({request}) => {
-    const body = (await request.json()) as Record<string, unknown>;
-    const filter = body?.filter as Record<string, unknown> | undefined;
-
-    const parentFilter = filter?.parentProcessInstanceKey;
-    if (parentFilter) {
-      return passthrough();
-    }
-
-    const processDefIdFilter =
-      (filter?.processDefinitionId as Record<string, unknown>)?.$eq ??
-      filter?.processDefinitionId;
-
-    if (
-      processDefIdFilter &&
-      processDefIdFilter !== MOCK_AGENT_DEFINITION_ID
-    ) {
-      return passthrough();
-    }
-
-    const shouldIncludeMock =
-      !processDefIdFilter || processDefIdFilter === MOCK_AGENT_DEFINITION_ID;
-
-    if (!shouldIncludeMock) {
-      return passthrough();
-    }
-
-    try {
-      const realResponse = await fetch(request.clone());
-      if (realResponse.ok) {
-        const realData = (await realResponse.json()) as {
-          items: unknown[];
-          page: typeof PAGE_DEFAULTS;
-        };
-        return HttpResponse.json({
-          items: [MOCK_AGENT_PROCESS_INSTANCE, ...realData.items],
-          page: {
-            ...realData.page,
-            totalItems: (realData.page.totalItems ?? 0) + 1,
-          },
-        });
-      }
-    } catch {
-      // Backend unavailable — return mock-only
-    }
-
-    return HttpResponse.json({
-      items: [MOCK_AGENT_PROCESS_INSTANCE],
-      page: {...PAGE_DEFAULTS, totalItems: 1},
-    });
-  }),
-
-  // POST process definitions search — inject mock definition
-  http.post('*/v2/process-definitions/search', async ({request}) => {
-    try {
-      const realResponse = await fetch(request.clone());
-      if (realResponse.ok) {
-        const realData = (await realResponse.json()) as {
-          items: unknown[];
-          page: typeof PAGE_DEFAULTS;
-        };
-        const hasMock = (realData.items as Array<{processDefinitionKey?: string}>).some(
-          (d) => d.processDefinitionKey === MOCK_AGENT_DEFINITION_KEY,
-        );
-        if (hasMock) {
-          return HttpResponse.json(realData);
-        }
-        return HttpResponse.json({
-          items: [MOCK_AGENT_PROCESS_DEFINITION, ...realData.items],
-          page: {
-            ...realData.page,
-            totalItems: (realData.page.totalItems ?? 0) + 1,
-          },
-        });
-      }
-    } catch {
-      // Backend unavailable
-    }
-
-    return HttpResponse.json({
-      items: [MOCK_AGENT_PROCESS_DEFINITION],
-      page: {...PAGE_DEFAULTS, totalItems: 1},
-    });
-  }),
-
   // GET process definition XML
-  http.get(
-    '*/v2/process-definitions/:processDefinitionKey/xml',
-    ({params}) => {
-      if (params.processDefinitionKey === MOCK_AGENT_DEFINITION_KEY) {
-        return HttpResponse.text(AGENT_BPMN_XML);
-      }
-      return passthrough();
-    },
-  ),
+  http.get('*/v2/process-definitions/:processDefinitionKey/xml', ({params}) => {
+    const scenario = getScenarioByDefinitionKey(
+      params.processDefinitionKey as string,
+    );
+    if (scenario) {
+      return HttpResponse.text(scenario.bpmnXml);
+    }
+    return passthrough();
+  }),
 
   // GET element instance statistics for process instance
   http.get(
     '*/v2/process-instances/:processInstanceKey/statistics/element-instances',
     ({params}) => {
-      if (params.processInstanceKey === MOCK_AGENT_INSTANCE_KEY) {
-        return HttpResponse.json(MOCK_AGENT_ELEMENT_STATISTICS);
+      const scenario = getScenarioByInstanceKey(
+        params.processInstanceKey as string,
+      );
+      if (scenario) {
+        return HttpResponse.json(scenario.elementStatistics);
       }
       return passthrough();
     },
@@ -154,20 +89,21 @@ const handlers: RequestHandler[] = [
       (filter?.processInstanceKey as Record<string, unknown>)?.$eq ??
       filter?.processInstanceKey;
 
-    // Also check if the scope key matches a mock element (tree expansion requests
-    // only send elementInstanceScopeKey, not processInstanceKey)
     const scopeFilter = filter?.elementInstanceScopeKey as string | undefined;
-    const isMockScope =
-      scopeFilter !== undefined &&
-      MOCK_AGENT_ELEMENT_INSTANCES.some(
-        (el) => el.elementInstanceKey === scopeFilter,
-      );
 
-    if (piKeyFilter !== MOCK_AGENT_INSTANCE_KEY && !isMockScope) {
+    let scenario = piKeyFilter
+      ? getScenarioByInstanceKey(piKeyFilter as string)
+      : undefined;
+
+    if (!scenario && scopeFilter) {
+      scenario = findScenarioByElementInstanceKey(scopeFilter);
+    }
+
+    if (!scenario) {
       return passthrough();
     }
 
-    let items = [...MOCK_AGENT_ELEMENT_INSTANCES];
+    let items = [...scenario.elementInstances];
 
     if (scopeFilter) {
       items = items.filter(
@@ -187,7 +123,9 @@ const handlers: RequestHandler[] = [
       items = items.filter((el) => el.type === typeFilter);
     }
 
-    const sort = body?.sort as Array<{field: string; order: string}> | undefined;
+    const sort = body?.sort as
+      | Array<{field: string; order: string}>
+      | undefined;
     if (sort?.length) {
       const {field, order} = sort[0]!;
       items.sort((a, b) => {
@@ -199,7 +137,9 @@ const handlers: RequestHandler[] = [
       });
     }
 
-    const page = body?.page as {limit?: number; searchAfter?: unknown[]} | undefined;
+    const page = body?.page as
+      | {limit?: number; searchAfter?: unknown[]}
+      | undefined;
     const limit = page?.limit ?? 50;
 
     return HttpResponse.json({
@@ -213,7 +153,7 @@ const handlers: RequestHandler[] = [
 
   // GET single element instance
   http.get('*/v2/element-instances/:elementInstanceKey', ({params}) => {
-    const found = MOCK_AGENT_ELEMENT_INSTANCES.find(
+    const found = allMockElementInstances().find(
       (el) => el.elementInstanceKey === params.elementInstanceKey,
     );
     if (found) {
@@ -226,8 +166,11 @@ const handlers: RequestHandler[] = [
   http.get(
     '*/v2/process-instances/:processInstanceKey/sequence-flows',
     ({params}) => {
-      if (params.processInstanceKey === MOCK_AGENT_INSTANCE_KEY) {
-        return HttpResponse.json(MOCK_AGENT_SEQUENCE_FLOWS);
+      const scenario = getScenarioByInstanceKey(
+        params.processInstanceKey as string,
+      );
+      if (scenario) {
+        return HttpResponse.json(scenario.sequenceFlows);
       }
       return passthrough();
     },
@@ -242,11 +185,15 @@ const handlers: RequestHandler[] = [
       (filter?.processInstanceKey as Record<string, unknown>)?.$eq ??
       filter?.processInstanceKey;
 
-    if (piKeyFilter !== MOCK_AGENT_INSTANCE_KEY) {
+    const scenario = piKeyFilter
+      ? getScenarioByInstanceKey(piKeyFilter as string)
+      : undefined;
+
+    if (!scenario) {
       return passthrough();
     }
 
-    let items = [...MOCK_AGENT_VARIABLES];
+    let items = [...scenario.variables];
 
     const scopeFilter = filter?.scopeKey;
     if (scopeFilter) {
@@ -265,7 +212,7 @@ const handlers: RequestHandler[] = [
   http.post(
     '*/v2/process-instances/:processInstanceKey/incidents/search',
     ({params}) => {
-      if (params.processInstanceKey === MOCK_AGENT_INSTANCE_KEY) {
+      if (getScenarioByInstanceKey(params.processInstanceKey as string)) {
         return HttpResponse.json({
           items: [],
           page: {...PAGE_DEFAULTS, totalItems: 0},
@@ -279,7 +226,7 @@ const handlers: RequestHandler[] = [
   http.post(
     '*/v2/element-instances/:elementInstanceKey/incidents/search',
     ({params}) => {
-      const isMockElement = MOCK_AGENT_ELEMENT_INSTANCES.some(
+      const isMockElement = allMockElementInstances().some(
         (el) => el.elementInstanceKey === params.elementInstanceKey,
       );
       if (isMockElement) {
@@ -296,7 +243,7 @@ const handlers: RequestHandler[] = [
   http.get(
     '*/v2/process-instances/:processInstanceKey/call-hierarchy',
     ({params}) => {
-      if (params.processInstanceKey === MOCK_AGENT_INSTANCE_KEY) {
+      if (getScenarioByInstanceKey(params.processInstanceKey as string)) {
         return HttpResponse.json([]);
       }
       return passthrough();
@@ -308,17 +255,21 @@ const handlers: RequestHandler[] = [
     const body = (await request.json()) as Record<string, unknown>;
     const filter = body?.filter as Record<string, unknown> | undefined;
 
-    const piKeyFilter = filter?.processInstanceKey;
-    const elementInstanceFilter = filter?.elementInstanceKey;
+    const piKeyFilter = filter?.processInstanceKey as string | undefined;
+    const elementInstanceFilter = filter?.elementInstanceKey as
+      | string
+      | undefined;
 
-    const isMockElement =
-      elementInstanceFilter &&
-      MOCK_AGENT_ELEMENT_INSTANCES.some(
-        (el) => el.elementInstanceKey === elementInstanceFilter,
-      );
+    let scenario = piKeyFilter
+      ? getScenarioByInstanceKey(piKeyFilter)
+      : undefined;
 
-    if (piKeyFilter === MOCK_AGENT_INSTANCE_KEY || isMockElement) {
-      let items = [...MOCK_AGENT_JOBS];
+    if (!scenario && elementInstanceFilter) {
+      scenario = findScenarioByElementInstanceKey(elementInstanceFilter);
+    }
+
+    if (scenario) {
+      let items = [...scenario.jobs];
 
       if (elementInstanceFilter) {
         items = items.filter(
@@ -340,7 +291,8 @@ const handlers: RequestHandler[] = [
     const body = (await request.json()) as Record<string, unknown>;
     const filter = body?.filter as Record<string, unknown> | undefined;
 
-    if (filter?.processInstanceKey === MOCK_AGENT_INSTANCE_KEY) {
+    const piKeyFilter = filter?.processInstanceKey as string | undefined;
+    if (piKeyFilter && getScenarioByInstanceKey(piKeyFilter)) {
       return HttpResponse.json({
         items: [],
         page: {...PAGE_DEFAULTS, totalItems: 0},
@@ -350,21 +302,43 @@ const handlers: RequestHandler[] = [
     return passthrough();
   }),
 
-  // POST definition-level statistics (for the process list diagram overlays)
+  // POST decision instances search
+  http.post('*/v2/decision-instances/search', async ({request}) => {
+    const body = (await request.json()) as Record<string, unknown>;
+    const filter = body?.filter as Record<string, unknown> | undefined;
+
+    const elementInstanceFilter = filter?.elementInstanceKey as
+      | string
+      | undefined;
+
+    if (
+      elementInstanceFilter &&
+      findScenarioByElementInstanceKey(elementInstanceFilter)
+    ) {
+      return HttpResponse.json({
+        items: [],
+        page: {...PAGE_DEFAULTS, totalItems: 0},
+      });
+    }
+
+    return passthrough();
+  }),
+
+  // POST listeners search
   http.post(
-    '*/v2/process-definitions/:processDefinitionKey/statistics/element-instances',
+    '*/v2/element-instances/:elementInstanceKey/listeners/search',
     ({params}) => {
-      if (params.processDefinitionKey === MOCK_AGENT_DEFINITION_KEY) {
-        return HttpResponse.json(MOCK_AGENT_ELEMENT_STATISTICS);
+      if (
+        findScenarioByElementInstanceKey(params.elementInstanceKey as string)
+      ) {
+        return HttpResponse.json({
+          items: [],
+          page: {...PAGE_DEFAULTS, totalItems: 0},
+        });
       }
       return passthrough();
     },
   ),
-
-  // POST batch operations search (needed for toolbar)
-  http.post('*/v2/batch-operations/search', () => {
-    return passthrough();
-  }),
 ];
 
 export {handlers};

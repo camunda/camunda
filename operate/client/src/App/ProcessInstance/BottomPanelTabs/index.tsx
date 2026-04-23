@@ -6,7 +6,8 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {Navigate, Outlet, useLocation} from 'react-router-dom';
+import {useEffect, useRef} from 'react';
+import {Navigate, Outlet, useLocation, useNavigate} from 'react-router-dom';
 import {Paths} from 'modules/Routes';
 import {Container, TabContent} from './styled';
 import {TabListNav} from './TabListNav';
@@ -57,11 +58,35 @@ const BottomPanelTabs: React.FC<{isHistoryTabVisible: boolean}> = ({
   const {processInstanceId} = useProcessInstancePageParams();
   const {currentPage} = useCurrentPage();
   const location = useLocation();
+  const navigate = useNavigate();
   const hasIncident = processInstance?.hasIncident === true;
   const incidentsCount = useSelectionAwareIncidentsCount(
     processInstanceId ?? '',
     hasIncident,
   );
+
+  // When the user selects an element on the diagram (transitioning from no
+  // selection to having one), default to the Details tab so the selection
+  // actually has somewhere to land. Don't fight subsequent manual tab
+  // switches — only steer on the edge from deselected → selected.
+  const prevHasSelection = useRef(hasSelection);
+  useEffect(() => {
+    if (
+      hasSelection &&
+      !prevHasSelection.current &&
+      currentPage !== 'process-details-details' &&
+      processInstanceId
+    ) {
+      navigate(
+        {
+          pathname: Paths.processInstanceDetails({processInstanceId}),
+          search: location.search,
+        },
+        {replace: true},
+      );
+    }
+    prevHasSelection.current = hasSelection;
+  }, [hasSelection, currentPage, processInstanceId, location.search, navigate]);
 
   const tabItems = [
     {
@@ -80,8 +105,7 @@ const BottomPanelTabs: React.FC<{isHistoryTabVisible: boolean}> = ({
       key: 'details',
       selected: currentPage === 'process-details-details',
       title: 'Details',
-      visible:
-        hasSelection && selectedElementInstanceKey !== processInstanceId,
+      visible: hasSelection && selectedElementInstanceKey !== processInstanceId,
     },
     {
       label: 'Variables',

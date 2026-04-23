@@ -39,8 +39,14 @@ import {useProcessInstance} from 'modules/queries/processInstance/useProcessInst
 const DefaultTabRedirect: React.FC = () => {
   const location = useLocation();
   const {data: processInstance} = useProcessInstance();
-  const pathname =
-    processInstance?.hasIncident === true ? 'incidents' : 'variables';
+  const searchParams = new URLSearchParams(location.search);
+  const hasSelection =
+    searchParams.has('elementId') || searchParams.has('elementInstanceKey');
+  const pathname = hasSelection
+    ? 'details'
+    : processInstance?.hasIncident === true
+      ? 'incidents'
+      : 'variables';
   return <Navigate to={{pathname, search: location.search}} replace />;
 };
 
@@ -163,14 +169,6 @@ const routes = createRoutesFromElements(
             const {InstanceHistoryTab} =
               await import('./ProcessInstance/BottomPanelTabs/InstanceHistoryTab/index');
             return {Component: InstanceHistoryTab};
-          }}
-        />
-        <Route
-          path={Paths.processInstanceAiAgent({isRelative: true})}
-          lazy={async () => {
-            const {AiAgentTab} =
-              await import('./ProcessInstance/BottomPanelTabs/AiAgentTab/index');
-            return {Component: AiAgentTab};
           }}
         />
         <Route path="*" element={<DefaultTabRedirect />} />

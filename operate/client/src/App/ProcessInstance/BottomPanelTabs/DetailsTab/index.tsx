@@ -27,6 +27,7 @@ import {
   IterationDetail,
   ToolCallDetail,
   ElementDetailsSection,
+  type ElementDetailsProps,
 } from '../AiAgentTab/AgentDetailPanel';
 
 const DetailsTab: React.FC = () => {
@@ -109,9 +110,25 @@ const DetailsTab: React.FC = () => {
     isAgentElement(selectedElementId) && agentSubprocessKey !== null;
 
   const agentData = useMemo(() => {
-    if (!showAgentContent || !agentSubprocessKey) return null;
+    if (!showAgentContent || !agentSubprocessKey) {
+      return null;
+    }
     return getAgentDataForElement(agentSubprocessKey);
   }, [showAgentContent, agentSubprocessKey, getAgentDataForElement]);
+
+  const elementDetails = useMemo<ElementDetailsProps | null>(() => {
+    if (!resolvedElementInstance) {
+      return null;
+    }
+    const {startDate, endDate} = resolvedElementInstance;
+    return {
+      elementInstanceKey: elementInstanceKey ?? '-',
+      executionDuration: startDate
+        ? getExecutionDuration(startDate, endDate)
+        : '-',
+      retriesLeft: job?.retries,
+    };
+  }, [resolvedElementInstance, elementInstanceKey, job]);
 
   const rows = useMemo(() => {
     if (!resolvedElementInstance) {
@@ -285,48 +302,39 @@ const DetailsTab: React.FC = () => {
     );
   }
 
-  // When an agent element is selected, show the appropriate detail view
-  if (showAgentContent && agentData && selectedElementId) {
-    const elementDetailsProps = {
-      elementInstanceKey: elementInstanceKey ?? '-',
-      executionDuration: resolvedElementInstance?.startDate
-        ? getExecutionDuration(
-            resolvedElementInstance.startDate,
-            resolvedElementInstance.endDate,
-          )
-        : '-',
-      retriesLeft: job?.retries,
-    };
-
-    // Check if an LLM call element is selected → show iteration detail
+  // When an agent element is selected, show the appropriate agent detail view
+  // inline inside the Details tab (no dedicated tab).
+  if (showAgentContent && agentData && elementDetails && selectedElementId) {
     const iteration = getIterationForElement(selectedElementId);
-    if (iteration) {
-      return (
-        <Container data-testid="details-tab" style={{overflowY: 'auto'}}>
-          <ElementDetailsSection details={elementDetailsProps} />
-          <IterationDetail iteration={iteration} />
-        </Container>
-      );
-    }
+    const toolInfo = !iteration
+      ? getToolCallForElement(selectedElementId)
+      : null;
 
-    // Check if a tool element is selected → show tool call detail
-    const toolInfo = getToolCallForElement(selectedElementId);
-    if (toolInfo) {
-      return (
-        <Container data-testid="details-tab" style={{overflowY: 'auto'}}>
-          <ElementDetailsSection details={elementDetailsProps} />
-          <ToolCallDetail tool={toolInfo.tool} iteration={toolInfo.iteration} />
-        </Container>
-      );
-    }
-
-    // Default: show the agent subprocess overview
     return (
-      <Container data-testid="details-tab" style={{overflowY: 'auto'}}>
-        <DefaultAgentDetail
-          agentData={agentData}
-          elementDetails={elementDetailsProps}
-        />
+      <Container
+        data-testid="details-tab"
+        style={{flex: 1, minHeight: 0, overflowY: 'auto'}}
+      >
+        <ElementDetailsSection details={elementDetails} />
+        <h4
+          style={{
+            fontSize: 'var(--cds-heading-compact-01-font-size)',
+            fontWeight: 'var(--cds-heading-compact-01-font-weight)',
+            lineHeight: 'var(--cds-heading-compact-01-line-height)',
+            letterSpacing: 'var(--cds-heading-compact-01-letter-spacing)',
+            color: 'var(--cds-text-primary)',
+            margin: 0,
+          }}
+        >
+          AI Agent
+        </h4>
+        {iteration ? (
+          <IterationDetail iteration={iteration} />
+        ) : toolInfo ? (
+          <ToolCallDetail tool={toolInfo.tool} iteration={toolInfo.iteration} />
+        ) : (
+          <DefaultAgentDetail agentData={agentData} />
+        )}
       </Container>
     );
   }

@@ -27,8 +27,4 @@ const Callout = styled(BaseCallout)`
   min-width: 100%;
 `;
 
-export {
-  EmptyMessageContainer,
-  Container,
-  Callout,
-};
+export {EmptyMessageContainer, Container, Callout};

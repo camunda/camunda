@@ -56,7 +56,17 @@ const Bar = forwardRef<HTMLDivElement, Props>(
             <StateIcon state={elementInstanceState} size={16} />
           )}
           {iterationSummary ? (
-            <div data-multiline style={{display: 'flex', flexDirection: 'column', minWidth: 0, flex: 1, marginLeft: 'var(--cds-spacing-02)', padding: 'var(--cds-spacing-02) 0'}}>
+            <div
+              data-multiline
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                minWidth: 0,
+                flex: 1,
+                marginLeft: 'var(--cds-spacing-02)',
+                padding: 'var(--cds-spacing-02) 0',
+              }}
+            >
               <span>{elementName}</span>
               <span
                 style={{

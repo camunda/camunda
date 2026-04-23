@@ -34,7 +34,32 @@ export const DetailPane = styled.div`
   min-width: 0;
 
   .cds--accordion__content {
-    padding-right: 0;
+    padding-right: 0.2rem;
+  }
+
+  .cds--accordion__item:first-child {
+    border-top: none;
+  }
+
+  .cds--accordion__title {
+    font-size: var(--cds-heading-compact-01-font-size);
+    font-weight: var(--cds-heading-compact-01-font-weight);
+    line-height: var(--cds-heading-compact-01-line-height);
+    letter-spacing: var(--cds-heading-compact-01-letter-spacing);
+    width: 100%;
+  }
+
+  .cds--progress-bar__track {
+    background-color: var(--cds-border-subtle-01);
+  }
+
+  .reset-usage-btn.cds--btn--icon-only {
+    padding: 0;
+    min-height: auto;
+    block-size: auto;
+    inline-size: auto;
+    width: 1rem;
+    height: 1rem;
   }
 `;
 
@@ -107,7 +132,9 @@ export const ToolCallList = styled.div`
   margin-bottom: var(--cds-spacing-02);
 `;
 
-export const StatusIndicator = styled.div<{$status: 'active' | 'completed' | 'failed'}>`
+export const StatusIndicator = styled.div<{
+  $status: 'active' | 'completed' | 'failed';
+}>`
   width: 8px;
   height: 8px;
   border-radius: 50%;
@@ -172,9 +199,10 @@ export const Mono = styled.span`
 `;
 
 export const MetaLabel = styled.div`
-  font-size: 10px;
+  font-size: var(--cds-label-01-font-size);
   font-weight: 600;
-  letter-spacing: 0.32px;
+  line-height: var(--cds-label-01-line-height);
+  letter-spacing: var(--cds-label-01-letter-spacing);
   text-transform: uppercase;
   color: var(--cds-text-secondary);
   margin-bottom: var(--cds-spacing-02);

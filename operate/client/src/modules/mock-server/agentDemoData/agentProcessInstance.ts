@@ -132,7 +132,7 @@ export const MOCK_AGENT_ELEMENT_INSTANCES: MockElementInstance[] = [
     processDefinitionKey: MOCK_AGENT_DEFINITION_KEY,
     processDefinitionId: MOCK_AGENT_DEFINITION_ID,
     elementId: 'LLM_Call_1',
-    elementName: 'LLM call 1',
+    elementName: 'Agent iteration 1',
     type: 'SUB_PROCESS',
     state: 'COMPLETED',
     hasIncident: false,
@@ -168,7 +168,7 @@ export const MOCK_AGENT_ELEMENT_INSTANCES: MockElementInstance[] = [
     processDefinitionKey: MOCK_AGENT_DEFINITION_KEY,
     processDefinitionId: MOCK_AGENT_DEFINITION_ID,
     elementId: 'LLM_Call_2',
-    elementName: 'LLM call 2',
+    elementName: 'Agent iteration 2',
     type: 'SUB_PROCESS',
     state: 'COMPLETED',
     hasIncident: false,
@@ -222,7 +222,7 @@ export const MOCK_AGENT_ELEMENT_INSTANCES: MockElementInstance[] = [
     processDefinitionKey: MOCK_AGENT_DEFINITION_KEY,
     processDefinitionId: MOCK_AGENT_DEFINITION_ID,
     elementId: 'LLM_Call_3',
-    elementName: 'LLM call 3',
+    elementName: 'Agent iteration 3',
     type: 'SUB_PROCESS',
     state: 'ACTIVE',
     hasIncident: false,
@@ -272,17 +272,77 @@ export const MOCK_AGENT_ELEMENT_INSTANCES: MockElementInstance[] = [
 
 export const MOCK_AGENT_ELEMENT_STATISTICS = {
   items: [
-    {elementId: 'StartEvent_1', active: 0, canceled: 0, incidents: 0, completed: 1},
-    {elementId: 'Gateway_0z6ctwk', active: 0, canceled: 0, incidents: 0, completed: 1},
+    {
+      elementId: 'StartEvent_1',
+      active: 0,
+      canceled: 0,
+      incidents: 0,
+      completed: 1,
+    },
+    {
+      elementId: 'Gateway_0z6ctwk',
+      active: 0,
+      canceled: 0,
+      incidents: 0,
+      completed: 1,
+    },
     {elementId: 'AI_Agent', active: 1, canceled: 0, incidents: 0, completed: 0},
-    {elementId: 'LLM_Call_1', active: 0, canceled: 0, incidents: 0, completed: 1},
-    {elementId: 'LLM_Call_2', active: 0, canceled: 0, incidents: 0, completed: 1},
-    {elementId: 'LLM_Call_3', active: 1, canceled: 0, incidents: 0, completed: 0},
-    {elementId: 'ListUsers', active: 0, canceled: 0, incidents: 0, completed: 1},
-    {elementId: 'LoadUserByID', active: 0, canceled: 0, incidents: 0, completed: 1},
-    {elementId: 'GetDateAndTime', active: 0, canceled: 0, incidents: 0, completed: 1},
-    {elementId: 'AskHumanToSendEmail', active: 1, canceled: 0, incidents: 0, completed: 0},
-    {elementId: 'User_Feedback', active: 1, canceled: 0, incidents: 0, completed: 0},
+    {
+      elementId: 'LLM_Call_1',
+      active: 0,
+      canceled: 0,
+      incidents: 0,
+      completed: 1,
+    },
+    {
+      elementId: 'LLM_Call_2',
+      active: 0,
+      canceled: 0,
+      incidents: 0,
+      completed: 1,
+    },
+    {
+      elementId: 'LLM_Call_3',
+      active: 1,
+      canceled: 0,
+      incidents: 0,
+      completed: 0,
+    },
+    {
+      elementId: 'ListUsers',
+      active: 0,
+      canceled: 0,
+      incidents: 0,
+      completed: 1,
+    },
+    {
+      elementId: 'LoadUserByID',
+      active: 0,
+      canceled: 0,
+      incidents: 0,
+      completed: 1,
+    },
+    {
+      elementId: 'GetDateAndTime',
+      active: 0,
+      canceled: 0,
+      incidents: 0,
+      completed: 1,
+    },
+    {
+      elementId: 'AskHumanToSendEmail',
+      active: 1,
+      canceled: 0,
+      incidents: 0,
+      completed: 0,
+    },
+    {
+      elementId: 'User_Feedback',
+      active: 1,
+      canceled: 0,
+      incidents: 0,
+      completed: 0,
+    },
   ],
 };
 
@@ -297,7 +357,8 @@ export const MOCK_AGENT_VARIABLES: Variable[] = [
   {
     variableKey: `${MOCK_AGENT_INSTANCE_KEY}-inputText`,
     name: 'inputText',
-    value: '"Find the email address of user Leanne Graham and send her an invitation to the company offsite."',
+    value:
+      '"Find the email address of user Leanne Graham and send her an invitation to the company offsite."',
     isTruncated: false,
     tenantId: '<default>',
     processInstanceKey: MOCK_AGENT_INSTANCE_KEY,
@@ -330,7 +391,8 @@ export const MOCK_AGENT_VARIABLES: Variable[] = [
         toolDefinitions: [
           {
             name: 'ListUsers',
-            description: 'Retrieves a list of all users from the user directory API',
+            description:
+              'Retrieves a list of all users from the user directory API',
             inputSchema: {type: 'object', properties: {}},
           },
           {
@@ -349,9 +411,15 @@ export const MOCK_AGENT_VARIABLES: Variable[] = [
           },
           {
             name: 'AskHumanToSendEmail',
-            description: 'Requests a human operator to compose and send an email',
+            description:
+              'Requests a human operator to compose and send an email',
             inputSchema: {
-              required: ['recipient_name', 'recipient_email', 'email_subject', 'email_body'],
+              required: [
+                'recipient_name',
+                'recipient_email',
+                'email_subject',
+                'email_body',
+              ],
               type: 'object',
               properties: {
                 recipient_name: {type: 'string'},
@@ -363,11 +431,14 @@ export const MOCK_AGENT_VARIABLES: Variable[] = [
           },
           {
             name: 'FetchURL',
-            description: 'Fetches content from a given URL and returns the response body',
+            description:
+              'Fetches content from a given URL and returns the response body',
             inputSchema: {
               required: ['url'],
               type: 'object',
-              properties: {url: {type: 'string', description: 'The URL to fetch'}},
+              properties: {
+                url: {type: 'string', description: 'The URL to fetch'},
+              },
             },
           },
         ],
@@ -383,9 +454,21 @@ export const MOCK_AGENT_VARIABLES: Variable[] = [
     variableKey: `${MOCK_AGENT_SUBPROCESS_KEY}-toolCallResults`,
     name: 'toolCallResults',
     value: JSON.stringify([
-      {id: 'tooluse_ListUsers_abc123', name: 'ListUsers', content: {status: 'success'}},
-      {id: 'tooluse_LoadUserByID_def456', name: 'LoadUserByID', content: {status: 'success'}},
-      {id: 'tooluse_GetDateAndTime_ghi789', name: 'GetDateAndTime', content: {status: 'success'}},
+      {
+        id: 'tooluse_ListUsers_abc123',
+        name: 'ListUsers',
+        content: {status: 'success'},
+      },
+      {
+        id: 'tooluse_LoadUserByID_def456',
+        name: 'LoadUserByID',
+        content: {status: 'success'},
+      },
+      {
+        id: 'tooluse_GetDateAndTime_ghi789',
+        name: 'GetDateAndTime',
+        content: {status: 'success'},
+      },
     ]),
     isTruncated: true,
     tenantId: '<default>',

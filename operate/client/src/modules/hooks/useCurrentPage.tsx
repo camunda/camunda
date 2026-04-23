@@ -27,7 +27,6 @@ const useCurrentPage = () => {
     | 'process-details-listeners'
     | 'process-details-operations-log'
     | 'process-details-instance-history'
-    | 'process-details-ai-agent'
     | 'decision-details'
     | 'login'
     | undefined {
@@ -103,10 +102,6 @@ const useCurrentPage = () => {
 
     if (matchPath(Paths.processInstanceHistory(), location.pathname) !== null) {
       return 'process-details-instance-history';
-    }
-
-    if (matchPath(Paths.processInstanceAiAgent(), location.pathname) !== null) {
-      return 'process-details-ai-agent';
     }
 
     if (matchPath(Paths.decisionInstance(), location.pathname) !== null) {

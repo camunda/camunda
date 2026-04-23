@@ -40,7 +40,7 @@ const SUBPROCESS_WITH_INCIDENTS = {
 };
 
 const AGENT_STATUS_TAG = {
-  top: -28,
+  top: -40,
   left: 0,
 };
 

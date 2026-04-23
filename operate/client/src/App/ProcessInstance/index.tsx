@@ -207,144 +207,152 @@ const ProcessInstance: React.FC = observer(() => {
   }
 
   return (
-    <AgentDataProvider processInstanceKey={processInstance?.processInstanceKey}>
-    <ProcessDefinitionKeyContext.Provider
-      value={processInstance?.processDefinitionKey}
+    <AgentDataProvider
+      processInstanceKey={processInstance?.processInstanceKey}
+      processDefinitionKey={processInstance?.processDefinitionKey}
     >
-      <VisuallyHiddenH1>
-        {`Operate Process Instance${
-          isModificationModeEnabled ? ' - Modification Mode' : ''
-        }`}
-      </VisuallyHiddenH1>
-      <Frame
-        frame={{
-          isVisible: isModificationModeEnabled,
-          headerTitle: 'Process Instance Modification Mode',
-        }}
+      <ProcessDefinitionKeyContext.Provider
+        value={processInstance?.processDefinitionKey}
       >
-        {processInstance && (
-          <InstanceDetail
-            className="camunda-process-instance-page"
-            hasLoadingOverlay={modificationStatus === 'applying-modifications'}
-            breadcrumb={
-              isBreadcrumbVisible && callHierarchy ? (
-                <Breadcrumb
-                  callHierarchy={callHierarchy.slice(0, -1)}
-                  processInstance={processInstance}
-                />
-              ) : undefined
-            }
-            header={<ProcessInstanceHeader processInstance={processInstance} />}
-            topPanel={<TopPanel />}
-            bottomPanel={<BottomPanelContent />}
-            footer={
-              isModificationModeEnabled ? (
-                <ModificationFooter>
-                  <LastModification />
-                  <Buttons orientation="horizontal" gap={4}>
-                    <ModalStateManager
-                      renderLauncher={({setOpen}) => (
-                        <Button
-                          kind="secondary"
-                          size="sm"
-                          onClick={() => {
-                            tracking.track({
-                              eventName: 'discard-all-summary',
-                              hasPendingModifications,
-                            });
-                            setOpen(true);
-                          }}
-                          data-testid="discard-all-button"
-                        >
-                          Discard All
-                        </Button>
-                      )}
-                    >
-                      {({open, setOpen}) => (
-                        <Modal
-                          modalHeading="Discard Modifications"
-                          preventCloseOnClickOutside
-                          danger
-                          primaryButtonText="Discard"
-                          secondaryButtonText="Cancel"
-                          open={open}
-                          onRequestClose={() => setOpen(false)}
-                          onRequestSubmit={() => {
-                            tracking.track({
-                              eventName: 'discard-modifications',
-                              hasPendingModifications,
-                            });
-                            modificationsStore.reset();
-                            setOpen(false);
-                          }}
-                        >
-                          <p>
-                            About to discard all added modifications for
-                            instance {processInstanceId}.
-                          </p>
-                          <p>Click "Discard" to proceed.</p>
-                        </Modal>
-                      )}
-                    </ModalStateManager>
-                    <ModalStateManager
-                      renderLauncher={({setOpen}) => (
-                        <Button
-                          kind="primary"
-                          size="sm"
-                          onClick={() => {
-                            tracking.track({
-                              eventName: 'apply-modifications-summary',
-                              hasPendingModifications,
-                            });
-                            setOpen(true);
-                          }}
-                          data-testid="review-modifications-button"
-                          disabled={!hasPendingModifications}
-                        >
-                          Review Modifications
-                        </Button>
-                      )}
-                    >
-                      {({open, setOpen}) => (
-                        <ModificationSummaryModal
-                          open={open}
-                          setOpen={setOpen}
-                        />
-                      )}
-                    </ModalStateManager>
-                  </Buttons>
-                </ModificationFooter>
-              ) : undefined
-            }
-            type="process"
-          />
-        )}
-      </Frame>
-      {isNavigationInterrupted && (
-        <Modal
-          open={isNavigationInterrupted}
-          modalHeading="Leave Modification Mode"
-          preventCloseOnClickOutside
-          onRequestClose={cancelNavigation}
-          secondaryButtonText="Stay"
-          primaryButtonText="Leave"
-          onRequestSubmit={() => {
-            tracking.track({eventName: 'leave-modification-mode'});
-            confirmNavigation();
+        <VisuallyHiddenH1>
+          {`Operate Process Instance${
+            isModificationModeEnabled ? ' - Modification Mode' : ''
+          }`}
+        </VisuallyHiddenH1>
+        <Frame
+          frame={{
+            isVisible: isModificationModeEnabled,
+            headerTitle: 'Process Instance Modification Mode',
           }}
         >
-          <p>
-            By leaving this page, all planned modification/s will be discarded.
-          </p>
-        </Modal>
-      )}
-      {isInfoModalOpen && (
-        <ProcessInstanceHelperModal
-          open={isInfoModalOpen}
-          onClose={() => setInfoModalOpen(false)}
-        />
-      )}
-    </ProcessDefinitionKeyContext.Provider>
+          {processInstance && (
+            <InstanceDetail
+              className="camunda-process-instance-page"
+              hasLoadingOverlay={
+                modificationStatus === 'applying-modifications'
+              }
+              breadcrumb={
+                isBreadcrumbVisible && callHierarchy ? (
+                  <Breadcrumb
+                    callHierarchy={callHierarchy.slice(0, -1)}
+                    processInstance={processInstance}
+                  />
+                ) : undefined
+              }
+              header={
+                <ProcessInstanceHeader processInstance={processInstance} />
+              }
+              topPanel={<TopPanel />}
+              bottomPanel={<BottomPanelContent />}
+              footer={
+                isModificationModeEnabled ? (
+                  <ModificationFooter>
+                    <LastModification />
+                    <Buttons orientation="horizontal" gap={4}>
+                      <ModalStateManager
+                        renderLauncher={({setOpen}) => (
+                          <Button
+                            kind="secondary"
+                            size="sm"
+                            onClick={() => {
+                              tracking.track({
+                                eventName: 'discard-all-summary',
+                                hasPendingModifications,
+                              });
+                              setOpen(true);
+                            }}
+                            data-testid="discard-all-button"
+                          >
+                            Discard All
+                          </Button>
+                        )}
+                      >
+                        {({open, setOpen}) => (
+                          <Modal
+                            modalHeading="Discard Modifications"
+                            preventCloseOnClickOutside
+                            danger
+                            primaryButtonText="Discard"
+                            secondaryButtonText="Cancel"
+                            open={open}
+                            onRequestClose={() => setOpen(false)}
+                            onRequestSubmit={() => {
+                              tracking.track({
+                                eventName: 'discard-modifications',
+                                hasPendingModifications,
+                              });
+                              modificationsStore.reset();
+                              setOpen(false);
+                            }}
+                          >
+                            <p>
+                              About to discard all added modifications for
+                              instance {processInstanceId}.
+                            </p>
+                            <p>Click "Discard" to proceed.</p>
+                          </Modal>
+                        )}
+                      </ModalStateManager>
+                      <ModalStateManager
+                        renderLauncher={({setOpen}) => (
+                          <Button
+                            kind="primary"
+                            size="sm"
+                            onClick={() => {
+                              tracking.track({
+                                eventName: 'apply-modifications-summary',
+                                hasPendingModifications,
+                              });
+                              setOpen(true);
+                            }}
+                            data-testid="review-modifications-button"
+                            disabled={!hasPendingModifications}
+                          >
+                            Review Modifications
+                          </Button>
+                        )}
+                      >
+                        {({open, setOpen}) => (
+                          <ModificationSummaryModal
+                            open={open}
+                            setOpen={setOpen}
+                          />
+                        )}
+                      </ModalStateManager>
+                    </Buttons>
+                  </ModificationFooter>
+                ) : undefined
+              }
+              type="process"
+            />
+          )}
+        </Frame>
+        {isNavigationInterrupted && (
+          <Modal
+            open={isNavigationInterrupted}
+            modalHeading="Leave Modification Mode"
+            preventCloseOnClickOutside
+            onRequestClose={cancelNavigation}
+            secondaryButtonText="Stay"
+            primaryButtonText="Leave"
+            onRequestSubmit={() => {
+              tracking.track({eventName: 'leave-modification-mode'});
+              confirmNavigation();
+            }}
+          >
+            <p>
+              By leaving this page, all planned modification/s will be
+              discarded.
+            </p>
+          </Modal>
+        )}
+        {isInfoModalOpen && (
+          <ProcessInstanceHelperModal
+            open={isInfoModalOpen}
+            onClose={() => setInfoModalOpen(false)}
+          />
+        )}
+      </ProcessDefinitionKeyContext.Provider>
     </AgentDataProvider>
   );
 });
