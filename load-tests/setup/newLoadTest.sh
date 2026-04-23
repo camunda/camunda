@@ -177,7 +177,7 @@ cp -rv default/ $namespace
 cp -v ../*.yaml $namespace/
 
 # Copy secrets creation script and utils to the new folder
-cp -v ./createCredsLoadTest.sh $namespace/
+cp -v ./default/createCredsLoadTest.sh $namespace/
 cp -v ./utils.sh $namespace/
 
 cd $namespace
