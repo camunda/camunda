@@ -455,14 +455,19 @@ const EntityList = <D extends EntityData>({
 
                       return (
                         <Fragment key={rowId}>
-                          <TableExpandRow {...getRowProps({ row })}>
+                          <TableExpandRow
+                            {...getRowProps({ row })}
+                            key={undefined}
+                          >
                             {cellContent}
                           </TableExpandRow>
                           <TableExpandedRow
                             colSpan={rowColSpan}
                             {...getExpandedRowProps({ row })}
                           >
-                            {isExpanded && renderExpandedRow(index[rowId])}
+                            {isExpanded &&
+                              index[rowId] &&
+                              renderExpandedRow(index[rowId])}
                           </TableExpandedRow>
                         </Fragment>
                       );
