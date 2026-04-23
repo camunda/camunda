@@ -233,6 +233,32 @@ public class MessageSubscriptionFilterImpl
   }
 
   @Override
+  public MessageSubscriptionFilter toolName(final String toolName) {
+    return toolName(f -> f.eq(toolName));
+  }
+
+  @Override
+  public MessageSubscriptionFilter toolName(final Consumer<StringProperty> fn) {
+    final StringProperty property = new StringPropertyImpl();
+    fn.accept(property);
+    filter.setToolName(provideSearchRequestProperty(property));
+    return this;
+  }
+
+  @Override
+  public MessageSubscriptionFilter inboundConnectorType(final String inboundConnectorType) {
+    return inboundConnectorType(f -> f.eq(inboundConnectorType));
+  }
+
+  @Override
+  public MessageSubscriptionFilter inboundConnectorType(final Consumer<StringProperty> fn) {
+    final StringProperty property = new StringPropertyImpl();
+    fn.accept(property);
+    filter.setInboundConnectorType(provideSearchRequestProperty(property));
+    return this;
+  }
+
+  @Override
   protected io.camunda.client.protocol.rest.MessageSubscriptionFilter getSearchRequestProperty() {
     return filter;
   }
