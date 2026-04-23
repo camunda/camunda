@@ -8,7 +8,7 @@
 
 import type {Page, Response} from '@playwright/test';
 
-export abstract class View {
+abstract class View {
   protected readonly page: Page;
 
   constructor(page: Page) {
@@ -16,6 +16,8 @@ export abstract class View {
   }
 }
 
-export abstract class BasePage extends View {
+abstract class BasePage extends View {
   abstract goto(...args: unknown[]): Promise<Response | null>;
 }
+
+export {BasePage, View};

@@ -6,8 +6,8 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {test as base} from '@playwright/test';
+import {test as base, expect} from '@playwright/test';
 
-export {expect} from '@playwright/test';
+const test = base.extend({});
 
-export const test = base.extend({});
+export {expect, test};
