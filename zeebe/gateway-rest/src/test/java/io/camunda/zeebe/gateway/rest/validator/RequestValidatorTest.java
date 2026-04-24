@@ -118,4 +118,52 @@ class RequestValidatorTest {
     assertThat(violations.get(0)).contains("testField");
     assertThat(violations.get(0)).contains("is not a valid key");
   }
+
+  // --- validateDecisionEvaluationInstanceKeyFormat tests ---
+
+  @ParameterizedTest
+  @ValueSource(strings = {"123-1", "0-1", "2251799813684367-1", "1-99"})
+  @DisplayName("Should accept valid decision evaluation instance keys")
+  void shouldAcceptValidDecisionEvaluationInstanceKeys(final String validKey) {
+    // given
+    final List<String> violations = new ArrayList<>();
+
+    // when
+    RequestValidator.validateDecisionEvaluationInstanceKeyFormat(validKey, violations);
+
+    // then
+    assertThat(violations).isEmpty();
+  }
+
+  @Test
+  @DisplayName("Should accept null decision evaluation instance key without violations")
+  void shouldRejectNullDecisionEvaluationInstanceKey() {
+    // given
+    final List<String> violations = new ArrayList<>();
+
+    // when
+    RequestValidator.validateDecisionEvaluationInstanceKeyFormat(null, violations);
+
+    // then
+    assertThat(violations).isEmpty();
+  }
+
+  @ParameterizedTest
+  @ValueSource(
+      strings = {
+        "+++", "abc", "123", "-1-2", "1-", "-1", "1--1", "1-2-3", "1-a", "a-1", " 1-1", "1-1 ", ""
+      })
+  @DisplayName("Should reject invalid decision evaluation instance keys")
+  void shouldRejectInvalidDecisionEvaluationInstanceKeys(final String invalidKey) {
+    // given
+    final List<String> violations = new ArrayList<>();
+
+    // when
+    RequestValidator.validateDecisionEvaluationInstanceKeyFormat(invalidKey, violations);
+
+    // then
+    assertThat(violations).hasSize(1);
+    assertThat(violations.getFirst()).contains("decisionEvaluationInstanceKey");
+    assertThat(violations.getFirst()).contains("is not a valid decision evaluation instance key");
+  }
 }
