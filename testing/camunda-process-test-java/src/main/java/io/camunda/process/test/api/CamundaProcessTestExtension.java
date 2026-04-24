@@ -35,7 +35,6 @@ import io.camunda.process.test.impl.runtime.CamundaProcessTestContainerRuntime;
 import io.camunda.process.test.impl.runtime.CamundaProcessTestRuntime;
 import io.camunda.process.test.impl.runtime.CamundaProcessTestRuntimeBuilder;
 import io.camunda.process.test.impl.runtime.CamundaProcessTestRuntimeDefaults;
-import io.camunda.process.test.impl.runtime.CamundaRuntimeHealthChecker;
 import io.camunda.process.test.impl.runtime.properties.SemanticSimilarityProperties;
 import io.camunda.process.test.impl.similarity.EmbeddingModelAdapterResolver;
 import io.camunda.process.test.impl.testCases.CamundaTestCaseRunner;
@@ -206,10 +205,6 @@ public class CamundaProcessTestExtension
     return CamundaManagementClient.createClient(runtime.getCamundaMonitoringApiAddress());
   }
 
-  private void waitForClusterReady() {
-    CamundaRuntimeHealthChecker.waitUntilClusterReady(runtime.getCamundaClientBuilderFactory());
-  }
-
   private void initializeJsonMapper(final JsonMapper jsonMapper) {
     if (jsonMapper != null) {
       CamundaAssert.setJsonMapper(jsonMapper);
@@ -301,9 +296,6 @@ public class CamundaProcessTestExtension
               + "Make sure that you registering the extension on a static field.");
     }
 
-    // wait until the cluster is ready to accept new operations, retrying until success or timeout
-    waitForClusterReady();
-
     // inject fields
     try {
       injectField(context, CamundaClient.class, camundaProcessTestContext::createClient);
@@ -325,6 +317,9 @@ public class CamundaProcessTestExtension
 
     // initialize result collector
     processTestResultCollector = new CamundaProcessTestResultCollector(dataSource);
+
+    // wait until the cluster is ready to accept new operations, retrying until success or timeout
+    runtime.waitUntilClusterReady(Duration.ofSeconds(10));
 
     // deploy resources if present
     testDeploymentService.deployTestResources(
