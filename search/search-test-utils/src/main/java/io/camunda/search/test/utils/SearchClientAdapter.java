@@ -177,20 +177,38 @@ public class SearchClientAdapter {
 
   public <T> T get(final String id, final String index, final Class<T> classType)
       throws IOException {
+    return get(id, null, index, classType);
+  }
+
+  public <T> T get(
+      final String id, final String routing, final String index, final Class<T> classType)
+      throws IOException {
     if (elsClient != null) {
-      return elsClient.get(r -> r.id(id).index(index), classType).source();
+      return elsClient.get(r -> r.id(id).routing(routing).index(index), classType).source();
     } else if (osClient != null) {
-      return osClient.get(r -> r.id(id).index(index), classType).source();
+      return osClient.get(r -> r.id(id).routing(routing).index(index), classType).source();
     }
     return null;
   }
 
   public String index(final String id, final String index, final Object document)
       throws IOException {
+    return index(id, null, index, document);
+  }
+
+  public String index(
+      final String id, final String routing, final String index, final Object document)
+      throws IOException {
     if (elsClient != null) {
-      return elsClient.index(i -> i.index(index).id(id).document(document)).result().jsonValue();
+      return elsClient
+          .index(i -> i.index(index).id(id).routing(routing).document(document))
+          .result()
+          .jsonValue();
     } else if (osClient != null) {
-      return osClient.index(i -> i.index(index).id(id).document(document)).result().jsonValue();
+      return osClient
+          .index(i -> i.index(index).id(id).routing(routing).document(document))
+          .result()
+          .jsonValue();
     }
     return "";
   }
