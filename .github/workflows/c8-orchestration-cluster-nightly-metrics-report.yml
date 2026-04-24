@@ -9,6 +9,8 @@ name: C8 Orchestration Cluster Nightly Metrics Report
 on:
   schedule:
     - cron: "0 4 * * *" # 4:00 AM UTC — after all nightly tests complete
+  pull_request:
+    types: [opened, edited, synchronize]
   workflow_dispatch: {}
 
 defaults:
@@ -127,7 +129,7 @@ jobs:
           method: chat.postMessage
           token: ${{ steps.secrets.outputs.SLACK_CORE_DOMAIN_BOT_TOKEN }}
           payload: |
-            channel: "c8-orchestration-cluster-e2e-test-results"
+            channel: "test-metrics"
             text: "C8 Orchestration Cluster Nightly Metrics Report"
             blocks:
               - type: "header"
