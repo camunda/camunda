@@ -76,6 +76,8 @@ jobs:
       OWNER: ${{ github.repository_owner }}
       REPO: ${{ inputs.repo || github.event.repository.name }}
       ISSUE_NUMBER: ${{ inputs.issue_number || github.event.inputs.issue_number || github.event.issue.number }}
+      # Org-level Urgency issue field (camunda org, single-select)
+      # Query: gh api graphql -f query='{organization(login:"camunda"){issueFields(first:30){nodes{...on IssueFieldSingleSelect{id name options{id name}}}}}}'
       URGENCY_FIELD_ID: 'IFSS_kgDNKAw'
       # Projects whose project-level Urgency field should be kept in sync
       # (for public projects where org-level fields are not visible)
