@@ -169,7 +169,10 @@ const test = base.extend<PlaywrightFixtures>({
       );
 
       if (res.status() !== 200) {
-        return;
+        const body = await res.text().catch(() => '<no-body>');
+        throw new Error(
+          `resetData: failed to create cancellation batch (HTTP ${res.status()}): ${body}`,
+        );
       }
 
       const json = await res.json();
@@ -181,6 +184,11 @@ const test = base.extend<PlaywrightFixtures>({
           {headers: jsonHeaders()},
         );
         const body = await statusRes.json();
+        if (body.state === 'FAILED') {
+          throw new Error(
+            `resetData: cancellation batch operation ${batchKey} failed`,
+          );
+        }
         expect(body.state).toBe('COMPLETED');
       }).toPass({
         intervals: [2_000, 5_000, 10_000, 15_000],
