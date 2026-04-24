@@ -107,3 +107,35 @@ mentioned.
 The connector tracing design will need to expand `LimitsInfo` to carry
 `maxTokens` and `maxToolCalls` when creating the execution entity. This is
 additive on the connector side and does not require engine changes.
+
+## 7. Concern: tracing event volume vs. RAFT commit cost
+
+**Date**: 2026-04-24
+**Status**: Open concern
+**Context**: The tracing design's API (`POST /agent-executions/{key}/events`)
+is implemented by appending commands to Zeebe. Every command goes through full
+RAFT consensus including replication. The design document does not acknowledge
+this cost — it treats the backend as an opaque HTTP endpoint with cheap writes
+(section 10.2: "Best-effort — failures are logged but do not fail the job",
+section 10.3: "stateless transport abstraction").
+
+The design buffers events and flushes them at 3 points per iteration (before
+LLM call, after iteration completion, job completion safety net). A typical
+2-iteration agent run with 2 tool calls produces roughly 10-12 individual
+events across these flush points.
+
+**Concern**: If each flush maps to **one Zeebe command** carrying the event
+batch as payload, that's 2-3 additional RAFT commits per iteration — comparable
+to what Zeebe already does for the job lifecycle and likely acceptable.
+
+If each event in a flush batch becomes **its own Zeebe command**, the cost
+scales with the number of events. A single iteration with 2 tool results
+generates 6-7 commands. An agent calling 5 tools in one turn produces ~10
+commands for that iteration alone. This is too much additional load on the
+partition.
+
+**Recommendation**: The connector team should ensure that each flush maps to
+exactly one Zeebe command, with the batch of events carried as payload within
+that single command. The design's existing flush-point model (3 flushes per
+iteration) is a reasonable upper bound if this batching is enforced. The number
+of events within a batch should not affect the number of RAFT commits.
