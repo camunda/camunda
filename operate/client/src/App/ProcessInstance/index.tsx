@@ -13,7 +13,7 @@ import {observer} from 'mobx-react';
 import {useProcessInstancePageParams} from './useProcessInstancePageParams';
 import {useEffect, useRef, useState} from 'react';
 import {modificationsStore} from 'modules/stores/modifications';
-import {reaction, when} from 'mobx';
+import {reaction} from 'mobx';
 import {incidentsStore} from 'modules/stores/incidents';
 import {flowNodeInstanceStore} from 'modules/stores/flowNodeInstance';
 import {instanceHistoryModificationStore} from 'modules/stores/instanceHistoryModification';
@@ -153,17 +153,10 @@ const ProcessInstance: React.FC = observer(() => {
   }, [processInstanceId]);
 
   useEffect(() => {
-    let processTitleDisposer = when(
-      () => !!processTitle,
-      () => {
-        document.title = processTitle ?? '';
-      },
-    );
-
-    return () => {
-      processTitleDisposer();
-    };
-  });
+    if (processTitle) {
+      document.title = processTitle;
+    }
+  }, [processTitle]);
 
   const [isListenerTabSelected, setListenerTabVisibility] =
     useState<boolean>(false);
