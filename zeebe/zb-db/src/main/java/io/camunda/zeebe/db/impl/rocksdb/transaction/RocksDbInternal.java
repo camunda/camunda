@@ -8,13 +8,11 @@
 package io.camunda.zeebe.db.impl.rocksdb.transaction;
 
 import static org.rocksdb.Status.Code.Aborted;
-import static org.rocksdb.Status.Code.Busy;
 import static org.rocksdb.Status.Code.Expired;
 import static org.rocksdb.Status.Code.IOError;
 import static org.rocksdb.Status.Code.MergeInProgress;
 import static org.rocksdb.Status.Code.Ok;
 import static org.rocksdb.Status.Code.TimedOut;
-import static org.rocksdb.Status.Code.TryAgain;
 
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
@@ -30,7 +28,7 @@ import org.rocksdb.Transaction;
 public final class RocksDbInternal {
 
   static final EnumSet<Code> RECOVERABLE_ERROR_CODES =
-      EnumSet.of(Ok, Aborted, Expired, IOError, Busy, TimedOut, TryAgain, MergeInProgress);
+      EnumSet.of(Ok, Aborted, Expired, IOError, TimedOut, MergeInProgress);
 
   static Field nativeHandle;
 
