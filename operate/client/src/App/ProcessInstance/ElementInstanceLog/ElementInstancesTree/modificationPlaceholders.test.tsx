@@ -15,7 +15,7 @@ import {ElementInstancesTree} from './index';
 import {
   multipleSubprocessesWithNoRunningScopeMock,
   multipleSubprocessesWithOneRunningScopeMock,
-  Wrapper,
+  getWrapper,
   mockMultiInstanceProcessInstance,
   mockNestedSubProcessInstance,
 } from './mocks';
@@ -67,7 +67,7 @@ describe('ElementInstancesTree - Modification placeholders', () => {
         businessObjects={nestedSubprocessBusinessObjects}
       />,
       {
-        wrapper: Wrapper,
+        wrapper: getWrapper(),
       },
     );
 
@@ -293,7 +293,7 @@ describe('ElementInstancesTree - Modification placeholders', () => {
         businessObjects={multiInstanceProcessBusinessObjects}
       />,
       {
-        wrapper: Wrapper,
+        wrapper: getWrapper(),
       },
     );
 
@@ -408,7 +408,7 @@ describe('ElementInstancesTree - Modification placeholders', () => {
         businessObjects={multiInstanceProcessBusinessObjects}
       />,
       {
-        wrapper: Wrapper,
+        wrapper: getWrapper(),
       },
     );
 
@@ -457,7 +457,7 @@ describe('ElementInstancesTree - Modification placeholders', () => {
         businessObjects={nestedSubprocessBusinessObjects}
       />,
       {
-        wrapper: Wrapper,
+        wrapper: getWrapper(),
       },
     );
 
@@ -466,8 +466,6 @@ describe('ElementInstancesTree - Modification placeholders', () => {
         selector: "[aria-expanded='false']",
       }),
     ).toHaveLength(2);
-
-    const businessObjects = await parseDiagramXML(mockNestedSubprocess);
 
     act(() => {
       modificationsStore.enableModificationMode();
@@ -480,7 +478,7 @@ describe('ElementInstancesTree - Modification placeholders', () => {
           affectedTokenCount: 1,
           visibleAffectedTokenCount: 1,
           parentScopeIds: generateParentScopeIds(
-            businessObjects.elementsById,
+            mockNestedSubprocessDiagramModel.elementsById,
             'user_task',
             'nested_sub_process',
           ),
@@ -495,7 +493,7 @@ describe('ElementInstancesTree - Modification placeholders', () => {
           affectedTokenCount: 1,
           visibleAffectedTokenCount: 1,
           parentScopeIds: generateParentScopeIds(
-            businessObjects.elementsById,
+            mockNestedSubprocessDiagramModel.elementsById,
             'user_task',
             'nested_sub_process',
           ),

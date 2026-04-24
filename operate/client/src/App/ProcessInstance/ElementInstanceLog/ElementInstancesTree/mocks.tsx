@@ -1198,35 +1198,41 @@ const adHocSubProcessInnerInstanceElementInstances = {
   },
 } satisfies Record<string, QueryElementInstancesResponseBody>;
 
-const Wrapper = ({children}: {children?: React.ReactNode}) => {
-  useEffect(() => {
-    return () => {
-      modificationsStore.reset();
-      instanceHistoryModificationStore.reset();
-    };
-  });
+const getWrapper = () => {
+  const queryClient = getMockQueryClient();
 
-  return (
-    <ProcessDefinitionKeyContext.Provider value="123">
-      <QueryClientProvider client={getMockQueryClient()}>
-        <MemoryRouter initialEntries={[Paths.processInstance('1')]}>
-          <Routes>
-            <Route
-              path={Paths.processInstance()}
-              element={
-                <>
-                  <TreeView label={'instance history'} hideLabel>
-                    {children}
-                  </TreeView>
-                  <LocationLog />
-                </>
-              }
-            />
-          </Routes>
-        </MemoryRouter>
-      </QueryClientProvider>
-    </ProcessDefinitionKeyContext.Provider>
-  );
+  const Wrapper = ({children}: {children?: React.ReactNode}) => {
+    useEffect(() => {
+      return () => {
+        modificationsStore.reset();
+        instanceHistoryModificationStore.reset();
+      };
+    });
+
+    return (
+      <ProcessDefinitionKeyContext.Provider value="123">
+        <QueryClientProvider client={queryClient}>
+          <MemoryRouter initialEntries={[Paths.processInstance('1')]}>
+            <Routes>
+              <Route
+                path={Paths.processInstance()}
+                element={
+                  <>
+                    <TreeView label={'instance history'} hideLabel>
+                      {children}
+                    </TreeView>
+                    <LocationLog />
+                  </>
+                }
+              />
+            </Routes>
+          </MemoryRouter>
+        </QueryClientProvider>
+      </ProcessDefinitionKeyContext.Provider>
+    );
+  };
+
+  return Wrapper;
 };
 
 export {
@@ -1242,5 +1248,5 @@ export {
   multipleSubprocessesWithTwoRunningScopesMock,
   mockAdHocSubProcessInnerInstanceProcessInstance,
   adHocSubProcessInnerInstanceElementInstances,
-  Wrapper,
+  getWrapper,
 };

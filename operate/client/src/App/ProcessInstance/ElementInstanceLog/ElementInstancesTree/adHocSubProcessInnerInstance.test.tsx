@@ -11,7 +11,7 @@ import {notificationsStore} from 'modules/stores/notifications';
 import {adHocSubProcessInnerInstance, searchResult} from 'modules/testUtils';
 import {ElementInstancesTree} from './index';
 import {
-  Wrapper,
+  getWrapper,
   mockAdHocSubProcessInnerInstanceProcessInstance,
   adHocSubProcessInnerInstanceElementInstances,
 } from './mocks';
@@ -60,7 +60,7 @@ describe('ElementInstancesTree - Ad Hoc Sub Process Inner Instance', () => {
         businessObjects={businessObjects}
       />,
       {
-        wrapper: Wrapper,
+        wrapper: getWrapper(),
       },
     );
 
@@ -104,7 +104,7 @@ describe('ElementInstancesTree - Ad Hoc Sub Process Inner Instance', () => {
         businessObjects={businessObjects}
       />,
       {
-        wrapper: Wrapper,
+        wrapper: getWrapper(),
       },
     );
 
@@ -163,7 +163,7 @@ describe('ElementInstancesTree - Ad Hoc Sub Process Inner Instance', () => {
         businessObjects={businessObjects}
       />,
       {
-        wrapper: Wrapper,
+        wrapper: getWrapper(),
       },
     );
     const originalSearch = screen.getByTestId('search').textContent;
@@ -202,7 +202,7 @@ describe('ElementInstancesTree - Ad Hoc Sub Process Inner Instance', () => {
         businessObjects={businessObjects}
       />,
       {
-        wrapper: Wrapper,
+        wrapper: getWrapper(),
       },
     );
     const originalSearch = screen.getByTestId('search').textContent;

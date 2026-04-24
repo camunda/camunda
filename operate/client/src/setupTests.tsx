@@ -205,6 +205,9 @@ beforeAll(() => {
 
   // temporary fix while jsdom doesn't implement this: https://github.com/jsdom/jsdom/issues/1695
   window.HTMLElement.prototype.scrollIntoView = function () {};
+
+  // jsdom doesn't implement window.prompt, needed by copy-to-clipboard (used by Carbon CodeSnippet)
+  window.prompt = vi.fn();
 });
 afterEach(() => mockServer.resetHandlers());
 afterAll(() => mockServer.close());
