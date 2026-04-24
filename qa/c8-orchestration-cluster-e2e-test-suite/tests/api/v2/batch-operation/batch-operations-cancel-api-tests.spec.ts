@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {test} from '@playwright/test';
+import {test, expect} from '@playwright/test';
 import {deploy} from '../../../../utils/zeebeClient';
 import {
   assertBadRequest,
@@ -22,7 +22,7 @@ import {
   createCompletedBatchOperation,
   expectBatchState,
 } from '@requestHelpers';
-
+import {defaultAssertionOptions} from 'utils/constants';
 /* eslint-disable playwright/expect-expect */
 
 test.describe.parallel('Cancel Batch Operation Tests', () => {
