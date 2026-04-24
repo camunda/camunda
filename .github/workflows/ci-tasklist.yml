@@ -67,6 +67,7 @@ jobs:
     env:
       TEST_TYPE: Tool
       TEST_OWNER: Core Features
+      TEST_PRODUCT: Tasklist
     defaults:
       run:
         working-directory: tasklist/client
@@ -101,6 +102,7 @@ jobs:
     env:
       TEST_TYPE: Tool
       TEST_OWNER: Core Features
+      TEST_PRODUCT: Tasklist
     defaults:
       run:
         working-directory: tasklist/client

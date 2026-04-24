@@ -1314,7 +1314,9 @@ jobs:
     timeout-minutes: 10
     permissions: {} # GITHUB_TOKEN unused in this job
     env:
-      SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+      TEST_OWNER: Identity
+      TEST_PRODUCT: Identity
+      TEST_TYPE: Tool
     defaults:
       run:
         working-directory: identity/client
