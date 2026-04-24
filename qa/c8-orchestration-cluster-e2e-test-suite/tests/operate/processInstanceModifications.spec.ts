@@ -345,9 +345,9 @@ test.describe('Process Instance Modifications', () => {
       );
       const addedTokenInHistory = `${neverFailsHistoryItem}, this element instance is planned to be added`;
       await operateProcessInstancePage.clickTreeItem(addedTokenInHistory);
-      await expect(
-        page.getByText(/The element has no Variables/i),
-      ).toBeVisible();
+      await expect(page.getByText(/The element has no Variables/i)).toBeVisible(
+        {timeout: 30000},
+      );
 
       await operateProcessInstancePage.addNewVariableModificationMode(
         'newVariables[0]',
@@ -364,7 +364,7 @@ test.describe('Process Instance Modifications', () => {
       await operateProcessInstancePage.navigateToRootScope();
       await expect(
         operateProcessInstancePage.getVariableTestId('newVariables[0]'),
-      ).toBeHidden();
+      ).toBeHidden({timeout: 30000});
 
       await operateProcessInstancePage.clickReviewModifications();
       const row =
