@@ -223,7 +223,7 @@ jobs:
           method: chat.postMessage
           token: ${{ steps.secrets.outputs.SLACK_CORE_DOMAIN_BOT_TOKEN }}
           payload: |
-            channel: "test-metrics"
+            channel: "c8-orchestration-cluster-e2e-test-results"
             text: "C8 Orchestration Cluster Nightly Metrics Report"
             blocks:
               - type: "header"
