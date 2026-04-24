@@ -345,9 +345,9 @@ test.describe('Process Instance Modifications', () => {
       );
       const addedTokenInHistory = `${neverFailsHistoryItem}, this element instance is planned to be added`;
       await operateProcessInstancePage.clickTreeItem(addedTokenInHistory);
-      await expect(
-        page.getByText(/The element has no Variables/i),
-      ).toBeVisible({timeout: 30000});
+      await expect(page.getByText(/The element has no Variables/i)).toBeVisible(
+        {timeout: 30000},
+      );
 
       await operateProcessInstancePage.addNewVariableModificationMode(
         'newVariables[0]',
