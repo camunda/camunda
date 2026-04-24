@@ -213,11 +213,8 @@ postgresql:
 zeebe:
   # Image configuration to configure the zeebe image specifics
   image:
-    # Image.repository defines which image repository to use
-    repository: camunda/zeebe
-    # Image.registry defines which image registry to use
     registry: docker.io
-    # Image.tag defines the tag / version which should be used in the chart
+    repository: camunda/zeebe
     tag: 8.7-SNAPSHOT
   # ClusterSize defines the amount of brokers (=replicas), which are deployed via helm
   clusterSize: "3"
@@ -226,9 +223,9 @@ zeebe:
   # ReplicationFactor defines how each partition is replicated, the value defines the number of nodes
   replicationFactor: "3"
   # CpuThreadCount defines how many threads can be used for the processing on each broker pod
-  cpuThreadCount: 3
+  cpuThreadCount: "3"
   # IoThreadCount defines how many threads can be used for the exporting on each broker pod
-  ioThreadCount: 3
+  ioThreadCount: "3"
   # Resources configuration to set request and limit configuration for the container https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#requests-and-limits
   resources:
     requests:
@@ -246,7 +243,7 @@ zeebe:
       effect: NoSchedule
 
   # PvcSize defines the persistent volume claim size, which is used by each broker pod https://kubernetes.io/docs/concepts/storage/persistent-volumes/#persistentvolumeclaims
-  pvcSize: 64Gi
+  pvcSize: "64Gi"
   # PvcStorageClassName can be used to set the storage class name which should be used by the persistent volume claim. It is recommended to use a storage class, which is backed with a SSD.
   # It is recommended to use a storage class, which is backed with a SSD. Set to "-" to disable use of default storage class.
   pvcStorageClassName: benchmark-ssd-zonal-v1
