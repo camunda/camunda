@@ -22,6 +22,7 @@ import io.camunda.optimize.dto.zeebe.process.ZeebeProcessInstanceDataDto;
 import io.camunda.optimize.dto.zeebe.process.ZeebeProcessInstanceRecordDto;
 import io.camunda.optimize.dto.zeebe.usertask.ZeebeUserTaskDataDto;
 import io.camunda.optimize.dto.zeebe.usertask.ZeebeUserTaskRecordDto;
+import io.camunda.optimize.dto.zeebe.variable.ZeebeVariableRecordDto;
 import io.camunda.optimize.exception.OptimizeIntegrationTestException;
 import io.camunda.optimize.service.db.DatabaseConstants;
 import io.camunda.optimize.service.importing.engine.service.zeebe.ZeebeProcessInstanceImportService;
@@ -35,6 +36,7 @@ import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
+import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import java.io.InputStream;
 import java.time.Instant;
@@ -44,12 +46,14 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import org.awaitility.Awaitility;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Order;
@@ -115,9 +119,17 @@ public abstract class AbstractCCSMIT extends AbstractIT {
   }
 
   @BeforeEach
-  public void setupZeebeImportAndReloadConfiguration() {
+  @Order(1)
+  public void ensureCleanZeebeState() {
+    // Safety net: records from the previous test may still be in the Zeebe exporter's write queue
+    // when after() ran; they can arrive in the window between after() and this @BeforeEach.
+    deleteZeebeRecordsAndAssertClean(zeebeExtension.getZeebeRecordPrefix());
+  }
+
+  @BeforeEach
+  @Order(2)
+  public void configureZeebeImport() {
     final String embeddedZeebePrefix = zeebeExtension.getZeebeRecordPrefix();
-    // set the new record prefix for the next test
     embeddedOptimizeExtension
         .getConfigurationService()
         .getConfiguredZeebe()
@@ -127,8 +139,83 @@ public abstract class AbstractCCSMIT extends AbstractIT {
 
   @AfterEach
   public void after() {
-    // Clear all potential existing Zeebe records in Optimize
-    databaseIntegrationTestExtension.deleteAllZeebeRecordsForPrefix(
+    final Set<Long> cancelledKeys = zeebeExtension.cancelAllStartedInstances();
+    waitForCancelledInstancesToExport(cancelledKeys);
+    deleteZeebeRecordsAndAssertClean(zeebeExtension.getZeebeRecordPrefix());
+  }
+
+  /**
+   * Waits until every cancelled instance has exported its PROCESS-level terminal record
+   * (ELEMENT_COMPLETED or ELEMENT_TERMINATED) before cleanup runs. That record is the last one the
+   * broker generates; once it appears in ES every earlier record for the instance — including
+   * asynchronously-exported variable records — is guaranteed to be there too.
+   *
+   * <p>Already-completed instances are excluded from {@code cancelledKeys} by {@link
+   * ZeebeExtension#cancelAllStartedInstances()}, so this wait never blocks on instances whose
+   * terminal record was deleted by a mid-test cleanup.
+   */
+  private void waitForCancelledInstancesToExport(final Set<Long> cancelledKeys) {
+    if (cancelledKeys.isEmpty()) {
+      return;
+    }
+    final TermsQueryContainer terminalQuery = new TermsQueryContainer();
+    terminalQuery.addTermQuery(
+        ZeebeRecordDto.Fields.intent,
+        List.of(
+            ProcessInstanceIntent.ELEMENT_COMPLETED.name(),
+            ProcessInstanceIntent.ELEMENT_TERMINATED.name()));
+    terminalQuery.addTermQuery(
+        ZeebeProcessInstanceRecordDto.Fields.value
+            + "."
+            + ZeebeProcessInstanceDataDto.Fields.bpmnElementType,
+        BpmnElementType.PROCESS.name());
+    waitUntilMinimumDataExportedCount(
+        cancelledKeys.size(), DatabaseConstants.ZEEBE_PROCESS_INSTANCE_INDEX_NAME, terminalQuery);
+  }
+
+  private void deleteZeebeRecordsAndAssertClean(final String zeebePrefix) {
+    final String processInstanceIndex =
+        zeebePrefix + "-" + DatabaseConstants.ZEEBE_PROCESS_INSTANCE_INDEX_NAME;
+    final String variableIndex = zeebePrefix + "-" + DatabaseConstants.ZEEBE_VARIABLE_INDEX_NAME;
+    final String userTaskIndex = zeebePrefix + "-" + DatabaseConstants.ZEEBE_USER_TASK_INDEX_NAME;
+    Awaitility.given()
+        .ignoreExceptions()
+        .timeout(30, TimeUnit.SECONDS)
+        .untilAsserted(
+            () -> {
+              databaseIntegrationTestExtension.deleteAllZeebeRecordsForPrefix(zeebePrefix);
+              if (databaseIntegrationTestExtension.zeebeIndexExists(processInstanceIndex)) {
+                assertThat(
+                        databaseIntegrationTestExtension.countRecordsByQuery(
+                            getQueryForProcessableProcessInstanceEvents(), processInstanceIndex))
+                    .isZero();
+              }
+              if (databaseIntegrationTestExtension.zeebeIndexExists(variableIndex)) {
+                assertThat(
+                        databaseIntegrationTestExtension.countRecordsByQuery(
+                            getQueryForProcessableVariableEvents(), variableIndex))
+                    .isZero();
+              }
+              if (databaseIntegrationTestExtension.zeebeIndexExists(userTaskIndex)) {
+                // Use match-all (empty container) to catch ALL user-task intents, including
+                // non-processable ones (CREATED, ASSIGNING, COMPLETING, CANCELING) that Zeebe
+                // generates but Optimize does not import. A filtered check would miss these and
+                // allow them to accumulate across tests.
+                assertThat(
+                        databaseIntegrationTestExtension.countRecordsByQuery(
+                            new TermsQueryContainer(), userTaskIndex))
+                    .isZero();
+              }
+            });
+  }
+
+  @AfterAll
+  static void deleteZeebeIndices() {
+    // Physically delete all Zeebe indices after the class finishes so they don't accumulate.
+    // This runs after all tests in the class are complete; the broker is still alive at this
+    // point but shutting down in ZeebeExtension.afterAll(), which is fine — any stray writes
+    // are inconsequential since no further tests will read these indices.
+    databaseIntegrationTestExtension.deleteAllZeebeIndicesForPrefix(
         zeebeExtension.getZeebeRecordPrefix());
   }
 
@@ -159,6 +246,14 @@ public abstract class AbstractCCSMIT extends AbstractIT {
         ZeebeProcessInstanceImportService.INTENTS_TO_IMPORT.stream()
             .map(ProcessInstanceIntent::name)
             .toList());
+    return termsQueryContainer;
+  }
+
+  private TermsQueryContainer getQueryForProcessableVariableEvents() {
+    final TermsQueryContainer termsQueryContainer = new TermsQueryContainer();
+    termsQueryContainer.addTermQuery(
+        ZeebeVariableRecordDto.Fields.intent,
+        List.of(VariableIntent.CREATED.name(), VariableIntent.UPDATED.name()));
     return termsQueryContainer;
   }
 
