@@ -1,15 +1,11 @@
 #!/usr/bin/env bash
 #
-# Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
-# one or more contributor license agreements. See the NOTICE file distributed
-# with this work for additional information regarding copyright ownership.
-# Licensed under the Camunda License 1.0. You may not use this file
-# except in compliance with the Camunda License 1.0.
+# Copyright Camunda Services GmbH ...
 #
 set -euo pipefail
 
 # Contains OS specific sed function
-. utils.sh
+. ../utils.sh
 
 # Usage: ./createCredsLoadTest.sh [namespace]
 NS="${1:-__NAMESPACE__}"
@@ -38,7 +34,6 @@ gen_token() { openssl rand -hex 16; }
 : "${IDENTITY_KEYCLOAK_POSTGRESQL_USER_PASSWORD:=$(gen_password)}"
 : "${IDENTITY_POSTGRESQL_ADMIN_PASSWORD:=$(gen_password)}"
 : "${IDENTITY_POSTGRESQL_USER_PASSWORD:=$(gen_password)}"
-
 # OIDC client secrets (32-char hex strings)
 : "${IDENTITY_ADMIN_CLIENT_TOKEN:=$(gen_token)}"
 : "${IDENTITY_OPTIMIZE_CLIENT_TOKEN:=$(gen_token)}"
@@ -64,9 +59,7 @@ stringData:
   identity-zeebe-client-token: "${IDENTITY_ZEEBE_CLIENT_TOKEN}"
 EOF
 
-echo "Done. Secret 'camunda-credentials' created in namespace '$NS'."
-
-# Replace __SECRET__ placeholder in load-test-values.yaml with the zeebe client token
-# so the load test can authenticate via OAuth to the Zeebe gateway
+# Replace __SECRET__ in load-test-values.yaml with the zeebe client token
 sed_inplace "s/__SECRET__/${IDENTITY_ZEEBE_CLIENT_TOKEN}/g" load-test-values.yaml
-echo "Replaced __SECRET__ in load-test-values.yaml with zeebe client token."
+
+echo "Done. Secret 'camunda-credentials' created in namespace '$NS'."

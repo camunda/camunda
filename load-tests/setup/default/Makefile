@@ -49,24 +49,23 @@ platform_values := -f camunda-platform-values.yaml
 
 # Add secondary storage values
 ifeq ($(secondary_storage),postgresql)
-platform_values += -f camunda-platform-values-rdbms.yaml
+	platform_values += -f camunda-platform-values-rdbms.yaml
 else ifeq ($(secondary_storage),opensearch)
-platform_values += -f camunda-platform-values-opensearch.yaml
+	platform_values += -f camunda-platform-values-opensearch.yaml
 else ifeq ($(secondary_storage),none)
-platform_values += -f camunda-platform-no-secondary-storage.yaml
+	platform_values += -f camunda-platform-no-secondary-storage.yaml
 endif
 
 # Disable Optimize if not enabled
 ifneq ($(enable_optimize),true)
-platform_values += --set optimize.enabled=false
+	platform_values += --set optimize.enabled=false
 endif
 
 # Disable Operate and Tasklist if webapps not enabled
 ifneq ($(enable_webapps),true)
-platform_values += --set operate.enabled=false
-platform_values += --set tasklist.enabled=false
+	platform_values += --set operate.enabled=false
+	platform_values += --set tasklist.enabled=false
 endif
-
 
 # Platform values with stable configuration
 platform_values_stable := $(platform_values) -f values-stable.yaml

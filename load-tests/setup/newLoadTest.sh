@@ -176,14 +176,11 @@ cp -rv default/ $namespace
 # Copy all *.yaml files to the new folder
 cp -v ../*.yaml $namespace/
 
-# Copy secrets creation script and utils to the new folder
-cp -v ./default/createCredsLoadTest.sh $namespace/
-cp -v ./utils.sh $namespace/
-
 cd $namespace
 
 # Update Makefile to use the namespace and secondary storage
 sed_inplace "s/__NAMESPACE__/$namespace/" Makefile
+sed_inplace "s/__NAMESPACE__/$namespace/" load-test-values.yaml
 sed_inplace "s/__STORAGE_TYPE__/$secondaryStorage/" Makefile
 sed_inplace "s/__ENABLE_OPTIMIZE__/$enable_optimize/" Makefile
 sed_inplace "s/__ENABLE_WEBAPPS__/$enable_webapps/" Makefile

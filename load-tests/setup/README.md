@@ -70,6 +70,21 @@ When following the instructions above, execute all commands that deal with Docke
 
 ## Load testing Self-Managed Zeebe Cluster
 
+### Default deployment
+
+By default, a load test deploys the full Camunda Platform, including:
+
+* **Zeebe cluster** (Gateway and Zeebe brokers)
+* **Identity**
+* **Operate**
+* **Tasklist**
+* **Elasticsearch** as secondary storage
+* **Optimize** with history cleanup (1-day TTL)
+* **Connectors** with OIDC authentication
+* **Identity + Keycloak** for OIDC-based authentication
+
+All components are configured in `camunda-platform-values.yaml`.
+
 ### How to set up a load test namespace
 
 If you run `newLoadTest.sh` without arguments, it will display the following help message.
@@ -91,7 +106,7 @@ Examples:
   ./newLoadTest.sh perf opensearch 3 true
 ```
 
-As you can see, you can create a test (namespace) by passing a name; other parameters are optional. Like, secondary storage, TTL, and whether Optimize should be enabled (defaults to true).
+As you can see, you can create a test (namespace) by passing a name; other parameters are optional. Like, secondary storage, TTL, and whether Optimize should be enabled.
 
 Example:
 
@@ -106,7 +121,7 @@ If you used `.` before `./newLoadTest.sh`, the script will change your directory
 
 You can specify a secondary storage type as the second argument:
 
-```
+```sh
 . ./newLoadTest.sh my-load-test-name elasticsearch  # Default - uses Elasticsearch
 . ./newLoadTest.sh my-load-test-name opensearch     # Uses OpenSearch
 . ./newLoadTest.sh my-load-test-name postgresql     # Uses PostgreSQL (RDBMS)
@@ -114,6 +129,16 @@ You can specify a secondary storage type as the second argument:
 ```
 
 The `none` option runs load tests without any secondary storage, which disables Camunda exporters. This is useful for testing the core orchestration engine performance in isolation.
+
+#### Disabling Optimize
+
+Optimize is enabled by default. To disable it, pass `false` as the fourth argument:
+
+```
+. ./newLoadTest.sh my-load-test-name elasticsearch 1 false
+```
+
+In the GitHub workflow, set the `enable-optimize` input to `false`.
 
 ### How to configure a load test
 
@@ -219,7 +244,7 @@ make template-load-test scenario=max  # renders load test manifests
 After you're done with your load test, you should remove the remaining namespace.
 In order to do this easily, just run:
 
-```
+```sh
 ./deleteLoadTest.sh my-load-test-name
 ```
 
@@ -275,7 +300,7 @@ make install-load-test
 By default, we will run an artificial load against the configured SaaS cluster. If you want to change this to some more realistic or typical workload, you can use the following targets.
 
 ```sh
-# Run typical workload, with 10 tasks 
+# Run typical workload, with 10 tasks
 make typical
 
 # Run a realistic workload with multi-instance call activities, etc.
