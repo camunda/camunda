@@ -356,7 +356,7 @@ public class CamundaExporter implements Exporter {
       metrics.recordFlushReasonBatchMemory();
       return true;
     }
-    if (writer.getBatchSize() > 0) {
+    if (false && writer.getBatchSize() > 0) {
       final long now = context.clock().millis();
       // do an optimistic check with the cached value
       if (exceedsDelay(lastFlushActiveTimestamp, now)) {
