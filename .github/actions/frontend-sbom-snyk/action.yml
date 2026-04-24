@@ -9,6 +9,10 @@ inputs:
   directory:
     description: Frontend directory containing package.json
     required: true
+  package-manager:
+    description: Package manager used by the frontend
+    required: false
+    default: "npm"
   sbom-file:
     description: Path to the generated CycloneDX JSON SBOM file
     required: true
@@ -31,28 +35,46 @@ inputs:
 runs:
   using: composite
   steps:
-    - name: Setup Node
+    - name: Setup Node for npm
+      if: inputs.package-manager == 'npm'
+      uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
+      with:
+        node-version: ${{ inputs.node-version }}
+        cache: npm
+        cache-dependency-path: ${{ inputs.directory }}/package-lock.json
+
+    - name: Setup Node for yarn
+      if: inputs.package-manager == 'yarn'
       uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
       with:
         node-version: ${{ inputs.node-version }}
 
-    - name: Setup Yarn cache
-      uses: camunda/infra-global-github-actions/setup-yarn-cache@main
-      with:
-        directory: ${{ inputs.directory }}
-
     - name: Install Snyk CLI
       uses: snyk/actions/setup@9adf32b1121593767fc3c057af55b55db032dc04 # v1.0.0
 
-    - name: Install dependencies
+    - name: Install dependencies with npm
+      if: inputs.package-manager == 'npm'
+      working-directory: ${{ inputs.directory }}
+      shell: bash
+      run: npm ci
+
+    - name: Install dependencies with yarn
+      if: inputs.package-manager == 'yarn'
       working-directory: ${{ inputs.directory }}
       shell: bash
       run: yarn install --frozen-lockfile
 
-    - name: Generate SBOM
+    - name: Generate SBOM with npm
+      if: inputs.package-manager == 'npm'
       working-directory: ${{ inputs.directory }}
       shell: bash
-      run: yarn run extract-sbom
+      run: npm run extract-sbom
+
+    - name: Generate SBOM with yarn
+      if: inputs.package-manager == 'yarn'
+      working-directory: ${{ inputs.directory }}
+      shell: bash
+      run: yarn extract-sbom
 
     - name: Verify generated SBOM path
       shell: bash

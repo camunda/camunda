@@ -643,15 +643,26 @@ jobs:
     timeout-minutes: 10
     permissions: { }  # GITHUB_TOKEN unused in this job
     env:
-      SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+      TEST_OWNER: Identity
+      TEST_PRODUCT: Identity
+      TEST_TYPE: Tool
     defaults:
       run:
         working-directory: identity/client
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-      - uses: ./.github/actions/frontend-sbom-snyk
+      - name: Print metadata
+        uses: ./.github/actions/print-metadata
+      - uses: camunda/infra-global-github-actions/setup-yarn-cache@main
         with:
           directory: identity/client
+      - uses: ./.github/actions/frontend-sbom-snyk
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        with:
+          directory: identity/client
+          package-manager: yarn
+          node-version: "20"
           sbom-file: identity/client/dist/cyclonedx/bom.json
           project-name: Identity frontend
       - name: Observe build status
