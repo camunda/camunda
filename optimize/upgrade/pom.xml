@@ -203,7 +203,7 @@
   </dependencies>
 
   <build>
-    <finalName>upgrade-optimize-from-${project.previousVersion}-to-${project.version}</finalName>
+    <finalName>upgrade-optimize-to-${project.version}</finalName>
     <plugins>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
@@ -300,18 +300,6 @@
                 <echo message="ES is running."></echo>
               </target>
             </configuration>
-          </execution>
-        </executions>
-      </plugin>
-      <plugin>
-        <groupId>org.codehaus.mojo</groupId>
-        <artifactId>templating-maven-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>filtering-java-templates</id>
-            <goals>
-              <goal>filter-sources</goal>
-            </goals>
           </execution>
         </executions>
       </plugin>
