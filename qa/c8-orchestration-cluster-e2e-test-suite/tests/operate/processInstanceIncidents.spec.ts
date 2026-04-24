@@ -458,8 +458,8 @@ test.describe('Process Instance Incident', () => {
     await test.step('Open incidents tab', async () => {
       await operateProcessInstancePage.clickIncidentsTab();
       await expect(operateProcessInstancePage.incidentsTab).toHaveAttribute(
-        'aria-selected',
-        'true',
+        'aria-current',
+        'page',
       );
     });
 
