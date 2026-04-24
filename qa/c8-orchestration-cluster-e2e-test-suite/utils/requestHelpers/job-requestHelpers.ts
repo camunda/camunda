@@ -77,7 +77,7 @@ export async function searchJobKey(
 
 export interface ActivatedJob {
   jobKey: number;
-  customHeaders: Record<string, string>;
+  customHeaders: JSONDoc;
 }
 
 export async function activateJobAndGetHeaders(
