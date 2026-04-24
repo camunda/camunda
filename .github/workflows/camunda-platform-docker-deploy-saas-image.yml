@@ -65,8 +65,8 @@ jobs:
         shell: bash
         run: |
           # shellcheck disable=SC2153
-          # Replace dots and slashes with dashes
-          branch=${BRANCH/[\/\.]/-}
+          # Replace all dots and slashes occurring in the BRANCH name with dashes (because of //)
+          branch=${BRANCH//[\/\.]/-}
           version=$(./mvnw help:evaluate -q -DforceStdout -D"expression=project.version")
           echo "image-tag=$version-$branch" >> "$GITHUB_OUTPUT"
         env:
