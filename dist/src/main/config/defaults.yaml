@@ -1228,7 +1228,7 @@ camunda: # Type: io.camunda.configuration.Camunda
     # Configures the maximum number of recoverable retries allowed during stream processing. When this
     # limit is reached, the operation fails and the partition restarts. Must be a positive integer.
     # Default is 100.
-    max-recoverable-retries: 100 # Type: Integer, Env: CAMUNDA_PROCESSING_MAXRECOVERABLERETRIES
+    max-recoverable-retries: 1000 # Type: Integer, Env: CAMUNDA_PROCESSING_MAXRECOVERABLERETRIES
     # Configures the rate at which a partition leader checks for expired scheduled tasks such as the due
     # date checker. The default value is 1 second. Use a lower interval to potentially decrease delays
     # between requested and actual execution of scheduled tasks. Using a low interval will result in
