@@ -598,6 +598,38 @@ public class ZeebePartitionTest {
   }
 
   @Test
+  public void shouldStepDownWhenLeaderReceivesOnRecoverableFailure() {
+    // given — partition is acting as leader
+    when(ctx.getCurrentRole()).thenReturn(Role.LEADER);
+    when(ctx.getCurrentTerm()).thenReturn(1L);
+    when(raft.term()).thenReturn(1L);
+    when(raft.stepDown()).thenReturn(CompletableFuture.completedFuture(null));
+
+    schedulerRule.submitActor(partition);
+
+    // when — a component (e.g. stream processor) signals a recoverable failure requiring step-down
+    final var report =
+        HealthReport.unhealthy(partition).withMessage("transaction conflict", Instant.now());
+    partition.onRecoverableFailure(report);
+
+    schedulerRule.workUntilDone();
+
+    // then — the Raft partition should step down so a new leader can be elected
+    verify(raft).stepDown();
+  }
+
+  @Test
+  public void shouldRegisterAsFailureListenerOnHealthMonitorDuringStartup() {
+    // when
+    schedulerRule.submitActor(partition);
+    schedulerRule.workUntilDone();
+
+    // then — ZeebePartition must register itself so CriticalComponentsHealthMonitor can forward
+    // onRecoverableFailure (e.g. from StreamProcessor) to it, triggering leader step-down
+    verify(healthMonitor).addFailureListener(partition);
+  }
+
+  @Test
   public void shouldBeAbleToGetHealthReportFromClosedPartition() {
     // given
     final HealthReport healthReport = mock(HealthReport.class);
