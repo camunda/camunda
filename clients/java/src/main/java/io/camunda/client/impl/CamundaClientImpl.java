@@ -1270,7 +1270,7 @@ public final class CamundaClientImpl implements CamundaClient {
 
   @Override
   public VariableGetRequest newVariableGetRequest(final long variableKey) {
-    return new VariableGetRequestImpl(httpClient, variableKey);
+    return new VariableGetRequestImpl(httpClient, variableKey, jsonMapper);
   }
 
   @Override
