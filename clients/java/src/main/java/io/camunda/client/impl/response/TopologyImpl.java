@@ -30,6 +30,7 @@ public final class TopologyImpl implements Topology {
   private final int partitionsCount;
   private final int replicationFactor;
   private final String gatewayVersion;
+  private final String lastCompletedChangeId;
 
   public TopologyImpl(final TopologyResponse grpcResponse) {
     brokers =
@@ -40,6 +41,9 @@ public final class TopologyImpl implements Topology {
     partitionsCount = grpcResponse.getPartitionsCount();
     replicationFactor = grpcResponse.getReplicationFactor();
     gatewayVersion = grpcResponse.getGatewayVersion();
+    // The gRPC TopologyResponse proto does not include lastCompletedChangeId;
+    // this field is only available via the REST API.
+    lastCompletedChangeId = null;
   }
 
   public TopologyImpl(final io.camunda.client.protocol.rest.TopologyResponse httpResponse) {
@@ -54,6 +58,7 @@ public final class TopologyImpl implements Topology {
         httpResponse.getReplicationFactor() == null ? 0 : httpResponse.getReplicationFactor();
     gatewayVersion =
         httpResponse.getGatewayVersion() == null ? "" : httpResponse.getGatewayVersion();
+    lastCompletedChangeId = httpResponse.getLastCompletedChangeId();
   }
 
   @Override
@@ -82,6 +87,11 @@ public final class TopologyImpl implements Topology {
   }
 
   @Override
+  public String getLastCompletedChangeId() {
+    return lastCompletedChangeId;
+  }
+
+  @Override
   public String toString() {
     return "TopologyImpl{"
         + "brokers="
@@ -94,6 +104,8 @@ public final class TopologyImpl implements Topology {
         + replicationFactor
         + ", gatewayVersion="
         + gatewayVersion
+        + ", lastCompletedChangeId="
+        + lastCompletedChangeId
         + '}';
   }
 }
