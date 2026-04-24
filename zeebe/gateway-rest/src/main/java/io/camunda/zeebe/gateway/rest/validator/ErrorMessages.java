@@ -44,6 +44,8 @@ public final class ErrorMessages {
       "The provided tag '%s' is not valid. %s";
   public static final String ERROR_MESSAGE_INVALID_TAGS_COUNT =
       "The provided number of tags '%s' is not supported. Ensure to not add more than %s tags.";
+  public static final String ERROR_MESSAGE_INVALID_DECISION_EVALUATION_INSTANCE_KEY_FORMAT =
+      "The provided %s '%s' is not a valid decision evaluation instance key. Expected a value matching the pattern '%s' (e.g. '2251799813684367-1').";
   public static final String ERROR_MESSAGE_UNSUPPORTED_PAGINATION_WITH_IS_LATEST_VERSION =
       "When using isLatestVersion filter, pagination is limited to forward pagination using 'after' and 'limit'. The field '%s' is not supported.";
   public static final String ERROR_MESSAGE_UNSUPPORTED_SORT_FIELD_WITH_IS_LATEST_VERSION =
