@@ -14,10 +14,7 @@ import {
   deployWithSubstitutions,
 } from '../../../../utils/zeebeClient';
 import {assertStatusCode, buildUrl, jsonHeaders} from '../../../../utils/http';
-import {
-  activateJobAndGetHeaders,
-  completeJob,
-} from '../../../../utils/requestHelpers/job-requestHelpers';
+import {activateJobAndGetHeaders, completeJob} from '@requestHelpers';
 
 test.describe.parallel('EL Header Basic Tests', () => {
   const suffix = randomUUID().slice(0, 8);

@@ -91,6 +91,14 @@ export async function activateJobAndGetHeaders(
       data: {type: jobType, timeout: 5000, maxJobsToActivate: 1},
     });
     await assertStatusCode(res, 200);
+    await validateResponse(
+      {
+        path: '/jobs/activation',
+        method: 'POST',
+        status: '200',
+      },
+      res,
+    );
     const json = await res.json();
     expect(json.jobs).toHaveLength(1);
     result.jobKey = json.jobs[0].jobKey;

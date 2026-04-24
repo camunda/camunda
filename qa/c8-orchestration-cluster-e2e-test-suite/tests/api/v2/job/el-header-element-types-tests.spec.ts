@@ -13,10 +13,7 @@ import {
   createInstances,
   deployWithSubstitutions,
 } from '../../../../utils/zeebeClient';
-import {
-  activateJobAndGetHeaders,
-  completeJob,
-} from '../../../../utils/requestHelpers/job-requestHelpers';
+import {activateJobAndGetHeaders, completeJob} from '@requestHelpers';
 
 test.describe.parallel('EL Header Element Types Tests', () => {
   const suffix = randomUUID().slice(0, 8);
