@@ -60,22 +60,6 @@ public class ExecutableFlowNode extends AbstractFlowElement {
     this.outputMappings = Optional.of(outputMappings);
   }
 
-  public void addListener(
-      final ZeebeExecutionListenerEventType eventType,
-      final Expression type,
-      final Expression retries,
-      final Map<String, String> taskHeaders) {
-    final ExecutionListener listener = new ExecutionListener();
-    listener.setEventType(eventType);
-
-    final JobWorkerProperties jobWorkerProperties = new JobWorkerProperties();
-    jobWorkerProperties.setType(type);
-    jobWorkerProperties.setRetries(retries);
-    jobWorkerProperties.setTaskHeaders(taskHeaders);
-    listener.setJobWorkerProperties(jobWorkerProperties);
-    executionListeners.add(listener);
-  }
-
   public List<ExecutionListener> getBeforeAllExecutionListeners() {
     return executionListeners.stream()
         .filter(el -> el.getEventType() == ZeebeExecutionListenerEventType.beforeAll)
@@ -98,11 +82,22 @@ public class ExecutableFlowNode extends AbstractFlowElement {
     return !executionListeners.isEmpty();
   }
 
-  /**
-   * Adds an already-constructed {@link ExecutionListener} to this flow node. Used when re-attaching
-   * listeners between flow nodes (e.g., moving {@code beforeAll} listeners from the inner activity
-   * to the multi-instance body during transformation).
-   */
+  public void addExecutionListener(
+      final ZeebeExecutionListenerEventType eventType,
+      final Expression type,
+      final Expression retries,
+      final Map<String, String> taskHeaders) {
+    final ExecutionListener listener = new ExecutionListener();
+    listener.setEventType(eventType);
+
+    final JobWorkerProperties jobWorkerProperties = new JobWorkerProperties();
+    jobWorkerProperties.setType(type);
+    jobWorkerProperties.setRetries(retries);
+    jobWorkerProperties.setTaskHeaders(taskHeaders);
+    listener.setJobWorkerProperties(jobWorkerProperties);
+    executionListeners.add(listener);
+  }
+
   public void addExecutionListener(final ExecutionListener listener) {
     executionListeners.add(listener);
   }
