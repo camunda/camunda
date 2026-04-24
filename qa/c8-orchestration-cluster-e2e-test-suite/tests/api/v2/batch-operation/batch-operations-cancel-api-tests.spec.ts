@@ -65,8 +65,10 @@ test.describe.parallel('Cancel Batch Operation Tests', () => {
       });
 
     await test.step('Send first cancel request', async () => {
-      const firstRes = await cancelBatchOperation(request, key);
-      await assertStatusCode(firstRes, 204);
+      await expect(async () => {
+        const firstRes = await cancelBatchOperation(request, key);
+        await assertStatusCode(firstRes, 204);
+      }).toPass(defaultAssertionOptions);
     });
 
     await test.step('Send second cancel request and assert failure', async () => {
