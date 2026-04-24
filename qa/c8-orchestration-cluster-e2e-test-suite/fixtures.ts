@@ -37,6 +37,7 @@ import {IdentityRolesDetailsPage} from '@pages/IdentityRolesDetailsPage';
 import {AccessDeniedPage} from '@pages/AccessDeniedPage';
 
 import {sleep} from 'utils/sleep';
+import {SwaggerPage} from '@pages/SwaggerPage';
 
 type PlaywrightFixtures = {
   makeAxeBuilder: () => AxeBuilder;
@@ -68,6 +69,7 @@ type PlaywrightFixtures = {
   identityTenantsPage: IdentityTenantsPage;
   identityRolesDetailsPage: IdentityRolesDetailsPage;
   accessDeniedPage: AccessDeniedPage;
+  swaggerPage: SwaggerPage
 };
 
 const test = base.extend<PlaywrightFixtures>({
@@ -103,6 +105,9 @@ const test = base.extend<PlaywrightFixtures>({
   },
   loginPage: async ({page}, use) => {
     await use(new LoginPage(page));
+  },
+  swaggerPage: async ({page}, use) => {
+    await use(new SwaggerPage(page));
   },
   taskPanelPage: async ({page}, use) => {
     await use(new TaskPanelPage(page));
