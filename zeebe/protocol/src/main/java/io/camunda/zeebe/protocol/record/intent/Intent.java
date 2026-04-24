@@ -35,6 +35,7 @@ public interface Intent {
   static Map<ValueType, Class<? extends Intent>> computeValueTypeToIntentMap() {
     final Map<ValueType, Class<? extends Intent>> map = new LinkedHashMap<>();
     map.put(ValueType.AD_HOC_SUB_PROCESS_INSTRUCTION, AdHocSubProcessInstructionIntent.class);
+    map.put(ValueType.AGENT_INSTANCE, AgentInstanceIntent.class);
     map.put(ValueType.ASYNC_REQUEST, AsyncRequestIntent.class);
     map.put(ValueType.AUTHORIZATION, AuthorizationIntent.class);
     map.put(ValueType.BATCH_OPERATION_CHUNK, BatchOperationChunkIntent.class);

@@ -41,6 +41,7 @@ public final class ValueTypes {
           ValueType.USER_TASK,
           ValueType.PROCESS_INSTANCE_MIGRATION,
           ValueType.AD_HOC_SUB_PROCESS_INSTRUCTION,
+          ValueType.AGENT_INSTANCE,
           ValueType.COMPENSATION_SUBSCRIPTION,
           ValueType.MESSAGE_CORRELATION,
           ValueType.USER,

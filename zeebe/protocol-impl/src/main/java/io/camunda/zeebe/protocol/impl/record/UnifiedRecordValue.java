@@ -12,6 +12,7 @@ import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.value.AsyncRequestRecord;
 import io.camunda.zeebe.protocol.impl.record.value.adhocsubprocess.AdHocSubProcessInstructionRecord;
+import io.camunda.zeebe.protocol.impl.record.value.agentinstance.AgentInstanceRecord;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.IdentitySetupRecord;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.MappingRuleRecord;
@@ -147,6 +148,7 @@ public class UnifiedRecordValue extends UnpackedObject implements RecordValue {
 
   public static UnifiedRecordValue fromValueType(final ValueType valueType) {
     return switch (valueType) {
+      case ValueType.AGENT_INSTANCE -> new AgentInstanceRecord();
       case ValueType.DEPLOYMENT -> new DeploymentRecord();
       case ValueType.JOB -> new JobRecord();
       case ValueType.PROCESS_INSTANCE -> new ProcessInstanceRecord();

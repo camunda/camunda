@@ -20,6 +20,7 @@ import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.impl.record.VersionInfo;
 import io.camunda.zeebe.protocol.impl.record.value.adhocsubprocess.AdHocSubProcessInstructionRecord;
+import io.camunda.zeebe.protocol.impl.record.value.agentinstance.AgentInstanceRecord;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.IdentitySetupRecord;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.MappingRuleRecord;
@@ -96,6 +97,7 @@ import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import io.camunda.zeebe.protocol.record.intent.HistoryDeletionIntent;
+import io.camunda.zeebe.protocol.record.value.AgentInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceMatcher;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
@@ -4622,6 +4624,71 @@ final class JsonSerializableToJsonTest {
       "source": "CONFIGURATION",
       "listenerType": "USER_TASK",
       "configKey": -1
+    }
+    """
+      },
+      //////////////////////////////////// AgentInstanceRecord /////////////////////////////////////
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      {
+        "AgentInstanceRecord",
+        (Supplier<AgentInstanceRecord>)
+            () ->
+                new AgentInstanceRecord()
+                    .setAgentInstanceKey(100L)
+                    .setElementInstanceKey(200L)
+                    .setProcessInstanceKey(300L)
+                    .setProcessDefinitionKey(400L)
+                    .setTenantId("tenant-1")
+                    .setStatus(AgentInstanceRecordValue.AgentInstanceStatus.THINKING)
+                    .setModel("gpt-4")
+                    .setProvider("openai")
+                    .setSystemPrompt("You are a helpful assistant.")
+                    .setInputTokens(1500)
+                    .setOutputTokens(500)
+                    .setModelCalls(3)
+                    .setMaxTokens(10000)
+                    .setMaxModelCalls(50)
+                    .setMaxToolCalls(100),
+        """
+    {
+      "agentInstanceKey": 100,
+      "elementInstanceKey": 200,
+      "processInstanceKey": 300,
+      "processDefinitionKey": 400,
+      "tenantId": "tenant-1",
+      "status": "THINKING",
+      "model": "gpt-4",
+      "provider": "openai",
+      "systemPrompt": "You are a helpful assistant.",
+      "inputTokens": 1500,
+      "outputTokens": 500,
+      "modelCalls": 3,
+      "maxTokens": 10000,
+      "maxModelCalls": 50,
+      "maxToolCalls": 100
+    }
+    """
+      },
+      {
+        "Empty AgentInstanceRecord",
+        (Supplier<AgentInstanceRecord>) AgentInstanceRecord::new,
+        """
+    {
+      "agentInstanceKey": -1,
+      "elementInstanceKey": -1,
+      "processInstanceKey": -1,
+      "processDefinitionKey": -1,
+      "tenantId": "<default>",
+      "status": "IDLE",
+      "model": "",
+      "provider": "",
+      "systemPrompt": "",
+      "inputTokens": 0,
+      "outputTokens": 0,
+      "modelCalls": 0,
+      "maxTokens": -1,
+      "maxModelCalls": -1,
+      "maxToolCalls": -1
     }
     """
       }

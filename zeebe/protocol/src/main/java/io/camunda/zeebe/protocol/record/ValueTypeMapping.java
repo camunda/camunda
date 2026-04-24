@@ -16,6 +16,7 @@
 package io.camunda.zeebe.protocol.record;
 
 import io.camunda.zeebe.protocol.record.intent.AdHocSubProcessInstructionIntent;
+import io.camunda.zeebe.protocol.record.intent.AgentInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.AsyncRequestIntent;
 import io.camunda.zeebe.protocol.record.intent.AuthorizationIntent;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationChunkIntent;
@@ -78,6 +79,7 @@ import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import io.camunda.zeebe.protocol.record.intent.management.CheckpointIntent;
 import io.camunda.zeebe.protocol.record.intent.scaling.ScaleIntent;
 import io.camunda.zeebe.protocol.record.value.AdHocSubProcessInstructionRecordValue;
+import io.camunda.zeebe.protocol.record.value.AgentInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.AsyncRequestRecordValue;
 import io.camunda.zeebe.protocol.record.value.AuthorizationRecordValue;
 import io.camunda.zeebe.protocol.record.value.BatchOperationChunkRecordValue;
@@ -196,6 +198,9 @@ public final class ValueTypeMapping {
   private Map<ValueType, Mapping<?, ?>> loadValueTypes() {
     final Map<ValueType, Mapping<?, ?>> mapping = new EnumMap<>(ValueType.class);
 
+    mapping.put(
+        ValueType.AGENT_INSTANCE,
+        new Mapping<>(AgentInstanceRecordValue.class, AgentInstanceIntent.class));
     mapping.put(ValueType.DECISION, new Mapping<>(DecisionRecordValue.class, DecisionIntent.class));
     mapping.put(
         ValueType.DECISION_EVALUATION,
