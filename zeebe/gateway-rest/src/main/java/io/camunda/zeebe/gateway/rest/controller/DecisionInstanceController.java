@@ -19,6 +19,7 @@ import io.camunda.zeebe.gateway.rest.annotation.RequiresSecondaryStorage;
 import io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper;
 import io.camunda.zeebe.gateway.rest.mapper.search.SearchQueryRequestMapper;
 import io.camunda.zeebe.gateway.rest.mapper.search.SearchQueryResponseMapper;
+import io.camunda.zeebe.gateway.rest.validator.RequestValidator;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -49,15 +50,12 @@ public class DecisionInstanceController {
   @CamundaGetMapping(path = "/{decisionEvaluationInstanceKey}")
   public ResponseEntity<DecisionInstanceGetQueryResult> getDecisionInstanceById(
       @PathVariable("decisionEvaluationInstanceKey") final String decisionEvaluationInstanceKey) {
-    try {
-      return ResponseEntity.ok(
-          SearchQueryResponseMapper.toDecisionInstanceGetQueryResponse(
-              decisionInstanceServices
-                  .withAuthentication(authenticationProvider.getCamundaAuthentication())
-                  .getById(decisionEvaluationInstanceKey)));
-    } catch (final Exception e) {
-      return RestErrorMapper.mapErrorToResponse(e);
-    }
+    return RequestValidator.validate(
+            violations ->
+                RequestValidator.validateDecisionEvaluationInstanceKeyFormat(
+                    decisionEvaluationInstanceKey, violations))
+        .<ResponseEntity<DecisionInstanceGetQueryResult>>map(RestErrorMapper::mapProblemToResponse)
+        .orElseGet(() -> getDecisionInstance(decisionEvaluationInstanceKey));
   }
 
   private ResponseEntity<DecisionInstanceSearchQueryResult> search(
@@ -69,6 +67,20 @@ public class DecisionInstanceController {
               .search(query);
       return ResponseEntity.ok(
           SearchQueryResponseMapper.toDecisionInstanceSearchQueryResponse(decisionInstances));
+    } catch (final Exception e) {
+      return RestErrorMapper.mapErrorToResponse(e);
+    }
+  }
+
+  private ResponseEntity<DecisionInstanceGetQueryResult> getDecisionInstance(
+      final String decisionEvaluationInstanceKey) {
+    try {
+      final var decisionInstanceById =
+          decisionInstanceServices
+              .withAuthentication(authenticationProvider.getCamundaAuthentication())
+              .getById(decisionEvaluationInstanceKey);
+      return ResponseEntity.ok(
+          SearchQueryResponseMapper.toDecisionInstanceGetQueryResponse(decisionInstanceById));
     } catch (final Exception e) {
       return RestErrorMapper.mapErrorToResponse(e);
     }
