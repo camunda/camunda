@@ -15,7 +15,6 @@
  */
 package io.camunda.process.test.api;
 
-import static io.camunda.process.test.api.CamundaAssert.assertThat;
 import static io.camunda.process.test.api.CamundaAssert.assertThatProcessInstance;
 import static io.camunda.process.test.api.ConditionalBehaviorTestProcess.*;
 
@@ -50,9 +49,17 @@ public class SpringConditionalBehaviorBeforeEachIT {
     processTestContext
         .when(
             () ->
-                assertThat(ProcessInstanceSelectors.byProcessId(PROCESS_ID))
-                    .hasActiveElement(USER_TASK_ID, 1))
-        .then(() -> processTestContext.completeUserTask(USER_TASK_ID, Map.of("happy", false)))
+                assertThatProcessInstance(ProcessInstanceSelectors.byProcessId(PROCESS_ID))
+                    .hasActiveElement(USER_TASK_ID, 1)
+                    .hasCompletedElement(USER_TASK_ID, 0))
+        .then(() -> processTestContext.completeUserTask(USER_TASK_ID, Map.of("happy", false)));
+
+    processTestContext
+        .when(
+            () ->
+                assertThatProcessInstance(ProcessInstanceSelectors.byProcessId(PROCESS_ID))
+                    .hasActiveElement(USER_TASK_ID, 1)
+                    .hasCompletedElement(USER_TASK_ID, 1))
         .then(() -> processTestContext.completeUserTask(USER_TASK_ID, Map.of("happy", true)));
 
     processTestContext

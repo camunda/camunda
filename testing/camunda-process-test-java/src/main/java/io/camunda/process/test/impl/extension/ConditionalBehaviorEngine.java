@@ -218,9 +218,6 @@ public class ConditionalBehaviorEngine {
         if (fireAction()) {
           waitForConditionReset();
         }
-        // A failed action left the system unchanged, so there is nothing to
-        // reset. Skipping the reset-wait lets the scheduler retry at the poll
-        // interval instead of burning the full reset timeout.
       }
     }
 

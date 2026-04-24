@@ -15,7 +15,6 @@
  */
 package io.camunda.process.test.impl.extensions;
 
-import static io.camunda.process.test.api.CamundaAssert.assertThat;
 import static io.camunda.process.test.api.CamundaAssert.assertThatProcessInstance;
 import static io.camunda.process.test.impl.extensions.ConditionalBehaviorTestProcess.*;
 
@@ -52,9 +51,17 @@ public class ConditionalBehaviorBeforeEachIT {
     processTestContext
         .when(
             () ->
-                assertThat(ProcessInstanceSelectors.byProcessId(PROCESS_ID))
-                    .hasActiveElement(USER_TASK_ID, 1))
-        .then(() -> processTestContext.completeUserTask(USER_TASK_ID, UNHAPPY))
+                assertThatProcessInstance(ProcessInstanceSelectors.byProcessId(PROCESS_ID))
+                    .hasActiveElement(USER_TASK_ID, 1)
+                    .hasCompletedElement(USER_TASK_ID, 0))
+        .then(() -> processTestContext.completeUserTask(USER_TASK_ID, UNHAPPY));
+
+    processTestContext
+        .when(
+            () ->
+                assertThatProcessInstance(ProcessInstanceSelectors.byProcessId(PROCESS_ID))
+                    .hasActiveElement(USER_TASK_ID, 1)
+                    .hasCompletedElement(USER_TASK_ID, 1))
         .then(() -> processTestContext.completeUserTask(USER_TASK_ID, HAPPY));
 
     processTestContext

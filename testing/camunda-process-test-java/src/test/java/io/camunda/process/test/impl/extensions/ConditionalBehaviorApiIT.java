@@ -15,7 +15,6 @@
  */
 package io.camunda.process.test.impl.extensions;
 
-import static io.camunda.process.test.api.CamundaAssert.assertThat;
 import static io.camunda.process.test.api.CamundaAssert.assertThatProcessInstance;
 import static io.camunda.process.test.impl.extensions.ConditionalBehaviorTestProcess.*;
 
@@ -46,16 +45,20 @@ public class ConditionalBehaviorApiIT {
     final Map<String, Object> exportVars = Collections.singletonMap("exportSuccess", true);
 
     // Setup conditional behaviors before starting the process
-
-    // When user task "State_Happiness" is created, complete it:
-    //   1st time with happy=false (loops back)
-    //   2nd time with happy=true (proceeds to Export_Happiness)
     processTestContext
         .when(
             () ->
-                assertThat(ProcessInstanceSelectors.byProcessId(PROCESS_ID))
-                    .hasActiveElement(USER_TASK_ID, 1))
-        .then(() -> processTestContext.completeUserTask(USER_TASK_ID, unhappy))
+                assertThatProcessInstance(ProcessInstanceSelectors.byProcessId(PROCESS_ID))
+                    .hasActiveElement(USER_TASK_ID, 1)
+                    .hasCompletedElement(USER_TASK_ID, 0))
+        .then(() -> processTestContext.completeUserTask(USER_TASK_ID, unhappy));
+
+    processTestContext
+        .when(
+            () ->
+                assertThatProcessInstance(ProcessInstanceSelectors.byProcessId(PROCESS_ID))
+                    .hasActiveElement(USER_TASK_ID, 1)
+                    .hasCompletedElement(USER_TASK_ID, 1))
         .then(() -> processTestContext.completeUserTask(USER_TASK_ID, happy));
 
     // When Export_Happiness is active, complete the job

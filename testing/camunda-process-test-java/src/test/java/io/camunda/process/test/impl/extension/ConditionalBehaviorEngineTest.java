@@ -452,9 +452,6 @@ class ConditionalBehaviorEngineTest {
 
   @Test
   void shouldRetryFailedActionAtPollIntervalWhenConditionStaysTrue() {
-    // If an action throws while the condition remains continuously true,
-    // the engine must retry at the poll interval rather than burning the
-    // full reset timeout — nothing changed, so there is nothing to reset.
     final AtomicInteger actionCount = new AtomicInteger(0);
 
     engine
@@ -465,9 +462,6 @@ class ConditionalBehaviorEngineTest {
               throw new RuntimeException("action always fails");
             });
 
-    // With the default 5s reset timeout, a pre-fix engine would fire ~once per
-    // 5s and never reach 3 fires within 1.5s. A fix that bypasses the reset
-    // wait on failure fires every pollInterval (~100ms) → well over 3 fires.
     await()
         .atMost(1500, TimeUnit.MILLISECONDS)
         .untilAsserted(() -> assertThat(actionCount.get()).isGreaterThanOrEqualTo(3));
