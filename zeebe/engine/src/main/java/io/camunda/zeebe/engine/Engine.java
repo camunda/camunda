@@ -26,6 +26,7 @@ import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ErrorIntent;
 import io.camunda.zeebe.protocol.record.intent.Intent;
+import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
@@ -249,10 +250,21 @@ public class Engine implements RecordProcessor {
   }
 
   private void rejectBannedInstanceCommand(final TypedRecord<?> typedCommand) {
-    final long processInstanceKey =
+    long processInstanceKey =
         typedCommand.getValue() instanceof ProcessInstanceRelated
             ? ((ProcessInstanceRelated) typedCommand.getValue()).getProcessInstanceKey()
             : -1;
+
+    // If processInstanceKey is not set directly in the command, resolve it from state
+    if (processInstanceKey <= 0 && typedCommand.getIntent() instanceof JobIntent) {
+      // For Job commands, resolve processInstanceKey from JobState using the job key
+      final long jobKey = typedCommand.getKey();
+      final var jobRecord = processingState.getJobState().getJob(jobKey);
+      if (jobRecord != null) {
+        processInstanceKey = jobRecord.getProcessInstanceKey();
+      }
+    }
+
     if (processInstanceKey <= 0) {
       LOG.debug(DEBUG_MESSAGE_PI_KEY_NOT_FOUND, typedCommand);
       return;

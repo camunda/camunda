@@ -623,6 +623,90 @@ public final class EngineErrorHandlingTest {
   }
 
   @Test
+  public void shouldRejectJobCommandForBannedProcessInstanceWithResolvedKey() {
+    // given
+    final ErrorProneProcessor errorProneProcessor = new ErrorProneProcessor();
+    final long processInstanceKey = 1L;
+    final long jobKey = 100L;
+
+    streamProcessor =
+        streams.startStreamProcessor(
+            STREAM_NAME,
+            DefaultZeebeDbFactory.defaultFactory(),
+            (processingContext) -> {
+              processingState = processingContext.getProcessingState();
+              keyGenerator = processingContext.getProcessingState().getKeyGenerator();
+
+              // Create a job in the state before processing begins
+              final JobRecord jobRecord =
+                  new JobRecord()
+                      .setProcessInstanceKey(processInstanceKey)
+                      .setType(wrapString("test"))
+                      .setRetries(3);
+              ((io.camunda.zeebe.engine.state.mutable.MutableProcessingState) processingState)
+                  .getJobState()
+                  .create(jobKey, jobRecord);
+
+              return TypedRecordProcessors.processors()
+                  .onCommand(
+                      ValueType.PROCESS_INSTANCE,
+                      ProcessInstanceIntent.ACTIVATE_ELEMENT,
+                      errorProneProcessor)
+                  .onCommand(
+                      ValueType.JOB,
+                      JobIntent.COMPLETE,
+                      new DumpProcessor(processingContext.getWriters()));
+            });
+
+    // Ban the process instance by sending a command that will fail
+    streams
+        .newRecord(STREAM_NAME)
+        .event(Records.processInstance(processInstanceKey))
+        .recordType(RecordType.COMMAND)
+        .intent(ProcessInstanceIntent.ACTIVATE_ELEMENT)
+        .write();
+
+    // Wait for error event to be written
+    waitForRecordWhichSatisfies(e -> Records.isEvent(e, ValueType.ERROR, ErrorIntent.CREATED));
+
+    // when - send a job command (COMPLETE) with processInstanceKey not set in the command
+    // The job key is provided, but processInstanceKey field in JobRecord will be -1 initially
+    final JobRecord jobCompleteCommand = new JobRecord().setType(wrapString("test"));
+
+    streams
+        .newRecord(STREAM_NAME)
+        .event(jobCompleteCommand)
+        .recordType(RecordType.COMMAND)
+        .intent(JobIntent.COMPLETE)
+        .key(jobKey)
+        .requestId(200L)
+        .requestStreamId(1)
+        .write();
+
+    // Wait for rejection to be written
+    waitForRecordWhichSatisfies(e -> Records.isRejection(e, ValueType.JOB, JobIntent.COMPLETE));
+
+    // then - verify the job command was rejected
+    final Record<JobRecord> rejection =
+        new RecordStream(streams.events(STREAM_NAME))
+            .onlyJobRecords()
+            .onlyRejections()
+            .withIntent(JobIntent.COMPLETE)
+            .getFirst();
+
+    assertThat(rejection.getRejectionType()).isEqualTo(RejectionType.INVALID_STATE);
+    assertThat(rejection.getRejectionReason())
+        .contains("process instance is banned due to previous errors");
+
+    // verify response was sent to client
+    verify(mockCommandResponseWriter).tryWriteResponse(eq(1), eq(200L));
+
+    // verify the processor was not called for the rejected job command
+    // (only once for the initial process instance activation that failed)
+    assertThat(errorProneProcessor.getProcessCount()).isEqualTo(1);
+  }
+
+  @Test
   public void shouldNotBanInstanceAndIgnoreTimerStartEvents() {
     // given
     final List<Long> processedInstances = new ArrayList<>();
