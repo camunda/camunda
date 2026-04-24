@@ -255,7 +255,6 @@ public class DefaultExecutionQueue implements ExecutionQueue {
       for (final var entry : optimizedItems) {
         LOG.trace("[RDBMS ExecutionQueue, Partition {}] Executing entry: {}", partitionId, entry);
         session.update(entry.statementId(), entry.parameter());
-        queue.remove();
         flushedElements++;
       }
 
@@ -274,6 +273,7 @@ public class DefaultExecutionQueue implements ExecutionQueue {
       }
 
       session.commit();
+      queue.clear();
       if (!postFlushListeners.isEmpty()) {
         LOG.trace("[RDBMS ExecutionQueue, Partition {}] Call post flush listeners", partitionId);
         postFlushListeners.forEach(PostFlushListener::onPostFlush);
