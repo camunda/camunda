@@ -14,6 +14,7 @@ import static org.mockito.Mockito.spy;
 import io.camunda.zeebe.db.ColumnFamily;
 import io.camunda.zeebe.db.DbKey;
 import io.camunda.zeebe.db.DbValue;
+import io.camunda.zeebe.db.TransactionConflictException;
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.TransactionOperation;
 import io.camunda.zeebe.db.ZeebeDb;
@@ -23,40 +24,48 @@ import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.stream.util.DefaultZeebeDbFactory;
 import io.camunda.zeebe.stream.util.RecordToWrite;
 import io.camunda.zeebe.stream.util.Records;
+import io.camunda.zeebe.util.health.FailureListener;
+import io.camunda.zeebe.util.health.HealthReport;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.io.File;
+import java.time.Duration;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.assertj.core.api.Assertions;
 import org.awaitility.Awaitility;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 final class StreamProcessorTransactionErrorTest {
 
-  @RegisterExtension
-  private final StreamPlatformExtension streamPlatformExtension =
-      new StreamPlatformExtension(
-          new ErrorProneDbFactory(new RuntimeException("Unexpected exception")));
+  @Nested
+  final class WhenCommitFails {
+    @RegisterExtension
+    private final StreamPlatformExtension streamPlatformExtension =
+        new StreamPlatformExtension(
+            new ErrorProneDbFactory(new RuntimeException("Unexpected exception")));
 
-  @SuppressWarnings("unused") // injected by the extension
-  private StreamPlatform streamPlatform;
+    @SuppressWarnings("unused") // injected by the extension
+    private StreamPlatform streamPlatform;
 
-  private StreamProcessor streamProcessor;
+    private StreamProcessor streamProcessor;
 
-  @Test
-  void shouldShutDownStreamProcessorOnUncommittedStateException() {
-    // given
-    streamProcessor = streamPlatform.startStreamProcessorNotAwaitOpening();
+    @Test
+    void shouldShutDownStreamProcessorOnUncommittedStateException() {
+      // given
+      streamProcessor = streamPlatform.startStreamProcessorNotAwaitOpening();
 
-    // when -- processing something to trigger a commit
-    streamPlatform.writeBatch(
-        RecordToWrite.command().processInstance(ACTIVATE_ELEMENT, Records.processInstance(1)));
+      // when -- processing something to trigger a commit
+      streamPlatform.writeBatch(
+          RecordToWrite.command().processInstance(ACTIVATE_ELEMENT, Records.processInstance(1)));
 
-    // then
-    Awaitility.await("wait to become unhealthy")
-        .until(() -> streamProcessor.getHealthReport().isUnhealthy());
+      // then
+      Awaitility.await("wait to become unhealthy")
+          .until(() -> streamProcessor.getHealthReport().isUnhealthy());
 
-    Assertions.assertThat(streamProcessor.isFailed()).isTrue();
+      Assertions.assertThat(streamProcessor.isFailed()).isTrue();
+    }
   }
 
   private static final class ErrorProneTransactionConext implements TransactionContext {
@@ -85,6 +94,58 @@ final class StreamProcessorTransactionErrorTest {
         throw new RuntimeException(e);
       }
       return spy;
+    }
+  }
+
+  /**
+   * Verifies that a {@link TransactionConflictException} thrown during commit triggers {@link
+   * FailureListener#onRecoverableFailure(HealthReport)}, NOT the dead-partition path.
+   */
+  @Nested
+  class WhenConflictAtCommit {
+
+    @RegisterExtension
+    private final StreamPlatformExtension streamPlatformExtension =
+        new StreamPlatformExtension(
+            new ErrorProneDbFactory(
+                new TransactionConflictException(new RuntimeException("simulated conflict"))));
+
+    @SuppressWarnings("unused") // injected by the extension
+    private StreamPlatform streamPlatform;
+
+    private StreamProcessor streamProcessor;
+
+    @Test
+    void shouldFireOnRecoverableFailureOnTransactionConflictAtCommit() {
+      // given
+      streamProcessor = streamPlatform.startStreamProcessorNotAwaitOpening();
+
+      final var recoverableFailureFired = new AtomicBoolean(false);
+      streamProcessor.addFailureListener(
+          new FailureListener() {
+            @Override
+            public void onFailure(final HealthReport report) {}
+
+            @Override
+            public void onRecovered(final HealthReport report) {}
+
+            @Override
+            public void onUnrecoverableFailure(final HealthReport report) {}
+
+            @Override
+            public void onRecoverableFailure(final HealthReport report) {
+              recoverableFailureFired.set(true);
+            }
+          });
+
+      // when
+      streamPlatform.writeBatch(
+          RecordToWrite.command().processInstance(ACTIVATE_ELEMENT, Records.processInstance(1)));
+
+      // then
+      Awaitility.await("recoverable failure is fired on transaction conflict")
+          .atMost(Duration.ofSeconds(15))
+          .until(recoverableFailureFired::get);
     }
   }
 

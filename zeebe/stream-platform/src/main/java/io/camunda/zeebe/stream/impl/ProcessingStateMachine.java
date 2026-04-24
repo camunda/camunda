@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.stream.impl;
 
+import io.camunda.zeebe.db.TransactionConflictException;
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDbTransaction;
 import io.camunda.zeebe.logstreams.impl.Loggers;
@@ -681,7 +682,13 @@ public final class ProcessingStateMachine {
     actor.runOnCompletion(
         retryFuture,
         (bool, throwable) -> {
-          if (throwable != null) {
+          if (throwable instanceof TransactionConflictException conflictException) {
+            // Commit failed due to a transaction conflict (e.g. not enough history in memory to
+            // check for conflicts, actual write-write conflict, etc.). However, we've already
+            // written the records, so we need to bubble this up for the StreamProcessor to
+            // trigger a step down.
+            throw conflictException;
+          } else if (throwable != null) {
             // Log entries were written already, but committing state changes failed with an
             // unexpected error not handled by `updateStateRetryStrategy`. At this point,
             // log and state have diverged, and we need to bail out.

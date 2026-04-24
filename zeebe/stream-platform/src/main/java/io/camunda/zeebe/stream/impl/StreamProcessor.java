@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.stream.impl;
 
+import io.camunda.zeebe.db.TransactionConflictException;
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.logstreams.impl.Loggers;
@@ -398,7 +399,20 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
                 openFuture.completeExceptionally(throwable);
               }
 
-              if (streamProcessorContext.getProcessorMode().equals(StreamProcessorMode.REPLAY)
+              if (throwable instanceof TransactionConflictException) {
+                // A transaction conflict can be because of an actual conflict (unlikely in our
+                // single-writer scenario) or because of memory pressure, where there is not enough
+                // history in memory for the transaction to check for conflicts at commit time.
+                // This can happen when there is unexpected flushing happening during the
+                // transaction. This is a recoverable error, but since we may have already written
+                // the records representing the processing results, we need to step down.
+                final var report =
+                    HealthReport.unhealthy(this)
+                        .withIssue(throwable, ActorClock.current().instant());
+                failureListeners.forEach(l -> l.onRecoverableFailure(report));
+              } else if (streamProcessorContext
+                      .getProcessorMode()
+                      .equals(StreamProcessorMode.REPLAY)
                   && !(throwable instanceof UnrecoverableException)) {
                 // If the stream processor is in replay mode, we do not want to report it as dead
                 // because it is not critical. The leaders are still active and able to process
