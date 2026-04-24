@@ -237,7 +237,7 @@ async function countProcessInstances(
 
 async function runBatchAndWaitForCompletion(
   request: APIRequestContext,
-  endpoint: string,
+  endpoint: '/process-instances/cancellation' | '/process-instances/deletion',
   filter: Record<string, unknown>,
 ): Promise<void> {
   const res = await request.post(buildUrl(endpoint), {
