@@ -195,10 +195,6 @@ public class CamundaProcessTestExtension
     }
   }
 
-  private void waitForClusterReady() {
-    CamundaRuntimeHealthChecker.waitUntilClusterReady(runtime.getCamundaClientBuilderFactory());
-  }
-
   private boolean hasProcessTestExtension(final ExtensionContext context) {
     return hasProcessTestAnnotation(context) || hasProcessTestField(context);
   }
@@ -228,9 +224,6 @@ public class CamundaProcessTestExtension
               + "Make sure that you registering the extension on a static field.");
     }
 
-    // wait until the cluster is ready to accept new operations, retrying until success or timeout
-    waitForClusterReady();
-
     // inject fields
     try {
       injectField(context, CamundaClient.class, camundaProcessTestContext::createClient);
@@ -249,6 +242,9 @@ public class CamundaProcessTestExtension
 
     // initialize result collector
     processTestResultCollector = new CamundaProcessTestResultCollector(dataSource);
+
+    // wait until the cluster is ready to accept new operations, retrying until success or timeout
+    runtime.waitUntilClusterReady(Duration.ofSeconds(10));
   }
 
   private <T> void injectField(

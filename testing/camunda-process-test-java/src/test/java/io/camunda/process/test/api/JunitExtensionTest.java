@@ -16,7 +16,9 @@
 package io.camunda.process.test.api;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -359,6 +361,39 @@ public class JunitExtensionTest {
   @CamundaProcessTest
   private static final class MainProcessTest {
     static class NestedProcessTest {}
+  }
+
+  @Nested
+  class BeforeEachTests {
+
+    @Test
+    void shouldWaitForClusterToBeReady() throws Exception {
+      // given
+      final CamundaProcessTestExtension extension =
+          new CamundaProcessTestExtension(camundaRuntimeBuilder, processCoverageBuilder, NOOP);
+
+      // when
+      extension.beforeAll(extensionContext);
+      extension.beforeEach(extensionContext);
+
+      // then
+      verify(camundaContainerRuntime).waitUntilClusterReady(any());
+    }
+
+    @Test
+    void shouldFailIfClusterIsNotReady() {
+      // given
+      final CamundaProcessTestExtension extension =
+          new CamundaProcessTestExtension(camundaRuntimeBuilder, processCoverageBuilder, NOOP);
+
+      final RuntimeException exception = new RuntimeException("Expected: cluster not ready");
+      doThrow(exception).when(camundaContainerRuntime).waitUntilClusterReady(any());
+
+      extension.beforeAll(extensionContext);
+
+      // when/then
+      assertThatThrownBy(() -> extension.beforeEach(extensionContext)).isEqualTo(exception);
+    }
   }
 
   @Nested

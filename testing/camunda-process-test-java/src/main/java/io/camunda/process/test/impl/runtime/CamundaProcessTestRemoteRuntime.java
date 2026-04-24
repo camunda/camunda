@@ -71,9 +71,7 @@ public class CamundaProcessTestRemoteRuntime implements CamundaProcessTestRuntim
 
     // check connection to remote runtime
     try {
-      final Topology topology =
-          CamundaRuntimeHealthChecker.waitUntilClusterReady(
-              camundaClientBuilderFactory, runtimeConnectionTimeout);
+      final Topology topology = waitUntilClusterReady(runtimeConnectionTimeout);
       LOGGER.info("Remote Camunda runtime connected. [version: {}]", topology.getGatewayVersion());
     } catch (final RuntimeException e) {
       throw new RuntimeException("Failed to connect to remote Camunda runtime.", e);
@@ -103,6 +101,11 @@ public class CamundaProcessTestRemoteRuntime implements CamundaProcessTestRuntim
   @Override
   public CamundaClientBuilderFactory getCamundaClientBuilderFactory() {
     return camundaClientBuilderFactory;
+  }
+
+  @Override
+  public Topology waitUntilClusterReady(final Duration timeout) {
+    return CamundaRuntimeHealthChecker.waitUntilClusterReady(camundaClientBuilderFactory, timeout);
   }
 
   private CamundaClientConfiguration getClientConfiguration(

@@ -16,6 +16,9 @@
 package io.camunda.process.test.api;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -47,6 +50,7 @@ import java.net.URI;
 import java.util.List;
 import java.util.function.Consumer;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Answers;
@@ -450,6 +454,41 @@ public class ExecutionListenerTest {
       cmcField.set(listener, camundaProcessTestResultCollector);
     } catch (final Throwable t) {
       throw new RuntimeException(t);
+    }
+  }
+
+  @Nested
+  class BeforeEachTests {
+
+    @Test
+    void shouldWaitForClusterToBeReady() {
+      // given
+      final CamundaProcessTestExecutionListener listener =
+          new CamundaProcessTestExecutionListener(
+              camundaRuntimeBuilder, processCoverageBuilder, NOOP);
+
+      // when
+      listener.beforeTestClass(testContext);
+      listener.beforeTestMethod(testContext);
+
+      // then
+      verify(camundaContainerRuntime).waitUntilClusterReady(any());
+    }
+
+    @Test
+    void shouldFailIfClusterIsNotReady() {
+      // given
+      final CamundaProcessTestExecutionListener listener =
+          new CamundaProcessTestExecutionListener(
+              camundaRuntimeBuilder, processCoverageBuilder, NOOP);
+
+      final RuntimeException exception = new RuntimeException("Expected: cluster not ready");
+      doThrow(exception).when(camundaContainerRuntime).waitUntilClusterReady(any());
+
+      listener.beforeTestClass(testContext);
+
+      // when/then
+      assertThatThrownBy(() -> listener.beforeTestMethod(testContext)).isEqualTo(exception);
     }
   }
 }
