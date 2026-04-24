@@ -83,7 +83,7 @@ public final class ExecutionListenerTransformer {
         .flatMap(l -> requireNotNull(l, l::getRetries, "retries"))
         .ifRightOrLeft(
             ok -> {
-              flowNode.addListener(
+              flowNode.addExecutionListener(
                   ok.getEventType(),
                   expressionLanguage.parseExpression(ok.getType()),
                   expressionLanguage.parseExpression(ok.getRetries()),
