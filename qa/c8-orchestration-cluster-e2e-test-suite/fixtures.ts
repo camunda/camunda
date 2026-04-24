@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {test as base} from '@playwright/test';
+import {test as base, expect} from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 import {OperateHomePage} from '@pages/OperateHomePage';
 import {TaskPanelPage} from '@pages/TaskPanelPage';
@@ -36,6 +36,7 @@ import {IdentityRolesDetailsPage} from '@pages/IdentityRolesDetailsPage';
 import {IdentityAuditLogPage} from '@pages/IdentityAuditLogPage';
 import {OperateOperationsDetailsPage} from '@pages/OperateOperationsDetailsPage';
 import {OperateOperationsLogPage} from '@pages/OperateOperationsLogPage';
+import {buildUrl, jsonHeaders} from 'utils/http';
 
 type PlaywrightFixtures = {
   makeAxeBuilder: () => AxeBuilder;
@@ -152,6 +153,40 @@ const test = base.extend<PlaywrightFixtures>({
   },
   tasklistProcessesPage: async ({page}, use) => {
     await use(new TasklistProcessesPage(page));
+  },
+  resetData: async ({request}, use) => {
+    await use(async () => {
+      const res = await request.post(
+        buildUrl('/process-instances/cancellation'),
+        {
+          headers: jsonHeaders(),
+          data: {
+            filter: {
+              state: 'ACTIVE',
+            },
+          },
+        },
+      );
+
+      if (res.status() !== 200) {
+        return;
+      }
+
+      const json = await res.json();
+      const batchKey = json.batchOperationKey;
+
+      await expect(async () => {
+        const statusRes = await request.get(
+          buildUrl(`/batch-operations/${batchKey}`),
+          {headers: jsonHeaders()},
+        );
+        const body = await statusRes.json();
+        expect(body.state).toBe('COMPLETED');
+      }).toPass({
+        intervals: [2_000, 5_000, 10_000, 15_000],
+        timeout: 60_000,
+      });
+    });
   },
   publicFormsPage: async ({page}, use) => {
     await use(new PublicFormsPage(page));
