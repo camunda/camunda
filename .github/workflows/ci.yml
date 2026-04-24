@@ -1441,6 +1441,10 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions: { }  # GITHUB_TOKEN unused in this job
+    env:
+      TEST_OWNER: Identity
+      TEST_PRODUCT: Identity
+      TEST_TYPE: Tool
     defaults:
       run:
         working-directory: identity/client
