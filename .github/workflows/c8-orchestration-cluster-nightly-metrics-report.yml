@@ -64,14 +64,20 @@ jobs:
 
           status_emoji() {
             case "$1" in
-              success)   echo "✅" ;;
-              failure)   echo "❌" ;;
-              cancelled) echo "⚠️" ;;
-              no_runs)   echo "⏳" ;;
-              *)         echo "❓" ;;
+              success)   echo ":white_check_mark:" ;;
+              failure)   echo ":x:" ;;
+              cancelled) echo ":warning:" ;;
+              no_runs)   echo ":hourglass:" ;;
+              *)         echo ":question:" ;;
             esac
           }
 
+          # Global counters for overall summary
+          TOTAL_RUNS=0
+          TOTAL_SUCCESS=0
+
+          # Build a single result line and update global counters.
+          # Sets BUILD_LINE_RESULT with the formatted line.
           build_line() {
             local label="$1"
             local workflow_file="$2"
@@ -81,41 +87,112 @@ jobs:
             local url="${status_line#* }"
             local emoji
             emoji=$(status_emoji "$conclusion")
-            echo "${emoji} ${label} — <${url}|View Run>"
+
+            TOTAL_RUNS=$((TOTAL_RUNS + 1))
+            if [[ "$conclusion" == "success" ]]; then
+              TOTAL_SUCCESS=$((TOTAL_SUCCESS + 1))
+            fi
+
+            BUILD_LINE_RESULT="${emoji} ${label} — <${url}|View Run>"
           }
 
-          TODAY=$(date -u +"%Y-%m-%d")
+          calc_percent() {
+            local s=$1 t=$2
+            if [[ $t -gt 0 ]]; then
+              awk "BEGIN {printf \"%.1f\", ($s/$t)*100}"
+            else
+              echo "0.0"
+            fi
+          }
 
+          # ── Collect results per category ────────────────────────────────────
+          # Each category tracks its own success/total for the category header.
+
+          # — API Tests — Elasticsearch (versions ASC) —
+          api_es_success=0; api_es_total=0; api_es_lines=""
+          for entry in \
+            "8.7|c8-orchestration-cluster-nightly-8.7-api-es.yml" \
+            "8.8|c8-orchestration-cluster-nightly-8.8-api-es.yml" \
+            "8.9|c8-orchestration-cluster-nightly-8.9-api-es.yml" \
+            "main|c8-orchestration-cluster-nightly-main-api-es.yml"; do
+            build_line "${entry%%|*}" "${entry#*|}"
+            api_es_lines+="${BUILD_LINE_RESULT}"$'\n'
+            api_es_total=$((api_es_total + 1))
+            [[ "$BUILD_LINE_RESULT" == ":white_check_mark:"* ]] && api_es_success=$((api_es_success + 1))
+          done
+
+          # — API Tests — RDBMS (versions ASC) —
+          api_rdbms_success=0; api_rdbms_total=0; api_rdbms_lines=""
+          for entry in \
+            "8.9|c8-orchestration-cluster-nightly-8.9-api-rdbms.yml" \
+            "main|c8-orchestration-cluster-nightly-main-api-rdbms.yml"; do
+            build_line "${entry%%|*}" "${entry#*|}"
+            api_rdbms_lines+="${BUILD_LINE_RESULT}"$'\n'
+            api_rdbms_total=$((api_rdbms_total + 1))
+            [[ "$BUILD_LINE_RESULT" == ":white_check_mark:"* ]] && api_rdbms_success=$((api_rdbms_success + 1))
+          done
+
+          # — E2E Tests (versions ASC) —
+          e2e_success=0; e2e_total=0; e2e_lines=""
+          for entry in \
+            "8.7|c8-orchestration-cluster-nightly-8.7-e2e.yml" \
+            "8.8|c8-orchestration-cluster-nightly-8.8-e2e.yml" \
+            "8.9|c8-orchestration-cluster-nightly-8.9-e2e.yml" \
+            "main|c8-orchestration-cluster-nightly-main-e2e.yml"; do
+            build_line "${entry%%|*}" "${entry#*|}"
+            e2e_lines+="${BUILD_LINE_RESULT}"$'\n'
+            e2e_total=$((e2e_total + 1))
+            [[ "$BUILD_LINE_RESULT" == ":white_check_mark:"* ]] && e2e_success=$((e2e_success + 1))
+          done
+
+          # ── Compute overall summary ─────────────────────────────────────────
+          TOTAL_FAILURE=$((TOTAL_RUNS - TOTAL_SUCCESS))
+          OVERALL_PERCENT=$(calc_percent "$TOTAL_SUCCESS" "$TOTAL_RUNS")
+          TODAY=$(date -u +"%d.%m.%Y")
+
+          # ── Write outputs ───────────────────────────────────────────────────
           {
-            # ── API Tests (versions in ASC order) ───────────────────────────────
-            echo "API_REPORT<<EOF"
-            echo "*🔌 API Tests*"
-            build_line "8.7 — ES" "c8-orchestration-cluster-nightly-8.7-api-es.yml"
-            build_line "8.8 — ES" "c8-orchestration-cluster-nightly-8.8-api-es.yml"
-            build_line "8.9 — ES" "c8-orchestration-cluster-nightly-8.9-api-es.yml"
-            build_line "8.9 — RDBMS" "c8-orchestration-cluster-nightly-8.9-api-rdbms.yml"
-            build_line "main — ES" "c8-orchestration-cluster-nightly-main-api-es.yml"
-            build_line "main — RDBMS" "c8-orchestration-cluster-nightly-main-api-rdbms.yml"
-            echo "EOF"
-
-            # ── E2E Tests (versions in ASC order) ───────────────────────────────
-            echo "E2E_REPORT<<EOF"
-            echo "*🧪 E2E Tests*"
-            build_line "8.7" "c8-orchestration-cluster-nightly-8.7-e2e.yml"
-            build_line "8.8" "c8-orchestration-cluster-nightly-8.8-e2e.yml"
-            build_line "8.9" "c8-orchestration-cluster-nightly-8.9-e2e.yml"
-            build_line "main" "c8-orchestration-cluster-nightly-main-e2e.yml"
-            echo "EOF"
-
             echo "REPORT_DATE=${TODAY}"
+
+            echo "SUMMARY<<EOF"
+            echo "Summary: ${TOTAL_RUNS} total runs | :white_check_mark: ${TOTAL_SUCCESS} success | :x: ${TOTAL_FAILURE} failure | :bar_chart: ${OVERALL_PERCENT}%"
+            echo "EOF"
+
+            echo "API_ES_REPORT<<EOF"
+            echo "━━ *API Tests — Elasticsearch* ━━"
+            echo ":bar_chart: Success Rate: $(calc_percent $api_es_success $api_es_total)% (${api_es_success}/${api_es_total})"
+            printf '%s' "$api_es_lines"
+            echo "EOF"
+
+            echo "API_RDBMS_REPORT<<EOF"
+            echo "━━ *API Tests — RDBMS* ━━"
+            echo ":bar_chart: Success Rate: $(calc_percent $api_rdbms_success $api_rdbms_total)% (${api_rdbms_success}/${api_rdbms_total})"
+            printf '%s' "$api_rdbms_lines"
+            echo "EOF"
+
+            echo "E2E_REPORT<<EOF"
+            echo "━━ *E2E Tests* ━━"
+            echo ":bar_chart: Success Rate: $(calc_percent $e2e_success $e2e_total)% (${e2e_success}/${e2e_total})"
+            printf '%s' "$e2e_lines"
+            echo "EOF"
           } >> "$GITHUB_OUTPUT"
 
       - name: Debug report output
         if: github.event_name == 'workflow_dispatch'
         run: |
-          echo "API Report:"
+          echo "Summary:"
           cat <<'BLOCK'
-          ${{ steps.report.outputs.API_REPORT }}
+          ${{ steps.report.outputs.SUMMARY }}
+          BLOCK
+          echo ""
+          echo "API ES Report:"
+          cat <<'BLOCK'
+          ${{ steps.report.outputs.API_ES_REPORT }}
+          BLOCK
+          echo ""
+          echo "API RDBMS Report:"
+          cat <<'BLOCK'
+          ${{ steps.report.outputs.API_RDBMS_REPORT }}
           BLOCK
           echo ""
           echo "E2E Report:"
@@ -135,11 +212,21 @@ jobs:
               - type: "header"
                 text:
                   type: "plain_text"
-                  text: "📊 C8 Orchestration Cluster Nightly Report — ${{ steps.report.outputs.REPORT_DATE }}"
+                  text: ":crescent_moon: C8 Orchestration Cluster Nightly Report — ${{ steps.report.outputs.REPORT_DATE }}"
               - type: "section"
                 text:
                   type: "mrkdwn"
-                  text: ${{ toJSON(steps.report.outputs.API_REPORT) }}
+                  text: ${{ toJSON(steps.report.outputs.SUMMARY) }}
+              - type: "divider"
+              - type: "section"
+                text:
+                  type: "mrkdwn"
+                  text: ${{ toJSON(steps.report.outputs.API_ES_REPORT) }}
+              - type: "divider"
+              - type: "section"
+                text:
+                  type: "mrkdwn"
+                  text: ${{ toJSON(steps.report.outputs.API_RDBMS_REPORT) }}
               - type: "divider"
               - type: "section"
                 text:
