@@ -24,6 +24,8 @@ import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.test.util.BrokerClassRuleHelper;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
+import java.util.List;
+import java.util.Map;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -180,6 +182,163 @@ public class ExecutionListenerJobTest {
             tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_COMPLETING),
             tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.COMPLETE_EXECUTION_LISTENER),
             tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_COMPLETED));
+  }
+
+  @Test
+  public void shouldCompleteBeforeAllExecutionListenerJobOnMultiInstanceActivity() {
+    // given
+    final String beforeAllElJobType = helper.getBeforeAllExecutionListenerType();
+    final String serviceTaskJobType = helper.getJobType();
+
+    // multi-instance service task with a single beforeAll execution listener that supplies the
+    // input collection
+    final BpmnModelInstance modelInstance =
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .serviceTask(
+                "task",
+                t ->
+                    t.zeebeJobType(serviceTaskJobType)
+                        .zeebeBeforeAllExecutionListener(beforeAllElJobType)
+                        .multiInstance(
+                            m ->
+                                m.parallel()
+                                    .zeebeInputCollectionExpression("items")
+                                    .zeebeInputElement("item")))
+            .endEvent()
+            .done();
+    final long processDefinitionKey = CLIENT_RULE.deployProcess(modelInstance);
+    final long processInstanceKey = CLIENT_RULE.createProcessInstance(processDefinitionKey, "{}");
+
+    final RecordingJobHandler elJobHandler = new RecordingJobHandler();
+    final RecordingJobHandler serviceTaskHandler = new RecordingJobHandler();
+    CLIENT_RULE.getClient().newWorker().jobType(beforeAllElJobType).handler(elJobHandler).open();
+    CLIENT_RULE
+        .getClient()
+        .newWorker()
+        .jobType(serviceTaskJobType)
+        .handler(serviceTaskHandler)
+        .open();
+
+    // when
+    waitUntilJobHandled(elJobHandler, beforeAllElJobType);
+    final ActivatedJob beforeAllJob = elJobHandler.getHandledJobs().getFirst();
+
+    // then: beforeAll job exists and the multi-instance body has not yet activated any inner
+    // service task jobs
+    assertThat(beforeAllJob.getType()).isEqualTo(beforeAllElJobType);
+    assertThat(serviceTaskHandler.getHandledJobs())
+        .as("service task jobs should not be created before the beforeAll listener completes")
+        .isEmpty();
+
+    final List<Integer> items = List.of(1, 2, 3);
+    CLIENT_RULE
+        .getClient()
+        .newCompleteCommand(beforeAllJob.getKey())
+        .variables(Map.of("items", items))
+        .send()
+        .join();
+
+    // and: each inner instance produces a service task job, and the process completes
+    waitUntil(() -> serviceTaskHandler.getHandledJobs().size() == items.size());
+    serviceTaskHandler
+        .getHandledJobs()
+        .forEach(j -> CLIENT_RULE.getClient().newCompleteCommand(j.getKey()).send().join());
+
+    waitUntil(
+        () ->
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withElementType(BpmnElementType.PROCESS)
+                .exists());
+
+    // and: the multi-instance body activated only after the beforeAll listener completed
+    assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limitToProcessInstanceCompleted())
+        .extracting(r -> r.getValue().getBpmnElementType(), Record::getIntent)
+        .containsSubsequence(
+            tuple(BpmnElementType.MULTI_INSTANCE_BODY, ProcessInstanceIntent.ELEMENT_ACTIVATING),
+            tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_COMPLETED));
+  }
+
+  @Test
+  public void shouldExecuteMultipleBeforeAllExecutionListenersInDeclarationOrder() {
+    // given
+    final String beforeAllElJobType1 = helper.getBeforeAllExecutionListenerType().concat("-1");
+    final String beforeAllElJobType2 = helper.getBeforeAllExecutionListenerType().concat("-2");
+    final String serviceTaskJobType = helper.getJobType();
+
+    final BpmnModelInstance modelInstance =
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .serviceTask(
+                "task",
+                t ->
+                    t.zeebeJobType(serviceTaskJobType)
+                        .zeebeBeforeAllExecutionListener(beforeAllElJobType1)
+                        .zeebeBeforeAllExecutionListener(beforeAllElJobType2)
+                        .multiInstance(
+                            m ->
+                                m.sequential()
+                                    .zeebeInputCollectionExpression("items")
+                                    .zeebeInputElement("item")))
+            .endEvent()
+            .done();
+    final long processDefinitionKey = CLIENT_RULE.deployProcess(modelInstance);
+    final long processInstanceKey = CLIENT_RULE.createProcessInstance(processDefinitionKey, "{}");
+
+    final RecordingJobHandler elJobHandler = new RecordingJobHandler();
+    final RecordingJobHandler serviceTaskHandler = new RecordingJobHandler();
+    CLIENT_RULE.getClient().newWorker().jobType(beforeAllElJobType1).handler(elJobHandler).open();
+    CLIENT_RULE.getClient().newWorker().jobType(beforeAllElJobType2).handler(elJobHandler).open();
+    CLIENT_RULE
+        .getClient()
+        .newWorker()
+        .jobType(serviceTaskJobType)
+        .handler(serviceTaskHandler)
+        .open();
+
+    // when: complete the first beforeAll listener with a payload
+    waitUntilJobHandled(elJobHandler, beforeAllElJobType1);
+    final long firstElJobKey = getHandledJobKey(elJobHandler, beforeAllElJobType1);
+    CLIENT_RULE
+        .getClient()
+        .newCompleteCommand(firstElJobKey)
+        .variables(Map.of("items", List.of(1, 2)))
+        .send()
+        .join();
+
+    // then: second beforeAll listener is activated only AFTER the first completes (declaration
+    // order) and can read the variable produced by the first listener
+    waitUntil(() -> elJobHandler.getHandledJobs().size() == 2);
+    final ActivatedJob secondElActivatedJob = elJobHandler.getHandledJobs().getLast();
+    assertThat(secondElActivatedJob.getType()).isEqualTo(beforeAllElJobType2);
+    assertThat(secondElActivatedJob.getVariablesAsMap()).containsEntry("items", List.of(1, 2));
+
+    ZeebeAssertHelper.assertJobCompleted(beforeAllElJobType1);
+
+    // and: complete the second beforeAll listener and the resulting service-task jobs so the
+    // process instance terminates and does not leak into other tests sharing the embedded broker
+    final long secondElJobKey = secondElActivatedJob.getKey();
+    CLIENT_RULE.getClient().newCompleteCommand(secondElJobKey).send().join();
+
+    // sequential multi-instance produces one service-task job at a time; complete each as it
+    // becomes available until both inner instances have finished
+    for (int completed = 0; completed < 2; completed++) {
+      final int expected = completed + 1;
+      waitUntil(() -> serviceTaskHandler.getHandledJobs().size() >= expected);
+      final ActivatedJob nextJob = serviceTaskHandler.getHandledJobs().get(completed);
+      CLIENT_RULE.getClient().newCompleteCommand(nextJob.getKey()).send().join();
+    }
+
+    waitUntil(
+        () ->
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withElementType(BpmnElementType.PROCESS)
+                .exists());
   }
 
   private static void completeJobWithType(
