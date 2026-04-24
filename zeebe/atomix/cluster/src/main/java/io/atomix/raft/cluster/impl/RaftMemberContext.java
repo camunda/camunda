@@ -25,6 +25,7 @@ import io.atomix.raft.storage.log.RaftLog;
 import io.atomix.raft.storage.log.RaftLogReader;
 import io.camunda.zeebe.snapshots.SnapshotChunkReader;
 import java.nio.ByteBuffer;
+import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 import org.slf4j.LoggerFactory;
 
 /** Cluster member state. */
@@ -32,6 +33,7 @@ public final class RaftMemberContext {
 
   private static final int APPEND_WINDOW_SIZE = 8;
   private final DefaultRaftMember member;
+  private final DescriptiveStatistics timeStats = new DescriptiveStatistics(APPEND_WINDOW_SIZE);
   private final int maxAppendsPerMember;
   private boolean open = true;
   private long term;
@@ -69,6 +71,7 @@ public final class RaftMemberContext {
     heartbeatTime = 0;
     responseTime = 0;
     inFlightAppendCount = 0;
+    timeStats.clear();
     configuring = false;
     installing = false;
     appendSucceeded = false;
@@ -147,7 +150,10 @@ public final class RaftMemberContext {
   public boolean canAppend() {
     return open
         && (inFlightAppendCount == 0
-            || (appendSucceeded && inFlightAppendCount < maxAppendsPerMember));
+            || (appendSucceeded
+                && inFlightAppendCount < maxAppendsPerMember
+                && System.currentTimeMillis() - (timeStats.getMean() / maxAppendsPerMember)
+                    >= appendTime));
   }
 
   /**
@@ -186,6 +192,16 @@ public final class RaftMemberContext {
   /** Completes an append request to the member. */
   public void completeAppend() {
     inFlightAppendCount--;
+  }
+
+  /**
+   * Completes an append request to the member.
+   *
+   * @param time The time in milliseconds for the append.
+   */
+  public void completeAppend(final long time) {
+    inFlightAppendCount--;
+    timeStats.addValue(time);
   }
 
   /**
