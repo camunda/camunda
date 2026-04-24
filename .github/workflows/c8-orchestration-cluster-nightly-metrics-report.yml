@@ -106,9 +106,9 @@ jobs:
           }
 
           # ── Collect results per category ────────────────────────────────────
-          # Each category tracks its own success/total for the category header.
+          # Each parent category (API, E2E) has subcategories (Elasticsearch, RDBMS).
 
-          # — API Tests — Elasticsearch (versions ASC) —
+          # — API — Elasticsearch (versions ASC) —
           api_es_success=0; api_es_total=0; api_es_lines=""
           for entry in \
             "8.7|c8-orchestration-cluster-nightly-8.7-api-es.yml" \
@@ -121,7 +121,7 @@ jobs:
             [[ "$BUILD_LINE_RESULT" == ":white_check_mark:"* ]] && api_es_success=$((api_es_success + 1))
           done
 
-          # — API Tests — RDBMS (versions ASC) —
+          # — API — RDBMS (versions ASC) —
           api_rdbms_success=0; api_rdbms_total=0; api_rdbms_lines=""
           for entry in \
             "8.9|c8-orchestration-cluster-nightly-8.9-api-rdbms.yml" \
@@ -132,18 +132,36 @@ jobs:
             [[ "$BUILD_LINE_RESULT" == ":white_check_mark:"* ]] && api_rdbms_success=$((api_rdbms_success + 1))
           done
 
-          # — E2E Tests (versions ASC) —
-          e2e_success=0; e2e_total=0; e2e_lines=""
+          # — E2E — Elasticsearch (versions ASC) —
+          e2e_es_success=0; e2e_es_total=0; e2e_es_lines=""
           for entry in \
             "8.7|c8-orchestration-cluster-nightly-8.7-e2e.yml" \
             "8.8|c8-orchestration-cluster-nightly-8.8-e2e.yml" \
             "8.9|c8-orchestration-cluster-nightly-8.9-e2e.yml" \
             "main|c8-orchestration-cluster-nightly-main-e2e.yml"; do
             build_line "${entry%%|*}" "${entry#*|}"
-            e2e_lines+="${BUILD_LINE_RESULT}"$'\n'
-            e2e_total=$((e2e_total + 1))
-            [[ "$BUILD_LINE_RESULT" == ":white_check_mark:"* ]] && e2e_success=$((e2e_success + 1))
+            e2e_es_lines+="${BUILD_LINE_RESULT}"$'\n'
+            e2e_es_total=$((e2e_es_total + 1))
+            [[ "$BUILD_LINE_RESULT" == ":white_check_mark:"* ]] && e2e_es_success=$((e2e_es_success + 1))
           done
+
+          # — E2E — RDBMS (versions ASC) —
+          # NOTE: No E2E RDBMS nightly workflows exist yet. Uncomment when added.
+          # e2e_rdbms_success=0; e2e_rdbms_total=0; e2e_rdbms_lines=""
+          # for entry in \
+          #   "8.9|c8-orchestration-cluster-nightly-8.9-e2e-rdbms.yml" \
+          #   "main|c8-orchestration-cluster-nightly-main-e2e-rdbms.yml"; do
+          #   build_line "${entry%%|*}" "${entry#*|}"
+          #   e2e_rdbms_lines+="${BUILD_LINE_RESULT}"$'\n'
+          #   e2e_rdbms_total=$((e2e_rdbms_total + 1))
+          #   [[ "$BUILD_LINE_RESULT" == ":white_check_mark:"* ]] && e2e_rdbms_success=$((e2e_rdbms_success + 1))
+          # done
+
+          # ── Combined category totals ─────────────────────────────────────────
+          api_success=$((api_es_success + api_rdbms_success))
+          api_total=$((api_es_total + api_rdbms_total))
+          e2e_success=$((e2e_es_success))
+          e2e_total=$((e2e_es_total))
 
           # ── Compute overall summary ─────────────────────────────────────────
           TOTAL_FAILURE=$((TOTAL_RUNS - TOTAL_SUCCESS))
@@ -158,22 +176,26 @@ jobs:
             echo "Summary: ${TOTAL_RUNS} total runs | :white_check_mark: ${TOTAL_SUCCESS} success | :x: ${TOTAL_FAILURE} failure | :bar_chart: ${OVERALL_PERCENT}%"
             echo "EOF"
 
-            echo "API_ES_REPORT<<EOF"
-            echo "━━ *API Tests — Elasticsearch* ━━"
+            echo "API_REPORT<<EOF"
+            echo "━━ *API Tests* ━━"
+            echo ":bar_chart: Overall: $(calc_percent $api_success $api_total)% (${api_success}/${api_total})"
+            echo ""
+            echo "*Elasticsearch*"
             echo ":bar_chart: Success Rate: $(calc_percent $api_es_success $api_es_total)% (${api_es_success}/${api_es_total})"
             printf '%s' "$api_es_lines"
-            echo "EOF"
-
-            echo "API_RDBMS_REPORT<<EOF"
-            echo "━━ *API Tests — RDBMS* ━━"
+            echo ""
+            echo "*RDBMS*"
             echo ":bar_chart: Success Rate: $(calc_percent $api_rdbms_success $api_rdbms_total)% (${api_rdbms_success}/${api_rdbms_total})"
             printf '%s' "$api_rdbms_lines"
             echo "EOF"
 
             echo "E2E_REPORT<<EOF"
             echo "━━ *E2E Tests* ━━"
-            echo ":bar_chart: Success Rate: $(calc_percent $e2e_success $e2e_total)% (${e2e_success}/${e2e_total})"
-            printf '%s' "$e2e_lines"
+            echo ":bar_chart: Overall: $(calc_percent $e2e_success $e2e_total)% (${e2e_success}/${e2e_total})"
+            echo ""
+            echo "*Elasticsearch*"
+            echo ":bar_chart: Success Rate: $(calc_percent $e2e_es_success $e2e_es_total)% (${e2e_es_success}/${e2e_es_total})"
+            printf '%s' "$e2e_es_lines"
             echo "EOF"
           } >> "$GITHUB_OUTPUT"
 
@@ -185,14 +207,9 @@ jobs:
           ${{ steps.report.outputs.SUMMARY }}
           BLOCK
           echo ""
-          echo "API ES Report:"
+          echo "API Report:"
           cat <<'BLOCK'
-          ${{ steps.report.outputs.API_ES_REPORT }}
-          BLOCK
-          echo ""
-          echo "API RDBMS Report:"
-          cat <<'BLOCK'
-          ${{ steps.report.outputs.API_RDBMS_REPORT }}
+          ${{ steps.report.outputs.API_REPORT }}
           BLOCK
           echo ""
           echo "E2E Report:"
@@ -221,12 +238,7 @@ jobs:
               - type: "section"
                 text:
                   type: "mrkdwn"
-                  text: ${{ toJSON(steps.report.outputs.API_ES_REPORT) }}
-              - type: "divider"
-              - type: "section"
-                text:
-                  type: "mrkdwn"
-                  text: ${{ toJSON(steps.report.outputs.API_RDBMS_REPORT) }}
+                  text: ${{ toJSON(steps.report.outputs.API_REPORT) }}
               - type: "divider"
               - type: "section"
                 text:
