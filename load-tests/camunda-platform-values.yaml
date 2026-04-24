@@ -130,7 +130,6 @@ connectors:
 
 webModeler:
   enabled: false
-  fullnameOverride: web-modeler # we override the names for simplicity of the deployment
 
 postgresql:
   enabled: false
@@ -180,7 +179,6 @@ orchestration:
           resourceId: "*"
           permissions:
             - CREATE
-
   # For simplicity of the deployment, we override the names to camunda
   # This means we will have pods like: camunda-0, camunda-1, camunda-2
   fullnameOverride: camunda
@@ -287,6 +285,7 @@ orchestration:
     # but can be overridden via --set-file for specific scenarios (e.g. max)
     # to change settings like disabling consistency checks without duplicating the full application.yml content.
     application-override.yml: "# no overrides"
+
   # Zeebe config
   extraVolumes:
     - name: logs
@@ -326,7 +325,7 @@ orchestration:
     # See https://github.com/camunda/camunda-platform-helm/issues/2197
     - name: SPRING_CONFIG_ADDITIONALLOCATION
       # application-override.yml is listed second so it has higher priority and can override application.yml.
-      # Marked optional so Spring does not fail when this file is not mounted (e.g. RDBMS / no-secondary-storage scenarios).
+      # Marked optional so Spring does not fail if this file is not mounted in a given deployment configuration.
       value: "/usr/local/camunda/config/application.yml,optional:/usr/local/camunda/config/application-override.yml"
 
 # Change these settings to configure a different way to collect metrics

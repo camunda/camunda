@@ -84,10 +84,10 @@ All components are configured in `camunda-platform-values.yaml`.
 
 ### How to set up a load test namespace
 
-If you run `newBenchmark.sh` without arguments, it will display the following help message.
+If you run `newLoadTest.sh` without arguments, it will display the following help message.
 
 ```sh
-Usage: newBenchmark.sh <namespace> [secondaryStorage] [ttl_days] [enable_optimize]
+Usage: newLoadTest.sh <namespace> [secondaryStorage] [ttl_days] [enable_optimize]
 
 Arguments:
   namespace          Base namespace name. Will be prefixed with "c8-" if missing.
@@ -99,8 +99,8 @@ Options:
   -h, --help         Show this help message.
 
 Examples:
-  ./newBenchmark.sh demo
-  ./newBenchmark.sh perf opensearch 3 true
+  ./newLoadTest.sh demo
+  ./newLoadTest.sh perf opensearch 3 true
 ```
 
 As you can see, you can create a test (namespace) by passing a name; other parameters are optional. Like, secondary storage, TTL, and whether Optimize should be enabled.
@@ -108,21 +108,21 @@ As you can see, you can create a test (namespace) by passing a name; other param
 Example:
 
 ```sh
-. ./newBenchmark.sh my-load-test-name
+. ./newLoadTest.sh my-load-test-name
 ```
 
-This will source and run the `newBenchmark.sh` script, which means it will create a new Kubernetes namespace. Furthermore, a new folder will be created with the given name.
-If you used `.` before `./newBenchmark.sh`, the script will change your directory after running, so you can directly start to configure your load test.
+This will source and run the `newLoadTest.sh` script, which means it will create a new Kubernetes namespace. Furthermore, a new folder will be created with the given name.
+If you used `.` before `./newLoadTest.sh`, the script will change your directory after running, so you can directly start to configure your load test.
 
 #### Secondary storage options
 
 You can specify a secondary storage type as the second argument:
 
-```
-. ./newBenchmark.sh my-load-test-name elasticsearch  # Default - uses Elasticsearch
-. ./newBenchmark.sh my-load-test-name opensearch     # Uses OpenSearch
-. ./newBenchmark.sh my-load-test-name postgresql     # Uses PostgreSQL (RDBMS)
-. ./newBenchmark.sh my-load-test-name none           # No secondary storage
+```sh
+. ./newLoadTest.sh my-load-test-name elasticsearch  # Default - uses Elasticsearch
+. ./newLoadTest.sh my-load-test-name opensearch     # Uses OpenSearch
+. ./newLoadTest.sh my-load-test-name postgresql     # Uses PostgreSQL (RDBMS)
+. ./newLoadTest.sh my-load-test-name none           # No secondary storage
 ```
 
 The `none` option runs load tests without any secondary storage, which disables Camunda exporters. This is useful for testing the core orchestration engine performance in isolation.
@@ -238,8 +238,8 @@ make template-load-test scenario=max  # renders load test manifests
 After you're done with your load test, you should remove the remaining namespace.
 In order to do this easily, just run:
 
-```
-./deleteBenchmark.sh my-load-test-name
+```sh
+./deleteLoadTest.sh my-load-test-name
 ```
 
 This will switch to the default namespace, delete the given namespace, and delete the corresponding folder.
@@ -273,13 +273,13 @@ The `clean` job works regardless and cleans up both the platform and load-test d
 _You need a Kubernetes Cluster at your disposal to run the load test itself, which then connects to your Camunda SaaS Cluster._
 
 ```sh
-./newCloudBenchmark.sh <namespace>
+./newCloudLoadTest.sh <namespace>
 ```
 
-Similar to the `newBenchmark.sh`, it will create a new Kubernetes namespace and a new folder with the given name.
+Similar to the `newLoadTest.sh`, it will create a new Kubernetes namespace and a new folder with the given name.
 Afterwards, we can deploy our load test applications (via the [Load Test Helm Chart](https://github.com/camunda/camunda-load-tests-helm)).
 
-Before doing that, you need to provide the Camunda SaaS credentials for the cluster you want to test. The `newCloudBenchmark.sh` script has already created a `credentials.txt` file inside the newly created namespace folder.
+Before doing that, you need to provide the Camunda SaaS credentials for the cluster you want to test. The `newCloudLoadTest.sh` script has already created a `credentials.txt` file inside the newly created namespace folder.
 
 Download the Camunda SaaS credentials (the file containing the required environment variables) and either copy its contents into the generated `credentials.txt` file or replace `credentials.txt` with the downloaded file (keeping the filename `credentials.txt`).
 
@@ -294,7 +294,7 @@ make install-load-test
 By default, we will run an artificial load against the configured SaaS cluster. If you want to change this to some more realistic or typical workload, you can use the following targets.
 
 ```sh
-# Run typical workload, with 10 tasks 
+# Run typical workload, with 10 tasks
 make typical
 
 # Run a realistic workload with multi-instance call activities, etc.

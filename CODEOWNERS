@@ -136,5 +136,5 @@
 
 # Performance + Load testing
 /load-tests/ @camunda/reliability-testing
-/zeebe/benchmarks/ @camunda/reliability-testing
+/load-tests/ @camunda/reliability-testing
 /.github/workflows/*load-test*.yml @camunda/reliability-testing

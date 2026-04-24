@@ -183,7 +183,7 @@ Arbitrary Helm arguments can be passed, making it easier to customize the load t
 ##### Creating manually
 
 As a last resort, if more customization is needed, it is also possible to manually deploy a benchmark.
-For further details on this topic, follow the [README](../../zeebe/benchmarks/setup/README.md) in our `zeebe/benchmarks/setup` directory.
+For further details on this topic, follow the [README](../../load-tests/setup/README.md) in our `load-tests/setup` directory.
 
 ##### SaaS Test
 
@@ -191,7 +191,7 @@ One use case for manually creating load tests is running them against an SaaS cl
 
 As a precondition for such tests, you need to create a cluster in SaaS (the stage doesn’t matter, may it be **DEV**, **INT,** or **PROD**). Additionally, we need client credentials deployed with the SaaS load tests, such that the starters and workers can connect to the right cluster.
 
-For further details on this topic, follow the [README](../../zeebe/benchmarks/setup/README.md#load-testing-camunda-saas) in our `zeebe/benchmarks/setup` directory.
+For further details on this topic, follow the [README](../../load-tests/setup/README.md#load-testing-camunda-saas) in our `load-tests/setup` directory.
 
 ## Chaos engineering
 
