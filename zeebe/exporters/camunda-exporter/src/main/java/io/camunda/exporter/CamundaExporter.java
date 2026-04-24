@@ -133,7 +133,7 @@ public class CamundaExporter implements Exporter {
   public void configure(final Context context) {
     this.context = context;
     configuration = context.getConfiguration().instantiate(ExporterConfiguration.class);
-    flushDelayMs = configuration.getBulk().getDelay() * 1000L;
+    flushDelayMs = 5 * configuration.getBulk().getDelay() * 1000L;
     partitionId = context.getPartitionId();
 
     LOG.info("Configuring exporter with {}", configuration);
