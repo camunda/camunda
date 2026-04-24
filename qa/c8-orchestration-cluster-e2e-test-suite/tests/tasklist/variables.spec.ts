@@ -197,7 +197,7 @@ test.describe('variables page', () => {
 
     await expect(async () => {
       await taskDetailsPage.variablesScrollContainer.evaluate((el) => {
-        el.scrollTop = el.scrollHeight;
+        el.scrollTo({top: el.scrollHeight, behavior: 'instant'});
       });
       await expect(
         taskDetailsPage.variablesTable.getByRole('cell', {name: 'variable_59'}),
