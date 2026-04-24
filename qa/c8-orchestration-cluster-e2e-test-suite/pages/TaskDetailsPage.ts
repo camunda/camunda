@@ -46,6 +46,7 @@ class TaskDetailsPage {
   readonly addressInput: Locator;
   readonly ageInput: Locator;
   readonly variablesTable: Locator;
+  readonly variablesScrollContainer: Locator;
   readonly nameColumnHeader: Locator;
   readonly valueColumnHeader: Locator;
   readonly form: Locator;
@@ -95,6 +96,9 @@ class TaskDetailsPage {
     this.addressInput = page.getByLabel('Address*');
     this.ageInput = page.getByLabel('Age');
     this.variablesTable = page.getByTestId('variables-table');
+    this.variablesScrollContainer = page.getByTestId(
+      'variables-scroll-container',
+    );
     this.nameColumnHeader = this.variablesTable.getByRole('columnheader', {
       name: 'Name',
     });

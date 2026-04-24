@@ -174,7 +174,6 @@ test.describe('variables page', () => {
   });
 
   test('loads all variables via infinite scroll pagination', async ({
-    page,
     taskPanelPage,
     taskDetailsPage,
   }) => {
@@ -196,9 +195,8 @@ test.describe('variables page', () => {
         .first(),
     ).toBeVisible({timeout: 30000});
 
-    const scrollContainer = page.getByTestId('variables-scroll-container');
     await expect(async () => {
-      await scrollContainer.evaluate((el) => {
+      await taskDetailsPage.variablesScrollContainer.evaluate((el) => {
         el.scrollTop = el.scrollHeight;
       });
       await expect(
