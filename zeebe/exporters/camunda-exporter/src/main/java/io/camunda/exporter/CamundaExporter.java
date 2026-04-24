@@ -358,13 +358,22 @@ public class CamundaExporter implements Exporter {
     }
     if (writer.getBatchSize() > 0) {
       final long now = context.clock().millis();
-      final long lastFlushTimestamp = updateAndGetLastActiveFlushTimestamp(now);
-      if ((now - lastFlushTimestamp) >= flushDelayMs) {
-        metrics.recordFlushReasonDelay();
-        return true;
+      // do an optimistic check with the cached value
+      if (exceedsDelay(lastFlushActiveTimestamp, now)) {
+        // then only check the dynamic value to confirm, so we
+        // avoid tying threads together for every check
+        final long lastFlushTimestamp = updateAndGetLastActiveFlushTimestamp(now);
+        if (exceedsDelay(lastFlushTimestamp, now)) {
+          metrics.recordFlushReasonDelay();
+          return true;
+        }
       }
     }
     return false;
+  }
+
+  private boolean exceedsDelay(final long lastFlushTimestamp, final long now) {
+    return (now - lastFlushTimestamp) >= flushDelayMs;
   }
 
   private ExporterBatchWriter createBatchWriter() {
