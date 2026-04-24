@@ -367,7 +367,7 @@ public class CamundaExporter implements Exporter {
       final long now = context.clock().millis();
       final long lastFlushTimestamp = updateAndGetLastActiveFlushTimestamp(now);
       if ((now - lastFlushTimestamp) >= flushDelayMs) {
-        metrics.recordFlushReasonScheduled();
+        metrics.recordFlushReasonDelay();
         return true;
       }
     }
