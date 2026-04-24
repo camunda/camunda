@@ -148,6 +148,7 @@ jobs:
     env:
       TEST_TYPE: Tool
       TEST_OWNER: Core Features
+      TEST_PRODUCT: Operate
     defaults:
       run:
         working-directory: operate/client
@@ -183,6 +184,7 @@ jobs:
     env:
       TEST_TYPE: Tool
       TEST_OWNER: Core Features
+      TEST_PRODUCT: Operate
     defaults:
       run:
         working-directory: operate/client
