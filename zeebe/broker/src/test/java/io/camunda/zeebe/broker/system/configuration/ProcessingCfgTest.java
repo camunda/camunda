@@ -89,7 +89,7 @@ final class ProcessingCfgTest {
     final int limit = cfg.getMaxRecoverableRetries();
 
     // then
-    assertThat(limit).isEqualTo(100);
+    assertThat(limit).isEqualTo(1000);
   }
 
   @Test

@@ -13,7 +13,7 @@ import java.util.Set;
 public final class ProcessingCfg implements ConfigurationEntry {
 
   private static final int DEFAULT_PROCESSING_BATCH_LIMIT = 100;
-  private static final int DEFAULT_MAX_RECOVERABLE_RETRIES = 100;
+  private static final int DEFAULT_MAX_RECOVERABLE_RETRIES = 1000;
   private Integer maxCommandsInBatch = DEFAULT_PROCESSING_BATCH_LIMIT;
   private int maxRecoverableRetries = DEFAULT_MAX_RECOVERABLE_RETRIES;
   private boolean enableAsyncScheduledTasks = true;

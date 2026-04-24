@@ -30,7 +30,7 @@ import java.util.function.BooleanSupplier;
 public final class StreamProcessorContext implements ReadonlyStreamProcessorContext {
 
   public static final int DEFAULT_MAX_COMMANDS_IN_BATCH = 100;
-  public static final int DEFAULT_MAX_RECOVERABLE_RETRIES = 100;
+  public static final int DEFAULT_MAX_RECOVERABLE_RETRIES = 1000;
   private static final StreamProcessorListener NOOP_LISTENER = processedCommand -> {};
   private ActorControl actor;
   private LogStream logStream;
