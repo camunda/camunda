@@ -43,6 +43,7 @@ public class DefaultExecutionQueue implements ExecutionQueue {
           Pattern.compile("io.camunda.db.rdbms.sql.BatchOperationMapper.activate"));
 
   private final SqlSessionFactory sessionFactory;
+  private final TransactionRunner transactionRunner;
   private final List<PreFlushListener> preFlushListeners = new ArrayList<>();
   private final List<PostFlushListener> postFlushListeners = new ArrayList<>();
 
@@ -62,13 +63,15 @@ public class DefaultExecutionQueue implements ExecutionQueue {
       final long partitionId,
       final int queueFlushLimit,
       final int queueMemoryLimitMb,
-      final RdbmsWriterMetrics metrics) {
+      final RdbmsWriterMetrics metrics,
+      final TransactionRunner transactionRunner) {
     this.sessionFactory = sessionFactory;
     this.partitionId = partitionId;
     this.queueFlushLimit = queueFlushLimit;
     // Convert MB to bytes for internal comparison
     queueMemoryLimitBytes = (long) queueMemoryLimitMb * BYTES_PER_MB;
     this.metrics = metrics;
+    this.transactionRunner = transactionRunner;
   }
 
   @Override
@@ -130,7 +133,7 @@ public class DefaultExecutionQueue implements ExecutionQueue {
       try (final var ignored = metrics.measureFlushDuration()) {
         // Record memory usage before flush
         metrics.recordQueueMemoryUsage(currentQueueMemoryBytes);
-        final int numFlushedElements = doFLush();
+        final int numFlushedElements = transactionRunner.runInTransaction(this::doFLush);
         metrics.stopFlushLatencyMeasurement();
         metrics.recordBulkSize(numFlushedElements);
         // Reset memory tracking after flush
@@ -230,7 +233,7 @@ public class DefaultExecutionQueue implements ExecutionQueue {
     final var startMillis = System.currentTimeMillis();
 
     final var session =
-        sessionFactory.openSession(ExecutorType.BATCH, TransactionIsolationLevel.READ_UNCOMMITTED);
+        sessionFactory.openSession(ExecutorType.BATCH, TransactionIsolationLevel.READ_COMMITTED);
 
     var flushedElements = 0;
     final var optimizedItems = optimizeQueueOrder(queue);
