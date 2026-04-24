@@ -465,20 +465,20 @@ class DecisionInstanceSearchTest {
 
   @Test
   void shouldReturnNotFoundOnGetWhenIdDoesNotExist() {
+    final var decisionInstanceId = "1-1";
     // when / then
     assertThatThrownBy(
-            () -> camundaClient.newDecisionInstanceGetRequest("someDecisionInstance").send().join())
+            () -> camundaClient.newDecisionInstanceGetRequest(decisionInstanceId).send().join())
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Failed with code 404: 'Not Found'")
         .hasMessageContaining(
-            ERROR_ENTITY_BY_ID_NOT_FOUND.formatted(
-                "Decision Instance", "id", "someDecisionInstance"));
+            ERROR_ENTITY_BY_ID_NOT_FOUND.formatted("Decision Instance", "id", decisionInstanceId));
   }
 
   @Test
   void shouldReturn404ForNotFoundDecisionInstance() {
     // when
-    final var decisionInstanceId = "not-existing";
+    final var decisionInstanceId = "1-1";
     final var problemException =
         assertThatExceptionOfType(ProblemException.class)
             .isThrownBy(
@@ -488,6 +488,34 @@ class DecisionInstanceSearchTest {
     assertThat(problemException.code()).isEqualTo(404);
     assertThat(problemException.details().getDetail())
         .contains("Decision Instance with id '%s' not found".formatted(decisionInstanceId));
+  }
+
+  @Test
+  void shouldReturnBadRequestOnGetWhenIdIsInvalid() {
+    final var decisionInstanceId = "invalidDecisionInstanceId";
+    // when / then
+    assertThatThrownBy(
+            () -> camundaClient.newDecisionInstanceGetRequest(decisionInstanceId).send().join())
+        .isInstanceOf(ProblemException.class)
+        .hasMessageContaining("Failed with code 400: 'Bad Request'")
+        .hasMessageContaining(
+            "'%s' is not a valid decision evaluation instance key".formatted(decisionInstanceId));
+  }
+
+  @Test
+  void shouldReturn400ForInvalidDecisionInstance() {
+    // when
+    final var decisionInstanceId = "invalidDecisionInstanceId";
+    final var problemException =
+        assertThatExceptionOfType(ProblemException.class)
+            .isThrownBy(
+                () -> camundaClient.newDecisionInstanceGetRequest(decisionInstanceId).send().join())
+            .actual();
+    // then
+    assertThat(problemException.code()).isEqualTo(400);
+    assertThat(problemException.details().getDetail())
+        .contains(
+            "'%s' is not a valid decision evaluation instance key".formatted(decisionInstanceId));
   }
 
   private static EvaluateDecisionResponse evaluateDecision(
