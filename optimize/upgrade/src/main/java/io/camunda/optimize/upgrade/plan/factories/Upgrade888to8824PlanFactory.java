@@ -11,10 +11,10 @@ import io.camunda.optimize.upgrade.plan.UpgradeExecutionDependencies;
 import io.camunda.optimize.upgrade.plan.UpgradePlan;
 import io.camunda.optimize.upgrade.plan.UpgradePlanBuilder;
 
-public class Upgrade888to889PlanFactory implements UpgradePlanFactory {
+public class Upgrade888to8824PlanFactory implements UpgradePlanFactory {
 
   @Override
   public UpgradePlan createUpgradePlan(final UpgradeExecutionDependencies dependencies) {
-    return UpgradePlanBuilder.createUpgradePlan().fromVersion("8.8.8").toVersion("8.8.9").build();
+    return UpgradePlanBuilder.createUpgradePlan().fromVersion("8.8.8").toVersion("8.8.24").build();
   }
 }
