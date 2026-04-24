@@ -26,6 +26,18 @@ public interface FailureListener {
    */
   void onUnrecoverableFailure(HealthReport report);
 
+  /**
+   * Invoked when a component signals a recoverable failure — one that is not a data-corruption
+   * scenario but cannot be resolved by retrying the same operation. The default implementation
+   * delegates to {@link #onFailure(HealthReport)} so that existing listeners treat it as an
+   * ordinary unhealthy event. Components that can initiate leader step-down (i.e. {@code
+   * ZeebePartition}) should override this to call {@code handleRecoverableFailure()} instead of the
+   * dead-partition path.
+   */
+  default void onRecoverableFailure(final HealthReport report) {
+    onFailure(report);
+  }
+
   default void onHealthReport(final HealthReport healthReport) {
     switch (healthReport.getStatus()) {
       case HEALTHY -> onRecovered(healthReport);

@@ -205,6 +205,24 @@ public class CriticalComponentsHealthMonitorTest {
   }
 
   @Test
+  public void shouldPropagateRecoverableFailureToListeners() {
+    // given
+    final ControllableComponent component = new ControllableComponent("test");
+    monitor.registerComponent(component);
+    waitUntilAllDone();
+    final FailureListener listener = mock(FailureListener.class);
+    monitor.addFailureListener(listener);
+    waitUntilAllDone();
+
+    // when
+    component.reportRecoverableFailure();
+    waitUntilAllDone();
+
+    // then
+    verify(listener).onRecoverableFailure(any());
+  }
+
+  @Test
   public void shouldReportArbitrarilyNestedComponents() {
     // given
     final var levels = 6;
@@ -345,6 +363,10 @@ public class CriticalComponentsHealthMonitorTest {
         healthReport = HealthReport.dead(this).withIssue(issue);
         failureListeners.forEach((l) -> l.onUnrecoverableFailure(healthReport));
       }
+    }
+
+    void reportRecoverableFailure() {
+      failureListeners.forEach(l -> l.onRecoverableFailure(healthReport));
     }
   }
 }

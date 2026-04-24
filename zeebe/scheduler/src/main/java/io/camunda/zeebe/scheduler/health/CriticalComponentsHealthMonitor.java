@@ -201,6 +201,11 @@ public class CriticalComponentsHealthMonitor implements HealthMonitor {
       actor.run(() -> onComponentDied(report));
     }
 
+    @Override
+    public void onRecoverableFailure(final HealthReport report) {
+      actor.run(() -> onComponentRecoverableFailure(report));
+    }
+
     private void onComponentFailure(final HealthReport report) {
       if (!monitoredComponents.containsKey(componentName)) {
         return;
@@ -232,6 +237,17 @@ public class CriticalComponentsHealthMonitor implements HealthMonitor {
       componentHealth.put(componentName, report);
       calculateHealth();
       failureListeners.forEach(l -> l.onUnrecoverableFailure(getHealthReport()));
+    }
+
+    private void onComponentRecoverableFailure(final HealthReport report) {
+      if (!monitoredComponents.containsKey(componentName)) {
+        return;
+      }
+
+      log.warn("{} reported recoverable failure: {}", componentName, report);
+      componentHealth.put(componentName, report);
+      calculateHealth();
+      failureListeners.forEach(l -> l.onRecoverableFailure(getHealthReport()));
     }
   }
 }

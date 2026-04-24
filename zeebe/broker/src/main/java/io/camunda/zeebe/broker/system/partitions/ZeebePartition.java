@@ -374,6 +374,11 @@ public final class ZeebePartition extends Actor
     actor.run(() -> handleUnrecoverableFailure(null));
   }
 
+  @Override
+  public void onRecoverableFailure(final HealthReport report) {
+    actor.run(this::handleRecoverableFailure);
+  }
+
   private void onInstallFailure(final Throwable error) {
     if (error instanceof UnrecoverableException) {
       LOG.error(
