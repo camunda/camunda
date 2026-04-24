@@ -72,6 +72,7 @@ import io.camunda.optimize.dto.zeebe.variable.ZeebeVariableRecordDto;
 import io.camunda.optimize.exception.OptimizeIntegrationTestException;
 import io.camunda.optimize.service.db.DatabaseConstants;
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
+import io.camunda.optimize.service.util.IdGenerator;
 import io.camunda.optimize.test.it.extension.db.TermsQueryContainer;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
@@ -483,8 +484,9 @@ public class ZeebeProcessInstanceImportIT extends AbstractCCSMIT {
 
   @Test
   public void importZeebeProcessInstanceData_instancesWithDifferentVersionsOfSameProcess() {
-    // given
-    final String processName = "someProcess";
+    // given - use a unique process name so the version counter starts at 1 regardless of how many
+    // times the broker (which is class-scoped) has seen this process in prior tests
+    final String processName = "someProcess-" + IdGenerator.getNextId();
     final ProcessInstanceEvent v1Instance =
         deployAndStartInstanceForProcess(createStartEndProcess(processName, processName));
     final ProcessInstanceEvent v2Instance =
@@ -917,7 +919,11 @@ public class ZeebeProcessInstanceImportIT extends AbstractCCSMIT {
     final long startedInstanceKey =
         zeebeExtension.startProcessInstanceWithVariables(
             deployedProcess.getBpmnProcessId(), processVariables);
+    // Wait for both process events AND the initial variables (var1, var2) to be exported so that
+    // the first import captures them — without this, currentNestedDocCount would be computed
+    // without variables and the nested-doc limit would be set too low for instance 2 to import.
     waitUntilMinimumProcessInstanceEventsExportedCount(4);
+    waitUntilMinimumVariableDocumentsExportedCount(2);
     importAllZeebeEntitiesFromScratch();
     final ProcessInstanceDto firstInstanceOnFirstRoundImport =
         getProcessInstanceForId(String.valueOf(startedInstanceKey));
@@ -932,13 +938,16 @@ public class ZeebeProcessInstanceImportIT extends AbstractCCSMIT {
 
     // Now add additional variables to go beyond the nested document limit
     zeebeExtension.addVariablesToScope(startedInstanceKey, additionalVariables, true);
-    waitUntilMinimumVariableDocumentsExportedCount(2);
+    // Wait for var3 + var4 CREATED events (total: 2 initial + 2 additional = 4)
+    waitUntilMinimumVariableDocumentsExportedCount(4);
 
     // and start a second instance, which should still be imported
     final long secondInstanceKey =
         zeebeExtension.startProcessInstanceWithVariables(
             deployedProcess.getBpmnProcessId(), processVariables);
     waitUntilMinimumProcessInstanceEventsExportedCount(8);
+    // Wait for instance 2's var1 + var2 CREATED events (total: 4 + 2 = 6)
+    waitUntilMinimumVariableDocumentsExportedCount(6);
 
     // when
     importAllZeebeEntitiesFromScratch();
