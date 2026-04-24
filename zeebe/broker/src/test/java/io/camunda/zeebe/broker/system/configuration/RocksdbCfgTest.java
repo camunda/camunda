@@ -74,7 +74,7 @@ public final class RocksdbCfgTest {
         .isEqualTo(DataSize.ofMegabytes(512).toBytes());
     assertThat(rocksDbConfiguration.getMaxOpenFiles()).isEqualTo(-1);
     assertThat(rocksDbConfiguration.getMaxWriteBufferNumber()).isEqualTo(6);
-    assertThat(rocksDbConfiguration.getMinWriteBufferNumberToMerge()).isEqualTo(3);
+    assertThat(rocksDbConfiguration.getMinWriteBufferNumberToMerge()).isEqualTo(1);
     assertThat(rocksDbConfiguration.getIoRateBytesPerSecond()).isZero();
     assertThat(rocksDbConfiguration.isWalDisabled()).isTrue();
   }

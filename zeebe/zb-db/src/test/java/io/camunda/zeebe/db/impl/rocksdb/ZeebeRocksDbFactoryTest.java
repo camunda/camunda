@@ -272,7 +272,7 @@ final class ZeebeRocksDbFactoryTest {
 
     // column family options match our defaults
     assertThat(columnFamilyOptions.memtablePrefixBloomSizeRatio()).isEqualTo(0.15);
-    assertThat(columnFamilyOptions.minWriteBufferNumberToMerge()).isEqualTo(3);
+    assertThat(columnFamilyOptions.minWriteBufferNumberToMerge()).isEqualTo(1);
     assertThat(columnFamilyOptions.maxWriteBufferNumber()).isEqualTo(6);
     assertThat(columnFamilyOptions.writeBufferSize()).isEqualTo(50_704_475L);
     assertThat(columnFamilyOptions.compactionPriority())
