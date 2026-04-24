@@ -220,3 +220,50 @@ export async function expectProcessInstanceCanBeFound(
     timeout: 180_000,
   });
 }
+
+async function runBatchAndWaitForCompletion(
+  request: APIRequestContext,
+  endpoint: string,
+  filter: Record<string, unknown>,
+): Promise<void> {
+  const res = await request.post(buildUrl(endpoint), {
+    headers: jsonHeaders(),
+    data: {filter},
+  });
+
+  // 400 means no matching instances — nothing to do
+  if (res.status() === 400) return;
+
+  await assertStatusCode(res, 200);
+  const json = await res.json();
+  const batchKey = json.batchOperationKey;
+
+  await expect(async () => {
+    const statusRes = await request.get(
+      buildUrl(`/batch-operations/${batchKey}`),
+      {headers: jsonHeaders()},
+    );
+    await assertStatusCode(statusRes, 200);
+    const body = await statusRes.json();
+    expect(body.state).toBe('COMPLETED');
+  }).toPass({
+    intervals: [5_000, 10_000, 15_000, 25_000, 35_000],
+    timeout: 120_000,
+  });
+}
+
+export async function clearAllProcessInstances(
+  request: APIRequestContext,
+): Promise<void> {
+  // Cancel all active instances first; the API overrides the state filter
+  // internally but requires a non-empty filter to be valid.
+  await runBatchAndWaitForCompletion(
+    request,
+    '/process-instances/cancellation',
+    {state: 'ACTIVE'},
+  );
+  // Cancellation moves instances to TERMINATED; delete both terminal states.
+  await runBatchAndWaitForCompletion(request, '/process-instances/deletion', {
+    $or: [{state: 'COMPLETED'}, {state: 'TERMINATED'}],
+  });
+}
