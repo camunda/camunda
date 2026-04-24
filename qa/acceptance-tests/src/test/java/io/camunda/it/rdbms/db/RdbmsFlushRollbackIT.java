@@ -23,12 +23,12 @@ import org.junit.jupiter.api.TestTemplate;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 /**
- * Integration test to verify that DefaultExecutionQueue with JdbcTransactionFactory ensures atomic
+ * Integration test to verify that DefaultExecutionQueue with a TransactionRunner ensures atomic
  * batch flush behavior. When statements are batched and flushed, they should either all commit or
  * all rollback to maintain data integrity.
  *
  * <p>This test uses the actual RDBMS infrastructure (H2 by default) to verify that the
- * JdbcTransactionFactory correctly provides transaction isolation for batch operations in the
+ * SpringTransactionRunner correctly provides transaction isolation for batch operations in the
  * execution queue.
  */
 @Tag("rdbms")
@@ -60,7 +60,7 @@ public class RdbmsFlushRollbackIT {
     rdbmsWriters.getFlowNodeInstanceWriter().create(flowNodeInstance);
 
     // when
-    assertThatThrownBy(rdbmsWriters::flush).isInstanceOf(Exception.class);
+    assertThatThrownBy(rdbmsWriters::flush).hasMessageContaining(duplicateAuditLogKey);
 
     // then
     assertThat(
