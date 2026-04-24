@@ -12,6 +12,7 @@ public class Config {
   // Connection settings
   private String url;
   private String apiKey;
+  private OAuthConfig oauth;
 
   // Error handling settings
   private boolean continueOnError = true;
@@ -39,6 +40,15 @@ public class Config {
 
   public Config setApiKey(final String apiKey) {
     this.apiKey = apiKey;
+    return this;
+  }
+
+  public OAuthConfig getOauth() {
+    return oauth;
+  }
+
+  public Config setOauth(final OAuthConfig oauth) {
+    this.oauth = oauth;
     return this;
   }
 
