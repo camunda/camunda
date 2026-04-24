@@ -5,6 +5,7 @@ on:
 
 env:
   GHA_BEST_PRACTICES_LINTER: enabled
+  TEST_PRODUCT: Tasklist
 
 jobs:
   fe-type-check:

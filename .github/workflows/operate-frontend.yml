@@ -1,4 +1,8 @@
 name: Operate Frontend
+
+env:
+  TEST_PRODUCT: Operate
+
 on:
   push:
     branches:
