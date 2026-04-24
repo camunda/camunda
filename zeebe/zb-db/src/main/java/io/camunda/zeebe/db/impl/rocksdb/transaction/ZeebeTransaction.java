@@ -8,7 +8,9 @@
 package io.camunda.zeebe.db.impl.rocksdb.transaction;
 
 import static io.camunda.zeebe.db.impl.rocksdb.transaction.RocksDbInternal.isRocksDbExceptionRecoverable;
+import static io.camunda.zeebe.db.impl.rocksdb.transaction.RocksDbInternal.isTransactionConflict;
 
+import io.camunda.zeebe.db.TransactionConflictException;
 import io.camunda.zeebe.db.TransactionOperation;
 import io.camunda.zeebe.db.ZeebeDbException;
 import io.camunda.zeebe.db.ZeebeDbTransaction;
@@ -140,6 +142,9 @@ public class ZeebeTransaction implements ZeebeDbTransaction, AutoCloseable {
     try {
       commitInternal();
     } catch (final RocksDBException rdbex) {
+      if (isTransactionConflict(rdbex)) {
+        throw new TransactionConflictException(rdbex);
+      }
       final String errorMessage = "Unexpected error occurred during RocksDB transaction commit.";
       if (isRocksDbExceptionRecoverable(rdbex)) {
         throw new ZeebeDbException(errorMessage, rdbex);

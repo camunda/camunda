@@ -8,11 +8,13 @@
 package io.camunda.zeebe.db.impl.rocksdb.transaction;
 
 import static org.rocksdb.Status.Code.Aborted;
+import static org.rocksdb.Status.Code.Busy;
 import static org.rocksdb.Status.Code.Expired;
 import static org.rocksdb.Status.Code.IOError;
 import static org.rocksdb.Status.Code.MergeInProgress;
 import static org.rocksdb.Status.Code.Ok;
 import static org.rocksdb.Status.Code.TimedOut;
+import static org.rocksdb.Status.Code.TryAgain;
 
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
@@ -29,6 +31,8 @@ public final class RocksDbInternal {
 
   static final EnumSet<Code> RECOVERABLE_ERROR_CODES =
       EnumSet.of(Ok, Aborted, Expired, IOError, TimedOut, MergeInProgress);
+
+  static final EnumSet<Code> TRANSACTION_CONFLICT_CODES = EnumSet.of(TryAgain, Busy);
 
   static Field nativeHandle;
 
@@ -117,5 +121,9 @@ public final class RocksDbInternal {
   static boolean isRocksDbExceptionRecoverable(final RocksDBException rdbex) {
     final Status status = rdbex.getStatus();
     return RECOVERABLE_ERROR_CODES.contains(status.getCode());
+  }
+
+  static boolean isTransactionConflict(final RocksDBException rdbex) {
+    return TRANSACTION_CONFLICT_CODES.contains(rdbex.getStatus().getCode());
   }
 }

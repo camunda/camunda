@@ -12,6 +12,7 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 
+import io.camunda.zeebe.db.TransactionConflictException;
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.ZeebeDbException;
@@ -25,6 +26,8 @@ import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.rocksdb.RocksDBException;
 import org.rocksdb.Status;
 import org.rocksdb.Status.Code;
@@ -241,34 +244,28 @@ final class ZeebeRocksDbTransactionTest {
     assertThatThrownBy(currentTransaction::rollback).isInstanceOf(RocksDBException.class);
   }
 
-  @Test
-  void shouldThrowRocksDbExceptionOnTryAgainAtCommit() throws Exception {
-    // given — TryAgain means OptimisticTransactionDB could not check for conflicts because
-    // the memtable history is not large enough (see max_write_buffer_number_to_maintain).
-    // Retrying the same transaction will never resolve this.
-    final Status status = new Status(Code.TryAgain, SubCode.None, "");
-    final ZeebeTransaction currentTransaction =
-        spy((ZeebeTransaction) transactionContext.getCurrentTransaction());
-    doThrow(new RocksDBException("conflict", status)).when(currentTransaction).commitInternal();
-
-    // when / then — must NOT be ZeebeDbException (RecoverableException)
-    assertThatThrownBy(currentTransaction::commit)
-        .isInstanceOf(RocksDBException.class)
-        .isNotInstanceOf(ZeebeDbException.class);
-  }
-
-  @Test
-  void shouldThrowRocksDbExceptionOnBusyAtCommit() throws Exception {
-    // given — Busy means OptimisticTransactionDB detected a write-write conflict at commit time.
-    // Retrying the same transaction will never resolve this.
-    final Status status = new Status(Code.Busy, SubCode.None, "");
+  /**
+   * Verifies that {@link ZeebeTransaction#commit()} wraps RocksDB conflict status codes as {@link
+   * TransactionConflictException} so the stream processor can detect them and trigger leader
+   * step-down rather than declaring the partition dead.
+   *
+   * <ul>
+   *   <li>{@link Code#TryAgain} — the memtable history is too small to check for conflicts
+   *   <li>{@link Code#Busy} — a write-write conflict was detected at commit time
+   * </ul>
+   */
+  @ParameterizedTest
+  @EnumSource(
+      value = Code.class,
+      names = {"TryAgain", "Busy"})
+  void shouldThrowTransactionConflictExceptionOnConflictAtCommit(final Code code) throws Exception {
+    // given
+    final Status status = new Status(code, SubCode.None, "");
     final ZeebeTransaction currentTransaction =
         spy((ZeebeTransaction) transactionContext.getCurrentTransaction());
     doThrow(new RocksDBException("conflict", status)).when(currentTransaction).commitInternal();
 
     // when / then
-    assertThatThrownBy(currentTransaction::commit)
-        .isInstanceOf(RocksDBException.class)
-        .isNotInstanceOf(ZeebeDbException.class);
+    assertThatThrownBy(currentTransaction::commit).isInstanceOf(TransactionConflictException.class);
   }
 }
