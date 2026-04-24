@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {expect, test} from '@playwright/test';
+import {test} from '@playwright/test';
 import {deploy} from '../../../../utils/zeebeClient';
 import {
   assertBadRequest,
@@ -16,13 +16,12 @@ import {
   buildUrl,
   jsonHeaders,
 } from '../../../../utils/http';
-import {defaultAssertionOptions} from '../../../../utils/constants';
 import {
   createCancellationBatch,
   cancelBatchOperation,
   createCompletedBatchOperation,
+  expectBatchState,
 } from '@requestHelpers';
-import {validateResponse} from 'json-body-assertions';
 
 /* eslint-disable playwright/expect-expect */
 
@@ -53,25 +52,7 @@ test.describe.parallel('Cancel Batch Operation Tests', () => {
     });
 
     await test.step('Poll batch status', async () => {
-      await expect(async () => {
-        const statusRes = await request.get(
-          buildUrl(`/batch-operations/${key}`),
-          {
-            headers: jsonHeaders(),
-          },
-        );
-        await assertStatusCode(statusRes, 200);
-        await validateResponse(
-          {
-            path: '/batch-operations/{batchOperationKey}',
-            method: 'GET',
-            status: '200',
-          },
-          statusRes,
-        );
-        const body = await statusRes.json();
-        expect(body.state).toBe('CANCELED');
-      }).toPass(defaultAssertionOptions);
+      await expectBatchState(request, key, 'CANCELED');
     });
   });
 
