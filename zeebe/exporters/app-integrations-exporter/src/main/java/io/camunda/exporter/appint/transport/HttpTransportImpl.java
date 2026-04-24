@@ -16,6 +16,8 @@ import io.camunda.exporter.appint.transport.Authentication.ApiKey;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Supplier;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.StringEntity;
@@ -71,14 +73,30 @@ public class HttpTransportImpl implements Transport<Event> {
   }
 
   private void sendPostRequest(final String url, final String json) {
-    final HttpPost httpPost = new HttpPost(url);
-    switch (authentication) {
-      case final ApiKey apiKeyAuth -> httpPost.setHeader(ApiKey.HEADER_NAME, apiKeyAuth.apiKey());
-      case final Authentication.None ignored ->
-          log.warn("No authentication provided for HTTP transport");
+    final StringEntity entity = createJsonEntity(json);
+    // Build the HttpPost (and re-apply auth) inside the retry loop so that transient failures
+    // when obtaining credentials (e.g. OAuth token endpoint blips) are retried as well.
+    post(
+        () -> {
+          final HttpPost httpPost = new HttpPost(url);
+          switch (authentication) {
+            case final ApiKey apiKeyAuth ->
+                httpPost.setHeader(ApiKey.HEADER_NAME, apiKeyAuth.apiKey());
+            case final Authentication.OAuth oauth -> applyOAuth(httpPost, oauth);
+            case final Authentication.None ignored ->
+                log.warn("No authentication provided for HTTP transport");
+          }
+          httpPost.setEntity(entity);
+          return httpPost;
+        });
+  }
+
+  private void applyOAuth(final HttpPost httpPost, final Authentication.OAuth oauth) {
+    try {
+      oauth.credentialsProvider().applyCredentials(httpPost::setHeader);
+    } catch (final IOException e) {
+      throw new TransportException("Failed to obtain OAuth credentials", e);
     }
-    httpPost.setEntity(createJsonEntity(json));
-    post(httpPost);
   }
 
   private StringEntity createJsonEntity(final String json) {
@@ -88,16 +106,25 @@ public class HttpTransportImpl implements Transport<Event> {
     return entity;
   }
 
-  private void post(final HttpPost httpPost) {
+  private void post(final Supplier<HttpPost> httpPostSupplier) {
+    final AtomicReference<HttpPost> currentRequest = new AtomicReference<>();
     Failsafe.with(timeout)
         .compose(retryPolicy)
         .onFailure(
             event -> {
               if (event.getException() instanceof TimeoutExceededException) {
-                abortRequest(httpPost);
+                final HttpPost inFlight = currentRequest.get();
+                if (inFlight != null) {
+                  abortRequest(inFlight);
+                }
               }
             })
-        .run(() -> executeRequest(httpPost));
+        .run(
+            () -> {
+              final HttpPost httpPost = httpPostSupplier.get();
+              currentRequest.set(httpPost);
+              executeRequest(httpPost);
+            });
   }
 
   private void executeRequest(final HttpPost httpPost) {

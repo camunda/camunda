@@ -7,7 +7,8 @@
  */
 package io.camunda.exporter.appint.subscription;
 
-import static io.camunda.exporter.appint.transport.Authentication.*;
+import static io.camunda.exporter.appint.transport.Authentication.None;
+import static java.util.Optional.ofNullable;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -16,12 +17,17 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import io.camunda.exporter.appint.config.BatchConfig;
 import io.camunda.exporter.appint.config.Config;
 import io.camunda.exporter.appint.config.ConfigValidator;
+import io.camunda.exporter.appint.config.OAuthConfig;
 import io.camunda.exporter.appint.event.Event;
 import io.camunda.exporter.appint.mapper.SupportedRecordsMapper;
+import io.camunda.exporter.appint.transport.Authentication;
 import io.camunda.exporter.appint.transport.Authentication.ApiKey;
+import io.camunda.exporter.appint.transport.Authentication.OAuthCredentialsProvider;
+import io.camunda.exporter.appint.transport.DefaultOAuthCredentialsProvider;
 import io.camunda.exporter.appint.transport.HttpTransportConfig;
 import io.camunda.exporter.appint.transport.HttpTransportImpl;
 import io.camunda.exporter.appint.transport.JsonMapper;
+import java.time.Duration;
 import java.util.function.Consumer;
 
 public class SubscriptionFactory {
@@ -44,11 +50,14 @@ public class SubscriptionFactory {
   public static Subscription<Event> createDefault(
       final Config config, final Consumer<Long> positionConsumer) {
     ConfigValidator.validate(config);
-    final var auth =
-        switch (config.getApiKey()) {
-          case null -> None.INSTANCE;
-          default -> new ApiKey(config.getApiKey());
-        };
+    final Authentication auth;
+    if (config.getOauth() != null) {
+      auth = new Authentication.OAuth(buildOAuthProvider(config.getOauth()));
+    } else if (config.getApiKey() != null) {
+      auth = new ApiKey(config.getApiKey());
+    } else {
+      auth = None.INSTANCE;
+    }
     final var httpTransportConfig =
         new HttpTransportConfig(
             config.getUrl(),
@@ -65,5 +74,21 @@ public class SubscriptionFactory {
             config.getBatchIntervalMs(),
             config.isContinueOnError());
     return new Subscription<>(transport, mapper, batchConfig, positionConsumer);
+  }
+
+  private static OAuthCredentialsProvider buildOAuthProvider(final OAuthConfig cfg) {
+    final Duration connectTimeout =
+        ofNullable(cfg.getConnectTimeoutMs()).map(Duration::ofMillis).orElse(null);
+    final Duration readTimeout =
+        ofNullable(cfg.getReadTimeoutMs()).map(Duration::ofMillis).orElse(null);
+    return new DefaultOAuthCredentialsProvider(
+        cfg.getAuthorizationServerUrl(),
+        cfg.getClientId(),
+        cfg.getClientSecret(),
+        cfg.getAudience(),
+        cfg.getScope(),
+        cfg.getResource(),
+        connectTimeout,
+        readTimeout);
   }
 }
