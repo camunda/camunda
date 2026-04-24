@@ -59,6 +59,7 @@ public final class ActivateAdHocSubProcessActivitiesCommandImpl
 
   @Override
   public ActivateAdHocSubProcessActivitiesCommandStep2 activateElement(final String elementId) {
+    resetAccumulatedVariables();
     latestActivateElement = new AdHocSubProcessActivateActivityReference().elementId(elementId);
     httpRequestObject.addElementsItem(latestActivateElement);
     return this;
@@ -68,6 +69,9 @@ public final class ActivateAdHocSubProcessActivitiesCommandImpl
   public ActivateAdHocSubProcessActivitiesCommandStep2 activateElement(
       final String elementId, final Map<String, Object> variables) {
     activateElement(elementId);
+    if (variables != null) {
+      seedAccumulatedVariables(variables);
+    }
     latestActivateElement.setVariables(variables);
     return this;
   }
