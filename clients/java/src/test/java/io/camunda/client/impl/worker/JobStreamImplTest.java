@@ -44,6 +44,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
+import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.core.LogEvent;
+import org.apache.logging.log4j.core.LoggerContext;
+import org.apache.logging.log4j.core.test.appender.ListAppender;
 import org.jmock.lib.concurrent.DeterministicScheduler;
 import org.junit.Rule;
 import org.junit.jupiter.api.AfterEach;
@@ -56,6 +62,8 @@ import org.mockito.Mockito;
 @ExtendWith(ExternalResourceSupport.class)
 final class JobStreamImplTest {
 
+  private static final String JOB_WORKER_LOGGER_NAME = "io.camunda.client.job.worker";
+
   @Rule
   public final GrpcCleanupRule grpcRule =
       new GrpcCleanupRule().setTimeout(1, TimeUnit.MILLISECONDS);
@@ -64,6 +72,7 @@ final class JobStreamImplTest {
   private final DeterministicScheduler scheduler = new DeterministicScheduler();
   private JobClient client;
   private JobStreamerImpl jobStreamer;
+  private ListAppender logCapture;
 
   @BeforeEach
   void beforeEach() throws IOException {
@@ -82,12 +91,28 @@ final class JobStreamImplTest {
             new CamundaObjectMapper(),
             ignored -> false);
     jobStreamer = createStreamer(Duration.ofHours(8));
+
+    logCapture = new ListAppender("capture-" + JOB_WORKER_LOGGER_NAME);
+    logCapture.start();
+    final LoggerContext ctx = (LoggerContext) LogManager.getContext(false);
+    ctx.getConfiguration()
+        .getLoggerConfig(JOB_WORKER_LOGGER_NAME)
+        .addAppender(logCapture, null, null);
+    ctx.updateLoggers();
   }
 
   @AfterEach
   void afterEach() {
     if (jobStreamer != null) {
       jobStreamer.close();
+    }
+    if (logCapture != null) {
+      final LoggerContext ctx = (LoggerContext) LogManager.getContext(false);
+      ctx.getConfiguration()
+          .getLoggerConfig(JOB_WORKER_LOGGER_NAME)
+          .removeAppender(logCapture.getName());
+      ctx.updateLoggers();
+      logCapture.stop();
     }
   }
 
@@ -197,6 +222,69 @@ final class JobStreamImplTest {
     assertThat(recreatedStream).isNotNull().isNotEqualTo(initialStream);
     assertThat(initialStream.isCancelled()).isTrue();
     assertThat(recreatedStream.isCancelled()).isFalse();
+  }
+
+  @Test
+  void shouldLogProxy504AtDebugOnlyWithException() {
+    // given - a realistic UNAVAILABLE status produced when an intermediary proxy (e.g. nginx)
+    // terminates the idle streaming connection with HTTP 504.
+    jobStreamer.openStreamer(ignored -> {});
+    final ServerCallStreamObserver<GatewayOuterClass.ActivatedJob> lastStream =
+        service.lastStream();
+
+    // when
+    lastStream.onError(
+        new StatusRuntimeException(
+            Status.UNAVAILABLE.withDescription(
+                "HTTP status code 504\n"
+                    + "invalid content-type: text/html\n"
+                    + "headers: Metadata(:status=504,content-type=text/html)\n"
+                    + "DATA-----------------------------\n"
+                    + "<html><body>504 Gateway Time-out</body></html>")));
+    scheduler.runUntilIdle();
+
+    // then
+    assertThat(eventsAt(Level.WARN)).as("proxy 504 should not produce a WARN").isEmpty();
+
+    assertThat(eventsAt(Level.DEBUG))
+        .as("DEBUG should carry the hint message and the full gRPC exception")
+        .anySatisfy(
+            e -> {
+              assertThat(e.getMessage().getFormattedMessage())
+                  .contains("upstream proxy")
+                  .contains("504")
+                  .contains("streamTimeout");
+              assertThat(e.getThrown()).isInstanceOf(StatusRuntimeException.class);
+            });
+  }
+
+  @Test
+  void shouldLogNonProxyUnavailableAsWarnWithException() {
+    // given - UNAVAILABLE for reasons other than an HTTP 504 from a proxy should continue to
+    // surface the full stack trace at WARN.
+    jobStreamer.openStreamer(ignored -> {});
+    final ServerCallStreamObserver<GatewayOuterClass.ActivatedJob> lastStream =
+        service.lastStream();
+
+    // when
+    lastStream.onError(
+        new StatusRuntimeException(Status.UNAVAILABLE.withDescription("io exception")));
+    scheduler.runUntilIdle();
+
+    // then
+    final List<LogEvent> warns = eventsAt(Level.WARN);
+    assertThat(warns).hasSize(1);
+    assertThat(warns.get(0).getThrown()).isInstanceOf(StatusRuntimeException.class);
+    assertThat(warns.get(0).getMessage().getFormattedMessage()).contains("Failed to stream jobs");
+  }
+
+  private List<LogEvent> eventsAt(final Level level) {
+    // ListAppender is attached to the nearest parent LoggerConfig (io.camunda.client), so filter
+    // by exact logger name to avoid cross-contamination from sibling loggers.
+    return logCapture.getEvents().stream()
+        .filter(e -> JOB_WORKER_LOGGER_NAME.equals(e.getLoggerName()))
+        .filter(e -> level.equals(e.getLevel()))
+        .collect(Collectors.toList());
   }
 
   private JobStreamerImpl createStreamer(final Duration streamingTimeout) {
