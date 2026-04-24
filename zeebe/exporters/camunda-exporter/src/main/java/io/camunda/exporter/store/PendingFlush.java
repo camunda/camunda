@@ -42,6 +42,7 @@ public class PendingFlush {
 
   private void start() {
     updateState(State.PENDING);
+    flushTimeMillis.set(null);
     pending =
         CompletableFuture.runAsync(
             () -> {

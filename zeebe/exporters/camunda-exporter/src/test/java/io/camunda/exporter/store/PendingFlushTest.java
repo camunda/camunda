@@ -9,6 +9,8 @@ package io.camunda.exporter.store;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -18,6 +20,10 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.zeebe.exporter.api.ExporterException;
 import java.time.InstantSource;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Semaphore;
+import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -133,6 +139,53 @@ class PendingFlushTest {
     verify(flush, times(2)).run();
 
     // retried so we should be on the next time for the flush
+    assertThat(pendingFlush.maybeFlushTimeMillis()).hasValue(TIME1);
+  }
+
+  @Test
+  public void shouldResetFlushTimeWhenRetryingFlush() {
+    // given
+    doThrow(new ExporterException("flush failed")).doNothing().when(flush).run();
+
+    // use this to let us control exactly when the tasks run
+    final var semaphore = new Semaphore(1);
+    final Executor executor = mock(Executor.class);
+    doAnswer(
+            invocation -> {
+              semaphore.acquire();
+              final Runnable task = invocation.getArgument(0);
+              task.run();
+              return null;
+            })
+        .when(executor)
+        .execute(any());
+
+    final var pendingFlush = new PendingFlush(executor, clock, flush, 123L);
+
+    assertThatThrownBy(pendingFlush::waitForCompletion)
+        .isInstanceOf(ExporterException.class)
+        .hasMessage("flush failed");
+
+    assertThat(pendingFlush.maybeFlushTimeMillis()).hasValue(TIME0);
+
+    // when
+
+    // pendingFlush::waitForCompletion will block so we can confirm the time gets reset
+    final var waitingForCompletion = CompletableFuture.runAsync(pendingFlush::waitForCompletion);
+
+    // then
+    Awaitility.await()
+        .untilAsserted(() -> assertThat(pendingFlush.maybeFlushTimeMillis()).isEmpty());
+
+    // second flush not run yet
+    verify(flush).run();
+
+    // now let things continue
+    semaphore.release();
+
+    waitingForCompletion.join();
+
+    verify(flush, times(2)).run();
     assertThat(pendingFlush.maybeFlushTimeMillis()).hasValue(TIME1);
   }
 }
