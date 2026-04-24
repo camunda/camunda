@@ -17,6 +17,7 @@ export class IdentityAuthorizationsPage {
   readonly authorizationsList: Locator;
   readonly createAuthorizationModal: Locator;
   readonly createAuthorizationOwnerComboBox: Locator;
+  readonly createAuthorizationOwnerSearchInput: Locator;
   readonly createAuthorizationOwnerOption: (name: string) => Locator;
   readonly createAuthorizationResourceIdField: Locator;
   readonly createAuthorizationAccessPermission: (name: string) => Locator;
@@ -52,6 +53,8 @@ export class IdentityAuthorizationsPage {
     });
     this.createAuthorizationOwnerComboBox =
       this.createAuthorizationModal.getByPlaceholder('Select an owner');
+    this.createAuthorizationOwnerSearchInput =
+      this.createAuthorizationModal.getByPlaceholder('Search by owner ID');
     this.createAuthorizationOwnerOption = (name) =>
       this.createAuthorizationModal.getByRole('option', {
         name,
@@ -218,7 +221,12 @@ export class IdentityAuthorizationsPage {
 
   async selectResourceType(resourceType: string) {
     await this.resourceTypeComboBox.click({timeout: 90000});
-    await this.resourceTypeOption(resourceType).click();
+    try {
+      await this.resourceTypeOption(resourceType).click({timeout: 5000});
+    } catch {
+      await this.resourceTypeComboBox.click();
+      await this.resourceTypeOption(resourceType).click();
+    }
   }
 
   async selectAuthorizationOwnerType(authorization: {ownerType: string}) {
@@ -226,9 +234,27 @@ export class IdentityAuthorizationsPage {
     await this.createAuthorizationOwnerTypeOption(
       authorization.ownerType,
     ).click();
+    if (authorization.ownerType !== 'User') {
+      await this.createAuthorizationOwnerComboBox.waitFor({
+        state: 'visible',
+        timeout: 5000,
+      });
+    }
   }
 
   async selectAuthorizationOwner(authorization: {ownerId: string}) {
+    if (await this.createAuthorizationOwnerSearchInput.isVisible()) {
+      await this.createAuthorizationOwnerSearchInput.fill(
+        authorization.ownerId,
+      );
+      await this.createAuthorizationModal
+        .locator('.cds--list-box__menu-item')
+        .filter({hasText: authorization.ownerId})
+        .first()
+        .click({timeout: 20000});
+      return;
+    }
+
     await this.createAuthorizationOwnerComboBox.click();
     try {
       await this.createAuthorizationOwnerOption(authorization.ownerId).click({
@@ -237,6 +263,7 @@ export class IdentityAuthorizationsPage {
     } catch (error) {
       console.log('Error while selecting owner' + error);
       await this.createAuthorizationOwnerComboBox.fill(authorization.ownerId);
+      await this.createAuthorizationOwnerComboBox.press('Tab');
     }
   }
 
