@@ -78,7 +78,7 @@ jobs:
         run: |
           ./mvnw -B -T1C -DskipTests -DskipChecks -Dflatten.skip=true -Dskip.fe.build=false package -P'!include-optimize'
           ./mvnw -D skipOptimize -pl dist/ help:evaluate -Dexpression=project.build.finalName -P'!include-optimize' -Doutput=artifact.txt
-          ARTIFACT=$(cat artifact.txt)
+          ARTIFACT=$(cat dist/artifact.txt)
           export ARTIFACT
           echo "distball=dist/target/${ARTIFACT}.tar.gz" >> "$GITHUB_OUTPUT"
           echo "distzip=dist/target/${ARTIFACT}.zip" >> "$GITHUB_OUTPUT"
