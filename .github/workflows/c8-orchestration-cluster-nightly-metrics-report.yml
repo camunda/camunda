@@ -1,0 +1,155 @@
+# description: Daily report summarising the latest C8 Orchestration Cluster
+#              nightly workflow run outcomes, grouped by API and E2E test
+#              categories with versions in ascending order. Posted to Slack.
+# type: CI
+# owner: @camunda/test-automation-team
+---
+name: C8 Orchestration Cluster Nightly Metrics Report
+
+on:
+  schedule:
+    - cron: "0 4 * * *" # 4:00 AM UTC — after all nightly tests complete
+  workflow_dispatch: {}
+
+defaults:
+  run:
+    shell: bash
+
+permissions:
+  actions: read
+  contents: read
+
+jobs:
+  nightly-metrics-report:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Import Secrets
+        id: secrets
+        uses: hashicorp/vault-action@79632e33d6953d190b940ffa440bf97821cabd80
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          exportEnv: false
+          secrets: |
+            secret/data/products/camunda/ci/github-actions SLACK_CORE_DOMAIN_BOT_TOKEN;
+
+      - name: Collect workflow run results
+        id: report
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+
+          # Fetch the latest completed run for a workflow file and return
+          # "<conclusion> <html_url>".
+          get_run_status() {
+            local workflow_file="$1"
+            local result
+            result=$(gh api \
+              "/repos/${REPO}/actions/workflows/${workflow_file}/runs?per_page=1&status=completed" \
+              --jq 'if (.workflow_runs | length) > 0
+                    then .workflow_runs[0] | "\(.conclusion) \(.html_url)"
+                    else "no_runs #" end' 2>/dev/null) || result="unknown #"
+            echo "$result"
+          }
+
+          status_emoji() {
+            case "$1" in
+              success)   echo "✅" ;;
+              failure)   echo "❌" ;;
+              cancelled) echo "⚠️" ;;
+              no_runs)   echo "⏳" ;;
+              *)         echo "❓" ;;
+            esac
+          }
+
+          build_line() {
+            local label="$1"
+            local workflow_file="$2"
+            local status_line
+            status_line=$(get_run_status "$workflow_file")
+            local conclusion="${status_line%% *}"
+            local url="${status_line#* }"
+            local emoji
+            emoji=$(status_emoji "$conclusion")
+            echo "${emoji} ${label} — <${url}|View Run>"
+          }
+
+          TODAY=$(date -u +"%Y-%m-%d")
+
+          {
+            # ── API Tests (versions in ASC order) ───────────────────────────────
+            echo "API_REPORT<<EOF"
+            echo "*🔌 API Tests*"
+            build_line "8.7 — ES" "c8-orchestration-cluster-nightly-8.7-api-es.yml"
+            build_line "8.8 — ES" "c8-orchestration-cluster-nightly-8.8-api-es.yml"
+            build_line "8.9 — ES" "c8-orchestration-cluster-nightly-8.9-api-es.yml"
+            build_line "8.9 — RDBMS" "c8-orchestration-cluster-nightly-8.9-api-rdbms.yml"
+            build_line "main — ES" "c8-orchestration-cluster-nightly-main-api-es.yml"
+            build_line "main — RDBMS" "c8-orchestration-cluster-nightly-main-api-rdbms.yml"
+            echo "EOF"
+
+            # ── E2E Tests (versions in ASC order) ───────────────────────────────
+            echo "E2E_REPORT<<EOF"
+            echo "*🧪 E2E Tests*"
+            build_line "8.7" "c8-orchestration-cluster-nightly-8.7-e2e.yml"
+            build_line "8.8" "c8-orchestration-cluster-nightly-8.8-e2e.yml"
+            build_line "8.9" "c8-orchestration-cluster-nightly-8.9-e2e.yml"
+            build_line "main" "c8-orchestration-cluster-nightly-main-e2e.yml"
+            echo "EOF"
+
+            echo "REPORT_DATE=${TODAY}"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Debug report output
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          echo "API Report:"
+          cat <<'BLOCK'
+          ${{ steps.report.outputs.API_REPORT }}
+          BLOCK
+          echo ""
+          echo "E2E Report:"
+          cat <<'BLOCK'
+          ${{ steps.report.outputs.E2E_REPORT }}
+          BLOCK
+
+      - name: Post report to Slack
+        uses: slackapi/slack-github-action@af78098f536edbc4de71162a307590698245be95 # v3.0.1
+        with:
+          method: chat.postMessage
+          token: ${{ steps.secrets.outputs.SLACK_CORE_DOMAIN_BOT_TOKEN }}
+          payload: |
+            channel: "c8-orchestration-cluster-e2e-test-results"
+            text: "C8 Orchestration Cluster Nightly Metrics Report"
+            blocks:
+              - type: "header"
+                text:
+                  type: "plain_text"
+                  text: "📊 C8 Orchestration Cluster Nightly Report — ${{ steps.report.outputs.REPORT_DATE }}"
+              - type: "section"
+                text:
+                  type: "mrkdwn"
+                  text: ${{ toJSON(steps.report.outputs.API_REPORT) }}
+              - type: "divider"
+              - type: "section"
+                text:
+                  type: "mrkdwn"
+                  text: ${{ toJSON(steps.report.outputs.E2E_REPORT) }}
+
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
