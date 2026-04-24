@@ -8,6 +8,7 @@
 package io.camunda.zeebe.gateway.rest.controller;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -409,6 +410,37 @@ public class DecisionInstanceQueryControllerTest extends RestControllerTest {
         ops -> new DecisionInstanceFilter.Builder().evaluationDateOperations(ops).build());
 
     return streamBuilder.build();
+  }
+
+  private static Stream<Arguments> provideInvalidDecisionEvaluationInstanceKeys() {
+    return Stream.of(
+        Arguments.of("+++"),
+        Arguments.of("abc"),
+        Arguments.of("123"),
+        Arguments.of("-1-2"),
+        Arguments.of("1-"),
+        Arguments.of("-1"),
+        Arguments.of("1--1"),
+        Arguments.of("1-2-3"),
+        Arguments.of("1-a"),
+        Arguments.of("a-1"));
+  }
+
+  @ParameterizedTest
+  @MethodSource("provideInvalidDecisionEvaluationInstanceKeys")
+  void shouldReturn400ForInvalidDecisionEvaluationInstanceKeyFormat(final String invalidKey) {
+    // when / then
+    webClient
+        .get()
+        .uri("/v2/decision-instances/{decisionInstanceId}", invalidKey)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON);
+
+    // then - the service must not be invoked when validation fails
+    verify(decisionInstanceServices, never()).getById(eq(invalidKey));
   }
 
   @ParameterizedTest
