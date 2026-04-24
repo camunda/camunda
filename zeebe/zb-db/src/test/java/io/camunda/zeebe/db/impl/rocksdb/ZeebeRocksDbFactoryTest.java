@@ -24,6 +24,7 @@ import io.camunda.zeebe.db.impl.DbString;
 import io.camunda.zeebe.db.impl.DefaultColumnFamily;
 import io.camunda.zeebe.db.impl.DefaultZeebeDbFactory;
 import io.camunda.zeebe.db.impl.rocksdb.RocksDbConfiguration.MemoryAllocationStrategy;
+import io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory.SharedRocksDbResources;
 import io.camunda.zeebe.util.ByteValue;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.File;
@@ -240,6 +241,16 @@ final class ZeebeRocksDbFactoryTest {
     try (final var db = factory.openSnapshotOnlyDb(dbPath)) {
       assertThatCode(() -> assertions.accept(db)).isInstanceOf(UnsupportedOperationException.class);
     }
+  }
+
+  @Test
+  void shouldNotThrowWhenClosingUninitializedSharedResources() {
+    // given
+    final var sharedResources = new SharedRocksDbResources();
+
+    // when - then
+    assertThatCode(sharedResources::close).doesNotThrowAnyException();
+    assertThat(sharedResources.isInitialized()).isFalse();
   }
 
   private static void validateDefaultExpectedOptions(

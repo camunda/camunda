@@ -12,7 +12,7 @@ import {
   TableBatchAction,
   TableBatchActions,
 } from '@carbon/react';
-import pluralSuffix from 'modules/utils/pluralSuffix';
+import {pluralSuffix} from 'modules/utils/pluralSuffix';
 import {useState} from 'react';
 import {RetryFailed, Error, TrashCan} from '@carbon/react/icons';
 import {MigrateAction} from './MigrateAction';
@@ -26,7 +26,7 @@ import {tracking} from 'modules/tracking';
 import {handleOperationError} from 'modules/utils/notifications';
 import {
   useBatchOperationMutationRequestBody,
-  useDeleteBatchOperationMutationRequestBody,
+  useDeleteProcessInstancesBatchOperationMutationRequestBody,
 } from 'modules/hooks/useBatchOperationMutationRequestBody';
 import {useBatchOperationSuccessNotification} from 'modules/hooks/useBatchOperationSuccessNotification';
 import {processInstancesSelectionStore} from 'modules/stores/instancesSelection';
@@ -62,7 +62,7 @@ const Toolbar: React.FC<Props> = observer(({selectedInstancesCount}) => {
     useBatchOperationMutationRequestBody();
 
   const deleteBatchOperationMutationRequestBody =
-    useDeleteBatchOperationMutationRequestBody();
+    useDeleteProcessInstancesBatchOperationMutationRequestBody();
 
   const cancelMutation = useCancelProcessInstancesBatchOperation({
     onSuccess: ({batchOperationKey, batchOperationType}) => {
@@ -71,7 +71,7 @@ const Toolbar: React.FC<Props> = observer(({selectedInstancesCount}) => {
         eventName: 'batch-operation',
         operationType: 'CANCEL_PROCESS_INSTANCE',
       });
-      processInstancesSelectionStore.reset();
+      processInstancesSelectionStore.resetState();
     },
     onError: (error) => {
       handleOperationError(error.response?.status);
@@ -85,7 +85,7 @@ const Toolbar: React.FC<Props> = observer(({selectedInstancesCount}) => {
         eventName: 'batch-operation',
         operationType: 'RESOLVE_INCIDENT',
       });
-      processInstancesSelectionStore.reset();
+      processInstancesSelectionStore.resetState();
     },
     onError: (error) => {
       handleOperationError(error.response?.status);
@@ -99,7 +99,7 @@ const Toolbar: React.FC<Props> = observer(({selectedInstancesCount}) => {
         eventName: 'batch-operation',
         operationType: 'DELETE_PROCESS_INSTANCE',
       });
-      processInstancesSelectionStore.reset();
+      processInstancesSelectionStore.resetState();
     },
     onError: (error) => {
       handleOperationError(error.response?.status);
@@ -124,7 +124,7 @@ const Toolbar: React.FC<Props> = observer(({selectedInstancesCount}) => {
 
   const handleCancelClick = () => {
     closeModal();
-    processInstancesSelectionStore.reset();
+    processInstancesSelectionStore.resetState();
   };
 
   const getBodyText = () => {

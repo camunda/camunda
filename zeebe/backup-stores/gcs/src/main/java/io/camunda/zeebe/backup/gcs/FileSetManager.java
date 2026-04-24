@@ -52,18 +52,21 @@ final class FileSetManager {
   private final String basePath;
   private final ExecutorService executor;
   private final Semaphore concurrencyLimit;
+  private final int bufferSize;
 
   FileSetManager(
       final Storage client,
       final BucketInfo bucketInfo,
       final String basePath,
       final ExecutorService executor,
-      final int maxConcurrentOperations) {
+      final int maxConcurrentOperations,
+      final int bufferSize) {
     this.client = client;
     this.bucketInfo = bucketInfo;
     this.basePath = basePath;
     this.executor = executor;
     concurrencyLimit = new Semaphore(maxConcurrentOperations);
+    this.bufferSize = bufferSize;
   }
 
   /**
@@ -120,8 +123,12 @@ final class FileSetManager {
       final String fileName,
       final Path filePath) {
     try (final var inputStream = Files.newInputStream(filePath)) {
+      final int effectiveBufferSize = Math.clamp(Files.size(filePath), 1, bufferSize);
       client.createFrom(
-          blobInfo(id, fileSetName, fileName), inputStream, BlobWriteOption.doesNotExist());
+          blobInfo(id, fileSetName, fileName),
+          inputStream,
+          effectiveBufferSize,
+          BlobWriteOption.doesNotExist());
     } catch (final IOException e) {
       throw new UncheckedIOException(e);
     }

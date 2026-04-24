@@ -318,6 +318,10 @@ As an example, we have the following tests running:
 * medic-y-2025-cw-25-59a095c4-test-realistic
 * medic-y-2025-cw-25-59a095c4-test-rdbms-realistic
 
+**Expectations:**
+
+* In case an issue prevents a test from working properly, **and** no workaround is currently available, the test can be deleted to save resources.
+
 #### Daily load tests
 
 In addition to our weekly load tests, we ran daily stress tests based on the state of the **main** branch (from the [Camunda mono repository](https://github.com/camunda/camunda)) with our [Camunda load test GitHub workflow](https://github.com/camunda/camunda/actions/workflows/camunda-load-test.yml).

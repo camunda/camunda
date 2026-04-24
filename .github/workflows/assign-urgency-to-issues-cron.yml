@@ -1,0 +1,53 @@
+# type: Project Management
+# owner: @camunda/core-features-team
+---
+# Hourly urgency sync for Quality Board (#187)
+#
+# Picks up issues that were recently updated but don't have urgency set yet.
+# Uses --direct mode to support cross-repo issues from all repos in the project.
+#
+name: Assign urgency to new issues in Quality Board
+
+on:
+  schedule:
+    - cron: '0 * * * *' # every hour
+  workflow_dispatch: {}
+
+jobs:
+  assign-urgency-batch:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    timeout-minutes: 15
+    defaults:
+      run:
+        shell: bash
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Generate GitHub token
+        id: github-token
+        uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@fc4fa13813cbc1835129967f10a12f24aa7a393c # main
+        with:
+          github-app-id-vault-key: PROJECT_BOARD_AUTOMATION_APP_ID
+          github-app-id-vault-path: secret/data/products/camunda/ci/camunda
+          github-app-private-key-vault-key: PROJECT_BOARD_AUTOMATION_APP_PRIVATE_KEY
+          github-app-private-key-vault-path: secret/data/products/camunda/ci/camunda
+          vault-auth-method: approle
+          vault-auth-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-auth-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+          vault-url: ${{ secrets.VAULT_ADDR }}
+
+      - name: Run urgency batch for Quality Board
+        env:
+          GH_TOKEN: ${{ steps.github-token.outputs.token }}
+        run: |
+          bash .github/workflows/assign-urgency-to-issues.sh \
+            --project 187 \
+            --direct \
+            --updated-since 2h \
+            --skip-assigned \
+            --limit 100 \
+            --delay 1

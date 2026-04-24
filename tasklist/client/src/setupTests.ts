@@ -45,6 +45,12 @@ function mockMatchMedia() {
 mockMatchMedia();
 initTestI18next();
 
+// Polyfill requestAnimationFrame at module level so it is available before any
+// test file runs (e.g. Preact-based form-js components call it during render).
+globalThis.requestAnimationFrame = (fn: FrameRequestCallback) =>
+  setTimeout(() => fn(Date.now()), 1) as unknown as number;
+globalThis.cancelAnimationFrame = (id: number) => clearTimeout(id);
+
 beforeEach(() => {
   mockMatchMedia();
 

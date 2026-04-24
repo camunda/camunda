@@ -39,7 +39,7 @@ public class SnapshotUtil {
             new ConsistencyChecksSettings(true, true),
             new AccessMetricsConfiguration(Kind.NONE, 1),
             SimpleMeterRegistry::new,
-            SharedRocksDbResources.allocate(DEFAULT_MEMORY_LIMIT),
+            new SharedRocksDbResources(DEFAULT_MEMORY_LIMIT),
             3);
   }
 

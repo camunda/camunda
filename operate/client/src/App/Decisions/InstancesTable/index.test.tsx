@@ -32,10 +32,6 @@ import {
 import * as clientConfig from 'modules/utils/getClientConfig';
 import {decisionInstancesSelectionStore} from 'modules/stores/instancesSelection';
 
-vi.mock('modules/feature-flags', () => ({
-  IS_DELETE_DI_BATCH_OPERATION_ENABLED: true,
-}));
-
 const createWrapper = (
   initialPath: string = `${Paths.decisions()}?evaluated=true`,
 ) => {
@@ -379,7 +375,7 @@ describe('<InstancesTable />', () => {
     await user.click(firstRowCheckbox!);
 
     expect(screen.getByText('1 item selected')).toBeInTheDocument();
-    expect(screen.getByRole('button', {name: /delete/i})).toBeInTheDocument();
+    expect(screen.getByRole('button', {name: 'Delete'})).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', {name: 'Discard'}));
 

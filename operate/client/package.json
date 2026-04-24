@@ -62,7 +62,8 @@
     "knip": "knip --tsConfig tsconfig.app.json"
   },
   "devDependencies": {
-    "@camunda/lint-config": "file:../../client-components/packages/lint-config",
+    "@camunda/lint-config": "file:../../webapp/client/packages/lint-config",
+    "@camunda/c8-mocks": "file:../../webapp/client/packages/c8-mocks",
     "@eslint/js": "9.39.4",
     "@playwright/test": "1.58.2",
     "@testing-library/dom": "10.4.1",

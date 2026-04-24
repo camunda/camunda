@@ -60,20 +60,10 @@ public class ExecutableFlowNode extends AbstractFlowElement {
     this.outputMappings = Optional.of(outputMappings);
   }
 
-  public void addListener(
-      final ZeebeExecutionListenerEventType eventType,
-      final Expression type,
-      final Expression retries,
-      final Map<String, String> taskHeaders) {
-    final ExecutionListener listener = new ExecutionListener();
-    listener.setEventType(eventType);
-
-    final JobWorkerProperties jobWorkerProperties = new JobWorkerProperties();
-    jobWorkerProperties.setType(type);
-    jobWorkerProperties.setRetries(retries);
-    jobWorkerProperties.setTaskHeaders(taskHeaders);
-    listener.setJobWorkerProperties(jobWorkerProperties);
-    executionListeners.add(listener);
+  public List<ExecutionListener> getBeforeAllExecutionListeners() {
+    return executionListeners.stream()
+        .filter(el -> el.getEventType() == ZeebeExecutionListenerEventType.beforeAll)
+        .toList();
   }
 
   public List<ExecutionListener> getStartExecutionListeners() {
@@ -90,5 +80,35 @@ public class ExecutableFlowNode extends AbstractFlowElement {
 
   public boolean hasExecutionListeners() {
     return !executionListeners.isEmpty();
+  }
+
+  public void addExecutionListener(
+      final ZeebeExecutionListenerEventType eventType,
+      final Expression type,
+      final Expression retries,
+      final Map<String, String> taskHeaders) {
+    final ExecutionListener listener = new ExecutionListener();
+    listener.setEventType(eventType);
+
+    final JobWorkerProperties jobWorkerProperties = new JobWorkerProperties();
+    jobWorkerProperties.setType(type);
+    jobWorkerProperties.setRetries(retries);
+    jobWorkerProperties.setTaskHeaders(taskHeaders);
+    listener.setJobWorkerProperties(jobWorkerProperties);
+    executionListeners.add(listener);
+  }
+
+  public void addExecutionListener(final ExecutionListener listener) {
+    executionListeners.add(listener);
+  }
+
+  /**
+   * Removes all {@code beforeAll} execution listeners from this flow node and returns them. Used
+   * during multi-instance body transformation to re-attach them to the body.
+   */
+  public List<ExecutionListener> removeBeforeAllExecutionListeners() {
+    final List<ExecutionListener> removed = getBeforeAllExecutionListeners();
+    executionListeners.removeAll(removed);
+    return removed;
   }
 }

@@ -18,10 +18,9 @@ export async function cleanupGlobalTaskListeners(
   await Promise.allSettled(
     ids.map(async (id) => {
       try {
-        await request.delete(
-          buildUrl('/global-task-listeners/{id}', {id}),
-          {headers: jsonHeaders()},
-        );
+        await request.delete(buildUrl('/global-task-listeners/{id}', {id}), {
+          headers: jsonHeaders(),
+        });
       } catch {}
     }),
   );

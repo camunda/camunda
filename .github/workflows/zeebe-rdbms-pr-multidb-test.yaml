@@ -1,0 +1,28 @@
+# description: Executes all Rdbms MultiDb tests in a PR when labeled with 'multidb-test-rdbms'.
+#     The actual test execution is defined in the zeebe-rdbms-integration-tests.yml workflow.
+# calls: zeebe-rdbms-integration-tests.yml
+# type: CI
+# owner: @camunda/data-layer
+name: Rdbms MultiDb Tests PR
+on:
+  pull_request:
+    types:
+      - labeled
+      - synchronize
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+defaults:
+  run:
+    # use bash shell by default to ensure pipefail behavior is the default
+    # see https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#exit-codes-and-error-action-preference
+    shell: bash
+
+jobs:
+  run-multidb-tests:
+    if: >
+      (github.event.action == 'labeled' && github.event.label.name == 'multidb-test-rdbms') ||
+      (github.event.action == 'synchronize' && contains(github.event.pull_request.labels.*.name, 'multidb-test-rdbms'))
+    uses: ./.github/workflows/zeebe-rdbms-integration-tests.yml
+    secrets: inherit

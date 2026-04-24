@@ -28,7 +28,6 @@ import io.camunda.qa.util.multidb.BasicAuthCamundaClientTestFactory;
 import io.camunda.qa.util.multidb.CamundaClientTestFactory;
 import io.camunda.qa.util.multidb.CamundaMultiDBExtension;
 import io.camunda.qa.util.multidb.CamundaMultiDBExtension.DatabaseType;
-import io.camunda.qa.util.multidb.EntityManager;
 import io.camunda.qa.util.multidb.OidcCamundaClientTestFactory;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.test.testcontainers.DefaultTestContainers;

@@ -11,7 +11,7 @@ import type {
   CreateIncidentResolutionBatchOperationRequestBody,
 } from '@camunda/camunda-api-zod-schemas/8.10';
 import {parseProcessInstancesSearchFilter} from 'modules/utils/filter/processInstancesSearch';
-import {buildProcessInstanceKeyCriterion} from 'modules/mutations/processes/buildProcessInstanceKeyCriterion';
+import {buildInstanceKeyCriterion} from 'modules/utils/instances/buildInstanceKeyCriterion';
 import {getValidVariableValues} from 'modules/utils/filter/getValidVariableValues';
 import type {Variable} from 'modules/stores/variableFilter';
 
@@ -32,7 +32,7 @@ const buildMutationRequestBody = ({
 }: BuildMutationRequestBodyParams) => {
   const baseFilter = parseProcessInstancesSearchFilter(searchParams);
 
-  const keyCriterion = buildProcessInstanceKeyCriterion(includeIds, excludeIds);
+  const keyCriterion = buildInstanceKeyCriterion(includeIds, excludeIds);
 
   let filter = baseFilter ?? {};
 

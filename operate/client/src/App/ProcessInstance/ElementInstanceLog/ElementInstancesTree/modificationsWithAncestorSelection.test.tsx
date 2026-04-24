@@ -13,7 +13,7 @@ import {ElementInstancesTree} from './index';
 import {
   multipleSubprocessesWithTwoRunningScopesMock,
   mockNestedSubProcessInstance,
-  Wrapper,
+  getWrapper,
 } from './mocks';
 import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
@@ -59,7 +59,7 @@ describe.todo(
           businessObjects={businessObjects}
         />,
         {
-          wrapper: Wrapper,
+          wrapper: getWrapper(),
         },
       );
 
@@ -155,7 +155,7 @@ describe.todo(
           businessObjects={businessObjects}
         />,
         {
-          wrapper: Wrapper,
+          wrapper: getWrapper(),
         },
       );
 
@@ -323,7 +323,7 @@ describe.todo(
           businessObjects={businessObjects}
         />,
         {
-          wrapper: Wrapper,
+          wrapper: getWrapper(),
         },
       );
 
@@ -505,7 +505,7 @@ describe.todo(
           businessObjects={businessObjects}
         />,
         {
-          wrapper: Wrapper,
+          wrapper: getWrapper(),
         },
       );
 

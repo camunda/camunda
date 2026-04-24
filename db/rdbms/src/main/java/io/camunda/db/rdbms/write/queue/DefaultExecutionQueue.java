@@ -38,6 +38,7 @@ public class DefaultExecutionQueue implements ExecutionQueue {
   private static final Set<Pattern> IGNORE_EMPTY_UPDATES =
       Set.of(
           Pattern.compile(".*update.*HistoryCleanupDate$"),
+          Pattern.compile("io.camunda.db.rdbms.sql.BatchOperationMapper.createIfNotExists"),
           Pattern.compile("io.camunda.db.rdbms.sql.SequenceFlowMapper.createIfNotExists"),
           Pattern.compile("io.camunda.db.rdbms.sql.BatchOperationMapper.activate"));
 

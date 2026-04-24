@@ -109,7 +109,7 @@ test.describe.parallel('Resolve related incidents API Tests', () => {
         );
         const body = await incidents.json();
         expect(body.page.totalItems).toEqual(2);
-        expect(body.items.length).toEqual(2);
+        expect(body.items).toHaveLength(2);
         for (const incident of body.items) {
           incidentKeys.push(incident.incidentKey);
           expect(incident.state).toBe('ACTIVE');
@@ -118,7 +118,7 @@ test.describe.parallel('Resolve related incidents API Tests', () => {
           }
         }
         expect(elementInstanceKey).not.toEqual('');
-        expect(incidentKeys.length).toEqual(2);
+        expect(incidentKeys).toHaveLength(2);
       }).toPass(defaultAssertionOptions);
     });
 

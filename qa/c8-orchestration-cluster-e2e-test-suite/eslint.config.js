@@ -25,6 +25,7 @@ export default [
       '.eslintcache',
       '.env',
       'html-report/',
+      'v2-stateless-tests/request-validation-test-generator/scripts/**',
     ],
   },
   {
@@ -68,6 +69,13 @@ export default [
     },
     rules: {
       'license-header/header': ['error', './license-header.js'],
+    },
+  },
+
+  {
+    files: ['v2-stateless-tests/request-validation-test-generator/**/*.ts'],
+    rules: {
+      '@typescript-eslint/no-explicit-any': 'off',
     },
   },
 ];

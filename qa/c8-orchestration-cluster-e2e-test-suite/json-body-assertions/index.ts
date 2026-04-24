@@ -81,11 +81,10 @@ export function validateResponseShape<
   }
 
   // Call without throwing so we can filter [EXTRA] errors first.
-  const result = _generatedValidateResponseShape(
-    spec,
-    body,
-    {...options, throw: false},
-  ) as ValidationResult;
+  const result = _generatedValidateResponseShape(spec, body, {
+    ...options,
+    throw: false,
+  }) as ValidationResult;
 
   const filtered = _filterExtraFieldErrors(result);
   if (!filtered.ok) {

@@ -97,7 +97,11 @@ test.describe
       }
 
       if (jobType === 'uninitialized') {
-        test.info().annotations.push({ type: 'blocked', description: 'No job statistics data available to verify the response with jobType filter' });
+        test.info().annotations.push({
+          type: 'blocked',
+          description:
+            'No job statistics data available to verify the response with jobType filter',
+        });
         return;
       }
     });
@@ -175,7 +179,7 @@ test.describe
       res,
     );
     const responseBody = await res.json();
-    expect(responseBody.items.length).toBe(0);
+    expect(responseBody.items).toHaveLength(0);
   });
 
   test('Get time-series metrics for a job type with no jobtype parameter - Bad Request', async ({
@@ -231,9 +235,13 @@ test.describe
           break;
         }
       }
-      
+
       if (jobType === 'uninitialized') {
-        test.info().annotations.push({ type: 'blocked', description: 'No job statistics data available to verify the response with jobType filter' });
+        test.info().annotations.push({
+          type: 'blocked',
+          description:
+            'No job statistics data available to verify the response with jobType filter',
+        });
         return;
       }
     });
@@ -296,6 +304,6 @@ test.describe
       res,
     );
     const responseBody = await res.json();
-    expect(responseBody.items.length).toBe(0);
+    expect(responseBody.items).toHaveLength(0);
   });
 });

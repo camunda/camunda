@@ -6,8 +6,10 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import {readFileSync} from 'node:fs';
+import {basename} from 'node:path';
 import {Camunda8} from '@camunda8/sdk';
-import {JSONDoc, ZBWorkerTaskHandler} from '@camunda8/sdk/dist/zeebe/types.js';
+import {JSONDoc} from '@camunda8/sdk/dist/zeebe/types.js';
 
 const c8 = new Camunda8({
   CAMUNDA_AUTH_STRATEGY: process.env.CAMUNDA_AUTH_STRATEGY as
@@ -25,6 +27,7 @@ const c8 = new Camunda8({
   // Zeebe server rejects keepalive pings sent without active RPC calls
   // (permitKeepAliveWithoutCalls=false). Setting this to 0 aligns the client
   // with the server's expectation and prevents ENHANCE_YOUR_CALM / excess pings errors.
+  // @ts-expect-error -- GRPC_KEEPALIVE_PERMIT_WITHOUT_CALLS is a valid gRPC channel option but not yet typed in the SDK
   GRPC_KEEPALIVE_PERMIT_WITHOUT_CALLS: 0,
 });
 
@@ -45,6 +48,28 @@ const deploy = async (processFilePaths: string[]) => {
   try {
     const results = await zeebe.deployResourcesFromFiles(processFilePaths);
     return results;
+  } catch (error) {
+    console.error('Deployment failed:', error);
+    throw error;
+  }
+};
+
+const deployWithSubstitutions = async (
+  filePath: string,
+  substitutions: Record<string, string>,
+): Promise<void> => {
+  let content = readFileSync(filePath, 'utf-8');
+  for (const [placeholder, replacement] of Object.entries(substitutions)) {
+    if (!content.includes(placeholder)) {
+      throw new Error(
+        `Placeholder '${placeholder}' not found in BPMN file '${filePath}'`,
+      );
+    }
+    content = content.split(placeholder).join(replacement);
+  }
+  const name = basename(filePath);
+  try {
+    await zeebe.deployResources([{content, name}]);
   } catch (error) {
     console.error('Deployment failed:', error);
     throw error;
@@ -97,7 +122,8 @@ const createWorker = (
   taskType: string,
   shouldFail: boolean = false,
   variables: JSONDoc = {},
-  handler?: ZBWorkerTaskHandler,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  handler?: (job: any) => any,
   timeout?: number,
 ) => {
   return zeebeGrpc.createWorker({
@@ -115,6 +141,14 @@ const createWorker = (
   });
 };
 
+const setVariables = async (
+  elementInstanceKey: string,
+  variables: Record<string, unknown>,
+  local: boolean = false,
+): Promise<void> => {
+  await zeebeGrpc.setVariables({elementInstanceKey, variables, local});
+};
+
 async function checkUpdateOnVersion(
   targetVersion: string,
   processInstanceKey: string,
@@ -126,16 +160,9 @@ async function checkUpdateOnVersion(
   return !!item && item.processDefinitionVersion == targetVersion;
 }
 
-const setVariables = async (
-  elementInstanceKey: string,
-  variables: JSONDoc,
-  local: boolean = false,
-) => {
-  return zeebeGrpc.setVariables({elementInstanceKey, variables, local});
-};
-
 export {
   deploy,
+  deployWithSubstitutions,
   createInstances,
   generateManyVariables,
   checkUpdateOnVersion,

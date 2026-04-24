@@ -11,14 +11,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.client.api.search.enums.UserTaskState;
 import io.camunda.tasklist.qa.backup.BackupRestoreTestContext;
 import io.camunda.tasklist.qa.backup.TasklistAPICaller;
 import io.camunda.tasklist.qa.util.ZeebeTestUtil;
 import io.camunda.tasklist.util.ThreadUtil;
-import io.camunda.tasklist.webapp.api.rest.v1.entities.SaveVariablesRequest;
 import io.camunda.tasklist.webapp.dto.VariableInputDTO;
 import io.camunda.webapps.schema.descriptors.template.DraftTaskVariableTemplate;
-import io.camunda.webapps.schema.entities.usertask.TaskState;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import java.io.IOException;
@@ -27,6 +26,7 @@ import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -55,12 +55,7 @@ public abstract class AbstractBackupRestoreDataGenerator implements BackupRestor
   private List<Long> processInstanceKeys = new ArrayList<>();
 
   private void init(final BackupRestoreTestContext testContext) {
-    camundaClient =
-        CamundaClient.newClientBuilder()
-            .preferRestOverGrpc(false)
-            .grpcAddress(testContext.getZeebeGrpcAddress())
-            .build();
-
+    camundaClient = testContext.createCamundaClient();
     initClient(testContext);
 
     indexPrefix = testContext.getIndexPrefix();
@@ -94,16 +89,17 @@ public abstract class AbstractBackupRestoreDataGenerator implements BackupRestor
   }
 
   @Override
-  public void assertData() throws IOException {
+  public void assertData() {
     await()
         .atMost(Duration.ofSeconds(30))
         .pollDelay(Duration.ofMillis(500))
         .untilAsserted(
             () -> {
               final var response = tasklistAPICaller.getAllTasks();
-              assertThat(response).hasSize(PROCESS_INSTANCE_COUNT);
-              assertThat(response.getFirst().getName()).isEqualTo("task1");
-              assertThat(response.getFirst().getTaskState()).isEqualTo(TaskState.CREATED);
+              final var tasks = response.items();
+              assertThat(tasks).hasSize(PROCESS_INSTANCE_COUNT);
+              assertThat(tasks.getFirst().getName()).isEqualTo("task1");
+              assertThat(tasks.getFirst().getState()).isEqualTo(UserTaskState.CREATED);
               assertThat(countEntitiesFor(DraftTaskVariableTemplate.INDEX_NAME))
                   .isEqualTo(ALL_DRAFT_TASK_VARIABLES_COUNT);
             });
@@ -116,18 +112,18 @@ public abstract class AbstractBackupRestoreDataGenerator implements BackupRestor
         .pollDelay(Duration.ofMillis(500))
         .untilAsserted(
             () -> {
-              var tasks = tasklistAPICaller.getTasks("task1");
+              var tasks = tasklistAPICaller.getTasks("task1").items();
               assertThat(tasks).hasSize(PROCESS_INSTANCE_COUNT);
               assertThat(tasks)
-                  .filteredOn(t -> t.getTaskState().equals(TaskState.COMPLETED))
+                  .filteredOn(t -> UserTaskState.COMPLETED.equals(t.getState()))
                   .hasSize(COMPLETED_TASKS_COUNT);
               assertThat(tasks)
-                  .filteredOn(t -> t.getTaskState().equals(TaskState.CREATED))
+                  .filteredOn(t -> UserTaskState.CREATED.equals(t.getState()))
                   .hasSize(PROCESS_INSTANCE_COUNT - COMPLETED_TASKS_COUNT);
 
-              tasks = tasklistAPICaller.getTasks("task2");
+              tasks = tasklistAPICaller.getTasks("task2").items();
               assertThat(tasks).hasSize(PROCESS_INSTANCE_COUNT);
-              assertThat(tasks).extracting("taskState").containsOnly(TaskState.CREATED);
+              assertThat(tasks).extracting("taskState").containsOnly(UserTaskState.CREATED);
 
               // after task completion all draft variables associated with a task will be deleted
               assertThat(countEntitiesFor(DraftTaskVariableTemplate.INDEX_NAME))
@@ -155,24 +151,20 @@ public abstract class AbstractBackupRestoreDataGenerator implements BackupRestor
   protected abstract void refreshIndices();
 
   private void addDraftVariablesForAllTasks() throws IOException {
-    final var tasks = tasklistAPICaller.getAllTasks();
+    final var taskResponse = tasklistAPICaller.getAllTasks();
+    final var tasks = taskResponse.items();
     LOGGER.info("Found '{}' tasks, adding 2 draft variables to each task.", tasks.size());
     tasks.stream()
         .parallel()
         .forEach(
             task ->
                 tasklistAPICaller.saveDraftTaskVariables(
-                    task.getId(),
-                    new SaveVariablesRequest()
-                        .setVariables(
-                            List.of(
-                                new VariableInputDTO()
-                                    .setName("var1")
-                                    .setValue("\"updatedDraftVarValue\""),
-                                new VariableInputDTO()
-                                    .setName("draftVar")
-                                    .setValue(
-                                        "\"" + RandomStringUtils.randomAlphanumeric(10) + "\"")))));
+                    task.getElementInstanceKey(),
+                    Map.of(
+                        "var1",
+                        "\"updatedDraftVarValue\"",
+                        "draftVar",
+                        "\"" + RandomStringUtils.randomAlphanumeric(10) + "\"")));
   }
 
   protected abstract void claimAllTasks();
@@ -191,7 +183,7 @@ public abstract class AbstractBackupRestoreDataGenerator implements BackupRestor
     final int maxWait = 101;
     while (PROCESS_INSTANCE_COUNT > loadedUserTasks && count < maxWait) {
       count++;
-      loadedUserTasks = tasklistAPICaller.getAllTasks().size();
+      loadedUserTasks = tasklistAPICaller.getAllTasks().items().size();
       LOGGER.info(
           "Imported '{}' process instances of '{}'", loadedUserTasks, PROCESS_INSTANCE_COUNT);
       assertThat(loadedUserTasks).isLessThanOrEqualTo(PROCESS_INSTANCE_COUNT);
@@ -258,10 +250,10 @@ public abstract class AbstractBackupRestoreDataGenerator implements BackupRestor
 
   private void completeTasks(final String taskBpmnId, final int completedTasksCount)
       throws IOException {
-    final var tasks = tasklistAPICaller.getTasks(taskBpmnId);
+    final var tasks = tasklistAPICaller.getTasks(taskBpmnId).items();
     for (int i = 0; i < completedTasksCount; i++) {
       tasklistAPICaller.completeTask(
-          tasks.get(i).getId(), new VariableInputDTO().setName("varOut").setValue("123"));
+          tasks.get(i).getUserTaskKey(), new VariableInputDTO().setName("varOut").setValue("123"));
     }
   }
 }

@@ -94,7 +94,7 @@ test.describe('Element Instance Search API', () => {
       const body = await res.json();
 
       expect(body.page.totalItems).toBeGreaterThan(1);
-      expect(body.items.length).toBe(1);
+      expect(body.items).toHaveLength(1);
     }).toPass(defaultAssertionOptions);
   });
 
@@ -154,7 +154,7 @@ test.describe('Element Instance Search API', () => {
       );
       const body = await res.json();
       expect(body.page.totalItems).toBe(expectedTotal);
-      expect(body.items.length).toBe(expectedTotal);
+      expect(body.items).toHaveLength(expectedTotal);
       body.items.forEach((item: Record<string, unknown>) => {
         expect(item.processDefinitionId).toBe(processDefinitionIdToSearch);
       });
@@ -186,7 +186,7 @@ test.describe('Element Instance Search API', () => {
       );
       const body = await res.json();
       expect(body.page.totalItems).toBe(expectedTotal);
-      expect(body.items.length).toBe(expectedTotal);
+      expect(body.items).toHaveLength(expectedTotal);
       body.items.forEach((item: Record<string, unknown>) => {
         expect(item.elementName).toBe(elementNameToSearch);
       });
@@ -248,7 +248,7 @@ test.describe('Element Instance Search API', () => {
       );
       const body = await res.json();
       expect(body.page.totalItems).toBe(expectedTotal);
-      expect(body.items.length).toBe(expectedTotal);
+      expect(body.items).toHaveLength(expectedTotal);
       body.items.forEach((item: Record<string, unknown>) => {
         expect(item.processDefinitionKey).toBe(processDefinitionKeyToSearch);
       });
@@ -280,7 +280,7 @@ test.describe('Element Instance Search API', () => {
       );
       const body = await res.json();
       expect(body.page.totalItems).toBe(expectedTotal);
-      expect(body.items.length).toBe(expectedTotal);
+      expect(body.items).toHaveLength(expectedTotal);
       body.items.forEach((item: Record<string, unknown>) => {
         expect(item.processInstanceKey).toBe(processInstanceKeyToSearch);
       });
@@ -309,7 +309,7 @@ test.describe('Element Instance Search API', () => {
       );
       const body = await res.json();
       expect(body.page.totalItems).toBe(1);
-      expect(body.items.length).toBe(1);
+      expect(body.items).toHaveLength(1);
       expect(body.items[0]['processDefinitionKey']).toBe(
         state.processDefinitionKey,
       );
@@ -368,7 +368,11 @@ test.describe('Element Instance Search API', () => {
           },
         },
       });
-      await assertInvalidArgument(res, 400, "The value for page.limit is '-1' but must be a non-negative number.");
+      await assertInvalidArgument(
+        res,
+        400,
+        "The value for page.limit is '-1' but must be a non-negative number.",
+      );
     }).toPass(defaultAssertionOptions);
   });
 

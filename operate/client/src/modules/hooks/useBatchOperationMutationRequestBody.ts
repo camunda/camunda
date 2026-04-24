@@ -8,8 +8,14 @@
 
 import {useSearchParams} from 'react-router-dom';
 import {variableFilterStore} from 'modules/stores/variableFilter';
-import {processInstancesSelectionStore} from 'modules/stores/instancesSelection';
+import {
+  processInstancesSelectionStore,
+  decisionInstancesSelectionStore,
+} from 'modules/stores/instancesSelection';
 import {buildMutationRequestBody} from 'modules/utils/buildMutationRequestBody';
+import {parseDecisionInstancesSearchFilter} from 'modules/utils/filter/decisionsFilter';
+import {buildInstanceKeyCriterion} from 'modules/utils/instances/buildInstanceKeyCriterion';
+import type {CreateDecisionInstancesDeletionBatchOperationRequestBody} from '@camunda/camunda-api-zod-schemas/8.10';
 
 const useBatchOperationMutationRequestBody = () => {
   const variable = variableFilterStore.variable;
@@ -33,7 +39,7 @@ const useBatchOperationMutationRequestBody = () => {
  * Unlike running operations (cancel, retry), delete operations only work on
  * finished instances (COMPLETED or TERMINATED).
  */
-const useDeleteBatchOperationMutationRequestBody = () => {
+const useDeleteProcessInstancesBatchOperationMutationRequestBody = () => {
   const variable = variableFilterStore.variable;
   const [searchParams] = useSearchParams();
 
@@ -50,7 +56,26 @@ const useDeleteBatchOperationMutationRequestBody = () => {
   });
 };
 
+const useDeleteDecisionInstancesBatchOperationRequestBody =
+  (): CreateDecisionInstancesDeletionBatchOperationRequestBody => {
+    const [searchParams] = useSearchParams();
+
+    const {selectedIds, excludedIds, checkedIds} =
+      decisionInstancesSelectionStore;
+
+    const includeIds = selectedIds.length > 0 ? checkedIds : [];
+    const keyCriterion = buildInstanceKeyCriterion(includeIds, excludedIds);
+
+    const baseFilter = parseDecisionInstancesSearchFilter(searchParams) ?? {};
+    const filter = keyCriterion
+      ? {...baseFilter, decisionEvaluationInstanceKey: keyCriterion}
+      : baseFilter;
+
+    return {filter};
+  };
+
 export {
   useBatchOperationMutationRequestBody,
-  useDeleteBatchOperationMutationRequestBody,
+  useDeleteProcessInstancesBatchOperationMutationRequestBody,
+  useDeleteDecisionInstancesBatchOperationRequestBody,
 };

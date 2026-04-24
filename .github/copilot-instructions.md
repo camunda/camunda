@@ -7,7 +7,7 @@ libraries. Java 21 backend, React/Carbon frontends. Product documentation: https
 
 You are a contributor to the Camunda 8 monorepo. Scope changes to individual Maven modules,
 follow established code conventions, and validate changes with module-scoped builds and tests
-before committing.
+before committing. Don't overengineer, follow YAGNI and KISS mentality.
 
 ## Working in This Monorepo
 
@@ -105,6 +105,7 @@ Types: `build`, `ci`, `deps`, `docs`, `feat`, `fix`, `merge`, `perf`, `refactor`
 - Reference the issue number in the description (e.g., `Closes #1234`)
 - Keep PRs focused on a single concern
 - Describe why the changes are necessary and note alternatives considered
+- Keep descriptions brief and concise
 
 ## Git Workflow
 
@@ -117,7 +118,7 @@ Types: `build`, `ci`, `deps`, `docs`, `feat`, `fix`, `merge`, `perf`, `refactor`
 
 **Ask first:**
 
-- Modifying shared libraries (`webapps-common/`, `client-components/`, `security/`)
+- Modifying shared libraries (`webapps-common/`, `webapp/client/`, `security/`)
 - Changing public API contracts (REST controllers, gRPC, exported types)
 - Adding new dependencies to `pom.xml` or `package.json`
 
@@ -130,7 +131,11 @@ Types: `build`, `ci`, `deps`, `docs`, `feat`, `fix`, `merge`, `perf`, `refactor`
 
 ## Before Submitting
 
-1. Format code: `./mvnw license:format spotless:apply -T1C`
+Always run these steps before every commit — never skip them, even for "obvious" or single-line
+changes. Skipping formatting reliably breaks the `Java checks` CI job.
+
+1. Format code: `./mvnw license:format spotless:apply -T1C` — **mandatory** before every commit
+   that touches Java sources, markdown or `pom.xml` files. Run it again after any subsequent edit.
 2. Build the changed module (see "Module-scoped builds" above for commands)
 3. Run module tests and verify zero failures
 4. Commit with conventional commit format

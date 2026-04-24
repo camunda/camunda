@@ -13,6 +13,7 @@ import {defaultAssertionOptions} from '../constants';
 import {cancelProcessInstance} from '../zeebeClient';
 import {sleep} from '../sleep';
 import {validateResponse} from 'json-body-assertions';
+import {expectBatchState} from './batch-operation-requestHelpers';
 
 export async function getProcessDefinitionKey(
   request: APIRequestContext,
@@ -219,4 +220,66 @@ export async function expectProcessInstanceCanBeFound(
     intervals: [5_000, 10_000, 15_000, 25_000, 35_000],
     timeout: 180_000,
   });
+}
+
+async function countProcessInstances(
+  request: APIRequestContext,
+  state: string,
+): Promise<number> {
+  const res = await request.post(buildUrl('/process-instances/search'), {
+    headers: jsonHeaders(),
+    data: {filter: {state}, page: {limit: 1}},
+  });
+  await assertStatusCode(res, 200);
+  const json = await res.json();
+  return json.page.totalItems as number;
+}
+
+async function runBatchAndWaitForCompletion(
+  request: APIRequestContext,
+  endpoint: '/process-instances/cancellation' | '/process-instances/deletion',
+  filter: Record<string, unknown>,
+): Promise<void> {
+  const res = await request.post(buildUrl(endpoint), {
+    headers: jsonHeaders(),
+    data: {filter},
+  });
+
+  await assertStatusCode(res, 200);
+  await validateResponse(
+    {
+      path: endpoint,
+      method: 'POST',
+      status: '200',
+    },
+    res,
+  );
+  const json = await res.json();
+  const batchKey = json.batchOperationKey;
+
+  await expectBatchState(request, batchKey, 'COMPLETED');
+}
+
+export async function clearAllProcessInstances(
+  request: APIRequestContext,
+): Promise<void> {
+  // Cancel all active instances first.
+  if ((await countProcessInstances(request, 'ACTIVE')) > 0) {
+    await runBatchAndWaitForCompletion(
+      request,
+      '/process-instances/cancellation',
+      {state: 'ACTIVE'},
+    );
+  }
+  // Cancellation moves instances to TERMINATED; delete each terminal state
+  // individually to avoid relying on $or in the search pre-check.
+  for (const state of ['COMPLETED', 'TERMINATED']) {
+    if ((await countProcessInstances(request, state)) > 0) {
+      await runBatchAndWaitForCompletion(
+        request,
+        '/process-instances/deletion',
+        {state},
+      );
+    }
+  }
 }

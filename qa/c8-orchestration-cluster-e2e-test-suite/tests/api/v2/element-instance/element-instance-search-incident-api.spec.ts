@@ -451,7 +451,11 @@ test.describe('Element Instance Incident Search API', () => {
           },
         },
       );
-      await assertInvalidArgument(res, 400, "The value for page.limit is '-1' but must be a non-negative number.");
+      await assertInvalidArgument(
+        res,
+        400,
+        "The value for page.limit is '-1' but must be a non-negative number.",
+      );
     }).toPass(defaultAssertionOptions);
   });
 });

@@ -754,6 +754,7 @@ class Modifications {
   };
 }
 
+const modificationsStore = new Modifications();
+
 export type {ElementModification, AncestorScopeType};
-export const modificationsStore = new Modifications();
-export {EMPTY_MODIFICATION};
+export {modificationsStore, EMPTY_MODIFICATION};

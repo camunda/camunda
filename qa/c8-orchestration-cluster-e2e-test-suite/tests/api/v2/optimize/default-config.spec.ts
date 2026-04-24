@@ -106,7 +106,6 @@ test.describe.parallel('Scope-Aware Variable Export — Default Config', () => {
     test('should export all variables when exportRootVariables=true and exportLocalVariables=true', async ({
       request,
     }) => {
-      // given
       const instance = await createSingleInstance(PROCESS_ID, 1, ROOT_VARS);
       const processInstanceKey = String(instance.processInstanceKey);
       processInstanceKeys.push(processInstanceKey);
@@ -203,7 +202,7 @@ test.describe.parallel('Scope-Aware Variable Export — Default Config', () => {
       const vars = await getAllProcessInstanceVariables(
         request,
         processInstanceKey,
-        1,
+        4,
       );
       await worker.close();
 

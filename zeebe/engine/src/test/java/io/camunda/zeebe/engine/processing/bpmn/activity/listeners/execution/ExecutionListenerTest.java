@@ -731,6 +731,175 @@ public class ExecutionListenerTest {
                 "overrideKey", "baseOverride"));
   }
 
+  @Test
+  public void shouldCreateExecutionListenerJobsWithCustomHeadersForEmbeddedSubProcess() {
+    // given: Embedded subprocess with start and end execution listeners that have custom headers
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .subProcess(
+                    SUB_PROCESS_ID,
+                    s ->
+                        s.zeebeExecutionListener(
+                                l ->
+                                    l.start()
+                                        .type(START_EL_TYPE)
+                                        .zeebeTaskHeader("subProcessStartHeader", "startValue"))
+                            .zeebeExecutionListener(
+                                l ->
+                                    l.end()
+                                        .type(END_EL_TYPE)
+                                        .zeebeTaskHeader("subProcessEndHeader", "endValue"))
+                            .embeddedSubProcess()
+                            .startEvent()
+                            .manualTask()
+                            .endEvent())
+                .endEvent()
+                .done())
+        .deploy();
+
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // when: complete start and end execution listener jobs
+    ENGINE.job().ofInstance(processInstanceKey).withType(START_EL_TYPE).complete();
+    ENGINE.job().ofInstance(processInstanceKey).withType(END_EL_TYPE).complete();
+
+    // then: assert that both execution listener jobs were created with their respective custom
+    // headers
+    assertThat(
+            jobRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .withJobKind(JobKind.EXECUTION_LISTENER)
+                .withIntent(JobIntent.CREATED)
+                .limit(2))
+        .extracting(
+            r -> r.getValue().getType(),
+            r -> r.getValue().getJobListenerEventType(),
+            r -> r.getValue().getCustomHeaders())
+        .containsExactly(
+            tuple(
+                START_EL_TYPE,
+                io.camunda.zeebe.protocol.record.value.JobListenerEventType.START,
+                Map.of("subProcessStartHeader", "startValue")),
+            tuple(
+                END_EL_TYPE,
+                io.camunda.zeebe.protocol.record.value.JobListenerEventType.END,
+                Map.of("subProcessEndHeader", "endValue")));
+  }
+
+  @Test
+  public void shouldCreateExecutionListenerJobsWithCustomHeadersForUserTask() {
+    // given: User task with start and end execution listeners that have custom headers
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .userTask(
+                    "user_task",
+                    t ->
+                        t.zeebeUserTask()
+                            .zeebeExecutionListener(
+                                l ->
+                                    l.start()
+                                        .type(START_EL_TYPE)
+                                        .zeebeTaskHeader("userTaskStartHeader", "startValue")
+                                        .zeebeTaskHeader("sharedHeader", "fromStart"))
+                            .zeebeExecutionListener(
+                                l ->
+                                    l.end()
+                                        .type(END_EL_TYPE)
+                                        .zeebeTaskHeader("userTaskEndHeader", "endValue")
+                                        .zeebeTaskHeader("sharedHeader", "fromEnd")))
+                .endEvent()
+                .done())
+        .deploy();
+
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // when: complete start EL job, complete the user task, then complete end EL job
+    ENGINE.job().ofInstance(processInstanceKey).withType(START_EL_TYPE).complete();
+    ENGINE.userTask().ofInstance(processInstanceKey).complete();
+    ENGINE.job().ofInstance(processInstanceKey).withType(END_EL_TYPE).complete();
+
+    // then: assert that both execution listener jobs were created with their respective custom
+    // headers
+    assertThat(
+            jobRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .withJobKind(JobKind.EXECUTION_LISTENER)
+                .withIntent(JobIntent.CREATED)
+                .limit(2))
+        .extracting(
+            r -> r.getValue().getType(),
+            r -> r.getValue().getJobListenerEventType(),
+            r -> r.getValue().getCustomHeaders())
+        .containsExactly(
+            tuple(
+                START_EL_TYPE,
+                io.camunda.zeebe.protocol.record.value.JobListenerEventType.START,
+                Map.of("userTaskStartHeader", "startValue", "sharedHeader", "fromStart")),
+            tuple(
+                END_EL_TYPE,
+                io.camunda.zeebe.protocol.record.value.JobListenerEventType.END,
+                Map.of("userTaskEndHeader", "endValue", "sharedHeader", "fromEnd")));
+  }
+
+  @Test
+  public void shouldCreateExecutionListenerJobsWithCustomHeadersForProcessLevelListeners() {
+    // given: Process-level start and end execution listeners with custom headers
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .zeebeExecutionListener(
+                    l ->
+                        l.start()
+                            .type(START_EL_TYPE)
+                            .zeebeTaskHeader("processStartHeader", "processStartValue")
+                            .zeebeTaskHeader("sharedHeader", "fromStart"))
+                .zeebeExecutionListener(
+                    l ->
+                        l.end()
+                            .type(END_EL_TYPE)
+                            .zeebeTaskHeader("processEndHeader", "processEndValue")
+                            .zeebeTaskHeader("sharedHeader", "fromEnd"))
+                .startEvent()
+                .manualTask()
+                .endEvent()
+                .done())
+        .deploy();
+
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // when: complete process and ELs
+    ENGINE.job().ofInstance(processInstanceKey).withType(START_EL_TYPE).complete();
+    ENGINE.job().ofInstance(processInstanceKey).withType(END_EL_TYPE).complete();
+
+    // then: assert that both process-level execution listener jobs have the correct custom headers
+    assertThat(
+            jobRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .withJobKind(JobKind.EXECUTION_LISTENER)
+                .withIntent(JobIntent.CREATED)
+                .limit(2))
+        .extracting(
+            r -> r.getValue().getType(),
+            r -> r.getValue().getJobListenerEventType(),
+            r -> r.getValue().getCustomHeaders())
+        .containsExactly(
+            tuple(
+                START_EL_TYPE,
+                io.camunda.zeebe.protocol.record.value.JobListenerEventType.START,
+                Map.of("processStartHeader", "processStartValue", "sharedHeader", "fromStart")),
+            tuple(
+                END_EL_TYPE,
+                io.camunda.zeebe.protocol.record.value.JobListenerEventType.END,
+                Map.of("processEndHeader", "processEndValue", "sharedHeader", "fromEnd")));
+  }
+
   // test util methods
   static long createProcessInstance(
       final EngineRule engineRule, final BpmnModelInstance modelInstance) {

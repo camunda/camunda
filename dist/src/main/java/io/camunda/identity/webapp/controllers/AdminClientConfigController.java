@@ -11,6 +11,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.security.entity.AuthenticationMethod;
+import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.swagger.v3.oas.annotations.Hidden;
 import java.util.Map;
 import org.slf4j.Logger;
@@ -29,6 +30,7 @@ public class AdminClientConfigController {
   private static final String ORGANIZATION_ID = "organizationId";
   private static final String CLUSTER_ID = "clusterId";
   private static final String ID_PATTERN = "idPattern";
+  private static final String RESOURCE_PERMISSIONS = "resourcePermissions";
   private static final String FALLBACK_CONFIG_JS = "window.clientConfig = {};";
   private static final String CONFIG_JS_TEMPLATE = "window.clientConfig = %s;";
 
@@ -42,7 +44,7 @@ public class AdminClientConfigController {
 
   private String generateClientConfig(final SecurityConfiguration securityConfiguration) {
     try {
-      final Map<String, String> config = createConfigMap(securityConfiguration);
+      final Map<String, Object> config = createConfigMap(securityConfiguration);
       final String configJson = objectMapper.writeValueAsString(config);
       return String.format(CONFIG_JS_TEMPLATE, configJson);
     } catch (final JsonProcessingException e) {
@@ -51,8 +53,8 @@ public class AdminClientConfigController {
     }
   }
 
-  private Map<String, String> createConfigMap(final SecurityConfiguration securityConfiguration) {
-    final var config = new java.util.HashMap<String, String>();
+  private Map<String, Object> createConfigMap(final SecurityConfiguration securityConfiguration) {
+    final var config = new java.util.HashMap<String, Object>();
     final var saasConfiguration = securityConfiguration.getSaas();
 
     config.put(IS_OIDC, String.valueOf(isOidcAuthentication(securityConfiguration)));
@@ -64,6 +66,7 @@ public class AdminClientConfigController {
     config.put(ORGANIZATION_ID, saasConfiguration.getOrganizationId());
     config.put(CLUSTER_ID, saasConfiguration.getClusterId());
     config.put(ID_PATTERN, securityConfiguration.getIdValidationPattern());
+    config.put(RESOURCE_PERMISSIONS, AuthorizationResourceType.buildResourcePermissionsMap());
 
     return config;
   }

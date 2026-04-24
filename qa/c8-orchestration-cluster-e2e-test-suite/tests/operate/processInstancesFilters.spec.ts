@@ -288,7 +288,7 @@ test.describe('Process Instances Filters', () => {
       await expect(
         operateProcessesPage.parentProcessInstanceKeyCell,
       ).toHaveText(`${callActivityProcessInstanceKey}`);
-      expect(await operateProcessesPage.processInstancesTable.count()).toBe(1);
+      await expect(operateProcessesPage.processInstancesTable).toHaveCount(1);
     });
 
     await test.step('Reset filter', async () => {
@@ -630,7 +630,8 @@ test.describe('Process Instances Filters', () => {
       await expect(operateOperationsDetailsPage.state).toBeVisible();
       await waitForAssertion({
         assertion: async () => {
-          const batchOperationStatus = await operateOperationsDetailsPage.getBatchOperationStatus();
+          const batchOperationStatus =
+            await operateOperationsDetailsPage.getBatchOperationStatus();
           expect(batchOperationStatus).toBe('Completed');
         },
         onFailure: async () => {

@@ -6,6 +6,7 @@ name: Rdbms Manual/Scheduled Run Integration Tests
 
 on:
   workflow_dispatch:
+  workflow_call:
   pull_request:
     paths:
       - ".github/workflows/zeebe-rdbms-integration-tests.yml"

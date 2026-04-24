@@ -45,7 +45,6 @@ test.describe('Process Instance Batch Modification', () => {
   test('Move Operation', async ({
     page,
     operateProcessesPage,
-    operateFiltersPanelPage,
     operateDiagramPage,
     operateProcessModificationModePage,
   }) => {

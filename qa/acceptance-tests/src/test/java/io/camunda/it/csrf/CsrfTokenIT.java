@@ -50,8 +50,7 @@ public class CsrfTokenIT {
           .withAdditionalProfile("consolidated-auth");
 
   // Test endpoints
-  private static final List<String> PROTECTED_ENDPOINTS =
-      List.of("v2/process-instances/search", "v1/tasks/search");
+  private static final List<String> PROTECTED_ENDPOINTS = List.of("v2/process-instances/search");
 
   @Test
   public void visitProtectedEndpointSuccessfulWhenCsrfTokenPresent()

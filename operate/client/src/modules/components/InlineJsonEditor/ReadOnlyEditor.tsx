@@ -70,9 +70,10 @@ const ReadOnlyEditor: React.FC<Props> = ({
 
     try {
       await navigator.clipboard.writeText(valueToCopy);
+
       notificationsStore.displayNotification({
         kind: 'success',
-        title: `${label} copied to clipboard`,
+        title: `Copied ${label} to clipboard`,
         isDismissable: true,
       });
     } catch {

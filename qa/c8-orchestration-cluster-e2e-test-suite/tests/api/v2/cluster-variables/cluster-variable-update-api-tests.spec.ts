@@ -23,10 +23,7 @@ import {
   createTenantAndStoreResponseFields,
   assertClusterVariableUpdate,
 } from '@requestHelpers';
-import {
-  validateResponseShape,
-  validateResponse,
-} from '../../../../json-body-assertions';
+import {validateResponse} from '../../../../json-body-assertions';
 import {
   cleanupGlobalClusterVariables,
   cleanupTenantClusterVariables,

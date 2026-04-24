@@ -11,14 +11,6 @@ import {expect} from '@playwright/test';
 import {assertStatusCode, buildUrl, jsonHeaders} from '../http';
 import {defaultAssertionOptions} from '../constants';
 
-/**
- * Represents a variable record returned by the /v2/variables/search endpoint.
- * The scopeKey field is used to determine whether a variable is root-scope
- * (scopeKey === processInstanceKey) or local-scope (scopeKey !== processInstanceKey).
- *
- * Root scope  = variable.scopeKey === variable.processInstanceKey
- * Local scope = variable.scopeKey !== variable.processInstanceKey
- */
 export interface VariableRecord {
   variableKey: string;
   name: string;
@@ -29,19 +21,10 @@ export interface VariableRecord {
   isTruncated?: boolean;
 }
 
-/**
- * Returns true when a variable was created at the process instance (root) scope.
- * Zeebe sets scopeKey === processInstanceKey for variables defined at the root level.
- */
 export function isRootScope(variable: VariableRecord): boolean {
   return variable.scopeKey === variable.processInstanceKey;
 }
 
-/**
- * Returns true when a variable was created at a child scope (e.g. service task,
- * sub-process, call activity). Zeebe sets scopeKey to the element instance key,
- * which differs from the process instance key.
- */
 export function isLocalScope(variable: VariableRecord): boolean {
   return variable.scopeKey !== variable.processInstanceKey;
 }
@@ -58,13 +41,6 @@ export function getLocalScopeVariables(
   return variables.filter(isLocalScope);
 }
 
-/**
- * Polls /v2/variables/search until at least `minCount` variables are present
- * for the given process instance, then returns all found records.
- *
- * Use minCount=0 and the caller is responsible for asserting absence of variables
- * after an appropriate stabilisation wait.
- */
 export async function getAllProcessInstanceVariables(
   request: APIRequestContext,
   processInstanceKey: string,
@@ -92,19 +68,11 @@ export async function getAllProcessInstanceVariables(
   return state.variables;
 }
 
-/**
- * Waits the full `timeoutMs` then performs a single assertion that no variables
- * exist for the given process instance.  Using a stabilisation wait avoids
- * false positives caused by async export lag.
- */
 export async function assertNoVariablesForProcessInstance(
   request: APIRequestContext,
   processInstanceKey: string,
   timeoutMs: number = 15_000,
 ): Promise<void> {
-  // Wait the full stabilisation period before asserting absence, so that any
-  // async export/import lag has time to produce variables if they were going to.
-  // A toPass that exits on the first empty poll would be a false positive.
   await new Promise((resolve) => setTimeout(resolve, timeoutMs));
   const res = await request.post(buildUrl('/variables/search'), {
     headers: jsonHeaders(),
@@ -117,9 +85,7 @@ export async function assertNoVariablesForProcessInstance(
   const json = await res.json();
   expect(json.items).toHaveLength(0);
 }
-/**
- * Returns all variables for the given process instance that match the supplied name.
- */
+
 export function getVariablesByName(
   variables: VariableRecord[],
   name: string,
@@ -127,10 +93,6 @@ export function getVariablesByName(
   return variables.filter((v) => v.name === name);
 }
 
-/**
- * Returns all variables for the given process instance whose names match at least
- * one of the supplied patterns (exact string or regex).
- */
 export function getVariablesByPatterns(
   variables: VariableRecord[],
   patterns: (string | RegExp)[],
