@@ -39,7 +39,6 @@ import io.camunda.process.test.impl.proxy.ZeebeClientProxy;
 import io.camunda.process.test.impl.runtime.CamundaProcessTestContainerRuntime;
 import io.camunda.process.test.impl.runtime.CamundaProcessTestRuntime;
 import io.camunda.process.test.impl.runtime.CamundaProcessTestRuntimeBuilder;
-import io.camunda.process.test.impl.runtime.CamundaRuntimeHealthChecker;
 import io.camunda.process.test.impl.runtime.CamundaSpringProcessTestRuntimeBuilder;
 import io.camunda.process.test.impl.testCases.CamundaTestCaseRunner;
 import io.camunda.process.test.impl.testresult.CamundaProcessTestResultCollector;
@@ -164,9 +163,6 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
 
   @Override
   public void beforeTestMethod(final TestContext testContext) {
-    // wait until the cluster is ready to accept new operations, retrying until success or timeout
-    waitForClusterReady();
-
     client = createClient(camundaProcessTestContext);
     zeebeClient = createZeebeClient(camundaProcessTestContext);
 
@@ -196,6 +192,9 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
 
     // initialize result collector
     processTestResultCollector = new CamundaProcessTestResultCollector(dataSource);
+
+    // wait until the cluster is ready to accept new operations, retrying until success or timeout
+    runtime.waitUntilClusterReady(Duration.ofSeconds(10));
 
     // deploy resources
     testDeploymentService.deployTestResources(
@@ -297,10 +296,6 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
 
   private CamundaManagementClient createManagementClient() {
     return CamundaManagementClient.createClient(runtime.getCamundaMonitoringApiAddress());
-  }
-
-  private void waitForClusterReady() {
-    CamundaRuntimeHealthChecker.waitUntilClusterReady(runtime.getCamundaClientBuilderFactory());
   }
 
   private void printTestResults() {
