@@ -42,26 +42,28 @@ public class FlowNodeInstanceIncidentExportHandler
   public void export(final Record<IncidentRecordValue> record) {
     final var value = record.getValue();
 
-    for (final List<Long> elementPair : value.getElementInstancePath()) {
-      final var flowNodeInstanceKey = elementPair.get(1);
-      if (record.getIntent().equals(IncidentIntent.CREATED)) {
-        if (flowNodeInstanceKey == value.getElementInstanceKey()) {
-          flowNodeInstanceWriter.createIncident(flowNodeInstanceKey, record.getKey());
+    for (final List<Long> elementPath : value.getElementInstancePath()) {
+      for (int i = 1; i < elementPath.size(); i++) {
+        final var flowNodeInstanceKey = elementPath.get(i);
+        if (record.getIntent().equals(IncidentIntent.CREATED)) {
+          if (flowNodeInstanceKey == value.getElementInstanceKey()) {
+            flowNodeInstanceWriter.createIncident(flowNodeInstanceKey, record.getKey());
+          } else {
+            flowNodeInstanceWriter.createSubprocessIncident(flowNodeInstanceKey);
+          }
+        } else if (record.getIntent().equals(IncidentIntent.RESOLVED)) {
+          if (flowNodeInstanceKey == value.getElementInstanceKey()) {
+            flowNodeInstanceWriter.resolveIncident(flowNodeInstanceKey);
+          } else {
+            flowNodeInstanceWriter.resolveSubprocessIncident(flowNodeInstanceKey);
+          }
         } else {
-          flowNodeInstanceWriter.createSubprocessIncident(flowNodeInstanceKey);
+          LOGGER.warn(
+              "Unexpected incident intent {} for record {}/{}",
+              record.getIntent(),
+              record.getPartitionId(),
+              record.getPosition());
         }
-      } else if (record.getIntent().equals(IncidentIntent.RESOLVED)) {
-        if (flowNodeInstanceKey == value.getElementInstanceKey()) {
-          flowNodeInstanceWriter.resolveIncident(flowNodeInstanceKey);
-        } else {
-          flowNodeInstanceWriter.resolveSubprocessIncident(flowNodeInstanceKey);
-        }
-      } else {
-        LOGGER.warn(
-            "Unexpected incident intent {} for record {}/{}",
-            record.getIntent(),
-            record.getPartitionId(),
-            record.getPosition());
       }
     }
   }
