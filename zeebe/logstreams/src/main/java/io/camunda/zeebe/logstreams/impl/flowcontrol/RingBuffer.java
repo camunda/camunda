@@ -10,7 +10,6 @@ package io.camunda.zeebe.logstreams.impl.flowcontrol;
 import io.camunda.zeebe.util.VisibleForTesting;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 import org.agrona.BitUtil;
-import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -50,7 +49,6 @@ import org.slf4j.LoggerFactory;
  * #put(InFlightEntry)} stamps the entry with the sequential index before the volatile write, and
  * {@link #get(long, long)} verifies both the sequential index and the log position match.
  */
-@NullMarked
 final class RingBuffer {
   private static final int DEFAULT_CAPACITY = 8 * 1024; // 8K slots
   private static final Logger LOGGER = LoggerFactory.getLogger(RingBuffer.class);

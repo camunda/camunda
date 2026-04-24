@@ -16,7 +16,10 @@ import org.agrona.MutableDirectBuffer;
 
 /** Represents the implementation of the logged event. */
 public final class LoggedEventImpl implements LoggedEvent {
+  // wrap() must be called before any use; field starts null but is never null after wrapping
+  @SuppressWarnings("NullAway")
   private DirectBuffer buffer;
+
   private int fragmentOffset = -1;
   private int messageOffset = -1;
 

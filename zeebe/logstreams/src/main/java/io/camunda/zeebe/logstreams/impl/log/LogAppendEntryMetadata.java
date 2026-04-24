@@ -12,9 +12,7 @@ import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import java.util.List;
-import org.jspecify.annotations.NullMarked;
 
-@NullMarked
 public final class LogAppendEntryMetadata {
   private final short[] recordTypes;
   private final short[] valueTypes;

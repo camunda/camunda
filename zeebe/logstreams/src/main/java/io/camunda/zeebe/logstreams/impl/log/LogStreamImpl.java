@@ -22,11 +22,9 @@ import io.micrometer.core.instrument.MeterRegistry;
 import java.time.InstantSource;
 import java.util.Collection;
 import java.util.concurrent.CopyOnWriteArrayList;
-import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 
-@NullMarked
 public final class LogStreamImpl implements LogStream, CommitListener {
 
   private static final Logger LOG = Loggers.LOGSTREAMS_LOGGER;
