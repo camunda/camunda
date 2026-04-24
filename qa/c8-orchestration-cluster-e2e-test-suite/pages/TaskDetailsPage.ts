@@ -389,7 +389,10 @@ class TaskDetailsPage {
     });
   }
 
-  async assertItemChecked(label: string, timeout: number = 60000): Promise<void> {
+  async assertItemChecked(
+    label: string,
+    timeout: number = 60000,
+  ): Promise<void> {
     await expect(this.page.getByLabel(label)).toBeChecked({timeout});
   }
 
