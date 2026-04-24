@@ -13,6 +13,7 @@ import {defaultAssertionOptions} from '../constants';
 import {cancelProcessInstance} from '../zeebeClient';
 import {sleep} from '../sleep';
 import {validateResponse} from 'json-body-assertions';
+import {expectBatchState} from './batch-operation-requestHelpers';
 
 export async function getProcessDefinitionKey(
   request: APIRequestContext,
@@ -235,21 +236,18 @@ async function runBatchAndWaitForCompletion(
   if (res.status() === 400) return;
 
   await assertStatusCode(res, 200);
+  await validateResponse(
+    {
+      path: endpoint,
+      method: 'POST',
+      status: '200',
+    },
+    res,
+  );
   const json = await res.json();
   const batchKey = json.batchOperationKey;
 
-  await expect(async () => {
-    const statusRes = await request.get(
-      buildUrl(`/batch-operations/${batchKey}`),
-      {headers: jsonHeaders()},
-    );
-    await assertStatusCode(statusRes, 200);
-    const body = await statusRes.json();
-    expect(body.state).toBe('COMPLETED');
-  }).toPass({
-    intervals: [5_000, 10_000, 15_000, 25_000, 35_000],
-    timeout: 120_000,
-  });
+  await expectBatchState(request, batchKey, 'COMPLETED');
 }
 
 export async function clearAllProcessInstances(
