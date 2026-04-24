@@ -8,7 +8,7 @@
 package io.camunda.webapps.schema.entities.usertask;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
-import io.camunda.webapps.schema.entities.ExporterEntity;
+import io.camunda.webapps.schema.entities.AbstractExporterEntity;
 import io.camunda.webapps.schema.entities.PartitionedEntity;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import java.time.OffsetDateTime;
@@ -16,10 +16,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-public class TaskEntity
-    implements ExporterEntity<TaskEntity>, PartitionedEntity<TaskEntity>, TenantOwned {
-
-  private String id;
+public class TaskEntity extends AbstractExporterEntity<TaskEntity>
+    implements PartitionedEntity<TaskEntity>, TenantOwned {
 
   private long key;
 
@@ -109,17 +107,6 @@ public class TaskEntity
   private TaskImplementation implementation;
 
   public TaskEntity() {}
-
-  @Override
-  public String getId() {
-    return id;
-  }
-
-  @Override
-  public TaskEntity setId(final String id) {
-    this.id = id;
-    return this;
-  }
 
   public long getKey() {
     return key;
@@ -377,10 +364,10 @@ public class TaskEntity
   }
 
   public TaskEntity addChangedAttribute(final String changedAttribute) {
-    if (this.changedAttributes == null) {
-      this.changedAttributes = new ArrayList<>();
+    if (changedAttributes == null) {
+      changedAttributes = new ArrayList<>();
     }
-    this.changedAttributes.add(changedAttribute);
+    changedAttributes.add(changedAttribute);
     return this;
   }
 
