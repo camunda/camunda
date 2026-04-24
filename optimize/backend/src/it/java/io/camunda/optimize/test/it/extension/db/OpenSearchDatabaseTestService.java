@@ -29,7 +29,6 @@ import io.camunda.optimize.dto.zeebe.ZeebeRecordDto;
 import io.camunda.optimize.dto.zeebe.process.ZeebeProcessInstanceDataDto;
 import io.camunda.optimize.exception.OptimizeIntegrationTestException;
 import io.camunda.optimize.service.db.DatabaseClient;
-import io.camunda.optimize.service.db.os.ExtendedOpenSearchClient;
 import io.camunda.optimize.service.db.os.OptimizeOpenSearchClient;
 import io.camunda.optimize.service.db.os.builders.OptimizeIndexOperationOS;
 import io.camunda.optimize.service.db.os.client.dsl.AggregationDSL;
@@ -77,6 +76,7 @@ import java.util.stream.StreamSupport;
 import org.jetbrains.annotations.NotNull;
 import org.mockserver.integration.ClientAndServer;
 import org.opensearch.client.json.JsonData;
+import org.opensearch.client.opensearch._types.Conflicts;
 import org.opensearch.client.opensearch._types.Refresh;
 import org.opensearch.client.opensearch._types.aggregations.Aggregate;
 import org.opensearch.client.opensearch._types.aggregations.Aggregation;
@@ -86,6 +86,7 @@ import org.opensearch.client.opensearch._types.query_dsl.BoolQuery;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
 import org.opensearch.client.opensearch.cluster.PutClusterSettingsRequest;
 import org.opensearch.client.opensearch.core.BulkRequest;
+import org.opensearch.client.opensearch.core.DeleteByQueryRequest;
 import org.opensearch.client.opensearch.core.IndexRequest;
 import org.opensearch.client.opensearch.core.IndexResponse;
 import org.opensearch.client.opensearch.core.SearchRequest;
@@ -101,7 +102,6 @@ import org.opensearch.client.opensearch.indices.ExistsRequest;
 import org.opensearch.client.opensearch.indices.ExistsTemplateRequest;
 import org.opensearch.client.opensearch.indices.GetAliasRequest;
 import org.opensearch.client.opensearch.indices.GetAliasResponse;
-import org.opensearch.client.opensearch.indices.GetIndexResponse;
 import org.opensearch.client.opensearch.indices.GetMappingRequest;
 import org.opensearch.client.opensearch.indices.GetMappingResponse;
 import org.opensearch.client.opensearch.indices.IndexSettings;
@@ -125,7 +125,6 @@ public class OpenSearchDatabaseTestService extends DatabaseTestService {
   private String opensearchDatabaseVersion;
 
   private OptimizeOpenSearchClient prefixAwareOptimizeOpenSearchClient;
-  private ExtendedOpenSearchClient extendedOpenSearchClient;
 
   public OpenSearchDatabaseTestService(final String customIndexPrefix, final boolean haveToClean) {
     super(customIndexPrefix, haveToClean);
@@ -303,47 +302,74 @@ public class OpenSearchDatabaseTestService extends DatabaseTestService {
 
   @Override
   public void deleteAllZeebeRecordsForPrefix(final String zeebeRecordPrefix) {
-    final GetIndexResponse allIndices =
+    // Two passes handle concurrent exporter writes. Pass 1 deletes existing records (using
+    // Conflicts.Proceed so version conflicts on background system docs don't abort the request).
+    // Pass 2 catches any records the exporter flushed between the first delete and its refresh.
+    // Background system records (camunda-user, mapping-rule) may survive due to concurrent upserts,
+    // but those are never imported by Optimize and do not affect test correctness.
+    for (int i = 0; i < 2; i++) {
+      try {
         getOptimizeOpenSearchClient()
-            .getRichOpenSearchClient()
-            .index()
-            .get(RequestDSL.getIndexRequestBuilder("*").ignoreUnavailable(true));
-
-    final String[] indicesToDelete =
-        allIndices.result().keySet().stream()
-            .filter(indexName -> indexName.contains(zeebeRecordPrefix))
-            .toArray(String[]::new);
-
-    if (indicesToDelete.length > 1) {
-      deleteIndices(indicesToDelete);
+            .getOpenSearchClient()
+            .deleteByQuery(
+                DeleteByQueryRequest.of(
+                    r ->
+                        r.index(zeebeRecordPrefix + "*")
+                            .query(QueryDSL.matchAll())
+                            .refresh(Refresh.True)
+                            .conflicts(Conflicts.Proceed)));
+      } catch (final Exception e) {
+        // No indices exist yet (e.g., first test in class) — nothing to clean up
+        break;
+      }
     }
+  }
+
+  @Override
+  public void deleteAllZeebeIndicesForPrefix(final String zeebeRecordPrefix) {
+    // Use the raw OS client directly — deleteIndices() applies the Optimize index prefix which
+    // would corrupt Zeebe index names.
+    deleteZeebeIndicesByName(listZeebeIndicesForPrefix(zeebeRecordPrefix));
   }
 
   @Override
   public void deleteAllOtherZeebeRecordsWithPrefix(
       final String zeebeRecordPrefix, final String recordsToKeep) {
-    // Since we are retrieving zeebe records, we cannot use the rich opensearch client,
-    // because it will add optimize prefixes to the request
-    final GetIndexResponse allIndices;
+    final List<String> indicesToDelete =
+        listZeebeIndicesForPrefix(zeebeRecordPrefix).stream()
+            .filter(indexName -> !indexName.contains(recordsToKeep))
+            .toList();
+    deleteZeebeIndicesByName(indicesToDelete);
+  }
+
+  private List<String> listZeebeIndicesForPrefix(final String prefix) {
     try {
-      allIndices =
-          getOptimizeOpenSearchClient()
-              .getOpenSearchClient()
-              .indices()
-              .get(RequestDSL.getIndexRequestBuilder("*").ignoreUnavailable(true).build());
+      return getOptimizeOpenSearchClient()
+          .getOpenSearchClient()
+          .indices()
+          .get(RequestDSL.getIndexRequestBuilder(prefix + "*").ignoreUnavailable(true).build())
+          .result()
+          .keySet()
+          .stream()
+          .toList();
     } catch (final IOException e) {
-      throw new RuntimeException(e);
+      return List.of(); // No indices exist — nothing to clean
     }
+  }
 
-    final String[] indicesToDelete =
-        allIndices.result().keySet().stream()
-            .filter(
-                indexName ->
-                    indexName.contains(zeebeRecordPrefix) && !indexName.contains(recordsToKeep))
-            .toArray(String[]::new);
-
-    if (indicesToDelete.length > 1) {
-      deleteIndices(indicesToDelete);
+  private void deleteZeebeIndicesByName(final List<String> indices) {
+    if (indices.isEmpty()) {
+      return;
+    }
+    // Wrap in a catch so that an ephemeral index (e.g. camunda-history-deletion in Zeebe 8.9)
+    // that vanishes between listing and deletion does not fail the cleanup.
+    try {
+      getOptimizeOpenSearchClient()
+          .getOpenSearchClient()
+          .indices()
+          .delete(d -> d.index(indices).ignoreUnavailable(true));
+    } catch (final Exception e) {
+      LOG.debug("Some Zeebe indices already gone by delete time, ignoring: {}", e.getMessage());
     }
   }
 
