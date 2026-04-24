@@ -178,4 +178,14 @@
     </plugins>
   </build>
 
+  <profiles>
+    <profile>
+      <!-- Always enable NullAway for this module; configuration is inherited from parent pom -->
+      <id>nullaway</id>
+      <activation>
+        <activeByDefault>true</activeByDefault>
+      </activation>
+    </profile>
+  </profiles>
+
 </project>
