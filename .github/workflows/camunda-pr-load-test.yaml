@@ -32,21 +32,17 @@ jobs:
     outputs:
       sanitized-name: ${{ steps.compute-namespace.outputs.namespace }}
     steps:
+      - id: sanitize-author
+        uses: camunda/infra-global-github-actions/sanitize-branch-name@main
+        with:
+          branch: ${{ github.event.pull_request.user.login }}
+          max_length: 10
       - id: compute-namespace
         name: Compute safe namespace from PR author and number
-        env:
-          AUTHOR: ${{ github.event.pull_request.user.login }}
-          PR_NUMBER: ${{ github.event.pull_request.number }}
         run: |
-          # Sanitize author: lowercase, replace non-alphanumeric chars with hyphens, truncate to 10 chars
-          author=$(printf '%s' "$AUTHOR" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9]/-/g' | sed 's/-\+/-/g' | sed 's/^-//' | sed 's/-$//')
-          author="${author:0:10}"
-          # Remove trailing '-' if any
-          author="${author%-}"
           # Compose namespace: c8-{author}-pr-{number}
           # e.g. c8-entangled9-pr-49745 (max ~25 chars, well under K8s 63-char service name limit)
-          namespace="c8-${author}-pr-${PR_NUMBER}"
-          echo "namespace=${namespace}" >> "$GITHUB_OUTPUT"
+          echo "namespace=c8-${{ steps.sanitize-author.outputs.branch_name }}-pr-${{ github.event.pull_request.number }}" >> "$GITHUB_OUTPUT"
       - name: Observe build status
         if: always()
         continue-on-error: true
