@@ -5,7 +5,6 @@
 	"scripts": {
 		"dev": "vite dev --port 3000",
 		"build": "vite build",
-		"test": "vitest run",
 		"typecheck": "tsc -p tsconfig.browser.json",
 		"extract-sbom": "vite build --mode sbom"
 	},
