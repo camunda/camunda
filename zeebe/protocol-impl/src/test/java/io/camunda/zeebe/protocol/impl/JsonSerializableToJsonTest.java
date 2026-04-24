@@ -4636,6 +4636,7 @@ final class JsonSerializableToJsonTest {
                 new AgentInstanceRecord()
                     .setAgentInstanceKey(100L)
                     .setElementInstanceKey(200L)
+                    .setElementId("Activity_agent_1")
                     .setProcessInstanceKey(300L)
                     .setProcessDefinitionKey(400L)
                     .setTenantId("tenant-1")
@@ -4646,6 +4647,7 @@ final class JsonSerializableToJsonTest {
                     .setInputTokens(1500)
                     .setOutputTokens(500)
                     .setModelCalls(3)
+                    .setToolCalls(7)
                     .setMaxTokens(10000)
                     .setMaxModelCalls(50)
                     .setMaxToolCalls(100),
@@ -4653,6 +4655,7 @@ final class JsonSerializableToJsonTest {
     {
       "agentInstanceKey": 100,
       "elementInstanceKey": 200,
+      "elementId": "Activity_agent_1",
       "processInstanceKey": 300,
       "processDefinitionKey": 400,
       "tenantId": "tenant-1",
@@ -4663,6 +4666,7 @@ final class JsonSerializableToJsonTest {
       "inputTokens": 1500,
       "outputTokens": 500,
       "modelCalls": 3,
+      "toolCalls": 7,
       "maxTokens": 10000,
       "maxModelCalls": 50,
       "maxToolCalls": 100
@@ -4676,6 +4680,7 @@ final class JsonSerializableToJsonTest {
     {
       "agentInstanceKey": -1,
       "elementInstanceKey": -1,
+      "elementId": "",
       "processInstanceKey": -1,
       "processDefinitionKey": -1,
       "tenantId": "<default>",
@@ -4686,6 +4691,7 @@ final class JsonSerializableToJsonTest {
       "inputTokens": 0,
       "outputTokens": 0,
       "modelCalls": 0,
+      "toolCalls": 0,
       "maxTokens": -1,
       "maxModelCalls": -1,
       "maxToolCalls": -1

@@ -23,13 +23,15 @@ import org.immutables.value.Value;
  * Represents an agent instance in the Zeebe protocol.
  *
  * <p>An agent instance is the engine-side representation of an AI agent execution's shared context.
- * It tracks the agent's definition, aggregate metrics (token usage, model calls), and status.
+ * It tracks the agent's definition, aggregate metrics (token usage, model calls, tool calls), and
+ * status.
  *
  * <p><b>Metric semantics differ by record type:</b> On UPDATE commands, the metric fields ({@link
- * #getInputTokens()}, {@link #getOutputTokens()}, {@link #getModelCalls()}) carry <em>deltas</em>
- * (increments from a single interaction). On UPDATED events, the same fields carry the
- * <em>aggregated totals</em> after the engine has applied the deltas to its state. This allows the
- * connector to report consumption incrementally while the engine maintains the running totals.
+ * #getInputTokens()}, {@link #getOutputTokens()}, {@link #getModelCalls()}, {@link
+ * #getToolCalls()}) carry <em>deltas</em> (increments from a single interaction). On UPDATED
+ * events, the same fields carry the <em>aggregated totals</em> after the engine has applied the
+ * deltas to its state. This allows the connector to report consumption incrementally while the
+ * engine maintains the running totals.
  */
 @Value.Immutable
 @ImmutableProtocol(builder = ImmutableAgentInstanceRecordValue.Builder.class)
@@ -40,6 +42,9 @@ public interface AgentInstanceRecordValue extends RecordValue, ProcessInstanceRe
 
   /** Returns the key of the element instance (Ad-Hoc Sub-Process) this agent belongs to. */
   long getElementInstanceKey();
+
+  /** Returns the BPMN element ID of the Ad-Hoc Sub-Process this agent belongs to. */
+  String getElementId();
 
   /** Returns the current status of the agent instance. */
   AgentInstanceStatus getStatus();
@@ -70,6 +75,12 @@ public interface AgentInstanceRecordValue extends RecordValue, ProcessInstanceRe
    * aggregate total.
    */
   long getModelCalls();
+
+  /**
+   * Returns tool call count. On UPDATE commands this is a delta; on UPDATED events this is the
+   * aggregate total.
+   */
+  long getToolCalls();
 
   /**
    * Returns the maximum number of tokens (input + output combined) this agent is allowed to

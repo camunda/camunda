@@ -22,6 +22,7 @@ public final class AgentInstanceRecord extends UnifiedRecordValue
 
   private static final StringValue AGENT_INSTANCE_KEY_KEY = new StringValue("agentInstanceKey");
   private static final StringValue ELEMENT_INSTANCE_KEY_KEY = new StringValue("elementInstanceKey");
+  private static final StringValue ELEMENT_ID_KEY = new StringValue("elementId");
   private static final StringValue PROCESS_INSTANCE_KEY_KEY = new StringValue("processInstanceKey");
   private static final StringValue PROCESS_DEFINITION_KEY_KEY =
       new StringValue("processDefinitionKey");
@@ -33,6 +34,7 @@ public final class AgentInstanceRecord extends UnifiedRecordValue
   private static final StringValue INPUT_TOKENS_KEY = new StringValue("inputTokens");
   private static final StringValue OUTPUT_TOKENS_KEY = new StringValue("outputTokens");
   private static final StringValue MODEL_CALLS_KEY = new StringValue("modelCalls");
+  private static final StringValue TOOL_CALLS_KEY = new StringValue("toolCalls");
   private static final StringValue MAX_TOKENS_KEY = new StringValue("maxTokens");
   private static final StringValue MAX_MODEL_CALLS_KEY = new StringValue("maxModelCalls");
   private static final StringValue MAX_TOOL_CALLS_KEY = new StringValue("maxToolCalls");
@@ -40,6 +42,7 @@ public final class AgentInstanceRecord extends UnifiedRecordValue
   private final LongProperty agentInstanceKeyProp = new LongProperty(AGENT_INSTANCE_KEY_KEY, -1L);
   private final LongProperty elementInstanceKeyProp =
       new LongProperty(ELEMENT_INSTANCE_KEY_KEY, -1L);
+  private final StringProperty elementIdProp = new StringProperty(ELEMENT_ID_KEY, "");
   private final LongProperty processInstanceKeyProp =
       new LongProperty(PROCESS_INSTANCE_KEY_KEY, -1L);
   private final LongProperty processDefinitionKeyProp =
@@ -54,14 +57,16 @@ public final class AgentInstanceRecord extends UnifiedRecordValue
   private final LongProperty inputTokensProp = new LongProperty(INPUT_TOKENS_KEY, 0);
   private final LongProperty outputTokensProp = new LongProperty(OUTPUT_TOKENS_KEY, 0);
   private final LongProperty modelCallsProp = new LongProperty(MODEL_CALLS_KEY, 0);
+  private final LongProperty toolCallsProp = new LongProperty(TOOL_CALLS_KEY, 0);
   private final LongProperty maxTokensProp = new LongProperty(MAX_TOKENS_KEY, -1L);
   private final LongProperty maxModelCallsProp = new LongProperty(MAX_MODEL_CALLS_KEY, -1L);
   private final LongProperty maxToolCallsProp = new LongProperty(MAX_TOOL_CALLS_KEY, -1L);
 
   public AgentInstanceRecord() {
-    super(15);
+    super(17);
     declareProperty(agentInstanceKeyProp)
         .declareProperty(elementInstanceKeyProp)
+        .declareProperty(elementIdProp)
         .declareProperty(processInstanceKeyProp)
         .declareProperty(processDefinitionKeyProp)
         .declareProperty(tenantIdProp)
@@ -72,6 +77,7 @@ public final class AgentInstanceRecord extends UnifiedRecordValue
         .declareProperty(inputTokensProp)
         .declareProperty(outputTokensProp)
         .declareProperty(modelCallsProp)
+        .declareProperty(toolCallsProp)
         .declareProperty(maxTokensProp)
         .declareProperty(maxModelCallsProp)
         .declareProperty(maxToolCallsProp);
@@ -94,6 +100,16 @@ public final class AgentInstanceRecord extends UnifiedRecordValue
 
   public AgentInstanceRecord setElementInstanceKey(final long key) {
     elementInstanceKeyProp.setValue(key);
+    return this;
+  }
+
+  @Override
+  public String getElementId() {
+    return bufferAsString(elementIdProp.getValue());
+  }
+
+  public AgentInstanceRecord setElementId(final String elementId) {
+    elementIdProp.setValue(elementId);
     return this;
   }
 
@@ -194,6 +210,16 @@ public final class AgentInstanceRecord extends UnifiedRecordValue
 
   public AgentInstanceRecord setModelCalls(final long modelCalls) {
     modelCallsProp.setValue(modelCalls);
+    return this;
+  }
+
+  @Override
+  public long getToolCalls() {
+    return toolCallsProp.getValue();
+  }
+
+  public AgentInstanceRecord setToolCalls(final long toolCalls) {
+    toolCallsProp.setValue(toolCalls);
     return this;
   }
 
