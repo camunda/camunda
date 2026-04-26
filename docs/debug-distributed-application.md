@@ -76,6 +76,8 @@ to make use of [ephemeral containers](https://kubernetes.io/docs/concepts/worklo
 
 To get a shell with a jdk on a node you can use the following command:
 
+> [!Note]
+>
 > You need to replace `<broker-0>` with the pod name you want to profile below.
 >
 > ```sh
@@ -84,7 +86,7 @@ To get a shell with a jdk on a node you can use the following command:
 
 ## Thread dump
 
-You can obtain a thread dump from the command line by finding the PID of your Java process, e.g. `pgrep java`.
+You can obtain a thread dump from the command line by finding the PID of your Java process, e.g. `jps` or `pgrep java` (if jps is not available).
 
 > If `pgrep` is not available, you can install it by running `apt update && apt install procps`.
 
@@ -172,7 +174,7 @@ root@pod:# jps
 910 Jps
 ```
 
-You can then setup the async-profiler with these commands:
+You can then set up the async-profiler with these commands:
 
 > You need to replace `<pid>` with the process id of the java process you want to profile
 >

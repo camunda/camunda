@@ -6,7 +6,7 @@ set -exo pipefail
 
 usage() {
   cat <<'EOF'
-Usage: newCloudBenchmark.sh <namespace>
+Usage: newCloudLoadTest.sh <namespace>
 
 Arguments:
   namespace          Base namespace name. Will be prefixed with "c8-" if missing.
@@ -15,8 +15,8 @@ Options:
   -h, --help         Show this help message.
 
 Examples:
-  ./newCloudBenchmark.sh demo
-  ./newCloudBenchmark.sh c8-demo
+  ./newCloudLoadTest.sh demo
+  ./newCloudLoadTest.sh c8-demo
 EOF
 }
 

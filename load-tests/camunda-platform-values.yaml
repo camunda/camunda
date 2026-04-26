@@ -5,6 +5,10 @@
 # The values are optimized for running the load tests with a Camunda cluster on GKE.
 #
 # This is a YAML-formatted file.
+# Per default we run with the Orchestration Cluster, Optimize, Connectors, Elasticsearch as secondary
+# storage and Identity Keycloak as identity provider with OIDC authentication, but you can easily
+# switch to other configurations by changing the values in this file or by overriding them via the
+# command line when installing the chart.
 
 ########################################################################################
 ################################################### Global cluster configuration
@@ -70,32 +74,6 @@ identity:
       value: n2-standard-4
       effect: NoSchedule
 
-identityKeycloak:
-  enabled: true
-  fullnameOverride: keycloak # we override the names for simplicity of the deployment
-  auth:
-    adminUser: admin
-    existingSecret: camunda-credentials
-    passwordSecretKey: identity-keycloak-admin-password
-  extraEnvVars:
-    # https://www.keycloak.org/server/logging#_console
-    - name: KC_LOG_CONSOLE_OUTPUT
-      value: json
-  nodeSelector:
-    topology.kubernetes.io/zone: __AVAILABILITY_ZONE__
-  tolerations:
-    - key: nodepool
-      operator: Equal
-      value: n2-standard-4
-      effect: NoSchedule
-  postgresql:
-    fullnameOverride: keycloak-postgresql # we override the names for simplicity of the deployment
-    auth:
-      existingSecret: camunda-credentials
-      secretKeys:
-        adminPasswordKey: identity-keycloak-postgresql-admin-password
-        userPasswordKey: identity-keycloak-postgresql-user-password
-
 optimize:
   enabled: true
   fullnameOverride: optimize # we override the names for simplicity of the deployment
@@ -124,6 +102,34 @@ optimize:
       operator: Equal
       value: n2-standard-4
       effect: NoSchedule
+
+identityKeycloak:
+  enabled: true
+  fullnameOverride: keycloak # we override the names for simplicity of the deployment
+  auth:
+    adminUser: admin
+    existingSecret: camunda-credentials
+    passwordSecretKey: identity-keycloak-admin-password
+  nodeSelector:
+    component: benchmark-n2-standard-4
+    topology.kubernetes.io/zone: __AVAILABILITY_ZONE__
+  tolerations:
+    - key: nodepool
+      operator: Equal
+      value: n2-standard-4
+      effect: NoSchedule
+  extraEnvVars:
+    # https://www.keycloak.org/server/logging#_console
+    - name: KC_LOG_CONSOLE_OUTPUT
+      value: json
+  postgresql:
+    fullnameOverride: keycloak-postgresql # we override the names for simplicity of the deployment
+    auth:
+      existingSecret: camunda-credentials
+      secretKeys:
+        adminPasswordKey: identity-keycloak-postgresql-admin-password
+        userPasswordKey: identity-keycloak-postgresql-user-password
+
 
 operate:
   enabled: true
@@ -200,7 +206,6 @@ connectors:
 
 webModeler:
   enabled: false
-  fullnameOverride: web-modeler # we override the names for simplicity of the deployment
 
 postgresql:
   enabled: false
@@ -208,11 +213,8 @@ postgresql:
 zeebe:
   # Image configuration to configure the zeebe image specifics
   image:
-    # Image.repository defines which image repository to use
-    repository: camunda/zeebe
-    # Image.registry defines which image registry to use
     registry: docker.io
-    # Image.tag defines the tag / version which should be used in the chart
+    repository: camunda/zeebe
     tag: 8.7-SNAPSHOT
   # ClusterSize defines the amount of brokers (=replicas), which are deployed via helm
   clusterSize: "3"
@@ -220,12 +222,31 @@ zeebe:
   partitionCount: "3"
   # ReplicationFactor defines how each partition is replicated, the value defines the number of nodes
   replicationFactor: "3"
-
   # CpuThreadCount defines how many threads can be used for the processing on each broker pod
-  cpuThreadCount: 3
+  cpuThreadCount: "3"
   # IoThreadCount defines how many threads can be used for the exporting on each broker pod
-  ioThreadCount: 3
+  ioThreadCount: "3"
+  # Resources configuration to set request and limit configuration for the container https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#requests-and-limits
+  resources:
+    requests:
+      cpu: 3000m
+      memory: 2Gi
+    limits:
+      cpu: 3000m
+      memory: 2Gi
+  nodeSelector:
+    topology.kubernetes.io/zone: __AVAILABILITY_ZONE__
+  tolerations:
+    - key: nodepool
+      operator: Equal
+      value: n2-standard-4
+      effect: NoSchedule
 
+  # PvcSize defines the persistent volume claim size, which is used by each broker pod https://kubernetes.io/docs/concepts/storage/persistent-volumes/#persistentvolumeclaims
+  pvcSize: "64Gi"
+  # PvcStorageClassName can be used to set the storage class name which should be used by the persistent volume claim. It is recommended to use a storage class, which is backed with a SSD.
+  # It is recommended to use a storage class, which is backed with a SSD. Set to "-" to disable use of default storage class.
+  pvcStorageClassName: benchmark-ssd-zonal-v1
   # ContainerSecurityContext defines the security options the Zeebe broker container should be run with
   containerSecurityContext:
     ## @param securityContext.allowPrivilegeEscalation
@@ -237,9 +258,7 @@ zeebe:
     ## @param securityContext.runAsUser
     runAsUser: 1000
     capabilities:
-      add: [ "NET_ADMIN" ]
-
-  # JavaOpts can be used to set java options for the zeebe brokers
+      add: ["NET_ADMIN"]
   javaOpts: >-
     -XX:MaxRAMPercentage=25.0
     -XX:+ExitOnOutOfMemoryError
@@ -277,15 +296,13 @@ zeebe:
   extraVolumeMounts:
     - name: logs
       mountPath: /usr/local/zeebe/logs
-
   # Retention can be used to define the data in Elasticsearch (ILM).
   retention:
     ## @param zeebe.retention.enabled if true, the ILM Policy is created and applied to the index templates.
     enabled: true
     ## @param zeebe.retention.minimumAge defines how old the data must be, before the data is deleted as a duration.
     minimumAge: 1d # Optimize needs time to import data before ILM cleanup
-
-  # Environment variables
+  # @param core.env can be used to set extra environment variables in each broker container
   env:
     # Enable JSON logging for google cloud stackdriver
     - name: ZEEBE_LOG_APPENDER
@@ -302,31 +319,8 @@ zeebe:
     # See https://github.com/camunda/camunda-platform-helm/issues/2197
     - name: SPRING_CONFIG_ADDITIONALLOCATION
       # application-override.yml is listed second so it has higher priority and can override application.yml.
-      # Marked optional so Spring does not fail when this file is not mounted (e.g. RDBMS / no-secondary-storage scenarios).
+      # Marked optional so Spring does not fail if this file is not mounted in a given deployment configuration.
       value: "/usr/local/zeebe/config/application.yml,optional:/usr/local/zeebe/config/application-override.yml"
-
-  # Resources configuration to set request and limit configuration for the container https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#requests-and-limits
-  resources:
-    limits:
-      cpu: 3000m
-      memory: 2Gi
-    requests:
-      cpu: 3000m
-      memory: 2Gi
-  nodeSelector:
-    topology.kubernetes.io/zone: __AVAILABILITY_ZONE__
-  tolerations:
-    - key: nodepool
-      operator: Equal
-      value: n2-standard-4
-      effect: NoSchedule
-
-  # PvcAccessModes can be used to configure the persistent volume claim access mode https://kubernetes.io/docs/concepts/storage/persistent-volumes/#access-modes
-  pvcAccessMode: [ "ReadWriteOnce" ]
-  # PvcSize defines the persistent volume claim size, which is used by each broker pod https://kubernetes.io/docs/concepts/storage/persistent-volumes/#persistentvolumeclaims
-  pvcSize: 64Gi
-  # PvcStorageClassName can be used to set the storage class name which should be used by the persistent volume claim. It is recommended to use a storage class, which is backed with a SSD.
-  pvcStorageClassName: benchmark-ssd-zonal-v1
 
 zeebeGateway:
   # Replicas defines how many standalone gateways are deployed
@@ -398,33 +392,32 @@ prometheusServiceMonitor:
     release: monitoring
   scrapeInterval: 30s
 
-# ELASTIC
+########################################################################################
+################################################### Elasticsearch cluster configuration
+########################################################################################
 elasticsearch:
   enabled: true
   imageTag: 8.9.2
   master:
     fullnameOverride: elastic
     nameOverride: elastic
-    # Number of master-eligible replicas to deploy
+    ## @param elasticsearch.master.replicaCount defines number of master-elegible replicas to deploy
     replicaCount: 3
     pdb:
       minAvailable: 2
-    # Elasticsearch master-eligible node heap size.
+    ## @param elasticsearch.master.heapSize
     heapSize: 3g
-    # The resources configurations for elasticsearch containers
     persistence:
-      # Persistent Volume Storage Class
-      storageClass: benchmark-ssd-zonal-v1
-      # Persistent Volume Size
+      ## @param elasticsearch.master.persistence.size
       size: 512Gi
-      # Persistent Volume Access Modes
-      accessModes: [ "ReadWriteOnce" ]
+      storageClass: benchmark-ssd-zonal-v1
+      accessModes: ["ReadWriteOnce"]
     resources:
       requests:
-        cpu: 7
+        cpu: 7000m
         memory: 8Gi
       limits:
-        cpu: 7
+        cpu: 7000m
         memory: 8Gi
     nodeSelector:
       component: benchmark-n2-standard-8
