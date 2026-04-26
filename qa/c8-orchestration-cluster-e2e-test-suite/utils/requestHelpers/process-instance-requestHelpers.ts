@@ -173,7 +173,11 @@ export async function verifyIncidentsForProcessInstance(
       buildUrl(`/process-instances/${processInstanceKey}/incidents/search`),
       {
         headers: jsonHeaders(),
-        data: {},
+        data: {
+          filter: {
+            state: 'ACTIVE',
+          },
+        },
       },
     );
     await assertStatusCode(res, 200);
