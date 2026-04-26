@@ -69,6 +69,11 @@ public enum ExecutionLatencyMetricsDoc implements ExtendedMeterDocumentation {
     public Type getType() {
       return Type.TIMER;
     }
+
+    @Override
+    public Duration[] getTimerSLOs() {
+      return new Duration[0];
+    }
   },
 
   /** The lifetime of a job */
