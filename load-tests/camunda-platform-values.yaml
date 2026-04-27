@@ -15,8 +15,8 @@
 ########################################################################################
 global:
   commonLabels:
-    "camunda.io/created-by": __AUTHOR__
-    "camunda.io/purpose": load-test
+    camunda.io/created-by: __AUTHOR__
+    camunda.io/purpose: load-test
   # Disable global ingress
   ingress:
     enabled: false
