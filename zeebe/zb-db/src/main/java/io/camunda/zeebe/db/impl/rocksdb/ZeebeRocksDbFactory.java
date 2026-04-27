@@ -13,6 +13,7 @@ import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.ZeebeDbFactory;
 import io.camunda.zeebe.db.impl.rocksdb.transaction.RocksDbOptions;
 import io.camunda.zeebe.db.impl.rocksdb.transaction.ZeebeTransactionDb;
+import org.slf4j.Logger;
 import io.camunda.zeebe.protocol.EnumValue;
 import io.camunda.zeebe.protocol.ScopedColumnFamily;
 import io.camunda.zeebe.util.VisibleForTesting;
@@ -45,6 +46,8 @@ import org.rocksdb.WriteBufferManager;
 public final class ZeebeRocksDbFactory<
         ColumnFamilyType extends Enum<? extends EnumValue> & EnumValue & ScopedColumnFamily>
     implements ZeebeDbFactory<ColumnFamilyType> {
+
+  private static final Logger LOG = Loggers.DB_LOGGER;
 
   private final SharedRocksDbResources sharedRocksDbResources;
   private final RocksDbConfiguration rocksDbConfiguration;
@@ -136,7 +139,24 @@ public final class ZeebeRocksDbFactory<
     managedResources.add(columnFamilyOptions);
     final var dbOptions = createDefaultDbOptions(managedResources, avoidFlush);
     managedResources.add(dbOptions);
+
+    logEffectiveConfiguration();
+
     return new RocksDbOptions(dbOptions, columnFamilyOptions);
+  }
+
+  private void logEffectiveConfiguration() {
+    final var memoryConfig = calculateMemoryConfiguration();
+    final long writeBufferManagerLimit = sharedRocksDbResources.blockCacheSize / 4;
+    LOG.info(
+        "Opening RocksDB with configuration: writeBufferSize={} bytes, maxWriteBufferNumber={}, "
+            + "minWriteBufferNumberToMerge={}, writeBufferManagerLimit={} bytes, "
+            + "walDisabled={}, maxWriteBufferSizeToMaintain=0 (not set — memtable history discarded on flush)",
+        memoryConfig.memtableMemory(),
+        rocksDbConfiguration.getMaxWriteBufferNumber(),
+        rocksDbConfiguration.getMinWriteBufferNumberToMerge(),
+        writeBufferManagerLimit,
+        rocksDbConfiguration.isWalDisabled());
   }
 
   private DBOptions createDefaultDbOptions(
@@ -189,6 +209,10 @@ public final class ZeebeRocksDbFactory<
           // can be disabled when not profiling
           .setStatsDumpPeriodSec(20);
     }
+
+    final var eventListener = new ZeebeRocksDbEventListener();
+    closeables.add(eventListener);
+    dbOptions.setListeners(List.of(eventListener));
 
     return dbOptions;
   }

@@ -26,6 +26,7 @@ import io.camunda.zeebe.db.impl.rocksdb.metrics.RocksDBMetricExporter;
 import io.camunda.zeebe.protocol.EnumValue;
 import io.camunda.zeebe.protocol.ScopedColumnFamily;
 import io.camunda.zeebe.util.micrometer.MicrometerUtil;
+import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.io.File;
 import java.util.ArrayList;
@@ -64,6 +65,7 @@ public class ZeebeTransactionDb<
   private final AccessMetricsConfiguration accessMetricsConfiguration;
   private final MeterRegistry meterRegistry;
   private final RocksDBMetricExporter metricExporter;
+  private final Counter conflictCheckFailures;
 
   protected ZeebeTransactionDb(
       final ColumnFamilyHandle defaultHandle,
@@ -81,6 +83,11 @@ public class ZeebeTransactionDb<
     this.accessMetricsConfiguration = accessMetricsConfiguration;
     this.meterRegistry = meterRegistry;
     metricExporter = new RocksDBMetricExporter(meterRegistry);
+    conflictCheckFailures =
+        Counter.builder("zeebe.rocksdb.transaction.conflict")
+            .description(
+                "Number of optimistic transaction conflict-check failures caused by memtable flush during an open transaction")
+            .register(meterRegistry);
 
     prefixReadOptions = PrefixReadOptions.readOptions();
     closables.add(prefixReadOptions);
@@ -204,7 +211,8 @@ public class ZeebeTransactionDb<
   @Override
   public TransactionContext createContext() {
     final Transaction transaction = optimisticTransactionDB.beginTransaction(defaultWriteOptions);
-    final ZeebeTransaction zeebeTransaction = new ZeebeTransaction(transaction, this);
+    final ZeebeTransaction zeebeTransaction =
+        new ZeebeTransaction(transaction, this, conflictCheckFailures);
     closables.add(zeebeTransaction);
     return new DefaultTransactionContext(zeebeTransaction);
   }

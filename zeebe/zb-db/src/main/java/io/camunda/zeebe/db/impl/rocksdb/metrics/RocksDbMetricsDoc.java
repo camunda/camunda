@@ -300,6 +300,23 @@ public enum RocksDbMetricsDoc implements RocksDbMeterDoc {
     public String propertyName() {
       return "rocksdb.num-running-compactions";
     }
+  },
+
+  NUM_IMMUTABLE_MEM_TABLE {
+    @Override
+    public String getDescription() {
+      return "Number of immutable memtables (sealed, awaiting flush). A rising value means the flush thread is falling behind, which increases the risk of optimistic transaction conflict-check failures.";
+    }
+
+    @Override
+    public String namespace() {
+      return WRITE_METRICS_PREFIX;
+    }
+
+    @Override
+    public String propertyName() {
+      return "rocksdb.num-immutable-mem-table";
+    }
   };
 
   private static final String ZEEBE_NAMESPACE = "zeebe";

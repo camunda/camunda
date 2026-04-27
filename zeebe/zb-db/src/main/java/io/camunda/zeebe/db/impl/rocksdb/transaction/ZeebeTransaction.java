@@ -12,6 +12,8 @@ import static io.camunda.zeebe.db.impl.rocksdb.transaction.RocksDbInternal.isRoc
 import io.camunda.zeebe.db.TransactionOperation;
 import io.camunda.zeebe.db.ZeebeDbException;
 import io.camunda.zeebe.db.ZeebeDbTransaction;
+import io.camunda.zeebe.db.impl.rocksdb.Loggers;
+import io.micrometer.core.instrument.Counter;
 import org.agrona.LangUtil;
 import org.rocksdb.ColumnFamilyHandle;
 import org.rocksdb.ReadOptions;
@@ -19,19 +21,27 @@ import org.rocksdb.RocksDBException;
 import org.rocksdb.RocksIterator;
 import org.rocksdb.Transaction;
 import org.rocksdb.WriteBatch;
+import org.slf4j.Logger;
 
 public class ZeebeTransaction implements ZeebeDbTransaction, AutoCloseable {
 
+  private static final Logger LOG = Loggers.DB_LOGGER;
+  private static final String CONFLICT_CHECK_FAILURE_MARKER = "MemTable only contains changes newer";
+
   private final long nativeHandle;
   private final TransactionRenovator transactionRenovator;
+  private final Counter conflictCheckFailures;
 
   private boolean inCurrentTransaction;
   private Transaction transaction;
 
   public ZeebeTransaction(
-      final Transaction transaction, final TransactionRenovator transactionRenovator) {
+      final Transaction transaction,
+      final TransactionRenovator transactionRenovator,
+      final Counter conflictCheckFailures) {
     this.transactionRenovator = transactionRenovator;
     this.transaction = transaction;
+    this.conflictCheckFailures = conflictCheckFailures;
     try {
       nativeHandle = RocksDbInternal.nativeHandle.getLong(transaction);
     } catch (final Exception ex) {
@@ -187,7 +197,17 @@ public class ZeebeTransaction implements ZeebeDbTransaction, AutoCloseable {
 
   void commitInternal() throws RocksDBException {
     inCurrentTransaction = false;
-    transaction.commit();
+    try {
+      transaction.commit();
+    } catch (final RocksDBException e) {
+      if (e.getMessage() != null && e.getMessage().contains(CONFLICT_CHECK_FAILURE_MARKER)) {
+        LOG.warn(
+            "Optimistic transaction conflict-check failed: memtable was flushed while this transaction was open, discarding the sequence history needed for conflict detection. {}",
+            e.getMessage());
+        conflictCheckFailures.increment();
+      }
+      throw e;
+    }
   }
 
   void rollbackInternal() throws RocksDBException {
