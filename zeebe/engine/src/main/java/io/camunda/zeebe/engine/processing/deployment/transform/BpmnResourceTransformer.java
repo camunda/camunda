@@ -10,6 +10,7 @@ package io.camunda.zeebe.engine.processing.deployment.transform;
 import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 
 import io.camunda.zeebe.el.ExpressionLanguageMetrics;
+import io.camunda.zeebe.engine.metrics.ProcessDefinitionMetrics;
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
 import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.ChecksumGenerator;
@@ -50,6 +51,7 @@ public final class BpmnResourceTransformer implements DeploymentResourceTransfor
   private final ProcessState processState;
   private final boolean enableStraightThroughProcessingLoopDetector;
   private final BpmnElementOrderErrorTransformer elementOrderErrorTransformer;
+  private final ProcessDefinitionMetrics processDefinitionMetrics;
 
   public BpmnResourceTransformer(
       final KeyGenerator keyGenerator,
@@ -60,7 +62,8 @@ public final class BpmnResourceTransformer implements DeploymentResourceTransfor
       final boolean enableStraightThroughProcessingLoopDetector,
       final ValidationConfig config,
       final InstantSource clock,
-      final ExpressionLanguageMetrics expressionLanguageMetrics) {
+      final ExpressionLanguageMetrics expressionLanguageMetrics,
+      final ProcessDefinitionMetrics processDefinitionMetrics) {
     bpmnTransformer =
         BpmnFactory.createTransformer(
             clock, expressionLanguageMetrics, config.maxNameFieldLength());
@@ -72,6 +75,7 @@ public final class BpmnResourceTransformer implements DeploymentResourceTransfor
         BpmnFactory.createValidator(clock, expressionProcessor, config, expressionLanguageMetrics);
     this.enableStraightThroughProcessingLoopDetector = enableStraightThroughProcessingLoopDetector;
     elementOrderErrorTransformer = new BpmnElementOrderErrorTransformer();
+    this.processDefinitionMetrics = processDefinitionMetrics;
   }
 
   @Override
@@ -149,10 +153,13 @@ public final class BpmnResourceTransformer implements DeploymentResourceTransfor
                     .setDuplicate(false)
                     .setDeploymentKey(deployment.getDeploymentKey());
               }
-              stateWriter.appendFollowUpEvent(
+              final var processRecord = new ProcessRecord().wrap(metadata, resource.getResource());
+              stateWriter.appendFollowUpEvent(key, ProcessIntent.CREATED, processRecord);
+              processDefinitionMetrics.processDefinitionDeployed(
                   key,
-                  ProcessIntent.CREATED,
-                  new ProcessRecord().wrap(metadata, resource.getResource()));
+                  processRecord.getBpmnProcessId(),
+                  processRecord.getVersion(),
+                  resource.getResource().length);
             });
   }
 

@@ -13,6 +13,7 @@ import static java.util.function.Predicate.not;
 
 import io.camunda.zeebe.el.ExpressionLanguageMetrics;
 import io.camunda.zeebe.engine.EngineConfiguration;
+import io.camunda.zeebe.engine.metrics.ProcessDefinitionMetrics;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.common.CatchEventBehavior;
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
@@ -91,6 +92,7 @@ public final class DeploymentCreateProcessor
   private final TypedResponseWriter responseWriter;
   private final CommandDistributionBehavior distributionBehavior;
   private final AuthorizationCheckBehavior authCheckBehavior;
+  private final ProcessDefinitionMetrics processDefinitionMetrics;
 
   public DeploymentCreateProcessor(
       final ProcessingState processingState,
@@ -102,7 +104,8 @@ public final class DeploymentCreateProcessor
       final EngineConfiguration config,
       final InstantSource clock,
       final AuthorizationCheckBehavior authCheckBehavior,
-      final ExpressionLanguageMetrics expressionLanguageMetrics) {
+      final ExpressionLanguageMetrics expressionLanguageMetrics,
+      final ProcessDefinitionMetrics processDefinitionMetrics) {
     deploymentState = processingState.getDeploymentState();
     processState = processingState.getProcessState();
     decisionState = processingState.getDecisionState();
@@ -117,6 +120,7 @@ public final class DeploymentCreateProcessor
     expressionProcessor = bpmnBehaviors.expressionProcessor();
     this.distributionBehavior = distributionBehavior;
     this.authCheckBehavior = authCheckBehavior;
+    this.processDefinitionMetrics = processDefinitionMetrics;
     deploymentTransformer =
         new DeploymentTransformer(
             stateWriter,
@@ -131,7 +135,8 @@ public final class DeploymentCreateProcessor
                 .withValidatorResultsOutputMaxSize(config.getValidatorsResultsOutputMaxSize())
                 .build(),
             clock,
-            expressionLanguageMetrics);
+            expressionLanguageMetrics,
+            processDefinitionMetrics);
     startEventSubscriptionManager =
         new StartEventSubscriptionManager(processingState, keyGenerator, stateWriter);
   }
@@ -256,10 +261,15 @@ public final class DeploymentCreateProcessor
                 final var resourceChecksum =
                     deploymentTransformer.getChecksum(resource.getResource());
                 if (resourceChecksum.equals(metadata.getChecksumBuffer())) {
+                  final var processRecord =
+                      new ProcessRecord().wrap(metadata, resource.getResource());
                   stateWriter.appendFollowUpEvent(
+                      metadata.getKey(), ProcessIntent.CREATED, processRecord);
+                  processDefinitionMetrics.processDefinitionDeployed(
                       metadata.getKey(),
-                      ProcessIntent.CREATED,
-                      new ProcessRecord().wrap(metadata, resource.getResource()));
+                      processRecord.getBpmnProcessId(),
+                      processRecord.getVersion(),
+                      resource.getResource().length);
                 }
               }
             });
@@ -278,7 +288,7 @@ public final class DeploymentCreateProcessor
     deploymentEvent.decisionsMetadata().stream()
         .filter(not(DecisionRecord::isDuplicate))
         .forEach(
-            (record) ->
+            record ->
                 stateWriter.appendFollowUpEvent(
                     record.getDecisionKey(), DecisionIntent.CREATED, record));
   }
