@@ -1,5 +1,4 @@
 #!/bin/bash
-set -exo pipefail
 
 # Contains OS specific sed function
 . utils.sh
@@ -9,10 +8,10 @@ usage() {
 Usage: newCloudLoadTest.sh <namespace>
 
 Arguments:
-  namespace          Base namespace name. Will be prefixed with "c8-" if missing.
+  namespace    Base namespace name. Will be prefixed with "c8-" if missing.
 
 Options:
-  -h, --help         Show this help message.
+  -h           Show this help message.
 
 Examples:
   ./newCloudLoadTest.sh demo
@@ -20,29 +19,27 @@ Examples:
 EOF
 }
 
-if [ "$1" = "-h" ] || [ "$1" = "--help" ]; then
-  usage
-  exit 0
-fi
+while getopts ":h" opt; do
+  case "$opt" in
+    h) usage; exit 0 ;;
+    \?) echo "Error: Unknown option -$OPTARG." >&2; usage; exit 1 ;;
+  esac
+done
+shift $((OPTIND - 1))
 
 if [ -z "$1" ]; then
-  echo "Error: Missing namespace name."
+  echo "Error: Missing namespace name." >&2
   usage
   exit 1
 fi
 
+set -exo pipefail
+
 ### Cloud load test helper script
-### First parameter is used as namespace name
+### Namespace name is the only required positional argument
 ### For a new namespace a new folder will be created
 
-
-namespace=$1
-
-# Add c8- prefix if not present
-if [[ ! "$namespace" =~ ^c8- ]]; then
-  namespace="c8-$namespace"
-  echo "Namespace prefix added: $namespace"
-fi
+namespace="$(namespace_name "$1")"
 
 kubectl create namespace $namespace
 
@@ -51,7 +48,6 @@ kubectl label namespace "$namespace" registry=harbor --overwrite
 
 cp -rv cloud-default/ $namespace
 cd $namespace
-
 
 # Update Makefile to use the namespace
 sed_inplace "s/__NAMESPACE__/$namespace/" Makefile

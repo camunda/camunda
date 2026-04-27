@@ -481,8 +481,14 @@ jobs:
           # The namespace label created-by will not be able resolve the actual user which triggered
           # the GitHub action by default. We need to correctly configure the git user here to make it work
           git config user.name ${{ github.actor }}
+          # Build newLoadTest.sh flags
+          flags="-s ${{ inputs.secondary-storage-type }} -t ${{ inputs.ttl }}"
+          if [[ "${{ inputs.enable-optimize }}" == "false" ]]; then
+            flags="$flags -O"
+          fi
           # Create the namespace for the load test
-          ./newLoadTest.sh ${{ env.NAMESPACE }} ${{ inputs.secondary-storage-type }} ${{ inputs.ttl }} ${{ inputs.enable-optimize }}
+          # shellcheck disable=SC2086
+          ./newLoadTest.sh $flags "${{ env.NAMESPACE }}"
           # Annotate namespace with the workflow run URL for traceability
           kubectl annotate namespace ${{ env.NAMESPACE }} \
             "github.com/workflow-run-url=${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
