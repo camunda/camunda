@@ -74,7 +74,7 @@ public final class InterPartitionCommandSenderService extends Actor
   }
 
   @Override
-  public void onPartitionLeaderUpdated(final int partitionId, final MemberId leaderId) {
-    actor.submit(() -> commandSender.setCurrentLeader(partitionId, leaderId));
+  public void onPartitionLeaderUpdated(final int leaderPartitionId, final MemberId leaderId) {
+    actor.submit(() -> commandSender.setCurrentLeader(leaderPartitionId, leaderId));
   }
 }
