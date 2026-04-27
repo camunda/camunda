@@ -230,10 +230,10 @@ zeebe:
   resources:
     requests:
       cpu: 3000m
-      memory: 2Gi
+      memory: 4Gi
     limits:
       cpu: 3000m
-      memory: 2Gi
+      memory: 4Gi
   nodeSelector:
     topology.kubernetes.io/zone: __AVAILABILITY_ZONE__
   tolerations:
