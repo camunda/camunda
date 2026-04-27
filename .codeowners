@@ -321,6 +321,9 @@ optimize.Dockerfile         @camunda/core-features
 /.github/workflows/*load-test*.yaml @camunda/reliability-testing
 /.github/workflows/profile-load-test.yml @camunda/reliability-testing
 
+# Claude Code skills
+/.claude/skills/load-test-ops/ @camunda/reliability-testing
+
 ################################
 ## @camunda/data-layer
 ################################
