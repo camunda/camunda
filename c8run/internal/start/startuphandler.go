@@ -23,6 +23,8 @@ import (
 
 var evalSymlinks = filepath.EvalSymlinks
 
+const startupHealthCheckRetries = 24
+
 type processHandler interface {
 	AttemptToStartProcess(pidPath string, processName string, startProcess func(), healthCheck func() error, stop context.CancelFunc)
 	WritePIDToFile(pidPath string, pid int) error
@@ -450,8 +452,6 @@ func (s *StartupHandler) StartCommand(wg *sync.WaitGroup, ctx context.Context, s
 		}
 	}
 
-	s.startConnectors(ctx, stop, state, parentDir, javaBinary)
-
 	s.ProcessHandler.AttemptToStartProcess(processInfo.Camunda.PidPath, "Camunda", func() {
 		camundaCmd := c8.CamundaCmd(ctx, processInfo.Camunda.Version, parentDir, extraArgs, javaOpts)
 		camundaLogPath := filepath.Join(parentDir, "log", "camunda.log")
@@ -462,8 +462,14 @@ func (s *StartupHandler) StartCommand(wg *sync.WaitGroup, ctx context.Context, s
 			return
 		}
 	}, func() error {
-		return health.QueryCamunda(ctx, c8, "Camunda", settings, 24)
+		return health.QueryCamunda(ctx, c8, "Camunda", settings, startupHealthCheckRetries)
 	}, stop)
+
+	if ctx.Err() != nil {
+		return
+	}
+
+	s.startConnectors(ctx, stop, state, parentDir, javaBinary)
 }
 
 func (s *StartupHandler) startConnectors(ctx context.Context, stop context.CancelFunc, state *types.State, parentDir string, javaBinary string) {
@@ -483,7 +489,6 @@ func (s *StartupHandler) startConnectors(ctx context.Context, stop context.Cance
 			return
 		}
 	}, func() error {
-		// TODO do a health check on the connectors process
-		return nil
+		return health.QueryConnectors(ctx, "Connectors", startupHealthCheckRetries)
 	}, stop)
 }
