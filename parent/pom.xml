@@ -109,7 +109,7 @@
     <version.rest-assured>6.0.0</version.rest-assured>
     <version.spring>7.0.6</version.spring>
     <version.spring-security>7.0.5</version.spring-security>
-    <version.spring-boot>4.0.5</version.spring-boot>
+    <version.spring-boot>4.0.6</version.spring-boot>
     <version.spring-ai>2.0.0-M4</version.spring-ai>
     <version.mcp-sdk>1.1.1</version.mcp-sdk>
     <version.jsonschema-generator>5.0.0</version.jsonschema-generator>
