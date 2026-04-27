@@ -317,6 +317,11 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
+      <artifactId>webapp-server</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
       <artifactId>webapps-common</artifactId>
     </dependency>
     <dependency>
@@ -1060,6 +1065,8 @@
             <dependency>io.camunda:operate-webapp</dependency>
 
             <dependency>io.camunda:tasklist-data-generator</dependency>
+
+            <dependency>io.camunda:webapp-server</dependency>
 
             <!-- Used to parse PKCS1 certificates -->
             <dependency>org.bouncycastle:bcprov-jdk18on</dependency>

@@ -782,6 +782,19 @@
         <scope>test</scope>
       </dependency>
 
+      <!-- Webapp Modules (orchestration cluster unified BFF) -->
+      <dependency>
+        <groupId>io.camunda</groupId>
+        <artifactId>webapp-webjar</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.camunda</groupId>
+        <artifactId>webapp-server</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
       <dependency>
         <groupId>io.camunda</groupId>
         <artifactId>document-api</artifactId>
