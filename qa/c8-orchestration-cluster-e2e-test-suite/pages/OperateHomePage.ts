@@ -36,7 +36,6 @@ class OperateHomePage {
     this.dashboardLink = page.getByRole('link', {name: 'Dashboard'});
     this.processesTab = page.getByRole('link', {name: 'Processes'}).first();
     this.decisionsTab = page.getByRole('link', {name: 'Decisions'});
-    // Carbon's HeaderMenu trigger uses this class regardless of element type/ARIA role
     this.operationsMenuButton = page
       .locator('.cds--header__menu-title')
       .filter({hasText: /^Operations$/});

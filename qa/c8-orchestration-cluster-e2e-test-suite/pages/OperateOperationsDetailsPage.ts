@@ -37,9 +37,7 @@ export class OperateOperationsDetailsPage {
     this.summaryTile = this.tileElement.filter({hasText: 'Summary of items'});
     this.actorTile = this.tileElement.filter({hasText: 'Actor'});
     this.startDateTile = this.tileElement.filter({hasText: 'Start date'});
-    this.forbiddenMessage = page.getByText(
-      /403 - You do not have permission/,
-    );
+    this.forbiddenMessage = page.getByText(/403 - You do not have permission/);
     this.backButton = page.getByRole('button', {
       name: 'Back to batch operations',
     });
@@ -48,9 +46,7 @@ export class OperateOperationsDetailsPage {
     this.optionsMenuButton = page.getByRole('button', {name: /Options/i});
     this.itemsTable = page.getByRole('table');
     this.itemsTableRows = this.itemsTable.getByRole('row');
-    this.stateBadge = page.getByRole('status', {
-      name: /Batch operation status:/,
-    });
+    this.stateBadge = this.state;
   }
 
   async goto(batchOperationKey: string): Promise<void> {

@@ -43,9 +43,7 @@ export async function createCancellationBatch(
   numberOfInstances = 3,
   processDefinitionId = 'batch_cancellation_process',
 ): Promise<string> {
-  // Create instances in concurrent waves to stay fast without overwhelming
-  // Zeebe's partition request queue (which returns 503 when exhausted).
-  const WAVE_SIZE = 20;
+  const WAVE_SIZE = 30;
   const processInstanceKeys: string[] = [];
   for (let i = 0; i < numberOfInstances; i += WAVE_SIZE) {
     const waveCount = Math.min(WAVE_SIZE, numberOfInstances - i);
@@ -56,6 +54,7 @@ export async function createCancellationBatch(
           data: {
             processDefinitionId: processDefinitionId,
           },
+          timeout: 30_000,
         }),
       ),
     );
@@ -74,29 +73,25 @@ export async function createCancellationBatch(
     }
   }
 
-  // Poll until at least one instance is indexed in Elasticsearch.
-  // A fixed sleep is unreliable under variable ES indexing latency.
   await expect(async () => {
-    let anyFound = false;
-    for (const key of processInstanceKeys) {
-      const searchRes = await request.post(
-        buildUrl('/process-instances/search'),
-        {
-          headers: jsonHeaders(),
-          data: {filter: {processInstanceKey: key}},
+    const searchRes = await request.post(
+      buildUrl('/process-instances/search'),
+      {
+        headers: jsonHeaders(),
+        data: {
+          filter: {
+            processInstanceKey: {
+              $in: processInstanceKeys,
+            },
+          },
         },
-      );
-      if (searchRes.ok()) {
-        const json = await searchRes.json();
-        if ((json.page?.totalItems ?? 0) > 0) {
-          anyFound = true;
-          break;
-        }
-      }
-    }
-    expect(anyFound).toBe(true);
+      },
+    );
+    await assertStatusCode(searchRes, 200);
+    const json = await searchRes.json();
+    expect((json.page?.totalItems ?? 0) > 0).toBe(true);
   }).toPass({
-    intervals: [1_000, 2_000, 3_000, 5_000, 5_000, 10_000, 10_000],
+    ...defaultAssertionOptions,
     timeout: 60_000,
   });
 

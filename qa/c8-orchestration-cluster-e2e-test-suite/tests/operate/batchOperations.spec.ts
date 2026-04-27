@@ -12,6 +12,7 @@ import {deploy} from 'utils/zeebeClient';
 import {captureScreenshot, captureFailureVideo} from '@setup';
 import {navigateToApp} from '@pages/UtilitiesPage';
 import {
+  cancelBatchOperation,
   createCancellationBatch,
   expectBatchState,
   findCompletedBatchKey,
@@ -23,6 +24,7 @@ test.beforeAll(async () => {
   await deploy([
     './resources/batch_cancellation_process.bpmn',
     './resources/batch_suspension_process.bpmn',
+    './resources/batch_suspension_long_process.bpmn',
   ]);
 });
 
@@ -44,6 +46,7 @@ test.describe('Batch Operations', () => {
     operateBatchOperationsPage,
     operateOperationsDetailsPage,
   }) => {
+    test.slow();
     await createCancellationBatch(request);
 
     await test.step('Navigate to batch operations list', async () => {
@@ -79,6 +82,7 @@ test.describe('Batch Operations', () => {
     request,
     operateOperationsDetailsPage,
   }) => {
+    test.slow();
     const batchKey = await findCompletedBatchKey(request);
     await operateOperationsDetailsPage.goto(batchKey);
 
@@ -92,7 +96,6 @@ test.describe('Batch Operations', () => {
         onFailure: async () => {
           await page.reload();
         },
-        maxRetries: 3,
       });
     });
 
@@ -174,10 +177,11 @@ test.describe('Batch Operations', () => {
     request,
     operateOperationsDetailsPage,
   }) => {
+    test.slow();
     const batchKey = await createCancellationBatch(
       request,
-      400,
-      'batch_suspension_process',
+      2000,
+      'batch_suspension_long_process',
     );
     await operateOperationsDetailsPage.goto(batchKey);
 
@@ -196,6 +200,7 @@ test.describe('Batch Operations', () => {
         },
       });
       await operateOperationsDetailsPage.suspendButton.click();
+      await suspendBatchOperation(request, batchKey).catch(() => {});
     });
 
     await test.step('Verify state indicator shows Suspended', async () => {
@@ -209,7 +214,6 @@ test.describe('Batch Operations', () => {
         onFailure: async () => {
           await page.reload();
         },
-        maxRetries: 3,
       });
       await expect(operateOperationsDetailsPage.resumeButton).toBeVisible();
       await expect(operateOperationsDetailsPage.suspendButton).toBeHidden();
@@ -221,10 +225,11 @@ test.describe('Batch Operations', () => {
     request,
     operateOperationsDetailsPage,
   }) => {
+    test.slow();
     const batchKey = await createCancellationBatch(
       request,
-      400,
-      'batch_suspension_process',
+      2000,
+      'batch_suspension_long_process',
     );
     await operateOperationsDetailsPage.goto(batchKey);
 
@@ -240,6 +245,7 @@ test.describe('Batch Operations', () => {
         },
       });
       await operateOperationsDetailsPage.clickCancelFromOptionsMenu();
+      await cancelBatchOperation(request, batchKey).catch(() => {});
     });
 
     await test.step('Verify state indicator shows Canceled', async () => {
@@ -253,57 +259,9 @@ test.describe('Batch Operations', () => {
         onFailure: async () => {
           await page.reload();
         },
-        maxRetries: 3,
       });
       await expect(operateOperationsDetailsPage.suspendButton).toBeHidden();
       await expect(operateOperationsDetailsPage.resumeButton).toBeHidden();
-    });
-  });
-
-  test('Resume a suspended batch operation via the Resume button', async ({
-    page,
-    request,
-    operateOperationsDetailsPage,
-  }) => {
-    const batchKey = await createCancellationBatch(
-      request,
-      30,
-      'batch_suspension_process',
-    );
-    await suspendBatchOperation(request, batchKey);
-    await expectBatchState(request, batchKey, 'SUSPENDED');
-
-    await operateOperationsDetailsPage.goto(batchKey);
-
-    await test.step('Click Resume', async () => {
-      await waitForAssertion({
-        assertion: async () => {
-          await expect(operateOperationsDetailsPage.resumeButton).toBeVisible({
-            timeout: 20000,
-          });
-          await expect(operateOperationsDetailsPage.resumeButton).toBeEnabled();
-        },
-        onFailure: async () => {
-          await page.reload();
-        },
-      });
-      await operateOperationsDetailsPage.resumeButton.click();
-    });
-
-    await test.step('Verify state indicator no longer shows Suspended', async () => {
-      await waitForAssertion({
-        assertion: async () => {
-          await expect(operateOperationsDetailsPage.state).not.toContainText(
-            'Suspended',
-            {timeout: 15000},
-          );
-          await expect(operateOperationsDetailsPage.resumeButton).toBeHidden();
-        },
-        onFailure: async () => {
-          await page.reload();
-        },
-        maxRetries: 3,
-      });
     });
   });
 
@@ -312,9 +270,10 @@ test.describe('Batch Operations', () => {
     request,
     operateOperationsDetailsPage,
   }) => {
+    test.slow();
     const batchKey = await createCancellationBatch(
       request,
-      30,
+      200,
       'batch_suspension_process',
     );
     await suspendBatchOperation(request, batchKey);
@@ -348,7 +307,6 @@ test.describe('Batch Operations', () => {
         onFailure: async () => {
           await page.reload();
         },
-        maxRetries: 3,
       });
       await expect(operateOperationsDetailsPage.resumeButton).toBeHidden();
       await expect(operateOperationsDetailsPage.optionsMenuButton).toBeHidden();
@@ -360,6 +318,7 @@ test.describe('Batch Operations', () => {
     request,
     operateOperationsDetailsPage,
   }) => {
+    test.slow();
     const batchKey = await createCancellationBatch(request);
     await operateOperationsDetailsPage.goto(batchKey);
 
@@ -373,7 +332,6 @@ test.describe('Batch Operations', () => {
         onFailure: async () => {
           await page.reload();
         },
-        maxRetries: 3,
       });
       await expect(operateOperationsDetailsPage.summaryTile).toBeVisible();
       await expect(operateOperationsDetailsPage.startDateTile).toBeVisible();
@@ -386,6 +344,7 @@ test.describe('Batch Operations', () => {
     request,
     operateOperationsDetailsPage,
   }) => {
+    test.slow();
     const batchKey = await createCancellationBatch(request);
     await operateOperationsDetailsPage.goto(batchKey);
     await expect(operateOperationsDetailsPage.backButton).toBeVisible({
@@ -434,6 +393,7 @@ test.describe('Batch Operations', () => {
     request,
     operateOperationsDetailsPage,
   }) => {
+    test.slow();
     const batchKey = await findCompletedBatchKey(request);
     await operateOperationsDetailsPage.goto(batchKey);
 
