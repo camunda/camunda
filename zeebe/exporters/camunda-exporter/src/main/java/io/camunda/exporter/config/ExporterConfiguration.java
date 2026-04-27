@@ -204,6 +204,7 @@ public class ExporterConfiguration {
     private String usageMetricsRolloverInterval = "1M";
     private int rolloverBatchSize = 100;
     private int reindexBatchSize = 1000;
+    private int archiveByIdMaxRetryAttempts = 3;
     private String waitPeriodBeforeArchiving = "1h";
     private int delayBetweenRuns = 2000;
     private int maxDelayBetweenRuns = 60000;
@@ -270,6 +271,14 @@ public class ExporterConfiguration {
       this.reindexBatchSize = reindexBatchSize;
     }
 
+    public int getArchiveByIdMaxRetryAttempts() {
+      return archiveByIdMaxRetryAttempts;
+    }
+
+    public void setArchiveByIdMaxRetryAttempts(final int archiveByIdMaxRetryAttempts) {
+      this.archiveByIdMaxRetryAttempts = archiveByIdMaxRetryAttempts;
+    }
+
     public RetentionConfiguration getRetention() {
       return retention;
     }
@@ -302,17 +311,37 @@ public class ExporterConfiguration {
       this.maxDelayBetweenRuns = maxDelayBetweenRuns;
     }
 
+    public boolean isTrackArchivalMetricsForProcessInstance() {
+      return trackArchivalMetricsForProcessInstance;
+    }
+
+    public void setTrackArchivalMetricsForProcessInstance(
+        final boolean trackArchivalMetricsForProcessInstance) {
+      this.trackArchivalMetricsForProcessInstance = trackArchivalMetricsForProcessInstance;
+    }
+
     @Override
     public String toString() {
       return "ArchiverConfiguration{"
+          + "processInstanceEnabled="
+          + processInstanceEnabled
+          + ", archiveByIdEnabled="
+          + archiveByIdEnabled
           + ", elsRolloverDateFormat='"
           + elsRolloverDateFormat
           + '\''
           + ", rolloverInterval='"
           + rolloverInterval
           + '\''
+          + ", usageMetricsRolloverInterval='"
+          + usageMetricsRolloverInterval
+          + '\''
           + ", rolloverBatchSize="
           + rolloverBatchSize
+          + ", reindexBatchSize="
+          + reindexBatchSize
+          + ", archiveByIdMaxRetryAttempts="
+          + archiveByIdMaxRetryAttempts
           + ", waitPeriodBeforeArchiving='"
           + waitPeriodBeforeArchiving
           + '\''
@@ -325,15 +354,6 @@ public class ExporterConfiguration {
           + ", trackArchivalMetricsForProcessInstance="
           + trackArchivalMetricsForProcessInstance
           + '}';
-    }
-
-    public boolean isTrackArchivalMetricsForProcessInstance() {
-      return trackArchivalMetricsForProcessInstance;
-    }
-
-    public void setTrackArchivalMetricsForProcessInstance(
-        final boolean trackArchivalMetricsForProcessInstance) {
-      this.trackArchivalMetricsForProcessInstance = trackArchivalMetricsForProcessInstance;
     }
   }
 
