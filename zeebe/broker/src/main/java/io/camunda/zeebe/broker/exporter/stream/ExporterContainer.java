@@ -66,7 +66,14 @@ final class ExporterContainer implements Controller {
             meterRegistry,
             clock);
 
-    exporter = descriptor.newInstance();
+    exporter = wrapIfAsync(descriptor.newInstance());
+  }
+
+  private Exporter wrapIfAsync(final Exporter exporter) {
+    if (exporter.isAsyncAllowed()) {
+      return new AsyncExporterWrapper(exporter);
+    }
+    return exporter;
   }
 
   void initContainer(

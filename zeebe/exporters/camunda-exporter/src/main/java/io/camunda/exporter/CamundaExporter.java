@@ -110,6 +110,11 @@ public class CamundaExporter implements Exporter {
   }
 
   @Override
+  public boolean isAsyncAllowed() {
+    return true;
+  }
+
+  @Override
   public void configure(final Context context) {
     this.context = context;
     configuration = context.getConfiguration().instantiate(ExporterConfiguration.class);

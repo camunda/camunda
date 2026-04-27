@@ -27,6 +27,10 @@ import io.camunda.zeebe.protocol.record.Record;
  * configuration, setup, resource allocation, etc.
  */
 public interface Exporter {
+  default boolean isAsyncAllowed() {
+    return false;
+  }
+
   /**
    * Use the provided configuration at this point to configure your exporter.
    *
