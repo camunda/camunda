@@ -17,26 +17,7 @@ import 'bpmn-js/dist/assets/bpmn-js.css';
 import {tracking} from 'modules/tracking';
 import {createRoot} from 'react-dom/client';
 
-function enableMockingForDevEnv(): Promise<void> {
-  return new Promise((resolve) => {
-    if (
-      process.env.NODE_ENV === 'development' ||
-      window.location.host.match(/camunda\.cloud$/) !== null
-    ) {
-      import('modules/mock-server/browser').then(({startMocking}) => {
-        startMocking();
-        resolve();
-      });
-    } else {
-      resolve();
-    }
-  });
-}
-
-Promise.all([
-  tracking.loadAnalyticsToWillingUsers(),
-  enableMockingForDevEnv(),
-]).then(() => {
+tracking.loadAnalyticsToWillingUsers().then(() => {
   const rootElement = document.getElementById('root');
   if (rootElement !== null) {
     const root = createRoot(rootElement);
