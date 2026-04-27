@@ -1,8 +1,8 @@
 fullnameOverride: "prom-els-exporter"
 
 commonLabels:
-  "camunda.io/created-by": __AUTHOR__
-  "camunda.io/purpose": load-test
+  camunda.io/created-by: __AUTHOR__
+  camunda.io/purpose: load-test
 
 image:
   # Route through colocated GAR pull-through cache to avoid quay.io rate limiting

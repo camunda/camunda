@@ -1,7 +1,7 @@
 global:
   commonLabels:
-    "camunda.io/created-by": __AUTHOR__
-    "camunda.io/purpose": load-test
+    camunda.io/created-by: __AUTHOR__
+    camunda.io/purpose: load-test
   image:
     repository: registry.camunda.cloud/team-zeebe
     pullSecrets:
