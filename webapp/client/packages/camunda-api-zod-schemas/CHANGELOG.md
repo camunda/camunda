@@ -1,5 +1,15 @@
 # Changelog
 
+## v0.0.60
+
+### 🩹 Fixes
+
+- Replace `postinstall` script with `prepare`. Makes it possible to install the package again.
+
+### ❤️ Contributors
+
+- Christoph Fricke ([@christoph-fricke](https://github.com/christoph-fricke))
+
 ## v0.0.59
 
 ### 🚀 Enhancements
