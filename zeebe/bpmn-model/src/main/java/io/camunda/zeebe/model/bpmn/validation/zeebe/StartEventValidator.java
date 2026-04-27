@@ -21,7 +21,6 @@ import io.camunda.zeebe.model.bpmn.instance.EventDefinition;
 import io.camunda.zeebe.model.bpmn.instance.StartEvent;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeExecutionListener;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeExecutionListenerEventType;
-import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeFormDefinition;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeProperties;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeProperty;
 import java.util.Collection;
@@ -49,10 +48,7 @@ public class StartEventValidator implements ModelElementValidator<StartEvent> {
       validationResultCollector.addError(0, "Start event can't have more than one type");
     }
 
-    final ZeebeFormDefinition formDefinition =
-        element.getSingleExtensionElement(ZeebeFormDefinition.class);
-
-    if (formDefinition != null && hasPublicAccessEnabled(element)) {
+    if (hasPublicAccessEnabledForm(element)) {
       validationResultCollector.addError(0, PUBLIC_ACCESS_ERROR_MESSAGE);
     }
 
@@ -71,7 +67,7 @@ public class StartEventValidator implements ModelElementValidator<StartEvent> {
         });
   }
 
-  private boolean hasPublicAccessEnabled(final StartEvent element) {
+  private boolean hasPublicAccessEnabledForm(final StartEvent element) {
     final ZeebeProperties zeebeProperties =
         element.getSingleExtensionElement(ZeebeProperties.class);
 
