@@ -105,7 +105,7 @@ final class AdminApiRequestHandlerTest {
         @Mock final ClusterConfigurationService clusterConfigurationService) {
       handler =
           new AdminApiRequestHandler(
-              transport, adminAccess, raftPartition, clusterConfigurationService, 1);
+              transport, adminAccess, raftPartition, clusterConfigurationService, 1, null);
     }
 
     @BeforeEach
@@ -149,7 +149,7 @@ final class AdminApiRequestHandlerTest {
       when(adminAccess.forPartition(partitionId)).thenReturn(Optional.of(adminAccess));
       handler =
           new AdminApiRequestHandler(
-              transport, adminAccess, raftPartition, clusterConfigurationService, 1);
+              transport, adminAccess, raftPartition, clusterConfigurationService, 1, null);
 
       request = new AdminRequest();
       request.setPartitionId(partitionId);
@@ -226,7 +226,7 @@ final class AdminApiRequestHandlerTest {
       when(adminAccess.forPartition(partitionId)).thenReturn(Optional.of(adminAccess));
       handler =
           new AdminApiRequestHandler(
-              transport, adminAccess, raftPartition, clusterConfigurationService, 1);
+              transport, adminAccess, raftPartition, clusterConfigurationService, 1, null);
 
       request = new AdminRequest();
       request.setPartitionId(partitionId);
@@ -303,7 +303,7 @@ final class AdminApiRequestHandlerTest {
       when(adminAccess.forPartition(partitionId)).thenReturn(Optional.of(adminAccess));
       handler =
           new AdminApiRequestHandler(
-              transport, adminAccess, raftPartition, clusterConfigurationService, 1);
+              transport, adminAccess, raftPartition, clusterConfigurationService, 1, null);
 
       request = new AdminRequest();
       request.setPartitionId(partitionId);
@@ -380,7 +380,7 @@ final class AdminApiRequestHandlerTest {
       this.clusterConfigurationService = clusterConfigurationService;
       handler =
           new AdminApiRequestHandler(
-              transport, adminAccess, raftPartition, clusterConfigurationService, nodeId);
+              transport, adminAccess, raftPartition, clusterConfigurationService, nodeId, null);
     }
 
     @BeforeEach
