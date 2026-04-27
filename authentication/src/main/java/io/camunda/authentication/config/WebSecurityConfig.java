@@ -130,6 +130,7 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.access.intercept.AuthorizationFilter;
 import org.springframework.security.web.authentication.AuthenticationEntryPointFailureHandler;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
+import org.springframework.security.web.authentication.LoginUrlAuthenticationEntryPoint;
 import org.springframework.security.web.authentication.logout.LogoutSuccessHandler;
 import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
 import org.springframework.security.web.csrf.CsrfFilter;
@@ -1108,7 +1109,12 @@ public class WebSecurityConfig {
                               "/tasklist/custom.css",
                               "/tasklist/favicon.ico")
                           .permitAll()
-                          .requestMatchers("/login/*", "/identity/admin/*/login")
+                          .requestMatchers(
+                              "/login/*",
+                              "/admin/*/login",
+                              "/admin/assets/**",
+                              "/admin/config.js",
+                              "/admin/favicon.ico")
                           .permitAll()
                           .anyRequest()
                           .authenticated())
@@ -1119,7 +1125,13 @@ public class WebSecurityConfig {
                           securityConfiguration.getHttpHeaders(),
                           securityConfiguration.getSaas().isConfigured()))
               .exceptionHandling(
-                  (exceptionHandling) -> exceptionHandling.accessDeniedHandler(authFailureHandler))
+                  (exceptionHandling) ->
+                      exceptionHandling
+                          .accessDeniedHandler(authFailureHandler)
+                          .authenticationEntryPoint(
+                              new TenantAwareAuthenticationEntryPoint(
+                                  physicalTenantIdpRegistry,
+                                  new LoginUrlAuthenticationEntryPoint("/login"))))
               .cors(AbstractHttpConfigurer::disable)
               .formLogin(AbstractHttpConfigurer::disable)
               .anonymous(AbstractHttpConfigurer::disable)
