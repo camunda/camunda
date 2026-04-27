@@ -1,0 +1,177 @@
+/*
+ * Copyright © 2017 camunda services GmbH (info@camunda.com)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package io.camunda.client.spring.annotation.processor;
+
+import static io.camunda.client.annotation.AnnotationUtil.isClusterVariables;
+import static org.springframework.util.ReflectionUtils.doWithMethods;
+
+import io.camunda.client.CamundaClient;
+import io.camunda.client.annotation.AnnotationUtil;
+import io.camunda.client.annotation.value.ClusterVariablesValue;
+import io.camunda.client.annotation.value.MethodClusterVariablesValue;
+import io.camunda.client.annotation.value.ResourceClusterVariablesValue;
+import io.camunda.client.api.JsonMapper;
+import io.camunda.client.bean.BeanInfo;
+import io.camunda.client.spring.properties.CamundaClientClusterVariablesProperties;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
+import java.util.*;
+import java.util.function.Supplier;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
+import org.springframework.core.io.support.ResourcePatternResolver;
+import org.springframework.util.ReflectionUtils;
+
+public class ClusterVariablesAnnotationProcessor extends AbstractCamundaAnnotationProcessor {
+
+  private static final Logger LOGGER =
+      LoggerFactory.getLogger(ClusterVariablesAnnotationProcessor.class);
+
+  private final List<ClusterVariablesValue> clusterVariablesValues = new ArrayList<>();
+  private final JsonMapper jsonMapper;
+  private final ResourcePatternResolver resourcePatternResolver;
+  private final CamundaClientClusterVariablesProperties properties;
+
+  public ClusterVariablesAnnotationProcessor(
+      final JsonMapper jsonMapper,
+      final ResourcePatternResolver resourcePatternResolver,
+      final CamundaClientClusterVariablesProperties properties) {
+    this.jsonMapper = jsonMapper;
+    this.resourcePatternResolver = resourcePatternResolver;
+    this.properties = properties;
+  }
+
+  public ClusterVariablesAnnotationProcessor(
+      final JsonMapper jsonMapper, final CamundaClientClusterVariablesProperties properties) {
+    this(jsonMapper, new PathMatchingResourcePatternResolver(), properties);
+  }
+
+  @Override
+  public boolean isApplicableFor(final BeanInfo beanInfo) {
+    return isClusterVariables(beanInfo);
+  }
+
+  @Override
+  public void configureFor(final BeanInfo beanInfo) {
+    final List<? extends ClusterVariablesValue> classValues =
+        AnnotationUtil.getClusterVariablesValuesFromClass(beanInfo);
+    if (!classValues.isEmpty()) {
+      LOGGER.debug("Configuring cluster variables from class annotations: {}", classValues);
+      clusterVariablesValues.addAll(classValues);
+    }
+
+    final List<ClusterVariablesValue> methodValues = new ArrayList<>();
+    doWithMethods(
+        beanInfo.getTargetClass(),
+        method ->
+            methodValues.addAll(
+                AnnotationUtil.getClusterVariablesValuesFromMethods(beanInfo.toMethodInfo(method))),
+        ReflectionUtils.USER_DECLARED_METHODS);
+
+    if (!methodValues.isEmpty()) {
+      LOGGER.debug("Configuring cluster variables from method annotations: {}", methodValues);
+      clusterVariablesValues.addAll(methodValues);
+    }
+  }
+
+  @Override
+  public void start(final CamundaClient client) {
+    // Process variables from properties
+    final Map<String, Object> propertyVariables = properties.getVariables();
+    if (propertyVariables != null && !propertyVariables.isEmpty()) {
+      LOGGER.debug("Creating {} cluster variable(s) from properties", propertyVariables.size());
+      createClusterVariables(client, propertyVariables, null);
+    }
+
+    // Process variables from annotations
+    for (final ClusterVariablesValue value : clusterVariablesValues) {
+      final Map<String, Object> variables;
+      if (value instanceof ResourceClusterVariablesValue resourceValue) {
+        variables = loadVariablesFromResources(resourceValue.getResources());
+      } else if (value instanceof MethodClusterVariablesValue methodValue) {
+        variables = loadVariablesFromSupplier(methodValue.getVariableSupplier());
+      } else {
+        continue;
+      }
+      createClusterVariables(client, variables, value.getTenantId());
+    }
+  }
+
+  @Override
+  public void stop(final CamundaClient client) {
+    clusterVariablesValues.clear();
+  }
+
+  private Map<String, Object> loadVariablesFromResources(final List<String> resourcePatterns) {
+    final Map<String, Object> variables = new LinkedHashMap<>();
+    final List<Resource> allResources =
+        resourcePatterns.stream()
+            .flatMap(pattern -> Arrays.stream(getResources(pattern)))
+            .distinct()
+            .toList();
+    if (allResources.isEmpty()) {
+      throw new IllegalArgumentException(
+          "No resources found for cluster variables patterns:" + resourcePatterns);
+    }
+    for (final Resource resource : allResources) {
+      try (final InputStream inputStream = resource.getInputStream()) {
+        final String json = new String(inputStream.readAllBytes(), StandardCharsets.UTF_8);
+        final Map<String, Object> loaded = jsonMapper.fromJsonAsMap(json);
+        LOGGER.debug(
+            "Loaded {} variable(s) from resource '{}'", loaded.size(), resource.getFilename());
+        variables.putAll(loaded);
+      } catch (final Exception e) {
+        throw new RuntimeException(
+            "Error reading cluster variables from resource:" + resource.getFilename(), e);
+      }
+    }
+    return variables;
+  }
+
+  private Map<String, Object> loadVariablesFromSupplier(final Supplier<Object> variableSupplier) {
+    final Object result = variableSupplier.get();
+    if (result == null) {
+      throw new IllegalStateException("@ClusterVariables method must not return null");
+    }
+    return jsonMapper.fromJsonAsMap(jsonMapper.toJson(result));
+  }
+
+  private void createClusterVariables(
+      final CamundaClient client, final Map<String, Object> variables, final String tenantId) {
+    for (final Map.Entry<String, Object> entry : variables.entrySet()) {
+      final String name = entry.getKey();
+      final Object value = entry.getValue();
+      if (tenantId != null) {
+        client.newTenantScopedClusterVariableCreateRequest(tenantId).create(name, value).execute();
+        LOGGER.info("Created tenant-scoped cluster variable '{}' for tenant '{}'", name, tenantId);
+      } else {
+        client.newGloballyScopedClusterVariableCreateRequest().create(name, value).execute();
+        LOGGER.info("Created globally-scoped cluster variable '{}'", name);
+      }
+    }
+  }
+
+  private Resource[] getResources(final String resourcePattern) {
+    try {
+      return resourcePatternResolver.getResources(resourcePattern);
+    } catch (final IOException e) {
+      return new Resource[0];
+    }
+  }
+}
