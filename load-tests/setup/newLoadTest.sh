@@ -120,11 +120,11 @@ else
 fi
 
 # Label to easily find related namespaces
-kubectl label namespace "$namespace" "camunda.io/purpose=load-test" --overwrite
+kubectl label namespace "$namespace" camunda.io/purpose=load-test --overwrite
 
 # Label namespace with author (based on git author)
 git_author=$(compute_git_author)
-kubectl label namespace "$namespace" "camunda.io/created-by"="$git_author" --overwrite
+kubectl label namespace "$namespace" camunda.io/created-by="$git_author" --overwrite
 
 # Label namespace with TTL deadline (default: 1 day from now)
 # Try GNU date format first (Linux), then BSD/macOS format
