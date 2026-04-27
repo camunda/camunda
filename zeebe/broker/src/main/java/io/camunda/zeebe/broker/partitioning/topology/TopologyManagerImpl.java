@@ -272,6 +272,12 @@ public final class TopologyManagerImpl extends Actor
         .map(Member::id)
         .filter(id -> MemberId.extractNodeId(id) == nodeId)
         .findFirst()
-        .orElseGet(() -> MemberId.from(Integer.toString(nodeId)));
+        .orElseGet(
+            () -> {
+              LOG.warn(
+                  "No cluster member found for nodeId {}; falling back to bare MemberId — zone-aware routing will not work for this member",
+                  nodeId);
+              return MemberId.from(Integer.toString(nodeId));
+            });
   }
 }
