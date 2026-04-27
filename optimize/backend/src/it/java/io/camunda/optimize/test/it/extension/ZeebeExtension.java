@@ -28,13 +28,16 @@ import io.zeebe.containers.ZeebeContainer;
 import java.io.IOException;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.awaitility.Awaitility;
-import org.junit.jupiter.api.extension.AfterEachCallback;
-import org.junit.jupiter.api.extension.BeforeEachCallback;
+import org.junit.jupiter.api.extension.AfterAllCallback;
+import org.junit.jupiter.api.extension.BeforeAllCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.slf4j.Logger;
 import org.testcontainers.Testcontainers;
@@ -42,18 +45,23 @@ import org.testcontainers.utility.DockerImageName;
 import org.testcontainers.utility.MountableFile;
 
 /** Embedded Zeebe Extension */
-public class ZeebeExtension implements BeforeEachCallback, AfterEachCallback {
+public class ZeebeExtension implements BeforeAllCallback, AfterAllCallback {
 
   private static final String ZEEBE_CONFIG_PATH = "zeebe/zeebe-application.yml";
   private static final String ZEEBE_VERSION =
       IntegrationTestConfigurationUtil.getZeebeDockerVersion();
   private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(ZeebeExtension.class);
 
+<<<<<<< HEAD
   private ZeebeContainer zeebeContainer;
+=======
+  private TestStandaloneBroker standaloneBroker;
+>>>>>>> b68151efa (test: scope ZeebeExtension to class lifecycle and track started instances)
   private CamundaClient camundaClient;
 
   private String zeebeRecordPrefix;
 
+<<<<<<< HEAD
   public ZeebeExtension() {
     final int databasePort;
     final String zeebeExporterClassName;
@@ -92,7 +100,142 @@ public class ZeebeExtension implements BeforeEachCallback, AfterEachCallback {
   @Override
   public void afterEach(final ExtensionContext extensionContext) {
     zeebeContainer.stop();
+=======
+  /** Keys of all process instances started during the current test. */
+  private final Set<Long> startedInstanceKeys = ConcurrentHashMap.newKeySet();
+
+  public ZeebeExtension() {
+    System.setProperty("management.endpoints.web.exposure.include", "*");
+  }
+
+  @Override
+  public void beforeAll(final ExtensionContext extensionContext) {
+    zeebeRecordPrefix = ZeebeConstants.ZEEBE_RECORD_TEST_PREFIX + "-" + IdGenerator.getNextId();
+    final var dbType = IntegrationTestConfigurationUtil.getDatabaseType();
+    Testcontainers.exposeHostPorts(9200);
+    buildAndStartBroker(dbType);
+    createClient();
+  }
+
+  private void buildAndStartBroker(final DatabaseType dbType) {
+    final String exporterClassName =
+        dbType.equals(DatabaseType.OPENSEARCH)
+            ? ZEEBE_OPENSEARCH_EXPORTER
+            : ZEEBE_ELASTICSEARCH_EXPORTER;
+
+    standaloneBroker =
+        new TestStandaloneBroker()
+            .withAdditionalProperties(
+                Map.of(
+                    "zeebe.log.level",
+                    "ERROR",
+                    "atomix.log.level",
+                    "ERROR",
+                    "zeebe.clock.controlled",
+                    "true",
+                    "zeebe.broker.gateway.enable",
+                    "true"))
+            // Enable basic auth so that consolidated-auth triggers the spring security registration
+            // so that they don't get auto-configured by Spring as it hides the actuator endpoints
+            // behind authentication.
+            .withBasicAuth()
+            .withUnauthenticatedAccess()
+            .withAuthorizationsDisabled();
+
+    standaloneBroker
+        .withUnifiedConfig(
+            cfg -> {
+              cfg.getCluster().setPartitionCount(2);
+              cfg.getData()
+                  .getSecondaryStorage()
+                  .setType(SecondaryStorageType.valueOf(dbType.getId()));
+              if (dbType.equals(DatabaseType.OPENSEARCH)) {
+                cfg.getData().getSecondaryStorage().getOpensearch().setUrl("http://localhost:9200");
+                cfg.getData()
+                    .getSecondaryStorage()
+                    .getOpensearch()
+                    .setIndexPrefix(zeebeRecordPrefix);
+              } else {
+                cfg.getData()
+                    .getSecondaryStorage()
+                    .getElasticsearch()
+                    .setUrl("http://localhost:9200");
+                cfg.getData()
+                    .getSecondaryStorage()
+                    .getElasticsearch()
+                    .setIndexPrefix(zeebeRecordPrefix);
+              }
+            })
+        .withExporter(
+            dbType.getId() + "exporter",
+            cfg -> {
+              cfg.setClassName(exporterClassName);
+              cfg.setArgs(
+                  Map.of(
+                      "index",
+                      Map.of("prefix", zeebeRecordPrefix),
+                      "bulk",
+                      Map.of("size", 1),
+                      "url",
+                      "http://localhost:9200"));
+            })
+        .withCreateSchema(true)
+        .withAdditionalProperties(
+            Map.of(
+                "camunda.data.secondary-storage.type",
+                dbType.getId(),
+                "camunda.database.type",
+                dbType.getId(),
+                "camunda.database.url",
+                "http://localhost:9200",
+                "camunda.tasklist.database",
+                dbType.getId(),
+                "camunda.operate.database",
+                dbType.getId(),
+                "camunda.tasklist." + dbType.getId() + ".url",
+                "http://localhost:9200",
+                "camunda.operate." + dbType.getId() + ".url",
+                "http://localhost:9200"))
+        .start();
+  }
+
+  @Override
+  public void afterAll(final ExtensionContext extensionContext) {
+    standaloneBroker.stop();
+>>>>>>> b68151efa (test: scope ZeebeExtension to class lifecycle and track started instances)
     destroyClient();
+  }
+
+  /**
+   * Cancels all still-running process instances started during the current test and returns the
+   * keys of the instances that were <em>successfully cancelled</em> (i.e., were still running).
+   * Instances that had already completed or terminated are silently skipped and are <em>not</em>
+   * included in the returned set.
+   *
+   * <p>Callers should wait for a PROCESS-level ELEMENT_TERMINATED record for every key in the
+   * returned set before running index cleanup. That record is the last one the broker generates for
+   * a cancelled instance; once it appears in ES every earlier record for that instance — including
+   * asynchronously-exported variable records — is guaranteed to already be there.
+   *
+   * <p>Already-completed instances are excluded because their terminal ELEMENT_COMPLETED record may
+   * have been deleted by a mid-test cleanup (e.g. {@code
+   * removeAllZeebeExportRecordsExceptUserTaskRecords}). Zeebe will not re-export it, so waiting for
+   * it would block forever. The retry cleanup loop in {@code after()} handles any residual records
+   * from completed instances without blocking.
+   */
+  public Set<Long> cancelAllStartedInstances() {
+    final Set<Long> keys = Set.copyOf(startedInstanceKeys);
+    startedInstanceKeys.clear();
+    final Set<Long> cancelledKeys = new HashSet<>();
+    for (final long key : keys) {
+      try {
+        camundaClient.newCancelInstanceCommand(key).send().join();
+        cancelledKeys.add(key);
+      } catch (final Exception e) {
+        // Instance already completed or terminated — no new terminal record will be generated.
+      }
+    }
+    return cancelledKeys;
   }
 
   public void createClient() {
@@ -132,7 +275,9 @@ public class ZeebeExtension implements BeforeEachCallback, AfterEachCallback {
                 .bpmnProcessId(bpmnProcessId)
                 .latestVersion()
                 .variables(variables);
-    return createProcessInstanceCommandStep3.send().join().getProcessInstanceKey();
+    final long key = createProcessInstanceCommandStep3.send().join().getProcessInstanceKey();
+    startedInstanceKeys.add(key);
+    return key;
   }
 
   public void startProcessInstanceWithSignal(final String signalName) {
@@ -143,6 +288,31 @@ public class ZeebeExtension implements BeforeEachCallback, AfterEachCallback {
     camundaClient.newBroadcastSignalCommand().signalName(signalName).send().join();
   }
 
+<<<<<<< HEAD
+=======
+  public long startProcessInstanceByConditionalEvaluation(
+      final long processDefinitionKey, final Map<String, Object> variables) {
+    final long key =
+        camundaClient
+            .newEvaluateConditionalCommand()
+            .variables(variables)
+            .processDefinitionKey(processDefinitionKey)
+            .send()
+            .join()
+            .getProcessInstances()
+            .stream()
+            .findFirst()
+            .map(ProcessInstanceReference::getProcessInstanceKey)
+            .orElseThrow(
+                () ->
+                    new RuntimeException(
+                        "No process instance created by conditional evaluation for process definition key: "
+                            + processDefinitionKey));
+    startedInstanceKeys.add(key);
+    return key;
+  }
+
+>>>>>>> b68151efa (test: scope ZeebeExtension to class lifecycle and track started instances)
   public void startProcessInstanceBeforeElementWithIds(
       final String bpmnProcessId, final String... elementIds) {
     final CreateProcessInstanceCommandStep1.CreateProcessInstanceCommandStep3
@@ -151,7 +321,8 @@ public class ZeebeExtension implements BeforeEachCallback, AfterEachCallback {
     for (final String elementId : elementIds) {
       createProcessInstanceCommandStep3.startBeforeElement(elementId);
     }
-    createProcessInstanceCommandStep3.send().join().getProcessInstanceKey();
+    final long key = createProcessInstanceCommandStep3.send().join().getProcessInstanceKey();
+    startedInstanceKeys.add(key);
   }
 
   public void addVariablesToScope(
@@ -173,11 +344,14 @@ public class ZeebeExtension implements BeforeEachCallback, AfterEachCallback {
   public ProcessInstanceEvent startProcessInstanceForProcess(final String processId) {
     final CreateProcessInstanceCommandStep1.CreateProcessInstanceCommandStep3 startInstanceCommand =
         camundaClient.newCreateInstanceCommand().bpmnProcessId(processId).latestVersion();
-    return startInstanceCommand.send().join();
+    final ProcessInstanceEvent event = startInstanceCommand.send().join();
+    startedInstanceKeys.add(event.getProcessInstanceKey());
+    return event;
   }
 
   public void cancelProcessInstance(final long processInstanceKey) {
     camundaClient.newCancelInstanceCommand(processInstanceKey).send().join();
+    startedInstanceKeys.remove(processInstanceKey);
   }
 
   public void completeTaskForInstanceWithJobType(final String jobType) {
