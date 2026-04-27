@@ -781,7 +781,7 @@
         <version>${project.version}</version>
         <scope>test</scope>
       </dependency>
-      
+
       <dependency>
         <groupId>io.camunda</groupId>
         <artifactId>webapp-webjar</artifactId>
