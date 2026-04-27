@@ -45,9 +45,7 @@ public final class RoundRobinPartitionDistributor implements PartitionDistributo
       final List<PartitionId> sortedPartitionIds,
       final int replicationFactor) {
     final List<MemberId> sorted = new ArrayList<>(clusterMembers);
-    // We know that the memberIds are always integer. Sort it based on the integer value instead of
-    // string.
-    sorted.sort(Comparator.comparing(m -> Integer.parseInt(m.id())));
+    sorted.sort(Comparator.comparingInt(MemberId::extractNodeId));
 
     final int length = sorted.size();
     final int count = Math.min(replicationFactor, length);
