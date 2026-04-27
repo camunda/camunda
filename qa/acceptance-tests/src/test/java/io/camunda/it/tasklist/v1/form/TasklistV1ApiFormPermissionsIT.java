@@ -28,7 +28,7 @@ import io.camunda.qa.util.cluster.TestRestTasklistClient;
 import io.camunda.qa.util.multidb.CamundaMultiDBExtension;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.qa.util.multidb.MultiDbTestApplication;
-import io.camunda.tasklist.webapp.api.rest.v1.entities.FormResponse;
+import io.camunda.qa.util.cluster.TestRestTasklistClient.FormResponse;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.test.util.JsonUtil;
 import java.util.Collections;

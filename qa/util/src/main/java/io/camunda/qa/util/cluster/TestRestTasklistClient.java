@@ -12,7 +12,6 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import io.camunda.client.CredentialsProvider;
-import io.camunda.tasklist.webapp.api.rest.v1.entities.TaskSearchResponse;
 import io.camunda.zeebe.util.CloseableSilently;
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -207,4 +206,114 @@ public class TestRestTasklistClient implements CloseableSilently {
 
   @JsonIgnoreProperties(ignoreUnknown = true)
   public record ProcessDefinitionResponse(String bpmnProcessId) {}
+
+  @JsonIgnoreProperties(ignoreUnknown = true)
+  public static class TaskSearchResponse {
+    private String id;
+    private String assignee;
+    private String processInstanceKey;
+    private String completionDate;
+    private String[] candidateUsers;
+    private String[] candidateGroups;
+
+    public String getId() {
+      return id;
+    }
+
+    public void setId(final String id) {
+      this.id = id;
+    }
+
+    public String getAssignee() {
+      return assignee;
+    }
+
+    public void setAssignee(final String assignee) {
+      this.assignee = assignee;
+    }
+
+    public String getProcessInstanceKey() {
+      return processInstanceKey;
+    }
+
+    public void setProcessInstanceKey(final String processInstanceKey) {
+      this.processInstanceKey = processInstanceKey;
+    }
+
+    public String getCompletionDate() {
+      return completionDate;
+    }
+
+    public void setCompletionDate(final String completionDate) {
+      this.completionDate = completionDate;
+    }
+
+    public String[] getCandidateUsers() {
+      return candidateUsers;
+    }
+
+    public void setCandidateUsers(final String[] candidateUsers) {
+      this.candidateUsers = candidateUsers;
+    }
+
+    public String[] getCandidateGroups() {
+      return candidateGroups;
+    }
+
+    public void setCandidateGroups(final String[] candidateGroups) {
+      this.candidateGroups = candidateGroups;
+    }
+  }
+
+  @JsonIgnoreProperties(ignoreUnknown = true)
+  public static class TaskResponse {
+    private String id;
+
+    public String getId() {
+      return id;
+    }
+
+    public void setId(final String id) {
+      this.id = id;
+    }
+  }
+
+  @JsonIgnoreProperties(ignoreUnknown = true)
+  public static class VariableSearchResponse {
+    private String id;
+
+    public String getId() {
+      return id;
+    }
+
+    public void setId(final String id) {
+      this.id = id;
+    }
+  }
+
+  @JsonIgnoreProperties(ignoreUnknown = true)
+  public static class FormResponse {
+    private String id;
+
+    public String getId() {
+      return id;
+    }
+
+    public void setId(final String id) {
+      this.id = id;
+    }
+  }
+
+  @JsonIgnoreProperties(ignoreUnknown = true)
+  public static class ProcessPublicEndpointsResponse {
+    private String processDefinitionKey;
+
+    public String getProcessDefinitionKey() {
+      return processDefinitionKey;
+    }
+
+    public void setProcessDefinitionKey(final String processDefinitionKey) {
+      this.processDefinitionKey = processDefinitionKey;
+    }
+  }
 }

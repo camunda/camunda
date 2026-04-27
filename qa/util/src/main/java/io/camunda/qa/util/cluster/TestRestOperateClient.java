@@ -14,7 +14,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import io.camunda.client.CredentialsProvider;
-import io.camunda.operate.webapp.api.v1.entities.ProcessInstance;
 import io.camunda.zeebe.util.Either;
 import java.io.IOException;
 import java.net.CookieManager;
@@ -186,4 +185,17 @@ public class TestRestOperateClient implements AutoCloseable {
   public record ProcessInstanceResult(
       @JsonProperty("items") List<ProcessInstance> processInstances,
       @JsonProperty("total") long total) {}
+
+  @JsonIgnoreProperties(ignoreUnknown = true)
+  public static class ProcessInstance {
+    private Long key;
+
+    public Long getKey() {
+      return key;
+    }
+
+    public void setKey(final Long key) {
+      this.key = key;
+    }
+  }
 }
