@@ -32,15 +32,15 @@ deprecate a stable branch, verify that this workflow is updated accordingly.
 
 ## Backporting Load Test Changes
 
-All active maintenance branches (`stable/8.7`, `stable/8.8`) use the same `load-tests/`
-directory layout as `main`. Backports should cherry-pick cleanly without path conflicts.
+Stable branches that use the same `load-tests/` directory layout as `main` should
+cherry-pick cleanly without path conflicts.
 
 ### Other differences by branch
 
 | Feature                               | stable/8.7–8.8      | stable/8.9+ / main  |
 |---------------------------------------|---------------------|----------------------|
 | Docker image build job in workflows   | `build-zeebe-image` (8.7) / `build-camunda-image` (8.8) | `build-camunda-image`|
-| Identity/Optimize/Keycloak in values  | disabled            | enabled              |
+| Identity/Optimize/Keycloak in values  | enabled            | enabled              |
 | Ad-hoc load test workflow             | `zeebe-benchmark.yml` | `camunda-load-test.yml` |
 | PR-triggered load test workflow       | `zeebe-pr-benchmark.yaml` | `camunda-pr-load-test.yaml` |
 | Cloud load test setup scripts         | absent              | present              |
