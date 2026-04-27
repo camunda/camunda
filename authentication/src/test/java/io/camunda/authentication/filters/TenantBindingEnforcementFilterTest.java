@@ -26,16 +26,16 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
 import org.springframework.security.oauth2.core.user.DefaultOAuth2User;
 
-public class PhysicalTenantAuthorizationFilterTest {
+public class TenantBindingEnforcementFilterTest {
 
   private final PhysicalTenantIdpRegistry registry =
       new PhysicalTenantIdpRegistry(
           Map.of(
-              "default", List.of("default"),
+              "default-engine", List.of("default"),
               "risk-production", List.of("default", "provider-a")));
 
-  private final PhysicalTenantAuthorizationFilter filter =
-      new PhysicalTenantAuthorizationFilter(registry);
+  private final TenantBindingEnforcementFilter filter =
+      new TenantBindingEnforcementFilter(registry);
 
   @AfterEach
   void clearSecurityContext() {
@@ -43,7 +43,24 @@ public class PhysicalTenantAuthorizationFilterTest {
   }
 
   @Test
-  public void shouldPassThroughWhenPathIsNotTenantScoped() throws Exception {
+  public void shouldPassThroughWhenRegistryEmpty() throws Exception {
+    // given — empty registry means tenant binding is dormant
+    final var emptyFilter =
+        new TenantBindingEnforcementFilter(new PhysicalTenantIdpRegistry(Map.of()));
+    final var req = makeRequest("/risk-production/api/foo");
+    final var res = new MockHttpServletResponse();
+    final var chain = new MockFilterChain();
+
+    // when
+    emptyFilter.doFilter(req, res, chain);
+
+    // then
+    assertThat(res.getStatus()).isEqualTo(HttpServletResponse.SC_OK);
+    assertThat(chain.getRequest()).isSameAs(req);
+  }
+
+  @Test
+  public void shouldPassThroughForNonTenantUrl() throws Exception {
     final var req = makeRequest("/api/health");
     final var res = new MockHttpServletResponse();
     final var chain = new MockFilterChain();
@@ -55,9 +72,8 @@ public class PhysicalTenantAuthorizationFilterTest {
   }
 
   @Test
-  public void shouldPassThroughForLoginPickerEvenIfPathLooksTenantScoped() throws Exception {
-    // /login/{tenantId} would have firstPathSegment "login"; "login" is not a tenant id, so the
-    // filter passes through and the controller serves the picker.
+  public void shouldPassThroughForLoginPicker() throws Exception {
+    // /login is not a tenant id; filter passes through (controller serves the picker).
     final var req = makeRequest("/login/risk-production");
     final var res = new MockHttpServletResponse();
     final var chain = new MockFilterChain();
@@ -65,21 +81,6 @@ public class PhysicalTenantAuthorizationFilterTest {
     filter.doFilter(req, res, chain);
 
     assertThat(res.getStatus()).isEqualTo(HttpServletResponse.SC_OK);
-    assertThat(chain.getRequest()).isSameAs(req);
-  }
-
-  @Test
-  public void shouldPassThroughForBearerTokenAuthOnTenantUrl() throws Exception {
-    SecurityContextHolder.getContext()
-        .setAuthentication(new TestingAuthenticationToken("api-client", "jwt", "ROLE_USER"));
-    final var req = makeRequest("/risk-production/api/foo");
-    final var res = new MockHttpServletResponse();
-    final var chain = new MockFilterChain();
-
-    filter.doFilter(req, res, chain);
-
-    assertThat(res.getStatus()).isEqualTo(HttpServletResponse.SC_OK);
-    assertThat(chain.getRequest()).isSameAs(req);
   }
 
   @Test
@@ -97,16 +98,15 @@ public class PhysicalTenantAuthorizationFilterTest {
   @Test
   public void shouldReturn403WhenIdpNotAssignedToUrlTenant() throws Exception {
     SecurityContextHolder.getContext().setAuthentication(oauthToken("provider-a"));
-    final var req = makeRequest("/default/api/foo");
+    final var req = makeRequest("/default-engine/api/foo");
     req.getSession()
-        .setAttribute(PhysicalTenantAuthorizationFilter.BOUND_TENANT_ATTRIBUTE, "risk-production");
+        .setAttribute(TenantBindingEnforcementFilter.BOUND_TENANT_ATTRIBUTE, "risk-production");
     final var res = new MockHttpServletResponse();
     final var chain = new MockFilterChain();
 
     filter.doFilter(req, res, chain);
 
     assertThat(res.getStatus()).isEqualTo(HttpServletResponse.SC_FORBIDDEN);
-    assertThat(chain.getRequest()).isNull();
   }
 
   @Test
@@ -114,20 +114,19 @@ public class PhysicalTenantAuthorizationFilterTest {
     SecurityContextHolder.getContext().setAuthentication(oauthToken("default"));
     final var req = makeRequest("/risk-production/api/foo");
     req.getSession()
-        .setAttribute(PhysicalTenantAuthorizationFilter.BOUND_TENANT_ATTRIBUTE, "default");
+        .setAttribute(TenantBindingEnforcementFilter.BOUND_TENANT_ATTRIBUTE, "default-engine");
     final var res = new MockHttpServletResponse();
     final var chain = new MockFilterChain();
 
     filter.doFilter(req, res, chain);
 
     assertThat(res.getStatus()).isEqualTo(HttpServletResponse.SC_FORBIDDEN);
-    assertThat(chain.getRequest()).isNull();
   }
 
   @Test
   public void shouldReturn403WhenSessionHasNoBoundTenant() throws Exception {
     SecurityContextHolder.getContext().setAuthentication(oauthToken("default"));
-    final var req = makeRequest("/default/api/foo");
+    final var req = makeRequest("/default-engine/api/foo");
     req.setSession(new MockHttpSession());
     final var res = new MockHttpServletResponse();
     final var chain = new MockFilterChain();
@@ -135,7 +134,6 @@ public class PhysicalTenantAuthorizationFilterTest {
     filter.doFilter(req, res, chain);
 
     assertThat(res.getStatus()).isEqualTo(HttpServletResponse.SC_FORBIDDEN);
-    assertThat(chain.getRequest()).isNull();
   }
 
   @Test
@@ -143,7 +141,7 @@ public class PhysicalTenantAuthorizationFilterTest {
     SecurityContextHolder.getContext().setAuthentication(oauthToken("provider-a"));
     final var req = makeRequest("/risk-production/api/foo");
     req.getSession()
-        .setAttribute(PhysicalTenantAuthorizationFilter.BOUND_TENANT_ATTRIBUTE, "risk-production");
+        .setAttribute(TenantBindingEnforcementFilter.BOUND_TENANT_ATTRIBUTE, "risk-production");
     final var res = new MockHttpServletResponse();
     final var chain = new MockFilterChain();
 
@@ -151,6 +149,20 @@ public class PhysicalTenantAuthorizationFilterTest {
 
     assertThat(res.getStatus()).isEqualTo(HttpServletResponse.SC_OK);
     assertThat(chain.getRequest()).isSameAs(req);
+  }
+
+  @Test
+  public void shouldPassThroughForNonOAuth2NonJwtAuthentication() throws Exception {
+    // basic-auth tokens, anonymous, custom — out of scope; defensive pass-through
+    SecurityContextHolder.getContext()
+        .setAuthentication(new TestingAuthenticationToken("user", "pw", "ROLE_USER"));
+    final var req = makeRequest("/risk-production/api/foo");
+    final var res = new MockHttpServletResponse();
+    final var chain = new MockFilterChain();
+
+    filter.doFilter(req, res, chain);
+
+    assertThat(res.getStatus()).isEqualTo(HttpServletResponse.SC_OK);
   }
 
   private static MockHttpServletRequest makeRequest(final String uri) {

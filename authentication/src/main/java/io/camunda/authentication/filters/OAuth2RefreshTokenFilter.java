@@ -29,8 +29,10 @@ import org.springframework.security.oauth2.client.web.OAuth2AuthorizedClientRepo
 import org.springframework.security.oauth2.core.OAuth2AccessToken;
 import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
 import org.springframework.security.oauth2.core.OAuth2Error;
+import org.springframework.security.web.authentication.logout.CompositeLogoutHandler;
 import org.springframework.security.web.authentication.logout.CookieClearingLogoutHandler;
 import org.springframework.security.web.authentication.logout.LogoutHandler;
+import org.springframework.security.web.authentication.logout.SecurityContextLogoutHandler;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 public class OAuth2RefreshTokenFilter extends OncePerRequestFilter {
@@ -51,7 +53,9 @@ public class OAuth2RefreshTokenFilter extends OncePerRequestFilter {
     this(
         authorizedClientRepository,
         authorizedClientManager,
-        new CookieClearingLogoutHandler(WebSecurityConfig.SESSION_COOKIE),
+        new CompositeLogoutHandler(
+            new CookieClearingLogoutHandler(WebSecurityConfig.SESSION_COOKIE),
+            new SecurityContextLogoutHandler()),
         SecurityContextHolder::getContext);
   }
 

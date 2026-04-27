@@ -22,7 +22,7 @@ import io.camunda.authentication.csrf.CsrfProtectionRequestMatcher;
 import io.camunda.authentication.exception.BasicAuthenticationNotSupportedException;
 import io.camunda.authentication.filters.AdminUserCheckFilter;
 import io.camunda.authentication.filters.OAuth2RefreshTokenFilter;
-import io.camunda.authentication.filters.PhysicalTenantAuthorizationFilter;
+import io.camunda.authentication.filters.TenantBindingEnforcementFilter;
 import io.camunda.authentication.filters.WebComponentAuthorizationCheckFilter;
 import io.camunda.authentication.handler.AuthFailureHandler;
 import io.camunda.authentication.handler.LoggingAuthenticationFailureHandler;
@@ -1108,7 +1108,7 @@ public class WebSecurityConfig {
                               "/tasklist/custom.css",
                               "/tasklist/favicon.ico")
                           .permitAll()
-                          .requestMatchers("/login/*", "/login/*/*")
+                          .requestMatchers("/login/*", "/identity/admin/*/login")
                           .permitAll()
                           .anyRequest()
                           .authenticated())
@@ -1144,8 +1144,13 @@ public class WebSecurityConfig {
                             authorization ->
                                 authorization.authorizationRequestResolver(
                                     authorizationRequestResolver(
-                                        clientRegistrationRepository, oidcProviderRepository)))
+                                        clientRegistrationRepository,
+                                        oidcProviderRepository,
+                                        physicalTenantIdpRegistry)))
                         .tokenEndpoint(tokenEndpointCustomizer)
+                        .successHandler(
+                            new TenantBindingAuthenticationSuccessHandler(
+                                physicalTenantIdpRegistry))
                         .failureHandler(new OAuth2AuthenticationExceptionHandler());
                   })
               .oidcLogout(httpSecurityOidcLogoutConfigurer -> {})
@@ -1161,7 +1166,7 @@ public class WebSecurityConfig {
                       securityConfiguration, authenticationProvider, resourceAccessProvider),
                   AuthorizationFilter.class)
               .addFilterAfter(
-                  new PhysicalTenantAuthorizationFilter(physicalTenantIdpRegistry),
+                  new TenantBindingEnforcementFilter(physicalTenantIdpRegistry),
                   WebComponentAuthorizationCheckFilter.class);
 
       applyOauth2RefreshTokenFilter(
@@ -1188,9 +1193,13 @@ public class WebSecurityConfig {
 
     private OAuth2AuthorizationRequestResolver authorizationRequestResolver(
         final ClientRegistrationRepository clientRegistrationRepository,
-        final OidcAuthenticationConfigurationRepository oidcAuthenticationConfigurationRepository) {
-      return new ClientAwareOAuth2AuthorizationRequestResolver(
-          clientRegistrationRepository, oidcAuthenticationConfigurationRepository);
+        final OidcAuthenticationConfigurationRepository oidcAuthenticationConfigurationRepository,
+        final PhysicalTenantIdpRegistry physicalTenantIdpRegistry) {
+      final var clientAwareResolver =
+          new ClientAwareOAuth2AuthorizationRequestResolver(
+              clientRegistrationRepository, oidcAuthenticationConfigurationRepository);
+      return new TenantAwareOAuth2AuthorizationRequestResolver(
+          clientAwareResolver, physicalTenantIdpRegistry);
     }
 
     // refresh token filter has to be registered after the ExceptionTranslationFilter

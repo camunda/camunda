@@ -24,38 +24,23 @@ public class PhysicalTenantIdpRegistryTest {
     final var registry =
         new PhysicalTenantIdpRegistry(
             Map.of(
-                "default", List.of("default"),
+                "default-engine", List.of("default"),
                 "risk-production", List.of("default", "provider-a")));
 
     // then
-    assertThat(registry.getIdpsForTenant("default")).containsExactly("default");
+    assertThat(registry.getIdpsForTenant("default-engine")).containsExactly("default");
     assertThat(registry.getIdpsForTenant("risk-production"))
         .containsExactly("default", "provider-a");
   }
 
   @Test
-  public void shouldReturnTenantsForIdpInReverse() {
+  public void shouldReturnEmptyListForUnknownTenant() {
     // given
     final var registry =
-        new PhysicalTenantIdpRegistry(
-            Map.of(
-                "default", List.of("default"),
-                "risk-production", List.of("default", "provider-a")));
-
-    // then
-    assertThat(registry.getTenantsForIdp("default"))
-        .containsExactlyInAnyOrder("default", "risk-production");
-    assertThat(registry.getTenantsForIdp("provider-a")).containsExactly("risk-production");
-  }
-
-  @Test
-  public void shouldReturnEmptyListForUnknownTenantOrIdp() {
-    // given
-    final var registry = new PhysicalTenantIdpRegistry(Map.of("default", List.of("default")));
+        new PhysicalTenantIdpRegistry(Map.of("default-engine", List.of("default")));
 
     // then — null-safe, returns empty list rather than null
     assertThat(registry.getIdpsForTenant("does-not-exist")).isEmpty();
-    assertThat(registry.getTenantsForIdp("does-not-exist")).isEmpty();
   }
 
   @Test
@@ -66,9 +51,9 @@ public class PhysicalTenantIdpRegistryTest {
 
     // then
     assertThat(fromNull.getIdpsForTenant("anything")).isEmpty();
-    assertThat(fromNull.getTenantsForIdp("anything")).isEmpty();
+    assertThat(fromNull.tenantIds()).isEmpty();
     assertThat(fromEmpty.getIdpsForTenant("anything")).isEmpty();
-    assertThat(fromEmpty.getTenantsForIdp("anything")).isEmpty();
+    assertThat(fromEmpty.tenantIds()).isEmpty();
   }
 
   @Test
@@ -92,12 +77,11 @@ public class PhysicalTenantIdpRegistryTest {
   @Test
   public void shouldReturnImmutableLookupResults() {
     // given
-    final var registry = new PhysicalTenantIdpRegistry(Map.of("default", List.of("default")));
+    final var registry =
+        new PhysicalTenantIdpRegistry(Map.of("default-engine", List.of("default")));
 
     // then — caller cannot mutate stored lists
-    assertThatThrownBy(() -> registry.getIdpsForTenant("default").add("hacker-idp"))
-        .isInstanceOf(UnsupportedOperationException.class);
-    assertThatThrownBy(() -> registry.getTenantsForIdp("default").add("hacker-tenant"))
+    assertThatThrownBy(() -> registry.getIdpsForTenant("default-engine").add("hacker-idp"))
         .isInstanceOf(UnsupportedOperationException.class);
   }
 
@@ -107,10 +91,61 @@ public class PhysicalTenantIdpRegistryTest {
     final var registry =
         new PhysicalTenantIdpRegistry(
             Map.of(
-                "default", List.of("default"),
+                "default-engine", List.of("default"),
                 "risk-production", List.of("default", "provider-a")));
 
     // then
-    assertThat(registry.tenantIds()).containsExactlyInAnyOrder("default", "risk-production");
+    assertThat(registry.tenantIds()).containsExactlyInAnyOrder("default-engine", "risk-production");
+  }
+
+  @Test
+  public void shouldRejectReservedTenantIds() {
+    // every reserved id must fail at construction
+    final var reserved =
+        List.of(
+            "login",
+            "logout",
+            "identity",
+            "admin",
+            "operate",
+            "tasklist",
+            "optimize",
+            "sso-callback",
+            "oauth2",
+            "processes",
+            "decisions",
+            "instances",
+            "actuator",
+            "api",
+            "v1",
+            "v2",
+            ".well-known");
+
+    for (final var id : reserved) {
+      assertThatThrownBy(() -> new PhysicalTenantIdpRegistry(Map.of(id, List.of("some-idp"))))
+          .as("tenant id '%s' must be rejected as reserved", id)
+          .isInstanceOf(IllegalArgumentException.class)
+          .hasMessageContaining("reserved");
+    }
+  }
+
+  @Test
+  public void shouldRejectAllNumericTenantIds() {
+    for (final var id : List.of("123", "0", "999999")) {
+      assertThatThrownBy(() -> new PhysicalTenantIdpRegistry(Map.of(id, List.of("some-idp"))))
+          .as("all-numeric tenant id '%s' must be rejected", id)
+          .isInstanceOf(IllegalArgumentException.class)
+          .hasMessageContaining("all-numeric");
+    }
+  }
+
+  @Test
+  public void shouldRejectBlankTenantId() {
+    // when
+    assertThatThrownBy(
+            () -> new PhysicalTenantIdpRegistry(new HashMap<>(Map.of(" ", List.of("default")))))
+        // then
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("blank");
   }
 }

@@ -7,31 +7,29 @@
  */
 package io.camunda.application.commons.security;
 
-import io.camunda.authentication.filters.PhysicalTenantAuthorizationFilter;
 import io.camunda.security.configuration.PhysicalTenantIdpRegistry;
-import jakarta.servlet.http.HttpServletRequest;
-import java.net.URI;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * Tenant-aware login. Two endpoints under the existing {@code /login/**} namespace (already in
- * {@code WEBAPP_PATHS}); the exact path {@code /login} is left untouched for the basic-auth form
- * chain.
+ * Tenant-aware login picker.
  *
- * <ul>
- *   <li>{@code GET /login/{tenantId}} — picker; returns the JSON list of IdPs assigned to the
- *       tenant, each paired with a tenant-bound login start URL.
- *   <li>{@code GET /login/{tenantId}/{idpId}} — login start; validates the IdP↔tenant assignment,
- *       refuses to rebind when the session is already pinned to a different tenant (409), stamps
- *       {@code boundTenantId} on the HTTP session, then 302-redirects to the existing {@code
- *       /oauth2/authorization/{idpId}} URL handled by {@code
- *       ClientAwareOAuth2AuthorizationRequestResolver}.
- * </ul>
+ * <p>{@code GET /login/{tenantId}} returns the JSON list of OIDC providers assigned to the tenant,
+ * each paired with the standard OAuth2 entry URL annotated with a {@code ?tenant=...} query
+ * parameter. The entry URL is consumed by Spring's OIDC chain (specifically by {@link
+ * io.camunda.authentication.config.TenantAwareOAuth2AuthorizationRequestResolver
+ * TenantAwareOAuth2AuthorizationRequestResolver}), which validates the IdP↔tenant assignment and
+ * stamps the session before redirecting to the IdP.
+ *
+ * <p>Already-authenticated callers receive 409 — the user must logout before binding a new tenant.
  */
 @RestController
 public class TenantLoginController {
@@ -46,44 +44,30 @@ public class TenantLoginController {
 
   @GetMapping("/login/{tenantId}")
   public ResponseEntity<TenantLoginResponse> picker(@PathVariable final String tenantId) {
+    if (isAuthenticated()) {
+      return ResponseEntity.status(HttpStatus.CONFLICT).build();
+    }
     if (!registry.tenantIds().contains(tenantId)) {
       return ResponseEntity.notFound().build();
     }
+    final var encodedTenant = URLEncoder.encode(tenantId, StandardCharsets.UTF_8);
     final var options =
         registry.getIdpsForTenant(tenantId).stream()
-            .map(id -> new IdpOption(id, "/login/" + tenantId + "/" + id))
+            .map(
+                id ->
+                    new IdpOption(
+                        id,
+                        OAUTH2_AUTH_PREFIX
+                            + URLEncoder.encode(id, StandardCharsets.UTF_8)
+                            + "?tenant="
+                            + encodedTenant))
             .toList();
     return ResponseEntity.ok(new TenantLoginResponse(tenantId, options));
   }
 
-  @GetMapping("/login/{tenantId}/{idpId}")
-  public ResponseEntity<Void> startLogin(
-      @PathVariable final String tenantId,
-      @PathVariable final String idpId,
-      final HttpServletRequest request) {
-    if (!registry.tenantIds().contains(tenantId)) {
-      return ResponseEntity.notFound().build();
-    }
-    if (!registry.getIdpsForTenant(tenantId).contains(idpId)) {
-      return ResponseEntity.badRequest().build();
-    }
-
-    final var existing = request.getSession(false);
-    if (existing != null) {
-      final var bound =
-          existing.getAttribute(PhysicalTenantAuthorizationFilter.BOUND_TENANT_ATTRIBUTE);
-      if (bound != null && !bound.equals(tenantId)) {
-        return ResponseEntity.status(HttpStatus.CONFLICT).build();
-      }
-    }
-
-    request
-        .getSession(true)
-        .setAttribute(PhysicalTenantAuthorizationFilter.BOUND_TENANT_ATTRIBUTE, tenantId);
-
-    return ResponseEntity.status(HttpStatus.FOUND)
-        .location(URI.create(OAUTH2_AUTH_PREFIX + idpId))
-        .build();
+  private static boolean isAuthenticated() {
+    final Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+    return auth != null && auth.isAuthenticated() && !"anonymousUser".equals(auth.getPrincipal());
   }
 
   public record TenantLoginResponse(String tenantId, List<IdpOption> idps) {}

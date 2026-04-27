@@ -13,6 +13,9 @@ export const Paths = {
   login() {
     return "/login";
   },
+  tenantLogin(tenantId: string) {
+    return `/${tenantId}/login`;
+  },
   forbidden() {
     return "/forbidden";
   },

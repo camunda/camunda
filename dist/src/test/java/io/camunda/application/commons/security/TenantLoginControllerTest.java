@@ -9,32 +9,40 @@ package io.camunda.application.commons.security;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.authentication.filters.PhysicalTenantAuthorizationFilter;
 import io.camunda.security.configuration.PhysicalTenantIdpRegistry;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
-import org.springframework.mock.web.MockHttpServletRequest;
+import org.springframework.security.authentication.TestingAuthenticationToken;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
+import org.springframework.security.oauth2.core.user.DefaultOAuth2User;
 
 public class TenantLoginControllerTest {
 
-  // ───────── picker (GET /login/{tenantId}) ─────────
+  @AfterEach
+  void clearSecurityContext() {
+    SecurityContextHolder.clearContext();
+  }
 
   @Test
-  public void pickerReturns404ForUnknownTenant() {
+  public void shouldReturn404ForUnknownTenant() {
     final var controller =
         new TenantLoginController(
-            new PhysicalTenantIdpRegistry(Map.of("default", List.of("default"))));
+            new PhysicalTenantIdpRegistry(Map.of("default-engine", List.of("default"))));
 
-    final var response = controller.picker("unknown");
+    final var response = controller.picker("unknown-tenant");
 
     assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
     assertThat(response.getBody()).isNull();
   }
 
   @Test
-  public void pickerReturnsAllowedIdpsForTenant() {
+  public void shouldReturnAllowedIdpsForKnownTenantWithTenantQueryParam() {
     final var controller =
         new TenantLoginController(
             new PhysicalTenantIdpRegistry(
@@ -51,102 +59,68 @@ public class TenantLoginControllerTest {
         .containsExactly("default", "provider-a");
     assertThat(body.idps())
         .extracting(TenantLoginController.IdpOption::loginUrl)
-        .containsExactly("/login/risk-production/default", "/login/risk-production/provider-a");
+        .containsExactly(
+            "/oauth2/authorization/default?tenant=risk-production",
+            "/oauth2/authorization/provider-a?tenant=risk-production");
   }
 
   @Test
-  public void pickerReturnsEmptyListWhenTenantHasNoIdps() {
+  public void shouldReturnEmptyIdpListWhenTenantHasNoIdps() {
     final var controller =
-        new TenantLoginController(new PhysicalTenantIdpRegistry(Map.of("orphan", List.of())));
+        new TenantLoginController(
+            new PhysicalTenantIdpRegistry(Map.of("default-engine", List.of())));
 
-    final var response = controller.picker("orphan");
+    final var response = controller.picker("default-engine");
 
     assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
     assertThat(response.getBody()).isNotNull();
     assertThat(response.getBody().idps()).isEmpty();
   }
 
-  // ───────── login start (GET /login/{tenantId}/{idpId}) ─────────
-
   @Test
-  public void loginStartReturns404ForUnknownTenant() {
+  public void shouldReturn409WhenAlreadyAuthenticatedViaOAuth2() {
+    SecurityContextHolder.getContext().setAuthentication(oauthToken("default"));
     final var controller =
         new TenantLoginController(
-            new PhysicalTenantIdpRegistry(Map.of("default", List.of("default"))));
-    final var req = new MockHttpServletRequest();
+            new PhysicalTenantIdpRegistry(Map.of("default-engine", List.of("default"))));
 
-    final var response = controller.startLogin("unknown", "default", req);
-
-    assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
-    assertThat(req.getSession(false)).isNull();
-  }
-
-  @Test
-  public void loginStartReturns400WhenIdpNotAssignedToTenant() {
-    final var controller =
-        new TenantLoginController(
-            new PhysicalTenantIdpRegistry(Map.of("default", List.of("default"))));
-    final var req = new MockHttpServletRequest();
-
-    final var response = controller.startLogin("default", "provider-a", req);
-
-    assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
-    assertThat(req.getSession(false)).isNull();
-  }
-
-  @Test
-  public void loginStartStampsSessionAndRedirectsToOauth2Authorization() {
-    final var controller =
-        new TenantLoginController(
-            new PhysicalTenantIdpRegistry(
-                Map.of("risk-production", List.of("default", "provider-a"))));
-    final var req = new MockHttpServletRequest();
-
-    final var response = controller.startLogin("risk-production", "provider-a", req);
-
-    assertThat(response.getStatusCode()).isEqualTo(HttpStatus.FOUND);
-    assertThat(response.getHeaders().getLocation()).hasToString("/oauth2/authorization/provider-a");
-    assertThat(
-            req.getSession().getAttribute(PhysicalTenantAuthorizationFilter.BOUND_TENANT_ATTRIBUTE))
-        .isEqualTo("risk-production");
-  }
-
-  @Test
-  public void loginStartReturns409WhenSessionAlreadyBoundToDifferentTenant() {
-    final var controller =
-        new TenantLoginController(
-            new PhysicalTenantIdpRegistry(
-                Map.of(
-                    "default", List.of("default"),
-                    "risk-production", List.of("default"))));
-    final var req = new MockHttpServletRequest();
-    req.getSession()
-        .setAttribute(PhysicalTenantAuthorizationFilter.BOUND_TENANT_ATTRIBUTE, "default");
-
-    final var response = controller.startLogin("risk-production", "default", req);
+    final var response = controller.picker("default-engine");
 
     assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
-    assertThat(
-            req.getSession().getAttribute(PhysicalTenantAuthorizationFilter.BOUND_TENANT_ATTRIBUTE))
-        .isEqualTo("default");
+    assertThat(response.getBody()).isNull();
   }
 
   @Test
-  public void loginStartIsIdempotentWhenSessionBoundToSameTenant() {
+  public void shouldReturn409WhenAlreadyAuthenticatedViaOtherMechanism() {
+    SecurityContextHolder.getContext()
+        .setAuthentication(new TestingAuthenticationToken("user", "pw", "ROLE_USER"));
     final var controller =
         new TenantLoginController(
-            new PhysicalTenantIdpRegistry(
-                Map.of("risk-production", List.of("default", "provider-a"))));
-    final var req = new MockHttpServletRequest();
-    req.getSession()
-        .setAttribute(PhysicalTenantAuthorizationFilter.BOUND_TENANT_ATTRIBUTE, "risk-production");
+            new PhysicalTenantIdpRegistry(Map.of("default-engine", List.of("default"))));
 
-    final var response = controller.startLogin("risk-production", "default", req);
+    final var response = controller.picker("default-engine");
 
-    assertThat(response.getStatusCode()).isEqualTo(HttpStatus.FOUND);
-    assertThat(response.getHeaders().getLocation()).hasToString("/oauth2/authorization/default");
-    assertThat(
-            req.getSession().getAttribute(PhysicalTenantAuthorizationFilter.BOUND_TENANT_ATTRIBUTE))
-        .isEqualTo("risk-production");
+    assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
+  }
+
+  @Test
+  public void shouldEncodeTenantIdsWithSpecialChars() {
+    final var controller =
+        new TenantLoginController(
+            new PhysicalTenantIdpRegistry(Map.of("tenant with-dash", List.of("default"))));
+
+    final var response = controller.picker("tenant with-dash");
+
+    assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+    assertThat(response.getBody().idps())
+        .extracting(TenantLoginController.IdpOption::loginUrl)
+        .containsExactly("/oauth2/authorization/default?tenant=tenant+with-dash");
+  }
+
+  private static OAuth2AuthenticationToken oauthToken(final String registrationId) {
+    final var user =
+        new DefaultOAuth2User(
+            Set.of(new SimpleGrantedAuthority("ROLE_USER")), Map.of("sub", "user1"), "sub");
+    return new OAuth2AuthenticationToken(user, user.getAuthorities(), registrationId);
   }
 }

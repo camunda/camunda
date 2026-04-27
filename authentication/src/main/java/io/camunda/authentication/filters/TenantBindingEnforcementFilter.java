@@ -15,40 +15,32 @@ import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.web.filter.OncePerRequestFilter;
+import org.springframework.web.util.UrlPathHelper;
 
 /**
- * Gates {@code /{tenantId}/...} requests where {@code tenantId} matches a known physical tenant.
+ * Gates {@code /{tenantId}/...} requests where the first path segment matches a known physical
+ * tenant. Reads the bound tenant from the {@code BOUND_TENANT_ATTRIBUTE} HTTP session attribute
+ * (written by {@link io.camunda.authentication.config.TenantAwareOAuth2AuthorizationRequestResolver
+ * TenantAwareOAuth2AuthorizationRequestResolver} during OIDC entry).
  *
- * <p>For OAuth2 (browser session) authentication, applies three checks in order:
+ * <p>Path extraction uses {@link UrlPathHelper#getPathWithinApplication(HttpServletRequest)} so the
+ * filter is correct under non-default servlet context paths.
  *
- * <ol>
- *   <li>The user is OAuth2-authenticated (else 401).
- *   <li>The user's authenticated IdP is assigned to the URL tenant per {@link
- *       PhysicalTenantIdpRegistry} (else 403).
- *   <li>The HTTP session's {@code boundTenantId} (set at login start by {@code
- *       TenantLoginController.startLogin}) equals the URL tenant (else 403).
- * </ol>
- *
- * <p>Bearer-token authenticated requests pass through unchanged — they don't carry a session and
- * are out of scope for the POC.
- *
- * <p>The first path segment {@code "login"} is never a tenant id (reserved by the picker URL
- * scheme), so {@code /login/{tenantId}} and {@code /login/{tenantId}/{idpId}} pass through this
- * filter without enforcement.
- *
- * <p>Wired into the OIDC chain by {@link io.camunda.authentication.config.WebSecurityConfig} via
- * {@code addFilterAfter(..., WebComponentAuthorizationCheckFilter.class)}; not picked up by
- * component scan.
+ * <p>Backward compatibility: when the registry is empty the filter is a no-op. Bearer-token traffic
+ * ({@link JwtAuthenticationToken}) is out of scope for this POC and passes through.
  */
-public class PhysicalTenantAuthorizationFilter extends OncePerRequestFilter {
+public final class TenantBindingEnforcementFilter extends OncePerRequestFilter {
 
-  /** HTTP session attribute key carrying the tenant chosen at login start. */
+  /** HTTP session attribute key carrying the tenant the user is bound to for this session. */
   public static final String BOUND_TENANT_ATTRIBUTE = "boundPhysicalTenantId";
+
+  private static final UrlPathHelper PATH_HELPER = new UrlPathHelper();
 
   private final PhysicalTenantIdpRegistry registry;
 
-  public PhysicalTenantAuthorizationFilter(final PhysicalTenantIdpRegistry registry) {
+  public TenantBindingEnforcementFilter(final PhysicalTenantIdpRegistry registry) {
     this.registry = registry;
   }
 
@@ -57,8 +49,15 @@ public class PhysicalTenantAuthorizationFilter extends OncePerRequestFilter {
       final HttpServletRequest req, final HttpServletResponse res, final FilterChain chain)
       throws IOException, ServletException {
 
-    final var urlTenantId = firstPathSegment(req.getRequestURI());
+    if (registry.tenantIds().isEmpty()) {
+      // BC: no tenants configured — the feature is dormant.
+      chain.doFilter(req, res);
+      return;
+    }
+
+    final var urlTenantId = firstPathSegment(req);
     if (urlTenantId == null || !registry.tenantIds().contains(urlTenantId)) {
+      // Not a tenant-scoped request.
       chain.doFilter(req, res);
       return;
     }
@@ -69,8 +68,16 @@ public class PhysicalTenantAuthorizationFilter extends OncePerRequestFilter {
       return;
     }
 
+    if (auth instanceof JwtAuthenticationToken) {
+      // Bearer-token API auth — out of scope for tenant binding in the POC.
+      chain.doFilter(req, res);
+      return;
+    }
+
     if (!(auth instanceof final OAuth2AuthenticationToken oauth)) {
-      // bearer-token (non-OAuth2) auth — out of scope for the POC, pass through
+      // Unknown authentication type (basic auth, anonymous, custom). Defensive pass-through:
+      // the OIDC chain only carries OAuth2 / JWT auth in practice; if something else lands
+      // here, it isn't ours to gate.
       chain.doFilter(req, res);
       return;
     }
@@ -88,18 +95,21 @@ public class PhysicalTenantAuthorizationFilter extends OncePerRequestFilter {
     if (!urlTenantId.equals(boundTenant)) {
       res.sendError(
           HttpServletResponse.SC_FORBIDDEN,
-          "Session is bound to tenant '" + boundTenant + "', not '" + urlTenantId + "'");
+          boundTenant == null
+              ? "Session is not bound to any tenant; re-login through the picker"
+              : "Session is bound to a different tenant than the URL");
       return;
     }
 
     chain.doFilter(req, res);
   }
 
-  private static String firstPathSegment(final String uri) {
-    if (uri == null || uri.length() < 2 || uri.charAt(0) != '/') {
+  private static String firstPathSegment(final HttpServletRequest req) {
+    final var path = PATH_HELPER.getPathWithinApplication(req);
+    if (path == null || path.length() < 2 || path.charAt(0) != '/') {
       return null;
     }
-    final var slash = uri.indexOf('/', 1);
-    return slash < 0 ? uri.substring(1) : uri.substring(1, slash);
+    final var slash = path.indexOf('/', 1);
+    return slash < 0 ? path.substring(1) : path.substring(1, slash);
   }
 }
