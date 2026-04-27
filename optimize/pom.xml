@@ -54,7 +54,7 @@
     <spring.boot.version>3.5.13</spring.boot.version>
     <spring.version>6.2.17</spring.version>
     <spring.security.version>6.5.10</spring.security.version>
-    <version.tomcat>10.1.44</version.tomcat>
+    <version.tomcat>10.1.54</version.tomcat>
     <httpclient.version>4.5.14</httpclient.version>
     <quartz.version>2.3.2</quartz.version>
     <kotlin-stdlib.version>2.1.0</kotlin-stdlib.version>
