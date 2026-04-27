@@ -36,7 +36,7 @@ const expectedMessageSubscription = {
   tenantId: '<default>',
   elementId: 'Event_12y7kfq',
   processDefinitionId: 'message-statistics-test',
-}
+};
 
 test.describe.parallel('Get message subscription statistics API Tests', () => {
   let userWithResourcesAuthorizationToSendRequest: {
