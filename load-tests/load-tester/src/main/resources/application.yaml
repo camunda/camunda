@@ -39,10 +39,6 @@ camunda:
     grpc-address: ${ZEEBE_GRPC_ADDRESS:http://localhost:26500}
     rest-address: ${ZEEBE_REST_ADDRESS:http://localhost:8080}
     prefer-rest-over-grpc: true
-    # Randomize DNS resolution + short connection TTL so pooled connections are
-    # regularly re-resolved and requests fan out across all gateway pod IPs.
-    # Requires the deployment to target a headless service (see load-test-values.yaml).
-    use-client-side-load-balancing: true
     # Since the starter doesn't need any job worker execution threads
     execution-threads: 0
     auth:

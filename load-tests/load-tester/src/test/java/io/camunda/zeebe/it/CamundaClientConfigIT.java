@@ -44,9 +44,6 @@ class CamundaClientConfigIT {
     // transport + mode
     assertThat(clientProps.getPreferRestOverGrpc()).isTrue();
     assertThat(clientProps.getMode()).isEqualTo(ClientMode.selfManaged);
-    // client-side load balancing: randomized DNS + short connection TTL so pooled
-    // connections rotate across gateway pod IPs. POJO default is false; yaml opts in.
-    assertThat(clientProps.isUseClientSideLoadBalancing()).isTrue();
 
     // starter default: client has no worker threads (execution-threads: 0 in main yaml)
     assertThat(clientProps.getExecutionThreads()).isZero();
