@@ -124,7 +124,7 @@ final class Ipv6IntegrationTest {
         .withEnv("ZEEBE_LOG_LEVEL", "DEBUG")
         .withEnv("ATOMIX_LOG_LEVEL", "INFO")
         .withEnv(
-            "ZEEBE_GATEWAY_CLUSTER_CONTACTPOINT",
+            "CAMUNDA_CLUSTER_INITIALCONTACTPOINTS",
             String.format("[%s]:%d", BROKER_IP, ZeebePort.INTERNAL.getPort()))
         .withEnv("ZEEBE_GATEWAY_NETWORK_HOST", INADDR6_ANY)
         .withEnv("ZEEBE_GATEWAY_NETWORK_ADVERTISEDHOST", hostName)
