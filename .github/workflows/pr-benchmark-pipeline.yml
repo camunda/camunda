@@ -46,29 +46,27 @@ jobs:
       - name: Checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
-      - id: compute-suffix
-        name: Compute namespace suffix
-        run: |
-          storage_type="${{ inputs.secondary-storage-type }}"
-          suffix=$([[ "$storage_type" == "elasticsearch" ]] && echo "" || echo "-${storage_type}")
-          max_length=$((60 - ${#suffix}))
-          {
-            echo "suffix=$suffix"
-            echo "max-length=$max_length"
-          } >> "$GITHUB_OUTPUT"
-
-      - id: sanitize
-        name: Sanitize branch name
+      - id: sanitize-author
+        name: Sanitize author name
         uses: camunda/infra-global-github-actions/sanitize-branch-name@main
         with:
-          branch: ${{ inputs.ref }}
-          max_length: ${{ steps.compute-suffix.outputs.max-length }}
+          branch: ${{ github.event.pull_request.user.login }}
+          max_length: 10
+
+      - id: sanitize-db-type
+        name: Sanitize db type
+        uses: camunda/infra-global-github-actions/sanitize-branch-name@main
+        with:
+          branch: ${{ inputs.secondary-storage-type }}
+          max_length: 15
 
       - id: assemble
         name: Assemble namespace name
         run: |
-          branch="${{ steps.sanitize.outputs.branch_name }}"
-          echo "name=c8-${branch%-}${{ steps.compute-suffix.outputs.suffix }}" >> "$GITHUB_OUTPUT"
+          author="${{ steps.sanitize-author.outputs.branch_name }}"
+          db_type="${{ steps.sanitize-db-type.outputs.branch_name }}"
+          pr_number="${{ github.event.pull_request.number }}"
+          echo "name=c8-${author}-pr-${pr_number}-${db_type}" >> "$GITHUB_OUTPUT"
 
       - name: Observe build status
         if: always()
