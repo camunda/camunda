@@ -33,6 +33,33 @@ final class MemberIdTest {
   }
 
   @Test
+  void shouldFormatIdWithoutZoneWhenZoneIsEmpty() {
+    // given / when
+    final var memberId = MemberId.from("", 7);
+
+    // then
+    assertThat(memberId.id()).isEqualTo("7");
+  }
+
+  @Test
+  void shouldFormatIdWithoutZoneWhenZoneIsBlank() {
+    // given / when
+    final var memberId = MemberId.from("   ", 7);
+
+    // then
+    assertThat(memberId.id()).isEqualTo("7");
+  }
+
+  @Test
+  void shouldStripSurroundingWhitespaceFromZone() {
+    // given / when
+    final var memberId = MemberId.from("  eu-west  ", 7);
+
+    // then
+    assertThat(memberId.id()).isEqualTo("eu-west/7");
+  }
+
+  @Test
   void shouldFormatIdWithZonePrefixWhenZoneIsSet() {
     // given / when
     final var memberId = MemberId.from("us-east", 7);

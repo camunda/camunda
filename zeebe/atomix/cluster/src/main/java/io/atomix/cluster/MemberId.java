@@ -48,14 +48,15 @@ public class MemberId extends NodeId {
   /**
    * Creates a zone-aware member identifier.
    *
-   * <p>When {@code zone} is {@code null} the result is the bare form {@code "$nodeId"}; otherwise
-   * it is {@code "$zone/$nodeId"}.
+   * <p>When {@code zone} is {@code null} or blank the result is the bare form {@code "$nodeId"};
+   * otherwise it is {@code "$zone/$nodeId"}.
    */
   public static MemberId from(final @Nullable String zone, final int nodeId) {
-    if (zone == null) {
+    final var normalizedZone = zone == null ? null : zone.strip();
+    if (normalizedZone == null || normalizedZone.isEmpty()) {
       return new MemberId(Integer.toString(nodeId));
     }
-    return new MemberId(zone + "/" + nodeId);
+    return new MemberId(normalizedZone + "/" + nodeId);
   }
 
   /**
