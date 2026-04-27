@@ -183,7 +183,67 @@ public abstract class AbstractProcessInstanceArchiverJobIT<T extends ProcessInst
           // check that the process is no longer in the main index
           verifyMoved(listViewTemplate, client, processInstance, "2020-01-01");
           for (final var flowNode : flowNodes) {
-            verifyMoved(listViewTemplate, client, flowNode, processInstance, "2020-01-01");
+            verifyMoved(listViewTemplate, client, processInstance, flowNode, "2020-01-01");
+          }
+        });
+  }
+
+  @TestTemplate
+  void shouldOnlyArchiveFinishedProcessInstanceAndProcessInstanceDependentEntities(
+      final ExporterConfiguration config, final SearchClientAdapter client) throws Exception {
+    withArchiverJob(
+        config,
+        (job, resourceProvider) -> {
+          // given
+          final var listViewTemplate =
+              resourceProvider.getIndexTemplateDescriptor(ListViewTemplate.class);
+
+          final ProcessInstanceForListViewEntity finishedInstance =
+              processInstanceForListViewEntity("2020-01-01T00:00:00+00:00");
+
+          final var finishedInstanceDependent =
+              getProcessInstanceDependentEntities(resourceProvider, finishedInstance);
+
+          store(listViewTemplate, client, finishedInstance);
+          for (final var dependent : finishedInstanceDependent) {
+            for (final var entity : dependent.entities()) {
+              store(dependent.template(), client, entity);
+            }
+          }
+
+          final ProcessInstanceForListViewEntity unfinishedInstance =
+              processInstanceForListViewEntity(null);
+          final var unfinishedInstanceDependent =
+              getProcessInstanceDependentEntities(resourceProvider, unfinishedInstance);
+
+          store(listViewTemplate, client, unfinishedInstance);
+          for (final var dependent : unfinishedInstanceDependent) {
+            for (final var entity : dependent.entities()) {
+              store(dependent.template(), client, entity);
+            }
+          }
+
+          client.refresh();
+
+          // when
+          final var archived = job.execute();
+
+          // then
+          assertThat(archived).succeedsWithin(Duration.ofSeconds(5L)).isEqualTo(1);
+
+          // check that the process is no longer in the main index
+          verifyMoved(listViewTemplate, client, finishedInstance, "2020-01-01");
+          for (final var dependent : finishedInstanceDependent) {
+            for (final var entity : dependent.entities()) {
+              verifyMoved(dependent.template(), client, entity, "2020-01-01");
+            }
+          }
+
+          verifyNotMoved(listViewTemplate, client, unfinishedInstance);
+          for (final var dependent : unfinishedInstanceDependent) {
+            for (final var entity : dependent.entities()) {
+              verifyNotMoved(dependent.template(), client, entity);
+            }
           }
         });
   }
