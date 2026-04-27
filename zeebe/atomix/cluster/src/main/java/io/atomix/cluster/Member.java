@@ -26,6 +26,7 @@ import java.util.Properties;
 
 /** Represents a node as a member in a cluster. */
 public class Member extends Node {
+
   private static final int UNKNOWN_TIMESTAMP = 0;
 
   private final MemberId id;
@@ -62,6 +63,12 @@ public class Member extends Node {
     this.id = checkNotNull(id, "id cannot be null");
     this.nodeVersion = nodeVersion;
     this.zone = zone;
+    if (zone != null) {
+      if (!id.id().startsWith(zone)) {
+        throw new IllegalArgumentException(
+            String.format("Expected id to start with zone %s, but did not: id=%s", zone, id));
+      }
+    }
     this.rack = rack;
     this.host = host;
     this.properties = properties;
