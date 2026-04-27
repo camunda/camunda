@@ -149,6 +149,7 @@ public final class CamundaBackgroundTaskManagerFactory {
     return new CamundaBackgroundTaskManager(
         partitionId,
         archiverRepository,
+        auditLogArchiverRepository,
         incidentRepository,
         batchOperationUpdateRepository,
         historyDeletionRepository,
