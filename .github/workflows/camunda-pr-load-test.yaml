@@ -1,10 +1,11 @@
 # description: Creates a load test when a PR is labeled with 'benchmark'. Deploys with
 #              scenario 'max', waits 15 minutes, then profiles via async-profiler and
 #              posts flamegraph results as a PR comment. Cleans up on label removal or PR close.
+# called by: pr-load-test-dispatch.yml
 # calls: camunda-load-test.yml (scenario: max), profile-load-test.yml
 # type: CI
 # owner: @camunda/reliability-testing
-name: PR Benchmark Pipeline
+name: Camunda Pull Request Benchmark
 on:
   workflow_call:
     inputs:
