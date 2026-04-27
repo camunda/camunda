@@ -44,6 +44,12 @@ public class MemberId extends NodeId {
     return new MemberId(id);
   }
 
+  /**
+   * Creates a zone-aware member identifier.
+   *
+   * <p>When {@code zone} is {@code null} the result is the bare form {@code "$nodeId"}; otherwise
+   * it is {@code "$zone/$nodeId"}.
+   */
   public static MemberId from(final String zone, final int nodeId) {
     if (zone == null) {
       return new MemberId(Integer.toString(nodeId));
