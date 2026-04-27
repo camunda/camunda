@@ -134,3 +134,58 @@ func TestShouldMarkQuickstartAsSeenAfterSuccessfulStartup(t *testing.T) {
 		t.Fatalf("expected marker file to be created: %v", err)
 	}
 }
+
+func TestShouldQueryConnectorsHealthEndpoint(t *testing.T) {
+	// given
+	originalIsRunningFunc := isRunningFunc
+	t.Cleanup(func() {
+		isRunningFunc = originalIsRunningFunc
+	})
+
+	isRunningFunc = func(_ context.Context, name string, url string, retries int, delay time.Duration) bool {
+		if name != "Connectors" {
+			t.Fatalf("expected name Connectors, got %s", name)
+		}
+		if url != "http://localhost:8086/actuator/health" {
+			t.Fatalf("expected connectors health endpoint, got %s", url)
+		}
+		if retries != 3 {
+			t.Fatalf("expected 3 retries, got %d", retries)
+		}
+		if delay != 14*time.Second {
+			t.Fatalf("expected 14s delay, got %s", delay)
+		}
+		return true
+	}
+
+	// when
+	err := QueryConnectors(context.Background(), "Connectors", 3)
+
+	// then
+	if err != nil {
+		t.Fatalf("QueryConnectors failed: %v", err)
+	}
+}
+
+func TestShouldReturnErrorWhenConnectorsHealthEndpointDoesNotStart(t *testing.T) {
+	// given
+	originalIsRunningFunc := isRunningFunc
+	t.Cleanup(func() {
+		isRunningFunc = originalIsRunningFunc
+	})
+
+	isRunningFunc = func(_ context.Context, _ string, _ string, _ int, _ time.Duration) bool {
+		return false
+	}
+
+	// when
+	err := QueryConnectors(context.Background(), "Connectors", 0)
+
+	// then
+	if err == nil {
+		t.Fatal("expected QueryConnectors to fail")
+	}
+	if !strings.Contains(err.Error(), "queryConnectors: Connectors did not start") {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}

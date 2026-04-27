@@ -76,6 +76,14 @@ func QueryCamunda(ctx context.Context, c8 opener, name string, settings types.C8
 	return fmt.Errorf("queryCamunda: %s did not start", name)
 }
 
+func QueryConnectors(ctx context.Context, name string, retries int) error {
+	healthEndpoint := fmt.Sprintf("http://localhost:%d/actuator/health", inboundConnectorsPort)
+	if isRunningFunc(ctx, name, healthEndpoint, retries, 14*time.Second) {
+		return nil
+	}
+	return fmt.Errorf("queryConnectors: %s did not start", name)
+}
+
 func isRunning(ctx context.Context, name, url string, retries int, delay time.Duration) bool {
 	transport := &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: true}}
 	client := &http.Client{Transport: transport, Timeout: 5 * time.Second}

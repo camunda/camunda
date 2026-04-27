@@ -23,6 +23,8 @@ import (
 
 var evalSymlinks = filepath.EvalSymlinks
 
+const startupHealthCheckRetries = 24
+
 func printSystemInformation(javaVersion, javaHome, javaOpts string) {
 	fmt.Println("")
 	fmt.Println("")
@@ -324,8 +326,7 @@ func (s *StartupHandler) StartCommand(wg *sync.WaitGroup, ctx context.Context, s
 			return
 		}
 	}, func() error {
-		// TODO do a health check on the connectors process
-		return nil
+		return health.QueryConnectors(ctx, "Connectors", startupHealthCheckRetries)
 	}, stop)
 
 	s.ProcessHandler.AttemptToStartProcess(processInfo.Camunda.PidPath, "Camunda", func() {
@@ -338,6 +339,6 @@ func (s *StartupHandler) StartCommand(wg *sync.WaitGroup, ctx context.Context, s
 			return
 		}
 	}, func() error {
-		return health.QueryCamunda(ctx, c8, "Camunda", settings, 24)
+		return health.QueryCamunda(ctx, c8, "Camunda", settings, startupHealthCheckRetries)
 	}, stop)
 }
