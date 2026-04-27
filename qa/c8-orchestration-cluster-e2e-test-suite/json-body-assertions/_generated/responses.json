@@ -1,10 +1,10 @@
 {
   "metadata": {
     "sourceRepo": "https://github.com/camunda/camunda",
-    "commit": "63b40f4328672f8fb49de2ff45c9a781e1b799ad",
-    "generatedAt": "2026-04-23T07:28:09.013Z",
+    "commit": "b22a92d268da08532cd1b5fc86b4763b8cad9d49",
+    "generatedAt": "2026-04-27T13:36:37.463Z",
     "specPath": "zeebe/gateway-protocol/src/main/proto/v2/rest-api.yaml",
-    "specSha256": "95f320d1b637d840f914b6878f08ba15e43378c401b1f7ed2502cf04161ad69f"
+    "specSha256": "e1916dea8fd495e28808d5902a663aca3e629446b9d3cae8c636b5d8a840e75f"
   },
   "responses": [
     {
@@ -5003,6 +5003,11 @@
                   "type": "object"
                 },
                 {
+                  "name": "inboundConnectorType",
+                  "type": "string",
+                  "nullable": true
+                },
+                {
                   "name": "lastUpdatedDate",
                   "type": "string"
                 },
@@ -5067,6 +5072,11 @@
                   "underlyingPrimitive": "string",
                   "rawRefName": "schema",
                   "wrapper": true
+                },
+                {
+                  "name": "toolName",
+                  "type": "string",
+                  "nullable": true
                 }
               ],
               "optional": []
