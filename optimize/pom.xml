@@ -52,7 +52,7 @@
     <apache.http5-core.version>5.3.6</apache.http5-core.version>
     <guava.version>33.3.1-jre</guava.version>
     <spring.boot.version>3.5.13</spring.boot.version>
-    <spring.version>6.2.17</spring.version>
+    <spring.version>6.2.18</spring.version>
     <spring.security.version>6.5.10</spring.security.version>
     <version.tomcat>10.1.44</version.tomcat>
     <httpclient.version>4.5.14</httpclient.version>
