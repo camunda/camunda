@@ -10,11 +10,10 @@ import {act, render, screen, waitFor} from 'modules/testing/testing-library';
 import {Variables} from './index';
 import * as taskMocks from 'modules/mocks/task';
 import * as variableMocks from 'modules/mocks/variables';
-import * as userMocks from 'modules/mocks/current-user';
+import {currentUser} from '@camunda/c8-mocks';
 import {nodeMockServer} from 'modules/testing/nodeMockServer';
 import {http, HttpResponse} from 'msw';
 import noop from 'lodash/noop';
-import {currentUser} from 'modules/mocks/current-user';
 import type {Variable} from '@camunda/camunda-api-zod-schemas/8.10';
 import {QueryClientProvider} from '@tanstack/react-query';
 import {getMockQueryClient} from 'modules/testing/getMockQueryClient';
@@ -60,7 +59,7 @@ describe('<Variables />', () => {
       http.get(
         '/v2/authentication/me',
         () => {
-          return HttpResponse.json(userMocks.currentUser);
+          return HttpResponse.json(currentUser);
         },
         {once: true},
       ),
@@ -1146,7 +1145,7 @@ describe('<Variables />', () => {
       http.get(
         '/v2/authentication/me',
         () => {
-          return HttpResponse.json(userMocks.currentUser);
+          return HttpResponse.json(currentUser);
         },
         {once: true},
       ),
@@ -1227,7 +1226,7 @@ describe('<Variables />', () => {
       http.get(
         '/v2/authentication/me',
         () => {
-          return HttpResponse.json(userMocks.currentUser);
+          return HttpResponse.json(currentUser);
         },
         {once: true},
       ),
@@ -1304,7 +1303,7 @@ describe('<Variables />', () => {
       http.get(
         '/v2/authentication/me',
         () => {
-          return HttpResponse.json(userMocks.currentUser);
+          return HttpResponse.json(currentUser);
         },
         {once: true},
       ),
@@ -1329,7 +1328,7 @@ describe('<Variables />', () => {
       http.get(
         '/v2/authentication/me',
         () => {
-          return HttpResponse.json(userMocks.currentUser);
+          return HttpResponse.json(currentUser);
         },
         {once: true},
       ),
