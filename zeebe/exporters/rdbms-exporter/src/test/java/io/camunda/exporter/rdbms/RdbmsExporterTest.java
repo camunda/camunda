@@ -24,6 +24,7 @@ import static org.mockito.Mockito.when;
 import io.camunda.db.rdbms.RdbmsSchemaManager;
 import io.camunda.db.rdbms.write.RdbmsWriterMetrics;
 import io.camunda.db.rdbms.write.RdbmsWriters;
+import io.camunda.db.rdbms.write.domain.ExporterPositionModel;
 import io.camunda.db.rdbms.write.queue.ExecutionQueue;
 import io.camunda.db.rdbms.write.queue.InTransactionHook;
 import io.camunda.db.rdbms.write.queue.PostFlushListener;
@@ -34,12 +35,15 @@ import io.camunda.db.rdbms.write.service.ExporterPositionService;
 import io.camunda.db.rdbms.write.service.HistoryCleanupService;
 import io.camunda.db.rdbms.write.service.HistoryDeletionService;
 import io.camunda.db.rdbms.write.service.RdbmsPurger;
+import io.camunda.exporter.rdbms.replication.ReplicationController;
+import io.camunda.exporter.rdbms.replication.ReplicationControllerFactory;
 import io.camunda.zeebe.exporter.api.ExporterException;
 import io.camunda.zeebe.exporter.api.context.Controller;
 import io.camunda.zeebe.exporter.api.context.ScheduledTask;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import java.time.Duration;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
@@ -59,6 +63,8 @@ class RdbmsExporterTest {
   private HistoryDeletionService historyDeletionService;
   private RdbmsWriterMetrics metrics;
   private RdbmsSchemaManager schemaManager;
+  private ReplicationControllerFactory replicationControllerFactory;
+  private ReplicationController replicationController;
 
   private ScheduledTask flushTask;
   private RdbmsPurger rdbmsPurger;
@@ -192,6 +198,7 @@ class RdbmsExporterTest {
 
     // then
     verify(positionService).update(Mockito.argThat(p -> p.lastExportedPosition() == 2));
+    verify(replicationController).onFlush(2L);
   }
 
   @Test
@@ -206,6 +213,7 @@ class RdbmsExporterTest {
 
     // then - position should be updated even for ignored records
     verify(positionService).update(Mockito.argThat(p -> p.lastExportedPosition() == 2));
+    verify(replicationController).onFlush(2L);
   }
 
   @Test
@@ -216,12 +224,14 @@ class RdbmsExporterTest {
     // when
     exporter.export(mockRecord(ValueType.JOB, 1));
     exporter.export(mockRecord(ValueType.JOB, 2));
-    executionQueue.flush();
 
     // then
     verify(positionService, times(2)).update(any());
     verify(positionService).update(Mockito.argThat(p -> p.lastExportedPosition() == 1));
     verify(positionService).update(Mockito.argThat(p -> p.lastExportedPosition() == 2));
+    verify(replicationController, times(2)).onFlush(anyLong());
+    verify(replicationController).onFlush(1L);
+    verify(replicationController).onFlush(2L);
   }
 
   @Test
@@ -233,12 +243,14 @@ class RdbmsExporterTest {
     // when
     exporter.export(mockRecord(ValueType.JOB, 1));
     exporter.export(mockRecord(ValueType.JOB, 2));
-    executionQueue.flush();
 
     // then
     verify(positionService, times(2)).update(any());
     verify(positionService).update(Mockito.argThat(p -> p.lastExportedPosition() == 1));
     verify(positionService).update(Mockito.argThat(p -> p.lastExportedPosition() == 2));
+    verify(replicationController, times(2)).onFlush(anyLong());
+    verify(replicationController).onFlush(1L);
+    verify(replicationController).onFlush(2L);
   }
 
   @Test
@@ -252,7 +264,27 @@ class RdbmsExporterTest {
 
     // then
     verify(positionService).update(Mockito.argThat(p -> p.lastExportedPosition() == 1));
+    verify(replicationController).onFlush(1L);
     verify(flushTask).cancel();
+
+    // set null to avoid tear down flush
+    exporter = null;
+  }
+
+  @Test
+  void shouldCloseEverythingOnClose() throws Exception {
+    // given
+    createExporter(b -> b.withHandler(ValueType.JOB, mockHandler(ValueType.JOB)));
+
+    // when
+    exporter.close();
+
+    // then
+    verify(replicationController).close();
+    verify(flushTask).cancel();
+
+    // set null to avoid tear down flush
+    exporter = null;
   }
 
   @Test
@@ -420,7 +452,7 @@ class RdbmsExporterTest {
   @Test
   void shouldThrowExceptionWhenSchemaIsNotInitialized() {
     // given - schema manager returns false for isInitialized
-    createExporter(b -> b, false, false);
+    createExporter(b -> b, false, false, null);
 
     // when + then
     assertThatThrownBy(() -> exporter.open(controller))
@@ -509,6 +541,21 @@ class RdbmsExporterTest {
     verify(controller, never()).requestReplay(Mockito.anyLong());
   }
 
+  @Test
+  void shouldThrowExceptionWhenReplicationControllerIsPaused() {
+    createExporter(b -> b.withHandler(ValueType.JOB, mockHandler(ValueType.JOB)));
+
+    when(replicationController.isReplicationInSync()).thenReturn(false);
+    final var record = mockRecord(ValueType.JOB, 1);
+    when(record.getTimestamp()).thenReturn(0L); // Unix epoch
+
+    // when
+    final var exceptionAssert = assertThatThrownBy(() -> exporter.export(record));
+
+    // then
+    exceptionAssert.isInstanceOf(ExporterException.class);
+  }
+
   // ------------------------------------------------
   // mocks and stubs
   // ------------------------------------------------
@@ -521,50 +568,16 @@ class RdbmsExporterTest {
   private void createExporterWithRdbmsPosition(
       final long brokerPosition, final long rdbmsPosition) {
     final var existingRdbmsPositionModel =
-        new io.camunda.db.rdbms.write.domain.ExporterPositionModel(
+        new ExporterPositionModel(
             0,
             RdbmsExporter.class.getSimpleName(),
             rdbmsPosition,
-            java.time.LocalDateTime.now(),
-            java.time.LocalDateTime.now());
+            LocalDateTime.now(),
+            LocalDateTime.now());
 
-    flushTask = mock(ScheduledTask.class);
-    controller = mock(Controller.class);
+    createExporter(b -> b, true, false, existingRdbmsPositionModel);
+
     when(controller.getLastExportedRecordPosition()).thenReturn(brokerPosition);
-    when(controller.scheduleCancellableTask(any(), any())).thenReturn(flushTask);
-
-    rdbmsWriters = mock(RdbmsWriters.class);
-    executionQueue = new StubExecutionQueue();
-    positionService = mock(ExporterPositionService.class);
-    when(positionService.findOne(anyInt())).thenReturn(existingRdbmsPositionModel);
-    rdbmsPurger = mock(RdbmsPurger.class);
-    historyCleanupService = mock(HistoryCleanupService.class);
-    when(historyCleanupService.cleanupHistory(anyInt(), any())).thenReturn(Duration.ofSeconds(1));
-    when(historyCleanupService.cleanupUsageMetricsHistory(anyInt(), any()))
-        .thenReturn(Duration.ofSeconds(1));
-    when(historyCleanupService.cleanupJobBatchMetricsHistory(anyInt(), any()))
-        .thenReturn(Duration.ofSeconds(1));
-    historyDeletionService = mock(HistoryDeletionService.class);
-    when(historyDeletionService.deleteHistory(anyInt())).thenReturn(Duration.ofSeconds(1));
-    when(rdbmsWriters.getExporterPositionService()).thenReturn(positionService);
-    when(rdbmsWriters.getExecutionQueue()).thenReturn(executionQueue);
-    when(rdbmsWriters.getRdbmsPurger()).thenReturn(rdbmsPurger);
-    metrics = mock(RdbmsWriterMetrics.class);
-    when(rdbmsWriters.getMetrics()).thenReturn(metrics);
-    schemaManager = mock(RdbmsSchemaManager.class);
-    when(schemaManager.isInitialized()).thenReturn(true);
-    doAnswer((invocation) -> executionQueue.checkQueueForFlush()).when(rdbmsWriters).flush(false);
-
-    exporter =
-        new RdbmsExporter.Builder()
-            .rdbmsWriter(rdbmsWriters)
-            .partitionId(0)
-            .flushInterval(Duration.ofMillis(500))
-            .queueSize(100)
-            .rdbmsSchemaManager(schemaManager)
-            .historyCleanupService(historyCleanupService)
-            .historyDeletionService(historyDeletionService)
-            .build();
   }
 
   private RdbmsExportHandler mockHandler(final ValueType valueType) {
@@ -589,19 +602,20 @@ class RdbmsExporterTest {
 
   private void createExporter(
       final Function<RdbmsExporter.Builder, RdbmsExporter.Builder> builderFunction) {
-    createExporter(builderFunction, true, true);
+    createExporter(builderFunction, true, true, null);
   }
 
   private void createExporter(
       final Function<RdbmsExporter.Builder, RdbmsExporter.Builder> builderFunction,
       final boolean schemaInitialized) {
-    createExporter(builderFunction, schemaInitialized, true);
+    createExporter(builderFunction, schemaInitialized, true, null);
   }
 
   private void createExporter(
       final Function<RdbmsExporter.Builder, RdbmsExporter.Builder> builderFunction,
       final boolean schemaInitialized,
-      final boolean openExporter) {
+      final boolean openExporter,
+      final ExporterPositionModel exporterPositionModel) {
     flushTask = mock(ScheduledTask.class);
 
     controller = mock(Controller.class);
@@ -611,7 +625,7 @@ class RdbmsExporterTest {
     rdbmsWriters = mock(RdbmsWriters.class);
     executionQueue = new StubExecutionQueue();
     positionService = mock(ExporterPositionService.class);
-    when(positionService.findOne(anyInt())).thenReturn(null);
+    when(positionService.findOne(anyInt())).thenReturn(exporterPositionModel);
     rdbmsPurger = mock(RdbmsPurger.class);
 
     historyCleanupService = mock(HistoryCleanupService.class);
@@ -627,6 +641,13 @@ class RdbmsExporterTest {
     when(rdbmsWriters.getExporterPositionService()).thenReturn(positionService);
     when(rdbmsWriters.getExecutionQueue()).thenReturn(executionQueue);
     when(rdbmsWriters.getRdbmsPurger()).thenReturn(rdbmsPurger);
+
+    // Mock replicationController
+    replicationControllerFactory = mock(ReplicationControllerFactory.class);
+    replicationController = mock(ReplicationController.class);
+    when(replicationControllerFactory.createReplicationController(any()))
+        .thenReturn(replicationController);
+    when(replicationController.isReplicationInSync()).thenReturn(true);
 
     // Mock getMetrics() to return a mock metrics instance by default
     metrics = mock(RdbmsWriterMetrics.class);
@@ -653,7 +674,8 @@ class RdbmsExporterTest {
             .queueSize(100)
             .rdbmsSchemaManager(schemaManager)
             .historyCleanupService(historyCleanupService)
-            .historyDeletionService(historyDeletionService);
+            .historyDeletionService(historyDeletionService)
+            .replicationControllerFactory(replicationControllerFactory);
 
     exporter = builderFunction.apply(builder).build();
     if (openExporter) {
