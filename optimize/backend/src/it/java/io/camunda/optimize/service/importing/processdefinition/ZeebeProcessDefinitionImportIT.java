@@ -39,6 +39,7 @@ import io.camunda.optimize.dto.optimize.DefinitionType;
 import io.camunda.optimize.dto.optimize.FlowNodeDataDto;
 import io.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
+import io.camunda.optimize.service.util.IdGenerator;
 import io.camunda.optimize.util.ZeebeBpmnModels;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
@@ -139,11 +140,12 @@ public class ZeebeProcessDefinitionImportIT extends AbstractCCSMIT {
   @Test
   public void importZeebeProcess_multipleProcessesDeployed() {
     // given
-    final String firstProcessName = "firstProcess";
+    final String firstProcessName = "firstProcess-" + IdGenerator.getNextId();
     deployProcessAndStartInstance(createSimpleServiceTaskProcess(firstProcessName));
-    final String secondProcessName = "secondProcess";
+    final String secondProcessName = "secondProcess-" + IdGenerator.getNextId();
     deployProcessAndStartInstance(createSimpleServiceTaskProcess(secondProcessName));
-    waitUntilNumberOfDefinitionsExported(2);
+    waitUntilDefinitionWithIdExported(firstProcessName);
+    waitUntilDefinitionWithIdExported(secondProcessName);
 
     // when
     importAllZeebeEntitiesFromScratch();
@@ -158,7 +160,7 @@ public class ZeebeProcessDefinitionImportIT extends AbstractCCSMIT {
   @Test
   public void importZeebeProcess_multipleProcessesDeployedOnDifferentDays() {
     // given
-    final String firstProcessName = "firstProcess";
+    final String firstProcessName = "firstProcess-" + IdGenerator.getNextId();
     deployProcessAndStartInstance(createSimpleServiceTaskProcess(firstProcessName));
 
     try {
@@ -166,7 +168,7 @@ public class ZeebeProcessDefinitionImportIT extends AbstractCCSMIT {
     } catch (final IOException | InterruptedException e) {
       throw new OptimizeRuntimeException(e);
     }
-    final String secondProcessName = "secondProcess";
+    final String secondProcessName = "secondProcess-" + IdGenerator.getNextId();
     deployProcessAndStartInstance(createSimpleServiceTaskProcess(secondProcessName));
     waitUntilDefinitionWithIdExported(firstProcessName);
     waitUntilDefinitionWithIdExported(secondProcessName);
@@ -215,11 +217,12 @@ public class ZeebeProcessDefinitionImportIT extends AbstractCCSMIT {
         .setMaxImportPageSize(1);
     embeddedOptimizeExtension.reloadConfiguration();
 
-    final String firstProcessName = "firstProcess";
+    final String firstProcessName = "firstProcess-" + IdGenerator.getNextId();
     deployProcessAndStartInstance(createSimpleServiceTaskProcess(firstProcessName));
-    final String secondProcessName = "secondProcess";
+    final String secondProcessName = "secondProcess-" + IdGenerator.getNextId();
     deployProcessAndStartInstance(createSimpleServiceTaskProcess(secondProcessName));
-    waitUntilNumberOfDefinitionsExported(2);
+    waitUntilDefinitionWithIdExported(firstProcessName);
+    waitUntilDefinitionWithIdExported(secondProcessName);
 
     // when
     importAllZeebeEntitiesFromScratch();
