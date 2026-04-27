@@ -51,16 +51,15 @@ jobs:
     secrets: inherit
     with:
       name: schedule-release-8-9-x
-      tag: '8.9.0-alpha5'
+      tag: '8.9.1'
 
-  # Main branch load test — uses 8.9.0-alpha5 tag as optimize SNAPSHOT image does not exist
   release-load-test-main:
     name: Release load test (main)
     uses: ./.github/workflows/camunda-release-load-test.yaml
     secrets: inherit
     with:
       name: schedule-release-main
-      tag: '8.9.0-alpha5'
+      tag: '8.9.1'
 
   # Verify and cleanup jobs — one per branch, run in parallel.
   # Each job waits for pods + gateway connectivity, then deletes the namespace.
@@ -130,34 +129,28 @@ jobs:
         with:
           webhook: ${{ steps.slack-secrets.outputs.SLACK_ZEEBOT_RELIABILITY_TESTING_ALERTS_WEBHOOK_URL }}
           webhook-type: incoming-webhook
-          payload: |
-            {
-              "blocks": [
-                {
-                  "type": "section",
-                  "text": {
-                    "type": "mrkdwn",
-                    "text": ":white_check_mark: *Daily release load tests completed successfully.*"
-                  }
-                },
-                {
-                  "type": "section",
-                  "text": {
-                    "type": "mrkdwn",
-                    "text": "*Tested versions:*\n- stable/8.7: `8.7.25` (${{ needs.verify-and-cleanup-8-7.result }})\n- stable/8.8: `8.8.17` (${{ needs.verify-and-cleanup-8-8.result }})\n- stable/8.9: `8.9.0-alpha5` (${{ needs.verify-and-cleanup-8-9.result }})\n- main: `8.9.0-alpha5` (${{ needs.verify-and-cleanup-main.result }})"
-                  }
-                },
-                {
-                  "type": "context",
-                  "elements": [
-                    {
-                      "type": "mrkdwn",
-                      "text": "<https://github.com/camunda/camunda/actions/runs/${{ github.run_id }}|Workflow run>"
-                    }
-                  ]
-                }
-              ]
-            }
+          payload: |-
+            blocks:
+              - type: section
+                text:
+                  type: mrkdwn
+                  text: ":white_check_mark: *Daily release load tests completed successfully.*"
+
+              - type: section
+                text:
+                  type: mrkdwn
+                  text: |-
+                    *Tested versions:*
+                    • stable/8.7: `8.7.25` (${{ needs.verify-and-cleanup-8-7.result }})
+                    • stable/8.8: `8.8.17` (${{ needs.verify-and-cleanup-8-8.result }})
+                    • stable/8.9: `8.9.1` (${{ needs.verify-and-cleanup-8-9.result }})
+                    • main: `8.9.1` (${{ needs.verify-and-cleanup-main.result }})
+
+              - type: context
+                elements:
+                  - type: mrkdwn
+                    text: <https://github.com/camunda/camunda/actions/runs/${{ github.run_id }}|Workflow run>
+
       - name: Observe build status
         if: always()
         continue-on-error: true
@@ -198,32 +191,28 @@ jobs:
         with:
           webhook: ${{ steps.slack-secrets.outputs.SLACK_ZEEBOT_RELIABILITY_TESTING_ALERTS_WEBHOOK_URL }}
           webhook-type: incoming-webhook
-          payload: |
-            {
-              "blocks": [
-                {
-                  "type": "section",
-                  "text": {
-                    "type": "mrkdwn",
-                    "text": ":alarm: *Scheduled release load test verification failed:*"
-                  }
-                },
-                {
-                  "type": "section",
-                  "text": {
-                    "type": "mrkdwn",
-                    "text": "*Job results:*\n- stable/8.7: ${{ needs.verify-and-cleanup-8-7.result }}\n- stable/8.8: ${{ needs.verify-and-cleanup-8-8.result }}\n- stable/8.9: ${{ needs.verify-and-cleanup-8-9.result }}\n- main: ${{ needs.verify-and-cleanup-main.result }}"
-                  }
-                },
-                {
-                  "type": "section",
-                  "text": {
-                    "type": "mrkdwn",
-                    "text": "@reliability-testing-team Please check: https://github.com/camunda/camunda/actions/runs/${{ github.run_id }}"
-                  }
-                }
-              ]
-            }
+          payload: |-
+            blocks:
+              - type: section
+                text:
+                  type: mrkdwn
+                  text: ":alarm: *Scheduled release load test verification failed:*"
+
+              - type: section
+                text:
+                  type: mrkdwn
+                  text: |-
+                    *Job results:*
+                    • stable/8.7: ${{ needs.verify-and-cleanup-8-7.result }}
+                    • stable/8.8: ${{ needs.verify-and-cleanup-8-8.result }}
+                    • stable/8.9: ${{ needs.verify-and-cleanup-8-9.result }}
+                    • main: ${{ needs.verify-and-cleanup-main.result }}
+
+              - type: section
+                text:
+                  type: mrkdwn
+                  text: "@reliability-testing-team Please check: https://github.com/camunda/camunda/actions/runs/${{ github.run_id }}"
+
       - name: Observe build status
         if: always()
         continue-on-error: true
