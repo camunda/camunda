@@ -10,7 +10,6 @@ import {test as base} from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 import {OperateHomePage} from '@pages/OperateHomePage';
 import {TaskPanelPage} from '@pages/TaskPanelPage';
-import {TaskPanelPageV1} from '@pages/v1/TaskPanelPage';
 import {LoginPage} from '@pages/LoginPage';
 import {OperateProcessesPage} from '@pages/OperateProcessesPage';
 import {OperateProcessInstancePage} from '@pages/OperateProcessInstancePage';
@@ -25,9 +24,6 @@ import {OperateProcessInstanceViewModificationModePage} from '@pages/OperateProc
 import {TaskDetailsPage} from '@pages/TaskDetailsPage';
 import {TasklistHeader} from '@pages/TasklistHeader';
 import {TasklistProcessesPage} from '@pages/TasklistProcessesPage';
-import {TaskDetailsPageV1} from '@pages/v1/TaskDetailsPage';
-import {TasklistHeaderV1} from '@pages/v1/TasklistHeader';
-import {TasklistProcessesPageV1} from '@pages/v1/TasklistProcessesPage';
 import {PublicFormsPage} from '@pages/PublicFormsPage';
 import {IdentityHeader} from '@pages/IdentityHeader';
 import {IdentityAuthorizationsPage} from '@pages/IdentityAuthorizationsPage';
@@ -40,18 +36,14 @@ import {IdentityRolesDetailsPage} from '@pages/IdentityRolesDetailsPage';
 import {IdentityAuditLogPage} from '@pages/IdentityAuditLogPage';
 import {OperateOperationsDetailsPage} from '@pages/OperateOperationsDetailsPage';
 import {OperateOperationsLogPage} from '@pages/OperateOperationsLogPage';
-
-import {sleep} from 'utils/sleep';
+import {SwaggerPage} from '@pages/SwaggerPage';
+import {OperateBatchOperationsPage} from '@pages/OperateBatchOperationsPage';
 
 type PlaywrightFixtures = {
   makeAxeBuilder: () => AxeBuilder;
   operateHomePage: OperateHomePage;
   loginPage: LoginPage;
   taskPanelPage: TaskPanelPage;
-  taskPanelPageV1: TaskPanelPageV1;
-  taskDetailsPageV1: TaskDetailsPageV1;
-  tasklistHeaderV1: TasklistHeaderV1;
-  tasklistProcessesPageV1: TasklistProcessesPageV1;
   operateProcessesPage: OperateProcessesPage;
   operateProcessInstancePage: OperateProcessInstancePage;
   operateDecisionInstancePage: OperateDecisionInstancePage;
@@ -64,6 +56,7 @@ type PlaywrightFixtures = {
   operateProcessInstanceViewModificationModePage: OperateProcessInstanceViewModificationModePage;
   operateOperationsDetailsPage: OperateOperationsDetailsPage;
   operateOperationsLogPage: OperateOperationsLogPage;
+  operateBatchOperationsPage: OperateBatchOperationsPage;
   taskDetailsPage: TaskDetailsPage;
   tasklistHeader: TasklistHeader;
   tasklistProcessesPage: TasklistProcessesPage;
@@ -78,22 +71,26 @@ type PlaywrightFixtures = {
   identityTenantsPage: IdentityTenantsPage;
   identityRolesDetailsPage: IdentityRolesDetailsPage;
   identityAuditLogPage: IdentityAuditLogPage;
+  swaggerPage: SwaggerPage;
   suppressHelperModals: void;
 };
 
 const test = base.extend<PlaywrightFixtures>({
-  suppressHelperModals: [async ({page}, use) => {
-    await page.addInitScript(() => {
-      const current = JSON.parse(
-        window.localStorage.getItem('sharedState') || '{}',
-      );
-      window.localStorage.setItem(
-        'sharedState',
-        JSON.stringify({...current, hideProcessInstanceHelperModal: true}),
-      );
-    });
-    await use();
-  }, {auto: true}],
+  suppressHelperModals: [
+    async ({page}, use) => {
+      await page.addInitScript(() => {
+        const current = JSON.parse(
+          window.localStorage.getItem('sharedState') || '{}',
+        );
+        window.localStorage.setItem(
+          'sharedState',
+          JSON.stringify({...current, hideProcessInstanceHelperModal: true}),
+        );
+      });
+      await use();
+    },
+    {auto: true},
+  ],
   makeAxeBuilder: async ({page}, use) => {
     const makeAxeBuilder = () =>
       new AxeBuilder({page}).withTags([
@@ -124,6 +121,9 @@ const test = base.extend<PlaywrightFixtures>({
   loginPage: async ({page}, use) => {
     await use(new LoginPage(page));
   },
+  swaggerPage: async ({page}, use) => {
+    await use(new SwaggerPage(page));
+  },
   taskPanelPage: async ({page}, use) => {
     await use(new TaskPanelPage(page));
   },
@@ -151,6 +151,9 @@ const test = base.extend<PlaywrightFixtures>({
   operateOperationsLogPage: async ({page}, use) => {
     await use(new OperateOperationsLogPage(page));
   },
+  operateBatchOperationsPage: async ({page}, use) => {
+    await use(new OperateBatchOperationsPage(page));
+  },
   taskDetailsPage: async ({page}, use) => {
     await use(new TaskDetailsPage(page));
   },
@@ -160,31 +163,6 @@ const test = base.extend<PlaywrightFixtures>({
   tasklistProcessesPage: async ({page}, use) => {
     await use(new TasklistProcessesPage(page));
   },
-  resetData: async ({baseURL}, use) => {
-    await use(async () => {
-      const headers: Record<string, string> = {
-        'Content-Type': 'application/json',
-        Authorization: `${process.env.CAMUNDA_AUTH_STRATEGY} ${Buffer.from(
-          `${process.env.CAMUNDA_BASIC_AUTH_USERNAME}:${process.env.CAMUNDA_BASIC_AUTH_PASSWORD}`,
-        ).toString('base64')}`,
-      };
-
-      const response = await fetch(
-        `${baseURL}/v1/external/devUtil/recreateData`,
-        {
-          method: 'POST',
-          headers,
-        },
-      );
-
-      if (!response.ok) {
-        throw new Error(`Failed to reset data: ${response.statusText}`);
-      }
-
-      await sleep(1000);
-    });
-  },
-
   publicFormsPage: async ({page}, use) => {
     await use(new PublicFormsPage(page));
   },
@@ -221,18 +199,6 @@ const test = base.extend<PlaywrightFixtures>({
   },
   identityAuditLogPage: async ({page}, use) => {
     await use(new IdentityAuditLogPage(page));
-  },
-  taskPanelPageV1: async ({page}, use) => {
-    await use(new TaskPanelPageV1(page));
-  },
-  taskDetailsPageV1: async ({page}, use) => {
-    await use(new TaskDetailsPageV1(page));
-  },
-  tasklistHeaderV1: async ({page}, use) => {
-    await use(new TasklistHeaderV1(page));
-  },
-  tasklistProcessesPageV1: async ({page}, use) => {
-    await use(new TasklistProcessesPageV1(page));
   },
 });
 

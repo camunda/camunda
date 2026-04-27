@@ -9,40 +9,31 @@ package io.camunda.tasklist.qa.backup;
 
 import static io.camunda.tasklist.qa.backup.BackupRestoreTest.BACKUP_ID;
 import static io.camunda.tasklist.qa.backup.BackupRestoreTest.INDEX_PREFIX;
-import static org.assertj.core.api.Assertions.assertThat;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
+import io.camunda.client.CamundaClient;
+import io.camunda.client.api.search.response.SearchResponse;
+import io.camunda.client.api.search.response.UserTask;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
-import io.camunda.tasklist.qa.util.TestContext;
 import io.camunda.tasklist.qa.util.rest.StatefulRestTemplate;
-import io.camunda.tasklist.webapp.api.rest.v1.entities.SaveVariablesRequest;
-import io.camunda.tasklist.webapp.api.rest.v1.entities.TaskCompleteRequest;
-import io.camunda.tasklist.webapp.api.rest.v1.entities.TaskResponse;
-import io.camunda.tasklist.webapp.api.rest.v1.entities.TaskSearchRequest;
-import io.camunda.tasklist.webapp.api.rest.v1.entities.TaskSearchResponse;
 import io.camunda.tasklist.webapp.dto.VariableInputDTO;
 import io.camunda.webapps.backup.GetBackupStateResponseDto;
 import io.camunda.webapps.backup.TakeBackupRequestDto;
 import io.camunda.webapps.backup.TakeBackupResponseDto;
 import java.io.IOException;
-import java.lang.reflect.Field;
-import java.net.URI;
-import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.function.BiFunction;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.restclient.RestTemplateBuilder;
-import org.springframework.boot.resttestclient.TestRestTemplate;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.http.HttpStatus;
 import org.springframework.resilience.annotation.EnableResilientMethods;
 import org.springframework.resilience.annotation.Retryable;
 import org.springframework.stereotype.Component;
@@ -54,69 +45,47 @@ import org.springframework.web.client.HttpClientErrorException;
 public class TasklistAPICaller {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(TasklistAPICaller.class);
-  private static final String COMPLETE_TASK_MUTATION_PATTERN =
-      "mutation {completeTask(taskId: \"%s\", variables: [%s]){id name assignee taskState completionTime}}";
 
   @Autowired private BiFunction<String, Integer, StatefulRestTemplate> statefulRestTemplateFactory;
 
   private StatefulRestTemplate statefulRestTemplate;
   private StatefulRestTemplate mgmtRestTemplate;
+  private CamundaClient client;
 
-  public List<TaskSearchResponse> getAllTasks() {
-    final URI url = statefulRestTemplate.getURL("/v1/tasks/search");
-    return Arrays.asList(
-        statefulRestTemplate
-            .postForEntity(
-                url, new TaskSearchRequest().setPageSize(10_000), TaskSearchResponse[].class)
-            .getBody());
+  public SearchResponse<UserTask> getAllTasks() {
+    return client.newUserTaskSearchRequest().send().join();
   }
 
-  public List<TaskSearchResponse> getTasks(final String taskBpmnId) {
-    final URI url = statefulRestTemplate.getURL("/v1/tasks/search");
-    return Arrays.asList(
-        statefulRestTemplate
-            .postForEntity(
-                url,
-                new TaskSearchRequest().setTaskDefinitionId(taskBpmnId),
-                TaskSearchResponse[].class)
-            .getBody());
+  public SearchResponse<UserTask> getTasks(final String taskBpmnId) {
+    return client.newUserTaskSearchRequest().filter(f -> f.bpmnProcessId(taskBpmnId)).send().join();
   }
 
-  public void completeTask(final String id, final VariableInputDTO... variables) {
-    final URI url = statefulRestTemplate.getURL("/v1/tasks/%s/complete".formatted(id));
-    statefulRestTemplate.patchForObject(
-        url, new TaskCompleteRequest().setVariables(Arrays.asList(variables)), TaskResponse.class);
-  }
-
-  public StatefulRestTemplate createTasklistRestClient(final TestContext testContext) {
-    final RestTemplateBuilder restTemplateBuilder = new RestTemplateBuilder();
-    final TestRestTemplate testRestTemplate = new TestRestTemplate(restTemplateBuilder);
-    final Field restTemplateField;
-    try {
-      statefulRestTemplate =
-          statefulRestTemplateFactory.apply(
-              testContext.getExternalTasklistHost(), testContext.getExternalTasklistPort());
-      mgmtRestTemplate =
-          statefulRestTemplateFactory.apply(
-              testContext.getExternalTasklistHost(), testContext.getExternalTasklistMgmtPort());
-      restTemplateField = testRestTemplate.getClass().getDeclaredField("restTemplate");
-      restTemplateField.setAccessible(true);
-      restTemplateField.set(testRestTemplate, statefulRestTemplate);
-    } catch (final NoSuchFieldException | IllegalAccessException e) {
-      throw new RuntimeException(e);
-    }
-    return statefulRestTemplate;
+  public void completeTask(final Long usetTaskKey, final VariableInputDTO... variables) {
+    client.newCompleteUserTaskCommand(usetTaskKey).variables(List.of(variables)).send().join();
   }
 
   public void saveDraftTaskVariables(
-      final String taskId, final SaveVariablesRequest saveVariablesRequest) {
-    final var response =
-        statefulRestTemplate.postForEntity(
-            statefulRestTemplate.getURL(String.format("v1/tasks/%s/variables", taskId)),
-            saveVariablesRequest,
-            Void.class);
+      final Long userTaskElementInstanceKey, final Map<String, String> draftVariables) {
+    // this feature is not supported in the V2 API, local variables are used
+    // as a replacement:
+    // https://docs.camunda.io/docs/next/apis-tools/migration-manuals/migrate-to-camunda-api/#save-task-draft-variables
+    client
+        .newSetVariablesCommand(userTaskElementInstanceKey)
+        .variables(draftVariables)
+        .local(true)
+        .send()
+        .join();
+  }
 
-    assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
+  public void createClients(final BackupRestoreTestContext testContext) {
+    client = testContext.getCamundaClient();
+    mgmtRestTemplate =
+        statefulRestTemplateFactory.apply(
+            testContext.getExternalTasklistHost(), testContext.getExternalTasklistMgmtPort());
+  }
+
+  public void setCamundaClient(final CamundaClient camundaClient) {
+    client = camundaClient;
   }
 
   public TakeBackupResponseDto backup(final Long backupId) {

@@ -34,7 +34,7 @@ jobs:
           fi
           echo "Branch '$branch_name' exists."
 
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
       - name: Detect base branch
         id: detect-base
@@ -63,7 +63,7 @@ jobs:
           echo "Input branch: ${{ github.event.inputs.branch }}"
           echo "Base branch: ${{ needs.validate-branch.outputs.base }}"
 
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           ref: ${{ github.event.inputs.branch }}
 
@@ -74,6 +74,12 @@ jobs:
             echo "NON_STANDALONE=true" >> "$GITHUB_ENV"
           else
             echo "NON_STANDALONE=false" >> "$GITHUB_ENV"
+          fi
+          if [[ "$base" == "main" ]]; then
+            echo "CAMUNDA_DOCKER_IMAGE=camunda/camunda:SNAPSHOT" >> "$GITHUB_ENV"
+          elif [[ "$base" == stable/* ]]; then
+            minor="${base#stable/}"
+            echo "CAMUNDA_DOCKER_IMAGE=camunda/camunda:${minor}-SNAPSHOT" >> "$GITHUB_ENV"
           fi
 
       - name: Start Camunda
@@ -141,7 +147,7 @@ jobs:
         working-directory: qa/c8-orchestration-cluster-e2e-test-suite/config
 
       - name: Setup Node.js
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
         with:
           node-version: 24
           cache: npm
@@ -173,7 +179,7 @@ jobs:
         working-directory: qa/c8-orchestration-cluster-e2e-test-suite
 
       - name: Python setup
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
         with:
           python-version: "3.x"
 
@@ -184,7 +190,6 @@ jobs:
           CAMUNDA_AUTH_STRATEGY: "BASIC"
           CAMUNDA_BASIC_AUTH_USERNAME: "demo"
           CAMUNDA_BASIC_AUTH_PASSWORD: "demo"
-          CAMUNDA_TASKLIST_V2_MODE_ENABLED: "false"
           CAMUNDA_PROCESSINSTANCECREATION_BUSINESSIDUNIQUENESSENABLED: "true"
         run: |
           if [[ "$NON_STANDALONE" == "true" ]]; then
@@ -210,17 +215,18 @@ jobs:
           TESTRAIL_KEY: ${{ steps.secrets.outputs.TESTRAIL_QA_PSW }}
           JUNIT_RESULTS_FILE: "qa/c8-orchestration-cluster-e2e-test-suite/test-results/junit-report.xml"
         run: |
-          pip install trcli
+          pip install trcli==1.14.1
           trcli -y -h "$TESTRAIL_HOST" \
             --project 'C8' \
             --username "$TESTRAIL_USERNAME" \
             --key "$TESTRAIL_KEY" \
+            --batch-size 500 \
             parse_junit --suite-id 17050 \
             --title "On Demand C8 Orchestration Cluster API Test Run Results - ${{ github.event.inputs.branch }} - $(date '+%Y-%m-%d %H:%M:%S')" \
             --close-run \
             -f "$JUNIT_RESULTS_FILE"
 
-      - uses: actions/upload-artifact@v7
+      - uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
         if: failure()
         with:
           name: C8 Orchestration Cluster API Test Result
@@ -250,7 +256,7 @@ jobs:
           echo "Input branch: ${{ github.event.inputs.branch }}"
           echo "Base branch: ${{ needs.validate-branch.outputs.base }}"
 
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           ref: ${{ github.event.inputs.branch }}
 
@@ -347,7 +353,7 @@ jobs:
           exit 1
 
       - name: Setup Node.js
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
         with:
           node-version: 24
           cache: npm
@@ -371,7 +377,6 @@ jobs:
           CAMUNDA_AUTH_STRATEGY: "BASIC"
           CAMUNDA_BASIC_AUTH_USERNAME: "demo"
           CAMUNDA_BASIC_AUTH_PASSWORD: "demo"
-          CAMUNDA_TASKLIST_V2_MODE_ENABLED: "false"
           CAMUNDA_PROCESSINSTANCECREATION_BUSINESSIDUNIQUENESSENABLED: "true"
           DATABASE: "RDBMS"
         run: |
@@ -385,7 +390,7 @@ jobs:
           echo "=== Camunda logs ==="
           cat dev-dist/camunda.log
 
-      - uses: actions/upload-artifact@v7
+      - uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
         if: failure()
         with:
           name: C8 Orchestration Cluster API Test Result (H2-RDBMS)
@@ -414,7 +419,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        tasklist_mode: ${{ fromJSON( (needs.validate-branch.outputs.base == 'stable/8.6' || needs.validate-branch.outputs.base == 'stable/8.7') && '["v1"]' || '["v1","v2"]' ) }}
+        tasklist_mode: ${{ fromJSON( (needs.validate-branch.outputs.base == 'stable/8.6' || needs.validate-branch.outputs.base == 'stable/8.7') && '["v1"]' || needs.validate-branch.outputs.base == 'main' && '["v2"]' || '["v1","v2"]' ) }}
     needs: [validate-branch]
     runs-on: ubuntu-latest
     steps:
@@ -424,7 +429,7 @@ jobs:
           echo "Base branch: ${{ needs.validate-branch.outputs.base }}"
           echo "Tasklist mode: ${{ matrix.tasklist_mode }}"
 
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           ref: ${{ github.event.inputs.branch }}
 
@@ -435,6 +440,12 @@ jobs:
             echo "NON_STANDALONE=true" >> "$GITHUB_ENV"
           else
             echo "NON_STANDALONE=false" >> "$GITHUB_ENV"
+          fi
+          if [[ "$base" == "main" ]]; then
+            echo "CAMUNDA_DOCKER_IMAGE=camunda/camunda:SNAPSHOT" >> "$GITHUB_ENV"
+          elif [[ "$base" == stable/* ]]; then
+            minor="${base#stable/}"
+            echo "CAMUNDA_DOCKER_IMAGE=camunda/camunda:${minor}-SNAPSHOT" >> "$GITHUB_ENV"
           fi
 
       - name: Start Camunda
@@ -508,7 +519,7 @@ jobs:
         working-directory: qa/c8-orchestration-cluster-e2e-test-suite/config
 
       - name: Setup Node.js
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
         with:
           node-version: 24
           cache: npm
@@ -540,7 +551,7 @@ jobs:
         working-directory: qa/c8-orchestration-cluster-e2e-test-suite
 
       - name: Python setup
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
         with:
           python-version: "3.x"
 
@@ -565,11 +576,14 @@ jobs:
 
             if [[ "${{ matrix.tasklist_mode }}" == "v2" ]]; then
               echo "Running V2 mode tests"
-              if [[ "${{ needs.validate-branch.outputs.base }}" == "stable/8.8" ]]; then
+              if [[ "${{ needs.validate-branch.outputs.base }}" == "main" ]]; then
+                # main: V1 directories removed, run all tests
+                TEST_ARGS+=(tests/)
+              elif [[ "${{ needs.validate-branch.outputs.base }}" == "stable/8.8" ]]; then
                 # stable/8.8: run all tests excluding @v1-only tagged tests
                 TEST_ARGS+=(tests/ --grep-invert '@v1-only')
               else
-                # main: run all tests excluding v1/ directories
+                # stable/8.9: run all tests excluding v1/ directories
                 TEST_ARGS+=(tests/ --grep-invert 'v1/')
               fi
             else
@@ -578,7 +592,7 @@ jobs:
                 # stable/8.8: no v1/ directories, run regular directories for V1 mode
                 TEST_ARGS+=(tests/tasklist/ tests/common-flows/)
               else
-                # main: has v1/ directories for V1 mode
+                # stable/8.9: has v1/ directories for V1 mode
                 TEST_ARGS+=(tests/tasklist/v1/ tests/common-flows/v1/)
               fi
             fi
@@ -596,17 +610,18 @@ jobs:
           TESTRAIL_KEY: ${{ steps.secrets.outputs.TESTRAIL_QA_PSW }}
           JUNIT_RESULTS_FILE: "qa/c8-orchestration-cluster-e2e-test-suite/test-results/junit-report.xml"
         run: |
-          pip install trcli
+          pip install trcli==1.14.1
           trcli -y -h "$TESTRAIL_HOST" \
             --project 'C8' \
             --username "$TESTRAIL_USERNAME" \
             --key "$TESTRAIL_KEY" \
+            --batch-size 500 \
             parse_junit --suite-id 17050 \
             --title "On Demand C8 Orchestration Cluster Test Run Results - ${{ github.event.inputs.branch }} (Tasklist ${{ matrix.tasklist_mode }} mode) - $(date '+%Y-%m-%d %H:%M:%S')" \
             --close-run \
             -f "$JUNIT_RESULTS_FILE"
 
-      - uses: actions/upload-artifact@v7
+      - uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
         if: failure()
         with:
           name: C8 Orchestration Cluster E2E Test Result (Tasklist ${{ matrix.tasklist_mode }} mode)

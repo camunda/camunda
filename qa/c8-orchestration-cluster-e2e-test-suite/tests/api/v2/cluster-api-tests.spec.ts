@@ -43,6 +43,6 @@ test.describe('Cluster API Tests', () => {
     const res = await request.get(buildUrl('/status'));
     await assertStatusCode(res, 204);
     const result = await res.body();
-    expect(result.length).toBe(0);
+    expect(result).toHaveLength(0);
   });
 });

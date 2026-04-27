@@ -14,12 +14,13 @@ const handleMutationError = (options: {
   subtitle?: string;
 }) => {
   if (options.statusCode === 403) {
-    return notificationsStore.displayNotification({
+    notificationsStore.displayNotification({
       kind: 'warning',
       title: "You don't have permission to perform this operation",
       subtitle: 'Please contact the administrator if you need access.',
       isDismissable: true,
     });
+    return;
   }
   notificationsStore.displayNotification({
     kind: 'error',
@@ -38,13 +39,14 @@ const handleOperationError = (statusCode?: number) => {
 
 const handleBatchOperationError = (statusCode?: number, title?: string) => {
   if (statusCode === 404) {
-    return notificationsStore.displayNotification({
+    notificationsStore.displayNotification({
       kind: 'error',
       title: title ?? 'Operation could not be created',
       subtitle:
         'Batch operation not found. It may have already completed or failed.',
       isDismissable: true,
     });
+    return;
   }
 
   handleMutationError({

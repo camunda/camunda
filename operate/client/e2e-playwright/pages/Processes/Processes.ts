@@ -7,7 +7,6 @@
  */
 
 import type {Page, Locator} from '@playwright/test';
-import {expect} from '@playwright/test';
 import {convertToQueryString} from '../../utils/convertToQueryString';
 import {DeleteResourceModal} from '../components/DeleteResourceModal';
 import MigrationModal from '../components/MigrationModal';

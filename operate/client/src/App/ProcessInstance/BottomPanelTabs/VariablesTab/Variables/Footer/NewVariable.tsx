@@ -8,6 +8,7 @@
 
 import {useState} from 'react';
 import {Field, useForm, useFormState} from 'react-final-form';
+import type {VariableFormValues} from 'modules/types/variables';
 import {useFieldError} from 'modules/hooks/useFieldError';
 import {Layer} from './styled';
 import {
@@ -28,7 +29,7 @@ import {MaximizeButton} from '../ViewFullVariableButton/MaximizeButton';
 import {InlineJsonEditor} from 'modules/components/InlineJsonEditor';
 
 const NewVariable: React.FC = () => {
-  const formState = useFormState();
+  const formState = useFormState<VariableFormValues>();
   const form = useForm();
   const [isModalVisible, setIsModalVisible] = useState(false);
   const {data: variablesData} = useVariables();
@@ -98,7 +99,7 @@ const NewVariable: React.FC = () => {
               ? `Edit Variable "${formState.values?.name}"`
               : 'Edit a new Variable'
           }
-          value={formState.values?.value}
+          value={formState.values?.value ?? ''}
           onClose={() => {
             setIsModalVisible(false);
             tracking.track({

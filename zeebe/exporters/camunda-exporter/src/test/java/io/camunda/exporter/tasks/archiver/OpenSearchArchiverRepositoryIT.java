@@ -42,7 +42,6 @@ import io.camunda.webapps.schema.descriptors.template.UsageMetricTUTemplate;
 import io.camunda.webapps.schema.descriptors.template.UsageMetricTemplate;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.net.URI;
 import java.time.Duration;
 import java.time.Instant;
@@ -54,6 +53,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.UUID;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.stream.IntStream;
 import java.util.stream.LongStream;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.hc.core5.http.HttpHost;
@@ -71,8 +73,11 @@ import org.mockito.Mockito;
 import org.opensearch.client.json.jackson.JacksonJsonpMapper;
 import org.opensearch.client.opensearch.OpenSearchAsyncClient;
 import org.opensearch.client.opensearch.OpenSearchClient;
+import org.opensearch.client.opensearch._types.OpenSearchException;
+import org.opensearch.client.opensearch._types.Result;
 import org.opensearch.client.opensearch._types.mapping.Property;
 import org.opensearch.client.opensearch._types.mapping.TypeMapping;
+import org.opensearch.client.opensearch.core.IndexResponse;
 import org.opensearch.client.opensearch.core.search.Hit;
 import org.opensearch.client.opensearch.generic.OpenSearchGenericClient;
 import org.opensearch.client.opensearch.generic.Request;
@@ -85,6 +90,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import software.amazon.awssdk.http.SdkHttpClient;
 import software.amazon.awssdk.http.apache.ApacheHttpClient;
+import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.regions.providers.DefaultAwsRegionProviderChain;
 
 @SuppressWarnings("resource")
@@ -106,7 +112,7 @@ final class OpenSearchArchiverRepositoryIT {
   private final String zeebeIndex = zeebeIndexPrefix + "-" + UUID.randomUUID();
   private TestExporterResourceProvider resourceProvider;
   private String indexPrefix;
-  private final ObjectMapper objectMapper = TestObjectMapper.objectMapper();
+  @AutoClose private final ExecutorService executor = Executors.newSingleThreadExecutor();
 
   @AfterEach
   void afterEach() {
@@ -1100,6 +1106,10 @@ final class OpenSearchArchiverRepositoryIT {
    * the background {@link ApplyRolloverPeriodJob} re-applies the policy to all historical indices.
    */
   @Test
+  @DisabledIfSystemProperty(
+      named = TEST_INTEGRATION_OPENSEARCH_AWS_URL,
+      matches = "^(?=\\s*\\S).*$",
+      disabledReason = "Excluding from AWS OS IT CI - policy modification not allowed")
   void shouldUpdateMinIndexAgeOnManagedIndicesWhenApplyRolloverPeriodJobRuns() throws Exception {
     // given
     changeIndexStateManagementJobInterval(1);
@@ -1156,7 +1166,7 @@ final class OpenSearchArchiverRepositoryIT {
     // ensure all templates are created
     startupSchema();
     // create indices for all templates with a date in the index name
-    final var searchClientAdapter = new SearchClientAdapter(testClient, objectMapper);
+    final var searchClientAdapter = new SearchClientAdapter(testClient, MAPPER);
     final String date = "2026-01-10";
     for (final var indexTemplate : resourceProvider.getIndexTemplateDescriptors()) {
       searchClientAdapter.createIndex(indexTemplate.getIndexPattern().replace("*", date), 0);
@@ -1173,6 +1183,7 @@ final class OpenSearchArchiverRepositoryIT {
 
     // then
     Awaitility.await()
+        .atMost(Duration.ofSeconds(30))
         .untilAsserted(
             () ->
                 verify(
@@ -1221,8 +1232,7 @@ final class OpenSearchArchiverRepositoryIT {
                                 .build())
                         .get();
 
-                final var json =
-                    objectMapper.readTree(response.getBody().orElseThrow().bodyAsString());
+                final var json = MAPPER.readTree(response.getBody().orElseThrow().bodyAsString());
                 // Check runtime index (should not have ISM policy)
                 assertThat(
                         json.get(template.getFullQualifiedName())
@@ -1238,6 +1248,286 @@ final class OpenSearchArchiverRepositoryIT {
                         repository.getRetentionPolicyName(template.getIndexName(), retention));
               });
     }
+  }
+
+  @Test
+  void shouldGetArchiveDocIdsBatch() throws IOException {
+    final var repository = createRepository();
+    final var documents =
+        List.of(
+            new TestProcessDocument("1", 111L, "variable"),
+            new TestProcessDocument("2", 111L, "activity"),
+            new TestProcessDocument("3", 222L, "variable"),
+            new TestProcessDocument("4", 111L, "variable"),
+            new TestProcessDocument("5", 222L, "activity"));
+
+    // create the index template first to ensure ID is a keyword, otherwise the surrounding
+    // aggregation will fail
+    createProcessInstanceIndex();
+    documents.forEach(doc -> index(processInstanceIndex, doc));
+    testClient.indices().refresh(r -> r.index(processInstanceIndex));
+
+    // when searching for process instance key 111
+    // then - we expect documents with IDs 1,2 and 4 to be returned
+    final var batch =
+        repository
+            .getArchiveDocIdsBatch(
+                processInstanceIndex,
+                Map.of("processInstanceKey", List.of("111")),
+                Map.of(),
+                Map.of(),
+                null)
+            .join();
+
+    assertThat(batch.ids()).containsExactlyInAnyOrder("1", "2", "4");
+    assertThat(batch.searchAfter()).hasSize(1);
+    assertThat(batch.searchAfter().getFirst().stringValue()).isEqualTo("4");
+
+    // when searching for process instance key 999
+    // then - we expect no documents to be returned
+    final var emptyBatch =
+        repository
+            .getArchiveDocIdsBatch(
+                processInstanceIndex,
+                Map.of("processInstanceKey", List.of("999")),
+                Map.of(),
+                Map.of(),
+                null)
+            .join();
+
+    assertThat(emptyBatch.isEmpty()).isTrue();
+    assertThat(emptyBatch.ids()).isEmpty();
+    assertThat(emptyBatch.searchAfter()).isEmpty();
+
+    // when searching for process instance key 111 with reindex batch size of 2
+    // then - we expect documents with IDs 1 and 2 to be returned
+    config.setReindexBatchSize(2);
+    final var batchPg1 =
+        repository
+            .getArchiveDocIdsBatch(
+                processInstanceIndex,
+                Map.of("processInstanceKey", List.of("111")),
+                Map.of(),
+                Map.of(),
+                null)
+            .join();
+
+    assertThat(batchPg1.ids()).containsExactlyInAnyOrder("1", "2");
+    assertThat(batchPg1.searchAfter().getFirst().stringValue()).isEqualTo("2");
+
+    // when searching for process instance key 111 with searchAfter from page 1
+    // then - we expect document with ID 4 to be returned
+    config.setReindexBatchSize(2);
+    final var batchPg2 =
+        repository
+            .getArchiveDocIdsBatch(
+                processInstanceIndex,
+                Map.of("processInstanceKey", List.of("111")),
+                Map.of(),
+                Map.of(),
+                batchPg1.searchAfter())
+            .join();
+
+    assertThat(batchPg2.ids()).containsExactlyInAnyOrder("4");
+    assertThat(batchPg2.searchAfter().getFirst().stringValue()).isEqualTo("4");
+
+    // when searching for process instance key 111 with searchAfter from page 2
+    // then - we expect no documents to be returned
+    config.setReindexBatchSize(2);
+    final var batchPg3 =
+        repository
+            .getArchiveDocIdsBatch(
+                processInstanceIndex,
+                Map.of("processInstanceKey", List.of("111")),
+                Map.of(),
+                Map.of(),
+                batchPg2.searchAfter())
+            .join();
+
+    assertThat(batchPg3.isEmpty()).isTrue();
+    assertThat(batchPg3.ids()).isEmpty();
+    assertThat(batchPg3.searchAfter()).isEmpty();
+
+    // when searching for process instance key 111 with exclusion filter for joinRelation=activity
+    // then - we expect only documents with joinRelation != activity (IDs 1 and 4)
+    config.setReindexBatchSize(100);
+    final var batchExcluded =
+        repository
+            .getArchiveDocIdsBatch(
+                processInstanceIndex,
+                Map.of("processInstanceKey", List.of("111")),
+                Map.of(),
+                Map.of("joinRelation", "activity"),
+                null)
+            .join();
+
+    assertThat(batchExcluded.ids()).containsExactlyInAnyOrder("1", "4");
+
+    // when searching for process instance key 111 with inclusion filter for joinRelation=variable
+    // and exclusion filter for joinRelation=activity
+    // then - we expect only documents matching joinRelation=variable (IDs 1 and 4)
+    final var batchBothFilters =
+        repository
+            .getArchiveDocIdsBatch(
+                processInstanceIndex,
+                Map.of("processInstanceKey", List.of("111")),
+                Map.of("joinRelation", "variable"),
+                Map.of("joinRelation", "activity"),
+                null)
+            .join();
+
+    assertThat(batchBothFilters.ids()).containsExactlyInAnyOrder("1", "4");
+  }
+
+  @Test
+  void shouldReindexDocumentsById() throws IOException {
+    // given
+    final var sourceIndexName = ARCHIVER_IDX_PREFIX + UUID.randomUUID().toString();
+    final var destIndexName = ARCHIVER_IDX_PREFIX + UUID.randomUUID().toString();
+    final var repository = createRepository();
+    final var documents =
+        List.of(new TestDocument("1"), new TestDocument("2"), new TestDocument("3"));
+    documents.forEach(doc -> index(sourceIndexName, doc));
+    testClient.indices().refresh(r -> r.index(sourceIndexName));
+    testClient.indices().create(r -> r.index(destIndexName));
+
+    // when - reindex the first two documents
+    final var result =
+        repository.reindexDocumentsById(sourceIndexName, destIndexName, List.of("1", "2"));
+
+    // then
+    assertThat(result).succeedsWithin(Duration.ofSeconds(30));
+    testClient.indices().refresh(r -> r.index(destIndexName));
+    final var remaining =
+        testClient.search(r -> r.index(sourceIndexName).requestCache(false), TestDocument.class);
+    final var reindexed =
+        testClient.search(r -> r.index(destIndexName).requestCache(false), TestDocument.class);
+    assertThat(reindexed.hits().hits())
+        .as("only first two documents were reindexed")
+        .hasSize(2)
+        .map(Hit::id)
+        .containsExactlyInAnyOrder("1", "2");
+    assertThat(remaining.hits().hits())
+        .as("all documents are remaining")
+        .hasSize(3)
+        .extracting(Hit::id)
+        .containsExactlyInAnyOrder("1", "2", "3");
+  }
+
+  @Test
+  void shouldDeleteDocumentsById() throws IOException {
+    // given
+    final var indexName = ARCHIVER_IDX_PREFIX + UUID.randomUUID().toString();
+    final var repository = createRepository();
+    final var documents =
+        List.of(new TestDocument("1"), new TestDocument("2"), new TestDocument("3"));
+    documents.forEach(doc -> index(indexName, doc));
+    testClient.indices().refresh(r -> r.index(indexName));
+
+    // when - delete the first two documents
+    final var result = repository.deleteDocumentsById(indexName, List.of("1", "2"));
+
+    // then
+    assertThat(result).succeedsWithin(Duration.ofSeconds(30));
+    testClient.indices().refresh(r -> r.index(indexName));
+    final var remaining =
+        testClient.search(r -> r.index(indexName).requestCache(false), TestDocument.class);
+    assertThat(remaining.hits().hits())
+        .as("only the third document is remaining")
+        .hasSize(1)
+        .first()
+        .extracting(Hit::id)
+        .isEqualTo("3");
+  }
+
+  @Test
+  void shouldMoveDocumentsById() throws IOException {
+    final var repository = createRepository();
+    final List<TestProcessDocument> documents = new ArrayList<>();
+
+    IntStream.rangeClosed(100, 199)
+        .mapToObj(i -> new TestProcessDocument(String.valueOf(i), 111L))
+        .forEach(documents::add);
+    IntStream.rangeClosed(200, 299)
+        .mapToObj(i -> new TestProcessDocument(String.valueOf(i), 222L))
+        .forEach(documents::add);
+    IntStream.rangeClosed(300, 399)
+        .mapToObj(i -> new TestProcessDocument(String.valueOf(i), 333L))
+        .forEach(documents::add);
+
+    // create the index template first to ensure ID is a keyword, otherwise the surrounding
+    // aggregation will fail
+    createProcessInstanceIndex();
+    documents.forEach(doc -> index(processInstanceIndex, doc));
+    testClient.indices().refresh(r -> r.index(processInstanceIndex));
+
+    // when moving documents by id
+    config.setReindexBatchSize(10); // force multiple batches
+    repository
+        .moveDocumentsById(
+            processInstanceIndex,
+            processInstanceIndex + "_dest",
+            Map.of("processInstanceKey", List.of("111", "333")),
+            Map.of(),
+            Map.of(),
+            executor)
+        .join(); // wait for completion
+
+    // then refresh indices
+    testClient.indices().refresh(r -> r.index(processInstanceIndex));
+    testClient.indices().refresh(r -> r.index(processInstanceIndex + "_dest"));
+
+    // then confirm docs were moved
+
+    final var totalSource =
+        testClient.count(r -> r.index(processInstanceIndex).query(q -> q.matchAll(a -> a))).count();
+    // only docs with `processInstanceKey=222` should be present
+    assertThat(totalSource).isEqualTo(100);
+
+    final List<Integer> sourceIds =
+        testClient
+            .search(
+                r ->
+                    r.index(processInstanceIndex)
+                        .query(q -> q.matchAll(a -> a))
+                        .size(1000)
+                        .source(s -> s.fetch(false)),
+                Object.class)
+            .hits()
+            .hits()
+            .stream()
+            .map(Hit::id)
+            .map(Integer::valueOf)
+            .sorted()
+            .toList();
+    assertThat(sourceIds.getFirst()).isEqualTo(200);
+    assertThat(sourceIds.getLast()).isEqualTo(299);
+
+    final var totalDestination =
+        testClient
+            .count(r -> r.index(processInstanceIndex + "_dest").query(q -> q.matchAll(a -> a)))
+            .count();
+    // only docs with `processInstanceKey=[111,333]` should be present
+    assertThat(totalDestination).isEqualTo(200);
+
+    final List<Integer> destinationIds =
+        testClient
+            .search(
+                r ->
+                    r.index(processInstanceIndex + "_dest")
+                        .query(q -> q.matchAll(a -> a))
+                        .size(1000)
+                        .source(s -> s.fetch(false)),
+                Object.class)
+            .hits()
+            .hits()
+            .stream()
+            .map(Hit::id)
+            .map(Integer::valueOf)
+            .sorted()
+            .toList();
+    assertThat(destinationIds.getFirst()).isEqualTo(100);
+    assertThat(destinationIds.getLast()).isEqualTo(399);
   }
 
   @Test
@@ -1285,13 +1575,13 @@ final class OpenSearchArchiverRepositoryIT {
   }
 
   private void startupSchema() {
-    final var searchEngineClient = new OpensearchEngineClient(testClient, objectMapper);
+    final var searchEngineClient = new OpensearchEngineClient(testClient, MAPPER);
     final var connectConfig = new ConnectConfiguration();
     connectConfig.setIndexPrefix(indexPrefix);
     connectConfig.setUrl(SEARCH_DB.esUrl());
     connectConfig.setType(DatabaseType.OPENSEARCH.toString());
     final var schemaManagerConfig = new SchemaManagerConfiguration();
-    schemaManagerConfig.getRetry().setMaxRetries(1);
+    schemaManagerConfig.getRetry().setMaxRetries(3);
     final var searchEngineConfiguration =
         SearchEngineConfiguration.of(
             builder ->
@@ -1304,7 +1594,7 @@ final class OpenSearchArchiverRepositoryIT {
             resourceProvider.getIndexDescriptors(),
             resourceProvider.getIndexTemplateDescriptors(),
             searchEngineConfiguration,
-            objectMapper)
+            MAPPER)
         .startup();
   }
 
@@ -1398,11 +1688,18 @@ final class OpenSearchArchiverRepositoryIT {
   }
 
   private <T extends TDocument> void index(final String index, final T document) {
-    try {
-      testClient.index(b -> b.index(index).document(document).id(document.id()));
-    } catch (final IOException e) {
-      throw new UncheckedIOException(e);
-    }
+    Awaitility.await()
+        .ignoreException(OpenSearchException.class)
+        .timeout(SEARCH_DB.dataAvailabilityTimeout())
+        .until(
+            () -> {
+              final IndexResponse result =
+                  testClient.index(b -> b.index(index).document(document).id(document.id()));
+              return result != null
+                  && (result.result() == Result.Created
+                      || result.result() == Result.Updated
+                      || result.result() == Result.NoOp);
+            });
   }
 
   private void createLifeCyclePolicies() {
@@ -1560,55 +1857,42 @@ final class OpenSearchArchiverRepositoryIT {
 
   private OpenSearchTransport createTransport() {
     try {
-      return ApacheHttpClient5TransportBuilder.builder(HttpHost.create(SEARCH_DB.osUrl()))
-          .setHttpClientConfigCallback(
-              httpClientBuilder -> {
-                httpClientBuilder.disableContentCompression();
-                return httpClientBuilder;
-              })
-          .setMapper(new JacksonJsonpMapper())
-          .build();
+      if (!SEARCH_DB.isAws()) {
+        return ApacheHttpClient5TransportBuilder.builder(HttpHost.create(SEARCH_DB.osUrl()))
+            .setHttpClientConfigCallback(
+                httpClientBuilder -> {
+                  httpClientBuilder.disableContentCompression();
+                  return httpClientBuilder;
+                })
+            .setMapper(new JacksonJsonpMapper(MAPPER))
+            .build();
+      }
+
+      final URI uri = URI.create(SEARCH_DB.osUrl());
+      final SdkHttpClient httpClient =
+          ApacheHttpClient.builder().socketTimeout(getAwsSocketTimeout()).build();
+      final Region region = new DefaultAwsRegionProviderChain().getRegion();
+      return new AwsSdk2Transport(
+          httpClient,
+          uri.getHost(),
+          region,
+          AwsSdk2TransportOptions.builder().setMapper(new JacksonJsonpMapper(MAPPER)).build());
     } catch (final Exception e) {
       throw new RuntimeException(e);
     }
   }
 
+  private Duration getAwsSocketTimeout() {
+    // AWS can be slow to respond, especially in CI, so we set a longer timeout than the default
+    return Duration.ofSeconds(120);
+  }
+
   private OpenSearchClient createOpenSearchClient() {
-    final var isAWSRun = System.getProperty(TEST_INTEGRATION_OPENSEARCH_AWS_URL, "");
-    if (isAWSRun.isEmpty()) {
-      return new OpenSearchClient(transport);
-    } else {
-      final URI uri = URI.create(isAWSRun);
-      final SdkHttpClient httpClient = ApacheHttpClient.builder().build();
-      final var region = new DefaultAwsRegionProviderChain().getRegion();
-      return new OpenSearchClient(
-          new AwsSdk2Transport(
-              httpClient,
-              uri.getHost(),
-              region,
-              AwsSdk2TransportOptions.builder()
-                  .setMapper(new JacksonJsonpMapper(new ObjectMapper()))
-                  .build()));
-    }
+    return new OpenSearchClient(transport);
   }
 
   private OpenSearchAsyncClient createOpenSearchAsyncClient() {
-    final var isAWSRun = System.getProperty(TEST_INTEGRATION_OPENSEARCH_AWS_URL, "");
-    if (isAWSRun.isEmpty()) {
-      return new OpenSearchAsyncClient(transport);
-    } else {
-      final URI uri = URI.create(isAWSRun);
-      final SdkHttpClient httpClient = ApacheHttpClient.builder().build();
-      final var region = new DefaultAwsRegionProviderChain().getRegion();
-      return new OpenSearchAsyncClient(
-          new AwsSdk2Transport(
-              httpClient,
-              uri.getHost(),
-              region,
-              AwsSdk2TransportOptions.builder()
-                  .setMapper(new JacksonJsonpMapper(new ObjectMapper()))
-                  .build()));
-    }
+    return new OpenSearchAsyncClient(transport);
   }
 
   private void deleteTestIndices() {
@@ -1708,6 +1992,13 @@ final class OpenSearchArchiverRepositoryIT {
   private record TestBatchOperation(String id, String endDate) implements TDocument {}
 
   private record TestDocument(String id) implements TDocument {}
+
+  private record TestProcessDocument(String id, Long processInstanceKey, String joinRelation)
+      implements TDocument {
+    TestProcessDocument(final String id, final Long processInstanceKey) {
+      this(id, processInstanceKey, null);
+    }
+  }
 
   private record TestProcessInstance(
       String id,

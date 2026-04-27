@@ -1,0 +1,309 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+
+import {http, HttpResponse} from 'msw';
+import {authenticationStore} from './authentication';
+import {nodeMockServer} from 'modules/testing/nodeMockServer';
+import {getStateLocally} from 'modules/local-storage';
+import * as clientConfig from 'modules/config/getClientConfig';
+import {currentUser} from '@camunda/c8-mocks';
+
+const unchangedHref = window.location.href;
+
+describe('authentication store', () => {
+  beforeEach(() => {
+    authenticationStore.reset();
+  });
+
+  it('should assume that there is an existing session', () => {
+    expect(authenticationStore.status).toBe('initial');
+  });
+
+  it('should login', async () => {
+    nodeMockServer.use(
+      http.post('/login', () => new HttpResponse(''), {once: true}),
+      http.get('/v2/authentication/me', () => HttpResponse.json(currentUser), {
+        once: true,
+      }),
+    );
+
+    authenticationStore.disableSession();
+
+    expect(authenticationStore.status).toBe('session-invalid');
+
+    await authenticationStore.handleLogin('demo', 'demo');
+
+    expect(authenticationStore.status).toBe('logged-in');
+  });
+
+  it('should handle login failure', async () => {
+    nodeMockServer.use(
+      http.post('/login', () => new HttpResponse('', {status: 401}), {
+        once: true,
+      }),
+    );
+
+    expect(await authenticationStore.handleLogin('demo', 'demo')).toStrictEqual(
+      {
+        response: null,
+        error: {
+          variant: 'failed-response',
+          response: expect.objectContaining({
+            status: 401,
+          }),
+          networkError: null,
+        },
+      },
+    );
+    expect(authenticationStore.status).toBe('initial');
+  });
+
+  it('should logout', async () => {
+    const mockReload = vi.fn();
+    vi.spyOn(window, 'location', 'get').mockReturnValue({
+      ...window.location,
+      reload: mockReload,
+    });
+
+    nodeMockServer.use(
+      http.post('/login', () => new HttpResponse(''), {once: true}),
+      http.get('/v2/authentication/me', () => HttpResponse.json(currentUser), {
+        once: true,
+      }),
+      http.post('/logout', () => new HttpResponse(''), {once: true}),
+    );
+
+    await authenticationStore.handleLogin('demo', 'demo');
+
+    expect(authenticationStore.status).toBe('logged-in');
+
+    await authenticationStore.handleLogout();
+
+    expect(authenticationStore.status).toBe('logged-out');
+
+    expect(mockReload).toHaveBeenCalledTimes(0);
+    expect(window.location.href).toBe(unchangedHref);
+    expect(getStateLocally('wasReloaded')).toBe(false);
+  });
+
+  it('should throw an error on logout with invalid JSON response', async () => {
+    const mockReload = vi.fn();
+    vi.spyOn(window, 'location', 'get').mockReturnValue({
+      ...window.location,
+      reload: mockReload,
+    });
+    vi.spyOn(clientConfig, 'getClientConfig').mockReturnValue({
+      ...clientConfig.getClientConfig(),
+      canLogout: true,
+      isLoginDelegated: true,
+    });
+
+    nodeMockServer.use(
+      http.post('/login', () => new HttpResponse(''), {once: true}),
+      http.get('/v2/authentication/me', () => HttpResponse.json(currentUser), {
+        once: true,
+      }),
+      http.post(
+        '/logout',
+        () => new HttpResponse('{"invalid": "json response"}'),
+        {once: true},
+      ),
+    );
+
+    await authenticationStore.handleLogin('demo', 'demo');
+
+    expect(authenticationStore.status).toBe('logged-in');
+
+    const result = authenticationStore.handleLogout();
+
+    await expect(result).resolves.not.toBeUndefined();
+
+    expect(authenticationStore.status).toBe('logged-in');
+
+    expect(mockReload).toHaveBeenCalledTimes(0);
+    expect(window.location.href).toBe(unchangedHref);
+    expect(getStateLocally('wasReloaded')).toBe(false);
+  });
+
+  it('should throw an error on logout failure', async () => {
+    nodeMockServer.use(
+      http.post('/logout', () => new HttpResponse('', {status: 500}), {
+        once: true,
+      }),
+    );
+
+    expect(await authenticationStore.handleLogout()).not.toBeUndefined();
+  });
+
+  it('should disable session', async () => {
+    const mockReload = vi.fn();
+    vi.spyOn(window, 'location', 'get').mockReturnValue({
+      ...window.location,
+      reload: mockReload,
+    });
+    vi.spyOn(clientConfig, 'getClientConfig').mockReturnValue({
+      ...clientConfig.getClientConfig(),
+      canLogout: true,
+      isLoginDelegated: false,
+    });
+
+    authenticationStore.activateSession();
+
+    expect(authenticationStore.status).toBe('logged-in');
+
+    authenticationStore.disableSession();
+
+    expect(authenticationStore.status).toBe('session-expired');
+
+    expect(mockReload).toHaveBeenCalledTimes(0);
+    expect(getStateLocally('wasReloaded')).toBe(false);
+
+    authenticationStore.activateSession();
+
+    expect(authenticationStore.status).toBe('logged-in');
+
+    expect(window.location.href).toBe(unchangedHref);
+    expect(mockReload).toHaveBeenCalledTimes(0);
+    expect(getStateLocally('wasReloaded')).toBe(false);
+  });
+
+  it.each([
+    {canLogout: false, isLoginDelegated: false},
+    {canLogout: true, isLoginDelegated: true},
+  ])(
+    'should disable session when canLogout is $canLogout and isLoginDelegated is $isLoginDelegated',
+    async ({canLogout, isLoginDelegated}) => {
+      const mockReload = vi.fn();
+      vi.spyOn(window, 'location', 'get').mockReturnValue({
+        ...window.location,
+        reload: mockReload,
+      });
+      vi.spyOn(clientConfig, 'getClientConfig').mockReturnValue({
+        ...clientConfig.getClientConfig(),
+        canLogout,
+        isLoginDelegated,
+      });
+
+      authenticationStore.activateSession();
+
+      expect(authenticationStore.status).toBe('logged-in');
+
+      authenticationStore.disableSession();
+
+      expect(authenticationStore.status).toBe('invalid-third-party-session');
+
+      expect(mockReload).toHaveBeenCalledTimes(1);
+      expect(getStateLocally('wasReloaded')).toBe(true);
+
+      authenticationStore.activateSession();
+
+      expect(authenticationStore.status).toBe('logged-in');
+
+      expect(window.location.href).toBe(unchangedHref);
+      expect(mockReload).toHaveBeenCalledTimes(1);
+      expect(getStateLocally('wasReloaded')).toBe(false);
+    },
+  );
+
+  it.each([
+    {canLogout: false, isLoginDelegated: false},
+    {canLogout: true, isLoginDelegated: true},
+  ])(
+    'should logout when canLogout is $canLogout and isLoginDelegated is $isLoginDelegated',
+    async ({canLogout, isLoginDelegated}) => {
+      const mockReload = vi.fn();
+      vi.spyOn(window, 'location', 'get').mockReturnValue({
+        ...window.location,
+        reload: mockReload,
+      });
+      vi.spyOn(clientConfig, 'getClientConfig').mockReturnValue({
+        ...clientConfig.getClientConfig(),
+        canLogout,
+        isLoginDelegated,
+      });
+
+      nodeMockServer.use(
+        http.post('/login', () => new HttpResponse(''), {once: true}),
+        http.get(
+          '/v2/authentication/me',
+          () => HttpResponse.json(currentUser),
+          {once: true},
+        ),
+        http.post('/logout', () => new HttpResponse('', {status: 204}), {
+          once: true,
+        }),
+        http.post('/login', () => new HttpResponse(''), {once: true}),
+        http.get(
+          '/v2/authentication/me',
+          () => HttpResponse.json(currentUser),
+          {once: true},
+        ),
+      );
+
+      await authenticationStore.handleLogin('demo', 'demo');
+
+      expect(authenticationStore.status).toBe('logged-in');
+
+      await authenticationStore.handleLogout();
+
+      expect(authenticationStore.status).toBe('invalid-third-party-session');
+
+      expect(mockReload).toHaveBeenCalledTimes(1);
+      expect(getStateLocally('wasReloaded')).toBe(true);
+
+      await authenticationStore.handleLogin('demo', 'demo');
+
+      expect(authenticationStore.status).toBe('logged-in');
+
+      expect(window.location.href).toBe(unchangedHref);
+      expect(mockReload).toHaveBeenCalledTimes(1);
+      expect(getStateLocally('wasReloaded')).toBe(false);
+    },
+  );
+
+  it('should redirect to logoutUrl returned by backend during logout', async () => {
+    const mockReload = vi.fn();
+    vi.spyOn(window, 'location', 'get').mockReturnValue({
+      ...window.location,
+      reload: mockReload,
+    });
+    vi.spyOn(clientConfig, 'getClientConfig').mockReturnValue({
+      ...clientConfig.getClientConfig(),
+      canLogout: true,
+      isLoginDelegated: true,
+    });
+
+    const mockIdpLogoutUrl = 'http://example.com/idpLogout';
+
+    nodeMockServer.use(
+      http.post('/login', () => new HttpResponse(''), {once: true}),
+      http.get('/v2/authentication/me', () => HttpResponse.json(currentUser), {
+        once: true,
+      }),
+      http.post(
+        '/logout',
+        () => new HttpResponse(`{"url": "${mockIdpLogoutUrl}"}`),
+        {
+          once: true,
+        },
+      ),
+    );
+
+    await authenticationStore.handleLogin('demo', 'demo');
+
+    expect(authenticationStore.status).toBe('logged-in');
+
+    await authenticationStore.handleLogout();
+
+    expect(authenticationStore.status).toBe('invalid-third-party-session');
+
+    expect(window.location.href).toBe(mockIdpLogoutUrl);
+    expect(mockReload).toHaveBeenCalledTimes(0);
+    expect(getStateLocally('wasReloaded')).toBe(true);
+  });
+});

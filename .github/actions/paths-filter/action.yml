@@ -35,7 +35,7 @@ outputs:
       ${{
         github.event_name == 'push' ||
         github.event_name == 'schedule' ||
-        steps.filter-common.outputs.github-actions-change == 'true' ||
+        steps.ci-github-actions.outputs.ci-relevant == 'true' ||
         steps.filter-common.outputs.java-code-change == 'true' ||
         steps.filter-common.outputs.maven-change == 'true' ||
         steps.filter-common.outputs.markdown-change == 'true'
@@ -46,7 +46,7 @@ outputs:
       ${{
         github.event_name == 'push' ||
         github.event_name == 'schedule' ||
-        steps.filter-common.outputs.github-actions-change == 'true' ||
+        steps.ci-github-actions.outputs.ci-relevant == 'true' ||
         steps.filter-common.outputs.maven-change == 'true' ||
         steps.filter-common.outputs.validate-pom-metadata-extra-change == 'true'
       }}
@@ -56,7 +56,7 @@ outputs:
       ${{
         github.event_name == 'push' ||
         github.event_name == 'schedule' ||
-        steps.filter-common.outputs.github-actions-change == 'true' ||
+        steps.ci-github-actions.outputs.ci-relevant == 'true' ||
         steps.filter-common.outputs.java-code-change == 'true' ||
         steps.filter-common.outputs.maven-change == 'true'
       }}
@@ -66,7 +66,7 @@ outputs:
       ${{
         github.event_name == 'push' ||
         github.event_name == 'schedule' ||
-        steps.filter-common.outputs.github-actions-change == 'true' ||
+        steps.ci-github-actions.outputs.ci-relevant == 'true' ||
         steps.filter-identity.outputs.identity-frontend-change == 'true'
       }}
   operate-backend-changes:
@@ -75,7 +75,7 @@ outputs:
       ${{
         github.event_name == 'push' ||
         github.event_name == 'schedule' ||
-        steps.filter-common.outputs.github-actions-change == 'true' ||
+        steps.ci-github-actions.outputs.ci-relevant == 'true' ||
         steps.filter-operate.outputs.operate-backend-change == 'true' ||
         steps.filter-common.outputs.webapps-change == 'true' ||
         steps.filter-common.outputs.maven-change == 'true' ||
@@ -87,7 +87,7 @@ outputs:
       ${{
         github.event_name == 'push' ||
         github.event_name == 'schedule' ||
-        steps.filter-common.outputs.github-actions-change == 'true' ||
+        steps.ci-github-actions.outputs.ci-relevant == 'true' ||
         steps.filter-operate.outputs.operate-frontend-change == 'true'
       }}
   tasklist-frontend-changes:
@@ -96,7 +96,7 @@ outputs:
       ${{
         github.event_name == 'push' ||
         github.event_name == 'schedule' ||
-        steps.filter-common.outputs.github-actions-change == 'true' ||
+        steps.ci-github-actions.outputs.ci-relevant == 'true' ||
         steps.filter-tasklist.outputs.tasklist-frontend-change == 'true'
       }}
   tasklist-backend-changes:
@@ -105,7 +105,7 @@ outputs:
       ${{
         github.event_name == 'push' ||
         github.event_name == 'schedule' ||
-        steps.filter-common.outputs.github-actions-change == 'true' ||
+        steps.ci-github-actions.outputs.ci-relevant == 'true' ||
         steps.filter-tasklist.outputs.tasklist-backend-change == 'true' ||
         steps.filter-common.outputs.webapps-change == 'true' ||
         steps.filter-common.outputs.maven-change == 'true' ||
@@ -117,7 +117,7 @@ outputs:
       ${{
         github.event_name == 'push' ||
         github.event_name == 'schedule' ||
-        steps.filter-common.outputs.github-actions-change == 'true' ||
+        steps.ci-github-actions.outputs.ci-relevant == 'true' ||
         steps.filter-optimize.outputs.optimize-frontend-change == 'true'
       }}
   optimize-backend-changes:
@@ -126,7 +126,7 @@ outputs:
       ${{
         github.event_name == 'push' ||
         github.event_name == 'schedule' ||
-        steps.filter-common.outputs.github-actions-change == 'true' ||
+        steps.ci-github-actions.outputs.ci-relevant == 'true' ||
         steps.filter-optimize.outputs.optimize-backend-change == 'true' ||
         steps.filter-common.outputs.webapps-change == 'true' ||
         steps.filter-common.outputs.maven-change == 'true'
@@ -137,7 +137,7 @@ outputs:
       ${{
         github.event_name == 'push' ||
         github.event_name == 'schedule' ||
-        steps.filter-common.outputs.github-actions-change == 'true' ||
+        steps.ci-github-actions.outputs.ci-relevant == 'true' ||
         steps.filter-common.outputs.java-code-change == 'true' ||
         steps.filter-common.outputs.maven-change == 'true' ||
         steps.filter-common.outputs.dockerfile-change == 'true' ||
@@ -149,7 +149,7 @@ outputs:
       ${{
         github.event_name == 'push' ||
         github.event_name == 'schedule' ||
-        steps.filter-common.outputs.github-actions-change == 'true' ||
+        steps.ci-github-actions.outputs.ci-relevant == 'true' ||
         steps.filter-common.outputs.frontend-change == 'true' ||
         steps.filter-identity.outputs.frontend-identity == 'true'
       }}
@@ -159,7 +159,7 @@ outputs:
       ${{
         github.event_name == 'push' ||
         github.event_name == 'schedule' ||
-        steps.filter-common.outputs.github-actions-change == 'true' ||
+        steps.ci-github-actions.outputs.ci-relevant == 'true' ||
         steps.filter-common.outputs.webapps-change == 'true' ||
         steps.filter-common.outputs.maven-change == 'true' ||
         steps.filter-zeebe.outputs.zeebe-change == 'true'
@@ -177,7 +177,7 @@ outputs:
       ${{
         github.event_name == 'push' ||
         github.event_name == 'schedule' ||
-        steps.filter-common.outputs.github-actions-change == 'true' ||
+        steps.ci-github-actions.outputs.ci-relevant == 'true' ||
         steps.filter-common.outputs.openapi-change == 'true'
       }}
   stable-branch-changes:
@@ -193,7 +193,7 @@ outputs:
       ${{
         github.event_name == 'push' ||
         github.event_name == 'schedule' ||
-        steps.filter-common.outputs.github-actions-change == 'true' ||
+        steps.ci-github-actions.outputs.ci-relevant == 'true' ||
         steps.filter-common.outputs.java-code-change == 'true' ||
         steps.filter-common.outputs.maven-change == 'true' ||
         steps.filter-common.outputs.rdbms-change == 'true'
@@ -204,17 +204,17 @@ outputs:
       ${{
         github.event_name == 'push' ||
         github.event_name == 'schedule' ||
-        steps.filter-common.outputs.github-actions-change == 'true' ||
+        steps.ci-github-actions.outputs.ci-relevant == 'true' ||
         steps.filter-common.outputs.renovate-config-change == 'true'
       }}
-  client-components-changes:
-    description: Output whether Client Components tests should be run based on GitHub event and files changed
+  webapp-client-changes:
+    description: Output whether Webapp Client tests should be run based on GitHub event and files changed
     value: >-
       ${{
         github.event_name == 'push' ||
         github.event_name == 'schedule' ||
-        steps.filter-common.outputs.github-actions-change == 'true' ||
-        steps.filter-client-components.outputs.client-components-change == 'true'
+        steps.ci-github-actions.outputs.ci-relevant == 'true' ||
+        steps.filter-webapp-client.outputs.webapp-client-change == 'true'
       }}
   docs-changes:
     description: Output whether Documentation tests should be run based on GitHub event and files changed
@@ -222,12 +222,21 @@ outputs:
       ${{
         steps.filter-docs.outputs.docs-change == 'true'
       }}
+  c8-e2e-test-suite-changes:
+    description: Output whether the C8 Orchestration Cluster E2E test suite lint check should be run based on GitHub event and files changed
+    value: >-
+      ${{
+        github.event_name == 'push' ||
+        github.event_name == 'schedule' ||
+        steps.ci-github-actions.outputs.ci-relevant == 'true' ||
+        steps.filter-c8-e2e-test-suite.outputs.c8-e2e-test-suite-change == 'true'
+      }}
 
 runs:
   using: composite
   steps:
 
-  - uses: dorny/paths-filter@v4
+  - uses: dorny/paths-filter@fbd0ab8f3e69293af611ebaee6363fc25e6d187d # v4.0.1
     id: filter-common
     with:
       base: ${{ github.event.merge_group.base_ref || '' }}
@@ -236,16 +245,6 @@ runs:
         actionlint-related-change:
           - '.github/actions/**'
           - '.github/workflows/**'
-          - '.github/actionlint*'
-          - '.github/conftest-*.rego'
-
-        github-actions-change:
-          - '.github/actions/**'
-          - '.github/workflows/**'
-          - '!.github/workflows/*load-test*'
-          - '!.github/workflows/*load_test*'
-          - '!.github/workflows/*benchmark*'
-          - '!.github/workflows/*testbench*'
           - '.github/actionlint*'
           - '.github/conftest-*.rego'
 
@@ -308,7 +307,41 @@ runs:
         - 'search/search-domain/**'
         - 'zeebe/exporters/rdbms-exporter/**'
 
-  - uses: dorny/paths-filter@v4
+  - uses: dorny/paths-filter@fbd0ab8f3e69293af611ebaee6363fc25e6d187d # v4.0.1
+    id: filter-github-actions
+    with:
+      base: ${{ github.event.merge_group.base_ref || '' }}
+      ref: ${{ github.event.merge_group.head_ref || github.ref }}
+      list-files: json
+      filters: |
+        github-actions-change:
+          - '.github/actions/**'
+          - '.github/workflows/**'
+          - '.github/actionlint*'
+          - '.github/conftest-*.rego'
+
+  # dorny/paths-filter negation patterns are broken (dorny/paths-filter#200,
+  # micromatch/picomatch#154): each pattern is an independent OR'd matcher, so
+  # !pattern matches everything NOT matching it instead of excluding.
+  # Work around by piping the actual file list through check.sh, which applies
+  # glob exclusions from .github/scripts/ci-relevance/excluded-paths.txt.
+  - id: ci-github-actions
+    shell: bash
+    env:
+      CHANGED_FILES: ${{ steps.filter-github-actions.outputs.github-actions-change_files }}
+    run: |
+      if [[ "${{ steps.filter-github-actions.outputs.github-actions-change }}" != "true" ]]; then
+        echo "ci-relevant=false" >> "$GITHUB_OUTPUT"
+        exit 0
+      fi
+      if jq -r '.[]' <<< "$CHANGED_FILES" | \
+          .github/scripts/ci-relevance/check.sh; then
+        echo "ci-relevant=true" >> "$GITHUB_OUTPUT"
+      else
+        echo "ci-relevant=false" >> "$GITHUB_OUTPUT"
+      fi
+
+  - uses: dorny/paths-filter@fbd0ab8f3e69293af611ebaee6363fc25e6d187d # v4.0.1
     id: filter-identity
     with:
       base: ${{ github.event.merge_group.base_ref || '' }}
@@ -317,7 +350,7 @@ runs:
         identity-frontend-change:
           - 'identity/client/**'
 
-  - uses: dorny/paths-filter@v4
+  - uses: dorny/paths-filter@fbd0ab8f3e69293af611ebaee6363fc25e6d187d # v4.0.1
     id: filter-zeebe
     with:
       base: ${{ github.event.merge_group.base_ref || '' }}
@@ -328,7 +361,7 @@ runs:
           - 'clients/**'
           - 'Dockerfile'
 
-  - uses: dorny/paths-filter@v4
+  - uses: dorny/paths-filter@fbd0ab8f3e69293af611ebaee6363fc25e6d187d # v4.0.1
     id: filter-operate
     with:
       base: ${{ github.event.merge_group.base_ref || '' }}
@@ -340,7 +373,7 @@ runs:
         operate-frontend-change:
           - operate/client/**
 
-  - uses: dorny/paths-filter@v4
+  - uses: dorny/paths-filter@fbd0ab8f3e69293af611ebaee6363fc25e6d187d # v4.0.1
     id: filter-tasklist
     with:
       base: ${{ github.event.merge_group.base_ref || '' }}
@@ -352,7 +385,7 @@ runs:
         tasklist-frontend-change:
           - tasklist/client/**
 
-  - uses: dorny/paths-filter@v4
+  - uses: dorny/paths-filter@fbd0ab8f3e69293af611ebaee6363fc25e6d187d # v4.0.1
     id: filter-optimize
     with:
       base: ${{ github.event.merge_group.base_ref || '' }}
@@ -369,16 +402,16 @@ runs:
           - optimize/c4/**
           - optimize/backend/src/main/resources/localization/**
 
-  - uses: dorny/paths-filter@v4
-    id: filter-client-components
+  - uses: dorny/paths-filter@fbd0ab8f3e69293af611ebaee6363fc25e6d187d # v4.0.1
+    id: filter-webapp-client
     with:
       base: ${{ github.event.merge_group.base_ref || '' }}
       ref: ${{ github.event.merge_group.head_ref || github.ref }}
       filters: |
-        client-components-change:
-          - 'client-components/**'
+        webapp-client-change:
+          - 'webapp/client/**'
 
-  - uses: dorny/paths-filter@v4
+  - uses: dorny/paths-filter@fbd0ab8f3e69293af611ebaee6363fc25e6d187d # v4.0.1
     id: filter-docs
     with:
       base: ${{ github.event.merge_group.base_ref || '' }}
@@ -390,6 +423,15 @@ runs:
           - 'monorepo-docs-site/*'
           - '.github/workflows/docs-build-deploy.yml'
           - '.github/workflows/docs-preview.yml'
+
+  - uses: dorny/paths-filter@fbd0ab8f3e69293af611ebaee6363fc25e6d187d # v4.0.1
+    id: filter-c8-e2e-test-suite
+    with:
+      base: ${{ github.event.merge_group.base_ref || '' }}
+      ref: ${{ github.event.merge_group.head_ref || github.ref }}
+      filters: |
+        c8-e2e-test-suite-change:
+          - 'qa/c8-orchestration-cluster-e2e-test-suite/**'
 
   # only works `on: push` and `on: pull_request` GitHub trigger events
   - id: filter-special-branch

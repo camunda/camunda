@@ -1461,9 +1461,9 @@
     "@ibm/telemetry-js" "^1.5.0"
 
 "@carbon/icons-react@^11.41.0", "@carbon/icons-react@^11.56.0":
-  version "11.77.0"
-  resolved "https://registry.yarnpkg.com/@carbon/icons-react/-/icons-react-11.77.0.tgz#ba8cdc8e64f3f379b6a04d0e63ed87f0de18c4af"
-  integrity sha512-dgCX1WuyL5AJpyeyDArI+wrvVNDbgHZpY96nIhcdL2sS/YsOfFZ5WNQ+UxVaJ9KmK/7x1pFx3CyjjDiQ5sTiyg==
+  version "11.78.0"
+  resolved "https://registry.yarnpkg.com/@carbon/icons-react/-/icons-react-11.78.0.tgz#6fb54ab4f8f29623fcce715e8b4f0f14d2804328"
+  integrity sha512-jfpLWMRaovV5yUb6cxWXU9hXkAqukWgREyLqIc+pcd4DJEhef7atkTQ7t9h0kZkluvNTzn8HwVXI08Uj5LZ0EA==
   dependencies:
     "@carbon/icon-helpers" "^10.74.0"
     "@ibm/telemetry-js" "^1.5.0"
@@ -7027,9 +7027,9 @@ dotenv@^10.0.0:
   integrity sha512-rlBi9d8jpv9Sf1klPjNfFAuWDjKLwTIJJ/VxtoTwIR6hnZxcEOQCZg2oIL3MWBYw5GpUDKOEnND7LXTbIpQ03Q==
 
 dotenv@^17.0.0:
-  version "17.3.0"
-  resolved "https://registry.yarnpkg.com/dotenv/-/dotenv-17.3.0.tgz#5af4a722c2ff39005bf2c0b87c91d392dda85893"
-  integrity sha512-i3z5dx/8F45f+Dj0B/qG8oKip9luzyHz6dfJMOKG7zQW/12tT7CrIjs/0J10uNK/Z5O7O0UtfEmx6yFKRQCl4g==
+  version "17.4.2"
+  resolved "https://registry.yarnpkg.com/dotenv/-/dotenv-17.4.2.tgz#c07e54a746e11eba021dd9e1047ced5afdc1c034"
+  integrity sha512-nI4U3TottKAcAD9LLud4Cb7b2QztQMUEfHbvhTH09bqXTxnSie8WnjPALV/WMCrJZ6UV/qHJ6L03OqO3LcdYZw==
 
 downshift@9.0.8:
   version "9.0.8"

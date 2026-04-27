@@ -410,6 +410,7 @@ public class BrokerBasedPropertiesOverride {
     override.getCluster().setClusterSize(cluster.getSize());
     override.getCluster().setClusterName(cluster.getName());
     override.getCluster().setClusterId(cluster.getClusterId());
+    override.getCluster().setZone(cluster.getZone());
 
     populateFromMembership(override);
     populateFromRaftProperties(override);
@@ -737,6 +738,7 @@ public class BrokerBasedPropertiesOverride {
     gcsBackupStoreConfig.setHost(gcs.getHost());
     gcsBackupStoreConfig.setAuth(GcsBackupStoreAuth.valueOf(gcs.getAuth().name()));
     gcsBackupStoreConfig.setMaxConcurrentTransfers(gcs.getMaxConcurrentTransfers());
+    gcsBackupStoreConfig.setBufferSize(gcs.getBufferSize());
 
     override.getData().getBackup().setGcs(gcsBackupStoreConfig);
   }

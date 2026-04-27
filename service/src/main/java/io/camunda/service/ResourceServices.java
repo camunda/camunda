@@ -9,18 +9,24 @@ package io.camunda.service;
 
 import static io.camunda.search.query.SearchQueryBuilders.decisionRequirementsSearchQuery;
 import static io.camunda.search.query.SearchQueryBuilders.processDefinitionSearchQuery;
+import static io.camunda.security.auth.Authorization.withAuthorization;
+import static io.camunda.service.authorization.Authorizations.RESOURCE_READ_AUTHORIZATION;
 
 import io.camunda.search.clients.DecisionRequirementSearchClient;
+import io.camunda.search.clients.DeployedResourceSearchClient;
 import io.camunda.search.clients.ProcessDefinitionSearchClient;
+import io.camunda.search.entities.DeployedResourceEntity;
+import io.camunda.search.exception.CamundaSearchException;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.security.auth.CamundaAuthentication;
+import io.camunda.service.exception.ErrorMapper;
+import io.camunda.service.exception.ServiceException;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerDeleteResourceRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerDeployResourceRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerFetchResourceRequest;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
-import io.camunda.zeebe.protocol.impl.record.value.deployment.ResourceRecord;
 import io.camunda.zeebe.protocol.impl.record.value.resource.ResourceDeletionRecord;
 import io.camunda.zeebe.protocol.record.value.ResourceType;
 import java.util.Map;
@@ -30,6 +36,8 @@ public final class ResourceServices extends ApiServices<ResourceServices> {
 
   private final ProcessDefinitionSearchClient processDefinitionSearchClient;
   private final DecisionRequirementSearchClient decisionRequirementSearchClient;
+  private final DeployedResourceSearchClient deployedResourceSearchClient;
+  private final boolean secondaryStorageEnabled;
 
   public ResourceServices(
       final BrokerClient brokerClient,
@@ -37,7 +45,9 @@ public final class ResourceServices extends ApiServices<ResourceServices> {
       final ApiServicesExecutorProvider executorProvider,
       final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter,
       final ProcessDefinitionSearchClient processDefinitionSearchClient,
-      final DecisionRequirementSearchClient decisionRequirementSearchClient) {
+      final DecisionRequirementSearchClient decisionRequirementSearchClient,
+      final DeployedResourceSearchClient deployedResourceSearchClient,
+      final boolean secondaryStorageEnabled) {
     super(
         brokerClient,
         securityContextProvider,
@@ -45,6 +55,8 @@ public final class ResourceServices extends ApiServices<ResourceServices> {
         brokerRequestAuthorizationConverter);
     this.processDefinitionSearchClient = processDefinitionSearchClient;
     this.decisionRequirementSearchClient = decisionRequirementSearchClient;
+    this.deployedResourceSearchClient = deployedResourceSearchClient;
+    this.secondaryStorageEnabled = secondaryStorageEnabled;
   }
 
   public CompletableFuture<DeploymentRecord> deployResources(
@@ -116,16 +128,73 @@ public final class ResourceServices extends ApiServices<ResourceServices> {
     }
   }
 
-  public CompletableFuture<ResourceRecord> fetchResource(
-      final ResourceFetchRequest request, final CamundaAuthentication authentication) {
-    return sendBrokerRequest(
-        new BrokerFetchResourceRequest().setResourceKey(request.resourceKey()), authentication);
+  public CompletableFuture<DeployedResourceEntity> getByKey(
+      final long resourceKey, final CamundaAuthentication authentication) {
+    return fetchDeployedResource(resourceKey, authentication, false);
+  }
+
+  public CompletableFuture<DeployedResourceEntity> getContentByKey(
+      final long resourceKey, final CamundaAuthentication authentication) {
+    return fetchDeployedResource(resourceKey, authentication, true);
+  }
+
+  private CompletableFuture<DeployedResourceEntity> fetchDeployedResource(
+      final long resourceKey,
+      final CamundaAuthentication authentication,
+      final boolean includeContent) {
+    if (secondaryStorageEnabled) {
+      final var securityContext =
+          securityContextProvider.provideSecurityContext(
+              authentication,
+              withAuthorization(RESOURCE_READ_AUTHORIZATION, DeployedResourceEntity::resourceId));
+      return CompletableFuture.supplyAsync(
+          () -> {
+            try {
+              final var client = deployedResourceSearchClient.withSecurityContext(securityContext);
+              return includeContent
+                  ? client.getDeployedResource(resourceKey)
+                  : client.getDeployedResourceMetadata(resourceKey);
+            } catch (final CamundaSearchException cse) {
+              throw ErrorMapper.mapSearchError(cse);
+            }
+          },
+          executorProvider.getExecutor());
+    } else {
+      return sendBrokerRequest(
+              new BrokerFetchResourceRequest().setResourceKey(resourceKey), authentication)
+          .handle(
+              (record, error) -> {
+                if (error != null) {
+                  // Normalize error message to match secondary storage format
+                  throw mapResourceNotFoundError(error, resourceKey);
+                }
+                return new DeployedResourceEntity(
+                    record.getResourceKey(),
+                    record.getResourceId(),
+                    record.getResourceName(),
+                    null,
+                    record.getVersion(),
+                    record.getVersionTag(),
+                    record.getDeploymentKey(),
+                    record.getTenantId(),
+                    includeContent ? record.getResourceProp() : null);
+              });
+    }
+  }
+
+  // Normalizes NOT_FOUND errors to match secondary storage format
+  private ServiceException mapResourceNotFoundError(final Throwable error, final long resourceKey) {
+    final ServiceException mappedException = ErrorMapper.mapError(error);
+    if (mappedException.getStatus() == ServiceException.Status.NOT_FOUND) {
+      return new ServiceException(
+          String.format("Resource with key '%d' not found", resourceKey),
+          ServiceException.Status.NOT_FOUND);
+    }
+    return mappedException;
   }
 
   public record DeployResourcesRequest(Map<String, byte[]> resources, String tenantId) {}
 
   public record ResourceDeletionRequest(
       long resourceKey, Long operationReference, boolean deleteHistory) {}
-
-  public record ResourceFetchRequest(long resourceKey) {}
 }

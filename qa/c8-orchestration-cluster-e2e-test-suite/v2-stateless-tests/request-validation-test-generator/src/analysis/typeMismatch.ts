@@ -1,3 +1,11 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+
 import {OperationModel, ValidationScenario} from '../model/types.js';
 import {makeId} from './common.js';
 
@@ -50,7 +58,6 @@ export function generateTypeMismatch(
   return out;
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function buildWrongType(schema: any): any {
   const t = schema.type;
   switch (t) {
@@ -81,7 +88,6 @@ function buildParams(path: string): Record<string, string> | undefined {
   return params;
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function buildMinimalBody(op: OperationModel): any | undefined {
   if (
     !op.requestBodySchema ||
@@ -89,7 +95,7 @@ function buildMinimalBody(op: OperationModel): any | undefined {
     !Array.isArray(op.requiredProps)
   )
     return undefined;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
   const body: Record<string, any> = {};
   for (const p of op.requiredProps) {
     const schema = op.requestBodySchema.properties?.[p];
@@ -98,7 +104,6 @@ function buildMinimalBody(op: OperationModel): any | undefined {
   return body;
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function schemaValue(schema: any): any {
   if (!schema) return 'x';
   if (schema.enum && schema.enum.length) return schema.enum[0];

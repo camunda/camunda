@@ -27,7 +27,7 @@ import {Toolbar} from './Toolbar';
 import {getProcessInstanceFilters} from 'modules/utils/filter/getProcessInstanceFilters';
 import {useLocation, useSearchParams} from 'react-router-dom';
 import {BatchModificationFooter} from './BatchModificationFooter';
-import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelection';
+import {processInstancesSelectionStore} from 'modules/stores/instancesSelection';
 import {InstanceOperations} from './InstanceOperations';
 import {getProcessDefinitionName} from 'modules/utils/instance';
 import {useOperationItemsForInstances} from 'modules/queries/batch-operations/useOperationItemsForInstances';
@@ -38,7 +38,7 @@ import {getClientConfig} from 'modules/utils/getClientConfig';
 type InstancesTableProps = {
   state: 'skeleton' | 'loading' | 'error' | 'empty' | 'content';
   processInstances: ProcessInstance[];
-  totalProcessInstancesCount: number;
+  totalCount: number;
   hasMoreTotalItems: boolean;
   onVerticalScrollStartReach?: (scrollDown: (offset: number) => void) => void;
   onVerticalScrollEndReach?: () => void;
@@ -48,7 +48,7 @@ const InstancesTable: React.FC<InstancesTableProps> = observer(
   ({
     state,
     processInstances,
-    totalProcessInstancesCount,
+    totalCount,
     hasMoreTotalItems,
     onVerticalScrollStartReach,
     onVerticalScrollEndReach,
@@ -112,31 +112,27 @@ const InstancesTable: React.FC<InstancesTableProps> = observer(
       <Container aria-label="Process Instances Panel">
         <PanelHeader
           title="Process Instances"
-          count={totalProcessInstancesCount}
+          count={totalCount}
           hasMoreTotalItems={hasMoreTotalItems}
         />
         <Toolbar
-          selectedInstancesCount={
-            processInstancesSelectionStore.selectedProcessInstanceCount
-          }
+          selectedInstancesCount={processInstancesSelectionStore.selectedCount}
         />
         <SortableTable
           state={state}
           columnsWithNoContentPadding={['operations']}
           selectionType="checkbox"
-          onSelectAll={processInstancesSelectionStore.selectAllProcessInstances}
+          onSelectAll={processInstancesSelectionStore.selectAll}
           onSelect={(rowId) => {
-            processInstancesSelectionStore.selectProcessInstance(rowId);
+            processInstancesSelectionStore.select(rowId);
           }}
           checkIsAllSelected={() => processInstancesSelectionStore.isAllChecked}
           checkIsIndeterminate={() =>
             !processInstancesSelectionStore.isAllChecked &&
-            processInstancesSelectionStore.selectedProcessInstanceCount > 0
+            processInstancesSelectionStore.selectedCount > 0
           }
           checkIsRowSelected={(rowId) => {
-            return processInstancesSelectionStore.checkedProcessInstanceIds.includes(
-              rowId,
-            );
+            return processInstancesSelectionStore.checkedIds.includes(rowId);
           }}
           rowOperationError={
             isOperationStateColumnVisible

@@ -388,6 +388,7 @@ public final class BpmnJobBehavior {
   private static JobListenerEventType fromExecutionListenerEventType(
       final ZeebeExecutionListenerEventType eventType) {
     return switch (eventType) {
+      case beforeAll -> JobListenerEventType.BEFORE_ALL;
       case start -> JobListenerEventType.START;
       case end -> JobListenerEventType.END;
     };

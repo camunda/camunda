@@ -56,7 +56,7 @@ const InstanceDetail: React.FC<Props> = observer(
       >
         {hasLoadingOverlay && <Loading data-testid="loading-overlay" />}
         {breadcrumb}
-        {header}
+        <div>{header}</div>
         <PanelContainer ref={containerRef}>
           <ResizablePanel
             panelId={`${type}-detail-vertical-panel`}

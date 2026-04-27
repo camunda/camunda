@@ -36,6 +36,7 @@
   "pleaseEnterValidGroupId": "Please enter a valid Group ID, max 256 characters and matching the pattern {{pattern}}",
   "resourceIdRequired": "Resource ID is required",
   "permissionRequired": "Please select at least one permission",
+  "permissionsUnavailable": "No permissions are available for the selected resource type.",
   "pleaseEnterValidClientId": "Please enter a valid Client ID, max 256 characters and matching the pattern {{pattern}}",
   "pleaseEnterValidResourceId": "Please enter a valid Resource ID, max 256 characters and matching the pattern {{pattern}}"
 }

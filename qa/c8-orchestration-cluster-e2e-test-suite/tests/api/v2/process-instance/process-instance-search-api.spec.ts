@@ -122,7 +122,7 @@ test.describe.parallel('Get Process instance Tests', () => {
         expect(json.page.totalItems).toBeDefined();
         expect(json.items).toBeDefined();
         expect(json.page.totalItems).toBe(1);
-        expect(json.items.length).toBe(1);
+        expect(json.items).toHaveLength(1);
         expect(json.items[0].processDefinitionId).toBe(
           'process_with_task_listener',
         );
@@ -214,7 +214,7 @@ test.describe.parallel('Get Process instance Tests', () => {
         );
         const json = await res.json();
         expect(json.page.totalItems).toBe(2);
-        expect(json.items.length).toBe(2);
+        expect(json.items).toHaveLength(2);
         expect(json.items[0].processDefinitionId).toBe(
           'process_with_task_listener',
         );
@@ -273,6 +273,6 @@ test.describe.parallel('Get Process instance Tests', () => {
     );
     const json = await res.json();
     expect(json.page.totalItems).toBe(0);
-    expect(json.items.length).toBe(0);
+    expect(json.items).toHaveLength(0);
   });
 });

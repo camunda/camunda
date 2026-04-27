@@ -7,9 +7,9 @@
  */
 package io.camunda.exporter.tasks.batchoperations;
 
-import io.camunda.exporter.tasks.BackgroundTask;
 import io.camunda.exporter.tasks.batchoperations.BatchOperationUpdateRepository.DocumentUpdate;
 import io.camunda.exporter.tasks.batchoperations.BatchOperationUpdateRepository.OperationsAggData;
+import io.camunda.zeebe.exporter.common.tasks.BackgroundTask;
 import io.camunda.zeebe.util.FunctionUtil;
 import java.util.Collection;
 import java.util.List;

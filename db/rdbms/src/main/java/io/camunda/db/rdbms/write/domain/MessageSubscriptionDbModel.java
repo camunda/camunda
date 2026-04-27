@@ -7,9 +7,12 @@
  */
 package io.camunda.db.rdbms.write.domain;
 
+import io.camunda.db.rdbms.write.util.MapSerializer;
 import io.camunda.search.entities.MessageSubscriptionEntity.MessageSubscriptionState;
+import io.camunda.search.entities.MessageSubscriptionEntity.MessageSubscriptionType;
 import io.camunda.util.ObjectBuilder;
 import java.time.OffsetDateTime;
+import java.util.Map;
 import java.util.function.Function;
 
 public class MessageSubscriptionDbModel implements Copyable<MessageSubscriptionDbModel> {
@@ -21,11 +24,18 @@ public class MessageSubscriptionDbModel implements Copyable<MessageSubscriptionD
   private String flowNodeId;
   private Long flowNodeInstanceKey;
   private MessageSubscriptionState messageSubscriptionState;
+  private MessageSubscriptionType messageSubscriptionType;
   private OffsetDateTime dateTime;
   private String messageName;
   private String correlationKey;
   private String tenantId;
   private int partitionId;
+  private String processDefinitionName;
+  private Integer processDefinitionVersion;
+  private String serializedExtensionProperties;
+  private Map<String, String> extensionProperties;
+  private String toolName;
+  private String inboundConnectorType;
 
   public MessageSubscriptionDbModel(final Long messageSubscriptionKey) {
     this.messageSubscriptionKey = messageSubscriptionKey;
@@ -40,11 +50,17 @@ public class MessageSubscriptionDbModel implements Copyable<MessageSubscriptionD
       final String flowNodeId,
       final Long flowNodeInstanceKey,
       final MessageSubscriptionState messageSubscriptionState,
+      final MessageSubscriptionType messageSubscriptionType,
       final OffsetDateTime dateTime,
       final String messageName,
       final String correlationKey,
       final String tenantId,
-      final int partitionId) {
+      final int partitionId,
+      final String processDefinitionName,
+      final Integer processDefinitionVersion,
+      final Map<String, String> extensionProperties,
+      final String toolName,
+      final String inboundConnectorType) {
     this.messageSubscriptionKey = messageSubscriptionKey;
     this.processDefinitionId = processDefinitionId;
     this.processDefinitionKey = processDefinitionKey;
@@ -53,11 +69,18 @@ public class MessageSubscriptionDbModel implements Copyable<MessageSubscriptionD
     this.flowNodeId = flowNodeId;
     this.flowNodeInstanceKey = flowNodeInstanceKey;
     this.messageSubscriptionState = messageSubscriptionState;
+    this.messageSubscriptionType = messageSubscriptionType;
     this.dateTime = dateTime;
     this.messageName = messageName;
     this.correlationKey = correlationKey;
     this.tenantId = tenantId;
     this.partitionId = partitionId;
+    this.processDefinitionName = processDefinitionName;
+    this.processDefinitionVersion = processDefinitionVersion;
+    serializedExtensionProperties = MapSerializer.serialize(extensionProperties);
+    this.extensionProperties = extensionProperties;
+    this.toolName = toolName;
+    this.inboundConnectorType = inboundConnectorType;
   }
 
   public Long messageSubscriptionKey() {
@@ -124,6 +147,59 @@ public class MessageSubscriptionDbModel implements Copyable<MessageSubscriptionD
     this.messageSubscriptionState = messageSubscriptionState;
   }
 
+  public MessageSubscriptionType messageSubscriptionType() {
+    return messageSubscriptionType;
+  }
+
+  public void messageSubscriptionType(final MessageSubscriptionType messageSubscriptionType) {
+    this.messageSubscriptionType = messageSubscriptionType;
+  }
+
+  public String processDefinitionName() {
+    return processDefinitionName;
+  }
+
+  public void processDefinitionName(final String processDefinitionName) {
+    this.processDefinitionName = processDefinitionName;
+  }
+
+  public Integer processDefinitionVersion() {
+    return processDefinitionVersion;
+  }
+
+  public void processDefinitionVersion(final Integer processDefinitionVersion) {
+    this.processDefinitionVersion = processDefinitionVersion;
+  }
+
+  public String serializedExtensionProperties() {
+    return serializedExtensionProperties;
+  }
+
+  public void setSerializedExtensionProperties(final String serializedExtensionProperties) {
+    this.serializedExtensionProperties = serializedExtensionProperties;
+    extensionProperties = MapSerializer.deserialize(serializedExtensionProperties);
+  }
+
+  public Map<String, String> extensionProperties() {
+    return extensionProperties;
+  }
+
+  public String toolName() {
+    return toolName;
+  }
+
+  public void toolName(final String toolName) {
+    this.toolName = toolName;
+  }
+
+  public String inboundConnectorType() {
+    return inboundConnectorType;
+  }
+
+  public void inboundConnectorType(final String inboundConnectorType) {
+    this.inboundConnectorType = inboundConnectorType;
+  }
+
   public OffsetDateTime dateTime() {
     return dateTime;
   }
@@ -183,11 +259,17 @@ public class MessageSubscriptionDbModel implements Copyable<MessageSubscriptionD
         .flowNodeId(flowNodeId)
         .flowNodeInstanceKey(flowNodeInstanceKey)
         .messageSubscriptionState(messageSubscriptionState)
+        .messageSubscriptionType(messageSubscriptionType)
         .dateTime(dateTime)
         .messageName(messageName)
         .correlationKey(correlationKey)
         .tenantId(tenantId)
-        .partitionId(partitionId);
+        .partitionId(partitionId)
+        .processDefinitionName(processDefinitionName)
+        .processDefinitionVersion(processDefinitionVersion)
+        .extensionProperties(extensionProperties)
+        .toolName(toolName)
+        .inboundConnectorType(inboundConnectorType);
   }
 
   public static class Builder implements ObjectBuilder<MessageSubscriptionDbModel> {
@@ -199,11 +281,17 @@ public class MessageSubscriptionDbModel implements Copyable<MessageSubscriptionD
     private String flowNodeId;
     private Long flowNodeInstanceKey;
     private MessageSubscriptionState messageSubscriptionState;
+    private MessageSubscriptionType messageSubscriptionType;
     private OffsetDateTime dateTime;
     private String messageName;
     private String correlationKey;
     private String tenantId;
     private int partitionId;
+    private String processDefinitionName;
+    private Integer processDefinitionVersion;
+    private Map<String, String> extensionProperties;
+    private String toolName;
+    private String inboundConnectorType;
 
     public Builder messageSubscriptionKey(final Long messageSubscriptionKey) {
       this.messageSubscriptionKey = messageSubscriptionKey;
@@ -246,6 +334,36 @@ public class MessageSubscriptionDbModel implements Copyable<MessageSubscriptionD
       return this;
     }
 
+    public Builder messageSubscriptionType(final MessageSubscriptionType messageSubscriptionType) {
+      this.messageSubscriptionType = messageSubscriptionType;
+      return this;
+    }
+
+    public Builder processDefinitionName(final String processDefinitionName) {
+      this.processDefinitionName = processDefinitionName;
+      return this;
+    }
+
+    public Builder processDefinitionVersion(final Integer processDefinitionVersion) {
+      this.processDefinitionVersion = processDefinitionVersion;
+      return this;
+    }
+
+    public Builder extensionProperties(final Map<String, String> extensionProperties) {
+      this.extensionProperties = extensionProperties;
+      return this;
+    }
+
+    public Builder toolName(final String toolName) {
+      this.toolName = toolName;
+      return this;
+    }
+
+    public Builder inboundConnectorType(final String inboundConnectorType) {
+      this.inboundConnectorType = inboundConnectorType;
+      return this;
+    }
+
     public Builder dateTime(final OffsetDateTime dateTime) {
       this.dateTime = dateTime;
       return this;
@@ -282,11 +400,17 @@ public class MessageSubscriptionDbModel implements Copyable<MessageSubscriptionD
           flowNodeId,
           flowNodeInstanceKey,
           messageSubscriptionState,
+          messageSubscriptionType,
           dateTime,
           messageName,
           correlationKey,
           tenantId,
-          partitionId);
+          partitionId,
+          processDefinitionName,
+          processDefinitionVersion,
+          extensionProperties,
+          toolName,
+          inboundConnectorType);
     }
   }
 }

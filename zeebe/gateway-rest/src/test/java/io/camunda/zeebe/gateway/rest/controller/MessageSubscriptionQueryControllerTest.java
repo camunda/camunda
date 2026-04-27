@@ -43,12 +43,18 @@ public class MessageSubscriptionQueryControllerTest extends RestControllerTest {
                   "elementId": "Activity_1ludhs2",
                   "elementInstanceKey": "2251799813685853",
                   "messageSubscriptionState": "CREATED",
+                  "messageSubscriptionType": "PROCESS_EVENT",
                   "lastUpdatedDate": "2025-07-05T12:11:00.975Z",
                   "messageName": "Message_1f8cu1e",
                   "correlationKey": "test",
                   "tenantId": "test-tenant",
                   "processDefinitionKey": null,
-                  "rootProcessInstanceKey": null
+                  "rootProcessInstanceKey": null,
+                  "extensionProperties": {},
+                  "processDefinitionName": null,
+                  "processDefinitionVersion": null,
+                  "toolName": null,
+                  "inboundConnectorType": null
                 }
             ],
             "page": {
@@ -73,6 +79,8 @@ public class MessageSubscriptionQueryControllerTest extends RestControllerTest {
                       .flowNodeInstanceKey(2251799813685853L)
                       .messageSubscriptionState(
                           MessageSubscriptionEntity.MessageSubscriptionState.CREATED)
+                      .messageSubscriptionType(
+                          MessageSubscriptionEntity.MessageSubscriptionType.PROCESS_EVENT)
                       .dateTime(OffsetDateTime.parse("2025-07-05T12:11:00.975Z"))
                       .messageName("Message_1f8cu1e")
                       .correlationKey("test")
@@ -203,15 +211,21 @@ public class MessageSubscriptionQueryControllerTest extends RestControllerTest {
             {
               "filter": {
                 "messageSubscriptionKey": "123",
+                "processDefinitionKey": "2251799813685848",
                 "processDefinitionId": "gg_msg_receive_id",
+                "processDefinitionName": "Receive message process",
+                "processDefinitionVersion": 7,
                 "processInstanceKey": "2251799813685849",
                 "elementId": "Activity_1ludhs2",
                 "elementInstanceKey": "2251799813685853",
                 "messageSubscriptionState": "CREATED",
+                "messageSubscriptionType": "PROCESS_EVENT",
                 "lastUpdatedDate": "2025-07-05T12:11:00.975Z",
                 "correlationKey": "test",
                 "messageName": "test-message",
-                "tenantId": "test-tenant"
+                "tenantId": "test-tenant",
+                "toolName": "myTool",
+                "inboundConnectorType": "io.camunda:http-webhook:1"
               }
             }""")
         .exchange()
@@ -229,17 +243,25 @@ public class MessageSubscriptionQueryControllerTest extends RestControllerTest {
                     .filter(
                         f ->
                             f.messageSubscriptionKeys(123L)
+                                .processDefinitionKeys(2251799813685848L)
                                 .processDefinitionIds("gg_msg_receive_id")
+                                .processDefinitionNames("Receive message process")
+                                .processDefinitionVersions(7)
                                 .processInstanceKeys(2251799813685849L)
                                 .flowNodeIds("Activity_1ludhs2")
                                 .flowNodeInstanceKeys(2251799813685853L)
                                 .messageSubscriptionStates(
                                     MessageSubscriptionEntity.MessageSubscriptionState.CREATED
                                         .name())
+                                .messageSubscriptionTypes(
+                                    MessageSubscriptionEntity.MessageSubscriptionType.PROCESS_EVENT
+                                        .name())
                                 .dateTimes(OffsetDateTime.parse("2025-07-05T12:11:00.975Z"))
                                 .correlationKeys("test")
                                 .messageNames("test-message")
-                                .tenantIds("test-tenant"))
+                                .tenantIds("test-tenant")
+                                .toolNames("myTool")
+                                .inboundConnectorTypes("io.camunda:http-webhook:1"))
                     .build()),
             any());
   }
@@ -268,6 +290,14 @@ public class MessageSubscriptionQueryControllerTest extends RestControllerTest {
                   "order": "desc"
                 },
                 {
+                  "field": "processDefinitionName",
+                  "order": "asc"
+                },
+                {
+                  "field": "processDefinitionVersion",
+                  "order": "desc"
+                },
+                {
                   "field": "processInstanceKey",
                   "order": "desc"
                 },
@@ -284,6 +314,10 @@ public class MessageSubscriptionQueryControllerTest extends RestControllerTest {
                   "order": "asc"
                 },
                 {
+                  "field": "messageSubscriptionType",
+                  "order": "desc"
+                },
+                {
                   "field": "lastUpdatedDate",
                   "order": "desc"
                 },
@@ -298,6 +332,14 @@ public class MessageSubscriptionQueryControllerTest extends RestControllerTest {
                 {
                   "field": "tenantId",
                   "order": "asc"
+                },
+                {
+                  "field": "toolName",
+                  "order": "asc"
+                },
+                {
+                  "field": "inboundConnectorType",
+                  "order": "desc"
                 }
               ]
             }""")
@@ -319,6 +361,10 @@ public class MessageSubscriptionQueryControllerTest extends RestControllerTest {
                                 .asc()
                                 .processDefinitionId()
                                 .desc()
+                                .processDefinitionName()
+                                .asc()
+                                .processDefinitionVersion()
+                                .desc()
                                 .processInstanceKey()
                                 .desc()
                                 .flowNodeId()
@@ -327,6 +373,8 @@ public class MessageSubscriptionQueryControllerTest extends RestControllerTest {
                                 .desc()
                                 .messageSubscriptionState()
                                 .asc()
+                                .messageSubscriptionType()
+                                .desc()
                                 .dateTime()
                                 .desc()
                                 .correlationKey()
@@ -334,7 +382,11 @@ public class MessageSubscriptionQueryControllerTest extends RestControllerTest {
                                 .messageName()
                                 .desc()
                                 .tenantId()
-                                .asc())
+                                .asc()
+                                .toolName()
+                                .asc()
+                                .inboundConnectorType()
+                                .desc())
                     .build()),
             any());
   }

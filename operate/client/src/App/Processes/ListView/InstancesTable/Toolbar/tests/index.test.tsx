@@ -6,11 +6,11 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {render, screen} from 'modules/testing-library';
+import {render, screen, within} from 'modules/testing-library';
 import {Toolbar} from '../index';
 import {MemoryRouter} from 'react-router-dom';
 import {batchModificationStore} from 'modules/stores/batchModification';
-import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelection';
+import {processInstancesSelectionStore} from 'modules/stores/instancesSelection';
 import {panelStatesStore} from 'modules/stores/panelStates';
 import {notificationsStore} from 'modules/stores/notifications';
 import {variableFilterStore} from 'modules/stores/variableFilter';
@@ -18,6 +18,7 @@ import {QueryClientProvider} from '@tanstack/react-query';
 import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 import {mockCancelProcessInstancesBatchOperation} from 'modules/mocks/api/v2/processes/cancelProcessInstancesBatchOperation';
 import {mockResolveProcessInstancesIncidentsBatchOperation} from 'modules/mocks/api/v2/processes/resolveProcessInstancesIncidentsBatchOperation';
+import {mockDeleteProcessInstancesBatchOperation} from 'modules/mocks/api/v2/processes/deleteProcessInstancesBatchOperation';
 import {mockQueryBatchOperations} from 'modules/mocks/api/v2/batchOperations/queryBatchOperations';
 import {tracking} from 'modules/tracking';
 
@@ -68,6 +69,10 @@ describe('<ProcessOperations />', () => {
       batchOperationKey: 'resolve-operation-456',
       batchOperationType: 'RESOLVE_INCIDENT',
     });
+    mockDeleteProcessInstancesBatchOperation().withSuccess({
+      batchOperationKey: 'delete-operation-789',
+      batchOperationType: 'DELETE_PROCESS_INSTANCE',
+    });
     mockQueryBatchOperations().withSuccess({
       items: [],
       page: {
@@ -80,12 +85,13 @@ describe('<ProcessOperations />', () => {
 
     processInstancesSelectionStore.init();
     processInstancesSelectionStore.setRuntime({
-      totalProcessInstancesCount: 2,
+      totalCount: 2,
       visibleIds: ['1', '2'],
       visibleRunningIds: ['1', '2'],
+      visibleFinishedIds: [],
     });
-    processInstancesSelectionStore.selectProcessInstance('1');
-    processInstancesSelectionStore.selectProcessInstance('2');
+    processInstancesSelectionStore.select('1');
+    processInstancesSelectionStore.select('2');
   });
 
   afterEach(() => {
@@ -118,6 +124,7 @@ describe('<ProcessOperations />', () => {
 
     expect(screen.getAllByRole('button', {name: 'Cancel'}).length).toBe(2);
     expect(screen.getByRole('button', {name: 'Retry'})).toBeInTheDocument();
+    expect(screen.getByRole('button', {name: 'Delete'})).toBeInTheDocument();
     expect(screen.getByRole('button', {name: 'Discard'})).toBeInTheDocument();
     expect(screen.getByText('1 item selected')).toBeInTheDocument();
 
@@ -126,7 +133,7 @@ describe('<ProcessOperations />', () => {
     expect(screen.getByText('10 items selected')).toBeInTheDocument();
   });
 
-  it('should disable cancel and retry in batch modification mode', async () => {
+  it('should disable cancel, delete and retry in batch modification mode', async () => {
     const {user} = render(<Toolbar selectedInstancesCount={1} />, {
       wrapper: Wrapper,
     });
@@ -145,6 +152,12 @@ describe('<ProcessOperations />', () => {
       screen.getByRole('button', {
         description: 'Not available in batch modification mode',
         name: 'Retry',
+      }),
+    ).toBeDisabled();
+    expect(
+      screen.getByRole('button', {
+        description: 'Not available in batch modification mode',
+        name: 'Delete',
       }),
     ).toBeDisabled();
     expect(screen.getByRole('button', {name: 'Discard'})).toBeEnabled();
@@ -198,6 +211,46 @@ describe('<ProcessOperations />', () => {
     expect(trackSpy).toHaveBeenCalledWith({
       eventName: 'batch-operation',
       operationType: 'RESOLVE_INCIDENT',
+    });
+
+    expect(notificationsStore.displayNotification).toHaveBeenCalledWith(
+      expect.objectContaining({
+        kind: 'success',
+      }),
+    );
+    expect(notificationsStore.displayNotification).not.toHaveBeenCalledWith(
+      expect.objectContaining({kind: 'error'}),
+    );
+
+    vi.useRealTimers();
+  });
+
+  it('should perform delete batch operation successfully', async () => {
+    vi.useFakeTimers({shouldAdvanceTime: true});
+
+    const trackSpy = vi.spyOn(tracking, 'track');
+
+    processInstancesSelectionStore.setRuntime({
+      totalCount: 2,
+      visibleIds: ['1', '2'],
+      visibleRunningIds: [],
+      visibleFinishedIds: ['1', '2'],
+    });
+
+    const {user} = render(<Toolbar selectedInstancesCount={2} />, {
+      wrapper: Wrapper,
+    });
+
+    await user.click(screen.getByTestId('delete-batch-operation'));
+
+    const modal = screen.getByRole('dialog');
+    await user.click(within(modal).getByRole('button', {name: /delete/i}));
+
+    vi.runOnlyPendingTimers();
+
+    expect(trackSpy).toHaveBeenCalledWith({
+      eventName: 'batch-operation',
+      operationType: 'DELETE_PROCESS_INSTANCE',
     });
 
     expect(notificationsStore.displayNotification).toHaveBeenCalledWith(

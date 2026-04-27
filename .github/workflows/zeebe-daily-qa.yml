@@ -31,13 +31,13 @@ jobs:
     outputs:
       matrix: ${{ steps.set-matrix.outputs.matrix }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - name: Set stable/8.* branches as JSON array of strings
         id: set-matrix
         run: |
           # List all `stable/8.*` branches
           # Sort them in desc order
-          # Exclude versions that don't require daily QA - for example, 8.5 in extended support
+          # Exclude versions that don't require daily QA - for example, 8.6 in extended support
           # Remove the `origin/` prefix
           # Transform to json-formatted objects with branch and generation_template fields
           # Transform them to json-formatted array of those objects
@@ -47,6 +47,7 @@ jobs:
               | sort -Vr \
               | grep -v '^stable/8.4$' \
               | grep -v '^stable/8.5$' \
+              | grep -v '^stable/8.6$' \
               | while read -r branch; do
                   version="${branch#stable/}"
                   printf '{"branch":"%s","generation_template":"Camunda %s+gen1"}\n' "$branch" "$version"
@@ -80,7 +81,7 @@ jobs:
     runs-on: ubuntu-latest
     name: Daily QA
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - name: Print branch and template
         run: |
           echo "Branch: ${{ matrix.branch }}"

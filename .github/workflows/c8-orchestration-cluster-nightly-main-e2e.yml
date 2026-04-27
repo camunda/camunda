@@ -1,0 +1,22 @@
+# description: Nightly E2E tests for main (Tasklist V2 only — V1 is removed from main).
+# test location: /qa/c8-orchestration-cluster-e2e-test-suite
+# type: CI
+# owner: @camunda/test-automation-team
+---
+name: C8 Orchestration Cluster Nightly main - E2E Tests
+
+on:
+  schedule:
+    - cron: "45 1 * * *"
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  nightly-e2e-tests-v2:
+    uses: ./.github/workflows/c8-orchestration-cluster-reusable-e2e-tests.yml
+    with:
+      branch: main
+      tasklist_mode: v2
+    secrets: inherit

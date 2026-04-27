@@ -16,7 +16,7 @@
 package io.camunda.client.jobhandling;
 
 import io.camunda.client.api.command.CompleteJobCommandStep1;
-import io.camunda.client.api.command.FinalCommandStep;
+import io.camunda.client.api.command.JobCallbackFinalCommandStep;
 import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.client.api.response.CompleteJobResponse;
 import io.camunda.client.api.worker.JobClient;
@@ -41,28 +41,28 @@ public class JobHandlerInvokingBeans implements JobHandler {
   private final BeanMethod method;
   private final boolean autoComplete;
   private final int maxRetries;
-  private final CommandExceptionHandlingStrategy commandExceptionHandlingStrategy;
   private final MetricsRecorder metricsRecorder;
   private final List<ParameterResolver> parameterResolvers;
   private final ResultProcessor resultProcessor;
+  private final JobCallbackCommandWrapperFactory jobCallbackCommandWrapperFactory;
 
   public JobHandlerInvokingBeans(
       final String jobWorkerName,
       final BeanMethod method,
       final boolean autoComplete,
       final int maxRetries,
-      final CommandExceptionHandlingStrategy commandExceptionHandlingStrategy,
       final MetricsRecorder metricsRecorder,
       final List<ParameterResolver> parameterResolvers,
-      final ResultProcessor resultProcessor) {
+      final ResultProcessor resultProcessor,
+      final JobCallbackCommandWrapperFactory jobCallbackCommandWrapperFactory) {
     this.jobWorkerName = jobWorkerName;
     this.method = method;
     this.autoComplete = autoComplete;
     this.maxRetries = maxRetries;
-    this.commandExceptionHandlingStrategy = commandExceptionHandlingStrategy;
     this.metricsRecorder = metricsRecorder;
     this.parameterResolvers = parameterResolvers;
     this.resultProcessor = resultProcessor;
+    this.jobCallbackCommandWrapperFactory = jobCallbackCommandWrapperFactory;
   }
 
   @Override
@@ -78,10 +78,12 @@ public class JobHandlerInvokingBeans implements JobHandler {
         resultProcessor.process(new ResultProcessorContext(methodInvocationResult, job));
     if (autoComplete) {
       LOG.trace("Auto completing {}", job);
-      final CommandWrapper command =
+      final JobCallbackCommandWrapper command =
           createCommandWrapper(
-              createCompleteCommand(jobClient, job, result), job, counterMetricsContext);
-      command.executeAsyncWithMetrics(MetricsRecorder::increaseCompleted);
+              createCompleteCommand(jobClient, job, result),
+              job.getDeadline(),
+              counterMetricsContext);
+      command.executeAsync();
     } else {
       if (result != null) {
         LOG.warn("Result provided but auto complete disabled for job {}", job);
@@ -89,24 +91,18 @@ public class JobHandlerInvokingBeans implements JobHandler {
     }
   }
 
-  private CommandWrapper createCommandWrapper(
-      final FinalCommandStep<?> command,
-      final ActivatedJob job,
+  private JobCallbackCommandWrapper createCommandWrapper(
+      final JobCallbackFinalCommandStep<?> command,
+      final long deadline,
       final CounterMetricsContext metricsContext) {
-    return new CommandWrapper(
-        command,
-        job,
-        commandExceptionHandlingStrategy,
-        metricsRecorder,
-        metricsContext,
-        maxRetries);
+    return jobCallbackCommandWrapperFactory.create(command, deadline, metricsContext, maxRetries);
   }
 
   private List<Object> createParameters(final JobClient jobClient, final ActivatedJob job) {
     return parameterResolvers.stream().map(resolver -> resolver.resolve(jobClient, job)).toList();
   }
 
-  private FinalCommandStep<CompleteJobResponse> createCompleteCommand(
+  private JobCallbackFinalCommandStep<CompleteJobResponse> createCompleteCommand(
       final JobClient jobClient, final ActivatedJob job, final Object result) {
     final CompleteJobCommandStep1 completeCommand = jobClient.newCompleteCommand(job.getKey());
     if (result instanceof final UserTaskResultFunction resultFunction) {

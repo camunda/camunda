@@ -1,8 +1,9 @@
 {
-  "extends": "./tsconfig.app.json",
+  "extends": "./tsconfig.base.json",
   "compilerOptions": {
     "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.vitest.tsbuildinfo",
-    "types": ["vitest/globals", "@testing-library/jest-dom", "node"]
+    "types": ["vitest/globals", "@testing-library/jest-dom", "node"],
+    "baseUrl": "src"
   },
   "include": [
     "src/**/*",

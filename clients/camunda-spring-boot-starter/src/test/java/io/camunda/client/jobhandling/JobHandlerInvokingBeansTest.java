@@ -53,6 +53,7 @@ import io.camunda.client.spring.testsupport.JobWorkerPermutationsUtil;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -72,15 +73,15 @@ public class JobHandlerInvokingBeansTest {
     final JobHandler jobHandler =
         new BeanJobHandlerFactory(
                 methodInfo(testDimension),
-                commandExceptionHandlingStrategy(),
                 parameterResolverStrategy(),
                 resultProcessorStrategy(),
-                metricsRecorder())
+                metricsRecorder(),
+                jobCallbackCommandWrapperFactory())
             .getJobHandler(new JobHandlerFactoryContext(jobWorkerValue, mock(CamundaClient.class)));
     final JobClient jobClient = mock(JobClient.class);
     final CompleteJobCommandStep1 completeJobCommandStep1 = mock(CompleteJobCommandStep1.class);
     final CamundaFuture<CompleteJobResponse> future = mock(CamundaFuture.class);
-    when(future.thenApply(any())).thenReturn(mock(CompletionStage.class));
+    when(future.thenAccept(any())).thenReturn(mock(CompletionStage.class));
     when(completeJobCommandStep1.variables(any(JobResponse.class)))
         .thenReturn(completeJobCommandStep1);
     when(completeJobCommandStep1.send()).thenReturn(future);
@@ -102,10 +103,10 @@ public class JobHandlerInvokingBeansTest {
     final JobHandler jobHandler =
         new BeanJobHandlerFactory(
                 methodInfo(testDimension),
-                commandExceptionHandlingStrategy(),
                 parameterResolverStrategy(),
                 resultProcessorStrategy(),
-                metricsRecorder())
+                metricsRecorder(),
+                jobCallbackCommandWrapperFactory())
             .getJobHandler(new JobHandlerFactoryContext(jobWorkerValue, mock(CamundaClient.class)));
     final JobClient jobClient = mock(JobClient.class);
     final ActivatedJob job = mock(ActivatedJob.class);
@@ -124,10 +125,10 @@ public class JobHandlerInvokingBeansTest {
     final JobHandler jobHandler =
         new BeanJobHandlerFactory(
                 methodInfo(testDimension),
-                commandExceptionHandlingStrategy(),
                 parameterResolverStrategy(),
                 resultProcessorStrategy(),
-                metricsRecorder())
+                metricsRecorder(),
+                jobCallbackCommandWrapperFactory())
             .getJobHandler(new JobHandlerFactoryContext(jobWorkerValue, mock(CamundaClient.class)));
 
     final JobClient jobClient = mock(JobClient.class);
@@ -147,10 +148,10 @@ public class JobHandlerInvokingBeansTest {
     final JobHandler jobHandler =
         new BeanJobHandlerFactory(
                 methodInfo(testDimension),
-                commandExceptionHandlingStrategy(),
                 parameterResolverStrategy(),
                 resultProcessorStrategy(),
-                metricsRecorder())
+                metricsRecorder(),
+                jobCallbackCommandWrapperFactory())
             .getJobHandler(new JobHandlerFactoryContext(jobWorkerValue, mock(CamundaClient.class)));
 
     final JobClient jobClient = mock(JobClient.class);
@@ -203,10 +204,17 @@ public class JobHandlerInvokingBeansTest {
     return arguments.stream();
   }
 
-  private static CommandExceptionHandlingStrategy commandExceptionHandlingStrategy() {
-    return new DefaultCommandExceptionHandlingStrategy(
-        BackoffSupplier.newBackoffBuilder().build(),
-        CamundaClientExecutorService.createDefault().getScheduledExecutor());
+  private static BackoffSupplier backoffSupplier() {
+    return BackoffSupplier.newBackoffBuilder().build();
+  }
+
+  private static ScheduledExecutorService scheduledExecutorService() {
+    return mock(ScheduledExecutorService.class);
+  }
+
+  private static JobCallbackCommandWrapperFactory jobCallbackCommandWrapperFactory() {
+    return new JobCallbackCommandWrapperFactory(
+        backoffSupplier(), scheduledExecutorService(), metricsRecorder());
   }
 
   private static MetricsRecorder metricsRecorder() {

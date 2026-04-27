@@ -33,6 +33,7 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
+      x-added-in-version: "8.6"
 
   /messages/correlation:
     post:
@@ -73,6 +74,7 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
+      x-added-in-version: "8.6"
 
   /message-subscriptions/search:
     post:
@@ -81,7 +83,20 @@ paths:
         - Message subscription
       operationId: searchMessageSubscriptions
       summary: Search message subscriptions
-      description: Search for message subscriptions based on given criteria.
+      description: |
+        Search for message subscriptions based on given criteria.
+
+        By default, both start and intermediate event subscriptions are returned. Use the
+        `messageSubscriptionType` filter to restrict results to a single type.
+
+        **Version notes:**
+        - Start event subscriptions are only captured for deployments made with 8.10 or later.
+        - The `messageSubscriptionType` field is only populated for data created
+          with Camunda 8.10 or later. For pre-8.10 data, intermediate event entries have no
+          `messageSubscriptionType` value stored. For convenience, the API returns `PROCESS_EVENT`
+          as a default for such search results, though.
+        - Searching for intermediate event subscriptions **including legacy data** can be achieved
+          by filtering for `messageSubscriptionType` not matching `START_EVENT`.
       requestBody:
         required: false
         content:
@@ -103,6 +118,7 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/Forbidden'
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+      x-added-in-version: "8.8"
 
   /correlated-message-subscriptions/search:
     post:
@@ -133,6 +149,7 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/Forbidden'
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+      x-added-in-version: "8.8"
 
 ## Schema definitions
 
@@ -254,14 +271,20 @@ components:
         - correlationKey
         - elementId
         - elementInstanceKey
+        - extensionProperties
+        - inboundConnectorType
         - lastUpdatedDate
         - messageName
         - messageSubscriptionKey
         - messageSubscriptionState
+        - messageSubscriptionType
         - processDefinitionId
         - processDefinitionKey
+        - processDefinitionName
+        - processDefinitionVersion
         - processInstanceKey
         - tenantId
+        - toolName
       properties:
         messageSubscriptionKey:
           allOf:
@@ -280,7 +303,9 @@ components:
           allOf:
             - $ref: 'keys.yaml#/components/schemas/ProcessInstanceKey'
           nullable: true
-          description: The process instance key associated with this message subscription.
+          description: |
+            The process instance key associated with this message subscription.
+            Only populated for intermediate event entities.
         rootProcessInstanceKey:
           description: |
             The key of the root process instance. The root process instance is the top-level
@@ -297,7 +322,9 @@ components:
           allOf:
             - $ref: 'keys.yaml#/components/schemas/ElementInstanceKey'
           nullable: true
-          description: The element instance key associated with this message subscription.
+          description: |
+            The element instance key associated with this message subscription.
+            Only populated for intermediate event entities.
         messageSubscriptionState:
           $ref: '#/components/schemas/MessageSubscriptionStateEnum'
         lastUpdatedDate:
@@ -311,6 +338,36 @@ components:
           type: string
           nullable: true
           description: The correlation key of the message subscription.
+        messageSubscriptionType:
+          $ref: '#/components/schemas/MessageSubscriptionTypeEnum'
+        extensionProperties:
+          type: object
+          additionalProperties:
+            type: string
+          description: |
+            The `zeebe:properties` extension properties extracted from the BPMN element associated
+            with this subscription. Empty object when no properties are defined.
+        processDefinitionName:
+          type: string
+          nullable: true
+          description: The name of the process definition associated with this message subscription.
+        processDefinitionVersion:
+          type: integer
+          format: int32
+          nullable: true
+          description: The version of the process definition associated with this message subscription.
+        toolName:
+          type: string
+          nullable: true
+          description: |
+            Tool name extracted from the `io.camunda.tool:name` zeebe:property.
+            Null when the property is absent.
+        inboundConnectorType:
+          type: string
+          nullable: true
+          description: |
+            Inbound connector type extracted from the `inbound.type` zeebe:property.
+            Null when the property is absent.
         tenantId:
           $ref: 'identifiers.yaml#/components/schemas/TenantId'
 
@@ -323,14 +380,19 @@ components:
           enum:
             - messageSubscriptionKey
             - processDefinitionId
+            - processDefinitionName
+            - processDefinitionVersion
             - processInstanceKey
             - elementId
             - elementInstanceKey
             - messageSubscriptionState
+            - messageSubscriptionType
             - lastUpdatedDate
             - messageName
             - correlationKey
             - tenantId
+            - toolName
+            - inboundConnectorType
         order:
           $ref: 'search-models.yaml#/components/schemas/SortOrderEnum'
       required:
@@ -400,6 +462,29 @@ components:
           allOf:
             - $ref: 'filters.yaml#/components/schemas/StringFilterProperty'
           description: The unique external tenant ID.
+        messageSubscriptionType:
+          allOf:
+            - $ref: '#/components/schemas/MessageSubscriptionTypeFilterProperty'
+          description: |
+            The type of message subscription to filter by. When omitted, both
+            `START_EVENT` and `PROCESS_EVENT` are returned. Only available for data
+            created with Camunda 8.10 or later.
+        processDefinitionName:
+          allOf:
+            - $ref: 'filters.yaml#/components/schemas/StringFilterProperty'
+          description: The name of the process definition associated with this message subscription.
+        processDefinitionVersion:
+          allOf:
+            - $ref: 'filters.yaml#/components/schemas/IntegerFilterProperty'
+          description: The version of the process definition associated with this message subscription.
+        toolName:
+          allOf:
+            - $ref: 'filters.yaml#/components/schemas/StringFilterProperty'
+          description: Filter by tool name extracted from the `io.camunda.tool:name` zeebe:property.
+        inboundConnectorType:
+          allOf:
+            - $ref: 'filters.yaml#/components/schemas/StringFilterProperty'
+          description: Filter by inbound connector type extracted from the `inbound.type` zeebe:property.
 
     CorrelatedMessageSubscriptionSearchQueryResult:
       required:
@@ -540,6 +625,18 @@ components:
         - DELETED
         - MIGRATED
 
+    MessageSubscriptionTypeEnum:
+      description: |
+        The type of message subscription.
+        `START_EVENT` is definition-scoped (process start events). Always has a value; only
+        captured from Camunda 8.10 onwards.
+        `PROCESS_EVENT` is instance-scoped (intermediate catch events). Pre-8.10 entries have
+        no value stored; the API returns `PROCESS_EVENT` as a default for those entries.
+      type: string
+      enum:
+        - START_EVENT
+        - PROCESS_EVENT
+
     ## Filters
 
     CorrelatedMessageSubscriptionFilter:
@@ -594,6 +691,40 @@ components:
           allOf:
             - $ref: 'filters.yaml#/components/schemas/StringFilterProperty'
           description: The tenant ID associated with this correlated message subscription.
+
+    MessageSubscriptionTypeFilterProperty:
+      description: MessageSubscriptionTypeEnum with full advanced search capabilities.
+      oneOf:
+        - type: string
+          title: Exact match
+          description: Matches the value exactly.
+          allOf:
+            - $ref: "#/components/schemas/MessageSubscriptionTypeEnum"
+        - $ref: '#/components/schemas/AdvancedMessageSubscriptionTypeFilter'
+
+    AdvancedMessageSubscriptionTypeFilter:
+      title: Advanced filter
+      description: Advanced MessageSubscriptionTypeEnum filter
+      type: object
+      properties:
+        $eq:
+          description: Checks for equality with the provided value.
+          allOf:
+            - $ref: "#/components/schemas/MessageSubscriptionTypeEnum"
+        $neq:
+          description: Checks for inequality with the provided value.
+          allOf:
+            - $ref: "#/components/schemas/MessageSubscriptionTypeEnum"
+        $exists:
+          description: Checks if the current property exists.
+          type: boolean
+        $in:
+          description: Checks if the property matches any of the provided values.
+          type: array
+          items:
+            $ref: "#/components/schemas/MessageSubscriptionTypeEnum"
+        $like:
+          $ref: "filters.yaml#/components/schemas/LikeFilter"
 
     MessageSubscriptionStateFilterProperty:
       description: MessageSubscriptionStateEnum with full advanced search capabilities.

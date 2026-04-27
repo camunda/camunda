@@ -87,13 +87,14 @@ All components are configured in `camunda-platform-values.yaml`.
 If you run `newLoadTest.sh` without arguments, it will display the following help message.
 
 ```sh
-Usage: newLoadTest.sh <namespace> [secondaryStorage] [ttl_days] [enable_optimize]
+Usage: newLoadTest.sh <namespace> [secondaryStorage] [ttl_days] [enable_optimize] [enable_single_zone]
 
 Arguments:
   namespace          Base namespace name. Will be prefixed with "c8-" if missing.
-  secondaryStorage   Optional. One of: elasticsearch, opensearch, postgresql, none. Default: elasticsearch.
+  secondaryStorage   Optional. One of: elasticsearch, opensearch, postgresql, mysql, mariadb, mssql, oracle, none. Default: elasticsearch.
   ttl_days           Optional. Positive integer for namespace TTL in days. Default: 1.
-  enable_optimize    Optional. true|false to enable Optimize. Default: false.
+  enable_optimize    Optional. true|false to enable Optimize. Default: true.
+  enable_single_zone Optional. true|false to deploy the cluster on a single zone. Default: true
 
 Options:
   -h, --help         Show this help message.
@@ -122,6 +123,10 @@ You can specify a secondary storage type as the second argument:
 . ./newLoadTest.sh my-load-test-name elasticsearch  # Default - uses Elasticsearch
 . ./newLoadTest.sh my-load-test-name opensearch     # Uses OpenSearch
 . ./newLoadTest.sh my-load-test-name postgresql     # Uses PostgreSQL (RDBMS)
+. ./newLoadTest.sh my-load-test-name mysql          # Uses MySQL (RDBMS)
+. ./newLoadTest.sh my-load-test-name mariadb        # Uses MariaDB (RDBMS)
+. ./newLoadTest.sh my-load-test-name mssql          # Uses Microsoft SQL Server (RDBMS)
+. ./newLoadTest.sh my-load-test-name oracle         # Uses Oracle (RDBMS)
 . ./newLoadTest.sh my-load-test-name none           # No secondary storage
 ```
 
@@ -195,6 +200,44 @@ The Camunda Platform deployment automatically sets up a leader balancing cronjob
 
 This will deploy the full Camunda Platform (including `orchestration cluster`, `elasticsearch`, `optimize`, `connectors`, `identity` and `keycloak`) and load test applications (e.g. `starter` and `worker`).
 
+### Running specific scenarios
+
+By default, `make install` uses the load test chart's own defaults (no workload profile applied).
+To run a specific workload profile, use one of the named targets:
+
+```sh
+make latency   # 1 instance/s, 1 worker — low-throughput, useful for latency measurements
+make typical   # 50 instances/s, 6 workers, typical_process BPMN
+make realistic # Realistic multi-instance benchmark (values from camunda-load-tests-helm)
+make max       # 300 instances/s — maximum stress, also disables consistency check overhead
+make archiver  # Multi-instance archiver scenario (no workers)
+```
+
+You can also pass `scenario=` directly to combine with additional overrides:
+
+```sh
+make install scenario=max additional_platform_configuration="--set orchestration.resources.limits.memory=4Gi"
+```
+
+For stable (non-spot) VMs, use `install-stable` with the `scenario=` variable:
+
+```sh
+make install-stable scenario=max
+```
+
+To inspect the resolved flags without running any Helm commands:
+
+```sh
+make print-scenario scenario=max
+```
+
+To render Helm templates for inspection:
+
+```sh
+make template scenario=max          # renders platform manifests
+make template-load-test scenario=max  # renders load test manifests
+```
+
 ### How to clean up a load test
 
 After you're done with your load test, you should remove the remaining namespace.
@@ -256,7 +299,7 @@ make install-load-test
 By default, we will run an artificial load against the configured SaaS cluster. If you want to change this to some more realistic or typical workload, you can use the following targets.
 
 ```sh
-# Run typical workload, with 10 tasks 
+# Run typical workload, with 10 tasks
 make typical
 
 # Run a realistic workload with multi-instance call activities, etc.

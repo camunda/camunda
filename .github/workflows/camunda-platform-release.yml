@@ -110,7 +110,7 @@ jobs:
           vault-auth-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-auth-secret-id: ${{ secrets.VAULT_SECRET_ID}}
           vault-url: ${{ secrets.VAULT_ADDR }}
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           ref: ${{ env.RELEASE_BRANCH }}
           # Overriding the default GITHUB_TOKEN with a GitHub App token in order to workaround
@@ -121,7 +121,7 @@ jobs:
           token: ${{ steps.github-token.outputs.token }}
       - name: Import Secrets
         id: secrets
-        uses: hashicorp/vault-action@v3.4.0
+        uses: hashicorp/vault-action@4c06c5ccf5c0761b6029f56cfb1dcf5565918a3b # v3.4.0
         with:
           url: ${{ secrets.VAULT_ADDR }}
           method: approle
@@ -181,7 +181,7 @@ jobs:
           #   Additional arguments to pass to the Maven executions, separated by spaces.
           #   Per default it is not required, but the release plugin is configured in the camunda release plugin (and this property is used)
           #   This is the reason why we have to set it at least as empty string.
-          
+
           # Conditionally set profile flags based on includeOptimize input
           if [[ "${{ inputs.includeOptimize }}" == "true" ]]; then
             PROFILE_FLAGS=""
@@ -190,7 +190,7 @@ jobs:
             PROFILE_FLAGS="-P\!include-optimize"
             ARGUMENTS_PROFILE="-P!include-optimize"
           fi
-          
+
           ./mvnw release:prepare -B \
             -Dresume=false \
             -Dtag="${RELEASE_TAG}" \
@@ -225,7 +225,7 @@ jobs:
           #   In order to disable QA/IT and the auto formatting during the release.
           #   It is unnecessary to release integration tests, and we don't want to run the auto-formatting unnecessarily.
 
-          
+
 
           # Conditionally set profile flags based on includeOptimize input
           if [[ "${{ inputs.includeOptimize }}" == "true" ]]; then
@@ -283,15 +283,15 @@ jobs:
           cp target/checkout/dist/target/camunda-zeebe-"${RELEASE_VERSION}".tar.gz "${ARTIFACT_DIR}/"
           cp target/checkout/dist/target/camunda-zeebe-"${RELEASE_VERSION}".zip "${ARTIFACT_DIR}/"
           cp target/checkout/db/rdbms-schema/target/camunda-db-rdbms-schema-"${RELEASE_VERSION}".zip "${ARTIFACT_DIR}/"
-          
+
           # Include Optimize artifacts if Optimize is included in the release
           if [[ "${{ inputs.includeOptimize }}" == "true" ]]; then
             cp target/checkout/optimize-distro/target/camunda-optimize-"${RELEASE_VERSION}"-production.tar.gz "${ARTIFACT_DIR}/"
           fi
-          
+
           echo "dir=${ARTIFACT_DIR}" >> "$GITHUB_OUTPUT"
       - name: Upload Release Artifacts
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
         with:
           name: release-artifacts-${{ inputs.releaseVersion }}
           path: ${{ steps.release-artifacts.outputs.dir }}
@@ -370,12 +370,12 @@ jobs:
       LOCAL_DOCKER_IMAGE: localhost:5000/camunda/zeebe
       DOCKER_IMAGE: camunda/zeebe
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           ref: ${{ env.RELEASE_BRANCH }}
       - name: Import Secrets
         id: secrets
-        uses: hashicorp/vault-action@v3.4.0
+        uses: hashicorp/vault-action@4c06c5ccf5c0761b6029f56cfb1dcf5565918a3b # v3.4.0
         with:
           url: ${{ secrets.VAULT_ADDR }}
           method: approle
@@ -386,18 +386,18 @@ jobs:
             secret/data/products/zeebe/ci/zeebe REGISTRY_HUB_DOCKER_COM_PSW;
             secret/data/products/camunda/ci/github-actions REGISTRY_MINIMUS_PSW | minimus-token
       - name: Login to DockerHub
-        uses: docker/login-action@v4
+        uses: docker/login-action@4907a6ddec9925e35a0a9e82d7399ccc52663121 # v4.1.0
         with:
           username: ${{ steps.secrets.outputs.REGISTRY_HUB_DOCKER_COM_USR }}
           password: ${{ steps.secrets.outputs.REGISTRY_HUB_DOCKER_COM_PSW }}
       - name: Logs on to Minimus
-        uses: docker/login-action@v4
+        uses: docker/login-action@4907a6ddec9925e35a0a9e82d7399ccc52663121 # v4.1.0
         with:
           registry: reg.mini.dev
           username: minimus
           password: ${{ steps.secrets.outputs.minimus-token }}
       - name: Download Release Artifacts
-        uses: actions/download-artifact@v8
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           name: release-artifacts-${{ inputs.releaseVersion }}
       - name: Build Zeebe Docker Image
@@ -424,7 +424,7 @@ jobs:
       - name: Sync Zeebe Docker Image to DockerHub
         if: ${{ !inputs.dryRun && !inputs.releaseProcessDryRun }}
         # see https://docs.docker.com/build/ci/github-actions/examples/#copy-images-between-registries
-        uses: nick-fields/retry@v4
+        uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
         with:
           max_attempts: 3
           retry_on: error
@@ -437,7 +437,7 @@ jobs:
       - name: Sync Zeebe Latest Docker Image to DockerHub
         if: ${{ !inputs.dryRun && !inputs.releaseProcessDryRun && inputs.isLatest }}
         # see https://docs.docker.com/build/ci/github-actions/examples/#copy-images-between-registries
-        uses: nick-fields/retry@v4
+        uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
         with:
           max_attempts: 3
           retry_on: error
@@ -475,12 +475,12 @@ jobs:
       LOCAL_DOCKER_IMAGE: localhost:5000/camunda/operate
       DOCKER_IMAGE: camunda/operate
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           ref: ${{ env.RELEASE_BRANCH }}
       - name: Import Secrets
         id: secrets
-        uses: hashicorp/vault-action@v3.4.0
+        uses: hashicorp/vault-action@4c06c5ccf5c0761b6029f56cfb1dcf5565918a3b # v3.4.0
         with:
           url: ${{ secrets.VAULT_ADDR }}
           method: approle
@@ -491,18 +491,18 @@ jobs:
             secret/data/products/operate/ci/github-actions REGISTRY_HUB_DOCKER_COM_PSW;
             secret/data/products/camunda/ci/github-actions REGISTRY_MINIMUS_PSW | minimus-token
       - name: Login to DockerHub
-        uses: docker/login-action@v4
+        uses: docker/login-action@4907a6ddec9925e35a0a9e82d7399ccc52663121 # v4.1.0
         with:
           username: ${{ steps.secrets.outputs.REGISTRY_HUB_DOCKER_COM_USR }}
           password: ${{ steps.secrets.outputs.REGISTRY_HUB_DOCKER_COM_PSW }}
       - name: Login to Minimus
-        uses: docker/login-action@v4
+        uses: docker/login-action@4907a6ddec9925e35a0a9e82d7399ccc52663121 # v4.1.0
         with:
           registry: reg.mini.dev
           username: minimus
           password: ${{ steps.secrets.outputs.minimus-token }}
       - name: Download Release Artifacts
-        uses: actions/download-artifact@v8
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           name: release-artifacts-${{ inputs.releaseVersion }}
       - name: Build Operate Docker Image
@@ -532,7 +532,7 @@ jobs:
       - name: Sync Operate Docker Image to DockerHub
         if: ${{ !inputs.dryRun && !inputs.releaseProcessDryRun }}
         # see https://docs.docker.com/build/ci/github-actions/examples/#copy-images-between-registries
-        uses: nick-fields/retry@v4
+        uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
         with:
           max_attempts: 3
           retry_on: error
@@ -545,7 +545,7 @@ jobs:
       - name: Sync Latest Operate Docker Image to DockerHub
         if: ${{ !inputs.dryRun && !inputs.releaseProcessDryRun && inputs.isLatest }}
         # see https://docs.docker.com/build/ci/github-actions/examples/#copy-images-between-registries
-        uses: nick-fields/retry@v4
+        uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
         with:
           max_attempts: 3
           retry_on: error
@@ -583,12 +583,12 @@ jobs:
       LOCAL_DOCKER_IMAGE: localhost:5000/camunda/tasklist
       DOCKER_IMAGE: camunda/tasklist
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           ref: ${{ env.RELEASE_BRANCH }}
       - name: Import Secrets
         id: secrets
-        uses: hashicorp/vault-action@v3.4.0
+        uses: hashicorp/vault-action@4c06c5ccf5c0761b6029f56cfb1dcf5565918a3b # v3.4.0
         with:
           url: ${{ secrets.VAULT_ADDR }}
           method: approle
@@ -599,18 +599,18 @@ jobs:
             secret/data/products/tasklist/ci/tasklist REGISTRY_HUB_DOCKER_COM_PSW;
             secret/data/products/camunda/ci/github-actions REGISTRY_MINIMUS_PSW | minimus-token
       - name: Login to DockerHub
-        uses: docker/login-action@v4
+        uses: docker/login-action@4907a6ddec9925e35a0a9e82d7399ccc52663121 # v4.1.0
         with:
           username: ${{ steps.secrets.outputs.REGISTRY_HUB_DOCKER_COM_USR }}
           password: ${{ steps.secrets.outputs.REGISTRY_HUB_DOCKER_COM_PSW }}
       - name: Login to Minimus
-        uses: docker/login-action@v4
+        uses: docker/login-action@4907a6ddec9925e35a0a9e82d7399ccc52663121 # v4.1.0
         with:
           registry: reg.mini.dev
           username: minimus
           password: ${{ steps.secrets.outputs.minimus-token }}
       - name: Download Release Artifacts
-        uses: actions/download-artifact@v8
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           name: release-artifacts-${{ inputs.releaseVersion }}
       - name: Build Tasklist Docker Image
@@ -640,7 +640,7 @@ jobs:
       - name: Sync Tasklist Docker Image to DockerHub
         if: ${{ !inputs.dryRun && !inputs.releaseProcessDryRun }}
         # see https://docs.docker.com/build/ci/github-actions/examples/#copy-images-between-registries
-        uses: nick-fields/retry@v4
+        uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
         with:
           max_attempts: 3
           retry_on: error
@@ -653,7 +653,7 @@ jobs:
       - name: Sync Latest Tasklist Docker Image to DockerHub
         if: ${{ !inputs.dryRun && !inputs.releaseProcessDryRun && inputs.isLatest }}
         # see https://docs.docker.com/build/ci/github-actions/examples/#copy-images-between-registries
-        uses: nick-fields/retry@v4
+        uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
         with:
           max_attempts: 3
           retry_on: error
@@ -695,12 +695,12 @@ jobs:
       DOCKER_IMAGE: camunda/optimize
       DOCKER_INFOSEC_REGISTRY_IMAGE: europe-west1-docker.pkg.dev/team-infosec/camunda/optimize-8
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           ref: ${{ env.RELEASE_BRANCH }}
       - name: Import Secrets
         id: secrets
-        uses: hashicorp/vault-action@v3.4.0
+        uses: hashicorp/vault-action@4c06c5ccf5c0761b6029f56cfb1dcf5565918a3b # v3.4.0
         with:
           url: ${{ secrets.VAULT_ADDR }}
           method: approle
@@ -711,31 +711,31 @@ jobs:
             secret/data/products/optimize/ci/camunda-optimize REGISTRY_HUB_DOCKER_COM_PSW;
             secret/data/products/camunda/ci/github-actions REGISTRY_MINIMUS_PSW | minimus-token
       - name: Login to DockerHub
-        uses: docker/login-action@v4
+        uses: docker/login-action@4907a6ddec9925e35a0a9e82d7399ccc52663121 # v4.1.0
         with:
           username: ${{ steps.secrets.outputs.REGISTRY_HUB_DOCKER_COM_USR }}
           password: ${{ steps.secrets.outputs.REGISTRY_HUB_DOCKER_COM_PSW }}
       - name: Login to Minimus
-        uses: docker/login-action@v4
+        uses: docker/login-action@4907a6ddec9925e35a0a9e82d7399ccc52663121 # v4.1.0
         with:
           registry: reg.mini.dev
           username: minimus
           password: ${{ steps.secrets.outputs.minimus-token }}
       - id: "auth"
         name: "Authenticate to Google Cloud"
-        uses: "google-github-actions/auth@v3"
+        uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3.0.0
         with:
           token_format: "access_token"
           workload_identity_provider: "projects/271764561088/locations/global/workloadIdentityPools/github/providers/camunda"
           service_account: "github-actions-camunda@team-infosec.iam.gserviceaccount.com"
       - name: Login to infosec registry
-        uses: docker/login-action@v4
+        uses: docker/login-action@4907a6ddec9925e35a0a9e82d7399ccc52663121 # v4.1.0
         with:
           registry: europe-west1-docker.pkg.dev
           username: oauth2accesstoken
           password: ${{ steps.auth.outputs.access_token }}
       - name: Download Release Artifacts
-        uses: actions/download-artifact@v8
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           name: release-artifacts-${{ inputs.releaseVersion }}
       - name: Build Optimize Docker Image
@@ -765,7 +765,7 @@ jobs:
       - name: Sync Optimize Docker Image to DockerHub
         if: ${{ !inputs.dryRun && !inputs.releaseProcessDryRun }}
         # see https://docs.docker.com/build/ci/github-actions/examples/#copy-images-between-registries
-        uses: nick-fields/retry@v4
+        uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
         with:
           max_attempts: 3
           retry_on: error
@@ -778,7 +778,7 @@ jobs:
       - name: Sync Latest Optimize Docker Image to DockerHub
         if: ${{ !inputs.dryRun && !inputs.releaseProcessDryRun && inputs.isLatest }}
         # see https://docs.docker.com/build/ci/github-actions/examples/#copy-images-between-registries
-        uses: nick-fields/retry@v4
+        uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
         with:
           max_attempts: 3
           retry_on: error
@@ -791,7 +791,7 @@ jobs:
       - name: Sync Optimize Docker Image to Internal Registry
         if: ${{ !inputs.dryRun && !inputs.releaseProcessDryRun }}
         # see https://docs.docker.com/build/ci/github-actions/examples/#copy-images-between-registries
-        uses: nick-fields/retry@v4
+        uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
         with:
           max_attempts: 3
           retry_on: error
@@ -829,12 +829,12 @@ jobs:
       LOCAL_DOCKER_IMAGE: localhost:5000/camunda/camunda
       DOCKER_IMAGE: camunda/camunda
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           ref: ${{ env.RELEASE_BRANCH }}
       - name: Import Secrets
         id: secrets
-        uses: hashicorp/vault-action@v3.4.0
+        uses: hashicorp/vault-action@4c06c5ccf5c0761b6029f56cfb1dcf5565918a3b # v3.4.0
         with:
           url: ${{ secrets.VAULT_ADDR }}
           method: approle
@@ -845,18 +845,18 @@ jobs:
             secret/data/products/camunda/ci/github-actions REGISTRY_HUB_DOCKER_COM_PSW;
             secret/data/products/camunda/ci/github-actions REGISTRY_MINIMUS_PSW | minimus-token
       - name: Login to DockerHub
-        uses: docker/login-action@v4
+        uses: docker/login-action@4907a6ddec9925e35a0a9e82d7399ccc52663121 # v4.1.0
         with:
           username: ${{ steps.secrets.outputs.REGISTRY_HUB_DOCKER_COM_USR }}
           password: ${{ steps.secrets.outputs.REGISTRY_HUB_DOCKER_COM_PSW }}
       - name: Logs on to Minimus
-        uses: docker/login-action@v4
+        uses: docker/login-action@4907a6ddec9925e35a0a9e82d7399ccc52663121 # v4.1.0
         with:
           registry: reg.mini.dev
           username: minimus
           password: ${{ steps.secrets.outputs.minimus-token }}
       - name: Download Release Artifacts
-        uses: actions/download-artifact@v8
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           name: release-artifacts-${{ inputs.releaseVersion }}
       - name: Build Camunda Docker Image
@@ -886,7 +886,7 @@ jobs:
       - name: Sync Camunda Docker Image to DockerHub
         if: ${{ !inputs.dryRun && !inputs.releaseProcessDryRun }}
         # see https://docs.docker.com/build/ci/github-actions/examples/#copy-images-between-registries
-        uses: nick-fields/retry@v4
+        uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
         with:
           max_attempts: 3
           retry_on: error
@@ -899,7 +899,7 @@ jobs:
       - name: Sync Latest Camunda Docker Image to DockerHub
         if: ${{ !inputs.dryRun && !inputs.releaseProcessDryRun && inputs.isLatest }}
         # see https://docs.docker.com/build/ci/github-actions/examples/#copy-images-between-registries
-        uses: nick-fields/retry@v4
+        uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
         with:
           max_attempts: 3
           retry_on: error
@@ -961,7 +961,7 @@ jobs:
       releaseBodyUpdateOutcome: ${{ steps.update-github-release-body.outcome }}
     # Minor releases take more time since a lot of issues are included in the changelog
     timeout-minutes: 30
-    if: ${{ always() && !cancelled() && 
+    if: ${{ always() && !cancelled() &&
       needs.release.result == 'success' &&
       needs.zeebe-docker.result == 'success' &&
       needs.operate-docker.result == 'success' &&
@@ -969,7 +969,7 @@ jobs:
       (needs.optimize-docker.result == 'success' || needs.optimize-docker.result == 'skipped') &&
       needs.camunda-docker.result == 'success' }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           ref: ${{ env.RELEASE_BRANCH }}
           fetch-depth: 0 # To fetch tags as well - necessary for the changelog generation
@@ -1029,7 +1029,7 @@ jobs:
           # To show the changelog also as step summary
           echo "$changelog" >> "$GITHUB_STEP_SUMMARY"
       - name: Download Release Artifacts
-        uses: actions/download-artifact@v8
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           name: release-artifacts-${{ inputs.releaseVersion }}
           path: release-artifacts
@@ -1081,10 +1081,12 @@ jobs:
         with:
           allowUpdates: true
           bodyFile: changelog.md
+          makeLatest: ${{ inputs.isLatest }}
           omitBodyDuringUpdate: false
           omitNameDuringUpdate: true
           omitDraftDuringUpdate: true
-          omitPrereleaseDuringUpdate: true
+          omitPrereleaseDuringUpdate: false
+          prerelease: ${{ steps.pre-release.outputs.result }}
           token: ${{ secrets.GITHUB_TOKEN }}
           tag: ${{ env.RELEASE_TAG }}
       - name: Warn if Github release body update failed
@@ -1114,7 +1116,7 @@ jobs:
     name: Create FOSSA releases and generate attribution/SBOM reports
     runs-on: ubuntu-latest
     needs: [release, github, zeebe-docker, operate-docker, tasklist-docker, optimize-docker, camunda-docker]
-    if: ${{ always() && !cancelled() && 
+    if: ${{ always() && !cancelled() &&
       needs.release.result == 'success' &&
       needs.github.result == 'success' &&
       needs.zeebe-docker.result == 'success' &&
@@ -1123,12 +1125,12 @@ jobs:
       (needs.optimize-docker.result == 'success' || needs.optimize-docker.result == 'skipped') &&
       needs.camunda-docker.result == 'success' }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           ref: ${{ env.RELEASE_BRANCH }}
       - name: Import Secrets
         id: secrets
-        uses: hashicorp/vault-action@v3.4.0
+        uses: hashicorp/vault-action@4c06c5ccf5c0761b6029f56cfb1dcf5565918a3b # v3.4.0
         with:
           url: ${{ secrets.VAULT_ADDR }}
           method: approle
@@ -1221,8 +1223,9 @@ jobs:
           variables: |
             {
               "is_camunda_release_successful": "true",
-              "camunda_workflow_run_url": "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-            }      
+              "camunda_workflow_run_url": "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}",
+              "camunda_repository": "${{ github.repository }}"
+            }
       - name: Send success Slack notification
         if: ${{ !inputs.dryRun && !inputs.releaseProcessDryRun && needs.github.outputs.releaseBodyUpdateOutcome != 'failure' }}
         uses: slackapi/slack-github-action@af78098f536edbc4de71162a307590698245be95 # v3.0.1
@@ -1314,8 +1317,9 @@ jobs:
           variables: |
             {
               "is_camunda_release_successful": "false",
-              "camunda_workflow_run_url": "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-            }            
+              "camunda_workflow_run_url": "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}",
+              "camunda_repository": "${{ github.repository }}"
+            }
       - name: Send failure Slack notification
         if: ${{ !inputs.dryRun && !inputs.releaseProcessDryRun }}
         uses: slackapi/slack-github-action@af78098f536edbc4de71162a307590698245be95 # v3.0.1

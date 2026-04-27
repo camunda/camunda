@@ -10,6 +10,7 @@ import {expect, test} from '@playwright/test';
 import {deploy} from '../../../../utils/zeebeClient';
 import {
   assertBadRequest,
+  assertInvalidArgument,
   assertStatusCode,
   assertUnauthorizedRequest,
   buildUrl,
@@ -93,7 +94,7 @@ test.describe.parallel('Search Batch Operation Tests', () => {
       );
       const body = await res.json();
       expect(body.page.totalItems).toBeGreaterThan(0);
-      expect(body.items.length).toBe(body.page.totalItems);
+      expect(body.items).toHaveLength(body.page.totalItems);
       for (const item of body.items) {
         expect(item.state).toBe('COMPLETED');
         expect(item.batchOperationType).toBe('CANCEL_PROCESS_INSTANCE');
@@ -179,7 +180,7 @@ test.describe.parallel('Search Batch Operation Tests', () => {
     );
     const body = await res.json();
     expect(body.page.totalItems).toBe(0);
-    expect(body.items.length).toBe(0);
+    expect(body.items).toHaveLength(0);
   });
 
   test('Search Batch Operations Unauthorized', async ({request}) => {
@@ -190,8 +191,7 @@ test.describe.parallel('Search Batch Operation Tests', () => {
     await assertUnauthorizedRequest(res);
   });
 
-  //Skipped due to bug 39372: https://github.com/camunda/camunda/issues/39372
-  test.skip('Search Batch Operations Invalid Pagination', async ({request}) => {
+  test('Search Batch Operations Invalid Pagination', async ({request}) => {
     await expect(async () => {
       const res = await request.post(buildUrl('/batch-operations/search'), {
         headers: jsonHeaders(),
@@ -200,7 +200,11 @@ test.describe.parallel('Search Batch Operation Tests', () => {
         },
       });
 
-      await assertBadRequest(res, /page\.(from|limit)/i);
+      await assertInvalidArgument(
+        res,
+        400,
+        "The value for page.from is '-1' but must be a non-negative number.",
+      );
     }).toPass(defaultAssertionOptions);
   });
 

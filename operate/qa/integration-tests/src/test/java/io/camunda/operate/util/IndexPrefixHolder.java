@@ -7,21 +7,13 @@
  */
 package io.camunda.operate.util;
 
+import java.util.UUID;
 import org.springframework.stereotype.Component;
 
 @Component
 public class IndexPrefixHolder {
 
-  private String indexPrefix;
-
-  public String createNewIndexPrefix() {
-    if (indexPrefix == null) {
-      indexPrefix = TestUtil.createRandomString(10);
-    }
-    return indexPrefix;
-  }
-
   public String getIndexPrefix() {
-    return indexPrefix;
+    return UUID.randomUUID().toString().substring(0, 10);
   }
 }

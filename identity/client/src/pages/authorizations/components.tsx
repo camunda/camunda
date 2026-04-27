@@ -10,12 +10,9 @@ import styled from "styled-components";
 import { TabListVertical, TabPanel } from "@carbon/react";
 import {
   label02,
-  layer01,
   sizeSmall,
   styles,
   spacing06,
-  textSecondary,
-  layerSelected01,
   spacing08,
 } from "@carbon/elements";
 
@@ -26,7 +23,7 @@ export const TabsTitle = styled.p`
   font-weight: ${label02.fontWeight};
   letter-spacing: ${label02.letterSpacing};
   line-height: ${label02.lineHeight};
-  color: ${textSecondary};
+  color: var(--cds-text-secondary);
 `;
 
 export const TabsContainer = styled.div`
@@ -41,14 +38,14 @@ export const CustomTabListVertical = styled(TabListVertical)`
   // Tab selectors container
   &.cds--tabs--vertical {
     top: ${spacing08};
-    background: ${layer01};
+    background: var(--cds-layer);
     border: none;
     box-shadow: none;
     padding-right: ${spacing06};
 
     // Tab selector
     .cds--tabs__nav-item {
-      background: ${layer01};
+      background: var(--cds-layer);
       margin-right: ${spacing06};
       height: ${sizeSmall};
       border: none;
@@ -65,7 +62,7 @@ export const CustomTabListVertical = styled(TabListVertical)`
 
     // Tab selector when selected
     .cds--tabs__nav-item--selected {
-      background: ${layerSelected01};
+      background: var(--cds-layer-selected);
     }
   }
 `;

@@ -41,10 +41,11 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/InvalidData'
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
+      x-added-in-version: "8.6"
 
   /resources/{resourceKey}:
     get:
-      x-eventually-consistent: false
+      x-eventually-consistent: true
       tags:
         - Resource
       operationId: getResource
@@ -76,10 +77,11 @@ paths:
                 $ref: "problem-detail.yaml#/components/schemas/ProblemDetail"
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+      x-added-in-version: "8.7"
 
   /resources/{resourceKey}/content:
     get:
-      x-eventually-consistent: false
+      x-eventually-consistent: true
       tags:
         - Resource
       operationId: getResourceContent
@@ -100,9 +102,10 @@ paths:
         "200":
           description: The resource content is successfully returned.
           content:
-            application/json:
+            application/octet-stream:
               schema:
                 type: string
+                format: binary
         "404":
           description: A resource with the given key was not found.
           content:
@@ -111,6 +114,7 @@ paths:
                 $ref: "problem-detail.yaml#/components/schemas/ProblemDetail"
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+      x-added-in-version: "8.7"
 
   /resources/{resourceKey}/deletion:
     post:
@@ -168,6 +172,7 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
+      x-added-in-version: "8.6"
 
 ## Schema definitions
 

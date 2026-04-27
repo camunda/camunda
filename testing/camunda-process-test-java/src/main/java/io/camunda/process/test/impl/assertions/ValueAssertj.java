@@ -17,20 +17,26 @@ package io.camunda.process.test.impl.assertions;
 
 import io.camunda.process.test.api.assertions.ValueAssert;
 import io.camunda.process.test.api.judge.JudgeConfig;
+import io.camunda.process.test.api.similarity.SemanticSimilarityConfig;
 import java.util.function.UnaryOperator;
 import org.assertj.core.api.AbstractAssert;
 
 /**
  * AssertJ implementation of {@link ValueAssert}. Evaluates string values against natural-language
- * expectations using an LLM judge.
+ * expectations using an LLM judge or semantic similarity embeddings.
  */
 public class ValueAssertj extends AbstractAssert<ValueAssertj, String> implements ValueAssert {
 
   private final JudgeAssertj judgeAssertj;
+  private final SemanticSimilarityAssertj similarityAssertj;
 
-  public ValueAssertj(final String actual, final JudgeConfig judgeConfig) {
+  public ValueAssertj(
+      final String actual,
+      final JudgeConfig judgeConfig,
+      final SemanticSimilarityConfig semanticSimilarityConfig) {
     super(actual, ValueAssertj.class);
     judgeAssertj = new JudgeAssertj(judgeConfig);
+    similarityAssertj = new SemanticSimilarityAssertj(semanticSimilarityConfig);
   }
 
   @Override
@@ -44,6 +50,21 @@ public class ValueAssertj extends AbstractAssert<ValueAssertj, String> implement
     judgeAssertj.assertJudgeHasAllRequiredSettings();
     assertExpectationNotEmpty(expectation);
     judgeAssertj.evaluateExpectation(expectation, actual, "");
+    return this;
+  }
+
+  @Override
+  public ValueAssert withSemanticSimilarityConfig(
+      final UnaryOperator<SemanticSimilarityConfig> modifier) {
+    similarityAssertj.withSemanticSimilarityConfig(modifier);
+    return this;
+  }
+
+  @Override
+  public ValueAssert isSimilarTo(final String expectedValue) {
+    similarityAssertj.assertSimilarityHasAllRequiredSettings();
+    assertExpectationNotEmpty(expectedValue);
+    similarityAssertj.evaluateSimilarity(expectedValue, actual, "Value ");
     return this;
   }
 

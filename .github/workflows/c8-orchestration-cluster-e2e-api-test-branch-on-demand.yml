@@ -40,7 +40,7 @@ jobs:
           fi
           echo "Branch '$branch_name' exists."
 
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
       - name: Detect base branch
         id: detect-base
@@ -58,18 +58,30 @@ jobs:
           echo "Detected base branch: $base"
           echo "base=$base" >> "$GITHUB_OUTPUT"
 
+  utils-get-snapshot-docker-tag:
+    needs: validate-branch
+    uses: ./.github/workflows/generate-snapshot-docker-tag.yml
+    with:
+      target_branch: ${{ needs.validate-branch.outputs.base }}
+    secrets: inherit
+    permissions:
+      contents: read
+
   c8-orchestration-cluster-api-tests-es:
     name: C8 Orchestration Cluster API Tests (ES)
-    needs: validate-branch
+    needs: [validate-branch, utils-get-snapshot-docker-tag]
     runs-on: ubuntu-latest
     timeout-minutes: 45
+    env:
+      # Prefer SNAPSHOT on main, otherwise use the branch-specific X.Y-SNAPSHOT tag.
+      RESOLVED_DOCKER_TAG: ${{ needs.utils-get-snapshot-docker-tag.outputs.snapshot_tag || needs.utils-get-snapshot-docker-tag.outputs.version_tag }}
     steps:
       - name: Print input and base branch
         run: |
           echo "Input branch: ${{ github.event.inputs.branch }}"
           echo "Base branch: ${{ needs.validate-branch.outputs.base }}"
 
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           ref: ${{ github.event.inputs.branch }}
 
@@ -85,13 +97,32 @@ jobs:
 
       - name: Build Docker image from branch
         run: |
+          # -Dquickly skips assembly.skipAssembly, so the .tar.gz may not exist.
+          # Fall back to packaging the exploded camunda-zeebe/ directory instead.
+          tarball=$(find dist/target -maxdepth 1 -name 'camunda-zeebe-*.tar.gz' | head -1)
+          if [ -z "$tarball" ]; then
+            exploded="dist/target/camunda-zeebe"
+            if [ -d "$exploded/bin" ]; then
+              echo "No tarball found (assembly skipped with -Dquickly); packaging exploded directory..."
+              tar czf dist/target/camunda-dist.tar.gz -C dist/target camunda-zeebe
+              tarball="dist/target/camunda-dist.tar.gz"
+            else
+              echo "ERROR: No distribution tarball or exploded directory found in dist/target/"
+              ls -la dist/target/ || echo "dist/target/ not found"
+              exit 1
+            fi
+          fi
+          echo "Using tarball: $tarball"
+          cp "$tarball" ./camunda-dist.tar.gz
+          echo "Building Docker image with tag: ${RESOLVED_DOCKER_TAG}"
           docker build \
             -f camunda.Dockerfile \
             --target app \
             --build-arg BASE=public \
-            --build-arg DISTBALL="dist/target/camunda-zeebe-*.tar.gz" \
-            -t "camunda/camunda:SNAPSHOT" \
+            --build-arg DISTBALL="camunda-dist.tar.gz" \
+            -t "camunda/camunda:${RESOLVED_DOCKER_TAG}" \
             .
+          rm -f ./camunda-dist.tar.gz
 
       - name: Set NON_STANDALONE variable
         run: |
@@ -104,6 +135,8 @@ jobs:
 
       - name: Start Camunda
         run: |
+          export CAMUNDA_DOCKER_IMAGE="camunda/camunda:${RESOLVED_DOCKER_TAG}"
+          echo "Using CAMUNDA_DOCKER_IMAGE=${CAMUNDA_DOCKER_IMAGE}"
           if [[ "$NON_STANDALONE" == "true" ]]; then
             echo "Using single services for older branches (8.6/8.7)"
             DATABASE=elasticsearch docker compose up -d operate tasklist
@@ -167,7 +200,7 @@ jobs:
         working-directory: qa/c8-orchestration-cluster-e2e-test-suite/config
 
       - name: Setup Node.js
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
         with:
           node-version: 24
           cache: npm
@@ -197,7 +230,7 @@ jobs:
         working-directory: qa/c8-orchestration-cluster-e2e-test-suite
 
       - name: Python setup
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
         with:
           python-version: "3.x"
 
@@ -207,7 +240,6 @@ jobs:
           CAMUNDA_AUTH_STRATEGY: "BASIC"
           CAMUNDA_BASIC_AUTH_USERNAME: "demo"
           CAMUNDA_BASIC_AUTH_PASSWORD: "demo"
-          CAMUNDA_TASKLIST_V2_MODE_ENABLED: "false"
           CAMUNDA_PROCESSINSTANCECREATION_BUSINESSIDUNIQUENESSENABLED: "true"
         run: |
           if [[ "$NON_STANDALONE" == "true" ]]; then
@@ -218,10 +250,10 @@ jobs:
             export CORE_APPLICATION_URL="http://localhost:8080"
             export ZEEBE_REST_ADDRESS="http://localhost:8080"
           fi
-          
+
           echo "Running API tests"
           npm run test -- --project=api-tests
-          
+
         working-directory: qa/c8-orchestration-cluster-e2e-test-suite
 
       - name: Publish test results to TestRail
@@ -232,17 +264,18 @@ jobs:
           TESTRAIL_KEY: ${{ steps.secrets.outputs.TESTRAIL_QA_PSW }}
           JUNIT_RESULTS_FILE: "qa/c8-orchestration-cluster-e2e-test-suite/test-results/junit-report.xml"
         run: |
-          pip install trcli
+          pip install trcli==1.14.1
           trcli -y -h "$TESTRAIL_HOST" \
             --project 'C8' \
             --username "$TESTRAIL_USERNAME" \
             --key "$TESTRAIL_KEY" \
+            --batch-size 500 \
             parse_junit --suite-id 17050 \
             --title "On Demand C8 Orchestration Cluster API Test Run Results - ${{ github.event.inputs.branch }} - $(date '+%Y-%m-%d %H:%M:%S')" \
             --close-run \
             -f "$JUNIT_RESULTS_FILE"
 
-      - uses: actions/upload-artifact@v7
+      - uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
         if: failure()
         with:
           name: C8 Orchestration Cluster API Test Result
@@ -271,7 +304,7 @@ jobs:
           echo "Input branch: ${{ github.event.inputs.branch }}"
           echo "Base branch: ${{ needs.validate-branch.outputs.base }}"
 
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           ref: ${{ github.event.inputs.branch }}
 
@@ -368,7 +401,7 @@ jobs:
           exit 1
 
       - name: Setup Node.js
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
         with:
           node-version: 24
           cache: npm
@@ -392,7 +425,6 @@ jobs:
           CAMUNDA_AUTH_STRATEGY: "BASIC"
           CAMUNDA_BASIC_AUTH_USERNAME: "demo"
           CAMUNDA_BASIC_AUTH_PASSWORD: "demo"
-          CAMUNDA_TASKLIST_V2_MODE_ENABLED: "false"
           CAMUNDA_PROCESSINSTANCECREATION_BUSINESSIDUNIQUENESSENABLED: "true"
         run: |
           echo "Running API tests against H2/RDBMS backend"
@@ -405,7 +437,7 @@ jobs:
           echo "=== Camunda logs ==="
           cat dev-dist/camunda.log
 
-      - uses: actions/upload-artifact@v7
+      - uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
         if: failure()
         with:
           name: C8 Orchestration Cluster API Test Result (H2-RDBMS)

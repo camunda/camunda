@@ -11,6 +11,7 @@ import io.camunda.zeebe.el.ExpressionLanguage;
 import io.camunda.zeebe.el.ExpressionLanguageFactory;
 import io.camunda.zeebe.el.ExpressionLanguageMetrics;
 import io.camunda.zeebe.engine.EngineConfiguration;
+import io.camunda.zeebe.engine.metrics.IncidentMetrics;
 import io.camunda.zeebe.engine.metrics.JobProcessingMetrics;
 import io.camunda.zeebe.engine.processing.bpmn.ProcessInstanceStateTransitionGuard;
 import io.camunda.zeebe.engine.processing.bpmn.clock.ZeebeFeelEngineClock;
@@ -79,7 +80,8 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
       final AuthorizationCheckBehavior authCheckBehavior,
       final TransientPendingSubscriptionState transientProcessMessageSubscriptionState,
       final ExpressionLanguageMetrics expressionMetrics,
-      final EngineConfiguration config) {
+      final EngineConfiguration config,
+      final IncidentMetrics incidentMetrics) {
 
     final var tenantClusterScope =
         new TenantScopeClusterVariableEvaluationContext(processingState.getClusterVariableState());
@@ -184,7 +186,7 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
 
     incidentBehavior =
         new BpmnIncidentBehavior(
-            processingState, processingState.getKeyGenerator(), writers.state());
+            processingState, processingState.getKeyGenerator(), writers.state(), incidentMetrics);
 
     eventPublicationBehavior =
         new BpmnEventPublicationBehavior(

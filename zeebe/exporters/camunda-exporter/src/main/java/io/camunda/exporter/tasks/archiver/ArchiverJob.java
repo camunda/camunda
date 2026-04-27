@@ -8,8 +8,8 @@
 package io.camunda.exporter.tasks.archiver;
 
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
-import io.camunda.exporter.tasks.BackgroundTask;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
+import io.camunda.zeebe.exporter.common.tasks.BackgroundTask;
 import io.camunda.zeebe.util.FunctionUtil;
 import io.micrometer.core.instrument.Timer;
 import java.util.List;
@@ -92,6 +92,10 @@ public abstract class ArchiverJob<B extends ArchiveBatch> implements BackgroundT
 
   protected ArchiverRepository getArchiverRepository() {
     return archiverRepository;
+  }
+
+  protected CamundaExporterMetrics getExporterMetrics() {
+    return exporterMetrics;
   }
 
   protected Executor getExecutor() {

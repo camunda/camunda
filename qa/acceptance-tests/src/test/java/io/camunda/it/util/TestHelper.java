@@ -398,6 +398,18 @@ public final class TestHelper {
             camundaClient.newProcessInstanceSearchRequest().filter(filter).page(page).execute());
   }
 
+  public static void waitForVariablesBeingExported(
+      final CamundaClient camundaClient, final int expectedSize) {
+    Awaitility.await("should receive variables from secondary storage")
+        .atMost(TIMEOUT_DATA_AVAILABILITY)
+        .ignoreExceptions() // Ignore exceptions and continue retrying
+        .untilAsserted(
+            () -> {
+              assertThat(camundaClient.newVariableSearchRequest().send().join().items())
+                  .hasSize(expectedSize);
+            });
+  }
+
   /**
    * Starts a process instance with a process variable {@link #VAR_TEST_SCOPE_ID} for scope.
    *

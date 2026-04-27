@@ -13,19 +13,7 @@ import type {
 } from '@camunda/camunda-api-zod-schemas/8.10';
 import {skipToken, type UseQueryOptions} from '@tanstack/react-query';
 import type {RequestError} from 'modules/request';
-
-const PROCESS_INSTANCES_STATISTICS_QUERY_KEY = 'processInstancesStatistics';
-
-function getQueryKey(
-  payload: GetProcessDefinitionStatisticsRequestBody,
-  processDefinitionKey?: string,
-) {
-  return [
-    PROCESS_INSTANCES_STATISTICS_QUERY_KEY,
-    processDefinitionKey,
-    ...Object.values(payload),
-  ];
-}
+import {queryKeys} from '../queryKeys';
 
 function useProcessInstancesStatisticsOptions<
   T = GetProcessDefinitionStatisticsResponseBody,
@@ -40,7 +28,10 @@ function useProcessInstancesStatisticsOptions<
   T
 > {
   return {
-    queryKey: getQueryKey(payload, processDefinitionKey),
+    queryKey: queryKeys.processDefinitionStatistics.get(
+      processDefinitionKey,
+      payload,
+    ),
     queryFn: processDefinitionKey
       ? async () => {
           const {response, error} = await fetchProcessInstancesStatistics(

@@ -7,7 +7,7 @@
  */
 
 import {expect} from '@playwright/test';
-import {test, MOCK_TENANTS} from '@/fixtures/v2-visual';
+import {test, MOCK_TENANTS} from '@/fixtures/visual';
 import {unassignedTask} from '@/mocks/v2/task';
 import schema from './resources/bigForm.json' assert {type: 'json'};
 
@@ -20,6 +20,7 @@ test.describe('a11y', () => {
     mockQueryVariablesByUserTaskRequest,
     mockGetUserTaskFormRequest,
   }) => {
+    const firstTenant = MOCK_TENANTS[0]!;
     const MOCK_FORM_TASK = unassignedTask({
       formKey: 'bigForm',
       assignee: 'demo',
@@ -28,7 +29,7 @@ test.describe('a11y', () => {
       processDefinitionKey: '2251799813685255',
       elementId: 'Activity_0aecztp',
       processInstanceKey: '4503599627371425',
-      tenantId: MOCK_TENANTS[0].tenantId,
+      tenantId: firstTenant.tenantId,
     });
 
     mockQueryUserTasksRequest([MOCK_FORM_TASK]);
@@ -43,7 +44,7 @@ test.describe('a11y', () => {
         schema: JSON.stringify(schema),
         formKey: 'bigForm',
         version: 1,
-        tenantId: MOCK_TENANTS[0].tenantId,
+        tenantId: firstTenant.tenantId,
       },
     });
 

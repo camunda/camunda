@@ -33,7 +33,7 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           ref: ${{ inputs.targetBranch }}
       - name: Git User Setup
@@ -42,7 +42,7 @@ jobs:
           git config --global user.name "github-actions[update-identity]@users.noreply.github.com"
       - name: Get current identity version from `./parent/pom.xml`
         id: get-current-identity-version
-        uses: mavrosxristoforos/get-xml-info@2.1.0
+        uses: mavrosxristoforos/get-xml-info@cc0a00b30a53c3adf0ea2cbfd8314cea394fbbad # 2.1.0
         with:
           xml-file: './parent/pom.xml'
           xpath: '//*[local-name()="version.identity"]'
@@ -56,12 +56,16 @@ jobs:
       - name: Update identity version in ./parent/pom.xml
         id: update-identity-version
         if: ${{ steps.get-current-identity-version.outputs.info != inputs.identityVersion }}
+        env:
+          IDENTITY_VERSION: ${{ inputs.identityVersion }}
         run: |
-          ./mvnw versions:set-property -DgenerateBackupPoms=false -Dproperty=version.identity -DnewVersion=${{ inputs.identityVersion }} -pl parent
-          git commit -am "deps(identity): update identity to ${{ inputs.identityVersion }}"
+          ./mvnw versions:set-property -DgenerateBackupPoms=false -Dproperty=version.identity -DnewVersion="$IDENTITY_VERSION" -pl parent
+          git commit -am "deps(identity): update identity to $IDENTITY_VERSION"
       - name: Push Changes to the target branch
         if: ${{ steps.update-identity-version.outcome == 'success' && inputs.dryRun == false }}
-        run: git push origin "${{ inputs.targetBranch }}"
+        env:
+          TARGET_BRANCH: ${{ inputs.targetBranch }}
+        run: git push origin -- "$TARGET_BRANCH"
       - name: Import Camunda Secrets
         if: success()
         id: camunda-secrets

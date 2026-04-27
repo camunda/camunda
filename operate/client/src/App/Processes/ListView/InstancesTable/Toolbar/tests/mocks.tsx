@@ -10,7 +10,7 @@ import {useEffect} from 'react';
 import {MemoryRouter} from 'react-router-dom';
 import {QueryClientProvider} from '@tanstack/react-query';
 import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
-import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelection';
+import {processInstancesSelectionStore} from 'modules/stores/instancesSelection';
 import {batchModificationStore} from 'modules/stores/batchModification';
 import type {ProcessInstance} from '@camunda/camunda-api-zod-schemas/8.10';
 import {createProcessDefinition} from 'modules/testUtils';
@@ -104,11 +104,18 @@ const setupSelectionStoreWithInstances = (
   const visibleRunningIds = instances
     .filter((instance) => instance.state === 'ACTIVE' || instance.hasIncident)
     .map((instance) => instance.processInstanceKey);
+  const visibleFinishedIds = instances
+    .filter(
+      (instance) =>
+        instance.state === 'COMPLETED' || instance.state === 'TERMINATED',
+    )
+    .map((instance) => instance.processInstanceKey);
 
   processInstancesSelectionStore.setRuntime({
-    totalProcessInstancesCount: instances.length,
+    totalCount: instances.length,
     visibleIds,
     visibleRunningIds,
+    visibleFinishedIds,
   });
 };
 
@@ -155,11 +162,7 @@ function createWrapper(
               {children}
               {withTestButtons && (
                 <>
-                  <button
-                    onClick={
-                      processInstancesSelectionStore.selectAllProcessInstances
-                    }
-                  >
+                  <button onClick={processInstancesSelectionStore.selectAll}>
                     Select all instances
                   </button>
                   <button onClick={batchModificationStore.enable}>

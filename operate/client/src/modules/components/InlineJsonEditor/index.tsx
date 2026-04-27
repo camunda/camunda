@@ -52,6 +52,7 @@ type Props = {
   id?: string;
   'data-testid'?: string;
   renderButton?: () => React.ReactNode;
+  onCopy?: () => Promise<string>;
 };
 
 function computeHeight(text: string, maxLines: number): number {
@@ -78,6 +79,7 @@ const InlineJsonEditor: React.FC<Props> = observer(
     autoFocus,
     'data-testid': dataTestId,
     renderButton,
+    onCopy,
   }) => {
     const isReadOnly = readOnly === true || onChange === undefined;
 
@@ -119,9 +121,15 @@ const InlineJsonEditor: React.FC<Props> = observer(
     }, [onFocus]);
 
     const handleBlur = useCallback(() => {
-      setIsEditing(false);
-      setEditingValue(null);
       onBlur?.();
+      // Monaco's FocusTracker debounces blur via setTimeout(0). Synchronously
+      // calling setIsEditing(false) would dispose the editor before that timer
+      // fires, leaving editorHasFocus=true and blocking keyboard input in other
+      // elements. Deferring here ensures Monaco cleans up first.
+      setTimeout(() => {
+        setIsEditing(false);
+        setEditingValue(null);
+      }, 0);
     }, [onBlur]);
 
     useEffect(() => {
@@ -151,6 +159,7 @@ const InlineJsonEditor: React.FC<Props> = observer(
             label={label}
             height={height}
             renderButton={renderButton}
+            onCopy={onCopy}
           />
         ) : (
           <>

@@ -12,6 +12,7 @@ import com.auth0.jwt.algorithms.Algorithm;
 import com.auth0.jwt.interfaces.Claim;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.security.entity.AuthenticationMethod;
+import io.camunda.security.oidc.NoopOidcClaimsProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.gateway.EndpointManager;
 import io.camunda.zeebe.gateway.Gateway;
@@ -110,6 +111,7 @@ public final class StubbedGateway {
                     new AuthenticationInterceptor(
                         new AuthenticationHandler.Oidc(
                             new FakeJwtDecoder(),
+                            new NoopOidcClaimsProvider(),
                             securityConfiguration.getAuthentication().getOidc()),
                         new AuthenticationMetrics(
                             new SimpleMeterRegistry(), AuthenticationMethod.OIDC))));

@@ -50,6 +50,10 @@
       <groupId>com.github.ben-manes.caffeine</groupId>
       <artifactId>caffeine</artifactId>
     </dependency>
+    <dependency>
+      <groupId>org.agrona</groupId>
+      <artifactId>agrona</artifactId>
+    </dependency>
 
     <dependency>
       <groupId>org.slf4j</groupId>
@@ -87,7 +91,21 @@
       <artifactId>mockito-core</artifactId>
       <scope>test</scope>
     </dependency>
-
+    <dependency>
+      <groupId>org.awaitility</groupId>
+      <artifactId>awaitility</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.logging.log4j</groupId>
+      <artifactId>log4j-api</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-test-util</artifactId>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
 
   <build>
@@ -99,6 +117,10 @@
           <ignoredUnusedDeclaredDependencies>
             <ignoredUnusedDeclaredDependency>org.slf4j:slf4j-api</ignoredUnusedDeclaredDependency>
           </ignoredUnusedDeclaredDependencies>
+          <ignoredNonTestScopedDependencies>
+            <!-- AuditLogEntry indirectly references this dependency for RecordMetadataDecoder.batchOperationReferenceNullValue() -->
+            <ignoredNonTestScopedDependency>org.agrona:agrona</ignoredNonTestScopedDependency>
+          </ignoredNonTestScopedDependencies>
         </configuration>
       </plugin>
     </plugins>

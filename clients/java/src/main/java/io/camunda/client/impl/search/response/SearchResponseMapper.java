@@ -125,10 +125,10 @@ public final class SearchResponseMapper {
   }
 
   public static SearchResponse<Variable> toVariableSearchResponse(
-      final VariableSearchQueryResult response) {
+      final VariableSearchQueryResult response, final JsonMapper jsonMapper) {
     final SearchResponsePage page = toSearchResponsePage(response.getPage());
     final List<Variable> instances =
-        toSearchResponseInstances(response.getItems(), VariableImpl::new);
+        toSearchResponseInstances(response.getItems(), v -> new VariableImpl(v, jsonMapper));
     return new SearchResponseImpl<>(instances, page);
   }
 

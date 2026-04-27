@@ -77,7 +77,7 @@ test.describe.parallel('Authentication API Tests', () => {
       const json = await res.json();
 
       if (isOracle) {
-        json.tenants?.forEach((t: any) => {
+        json.tenants?.forEach((t: {description?: string | null}) => {
           if (t.description == null) {
             t.description = '';
           }

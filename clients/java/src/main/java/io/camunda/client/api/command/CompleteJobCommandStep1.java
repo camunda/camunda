@@ -22,7 +22,7 @@ import java.util.function.Function;
 
 public interface CompleteJobCommandStep1
     extends CommandWithCommunicationApiStep<CompleteJobCommandStep1>,
-        FinalCommandStep<CompleteJobResponse>,
+        JobCallbackFinalCommandStep<CompleteJobResponse>,
         CommandWithVariables<CompleteJobCommandStep1> {
 
   /**

@@ -44,7 +44,7 @@ public interface Topology {
   String getGatewayVersion();
 
   /**
-   * @return the ID of the last completed topology change, or null if not available
+   * @return the ID of the last completed change, or null if none was found
    */
   String getLastCompletedChangeId();
 }

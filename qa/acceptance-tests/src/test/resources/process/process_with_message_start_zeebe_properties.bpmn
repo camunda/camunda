@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+                  xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"
+                  xmlns:dc="http://www.omg.org/spec/DD/20100524/DC"
+                  xmlns:zeebe="http://camunda.org/schema/zeebe/1.0"
+                  xmlns:di="http://www.omg.org/spec/DD/20100524/DI"
+                  id="Definitions_phase2" targetNamespace="http://bpmn.io/schema/bpmn">
+  <bpmn:process id="process_with_message_start_zeebe_properties"
+                name="Phase 2 Test Process"
+                isExecutable="true">
+    <bpmn:startEvent id="StartEvent_msg">
+      <bpmn:extensionElements>
+        <zeebe:properties>
+          <zeebe:property name="customKey" value="customValue" />
+          <zeebe:property name="env" value="test" />
+        </zeebe:properties>
+      </bpmn:extensionElements>
+      <bpmn:outgoing>Flow_1</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MED_Start" messageRef="Msg_Start" />
+    </bpmn:startEvent>
+    <bpmn:sequenceFlow id="Flow_1" sourceRef="StartEvent_msg" targetRef="IntermediateCatch_1" />
+    <bpmn:intermediateCatchEvent id="IntermediateCatch_1">
+      <bpmn:incoming>Flow_1</bpmn:incoming>
+      <bpmn:outgoing>Flow_2</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MED_Intermediate" messageRef="Msg_Intermediate" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:sequenceFlow id="Flow_2" sourceRef="IntermediateCatch_1" targetRef="EndEvent_1" />
+    <bpmn:endEvent id="EndEvent_1">
+      <bpmn:incoming>Flow_2</bpmn:incoming>
+    </bpmn:endEvent>
+  </bpmn:process>
+  <bpmn:message id="Msg_Start" name="process_with_message_start_zeebe_properties_Start" />
+  <bpmn:message id="Msg_Intermediate" name="process_with_message_start_zeebe_properties_Intermediate">
+    <bpmn:extensionElements>
+      <zeebe:subscription correlationKey="=&quot;phase2&quot;" />
+    </bpmn:extensionElements>
+  </bpmn:message>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="process_with_message_start_zeebe_properties">
+      <bpmndi:BPMNShape id="StartEvent_msg_di" bpmnElement="StartEvent_msg">
+        <dc:Bounds x="150" y="100" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="IntermediateCatch_1_di" bpmnElement="IntermediateCatch_1">
+        <dc:Bounds x="250" y="100" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="EndEvent_1_di" bpmnElement="EndEvent_1">
+        <dc:Bounds x="350" y="100" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_1_di" bpmnElement="Flow_1">
+        <di:waypoint x="186" y="118" />
+        <di:waypoint x="250" y="118" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_2_di" bpmnElement="Flow_2">
+        <di:waypoint x="286" y="118" />
+        <di:waypoint x="350" y="118" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

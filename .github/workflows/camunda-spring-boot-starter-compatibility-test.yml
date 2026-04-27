@@ -10,11 +10,11 @@ on:
   workflow_dispatch:
     inputs:
       client_version:
-        description: 'Spring client version to test (e.g., 8.8.0 or 8.9.0-SNAPSHOT). Leave empty to test all versions.'
+        description: 'Spring client version to test (e.g., 8.8.0 or 8.9-SNAPSHOT). Leave empty to test all versions.'
         required: false
         type: string
       server_version:
-        description: 'Server version to test (e.g., 8.8.0 or 8.9.0-SNAPSHOT). Leave empty to test all versions.'
+        description: 'Server version to test (e.g., 8.8.0 or 8.9-SNAPSHOT). Leave empty to test all versions.'
         required: false
         type: string
       skip_cache:
@@ -45,7 +45,7 @@ jobs:
       is-main: ${{ steps.branch-info.outputs.is-main }}
       branch-name: ${{ steps.branch-info.outputs.branch-name }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           fetch-depth: 0  # Fetch all history for git tags
 
@@ -138,7 +138,7 @@ jobs:
             IFS='.' read -r STABLE_MAJOR STABLE_MINOR <<< "$STABLE_VERSION"
             NEXT_MINOR=$((STABLE_MINOR + 1))
             if echo "$FILTERED_TAGS" | grep -q "^${STABLE_MAJOR}\\.${NEXT_MINOR}\\."; then
-              NEXT_SNAPSHOT="${STABLE_MAJOR}.${NEXT_MINOR}.0-SNAPSHOT"
+              NEXT_SNAPSHOT="${STABLE_MAJOR}.${NEXT_MINOR}-SNAPSHOT"
             else
               NEXT_SNAPSHOT="SNAPSHOT"
             fi
@@ -217,7 +217,7 @@ jobs:
       - name: Download tested combinations artifact
         id: download-tested
         continue-on-error: true
-        uses: actions/download-artifact@v8
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           name: spring-compatibility-tested-combinations
           path: /tmp/compatibility-state-download
@@ -243,6 +243,10 @@ jobs:
         run: |
           CLIENT_VERSION="${{ inputs.client_version }}"
           SERVER_VERSION="${{ inputs.server_version }}"
+
+          # Normalize x.y.0-SNAPSHOT to x.y-SNAPSHOT (Docker tag format)
+          CLIENT_VERSION="${CLIENT_VERSION/%.0-SNAPSHOT/-SNAPSHOT}"
+          SERVER_VERSION="${SERVER_VERSION/%.0-SNAPSHOT/-SNAPSHOT}"
 
           if [[ -n "$CLIENT_VERSION" ]] && [[ -n "$SERVER_VERSION" ]]; then
             echo "Manual trigger: Testing specific versions - Client: $CLIENT_VERSION, Server: $SERVER_VERSION"
@@ -322,7 +326,7 @@ jobs:
       fail-fast: false
       matrix: ${{ fromJson(needs.prepare-versions.outputs.matrix) }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           ref: ${{ needs.prepare-versions.outputs.branch-name }}
           fetch-depth: 0
@@ -345,8 +349,13 @@ jobs:
 
       - name: Override spring client version for compatibility testing
         run: |
-          # Inject an explicit <version> on camunda-spring-boot-starter to override the parent-managed version
-          sed -i '/<artifactId>camunda-spring-boot-starter<\/artifactId>/a\      <version>${{ matrix.client }}<\/version>' qa/compatibility-test/pom.xml
+          # Inject an explicit <version> on all Camunda client-side dependencies to override
+          # the parent-managed SNAPSHOT version. This ensures the entire client stack (starter,
+          # process-test framework, and client library) is at the released version being tested,
+          # while the server (Docker image) runs the SNAPSHOT version.
+          for artifact in camunda-spring-boot-starter camunda-process-test-spring camunda-process-test-java camunda-client-java; do
+            sed -i "/<artifactId>${artifact}<\/artifactId>/a\\      <version>${{ matrix.client }}<\/version>" qa/compatibility-test/pom.xml
+          done
 
       - name: Run compatibility tests
         uses: ./.github/actions/run-maven
@@ -367,7 +376,7 @@ jobs:
 
       - name: Upload tested combinations
         if: success()
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
         with:
           name: spring-tested-combo-${{ matrix.client }}-${{ matrix.server }}
           path: compatibility-test-results/tested.txt
@@ -393,10 +402,10 @@ jobs:
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
       - name: Download all tested combinations
-        uses: actions/download-artifact@v8
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           pattern: spring-tested-combo-*
           path: compatibility-test-results
@@ -419,7 +428,7 @@ jobs:
           cat compatibility-state/tested-combinations.txt
 
       - name: Upload combined results
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
         with:
           name: spring-compatibility-tested-combinations
           path: compatibility-state/tested-combinations.txt
@@ -443,7 +452,7 @@ jobs:
     if: always() && (contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled'))
     permissions: {}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - name: Import Secrets
         id: secrets
         uses: hashicorp/vault-action@79632e33d6953d190b940ffa440bf97821cabd80
@@ -456,7 +465,7 @@ jobs:
           secrets: |
             secret/data/products/camunda/ci/github-actions SLACK_CAMUNDA_EX_CI_WEBHOOK;
       - name: Notify failure
-        uses: slackapi/slack-github-action@v3.0.1
+        uses: slackapi/slack-github-action@af78098f536edbc4de71162a307590698245be95 # v3.0.1
         if: steps.secrets.outputs.SLACK_CAMUNDA_EX_CI_WEBHOOK != ''
         with:
           webhook: ${{ steps.secrets.outputs.SLACK_CAMUNDA_EX_CI_WEBHOOK }}

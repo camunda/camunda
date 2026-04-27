@@ -235,10 +235,12 @@ public class ExporterConfiguration {
     private boolean processInstanceEnabled = true;
     private ProcessInstanceRetentionMode processInstanceRetentionMode =
         ProcessInstanceRetentionMode.PI_HIERARCHY;
+    private boolean archiveByIdEnabled = false;
     private String elsRolloverDateFormat = "date";
     private String rolloverInterval = "1d";
     private String usageMetricsRolloverInterval = "1M";
     private int rolloverBatchSize = 100;
+    private int reindexBatchSize = 1000;
     private String waitPeriodBeforeArchiving = "1h";
     private int delayBetweenRuns = 2000;
     private int maxDelayBetweenRuns = 60000;
@@ -251,6 +253,14 @@ public class ExporterConfiguration {
 
     public void setProcessInstanceEnabled(final boolean processInstanceEnabled) {
       this.processInstanceEnabled = processInstanceEnabled;
+    }
+
+    public boolean isArchiveByIdEnabled() {
+      return archiveByIdEnabled;
+    }
+
+    public void setArchiveByIdEnabled(final boolean archiveByIdEnabled) {
+      this.archiveByIdEnabled = archiveByIdEnabled;
     }
 
     public String getElsRolloverDateFormat() {
@@ -287,6 +297,14 @@ public class ExporterConfiguration {
 
     public void setRolloverBatchSize(final int rolloverBatchSize) {
       this.rolloverBatchSize = rolloverBatchSize;
+    }
+
+    public int getReindexBatchSize() {
+      return reindexBatchSize;
+    }
+
+    public void setReindexBatchSize(final int reindexBatchSize) {
+      this.reindexBatchSize = reindexBatchSize;
     }
 
     public RetentionConfiguration getRetention() {

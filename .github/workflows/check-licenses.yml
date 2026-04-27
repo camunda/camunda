@@ -51,12 +51,12 @@ jobs:
             -Dquickly=true
             -DskipQaBuild=true
     steps:
-    - uses: actions/checkout@v6
+    - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
     # Import FOSSA_API_KEY secret from Vault
     - name: Import Secrets
       id: secrets
-      uses: hashicorp/vault-action@v3.4.0
+      uses: hashicorp/vault-action@4c06c5ccf5c0761b6029f56cfb1dcf5565918a3b # v3.4.0
       with:
         url: ${{ secrets.VAULT_ADDR }}
         method: approle
@@ -72,7 +72,7 @@ jobs:
         vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
         vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
 
-    - uses: actions/setup-go@v6
+    - uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6.4.0
       if: matrix.project.name == 'c8run'
       with:
         go-version: '>=1.23.1'
@@ -145,7 +145,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 3
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - name: Check for aborted jobs
         continue-on-error: true
         uses: ./.github/actions/observe-aborted-jobs

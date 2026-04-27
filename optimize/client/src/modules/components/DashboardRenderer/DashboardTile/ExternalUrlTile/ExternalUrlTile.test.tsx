@@ -38,6 +38,15 @@ it('should include an iframe with the provided external url', () => {
   expect(iframe).toHaveProp('src', 'externalURL');
 });
 
+it('should sandbox the iframe to prevent form submission and restrict capabilities', () => {
+  const node = shallow(<ExternalUrlTile {...props} />);
+
+  const iframe = node.find('iframe');
+
+  expect(iframe).toHaveProp('sandbox', 'allow-scripts');
+  expect(iframe).toHaveProp('referrerPolicy', 'no-referrer');
+});
+
 it('should update the iframe key to reload it when loadTileData function is called ', async () => {
   const node = shallow(
     <ExternalUrlTile {...props} children={(props) => <p {...props}>child</p>} />

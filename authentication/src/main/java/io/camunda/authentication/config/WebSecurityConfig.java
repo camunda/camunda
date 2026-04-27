@@ -37,6 +37,10 @@ import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.security.configuration.headers.HeaderConfiguration;
 import io.camunda.security.configuration.headers.values.FrameOptionMode;
 import io.camunda.security.entity.AuthenticationMethod;
+import io.camunda.security.oidc.CachingOidcClaimsProvider;
+import io.camunda.security.oidc.NoopOidcClaimsProvider;
+import io.camunda.security.oidc.OidcClaimsProvider;
+import io.camunda.security.oidc.OidcUserInfoClient;
 import io.camunda.security.reader.ResourceAccessProvider;
 import io.camunda.service.GroupServices;
 import io.camunda.service.RoleServices;
@@ -44,6 +48,8 @@ import io.camunda.service.TenantServices;
 import io.camunda.spring.utils.ConditionalOnSecondaryStorageDisabled;
 import io.camunda.spring.utils.ConditionalOnSecondaryStorageEnabled;
 import io.micrometer.common.KeyValues;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import io.micrometer.observation.ObservationRegistry;
 import jakarta.annotation.PostConstruct;
 import jakarta.servlet.FilterChain;
@@ -51,6 +57,9 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -61,8 +70,13 @@ import java.util.stream.StreamSupport;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.actuate.logging.LoggersEndpoint;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.security.autoconfigure.actuate.web.servlet.EndpointRequest;
+import org.springframework.boot.ssl.NoSuchSslBundleException;
+import org.springframework.boot.ssl.SslBundles;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
@@ -174,7 +188,6 @@ public class WebSecurityConfig {
       Set.of(
           "/login/**",
           "/logout",
-          "/identity/**",
           "/admin/**",
           "/operate/**",
           "/tasklist/**",
@@ -628,8 +641,101 @@ public class WebSecurityConfig {
 
     @Bean
     public CamundaAuthenticationConverter<Authentication> oidcTokenAuthenticationConverter(
-        final TokenClaimsConverter tokenClaimsConverter) {
-      return new OidcTokenAuthenticationConverter(tokenClaimsConverter);
+        final TokenClaimsConverter tokenClaimsConverter,
+        final OidcClaimsProvider oidcClaimsProvider) {
+      return new OidcTokenAuthenticationConverter(tokenClaimsConverter, oidcClaimsProvider);
+    }
+
+    /**
+     * Fallback {@link MeterRegistry} for test / minimal Spring contexts that don't configure the
+     * standard Spring Boot auto-configured {@code CompositeMeterRegistry}. In real deployments the
+     * app-wide registry wins via {@link ConditionalOnMissingBean} and metrics land on a scraped
+     * backend (Prometheus / OTLP / etc.) rather than the in-memory sink.
+     */
+    @Bean
+    @ConditionalOnMissingBean(MeterRegistry.class)
+    public MeterRegistry oidcFallbackMeterRegistry() {
+      return new SimpleMeterRegistry();
+    }
+
+    /**
+     * HTTP client used by {@link OidcClaimsProvider} implementations to call the IdP's {@code
+     * /userinfo} endpoint. Registered as a Spring-managed bean so its lifecycle is bound to the
+     * application context — {@code close()} on shutdown releases the JDK selector + executor
+     * threads. Can be overridden by registering a bean of the same name.
+     *
+     * <p>SSL context is sourced from the {@code oidc-userinfo} entry in {@link SslBundles} when
+     * present, so enterprise deployments with custom CA trust under {@code spring.ssl.bundle.*}
+     * apply automatically. Falls back to JDK default.
+     */
+    @Bean(destroyMethod = "close", name = "oidcUserInfoHttpClient")
+    @ConditionalOnMissingBean(name = "oidcUserInfoHttpClient")
+    public HttpClient oidcUserInfoHttpClient(
+        @Autowired(required = false) final SslBundles sslBundles) {
+      // Redirects are NOT followed. The JDK HttpClient would re-send the Authorization: Bearer
+      // header to the redirect target, which would leak the access token to an attacker-controlled
+      // URL if the IdP's /userinfo responded with a 3xx (misconfiguration, open-redirect vuln,
+      // hijacked CDN). OIDC Core does not require redirects on /userinfo; any 3xx surfaces as a
+      // non-2xx via OidcUserInfoClient.fetch() and degrades to JWT-only claims.
+      final HttpClient.Builder builder =
+          HttpClient.newBuilder()
+              .connectTimeout(Duration.ofSeconds(2))
+              .followRedirects(HttpClient.Redirect.NEVER);
+      if (sslBundles != null) {
+        try {
+          final var bundle = sslBundles.getBundle("oidc-userinfo");
+          builder.sslContext(bundle.createSslContext());
+          LOG.info(
+              "OIDC UserInfo HTTP client using SSL bundle 'oidc-userinfo' "
+                  + "(custom truststore / trust material)");
+        } catch (final NoSuchSslBundleException e) {
+          LOG.debug(
+              "No 'oidc-userinfo' SSL bundle configured; OIDC UserInfo HTTP client "
+                  + "uses JDK default SSLContext");
+        }
+      }
+      return builder.build();
+    }
+
+    @Bean
+    @ConditionalOnMissingBean(OidcClaimsProvider.class)
+    public OidcClaimsProvider oidcClaimsProvider(
+        final SecurityConfiguration securityConfiguration,
+        final ClientRegistrationRepository clientRegistrationRepository,
+        final OidcAuthenticationConfigurationRepository oidcProviderRepository,
+        @Qualifier("oidcUserInfoHttpClient") final HttpClient oidcUserInfoHttpClient,
+        final MeterRegistry meterRegistry) {
+      final var oidc = securityConfiguration.getAuthentication().getOidc();
+      if (oidc == null || !oidc.getUserInfoAugmentation().isEnabled()) {
+        return new NoopOidcClaimsProvider();
+      }
+      // Build a map of issuer -> userinfo URI from the Spring-managed ClientRegistrations.
+      // Each ClientRegistration's ProviderDetails.getIssuerUri() is the canonical 'iss' claim
+      // the IdP emits on its tokens, and UserInfoEndpoint.getUri() is the userinfo URL from
+      // the same discovery document. CachingOidcClaimsProvider uses this to route each
+      // token to its own issuer's userinfo endpoint — never cross-wired.
+      final Map<String, URI> userInfoUriByIssuer =
+          oidcProviderRepository.getOidcAuthenticationConfigurations().keySet().stream()
+              .map(clientRegistrationRepository::findByRegistrationId)
+              .filter(Objects::nonNull)
+              .filter(cr -> cr.getProviderDetails().getIssuerUri() != null)
+              .filter(cr -> cr.getProviderDetails().getUserInfoEndpoint().getUri() != null)
+              .collect(
+                  toMap(
+                      cr -> cr.getProviderDetails().getIssuerUri(),
+                      cr -> URI.create(cr.getProviderDetails().getUserInfoEndpoint().getUri()),
+                      (existing, replacement) -> existing));
+      if (userInfoUriByIssuer.isEmpty()) {
+        throw new IllegalStateException(
+            "UserInfo augmentation is enabled but no ClientRegistration exposes a userinfo "
+                + "endpoint. Check the IdP's OIDC discovery document and the userInfoEnabled "
+                + "flag.");
+      }
+      return new CachingOidcClaimsProvider(
+          oidc,
+          userInfoUriByIssuer,
+          new OidcUserInfoClient(oidcUserInfoHttpClient, Duration.ofSeconds(2)),
+          meterRegistry);
     }
 
     @Bean
@@ -644,7 +750,8 @@ public class WebSecurityConfig {
           oidcAccessTokenDecoderFactory,
           tokenClaimsConverter,
           request,
-          buildAdditionalJwkSetUrisByIssuer(oidcProviderRepository));
+          buildAdditionalJwkSetUrisByIssuer(oidcProviderRepository),
+          buildPreferIdTokenClaimsByRegistrationId(oidcProviderRepository));
     }
 
     @Bean
@@ -796,6 +903,13 @@ public class WebSecurityConfig {
                     }
                     return a;
                   }));
+    }
+
+    private Map<String, Boolean> buildPreferIdTokenClaimsByRegistrationId(
+        final OidcAuthenticationConfigurationRepository oidcProviderRepository) {
+      return oidcProviderRepository.getOidcAuthenticationConfigurations().entrySet().stream()
+          .filter(entry -> entry.getValue().isPreferIdTokenClaims())
+          .collect(toMap(Map.Entry::getKey, entry -> Boolean.TRUE));
     }
 
     @Bean

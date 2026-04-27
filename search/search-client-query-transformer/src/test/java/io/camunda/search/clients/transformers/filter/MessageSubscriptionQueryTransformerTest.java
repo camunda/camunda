@@ -14,8 +14,10 @@ import io.camunda.search.clients.query.SearchMatchNoneQuery;
 import io.camunda.search.clients.query.SearchTermQuery;
 import io.camunda.search.clients.query.SearchTermsQuery;
 import io.camunda.search.clients.types.TypedValue;
+import io.camunda.search.entities.MessageSubscriptionEntity.MessageSubscriptionType;
 import io.camunda.search.filter.FilterBuilders;
 import io.camunda.search.filter.MessageSubscriptionFilter;
+import io.camunda.search.filter.Operation;
 import io.camunda.security.auth.Authorization;
 import io.camunda.security.reader.AuthorizationCheck;
 import io.camunda.security.reader.ResourceAccessChecks;
@@ -37,7 +39,7 @@ public class MessageSubscriptionQueryTransformerTest extends AbstractTransformer
 
   @ParameterizedTest
   @MethodSource("queryFilterParameters")
-  void shouldQueryByMessageSubscriptionKey(
+  void shouldQueryByTermCriterion(
       final Function<MessageSubscriptionFilter.Builder, ObjectBuilder<MessageSubscriptionFilter>>
           filterFunction,
       final String expectedFieldName,
@@ -59,11 +61,13 @@ public class MessageSubscriptionQueryTransformerTest extends AbstractTransformer
               assertThat(query.must().size()).isEqualTo(2);
               assertThat(query.must().getFirst().queryOption())
                   .isInstanceOfSatisfying(
-                      SearchTermQuery.class,
-                      termQuery -> {
-                        assertThat(termQuery.field()).isEqualTo("eventSourceType");
-                        assertThat(termQuery.value().stringValue())
-                            .isEqualTo("PROCESS_MESSAGE_SUBSCRIPTION");
+                      SearchTermsQuery.class,
+                      termsQuery -> {
+                        assertThat(termsQuery.field()).isEqualTo("eventSourceType");
+                        Assertions.assertThat(
+                                termsQuery.values().stream().map(TypedValue::stringValue).toList())
+                            .containsExactlyInAnyOrder(
+                                "PROCESS_MESSAGE_SUBSCRIPTION", "MESSAGE_START_EVENT_SUBSCRIPTION");
                       });
               assertThat(query.must().get(1).queryOption())
                   .isInstanceOfSatisfying(
@@ -132,7 +136,44 @@ public class MessageSubscriptionQueryTransformerTest extends AbstractTransformer
             (Function<MessageSubscriptionFilter.Builder, ObjectBuilder<MessageSubscriptionFilter>>)
                 b -> b.tenantIds("tnt1"),
             "tenantId",
-            "tnt1"));
+            "tnt1"),
+        Arguments.of(
+            (Function<MessageSubscriptionFilter.Builder, ObjectBuilder<MessageSubscriptionFilter>>)
+                b -> b.processDefinitionNames("proc_def_name"),
+            "processDefinitionName",
+            "proc_def_name"),
+        Arguments.of(
+            (Function<MessageSubscriptionFilter.Builder, ObjectBuilder<MessageSubscriptionFilter>>)
+                b -> b.processDefinitionVersions(5),
+            "processDefinitionVersion",
+            5),
+        Arguments.of(
+            (Function<MessageSubscriptionFilter.Builder, ObjectBuilder<MessageSubscriptionFilter>>)
+                b -> b.messageSubscriptionTypes(MessageSubscriptionType.START_EVENT.name()),
+            "messageSubscriptionType",
+            "START_EVENT"),
+        Arguments.of(
+            (Function<MessageSubscriptionFilter.Builder, ObjectBuilder<MessageSubscriptionFilter>>)
+                b -> b.messageSubscriptionTypes(MessageSubscriptionType.PROCESS_EVENT.name()),
+            "messageSubscriptionType",
+            "PROCESS_EVENT"),
+        Arguments.of(
+            (Function<MessageSubscriptionFilter.Builder, ObjectBuilder<MessageSubscriptionFilter>>)
+                b ->
+                    b.messageSubscriptionTypeOperations(
+                        Operation.in(MessageSubscriptionType.PROCESS_EVENT.name())),
+            "messageSubscriptionType",
+            "PROCESS_EVENT"),
+        Arguments.of(
+            (Function<MessageSubscriptionFilter.Builder, ObjectBuilder<MessageSubscriptionFilter>>)
+                b -> b.toolNames("myTool"),
+            "toolName",
+            "myTool"),
+        Arguments.of(
+            (Function<MessageSubscriptionFilter.Builder, ObjectBuilder<MessageSubscriptionFilter>>)
+                b -> b.inboundConnectorTypes("io.camunda:http-webhook:1"),
+            "inboundConnectorType",
+            "io.camunda:http-webhook:1"));
   }
 
   @Test
@@ -159,11 +200,13 @@ public class MessageSubscriptionQueryTransformerTest extends AbstractTransformer
               assertThat(query.must().size()).isEqualTo(2);
               assertThat(query.must().getFirst().queryOption())
                   .isInstanceOfSatisfying(
-                      SearchTermQuery.class,
-                      termQuery -> {
-                        assertThat(termQuery.field()).isEqualTo("eventSourceType");
-                        assertThat(termQuery.value().stringValue())
-                            .isEqualTo("PROCESS_MESSAGE_SUBSCRIPTION");
+                      SearchTermsQuery.class,
+                      termsQuery -> {
+                        assertThat(termsQuery.field()).isEqualTo("eventSourceType");
+                        Assertions.assertThat(
+                                termsQuery.values().stream().map(TypedValue::stringValue).toList())
+                            .containsExactlyInAnyOrder(
+                                "PROCESS_MESSAGE_SUBSCRIPTION", "MESSAGE_START_EVENT_SUBSCRIPTION");
                       });
               assertThat(query.must().get(1).queryOption())
                   .isInstanceOfSatisfying(
@@ -212,10 +255,13 @@ public class MessageSubscriptionQueryTransformerTest extends AbstractTransformer
     assertThat(queryVariant)
         .isNotNull()
         .isInstanceOfSatisfying(
-            SearchTermQuery.class,
-            termQuery -> {
-              assertThat(termQuery.field()).isEqualTo("eventSourceType");
-              assertThat(termQuery.value().stringValue()).isEqualTo("PROCESS_MESSAGE_SUBSCRIPTION");
+            SearchTermsQuery.class,
+            termsQuery -> {
+              assertThat(termsQuery.field()).isEqualTo("eventSourceType");
+              Assertions.assertThat(
+                      termsQuery.values().stream().map(TypedValue::stringValue).toList())
+                  .containsExactlyInAnyOrder(
+                      "PROCESS_MESSAGE_SUBSCRIPTION", "MESSAGE_START_EVENT_SUBSCRIPTION");
             });
   }
 
@@ -240,11 +286,13 @@ public class MessageSubscriptionQueryTransformerTest extends AbstractTransformer
               assertThat(query.must().size()).isEqualTo(2);
               assertThat(query.must().getFirst().queryOption())
                   .isInstanceOfSatisfying(
-                      SearchTermQuery.class,
-                      termQuery -> {
-                        assertThat(termQuery.field()).isEqualTo("eventSourceType");
-                        assertThat(termQuery.value().stringValue())
-                            .isEqualTo("PROCESS_MESSAGE_SUBSCRIPTION");
+                      SearchTermsQuery.class,
+                      termsQuery -> {
+                        assertThat(termsQuery.field()).isEqualTo("eventSourceType");
+                        Assertions.assertThat(
+                                termsQuery.values().stream().map(TypedValue::stringValue).toList())
+                            .containsExactlyInAnyOrder(
+                                "PROCESS_MESSAGE_SUBSCRIPTION", "MESSAGE_START_EVENT_SUBSCRIPTION");
                       });
               assertThat(query.must().get(1).queryOption())
                   .isInstanceOfSatisfying(
@@ -276,10 +324,13 @@ public class MessageSubscriptionQueryTransformerTest extends AbstractTransformer
     assertThat(queryVariant)
         .isNotNull()
         .isInstanceOfSatisfying(
-            SearchTermQuery.class,
-            termQuery -> {
-              assertThat(termQuery.field()).isEqualTo("eventSourceType");
-              assertThat(termQuery.value().stringValue()).isEqualTo("PROCESS_MESSAGE_SUBSCRIPTION");
+            SearchTermsQuery.class,
+            termsQuery -> {
+              assertThat(termsQuery.field()).isEqualTo("eventSourceType");
+              Assertions.assertThat(
+                      termsQuery.values().stream().map(TypedValue::stringValue).toList())
+                  .containsExactlyInAnyOrder(
+                      "PROCESS_MESSAGE_SUBSCRIPTION", "MESSAGE_START_EVENT_SUBSCRIPTION");
             });
   }
 

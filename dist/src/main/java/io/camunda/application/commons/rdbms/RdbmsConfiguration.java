@@ -22,6 +22,7 @@ import io.camunda.db.rdbms.read.service.CorrelatedMessageSubscriptionDbReader;
 import io.camunda.db.rdbms.read.service.DecisionDefinitionDbReader;
 import io.camunda.db.rdbms.read.service.DecisionInstanceDbReader;
 import io.camunda.db.rdbms.read.service.DecisionRequirementsDbReader;
+import io.camunda.db.rdbms.read.service.DeployedResourceDbReader;
 import io.camunda.db.rdbms.read.service.FlowNodeInstanceDbReader;
 import io.camunda.db.rdbms.read.service.FormDbReader;
 import io.camunda.db.rdbms.read.service.GlobalListenerDbReader;
@@ -62,6 +63,7 @@ import io.camunda.db.rdbms.sql.CorrelatedMessageSubscriptionMapper;
 import io.camunda.db.rdbms.sql.DecisionDefinitionMapper;
 import io.camunda.db.rdbms.sql.DecisionInstanceMapper;
 import io.camunda.db.rdbms.sql.DecisionRequirementsMapper;
+import io.camunda.db.rdbms.sql.DeployedResourceMapper;
 import io.camunda.db.rdbms.sql.ExporterPositionMapper;
 import io.camunda.db.rdbms.sql.FlowNodeInstanceMapper;
 import io.camunda.db.rdbms.sql.FormMapper;
@@ -389,6 +391,12 @@ public class RdbmsConfiguration {
   }
 
   @Bean
+  public DeployedResourceDbReader resourceRdbmsReader(
+      final DeployedResourceMapper deployedResourceMapper) {
+    return new DeployedResourceDbReader(deployedResourceMapper);
+  }
+
+  @Bean
   public RdbmsWriterFactory rdbmsWriterFactory(
       final SqlSessionFactory sqlSessionFactory,
       final ExporterPositionMapper exporterPositionMapper,
@@ -405,7 +413,6 @@ public class RdbmsConfiguration {
       final UserTaskMapper userTaskMapper,
       final VariableMapper variableMapper,
       final MeterRegistry meterRegistry,
-      final BatchOperationDbReader batchOperationReader,
       final JobMapper jobMapper,
       final JobMetricsBatchMapper jobMetricsBatchMapper,
       final SequenceFlowMapper sequenceFlowMapper,
@@ -432,7 +439,6 @@ public class RdbmsConfiguration {
         userTaskMapper,
         variableMapper,
         meterRegistry,
-        batchOperationReader,
         jobMapper,
         jobMetricsBatchMapper,
         sequenceFlowMapper,
@@ -488,7 +494,8 @@ public class RdbmsConfiguration {
           incidentProcessInstanceStatisticsByErrorReader,
       final IncidentProcessInstanceStatisticsByDefinitionDbReader
           incidentProcessInstanceStatisticsByDefinitionReader,
-      final GlobalListenerDbReader globalListenerDbReader) {
+      final GlobalListenerDbReader globalListenerDbReader,
+      final DeployedResourceDbReader deployedResourceDbReader) {
     return new RdbmsService(
         rdbmsWriterFactory,
         auditLogReader,
@@ -527,7 +534,8 @@ public class RdbmsConfiguration {
         historyDeletionDbReader,
         incidentProcessInstanceStatisticsByErrorReader,
         incidentProcessInstanceStatisticsByDefinitionReader,
-        globalListenerDbReader);
+        globalListenerDbReader,
+        deployedResourceDbReader);
   }
 
   @Bean

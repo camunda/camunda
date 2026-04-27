@@ -19,6 +19,7 @@ import io.camunda.search.entities.CorrelatedMessageSubscriptionEntity;
 import io.camunda.search.entities.DecisionDefinitionEntity;
 import io.camunda.search.entities.DecisionInstanceEntity;
 import io.camunda.search.entities.DecisionRequirementsEntity;
+import io.camunda.search.entities.DeployedResourceEntity;
 import io.camunda.search.entities.FlowNodeInstanceEntity;
 import io.camunda.search.entities.FormEntity;
 import io.camunda.search.entities.GlobalJobStatisticsEntity;
@@ -449,5 +450,15 @@ public class NoopSearchClientsProxy implements SearchClientsProxy {
   public SearchQueryResult<GlobalListenerEntity> searchGlobalListeners(
       final GlobalListenerQuery query) {
     return SearchQueryResult.empty();
+  }
+
+  @Override
+  public DeployedResourceEntity getDeployedResource(final long key) {
+    return null;
+  }
+
+  @Override
+  public DeployedResourceEntity getDeployedResourceMetadata(final long key) {
+    return null;
   }
 }

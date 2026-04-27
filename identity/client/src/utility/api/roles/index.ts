@@ -46,6 +46,14 @@ export const deleteRole: ApiDefinition<undefined, Pick<Role, "roleId">> = ({
   roleId,
 }) => apiDelete(`${ROLES_ENDPOINT}/${encodeURIComponent(roleId)}`);
 
+export const updateRole: ApiDefinition<undefined, Role> = (role) => {
+  const { roleId, name, description } = role;
+  return apiPut(`${ROLES_ENDPOINT}/${encodeURIComponent(roleId)}`, {
+    name,
+    description,
+  });
+};
+
 // ----------------- Mapping rules within a Role -----------------
 
 export const getMappingRulesByRoleId: ApiDefinition<

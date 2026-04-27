@@ -57,7 +57,7 @@ jobs:
             runner: "aws-arm-core-4-longrunning"
             arch: arm64
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - name: Print metadata
         uses: ./.github/actions/print-metadata
       - uses: ./.github/actions/setup-build
@@ -130,7 +130,7 @@ jobs:
       TEST_OWNER: Core Features
       TEST_TYPE: Unit
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - name: Print metadata
         uses: ./.github/actions/print-metadata
       - uses: ./.github/actions/setup-build
@@ -189,7 +189,7 @@ jobs:
       TEST_OWNER: Core Features
       TEST_TYPE: Performance
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - name: Print metadata
         uses: ./.github/actions/print-metadata
       - uses: ./.github/actions/setup-build
@@ -259,7 +259,7 @@ jobs:
       TEST_OWNER: Core Features
       TEST_TYPE: Unit
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - name: Print metadata
         uses: ./.github/actions/print-metadata
       - name: Install and allow strace tests
@@ -329,10 +329,10 @@ jobs:
       TEST_OWNER: Core Features
       TEST_TYPE: Build
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - name: Print metadata
         uses: ./.github/actions/print-metadata
-      - uses: hadolint/hadolint-action@v3.3.0
+      - uses: hadolint/hadolint-action@2332a7b74a6de0dda2e2221d575162eba76ba5e5 # v3.3.0
         with:
           config: ./.hadolint.yaml
           dockerfile: ./Dockerfile
@@ -343,7 +343,7 @@ jobs:
       - name: Upload Hadolint Results
         if: always()
         continue-on-error: ${{ github.event_name == 'merge_group' }}
-        uses: github/codeql-action/upload-sarif@v4
+        uses: github/codeql-action/upload-sarif@c10b8064de6f491fea524254123dbe5e09572f13 # v4.35.1
         with:
           sarif_file: ./hadolint.sarif
       - uses: ./.github/actions/setup-build
@@ -403,14 +403,21 @@ jobs:
       - docker-checks
       - strace-tests
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - run: |
           EXIT_CODE=${{ ((contains(needs.*.result, 'cancelled') || contains(needs.*.result, 'failure')) && 1) || 0 }}
           exit $EXIT_CODE
 
-  # Dynamically generate the Docker tag (e.g., SNAPSHOT or X.Y-SNAPSHOT) and concurrency group based on branch name
-  utils-get-snapshot-docker-tag-and-concurrency-group:
-    uses: ./.github/workflows/generate-snapshot-docker-tag-and-concurrency-group.yml
+  # Dynamically generate the Docker tag (e.g., SNAPSHOT or X.Y-SNAPSHOT) based on branch name
+  utils-get-snapshot-docker-tag:
+    uses: ./.github/workflows/generate-snapshot-docker-tag.yml
+    secrets: inherit
+    permissions:
+      contents: read
+
+  # Dynamically generate the concurrency group based on branch name
+  utils-get-concurrency-group:
+    uses: ./.github/workflows/generate-concurrency-group.yml
     secrets: inherit
     permissions:
       contents: read
@@ -421,14 +428,14 @@ jobs:
     name: Deploy snapshot Docker image
     timeout-minutes: 15
     permissions: {}  # GITHUB_TOKEN unused in this job
-    needs: [ test-summary, utils-get-snapshot-docker-tag-and-concurrency-group ]
+    needs: [ test-summary, utils-get-snapshot-docker-tag, utils-get-concurrency-group ]
     runs-on: ubuntu-latest
     if: github.repository == 'camunda/camunda' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/stable/'))
     concurrency:
-      group:  ${{ needs.utils-get-snapshot-docker-tag-and-concurrency-group.outputs.concurrency_group_name }}
+      group:  ${{ needs.utils-get-concurrency-group.outputs.concurrency_group_name }}
       cancel-in-progress: false
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - uses: ./.github/actions/setup-build
         with:
           dockerhub: true
@@ -445,8 +452,8 @@ jobs:
         with:
           repository: camunda/zeebe
           version: |
-            ${{ needs.utils-get-snapshot-docker-tag-and-concurrency-group.outputs.version_tag }}
-            ${{ needs.utils-get-snapshot-docker-tag-and-concurrency-group.outputs.snapshot_tag }}
+            ${{ needs.utils-get-snapshot-docker-tag.outputs.version_tag }}
+            ${{ needs.utils-get-snapshot-docker-tag.outputs.snapshot_tag }}
           platforms: ${{ env.DOCKER_PLATFORMS }}
           push: true
           distball: ${{ steps.build-zeebe.outputs.distball }}
@@ -461,22 +468,32 @@ jobs:
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           user_description: "team-distributed-systems"
 
+  # Dynamically generate the concurrency group for load test image deployment
+  utils-get-concurrency-group-for-load-test:
+    uses: ./.github/workflows/generate-concurrency-group.yml
+    secrets: inherit
+    permissions:
+      contents: read
+    with:
+      base_group_name: deploy-load-test-images
+
   deploy-load-test-images:
     name: Deploy load test images
     timeout-minutes: 5
-    needs: [ test-summary ]
+    needs: [ test-summary, utils-get-snapshot-docker-tag, utils-get-concurrency-group-for-load-test ]
     runs-on: ubuntu-latest
-    if: github.repository == 'camunda/camunda' && github.ref == 'refs/heads/main'
+    if: github.repository == 'camunda/camunda' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/stable/'))
     concurrency:
-      group: deploy-load-test-images
+      group: ${{ needs.utils-get-concurrency-group-for-load-test.outputs.concurrency_group_name }}
       cancel-in-progress: false
     permissions:
       contents: 'read'
       id-token: 'write'
     env:
       IMAGE_REPOSITORY: registry.camunda.cloud/team-zeebe
+      IMAGE_TAG: ${{ needs.utils-get-snapshot-docker-tag.outputs.snapshot_tag != '' && needs.utils-get-snapshot-docker-tag.outputs.snapshot_tag || needs.utils-get-snapshot-docker-tag.outputs.version_tag }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - uses: ./.github/actions/setup-build
         with:
           dockerhub-readonly: true
@@ -486,9 +503,9 @@ jobs:
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
       - run: ./mvnw -B -D skipTests -D skipChecks -pl load-tests/load-tester -am install
       - name: Build Starter Image
-        run: ./mvnw -pl load-tests/load-tester jib:build -P starter -D image="${{ env.IMAGE_REPOSITORY }}/starter:SNAPSHOT"
+        run: ./mvnw -pl load-tests/load-tester jib:build -P starter -D image="${{ env.IMAGE_REPOSITORY }}/starter:${{ env.IMAGE_TAG }}"
       - name: Build Worker Image
-        run: ./mvnw -pl load-tests/load-tester jib:build -P worker -D image="${{ env.IMAGE_REPOSITORY }}/worker:SNAPSHOT"
+        run: ./mvnw -pl load-tests/load-tester jib:build -P worker -D image="${{ env.IMAGE_REPOSITORY }}/worker:${{ env.IMAGE_TAG }}"
       - name: Observe build status
         if: always()
         continue-on-error: true
@@ -548,7 +565,7 @@ jobs:
           vault-auth-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-auth-secret-id: ${{ secrets.VAULT_SECRET_ID }}
           vault-url: ${{ secrets.VAULT_ADDR }}
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - id: approve-and-merge-backport-renovate
         name: Approve and merge backport PR
         env:

@@ -16,7 +16,7 @@ import {createWrapper} from './mocks';
 
 describe('<Decision /> - operations', () => {
   beforeEach(() => {
-    const selectedDecisionDefinition = mockDecisionDefinitions.items[5];
+    const selectedDecisionDefinition = mockDecisionDefinitions.items[5]!;
     mockSearchDecisionDefinitions().withSuccess({
       items: [selectedDecisionDefinition],
       page: {

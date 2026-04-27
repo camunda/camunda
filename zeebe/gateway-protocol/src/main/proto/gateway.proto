@@ -82,6 +82,7 @@ message ActivatedJob {
     START = 5;
     UNSPECIFIED = 6;
     UPDATING = 7;
+    BEFORE_ALL = 8;
   }
 
   // the key, a unique identifier for the job

@@ -17,19 +17,19 @@ import {
   createRoutesFromElements,
 } from 'react-router-dom';
 import {ErrorBoundary} from 'react-error-boundary';
-import {Notifications} from 'common/notifications';
-import {NetworkStatusWatcher} from 'common/NetworkStatusWatcher';
-import {ThemeProvider} from 'common/theme/ThemeProvider';
-import {SessionWatcher} from 'common/auth/SessionWatcher';
-import {TrackPagination} from 'common/tracking/TrackPagination';
-import {ReactQueryProvider} from 'common/react-query/ReactQueryProvider';
+import {Notifications} from 'modules/notifications';
+import {NetworkStatusWatcher} from 'modules/NetworkStatusWatcher';
+import {ThemeProvider} from 'modules/theme/ThemeProvider';
+import {SessionWatcher} from 'modules/auth/SessionWatcher';
+import {TrackPagination} from 'modules/tracking/TrackPagination';
+import {ReactQueryProvider} from 'modules/react-query/ReactQueryProvider';
 import {
   ErrorWithinLayout,
   FallbackErrorPage,
-} from 'common/error-handling/errorBoundaries';
-import {tracking} from 'common/tracking';
-import {getClientConfig} from 'common/config/getClientConfig';
-import {Forbidden} from 'common/error-handling/Forbidden';
+} from 'modules/error-handling/errorBoundaries';
+import {tracking} from 'modules/tracking';
+import {getClientConfig} from 'modules/config/getClientConfig';
+import {Forbidden} from 'pages/Forbidden';
 
 const Wrapper: React.FC = () => {
   return (
@@ -41,103 +41,53 @@ const Wrapper: React.FC = () => {
   );
 };
 
-const v1Routes = createRoutesFromElements(
-  <Route path="/" element={<Wrapper />} ErrorBoundary={ErrorWithinLayout}>
-    <Route path="login" lazy={() => import('common/auth/Login')} />
-    <Route
-      path="new/:bpmnProcessId"
-      lazy={() => import('./v1/StartProcessFromForm')}
-    />
-    <Route path="/" lazy={() => import('./common/components/Layout')}>
-      <Route path="forbidden" element={<Forbidden />} />
-      <Route path="processes" ErrorBoundary={ErrorWithinLayout}>
-        <Route index lazy={() => import('./v1/ProcessesTab')} />
-        <Route
-          path=":bpmnProcessId/start"
-          lazy={() => import('./v1/ProcessesTab')}
-        />
-      </Route>
-      <Route
-        path="/"
-        lazy={() => import('./v1/TasksTab')}
-        ErrorBoundary={ErrorWithinLayout}
-      >
-        <Route
-          index
-          lazy={() => import('./common/tasks/EmptyPage')}
-          ErrorBoundary={ErrorWithinLayout}
-        />
-        <Route
-          path=":id"
-          lazy={() => import('./v1/TaskDetailsLayout')}
-          ErrorBoundary={ErrorWithinLayout}
-        >
-          <Route index lazy={() => import('./v1/TaskDetails')} />
+const router = createBrowserRouter(
+  createRoutesFromElements(
+    <Route path="/" element={<Wrapper />} ErrorBoundary={ErrorWithinLayout}>
+      <Route path="login" lazy={() => import('pages/Login')} />
+      <Route path="/" lazy={() => import('./pages/Layout')}>
+        <Route path="forbidden" element={<Forbidden />} />
+        <Route path="processes" ErrorBoundary={ErrorWithinLayout}>
+          <Route index lazy={() => import('./pages/ProcessesTab')} />
           <Route
-            path="process"
-            lazy={() => import('./v1/TaskDetailsProcessView')}
+            path=":processDefinitionKey/start"
+            lazy={() => import('./pages/ProcessesTab')}
           />
         </Route>
-      </Route>
-    </Route>
-  </Route>,
-);
-
-const v2Routes = createRoutesFromElements(
-  <Route path="/" element={<Wrapper />} ErrorBoundary={ErrorWithinLayout}>
-    <Route path="login" lazy={() => import('common/auth/Login')} />
-    <Route
-      path="new/:bpmnProcessId"
-      lazy={() => import('./v2/StartProcessFromForm')}
-    />
-    <Route path="/" lazy={() => import('./common/components/Layout')}>
-      <Route path="forbidden" element={<Forbidden />} />
-      <Route path="processes" ErrorBoundary={ErrorWithinLayout}>
-        <Route index lazy={() => import('./v2/ProcessesTab')} />
         <Route
-          path=":processDefinitionKey/start"
-          lazy={() => import('./v2/ProcessesTab')}
-        />
-      </Route>
-      <Route
-        path="/"
-        lazy={() => import('./v2/TasksTab')}
-        ErrorBoundary={ErrorWithinLayout}
-      >
-        <Route
-          index
-          lazy={() => import('./common/tasks/EmptyPage')}
-          ErrorBoundary={ErrorWithinLayout}
-        />
-        <Route
-          path=":id"
-          lazy={() => import('./v2/TaskDetailsLayout')}
+          path="/"
+          lazy={() => import('./pages/TasksTab')}
           ErrorBoundary={ErrorWithinLayout}
         >
-          <Route index lazy={() => import('./v2/TaskDetails')} />
           <Route
-            path="process"
-            lazy={() => import('./v2/TaskDetailsProcessView')}
+            index
+            lazy={() => import('./pages/NoTaskSelected')}
+            ErrorBoundary={ErrorWithinLayout}
           />
           <Route
-            path="history"
-            lazy={() => import('./v2/TaskDetailsHistoryView')}
+            path=":id"
+            lazy={() => import('./pages/TaskDetailsLayout')}
+            ErrorBoundary={ErrorWithinLayout}
           >
+            <Route index lazy={() => import('./pages/TaskDetails')} />
             <Route
-              path=":auditLogKey"
-              lazy={() =>
-                import('./v2/TaskDetailsHistoryView/HistoryItemDetailsModal')
-              }
+              path="process"
+              lazy={() => import('./pages/TaskDetailsProcessView')}
             />
+            <Route
+              path="history"
+              lazy={() => import('./pages/TaskDetailsHistoryView')}
+            >
+              <Route
+                path=":auditLogKey"
+                lazy={() => import('./pages/HistoryItemDetailsModal')}
+              />
+            </Route>
           </Route>
         </Route>
       </Route>
-    </Route>
-  </Route>,
-);
-
-const router = createBrowserRouter(
-  getClientConfig().clientMode === 'v1' ? v1Routes : v2Routes,
+    </Route>,
+  ),
   {
     basename: import.meta.env.DEV ? '/' : getClientConfig().baseName,
   },

@@ -377,17 +377,23 @@ class TaskDetailsPage {
     const input = this.page.getByLabel(label, {exact: true});
     await waitForAssertion({
       assertion: async () => {
-        const actualValue = input;
-        await expect(actualValue).toHaveValue(expectedValue);
+        await expect(input).toHaveValue(expectedValue);
       },
       onFailure: async () => {
-        console.log(`Retrying assertion for field "${label}"...`);
+        console.log(
+          `Assertion for field "${label}" failed, reloading page and retrying...`,
+        );
+        await this.page.reload();
+        await expect(this.form).toBeVisible({timeout: 30000});
       },
     });
   }
 
-  async assertItemChecked(label: string): Promise<void> {
-    await expect(this.page.getByLabel(label)).toBeChecked();
+  async assertItemChecked(
+    label: string,
+    timeout: number = 60000,
+  ): Promise<void> {
+    await expect(this.page.getByLabel(label)).toBeChecked({timeout});
   }
 
   async selectTaglistValues(values: string[]) {
@@ -411,6 +417,20 @@ class TaskDetailsPage {
 
   getHistoryTableAssignCellCount(): Promise<number> {
     return this.historyTableAssignCell.count();
+  }
+
+  async unassignReassignToMeAndComplete(): Promise<void> {
+    // Unassign from the current assignee
+    await this.clickUnassignButton();
+
+    // Assign to the logged-in user and verify assignment
+    await this.clickAssignToMeButton();
+
+    // Complete the task, wait for the banner to appear, then disappear
+    await expect(this.completeTaskButton).toBeEnabled({timeout: 15000});
+    await this.clickCompleteTaskButton();
+    await expect(this.taskCompletedBanner).toBeVisible();
+    await expect(this.taskCompletedBanner).toBeHidden({timeout: 15000});
   }
 }
 

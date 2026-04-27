@@ -31,6 +31,7 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
+      x-added-in-version: "8.6"
 
   /jobs/search:
     post:
@@ -61,6 +62,7 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/Forbidden'
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+      x-added-in-version: "8.8"
 
   /jobs/{jobKey}/failure:
     post:
@@ -110,6 +112,7 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
+      x-added-in-version: "8.6"
 
   /jobs/{jobKey}/error:
     post:
@@ -157,6 +160,7 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
+      x-added-in-version: "8.6"
 
   /jobs/{jobKey}/completion:
     post:
@@ -203,6 +207,7 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
+      x-added-in-version: "8.6"
 
   /jobs/{jobKey}:
     patch:
@@ -248,6 +253,7 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
+      x-added-in-version: "8.6"
 
 ## Schema definitions
 
@@ -1035,6 +1041,7 @@ components:
       type: string
       enum:
         - ASSIGNING
+        - BEFORE_ALL
         - CANCELING
         - COMPLETING
         - CREATING

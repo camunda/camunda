@@ -25,12 +25,12 @@ jobs:
       matrix:
         shards: [ 1, 2, 3, 4, 5, 6] # Values are not used, we just need an array of the right length
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - name: Generate cache key with current hour
         id: cache-key
         run: echo "hour=$(date -u +%Y%m%d%H)" >> "$GITHUB_OUTPUT"
       - name: Cache Zeebe versions (hourly refresh)
-        uses: actions/cache@v5
+        uses: actions/cache@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5.0.4
         with:
           path: .cache/camunda
           key: zeebe-versions-${{ steps.cache-key.outputs.hour }}
@@ -39,13 +39,23 @@ jobs:
       - name: Find previous report
         id: get-last-run-id
         run: |
-          runs=$(gh api /repos/${{ github.repository }}/actions/workflows/zeebe-version-compatibility.yml/runs)
-          last_run_id=$(echo "$runs" | jq 'first(.workflow_runs[] | select(.status=="completed").id)')
-          echo "last_run_id=$last_run_id" >> "$GITHUB_OUTPUT"
+          run_ids=$(gh api '/repos/${{ github.repository }}/actions/workflows/zeebe-version-compatibility.yml/runs?branch=main' \
+            | jq -r '[.workflow_runs[] | select(.status=="completed" and .conclusion!="cancelled").id] | .[:10] | .[]')
+          for run_id in $run_ids; do
+            has_artifact=$(gh api "/repos/${{ github.repository }}/actions/runs/${run_id}/artifacts" \
+              | jq '[.artifacts[] | select(.name=="zeebe-version-compatibility")] | length')
+            if [ "$has_artifact" -gt 0 ]; then
+              echo "Found report artifact in run $run_id"
+              echo "last_run_id=$run_id" >> "$GITHUB_OUTPUT"
+              break
+            fi
+            echo "Run $run_id has no report artifact, trying next..."
+          done
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Download previous report
-        uses: actions/download-artifact@v8
+        if: steps.get-last-run-id.outputs.last_run_id != ''
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         continue-on-error: true
         with:
           name: zeebe-version-compatibility
@@ -78,7 +88,7 @@ jobs:
         with:
           name: "Version compatibility ${{ strategy.job-index }}"
       - name: Upload report
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
         if: always()
         with:
           name: zeebe-version-compatibility-${{ strategy.job-index }}
@@ -88,12 +98,12 @@ jobs:
     runs-on: ubuntu-latest
     if: always()
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - name: Generate cache key with current hour
         id: cache-key
         run: echo "hour=$(date -u +%Y%m%d%H)" >> "$GITHUB_OUTPUT"
       - name: Cache Zeebe versions (hourly refresh)
-        uses: actions/cache@v5
+        uses: actions/cache@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5.0.4
         with:
           path: .cache/camunda
           key: zeebe-versions-${{ steps.cache-key.outputs.hour }}
@@ -132,19 +142,19 @@ jobs:
     needs: released-versions
     if: always()
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - name: Download all reports
-        uses: actions/download-artifact@v8
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           pattern: zeebe-version-compatibility-*
       - name: Merge reports
-        run : |
+        run: |
           cat zeebe-version-compatibility-*/** | sort | uniq > ${{ github.workspace }}/zeebe-version-compatibility
           if [ ! -s ${{ github.workspace }}/zeebe-version-compatibility ]; then
             exit 1
           fi
       - name: Upload shared report
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
         with:
           name: zeebe-version-compatibility
           path: ${{ github.workspace }}/zeebe-version-compatibility
@@ -154,10 +164,10 @@ jobs:
     needs: [released-versions, current-snapshot]
     if: failure()
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - name: Import Secrets
         id: secrets
-        uses: hashicorp/vault-action@79632e33d6953d190b940ffa440bf97821cabd80
+        uses: hashicorp/vault-action@4c06c5ccf5c0761b6029f56cfb1dcf5565918a3b # v3.4.0
         with:
           url: ${{ secrets.VAULT_ADDR }}
           method: approle
@@ -167,7 +177,7 @@ jobs:
           secrets: |
             secret/data/products/camunda/ci/github-actions SLACK_ZEEBOT_ZEEBE_CI_WEBHOOK_URL;
       - id: slack-notify
-        uses: slackapi/slack-github-action@v3.0.1
+        uses: slackapi/slack-github-action@af78098f536edbc4de71162a307590698245be95 # v3.0.1
         with:
           webhook: ${{ steps.secrets.outputs.SLACK_ZEEBOT_ZEEBE_CI_WEBHOOK_URL }}
           webhook-type: incoming-webhook

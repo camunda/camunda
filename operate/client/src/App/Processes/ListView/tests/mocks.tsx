@@ -8,7 +8,7 @@
 
 import {MemoryRouter} from 'react-router-dom';
 import {useEffect} from 'react';
-import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelection';
+import {processInstancesSelectionStore} from 'modules/stores/instancesSelection';
 import {batchModificationStore} from 'modules/stores/batchModification';
 import {Paths} from 'modules/Routes';
 import {QueryClientProvider} from '@tanstack/react-query';

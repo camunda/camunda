@@ -16,8 +16,8 @@ if kubectl -n "$NS" get secret camunda-credentials &>/dev/null; then
   echo "Secret 'camunda-credentials' already exists in namespace '$NS'. Skipping creation."
   echo "Reading existing orchestration secret from 'camunda-credentials' in namespace '$NS'."
   ORCHESTRATION_SECRET=$(kubectl -n "$NS" get secret camunda-credentials -o jsonpath='{.data.orchestration-security-authentication-oidc-secret}' | base64 -d)
-  echo "Done Replacing __SECRET__ in load-test-values.yaml with existing orchestration secret."
   sed_inplace "s/__SECRET__/${ORCHESTRATION_SECRET}/g" load-test-values.yaml
+  echo "Done replacing __SECRET__ in load-test-values.yaml with existing orchestration secret."
   exit 0
 fi
 
@@ -61,7 +61,7 @@ stringData:
   identity-optimize-client-token: "${IDENTITY_OPTIMIZE_CLIENT_TOKEN}"
 EOF
 
-# Replace __SECRET__ in load-test-values.yaml with the generated orchestration secret 
+# Replace __SECRET__ in load-test-values.yaml with the generated orchestration secret
 sed_inplace "s/__SECRET__/${ORCHESTRATION_SECRET}/g" load-test-values.yaml
 
 echo "Done. Secret 'camunda-credentials' created in namespace '$NS'."

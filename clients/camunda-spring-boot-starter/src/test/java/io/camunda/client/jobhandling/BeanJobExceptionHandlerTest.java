@@ -31,26 +31,30 @@ import io.camunda.client.api.command.ThrowErrorCommandStep1.ThrowErrorCommandSte
 import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.client.api.response.FailJobResponse;
 import io.camunda.client.api.response.ThrowErrorResponse;
+import io.camunda.client.api.worker.BackoffSupplier;
 import io.camunda.client.api.worker.JobClient;
 import io.camunda.client.api.worker.JobExceptionHandler.JobExceptionHandlerContext;
 import io.camunda.client.exception.BpmnError;
 import io.camunda.client.exception.JobError;
-import io.camunda.client.metrics.DefaultNoopMetricsRecorder;
 import io.camunda.client.metrics.MetricsRecorder;
 import io.camunda.client.spring.test.util.JobWorkerPermutationsGenerator.JobResponse;
 import java.time.Duration;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.ScheduledExecutorService;
 import org.junit.jupiter.api.Test;
 
 public class BeanJobExceptionHandlerTest {
+  private static JobCallbackCommandWrapperFactory jobCallbackCommandWrapperFactory() {
+    return new JobCallbackCommandWrapperFactory(
+        mock(BackoffSupplier.class),
+        mock(ScheduledExecutorService.class),
+        mock(MetricsRecorder.class));
+  }
+
   @Test
   void shouldHandleAnyException() {
-    final MetricsRecorder metricsRecorder = new DefaultNoopMetricsRecorder();
-    final CommandExceptionHandlingStrategy commandExceptionHandlingStrategy =
-        mock(CommandExceptionHandlingStrategy.class);
     final BeanJobExceptionHandler handler =
-        new BeanJobExceptionHandler(
-            Duration.ZERO, 0, metricsRecorder, commandExceptionHandlingStrategy);
+        new BeanJobExceptionHandler(Duration.ZERO, 0, jobCallbackCommandWrapperFactory());
     final JobClient jobClient = mock(JobClient.class);
     final FailJobCommandStep1 failJobCommandStep1 = mock(FailJobCommandStep1.class);
     final FailJobCommandStep2 failJobCommandStep2 = mock(FailJobCommandStep2.class);
@@ -61,7 +65,7 @@ public class BeanJobExceptionHandlerTest {
     when(failJobCommandStep2.retryBackoff(any())).thenReturn(failJobCommandStep2);
     when(failJobCommandStep2.variables(any(JobResponse.class))).thenReturn(failJobCommandStep2);
     when(failJobCommandStep2.send()).thenReturn(future);
-    when(future.thenApply(any())).thenReturn(mock(CompletionStage.class));
+    when(future.thenAccept(any())).thenReturn(mock(CompletionStage.class));
     final ActivatedJob job = mock(ActivatedJob.class);
     when(job.getType()).thenReturn("test");
     when(job.getRetries()).thenReturn(3);
@@ -74,12 +78,8 @@ public class BeanJobExceptionHandlerTest {
 
   @Test
   void shouldHandleJobError() {
-    final MetricsRecorder metricsRecorder = new DefaultNoopMetricsRecorder();
-    final CommandExceptionHandlingStrategy commandExceptionHandlingStrategy =
-        mock(CommandExceptionHandlingStrategy.class);
     final BeanJobExceptionHandler handler =
-        new BeanJobExceptionHandler(
-            Duration.ZERO, 0, metricsRecorder, commandExceptionHandlingStrategy);
+        new BeanJobExceptionHandler(Duration.ZERO, 0, jobCallbackCommandWrapperFactory());
     final JobClient jobClient = mock(JobClient.class);
     final FailJobCommandStep1 failJobCommandStep1 = mock(FailJobCommandStep1.class);
     final FailJobCommandStep2 failJobCommandStep2 = mock(FailJobCommandStep2.class);
@@ -90,7 +90,7 @@ public class BeanJobExceptionHandlerTest {
     when(failJobCommandStep2.retryBackoff(any())).thenReturn(failJobCommandStep2);
     when(failJobCommandStep2.variables(any(JobResponse.class))).thenReturn(failJobCommandStep2);
     when(failJobCommandStep2.send()).thenReturn(future);
-    when(future.thenApply(any())).thenReturn(mock(CompletionStage.class));
+    when(future.thenAccept(any())).thenReturn(mock(CompletionStage.class));
     final ActivatedJob job = mock(ActivatedJob.class);
     when(job.getType()).thenReturn("test");
     when(job.getRetries()).thenReturn(3);
@@ -104,12 +104,8 @@ public class BeanJobExceptionHandlerTest {
 
   @Test
   void shouldHandleBpmnError() {
-    final MetricsRecorder metricsRecorder = new DefaultNoopMetricsRecorder();
-    final CommandExceptionHandlingStrategy commandExceptionHandlingStrategy =
-        mock(CommandExceptionHandlingStrategy.class);
     final BeanJobExceptionHandler handler =
-        new BeanJobExceptionHandler(
-            Duration.ZERO, 0, metricsRecorder, commandExceptionHandlingStrategy);
+        new BeanJobExceptionHandler(Duration.ZERO, 0, jobCallbackCommandWrapperFactory());
     final JobClient jobClient = mock(JobClient.class);
     final ThrowErrorCommandStep1 throwErrorCommandStep1 = mock(ThrowErrorCommandStep1.class);
     final ThrowErrorCommandStep2 throwErrorCommandStep2 = mock(ThrowErrorCommandStep2.class);
@@ -120,7 +116,7 @@ public class BeanJobExceptionHandlerTest {
     when(throwErrorCommandStep2.variables(any(JobResponse.class)))
         .thenReturn(throwErrorCommandStep2);
     when(throwErrorCommandStep2.send()).thenReturn(future);
-    when(future.thenApply(any())).thenReturn(mock(CompletionStage.class));
+    when(future.thenAccept(any())).thenReturn(mock(CompletionStage.class));
     final ActivatedJob job = mock(ActivatedJob.class);
     when(job.getType()).thenReturn("test");
     when(job.getRetries()).thenReturn(3);

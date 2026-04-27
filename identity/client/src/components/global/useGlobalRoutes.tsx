@@ -17,6 +17,7 @@ import Authorizations from "src/pages/authorizations";
 import ClusterVariables from "src/pages/cluster-variables";
 import OperationsLog from "src/pages/operations-log";
 import GlobalTaskListeners from "src/pages/global-task-listeners";
+import McpProcesses from "src/pages/mcp-processes";
 import {
   isCamundaGroupsEnabled,
   isOIDC,
@@ -98,6 +99,12 @@ export const useGlobalRoutes = () => {
       key: Paths.clusterVariables(),
       label: t("clusterVariables"),
       element: <ClusterVariables />,
+    },
+    {
+      path: `${Paths.mcpProcesses()}/*`,
+      key: Paths.mcpProcesses(),
+      label: t("mcpProcesses"),
+      element: <McpProcesses />,
     },
     {
       path: `${Paths.operationsLog()}/*`,

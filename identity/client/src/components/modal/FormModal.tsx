@@ -8,7 +8,7 @@
 
 import { FC, FormEvent, useState } from "react";
 import { Form, Stack, Loading, InlineNotification } from "@carbon/react";
-import { spacing06, colors } from "@carbon/elements";
+import { spacing06 } from "@carbon/elements";
 import styled from "styled-components";
 import { ErrorResponse } from "src/utility/api/request";
 import Modal, { ModalProps } from "./Modal";
@@ -22,7 +22,7 @@ const HiddenSubmitButton = styled.input`
 
 const LoadingLabel = styled.div`
   position: fixed;
-  color: ${colors.white};
+  color: var(--cds-text-on-color);
   z-index: ${styles.overlayZIndex + 1};
   display: flex;
   align-items: center;

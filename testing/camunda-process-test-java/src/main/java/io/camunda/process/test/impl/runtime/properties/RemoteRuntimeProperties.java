@@ -17,7 +17,6 @@ package io.camunda.process.test.impl.runtime.properties;
 
 import static io.camunda.process.test.impl.runtime.util.PropertiesUtil.getPropertyOrDefault;
 
-import io.camunda.client.CamundaClientBuilder;
 import io.camunda.process.test.impl.runtime.CamundaProcessTestRuntimeDefaults;
 import java.net.URI;
 import java.time.Duration;
@@ -34,8 +33,6 @@ public class RemoteRuntimeProperties {
   private final URI camundaMonitoringApiAddress;
   private final URI connectorsRestApiAddress;
   private final Duration runtimeConnectionTimeout;
-
-  private final RemoteRuntimeClientProperties remoteClientProperties;
 
   public RemoteRuntimeProperties(final Properties properties) {
     camundaMonitoringApiAddress =
@@ -70,8 +67,6 @@ public class RemoteRuntimeProperties {
             PROPERTY_NAME_RUNTIME_CONNECTION_TIMEOUT,
             Duration::parse,
             CamundaProcessTestRuntimeDefaults.DEFAULT_REMOTE_RUNTIME_CONNECTION_TIMEOUT);
-
-    remoteClientProperties = new RemoteRuntimeClientProperties(properties);
   }
 
   public URI getCamundaMonitoringApiAddress() {
@@ -84,13 +79,5 @@ public class RemoteRuntimeProperties {
 
   public Duration getRuntimeConnectionTimeout() {
     return runtimeConnectionTimeout;
-  }
-
-  public RemoteRuntimeClientProperties getRemoteClientProperties() {
-    return remoteClientProperties;
-  }
-
-  public CamundaClientBuilder createCamundaClientBuilder() {
-    return remoteClientProperties.createCamundaClientBuilder();
   }
 }

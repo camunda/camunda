@@ -214,6 +214,7 @@ mwnw*                       @camunda/monorepo-devops-team
 # Zeebe QA
 /zeebe/qa/util/             @camunda/core-features
 /zeebe/qa/update-tests/     @camunda/core-features
+/zeebe/qa/update-tests/src/test/java/io/camunda/zeebe/test/backup/ @camunda/zeebe-distributed-platform
 /zeebe/qa/integration-tests/ @camunda/core-features
 /zeebe/qa/integration-tests/src/test/java/io/camunda/zeebe/it/engine/ @camunda/core-features
 
@@ -240,8 +241,8 @@ optimize.Dockerfile         @camunda/core-features
 /document/                  @camunda/core-features
 /service/                   @camunda/core-features
 
-# Client Components (shared UI library)
-/client-components/         @camunda/core-features
+# Webapp Client (shared UI library)
+/webapp/client/         @camunda/core-features
 
 # Gateways
 /gateways/gateway-mapping-http/ @camunda/core-features
@@ -268,7 +269,6 @@ optimize.Dockerfile         @camunda/core-features
 /.github/actions/run-maven/ @camunda/core-features
 /.github/optimize/scripts/ @camunda/core-features
 /.github/workflows/assign-urgency-to-issue* @camunda/core-features
-/.github/workflows/operate-ci-build-observe-reusable.yml @camunda/core-features
 /.github/workflows/operate-ci-build-reusable.yml @camunda/core-features
 /.github/workflows/operate-ci.yml @camunda/core-features
 /.github/workflows/operate-ci-test-reusable.yml @camunda/core-features
@@ -278,7 +278,7 @@ optimize.Dockerfile         @camunda/core-features
 /.github/workflows/operate-release-*.yml @camunda/core-features
 /.github/workflows/ci-operate.yml @camunda/core-features
 /.github/workflows/ci-tasklist.yml @camunda/core-features
-/.github/workflows/ci-client-components.yml @camunda/core-features
+/.github/workflows/ci-webapp-client.yml @camunda/core-features
 /.github/workflows/ci-webapp-run-ut-reuseable.yml @camunda/core-features
 /.github/workflows/tasklist* @camunda/core-features
 /.github/workflows/ci-optimize.yml @camunda/core-features

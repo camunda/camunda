@@ -57,7 +57,7 @@ jobs:
           - 9300:9300
     steps:
       - name: Check out repository code
-        uses: actions/checkout@v6
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - name: Import Secrets
         id: secrets
         uses: hashicorp/vault-action@v3.4.0
@@ -71,7 +71,7 @@ jobs:
             secret/data/github.com/organizations/camunda NEXUS_PSW;
 
       - name: Setup Node
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
         with:
           node-version: 24
 
@@ -116,9 +116,11 @@ jobs:
         # we're excluding optimize from the build, not to impact this Operate workflow.
         run: ./mvnw clean install -T1C -DskipChecks -P -docker,skipFrontendBuild -DskipTests=true -B -DskipRemoteStaging=true -Dmaven.deploy.skip=true
       - name: Start Operate
-        run: >
-          ./mvnw -q -B spring-boot:start -pl dist -Dspring-boot.run.fork=true
-          -Dspring-boot.run.main-class=io.camunda.application.StandaloneCamunda
+        run: |
+          DIST_DIR="$(find dist/target -maxdepth 1 -type d -name 'camunda-zeebe*' | head -n 1)"
+
+          nohup "$DIST_DIR/bin/camunda" > "$RUNNER_TEMP/operate.log" 2>&1 &
+          echo $! > "$RUNNER_TEMP/operate.pid"
         env:
           SPRING_PROFILES_ACTIVE: operate,consolidated-auth,broker
           ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_CLASSNAME: io.camunda.exporter.CamundaExporter
@@ -135,9 +137,25 @@ jobs:
           CAMUNDA_SECURITY_AUTHENTICATION_UNPROTECTEDAPI: true
           CAMUNDA_SECURITY_AUTHORIZATIONS_ENABLED: false
 
+      - name: Wait for Operate to be ready
+        run: |
+          echo "Waiting for Operate to be ready..."
+          for i in $(seq 1 90); do
+            if curl -sf -u demo:demo http://localhost:8080/v2/topology >/dev/null 2>&1; then
+              echo "Operate is ready!"
+              exit 0
+            fi
+            echo "Waiting... ($i/90)"
+            sleep 5
+          done
+          echo "Operate failed to start in time."
+          echo "=== Last 100 lines of log ==="
+          tail -100 "$RUNNER_TEMP/operate.log"
+          exit 1
+
       - name: Python setup
         if: always()
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
         with:
           python-version: "3.x"
 
@@ -152,7 +170,7 @@ jobs:
           ZEEBE_REST_ADDRESS: "http://localhost:8080"
         run: npm run test -- --project=operate-e2e
         working-directory: qa/c8-orchestration-cluster-e2e-test-suite
-      - uses: actions/upload-artifact@v7
+      - uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
         if: always()
         with:
           name: C8 Orchestration Cluster E2E Test Result (operate)
@@ -169,10 +187,23 @@ jobs:
         run: tar cvzf ./logs.tgz ./logs
       - name: Upload logs to GitHub
         if: failure()
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
         with:
           name: logs.tgz
           path: ./logs.tgz
+
+      - name: Show Operate logs on failure
+        if: failure()
+        run: |
+          echo "=== Camunda logs ==="
+          cat "$RUNNER_TEMP/operate.log"
+
+      - name: Stop Operate
+        if: always()
+        run: |
+          if [[ -f "$RUNNER_TEMP/operate.pid" ]]; then
+            kill "$(cat "$RUNNER_TEMP/operate.pid")" || true
+          fi
 
       - name: Observe build status
         if: always()

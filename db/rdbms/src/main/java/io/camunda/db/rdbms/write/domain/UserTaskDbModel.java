@@ -7,7 +7,7 @@
  */
 package io.camunda.db.rdbms.write.domain;
 
-import io.camunda.db.rdbms.write.util.CustomHeaderSerializer;
+import io.camunda.db.rdbms.write.util.MapSerializer;
 import io.camunda.util.ObjectBuilder;
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -89,7 +89,7 @@ public class UserTaskDbModel implements Copyable<UserTaskDbModel> {
     this.externalFormReference = externalFormReference;
     this.processDefinitionVersion = processDefinitionVersion;
     this.customHeaders = customHeaders;
-    serializedCustomHeaders = CustomHeaderSerializer.serialize(customHeaders);
+    serializedCustomHeaders = MapSerializer.serialize(customHeaders);
     this.priority = priority;
     this.tags = tags;
     this.partitionId = partitionId;
@@ -269,7 +269,7 @@ public class UserTaskDbModel implements Copyable<UserTaskDbModel> {
 
   public void serializedCustomHeaders(final String serializedCustomHeaders) {
     this.serializedCustomHeaders = serializedCustomHeaders;
-    customHeaders = CustomHeaderSerializer.deserialize(serializedCustomHeaders);
+    customHeaders = MapSerializer.deserialize(serializedCustomHeaders);
   }
 
   public Map<String, String> customHeaders() {

@@ -10,7 +10,12 @@ import type {APIRequestContext} from 'playwright-core';
 import {assertStatusCode, buildUrl, jsonHeaders} from '../http';
 import {expect} from '@playwright/test';
 import {JSONDoc} from '@camunda8/sdk/dist/zeebe/types';
-import {cancelProcessInstance, createInstances, deploy} from '../zeebeClient';
+import {
+  cancelProcessInstance,
+  createInstances,
+  deploy,
+  deployWithSubstitutions,
+} from '../zeebeClient';
 import {defaultAssertionOptions} from '../constants';
 import {validateResponse} from 'json-body-assertions';
 
@@ -85,15 +90,26 @@ export async function completeJob(
 
 export function setupProcessInstanceForTests(
   processFileName: string,
-  processName?: string,
-  variables?: JSONDoc,
+  options?: {
+    processName?: string;
+    variables?: JSONDoc;
+    substitutions?: Record<string, string>;
+  },
 ) {
+  const {processName, variables, substitutions} = options ?? {};
   const state: Record<string, unknown> = {};
 
   return {
     state,
     beforeAll: async () => {
-      await deploy([`./resources/${processFileName}.bpmn`]);
+      if (substitutions) {
+        await deployWithSubstitutions(
+          `./resources/${processFileName}.bpmn`,
+          substitutions,
+        );
+      } else {
+        await deploy([`./resources/${processFileName}.bpmn`]);
+      }
     },
     beforeEach: async () => {
       const processInstance = await createInstances(
@@ -110,4 +126,30 @@ export function setupProcessInstanceForTests(
       }
     },
   };
+}
+
+export function getLast24HoursRange() {
+  const fromDate = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(); // 24 hours ago
+  const toDate = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(); // 24 hours from now
+  return {
+    fromDate,
+    toDate,
+  };
+}
+
+export interface StatisticsJobItem {
+  jobType: string;
+  created: {
+    count: number;
+    lastUpdatedAt: string;
+  };
+  completed: {
+    count: number;
+    lastUpdatedAt: string;
+  };
+  failed: {
+    count: number;
+    lastUpdatedAt: string;
+  };
+  workers: number;
 }

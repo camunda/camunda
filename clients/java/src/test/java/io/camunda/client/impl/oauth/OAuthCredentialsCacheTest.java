@@ -23,6 +23,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
+import java.time.Duration;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
@@ -36,6 +37,8 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
+import org.awaitility.Awaitility;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -261,6 +264,28 @@ public final class OAuthCredentialsCacheTest {
   }
 
   @Test
+  public void shouldRejectNullRefreshThresholdWhenProactiveCallbackProvided() throws IOException {
+    // given
+    final OAuthCredentialsCache cache = new OAuthCredentialsCache(cacheFile);
+    cache.readCache();
+
+    // when / then — a non-null callback paired with a null threshold should fail fast
+    // rather than NPE inside shouldRefreshProactively()
+    assertThatThrownBy(
+            () ->
+                cache.computeIfMissingOrInvalid(
+                    WOMBAT_CLIENT_ID,
+                    () -> WOMBAT,
+                    () -> {
+                      /* no-op */
+                    },
+                    null))
+        .isInstanceOf(NullPointerException.class)
+        .hasMessageContaining("proactiveTokenRefreshThreshold")
+        .hasMessageContaining("non-null");
+  }
+
+  @Test
   public void shouldInvokeProactiveRefreshCallbackWhenTokenIsNearingExpiry() throws IOException {
     // given — a token that is within the proactive refresh window (expires in 45s: valid but
     // past the 60s proactive threshold)
@@ -274,7 +299,10 @@ public final class OAuthCredentialsCacheTest {
     // when
     final CamundaClientCredentials result =
         cache.computeIfMissingOrInvalid(
-            WOMBAT_CLIENT_ID, () -> WOMBAT, () -> callbackInvoked.set(true));
+            WOMBAT_CLIENT_ID,
+            () -> WOMBAT,
+            () -> callbackInvoked.set(true),
+            Duration.ofSeconds(60));
 
     // then — returns the still-valid token but triggers the callback
     assertThat(result.getAccessToken()).isEqualTo("nearExpiry");
@@ -291,7 +319,10 @@ public final class OAuthCredentialsCacheTest {
     // when — WOMBAT has expiry in year 3020, far from any threshold
     final CamundaClientCredentials result =
         cache.computeIfMissingOrInvalid(
-            WOMBAT_CLIENT_ID, () -> WOMBAT, () -> callbackInvoked.set(true));
+            WOMBAT_CLIENT_ID,
+            () -> WOMBAT,
+            () -> callbackInvoked.set(true),
+            Duration.ofSeconds(60));
 
     // then — returns the token without triggering the callback
     assertThat(result.getAccessToken()).isEqualTo("wombat");
@@ -306,6 +337,7 @@ public final class OAuthCredentialsCacheTest {
     final CountDownLatch fetchStarted = new CountDownLatch(1);
     final CountDownLatch fetchCanComplete = new CountDownLatch(1);
     final AtomicInteger fetchCount = new AtomicInteger(0);
+    final AtomicReference<Thread> thread2 = new AtomicReference<>();
     final CamundaClientCredentials freshCredentials =
         new CamundaClientCredentials("freshToken", EXPIRY, "Bearer");
 
@@ -314,7 +346,8 @@ public final class OAuthCredentialsCacheTest {
     // it sees the generation was incremented and skips the fetch.
     final ExecutorService pool = Executors.newFixedThreadPool(2);
     try {
-      final Callable<Boolean> refreshTask =
+      // Thread 1: enters the synchronized block, signals fetchStarted, then waits
+      final Callable<Boolean> task1 =
           () ->
               cache.forceRefreshIfChanged(
                   WOMBAT_CLIENT_ID,
@@ -329,12 +362,40 @@ public final class OAuthCredentialsCacheTest {
                     return freshCredentials;
                   });
 
-      final Future<Boolean> first = pool.submit(refreshTask);
-      final Future<Boolean> second = pool.submit(refreshTask);
+      // Thread 2: records itself so we can observe its state, then calls forceRefreshIfChanged
+      final Callable<Boolean> task2 =
+          () -> {
+            thread2.set(Thread.currentThread());
+            return cache.forceRefreshIfChanged(
+                WOMBAT_CLIENT_ID,
+                () -> {
+                  fetchCount.incrementAndGet();
+                  return freshCredentials;
+                });
+          };
 
-      // Wait for the first thread to start fetching (it holds the lock)
+      // Submit only task1 first; task2 is submitted only after task1 holds the lock.
+      // This guarantees task2 reads generationOnEntry = 0 while Thread 1 is mid-fetch.
+      final Future<Boolean> first = pool.submit(task1);
+
+      // Wait for Thread 1 to be inside the supplier (it holds the synchronized lock)
       assertThat(fetchStarted.await(5, TimeUnit.SECONDS)).isTrue();
-      // Release the fetch so the first thread can complete
+
+      // Now submit task2: it will read generationOnEntry = 0, then block on the monitor
+      final Future<Boolean> second = pool.submit(task2);
+
+      // Wait until Thread 2 is blocked on the synchronized monitor entry.
+      // At this point Thread 2 has already read generationOnEntry = 0 (before the lock),
+      // so releasing Thread 1 now guarantees Thread 2 will observe the incremented generation.
+      Awaitility.await()
+          .atMost(5, TimeUnit.SECONDS)
+          .until(
+              () -> {
+                final Thread t = thread2.get();
+                return t != null && t.getState() == Thread.State.BLOCKED;
+              });
+
+      // Release Thread 1 to complete its fetch and increment the generation
       fetchCanComplete.countDown();
 
       // then — only one thread should have performed the expensive fetch

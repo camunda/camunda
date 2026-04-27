@@ -329,7 +329,7 @@ test.describe.parallel('Search Incidents API Tests', () => {
 
       const body = await res.json();
       expect(body.page.totalItems).toEqual(0);
-      expect(body.items.length).toEqual(0);
+      expect(body.items).toHaveLength(0);
     }).toPass(defaultAssertionOptions);
   });
 
@@ -355,7 +355,7 @@ test.describe.parallel('Search Incidents API Tests', () => {
       );
       const body = await res.json();
       expect(body.page.totalItems).toBeGreaterThanOrEqual(11);
-      expect(body.items.length).toBe(1);
+      expect(body.items).toHaveLength(1);
     }).toPass(defaultAssertionOptions);
   });
 });

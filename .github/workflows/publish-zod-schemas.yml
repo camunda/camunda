@@ -18,7 +18,7 @@ on:
       - '**'  # Allow testing from any branch
     paths:
       - '.github/workflows/publish-zod-schemas.yml'
-      - 'client-components/packages/camunda-api-zod-schemas/**'
+      - 'webapp/client/packages/camunda-api-zod-schemas/**'
 
 env:
   GHA_BEST_PRACTICES_LINTER: enabled
@@ -33,7 +33,7 @@ jobs:
       contents: read
     defaults:
       run:
-        working-directory: client-components
+        working-directory: webapp/client
         shell: bash
     env:
       TEST_OWNER: Core Features
@@ -41,13 +41,13 @@ jobs:
       TEST_TYPE: Build
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
       - name: Print metadata
         uses: ./.github/actions/print-metadata
 
       - name: Setup Node.js
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
         with:
           node-version: 24
           registry-url: 'https://registry.npmjs.org'

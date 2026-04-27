@@ -102,13 +102,13 @@ jobs:
             run: false
     steps:
       - name: Install Teleport
-        uses: teleport-actions/setup@v1
+        uses: teleport-actions/setup@b638ff596557cc3959eb6b5287d5e58e0c8ac6a6 # v1.1.1
         with:
           proxy: camunda.teleport.sh:443
           version: auto
 
       - name: Authenticate to Teleport
-        uses: teleport-actions/auth@v2
+        uses: teleport-actions/auth@3b365df2b4f64891358392a444ff34929ba0d0b1 # v2.1.2
         with:
           # Required for tsh proxy app: allows the bot to reissue app-specific TLS certificates.
           # Without this, the bot cert has "disallow-reissue" extension and tsh proxy app fails with:
@@ -156,7 +156,7 @@ jobs:
           repositories: c8-cross-component-e2e-tests
 
       - name: Checkout Smoke Tests
-        uses: actions/checkout@v6
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           repository: camunda/c8-cross-component-e2e-tests
           token: ${{ steps.github-token.outputs.token }}
@@ -164,7 +164,7 @@ jobs:
           ref: main
 
       - name: Setup Node.js
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
         with:
           node-version: 24
           cache: npm
@@ -198,7 +198,7 @@ jobs:
 
       - name: Upload Test Artifacts
         if: failure()
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
         with:
           name: playwright-report-${{ matrix.deployment.version }}-${{ github.run_number }}
           path: |

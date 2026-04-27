@@ -1,0 +1,127 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+package io.camunda.zeebe.exporter.common.tasks;
+
+import io.camunda.zeebe.exporter.common.tasks.util.ReschedulingTaskLogger;
+import io.camunda.zeebe.util.ExponentialBackoff;
+import io.camunda.zeebe.util.VisibleForTesting;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
+import org.slf4j.Logger;
+
+public final class ReschedulingTask implements RunnableTask {
+  private final BackgroundTask task;
+  private final int minimumWorkCount;
+  private final ScheduledExecutorService executor;
+  private final Logger logger;
+  private final ReschedulingTaskLogger periodicLogger;
+  private final ExponentialBackoff idleStrategy;
+  private final ExponentialBackoff errorStrategy;
+  private final AtomicLong executionCounter = new AtomicLong(0L);
+  private long delayMs;
+  private long errorDelayMs;
+  private volatile boolean closed = false;
+  private volatile boolean scheduled;
+
+  public ReschedulingTask(
+      final BackgroundTask task,
+      final int minimumWorkCount,
+      final long delayBetweenRunsMs,
+      final long maxDelayBetweenRunsMs,
+      final ScheduledExecutorService executor,
+      final Logger logger) {
+    this.task = task;
+    this.minimumWorkCount = minimumWorkCount;
+    this.executor = executor;
+    this.logger = logger;
+
+    periodicLogger = new ReschedulingTaskLogger(logger, true);
+    idleStrategy = new ExponentialBackoff(maxDelayBetweenRunsMs, delayBetweenRunsMs, 1.2, 0);
+    errorStrategy = new ExponentialBackoff(10_000, delayBetweenRunsMs, 1.2, 0);
+  }
+
+  @Override
+  public void run() {
+    scheduled = true;
+    CompletionStage<Integer> result;
+    try {
+      result = task.execute();
+    } catch (final Exception e) {
+      // in case the task throws an exception instead of returning a failed CompletionStage
+      result = CompletableFuture.failedFuture(e);
+    }
+    // while we could always expect this to return a non-null result, we don't necessarily want to
+    // stop, and more importantly, we want to make it transparent that something went wrong
+    if (result == null) {
+      logger.warn(
+          "Expected to perform a background task, but no result returned for job {}; rescheduling anyway",
+          task);
+      result = CompletableFuture.completedFuture(0);
+    }
+
+    result
+        .thenApplyAsync(this::onWorkPerformed, executor)
+        .exceptionallyAsync(this::onError, executor)
+        .thenAcceptAsync(this::reschedule, executor)
+        .thenAccept(unused -> executionCounter.incrementAndGet());
+  }
+
+  @Override
+  public void close() {
+    closed = true;
+    if (!scheduled) {
+      // if we never scheduled the task, we need to close it ourselves
+      task.close();
+    }
+  }
+
+  @VisibleForTesting
+  public long executionCount() {
+    return executionCounter.get();
+  }
+
+  private long onWorkPerformed(final int count) {
+    errorDelayMs = 0;
+
+    // if we worked on less than the minimum expected work count, then there's probably even more
+    // work to be done, so use the minimum delay between runs; otherwise, backoff from the last
+    // known delay
+    delayMs =
+        count >= minimumWorkCount ? idleStrategy.applyAsLong(0) : idleStrategy.applyAsLong(delayMs);
+    return delayMs;
+  }
+
+  private long onError(final Throwable error) {
+    errorDelayMs = errorStrategy.applyAsLong(errorDelayMs);
+
+    logError(error);
+
+    return errorDelayMs;
+  }
+
+  private void logError(final Throwable error) {
+    periodicLogger.logError(
+        "Error occurred while performing a background task {}; error message {}; operation will be retried",
+        error,
+        task.getCaption(),
+        error.getCause().getMessage());
+  }
+
+  private void reschedule(final long delay) {
+    if (!closed) {
+      logger.trace("Rescheduling task {} in {}ms", task, delay);
+      executor.schedule(this, delay, TimeUnit.MILLISECONDS);
+    } else {
+      logger.info("Task {} was closed, not rescheduling.", task.getClass().getSimpleName());
+      task.close();
+    }
+  }
+}

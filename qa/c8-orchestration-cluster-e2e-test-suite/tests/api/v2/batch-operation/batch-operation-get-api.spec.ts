@@ -15,7 +15,6 @@ import {
   buildUrl,
   jsonHeaders,
 } from '../../../../utils/http';
-import {defaultAssertionOptions} from '../../../../utils/constants';
 import {validateResponse} from '../../../../json-body-assertions';
 import {createCancellationBatch} from '@requestHelpers';
 

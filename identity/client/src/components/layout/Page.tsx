@@ -15,7 +15,6 @@ import {
   spacing07,
   spacing08,
   styles,
-  textSecondary,
 } from "@carbon/elements";
 import { useNavigate } from "react-router-dom";
 import { DocumentationLink } from "src/components/documentation";
@@ -31,7 +30,7 @@ const PageSubTitle = styled.div`
   font-weight: ${styles.bodyCompact01.fontWeight};
   letter-spacing: ${styles.bodyCompact01.letterSpacing};
   line-height: ${styles.bodyCompact01.lineHeight};
-  color: ${textSecondary};
+  color: var(--cds-text-secondary);
 `;
 
 const StackWithMargin = styled(Stack)`

@@ -12,6 +12,7 @@ import io.camunda.webapps.schema.descriptors.index.AuthorizationIndex;
 import io.camunda.webapps.schema.descriptors.index.ClusterVariableIndex;
 import io.camunda.webapps.schema.descriptors.index.DecisionIndex;
 import io.camunda.webapps.schema.descriptors.index.DecisionRequirementsIndex;
+import io.camunda.webapps.schema.descriptors.index.DeployedResourceIndex;
 import io.camunda.webapps.schema.descriptors.index.FormIndex;
 import io.camunda.webapps.schema.descriptors.index.GlobalListenerIndex;
 import io.camunda.webapps.schema.descriptors.index.GroupIndex;
@@ -90,7 +91,8 @@ public class IndexDescriptors {
                 new HistoryDeletionIndex(indexPrefix, isElasticsearch),
                 new JobMetricsBatchTemplate(indexPrefix, isElasticsearch),
                 new AuditLogCleanupIndex(indexPrefix, isElasticsearch),
-                new GlobalListenerIndex(indexPrefix, isElasticsearch))
+                new GlobalListenerIndex(indexPrefix, isElasticsearch),
+                new DeployedResourceIndex(indexPrefix, isElasticsearch))
             .collect(Collectors.toMap(Object::getClass, Function.identity()));
   }
 

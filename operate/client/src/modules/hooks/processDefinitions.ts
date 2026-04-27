@@ -9,7 +9,7 @@
 import type {ProcessDefinition} from '@camunda/camunda-api-zod-schemas/8.10';
 import {DEFAULT_TENANT} from 'modules/constants';
 import {useProcessDefinitionsSearch} from 'modules/queries/processDefinitions/useProcessDefinitionsSearch';
-import {parseProcessDefinitionsSearchFilter} from 'modules/utils/filter/v2/processDefinitionsSearchFilter';
+import {parseProcessDefinitionsSearchFilter} from 'modules/utils/filter/processDefinitionsSearchFilter';
 import {useMemo} from 'react';
 import {useSearchParams} from 'react-router-dom';
 
@@ -138,6 +138,7 @@ function useSelectedProcessDefinition() {
       if (definitions.length === 1) {
         return definitions[0];
       }
+      return undefined;
     },
   });
 }

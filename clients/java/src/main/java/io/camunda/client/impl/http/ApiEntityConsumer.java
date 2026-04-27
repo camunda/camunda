@@ -49,7 +49,11 @@ import org.apache.hc.core5.http.nio.entity.AbstractBinAsyncEntityConsumer;
  */
 final class ApiEntityConsumer<T> extends AbstractBinAsyncEntityConsumer<ApiEntity<T>> {
   private static final List<ContentType> SUPPORTED_TEXT_CONTENT_TYPES =
-      Arrays.asList(ContentType.TEXT_XML, ContentType.TEXT_HTML, ContentType.TEXT_PLAIN);
+      Arrays.asList(
+          ContentType.TEXT_XML,
+          ContentType.TEXT_HTML,
+          ContentType.TEXT_PLAIN,
+          ContentType.APPLICATION_OCTET_STREAM);
   private final ObjectMapper json;
   private final Class<T> type;
   private final int chunkSize;

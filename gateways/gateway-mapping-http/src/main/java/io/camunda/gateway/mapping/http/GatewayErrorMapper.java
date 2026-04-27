@@ -18,6 +18,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ProblemDetail;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.AuthenticationException;
 
 public class GatewayErrorMapper {
   public static final Function<String, Exception> RESOURCE_EXHAUSTED_EXCEPTION_PROVIDER =
@@ -43,6 +45,14 @@ public class GatewayErrorMapper {
     final var exception = unwrapError(error);
     if (exception instanceof final ServiceException se) {
       return createProblemDetail(mapStatus(se.getStatus()), se.getMessage(), se.getStatus().name());
+    } else if (exception instanceof final AuthenticationException ae) {
+      LOG.warn("Expected to handle REST request, but an authentication error occurred", error);
+      return createProblemDetail(
+          HttpStatus.UNAUTHORIZED, ae.getMessage(), HttpStatus.UNAUTHORIZED.name());
+    } else if (exception instanceof final AccessDeniedException ade) {
+      LOG.warn("Expected to handle REST request, but access was denied", error);
+      return createProblemDetail(
+          HttpStatus.FORBIDDEN, ade.getMessage(), HttpStatus.FORBIDDEN.name());
     } else {
       LOG.error("Expected to handle REST request, but an unexpected error occurred", error);
       return createProblemDetail(

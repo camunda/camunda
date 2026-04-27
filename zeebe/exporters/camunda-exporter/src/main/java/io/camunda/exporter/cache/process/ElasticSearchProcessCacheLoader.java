@@ -46,7 +46,8 @@ public class ElasticSearchProcessCacheLoader implements CacheLoader<Long, Cached
           processEntity.getVersionTag(),
           processDiagramData.callActivityIds(),
           processDiagramData.flowNodesMap(),
-          processDiagramData.hasUserTasks());
+          processDiagramData.hasUserTasks(),
+          processDiagramData.elementExtensionProperties());
     } else {
       // This should only happen if the process was deleted from ElasticSearch which should never
       // happen. Normally, the process is exported before the process instance is exporter. So the

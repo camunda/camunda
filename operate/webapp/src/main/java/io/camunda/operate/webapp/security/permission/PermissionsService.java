@@ -7,7 +7,6 @@
  */
 package io.camunda.operate.webapp.security.permission;
 
-import io.camunda.operate.webapp.api.v1.exceptions.ForbiddenException;
 import io.camunda.security.auth.Authorization;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
@@ -15,7 +14,6 @@ import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.security.impl.AuthorizationChecker;
 import io.camunda.security.reader.ResourceAccessProvider;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
-import io.camunda.zeebe.protocol.record.value.AuthorizationScope;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
@@ -78,67 +76,6 @@ public class PermissionsService {
   }
 
   /**
-   * hasPermissionForResource
-   *
-   * @return true if the user has the given permission for the process
-   */
-  public boolean hasPermissionForResource(
-      final Long deploymentKey, final PermissionType permissionType) {
-    return hasPermissionForResourceType(
-        deploymentKey.toString(), AuthorizationResourceType.RESOURCE, permissionType);
-  }
-
-  /**
-   * hasPermissionForProcess
-   *
-   * @return true if the user has the given permission for the process
-   */
-  public boolean hasPermissionForProcess(
-      final String bpmnProcessId, final PermissionType permissionType) {
-    return hasPermissionForResourceType(
-        bpmnProcessId, AuthorizationResourceType.PROCESS_DEFINITION, permissionType);
-  }
-
-  /**
-   * hasPermissionForDecision
-   *
-   * @return true if the user has the given permission for the decision
-   */
-  public boolean hasPermissionForDecision(
-      final String decisionId, final PermissionType permissionType) {
-    return hasPermissionForResourceType(
-        decisionId, AuthorizationResourceType.DECISION_DEFINITION, permissionType);
-  }
-
-  public void verifyWildcardResourcePermission(
-      final AuthorizationResourceType resourceType, final PermissionType permissionType) {
-    if (!hasPermissionForResourceType(
-        AuthorizationScope.WILDCARD_CHAR, resourceType, permissionType)) {
-      throw new ForbiddenException(
-          "%s:%s:%s permissions required to access this resource."
-              .formatted(
-                  resourceType.toString(),
-                  AuthorizationScope.WILDCARD_CHAR,
-                  permissionType.toString()));
-    }
-  }
-
-  /**
-   * hasPermissionForResource
-   *
-   * @return true if the user has the given permission for the resource
-   */
-  private boolean hasPermissionForResourceType(
-      final String resourceId,
-      final AuthorizationResourceType resourceType,
-      final PermissionType permissionType) {
-    if (!permissionsEnabled()) {
-      return true;
-    }
-    return isAuthorizedFor(resourceId, resourceType, permissionType);
-  }
-
-  /**
    * getProcessesWithPermission
    *
    * @return processes for which the user has the given permission; the result matches either all
@@ -195,17 +132,6 @@ public class PermissionsService {
    */
   public boolean permissionsEnabled() {
     return securityConfiguration.getAuthorizations().isEnabled();
-  }
-
-  private boolean isAuthorizedFor(
-      final String resourceId,
-      final AuthorizationResourceType resourceType,
-      final PermissionType permissionType) {
-    final var authorization =
-        Authorization.of(a -> a.resourceType(resourceType).permissionType(permissionType));
-    return resourceAccessProvider
-        .hasResourceAccessByResourceId(getAuthentication(), authorization, resourceId)
-        .allowed();
   }
 
   private CamundaAuthentication getAuthentication() {

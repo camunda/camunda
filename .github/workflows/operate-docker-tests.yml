@@ -53,7 +53,7 @@ jobs:
           - 5000:5000
     steps:
       - name: Check out repository code
-        uses: actions/checkout@v6
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - uses: hadolint/hadolint-action@v3.3.0
         with:
           ignore: DL3018 # redundant when pinning the base image
@@ -94,7 +94,7 @@ jobs:
              }]
           mirrors: '[{"url": "https://repository.nexus.camunda.cloud/content/groups/internal/", "id": "camunda-nexus", "mirrorOf": "*", "name": "camunda Nexus"}]'
       - name: Build backend
-        run: ./mvnw clean install -B -T1C -DskipChecks -P -docker,skipFrontendBuild -DskipTests=true -B -DskipRemoteStaging=true -Dmaven.deploy.skip=true
+        run: ./mvnw clean install -B -T1C -DskipChecks -P -docker,skipFrontendBuild -DskipTests=true -DskipRemoteStaging=true -Dmaven.deploy.skip=true
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v4
         with:

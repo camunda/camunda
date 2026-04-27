@@ -977,16 +977,16 @@ test.describe('Multi-Instance Subprocess Modifications', () => {
     await test.step('Verify no cancel or move actions are available for the terminated flow node', async () => {
       await expect(
         operateProcessInstanceViewModificationModePage.cancelButtonPopup,
-      ).not.toBeVisible();
+      ).toBeHidden();
       await expect(
         operateProcessInstanceViewModificationModePage.moveSelectedInstanceButton,
-      ).not.toBeVisible();
+      ).toBeHidden();
     });
 
     await test.step('Verify Add is also not available for the terminated flow node', async () => {
       await expect(
         operateProcessInstanceViewModificationModePage.addModificationButtononPopup,
-      ).not.toBeVisible();
+      ).toBeHidden();
     });
   });
 });

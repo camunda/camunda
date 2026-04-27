@@ -18,6 +18,7 @@ import {
   assertUnauthorizedRequest,
   buildUrl,
   jsonHeaders,
+  assertInvalidArgument,
 } from '../../../../utils/http';
 import {validateResponse} from '../../../../json-body-assertions';
 import {defaultAssertionOptions} from '../../../../utils/constants';
@@ -93,7 +94,7 @@ test.describe('Element Instance Search API', () => {
       const body = await res.json();
 
       expect(body.page.totalItems).toBeGreaterThan(1);
-      expect(body.items.length).toBe(1);
+      expect(body.items).toHaveLength(1);
     }).toPass(defaultAssertionOptions);
   });
 
@@ -153,7 +154,7 @@ test.describe('Element Instance Search API', () => {
       );
       const body = await res.json();
       expect(body.page.totalItems).toBe(expectedTotal);
-      expect(body.items.length).toBe(expectedTotal);
+      expect(body.items).toHaveLength(expectedTotal);
       body.items.forEach((item: Record<string, unknown>) => {
         expect(item.processDefinitionId).toBe(processDefinitionIdToSearch);
       });
@@ -185,7 +186,7 @@ test.describe('Element Instance Search API', () => {
       );
       const body = await res.json();
       expect(body.page.totalItems).toBe(expectedTotal);
-      expect(body.items.length).toBe(expectedTotal);
+      expect(body.items).toHaveLength(expectedTotal);
       body.items.forEach((item: Record<string, unknown>) => {
         expect(item.elementName).toBe(elementNameToSearch);
       });
@@ -247,7 +248,7 @@ test.describe('Element Instance Search API', () => {
       );
       const body = await res.json();
       expect(body.page.totalItems).toBe(expectedTotal);
-      expect(body.items.length).toBe(expectedTotal);
+      expect(body.items).toHaveLength(expectedTotal);
       body.items.forEach((item: Record<string, unknown>) => {
         expect(item.processDefinitionKey).toBe(processDefinitionKeyToSearch);
       });
@@ -279,7 +280,7 @@ test.describe('Element Instance Search API', () => {
       );
       const body = await res.json();
       expect(body.page.totalItems).toBe(expectedTotal);
-      expect(body.items.length).toBe(expectedTotal);
+      expect(body.items).toHaveLength(expectedTotal);
       body.items.forEach((item: Record<string, unknown>) => {
         expect(item.processInstanceKey).toBe(processInstanceKeyToSearch);
       });
@@ -308,7 +309,7 @@ test.describe('Element Instance Search API', () => {
       );
       const body = await res.json();
       expect(body.page.totalItems).toBe(1);
-      expect(body.items.length).toBe(1);
+      expect(body.items).toHaveLength(1);
       expect(body.items[0]['processDefinitionKey']).toBe(
         state.processDefinitionKey,
       );
@@ -355,8 +356,7 @@ test.describe('Element Instance Search API', () => {
     }).toPass(defaultAssertionOptions);
   });
 
-  //Skipped due to bug 39372: https://github.com/camunda/camunda/issues/39372
-  test.skip('Search Element Instances - with invalid pagination parameters', async ({
+  test('Search Element Instances - with invalid pagination parameters', async ({
     request,
   }) => {
     await expect(async () => {
@@ -368,7 +368,11 @@ test.describe('Element Instance Search API', () => {
           },
         },
       });
-      await assertBadRequest(res, 'Sort field must not be null.');
+      await assertInvalidArgument(
+        res,
+        400,
+        "The value for page.limit is '-1' but must be a non-negative number.",
+      );
     }).toPass(defaultAssertionOptions);
   });
 

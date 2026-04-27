@@ -12,19 +12,15 @@ import {Header} from '@/pageElements/Header';
 import {LoginPage} from '@/pageElements/LoginPage';
 import {TaskVariableView} from '@/pageElements/TaskVariableView';
 import {TasksPage} from '@/pageElements/TasksPage';
-import {PublicFormsPage} from '@/pageElements/PublicFormsPage';
 import {ProcessesPage} from '@/pageElements/ProcessesPage';
 import {TaskFormView} from '@/pageElements/TaskFormView';
-import {sleep} from '@/utils/sleep';
 
 type PlaywrightFixtures = {
   makeAxeBuilder: () => AxeBuilder;
-  resetData: () => Promise<void>;
   header: Header;
   loginPage: LoginPage;
   taskVariableView: TaskVariableView;
   tasksPage: TasksPage;
-  publicFormsPage: PublicFormsPage;
   processesPage: ProcessesPage;
   taskFormView: TaskFormView;
 };
@@ -44,15 +40,6 @@ const test = base.extend<PlaywrightFixtures>({
 
     await use(makeAxeBuilder);
   },
-  resetData: async ({baseURL}, use) => {
-    await use(async () => {
-      await fetch(`${baseURL}../v1/external/devUtil/recreateData`, {
-        method: 'POST',
-      });
-
-      await sleep(1000);
-    });
-  },
   header: async ({page}, use) => {
     await use(new Header(page));
   },
@@ -64,9 +51,6 @@ const test = base.extend<PlaywrightFixtures>({
   },
   tasksPage: async ({page}, use) => {
     await use(new TasksPage(page));
-  },
-  publicFormsPage: async ({page}, use) => {
-    await use(new PublicFormsPage(page));
   },
   processesPage: async ({page}, use) => {
     await use(new ProcessesPage(page));

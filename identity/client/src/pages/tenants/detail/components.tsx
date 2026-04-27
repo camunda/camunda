@@ -6,9 +6,8 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import { textSecondary } from "@carbon/elements";
 import styled from "styled-components";
 
 export const Description = styled.p`
-  color: ${textSecondary};
+  color: var(--cds-text-secondary);
 `;

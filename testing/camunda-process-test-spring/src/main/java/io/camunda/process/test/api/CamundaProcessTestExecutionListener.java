@@ -19,7 +19,6 @@ import io.camunda.client.CamundaClient;
 import io.camunda.client.api.JsonMapper;
 import io.camunda.client.spring.event.CamundaClientClosingSpringEvent;
 import io.camunda.client.spring.event.CamundaClientCreatedSpringEvent;
-import io.camunda.client.spring.properties.CamundaClientProperties;
 import io.camunda.process.test.api.runtime.CamundaProcessTestContainerProvider;
 import io.camunda.process.test.impl.assertions.CamundaDataSource;
 import io.camunda.process.test.impl.assertions.util.InstantProbeAwaitBehavior;
@@ -135,7 +134,7 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
             runtime,
             createdClients::add,
             camundaManagementClient,
-            CamundaAssert.getAwaitBehavior(),
+            CamundaAssert::getAwaitBehavior,
             jsonMapper,
             conditionalBehaviorEngine);
 
@@ -354,17 +353,21 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
       final TestContext testContext,
       final CamundaProcessTestRuntimeConfiguration runtimeConfiguration) {
 
-    final CamundaClientProperties clientProperties =
-        testContext.getApplicationContext().getBean(CamundaClientProperties.class);
-
     final Map<String, CamundaProcessTestContainerProvider> containerProviders =
         testContext
             .getApplicationContext()
             .getBeansOfType(CamundaProcessTestContainerProvider.class);
     containerProviders.values().forEach(containerRuntimeBuilder::withContainerProvider);
 
+    // Load the CamundaClientBuilderFactory from the Spring context.
+    // This factory applies all camunda.client.* properties (including auth) to the client builder.
+    // It is created in CamundaProcessTestDefaultConfiguration unless overridden by a custom bean.
+    final CamundaClientBuilderFactory clientBuilderFactory =
+        testContext.getApplicationContext().getBean(CamundaClientBuilderFactory.class);
+    containerRuntimeBuilder.withCamundaClientBuilderFactory(clientBuilderFactory);
+
     return CamundaSpringProcessTestRuntimeBuilder.buildRuntime(
-        containerRuntimeBuilder, runtimeConfiguration, clientProperties);
+        containerRuntimeBuilder, runtimeConfiguration);
   }
 
   private static CamundaClient createClient(

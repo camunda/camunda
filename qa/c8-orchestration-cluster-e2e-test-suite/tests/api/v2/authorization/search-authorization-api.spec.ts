@@ -14,6 +14,7 @@ import {
   assertUnauthorizedRequest,
   encode,
   assertStatusCode,
+  assertInvalidArgument,
 } from '../../../../utils/http';
 import {defaultAssertionOptions} from '../../../../utils/constants';
 import {cleanupUsers} from '../../../../utils/usersCleanup';
@@ -222,7 +223,7 @@ test.describe.parallel('Search Authorization API', () => {
 
       const body = await res.json();
       expect(body.page.totalItems).toBe(2);
-      expect(body.items.length).toBe(2);
+      expect(body.items).toHaveLength(2);
       const authorization: Authorization = body.items[0];
       verifyAuthorizationFields(authorization, expectedUserAuthorization);
     }).toPass(defaultAssertionOptions);
@@ -258,7 +259,7 @@ test.describe.parallel('Search Authorization API', () => {
 
       const body = await res.json();
       expect(body.page.totalItems).toEqual(1);
-      expect(body.items.length).toEqual(1);
+      expect(body.items).toHaveLength(1);
     }).toPass(defaultAssertionOptions);
   });
 
@@ -317,7 +318,7 @@ test.describe.parallel('Search Authorization API', () => {
 
       const body = await res.json();
       expect(body.page.totalItems).toEqual(0);
-      expect(body.items.length).toEqual(0);
+      expect(body.items).toHaveLength(0);
     }).toPass(defaultAssertionOptions);
   });
 
@@ -436,13 +437,12 @@ test.describe.parallel('Search Authorization API', () => {
         );
         const body = await res.json();
         expect(body.page.totalItems).toEqual(0);
-        expect(body.items.length).toEqual(0);
+        expect(body.items).toHaveLength(0);
       }).toPass(defaultAssertionOptions);
     });
   });
 
-  // Skiped due to bug 39372: https://github.com/camunda/camunda/issues/39372
-  test.skip('Search Authorization - Negative pagination values (known bug) - 200 instead of 400', async ({
+  test('Search Authorization - Negative pagination values - 400 Bad Request', async ({
     request,
   }) => {
     await expect(async () => {
@@ -452,7 +452,11 @@ test.describe.parallel('Search Authorization API', () => {
           page: {from: -1, limit: -1},
         },
       });
-      await assertBadRequest(res, /page\.(from|limit)/i);
+      await assertInvalidArgument(
+        res,
+        400,
+        "The value for page.from is '-1' but must be a non-negative number.",
+      );
     }).toPass(defaultAssertionOptions);
   });
 
@@ -476,7 +480,7 @@ test.describe.parallel('Search Authorization API', () => {
 
       const body = await res.json();
       expect(body.page.totalItems).toBeGreaterThanOrEqual(35);
-      expect(body.items.length).toEqual(0);
+      expect(body.items).toHaveLength(0);
     }).toPass(defaultAssertionOptions);
   });
 });

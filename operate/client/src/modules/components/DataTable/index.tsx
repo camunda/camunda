@@ -91,7 +91,7 @@ const DataTable = React.forwardRef<HTMLDivElement, Props>(
                       <TableHeader
                         id={header.key}
                         key={header.key}
-                        $width={rawHeaders[index].width}
+                        $width={rawHeaders[index]?.width}
                       >
                         {header.header}
                       </TableHeader>

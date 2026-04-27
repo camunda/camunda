@@ -25,10 +25,16 @@ public class MessageSubscriptionEntityMapper {
         .flowNodeId(nullToEmpty(messageSubscriptionDbModel.flowNodeId()))
         .flowNodeInstanceKey(messageSubscriptionDbModel.flowNodeInstanceKey())
         .messageSubscriptionState(messageSubscriptionDbModel.messageSubscriptionState())
+        .messageSubscriptionType(messageSubscriptionDbModel.messageSubscriptionType())
         .dateTime(messageSubscriptionDbModel.dateTime())
         .messageName(nullToEmpty(messageSubscriptionDbModel.messageName()))
         .correlationKey(nullToEmpty(messageSubscriptionDbModel.correlationKey()))
         .tenantId(nullToEmpty(messageSubscriptionDbModel.tenantId()))
+        .processDefinitionName(nullToEmpty(messageSubscriptionDbModel.processDefinitionName()))
+        .processDefinitionVersion(messageSubscriptionDbModel.processDefinitionVersion())
+        .extensionProperties(messageSubscriptionDbModel.extensionProperties())
+        .toolName(messageSubscriptionDbModel.toolName())
+        .inboundConnectorType(messageSubscriptionDbModel.inboundConnectorType())
         .build();
   }
 }

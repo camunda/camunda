@@ -1,0 +1,192 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+
+import type {
+  CurrentUser,
+  UserTask,
+} from '@camunda/camunda-api-zod-schemas/8.10';
+import taskDetailsLayoutCommon from 'modules/tasks/details/taskDetailsLayoutCommon.module.scss';
+import {Section} from '@carbon/react';
+import {TurnOnNotificationPermission} from 'modules/tasks/details/TurnOnNotificationPermission';
+import {TabListNav} from 'modules/tasks/details/TabListNav';
+import {Aside} from 'modules/tasks/details/Aside';
+import {pages, useTaskDetailsParams} from 'modules/routing';
+import {useTranslation} from 'react-i18next';
+import {useCurrentUser} from 'modules/api/useCurrentUser.query';
+import {Outlet, useMatch, useNavigate, useSearchParams} from 'react-router-dom';
+import {DetailsSkeleton} from 'modules/tasks/details/DetailsSkeleton';
+import {useProcessDefinitionXml} from 'modules/api/useProcessDefinitionXml.query';
+import {useTask} from 'modules/api/useTask.query';
+import {useEffect} from 'react';
+import {notificationsStore} from 'modules/notifications/notifications.store';
+import {TaskDetailsHeader} from 'modules/tasks/details/TaskDetailsHeader';
+import {tracking} from 'modules/tracking';
+import {decodeTaskOpenedRef} from 'modules/tracking/reftags';
+import {AssignButton} from './AssignButton';
+import {removeSortParam} from 'modules/tasks/removeSortParam';
+import {removeRefParam} from 'modules/tasks/removeRefParam';
+
+type OutletContext = {
+  task: UserTask;
+  currentUser: CurrentUser;
+  refetch: () => void;
+  processXml: string | undefined;
+};
+const POLLING_STATES: UserTask['state'][] = [
+  'CANCELING',
+  'UPDATING',
+  'COMPLETING',
+  'ASSIGNING',
+] as const;
+
+const TaskDetailsLayout: React.FC = () => {
+  const {id} = useTaskDetailsParams();
+  const {t} = useTranslation();
+  const {data: currentUser} = useCurrentUser();
+  const {data: task, refetch} = useTask(id, {
+    refetchInterval(query) {
+      const {data} = query.state;
+
+      if (data?.state && POLLING_STATES.includes(data.state)) {
+        return 5000;
+      }
+
+      return false;
+    },
+  });
+  const isTaskCompleted = task?.state === 'COMPLETED';
+  const {data: processXml, isLoading: processLoading} = useProcessDefinitionXml(
+    task?.processDefinitionKey ?? '',
+    {
+      enabled: task !== undefined && !isTaskCompleted,
+    },
+  );
+  const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  useEffect(() => {
+    if (task?.state === 'CANCELED') {
+      notificationsStore.displayNotification({
+        kind: 'info',
+        title: t('processInstanceCancelledNotification'),
+        subtitle: `${task?.processName ?? task?.processDefinitionId} (${task?.processInstanceKey})`,
+        isDismissable: true,
+      });
+      navigate({
+        pathname: pages.initial,
+        search: removeRefParam(searchParams),
+      });
+    }
+  }, [
+    navigate,
+    searchParams,
+    task?.processInstanceKey,
+    task?.processName,
+    task?.state,
+    task?.processDefinitionId,
+    t,
+  ]);
+
+  useEffect(() => {
+    const ref = searchParams.get('ref');
+    if (searchParams.has('ref')) {
+      setSearchParams(removeRefParam(searchParams), {replace: true});
+    }
+
+    const taskOpenedRef = decodeTaskOpenedRef(ref);
+    tracking.track({
+      eventName: 'task-opened',
+      ...(taskOpenedRef ?? {}),
+    });
+  }, [searchParams, setSearchParams, id]);
+
+  const tabs = [
+    {
+      key: 'task',
+      title: t('taskDetailsTaskTabLabel'),
+      label: t('taskDetailsShowTaskLabel'),
+      selected: useMatch(pages.taskDetails()) !== null,
+      to: {
+        pathname: pages.taskDetails(id),
+        search: removeSortParam(searchParams.toString()),
+      },
+    },
+    {
+      key: 'process',
+      title: t('taskDetailsProcessTabLabel'),
+      label: t('taskDetailsShowBpmnProcessLabel'),
+      selected: useMatch(pages.taskDetailsProcess()) !== null,
+      to: {
+        pathname: pages.taskDetailsProcess(id),
+        search: removeSortParam(searchParams.toString()),
+      },
+      visible: !isTaskCompleted && processXml !== undefined,
+    },
+    {
+      key: 'history',
+      title: t('taskDetailsHistoryTabLabel'),
+      label: t('taskDetailsShowHistoryLabel'),
+      selected: useMatch(pages.taskDetailsHistory()) !== null,
+      to: {
+        pathname: pages.taskDetailsHistory(id),
+        search: removeSortParam(searchParams.toString()),
+      },
+    },
+  ];
+
+  if (task === undefined || currentUser === undefined || processLoading) {
+    return <DetailsSkeleton data-testid="details-skeleton" />;
+  }
+
+  return (
+    <div
+      className={taskDetailsLayoutCommon.container}
+      data-testid="details-info"
+    >
+      <Section className={taskDetailsLayoutCommon.content} level={4}>
+        <TurnOnNotificationPermission />
+        <TaskDetailsHeader
+          taskName={task.name ?? task.elementId}
+          processName={task.processName ?? task.processDefinitionId}
+          assignee={task.assignee ?? null}
+          taskState={task.state}
+          user={currentUser}
+          assignButton={
+            <AssignButton
+              key={task.userTaskKey}
+              id={task.userTaskKey}
+              taskState={task.state}
+              assignee={task.assignee}
+              currentUser={currentUser.username}
+            />
+          }
+        />
+        <TabListNav label={t('taskDetailsNavLabel')} items={tabs} />
+        <Outlet
+          context={
+            {task, currentUser, refetch, processXml} satisfies OutletContext
+          }
+        />
+      </Section>
+      <Aside
+        creationDate={task.creationDate}
+        completionDate={task.completionDate}
+        dueDate={task.dueDate}
+        followUpDate={task.followUpDate}
+        priority={task.priority}
+        candidateUsers={task.candidateUsers}
+        candidateGroups={task.candidateGroups}
+        tenantId={task.tenantId}
+        user={currentUser}
+      />
+    </div>
+  );
+};
+
+export {TaskDetailsLayout as Component};
+export type {OutletContext};

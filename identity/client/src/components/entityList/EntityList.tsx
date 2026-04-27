@@ -188,16 +188,17 @@ const EntityList = <D extends EntityData>({
     ? { $compact: true }
     : {
         title,
-        description: (
-          <>
-            {description && <p>{description}</p>}
-            {documentationPath && (
-              <DocumentationLink path={documentationPath}>
-                {t("Learn more")}
-              </DocumentationLink>
-            )}
-          </>
-        ),
+        description:
+          !description && !documentationPath ? undefined : (
+            <>
+              {description && <p>{description}</p>}
+              {documentationPath && (
+                <DocumentationLink path={documentationPath}>
+                  {t("Learn more")}
+                </DocumentationLink>
+              )}
+            </>
+          ),
       };
 
   return (

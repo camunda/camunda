@@ -14,8 +14,15 @@ env:
   GHA_BEST_PRACTICES_LINTER: enabled
 
 jobs:
+  utils-get-snapshot-docker-tag:
+    uses: ./.github/workflows/generate-snapshot-docker-tag.yml
+    secrets: inherit
+    permissions:
+      contents: read
+
   helm-deploy:
     name: Helm chart Integration Tests
+    needs: [utils-get-snapshot-docker-tag]
     uses: camunda/camunda-platform-helm/.github/workflows/test-integration-template.yaml@main
     secrets: inherit
     with:
@@ -23,19 +30,20 @@ jobs:
       camunda-helm-dir: camunda-platform-8.8
       test-enabled: true
       caller-git-ref: main
+      # On main: uses SNAPSHOT tag; on stable: uses versioned tag (e.g. 8.9-SNAPSHOT)
       extra-values: |
         zeebe:
           image:
-            tag: SNAPSHOT
+            tag: ${{ needs.utils-get-snapshot-docker-tag.outputs.snapshot_tag != '' && needs.utils-get-snapshot-docker-tag.outputs.snapshot_tag || needs.utils-get-snapshot-docker-tag.outputs.version_tag }}
         operate:
           image:
-            tag: SNAPSHOT
+            tag: ${{ needs.utils-get-snapshot-docker-tag.outputs.snapshot_tag != '' && needs.utils-get-snapshot-docker-tag.outputs.snapshot_tag || needs.utils-get-snapshot-docker-tag.outputs.version_tag }}
         tasklist:
           image:
-            tag: SNAPSHOT
+            tag: ${{ needs.utils-get-snapshot-docker-tag.outputs.snapshot_tag != '' && needs.utils-get-snapshot-docker-tag.outputs.snapshot_tag || needs.utils-get-snapshot-docker-tag.outputs.version_tag }}
         optimize:
           image:
-            tag: 8-SNAPSHOT
+            tag: ${{ needs.utils-get-snapshot-docker-tag.outputs.snapshot_tag != '' && '8-SNAPSHOT' || needs.utils-get-snapshot-docker-tag.outputs.version_tag }}
       vault-secret-mapping: |
         secret/data/products/zeebe/ci/zeebe REGISTRY_HUB_DOCKER_COM_USR | TEST_DOCKER_USERNAME;
         secret/data/products/zeebe/ci/zeebe REGISTRY_HUB_DOCKER_COM_PSW | TEST_DOCKER_PASSWORD;
@@ -50,7 +58,7 @@ jobs:
     timeout-minutes: 5
     permissions: {}  # GITHUB_TOKEN unused in this job
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
       - name: Import Secrets
         id: secrets

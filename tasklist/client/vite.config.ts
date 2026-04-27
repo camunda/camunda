@@ -30,8 +30,6 @@ export default defineConfig(({mode}) => ({
     port: 3000,
     open: true,
     proxy: {
-      '/api': 'http://localhost:8080',
-      '/v1': 'http://localhost:8080',
       '/v2': 'http://localhost:8080',
       '/login': {
         target: 'http://localhost:8080',
@@ -77,6 +75,8 @@ export default defineConfig(({mode}) => ({
     restoreMocks: true,
     mockReset: true,
     retry: process.env.CI ? 3 : 0,
+    fileParallelism: !process.env.CI,
+    maxWorkers: process.env.CI ? 1 : undefined,
     server: {
       deps: {
         // this was necessary due to some issues with styled-components which appeared when bumping C3 on this https://github.com/camunda/camunda/pull/46171

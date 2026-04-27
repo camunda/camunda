@@ -18,13 +18,12 @@ import static org.awaitility.Awaitility.await;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.MigrationPlan;
 import io.camunda.client.api.command.ProblemException;
+import io.camunda.client.api.search.enums.ElementInstanceState;
 import io.camunda.client.api.search.enums.UserTaskState;
 import io.camunda.client.api.search.response.UserTask;
 import io.camunda.qa.util.cluster.TestCamundaApplication;
-import io.camunda.qa.util.cluster.TestRestTasklistClient;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.qa.util.multidb.MultiDbTestApplication;
-import io.camunda.qa.util.cluster.TestRestTasklistClient.TaskSearchResponse;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.builder.AbstractUserTaskBuilder;
@@ -33,7 +32,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
-import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
@@ -53,7 +51,6 @@ public class UserTaskProcessInstanceMigrationIT {
       new TestCamundaApplication().withAuthorizationsDisabled();
 
   private static CamundaClient client;
-  @AutoClose private static TestRestTasklistClient tasklistClient;
   private static final String FROM_PROCESS_ID = "migration-user-task_v1";
   private static final String TO_PROCESS_ID = "migration-user-task_v2";
   private static final String TASK_ID = "task1";
@@ -68,7 +65,6 @@ public class UserTaskProcessInstanceMigrationIT {
 
   @BeforeAll
   static void setup(final CamundaClient camundaClient) {
-    tasklistClient = STANDALONE_CAMUNDA.newTasklistClient();
     formKey1 =
         client
             .newDeployResourceCommand()
@@ -127,7 +123,7 @@ public class UserTaskProcessInstanceMigrationIT {
         startProcessInstance(
                 client, FROM_PROCESS_ID, Map.of("varAssignee", "demo", "varPriority", 20))
             .getProcessInstanceKey();
-    // wait for task to be exported - use V1 because V2 does not return job worker user tasks
+    // wait for task element instance to be exported
     waitForTaskExported(processInstanceKey);
 
     // when
@@ -183,7 +179,7 @@ public class UserTaskProcessInstanceMigrationIT {
         startProcessInstance(
                 client, FROM_PROCESS_ID, Map.of("varAssignee", "demo", "varPriority", 20))
             .getProcessInstanceKey();
-    // wait for task to be exported - use V1 because V2 does not return job worker user tasks
+    // wait for task element instance to be exported
     waitForTaskExported(processInstanceKey);
 
     // when - then
@@ -308,7 +304,7 @@ public class UserTaskProcessInstanceMigrationIT {
             .getProcessDefinitionKey();
     final var processInstanceKey =
         startProcessInstance(client, FROM_PROCESS_ID, Map.of()).getProcessInstanceKey();
-    // wait for task to be exported - use V1 because V2 does not return job worker user tasks
+    // wait for task element instance to be exported
     waitForTaskExported(processInstanceKey);
 
     // when
@@ -540,12 +536,19 @@ public class UserTaskProcessInstanceMigrationIT {
     await()
         .atMost(TIMEOUT_DATA_AVAILABILITY)
         .untilAsserted(
-            () -> {
-              final TaskSearchResponse[] tasks =
-                  tasklistClient.searchAndParseTasks(processInstanceKey);
-              assertThat(tasks).hasSize(1);
-              assertThat(tasks[0].getProcessInstanceKey()).isEqualTo(processInstanceKey.toString());
-            });
+            () ->
+                assertThat(
+                        client
+                            .newElementInstanceSearchRequest()
+                            .filter(
+                                f ->
+                                    f.processInstanceKey(processInstanceKey)
+                                        .elementId(TASK_ID)
+                                        .state(ElementInstanceState.ACTIVE))
+                            .send()
+                            .join()
+                            .items())
+                    .hasSize(1));
   }
 
   private void verifyFormOperationsWork(final long userTaskKey) {

@@ -16,7 +16,7 @@ import {mockDecisionDefinitions} from 'modules/mocks/mockDecisionDefinitions';
 
 describe('<Decision />', () => {
   beforeEach(() => {
-    const selectedDecisionDefinition = mockDecisionDefinitions.items[5];
+    const selectedDecisionDefinition = mockDecisionDefinitions.items[5]!;
     mockSearchDecisionDefinitions().withSuccess({
       items: [selectedDecisionDefinition],
       page: {
@@ -29,9 +29,6 @@ describe('<Decision />', () => {
   });
 
   it('should render decision table and panel header', async () => {
-    const originalWindowPrompt = window.prompt;
-    window.prompt = vi.fn();
-
     mockFetchDecisionDefinitionXML().withSuccess(mockDmnXml);
 
     const {user} = render(<Decision />, {
@@ -55,8 +52,6 @@ describe('<Decision />', () => {
     );
 
     expect(await screen.findByText('Copied to clipboard')).toBeInTheDocument();
-
-    window.prompt = originalWindowPrompt;
   });
 
   it('should render text when no decision is selected', async () => {
@@ -103,7 +98,7 @@ describe('<Decision />', () => {
 
   it('should render text on error', async () => {
     mockFetchDecisionDefinitionXML().withServerError(404);
-    const selectedDecisionDefinition = mockDecisionDefinitions.items[6];
+    const selectedDecisionDefinition = mockDecisionDefinitions.items[6]!;
     mockSearchDecisionDefinitions().withSuccess({
       items: [selectedDecisionDefinition],
       page: {

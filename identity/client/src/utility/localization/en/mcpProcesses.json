@@ -1,0 +1,9 @@
+{
+  "toolName": "Tool Name",
+  "toolDescription": "Tool Description",
+  "processName": "Process Name",
+  "version": "Version",
+  "tenant": "Tenant",
+  "searchByToolName": "Search by tool name",
+  "mcpProcessesCouldNotLoad": "MCP Processes could not be loaded."
+}

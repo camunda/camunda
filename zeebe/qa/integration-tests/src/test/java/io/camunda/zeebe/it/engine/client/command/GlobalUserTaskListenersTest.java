@@ -510,6 +510,49 @@ public class GlobalUserTaskListenersTest {
         .containsExactly("15_api", "20_configuration", "30_api", "40_configuration");
   }
 
+  @Test
+  public void shouldAllowCancellingUserTaskWhileWaitingForListener() {
+    // given: global listener configuration and a process with a task
+    // a listener is configured for the "creating" event but no associated worker is present
+    configureGlobalListeners(List.of(createListenerConfig("global", List.of("creating"), false)));
+    restartBroker();
+
+    // deploy process definition
+    final BpmnModelInstance processDefinition =
+        Bpmn.createExecutableProcess("processWithUserTask")
+            .startEvent("start")
+            .userTask("task")
+            .zeebeUserTask()
+            .endEvent("end")
+            .done();
+    final long processDefinitionKey = resourcesHelper.deployProcess(processDefinition);
+
+    // create process instance
+    final var processInstanceKey = resourcesHelper.createProcessInstance(processDefinitionKey);
+
+    // when: the process is canceled while waiting for the listener
+
+    // Wait for the listener job to be created
+    // Note that the listener will never complete because no related job worker has been registered.
+    RecordingExporter.jobRecords(JobIntent.CREATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .withType("global")
+        .await();
+
+    // Cancel the process (with the task)
+    camundaClient.newCancelInstanceCommand(processInstanceKey).send();
+
+    // then: the "creating" job and the task are correctly canceled
+    RecordingExporter.userTaskRecords(UserTaskIntent.CANCELED)
+        .withProcessInstanceKey(processInstanceKey)
+        .await();
+    RecordingExporter.jobRecords(JobIntent.CANCELED)
+        .withProcessInstanceKey(processInstanceKey)
+        .withJobListenerEventType(JobListenerEventType.CREATING)
+        .withType("global")
+        .await();
+  }
+
   private void setupAutocompleteWorker(final String jobType) {
     camundaClient
         .newWorker()

@@ -65,7 +65,7 @@ import org.springframework.context.annotation.Import;
 })
 public class ModulesTestApplication {
 
-  public static void main(final String[] args) throws Exception {
+  public static void main(final String[] args) {
     SpringApplication.run(ModulesTestApplication.class, args);
   }
 }

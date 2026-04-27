@@ -14,9 +14,9 @@ import {
 import playwrightPkg from '@playwright/test/package.json' with {type: 'json'};
 
 const BASE_URL = 'http://localhost:3003/operate/';
-const IS_CI = Boolean(process.env.CI);
+const IS_CI = Boolean(process.env['CI']);
 const USE_CONTAINERIZED_BROWSER =
-  !IS_CI && Boolean(process.env.CONTAINERIZED_BROWSER);
+  !IS_CI && Boolean(process.env['CONTAINERIZED_BROWSER']);
 
 const webServer: PlaywrightTestConfig['webServer'] = [
   {
@@ -107,7 +107,7 @@ const config = defineConfig({
     video: 'retain-on-failure',
     ...(USE_CONTAINERIZED_BROWSER && {
       connectOptions: {
-        wsEndpoint: `ws://127.0.0.1:${process.env.PLAYWRIGHT_SERVER_PORT}/`,
+        wsEndpoint: `ws://127.0.0.1:${process.env['PLAYWRIGHT_SERVER_PORT']}/`,
       },
     }),
   },

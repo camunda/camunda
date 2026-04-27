@@ -54,7 +54,7 @@ public class VariableAssertj extends AbstractAssert<VariableAssertj, String> {
   private final Supplier<CamundaAssertAwaitBehavior> awaitBehavior;
   private final CamundaAssertJsonMapper jsonMapper;
   private final JudgeAssertj judgeAssertj;
-  private SemanticSimilarityConfig semanticSimilarityConfig;
+  private final SemanticSimilarityAssertj similarityAssertj;
 
   public VariableAssertj(
       final CamundaDataSource dataSource,
@@ -68,7 +68,7 @@ public class VariableAssertj extends AbstractAssert<VariableAssertj, String> {
     this.awaitBehavior = awaitBehavior;
     this.jsonMapper = jsonMapper;
     judgeAssertj = new JudgeAssertj(judgeConfig);
-    this.semanticSimilarityConfig = semanticSimilarityConfig;
+    similarityAssertj = new SemanticSimilarityAssertj(semanticSimilarityConfig);
   }
 
   public void hasLocalVariableNames(
@@ -451,11 +451,11 @@ public class VariableAssertj extends AbstractAssert<VariableAssertj, String> {
   // --- Semantic similarity evaluation methods ---
 
   SemanticSimilarityConfig getSemanticSimilarityConfig() {
-    return semanticSimilarityConfig;
+    return similarityAssertj.getSemanticSimilarityConfig();
   }
 
-  void setSemanticSimilarityConfig(final SemanticSimilarityConfig similarityConfig) {
-    semanticSimilarityConfig = similarityConfig;
+  void withSemanticSimilarityConfig(final UnaryOperator<SemanticSimilarityConfig> modifier) {
+    similarityAssertj.withSemanticSimilarityConfig(modifier);
   }
 
   public void hasVariableSimilarTo(
@@ -463,7 +463,7 @@ public class VariableAssertj extends AbstractAssert<VariableAssertj, String> {
       final VariableSelector variableSelector,
       final String expectedValue) {
 
-    assertSimilarityCheckHasAllRequiredSettings();
+    similarityAssertj.assertSimilarityHasAllRequiredSettings();
     assertExpectationNotEmpty(expectedValue);
 
     hasVariableSatisfies(
@@ -478,7 +478,7 @@ public class VariableAssertj extends AbstractAssert<VariableAssertj, String> {
       final VariableSelector variableSelector,
       final String expectedValue) {
 
-    assertSimilarityCheckHasAllRequiredSettings();
+    similarityAssertj.assertSimilarityHasAllRequiredSettings();
     assertExpectationNotEmpty(expectedValue);
 
     withLocalVariableAssertion(
@@ -507,34 +507,8 @@ public class VariableAssertj extends AbstractAssert<VariableAssertj, String> {
           "%s variable '%s' is present but has no value to compare for semantic similarity.",
           actual, variableName);
     }
-    final SimilarityEvaluation evaluation =
-        new SimilarityEvaluation(
-            semanticSimilarityConfig.getEmbeddingModel(),
-            semanticSimilarityConfig.getPreprocessors(),
-            expectedValue);
-    final SimilarityEvaluation.Result result = evaluation.evaluate(variableValue);
-    LOG.debug("Computed similarity score for variable '{}': {}", variableName, result.getScore());
-    final double threshold = semanticSimilarityConfig.getThreshold();
-    if (!result.passed(threshold)) {
-      fail(
-          "%s variable '%s' did not satisfy similarity check.\n"
-              + "  Expectation: %s\n"
-              + "  Actual value: %s\n"
-              + "  Score: %.2f (threshold: %.2f)\n",
-          actual, variableName, expectedValue, variableValue, result.getScore(), threshold);
-    }
-  }
-
-  private void assertSimilarityCheckHasAllRequiredSettings() {
-    if (semanticSimilarityConfig == null) {
-      throw new IllegalStateException(
-          "SemanticSimilarityConfig is not set. Ensure to provide a SemanticSimilarityConfig instance to use similarity assertions.");
-    }
-    if (semanticSimilarityConfig.getEmbeddingModel() == null) {
-      throw new IllegalStateException(
-          "SemanticSimilarityConfig has no EmbeddingModelAdapter configured. "
-              + "Use SemanticSimilarityConfig.of(embeddingModel) or withSemanticSimilarityConfig(config -> config.withEmbeddingModelAdapter(embeddingModel)).");
-    }
+    similarityAssertj.evaluateSimilarity(
+        expectedValue, variableValue, String.format("%s variable '%s' ", actual, variableName));
   }
 
   // --- Variable fetching ---

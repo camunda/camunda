@@ -48,8 +48,8 @@ import io.camunda.exporter.exceptions.PersistenceException;
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.exporter.store.ExporterBatchWriter;
-import io.camunda.exporter.tasks.BackgroundTaskManager;
-import io.camunda.exporter.tasks.BackgroundTaskManagerFactory;
+import io.camunda.exporter.tasks.CamundaBackgroundTaskManager;
+import io.camunda.exporter.tasks.CamundaBackgroundTaskManagerFactory;
 import io.camunda.search.schema.MappingSource;
 import io.camunda.search.schema.SchemaManager;
 import io.camunda.search.schema.SearchEngineClient;
@@ -84,7 +84,7 @@ public class CamundaExporter implements Exporter {
   private long lastPosition = -1;
   private final ExporterResourceProvider provider;
   private CamundaExporterMetrics metrics;
-  private BackgroundTaskManager taskManager;
+  private CamundaBackgroundTaskManager taskManager;
   private ExporterMetadata metadata;
   private SearchEngineClient searchEngineClient;
   private int partitionId;
@@ -264,7 +264,7 @@ public class CamundaExporter implements Exporter {
         clientAdapter.objectMapper());
 
     taskManager =
-        new BackgroundTaskManagerFactory(
+        new CamundaBackgroundTaskManagerFactory(
                 context.getPartitionId(),
                 context.getConfiguration().getId().toLowerCase(),
                 configuration,
@@ -301,10 +301,20 @@ public class CamundaExporter implements Exporter {
   }
 
   private boolean shouldFlush() {
-    return writer.getBatchSize() >= configuration.getBulk().getSize()
-        || writer.getBatchMemoryEstimateInMb() >= configuration.getBulk().getMemoryLimit()
-        || (writer.getBatchSize() > 0
-            && (context.clock().millis() - lastFlushTimestamp) >= flushDelayMs);
+    if (writer.getBatchSize() >= configuration.getBulk().getSize()) {
+      metrics.recordFlushReasonBatchSize();
+      return true;
+    }
+    if (writer.getBatchMemoryEstimateInMb() >= configuration.getBulk().getMemoryLimit()) {
+      metrics.recordFlushReasonBatchMemory();
+      return true;
+    }
+    if (writer.getBatchSize() > 0
+        && (context.clock().millis() - lastFlushTimestamp) >= flushDelayMs) {
+      metrics.recordFlushReasonScheduled();
+      return true;
+    }
+    return false;
   }
 
   private ExporterBatchWriter createBatchWriter() {
@@ -328,6 +338,7 @@ public class CamundaExporter implements Exporter {
     final var now = context.clock().millis();
     try {
       if (now - lastFlushTimestamp >= flushDelayMs) {
+        metrics.recordFlushReasonScheduled();
         flush();
       }
     } catch (final Exception e) {

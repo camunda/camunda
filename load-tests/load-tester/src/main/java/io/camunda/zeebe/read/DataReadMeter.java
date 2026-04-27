@@ -9,8 +9,8 @@ package io.camunda.zeebe.read;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.FinalCommandStep;
-import io.camunda.zeebe.StarterLatencyMetricsDoc;
-import io.camunda.zeebe.StarterLatencyMetricsDoc.StarterMetricKeyNames;
+import io.camunda.zeebe.metrics.StarterLatencyMetricsDoc;
+import io.camunda.zeebe.metrics.StarterLatencyMetricsDoc.StarterMetricKeyNames;
 import io.camunda.zeebe.util.micrometer.MicrometerUtil;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;

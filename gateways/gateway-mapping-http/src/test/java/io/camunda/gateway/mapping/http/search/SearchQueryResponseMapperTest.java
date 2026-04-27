@@ -14,6 +14,8 @@ import io.camunda.gateway.protocol.model.BatchOperationItemResponse;
 import io.camunda.gateway.protocol.model.BatchOperationItemResponse.StateEnum;
 import io.camunda.gateway.protocol.model.BatchOperationTypeEnum;
 import io.camunda.gateway.protocol.model.IncidentStateEnum;
+import io.camunda.gateway.protocol.model.JobListenerEventTypeEnum;
+import io.camunda.gateway.protocol.model.JobSearchQueryResult;
 import io.camunda.search.entities.AuditLogEntity;
 import io.camunda.search.entities.AuditLogEntity.AuditLogActorType;
 import io.camunda.search.entities.AuditLogEntity.AuditLogEntityType;
@@ -778,5 +780,72 @@ class SearchQueryResponseMapperTest {
     assertThat(result.getC8Links())
         .containsEntry("operate", "https://operate.example.com")
         .containsEntry("tasklist", "https://tasklist.example.com");
+  }
+
+  @Test
+  void shouldMapJobSearchResultWithBeforeAllListenerEventType() {
+    // given
+    final JobEntity job =
+        new JobEntity.Builder()
+            .jobKey(1L)
+            .type("before-all-job")
+            .worker("worker1")
+            .state(JobState.CREATED)
+            .kind(JobKind.EXECUTION_LISTENER)
+            .listenerEventType(ListenerEventType.BEFORE_ALL)
+            .retries(3)
+            .hasFailedWithRetriesLeft(false)
+            .processDefinitionId("process1")
+            .processDefinitionKey(10L)
+            .processInstanceKey(20L)
+            .elementId("element1")
+            .elementInstanceKey(30L)
+            .tenantId("default")
+            .build();
+    final SearchQueryResult<JobEntity> result =
+        new SearchQueryResult<>(1, false, List.of(job), null, null);
+
+    // when
+    final JobSearchQueryResult response =
+        SearchQueryResponseMapper.toJobSearchQueryResponse(result);
+
+    // then
+    assertThat(response.getItems()).hasSize(1);
+    assertThat(response.getItems().getFirst().getListenerEventType())
+        .isEqualTo(JobListenerEventTypeEnum.BEFORE_ALL);
+  }
+
+  @Test
+  void shouldMapAllListenerEventTypesToJobSearchResult() {
+    // given / when / then
+    for (final ListenerEventType type : ListenerEventType.values()) {
+      final JobEntity job =
+          new JobEntity.Builder()
+              .jobKey(1L)
+              .type("job")
+              .worker("worker")
+              .state(JobState.CREATED)
+              .kind(JobKind.EXECUTION_LISTENER)
+              .listenerEventType(type)
+              .retries(1)
+              .hasFailedWithRetriesLeft(false)
+              .processDefinitionId("p1")
+              .processDefinitionKey(1L)
+              .processInstanceKey(2L)
+              .elementId("e1")
+              .elementInstanceKey(3L)
+              .tenantId("default")
+              .build();
+      final SearchQueryResult<JobEntity> result =
+          new SearchQueryResult<>(1, false, List.of(job), null, null);
+
+      final JobSearchQueryResult response =
+          SearchQueryResponseMapper.toJobSearchQueryResponse(result);
+
+      assertThat(response.getItems().getFirst().getListenerEventType())
+          .as("ListenerEventType.%s should map without error", type)
+          .isNotNull()
+          .isEqualTo(JobListenerEventTypeEnum.fromValue(type.name()));
+    }
   }
 }

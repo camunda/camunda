@@ -1,10 +1,10 @@
 {
   "metadata": {
     "sourceRepo": "https://github.com/camunda/camunda",
-    "commit": "1ff50fc22791ae07c6353bfc72e62e0f4775f1df",
-    "generatedAt": "2026-04-01T13:31:56.835Z",
+    "commit": "b22a92d268da08532cd1b5fc86b4763b8cad9d49",
+    "generatedAt": "2026-04-27T13:36:37.463Z",
     "specPath": "zeebe/gateway-protocol/src/main/proto/v2/rest-api.yaml",
-    "specSha256": "36365a7879894180284f12a90a1afaa1c73061c07dfa3f5d45c8300c9301030d"
+    "specSha256": "e1916dea8fd495e28808d5902a663aca3e629446b9d3cae8c636b5d8a840e75f"
   },
   "responses": [
     {
@@ -523,8 +523,7 @@
           },
           {
             "name": "username",
-            "type": "string",
-            "nullable": true
+            "type": "string"
           }
         ],
         "optional": []
@@ -4049,6 +4048,7 @@
                   "type": "string",
                   "enumValues": [
                     "ASSIGNING",
+                    "BEFORE_ALL",
                     "CANCELING",
                     "COMPLETING",
                     "CREATING",
@@ -4258,6 +4258,7 @@
                   "type": "string",
                   "enumValues": [
                     "ASSIGNING",
+                    "BEFORE_ALL",
                     "CANCELING",
                     "COMPLETING",
                     "CREATING",
@@ -4998,6 +4999,15 @@
                   "nullable": true
                 },
                 {
+                  "name": "extensionProperties",
+                  "type": "object"
+                },
+                {
+                  "name": "inboundConnectorType",
+                  "type": "string",
+                  "nullable": true
+                },
+                {
                   "name": "lastUpdatedDate",
                   "type": "string"
                 },
@@ -5020,12 +5030,30 @@
                   ]
                 },
                 {
+                  "name": "messageSubscriptionType",
+                  "type": "string",
+                  "enumValues": [
+                    "START_EVENT",
+                    "PROCESS_EVENT"
+                  ]
+                },
+                {
                   "name": "processDefinitionId",
                   "type": "string"
                 },
                 {
                   "name": "processDefinitionKey",
                   "type": "string",
+                  "nullable": true
+                },
+                {
+                  "name": "processDefinitionName",
+                  "type": "string",
+                  "nullable": true
+                },
+                {
+                  "name": "processDefinitionVersion",
+                  "type": "number",
                   "nullable": true
                 },
                 {
@@ -5044,6 +5072,11 @@
                   "underlyingPrimitive": "string",
                   "rawRefName": "schema",
                   "wrapper": true
+                },
+                {
+                  "name": "toolName",
+                  "type": "string",
+                  "nullable": true
                 }
               ],
               "optional": []
@@ -6226,15 +6259,6 @@
             "nullable": true
           }
         ],
-        "optional": []
-      }
-    },
-    {
-      "path": "/resources/{resourceKey}/content",
-      "method": "GET",
-      "status": "200",
-      "schema": {
-        "required": [],
         "optional": []
       }
     },

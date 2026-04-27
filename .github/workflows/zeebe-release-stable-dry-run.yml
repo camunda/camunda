@@ -31,7 +31,7 @@ jobs:
           vault-auth-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-auth-secret-id: ${{ secrets.VAULT_SECRET_ID }}
           vault-url: ${{ secrets.VAULT_ADDR }}
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           fetch-depth: 0
           token: ${{ steps.github-token.outputs.token }}
@@ -74,6 +74,7 @@ jobs:
       nextDevelopmentVersion: 0.0.0-SNAPSHOT
       isLatest: true
       dryRun: true
+      includeOptimize: true
   dry-run-release-88:
     name: "Release from stable/8.8"
     needs: create-dry-run-branches
@@ -88,6 +89,7 @@ jobs:
       nextDevelopmentVersion: 0.0.0-SNAPSHOT
       isLatest: true
       dryRun: true
+      includeOptimize: true
   dry-run-release-87:
     name: "Release from stable/8.7"
     needs: create-dry-run-branches
@@ -124,7 +126,7 @@ jobs:
           vault-auth-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-auth-secret-id: ${{ secrets.VAULT_SECRET_ID }}
           vault-url: ${{ secrets.VAULT_ADDR }}
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           token: ${{ steps.github-token.outputs.token }}
       - name: Delete temporary dryrun 8.9 branch and tag

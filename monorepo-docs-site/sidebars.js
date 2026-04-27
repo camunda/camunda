@@ -15,6 +15,7 @@
 const sidebars = {
   tutorialSidebar: [
     'index',
+    'monorepo-devops-team-processes',
     'collaboration-guidelines',
     'ci',
     'ci-runbooks',
@@ -81,6 +82,11 @@ const sidebars = {
                   ],
                 },
               ],
+            },
+            {
+              type: 'doc',
+              id: 'architecture/components/identity/management_identity_architecture_docs',
+              label: 'Management Identity',
             },
           ],
         },

@@ -1,3 +1,11 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+
 import {OperationModel, ValidationScenario} from '../model/types.js';
 import {makeId} from './common.js';
 
@@ -18,7 +26,6 @@ export function generateMissingBody(
     // Skip optional bodies entirely (we don't assert positives; business logic not derivable here).
     let required = op.bodyRequired === true;
     if (!required) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const schema: any = op.requestBodySchema;
       if (
         schema &&
@@ -57,11 +64,11 @@ export function generateBodyTopTypeMismatch(
   for (const op of ops) {
     if (opts.onlyOperations && !opts.onlyOperations.has(op.operationId))
       continue;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
     const schema: any = op.requestBodySchema;
     if (!schema) continue;
     const actual = schema.type;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
     let wrong: any;
     switch (actual) {
       case 'object':

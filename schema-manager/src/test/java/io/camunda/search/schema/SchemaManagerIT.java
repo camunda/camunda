@@ -1016,6 +1016,7 @@ public class SchemaManagerIT {
             newPrefix + "-camunda-audit-log-8.9.0_",
             newPrefix + "-camunda-audit-log-cleanup-8.9.0_",
             newPrefix + "-camunda-history-deletion-8.9.0_",
+            newPrefix + "-camunda-deployed-resource-8.10.0_",
             newPrefix + "-operate-batch-operation-1.0.0_",
             newPrefix + "-operate-decision-8.3.0_",
             newPrefix + "-operate-decision-instance-8.3.0_",

@@ -7,18 +7,16 @@
  */
 package io.camunda.it;
 
+import static io.camunda.it.util.TestHelper.waitForProcessInstance;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.client.api.search.response.ProcessInstance;
 import io.camunda.qa.util.cluster.TestCamundaApplication;
-import io.camunda.qa.util.cluster.TestRestOperateClient.ProcessInstanceResult;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.qa.util.multidb.MultiDbTestApplication;
 import io.camunda.security.entity.AuthenticationMethod;
 import io.camunda.zeebe.model.bpmn.Bpmn;
-import io.camunda.zeebe.util.Either;
-import java.time.Duration;
-import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 
@@ -62,28 +60,19 @@ public class StandaloneCamundaTest {
             .join();
 
     // then
-    final var operateClient = CAMUNDA_APPLICATION.newOperateClient();
-    Awaitility.await("should receive data from ES")
-        .timeout(Duration.ofMinutes(1))
-        .untilAsserted(
-            () -> {
-              final Either<Exception, ProcessInstanceResult> eitherProcessInstanceResult =
-                  operateClient.getProcessInstanceWith(
-                      processInstanceEvent.getProcessInstanceKey());
+    waitForProcessInstance(
+        camundaClient,
+        f -> f.processInstanceKey(processInstanceEvent.getProcessInstanceKey()),
+        f -> assertThat(f).hasSize(1));
 
-              // has no exception
-              assertThat(eitherProcessInstanceResult.isRight())
-                  .withFailMessage("Expect no error on retrieving process instance")
-                  .isTrue();
+    final ProcessInstance processInstance =
+        camundaClient
+            .newProcessInstanceGetRequest(processInstanceEvent.getProcessInstanceKey())
+            .send()
+            .join();
 
-              final var processInstanceResult = eitherProcessInstanceResult.get();
-              assertThat(processInstanceResult.total())
-                  .withFailMessage("Expect to read a process instance from ES")
-                  .isGreaterThan(0);
-
-              assertThat(processInstanceResult.processInstances().getFirst().getKey())
-                  .withFailMessage("Expect to read the expected process instance from ES")
-                  .isEqualTo(processInstanceEvent.getProcessInstanceKey());
-            });
+    assertThat(processInstance.getProcessInstanceKey())
+        .withFailMessage("Expect to read the expected process instance from ES")
+        .isEqualTo(processInstanceEvent.getProcessInstanceKey());
   }
 }

@@ -8,7 +8,6 @@
 package io.camunda.db.rdbms.write;
 
 import io.camunda.db.rdbms.config.VendorDatabaseProperties;
-import io.camunda.db.rdbms.read.service.BatchOperationDbReader;
 import io.camunda.db.rdbms.sql.AuditLogMapper;
 import io.camunda.db.rdbms.sql.BatchOperationMapper;
 import io.camunda.db.rdbms.sql.ClusterVariableMapper;
@@ -39,6 +38,7 @@ import io.camunda.db.rdbms.write.service.CorrelatedMessageSubscriptionWriter;
 import io.camunda.db.rdbms.write.service.DecisionDefinitionWriter;
 import io.camunda.db.rdbms.write.service.DecisionInstanceWriter;
 import io.camunda.db.rdbms.write.service.DecisionRequirementsWriter;
+import io.camunda.db.rdbms.write.service.DeployedResourceWriter;
 import io.camunda.db.rdbms.write.service.ExporterPositionService;
 import io.camunda.db.rdbms.write.service.FlowNodeInstanceWriter;
 import io.camunda.db.rdbms.write.service.FormWriter;
@@ -95,7 +95,6 @@ public class RdbmsWriters {
       final UserTaskMapper userTaskMapper,
       final VariableMapper variableMapper,
       final VendorDatabaseProperties vendorDatabaseProperties,
-      final BatchOperationDbReader batchOperationReader,
       final JobMapper jobMapper,
       final JobMetricsBatchMapper jobMetricsBatchMapper,
       final SequenceFlowMapper sequenceFlowMapper,
@@ -151,11 +150,7 @@ public class RdbmsWriters {
     writers.put(
         BatchOperationWriter.class,
         new BatchOperationWriter(
-            batchOperationReader,
-            executionQueue,
-            batchOperationMapper,
-            config,
-            vendorDatabaseProperties));
+            executionQueue, batchOperationMapper, config, vendorDatabaseProperties));
     writers.put(
         JobWriter.class,
         new JobWriter(executionQueue, jobMapper, vendorDatabaseProperties, config));
@@ -181,6 +176,7 @@ public class RdbmsWriters {
         HistoryDeletionWriter.class,
         new HistoryDeletionWriter(executionQueue, historyDeletionMapper));
     writers.put(GlobalListenerWriter.class, new GlobalListenerWriter(executionQueue));
+    writers.put(DeployedResourceWriter.class, new DeployedResourceWriter(executionQueue));
   }
 
   public AuthorizationWriter getAuthorizationWriter() {
@@ -293,6 +289,10 @@ public class RdbmsWriters {
 
   public GlobalListenerWriter getGlobalListenerWriter() {
     return getWriter(GlobalListenerWriter.class);
+  }
+
+  public DeployedResourceWriter getResourceWriter() {
+    return getWriter(DeployedResourceWriter.class);
   }
 
   public List<ProcessInstanceDependant> getProcessInstanceDependantWriters() {

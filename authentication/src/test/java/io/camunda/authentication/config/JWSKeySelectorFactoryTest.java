@@ -235,11 +235,11 @@ final class JWSKeySelectorFactoryTest {
   }
 
   @Test
-  void shouldResolveDisjointKeysFromCorrectSourcesLikeWalmartScenario() throws Exception {
-    // given — simulates the Walmart/PingFederate scenario:
-    // Primary JWKS (standard) has kid="web-ui-kid" for Web UI tokens
-    // Additional JWKS (custom) has kid="m2m-kid" for M2M tokens
-    // The key sets are disjoint (different kids at each endpoint).
+  void shouldResolveDisjointKeysFromCorrectSources() throws Exception {
+    // given — primary JWKS and additional JWKS hold disjoint key sets:
+    // primary has kid="web-ui-kid" for Web UI tokens, additional has
+    // kid="m2m-kid" for M2M tokens. The composite source must route each
+    // token to the correct JWKS.
     final var webUiKey =
         new RSAKeyGenerator(2048)
             .keyID("web-ui-kid")

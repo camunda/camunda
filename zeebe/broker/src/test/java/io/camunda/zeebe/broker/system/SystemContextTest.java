@@ -17,6 +17,7 @@ import io.atomix.cluster.AtomixCluster;
 import io.camunda.search.clients.SearchClientsProxy;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.security.oidc.NoopOidcClaimsProvider;
 import io.camunda.service.UserServices;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
@@ -383,6 +384,7 @@ final class SystemContextTest {
         mock(UserServices.class),
         mock(PasswordEncoder.class),
         mock(JwtDecoder.class),
+        new NoopOidcClaimsProvider(),
         mock(SearchClientsProxy.class),
         mock(BrokerRequestAuthorizationConverter.class),
         mock(NodeIdProvider.class));

@@ -790,10 +790,15 @@ public class SearchQuerySortRequestMapper {
         case ELEMENT_ID -> builder.flowNodeId();
         case ELEMENT_INSTANCE_KEY -> builder.flowNodeInstanceKey();
         case MESSAGE_SUBSCRIPTION_STATE -> builder.messageSubscriptionState();
+        case MESSAGE_SUBSCRIPTION_TYPE -> builder.messageSubscriptionType();
         case LAST_UPDATED_DATE -> builder.dateTime();
         case MESSAGE_NAME -> builder.messageName();
         case CORRELATION_KEY -> builder.correlationKey();
         case TENANT_ID -> builder.tenantId();
+        case PROCESS_DEFINITION_NAME -> builder.processDefinitionName();
+        case PROCESS_DEFINITION_VERSION -> builder.processDefinitionVersion();
+        case TOOL_NAME -> builder.toolName();
+        case INBOUND_CONNECTOR_TYPE -> builder.inboundConnectorType();
         default -> validationErrors.add(ERROR_UNKNOWN_SORT_BY.formatted(field));
       }
     }

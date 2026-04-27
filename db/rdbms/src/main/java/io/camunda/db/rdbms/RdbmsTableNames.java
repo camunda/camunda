@@ -54,6 +54,7 @@ public final class RdbmsTableNames {
           "PROCESS_DEFINITION",
           "PROCESS_INSTANCE_TAG",
           "PROCESS_INSTANCE",
+          "DEPLOYED_RESOURCE",
           "ROLE_MEMBER",
           "ROLES",
           "SEQUENCE_FLOW",

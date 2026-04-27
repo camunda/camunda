@@ -96,13 +96,37 @@ public class CamundaJsonSchemaGenerator {
             : new SpringAiSchemaModule(
                 SpringAiSchemaModule.Option.PROPERTY_REQUIRED_FALSE_BY_DEFAULT);
 
-    return new SchemaGeneratorConfigBuilder(objectMapper, SCHEMA_VERSION, OptionPreset.PLAIN_JSON)
-        .with(jacksonModule)
-        .with(openApiModule)
-        .with(springAiSchemaModule)
-        .with(Option.EXTRA_OPEN_API_FORMAT_VALUES)
-        .with(Option.STANDARD_FORMATS)
-        .with(Option.INLINE_ALL_SCHEMAS);
+    final var builder =
+        new SchemaGeneratorConfigBuilder(objectMapper, SCHEMA_VERSION, OptionPreset.PLAIN_JSON)
+            .with(jacksonModule)
+            .with(openApiModule)
+            .with(springAiSchemaModule)
+            .with(Option.EXTRA_OPEN_API_FORMAT_VALUES)
+            .with(Option.STANDARD_FORMATS)
+            .with(Option.INLINE_ALL_SCHEMAS);
+
+    // The Swagger2Module reads @Schema.defaultValue() and emits it into the JSON Schema "default"
+    // field. When defaultValue is not explicitly set, the annotation returns the sentinel
+    // "##default" (Schema.DEFAULT_SENTINEL), which leaks into the generated schema. Strip it.
+    // Can be removed when upstream is fixed:
+    // https://github.com/victools/jsonschema-generator/issues/573
+    builder
+        .forFields()
+        .withInstanceAttributeOverride((node, field, context) -> removeDefaultSentinel(node));
+    builder
+        .forMethods()
+        .withInstanceAttributeOverride((node, method, context) -> removeDefaultSentinel(node));
+
+    return builder;
+  }
+
+  private static void removeDefaultSentinel(final ObjectNode node) {
+    final var defaultNode = node.get("default");
+    if (defaultNode != null
+        && defaultNode.isTextual()
+        && Schema.DEFAULT_SENTINEL.equals(defaultNode.asText())) {
+      node.remove("default");
+    }
   }
 
   public String generateForMethodInput(final Method method) {

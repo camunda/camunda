@@ -65,6 +65,10 @@ identity:
     secret:
       existingSecret: camunda-credentials
       existingSecretKey: identity-firstuser-password
+  env:
+    # https://docs.camunda.io/docs/self-managed/components/management-identity/miscellaneous/configuration-variables/#google-stackdriver-json-logging
+    - name: IDENTITY_LOG_APPENDER
+      value: Stackdriver
   tolerations:
     - key: nodepool
       operator: Equal
@@ -80,6 +84,12 @@ optimize:
         historyCleanup:
           cronTrigger: '0 1 * * *'
           ttl: 'P1D'
+          processDataCleanup:
+            enabled: true
+  env:
+    # https://docs.camunda.io/docs/self-managed/components/optimize/configuration/logging/#google-stackdriver-json-logging
+    - name: OPTIMIZE_LOG_APPENDER
+      value: Stackdriver
   tolerations:
     - key: nodepool
       operator: Equal
@@ -97,6 +107,10 @@ identityKeycloak:
       operator: Equal
       value: n2-standard-4
       effect: NoSchedule
+  extraEnvVars:
+    # https://www.keycloak.org/server/logging#_console
+    - name: KC_LOG_CONSOLE_OUTPUT
+      value: json
   postgresql:
     fullnameOverride: keycloak-postgresql # we override the names for simplicity of the deployment
 
@@ -110,6 +124,10 @@ connectors:
         secret:
           existingSecret: camunda-credentials
           existingSecretKey: connectors-security-authentication-oidc-secret
+  env:
+    # https://docs.camunda.io/docs/self-managed/components/connectors/connectors-configuration/#google-stackdriver-json-logging
+    - name: CONNECTORS_LOG_APPENDER
+      value: stackdriver
   tolerations:
     - key: nodepool
       operator: Equal
@@ -138,8 +156,35 @@ orchestration:
           existingSecretKey: orchestration-security-authentication-oidc-secret
 
     authorizations:
-      enabled: false
-
+      enabled: true
+    initialization:
+      authorizations:
+        # Grant the orchestration client (load tester) permission to create resources (BPMN/DMN)
+        - ownerType: CLIENT
+          ownerId: orchestration
+          resourceType: RESOURCE
+          resourceId: "*"
+          permissions:
+            - CREATE
+        # Grant the orchestration client permissions to manage and observe process instances
+        - ownerType: CLIENT
+          ownerId: orchestration
+          resourceType: PROCESS_DEFINITION
+          resourceId: "*"
+          permissions:
+            - CREATE_PROCESS_INSTANCE
+            - UPDATE_PROCESS_INSTANCE
+            - READ_PROCESS_INSTANCE
+            - READ_PROCESS_DEFINITION
+        # Grant the orchestration client permission to publish messages
+        # (required by realistic benchmark workers: customer_notification,
+        # dispute_process_request_proof_from_vendor)
+        - ownerType: CLIENT
+          ownerId: orchestration
+          resourceType: MESSAGE
+          resourceId: "*"
+          permissions:
+            - CREATE
   # For simplicity of the deployment, we override the names to camunda
   # This means we will have pods like: camunda-0, camunda-1, camunda-2
   fullnameOverride: camunda
@@ -230,9 +275,6 @@ orchestration:
         zeebe.broker.flowControl.write.enabled: "true"
         zeebe.broker.flowControl.write.limit: 10000
         zeebe.broker.flowControl.write.throttling.enabled: "true"
-        # RocksDB memory limit setting, limits the overall RocksDB memory usage
-        # ZEEBE_BROKER_EXPERIMENTAL_ROCKSDB_MEMORYLIMIT
-        zeebe.broker.experimental.rocksdb.memoryLimit: "64MB"
     # This file is loaded after application.yml (higher priority). It is empty by default,
     # but can be overridden via --set-file for specific scenarios (e.g. max) to change settings
     # like disabling consistency checks without duplicating the full application.yml content.

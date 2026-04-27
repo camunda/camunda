@@ -6,12 +6,17 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {Page, Locator} from '@playwright/test';
+import {Page, Locator, expect} from '@playwright/test';
 import {waitForAssertion} from 'utils/waitForAssertion';
-import {expect} from '@playwright/test';
+
+export type TaskCard = {
+  readonly name: string;
+  readonly assignee?: string;
+};
 
 class TaskPanelPage {
   readonly availableTasks: Locator;
+  readonly taskCards: Locator;
   readonly collapseSidePanelButton: Locator;
   readonly expandSidePanelButton: Locator;
   private page: Page;
@@ -22,6 +27,7 @@ class TaskPanelPage {
   constructor(page: Page) {
     this.page = page;
     this.availableTasks = page.getByTitle('Available tasks');
+    this.taskCards = this.availableTasks.locator('article');
     this.collapseSidePanelButton = page.locator(
       'button[aria-controls="task-nav-bar"][aria-expanded="true"]',
     );
@@ -40,52 +46,10 @@ class TaskPanelPage {
   }
 
   async openTask(name: string) {
-    // V1/V2 mode difference:
-    // V1: displays process name ("User registration")
-    // V2: always displays process ID ("user_registration") regardless of task name
-
-    // Mapping of processes names to process IDs for V2 mode compatibility
-    const processNameToIdMapping: Record<string, string> = {
-      'User registration': 'user_registration',
-      'Some user activity': 'usertask_to_be_completed', // Process ID from BPMN
-      usertask_to_be_completed: 'usertask_to_be_completed', // Allow process ID as input too
-      'User registration with vars': 'user_registration_with_vars',
-      'User Task with form rerender 1': 'user_task_with_form_rerender_1',
-      'User Task with form rerender 2': 'user_task_with_form_rerender_2',
-      UserTask_Number: 'UserTask_Number',
-      'Date and Time Task': 'Date_and_Time_Task',
-      'Checkbox Task': 'Checkbox_User_Task',
-      'Select User Task': 'Select',
-      'Radio Button Task': 'Radio_Button_User_Task',
-      'Checklist User Task': 'Checklist_Task',
-      'Tag list Task': 'Tag_List_Task',
-      Text_Templating_Form_Task: 'Text_Templating_Form_Task',
-      processWithDeployedForm: 'processWithDeployedForm',
-      Zeebe_user_task: 'Zeebe_user_task',
-    };
-
-    // Strategy 1: Try with original name (for V1)
-    try {
-      await this.availableTasks
-        .getByText(name, {exact: true})
-        .nth(0)
-        .click({timeout: 10000});
-      return;
-    } catch {}
-
-    // Strategy 2: Try with mapped process ID (for V2 mode)
-    const processId = processNameToIdMapping[name] || name;
-    if (processId !== name) {
-      try {
-        await this.availableTasks
-          .getByText(processId, {exact: true})
-          .nth(0)
-          .click({timeout: 10000});
-        return;
-      } catch {
-        console.log('Failed to open task with name:', name);
-      }
-    }
+    await this.availableTasks
+      .getByText(name, {exact: true})
+      .nth(0)
+      .click({timeout: 10000});
   }
 
   async filterBy(
@@ -156,6 +120,43 @@ class TaskPanelPage {
 
   goToTaskDetails(taskKey: string) {
     return this.page.goto(`/tasklist/${taskKey}`);
+  }
+
+  private getTaskCards(task: TaskCard): Locator {
+    let taskCards = this.taskCards.filter({
+      has: this.page.getByText(task.name, {exact: true}),
+    });
+
+    if (task.assignee) {
+      taskCards = taskCards.filter({
+        has: this.page.getByText(task.assignee, {exact: true}),
+      });
+    }
+
+    return taskCards;
+  }
+
+  async assertTaskCardsPresent(
+    tasks: TaskCard[],
+    options: {expectedCount?: number} = {},
+  ): Promise<void> {
+    const {expectedCount} = options;
+
+    for (const task of tasks) {
+      const taskCards = this.getTaskCards(task);
+
+      if (expectedCount === undefined) {
+        await expect(taskCards.first()).toBeVisible();
+      } else {
+        await expect(taskCards).toHaveCount(expectedCount);
+      }
+    }
+  }
+
+  async assertTaskCardsAbsent(tasks: TaskCard[]): Promise<void> {
+    for (const task of tasks) {
+      await expect(this.getTaskCards(task)).toHaveCount(0);
+    }
   }
 }
 

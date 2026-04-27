@@ -12,11 +12,16 @@ import {deploy, createInstances} from 'utils/zeebeClient';
 import {captureScreenshot, captureFailureVideo} from '@setup';
 import {navigateToApp} from '@pages/UtilitiesPage';
 
+const MANY_VARIABLES = Object.fromEntries(
+  Array.from({length: 60}, (_, i) => [`variable_${i}`, `value_${i}`]),
+);
+
 test.beforeAll(async () => {
   await deploy([
     './resources/usertask_with_variables.bpmn',
     './resources/usertask_with_variables2.bpmn',
     './resources/usertask_without_variables.bpmn',
+    './resources/usertask_with_many_variables.bpmn',
   ]);
   await createInstances('usertask_without_variables', 1, 1);
   await createInstances('usertask_with_variables', 1, 3, {
@@ -25,6 +30,7 @@ test.beforeAll(async () => {
   await createInstances('usertask_with_variables2', 1, 1, {
     testData: 'something',
   });
+  await createInstances('usertask_with_many_variables', 1, 1, MANY_VARIABLES);
 });
 
 test.describe('variables page', () => {
@@ -165,6 +171,40 @@ test.describe('variables page', () => {
     await expect(
       taskDetailsPage.variablesTable.getByText('newVariableValue'),
     ).toBeHidden();
+  });
+
+  test('loads all variables via infinite scroll pagination', async ({
+    taskPanelPage,
+    taskDetailsPage,
+  }) => {
+    await taskPanelPage.filterBy('Unassigned');
+    await expect(async () => {
+      await expect(
+        taskPanelPage.availableTasks
+          .getByText('usertask_with_many_variables')
+          .first(),
+      ).toBeVisible();
+    }).toPass();
+    await taskPanelPage.openTask('usertask_with_many_variables');
+
+    await expect(
+      taskDetailsPage.variablesTable
+
+        .getByRole('cell', {
+          name: /^variable_\d+$/,
+        })
+        .first(),
+    ).toBeVisible({timeout: 30000});
+
+    const scrollContainer = taskDetailsPage.variablesTable.locator('..');
+    await expect(async () => {
+      await scrollContainer.evaluate((el) => {
+        el.scrollTop = el.scrollHeight;
+      });
+      await expect(
+        taskDetailsPage.variablesTable.getByRole('cell', {name: 'variable_59'}),
+      ).toBeVisible();
+    }).toPass({timeout: 30000});
   });
 
   test('new variable still exists after refresh if task is completed', async ({

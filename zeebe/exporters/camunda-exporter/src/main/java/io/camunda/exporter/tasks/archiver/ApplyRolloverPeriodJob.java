@@ -7,7 +7,7 @@
  */
 package io.camunda.exporter.tasks.archiver;
 
-import io.camunda.exporter.tasks.BackgroundTask;
+import io.camunda.zeebe.exporter.common.tasks.BackgroundTask;
 import java.util.concurrent.CompletionStage;
 import org.slf4j.Logger;
 

@@ -31,7 +31,7 @@ jobs:
     permissions:
       pull-requests: read
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       # Detect changes against the base branch
       - name: Detect changes
         uses: ./.github/actions/paths-filter
@@ -40,8 +40,6 @@ jobs:
   test:
     strategy:
       fail-fast: false
-      matrix:
-        tasklist_mode: [v1, v2]
     runs-on: ubuntu-latest
     needs: [detect-changes]
     if: ${{ needs.detect-changes.outputs.tasklist-backend-changes == 'true' || needs.detect-changes.outputs.tasklist-frontend-changes == 'true' }}
@@ -61,7 +59,7 @@ jobs:
 
     steps:
       - name: Check out repository code
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
       - name: Import Secrets
         id: secrets
@@ -135,8 +133,7 @@ jobs:
           CAMUNDA_SECURITY_INITIALIZATION_USERS_0_EMAIL: demo@example.com
           CAMUNDA_SECURITY_INITIALIZATION_DEFAULTROLES_ADMIN_USERS_0: demo
           CAMUNDA_SECURITY_AUTHENTICATION_UNPROTECTEDAPI: true
-          CAMUNDA_SECURITY_AUTHORIZATIONS_ENABLED: false
-          CAMUNDA_TASKLIST_V2_MODE_ENABLED: ${{ matrix.tasklist_mode == 'v2' && 'true' || 'false' }}
+          CAMUNDA_SECURITY_AUTHORIZATIONS_ENABLED: true
         run: >
           ./mvnw -q -B spring-boot:start -pl dist
           -Dspring-boot.run.main-class=io.camunda.application.StandaloneCamunda
@@ -158,12 +155,12 @@ jobs:
           CAMUNDA_BASIC_AUTH_USERNAME: "demo"
           CAMUNDA_BASIC_AUTH_PASSWORD: "demo"
           ZEEBE_REST_ADDRESS: "http://localhost:8080"
-        run: npm run test -- --project=tasklist-${{ matrix.tasklist_mode }}-e2e
+        run: npm run test -- --project=tasklist-e2e
         working-directory: qa/c8-orchestration-cluster-e2e-test-suite
       - uses: actions/upload-artifact@v7
         if: always()
         with:
-          name: C8 Orchestration Cluster E2E Test Result (${{ matrix.tasklist_mode }})
+          name: C8 Orchestration Cluster E2E Test Result
           path: qa/c8-orchestration-cluster-e2e-test-suite/html-report
           retention-days: 30
 
@@ -172,7 +169,7 @@ jobs:
         continue-on-error: true
         uses: ./.github/actions/observe-build-status
         with:
-          job_name: "test/${{ matrix.tasklist_mode }}"
+          job_name: "test/tasklist-v2-api-e2e-tests"
           build_status: ${{ job.status }}
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}

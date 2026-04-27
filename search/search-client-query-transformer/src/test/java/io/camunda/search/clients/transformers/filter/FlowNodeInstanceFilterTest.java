@@ -15,6 +15,7 @@ import io.camunda.search.clients.query.SearchPrefixQuery;
 import io.camunda.search.clients.query.SearchRangeQuery;
 import io.camunda.search.clients.query.SearchTermQuery;
 import io.camunda.search.clients.query.SearchTermsQuery;
+import io.camunda.search.clients.query.SearchWildcardQuery;
 import io.camunda.search.clients.types.TypedValue;
 import io.camunda.search.entities.FlowNodeInstanceEntity.FlowNodeState;
 import io.camunda.search.entities.FlowNodeInstanceEntity.FlowNodeType;
@@ -45,8 +46,8 @@ public final class FlowNodeInstanceFilterTest extends AbstractTransformerTest {
     assertThat(flowNodeInstanceFilter.processDefinitionIds()).isEmpty();
     assertThat(flowNodeInstanceFilter.stateOperations()).isEmpty();
     assertThat(flowNodeInstanceFilter.types()).isEmpty();
-    assertThat(flowNodeInstanceFilter.flowNodeIds()).isEmpty();
-    assertThat(flowNodeInstanceFilter.flowNodeNames()).isEmpty();
+    assertThat(flowNodeInstanceFilter.flowNodeIdOperations()).isEmpty();
+    assertThat(flowNodeInstanceFilter.flowNodeNameOperations()).isEmpty();
     assertThat(flowNodeInstanceFilter.treePaths()).isEmpty();
     assertThat(flowNodeInstanceFilter.hasIncident()).isNull();
     assertThat(flowNodeInstanceFilter.incidentKeys()).isEmpty();
@@ -174,6 +175,46 @@ public final class FlowNodeInstanceFilterTest extends AbstractTransformerTest {
             t -> {
               assertThat(t.field()).isEqualTo("flowNodeId");
               assertThat(t.value().stringValue()).isEqualTo("startEvent_1");
+            });
+  }
+
+  @Test
+  public void shouldQueryByFlowNodeIdWithLikeOperation() {
+    // given
+    final var filter =
+        FilterBuilders.flowNodeInstance(f -> f.flowNodeIdOperations(Operation.like("*Start*")));
+
+    // when
+    final var searchRequest = transformQuery(filter);
+
+    // then
+    final var queryVariant = searchRequest.queryOption();
+    assertThat(queryVariant)
+        .isInstanceOfSatisfying(
+            SearchWildcardQuery.class,
+            t -> {
+              assertThat(t.field()).isEqualTo("flowNodeId");
+              assertThat(t.value()).isEqualTo("*Start*");
+            });
+  }
+
+  @Test
+  public void shouldQueryByFlowNodeNameWithLikeOperation() {
+    // given
+    final var filter =
+        FilterBuilders.flowNodeInstance(f -> f.flowNodeNameOperations(Operation.like("*Payment*")));
+
+    // when
+    final var searchRequest = transformQuery(filter);
+
+    // then
+    final var queryVariant = searchRequest.queryOption();
+    assertThat(queryVariant)
+        .isInstanceOfSatisfying(
+            SearchWildcardQuery.class,
+            t -> {
+              assertThat(t.field()).isEqualTo("flowNodeName");
+              assertThat(t.value()).isEqualTo("*Payment*");
             });
   }
 

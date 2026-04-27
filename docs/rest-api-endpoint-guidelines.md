@@ -85,6 +85,7 @@ All descriptive text (summaries, descriptions, property docs) should follow the 
 - `description` — full sentence(s) with period. First line must be a complete sentence (used as `meta description` in docs)
 - `tags` — exactly one tag matching the resource
 - `x-eventually-consistent` — explicitly `true` or `false` (see §2.5)
+- `x-added-in-version` — the Camunda version in which the operation was introduced, e.g., `"8.9"` (see §2.17)
 
 **Path patterns:**
 
@@ -287,7 +288,7 @@ On the Java controller side, query endpoints that read from the secondary storag
 - If a spec operation has `x-eventually-consistent: true`, the corresponding controller method should have `@RequiresSecondaryStorage`.
 - If you add `@RequiresSecondaryStorage` to a controller method, set `x-eventually-consistent: true` on the matching spec operation.
 
-A mismatch means SDK consumers get incorrect consistency guarantees. See §2.15 for more details on controller–spec alignment.
+A mismatch means SDK consumers get incorrect consistency guarantees. See §2.16 for more details on controller–spec alignment.
 
 ### 2.6 Component reuse and schema organisation
 
@@ -597,7 +598,35 @@ MyResourceFilter:
       description: Whether the resource is active.
 ```
 
-### 2.12 Deprecated enum members
+### 2.12 Upgrading an existing filter field to advanced search
+
+When an **existing** search filter field needs to be upgraded from a plain string to support advanced
+operators (e.g., adding `$like` to `elementId`), do not swap the type to `StringFilterProperty`
+directly. This would change the codegen output and break generated SDKs (see the compatibility table
+in §2.8). Instead, create a **dedicated filter property type** in `identifiers.yaml` that preserves
+the original identifier type.
+
+**Do not use `StringFilterProperty` directly** for existing fields because it loses identifier
+metadata (`example`, `format`, `x-semantic-type`) and causes codegen type conflicts in the gateway
+model.
+
+#### Checklist
+
+1. **`identifiers.yaml`** - Define a `<Type>FilterProperty` as a `oneOf` of the original identifier
+   (plain string, backward compatible) and a new `Advanced<Type>Filter` object. The advanced filter
+   references the original identifier in each operator field.
+2. **Endpoint spec** - Reference the new filter type instead of the original identifier.
+3. **`gateways/gateway-model/pom.xml`** - Add type mappings for both profiles: advanced
+   (`=StringFilterProperty`) and simple (`=String`).
+4. **Java client** - Add `Consumer<StringProperty>` overload. Keep the existing `String` method,
+   delegating to `b -> b.eq(value)`.
+5. **Search domain** - Change `List<String>` to `List<Operation<String>>` in the filter record.
+   Keep convenience methods that wrap in `EQUALS`. Update the transformer from `stringTerms()` to
+   `stringOperations()`. Update RDBMS MyBatis mapper to use `operationCondition`.
+
+For a complete reference implementation, see [#50744](https://github.com/camunda/camunda/pull/50744).
+
+### 2.13 Deprecated enum members
 
 When deprecating enum values, use the `x-deprecated-enum-members` vendor extension:
 
@@ -619,7 +648,7 @@ Rules enforced by the `valid-deprecated-enum-members` Spectral rule:
 - No duplicate names.
 - No extra keys beyond `name` and `deprecatedInVersion`.
 
-### 2.13 Polymorphic union types (`x-polymorphic-schema`)
+### 2.14 Polymorphic union types (`x-polymorphic-schema`)
 
 When a request body accepts **mutually exclusive** sets of properties — e.g., identify a process by `processDefinitionId` **or** by `processDefinitionKey`, but never both — model this as a `oneOf` composition and annotate the wrapper schema with `x-polymorphic-schema: true`.
 
@@ -729,11 +758,11 @@ Omit the discriminator when:
 | `AuthorizationPatchInstruction`                   | `authorizations.yaml`       | (permission variants)                                                          |
 | `SearchQueryPageRequest`                          | `search-models.yaml`        | `LimitPagination`, `OffsetPagination`, `CursorForward...`, `CursorBackward...` |
 
-### 2.14 Security schemes
+### 2.15 Security schemes
 
 Ensure that `securitySchemes` in the OpenAPI YAML mirrors the security schemes defined in `OpenApiResourceConfig.java`. Any changes to the security config must be reflected in both places for SDK generators to produce correct authentication boilerplate.
 
-### 2.15 Controller–spec alignment and the `@Hidden` annotation
+### 2.16 Controller–spec alignment and the `@Hidden` annotation
 
 Every public endpoint in a REST controller **must** have a corresponding path/operation in the OpenAPI spec. Conversely, every spec operation must be backed by a controller method.
 
@@ -760,6 +789,36 @@ If you add `@RequiresSecondaryStorage` to a method, verify the spec counterpart 
 - The endpoint will reject requests when secondary storage is disabled but the spec doesn't indicate it requires it.
 
 > **Note:** There is currently no automated CI check that cross-references `@RequiresSecondaryStorage` against `x-eventually-consistent`. This is a manual review responsibility. [#36469](https://github.com/camunda/camunda/issues/36469) tracks the aspiration to add such static analysis.
+
+### 2.17 Operation versioning annotation (`x-added-in-version`)
+
+Every operation **must** declare the Camunda version in which it was introduced via the `x-added-in-version` extension. This enables generated docs and SDKs to surface endpoint version availability to consumers.
+
+```yaml
+/process-instances/{processInstanceKey}/sequence-flows:
+  get:
+    operationId: getProcessInstanceSequenceFlows
+    summary: Get sequence flows of a process instance
+    description: Returns the sequence flows traversed by the given process instance.
+    x-added-in-version: "8.9"
+    tags:
+      - Process instance
+```
+
+#### Rules
+
+- The value is a **string** containing the minor version (e.g., `"8.6"`, `"8.9"`). Patch versions are not used.
+- Set the value to the version in which the endpoint **first** ships. Do **not** update it on subsequent changes — that's what changelogs and the breaking-change rules in §2.7 are for.
+
+#### What the Spectral rule enforces
+
+The `require-added-in-version` rule (severity `error`) checks every operation under `paths` (`get`, `post`, `put`, `patch`, `delete`) and fails the build if `x-added-in-version` is missing. The rule does **not** validate the version string format — that's a reviewer responsibility.
+
+If you add a new endpoint without this annotation, CI will fail with a message such as:
+
+```
+Operation "createMyResource" (POST /my-resources) is missing x-added-in-version. Every endpoint must declare the Camunda version in which it was introduced.
+```
 
 ---
 
@@ -806,6 +865,7 @@ The ruleset lives in `zeebe/gateway-protocol/.spectral.yaml`. Custom functions a
 | `array-properties-must-be-required`        | error    | Response array properties must be `required` and not `nullable`                                   |
 | `no-eventually-consistent-on-commands`     | error    | Command operations must not have `x-eventually-consistent: true`                                  |
 | `valid-deprecated-enum-members`            | error    | `x-deprecated-enum-members` must be well-formed                                                   |
+| `require-added-in-version`                 | error    | Every operation must declare `x-added-in-version` (see §2.17)                                     |
 | `oas3-valid-schema-example`                | error    | Schemas must be valid per OpenAPI 3.0 JSON Schema rules                                           |
 
 ### 3.4 Adding new Spectral rules
@@ -1094,6 +1154,7 @@ Before opening a PR:
 - [ ] **All properties have descriptions**
 - [ ] **Key properties are `type: string`**
 - [ ] **`x-eventually-consistent`** set correctly (`true` for queries, `false` for commands)
+- [ ] **`x-added-in-version`** field present on every new operation (see §2.17)
 - [ ] **Response arrays** are `required` and not `nullable`
 - [ ] **`required` entries** all exist in `properties`
 - [ ] **Controller implemented** following conventions (§4)
@@ -1183,6 +1244,32 @@ properties:
 ```
 
 **Fix:** Change to `x-eventually-consistent: false`. Only search/statistics/GET endpoints use `true`.
+
+---
+
+### ❌ Missing `x-added-in-version` on a new operation
+
+```yaml
+# Wrong — Spectral error: require-added-in-version
+/my-resources:
+  post:
+    operationId: createMyResource
+    summary: Create a my-resource
+    tags: [My resource]
+```
+
+**Fix:** Add `x-added-in-version` set to the version in which the endpoint first ships:
+
+```yaml
+/my-resources:
+  post:
+    operationId: createMyResource
+    summary: Create a my-resource
+    x-added-in-version: "8.9"
+    tags: [My resource]
+```
+
+See §2.17 for full conventions.
 
 ---
 

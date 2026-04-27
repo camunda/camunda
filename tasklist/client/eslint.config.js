@@ -36,7 +36,7 @@ export default [
     testFiles: files.test,
     nodeFiles: files.node,
     tsconfigRootDir: import.meta.dirname,
-    tsProjects: './tsconfig.json',
+    tsProjects: ['./tsconfig.app.json', './tsconfig.vitest.json'],
   }),
 
   ...reactConfig({browserFiles: files.browser, testFiles: files.test}),

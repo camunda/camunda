@@ -20,6 +20,7 @@ import static io.camunda.client.impl.oauth.OAuthCredentialsProviderBuilder.*;
 import java.net.URI;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.util.Set;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
 
 public class CamundaClientAuthProperties {
@@ -110,6 +111,47 @@ public class CamundaClientAuthProperties {
   /** The data read timeout for requests to the OAuth credentials provider. */
   private Duration readTimeout = DEFAULT_READ_TIMEOUT;
 
+  /**
+   * The lead time before actual token expiry at which a background refresh is triggered. The token
+   * is still considered valid inside this window; this is a policy knob for how early refresh kicks
+   * in so callers don't have to block on a synchronous refresh at the cliff edge. Must be strictly
+   * larger than the internal expiry grace period.
+   */
+  private Duration proactiveTokenRefreshThreshold = DEFAULT_PROACTIVE_TOKEN_REFRESH_THRESHOLD;
+
+  /**
+   * The maximum number of attempts (including the initial one) when fetching a token from the OAuth
+   * authorization server. Retries are only attempted on IOException or HTTP status codes configured
+   * via {@code tokenFetchRetryableStatusCodes}.
+   */
+  private int tokenFetchMaxRetries = DEFAULT_TOKEN_FETCH_MAX_RETRIES;
+
+  /**
+   * The initial backoff duration applied between token fetch retry attempts. Subsequent delays grow
+   * geometrically by {@link #tokenFetchBackoffMultiplier}.
+   */
+  private Duration tokenFetchInitialBackoff = DEFAULT_TOKEN_FETCH_INITIAL_BACKOFF;
+
+  /**
+   * The multiplier applied to the backoff duration between successive token fetch retry attempts.
+   * Must be greater than or equal to 1.0.
+   */
+  private double tokenFetchBackoffMultiplier = DEFAULT_TOKEN_FETCH_BACKOFF_MULTIPLIER;
+
+  /**
+   * The set of HTTP status codes from the token endpoint that should be retried with backoff. Any
+   * non-200 status code outside this set trips a non-retryable failure latch that fails fast for
+   * the duration of tokenFetchNonRetryableCooldown.
+   */
+  private Set<Integer> tokenFetchRetryableStatusCodes = DEFAULT_TOKEN_FETCH_RETRYABLE_STATUS_CODES;
+
+  /**
+   * Duration for which token fetches fail fast after the token endpoint returns a non-retryable
+   * response. After the cooldown elapses, the next call retries; if it fails again non-retryably,
+   * the latch re-arms with a new cooldown. Set to Duration.ZERO to disable the cooldown entirely.
+   */
+  private Duration tokenFetchNonRetryableCooldown = DEFAULT_TOKEN_FETCH_NON_RETRYABLE_COOLDOWN;
+
   @NestedConfigurationProperty
   private CamundaClientAuthClientAssertionProperties clientAssertion =
       new CamundaClientAuthClientAssertionProperties();
@@ -168,6 +210,54 @@ public class CamundaClientAuthProperties {
 
   public void setReadTimeout(final Duration readTimeout) {
     this.readTimeout = readTimeout;
+  }
+
+  public Duration getProactiveTokenRefreshThreshold() {
+    return proactiveTokenRefreshThreshold;
+  }
+
+  public void setProactiveTokenRefreshThreshold(final Duration proactiveTokenRefreshThreshold) {
+    this.proactiveTokenRefreshThreshold = proactiveTokenRefreshThreshold;
+  }
+
+  public int getTokenFetchMaxRetries() {
+    return tokenFetchMaxRetries;
+  }
+
+  public void setTokenFetchMaxRetries(final int tokenFetchMaxRetries) {
+    this.tokenFetchMaxRetries = tokenFetchMaxRetries;
+  }
+
+  public Duration getTokenFetchInitialBackoff() {
+    return tokenFetchInitialBackoff;
+  }
+
+  public void setTokenFetchInitialBackoff(final Duration tokenFetchInitialBackoff) {
+    this.tokenFetchInitialBackoff = tokenFetchInitialBackoff;
+  }
+
+  public double getTokenFetchBackoffMultiplier() {
+    return tokenFetchBackoffMultiplier;
+  }
+
+  public void setTokenFetchBackoffMultiplier(final double tokenFetchBackoffMultiplier) {
+    this.tokenFetchBackoffMultiplier = tokenFetchBackoffMultiplier;
+  }
+
+  public Set<Integer> getTokenFetchRetryableStatusCodes() {
+    return tokenFetchRetryableStatusCodes;
+  }
+
+  public void setTokenFetchRetryableStatusCodes(final Set<Integer> tokenFetchRetryableStatusCodes) {
+    this.tokenFetchRetryableStatusCodes = tokenFetchRetryableStatusCodes;
+  }
+
+  public Duration getTokenFetchNonRetryableCooldown() {
+    return tokenFetchNonRetryableCooldown;
+  }
+
+  public void setTokenFetchNonRetryableCooldown(final Duration tokenFetchNonRetryableCooldown) {
+    this.tokenFetchNonRetryableCooldown = tokenFetchNonRetryableCooldown;
   }
 
   public String getCredentialsCachePath() {
@@ -326,6 +416,18 @@ public class CamundaClientAuthProperties {
         + connectTimeout
         + ", readTimeout="
         + readTimeout
+        + ", proactiveTokenRefreshThreshold="
+        + proactiveTokenRefreshThreshold
+        + ", tokenFetchMaxRetries="
+        + tokenFetchMaxRetries
+        + ", tokenFetchInitialBackoff="
+        + tokenFetchInitialBackoff
+        + ", tokenFetchBackoffMultiplier="
+        + tokenFetchBackoffMultiplier
+        + ", tokenFetchRetryableStatusCodes="
+        + tokenFetchRetryableStatusCodes
+        + ", tokenFetchNonRetryableCooldown="
+        + tokenFetchNonRetryableCooldown
         + ", clientAssertion="
         + clientAssertion
         + '}';

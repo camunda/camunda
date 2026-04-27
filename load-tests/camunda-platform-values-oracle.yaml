@@ -1,0 +1,48 @@
+# -------
+#
+# owner: @data-layer
+#
+# -------
+
+########################################################################################
+################################################### Orchestration cluster configuration
+########################################################################################
+orchestration:
+  data:
+    secondaryStorage:
+      rdbms:
+        # Load-test only: intra-cluster traffic is within the same namespace.
+        # Connects to the pluggable database FREEPDB1, which is the default PDB
+        # created by the gvenzl/oracle-free image (see databases/oracle.yaml).
+        url: "jdbc:oracle:thin:@//oracle:1521/FREEPDB1"
+        username: camunda
+        # Load-test only: credentials are hardcoded inline, consistent with the
+        # MySQL and PostgreSQL load-test values files (e.g. inlineSecret: camunda).
+        # Do not use these credentials in production environments.
+        secret:
+          inlineSecret: "camunda"
+
+  ####
+  #### Oracle manually mounted driver
+  ####
+  extraVolumeMounts:
+    - name: jdbcdrivers
+      mountPath: /driver-lib
+  extraVolumes:
+    - name: jdbcdrivers
+      emptyDir: {}
+  initContainers:
+    - name: fetch-jdbc-drivers
+      image: alpine:3.19
+      imagePullPolicy: Always
+      command:
+        - sh
+        - -c
+        - >
+          wget https://repo1.maven.org/maven2/com/oracle/database/jdbc/ojdbc11/23.6.0.24.10/ojdbc11-23.6.0.24.10.jar
+          -O /driver-lib/oracle-driver.jar
+      volumeMounts:
+        - name: jdbcdrivers
+          mountPath: /driver-lib
+      securityContext:
+        runAsUser: 1001

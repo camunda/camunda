@@ -21,11 +21,10 @@ import {findUserTask} from '@requestHelpers';
 /* eslint-disable playwright/expect-expect */
 test.describe.parallel('Search User Task Variables Tests', () => {
   const {state, beforeAll, beforeEach, afterEach} =
-    setupProcessInstanceForTests(
-      'user_task_api_test_process',
-      'user_task_api_test_process',
-      {testset1: 'something', testset2: 'something else', zip: 123},
-    );
+    setupProcessInstanceForTests('user_task_api_test_process', {
+      processName: 'user_task_api_test_process',
+      variables: {testset1: 'something', testset2: 'something else', zip: 123},
+    });
 
   test.beforeAll(beforeAll);
 
@@ -58,7 +57,7 @@ test.describe.parallel('Search User Task Variables Tests', () => {
         json,
       );
       expect(json.page.totalItems).toBe(3);
-      expect(json.items.length).toBe(3);
+      expect(json.items).toHaveLength(3);
     }).toPass(defaultAssertionOptions);
   });
 
@@ -89,7 +88,7 @@ test.describe.parallel('Search User Task Variables Tests', () => {
         json,
       );
       expect(json.page.totalItems).toBe(3);
-      expect(json.items.length).toBe(3);
+      expect(json.items).toHaveLength(3);
       expect(json.items[0].name).toEqual('zip');
       expect(json.items[1].name).toEqual('testset2');
       expect(json.items[2].name).toEqual('testset1');
@@ -188,7 +187,7 @@ test.describe.parallel('Search User Task Variables Tests', () => {
         json,
       );
       expect(json.page.totalItems).toBe(1);
-      expect(json.items.length).toBe(1);
+      expect(json.items).toHaveLength(1);
       expect(json.items[0].name).toBe('testset1');
       expect(json.items[0].value).toBe('"something"');
     }).toPass(defaultAssertionOptions);
@@ -226,7 +225,7 @@ test.describe.parallel('Search User Task Variables Tests', () => {
         json,
       );
       expect(json.page.totalItems).toBe(2);
-      expect(json.items.length).toBe(2);
+      expect(json.items).toHaveLength(2);
       expect(json.items[0].name).toBe('testset1');
       expect(json.items[0].value).toBe('"something"');
       expect(json.items[1].name).toBe('testset2');

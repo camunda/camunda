@@ -9,6 +9,7 @@
 import {useEffect, useState} from 'react';
 import {Form} from 'react-final-form';
 import {DatePicker, Layer, Modal, Stack} from '@carbon/react';
+import englishLocale from 'flatpickr/dist/l10n/default';
 import {logger} from 'modules/logger';
 import {formatDate} from '../formatDate';
 import {DateInput} from './DateInput';
@@ -134,6 +135,7 @@ const DateRangeModal: React.FC<Props> = ({
                   <div>
                     <DatePicker
                       datePickerType="range"
+                      locale={englishLocale}
                       onChange={(event) => {
                         const [fromDateTime, toDateTime] = event;
                         if (fromDateTime !== undefined) {

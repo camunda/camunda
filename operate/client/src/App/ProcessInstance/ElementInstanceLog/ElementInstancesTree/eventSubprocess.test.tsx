@@ -10,7 +10,7 @@ import {render, screen} from 'modules/testing-library';
 import {ElementInstancesTree} from './index';
 import {
   eventSubProcessElementInstances,
-  Wrapper,
+  getWrapper,
   mockEventSubprocessInstance,
 } from './mocks';
 import {eventSubProcess, searchResult} from 'modules/testUtils';
@@ -44,7 +44,7 @@ describe('ElementInstancesTree - Event Subprocess', () => {
         businessObjects={businessObjects}
       />,
       {
-        wrapper: Wrapper,
+        wrapper: getWrapper(),
       },
     );
 

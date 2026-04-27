@@ -46,11 +46,16 @@ import java.security.cert.X509Certificate;
 import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
 import java.time.Duration;
+import java.time.Instant;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Base64;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 import javax.net.ssl.HttpsURLConnection;
@@ -89,6 +94,23 @@ public final class OAuthCredentialsProvider implements CredentialsProvider {
   private final OAuthCredentialsCache credentialsCache;
   private final Duration connectionTimeout;
   private final Duration readTimeout;
+  private final Duration proactiveTokenRefreshThreshold;
+  private final int tokenFetchMaxRetries;
+  private final long tokenFetchInitialBackoffMs;
+  private final double tokenFetchBackoffMultiplier;
+  private final Set<Integer> tokenFetchRetryableStatusCodes;
+  private final Duration tokenFetchNonRetryableCooldown;
+
+  /**
+   * Latched when the token endpoint returns an HTTP response whose status code is not configured as
+   * retryable in {@code tokenFetchRetryableStatusCodes}. While set, every subsequent token fetch
+   * fails immediately without contacting the OIDC provider. The latch self-clears after {@code
+   * tokenFetchNonRetryableCooldown} elapses, after which the next call attempts a fresh fetch and,
+   * on continued failure, re-arms the latch with a new cooldown.
+   */
+  private final AtomicReference<NonRetryableFailureState> nonRetryableFailure =
+      new AtomicReference<>();
+
   // client assertion
   private final boolean clientAssertionEnabled;
   private final Path clientAssertionKeystorePath;
@@ -119,6 +141,12 @@ public final class OAuthCredentialsProvider implements CredentialsProvider {
     credentialsCache = new OAuthCredentialsCache(builder.getCredentialsCache());
     connectionTimeout = builder.getConnectTimeout();
     readTimeout = builder.getReadTimeout();
+    proactiveTokenRefreshThreshold = builder.getProactiveTokenRefreshThreshold();
+    tokenFetchMaxRetries = builder.getTokenFetchMaxRetries();
+    tokenFetchInitialBackoffMs = builder.getTokenFetchInitialBackoff().toMillis();
+    tokenFetchBackoffMultiplier = builder.getTokenFetchBackoffMultiplier();
+    tokenFetchRetryableStatusCodes = builder.getTokenFetchRetryableStatusCodes();
+    tokenFetchNonRetryableCooldown = builder.getTokenFetchNonRetryableCooldown();
     clientAssertionEnabled = builder.clientAssertionEnabled();
     clientAssertionKeystorePath = builder.getClientAssertionKeystorePath();
     clientAssertionKeystorePassword = builder.getClientAssertionKeystorePassword();
@@ -135,7 +163,10 @@ public final class OAuthCredentialsProvider implements CredentialsProvider {
   public void applyCredentials(final CredentialsApplier applier) throws IOException {
     final CamundaClientCredentials camundaClientCredentials =
         credentialsCache.computeIfMissingOrInvalid(
-            clientId, this::fetchCredentials, this::triggerProactiveRefresh);
+            clientId,
+            this::fetchCredentials,
+            this::triggerProactiveRefresh,
+            proactiveTokenRefreshThreshold);
 
     String type = camundaClientCredentials.getTokenType();
     if (type == null || type.isEmpty()) {
@@ -162,11 +193,18 @@ public final class OAuthCredentialsProvider implements CredentialsProvider {
     if (!statusCode.isUnauthorized()) {
       return false;
     }
+    // Short-circuit while the non-retryable failure cooldown is active: no point in attempting
+    // another fetch, and skipping it avoids log spam from this method's IOException catch on
+    // every subsequent rejected request.
+    final NonRetryableFailureState latched = nonRetryableFailure.get();
+    if (latched != null && Instant.now().isBefore(latched.cooldownUntil())) {
+      return false;
+    }
 
     try {
       return credentialsCache.forceRefreshIfChanged(clientId, this::fetchCredentials);
     } catch (final IOException e) {
-      LOG.error("Failed while fetching credentials: ", e);
+      LOG.error("Failed while fetching credentials for clientId={}: ", clientId, e);
       return false;
     }
   }
@@ -251,6 +289,72 @@ public final class OAuthCredentialsProvider implements CredentialsProvider {
   }
 
   private CamundaClientCredentials fetchCredentials() throws IOException {
+    final NonRetryableFailureState latched = nonRetryableFailure.get();
+    if (latched != null) {
+      if (Instant.now().isBefore(latched.cooldownUntil())) {
+        LOG.debug(
+            "Rejecting token fetch for clientId={}: OAuth credentials provider is in"
+                + " non-retryable cooldown until {}",
+            clientId,
+            latched.cooldownUntil(),
+            latched.cause());
+        throw new IOException(
+            "OAuth credentials provider is in non-retryable failure cooldown until "
+                + latched.cooldownUntil()
+                + " due to earlier non-retryable token endpoint response.",
+            latched.cause());
+      }
+      // cooldown elapsed — clear and probe. If another thread already cleared or re-armed, respect
+      // its decision.
+      nonRetryableFailure.compareAndSet(latched, null);
+    }
+
+    IOException lastException = null;
+    long backoffMs = tokenFetchInitialBackoffMs;
+
+    for (int attempt = 1; attempt <= tokenFetchMaxRetries; attempt++) {
+      try {
+        return doFetchCredentials();
+      } catch (final NonRetryableOAuthFailureException e) {
+        // already latched inside doFetchCredentials; surface the underlying IOException
+        throw (IOException) e.getCause();
+      } catch (final IOException e) {
+        lastException = e;
+        if (attempt < tokenFetchMaxRetries) {
+          // Honor a server-provided Retry-After hint when present: always use it as-is,
+          // ignoring our computed backoff. Otherwise fall back to jittered exponential.
+          final Long retryAfterMs =
+              (e instanceof RetryableOAuthFailureException)
+                  ? ((RetryableOAuthFailureException) e).retryAfterMs()
+                  : null;
+          final long sleepMs = retryAfterMs != null ? retryAfterMs : withEqualJitter(backoffMs);
+          LOG.warn(
+              "Token fetch failed for clientId={} (attempt {}/{}), retrying in {}ms{}: {}",
+              clientId,
+              attempt,
+              tokenFetchMaxRetries,
+              sleepMs,
+              retryAfterMs != null ? " (honoring Retry-After)" : "",
+              e.getMessage());
+          try {
+            Thread.sleep(sleepMs);
+          } catch (final InterruptedException ie) {
+            Thread.currentThread().interrupt();
+            throw new IOException("Interrupted while waiting to retry token fetch", ie);
+          }
+          backoffMs = (long) (backoffMs * tokenFetchBackoffMultiplier);
+        }
+      }
+    }
+
+    LOG.warn(
+        "Token fetch failed for clientId={} after {} attempts; surfacing last error to caller.",
+        clientId,
+        tokenFetchMaxRetries);
+    throw lastException;
+  }
+
+  private CamundaClientCredentials doFetchCredentials() throws IOException {
     final HttpURLConnection connection =
         (HttpURLConnection) authorizationServerUrl.openConnection();
     maybeConfigureCustomSSLContext(connection);
@@ -267,11 +371,32 @@ public final class OAuthCredentialsProvider implements CredentialsProvider {
       os.write(input, 0, input.length);
     }
 
-    if (connection.getResponseCode() != 200) {
-      throw new IOException(
-          String.format(
-              "Failed while requesting access token with status code %d and message %s.",
-              connection.getResponseCode(), connection.getResponseMessage()));
+    final int statusCode = connection.getResponseCode();
+    if (statusCode != 200) {
+      final IOException error =
+          new IOException(
+              String.format(
+                  "Failed while requesting access token with status code %d and message %s.",
+                  statusCode, connection.getResponseMessage()));
+      if (!tokenFetchRetryableStatusCodes.contains(statusCode)) {
+        final Instant cooldownUntil = Instant.now().plus(tokenFetchNonRetryableCooldown);
+        // Unconditional set — re-arming on every trip intentionally refreshes the cooldown so
+        // persistent misconfiguration produces periodic ERROR logs (every cooldown window) rather
+        // than a single one that scrolls out of buffer. Per-trip ERROR logging is the whole point.
+        nonRetryableFailure.set(new NonRetryableFailureState(error, cooldownUntil));
+        LOG.error(
+            "OAuth credentials provider latched non-retryable failure for clientId={} after HTTP"
+                + " {} from token endpoint {}. Token fetches will fail fast until {} ({}), then a"
+                + " fresh attempt will be made. Verify clientId, clientSecret, audience, and token"
+                + " URL configuration.",
+            clientId,
+            statusCode,
+            authorizationServerUrl,
+            cooldownUntil,
+            tokenFetchNonRetryableCooldown);
+        throw new NonRetryableOAuthFailureException(error);
+      }
+      throw new RetryableOAuthFailureException(error, parseRetryAfterMs(connection));
     }
 
     try (final InputStream in = connection.getInputStream();
@@ -348,6 +473,107 @@ public final class OAuthCredentialsProvider implements CredentialsProvider {
       return Base64.getUrlEncoder().withoutPadding().encodeToString(encoded);
     } catch (final Exception e) {
       throw new RuntimeException("Failed to generate x5t thumbprint", e);
+    }
+  }
+
+  /**
+   * Parses the {@code Retry-After} response header per RFC 7231 §7.1.3. Supports both the
+   * delta-seconds form ({@code Retry-After: 120}) and the HTTP-date form ({@code Retry-After: Fri,
+   * 31 Dec 1999 23:59:59 GMT}). Returns {@code null} if the header is absent, empty, or
+   * unparseable.
+   */
+  private static Long parseRetryAfterMs(final HttpURLConnection connection) {
+    final String header = connection.getHeaderField("Retry-After");
+    if (header == null) {
+      return null;
+    }
+    final String trimmed = header.trim();
+    if (trimmed.isEmpty()) {
+      return null;
+    }
+    try {
+      final long seconds = Long.parseLong(trimmed);
+      if (seconds < 0) {
+        return null;
+      }
+      // Guard against overflow: cap at Long.MAX_VALUE / 1000 before multiplying.
+      return seconds > Long.MAX_VALUE / 1000 ? Long.MAX_VALUE : seconds * 1000L;
+    } catch (final NumberFormatException ignored) {
+      // fall through to HTTP-date parsing
+    }
+    try {
+      final ZonedDateTime when = ZonedDateTime.parse(trimmed, DateTimeFormatter.RFC_1123_DATE_TIME);
+      final long deltaMs = Duration.between(ZonedDateTime.now(when.getZone()), when).toMillis();
+      return deltaMs < 0 ? 0L : deltaMs;
+    } catch (final Exception ignored) {
+      return null;
+    }
+  }
+
+  /**
+   * Applies equal jitter to a backoff value: returns a random value in {@code [baseMs/2, baseMs]}.
+   * This prevents coordinated retry storms when many clients (e.g. pods restarting after a
+   * deployment) hit the OAuth endpoint at the same time, which is exactly the scenario this
+   * provider's retry logic is meant to dampen. See AWS Architecture Blog: "Exponential Backoff And
+   * Jitter".
+   */
+  private static long withEqualJitter(final long baseMs) {
+    if (baseMs <= 1) {
+      return baseMs;
+    }
+    final long half = baseMs / 2;
+    return half + ThreadLocalRandom.current().nextLong(baseMs - half + 1);
+  }
+
+  /**
+   * Snapshot of a non-retryable failure plus the instant until which subsequent fetches should fail
+   * fast. Stored in an {@link AtomicReference} so the latch can be cleared atomically when the
+   * cooldown elapses and re-armed on repeated failures.
+   */
+  private static final class NonRetryableFailureState {
+    private final IOException cause;
+    private final Instant cooldownUntil;
+
+    NonRetryableFailureState(final IOException cause, final Instant cooldownUntil) {
+      this.cause = cause;
+      this.cooldownUntil = cooldownUntil;
+    }
+
+    IOException cause() {
+      return cause;
+    }
+
+    Instant cooldownUntil() {
+      return cooldownUntil;
+    }
+  }
+
+  /**
+   * Internal marker thrown by {@link #doFetchCredentials()} when a non-retryable HTTP response is
+   * received, so the retry loop in {@link #fetchCredentials()} can distinguish it from a retryable
+   * IOException without re-inspecting the underlying cause. Never escapes this class.
+   */
+  private static final class NonRetryableOAuthFailureException extends IOException {
+    NonRetryableOAuthFailureException(final IOException cause) {
+      super(cause);
+    }
+  }
+
+  /**
+   * Internal marker thrown by {@link #doFetchCredentials()} when a retryable HTTP response is
+   * received, optionally carrying the {@code Retry-After} hint parsed from the response headers so
+   * the retry loop can honor it. Never escapes this class.
+   */
+  private static final class RetryableOAuthFailureException extends IOException {
+    private final Long retryAfterMs;
+
+    RetryableOAuthFailureException(final IOException cause, final Long retryAfterMs) {
+      super(cause);
+      this.retryAfterMs = retryAfterMs;
+    }
+
+    Long retryAfterMs() {
+      return retryAfterMs;
     }
   }
 }

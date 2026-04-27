@@ -239,11 +239,11 @@ describe('BottomPanel - sequence flow mappings', () => {
     }).children;
 
     expect(options).toHaveLength(6);
-    expect(options[0].textContent).toMatch('');
-    expect(options[1].textContent).toMatch(/Flow R/i);
-    expect(options[2].textContent).toMatch(/Flow C/i);
-    expect(options[3].textContent).toMatch(/Flow L/i);
-    expect(options[4].textContent).toMatch(/Flow N/i);
-    expect(options[5].textContent).toMatch(/Flow U/i);
+    expect(options[0]?.textContent).toMatch('');
+    expect(options[1]?.textContent).toMatch(/Flow R/i);
+    expect(options[2]?.textContent).toMatch(/Flow C/i);
+    expect(options[3]?.textContent).toMatch(/Flow L/i);
+    expect(options[4]?.textContent).toMatch(/Flow N/i);
+    expect(options[5]?.textContent).toMatch(/Flow U/i);
   });
 });

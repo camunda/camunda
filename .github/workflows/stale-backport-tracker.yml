@@ -1,5 +1,5 @@
 # description: Tracks stale backport PRs and notifies authors via GitHub comments and Slack.
-#   Runs every 4 hours on weekdays, on manual dispatch, and can be called by other workflows.
+# Runs every hours on weekdays, on manual dispatch, and can be called by other workflows.
 # type: CI Helper
 # owner: @camunda/monorepo-devops-team
 ---
@@ -7,9 +7,9 @@ name: Stale Backport Tracker
 
 on:
   schedule:
-    # Run every 4 hours during weekday business hours (UTC): 6, 10, 14, 18
+    # Run every hour during weekday business hours (UTC): 6–18
     # First run at 6 AM creates a new message; subsequent runs update it in-place.
-    - cron: '0 6-18/4 * * 1-5'
+    - cron: '0 6-18 * * 1-5'
   workflow_dispatch:
     inputs:
       target_branch:
@@ -95,7 +95,7 @@ jobs:
     steps:
       - name: Generate GitHub token
         id: github-token
-        uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@main
+        uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@fc4fa13813cbc1835129967f10a12f24aa7a393c # main
         with:
           github-app-id-vault-key: MONOREPO_RELEASE_APP_ID
           github-app-id-vault-path: secret/data/products/camunda/ci/camunda
@@ -107,7 +107,7 @@ jobs:
           vault-url: ${{ secrets.VAULT_ADDR }}
 
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
       - name: Collect stale backport PRs
         id: collect
@@ -154,7 +154,7 @@ jobs:
     steps:
       - name: Generate GitHub token
         id: github-token
-        uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@main
+        uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@fc4fa13813cbc1835129967f10a12f24aa7a393c # main
         with:
           github-app-id-vault-key: MONOREPO_RELEASE_APP_ID
           github-app-id-vault-path: secret/data/products/camunda/ci/camunda
@@ -164,9 +164,10 @@ jobs:
           vault-auth-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-auth-secret-id: ${{ secrets.VAULT_SECRET_ID }}
           vault-url: ${{ secrets.VAULT_ADDR }}
+          repositories: "camunda,zeebe-process-test"
   
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
   
       - name: Notify stale backport PRs
         env:
@@ -198,8 +199,22 @@ jobs:
     timeout-minutes: 5
     permissions: {}
     steps:
+      - name: Generate GitHub token
+        id: github-token
+        uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@fc4fa13813cbc1835129967f10a12f24aa7a393c # main
+        with:
+          github-app-id-vault-key: MONOREPO_DEVOPS_AUTOMATION_APP_ID
+          github-app-id-vault-path: secret/data/products/camunda/ci/camunda
+          github-app-private-key-vault-key: MONOREPO_DEVOPS_AUTOMATION_APP_PRIVATE_KEY
+          github-app-private-key-vault-path: secret/data/products/camunda/ci/camunda
+          vault-auth-method: approle
+          vault-auth-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-auth-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+          vault-url: ${{ secrets.VAULT_ADDR }}
+          repositories: "monorepo-ci-data"
+
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
       - name: Get Slack secrets from Vault
         id: secrets
@@ -214,25 +229,24 @@ jobs:
              secret/data/products/camunda/ci/github-actions SLACK_C8_MONOREPO_NOTIFICATIONS_BOT_TOKEN;
              secret/data/products/camunda/ci/github-actions SLACK_TOPMONOREPOCI_CHANNEL_ID;
 
-      - name: Resolve Slack user IDs
-        id: slack-users
+      - name: Download GitHub-Slack user map
         env:
-          SLACK_BOT_TOKEN: ${{ steps.secrets.outputs.SLACK_C8_MONOREPO_NOTIFICATIONS_BOT_TOKEN }}
+          GH_TOKEN: ${{ steps.github-token.outputs.token }}
         run: |
-          chmod +x .ci/scripts/stale-backport-scripts/resolve-slack-users.sh
-
-          # Extract unique author names from stale data
-          names=$(echo '${{ needs.collect-stale-backports.outputs.stale_data }}' | \
-            jq '[.[].original_pr_author_name // empty] | unique')
-
-          # Resolve names to Slack user IDs
-          slack_user_map=$(echo "$names" | .ci/scripts/stale-backport-scripts/resolve-slack-users.sh)
-
-          {
-            echo "slack_user_map<<SLACK_MAP_EOF"
-            echo "$slack_user_map"
-            echo "SLACK_MAP_EOF"
-          } >> "$GITHUB_OUTPUT"
+          # The GitHub-to-Slack user map is built weekly by a workflow in camunda/monorepo-ci-data.
+          # It resolves Slack custom profile fields (GitHub username) into a JSON mapping of
+          # GitHub login → {slack_id, display_name, real_name}.
+          # The map is stored as a GitHub Actions artifact named "github-slack-user-map".
+          # See: https://github.com/camunda/monorepo-ci-data/blob/main/.github/workflows/build-github-slack-user-map.yml
+          if gh run download --repo camunda/monorepo-ci-data --name github-slack-user-map --dir /tmp/map 2>/dev/null; then
+            cp /tmp/map/github-slack-user-map.json /tmp/slack-user-map.json
+            echo "Downloaded map with $(jq 'length' /tmp/slack-user-map.json) entries"
+            echo "SLACK_USER_MAP_FALLBACK=false" >> "$GITHUB_ENV"
+          else
+            echo "⚠️ No GitHub-Slack user map artifact found — Slack mentions will use fallback" >&2
+            echo '{}' > /tmp/slack-user-map.json
+            echo "SLACK_USER_MAP_FALLBACK=true" >> "$GITHUB_ENV"
+          fi
 
       - name: Format Slack report
         id: format
@@ -241,7 +255,8 @@ jobs:
           GITHUB_RUN_ID: ${{ github.run_id }}
           TARGET_BRANCH: ${{ inputs.target_branch || '' }}
           REPOSITORIES: "camunda/camunda,camunda/zeebe-process-test"
-          SLACK_USER_MAP: ${{ steps.slack-users.outputs.slack_user_map }}
+          SLACK_USER_MAP_FILE: /tmp/slack-user-map.json
+          SLACK_USER_MAP_FALLBACK: ${{ env.SLACK_USER_MAP_FALLBACK }}
         run: |
           chmod +x .ci/scripts/stale-backport-scripts/format-slack-report.sh
           payload=$(echo '${{ needs.collect-stale-backports.outputs.stale_data }}' | \

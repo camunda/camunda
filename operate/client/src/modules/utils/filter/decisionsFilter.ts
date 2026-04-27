@@ -94,6 +94,7 @@ function mapDecisionEvaluationInstanceKeyFilter(
   if (keys.length > 0) {
     return {$in: keys};
   }
+  return undefined;
 }
 
 function mapDecisionDefinitionVersionFilter(
@@ -108,6 +109,7 @@ function mapDecisionDefinitionVersionFilter(
       return version;
     }
   }
+  return undefined;
 }
 
 function mapStateFilter(
@@ -134,6 +136,7 @@ function mapEvaluationDateFilter(
       $lt: filter.evaluationDateTo,
     };
   }
+  return undefined;
 }
 
 type DecisionInstancesSearchSort = NonNullable<

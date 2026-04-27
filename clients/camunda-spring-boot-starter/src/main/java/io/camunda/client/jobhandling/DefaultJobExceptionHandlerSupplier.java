@@ -16,30 +16,19 @@
 package io.camunda.client.jobhandling;
 
 import io.camunda.client.api.worker.JobExceptionHandler;
-import io.camunda.client.metrics.MetricsRecorder;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class DefaultJobExceptionHandlerSupplier implements JobExceptionHandlerSupplier {
-  private static final Logger LOG =
-      LoggerFactory.getLogger(DefaultJobExceptionHandlerSupplier.class);
-  private final CommandExceptionHandlingStrategy commandExceptionHandlingStrategy;
-  private final MetricsRecorder metricsRecorder;
+  private final JobCallbackCommandWrapperFactory jobCallbackCommandWrapperFactory;
 
   public DefaultJobExceptionHandlerSupplier(
-      final CommandExceptionHandlingStrategy commandExceptionHandlingStrategy,
-      final MetricsRecorder metricsRecorder) {
-    this.commandExceptionHandlingStrategy = commandExceptionHandlingStrategy;
-    this.metricsRecorder = metricsRecorder;
+      final JobCallbackCommandWrapperFactory jobCallbackCommandWrapperFactory) {
+    this.jobCallbackCommandWrapperFactory = jobCallbackCommandWrapperFactory;
   }
 
   @Override
   public JobExceptionHandler getJobExceptionHandler(
       final JobExceptionHandlerSupplierContext context) {
     return new BeanJobExceptionHandler(
-        context.retryBackoff(),
-        context.maxRetries(),
-        metricsRecorder,
-        commandExceptionHandlingStrategy);
+        context.retryBackoff(), context.maxRetries(), jobCallbackCommandWrapperFactory);
   }
 }

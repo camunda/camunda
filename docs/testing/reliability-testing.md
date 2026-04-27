@@ -100,6 +100,10 @@ Load tests can be configured with different secondary storage backends to valida
 * **Elasticsearch** (default): Deploys a three-node Elasticsearch cluster. This is the standard configuration used to validate exporter performance and archiving throughput.
 * **OpenSearch**: Deploys an OpenSearch cluster as an alternative to Elasticsearch.
 * **PostgreSQL**: Deploys a PostgreSQL database for RDBMS-based secondary storage testing.
+* **MySQL**: Deploys a MySQL database for RDBMS-based secondary storage testing.
+* **MariaDB**: Deploys a MariaDB database for RDBMS-based secondary storage testing.
+* **MSSQL**: Deploys an MSSQL database for RDBMS-based secondary storage testing.
+* **Oracle**: Deploys an Oracle database for RDBMS-based secondary storage testing.
 * **None**: Runs load tests without any secondary storage. This is useful for testing the core orchestration engine performance in isolation, without the overhead of exporting data to a secondary database. In this mode, Camunda exporters are disabled.
 
 The secondary storage type can be specified when creating a load test via the `newLoadTest.sh` script or the GitHub workflow inputs.
@@ -280,7 +284,7 @@ The [scheduled release load test workflow](https://github.com/camunda/camunda/bl
 After deployment, each load test is verified by the [verify-and-cleanup workflow](https://github.com/camunda/camunda/blob/main/.github/workflows/camunda-verify-and-cleanup-load-test.yml), which:
 
 1. Waits for all pods to be ready
-2. Checks gateway connectivity via the Topology gRPC metric
+2. Checks gateway connectivity via the `app.connected` gauge metric (set to 1 when topology is first received)
 3. Deletes the namespace (regardless of verification outcome)
 
 Results are posted to the `#reliability-testing-alerts` Slack channel.
@@ -313,6 +317,10 @@ As an example, we have the following tests running:
 * medic-y-2025-cw-25-59a095c4-test-latency
 * medic-y-2025-cw-25-59a095c4-test-realistic
 * medic-y-2025-cw-25-59a095c4-test-rdbms-realistic
+
+**Expectations:**
+
+* In case an issue prevents a test from working properly, **and** no workaround is currently available, the test can be deleted to save resources.
 
 #### Daily load tests
 

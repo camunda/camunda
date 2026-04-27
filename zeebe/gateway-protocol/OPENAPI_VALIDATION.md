@@ -18,6 +18,7 @@ We use [Spectral CLI](https://docs.stoplight.io/docs/spectral/) to validate the 
   - Key property type validation (`...Key` properties must be strings)
   - Eventually-consistent annotation validation (command operations must not be marked as eventually consistent)
   - Required property existence validation (entries in required array must exist in properties)
+  - Operation versioning annotation validation (every operation must declare `x-added-in-version`)
 
 ## Running Validation Locally
 
@@ -123,6 +124,36 @@ schema:
 ```
 
 See [#46224](https://github.com/camunda/camunda/issues/46224) for details.
+
+### Missing `x-added-in-version` on an Operation
+
+Every operation must declare the Camunda version in which it was first introduced via the `x-added-in-version` extension. The `require-added-in-version` rule fails the build if this annotation is missing.
+
+**Wrong:**
+
+```yaml
+paths:
+  /my-resources:
+    post:
+      operationId: createMyResource
+      summary: Create a my-resource
+      tags: [My resource]
+      # ❌ Missing x-added-in-version
+```
+
+**Correct:**
+
+```yaml
+paths:
+  /my-resources:
+    post:
+      operationId: createMyResource
+      summary: Create a my-resource
+      x-added-in-version: "8.9"  # ✓ String containing the minor version (no patch)
+      tags: [My resource]
+```
+
+Set the value to the version in which the endpoint **first** ships and do not update it on later changes. See §2.17 of [`docs/rest-api-endpoint-guidelines.md`](../../docs/rest-api-endpoint-guidelines.md) for the full convention.
 
 ## Testing Custom Spectral Functions
 

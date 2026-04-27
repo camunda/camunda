@@ -124,8 +124,7 @@ test.describe.parallel('Cluster Variable API Tests - Tenant Scope', () => {
     await assertBadRequest(res, /value/i, 'INVALID_ARGUMENT');
   });
 
-  // skipped due to bug 42049: https://github.com/camunda/camunda/issues/42049
-  test.skip('Create Tenant Cluster Variable Invalid Tenant Not Found', async ({
+  test('Create Tenant Cluster Variable Invalid Tenant Not Found', async ({
     request,
   }) => {
     const res = await request.post(

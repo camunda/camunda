@@ -18,23 +18,27 @@ const isEventSubProcess = ({
   eventTypes?: EventType[];
 }) => {
   if (
-    hasType({businessObject, types: ['bpmn:SubProcess']}) &&
-    businessObject.triggeredByEvent === true
+    !hasType({businessObject, types: ['bpmn:SubProcess']}) ||
+    businessObject.triggeredByEvent !== true
   ) {
-    if (eventTypes !== undefined) {
-      /**
-       * if event type is provided: check for event type
-       */
-      return businessObject.flowElements?.some((businessObject) => {
+    return false;
+  }
+
+  if (eventTypes !== undefined) {
+    /**
+     * if event type is provided: check for event type
+     */
+    return (
+      businessObject.flowElements?.some((businessObject) => {
         return (
           hasType({businessObject, types: ['bpmn:StartEvent']}) &&
           hasEventType({businessObject, types: eventTypes})
         );
-      });
-    }
-
-    return true;
+      }) ?? false
+    );
   }
+
+  return true;
 };
 
 export {isEventSubProcess};

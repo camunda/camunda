@@ -50,6 +50,7 @@ public class OidcAuthenticationConfiguration {
   private String clientIdClaim;
   private String groupsClaim;
   private boolean preferUsernameClaim;
+  private boolean preferIdTokenClaims;
   private String organizationId;
   private List<String> resource;
   private String clientAuthenticationMethod = CLIENT_AUTHENTICATION_METHOD_CLIENT_SECRET_BASIC;
@@ -57,6 +58,8 @@ public class OidcAuthenticationConfiguration {
   private Duration clockSkew = DEFAULT_CLOCK_SKEW;
   private boolean idpLogoutEnabled = true;
   private boolean userInfoEnabled = true;
+  private OidcUserInfoAugmentationConfiguration userInfoAugmentation =
+      new OidcUserInfoAugmentationConfiguration();
 
   @PostConstruct
   public void validate() {
@@ -237,6 +240,14 @@ public class OidcAuthenticationConfiguration {
     this.preferUsernameClaim = preferUsernameClaim;
   }
 
+  public boolean isPreferIdTokenClaims() {
+    return preferIdTokenClaims;
+  }
+
+  public void setPreferIdTokenClaims(final boolean preferIdTokenClaims) {
+    this.preferIdTokenClaims = preferIdTokenClaims;
+  }
+
   public String getClientAuthenticationMethod() {
     return clientAuthenticationMethod;
   }
@@ -277,6 +288,15 @@ public class OidcAuthenticationConfiguration {
     this.userInfoEnabled = userInfoEnabled;
   }
 
+  public OidcUserInfoAugmentationConfiguration getUserInfoAugmentation() {
+    return userInfoAugmentation;
+  }
+
+  public void setUserInfoAugmentation(
+      final OidcUserInfoAugmentationConfiguration userInfoAugmentation) {
+    this.userInfoAugmentation = userInfoAugmentation;
+  }
+
   public boolean isSet() {
     return issuerUri != null
         || clientId != null
@@ -298,6 +318,7 @@ public class OidcAuthenticationConfiguration {
         || clientIdClaim != null
         || groupsClaim != null
         || preferUsernameClaim
+        || preferIdTokenClaims
         || organizationId != null
         || !CLIENT_AUTHENTICATION_METHOD_CLIENT_SECRET_BASIC.equals(clientAuthenticationMethod)
         || assertionConfiguration.getKeystore().getPath() != null
@@ -336,12 +357,15 @@ public class OidcAuthenticationConfiguration {
     private String clientIdClaim;
     private String groupsClaim;
     private boolean preferUsernameClaim;
+    private boolean preferIdTokenClaims;
     private String organizationId;
     private String clientAuthenticationMethod = CLIENT_AUTHENTICATION_METHOD_CLIENT_SECRET_BASIC;
     private AssertionConfiguration assertionConfiguration = new AssertionConfiguration();
     private Duration clockSkew = DEFAULT_CLOCK_SKEW;
     private boolean idpLogoutEnabled = true;
     private boolean userInfoEnabled = true;
+    private OidcUserInfoAugmentationConfiguration userInfoAugmentation =
+        new OidcUserInfoAugmentationConfiguration();
 
     public Builder issuerUri(final String issuerUri) {
       this.issuerUri = issuerUri;
@@ -440,6 +464,11 @@ public class OidcAuthenticationConfiguration {
       return this;
     }
 
+    public Builder preferIdTokenClaims(final boolean preferIdTokenClaims) {
+      this.preferIdTokenClaims = preferIdTokenClaims;
+      return this;
+    }
+
     public Builder organizationId(final String organizationId) {
       this.organizationId = organizationId;
       return this;
@@ -470,6 +499,12 @@ public class OidcAuthenticationConfiguration {
       return this;
     }
 
+    public Builder userInfoAugmentation(
+        final OidcUserInfoAugmentationConfiguration userInfoAugmentation) {
+      this.userInfoAugmentation = userInfoAugmentation;
+      return this;
+    }
+
     public OidcAuthenticationConfiguration build() {
       final OidcAuthenticationConfiguration config = new OidcAuthenticationConfiguration();
       config.setIssuerUri(issuerUri);
@@ -491,12 +526,14 @@ public class OidcAuthenticationConfiguration {
       config.setClientIdClaim(clientIdClaim);
       config.setGroupsClaim(groupsClaim);
       config.setPreferUsernameClaim(preferUsernameClaim);
+      config.setPreferIdTokenClaims(preferIdTokenClaims);
       config.setOrganizationId(organizationId);
       config.setClientAuthenticationMethod(clientAuthenticationMethod);
       config.setAssertion(assertionConfiguration);
       config.setClockSkew(clockSkew);
       config.setIdpLogoutEnabled(idpLogoutEnabled);
       config.setUserInfoEnabled(userInfoEnabled);
+      config.setUserInfoAugmentation(userInfoAugmentation);
       return config;
     }
   }

@@ -7,11 +7,11 @@
  */
 
 import styled from "styled-components";
-import { borderSubtle01, spacing06 } from "@carbon/elements";
+import { spacing06 } from "@carbon/elements";
 import { Stack } from "@carbon/react";
 
 export const MappingRuleContainer = styled.div`
-  border-top: 1px solid ${borderSubtle01};
+  border-top: 1px solid var(--cds-border-subtle);
   padding-top: ${spacing06};
 `;
 

@@ -16,7 +16,9 @@
 package io.camunda.client.api.search.response;
 
 import io.camunda.client.api.search.enums.MessageSubscriptionState;
+import io.camunda.client.api.search.enums.MessageSubscriptionType;
 import java.time.OffsetDateTime;
+import java.util.Map;
 
 public interface MessageSubscription {
 
@@ -45,6 +47,8 @@ public interface MessageSubscription {
 
   MessageSubscriptionState getMessageSubscriptionState();
 
+  MessageSubscriptionType getMessageSubscriptionType();
+
   OffsetDateTime getLastUpdatedDate();
 
   String getMessageName();
@@ -52,4 +56,14 @@ public interface MessageSubscription {
   String getCorrelationKey();
 
   String getTenantId();
+
+  String getProcessDefinitionName();
+
+  Integer getProcessDefinitionVersion();
+
+  Map<String, String> getExtensionProperties();
+
+  String getToolName();
+
+  String getInboundConnectorType();
 }

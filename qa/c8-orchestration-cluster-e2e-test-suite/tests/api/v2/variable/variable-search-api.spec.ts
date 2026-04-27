@@ -10,6 +10,7 @@ import {expect, test} from '@playwright/test';
 import {cancelProcessInstance, deploy} from '../../../../utils/zeebeClient';
 import {
   assertBadRequest,
+  assertInvalidArgument,
   assertStatusCode,
   assertUnauthorizedRequest,
   buildUrl,
@@ -159,7 +160,7 @@ test.describe.parallel('Search Variables API Tests', () => {
       const body = await res.json();
 
       expect(body.page.totalItems).toBeGreaterThanOrEqual(1);
-      expect(body.items.length).toBe(1);
+      expect(body.items).toHaveLength(1);
     }).toPass(defaultAssertionOptions);
   });
 
@@ -256,10 +257,27 @@ test.describe.parallel('Search Variables API Tests', () => {
     }).toPass(defaultAssertionOptions);
   });
 
-  //Skipped due to bug 39372: https://github.com/camunda/camunda/issues/39372
-  test.skip('Search Variables with invalid pagination parameters', async ({
+  test('Search Variables with invalid pagination parameters', async ({
     request,
   }) => {
+    await expect(async () => {
+      const res = await request.post(buildUrl('/variables/search'), {
+        headers: jsonHeaders(),
+        data: {
+          page: {
+            limit: -1,
+          },
+        },
+      });
+      await assertInvalidArgument(
+        res,
+        400,
+        "The value for page.limit is '-1' but must be a non-negative number.",
+      );
+    }).toPass(defaultAssertionOptions);
+  });
+
+  test('Search Variables with 0 pagination parameters', async ({request}) => {
     await expect(async () => {
       const res = await request.post(buildUrl('/variables/search'), {
         headers: jsonHeaders(),
@@ -269,8 +287,18 @@ test.describe.parallel('Search Variables API Tests', () => {
           },
         },
       });
-
-      await assertBadRequest(res, /page.from|page.limit/);
+      await assertStatusCode(res, 200);
+      await validateResponse(
+        {
+          path: '/variables/search',
+          method: 'POST',
+          status: '200',
+        },
+        res,
+      );
+      const body = await res.json();
+      expect(body.page.totalItems).toBeGreaterThanOrEqual(0);
+      expect(body.items).toHaveLength(0);
     }).toPass(defaultAssertionOptions);
   });
 });

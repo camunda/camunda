@@ -6,7 +6,8 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {test} from '@playwright/test';
+import {expect, test} from '@playwright/test';
+import {randomUUID} from 'crypto';
 import {
   assertBadRequest,
   assertNotFoundRequest,
@@ -18,12 +19,20 @@ import {
   activateJobToObtainAValidJobKey,
   setupProcessInstanceForTests,
 } from '@requestHelpers';
+import {defaultAssertionOptions} from 'utils/constants';
+
+const runSuffix = randomUUID().slice(0, 8);
+const processId = `jobApiProcess-failure-${runSuffix}`;
+const taskType = `jobApiTaskType-failure-${runSuffix}`;
 
 /* eslint-disable playwright/expect-expect */
 test.describe('Job Fail API Tests', () => {
   const {beforeAll, beforeEach, afterEach} = setupProcessInstanceForTests(
     'job_api_process',
-    'jobApiProcess',
+    {
+      processName: processId,
+      substitutions: {jobApiProcess: processId, jobApiTaskType: taskType},
+    },
   );
 
   test.beforeAll(beforeAll);
@@ -33,21 +42,20 @@ test.describe('Job Fail API Tests', () => {
   test.afterEach(afterEach);
 
   test('Fail Job - success', async ({request}) => {
-    const jobKey = await activateJobToObtainAValidJobKey(
-      request,
-      'jobApiTaskType',
-    );
+    const jobKey = await activateJobToObtainAValidJobKey(request, taskType);
 
     // Now fail the job
-    const failRes = await request.post(buildUrl(`/jobs/${jobKey}/failure`), {
-      headers: jsonHeaders(),
-      data: {
-        retries: 0,
-        errorMessage: 'Simulated failure',
-      },
-    });
+    await expect(async () => {
+      const failRes = await request.post(buildUrl(`/jobs/${jobKey}/failure`), {
+        headers: jsonHeaders(),
+        data: {
+          retries: 0,
+          errorMessage: 'Simulated failure',
+        },
+      });
 
-    await assertStatusCode(failRes, 204);
+      await assertStatusCode(failRes, 204);
+    }).toPass(defaultAssertionOptions);
   });
 
   test('Fail Job - Job not found', async ({request}) => {
@@ -85,22 +93,24 @@ test.describe('Job Fail API Tests', () => {
     await test.step('First activate a job', async () => {
       localState['jobKey'] = await activateJobToObtainAValidJobKey(
         request,
-        'jobApiTaskType',
+        taskType,
       );
     });
 
     await test.step('fail the job for the first time', async () => {
-      const failRes = await request.post(
-        buildUrl(`/jobs/${localState['jobKey']}/failure`),
-        {
-          headers: jsonHeaders(),
-          data: {
-            retries: 0,
-            errorMessage: 'Simulated failure',
+      await expect(async () => {
+        const failRes = await request.post(
+          buildUrl(`/jobs/${localState['jobKey']}/failure`),
+          {
+            headers: jsonHeaders(),
+            data: {
+              retries: 0,
+              errorMessage: 'Simulated failure',
+            },
           },
-        },
-      );
-      await assertStatusCode(failRes, 204);
+        );
+        await assertStatusCode(failRes, 204);
+      }).toPass(defaultAssertionOptions);
     });
 
     await test.step('fail the job for the second time', async () => {

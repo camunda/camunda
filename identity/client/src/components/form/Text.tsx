@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import { helperText01, textSecondary } from "@carbon/elements";
+import { helperText01 } from "@carbon/elements";
 import styled from "styled-components";
 
 export const PrimaryText = styled.p`
@@ -17,7 +17,7 @@ export const PrimaryText = styled.p`
 `;
 
 export const SecondaryText = styled.p`
-  color: ${textSecondary};
+  color: var(--cds-text-secondary);
 `;
 
 export const HelperText = styled(SecondaryText)`

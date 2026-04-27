@@ -105,4 +105,21 @@ public final class InFlightLongPollingActivateJobsRequestsState<T> {
   public boolean shouldBeRepeated(final InflightActivateJobsRequest<T> request) {
     return activeRequestsToBeRepeated.contains(request) && !request.isLongPollingDisabled();
   }
+
+  /**
+   * Fails all pending and active requests with the given error, then clears all tracking state.
+   * Used when the cluster is purged and all in-flight requests must be cancelled.
+   */
+  public void failAllRequests(final Throwable error) {
+    for (final var request : pendingRequests) {
+      request.onError(error);
+    }
+    for (final var request : activeRequests) {
+      request.onError(error);
+    }
+    pendingRequests.clear();
+    activeRequests.clear();
+    activeRequestsToBeRepeated.clear();
+    updatePendingMetrics();
+  }
 }

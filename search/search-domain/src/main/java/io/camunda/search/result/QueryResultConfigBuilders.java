@@ -49,4 +49,16 @@ public final class QueryResultConfigBuilders {
           fn) {
     return fn.apply(decisionInstance()).build();
   }
+
+  public static ProcessDefinitionQueryResultConfig.Builder processDefinition() {
+    return new ProcessDefinitionQueryResultConfig.Builder();
+  }
+
+  public static ProcessDefinitionQueryResultConfig processDefinition(
+      final Function<
+              ProcessDefinitionQueryResultConfig.Builder,
+              ObjectBuilder<ProcessDefinitionQueryResultConfig>>
+          fn) {
+    return fn.apply(processDefinition()).build();
+  }
 }

@@ -15,6 +15,7 @@ import {
   assertBadRequest,
   assertUnauthorizedRequest,
   encode,
+  assertInvalidArgument,
 } from '../../../../utils/http';
 import {
   CORRELATE_MESSAGE,
@@ -437,8 +438,7 @@ test.describe.serial('Correlated Message Subscriptions API Tests', () => {
     });
   });
 
-  // Skiped due to bug 39372: https://github.com/camunda/camunda/issues/39372
-  test.skip('Search Message Subscriptions - Negative pagination - 400 Bad Request', async ({
+  test('Search Message Subscriptions - Negative pagination - 400 Bad Request', async ({
     request,
   }) => {
     await expect(async () => {
@@ -453,7 +453,11 @@ test.describe.serial('Correlated Message Subscriptions API Tests', () => {
           },
         },
       );
-      await assertBadRequest(res, /page\.(from|limit)/i);
+      await assertInvalidArgument(
+        res,
+        400,
+        "The value for page.limit is '-5' but must be a non-negative number.",
+      );
     }).toPass(defaultAssertionOptions);
   });
 
@@ -480,7 +484,7 @@ test.describe.serial('Correlated Message Subscriptions API Tests', () => {
         res,
       );
       const json = await res.json();
-      expect(json.items.length).toBe(0);
+      expect(json.items).toHaveLength(0);
       expect(json.page.totalItems).toBeGreaterThanOrEqual(1);
     }).toPass(defaultAssertionOptions);
   });

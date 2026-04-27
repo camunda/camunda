@@ -216,6 +216,7 @@ public class ResolveFeelExpressionTest {
   @Test
   public void shouldResolveExpressionWithTenantScopedClusterVariable() {
     // given
+    ENGINE_RULE.tenant().newTenant().withTenantId("tenant-1").create();
     ENGINE_RULE
         .clusterVariables()
         .withName("tenantVar")

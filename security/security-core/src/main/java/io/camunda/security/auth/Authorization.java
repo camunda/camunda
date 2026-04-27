@@ -18,6 +18,7 @@ import static io.camunda.zeebe.protocol.record.value.AuthorizationResourceType.G
 import static io.camunda.zeebe.protocol.record.value.AuthorizationResourceType.GROUP;
 import static io.camunda.zeebe.protocol.record.value.AuthorizationResourceType.MAPPING_RULE;
 import static io.camunda.zeebe.protocol.record.value.AuthorizationResourceType.PROCESS_DEFINITION;
+import static io.camunda.zeebe.protocol.record.value.AuthorizationResourceType.RESOURCE;
 import static io.camunda.zeebe.protocol.record.value.AuthorizationResourceType.ROLE;
 import static io.camunda.zeebe.protocol.record.value.AuthorizationResourceType.SYSTEM;
 import static io.camunda.zeebe.protocol.record.value.AuthorizationResourceType.TENANT;
@@ -293,6 +294,10 @@ public record Authorization<T>(
       return resourceType(GLOBAL_LISTENER);
     }
 
+    public Builder<T> resource() {
+      return resourceType(RESOURCE);
+    }
+
     public Builder<T> resourceId(final String resourceId) {
       return resourceIds(List.of(resourceId));
     }
@@ -313,10 +318,10 @@ public record Authorization<T>(
     }
 
     public Builder<T> authorizedByProperty(final String propertyName) {
-      if (this.resourcePropertyNames == null) {
-        this.resourcePropertyNames = new HashSet<>();
+      if (resourcePropertyNames == null) {
+        resourcePropertyNames = new HashSet<>();
       }
-      this.resourcePropertyNames.add(propertyName);
+      resourcePropertyNames.add(propertyName);
       return this;
     }
 

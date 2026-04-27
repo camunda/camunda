@@ -6,6 +6,7 @@
     "forceConsistentCasingInFileNames": true,
     "strict": true,
     "skipLibCheck": true,
+    "ignoreDeprecations": "5.0",
     "baseUrl": "./",
     "noEmit": true,
     "paths": {
@@ -14,5 +15,8 @@
       "@pages/*": ["pages/*"],
       "@requestHelpers": ["utils/requestHelpers/index.ts"]
     }
-  }
+  },
+  "exclude": [
+    "v2-stateless-tests/request-validation-test-generator/scripts/**"
+  ]
 }

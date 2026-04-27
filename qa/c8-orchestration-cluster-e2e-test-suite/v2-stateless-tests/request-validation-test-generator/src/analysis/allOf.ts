@@ -1,3 +1,11 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+
 import {OperationModel, ValidationScenario} from '../model/types.js';
 import {buildBaselineBody} from '../schema/baseline.js';
 import {makeId} from './common.js';
@@ -78,7 +86,7 @@ export function generateAllOfConflicts(
       }
     }
     const conflicts = Object.entries(typeMap)
-      .filter(([_, set]) => set.size > 1)
+      .filter(([, set]) => set.size > 1)
       .map(([k]) => k);
     if (!conflicts.length) continue;
     const baseline = buildBaselineBody(op);

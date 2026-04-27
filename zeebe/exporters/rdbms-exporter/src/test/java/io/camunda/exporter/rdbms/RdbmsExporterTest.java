@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
@@ -24,6 +25,7 @@ import io.camunda.db.rdbms.RdbmsSchemaManager;
 import io.camunda.db.rdbms.write.RdbmsWriterMetrics;
 import io.camunda.db.rdbms.write.RdbmsWriters;
 import io.camunda.db.rdbms.write.queue.ExecutionQueue;
+import io.camunda.db.rdbms.write.queue.InTransactionHook;
 import io.camunda.db.rdbms.write.queue.PostFlushListener;
 import io.camunda.db.rdbms.write.queue.PreFlushListener;
 import io.camunda.db.rdbms.write.queue.QueueItem;
@@ -41,6 +43,7 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
@@ -58,11 +61,14 @@ class RdbmsExporterTest {
   private RdbmsSchemaManager schemaManager;
 
   private ScheduledTask flushTask;
-  private ScheduledTask cleanupTask;
-  private ScheduledTask usageMetricsCleanupTask;
-  private ScheduledTask historyDeletionTask;
-  private ScheduledTask jobMetricsBatchCleanupTask;
   private RdbmsPurger rdbmsPurger;
+
+  @AfterEach
+  void tearDown() {
+    if (exporter != null) {
+      exporter.close();
+    }
+  }
 
   @Test
   void shouldCallCorrectHandler() {
@@ -166,6 +172,15 @@ class RdbmsExporterTest {
   }
 
   @Test
+  void shouldRegisterInTransactionHookOnOpen() {
+    // given + when
+    createExporter(b -> b);
+
+    // then - the exporter should register a lock position hook on the position service
+    verify(positionService).registerLockPositionHook(eq(0), any());
+  }
+
+  @Test
   void shouldUpdatePositionOnFlush() {
     // given
     createExporter(b -> b.withHandler(ValueType.JOB, mockHandler(ValueType.JOB)));
@@ -238,9 +253,6 @@ class RdbmsExporterTest {
     // then
     verify(positionService).update(Mockito.argThat(p -> p.lastExportedPosition() == 1));
     verify(flushTask).cancel();
-    verify(cleanupTask).cancel();
-    verify(usageMetricsCleanupTask).cancel();
-    verify(historyDeletionTask).cancel();
   }
 
   @Test
@@ -258,8 +270,8 @@ class RdbmsExporterTest {
     createExporter(b -> b.queueSize(0));
 
     // then
-    // only cleanup task
-    verify(controller, times(4)).scheduleCancellableTask(any(), any());
+    // no flush task scheduled via controller when queue size is zero
+    verify(controller, times(0)).scheduleCancellableTask(any(), any());
   }
 
   @Test
@@ -268,8 +280,8 @@ class RdbmsExporterTest {
     createExporter(b -> b.flushInterval(Duration.ZERO));
 
     // then
-    // only cleanup task
-    verify(controller, times(4)).scheduleCancellableTask(any(), any());
+    // no flush task scheduled via controller when flush interval is zero
+    verify(controller, times(0)).scheduleCancellableTask(any(), any());
   }
 
   @Test
@@ -277,7 +289,7 @@ class RdbmsExporterTest {
     // given
     createExporter(b -> b.withHandler(ValueType.JOB, mockHandler(ValueType.JOB)));
     final var runnableCaptor = ArgumentCaptor.forClass(Runnable.class);
-    verify(controller, times(5))
+    verify(controller, times(1))
         .scheduleCancellableTask(any(Duration.class), runnableCaptor.capture());
     final var runnable = runnableCaptor.getAllValues().getFirst();
 
@@ -287,7 +299,7 @@ class RdbmsExporterTest {
 
     // then
     // captures the initial and the rescheduled call
-    verify(controller, times(6)).scheduleCancellableTask(any(Duration.class), any());
+    verify(controller, times(2)).scheduleCancellableTask(any(Duration.class), any());
     verify(positionService).update(Mockito.argThat(p -> p.lastExportedPosition() == 1));
   }
 
@@ -301,9 +313,6 @@ class RdbmsExporterTest {
 
     // then
     verify(flushTask).cancel();
-    verify(cleanupTask).cancel();
-    verify(usageMetricsCleanupTask).cancel();
-    verify(historyDeletionTask).cancel();
     verify(rdbmsPurger).purgeRdbms();
   }
 
@@ -404,9 +413,8 @@ class RdbmsExporterTest {
     // given - schema manager returns true for isInitialized
     createExporter(b -> b, true);
 
-    // then - exporter should have opened successfully
-    verify(controller, times(5))
-        .scheduleCancellableTask(any(Duration.class), any()); // flush + 3 scheduled tasks
+    // then - exporter should have opened successfully (only flush task scheduled via controller)
+    verify(controller, times(1)).scheduleCancellableTask(any(Duration.class), any());
   }
 
   @Test
@@ -427,7 +435,7 @@ class RdbmsExporterTest {
   void shouldRescheduleTaskAfterSuccessfulFlush() {
     // given
     createExporter(b -> b.withHandler(ValueType.JOB, mockHandler(ValueType.JOB)));
-    final var initialScheduleCount = 5; // flush + 4 cleanup tasks
+    final var initialScheduleCount = 1; // only flush task
 
     // when
     exporter.flushAndReschedule();
@@ -441,7 +449,7 @@ class RdbmsExporterTest {
   void shouldRescheduleTaskEvenWhenFlushThrowsException() {
     // given
     createExporter(b -> b.withHandler(ValueType.JOB, mockHandler(ValueType.JOB)));
-    final var initialScheduleCount = 5; // flush + 4 cleanup tasks
+    final var initialScheduleCount = 1; // only flush task
 
     // Mock the rdbmsWriter to throw an exception on flush
     doAnswer(
@@ -460,70 +468,104 @@ class RdbmsExporterTest {
   }
 
   @Test
-  void shouldCatchExceptionAndRescheduleCleanupHistory() {
-    // given
-    createExporter(b -> b);
-    final var initialScheduleCount = 5; // flush + 4 cleanup tasks
+  void shouldRequestReplayWhenBrokerAheadOfRdbmsOnOpen() {
+    // given - broker position is 1000, RDBMS position is 900
+    final long brokerPosition = 1000L;
+    final long rdbmsPosition = 900L;
+    createExporterWithRdbmsPosition(brokerPosition, rdbmsPosition);
+    when(controller.requestReplay(anyLong())).thenReturn(true);
 
-    // Mock the historyCleanupService to throw an exception
-    when(historyCleanupService.cleanupHistory(anyInt(), any()))
-        .thenThrow(new RuntimeException("Simulated cleanup failure"));
-    when(historyCleanupService.getCurrentCleanupInterval(anyInt()))
-        .thenReturn(Duration.ofSeconds(1));
+    // when
+    exporter.open(controller);
 
-    // when - should not throw exception
-    exporter.cleanupHistory();
-
-    // then - a new task should be scheduled
-    verify(controller, times(initialScheduleCount + 1))
-        .scheduleCancellableTask(any(Duration.class), any());
-    verify(historyCleanupService).getCurrentCleanupInterval(anyInt());
+    // then - requestReplay should be called with rdbmsPosition + 1
+    verify(controller).requestReplay(rdbmsPosition + 1);
   }
 
   @Test
-  void shouldCatchExceptionAndRescheduleCleanupUsageMetricsHistory() {
-    // given
-    createExporter(b -> b);
-    final var initialScheduleCount = 5; // flush + 4 cleanup tasks
+  void shouldThrowWhenReplayFailsBecauseLogSegmentsAreGone() {
+    // given - broker position is 1000, RDBMS position is 900, but log segments are gone
+    final long brokerPosition = 1000L;
+    final long rdbmsPosition = 900L;
+    createExporterWithRdbmsPosition(brokerPosition, rdbmsPosition);
+    when(controller.requestReplay(anyLong())).thenReturn(false);
 
-    // Mock the historyCleanupService to throw an exception
-    when(historyCleanupService.cleanupUsageMetricsHistory(anyInt(), any()))
-        .thenThrow(new RuntimeException("Simulated usage metrics cleanup failure"));
-    when(historyCleanupService.getUsageMetricsHistoryCleanupInterval())
-        .thenReturn(Duration.ofSeconds(1));
-
-    // when - should not throw exception
-    exporter.cleanupUsageMetricsHistory();
-
-    // then - a new task should be scheduled
-    verify(controller, times(initialScheduleCount + 1))
-        .scheduleCancellableTask(any(Duration.class), any());
-    verify(historyCleanupService).getUsageMetricsHistoryCleanupInterval();
+    // when + then - exporter should fail to open because replay is not possible
+    assertThatThrownBy(() -> exporter.open(controller))
+        .isInstanceOf(ExporterException.class)
+        .hasMessageContaining("log segments are no longer available");
   }
 
   @Test
-  void shouldCatchExceptionAndRescheduleDeleteHistory() {
-    // given
-    createExporter(b -> b);
-    final var initialScheduleCount = 5; // flush + 4 cleanup tasks
+  void shouldNotRequestReplayWhenBrokerAndRdbmsPositionAreEqual() {
+    // given - broker position equals RDBMS position
+    final long position = 1000L;
+    createExporterWithRdbmsPosition(position, position);
 
-    // Mock the historyDeletionService to throw an exception
-    when(historyDeletionService.deleteHistory(anyInt()))
-        .thenThrow(new RuntimeException("Simulated deletion failure"));
-    when(historyDeletionService.getCurrentDelayBetweenRuns()).thenReturn(Duration.ofSeconds(1));
+    // when
+    exporter.open(controller);
 
-    // when - should not throw exception
-    exporter.deleteHistory();
-
-    // then - a new task should be scheduled
-    verify(controller, times(initialScheduleCount + 1))
-        .scheduleCancellableTask(any(Duration.class), any());
-    verify(historyDeletionService).getCurrentDelayBetweenRuns();
+    // then - no replay should be requested
+    verify(controller, never()).requestReplay(Mockito.anyLong());
   }
 
   // ------------------------------------------------
   // mocks and stubs
   // ------------------------------------------------
+
+  /**
+   * Creates an exporter with an existing RDBMS position already stored, without calling open(). Use
+   * this when you need to control the broker and RDBMS positions independently (e.g., to simulate a
+   * secondary storage that is behind the broker after a restore or failover).
+   */
+  private void createExporterWithRdbmsPosition(
+      final long brokerPosition, final long rdbmsPosition) {
+    final var existingRdbmsPositionModel =
+        new io.camunda.db.rdbms.write.domain.ExporterPositionModel(
+            0,
+            RdbmsExporter.class.getSimpleName(),
+            rdbmsPosition,
+            java.time.LocalDateTime.now(),
+            java.time.LocalDateTime.now());
+
+    flushTask = mock(ScheduledTask.class);
+    controller = mock(Controller.class);
+    when(controller.getLastExportedRecordPosition()).thenReturn(brokerPosition);
+    when(controller.scheduleCancellableTask(any(), any())).thenReturn(flushTask);
+
+    rdbmsWriters = mock(RdbmsWriters.class);
+    executionQueue = new StubExecutionQueue();
+    positionService = mock(ExporterPositionService.class);
+    when(positionService.findOne(anyInt())).thenReturn(existingRdbmsPositionModel);
+    rdbmsPurger = mock(RdbmsPurger.class);
+    historyCleanupService = mock(HistoryCleanupService.class);
+    when(historyCleanupService.cleanupHistory(anyInt(), any())).thenReturn(Duration.ofSeconds(1));
+    when(historyCleanupService.cleanupUsageMetricsHistory(anyInt(), any()))
+        .thenReturn(Duration.ofSeconds(1));
+    when(historyCleanupService.cleanupJobBatchMetricsHistory(anyInt(), any()))
+        .thenReturn(Duration.ofSeconds(1));
+    historyDeletionService = mock(HistoryDeletionService.class);
+    when(historyDeletionService.deleteHistory(anyInt())).thenReturn(Duration.ofSeconds(1));
+    when(rdbmsWriters.getExporterPositionService()).thenReturn(positionService);
+    when(rdbmsWriters.getExecutionQueue()).thenReturn(executionQueue);
+    when(rdbmsWriters.getRdbmsPurger()).thenReturn(rdbmsPurger);
+    metrics = mock(RdbmsWriterMetrics.class);
+    when(rdbmsWriters.getMetrics()).thenReturn(metrics);
+    schemaManager = mock(RdbmsSchemaManager.class);
+    when(schemaManager.isInitialized()).thenReturn(true);
+    doAnswer((invocation) -> executionQueue.checkQueueForFlush()).when(rdbmsWriters).flush(false);
+
+    exporter =
+        new RdbmsExporter.Builder()
+            .rdbmsWriter(rdbmsWriters)
+            .partitionId(0)
+            .flushInterval(Duration.ofMillis(500))
+            .queueSize(100)
+            .rdbmsSchemaManager(schemaManager)
+            .historyCleanupService(historyCleanupService)
+            .historyDeletionService(historyDeletionService)
+            .build();
+  }
 
   private RdbmsExportHandler mockHandler(final ValueType valueType) {
     return mockHandler(valueType, true);
@@ -561,19 +603,10 @@ class RdbmsExporterTest {
       final boolean schemaInitialized,
       final boolean openExporter) {
     flushTask = mock(ScheduledTask.class);
-    cleanupTask = mock(ScheduledTask.class);
-    usageMetricsCleanupTask = mock(ScheduledTask.class);
-    historyDeletionTask = mock(ScheduledTask.class);
-    jobMetricsBatchCleanupTask = mock(ScheduledTask.class);
 
     controller = mock(Controller.class);
     when(controller.getLastExportedRecordPosition()).thenReturn(-1L);
-    when(controller.scheduleCancellableTask(any(), any()))
-        .thenReturn(flushTask)
-        .thenReturn(cleanupTask)
-        .thenReturn(usageMetricsCleanupTask)
-        .thenReturn(historyDeletionTask)
-        .thenReturn(jobMetricsBatchCleanupTask);
+    when(controller.scheduleCancellableTask(any(), any())).thenReturn(flushTask);
 
     rdbmsWriters = mock(RdbmsWriters.class);
     executionQueue = new StubExecutionQueue();
@@ -632,6 +665,7 @@ class RdbmsExporterTest {
 
     final List<PreFlushListener> preFlushListeners = new ArrayList<>();
     final List<PostFlushListener> postFlushListeners = new ArrayList<>();
+    final List<InTransactionHook> inTransactionHooks = new ArrayList<>();
 
     @Override
     public void executeInQueue(final QueueItem entry) {
@@ -646,6 +680,11 @@ class RdbmsExporterTest {
     @Override
     public void registerPostFlushListener(final PostFlushListener listener) {
       postFlushListeners.add(listener);
+    }
+
+    @Override
+    public void registerInTransactionHook(final InTransactionHook hook) {
+      inTransactionHooks.add(hook);
     }
 
     @Override

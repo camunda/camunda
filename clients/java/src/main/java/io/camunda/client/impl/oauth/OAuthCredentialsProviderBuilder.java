@@ -26,6 +26,7 @@ import static io.camunda.client.impl.CamundaClientEnvironmentVariables.OAUTH_ENV
 import static io.camunda.client.impl.CamundaClientEnvironmentVariables.OAUTH_ENV_CLIENT_SECRET;
 import static io.camunda.client.impl.CamundaClientEnvironmentVariables.OAUTH_ENV_CONNECT_TIMEOUT;
 import static io.camunda.client.impl.CamundaClientEnvironmentVariables.OAUTH_ENV_ISSUER_URL;
+import static io.camunda.client.impl.CamundaClientEnvironmentVariables.OAUTH_ENV_PROACTIVE_TOKEN_REFRESH_THRESHOLD;
 import static io.camunda.client.impl.CamundaClientEnvironmentVariables.OAUTH_ENV_READ_TIMEOUT;
 import static io.camunda.client.impl.CamundaClientEnvironmentVariables.OAUTH_ENV_SSL_CLIENT_KEYSTORE_KEY_SECRET;
 import static io.camunda.client.impl.CamundaClientEnvironmentVariables.OAUTH_ENV_SSL_CLIENT_KEYSTORE_PATH;
@@ -33,6 +34,11 @@ import static io.camunda.client.impl.CamundaClientEnvironmentVariables.OAUTH_ENV
 import static io.camunda.client.impl.CamundaClientEnvironmentVariables.OAUTH_ENV_SSL_CLIENT_TRUSTSTORE_PATH;
 import static io.camunda.client.impl.CamundaClientEnvironmentVariables.OAUTH_ENV_SSL_CLIENT_TRUSTSTORE_SECRET;
 import static io.camunda.client.impl.CamundaClientEnvironmentVariables.OAUTH_ENV_TOKEN_AUDIENCE;
+import static io.camunda.client.impl.CamundaClientEnvironmentVariables.OAUTH_ENV_TOKEN_FETCH_BACKOFF_MULTIPLIER;
+import static io.camunda.client.impl.CamundaClientEnvironmentVariables.OAUTH_ENV_TOKEN_FETCH_INITIAL_BACKOFF;
+import static io.camunda.client.impl.CamundaClientEnvironmentVariables.OAUTH_ENV_TOKEN_FETCH_MAX_RETRIES;
+import static io.camunda.client.impl.CamundaClientEnvironmentVariables.OAUTH_ENV_TOKEN_FETCH_NON_RETRYABLE_COOLDOWN;
+import static io.camunda.client.impl.CamundaClientEnvironmentVariables.OAUTH_ENV_TOKEN_FETCH_RETRYABLE_STATUS_CODES;
 import static io.camunda.client.impl.CamundaClientEnvironmentVariables.OAUTH_ENV_TOKEN_RESOURCE;
 import static io.camunda.client.impl.CamundaClientEnvironmentVariables.OAUTH_ENV_TOKEN_SCOPE;
 import static io.camunda.client.impl.CamundaClientEnvironmentVariables.OAUTH_ENV_WELL_KNOWN_CONFIGURATION_URL;
@@ -42,6 +48,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
+import io.camunda.client.impl.CamundaClientCredentials;
 import io.camunda.client.impl.util.SSLContextUtil;
 import io.camunda.client.impl.util.VersionUtil;
 import java.io.File;
@@ -59,18 +66,37 @@ import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.cert.CertificateException;
 import java.time.Duration;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
 import javax.net.ssl.HttpsURLConnection;
 
 public final class OAuthCredentialsProviderBuilder {
   public static final String INVALID_ARGUMENT_MSG = "Expected valid %s but none was provided.";
   public static final Duration DEFAULT_CONNECT_TIMEOUT = Duration.ofSeconds(5);
   public static final Duration DEFAULT_READ_TIMEOUT = DEFAULT_CONNECT_TIMEOUT;
+  public static final Duration DEFAULT_PROACTIVE_TOKEN_REFRESH_THRESHOLD = Duration.ofSeconds(30);
   public static final String DEFAULT_CREDENTIALS_CACHE_PATH =
       Paths.get(System.getProperty("user.home"), ".camunda", "credentials")
           .toAbsolutePath()
           .toString();
   public static final String DEFAULT_AUTHZ_SERVER = "https://login.cloud.camunda.io/oauth/token/";
+  public static final int DEFAULT_TOKEN_FETCH_MAX_RETRIES = 5;
+  public static final Duration DEFAULT_TOKEN_FETCH_INITIAL_BACKOFF = Duration.ofSeconds(1);
+  public static final double DEFAULT_TOKEN_FETCH_BACKOFF_MULTIPLIER = 2.0;
+  public static final Duration DEFAULT_TOKEN_FETCH_NON_RETRYABLE_COOLDOWN = Duration.ofMinutes(5);
+
+  /**
+   * HTTP status codes from the token endpoint that should trigger a retry with backoff. Any other
+   * non-200 status code is treated as a non-retryable failure and trips the latch. {@code
+   * IOException} (network/timeout) is always retried independently of this set.
+   */
+  public static final Set<Integer> DEFAULT_TOKEN_FETCH_RETRYABLE_STATUS_CODES =
+      Collections.unmodifiableSet(new HashSet<>(Arrays.asList(404, 429, 500, 502, 503, 504)));
+
   private String clientId;
   private String clientSecret;
   private String audience;
@@ -89,6 +115,12 @@ public final class OAuthCredentialsProviderBuilder {
   private File credentialsCache;
   private Duration connectTimeout;
   private Duration readTimeout;
+  private Duration proactiveTokenRefreshThreshold;
+  private Integer tokenFetchMaxRetries;
+  private Duration tokenFetchInitialBackoff;
+  private Double tokenFetchBackoffMultiplier;
+  private Set<Integer> tokenFetchRetryableStatusCodes;
+  private Duration tokenFetchNonRetryableCooldown;
   private boolean applyEnvironmentOverrides = true;
   private Path clientAssertionKeystorePath;
   private String clientAssertionKeystorePassword;
@@ -328,6 +360,189 @@ public final class OAuthCredentialsProviderBuilder {
     return readTimeout;
   }
 
+  /**
+   * Window before actual token expiry during which a background refresh is triggered eagerly. The
+   * token remains valid inside this window; this is purely a policy knob controlling how early
+   * refresh kicks in, so concurrent callers don't have to block on a synchronous refresh at the
+   * cliff edge. Must be strictly larger than {@link CamundaClientCredentials#EXPIRY_GRACE_PERIOD}.
+   * The default is 30 seconds.
+   */
+  public OAuthCredentialsProviderBuilder proactiveTokenRefreshThreshold(
+      final Duration proactiveTokenRefreshThreshold) {
+    this.proactiveTokenRefreshThreshold = proactiveTokenRefreshThreshold;
+    return this;
+  }
+
+  private OAuthCredentialsProviderBuilder proactiveTokenRefreshThreshold(
+      final String proactiveTokenRefreshThreshold) {
+    if (proactiveTokenRefreshThreshold != null) {
+      return proactiveTokenRefreshThreshold(
+          Duration.ofMillis(Long.parseLong(proactiveTokenRefreshThreshold)));
+    }
+    return this;
+  }
+
+  /**
+   * @see #proactiveTokenRefreshThreshold(Duration)
+   */
+  public Duration getProactiveTokenRefreshThreshold() {
+    return proactiveTokenRefreshThreshold;
+  }
+
+  /**
+   * The maximum number of attempts (including the initial one) when fetching a token from the OAuth
+   * authorization server. Retries are only attempted on {@link IOException} or HTTP status codes
+   * configured via {@link #tokenFetchRetryableStatusCodes(Set)}. The default value is {@value
+   * #DEFAULT_TOKEN_FETCH_MAX_RETRIES}.
+   */
+  public OAuthCredentialsProviderBuilder tokenFetchMaxRetries(final int tokenFetchMaxRetries) {
+    this.tokenFetchMaxRetries = tokenFetchMaxRetries;
+    return this;
+  }
+
+  private OAuthCredentialsProviderBuilder tokenFetchMaxRetries(final String tokenFetchMaxRetries) {
+    if (tokenFetchMaxRetries != null) {
+      return tokenFetchMaxRetries(Integer.parseInt(tokenFetchMaxRetries));
+    }
+    return this;
+  }
+
+  /**
+   * @see #tokenFetchMaxRetries(int)
+   */
+  public int getTokenFetchMaxRetries() {
+    return tokenFetchMaxRetries;
+  }
+
+  /**
+   * The initial backoff duration applied between token fetch retry attempts. Subsequent delays grow
+   * geometrically by {@link #tokenFetchBackoffMultiplier(double)}. The default value is 1 second.
+   *
+   * <p>If the token endpoint replies with a {@code Retry-After} header, the server-specified delay
+   * always takes precedence over the computed backoff, regardless of whether it is shorter or
+   * longer. The total retry duration may therefore differ from what the {@code initialBackoff *
+   * multiplier^n} progression alone would suggest.
+   */
+  public OAuthCredentialsProviderBuilder tokenFetchInitialBackoff(
+      final Duration tokenFetchInitialBackoff) {
+    this.tokenFetchInitialBackoff = tokenFetchInitialBackoff;
+    return this;
+  }
+
+  private OAuthCredentialsProviderBuilder tokenFetchInitialBackoff(
+      final String tokenFetchInitialBackoffMs) {
+    if (tokenFetchInitialBackoffMs != null) {
+      return tokenFetchInitialBackoff(
+          Duration.ofMillis(Long.parseLong(tokenFetchInitialBackoffMs)));
+    }
+    return this;
+  }
+
+  /**
+   * @see #tokenFetchInitialBackoff(Duration)
+   */
+  public Duration getTokenFetchInitialBackoff() {
+    return tokenFetchInitialBackoff;
+  }
+
+  /**
+   * The multiplier applied to the backoff duration between successive token fetch retry attempts.
+   * Must be greater than or equal to 1.0. The default value is {@value
+   * #DEFAULT_TOKEN_FETCH_BACKOFF_MULTIPLIER}.
+   */
+  public OAuthCredentialsProviderBuilder tokenFetchBackoffMultiplier(
+      final double tokenFetchBackoffMultiplier) {
+    this.tokenFetchBackoffMultiplier = tokenFetchBackoffMultiplier;
+    return this;
+  }
+
+  private OAuthCredentialsProviderBuilder tokenFetchBackoffMultiplier(
+      final String tokenFetchBackoffMultiplier) {
+    if (tokenFetchBackoffMultiplier != null) {
+      return tokenFetchBackoffMultiplier(Double.parseDouble(tokenFetchBackoffMultiplier));
+    }
+    return this;
+  }
+
+  /**
+   * @see #tokenFetchBackoffMultiplier(double)
+   */
+  public double getTokenFetchBackoffMultiplier() {
+    return tokenFetchBackoffMultiplier;
+  }
+
+  /**
+   * The set of HTTP status codes from the token endpoint that should be retried with backoff. Any
+   * non-200 status code outside this set trips the non-retryable-failure cooldown: token fetches
+   * fail fast for the duration configured via {@link #tokenFetchNonRetryableCooldown(Duration)}
+   * (default 5 minutes), after which the provider automatically probes again. The default is {@link
+   * #DEFAULT_TOKEN_FETCH_RETRYABLE_STATUS_CODES}. Setting this fully replaces the default; callers
+   * wanting to extend or shrink the default should derive from {@link
+   * #DEFAULT_TOKEN_FETCH_RETRYABLE_STATUS_CODES}.
+   */
+  public OAuthCredentialsProviderBuilder tokenFetchRetryableStatusCodes(
+      final Set<Integer> tokenFetchRetryableStatusCodes) {
+    this.tokenFetchRetryableStatusCodes =
+        tokenFetchRetryableStatusCodes == null
+            ? null
+            : Collections.unmodifiableSet(new HashSet<>(tokenFetchRetryableStatusCodes));
+    return this;
+  }
+
+  private OAuthCredentialsProviderBuilder tokenFetchRetryableStatusCodes(
+      final String csvStatusCodes) {
+    if (csvStatusCodes == null) {
+      return this;
+    }
+    if (csvStatusCodes.trim().isEmpty()) {
+      return tokenFetchRetryableStatusCodes(Collections.emptySet());
+    }
+    return tokenFetchRetryableStatusCodes(
+        Arrays.stream(csvStatusCodes.split(","))
+            .map(String::trim)
+            .filter(s -> !s.isEmpty())
+            .map(Integer::parseInt)
+            .collect(Collectors.toSet()));
+  }
+
+  /**
+   * @see #tokenFetchRetryableStatusCodes(Set)
+   */
+  public Set<Integer> getTokenFetchRetryableStatusCodes() {
+    return tokenFetchRetryableStatusCodes;
+  }
+
+  /**
+   * The cooldown duration applied after the token endpoint returns a non-retryable response. For
+   * the length of this cooldown, all subsequent token fetches fail immediately without contacting
+   * the OIDC provider. After the cooldown elapses, the next call clears the latch and attempts a
+   * fresh fetch; if it fails again non-retryably, the latch re-arms with a new cooldown. This
+   * prevents hammering the OIDC provider during misconfiguration while still allowing automatic
+   * recovery from transient non-retryable-looking failures (e.g. credential rotation in-flight,
+   * load balancer flaps). The default is {@link #DEFAULT_TOKEN_FETCH_NON_RETRYABLE_COOLDOWN}.
+   */
+  public OAuthCredentialsProviderBuilder tokenFetchNonRetryableCooldown(
+      final Duration tokenFetchNonRetryableCooldown) {
+    this.tokenFetchNonRetryableCooldown = tokenFetchNonRetryableCooldown;
+    return this;
+  }
+
+  private OAuthCredentialsProviderBuilder tokenFetchNonRetryableCooldown(
+      final String tokenFetchNonRetryableCooldownMs) {
+    if (tokenFetchNonRetryableCooldownMs != null) {
+      return tokenFetchNonRetryableCooldown(
+          Duration.ofMillis(Long.parseLong(tokenFetchNonRetryableCooldownMs)));
+    }
+    return this;
+  }
+
+  /**
+   * @see #tokenFetchNonRetryableCooldown(Duration)
+   */
+  public Duration getTokenFetchNonRetryableCooldown() {
+    return tokenFetchNonRetryableCooldown;
+  }
+
   public OAuthCredentialsProviderBuilder clientAssertionKeystorePath(
       final String clientAssertionKeystorePath) {
     if (clientAssertionKeystorePath != null) {
@@ -538,6 +753,17 @@ public final class OAuthCredentialsProviderBuilder {
     applyEnvironmentValueIfNotNull(this::credentialsCachePath, OAUTH_ENV_CACHE_PATH);
     applyEnvironmentValueIfNotNull(this::readTimeout, OAUTH_ENV_READ_TIMEOUT);
     applyEnvironmentValueIfNotNull(this::connectTimeout, OAUTH_ENV_CONNECT_TIMEOUT);
+    applyEnvironmentValueIfNotNull(
+        this::proactiveTokenRefreshThreshold, OAUTH_ENV_PROACTIVE_TOKEN_REFRESH_THRESHOLD);
+    applyEnvironmentValueIfNotNull(this::tokenFetchMaxRetries, OAUTH_ENV_TOKEN_FETCH_MAX_RETRIES);
+    applyEnvironmentValueIfNotNull(
+        this::tokenFetchInitialBackoff, OAUTH_ENV_TOKEN_FETCH_INITIAL_BACKOFF);
+    applyEnvironmentValueIfNotNull(
+        this::tokenFetchBackoffMultiplier, OAUTH_ENV_TOKEN_FETCH_BACKOFF_MULTIPLIER);
+    applyEnvironmentValueIfNotNull(
+        this::tokenFetchRetryableStatusCodes, OAUTH_ENV_TOKEN_FETCH_RETRYABLE_STATUS_CODES);
+    applyEnvironmentValueIfNotNull(
+        this::tokenFetchNonRetryableCooldown, OAUTH_ENV_TOKEN_FETCH_NON_RETRYABLE_COOLDOWN);
   }
 
   private void applyDefaults() {
@@ -551,6 +777,24 @@ public final class OAuthCredentialsProviderBuilder {
 
     if (readTimeout == null) {
       readTimeout = DEFAULT_READ_TIMEOUT;
+    }
+    if (proactiveTokenRefreshThreshold == null) {
+      proactiveTokenRefreshThreshold = DEFAULT_PROACTIVE_TOKEN_REFRESH_THRESHOLD;
+    }
+    if (tokenFetchMaxRetries == null) {
+      tokenFetchMaxRetries = DEFAULT_TOKEN_FETCH_MAX_RETRIES;
+    }
+    if (tokenFetchInitialBackoff == null) {
+      tokenFetchInitialBackoff = DEFAULT_TOKEN_FETCH_INITIAL_BACKOFF;
+    }
+    if (tokenFetchBackoffMultiplier == null) {
+      tokenFetchBackoffMultiplier = DEFAULT_TOKEN_FETCH_BACKOFF_MULTIPLIER;
+    }
+    if (tokenFetchRetryableStatusCodes == null) {
+      tokenFetchRetryableStatusCodes = DEFAULT_TOKEN_FETCH_RETRYABLE_STATUS_CODES;
+    }
+    if (tokenFetchNonRetryableCooldown == null) {
+      tokenFetchNonRetryableCooldown = DEFAULT_TOKEN_FETCH_NON_RETRYABLE_COOLDOWN;
     }
     if (clientAssertionKeystoreKeyPassword == null) {
       clientAssertionKeystoreKeyPassword = clientAssertionKeystorePassword;
@@ -594,12 +838,63 @@ public final class OAuthCredentialsProviderBuilder {
       }
       validateTimeout(connectTimeout, "ConnectTimeout");
       validateTimeout(readTimeout, "ReadTimeout");
+      validateProactiveTokenRefreshThreshold(proactiveTokenRefreshThreshold);
+      validateTokenFetchRetryConfig();
     } catch (final NullPointerException
         | IOException
         | KeyStoreException
         | NoSuchAlgorithmException
         | CertificateException e) {
       throw new IllegalArgumentException(e);
+    }
+  }
+
+  private void validateProactiveTokenRefreshThreshold(final Duration threshold) {
+    if (threshold.isZero() || threshold.isNegative()) {
+      throw new IllegalArgumentException(
+          String.format(
+              "Proactive token refresh threshold is %s milliseconds, expected a positive duration.",
+              threshold.toMillis()));
+    }
+    if (threshold.compareTo(CamundaClientCredentials.EXPIRY_GRACE_PERIOD) <= 0) {
+      throw new IllegalArgumentException(
+          String.format(
+              "Proactive token refresh threshold (%s ms) must be strictly larger than the expiry "
+                  + "grace period (%s ms); otherwise eager refresh would never fire before the "
+                  + "token is considered invalid.",
+              threshold.toMillis(), CamundaClientCredentials.EXPIRY_GRACE_PERIOD.toMillis()));
+    }
+  }
+
+  private void validateTokenFetchRetryConfig() {
+    if (tokenFetchMaxRetries < 1) {
+      throw new IllegalArgumentException(
+          String.format(
+              "tokenFetchMaxRetries is %d, expected a positive number greater than or equal to 1.",
+              tokenFetchMaxRetries));
+    }
+    if (tokenFetchInitialBackoff.toMillis() < 1) {
+      throw new IllegalArgumentException(
+          String.format(
+              "tokenFetchInitialBackoff is %s, expected a duration of at least 1 millisecond.",
+              tokenFetchInitialBackoff));
+    }
+    if (tokenFetchBackoffMultiplier < 1.0) {
+      throw new IllegalArgumentException(
+          String.format(
+              "tokenFetchBackoffMultiplier is %s, expected a value greater than or equal to 1.0.",
+              tokenFetchBackoffMultiplier));
+    }
+    if (tokenFetchRetryableStatusCodes == null) {
+      throw new IllegalArgumentException(
+          "tokenFetchRetryableStatusCodes must not be null (use an empty set to disable retries).");
+    }
+    if (tokenFetchNonRetryableCooldown.isNegative()) {
+      throw new IllegalArgumentException(
+          String.format(
+              "tokenFetchNonRetryableCooldown is %s, expected a non-negative duration (use"
+                  + " Duration.ZERO to disable the cooldown).",
+              tokenFetchNonRetryableCooldown));
     }
   }
 

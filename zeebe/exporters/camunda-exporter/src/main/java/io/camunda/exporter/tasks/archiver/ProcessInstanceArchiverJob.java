@@ -13,6 +13,7 @@ import io.camunda.exporter.tasks.archiver.ArchiveBatch.ProcessInstanceArchiveBat
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
 import io.camunda.webapps.schema.descriptors.ProcessInstanceDependant;
 import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
+import io.camunda.zeebe.util.FunctionUtil;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -35,6 +36,7 @@ public class ProcessInstanceArchiverJob extends ArchiverJob<ProcessInstanceArchi
   private final HistoryConfiguration config;
   private final ListViewTemplate processInstanceTemplate;
   private final List<ProcessInstanceDependant> processInstanceDependants;
+  private final RecentlyArchivedProcessInstances recentlyArchivedProcessInstances;
   private final Queue<ProcessInstanceArchiveBatch> pendingBatches =
       new java.util.concurrent.ConcurrentLinkedQueue<>();
 
@@ -59,6 +61,7 @@ public class ProcessInstanceArchiverJob extends ArchiverJob<ProcessInstanceArchi
         processInstanceDependants.stream()
             .sorted(Comparator.comparing(ProcessInstanceDependant::getFullQualifiedName))
             .toList(); // sort to ensure the execution order is stable
+    recentlyArchivedProcessInstances = new RecentlyArchivedProcessInstances(largeBatchSize());
   }
 
   @Override
@@ -75,7 +78,13 @@ public class ProcessInstanceArchiverJob extends ArchiverJob<ProcessInstanceArchi
         .getProcessInstancesNextBatch(largeBatchSize())
         .thenApply(
             batch -> {
-              final var chunks = batch.chunk(config.getRolloverBatchSize());
+              if (batch == null) {
+                return null;
+              }
+              final var deduped = recentlyArchivedProcessInstances.deduplicate(batch);
+              final var duplication = batch.size() - deduped.size();
+              getExporterMetrics().recordProcessInstancesArchivingDeduplicated(duplication);
+              final var chunks = deduped.chunk(config.getRolloverBatchSize());
               final var first = chunks.removeFirst();
               pendingBatches.addAll(chunks);
               return first;
@@ -91,7 +100,8 @@ public class ProcessInstanceArchiverJob extends ArchiverJob<ProcessInstanceArchi
   protected CompletableFuture<Integer> archive(
       final IndexTemplateDescriptor templateDescriptor, final ProcessInstanceArchiveBatch batch) {
     return archiveProcessDependants(batch)
-        .thenComposeAsync(v -> super.archive(templateDescriptor, batch), getExecutor());
+        .thenComposeAsync(v -> archive(templateDescriptor, batch, Map.of()), getExecutor())
+        .thenApply(FunctionUtil.peek(archived -> markBatchRecentlyArchived(batch)));
   }
 
   @Override
@@ -126,22 +136,32 @@ public class ProcessInstanceArchiverJob extends ArchiverJob<ProcessInstanceArchi
     return idsMap;
   }
 
+  protected CompletableFuture<Void> archiveProcessDependants(
+      final ProcessInstanceArchiveBatch batch) {
+    final List<CompletableFuture<?>> dependentFutures = getProcessDependentArchiveFutures(batch);
+    return CompletableFuture.allOf(dependentFutures.toArray(CompletableFuture[]::new));
+  }
+
+  protected void markBatchRecentlyArchived(final ProcessInstanceArchiveBatch batch) {
+    recentlyArchivedProcessInstances.markRecentlyArchived(batch);
+  }
+
+  protected List<CompletableFuture<?>> getProcessDependentArchiveFutures(
+      final ProcessInstanceArchiveBatch batch) {
+    final var futures = new ArrayList<CompletableFuture<?>>();
+
+    for (final var dependant : processInstanceDependants) {
+      futures.add(archive(dependant, batch, Map.of()));
+    }
+
+    return futures;
+  }
+
   private int largeBatchSize() {
     final int rolloverBatchSize = config.getRolloverBatchSize();
     final int largeBatchSize =
         Math.min(MAX_LARGE_BATCH_SIZE, SUB_BATCHES_PER_LARGE_BATCH * rolloverBatchSize);
     // just in case rollover batch size is configured very high
     return Math.max(largeBatchSize, rolloverBatchSize);
-  }
-
-  private CompletableFuture<Void> archiveProcessDependants(
-      final ProcessInstanceArchiveBatch batch) {
-    final var futures = new ArrayList<CompletableFuture<?>>();
-
-    for (final var dependant : processInstanceDependants) {
-      futures.add(super.archive(dependant, batch));
-    }
-
-    return CompletableFuture.allOf(futures.toArray(CompletableFuture[]::new));
   }
 }

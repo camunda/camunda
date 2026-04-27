@@ -12,7 +12,7 @@ import io.camunda.application.commons.actor.ActorSchedulerConfiguration.Schedule
 import io.camunda.application.commons.broker.client.BrokerClientConfiguration.BrokerClientCfg;
 import io.camunda.application.commons.condition.ConditionalOnAnyHttpGatewayEnabled;
 import io.camunda.application.commons.configuration.WorkingDirectoryConfiguration.WorkingDirectory;
-import io.camunda.application.commons.job.JobHandlerConfiguration.ActivateJobHandlerConfiguration;
+import io.camunda.application.commons.job.HttpJobHandlerConfiguration.ActivateJobHandlerConfiguration;
 import io.camunda.configuration.beans.BrokerBasedProperties;
 import io.camunda.zeebe.broker.clustering.ClusterConfigFactory;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;

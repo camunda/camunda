@@ -111,10 +111,7 @@ const mockNestedSubProcessInstance: ProcessInstance = {
   tags: [],
 };
 
-const multipleSubprocessesWithOneRunningScopeMock: Record<
-  string,
-  QueryElementInstancesResponseBody
-> = {
+const multipleSubprocessesWithOneRunningScopeMock = {
   firstLevel: {
     items: [
       {
@@ -357,12 +354,9 @@ const multipleSubprocessesWithOneRunningScopeMock: Record<
       hasMoreTotalItems: false,
     },
   },
-};
+} satisfies Record<string, QueryElementInstancesResponseBody>;
 
-const multipleSubprocessesWithNoRunningScopeMock: Record<
-  string,
-  QueryElementInstancesResponseBody
-> = {
+const multipleSubprocessesWithNoRunningScopeMock = {
   firstLevel: {
     items: [
       {
@@ -637,12 +631,9 @@ const multipleSubprocessesWithNoRunningScopeMock: Record<
       hasMoreTotalItems: false,
     },
   },
-};
+} satisfies Record<string, QueryElementInstancesResponseBody>;
 
-const adHocNodeElementInstances: Record<
-  string,
-  QueryElementInstancesResponseBody
-> = {
+const adHocNodeElementInstances = {
   level1: {
     items: [
       {
@@ -727,12 +718,9 @@ const adHocNodeElementInstances: Record<
       hasMoreTotalItems: false,
     },
   },
-};
+} satisfies Record<string, QueryElementInstancesResponseBody>;
 
-const eventSubProcessElementInstances: Record<
-  string,
-  QueryElementInstancesResponseBody
-> = {
+const eventSubProcessElementInstances = {
   level1: {
     items: [
       {
@@ -833,12 +821,9 @@ const eventSubProcessElementInstances: Record<
       hasMoreTotalItems: false,
     },
   },
-};
+} satisfies Record<string, QueryElementInstancesResponseBody>;
 
-const multipleSubprocessesWithTwoRunningScopesMock: Record<
-  string,
-  QueryElementInstancesResponseBody
-> = {
+const multipleSubprocessesWithTwoRunningScopesMock = {
   firstLevel: {
     items: [
       {
@@ -1113,7 +1098,7 @@ const multipleSubprocessesWithTwoRunningScopesMock: Record<
       hasMoreTotalItems: false,
     },
   },
-};
+} satisfies Record<string, QueryElementInstancesResponseBody>;
 
 const mockAdHocSubProcessInnerInstanceProcessInstance: ProcessInstance = {
   processInstanceKey: '111111111111111',
@@ -1133,10 +1118,7 @@ const mockAdHocSubProcessInnerInstanceProcessInstance: ProcessInstance = {
   tags: [],
 };
 
-const adHocSubProcessInnerInstanceElementInstances: Record<
-  string,
-  QueryElementInstancesResponseBody
-> = {
+const adHocSubProcessInnerInstanceElementInstances = {
   level1: {
     items: [
       {
@@ -1214,37 +1196,43 @@ const adHocSubProcessInnerInstanceElementInstances: Record<
       hasMoreTotalItems: false,
     },
   },
-};
+} satisfies Record<string, QueryElementInstancesResponseBody>;
 
-const Wrapper = ({children}: {children?: React.ReactNode}) => {
-  useEffect(() => {
-    return () => {
-      modificationsStore.reset();
-      instanceHistoryModificationStore.reset();
-    };
-  });
+const getWrapper = () => {
+  const queryClient = getMockQueryClient();
 
-  return (
-    <ProcessDefinitionKeyContext.Provider value="123">
-      <QueryClientProvider client={getMockQueryClient()}>
-        <MemoryRouter initialEntries={[Paths.processInstance('1')]}>
-          <Routes>
-            <Route
-              path={Paths.processInstance()}
-              element={
-                <>
-                  <TreeView label={'instance history'} hideLabel>
-                    {children}
-                  </TreeView>
-                  <LocationLog />
-                </>
-              }
-            />
-          </Routes>
-        </MemoryRouter>
-      </QueryClientProvider>
-    </ProcessDefinitionKeyContext.Provider>
-  );
+  const Wrapper = ({children}: {children?: React.ReactNode}) => {
+    useEffect(() => {
+      return () => {
+        modificationsStore.reset();
+        instanceHistoryModificationStore.reset();
+      };
+    });
+
+    return (
+      <ProcessDefinitionKeyContext.Provider value="123">
+        <QueryClientProvider client={queryClient}>
+          <MemoryRouter initialEntries={[Paths.processInstance('1')]}>
+            <Routes>
+              <Route
+                path={Paths.processInstance()}
+                element={
+                  <>
+                    <TreeView label={'instance history'} hideLabel>
+                      {children}
+                    </TreeView>
+                    <LocationLog />
+                  </>
+                }
+              />
+            </Routes>
+          </MemoryRouter>
+        </QueryClientProvider>
+      </ProcessDefinitionKeyContext.Provider>
+    );
+  };
+
+  return Wrapper;
 };
 
 export {
@@ -1260,5 +1248,5 @@ export {
   multipleSubprocessesWithTwoRunningScopesMock,
   mockAdHocSubProcessInnerInstanceProcessInstance,
   adHocSubProcessInnerInstanceElementInstances,
-  Wrapper,
+  getWrapper,
 };

@@ -210,7 +210,8 @@
     {
       "description": "Exclude major updates to Spring, we will do those manually",
       "matchManagers": [
-        "maven"
+        "maven",
+        "custom.regex"
       ],
       "matchPackageNames": [
         "org.springframework**"
@@ -223,7 +224,8 @@
     {
       "description": "Spring updates are often security-relevant, get those first (prio 10)",
       "matchManagers": [
-        "maven"
+        "maven",
+        "custom.regex"
       ],
       "matchPackageNames": [
         "org.springframework**"
@@ -436,18 +438,18 @@
       "groupSlug": "optimize-patch"
     },
     {
-      "description": "Group patch updates per project (Client components).",
+      "description": "Group patch updates per project (Webapp client).",
       "matchManagers": [
         "npm"
       ],
       "matchFileNames": [
-        "client-components/**"
+        "webapp/client/**"
       ],
       "matchUpdateTypes": [
         "patch"
       ],
-      "groupName": "client-components patch dependencies",
-      "groupSlug": "client-components-patch"
+      "groupName": "webapp-client patch dependencies",
+      "groupSlug": "webapp-client-patch"
     },
     {
       "description": "Group patch updates per project (Docs site).",
@@ -607,6 +609,48 @@
         "(?<depName>docker\\.io\\/library\\/alpine):(?<currentValue>\\d+\\.\\d+\\.\\d+)"
       ],
       "datasourceTemplate": "docker"
+    },
+    {
+      "description": "Track Spring Boot version overrides in submodule poms (not visible to Maven manager due to BOM inheritance).",
+      "customType": "regex",
+      "managerFilePatterns": [
+        "/clients/camunda-spring-boot-[34]-starter/pom\\.xml$/",
+        "/testing/camunda-process-test-spring-boot-[34]/pom\\.xml$/",
+        "/library-parent/pom\\.xml$/"
+      ],
+      "matchStrings": [
+        "<version\\.spring-boot>(?<currentValue>[^<]+)</version\\.spring-boot>"
+      ],
+      "depNameTemplate": "org.springframework.boot:spring-boot",
+      "datasourceTemplate": "maven"
+    },
+    {
+      "description": "Track Spring Framework version overrides in submodule poms (not visible to Maven manager due to BOM inheritance).",
+      "customType": "regex",
+      "managerFilePatterns": [
+        "/clients/camunda-spring-boot-[34]-starter/pom\\.xml$/",
+        "/testing/camunda-process-test-spring-boot-[34]/pom\\.xml$/",
+        "/library-parent/pom\\.xml$/"
+      ],
+      "matchStrings": [
+        "<version\\.spring>(?<currentValue>[^<]+)</version\\.spring>"
+      ],
+      "depNameTemplate": "org.springframework:spring-core",
+      "datasourceTemplate": "maven"
+    },
+    {
+      "description": "Track JUnit version overrides in submodule poms (not visible to Maven manager due to BOM inheritance).",
+      "customType": "regex",
+      "managerFilePatterns": [
+        "/clients/camunda-spring-boot-[34]-starter/pom\\.xml$/",
+        "/testing/camunda-process-test-spring-boot-[34]/pom\\.xml$/",
+        "/library-parent/pom\\.xml$/"
+      ],
+      "matchStrings": [
+        "<version\\.junit>(?<currentValue>[^<]+)</version\\.junit>"
+      ],
+      "depNameTemplate": "org.junit.jupiter:junit-jupiter",
+      "datasourceTemplate": "maven"
     }
   ]
 }

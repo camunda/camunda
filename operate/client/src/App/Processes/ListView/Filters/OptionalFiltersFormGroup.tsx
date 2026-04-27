@@ -278,6 +278,7 @@ const OptionalFiltersFormGroup: React.FC<Props> = observer(
                               />
                             );
                           }
+                          return null;
                         }}
                       </Field>
                     );

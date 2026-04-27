@@ -52,7 +52,7 @@ record TestTopology(
 
   @Override
   public String getLastCompletedChangeId() {
-    return null;
+    return "-1";
   }
 
   record TestPartition(int partitionId, PartitionBrokerRole role, PartitionBrokerHealth health)

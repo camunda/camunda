@@ -8,12 +8,14 @@
 package io.camunda.zeebe.exporter;
 
 import io.camunda.search.connect.plugin.PluginConfiguration;
+import io.camunda.zeebe.exporter.api.context.StrictConfiguration;
 import io.camunda.zeebe.exporter.filter.FilterConfiguration;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import java.util.ArrayList;
 import java.util.List;
 
+@StrictConfiguration
 public class ElasticsearchExporterConfiguration implements FilterConfiguration {
 
   private static final String DEFAULT_URL = "http://localhost:9200";

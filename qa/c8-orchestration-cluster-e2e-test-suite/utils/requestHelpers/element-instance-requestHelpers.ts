@@ -103,6 +103,9 @@ async function searchElementInstanceByFilter(
       expect(body.items[0][filterKey]).toBe(filter[filterKey]);
     });
     result.body = body;
-  }).toPass(defaultAssertionOptions);
+  }).toPass({
+    ...defaultAssertionOptions,
+    timeout: 60_000,
+  });
   return result;
 }

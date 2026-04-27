@@ -845,8 +845,12 @@ public class SearchQueryFilterMapper {
           .ifPresent(builder::stateOperations);
       Optional.ofNullable(filter.getType())
           .ifPresent(t -> builder.types(FlowNodeType.fromZeebeBpmnElementType(t.getValue())));
-      Optional.ofNullable(filter.getElementId()).ifPresent(builder::flowNodeIds);
-      Optional.ofNullable(filter.getElementName()).ifPresent(builder::flowNodeNames);
+      ofNullable(filter.getElementId())
+          .map(mapToStringOperations())
+          .ifPresent(builder::flowNodeIdOperations);
+      ofNullable(filter.getElementName())
+          .map(mapToStringOperations())
+          .ifPresent(builder::flowNodeNameOperations);
       Optional.ofNullable(filter.getHasIncident()).ifPresent(builder::hasIncident);
       Optional.ofNullable(filter.getIncidentKey())
           .map(mapKeyToLong("incidentKey", validationErrors))
@@ -1057,6 +1061,21 @@ public class SearchQueryFilterMapper {
       ofNullable(filter.getTenantId())
           .map(mapToStringOperations())
           .ifPresent(builder::tenantIdOperations);
+      ofNullable(filter.getMessageSubscriptionType())
+          .map(mapToStringOperations())
+          .ifPresent(builder::messageSubscriptionTypeOperations);
+      ofNullable(filter.getProcessDefinitionName())
+          .map(mapToStringOperations())
+          .ifPresent(builder::processDefinitionNameOperations);
+      ofNullable(filter.getProcessDefinitionVersion())
+          .map(mapToIntegerOperations("processDefinitionVersion", validationErrors))
+          .ifPresent(builder::processDefinitionVersionOperations);
+      ofNullable(filter.getToolName())
+          .map(mapToStringOperations())
+          .ifPresent(builder::toolNameOperations);
+      ofNullable(filter.getInboundConnectorType())
+          .map(mapToStringOperations())
+          .ifPresent(builder::inboundConnectorTypeOperations);
     }
     return validationErrors.isEmpty()
         ? Either.right(builder.build())

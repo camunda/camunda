@@ -55,7 +55,7 @@ class InitializeTenantIT {
           .withAuthorizationsEnabled()
           .withSecurityConfig(
               conf -> {
-                conf.getInitialization().setTenants(List.of(CONFIGURED_TENANT_1));
+                conf.getInitialization().getTenants().add(CONFIGURED_TENANT_1);
                 conf.getInitialization().getUsers().add(CONFIGURED_USER);
               });
 

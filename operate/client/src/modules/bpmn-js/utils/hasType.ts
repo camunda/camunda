@@ -18,9 +18,7 @@ const hasType = ({
   businessObject: BusinessObject;
   types: ElementType[];
 }) => {
-  if (types.includes(businessObject.$type)) {
-    return true;
-  }
+  return types.includes(businessObject.$type);
 };
 
 export {hasType};

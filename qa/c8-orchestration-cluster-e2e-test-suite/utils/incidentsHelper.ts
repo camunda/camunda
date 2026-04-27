@@ -24,7 +24,7 @@ function getAuthHeaders() {
 export async function waitForIncidents(
   request: APIRequestContext,
   processInstanceKey: string,
-  flowNodeId: string,
+  elementId: string,
   expectedCount: number,
   timeout = 120000,
 ): Promise<void> {
@@ -33,20 +33,20 @@ export async function waitForIncidents(
   await expect
     .poll(
       async () => {
-        const response = await request.post('v1/flownode-instances/search', {
+        const response = await request.post('/v2/element-instances/search', {
           ...requestHeaders,
           data: {
             filter: {
               processInstanceKey,
-              flowNodeId,
+              elementId,
               type: 'SERVICE_TASK',
-              incident: true,
+              hasIncident: true,
             },
           },
         });
 
-        const flowNodeInstances = await response.json();
-        return flowNodeInstances.total;
+        const result = await response.json();
+        return result.page?.totalItems;
       },
       {timeout},
     )
