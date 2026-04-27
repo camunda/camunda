@@ -149,6 +149,9 @@ public final class RdbmsExporter {
     rdbmsWriters.getExecutionQueue().registerPostFlushListener(this::recordExportingLatency);
     rdbmsWriters
         .getExecutionQueue()
+        .registerPostFlushListener(() -> lastFlushedPosition = lastPosition);
+    rdbmsWriters
+        .getExecutionQueue()
         .registerPostFlushListener(() -> replicationController.onFlush(lastPosition));
 
     if (!flushAfterEachRecord()) {
@@ -188,6 +191,11 @@ public final class RdbmsExporter {
             partitionId);
         throw e;
       }
+
+      if (replicationController != null) {
+        replicationController.close();
+        replicationController = null;
+      }
     } catch (final Exception e) {
       LOG.warn(
           "[RDBMS Exporter P{}] Failed to flush records before closing exporter.", partitionId, e);
@@ -201,7 +209,7 @@ public final class RdbmsExporter {
   }
 
   public void export(final Record<?> record) {
-    if (replicationController.isPaused()) {
+    if (!replicationController.isReplicationInSync()) {
       throw new ExporterException(
           String.format(
               "[RDBMS Exporter P%d] Exporting paused: DB-reported lag exceeded maxLag. Retry later.",
@@ -303,7 +311,6 @@ public final class RdbmsExporter {
 
   private void updatePositionInBroker() {
     LOG.trace("[RDBMS Exporter P{}] Updating position to {} in broker", partitionId, lastPosition);
-    lastFlushedPosition = lastPosition;
     controller.updateLastExportedRecordPosition(lastPosition);
   }
 

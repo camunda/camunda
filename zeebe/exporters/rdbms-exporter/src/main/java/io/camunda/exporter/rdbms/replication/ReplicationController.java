@@ -12,11 +12,11 @@ public interface ReplicationController extends AutoCloseable {
   void onFlush(long exporterPosition);
 
   /**
-   * Returns {@code true} when the exporter must stop flushing records because replication lag has
-   * exceeded the configured maximum. The exporter resumes flushing once this returns {@code false}
-   * again.
+   * Returns {@code true} as long as the async replication is in sync, otherwise {@code false}.
+   *
+   * @return if the replication is in sync
    */
-  default boolean isPaused() {
-    return false;
+  default boolean isReplicationInSync() {
+    return true;
   }
 }

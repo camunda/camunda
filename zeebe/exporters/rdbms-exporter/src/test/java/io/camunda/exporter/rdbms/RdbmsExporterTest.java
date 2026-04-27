@@ -266,6 +266,25 @@ class RdbmsExporterTest {
     verify(positionService).update(Mockito.argThat(p -> p.lastExportedPosition() == 1));
     verify(replicationController).onFlush(1L);
     verify(flushTask).cancel();
+
+    // set null to avoid tear down flush
+    exporter = null;
+  }
+
+  @Test
+  void shouldCloseEverythingOnClose() throws Exception {
+    // given
+    createExporter(b -> b.withHandler(ValueType.JOB, mockHandler(ValueType.JOB)));
+
+    // when
+    exporter.close();
+
+    // then
+    verify(replicationController).close();
+    verify(flushTask).cancel();
+
+    // set null to avoid tear down flush
+    exporter = null;
   }
 
   @Test
@@ -526,7 +545,7 @@ class RdbmsExporterTest {
   void shouldThrowExceptionWhenReplicationControllerIsPaused() {
     createExporter(b -> b.withHandler(ValueType.JOB, mockHandler(ValueType.JOB)));
 
-    when(replicationController.isPaused()).thenReturn(true);
+    when(replicationController.isReplicationInSync()).thenReturn(false);
     final var record = mockRecord(ValueType.JOB, 1);
     when(record.getTimestamp()).thenReturn(0L); // Unix epoch
 
@@ -549,7 +568,7 @@ class RdbmsExporterTest {
   private void createExporterWithRdbmsPosition(
       final long brokerPosition, final long rdbmsPosition) {
     final var existingRdbmsPositionModel =
-        new io.camunda.db.rdbms.write.domain.ExporterPositionModel(
+        new ExporterPositionModel(
             0,
             RdbmsExporter.class.getSimpleName(),
             rdbmsPosition,
@@ -628,7 +647,7 @@ class RdbmsExporterTest {
     replicationController = mock(ReplicationController.class);
     when(replicationControllerFactory.createReplicationController(any()))
         .thenReturn(replicationController);
-    when(replicationController.isPaused()).thenReturn(false);
+    when(replicationController.isReplicationInSync()).thenReturn(true);
 
     // Mock getMetrics() to return a mock metrics instance by default
     metrics = mock(RdbmsWriterMetrics.class);
