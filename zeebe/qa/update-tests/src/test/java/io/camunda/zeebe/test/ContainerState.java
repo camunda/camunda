@@ -87,23 +87,11 @@ final class ContainerState implements AutoCloseable {
 
   ContainerState withOldBroker() {
     broker(PREVIOUS_VERSION);
-    // user - needs to be set to `1001` to allow a smooth update from zeebe 8.3 to 8.4,
-    // as the default user changed to `1001` with 8.4 and was `1000` with 8.3
-    // TODO remove after 8.4 release
-    withUser("1001");
     return this;
   }
 
   ContainerState withNewBroker() {
-    // user - `1001` is the default in 8.4
-    // group - needs to be set to `0` as the data volume in 8.3 is owned by 1000:0
-    // thus zeebe 8.4 needs to run with group `0` to be able to create new files in
-    // the root of the data volume (in particular it creates a new `.topology.meta` file)
-    // TODO remove after 8.4 release
-    withUser("1001:0");
-
     withVersionOverride(VersionUtil.getVersion().replace("-SNAPSHOT", ""));
-
     return broker(CURRENT_VERSION);
   }
 
