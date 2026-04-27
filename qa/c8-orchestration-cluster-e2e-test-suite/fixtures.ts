@@ -40,6 +40,7 @@ import {IdentityRolesDetailsPage} from '@pages/IdentityRolesDetailsPage';
 import {IdentityAuditLogPage} from '@pages/IdentityAuditLogPage';
 import {OperateOperationsDetailsPage} from '@pages/OperateOperationsDetailsPage';
 import {OperateOperationsLogPage} from '@pages/OperateOperationsLogPage';
+import {SwaggerPage} from '@pages/SwaggerPage';
 
 import {sleep} from 'utils/sleep';
 
@@ -78,6 +79,7 @@ type PlaywrightFixtures = {
   identityTenantsPage: IdentityTenantsPage;
   identityRolesDetailsPage: IdentityRolesDetailsPage;
   identityAuditLogPage: IdentityAuditLogPage;
+  swaggerPage: SwaggerPage;
   suppressHelperModals: void;
 };
 
@@ -123,6 +125,9 @@ const test = base.extend<PlaywrightFixtures>({
   },
   loginPage: async ({page}, use) => {
     await use(new LoginPage(page));
+  },
+  swaggerPage: async ({page}, use) => {
+    await use(new SwaggerPage(page));
   },
   taskPanelPage: async ({page}, use) => {
     await use(new TaskPanelPage(page));
