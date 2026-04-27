@@ -7,8 +7,8 @@
  */
 package io.camunda.zeebe.engine.processing.expression;
 
-import io.camunda.zeebe.el.Expression;
 import io.camunda.zeebe.engine.processing.Rejection;
+import io.camunda.zeebe.engine.processing.expression.ExpressionValidator.ValidatedCommand;
 import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.identity.authorization.request.AuthorizationRequest;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
@@ -51,20 +51,27 @@ public final class ExpressionEvaluateProcessor implements TypedRecordProcessor<E
 
   @Override
   public void processRecord(final TypedRecord<ExpressionRecord> command) {
-    final var record = command.getValue();
     validator
-        .ensureNotBlank(command)
-        .flatMap(validator::isValid)
-        .flatMap(expression -> isAuthorized(command, expression))
-        .flatMap(expression -> expressionBehavior.resolveExpression(expression, record))
+        .validate(command)
+        .flatMap(validated -> authorize(command, validated))
+        .flatMap(this::evaluate)
         .ifRightOrLeft(
             resolvedRecord -> acceptCommand(command, resolvedRecord),
             rejection -> rejectCommand(command, rejection));
   }
 
-  private Either<Rejection, Expression> isAuthorized(
-      final TypedRecord<ExpressionRecord> command, final Expression expression) {
-    final var tenantId = command.getValue().getTenantId();
+  private Either<Rejection, ValidatedCommand> authorize(
+      final TypedRecord<ExpressionRecord> command, final ValidatedCommand validated) {
+    return isAuthorized(command, validated.record()).map(ignored -> validated);
+  }
+
+  private Either<Rejection, ExpressionRecord> evaluate(final ValidatedCommand validated) {
+    return expressionBehavior.resolveExpression(validated.expression(), validated.record());
+  }
+
+  private Either<Rejection, ExpressionRecord> isAuthorized(
+      final TypedRecord<ExpressionRecord> command, final ExpressionRecord record) {
+    final var tenantId = record.getTenantId();
     final var authRequestBuilder =
         AuthorizationRequest.builder()
             .command(command)
@@ -76,7 +83,7 @@ public final class ExpressionEvaluateProcessor implements TypedRecordProcessor<E
     }
 
     final var authRequest = authRequestBuilder.build();
-    return authCheckBehavior.isAuthorizedOrInternalCommand(authRequest).map(unused -> expression);
+    return authCheckBehavior.isAuthorizedOrInternalCommand(authRequest).map(unused -> record);
   }
 
   private void rejectCommand(
