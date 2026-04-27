@@ -136,7 +136,9 @@ test.describe.parallel('Get process instance statistics API Tests', () => {
     );
     const expectedActiveInstancesWithIncidentCountList = [
       ...actualActiveInstancesWithIncidentCountList,
-    ].sort().reverse();
+    ]
+      .sort()
+      .reverse();
     expect(actualActiveInstancesWithIncidentCountList).toEqual(
       expectedActiveInstancesWithIncidentCountList,
     );
