@@ -10,7 +10,7 @@
 #        camunda-load-test-metrics.yaml, camunda-delete-load-test.yml
 # type: CI
 # owner: @camunda/reliability-testing
-name: PR Benchmark Pipeline
+name: Camunda Pull Request Benchmark
 on:
   workflow_call:
     inputs:
