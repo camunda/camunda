@@ -42,7 +42,7 @@ public final class JobWorkerBuilderImpl
 
   public static final BackoffSupplier DEFAULT_BACKOFF_SUPPLIER =
       BackoffSupplier.newBackoffBuilder().build();
-  public static final Duration DEFAULT_STREAMING_TIMEOUT = Duration.ofHours(8);
+  public static final Duration DEFAULT_STREAM_TIMEOUT = Duration.ofHours(8);
   private final JobClient jobClient;
   private final ScheduledExecutorService executorService;
   private final List<Closeable> closeables;
@@ -58,7 +58,7 @@ public final class JobWorkerBuilderImpl
   private final List<String> customTenantIds;
   private BackoffSupplier backoffSupplier;
   private boolean enableStreaming;
-  private Duration streamingTimeout;
+  private Duration streamTimeout;
   private JobWorkerMetrics metrics = JobWorkerMetrics.noop();
 
   public JobWorkerBuilderImpl(
@@ -79,7 +79,7 @@ public final class JobWorkerBuilderImpl
     defaultTenantIds = configuration.getDefaultJobWorkerTenantIds();
     customTenantIds = new ArrayList<>();
     backoffSupplier = DEFAULT_BACKOFF_SUPPLIER;
-    streamingTimeout = DEFAULT_STREAMING_TIMEOUT;
+    streamTimeout = DEFAULT_STREAM_TIMEOUT;
   }
 
   @Override
@@ -154,7 +154,7 @@ public final class JobWorkerBuilderImpl
 
   @Override
   public JobWorkerBuilderStep3 streamTimeout(final Duration timeout) {
-    streamingTimeout = timeout;
+    streamTimeout = timeout;
     return this;
   }
 
@@ -187,8 +187,8 @@ public final class JobWorkerBuilderImpl
 
     final Executor jobExecutor;
     if (enableStreaming) {
-      if (streamingTimeout != null) {
-        ensurePositive("streamingTimeout", streamingTimeout);
+      if (streamTimeout != null) {
+        ensurePositive("streamTimeout", streamTimeout);
       }
 
       jobStreamer =
@@ -199,7 +199,7 @@ public final class JobWorkerBuilderImpl
               timeout,
               fetchVariables,
               getTenantIds(),
-              streamingTimeout,
+              streamTimeout,
               backoffSupplier,
               executorService);
       jobExecutor = new BlockingExecutor(executorService, maxJobsActive, timeout);
