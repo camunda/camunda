@@ -47,8 +47,8 @@ public final class RocksDbInternal {
   static MethodHandle getWithHandle;
 
   /**
-   * WriteBatchWithIndex.delete(long handle, byte[] key, int keyLength, long cfHandle)
-   * — package-private final method, no offset param.
+   * WriteBatchWithIndex.delete(long handle, byte[] key, int keyLength, long cfHandle) —
+   * package-private final method, no offset param.
    */
   static MethodHandle removeWithHandle;
 
@@ -82,13 +82,7 @@ public final class RocksDbInternal {
   private static void putWithHandle() throws NoSuchMethodException {
     final var method =
         WriteBatchWithIndex.class.getDeclaredMethod(
-            "put",
-            Long.TYPE,
-            byte[].class,
-            Integer.TYPE,
-            byte[].class,
-            Integer.TYPE,
-            Long.TYPE);
+            "put", Long.TYPE, byte[].class, Integer.TYPE, byte[].class, Integer.TYPE, Long.TYPE);
     method.setAccessible(true);
     try {
       putWithHandle = MethodHandles.lookup().unreflect(method);

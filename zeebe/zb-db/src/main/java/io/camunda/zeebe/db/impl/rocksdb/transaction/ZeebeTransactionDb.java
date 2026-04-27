@@ -42,13 +42,12 @@ import org.rocksdb.ReadOptions;
 import org.rocksdb.RocksDB;
 import org.rocksdb.RocksDBException;
 import org.rocksdb.RocksObject;
-import org.rocksdb.Transaction;
 import org.rocksdb.WriteOptions;
 import org.slf4j.Logger;
 
 public class ZeebeTransactionDb<
         ColumnFamilyNames extends Enum<? extends EnumValue> & EnumValue & ScopedColumnFamily>
-    implements ZeebeDb<ColumnFamilyNames>, TransactionRenovator {
+    implements ZeebeDb<ColumnFamilyNames> {
 
   private static final Logger LOG = Loggers.DB_LOGGER;
   private static final String ERROR_MESSAGE_CLOSE_RESOURCE =
@@ -203,8 +202,7 @@ public class ZeebeTransactionDb<
 
   @Override
   public TransactionContext createContext() {
-    final Transaction transaction = optimisticTransactionDB.beginTransaction(defaultWriteOptions);
-    final ZeebeTransaction zeebeTransaction = new ZeebeTransaction(transaction, this);
+    final var zeebeTransaction = new ZeebeTransaction(optimisticTransactionDB, defaultWriteOptions);
     closables.add(zeebeTransaction);
     return new DefaultTransactionContext(zeebeTransaction);
   }
@@ -224,11 +222,6 @@ public class ZeebeTransactionDb<
   @Override
   public void exportMetrics() {
     metricExporter.exportMetrics(optimisticTransactionDB);
-  }
-
-  @Override
-  public Transaction renewTransaction(final Transaction oldTransaction) {
-    return optimisticTransactionDB.beginTransaction(defaultWriteOptions, oldTransaction);
   }
 
   @Override
