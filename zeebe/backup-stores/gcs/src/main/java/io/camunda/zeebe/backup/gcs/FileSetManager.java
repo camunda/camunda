@@ -41,11 +41,17 @@ final class FileSetManager {
   private final Storage client;
   private final BucketInfo bucketInfo;
   private final String basePath;
+  private final int bufferSize;
 
-  FileSetManager(final Storage client, final BucketInfo bucketInfo, final String basePath) {
+  FileSetManager(
+      final Storage client,
+      final BucketInfo bucketInfo,
+      final String basePath,
+      final int bufferSize) {
     this.client = client;
     this.bucketInfo = bucketInfo;
     this.basePath = basePath;
+    this.bufferSize = bufferSize;
   }
 
   void save(final BackupIdentifier id, final String fileSetName, final NamedFileSet fileSet) {
@@ -57,8 +63,12 @@ final class FileSetManager {
       // during upload, causing checksum mismatches.
       // See https://github.com/camunda/camunda/issues/45636
       try (final var inputStream = Files.newInputStream(filePath)) {
+        final int effectiveBufferSize = Math.clamp(Files.size(filePath), 1, bufferSize);
         client.createFrom(
-            blobInfo(id, fileSetName, fileName), inputStream, BlobWriteOption.doesNotExist());
+            blobInfo(id, fileSetName, fileName),
+            inputStream,
+            effectiveBufferSize,
+            BlobWriteOption.doesNotExist());
       } catch (final IOException e) {
         throw new UncheckedIOException(e);
       }

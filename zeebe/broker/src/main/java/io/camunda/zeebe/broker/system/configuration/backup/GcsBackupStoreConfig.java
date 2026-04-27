@@ -17,6 +17,9 @@ public class GcsBackupStoreConfig implements ConfigurationEntry {
   private String host;
   private GcsBackupStoreAuth auth = GcsBackupStoreAuth.AUTO;
 
+  /** Size of the buffer (in bytes) used when uploading files to GCS. */
+  private int bufferSize = 2 * 1024 * 1024;
+
   public String getBucketName() {
     return bucketName;
   }
@@ -49,18 +52,32 @@ public class GcsBackupStoreConfig implements ConfigurationEntry {
     this.auth = auth;
   }
 
+  public int getBufferSize() {
+    return bufferSize;
+  }
+
+  public void setBufferSize(final int bufferSize) {
+    this.bufferSize = bufferSize;
+  }
+
   public static GcsBackupConfig toStoreConfig(GcsBackupStoreConfig config) {
     final var storeConfig =
         new GcsBackupConfig.Builder()
             .withBucketName(config.getBucketName())
             .withBasePath(config.getBasePath())
-            .withHost(config.getHost());
+            .withHost(config.getHost())
+            .withBufferSize(config.getBufferSize());
     final var authenticated =
         switch (config.getAuth()) {
           case NONE -> storeConfig.withoutAuthentication();
           case AUTO -> storeConfig.withAutoAuthentication();
         };
     return authenticated.build();
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(bucketName, basePath, host, auth, bufferSize);
   }
 
   @Override
@@ -75,12 +92,8 @@ public class GcsBackupStoreConfig implements ConfigurationEntry {
     return Objects.equals(bucketName, that.bucketName)
         && Objects.equals(basePath, that.basePath)
         && Objects.equals(host, that.host)
-        && auth == that.auth;
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(bucketName, basePath, host, auth);
+        && auth == that.auth
+        && bufferSize == that.bufferSize;
   }
 
   @Override
@@ -97,6 +110,8 @@ public class GcsBackupStoreConfig implements ConfigurationEntry {
         + '\''
         + ", auth="
         + auth
+        + ", bufferSize="
+        + bufferSize
         + '}';
   }
 

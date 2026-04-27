@@ -50,6 +50,9 @@ public class Gcs {
    */
   private GcsBackupStoreAuth auth = GcsBackupStoreAuth.AUTO;
 
+  /** Size of the buffer (in bytes) used when uploading files to GCS. */
+  private int bufferSize = 2 * 1024 * 1024;
+
   public String getBucketName() {
     return UnifiedConfigurationHelper.validateLegacyConfiguration(
         PREFIX + ".bucket-name",
@@ -100,6 +103,14 @@ public class Gcs {
 
   public void setAuth(final GcsBackupStoreAuth auth) {
     this.auth = auth;
+  }
+
+  public int getBufferSize() {
+    return bufferSize;
+  }
+
+  public void setBufferSize(final int bufferSize) {
+    this.bufferSize = bufferSize;
   }
 
   public enum GcsBackupStoreAuth {
