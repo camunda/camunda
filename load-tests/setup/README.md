@@ -84,27 +84,28 @@ All components are configured in `camunda-platform-values.yaml`.
 
 ### How to set up a load test namespace
 
-If you run `newLoadTest.sh` without arguments, it will display the following help message.
+Run `./newLoadTest.sh -h` to display the help message:
 
 ```sh
-Usage: newLoadTest.sh <namespace> [secondaryStorage] [ttl_days] [enable_optimize] [enable_single_zone]
+Usage: newLoadTest.sh [options] <namespace>
 
 Arguments:
-  namespace          Base namespace name. Will be prefixed with "c8-" if missing.
-  secondaryStorage   Optional. One of: elasticsearch, opensearch, postgresql, mysql, mariadb, mssql, oracle, none. Default: elasticsearch.
-  ttl_days           Optional. Positive integer for namespace TTL in days. Default: 1.
-  enable_optimize    Optional. true|false to enable Optimize. Default: true.
-  enable_single_zone Optional. true|false to deploy the cluster on a single zone. Default: true
+  namespace    Base namespace name. Will be prefixed with "c8-" if missing.
 
 Options:
-  -h, --help         Show this help message.
+  -s <type>          Secondary storage type. One of: elasticsearch, opensearch, postgresql,
+                     mysql, mariadb, mssql, oracle, none. Default: elasticsearch.
+  -t <days>          Namespace TTL in days (positive integer). Default: 1.
+  -O                 Disable Optimize. Default: enabled.
+  -z                 Deploy across multiple zones. Default: single zone.
+  -h                 Show this help message.
 
 Examples:
   ./newLoadTest.sh demo
-  ./newLoadTest.sh perf opensearch 3 true
+  ./newLoadTest.sh perf -s opensearch -t 3 -O
 ```
 
-As you can see, you can create a test (namespace) by passing a name; other parameters are optional. Like, secondary storage, TTL, and whether Optimize should be enabled.
+You can create a test namespace by passing a name; all other parameters are optional flags.
 
 Example:
 
@@ -117,27 +118,28 @@ If you used `.` before `./newLoadTest.sh`, the script will change your directory
 
 #### Secondary storage options
 
-You can specify a secondary storage type as the second argument:
+You can specify a secondary storage type with the `-s` flag:
 
 ```sh
-. ./newLoadTest.sh my-load-test-name elasticsearch  # Default - uses Elasticsearch
-. ./newLoadTest.sh my-load-test-name opensearch     # Uses OpenSearch
-. ./newLoadTest.sh my-load-test-name postgresql     # Uses PostgreSQL (RDBMS)
-. ./newLoadTest.sh my-load-test-name mysql          # Uses MySQL (RDBMS)
-. ./newLoadTest.sh my-load-test-name mariadb        # Uses MariaDB (RDBMS)
-. ./newLoadTest.sh my-load-test-name mssql          # Uses Microsoft SQL Server (RDBMS)
-. ./newLoadTest.sh my-load-test-name oracle         # Uses Oracle (RDBMS)
-. ./newLoadTest.sh my-load-test-name none           # No secondary storage
+. ./newLoadTest.sh my-load-test-name                        # Default - uses Elasticsearch
+. ./newLoadTest.sh my-load-test-name -s elasticsearch       # Explicit Elasticsearch
+. ./newLoadTest.sh my-load-test-name -s opensearch          # Uses OpenSearch
+. ./newLoadTest.sh my-load-test-name -s postgresql          # Uses PostgreSQL (RDBMS)
+. ./newLoadTest.sh my-load-test-name -s mysql               # Uses MySQL (RDBMS)
+. ./newLoadTest.sh my-load-test-name -s mariadb             # Uses MariaDB (RDBMS)
+. ./newLoadTest.sh my-load-test-name -s mssql               # Uses Microsoft SQL Server (RDBMS)
+. ./newLoadTest.sh my-load-test-name -s oracle              # Uses Oracle (RDBMS)
+. ./newLoadTest.sh my-load-test-name -s none                # No secondary storage
 ```
 
 The `none` option runs load tests without any secondary storage, which disables Camunda exporters. This is useful for testing the core orchestration engine performance in isolation.
 
 #### Disabling Optimize
 
-Optimize is enabled by default. To disable it, pass `false` as the fourth argument:
+Optimize is enabled by default. To disable it, pass the `-O` flag:
 
-```
-. ./newLoadTest.sh my-load-test-name elasticsearch 1 false
+```sh
+. ./newLoadTest.sh my-load-test-name -O
 ```
 
 In the GitHub workflow, set the `enable-optimize` input to `false`.

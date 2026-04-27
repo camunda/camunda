@@ -3,100 +3,58 @@
 # Contains OS specific sed function
 . utils.sh
 
-set -exo pipefail
-
 usage() {
   cat <<'EOF'
-Usage: newLoadTest.sh <namespace> [secondaryStorage] [ttl_days] [enable_optimize] [enable_single_zone]
+Usage: newLoadTest.sh [options] <namespace>
 
 Arguments:
-  namespace          Base namespace name. Will be prefixed with "c8-" if missing.
-  secondaryStorage   Optional. One of: elasticsearch, opensearch, postgresql, mysql, mariadb, mssql, oracle, none. Default: elasticsearch.
-  ttl_days           Optional. Positive integer for namespace TTL in days. Default: 1.
-  enable_optimize    Optional. true|false to enable Optimize. Default: true.
-  enable_single_zone Optional. true|false to deploy the cluster on a single zone. Default: true
+  namespace    Base namespace name. Will be prefixed with "c8-" if missing.
 
 Options:
-  -h, --help         Show this help message.
+  -s <type>          Secondary storage type. One of: elasticsearch, opensearch, postgresql, mysql, mariadb, mssql, oracle, none. Default: elasticsearch.
+  -t <days>          Namespace TTL in days (positive integer). Default: 1.
+  -O                 Disable Optimize. Default: enabled.
+  -z                 Deploy across multiple zones. Default: single zone.
+  -h                 Show this help message.
 
 Examples:
   ./newLoadTest.sh demo
-  ./newLoadTest.sh perf opensearch 3 false
+  ./newLoadTest.sh perf -s opensearch -t 3 -O
 EOF
 }
 
-if [ "$1" = "-h" ] || [ "$1" = "--help" ]; then
-  usage
-  exit 0
-fi
+secondaryStorage="elasticsearch"
+ttl_days=1
+enable_optimize="true"
+enable_single_zone="true"
+
+while getopts ":hs:t:Oz" opt; do
+  case "$opt" in
+    h) usage; exit 0 ;;
+    s) validate_secondary_storage "$OPTARG" || { usage; exit 1; }; secondaryStorage="$OPTARG" ;;
+    t) validate_ttl "$OPTARG" || { usage; exit 1; }; ttl_days="$OPTARG" ;;
+    O) enable_optimize="false" ;;
+    z) enable_single_zone="false" ;;
+    :) echo "Error: Option -$OPTARG requires an argument." >&2; usage; exit 1 ;;
+    \?) echo "Error: Unknown option -$OPTARG." >&2; usage; exit 1 ;;
+  esac
+done
+shift $((OPTIND - 1))
 
 if [ -z "$1" ]; then
-  echo "Error: Missing namespace name."
+  echo "Error: Missing namespace name." >&2
   usage
   exit 1
 fi
 
+set -exo pipefail
+
 ### Load test helper script
-### First parameter is used as namespace name
+### Namespace name is the only required positional argument
 ### For a new namespace a new folder will be created
 
 helm_chart="camunda-platform-8.10"
-namespace="$1"
-
-# Add c8- prefix if not present
-if [[ ! "$namespace" =~ ^c8- ]]; then
-  namespace="c8-$namespace"
-  echo "Namespace prefix added: $namespace"
-fi
-
-# Validate secondaryStorage value
-secondaryStorage="${2:-elasticsearch}"
-if [[ "$secondaryStorage" != "elasticsearch" && "$secondaryStorage" != "opensearch" && "$secondaryStorage" != "postgresql" && "$secondaryStorage" != "mysql" && "$secondaryStorage" != "mariadb" && "$secondaryStorage" != "mssql" && "$secondaryStorage" != "oracle" && "$secondaryStorage" != "none" ]]; then
-  echo "Error: Invalid secondary storage type '$secondaryStorage'"
-  echo "Allowed values are: elasticsearch, opensearch, postgresql, mysql, mariadb, mssql, oracle, none"
-  exit 1
-fi
-
-# Validate TTL value
-ttl_days="${3:-1}"
-numberRegex='^[0-9]+$'
-if ! [[ $ttl_days =~ $numberRegex ]] ; then
-   echo "Error: TTL '$ttl_days' is not a number"
-   exit 1
-fi
-
-# Validate enable_optimize value
-enable_optimize="${4:-true}"
-enable_optimize=$(echo "$enable_optimize" | tr '[:upper:]' '[:lower:]')
-if [[ "$enable_optimize" != "true" && "$enable_optimize" != "false" ]]; then
-  echo "Error: Invalid enable_optimize value '$enable_optimize'"
-  echo "Allowed values are: true or false"
-  exit 1
-fi
-
-# Pick a "random" zone, selected from the input value.
-function hashmod_zone() {
-    local input="${1?"Specify an initial value to compute the zone from"}"
-
-    # We can get the list of zones with already created nodes with:
-    # kubectl get nodes -o jsonpath='{range .items[*]}{.metadata.labels.topology\.kubernetes\.io\/zone}{"\n"}{end}' | sort | uniq -c
-    zones=(
-        europe-west1-b
-        europe-west1-c
-        europe-west1-d
-    )
-    nb_zones=${#zones[@]}
-
-    # bc only accept hexadecimal with capitalized letters
-    checksum="$(echo "$input" | md5sum | cut -c 1-32 | tr "a-z" "A-Z")"
-    hashmod="$(echo "ibase=16; $checksum % $nb_zones" | bc)"
-
-    zone="${zones[$hashmod]}"
-    echo "$zone"
-}
-
-enable_single_zone="${5:-true}"
-enable_single_zone=$(echo "$enable_single_zone" | tr '[:upper:]' '[:lower:]')
+namespace="$(namespace_name "$1")"
 single_zone_annotation_name="topology.kubernetes.io/zone"
 availability_zone="~"
 
@@ -119,23 +77,6 @@ else
   echo "Namespace ${namespace} has previously been configured to run on the single availability zone: $availability_zone"
 fi
 
-# Sanitize a string to be a valid Kubernetes label value
-sanitize_k8s_label() {
-  local value="$1"
-  # Replace invalid characters with hyphens
-  value=$(echo "$value" | sed 's/[^A-Za-z0-9_.-]/-/g')
-  # Remove leading non-alphanumeric characters
-  value=$(echo "$value" | sed 's/^[^A-Za-z0-9]\+//')
-  # Remove trailing non-alphanumeric characters
-  value=$(echo "$value" | sed 's/[^A-Za-z0-9]\+$//')
-  # Truncate to 63 characters as required by Kubernetes label values
-  value=${value:0:63}
-  # Fallback if the result is empty
-  if [ -z "$value" ]; then
-    value="unknown"
-  fi
-  echo "$value"
-}
 
 # Label to easily find related namespaces
 kubectl label namespace "$namespace" "camunda.io/purpose=load-test" --overwrite
@@ -145,16 +86,8 @@ raw_git_author=$(git config user.name || echo "unknown")
 git_author=$(sanitize_k8s_label "$raw_git_author")
 kubectl label namespace "$namespace" created-by="$git_author" --overwrite
 
-# Label namespace with TTL deadline (default: 1 day from now)
-# Try GNU date format first (Linux), then BSD/macOS format
-if deadline_date=$(date -d "+${ttl_days} days" +%Y-%m-%d 2>/dev/null); then
-  : # GNU date succeeded
-elif deadline_date=$(date -v +${ttl_days}d +%Y-%m-%d 2>/dev/null); then
-  : # BSD/macOS date succeeded
-else
-  echo "Warning: Could not calculate deadline date. Supported on Linux and macOS only."
-  deadline_date="unknown"
-fi
+# Label namespace with TTL deadline
+deadline_date="$(new_deadline_date "$ttl_days")"
 kubectl label namespace $namespace deadline-date="${deadline_date}" --overwrite
 
 # Label namespace with registry (required to inject image pull secrets)
