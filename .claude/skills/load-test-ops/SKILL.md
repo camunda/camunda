@@ -5,22 +5,29 @@ description: Trigger, monitor, update, profile, and stop Camunda load tests usin
 
 # Camunda Load Test Operations
 
-## Prerequisites
+## Prerequisites check
 
-- `gh` CLI authenticated (`gh auth status`)
-- Optional: active kubectl/Teleport session for cluster-direct operations
+`gh` CLI must always be authenticated (`gh auth status`).
 
-When kubectl is available, prefer it for status and config inspection — it's faster
-and more accurate than polling GHA. When kubectl is not available, fall back to
-`gh run view` and GHA logs.
+**Starting a load test always goes through GHA** — it needs to build a Docker image from the
+branch before deploying. There is no local shortcut for this step.
+
+For **updates to a running cluster**, check kubectl access first:
+
+```bash
+kubectl get nodes 2>/dev/null && echo "kubectl available" || echo "use GHA fallback"
+```
+
+**If kubectl is available:** use `newLoadTest.sh` + Makefile for direct Helm upgrades — faster, no GHA queue, no image rebuild.
+**If not:** fall back to `gh workflow run` with `reuse-tag` to skip the Docker build.
 
 ---
 
 ## Namespace conventions
 
-- Format: `c8-<name>` — always prefixed with `c8-`
-- Recommended `<name>`: `<branch-slug>-<YYYYMMDD>`, e.g. `my-feature-20260424`
-- Grafana: `https://dashboard.benchmark.camunda.cloud/d/zeebe-dashboard/zeebe?var-namespace=<namespace>`
+- Format: `c8-<initials>-<slug>-<YYYYMMDD>` — always prefixed with `c8-`
+- Example: `c8-ck-my-feature-20260427` (ck = ChrisKujawa)
+- The `name` field passed to GHA/scripts is the part **without** `c8-` prefix
 
 Namespaces carry these labels (set by `newLoadTest.sh`):
 
@@ -37,38 +44,15 @@ Namespaces carry these labels (set by `newLoadTest.sh`):
 ```bash
 gh workflow run camunda-load-test.yml --repo camunda/camunda \
   --field ref=<branch> \
-  --field name=<name-without-c8-prefix> \
-  --field ttl=1 \
-  --field scenario=typical \
-  --field secondary-storage-type=elasticsearch \
-  --field enable-optimize=false
+  --field name=ck-<slug>-<YYYYMMDD>
 ```
 
-**All `--field` options:**
-
-| Field | Default | Notes |
-|---|---|---|
-| `ref` | `main` | Branch, tag, or commit SHA to test |
-| `name` | required | Namespace suffix — workflow prepends `c8-` |
-| `ttl` | `1` | Days before namespace auto-deleted |
-| `scenario` | `max` | `typical`, `realistic`, `latency`, `max`, `archiver`, `custom` |
-| `secondary-storage-type` | `elasticsearch` | `elasticsearch`, `opensearch`, `postgresql`, `mysql`, `mariadb`, `mssql`, `oracle`, `none` |
-| `enable-optimize` | `false` | `true` / `false` |
-| `platform-helm-values` | — | Arbitrary `--set` flags for the platform chart |
-| `load-test-load` | — | Helm args for the load test chart (only for `scenario=custom`) |
-| `stable-vms` | `false` | Deploy to non-spot VMs |
-| `perform-read-benchmarks` | `false` | Enable read load on secondary storage |
-| `build-frontend` | `false` | Build frontend from `ref` before deploying |
-| `orchestration-tag` | — | Pin orchestration to a Docker Hub tag (incompatible with `reuse-tag`) |
-| `optimize-tag` | — | Pin Optimize image tag |
-| `identity-tag` | — | Pin Identity image tag |
-| `connectors-tag` | — | Pin Connectors image tag |
-| `reuse-tag` | — | Skip Docker build, reuse an existing internal registry tag |
+For all available inputs see the `inputs:` block in `.github/workflows/camunda-load-test.yml`.
 
 After dispatching, find the run:
 
 ```bash
-gh run list --workflow=camunda-load-test.yml --repo camunda/camunda --limit 5
+gh run list --workflow=camunda-load-test.yml --repo camunda/camunda --actor $(gh api /user --jq .login) --limit 5
 ```
 
 ---
@@ -103,72 +87,60 @@ gh run list --workflow=camunda-load-test.yml --repo camunda/camunda \
 
 ## Inspect configuration
 
-**Read default Helm values (to know what keys to override):**
-
 ```bash
-# Platform chart defaults
+# Read default Helm values (know what keys to override)
 cat load-tests/camunda-platform-values.yaml
-
-# Load test chart defaults
 cat load-tests/load-test-values.yaml
-```
 
-**Read what's actually deployed (requires kubectl):**
-
-```bash
+# Read what's actually deployed (requires kubectl)
 helm get values <namespace> -n <namespace>
 helm get values <namespace>-test -n <namespace>
-```
-
-**Common platform overrides for `platform-helm-values`:**
-
-```
---set orchestration.resources.limits.memory=4Gi
---set orchestration.clusterSize=1
---set orchestration.partitionCount=1
---set orchestration.javaOpts='-Xmx3g -XX:+UseZGC'
---set elasticsearch.master.replicaCount=1
 ```
 
 ---
 
 ## Update / redeploy
 
-**Via GHA — rebuild image from branch:**
+**Check kubectl first** (see Prerequisites). Then choose:
+
+### With kubectl (direct — preferred for iterative changes)
+
+```bash
+cd load-tests/setup
+
+# Create namespace if it doesn't exist yet
+./newLoadTest.sh <namespace> <secondary-storage> <ttl-days> <enable-optimize>
+
+# Upgrade platform Helm chart
+cd <namespace>
+make install-platform additional_platform_configuration="--set orchestration.resources.limits.memory=4Gi"
+
+# Upgrade load test Helm chart
+make install-load-test additional_load_test_configuration="--set starter.rate=200"
+```
+
+### Without kubectl (via GHA)
+
+Rebuild image from branch:
 
 ```bash
 gh workflow run camunda-load-test.yml --repo camunda/camunda \
   --field ref=<branch> \
-  --field name=<name-without-c8-prefix> \
-  --field ttl=<original-ttl> \
-  --field scenario=<original-scenario>
+  --field name=ck-<slug>-<YYYYMMDD>
 ```
 
-**Via GHA — reuse existing image (skip Docker build):**
+Reuse existing image (skip Docker build):
 
 ```bash
+# Find current image tag
+kubectl get pods -n <namespace> -o jsonpath='{.items[0].spec.containers[0].image}'
+
 gh workflow run camunda-load-test.yml --repo camunda/camunda \
   --field ref=<branch> \
   --field name=<name-without-c8-prefix> \
   --field reuse-tag=<image-tag> \
   --field platform-helm-values="--set orchestration.resources.limits.memory=4Gi"
 ```
-
-Find the current image tag:
-
-```bash
-kubectl get pods -n <namespace> -o jsonpath='{.items[0].spec.containers[0].image}'
-```
-
-**Via Makefile — direct Helm upgrade (requires kubectl):**
-
-```bash
-cd load-tests/setup/<namespace>
-make install-platform additional_platform_configuration="--set orchestration.resources.limits.memory=4Gi"
-make install-load-test additional_load_test_configuration="--set starter.rate=200"
-```
-
-The Makefile approach is faster for iterative config changes — no Docker build, no GHA queue.
 
 ---
 
@@ -189,7 +161,7 @@ gh workflow run profile-load-test.yml --repo camunda/camunda \
   --field pod=camunda-1
 ```
 
-After ~5 min, download flamegraph artifacts from the GHA run:
+After ~5 min, download flamegraph artifacts:
 
 ```bash
 gh run download <run-id> --repo camunda/camunda
@@ -201,29 +173,32 @@ Artifact names: `flamegraph-cpu-camunda-0`, `flamegraph-wall-camunda-1`, `flameg
 
 ## Stop / clean up
 
+**With kubectl (preferred):**
+
 ```bash
-# Trigger TTL-based cleanup (deletes ALL namespaces expiring on or before <date>)
+cd load-tests/setup
+./deleteLoadTest.sh <full-namespace-with-c8-prefix>
+```
+
+This deletes the namespace and removes the local setup directory for it.
+
+**Without kubectl — GHA TTL cleanup:**
+
+```bash
+# WARNING: deletes ALL namespaces whose deadline-date label is ≤ today
 gh workflow run camunda-load-test-clean-up.yml --repo camunda/camunda \
   --field date=$(date -u +%Y-%m-%d)
 ```
 
-**WARNING:** This deletes every namespace whose `deadline-date` label is ≤ today, not only the one you have in mind.
-
-Direct deletion (requires kubectl):
-
-```bash
-kubectl delete namespace <namespace>
-```
-
 ---
 
-## Logs and debugging
+## Logs
 
 ```bash
-# Broker logs
-kubectl logs -n <namespace> camunda-0 --tail=100 -f
+# Broker logs (follow)
+kubectl logs -n <namespace> camunda-0 -f
 
-# All broker logs
+# All brokers — last 50 lines each
 for pod in camunda-0 camunda-1 camunda-2; do
   echo "=== $pod ===" && kubectl logs -n <namespace> $pod --tail=50
 done
@@ -231,6 +206,22 @@ done
 # Load tester logs
 kubectl logs -n <namespace> -l app=starter --tail=100
 
-# Describe a pod (resource issues, scheduling)
+# Describe a pod (scheduling / resource issues)
 kubectl describe pod -n <namespace> camunda-0
+```
+
+---
+
+## Monitoring dashboards
+
+Replace `<namespace>` with the full namespace name (e.g. `c8-ck-my-feature-20260427`).
+
+**Performance dashboard** — high-level overview: throughput, latency, and all key metrics (start here):
+```
+https://dashboard.benchmark.camunda.cloud/d/camunda-performance/camunda-performance?orgId=1&from=now-24h&to=now&timezone=browser&var-DS_PROMETHEUS=prometheus&var-namespace=<namespace>&var-pod=$__all&var-partition=$__all
+```
+
+**Zeebe dashboard** — deep dive into Zeebe internals (backpressure, partitions, exporters):
+```
+https://dashboard.benchmark.camunda.cloud/d/zeebe-dashboard/zeebe?var-namespace=<namespace>
 ```
