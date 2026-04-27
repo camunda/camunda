@@ -43,6 +43,7 @@ public class ExporterConfiguration {
   private CacheConfiguration processCache = new CacheConfiguration();
   private CacheConfiguration decisionRequirementsCache = new CacheConfiguration();
   private CacheConfiguration batchOperationCache = new CacheConfiguration();
+  private ReplicationConfiguration asyncReplication = new ReplicationConfiguration();
 
   public AuditLogConfiguration getAuditLog() {
     return auditLog;
@@ -141,10 +142,19 @@ public class ExporterConfiguration {
     this.insertBatching = insertBatching;
   }
 
+  public ReplicationConfiguration getAsyncReplication() {
+    return asyncReplication;
+  }
+
+  public void setAsyncReplication(final ReplicationConfiguration asyncReplication) {
+    this.asyncReplication = asyncReplication;
+  }
+
   public void validate() {
 
     final List<String> errors = new ArrayList<>(history.validate());
     errors.addAll(insertBatching.validate());
+    errors.addAll(asyncReplication.validate());
 
     if (flushInterval.isNegative()) {
       errors.add(
@@ -295,6 +305,8 @@ public class ExporterConfiguration {
         + decisionRequirementsCache
         + ", batchOperationCache="
         + batchOperationCache
+        + ", asyncReplication.enabled="
+        + asyncReplication.enabled
         + '}';
   }
 
@@ -608,6 +620,82 @@ public class ExporterConfiguration {
 
     public void setMaxHistoryCleanupUsage(final double maxHistoryCleanupUsage) {
       this.maxHistoryCleanupUsage = maxHistoryCleanupUsage;
+    }
+  }
+
+  public static class ReplicationConfiguration {
+    public static final boolean DEFAULT_ENABLED = false;
+    public static final Duration DEFAULT_POLLING_INTERVAL = Duration.ofSeconds(15);
+    public static final Duration DEFAULT_MAX_LAG = Duration.ofMinutes(15);
+    public static final int DEFAULT_MIN_SYNC_REPLICAS = 0;
+    public static final boolean DEFAULT_PAUSE_ON_MAX_LAG_EXCEEDED = false;
+
+    private boolean enabled = DEFAULT_ENABLED;
+    private Duration pollingInterval = DEFAULT_POLLING_INTERVAL;
+    private int minSyncReplicas = DEFAULT_MIN_SYNC_REPLICAS;
+    private Duration maxLag = DEFAULT_MAX_LAG;
+    private boolean pauseOnMaxLagExceeded = DEFAULT_PAUSE_ON_MAX_LAG_EXCEEDED;
+
+    public boolean isEnabled() {
+      return enabled;
+    }
+
+    public void setEnabled(final boolean enabled) {
+      this.enabled = enabled;
+    }
+
+    public Duration getPollingInterval() {
+      return pollingInterval;
+    }
+
+    public void setPollingInterval(final Duration pollingInterval) {
+      this.pollingInterval = pollingInterval;
+    }
+
+    public int getMinSyncReplicas() {
+      return minSyncReplicas;
+    }
+
+    public void setMinSyncReplicas(final int minSyncReplicas) {
+      this.minSyncReplicas = minSyncReplicas;
+    }
+
+    public Duration getMaxLag() {
+      return maxLag;
+    }
+
+    public void setMaxLag(final Duration maxLag) {
+      this.maxLag = maxLag;
+    }
+
+    public boolean isPauseOnMaxLagExceeded() {
+      return pauseOnMaxLagExceeded;
+    }
+
+    public void setPauseOnMaxLagExceeded(final boolean pauseOnMaxLagExceeded) {
+      this.pauseOnMaxLagExceeded = pauseOnMaxLagExceeded;
+    }
+
+    public List<String> validate() {
+      final List<String> errors = new ArrayList<>();
+      if (enabled && (pollingInterval.isNegative() || pollingInterval.isZero())) {
+        errors.add(
+            String.format(
+                "asyncReplication.pollingInterval must be a positive duration but was %s",
+                pollingInterval));
+      }
+      if (minSyncReplicas < 0) {
+        errors.add(
+            String.format(
+                "asyncReplication.minSyncReplicas must be greater or equal 0 but was %d",
+                minSyncReplicas));
+      }
+      if (enabled && (maxLag.isNegative() || maxLag.isZero())) {
+        errors.add(
+            String.format(
+                "asyncReplication.maxLag must be a positive duration but was %s", maxLag));
+      }
+      return errors;
     }
   }
 }
