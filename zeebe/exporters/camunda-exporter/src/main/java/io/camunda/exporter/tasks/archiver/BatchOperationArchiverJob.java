@@ -24,6 +24,7 @@ public class BatchOperationArchiverJob extends ArchiverJob<ArchiveBatch.BasicArc
 
   private final BatchOperationTemplate batchOperationTemplate;
   private final List<BatchOperationDependant> batchOperationDependants;
+  private final Logger logger;
 
   public BatchOperationArchiverJob(
       final ArchiverRepository repository,
@@ -44,6 +45,7 @@ public class BatchOperationArchiverJob extends ArchiverJob<ArchiveBatch.BasicArc
         batchOperationDependants.stream()
             .sorted(Comparator.comparing(BatchOperationDependant::getFullQualifiedName))
             .toList(); // sort to ensure the execution order is stable
+    this.logger = logger;
   }
 
   @Override
@@ -71,16 +73,44 @@ public class BatchOperationArchiverJob extends ArchiverJob<ArchiveBatch.BasicArc
   @Override
   protected Map<String, List<String>> createIdsByFieldMap(
       final IndexTemplateDescriptor templateDescriptor, final BasicArchiveBatch batch) {
-    final String field =
-        switch (templateDescriptor) {
-          case final BatchOperationTemplate ignored -> BatchOperationTemplate.ID;
-          case final BatchOperationDependant dependant ->
-              dependant.getBatchOperationDependantField();
-          default ->
-              throw new IllegalArgumentException(
-                  "Unsupported template descriptor: " + templateDescriptor.getClass().getName());
-        };
-    return Map.of(field, batch.ids());
+    final String field;
+    final List<String> ids;
+
+    switch (templateDescriptor) {
+      case final BatchOperationTemplate ignored -> {
+        field = BatchOperationTemplate.ID;
+        ids = batch.ids();
+      }
+      case final BatchOperationDependant dependant -> {
+        field = dependant.getBatchOperationDependantField();
+        // Filter out non-numeric IDs from legacy 8.8 batch operations where IDs were GUIDs.
+        // Dependant fields (e.g. batchOperationKey) expect numeric (long) values, so passing
+        // a GUID would cause a number_format_exception in Elasticsearch.
+        ids = batch.ids().stream().filter(BatchOperationArchiverJob::isNumericId).toList();
+        final int skippedCount = batch.ids().size() - ids.size();
+        if (skippedCount > 0) {
+          logger.warn(
+              "Skipping {} legacy batch operation ID(s) with non-numeric format"
+                  + " for dependant archiving of [{}]",
+              skippedCount,
+              dependant.getFullQualifiedName());
+        }
+      }
+      default ->
+          throw new IllegalArgumentException(
+              "Unsupported template descriptor: " + templateDescriptor.getClass().getName());
+    }
+
+    return Map.of(field, ids);
+  }
+
+  private static boolean isNumericId(final String id) {
+    try {
+      Long.parseLong(id);
+      return true;
+    } catch (final NumberFormatException e) {
+      return false;
+    }
   }
 
   private CompletableFuture<Void> archiveBatchDependants(final BasicArchiveBatch batch) {

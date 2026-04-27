@@ -89,4 +89,71 @@ final class BatchOperationArchiverJobTest extends ArchiverJobRecordingMetricsAbs
                 Map.of(BatchOperationTemplate.ID, List.of("1", "2", "3")),
                 executor));
   }
+
+  @Test
+  void shouldSkipNonNumericIdsForDependantArchiving() {
+    // given - batch with mixed numeric and GUID (non-numeric) IDs, simulating 8.8 → 8.9 migration
+    repository.batches =
+        List.of(
+            new BasicArchiveBatch(
+                "2024-01-01", List.of("1", "a1b2c3d4-e5f6-7890-abcd-ef1234567890", "3")));
+
+    // when
+    final int count = job.execute().toCompletableFuture().join();
+
+    // then - batch operations are archived with all IDs
+    //        but dependant (audit log) only receives numeric IDs
+    assertThat(count).isEqualTo(3);
+    assertThat(repository.moves)
+        .containsExactly(
+            new DocumentMove(
+                auditLogTemplate.getFullQualifiedName(),
+                auditLogTemplate.getFullQualifiedName() + "2024-01-01",
+                Map.of(AuditLogTemplate.BATCH_OPERATION_KEY, List.of("1", "3")),
+                Map.of(AuditLogTemplate.ENTITY_TYPE, "BATCH"),
+                executor),
+            new DocumentMove(
+                batchOperationTemplate.getFullQualifiedName(),
+                batchOperationTemplate.getFullQualifiedName() + "2024-01-01",
+                Map.of(
+                    BatchOperationTemplate.ID,
+                    List.of("1", "a1b2c3d4-e5f6-7890-abcd-ef1234567890", "3")),
+                executor));
+  }
+
+  @Test
+  void shouldSkipAllNonNumericIdsForDependantArchiving() {
+    // given - batch with only GUID (non-numeric) IDs, simulating all legacy 8.8 records
+    repository.batches =
+        List.of(
+            new BasicArchiveBatch(
+                "2024-01-01",
+                List.of(
+                    "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+                    "b2c3d4e5-f6a7-8901-bcde-f12345678901")));
+
+    // when
+    final int count = job.execute().toCompletableFuture().join();
+
+    // then - batch operations are archived with all IDs
+    //        but dependant (audit log) receives empty list since all IDs are non-numeric
+    assertThat(count).isEqualTo(2);
+    assertThat(repository.moves)
+        .containsExactly(
+            new DocumentMove(
+                auditLogTemplate.getFullQualifiedName(),
+                auditLogTemplate.getFullQualifiedName() + "2024-01-01",
+                Map.of(AuditLogTemplate.BATCH_OPERATION_KEY, List.of()),
+                Map.of(AuditLogTemplate.ENTITY_TYPE, "BATCH"),
+                executor),
+            new DocumentMove(
+                batchOperationTemplate.getFullQualifiedName(),
+                batchOperationTemplate.getFullQualifiedName() + "2024-01-01",
+                Map.of(
+                    BatchOperationTemplate.ID,
+                    List.of(
+                        "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+                        "b2c3d4e5-f6a7-8901-bcde-f12345678901")),
+                executor));
+  }
 }
