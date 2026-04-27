@@ -8,6 +8,7 @@
 package io.camunda.exporter.rdbms.handlers.message;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -30,9 +31,13 @@ import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import java.time.Instant;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.BiConsumer;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.EnumSource;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.ArgumentCaptor;
 
 final class MessageSubscriptionFromMessageStartEventSubscriptionExportHandlerTest {
@@ -73,7 +78,7 @@ final class MessageSubscriptionFromMessageStartEventSubscriptionExportHandlerTes
     underTest.export(record);
 
     // then
-    verify(writer).create(org.mockito.ArgumentMatchers.any());
+    verify(writer).create(any());
   }
 
   @Test
@@ -90,7 +95,7 @@ final class MessageSubscriptionFromMessageStartEventSubscriptionExportHandlerTes
     underTest.export(record);
 
     // then
-    verify(writer).update(org.mockito.ArgumentMatchers.any());
+    verify(writer).update(any());
   }
 
   @Test
@@ -107,11 +112,16 @@ final class MessageSubscriptionFromMessageStartEventSubscriptionExportHandlerTes
     underTest.export(record);
 
     // then
-    verify(writer).update(org.mockito.ArgumentMatchers.any());
+    verify(writer).update(any());
   }
 
-  @Test
-  void shouldMapAllFieldsCorrectlyWithCacheHit() {
+  @ParameterizedTest
+  @MethodSource("provideTestRoutines")
+  void shouldMapAllFieldsCorrectlyWithCacheHit(
+      final Intent intent,
+      final MessageSubscriptionState state,
+      final BiConsumer<MessageSubscriptionWriter, ArgumentCaptor<MessageSubscriptionDbModel>>
+          testRoutine) {
     // given
     final long recordKey = 100L;
     final long pdKey = 200L;
@@ -140,7 +150,7 @@ final class MessageSubscriptionFromMessageStartEventSubscriptionExportHandlerTes
         factory.generateRecord(
             ValueType.MESSAGE_START_EVENT_SUBSCRIPTION,
             r ->
-                r.withIntent(MessageStartEventSubscriptionIntent.CREATED)
+                r.withIntent(intent)
                     .withKey(recordKey)
                     .withPartitionId(partitionId)
                     .withTimestamp(timestamp)
@@ -156,7 +166,7 @@ final class MessageSubscriptionFromMessageStartEventSubscriptionExportHandlerTes
 
     // then
     final var captor = ArgumentCaptor.forClass(MessageSubscriptionDbModel.class);
-    verify(writer).create(captor.capture());
+    testRoutine.accept(writer, captor);
     final MessageSubscriptionDbModel model = captor.getValue();
 
     assertThat(model.messageSubscriptionKey()).isEqualTo(recordKey);
@@ -166,7 +176,7 @@ final class MessageSubscriptionFromMessageStartEventSubscriptionExportHandlerTes
     assertThat(model.rootProcessInstanceKey()).isNull();
     assertThat(model.flowNodeId()).isEqualTo(elementId);
     assertThat(model.flowNodeInstanceKey()).isNull();
-    assertThat(model.messageSubscriptionState()).isEqualTo(MessageSubscriptionState.CREATED);
+    assertThat(model.messageSubscriptionState()).isEqualTo(state);
     assertThat(model.messageSubscriptionType()).isEqualTo(MessageSubscriptionType.START_EVENT);
     assertThat(model.messageName()).isEqualTo(messageName);
     assertThat(model.correlationKey()).isEqualTo(correlationKey);
@@ -177,6 +187,20 @@ final class MessageSubscriptionFromMessageStartEventSubscriptionExportHandlerTes
     assertThat(model.processDefinitionName()).isEqualTo(processName);
     assertThat(model.processDefinitionVersion()).isEqualTo(processVersion);
     assertThat(model.extensionProperties()).isEqualTo(extProps);
+  }
+
+  private static Stream<Arguments> provideTestRoutines() {
+    return Stream.of(
+        Arguments.of(
+            MessageStartEventSubscriptionIntent.CREATED,
+            MessageSubscriptionState.CREATED,
+            (BiConsumer<MessageSubscriptionWriter, ArgumentCaptor<MessageSubscriptionDbModel>>)
+                (writer, captor) -> verify(writer).create(captor.capture())),
+        Arguments.of(
+            MessageStartEventSubscriptionIntent.CORRELATED,
+            MessageSubscriptionState.CORRELATED,
+            (BiConsumer<MessageSubscriptionWriter, ArgumentCaptor<MessageSubscriptionDbModel>>)
+                (writer, captor) -> verify(writer).update(captor.capture())));
   }
 
   @Test
