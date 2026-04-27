@@ -11,6 +11,7 @@ import io.camunda.db.rdbms.write.domain.DeployedResourceDbModel;
 import io.camunda.db.rdbms.write.domain.DeployedResourceDbModel.DeployedResourceDbModelBuilder;
 import io.camunda.db.rdbms.write.service.DeployedResourceWriter;
 import io.camunda.exporter.rdbms.RdbmsExportHandler;
+import io.camunda.zeebe.exporter.common.utils.ResourceUtils;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ResourceIntent;
@@ -55,23 +56,12 @@ public class ResourceExportHandler implements RdbmsExportHandler<Resource> {
         .resourceKey(value.getResourceKey())
         .resourceId(value.getResourceId())
         .resourceName(value.getResourceName())
-        .resourceType(deriveResourceType(value.getResourceName()))
+        .resourceType(ResourceUtils.deriveResourceType(value.getResourceName()))
         .version(value.getVersion())
         .versionTag(value.getVersionTag())
         .deploymentKey(value.getDeploymentKey())
         .tenantId(value.getTenantId())
         .resourceContent(value.getResourceProp())
         .build();
-  }
-
-  private String deriveResourceType(final String resourceName) {
-    if (resourceName == null || resourceName.isEmpty()) {
-      return null;
-    }
-    final int lastDotIndex = resourceName.lastIndexOf('.');
-    if (lastDotIndex > 0 && lastDotIndex < resourceName.length() - 1) {
-      return resourceName.substring(lastDotIndex + 1).toLowerCase();
-    }
-    return null;
   }
 }
