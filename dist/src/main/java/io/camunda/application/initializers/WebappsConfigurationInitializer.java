@@ -12,6 +12,7 @@ import static io.camunda.application.Profile.IDENTITY;
 import static io.camunda.application.Profile.OPERATE;
 import static io.camunda.application.Profile.STANDALONE;
 import static io.camunda.application.Profile.TASKLIST;
+import static io.camunda.application.Profile.TMP_WEBAPP;
 import static io.camunda.authentication.config.AuthenticationProperties.METHOD;
 
 import io.camunda.authentication.config.WebSecurityConfig;
@@ -31,7 +32,8 @@ public class WebappsConfigurationInitializer
 
   public static final String CAMUNDA_WEBAPPS_ENABLED_PROPERTY = "camunda.webapps.enabled";
   private static final Set<String> WEBAPPS_PROFILES =
-      Set.of(OPERATE.getId(), TASKLIST.getId(), IDENTITY.getId(), ADMIN.getId());
+      Set.of(
+          OPERATE.getId(), TASKLIST.getId(), IDENTITY.getId(), ADMIN.getId(), TMP_WEBAPP.getId());
   private static final String DEFAULT_RESOURCES_LOCATION = "classpath:/META-INF/resources/";
   private static final String AUTHORIZATIONS_ENABLED_PROPERTY =
       "camunda.security.authorizations.enabled";
@@ -109,6 +111,13 @@ public class WebappsConfigurationInitializer
       if (defaultWebapp == null) {
         defaultWebapp = ADMIN.getId();
       }
+    }
+
+    // Unified Webapp (tmp-webapp profile) — temporary; removed at end of epic #51309
+    // Deliberately does NOT set defaultWebapp: legacy profiles win the home-page contest if mixed.
+
+    if (activeProfiles.contains(TMP_WEBAPP.getId())) {
+      locations.add(DEFAULT_RESOURCES_LOCATION + "webapp/");
     }
 
     // Store locations, default homepage and merge everything
