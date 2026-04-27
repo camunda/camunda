@@ -52,7 +52,7 @@ kubectl label namespace "$namespace" registry=harbor --overwrite
 # Label namespace with author and purpose
 git_author=$(compute_git_author)
 kubectl label namespace "$namespace" "camunda.io/purpose=load-test" --overwrite
-kubectl label namespace "$namespace" created-by="$git_author" --overwrite
+kubectl label namespace "$namespace" "camunda.io/created-by"="$git_author" --overwrite
 
 cp -rv cloud-default/ $namespace
 cd $namespace

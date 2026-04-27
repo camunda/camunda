@@ -1,6 +1,6 @@
 global:
   commonLabels:
-    created-by: __AUTHOR__
+    "camunda.io/created-by": __AUTHOR__
     "camunda.io/purpose": load-test
   image:
     repository: registry.camunda.cloud/team-zeebe
