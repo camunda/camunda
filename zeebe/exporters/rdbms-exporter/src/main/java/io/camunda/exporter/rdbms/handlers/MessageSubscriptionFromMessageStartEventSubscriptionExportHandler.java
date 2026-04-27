@@ -16,6 +16,7 @@ import io.camunda.search.entities.MessageSubscriptionEntity.MessageSubscriptionS
 import io.camunda.search.entities.MessageSubscriptionEntity.MessageSubscriptionType;
 import io.camunda.zeebe.exporter.common.cache.ExporterEntityCache;
 import io.camunda.zeebe.exporter.common.cache.process.CachedProcessEntity;
+import io.camunda.zeebe.exporter.common.utils.ProcessCacheUtil;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.MessageStartEventSubscriptionIntent;
@@ -69,6 +70,11 @@ public class MessageSubscriptionFromMessageStartEventSubscriptionExportHandler
     final var value = record.getValue();
     final long pdKey = value.getProcessDefinitionKey();
     final Optional<CachedProcessEntity> cached = processCache.get(pdKey);
+    final var ext =
+        cached
+            .map(CachedProcessEntity::elementExtensionProperties)
+            .map(p -> p.get(value.getStartEventId()))
+            .orElse(Map.of());
     return new MessageSubscriptionDbModel.Builder()
         .messageSubscriptionKey(record.getKey())
         .processDefinitionId(value.getBpmnProcessId())
@@ -87,11 +93,9 @@ public class MessageSubscriptionFromMessageStartEventSubscriptionExportHandler
         .processDefinitionName(
             cached.map(CachedProcessEntity::name).filter(s -> !s.isBlank()).orElse(null))
         .processDefinitionVersion(cached.map(CachedProcessEntity::version).orElse(null))
-        .extensionProperties(
-            cached
-                .map(CachedProcessEntity::elementExtensionProperties)
-                .map(p -> p.get(value.getStartEventId()))
-                .orElse(Map.of()))
+        .extensionProperties(ext)
+        .toolName(ProcessCacheUtil.getToolName(ext))
+        .inboundConnectorType(ProcessCacheUtil.getInboundConnectorType(ext))
         .build();
   }
 }

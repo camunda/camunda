@@ -39,6 +39,8 @@ public class MessageSubscriptionBuilder implements MessageSubscription {
   private String processDefinitionName;
   private Integer processDefinitionVersion;
   private Map<String, String> extensionProperties;
+  private String toolName;
+  private String inboundConnectorType;
 
   @Override
   public Long getMessageSubscriptionKey() {
@@ -118,6 +120,16 @@ public class MessageSubscriptionBuilder implements MessageSubscription {
   @Override
   public Map<String, String> getExtensionProperties() {
     return extensionProperties;
+  }
+
+  @Override
+  public String getToolName() {
+    return toolName;
+  }
+
+  @Override
+  public String getInboundConnectorType() {
+    return inboundConnectorType;
   }
 
   public MessageSubscriptionBuilder setExtensionProperties(
@@ -201,6 +213,16 @@ public class MessageSubscriptionBuilder implements MessageSubscription {
 
   public MessageSubscriptionBuilder setMessageSubscriptionKey(final Long messageSubscriptionKey) {
     this.messageSubscriptionKey = messageSubscriptionKey;
+    return this;
+  }
+
+  public MessageSubscriptionBuilder setToolName(final String toolName) {
+    this.toolName = toolName;
+    return this;
+  }
+
+  public MessageSubscriptionBuilder setInboundConnectorType(final String inboundConnectorType) {
+    this.inboundConnectorType = inboundConnectorType;
     return this;
   }
 

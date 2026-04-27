@@ -1068,7 +1068,9 @@ public final class SearchQueryResponseMapper {
         .tenantId(messageSubscription.tenantId())
         .processDefinitionName(messageSubscription.processDefinitionName())
         .processDefinitionVersion(messageSubscription.processDefinitionVersion())
-        .extensionProperties(messageSubscription.extensionProperties());
+        .extensionProperties(messageSubscription.extensionProperties())
+        .toolName(messageSubscription.toolName())
+        .inboundConnectorType(messageSubscription.inboundConnectorType());
   }
 
   private static List<CorrelatedMessageSubscriptionResult> toCorrelatedMessageSubscriptions(

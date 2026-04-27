@@ -139,7 +139,8 @@ final class MessageSubscriptionExportHandlerTest {
     final String tenantId = "tenant-1";
     final String processName = "Process One";
     final int processVersion = 2;
-    final Map<String, String> extProps = Map.of("io.camunda.tool:name", "myTool");
+    final Map<String, String> extProps =
+        Map.of("io.camunda.tool:name", "myTool", "inbound.type", "io.camunda:http-webhook:1");
 
     final var recordValue =
         ImmutableProcessMessageSubscriptionRecordValue.builder()
@@ -195,6 +196,8 @@ final class MessageSubscriptionExportHandlerTest {
     assertThat(model.processDefinitionName()).isEqualTo(processName);
     assertThat(model.processDefinitionVersion()).isEqualTo(processVersion);
     assertThat(model.extensionProperties()).isEqualTo(extProps);
+    assertThat(model.toolName()).isEqualTo("myTool");
+    assertThat(model.inboundConnectorType()).isEqualTo("io.camunda:http-webhook:1");
   }
 
   private static Stream<Arguments> provideTestRoutines() {
@@ -243,5 +246,7 @@ final class MessageSubscriptionExportHandlerTest {
     assertThat(model.processDefinitionName()).isNull();
     assertThat(model.processDefinitionVersion()).isNull();
     assertThat(model.extensionProperties()).isEqualTo(Map.of());
+    assertThat(model.toolName()).isNull();
+    assertThat(model.inboundConnectorType()).isNull();
   }
 }

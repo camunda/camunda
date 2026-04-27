@@ -23,7 +23,9 @@ public enum MessageSubscriptionColumn implements SearchColumn<MessageSubscriptio
   CORRELATION_KEY("correlationKey"),
   TENANT_ID("tenantId"),
   PROCESS_DEFINITION_NAME("processDefinitionName"),
-  PROCESS_DEFINITION_VERSION("processDefinitionVersion");
+  PROCESS_DEFINITION_VERSION("processDefinitionVersion"),
+  TOOL_NAME("toolName"),
+  INBOUND_CONNECTOR_TYPE("inboundConnectorType");
 
   private final String property;
 

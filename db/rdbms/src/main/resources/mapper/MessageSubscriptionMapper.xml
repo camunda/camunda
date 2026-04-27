@@ -43,7 +43,9 @@
     PARTITION_ID,
     PROCESS_DEFINITION_NAME,
     PROCESS_DEFINITION_VERSION,
-    EXTENSION_PROPERTIES
+    EXTENSION_PROPERTIES,
+    TOOL_NAME,
+    INBOUND_CONNECTOR_TYPE
     FROM ${prefix}MESSAGE_SUBSCRIPTION
 
     <include refid="io.camunda.db.rdbms.sql.MessageSubscriptionMapper.searchAndAuthFilter" />
@@ -159,6 +161,18 @@
         <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
       </foreach>
     </if>
+    <if test="filter.toolNameOperations != null and !filter.toolNameOperations.isEmpty()">
+      <foreach collection="filter.toolNameOperations" item="operation">
+        AND TOOL_NAME
+        <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+      </foreach>
+    </if>
+    <if test="filter.inboundConnectorTypeOperations != null and !filter.inboundConnectorTypeOperations.isEmpty()">
+      <foreach collection="filter.inboundConnectorTypeOperations" item="operation">
+        AND INBOUND_CONNECTOR_TYPE
+        <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+      </foreach>
+    </if>
   </sql>
 
   <resultMap id="searchResultMap" type="io.camunda.db.rdbms.write.domain.MessageSubscriptionDbModel">
@@ -181,6 +195,8 @@
     <result column="PROCESS_DEFINITION_NAME" property="processDefinitionName" javaType="java.lang.String" />
     <result column="PROCESS_DEFINITION_VERSION" property="processDefinitionVersion" javaType="java.lang.Integer" />
     <result column="EXTENSION_PROPERTIES" property="serializedExtensionProperties" javaType="java.lang.String" />
+    <result column="TOOL_NAME" property="toolName" javaType="java.lang.String" />
+    <result column="INBOUND_CONNECTOR_TYPE" property="inboundConnectorType" javaType="java.lang.String" />
   </resultMap>
 
 
@@ -202,7 +218,9 @@
                                                PARTITION_ID,
                                                PROCESS_DEFINITION_NAME,
                                                PROCESS_DEFINITION_VERSION,
-                                               EXTENSION_PROPERTIES
+                                               EXTENSION_PROPERTIES,
+                                               TOOL_NAME,
+                                               INBOUND_CONNECTOR_TYPE
     )
     VALUES (
             #{messageSubscriptionKey},
@@ -221,7 +239,9 @@
             #{partitionId},
             #{processDefinitionName},
             #{processDefinitionVersion},
-            #{serializedExtensionProperties}
+            #{serializedExtensionProperties},
+            #{toolName},
+            #{inboundConnectorType}
     )
   </insert>
 
@@ -240,7 +260,9 @@
         TENANT_ID = #{tenantId},
         PROCESS_DEFINITION_NAME = #{processDefinitionName},
         PROCESS_DEFINITION_VERSION = #{processDefinitionVersion},
-        EXTENSION_PROPERTIES = #{serializedExtensionProperties}
+        EXTENSION_PROPERTIES = #{serializedExtensionProperties},
+        TOOL_NAME = #{toolName},
+        INBOUND_CONNECTOR_TYPE = #{inboundConnectorType}
     WHERE MESSAGE_SUBSCRIPTION_KEY = #{messageSubscriptionKey}
   </update>
 

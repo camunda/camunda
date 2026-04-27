@@ -62,4 +62,8 @@ public interface MessageSubscription {
   Integer getProcessDefinitionVersion();
 
   Map<String, String> getExtensionProperties();
+
+  String getToolName();
+
+  String getInboundConnectorType();
 }

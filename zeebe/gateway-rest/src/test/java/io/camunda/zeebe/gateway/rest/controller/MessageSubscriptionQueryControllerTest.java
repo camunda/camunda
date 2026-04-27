@@ -52,7 +52,9 @@ public class MessageSubscriptionQueryControllerTest extends RestControllerTest {
                   "rootProcessInstanceKey": null,
                   "extensionProperties": {},
                   "processDefinitionName": null,
-                  "processDefinitionVersion": null
+                  "processDefinitionVersion": null,
+                  "toolName": null,
+                  "inboundConnectorType": null
                 }
             ],
             "page": {
@@ -221,7 +223,9 @@ public class MessageSubscriptionQueryControllerTest extends RestControllerTest {
                 "lastUpdatedDate": "2025-07-05T12:11:00.975Z",
                 "correlationKey": "test",
                 "messageName": "test-message",
-                "tenantId": "test-tenant"
+                "tenantId": "test-tenant",
+                "toolName": "myTool",
+                "inboundConnectorType": "io.camunda:http-webhook:1"
               }
             }""")
         .exchange()
@@ -255,7 +259,9 @@ public class MessageSubscriptionQueryControllerTest extends RestControllerTest {
                                 .dateTimes(OffsetDateTime.parse("2025-07-05T12:11:00.975Z"))
                                 .correlationKeys("test")
                                 .messageNames("test-message")
-                                .tenantIds("test-tenant"))
+                                .tenantIds("test-tenant")
+                                .toolNames("myTool")
+                                .inboundConnectorTypes("io.camunda:http-webhook:1"))
                     .build()),
             any());
   }
@@ -326,6 +332,14 @@ public class MessageSubscriptionQueryControllerTest extends RestControllerTest {
                 {
                   "field": "tenantId",
                   "order": "asc"
+                },
+                {
+                  "field": "toolName",
+                  "order": "asc"
+                },
+                {
+                  "field": "inboundConnectorType",
+                  "order": "desc"
                 }
               ]
             }""")
@@ -368,7 +382,11 @@ public class MessageSubscriptionQueryControllerTest extends RestControllerTest {
                                 .messageName()
                                 .desc()
                                 .tenantId()
-                                .asc())
+                                .asc()
+                                .toolName()
+                                .asc()
+                                .inboundConnectorType()
+                                .desc())
                     .build()),
             any());
   }
