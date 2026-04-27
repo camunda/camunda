@@ -10,7 +10,6 @@ package io.camunda.authentication.service;
 import static io.camunda.zeebe.protocol.record.value.EntityType.GROUP;
 import static io.camunda.zeebe.protocol.record.value.EntityType.MAPPING_RULE;
 
-import io.camunda.search.entities.GroupEntity;
 import io.camunda.search.entities.MappingRuleEntity;
 import io.camunda.search.entities.RoleEntity;
 import io.camunda.search.entities.TenantEntity;
@@ -91,12 +90,19 @@ public class DefaultMembershipService implements MembershipService {
     if (isGroupsClaimConfigured) {
       groups = new HashSet<>(oidcGroupsLoader.load(tokenClaims));
     } else {
-      groups =
-          groupServices
-              .getGroupsByMemberTypeAndMemberIds(ownerTypeToIds, CamundaAuthentication.anonymous())
-              .stream()
-              .map(GroupEntity::groupId)
-              .collect(Collectors.toSet());
+      final var groupEntities =
+          groupServices.getGroupsByMemberTypeAndMemberIds(
+              ownerTypeToIds, CamundaAuthentication.anonymous());
+      // Include both group IDs and group names to support BPMN processes that reference groups
+      // by either ID or name (name-based references were common before 8.8 migration)
+      groups = new HashSet<>();
+      groupEntities.forEach(
+          group -> {
+            groups.add(group.groupId());
+            if (group.name() != null && !group.name().equals(group.groupId())) {
+              groups.add(group.name());
+            }
+          });
     }
 
     if (!groups.isEmpty()) {
