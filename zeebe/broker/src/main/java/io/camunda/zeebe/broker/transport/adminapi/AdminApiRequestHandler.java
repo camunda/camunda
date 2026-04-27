@@ -23,6 +23,7 @@ import io.camunda.zeebe.transport.RequestType;
 import io.camunda.zeebe.transport.impl.AtomixServerTransport;
 import io.camunda.zeebe.util.Either;
 import java.io.IOException;
+import org.jspecify.annotations.Nullable;
 
 public class AdminApiRequestHandler
     extends AsyncApiRequestHandler<ApiRequestReader, ApiResponseWriter> {
@@ -31,7 +32,7 @@ public class AdminApiRequestHandler
   private final RaftPartition raftPartition;
   private final ClusterConfigurationService clusterConfigurationService;
   private final int nodeId;
-  private final String zone;
+  private final @Nullable String zone;
 
   public AdminApiRequestHandler(
       final AtomixServerTransport transport,
@@ -39,7 +40,7 @@ public class AdminApiRequestHandler
       final RaftPartition raftPartition,
       final ClusterConfigurationService clusterConfigurationService,
       final int nodeId,
-      final String zone) {
+      final @Nullable String zone) {
     super(ApiRequestReader::new, ApiResponseWriter::new);
     this.transport = transport;
     this.adminAccess = adminAccess;
