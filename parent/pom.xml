@@ -169,7 +169,6 @@
     <version.caffeine>3.2.3</version.caffeine>
     <version.commons-collections>20040616</version.commons-collections>
     <version.reflections>0.10.2</version.reflections>
-    <version.duct-tape>1.0.8</version.duct-tape>
 
     <version.commons-io>2.21.0</version.commons-io>
     <version.thymeleaf>3.1.4.RELEASE</version.thymeleaf>
@@ -2208,12 +2207,6 @@
         <groupId>com.github.wnameless.json</groupId>
         <artifactId>json-flattener</artifactId>
         <version>${version.json-flattener}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>org.rnorth.duct-tape</groupId>
-        <artifactId>duct-tape</artifactId>
-        <version>${version.duct-tape}</version>
       </dependency>
 
     </dependencies>
