@@ -71,6 +71,8 @@ jobs:
             local db="${label_to_db[$label]:-}"
             if [[ -n "$db" ]]; then
               entries+=("{\"label\":\"${label}\",\"db\":\"${db}\"}")
+            else
+              echo "::warning title=Unknown Benchmark Label::Label '$label' is not a recognized benchmark trigger. Ignoring."
             fi
           }
 
@@ -112,7 +114,7 @@ jobs:
     concurrency:
       group: pr-benchmark-${{ matrix.db }}-${{ github.event.pull_request.number }}
       cancel-in-progress: true
-    uses: ./.github/workflows/pr-benchmark-pipeline.yml
+    uses: ./.github/workflows/camunda-pr-load-test.yaml
     secrets: inherit
     with:
       label: ${{ matrix.label }}
