@@ -129,3 +129,48 @@ it('should process the result of every created report', () => {
   const reportNames = processResult.mock.calls.map((call) => call[0].id);
   expect(reportNames).toEqual(['taskId1', 'taskId2', 'taskId3']);
 });
+
+it('should translate the missing variable key to "null / undefined" for distributedBy variable reports', () => {
+  const variableDistributedReport = {
+    data: {
+      processDefinitionKey: 'aKey',
+      processDefinitionVersion: '1',
+      view: {
+        properties: ['frequency'],
+        entity: 'processInstance',
+      },
+      groupBy: {
+        type: 'startDate',
+        value: {unit: 'month'},
+      },
+      visualization: 'line',
+      distributedBy: {type: 'variable', value: {name: 'boolVar', type: 'Boolean'}},
+      configuration: {},
+    },
+    result: {
+      measures: [
+        {
+          property: 'frequency',
+          data: [
+            {
+              key: '2024-01-01',
+              label: 'Jan 2024',
+              value: [
+                {key: 'true', label: 'true', value: 8},
+                {key: 'missing', label: 'missing', value: 3},
+              ],
+            },
+          ],
+        },
+      ],
+      instanceCount: 11,
+      type: 'hyperMap',
+    },
+  };
+
+  const node = shallow(<HyperReportRenderer report={variableDistributedReport} />);
+  const resultData = node.find(Chart).prop('report').result.data;
+
+  expect(resultData['missing'].name).toBe('null / undefined');
+  expect(resultData['true'].name).toBe('true');
+});
