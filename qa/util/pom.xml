@@ -221,6 +221,11 @@
     </dependency>
 
     <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-db-rdbms-schema</artifactId>
+    </dependency>
+
+    <dependency>
       <groupId>org.jspecify</groupId>
       <artifactId>jspecify</artifactId>
     </dependency>

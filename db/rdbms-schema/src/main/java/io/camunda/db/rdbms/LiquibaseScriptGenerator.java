@@ -88,18 +88,6 @@ public class LiquibaseScriptGenerator {
         previousVersion = fileName.replace(".xml", "");
       }
     }
-
-    // Generate an Oracle SQL template with __PREFIX__ as a sentinel value.
-    // This template is used by @MultiDbTest tests to initialize the Oracle schema without
-    // running Liquibase at test startup (avoiding slow precondition evaluation on Oracle).
-    // At test time the sentinel is replaced with the actual per-test table prefix and the
-    // resulting SQL is executed directly over JDBC.
-    generateLiquibaseScript(
-        ORACLE,
-        CHANGELOG_PATH + "changelog-master.xml",
-        "__PREFIX__",
-        targetDir + "/create-template",
-        ORACLE + "_master.sql");
   }
 
   public static void generateLiquibaseScript(

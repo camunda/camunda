@@ -11,7 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import org.junit.jupiter.api.Test;
 
-class OracleSchemaInitializerTest {
+class RdbmsSchemaInitializerTest {
 
   @Test
   void shouldStripSingleLeadingCommentLine() {
@@ -19,7 +19,7 @@ class OracleSchemaInitializerTest {
     final String input = "-- create_process_definition_table\nCREATE TABLE FOO (ID NUMBER)";
 
     // when
-    final String result = OracleSchemaInitializer.stripLeadingComments(input);
+    final String result = RdbmsSchemaInitializer.stripLeadingComments(input);
 
     // then
     assertThat(result).isEqualTo("CREATE TABLE FOO (ID NUMBER)");
@@ -31,7 +31,7 @@ class OracleSchemaInitializerTest {
     final String input = "-- comment 1\n-- comment 2\nCREATE TABLE FOO (ID NUMBER)";
 
     // when
-    final String result = OracleSchemaInitializer.stripLeadingComments(input);
+    final String result = RdbmsSchemaInitializer.stripLeadingComments(input);
 
     // then
     assertThat(result).isEqualTo("CREATE TABLE FOO (ID NUMBER)");
@@ -43,7 +43,7 @@ class OracleSchemaInitializerTest {
     final String input = "CREATE TABLE FOO (\n  -- column comment\n  ID NUMBER\n)";
 
     // when
-    final String result = OracleSchemaInitializer.stripLeadingComments(input);
+    final String result = RdbmsSchemaInitializer.stripLeadingComments(input);
 
     // then - the embedded comment is preserved because it does not appear at the leading position
     assertThat(result).isEqualTo("CREATE TABLE FOO (\n  -- column comment\n  ID NUMBER\n)");
@@ -55,10 +55,10 @@ class OracleSchemaInitializerTest {
     final String input = "-- only a comment";
 
     // when
-    final String result = OracleSchemaInitializer.stripLeadingComments(input);
+    final String result = RdbmsSchemaInitializer.stripLeadingComments(input);
 
     // then
-    assertThat(result.trim()).isEmpty();
+    assertThat(result).isEmpty();
   }
 
   @Test
@@ -67,25 +67,9 @@ class OracleSchemaInitializerTest {
     final String input = "CREATE INDEX IDX_FOO ON BAR(BAZ)";
 
     // when
-    final String result = OracleSchemaInitializer.stripLeadingComments(input);
+    final String result = RdbmsSchemaInitializer.stripLeadingComments(input);
 
     // then
     assertThat(result).isEqualTo(input);
-  }
-
-  @Test
-  void shouldSubstituteSentinelInTemplate() {
-    // given – verify that a simple replace of the sentinel produces the expected prefix
-    final String template =
-        "CREATE TABLE __PREFIX__FOO (ID NUMBER);\n\nCREATE INDEX __PREFIX__IDX ON __PREFIX__FOO(ID);\n";
-    final String prefix = "TESTPREFIX";
-
-    // when
-    final String result = template.replace(OracleSchemaInitializer.PREFIX_SENTINEL, prefix);
-
-    // then
-    assertThat(result)
-        .contains("CREATE TABLE TESTPREFIXFOO")
-        .contains("CREATE INDEX TESTPREFIXIDX ON TESTPREFIXFOO");
   }
 }
