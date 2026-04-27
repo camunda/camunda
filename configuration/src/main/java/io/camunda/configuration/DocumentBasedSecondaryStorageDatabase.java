@@ -36,11 +36,11 @@ public abstract class DocumentBasedSecondaryStorageDatabase
   /** The connection timeout for ES and OS connector */
   private Duration connectionTimeout;
 
-  /** How many shards Elasticsearch uses for all Tasklist indices. */
+  /** How many shards the search engine database uses for all indices. */
   private int numberOfShards = 1;
 
-  /** How many replicas Elasticsearch uses for all indices. */
-  private int numberOfReplicas = 0;
+  /** How many replicas the search engine database uses for all indices. */
+  private int numberOfReplicas = 1;
 
   /** What default refresh interval we will use for all indices */
   private String refreshInterval;
