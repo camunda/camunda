@@ -48,7 +48,7 @@ public final class ClusterConfigurationManagerService
   public static final String TOPOLOGY_FILE_NAME = ".topology.meta";
   // Use a node 0 as always the coordinator. Later we can make it configurable or allow changing it
   // dynamically.
-  private static final String COORDINATOR_ID = "0";
+  private static final int COORDINATOR_NODE_ID = 0;
   private final ClusterConfigurationManagerImpl clusterConfigurationManager;
   private final ClusterConfigurationGossiper clusterConfigurationGossiper;
   private final boolean isCoordinator;
@@ -98,7 +98,7 @@ public final class ClusterConfigurationManagerService
             config,
             clusterConfigurationManager::onGossipReceived,
             topologyMetrics);
-    isCoordinator = localMemberId.id().equals(COORDINATOR_ID);
+    isCoordinator = MemberId.extractNodeId(localMemberId) == COORDINATOR_NODE_ID;
     configurationChangeCoordinator =
         new ConfigurationChangeCoordinatorImpl(
             clusterConfigurationManager, localMemberId, managerActor);
