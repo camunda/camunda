@@ -9,7 +9,9 @@ package io.camunda.zeebe.worker;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.annotation.JobWorker;
+import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.response.ActivatedJob;
+import io.camunda.client.api.response.PublishMessageResponse;
 import io.camunda.client.api.worker.JobClient;
 import io.camunda.zeebe.config.LoadTesterProperties;
 import io.camunda.zeebe.config.WorkerProperties;
@@ -22,7 +24,6 @@ import java.time.Duration;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Profile;
@@ -91,28 +92,48 @@ public class Worker {
       final var correlationKey =
           job.getVariable(workerCfg.getCorrelationKeyVariableName()).toString();
 
-      final boolean messagePublishedSuccessfully = publishMessage(correlationKey);
-      if (!messagePublishedSuccessfully) {
-        // Instead of failing the job, we simply let the job time out, so someone else has to
-        // pick up the job later. This might delay the individual process instance, but overall it
-        // has a lesser impact, as we can work on a different job in the meantime, keeping up the
-        // throughput.
-        //
-        // It might be that one partition has currently some struggle due to restarts or role
-        // changes, chances are low that this affects all partitions.
-        //
-        // This might cause issues for the current job to publish a message, but we are sending
-        // messages via correlation key,   based on the process instance payload.
-        //
-        // On the next job/message published the chances are (partition count - 1 / partition
-        // count) that we hit another partition where it works without issues.
-        return;
-      }
+      final var messagePublishedFuture = publishMessage(correlationKey);
+      // We do not want to block the worker here - as this would throttle the general throuhgput
+      // due to individual response latencies
+      messagePublishedFuture.whenComplete(
+          (value, error) -> {
+            if (error == null) {
+              final var command = jobClient.newCompleteCommand(job.getKey()).variables(variables);
+              tryToOffer(command.send());
+            } else {
+              // Instead of failing the job, we simply let the job time out, so someone else has to
+              // pick up the job later. This might delay the individual process instance, but
+              // overall it
+              // has a lesser impact, as we can work on a different job in the meantime, keeping up
+              // the
+              // throughput.
+              //
+              // It might be that one partition has currently some struggle due to restarts or role
+              // changes, chances are low that this affects all partitions.
+              //
+              // This might cause issues for the current job to publish a message, but we are
+              // sending
+              // messages via correlation key,   based on the process instance payload.
+              //
+              // On the next job/message published the chances are (partition count - 1 / partition
+              // count) that we hit another partition where it works without issues.
+              return;
+            }
+          });
+
+      // job will eventually completed by the worker - later after the response of the publish
+      // received or on
+      // retry
+      return;
     }
 
     final var command = jobClient.newCompleteCommand(job.getKey()).variables(variables);
     addDelayToCompletion(workerCfg.getCompletionDelay().toMillis(), startHandlingTime);
-    if (!requestFutures.offer(command.send())) {
+    tryToOffer(command.send());
+  }
+
+  private void tryToOffer(final CamundaFuture<?> commandFuture) {
+    if (!requestFutures.offer(commandFuture)) {
       // Non-blocking: if the response-check queue is saturated, drop tracking for this
       // completion rather than stalling the job handler thread (which would cascade into
       // broker timeouts). We lose visibility into its eventual result — log throttled so
@@ -123,28 +144,15 @@ public class Worker {
     }
   }
 
-  private boolean publishMessage(final String correlationKey) {
+  private CamundaFuture<PublishMessageResponse> publishMessage(final String correlationKey) {
     final var messageName = workerCfg.getMessageName();
 
     LOGGER.debug("Publish message '{}' with correlation key '{}'", messageName, correlationKey);
-    final var messageSendFuture =
-        client
-            .newPublishMessageCommand()
-            .messageName(messageName)
-            .correlationKey(correlationKey)
-            .send();
-
-    try {
-      messageSendFuture.get(10, TimeUnit.SECONDS);
-      return true;
-    } catch (final Exception ex) {
-      THROTTLED_LOGGER.error(
-          "Exception on publishing a message with name {} and correlationKey {}",
-          messageName,
-          correlationKey,
-          ex);
-      return false;
-    }
+    return client
+        .newPublishMessageCommand()
+        .messageName(messageName)
+        .correlationKey(correlationKey)
+        .send();
   }
 
   private static void addDelayToCompletion(
