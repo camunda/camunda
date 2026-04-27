@@ -10,6 +10,11 @@ server:
 logging:
   level:
     root: ${LOG_LEVEL:WARN}
+    # Apache HC5 (used by CamundaClient's REST transport) logs every 503 retry
+    # at INFO, flooding starter/worker pod logs under benchmark load when
+    # LOG_LEVEL=INFO. Pin this package to WARN; override with
+    # LOGGING_LEVEL_ORG_APACHE_HC_CLIENT5_HTTP_IMPL_ASYNC=INFO to debug retries.
+    org.apache.hc.client5.http.impl.async: WARN
 
 management:
   server:
