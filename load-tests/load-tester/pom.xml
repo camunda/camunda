@@ -10,9 +10,9 @@
     <relativePath>../../parent/pom.xml</relativePath>
   </parent>
 
-  <artifactId>zeebe-benchmark</artifactId>
+  <artifactId>camunda-load-tester</artifactId>
 
-  <name>Zeebe Benchmark</name>
+  <name>Camunda Load Tester</name>
 
   <licenses>
     <license>
@@ -28,27 +28,67 @@
     <!-- java version -->
     <version.java>21</version.java>
 
-    <!-- dependency versions -->
-    <version.config>1.4.6</version.config>
-
     <!-- maven plugin versions -->
     <plugin.version.license>3.0</plugin.version.license>
     <plugin.version.jib>3.4.6</plugin.version.jib>
   </properties>
 
   <dependencies>
-    <!-- Benchmark only dependencies -->
+    <!-- Camunda Spring Boot Starter: auto-configures CamundaClient, @JobWorker, properties -->
     <dependency>
-      <groupId>com.typesafe</groupId>
-      <artifactId>config</artifactId>
-      <version>${version.config}</version>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-spring-boot-starter</artifactId>
     </dependency>
+
+    <!-- Webflux (Netty) instead of Web (Tomcat) to minimize memory footprint.
+         The old HOCON app used a ~2 MB Prometheus HTTPServer; Tomcat adds ~40 MB
+         overhead that causes OOM in 256 Mi worker pods under load. Netty is much
+         lighter and still serves /actuator/prometheus for Grafana scraping. -->
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-webflux</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-actuator</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-autoconfigure</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-context</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-beans</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>jakarta.annotation</groupId>
+      <artifactId>jakarta.annotation-api</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-api</artifactId>
+    </dependency>
+
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>zeebe-protocol</artifactId>
     </dependency>
 
-    <!-- Shared dependencies with the rest of the project -->
     <dependency>
       <groupId>com.google.guava</groupId>
       <artifactId>guava</artifactId>
@@ -57,11 +97,6 @@
     <dependency>
       <groupId>org.apache.commons</groupId>
       <artifactId>commons-lang3</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>io.grpc</groupId>
-      <artifactId>grpc-api</artifactId>
     </dependency>
 
     <dependency>
@@ -75,38 +110,18 @@
     </dependency>
 
     <dependency>
-      <groupId>io.prometheus</groupId>
-      <artifactId>prometheus-metrics-exporter-httpserver</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>io.prometheus</groupId>
-      <artifactId>prometheus-metrics-model</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>org.slf4j</groupId>
-      <artifactId>slf4j-api</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>org.apache.logging.log4j</groupId>
-      <artifactId>log4j-core</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>org.apache.logging.log4j</groupId>
-      <artifactId>log4j-slf4j2-impl</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>io.micrometer</groupId>
-      <artifactId>micrometer-core</artifactId>
+      <groupId>io.grpc</groupId>
+      <artifactId>grpc-api</artifactId>
     </dependency>
 
     <dependency>
       <groupId>io.micrometer</groupId>
       <artifactId>micrometer-commons</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.micrometer</groupId>
+      <artifactId>micrometer-core</artifactId>
     </dependency>
 
     <dependency>
@@ -122,6 +137,30 @@
     <dependency>
       <groupId>com.fasterxml.jackson.core</groupId>
       <artifactId>jackson-core</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>com.fasterxml.jackson.datatype</groupId>
+      <artifactId>jackson-datatype-jsr310</artifactId>
+    </dependency>
+
+    <!-- Test dependencies -->
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-test</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-test</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-test</artifactId>
+      <scope>test</scope>
     </dependency>
 
     <dependency>
@@ -147,9 +186,28 @@
       <artifactId>awaitility</artifactId>
       <scope>test</scope>
     </dependency>
+
     <dependency>
       <groupId>org.mockito</groupId>
       <artifactId>mockito-core</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.testcontainers</groupId>
+      <artifactId>testcontainers</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.testcontainers</groupId>
+      <artifactId>testcontainers-junit-jupiter</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-process-test-java</artifactId>
       <scope>test</scope>
     </dependency>
   </dependencies>
@@ -186,6 +244,29 @@
         <groupId>com.mycila</groupId>
         <artifactId>license-maven-plugin</artifactId>
       </plugin>
+      <plugin>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-maven-plugin</artifactId>
+        <configuration>
+          <mainClass>io.camunda.zeebe.LoadTesterApplication</mainClass>
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-failsafe-plugin</artifactId>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-dependency-plugin</artifactId>
+        <configuration>
+          <usedDependencies>
+            <dependency>org.springframework.boot:spring-boot-starter-webflux</dependency>
+            <dependency>org.springframework.boot:spring-boot-starter-actuator</dependency>
+            <dependency>org.springframework.boot:spring-boot-starter-test</dependency>
+            <dependency>com.fasterxml.jackson.datatype:jackson-datatype-jsr310</dependency>
+          </usedDependencies>
+        </configuration>
+      </plugin>
     </plugins>
   </build>
 
@@ -206,7 +287,10 @@
                 <image>gcr.io/zeebe-io/starter:SNAPSHOT</image>
               </to>
               <container>
-                <mainClass>io.camunda.zeebe.Starter</mainClass>
+                <mainClass>io.camunda.zeebe.LoadTesterApplication</mainClass>
+                <args>
+                  <arg>--spring.profiles.active=starter</arg>
+                </args>
               </container>
             </configuration>
           </plugin>
@@ -229,7 +313,10 @@
                 <image>gcr.io/zeebe-io/worker:SNAPSHOT</image>
               </to>
               <container>
-                <mainClass>io.camunda.zeebe.Worker</mainClass>
+                <mainClass>io.camunda.zeebe.LoadTesterApplication</mainClass>
+                <args>
+                  <arg>--spring.profiles.active=worker</arg>
+                </args>
               </container>
             </configuration>
           </plugin>
