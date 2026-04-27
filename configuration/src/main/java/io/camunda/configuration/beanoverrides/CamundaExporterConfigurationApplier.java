@@ -162,6 +162,7 @@ public final class CamundaExporterConfigurationApplier {
         Math.toIntExact(source.getHistory().getDelayBetweenRuns().toMillis()));
     target.setMaxDelayBetweenRuns(
         Math.toIntExact(source.getHistory().getMaxDelayBetweenRuns().toMillis()));
+    target.setArchiveByIdMaxRetryAttempts(source.getHistory().getArchiveByIdMaxRetryAttempts());
   }
 
   public static void applyPostExportConfiguration(
