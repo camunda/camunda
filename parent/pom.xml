@@ -99,6 +99,7 @@
     <version.postgressql-testcontainer>2.0.2</version.postgressql-testcontainer>
     <version.netflix.concurrency>0.5.4</version.netflix.concurrency>
     <version.zeebe-test-container>3.6.9</version.zeebe-test-container>
+<<<<<<< HEAD
     <version.feel-scala>1.19.5</version.feel-scala>
     <version.dmn-scala>1.10.1</version.dmn-scala>
     <version.rest-assured>5.5.7</version.rest-assured>
@@ -108,6 +109,18 @@
     <spring-security.version>${version.spring-security}</spring-security.version>
     <version.spring-boot>3.5.14</version.spring-boot>
     <version.tomcat>10.1.54</version.tomcat>
+=======
+    <version.feel-scala>1.21.0</version.feel-scala>
+    <version.dmn-scala>1.12.0</version.dmn-scala>
+    <version.rest-assured>6.0.0</version.rest-assured>
+    <version.spring>7.0.6</version.spring>
+    <version.spring-security>7.0.5</version.spring-security>
+    <version.spring-boot>4.0.5</version.spring-boot>
+    <version.spring-ai>2.0.0-M4</version.spring-ai>
+    <version.mcp-sdk>1.1.1</version.mcp-sdk>
+    <version.jsonschema-generator>5.0.0</version.jsonschema-generator>
+    <version.tomcat>11.0.21</version.tomcat>
+>>>>>>> 35559a90 (deps: update spring security to 7.0.5)
     <version.concurrentunit>0.4.6</version.concurrentunit>
     <version.kryo>5.6.2</version.kryo>
     <version.failsafe>2.4.4</version.failsafe>
