@@ -26,7 +26,7 @@
     <!-- Override Spring Boot version for 3.x compatibility -->
     <version.spring-boot>3.5.14</version.spring-boot>
     <!-- Spring Framework 6.x is required for Spring Boot 3.x -->
-    <version.spring>6.2.16</version.spring>
+    <version.spring>6.2.18</version.spring>
     <version.roaster>2.31.0.Final</version.roaster>
     <version.aspectjweaver>1.9.25.1</version.aspectjweaver>
     <generated.test.sources.path>${project.build.directory}/generated-test-sources/java</generated.test.sources.path>
