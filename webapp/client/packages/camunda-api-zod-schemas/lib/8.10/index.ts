@@ -666,6 +666,7 @@ export {
 	queryCorrelatedMessageSubscriptionRequestBodySchema,
 	queryCorrelatedMessageSubscriptionsResponseBodySchema,
 	type MessageSubscriptionState,
+	type MessageSubscriptionType,
 	type MessageSubscription,
 	type QueryMessageSubscriptionsRequestBody,
 	type QueryMessageSubscriptionsResponseBody,

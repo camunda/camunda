@@ -7,7 +7,7 @@
     "@bpmn-io/element-template-icon-renderer": "1.0.0",
     "@bpmn-io/form-js-carbon-styles": "1.21.2",
     "@bpmn-io/form-js-viewer": "1.21.2",
-    "@camunda/camunda-api-zod-schemas": "^0.0.58",
+    "@camunda/camunda-api-zod-schemas": "0.0.60",
     "@camunda/camunda-composite-components": "0.22.6",
     "@carbon/react": "1.105.0",
     "@monaco-editor/react": "4.7.0",
