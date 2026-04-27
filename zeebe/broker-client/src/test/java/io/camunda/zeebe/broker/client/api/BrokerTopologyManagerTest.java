@@ -32,6 +32,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CopyOnWriteArraySet;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterEach;
@@ -556,7 +557,7 @@ final class BrokerTopologyManagerTest {
     notifyEvent(new ClusterMembershipEvent(Type.MEMBER_ADDED, member));
 
     // when — a new listener is added after the broker is already known
-    final var capturedIds = new java.util.concurrent.CopyOnWriteArrayList<MemberId>();
+    final var capturedIds = new CopyOnWriteArrayList<MemberId>();
     topologyManager.addTopologyListener(
         new BrokerTopologyListener() {
           @Override
