@@ -87,7 +87,7 @@ public class ZeebePositionBasedImportIndexIT extends AbstractCCSMIT {
 
     // when
     startAndUseNewOptimizeInstance();
-    setupZeebeImportAndReloadConfiguration();
+    configureZeebeImport();
     databaseIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // then
@@ -111,7 +111,7 @@ public class ZeebePositionBasedImportIndexIT extends AbstractCCSMIT {
 
     // when
     startAndUseNewOptimizeInstance();
-    setupZeebeImportAndReloadConfiguration();
+    configureZeebeImport();
     databaseIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // then
