@@ -22,6 +22,7 @@ import io.camunda.authentication.csrf.CsrfProtectionRequestMatcher;
 import io.camunda.authentication.exception.BasicAuthenticationNotSupportedException;
 import io.camunda.authentication.filters.AdminUserCheckFilter;
 import io.camunda.authentication.filters.OAuth2RefreshTokenFilter;
+import io.camunda.authentication.filters.PhysicalTenantAuthorizationFilter;
 import io.camunda.authentication.filters.WebComponentAuthorizationCheckFilter;
 import io.camunda.authentication.handler.AuthFailureHandler;
 import io.camunda.authentication.handler.LoggingAuthenticationFailureHandler;
@@ -32,6 +33,7 @@ import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.security.configuration.AuthenticationConfiguration;
 import io.camunda.security.configuration.ConfiguredUser;
 import io.camunda.security.configuration.OidcAuthenticationConfiguration;
+import io.camunda.security.configuration.PhysicalTenantIdpRegistry;
 import io.camunda.security.configuration.ProvidersConfiguration;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.security.configuration.headers.HeaderConfiguration;
@@ -1089,7 +1091,8 @@ public class WebSecurityConfig {
         final OAuth2AuthorizedClientManager authorizedClientManager,
         final OidcTokenEndpointCustomizer tokenEndpointCustomizer,
         final LogoutSuccessHandler logoutSuccessHandler,
-        final OidcUserService oidcUserService)
+        final OidcUserService oidcUserService,
+        final PhysicalTenantIdpRegistry physicalTenantIdpRegistry)
         throws Exception {
       final var filterChainBuilder =
           httpSecurity
@@ -1104,6 +1107,8 @@ public class WebSecurityConfig {
                               "/tasklist/client-config.js",
                               "/tasklist/custom.css",
                               "/tasklist/favicon.ico")
+                          .permitAll()
+                          .requestMatchers("/login/*", "/login/*/*")
                           .permitAll()
                           .anyRequest()
                           .authenticated())
@@ -1154,7 +1159,10 @@ public class WebSecurityConfig {
               .addFilterAfter(
                   new WebComponentAuthorizationCheckFilter(
                       securityConfiguration, authenticationProvider, resourceAccessProvider),
-                  AuthorizationFilter.class);
+                  AuthorizationFilter.class)
+              .addFilterAfter(
+                  new PhysicalTenantAuthorizationFilter(physicalTenantIdpRegistry),
+                  WebComponentAuthorizationCheckFilter.class);
 
       applyOauth2RefreshTokenFilter(
           httpSecurity, authorizedClientRepository, authorizedClientManager);
