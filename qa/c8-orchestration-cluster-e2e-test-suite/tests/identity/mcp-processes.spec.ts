@@ -144,7 +144,7 @@ test.describe('Identity MCP Processes', () => {
 
     await test.step("Verify default sort is ascending by 'Tool Name'", async () => {
       await expect(rows.nth(1)).toContainText(ALPHA_TOOL_NAME);
-      await expect(rows.nth(2)).toContainText(BRAVO_TOOL_NAME);
+      await expect(rows.nth(3)).toContainText(BRAVO_TOOL_NAME);
     });
 
     await test.step("Sort ASC by 'Tool Name'", async () => {
@@ -152,7 +152,7 @@ test.describe('Identity MCP Processes', () => {
       await toolNameHeader.click();
 
       await expect(rows.nth(1)).toContainText(ALPHA_TOOL_NAME);
-      await expect(rows.nth(2)).toContainText(BRAVO_TOOL_NAME);
+      await expect(rows.nth(3)).toContainText(BRAVO_TOOL_NAME);
     });
 
     await test.step("Sort DESC by 'Tool Name'", async () => {
@@ -160,7 +160,58 @@ test.describe('Identity MCP Processes', () => {
       await toolNameHeader.click();
 
       await expect(rows.nth(1)).toContainText(BRAVO_TOOL_NAME);
-      await expect(rows.nth(2)).toContainText(ALPHA_TOOL_NAME);
+      await expect(rows.nth(3)).toContainText(ALPHA_TOOL_NAME);
+    });
+  });
+
+  test('MCP Processes rows can be expanded to show more tool information', async ({
+    identityMcpProcessesPage,
+  }) => {
+    await identityMcpProcessesPage.navigateToMcpProcesses();
+
+    await test.step('Verify tool with all information', async () => {
+      const details =
+        identityMcpProcessesPage.getRowToolDetails(ALPHA_TOOL_NAME);
+
+      await identityMcpProcessesPage.expandRowByToolName(ALPHA_TOOL_NAME);
+
+      await expect(details.container).toBeVisible();
+
+      await expect(details.purpose).toBeVisible();
+      await expect(details.purpose).toHaveText(
+        'Tool for executing an alpha process triggered by MCP.',
+      );
+      await expect(details.results).toBeVisible();
+      await expect(details.results).toHaveText(
+        'Alpha tool returns the result of the alpha process execution.',
+      );
+      await expect(details.whenToUse).toBeVisible();
+      await expect(details.whenToUse).toHaveText(
+        'Use the alpha tool when an alpha process needs to be triggered.',
+      );
+      await expect(details.whenNotToUse).toBeVisible();
+      await expect(details.whenNotToUse).toHaveText(
+        'Do not use the alpha tool for bravo processes.',
+      );
+    });
+
+    await test.step('Verify tool with partial information', async () => {
+      const details =
+        identityMcpProcessesPage.getRowToolDetails(BRAVO_TOOL_NAME);
+      await identityMcpProcessesPage.expandRowByToolName(BRAVO_TOOL_NAME);
+
+      await expect(details.purpose).toBeVisible();
+      await expect(details.purpose).toHaveText(
+        'Tool for executing a bravo process triggered by MCP.',
+      );
+      await expect(details.results).toBeVisible();
+      await expect(details.results).toHaveText(
+        'Bravo tool returns the result of the bravo process execution.',
+      );
+      await expect(details.whenToUse).toBeVisible();
+      await expect(details.whenToUse).toHaveText('No information provided.');
+      await expect(details.whenNotToUse).toBeVisible();
+      await expect(details.whenNotToUse).toHaveText('No information provided.');
     });
   });
 });

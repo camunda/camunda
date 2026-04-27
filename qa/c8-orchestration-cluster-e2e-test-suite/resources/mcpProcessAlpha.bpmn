@@ -6,6 +6,9 @@
         <zeebe:properties>
           <zeebe:property name="io.camunda.tool:name" value="alpha-tool-name" />
           <zeebe:property name="io.camunda.tool:purpose" value="Tool for executing an alpha process triggered by MCP." />
+          <zeebe:property name="io.camunda.tool:results" value="Alpha tool returns the result of the alpha process execution." />
+          <zeebe:property name="io.camunda.tool:when_to_use" value="Use the alpha tool when an alpha process needs to be triggered." />
+          <zeebe:property name="io.camunda.tool:when_not_to_use" value="Do not use the alpha tool for bravo processes." />
         </zeebe:properties>
       </bpmn:extensionElements>
       <bpmn:outgoing>Flow_1</bpmn:outgoing>
