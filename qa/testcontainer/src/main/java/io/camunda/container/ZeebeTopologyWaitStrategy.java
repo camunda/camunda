@@ -212,15 +212,11 @@ public class ZeebeTopologyWaitStrategy extends AbstractWaitStrategy {
             .pollInterval(Duration.ofSeconds(1))
             .atMost(startupTimeout)
             .until(
-                () ->
-                    getRateLimiter()
-                        .getWhenReady(
-                            () -> {
-                              latestTopology.topology = getTopology(client);
-                              LOGGER.trace(
-                                  "{}: Topology: {}", containerName, latestTopology.topology);
-                              return isTopologyComplete(latestTopology.topology, containerName);
-                            }));
+                () -> {
+                  latestTopology.topology = getTopology(client);
+                  LOGGER.trace("{}: Topology: {}", containerName, latestTopology.topology);
+                  return isTopologyComplete(latestTopology.topology, containerName);
+                });
       } catch (final ConditionTimeoutException e) {
         throw new ContainerLaunchException(
             String.format(
