@@ -14,6 +14,8 @@ import {
   assertStatusCode,
   assertEqualsForKeys,
   assertNotFoundRequest,
+  assertBadRequest,
+  assertInvalidArgument,
 } from '../../../../utils/http';
 import {defaultAssertionOptions} from '../../../../utils/constants';
 import {
@@ -70,7 +72,7 @@ test.describe.parallel('Get Decision Instances API Tests', () => {
   });
 
   test('Get Decision Instance - Not found', async ({request}) => {
-    const someRandomNotExistingKey = '9999999999999999';
+    const someRandomNotExistingKey = '9999999999999999-1';
     await expect(async () => {
       const res = await request.get(
         buildUrl(`/decision-instances/${someRandomNotExistingKey}`),
@@ -103,5 +105,21 @@ test.describe.parallel('Get Decision Instances API Tests', () => {
 
       await assertUnauthorizedRequest(res);
     }).toPass(defaultAssertionOptions);
+  });
+
+  test('Get Decision Instance - Bad Request', async ({request}) => {
+    const invalidDecisionEvaluationInstanceKey = '+++';
+    const res = await request.get(
+        buildUrl(`/decision-instances/${invalidDecisionEvaluationInstanceKey}`),
+        {
+          headers: jsonHeaders(),
+          data: {},
+        },
+      );
+    await assertInvalidArgument(
+      res,
+      400,
+      `The provided decisionEvaluationInstanceKey '${invalidDecisionEvaluationInstanceKey}' is not a valid decision evaluation instance key.`,
+    );
   });
 });
