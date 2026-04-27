@@ -106,6 +106,7 @@ public class ResourceCreatedHandlerTest {
             .setResourceKey(42L)
             .setResourceId("resource-id")
             .setResourceName("my-script.rpa")
+            .setResourceType("rpa")
             .setVersion(1)
             .setVersionTag("v1")
             .setDeploymentKey(100L)
@@ -148,10 +149,40 @@ public class ResourceCreatedHandlerTest {
     assertThat(entity.getResourceKey()).isEqualTo(42L);
     assertThat(entity.getResourceId()).isEqualTo("resource-id");
     assertThat(entity.getResourceName()).isEqualTo("my-script.rpa");
+    assertThat(entity.getResourceType()).isEqualTo("rpa");
     assertThat(entity.getVersion()).isEqualTo(2);
     assertThat(entity.getVersionTag()).isEqualTo("v2");
     assertThat(entity.getDeploymentKey()).isEqualTo(100L);
     assertThat(entity.getTenantId()).isEqualTo("tenant-1");
     assertThat(entity.getResourceContent()).isEqualTo("rpa-content");
+  }
+
+  @Test
+  void shouldExtractFileTypeFromFilenameWithMultipleDots() {
+    // given
+    final Resource value =
+        ImmutableResource.builder()
+            .from(factory.generateObject(Resource.class))
+            .withResourceKey(43L)
+            .withResourceId("resource-id")
+            .withResourceName("user.1/my.script.rpa")
+            .withVersion(1)
+            .withVersionTag("v1")
+            .withDeploymentKey(100L)
+            .withTenantId("tenant-1")
+            .withResourceProp("rpa-content")
+            .build();
+    final Record<Resource> record =
+        factory.generateRecord(
+            ValueType.RESOURCE, r -> r.withIntent(ResourceIntent.CREATED).withValue(value));
+
+    final DeployedResourceEntity entity = underTest.createNewEntity("43");
+
+    // when
+    underTest.updateEntity(record, entity);
+
+    // then
+    assertThat(entity.getResourceName()).isEqualTo("user.1/my.script.rpa");
+    assertThat(entity.getResourceType()).isEqualTo("rpa");
   }
 }

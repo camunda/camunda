@@ -22,6 +22,7 @@ public class DeployedResourceEntityTransformer
         value.getResourceKey(),
         value.getResourceId(),
         value.getResourceName(),
+        value.getResourceType(),
         value.getVersion(),
         value.getVersionTag(),
         value.getDeploymentKey(),

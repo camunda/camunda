@@ -15,6 +15,7 @@ public record DeployedResourceEntity(
     Long resourceKey,
     String resourceId,
     String resourceName,
+    String resourceType,
     Integer version,
     String versionTag,
     Long deploymentKey,
@@ -26,6 +27,7 @@ public record DeployedResourceEntity(
     private Long resourceKey;
     private String resourceId;
     private String resourceName;
+    private String resourceType;
     private Integer version;
     private String versionTag;
     private Long deploymentKey;
@@ -44,6 +46,11 @@ public record DeployedResourceEntity(
 
     public Builder resourceName(final String resourceName) {
       this.resourceName = resourceName;
+      return this;
+    }
+
+    public Builder resourceType(final String resourceType) {
+      this.resourceType = resourceType;
       return this;
     }
 
@@ -78,6 +85,7 @@ public record DeployedResourceEntity(
           resourceKey,
           resourceId,
           resourceName,
+          resourceType,
           version,
           versionTag,
           deploymentKey,

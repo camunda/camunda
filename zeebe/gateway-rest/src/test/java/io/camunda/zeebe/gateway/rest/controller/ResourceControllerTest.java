@@ -574,7 +574,7 @@ public class ResourceControllerTest extends RestControllerTest {
         .thenReturn(
             CompletableFuture.completedFuture(
                 new DeployedResourceEntity(
-                    1L, "test", "test.rpa", 1, null, 100L, "tenant", content)));
+                    1L, "test", "test.rpa", "rpa", 1, null, 100L, "tenant", content)));
 
     // when / then
     webClient
