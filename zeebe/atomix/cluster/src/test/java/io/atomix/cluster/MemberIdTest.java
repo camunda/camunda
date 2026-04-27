@@ -74,4 +74,14 @@ final class MemberIdTest {
     assertThatThrownBy(() -> MemberId.extractNodeId(memberId))
         .isInstanceOf(NumberFormatException.class);
   }
+
+  @Test
+  void shouldThrowWhenMemberZoneDoesNotMatchMemberIdPrefix() {
+    // given
+    final var memberId = MemberId.from("us-east/0");
+
+    // then
+    assertThatThrownBy(() -> Member.builder(memberId).withZoneId("us").build())
+        .isInstanceOf(IllegalArgumentException.class);
+  }
 }
