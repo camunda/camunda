@@ -14,7 +14,7 @@ NS="${1:-__NAMESPACE__}"
 # for the sed replacement and skip creation.
 if kubectl -n "$NS" get secret camunda-credentials &>/dev/null; then
   echo "Secret 'camunda-credentials' already exists in namespace '$NS'. Skipping creation."
-  echo "Reading existing admin client secret from 'camunda-credentials' in namespace '$NS'."
+  echo "Reading existing zeebe client secret from 'camunda-credentials' in namespace '$NS'."
   ZEEBE_SECRET=$(kubectl -n "$NS" get secret camunda-credentials -o jsonpath='{.data.identity-zeebe-client-token}' | base64 -d)
   sed_inplace "s/__SECRET__/${ZEEBE_SECRET}/g" load-test-values.yaml
   echo "Done replacing __SECRET__ in load-test-values.yaml with existing zeebe client secret."
