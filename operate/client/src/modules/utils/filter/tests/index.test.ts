@@ -16,6 +16,7 @@ describe('utils/filter', () => {
       search: 'test=1&test2=2&test3=3',
       state: null,
       key: '',
+      unstable_mask: undefined,
     } as const;
 
     expect(deleteSearchParams(locationMock, ['test2', 'test3']).search).toBe(
