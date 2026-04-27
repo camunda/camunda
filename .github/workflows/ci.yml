@@ -651,8 +651,6 @@ jobs:
         working-directory: identity/client
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-      - name: Print metadata
-        uses: ./.github/actions/print-metadata
       - uses: camunda/infra-global-github-actions/setup-yarn-cache@main
         with:
           directory: identity/client
