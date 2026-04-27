@@ -98,6 +98,7 @@ Types: `build`, `ci`, `deps`, `docs`, `feat`, `fix`, `merge`, `perf`, `refactor`
 
 - Separate behavioral changes from structural/refactoring changes into distinct commits
 - Commit messages should explain *why*, not just *what* changed
+- Do not use commit scopes — commitlint enforces `scope-empty`. Use `fix: ...` not `fix(ci): ...`
 
 ## Pull Request Conventions
 
