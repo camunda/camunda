@@ -144,8 +144,7 @@ test.describe('Process Instance Listeners', () => {
 
     await expect(page.getByTestId('state-overlay-active')).toBeVisible();
 
-    const {statusCode} = await zeebeRestApi.completeUserTask({userTaskKey});
-    expect(statusCode).toBe(204);
+    await zeebeRestApi.completeUserTask({userTaskKey});
 
     // check if user task is completed, selecting task and moving metadata popup out of the way
     await expect(page.getByTestId('state-overlay-active')).not.toBeVisible();

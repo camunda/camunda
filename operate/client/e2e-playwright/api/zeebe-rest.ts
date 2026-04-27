@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {ZeebeRestClient} from '@camunda8/sdk/dist/zeebe';
+import {type CamundaRestClient} from '@camunda8/sdk';
 import {camunda8} from './camunda8';
 
 interface TaskChangeSet {
@@ -39,10 +39,10 @@ type RemoveAssigneeParams = {
 };
 
 class ZeebeRestApi {
-  zeebe: ZeebeRestClient;
+  zeebe: CamundaRestClient;
 
   constructor() {
-    this.zeebe = camunda8.getZeebeRestClient();
+    this.zeebe = camunda8.getCamundaRestClient();
   }
 
   getTopology() {
@@ -50,7 +50,7 @@ class ZeebeRestApi {
   }
 
   assignTask({userTaskKey, assignee, allowOverride, action}: AssignTaskParams) {
-    return this.zeebe.assignTask({
+    return this.zeebe.assignUserTask({
       userTaskKey,
       assignee,
       allowOverride,
@@ -63,14 +63,14 @@ class ZeebeRestApi {
   }
 
   updateTask({userTaskKey, changeset}: UpdateTaskParams) {
-    return this.zeebe.updateTask({
+    return this.zeebe.updateUserTask({
       userTaskKey,
       changeset,
     });
   }
 
   removeAssignee({userTaskKey}: RemoveAssigneeParams) {
-    return this.zeebe.removeAssignee({userTaskKey});
+    return this.zeebe.unassignUserTask({userTaskKey});
   }
 }
 
