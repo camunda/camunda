@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe;
+package io.camunda.zeebe.metrics;
 
 import io.camunda.zeebe.util.micrometer.ExtendedMeterDocumentation;
 import io.micrometer.common.docs.KeyName;
