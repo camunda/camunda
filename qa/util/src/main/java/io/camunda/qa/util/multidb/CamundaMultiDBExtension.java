@@ -382,13 +382,33 @@ public class CamundaMultiDBExtension
               "camunda",
               "camunda",
               "com.mysql.cj.jdbc.Driver");
-      case RDBMS_ORACLE ->
-          multiDbConfigurator.configureRDBMSSupport(
-              isHistoryRelatedTest,
-              "jdbc:oracle:thin:@localhost:1521/FREEPDB1",
-              "camunda",
-              "camunda",
-              "oracle.jdbc.OracleDriver");
+      case RDBMS_ORACLE -> {
+        // Pre-initialise the Oracle schema from a generated SQL template to avoid the expensive
+        // Liquibase precondition evaluation (tableExists / indexExists) which can add ~120 s of
+        // startup overhead per test class on Oracle.  We generate the template once during the
+        // db/rdbms-schema build with "__PREFIX__" as a sentinel and replace it here with the
+        // actual per-test prefix before executing the DDL directly via JDBC.
+        final String oracleUrl = "jdbc:oracle:thin:@localhost:1521/FREEPDB1";
+        final String oracleUser = "camunda";
+        final String oraclePassword = "camunda";
+        final String tablePrefix = MultiDbConfigurator.generateTablePrefix();
+        try {
+          new OracleSchemaInitializer(oracleUrl, oracleUser, oraclePassword)
+              .initializeSchema(tablePrefix);
+        } catch (final Exception e) {
+          throw new RuntimeException("Failed to pre-initialize Oracle schema for tests", e);
+        }
+        // Disable Liquibase auto-DDL so the application uses NoopSchemaManager and skips the
+        // precondition-heavy migration run that we have already handled above.
+        multiDbConfigurator.configureRDBMSSupport(
+            isHistoryRelatedTest,
+            oracleUrl,
+            oracleUser,
+            oraclePassword,
+            "oracle.jdbc.OracleDriver",
+            tablePrefix,
+            false);
+      }
       case RDBMS_MSSQL ->
           multiDbConfigurator.configureRDBMSSupport(
               isHistoryRelatedTest,
