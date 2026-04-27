@@ -38,9 +38,9 @@ In the consumer's `package.json`:
 
 ```json
 {
-  "devDependencies": {
-    "@camunda/lint-config": "file:../../webapp/client/packages/lint-config"
-  }
+	"devDependencies": {
+		"@camunda/lint-config": "file:../../webapp/client/packages/lint-config"
+	}
 }
 ```
 
@@ -56,10 +56,10 @@ The required peer dependencies across all consumers are `eslint` and `prettier`:
 
 ```json
 {
-  "devDependencies": {
-    "eslint": "9.x",
-    "prettier": "3.x"
-  }
+	"devDependencies": {
+		"eslint": "9.x",
+		"prettier": "3.x"
+	}
 }
 ```
 
@@ -79,38 +79,38 @@ Create an `eslint.config.js` in the consumer project and compose the shared fact
 
 ```javascript
 import {
-  baseConfig,
-  typescriptConfig,
-  reactConfig,
-  testingConfig,
-  tanstackQueryConfig,
-  licenseConfig,
+	baseConfig,
+	typescriptConfig,
+	reactConfig,
+	testingConfig,
+	tanstackQueryConfig,
+	licenseConfig,
 } from '@camunda/lint-config/eslint';
 import {defineConfig, globalIgnores} from 'eslint/config';
 
 const files = {
-  browser: ['src/**/*.{js,jsx,ts,tsx}'],
-  test: ['src/**/*.test.ts', 'src/**/*.test.tsx', 'src/setupTests.ts'],
-  node: ['vite.config.ts', 'playwright.config.ts'],
+	browser: ['src/**/*.{js,jsx,ts,tsx}'],
+	test: ['src/**/*.test.ts', 'src/**/*.test.tsx', 'src/setupTests.ts'],
+	node: ['vite.config.ts', 'playwright.config.ts'],
 };
 
 export default defineConfig([
-  ...baseConfig,
+	...baseConfig,
 
-  ...typescriptConfig({
-    browserFiles: files.browser,
-    testFiles: files.test,
-    nodeFiles: files.node,
-    tsconfigRootDir: import.meta.dirname,
-    tsProjects: ['./tsconfig.app.json', './tsconfig.vitest.json'],
-  }),
+	...typescriptConfig({
+		browserFiles: files.browser,
+		testFiles: files.test,
+		nodeFiles: files.node,
+		tsconfigRootDir: import.meta.dirname,
+		tsProjects: ['./tsconfig.app.json', './tsconfig.vitest.json'],
+	}),
 
-  ...reactConfig({browserFiles: files.browser, testFiles: files.test}),
-  ...testingConfig({testFiles: files.test}),
-  ...tanstackQueryConfig({browserFiles: files.browser}),
-  ...licenseConfig({licenseHeaderPath: './resources/license-header.js'}),
+	...reactConfig({browserFiles: files.browser, testFiles: files.test}),
+	...testingConfig({testFiles: files.test}),
+	...tanstackQueryConfig({browserFiles: files.browser}),
+	...licenseConfig({licenseHeaderPath: './resources/license-header.js'}),
 
-  globalIgnores(['dist/*', 'node_modules/*', 'build/*', 'target/*']),
+	globalIgnores(['dist/*', 'node_modules/*', 'build/*', 'target/*']),
 ]);
 ```
 
@@ -122,8 +122,8 @@ Create a `prettier.config.js` in the consumer project:
 import sharedConfig from '@camunda/lint-config/prettier';
 
 export default {
-  ...sharedConfig,
-  // project-specific overrides here
+	...sharedConfig,
+	// project-specific overrides here
 };
 ```
 
@@ -131,26 +131,26 @@ export default {
 
 Each factory is a function that returns an array of ESLint flat config objects. They accept options so that project-specific values (file globs, tsconfig paths) are resolved in the consumer.
 
-| Import | Required peer dependency                                                   | Options                                                                     |
-|---|----------------------------------------------------------------------------|-----------------------------------------------------------------------------|
-| `baseConfig` | `eslint-config-prettier`, `eslint-plugin-prettier`, `prettier`             | —                                                                           |
-| `typescriptConfig` | `@typescript-eslint/eslint-plugin`, `@typescript-eslint/parser`, `globals` | `browserFiles`, `testFiles`, `nodeFiles`, `tsconfigRootDir`, `tsProjects`, `eslint-plugin-import` |
-| `reactConfig` | `eslint-plugin-react-hooks`, `eslint-plugin-react-refresh`                 | `browserFiles`, `testFiles`                                                 |
-| `testingConfig` | `@vitest/eslint-plugin`, `eslint-plugin-testing-library`                   | `testFiles`                                                                 |
-| `tanstackQueryConfig` | `@tanstack/eslint-plugin-query`                                            | `browserFiles`                                                              |
-| `licenseConfig` | `eslint-plugin-license-header`                                             | `licenseHeaderPath`                                                         |
+| Import                | Required peer dependency                                                   | Options                                                                                           |
+| --------------------- | -------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
+| `baseConfig`          | `eslint-config-prettier`, `eslint-plugin-prettier`, `prettier`             | —                                                                                                 |
+| `typescriptConfig`    | `@typescript-eslint/eslint-plugin`, `@typescript-eslint/parser`, `globals` | `browserFiles`, `testFiles`, `nodeFiles`, `tsconfigRootDir`, `tsProjects`, `eslint-plugin-import` |
+| `reactConfig`         | `eslint-plugin-react-hooks`, `eslint-plugin-react-refresh`                 | `browserFiles`, `testFiles`                                                                       |
+| `testingConfig`       | `@vitest/eslint-plugin`, `eslint-plugin-testing-library`                   | `testFiles`                                                                                       |
+| `tanstackQueryConfig` | `@tanstack/eslint-plugin-query`                                            | `browserFiles`                                                                                    |
+| `licenseConfig`       | `eslint-plugin-license-header`                                             | `licenseHeaderPath`                                                                               |
 
 > **Note:** `baseConfig` is a plain array (not a function) and can be spread directly.
 
 ### `typescriptConfig` options
 
-| Option | Type | Description |
-|---|---|---|
-| `browserFiles` | `string[]` | Globs for browser source files |
-| `testFiles` | `string[]` | Globs for test files |
-| `nodeFiles` | `string[]` | Globs for Node.js tooling files (vite.config, playwright.config, etc.) |
-| `tsconfigRootDir` | `string` | Absolute path to the directory containing the tsconfig files. Use `import.meta.dirname` in ESM or `path.dirname(fileURLToPath(import.meta.url))` in CJS |
-| `tsProjects` | `string \| string[]` | Path(s) to tsconfig file(s) relative to `tsconfigRootDir`. Use multiple entries if the project has separate tsconfigs for app, vitest, and browser tests |
+| Option            | Type                 | Description                                                                                                                                              |
+| ----------------- | -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `browserFiles`    | `string[]`           | Globs for browser source files                                                                                                                           |
+| `testFiles`       | `string[]`           | Globs for test files                                                                                                                                     |
+| `nodeFiles`       | `string[]`           | Globs for Node.js tooling files (vite.config, playwright.config, etc.)                                                                                   |
+| `tsconfigRootDir` | `string`             | Absolute path to the directory containing the tsconfig files. Use `import.meta.dirname` in ESM or `path.dirname(fileURLToPath(import.meta.url))` in CJS  |
+| `tsProjects`      | `string \| string[]` | Path(s) to tsconfig file(s) relative to `tsconfigRootDir`. Use multiple entries if the project has separate tsconfigs for app, vitest, and browser tests |
 
 ## Extending a config in a consumer project
 

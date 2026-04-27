@@ -31,7 +31,11 @@ import {
 	getDecisionDefinitionXml,
 	evaluateDecision,
 } from './decision-definition';
-import {queryDecisionInstances, getDecisionInstance, createDecisionInstancesDeletionBatchOperation} from './decision-instance';
+import {
+	queryDecisionInstances,
+	getDecisionInstance,
+	createDecisionInstancesDeletionBatchOperation,
+} from './decision-instance';
 import {queryDecisionRequirements, getDecisionRequirements, getDecisionRequirementsXml} from './decision-requirements';
 import {createDocument, createDocuments, getDocument, deleteDocument, createDocumentLink} from './document';
 import {

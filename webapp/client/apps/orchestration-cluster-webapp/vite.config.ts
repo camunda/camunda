@@ -1,0 +1,55 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+
+import {defineConfig, type PluginOption} from 'vite';
+import {devtools} from '@tanstack/devtools-vite';
+import {tanstackRouter} from '@tanstack/router-plugin/vite';
+import viteReact from '@vitejs/plugin-react';
+import sbom from 'rollup-plugin-sbom';
+
+const basePlugins: PluginOption[] = [
+	devtools(),
+	tanstackRouter({
+		target: 'react',
+		autoCodeSplitting: true,
+	}),
+	viteReact(),
+];
+
+const config = defineConfig(({mode}) => ({
+	resolve: {tsconfigPaths: true},
+	plugins: mode === 'sbom' ? [...basePlugins, sbom()] : basePlugins,
+	server: {
+		port: 3000,
+		open: true,
+		proxy: {
+			'/v2': 'http://localhost:8080',
+			'/login': {
+				target: 'http://localhost:8080',
+				bypass: (req) => (req.method !== 'POST' ? '/' : undefined),
+			},
+			'/logout': {
+				target: 'http://localhost:8080',
+				bypass: (req) => (req.method !== 'POST' ? '/' : undefined),
+			},
+		},
+	},
+	build: {
+		sourcemap: mode !== 'sbom',
+		license: {
+			fileName: 'assets/vendor.LICENSE.txt',
+		},
+		rolldownOptions: {
+			output: {
+				postBanner: '/*! licenses: /assets/vendor.LICENSE.txt */',
+			},
+		},
+	},
+}));
+
+export default config;

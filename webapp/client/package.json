@@ -10,9 +10,11 @@
 		"url": "git+https://github.com/camunda/camunda.git"
 	},
 	"workspaces": [
-		"packages/*"
+		"packages/*",
+		"apps/*"
 	],
 	"scripts": {
+		"dev:oc": "npm run dev -w @camunda/orchestration-cluster-webapp",
 		"lint": "eslint .",
 		"typecheck": "npm run typecheck --workspaces --if-present",
 		"format": "npm run format --workspaces --if-present",

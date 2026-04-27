@@ -1,3 +1,11 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+
 import js from '@eslint/js';
 import globals from 'globals';
 import tseslint from 'typescript-eslint';
@@ -5,13 +13,13 @@ import {defineConfig} from 'eslint/config';
 import licenseHeaderPlugin from 'eslint-plugin-license-header';
 
 const files = {
-	browser: ['packages/**/*.{js,mjs,cjs,ts,mts,cts}'],
+	browser: ['packages/**/*.{js,mjs,cjs,ts,mts,cts}', 'apps/**/*.{js,mjs,cjs,ts,mts,cts}'],
 	node: ['scripts/**/*.{js,mjs,cjs,ts,mts,cts}', 'prettier.config.js'],
 };
 
 export default defineConfig([
 	{
-		ignores: ['packages/**/dist/**/*'],
+		ignores: ['packages/**/dist/**/*', 'apps/**/dist/**/*'],
 	},
 
 	{
