@@ -22,6 +22,8 @@ import org.slf4j.LoggerFactory;
 
 public final class ProcessCacheUtil {
 
+  public static final String EXTENSION_PROPERTY_CAMUNDA_TOOL_NAME = "io.camunda.tool:name";
+  public static final String EXTENSION_PROPERTY_INBOUND_TYPE = "inbound.type";
   private static final Logger LOGGER = LoggerFactory.getLogger(ProcessCacheUtil.class);
 
   private ProcessCacheUtil() {
@@ -155,5 +157,19 @@ public final class ProcessCacheUtil {
   public static Map<String, String> getFlowNodesMap(final Collection<FlowNode> flowNodes) {
     return flowNodes.stream()
         .collect(HashMap::new, (map, fn) -> map.put(fn.getId(), fn.getName()), HashMap::putAll);
+  }
+
+  public static String getToolName(final Map<String, String> extensionProperties) {
+    if (extensionProperties == null) {
+      return null;
+    }
+    return extensionProperties.get(EXTENSION_PROPERTY_CAMUNDA_TOOL_NAME);
+  }
+
+  public static String getInboundConnectorType(final Map<String, String> extensionProperties) {
+    if (extensionProperties == null) {
+      return null;
+    }
+    return extensionProperties.get(EXTENSION_PROPERTY_INBOUND_TYPE);
   }
 }

@@ -16,6 +16,7 @@ import io.camunda.search.entities.MessageSubscriptionEntity.MessageSubscriptionS
 import io.camunda.search.entities.MessageSubscriptionEntity.MessageSubscriptionType;
 import io.camunda.zeebe.exporter.common.cache.ExporterEntityCache;
 import io.camunda.zeebe.exporter.common.cache.process.CachedProcessEntity;
+import io.camunda.zeebe.exporter.common.utils.ProcessCacheUtil;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
@@ -94,8 +95,8 @@ public class MessageSubscriptionExportHandler
             cached.map(CachedProcessEntity::name).filter(s -> !s.isBlank()).orElse(null))
         .processDefinitionVersion(cached.map(CachedProcessEntity::version).orElse(null))
         .extensionProperties(ext)
-        .toolName(ext.get("io.camunda.tool:name"))
-        .inboundConnectorType(ext.get("inbound.type"))
+        .toolName(ProcessCacheUtil.getToolName(ext))
+        .inboundConnectorType(ProcessCacheUtil.getInboundConnectorType(ext))
         .build();
   }
 }

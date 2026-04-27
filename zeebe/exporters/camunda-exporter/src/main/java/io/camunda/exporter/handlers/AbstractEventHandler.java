@@ -38,6 +38,7 @@ import io.camunda.webapps.schema.entities.messagesubscription.MessageSubscriptio
 import io.camunda.webapps.schema.entities.messagesubscription.MessageSubscriptionState;
 import io.camunda.zeebe.exporter.common.cache.ExporterEntityCache;
 import io.camunda.zeebe.exporter.common.cache.process.CachedProcessEntity;
+import io.camunda.zeebe.exporter.common.utils.ProcessCacheUtil;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import java.time.Instant;
@@ -148,8 +149,8 @@ public abstract class AbstractEventHandler<R extends RecordValue>
               .orElse(Map.of());
       entity
           .setExtensionProperties(ext)
-          .setToolName(ext.get("io.camunda.tool:name"))
-          .setInboundConnectorType(ext.get("inbound.type"));
+          .setToolName(ProcessCacheUtil.getToolName(ext))
+          .setInboundConnectorType(ProcessCacheUtil.getInboundConnectorType(ext));
     }
   }
 }
