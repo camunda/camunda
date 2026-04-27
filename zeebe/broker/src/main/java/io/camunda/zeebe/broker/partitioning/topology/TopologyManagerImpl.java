@@ -12,6 +12,7 @@ import io.atomix.cluster.ClusterMembershipEvent.Type;
 import io.atomix.cluster.ClusterMembershipEventListener;
 import io.atomix.cluster.ClusterMembershipService;
 import io.atomix.cluster.Member;
+import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.broker.Loggers;
 import io.camunda.zeebe.broker.PartitionListener;
 import io.camunda.zeebe.engine.state.QueryService;
@@ -228,7 +229,10 @@ public final class TopologyManagerImpl extends Actor
           partitionLeaders.forEach(
               (partitionId, leader) ->
                   LogUtil.catchAndLog(
-                      LOG, () -> listener.onPartitionLeaderUpdated(partitionId, leader)));
+                      LOG,
+                      () ->
+                          listener.onPartitionLeaderUpdated(
+                              partitionId, resolveMemberId(leader.getNodeId()))));
         });
   }
 
@@ -257,8 +261,17 @@ public final class TopologyManagerImpl extends Actor
   }
 
   private void notifyPartitionLeaderUpdated(final int partitionId, final BrokerInfo member) {
+    final var leaderId = resolveMemberId(member.getNodeId());
     for (final TopologyPartitionListener listener : topologyPartitionListeners) {
-      LogUtil.catchAndLog(LOG, () -> listener.onPartitionLeaderUpdated(partitionId, member));
+      LogUtil.catchAndLog(LOG, () -> listener.onPartitionLeaderUpdated(partitionId, leaderId));
     }
+  }
+
+  private MemberId resolveMemberId(final int nodeId) {
+    return membershipService.getMembers().stream()
+        .map(Member::id)
+        .filter(id -> MemberId.extractNodeId(id) == nodeId)
+        .findFirst()
+        .orElseGet(() -> MemberId.from(Integer.toString(nodeId)));
   }
 }
