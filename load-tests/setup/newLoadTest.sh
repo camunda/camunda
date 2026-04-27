@@ -175,6 +175,7 @@ sed_inplace "s/__NAMESPACE__/$namespace/" load-test-values.yaml
 sed_inplace "s/__STORAGE_TYPE__/$secondaryStorage/" Makefile
 sed_inplace "s/__ENABLE_OPTIMIZE__/$enable_optimize/" Makefile
 sed_inplace "s/__AVAILABILITY_ZONE__/$availability_zone/" *.yaml
+sed_inplace "s/__AUTHOR__/$git_author/" *.yaml
 
 # Add/update helm repositories
 helm repo add camunda https://helm.camunda.io/ --force-update
