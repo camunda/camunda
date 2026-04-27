@@ -29,8 +29,11 @@ import io.camunda.search.connect.os.OpensearchConnector;
 import io.camunda.search.test.utils.SearchClientAdapter;
 import io.camunda.search.test.utils.SearchDBExtension;
 import io.camunda.search.test.utils.TestObjectMapper;
+import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
+import io.camunda.webapps.schema.entities.ExporterEntity;
 import io.camunda.zeebe.exporter.api.context.Context;
 import io.camunda.zeebe.exporter.test.ExporterTestContext;
+import java.io.IOException;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
@@ -114,6 +117,61 @@ public abstract class ArchiverJobIT<T extends ArchiverJob<?>> {
     try (final T job = createArchiveJob(config, exporterResourceProvider, repository)) {
       jobConsumer.accept(job, exporterResourceProvider);
     }
+  }
+
+  protected void store(
+      final IndexTemplateDescriptor template,
+      final SearchClientAdapter client,
+      final ExporterEntity<?> entity)
+      throws IOException {
+    client.index(entity.getId(), template.getFullQualifiedName(), entity);
+  }
+
+  protected void store(
+      final IndexTemplateDescriptor template,
+      final SearchClientAdapter client,
+      final ExporterEntity<?> parent,
+      final ExporterEntity<?> child)
+      throws IOException {
+    client.index(child.getId(), parent.getId(), template.getFullQualifiedName(), child);
+  }
+
+  protected void verifyMoved(
+      final IndexTemplateDescriptor templateDescriptor,
+      final SearchClientAdapter client,
+      final ExporterEntity<?> entity,
+      final String datedIndexSuffix)
+      throws IOException {
+    verifyMoved(templateDescriptor, client, entity, (String) null, datedIndexSuffix);
+  }
+
+  protected void verifyMoved(
+      final IndexTemplateDescriptor templateDescriptor,
+      final SearchClientAdapter client,
+      final ExporterEntity<?> entity,
+      final String routing,
+      final String datedIndexSuffix)
+      throws IOException {
+    // should no longer be in the original index
+    final var originalIndexEntity =
+        client.get(
+            entity.getId(), routing, templateDescriptor.getFullQualifiedName(), entity.getClass());
+    assertThat(originalIndexEntity).isNull();
+
+    // should now be in the dated index
+    final var dateIndex = templateDescriptor.getFullQualifiedName() + datedIndexSuffix;
+    final var newIndexEntity = client.get(entity.getId(), routing, dateIndex, entity.getClass());
+    assertThat(newIndexEntity).isEqualTo(entity);
+  }
+
+  protected void verifyNotMoved(
+      final IndexTemplateDescriptor templateDescriptor,
+      final SearchClientAdapter client,
+      final ExporterEntity<?> entity)
+      throws IOException {
+    final var originalIndexEntity =
+        client.get(entity.getId(), templateDescriptor.getFullQualifiedName(), entity.getClass());
+    assertThat(originalIndexEntity).isEqualTo(entity);
   }
 
   private ExporterResourceProvider exporterResourceProvider(final ExporterConfiguration config) {
