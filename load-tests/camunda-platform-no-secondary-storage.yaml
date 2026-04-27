@@ -10,9 +10,8 @@
 ################################################### Global cluster configuration
 ########################################################################################
 global:
-  # Our default is ELASTICSEARCH
-  # We need to explicitly enable ELS as per default this is disabled now
-  # Disable Elasticsearch completely, as we don't want any secondary storage in this configuration
+  # No secondary storage in this configuration: Elasticsearch is disabled and
+  # `noSecondaryStorage` short-circuits all secondary-storage-dependent components.
   elasticsearch:
     enabled: false
   noSecondaryStorage: true
@@ -30,8 +29,7 @@ orchestration:
   exporters:
     camunda:
       enabled: false
-  # We need to explicitly set the secondary storage type to ELS
-  # THIS GETS OVERRIDDEN IN THE OTHER VALUES FILES, e.g. for OpenSearch and RDBMS
+  # No secondary storage backend — pairs with `global.noSecondaryStorage: true` above.
   data:
     secondaryStorage:
       type: none
