@@ -38,6 +38,20 @@ public class AdminIndexController {
   }
 
   /**
+   * Tenant-aware login picker URL.
+   *
+   * <p>Always forwards to the SPA shell, skipping {@link WebappsRequestForwardManager}'s
+   * login-delegate redirect. The picker page must be reachable for unauthenticated users —
+   * otherwise the user gets bounced to {@code /login} (Spring's default chooser, no tenant
+   * context) instead of seeing the tenant-aware picker.
+   */
+  @GetMapping("/admin/{tenantId}/login")
+  public String tenantPicker(final Model model) {
+    model.addAttribute("contextPath", context.getContextPath() + "/admin/");
+    return "admin/index";
+  }
+
+  /**
    * Forwards SPA routes to index.html, excluding static assets.
    *
    * <p>The regex pattern uses negative lookahead to prevent matching paths starting with "assets":
