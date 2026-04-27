@@ -25,7 +25,7 @@ public enum Profile {
   ADMIN("admin"),
   TMP_WEBAPP(
       "tmp-webapp"), // Temporary profile for the unified BFF migration; removed at end of epic
-  // #51309
+  // https://github.com/camunda/product-hub/issues/3456
 
   // environment profiles
   TEST("test"),

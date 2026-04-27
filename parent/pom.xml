@@ -781,8 +781,7 @@
         <version>${project.version}</version>
         <scope>test</scope>
       </dependency>
-
-      <!-- Webapp Modules (orchestration cluster unified BFF) -->
+      
       <dependency>
         <groupId>io.camunda</groupId>
         <artifactId>webapp-webjar</artifactId>

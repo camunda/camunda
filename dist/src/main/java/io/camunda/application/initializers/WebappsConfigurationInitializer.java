@@ -113,8 +113,10 @@ public class WebappsConfigurationInitializer
       }
     }
 
-    // Unified Webapp (tmp-webapp profile) — temporary; removed at end of epic #51309
-    // Deliberately does NOT set defaultWebapp: legacy profiles win the home-page contest if mixed.
+    // The tmp-webapp is temporary profile while the FUA
+    // https://github.com/camunda/product-hub/issues/3456
+    // project is in progress. Deliberately does NOT set defaultWebapp: legacy profiles win the
+    // home-page contest if mixed.
 
     if (activeProfiles.contains(TMP_WEBAPP.getId())) {
       locations.add(DEFAULT_RESOURCES_LOCATION + "webapp/");
