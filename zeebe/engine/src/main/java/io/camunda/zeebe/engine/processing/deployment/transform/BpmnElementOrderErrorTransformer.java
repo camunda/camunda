@@ -7,14 +7,36 @@
  */
 package io.camunda.zeebe.engine.processing.deployment.transform;
 
+import org.camunda.bpm.model.xml.ModelParseException;
+
 /**
- * Validates and improves error messages for BPMN XML element ordering violations.
+ * Transforms confusing BPMN XML element ordering error messages into clearer, more actionable
+ * messages.
  *
  * <p>When BPMN elements appear in the wrong order according to the BPMN 2.0 XML Schema, the XML
- * parser produces confusing error messages. This validator detects such ordering errors and
+ * parser produces confusing error messages. This transformer detects such ordering errors and
  * provides clearer messages explaining the required order.
  */
-public final class BpmnElementOrderValidator {
+public final class BpmnElementOrderErrorTransformer {
+
+  /**
+   * Transforms a ModelParseException into an improved error message for element ordering
+   * violations.
+   *
+   * <p>When BPMN elements appear in the wrong order (e.g., {@code <outgoing>} after {@code
+   * <timerEventDefinition>}), the XML parser produces a confusing error like "Invalid content was
+   * found starting with element 'outgoing'". This method detects such ordering errors and provides
+   * a clearer message explaining the required order.
+   *
+   * @param exception the ModelParseException from BPMN parsing
+   * @return an improved error message if this is an element ordering error, otherwise the original
+   *     message
+   */
+  public String transform(final ModelParseException exception) {
+    final String originalMessage =
+        exception.getCause() != null ? exception.getCause().getMessage() : exception.getMessage();
+    return improveElementOrderingErrorMessage(originalMessage);
+  }
 
   /**
    * Improves XML Schema validation error messages for element ordering violations.
@@ -28,7 +50,7 @@ public final class BpmnElementOrderValidator {
    * @return an improved error message if this is an element ordering error, otherwise the original
    *     message
    */
-  public String improveElementOrderingErrorMessage(final String originalMessage) {
+  private String improveElementOrderingErrorMessage(final String originalMessage) {
     if (originalMessage == null) {
       return "Unable to parse BPMN XML";
     }
@@ -71,8 +93,12 @@ public final class BpmnElementOrderValidator {
   }
 
   /**
-   * Extracts the element name from different formats: -
-   * {\"http://www.omg.org/spec/BPMN/20100524/MODEL\":outgoing} - bpmn:outgoing - outgoing
+   * Extracts the element name from different formats:
+   *
+   * <ul>
+   *   <li>bpmn:outgoing
+   *   <li>outgoing
+   * </ul>
    */
   private String extractElementName(final String problematicElement) {
     if (problematicElement.contains("}")) {
