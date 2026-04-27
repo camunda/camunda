@@ -10,9 +10,9 @@
     <relativePath>../../parent/pom.xml</relativePath>
   </parent>
 
-  <artifactId>zeebe-benchmark</artifactId>
+  <artifactId>camunda-load-tester</artifactId>
 
-  <name>Zeebe Benchmark</name>
+  <name>Camunda Load Tester</name>
 
   <licenses>
     <license>
