@@ -1,4 +1,4 @@
 global:
   commonLabels:
-    created-by: __AUTHOR__
+    "camunda.io/created-by": __AUTHOR__
     "camunda.io/purpose": load-test

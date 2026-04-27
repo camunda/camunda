@@ -142,9 +142,8 @@ sanitize_k8s_label() {
 kubectl label namespace "$namespace" "camunda.io/purpose=load-test" --overwrite
 
 # Label namespace with author (based on git author)
-raw_git_author=$(git config user.name || echo "unknown")
-git_author=$(sanitize_k8s_label "$raw_git_author")
-kubectl label namespace "$namespace" created-by="$git_author" --overwrite
+git_author=$(compute_git_author)
+kubectl label namespace "$namespace" "camunda.io/created-by"="$git_author" --overwrite
 
 # Label namespace with TTL deadline (default: 1 day from now)
 # Try GNU date format first (Linux), then BSD/macOS format
