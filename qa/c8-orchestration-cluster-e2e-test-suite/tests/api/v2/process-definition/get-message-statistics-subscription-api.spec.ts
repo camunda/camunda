@@ -9,7 +9,7 @@
 import {expect, test} from '@playwright/test';
 import {
   cancelProcessInstance,
-  createInstances,
+  createSingleInstance,
   deploy,
 } from '../../../../utils/zeebeClient';
 import {
@@ -24,18 +24,19 @@ import {
 import {validateResponse} from '../../../../json-body-assertions';
 import {cleanupUsers} from 'utils/usersCleanup';
 import {
-  CORRELATE_MESSAGE,
-  CORRELATE_MESSAGE1,
-  CORRELATE_MESSAGE2,
-  CORRELATE_MESSAGE_DOUBLE_1,
-  CORRELATE_MESSAGE_DOUBLE_2,
-} from '../../../../utils/beans/requestBeans';
-import {
   expectProcessInstanceCanBeFound,
   searchCorrelatedMessageSubscriptions,
   grantUserResourceAuthorization,
   createUser,
 } from '@requestHelpers';
+
+const expectedMessageSubscription = {
+  messageName: 'Message_2l3lsuj',
+  correlationKey: '213213',
+  tenantId: '<default>',
+  elementId: 'Event_12y7kfq',
+  processDefinitionId: 'message-statistics-test',
+}
 
 test.describe.parallel('Get message subscription statistics API Tests', () => {
   let userWithResourcesAuthorizationToSendRequest: {
@@ -51,7 +52,7 @@ test.describe.parallel('Get message subscription statistics API Tests', () => {
   };
   let processInstanceKeys: string[] = [];
   let messageKeys: string[] = [];
-  const processDefinitionId = 'messageCatchEvent1';
+  const processDefinitionId = 'message-statistics-test';
 
   test.beforeAll(async ({request}) => {
     await test.step('Setup - Create test user with Resource Authorization and user for granting Authorization', async () => {
@@ -64,26 +65,13 @@ test.describe.parallel('Get message subscription statistics API Tests', () => {
 
     await test.step('Deploy processes', async () => {
       await deploy([
-        './resources/messageCatchEvent3.bpmn',
-        './resources/messageCatchEvent1.bpmn',
-        './resources/messageCatchEvent2.bpmn',
-        './resources/doubleMessageCatchEvent.bpmn',
+        './resources/message-subscription-statistics-process.bpmn',
       ]);
     });
 
     await test.step('Create process instances', async () => {
-      const [procA] = await createInstances('messageCatchEvent3', 1, 1);
-      const [procB] = await createInstances('messageCatchEvent1', 1, 1);
-      const [procC] = await createInstances('messageCatchEvent2', 1, 1);
-      const [procD] = await createInstances(
-        'Process_double_message_catch',
-        1,
-        1,
-      );
-      processInstanceKeys.push(procA.processInstanceKey);
-      processInstanceKeys.push(procB.processInstanceKey);
-      processInstanceKeys.push(procC.processInstanceKey);
-      processInstanceKeys.push(procD.processInstanceKey);
+      const meow = await createSingleInstance('message-statistics-test', 1);
+      processInstanceKeys.push(meow.processInstanceKey);
     });
 
     await test.step('Poll process instances', async () => {
@@ -93,31 +81,28 @@ test.describe.parallel('Get message subscription statistics API Tests', () => {
     });
 
     await test.step('Correlate messages', async () => {
-      const correlationPayloads = [
-        {body: CORRELATE_MESSAGE, stateKey: 'messageKeyPrimary'},
-        {body: CORRELATE_MESSAGE2, stateKey: 'messageKeySecondary'},
-        {body: CORRELATE_MESSAGE1, stateKey: 'messageKeyTertiary'},
-        {body: CORRELATE_MESSAGE_DOUBLE_1, stateKey: 'messageKeyDouble1'},
-        {body: CORRELATE_MESSAGE_DOUBLE_2, stateKey: 'messageKeyDouble2'},
-      ];
+      const bodyToCorrelateMessage = {
+        name: expectedMessageSubscription.messageName,
+        correlationKey: expectedMessageSubscription.correlationKey,
+        variables: {fooboo: 'bar'},
+        tenantId: '<default>',
+      };
 
-      for (const payload of correlationPayloads) {
-        const res = await request.post(buildUrl('/messages/correlation'), {
-          headers: jsonHeaders(),
-          data: payload.body,
-        });
-        await assertStatusCode(res, 200);
-        await validateResponse(
-          {
-            path: '/messages/correlation',
-            method: 'POST',
-            status: '200',
-          },
-          res,
-        );
-        const json = await res.json();
-        messageKeys.push(json.messageKey);
-      }
+      const res = await request.post(buildUrl('/messages/correlation'), {
+        headers: jsonHeaders(),
+        data: bodyToCorrelateMessage,
+      });
+      await assertStatusCode(res, 200);
+      await validateResponse(
+        {
+          path: '/messages/correlation',
+          method: 'POST',
+          status: '200',
+        },
+        res,
+      );
+      const json = await res.json();
+      messageKeys.push(json.messageKey);
     });
 
     await test.step('Wait for message subscriptions to be created', async () => {
@@ -202,7 +187,7 @@ test.describe.parallel('Get message subscription statistics API Tests', () => {
   test('Get message subscription statistics by process instance key - Success', async ({
     request,
   }) => {
-    const processInstanceKey = processInstanceKeys[1];
+    const processInstanceKey = processInstanceKeys[0];
     let processDefinitionKey: string = '';
 
     await test.step('Get definitionKEy of process instance', async () => {
