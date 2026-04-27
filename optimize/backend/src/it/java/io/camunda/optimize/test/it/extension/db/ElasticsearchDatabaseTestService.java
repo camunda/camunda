@@ -344,44 +344,86 @@ public class ElasticsearchDatabaseTestService extends DatabaseTestService {
 
   @Override
   public void deleteAllZeebeRecordsForPrefix(final String zeebeRecordPrefix) {
-    final String[] indicesToDelete;
+    // Force a refresh first so any records the exporter wrote without an explicit refresh become
+    // visible to the subsequent deleteByQuery. Without this, unrefreshed writes are invisible to
+    // the delete, pass the zero-count assertion, and then surface at the next automatic 1-second
+    // refresh — exactly when the next test starts. Two delete passes then catch any records that
+    // the exporter flushes in the window between the refresh and the delete's own refresh.
     try {
-      indicesToDelete =
-          getOptimizeElasticClient()
-              .getEsClient()
-              .indices()
-              .get(GetIndexRequest.of(r -> r.index(zeebeRecordPrefix + "*")))
-              .result()
-              .keySet()
-              .toArray(String[]::new);
+      getOptimizeElasticClient()
+          .getEsClient()
+          .indices()
+          .refresh(
+              RefreshRequest.of(
+                  r ->
+                      r.index(zeebeRecordPrefix + "*")
+                          .ignoreUnavailable(true)
+                          .allowNoIndices(true)));
+      for (int i = 0; i < 2; i++) {
+        getOptimizeElasticClient()
+            .getEsClient()
+            .deleteByQuery(
+                DeleteByQueryRequest.of(
+                    r ->
+                        r.index(zeebeRecordPrefix + "*")
+                            .query(Query.of(q -> q.matchAll(m -> m)))
+                            .refresh(true)
+                            .conflicts(Conflicts.Proceed)
+                            .allowNoIndices(true)
+                            .ignoreUnavailable(true)));
+      }
     } catch (final IOException e) {
       throw new OptimizeRuntimeException(e);
     }
-    if (indicesToDelete.length > 1) {
-      getOptimizeElasticClient().deleteIndexByRawIndexNames(indicesToDelete);
-    }
+  }
+
+  @Override
+  public void deleteAllZeebeIndicesForPrefix(final String zeebeRecordPrefix) {
+    // List matching indices explicitly first — wildcard DELETE is blocked by
+    // action.destructive_requires_name in the test ES cluster.
+    deleteZeebeIndicesByName(listZeebeIndicesForPrefix(zeebeRecordPrefix));
   }
 
   @Override
   public void deleteAllOtherZeebeRecordsWithPrefix(
       final String zeebeRecordPrefix, final String recordsToKeep) {
-    final String[] indicesToDelete;
+    final String[] indicesToDelete =
+        Arrays.stream(listZeebeIndicesForPrefix(zeebeRecordPrefix))
+            .filter(indexName -> !indexName.contains(recordsToKeep))
+            .toArray(String[]::new);
+    deleteZeebeIndicesByName(indicesToDelete);
+  }
+
+  private String[] listZeebeIndicesForPrefix(final String prefix) {
     try {
-      indicesToDelete =
-          getOptimizeElasticClient()
-              .elasticsearchClient()
-              .indices()
-              .get(GetIndexRequest.of(r -> r.index(zeebeRecordPrefix + "*")))
-              .result()
-              .keySet()
-              .stream()
-              .filter(indexName -> !indexName.contains(recordsToKeep))
-              .toArray(String[]::new);
+      return getOptimizeElasticClient()
+          .elasticsearchClient()
+          .indices()
+          .get(
+              GetIndexRequest.of(
+                  r -> r.index(prefix + "*").ignoreUnavailable(true).allowNoIndices(true)))
+          .result()
+          .keySet()
+          .toArray(String[]::new);
     } catch (final IOException e) {
       throw new OptimizeRuntimeException(e);
     }
-    if (indicesToDelete.length > 1) {
-      getOptimizeElasticClient().deleteIndexByRawIndexNames(indicesToDelete);
+  }
+
+  private void deleteZeebeIndicesByName(final String... indices) {
+    if (indices.length == 0) {
+      return;
+    }
+    // Wrap in a catch so that an ephemeral index (e.g. camunda-history-deletion in Zeebe 8.9)
+    // that vanishes between listing and deletion does not fail the cleanup.
+    try {
+      getOptimizeElasticClient().deleteIndexByRawIndexNames(indices);
+    } catch (final ElasticsearchException e) {
+      if ("index_not_found_exception".equals(e.error().type())) {
+        LOG.debug("Some Zeebe indices already gone by delete time, ignoring: {}", e.getMessage());
+      } else {
+        throw e;
+      }
     }
   }
 
