@@ -49,9 +49,15 @@ kubectl create namespace $namespace
 # Label namespace with registry (required to inject image pull secrets)
 kubectl label namespace "$namespace" registry=harbor --overwrite
 
+# Label namespace with author and purpose
+git_author=$(compute_git_author)
+kubectl label namespace "$namespace" "camunda.io/purpose=load-test" --overwrite
+kubectl label namespace "$namespace" created-by="$git_author" --overwrite
+
 cp -rv cloud-default/ $namespace
 cd $namespace
 
 
 # Update Makefile to use the namespace
 sed_inplace "s/__NAMESPACE__/$namespace/" Makefile
+sed_inplace "s/__AUTHOR__/$git_author/" *.yaml
