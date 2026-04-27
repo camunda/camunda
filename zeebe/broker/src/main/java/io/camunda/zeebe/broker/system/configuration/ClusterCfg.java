@@ -18,7 +18,10 @@ import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
+@NullMarked
 public final class ClusterCfg implements ConfigurationEntry {
 
   public static final List<String> DEFAULT_CONTACT_POINTS = Collections.emptyList();
@@ -44,11 +47,16 @@ public final class ClusterCfg implements ConfigurationEntry {
 
   private List<String> initialContactPoints = DEFAULT_CONTACT_POINTS;
 
+  @SuppressWarnings("NullAway.Init")
+  // initialized in the init() method with the correct partitionCount
   private List<Integer> partitionIds;
+
   private Integer nodeId = 0;
   // TODO add javaDoc
   private Long nodeVersion = 0L;
-  private String clusterId;
+
+  private @Nullable String clusterId;
+
   private int partitionsCount = DEFAULT_PARTITIONS_COUNT;
   private int replicationFactor = DEFAULT_REPLICATION_FACTOR;
   private int clusterSize = DEFAULT_CLUSTER_SIZE;
@@ -59,6 +67,7 @@ public final class ClusterCfg implements ConfigurationEntry {
   private RaftCfg raft = new RaftCfg();
   private CompressionAlgorithm messageCompression = CompressionAlgorithm.NONE;
   private ConfigManagerCfg configManager = ConfigManagerCfg.defaultConfig();
+  private @Nullable String zone;
 
   @Override
   public void init(final BrokerCfg globalConfig, final String brokerBase) {
@@ -156,7 +165,7 @@ public final class ClusterCfg implements ConfigurationEntry {
     this.clusterName = clusterName;
   }
 
-  public String getClusterId() {
+  public @Nullable String getClusterId() {
     return clusterId;
   }
 
@@ -212,6 +221,14 @@ public final class ClusterCfg implements ConfigurationEntry {
     configManager = configManagerCfg;
   }
 
+  public @Nullable String getZone() {
+    return zone;
+  }
+
+  public void setZone(@Nullable final String zone) {
+    this.zone = zone;
+  }
+
   @Override
   public int hashCode() {
     return Objects.hash(
@@ -227,11 +244,12 @@ public final class ClusterCfg implements ConfigurationEntry {
         membership,
         raft,
         messageCompression,
-        configManager);
+        configManager,
+        zone);
   }
 
   @Override
-  public boolean equals(final Object o) {
+  public boolean equals(@Nullable final Object o) {
     if (this == o) {
       return true;
     }
@@ -251,7 +269,8 @@ public final class ClusterCfg implements ConfigurationEntry {
         && Objects.equals(membership, that.membership)
         && Objects.equals(raft, that.raft)
         && messageCompression == that.messageCompression
-        && Objects.equals(configManager, that.configManager);
+        && Objects.equals(configManager, that.configManager)
+        && Objects.equals(zone, that.zone);
   }
 
   @Override
@@ -284,6 +303,9 @@ public final class ClusterCfg implements ConfigurationEntry {
         + messageCompression
         + ", configManagerCfg="
         + configManager
+        + ", zone='"
+        + zone
+        + '\''
         + '}';
   }
 
