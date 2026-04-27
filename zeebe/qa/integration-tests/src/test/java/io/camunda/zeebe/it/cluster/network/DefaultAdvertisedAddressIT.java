@@ -67,13 +67,7 @@ final class DefaultAdvertisedAddressIT {
                     "http://localhost:"
                         + cluster
                             .getAvailableGateway()
-                            .getMappedPort(CamundaPort.GATEWAY_REST.getPort())))
-            .grpcAddress(
-                URI.create(
-                    "http://"
-                        + cluster
-                            .getAvailableGateway()
-                            .getMappedPort(CamundaPort.GATEWAY_GRPC.getPort())));
+                            .getMappedPort(CamundaPort.GATEWAY_REST.getPort())));
 
     try (final var client = clientBuilder.build()) {
       // when - then
