@@ -23,7 +23,7 @@ export type McpProcessTool = {
   id: string;
   toolName: string;
   toolDescription: string;
-  processDefinitionKey: string;
+  processDefinitionKey: string | null;
   processDefinitionId: string;
   processDefinitionName: string;
   processDefinitionVersion: number | string;
