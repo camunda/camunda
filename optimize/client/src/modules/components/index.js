@@ -53,6 +53,10 @@ export {InstanceViewTable} from './InstanceViewTable';
 export {TenantInfo} from './TenantInfo';
 export {TargetSelection} from './TargetSelection';
 export {Loading} from './Loading';
+<<<<<<< HEAD
+=======
+export {Breadcrumbs} from './Breadcrumbs';
+>>>>>>> 01c4e1e (feat: merge c4 package into optimize/client)
 export {MenuDropdown} from './MenuDropdown';
 export {MenuButton} from './MenuButton';
 export {MultiValueInput} from './MultiValueInput';

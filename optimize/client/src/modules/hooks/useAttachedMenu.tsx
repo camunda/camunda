@@ -23,7 +23,11 @@ export function useAttachedMenu(
   anchor: RefObject<HTMLElement | null> | HTMLElement
 ): UseAttachedMenuReturn {
   const [open, setOpen] = useState(false);
+<<<<<<< HEAD
   const [position, setPosition] = useState<[TwoCoordinates, TwoCoordinates]>([
+=======
+  const [position, setPosition] = useState<TwoCoordinates[]>([
+>>>>>>> 01c4e1e (feat: merge c4 package into optimize/client)
     [-1, -1],
     [-1, -1],
   ]);

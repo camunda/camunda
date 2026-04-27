@@ -42,6 +42,12 @@ export {ReportRenderer} from './ReportRenderer';
 export {Loading} from './Loading';
 export {EntityList} from './EntityList';
 export {EmptyState} from './EmptyState';
+<<<<<<< HEAD
+=======
+export {Breadcrumbs} from './Breadcrumbs';
+export {Deleter} from './Deleter';
+export {BulkDeleter} from './BulkDeleter';
+>>>>>>> 01c4e1e (feat: merge c4 package into optimize/client)
 export {MenuDropdown} from './MenuDropdown';
 export {MenuButton} from './MenuButton';
 export {MultiValueInput} from './MultiValueInput';

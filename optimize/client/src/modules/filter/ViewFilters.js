@@ -9,7 +9,11 @@
 import {MenuItem} from '@carbon/react';
 import classNames from 'classnames';
 
+<<<<<<< HEAD
 import {MenuDropdown} from 'components';
+=======
+import {Select, MenuDropdown} from 'components';
+>>>>>>> 01c4e1e (feat: merge c4 package into optimize/client)
 import {t} from 'translation';
 import {useUiConfig} from 'hooks';
 
