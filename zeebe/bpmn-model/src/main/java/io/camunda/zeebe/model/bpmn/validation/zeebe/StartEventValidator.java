@@ -31,8 +31,6 @@ import org.camunda.bpm.model.xml.validation.ValidationResultCollector;
 public class StartEventValidator implements ModelElementValidator<StartEvent> {
 
   private static final String PUBLIC_ACCESS_PROPERTY_NAME = "publicAccess";
-  private static final String PUBLIC_ACCESS_ERROR_MESSAGE =
-      "Start event forms with public access enabled are not supported";
 
   @Override
   public Class<StartEvent> getElementType() {
@@ -49,7 +47,9 @@ public class StartEventValidator implements ModelElementValidator<StartEvent> {
     }
 
     if (hasPublicAccessEnabledForm(element)) {
-      validationResultCollector.addError(0, PUBLIC_ACCESS_ERROR_MESSAGE);
+      validationResultCollector.addError(
+          0,
+          "Start event forms with public access enabled are not supported. Please remove the 'publicAccess' property or set it to 'false'");
     }
 
     validateExecutionListenersDefinitionForElement(
@@ -68,11 +68,14 @@ public class StartEventValidator implements ModelElementValidator<StartEvent> {
   }
 
   private boolean hasPublicAccessEnabledForm(final StartEvent element) {
-    final ZeebeProperties zeebeProperties =
-        element.getSingleExtensionElement(ZeebeProperties.class);
-
-    return zeebeProperties != null
-        && zeebeProperties.getProperties().stream()
+    return element.getExtensionElements() != null
+        && element
+            .getExtensionElements()
+            .getElementsQuery()
+            .filterByType(ZeebeProperties.class)
+            .list()
+            .stream()
+            .flatMap(properties -> properties.getProperties().stream())
             .filter(property -> PUBLIC_ACCESS_PROPERTY_NAME.equals(property.getName()))
             .map(ZeebeProperty::getValue)
             .filter(Objects::nonNull)
