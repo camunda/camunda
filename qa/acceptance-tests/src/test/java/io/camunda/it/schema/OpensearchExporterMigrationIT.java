@@ -7,15 +7,12 @@
  */
 package io.camunda.it.schema;
 
-import co.elastic.clients.elasticsearch.ElasticsearchClient;
-import co.elastic.clients.json.jackson.JacksonJsonpMapper;
-import co.elastic.clients.transport.rest_client.RestClientTransport;
 import io.camunda.webapps.schema.SupportedVersions;
+import java.net.URI;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
-import org.apache.http.HttpHost;
-import org.elasticsearch.client.RestClient;
+import org.apache.hc.core5.http.HttpHost;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Tag;
@@ -23,33 +20,25 @@ import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.opensearch.client.opensearch.OpenSearchClient;
+import org.opensearch.client.transport.httpclient5.ApacheHttpClient5Transport;
+import org.opensearch.client.transport.httpclient5.ApacheHttpClient5TransportBuilder;
+import org.opensearch.testcontainers.OpenSearchContainer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.Network;
-import org.testcontainers.elasticsearch.ElasticsearchContainer;
 import org.testcontainers.utility.DockerImageName;
 
-/**
- * Full lifecycle upgrade test that validates the ES exporter works correctly after upgrading from
- * Camunda previous to current version with an export backlog. If strict mapping or other export
- * issues exist, this test will fail because backlog records won't be exported and jobs won't
- * complete.
- *
- * <p>Data is shared between the previous Docker container and the current in-JVM broker via a
- * Docker volume ({@link CamundaVolume}), which is extracted to the host filesystem using tar. This
- * approach works reliably in Docker-in-Docker (CI) environments.
- */
-class ElasticsearchExporterMigrationIT {
+public class OpensearchExporterMigrationIT {
 
-  private static final Logger LOG = LoggerFactory.getLogger(ElasticsearchExporterMigrationIT.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(OpensearchExporterMigrationIT.class);
+  private static final String OS_NETWORK_ALIAS = "test-opensearch";
   private static final String HTTP_PREFIX = "http://";
-  private static final String ES_NETWORK_ALIAS = "test-elasticsearch";
 
   private static Network network;
-  private static ElasticsearchContainer esContainer;
-  private static RestClientTransport transport;
-  private static ElasticsearchClient esClient;
-  private static RestClient restClient;
+  private static OpenSearchContainer osContainer;
+  private static ApacheHttpClient5Transport transport;
+  private static OpenSearchClient osClient;
   private static ExporterMigrationTestHelper testHelper;
 
   @TempDir private static Path dataDir;
@@ -58,38 +47,50 @@ class ElasticsearchExporterMigrationIT {
   static void setUp() {
     network = Network.newNetwork();
 
-    esContainer =
-        new ElasticsearchContainer(
-                DockerImageName.parse("docker.elastic.co/elasticsearch/elasticsearch")
-                    .withTag(SupportedVersions.SUPPORTED_ELASTICSEARCH_VERSION))
+    osContainer =
+        new OpenSearchContainer<>(
+                DockerImageName.parse("opensearchproject/opensearch")
+                    .withTag(SupportedVersions.SUPPORTED_OPENSEARCH_VERSION))
             .withNetwork(network)
-            .withNetworkAliases(ES_NETWORK_ALIAS)
+            .withNetworkAliases(OS_NETWORK_ALIAS)
             .withStartupTimeout(Duration.ofMinutes(5))
-            .withEnv("xpack.security.enabled", "false")
-            .withEnv("xpack.watcher.enabled", "false")
-            .withEnv("xpack.ml.enabled", "false")
+            .withEnv("discovery.type", "single-node")
             .withEnv("action.auto_create_index", "true")
-            .withEnv("action.destructive_requires_name", "false");
-    esContainer.start();
+            .withEnv("action.destructive_requires_name", "false")
 
-    restClient =
-        RestClient.builder(HttpHost.create(HTTP_PREFIX + esContainer.getHttpHostAddress())).build();
-    transport = new RestClientTransport(restClient, new JacksonJsonpMapper());
-    esClient = new ElasticsearchClient(transport);
+            // NOTE: Even though the security is disabled, opensearch still requires a strong
+            //  password to be set, to start successfully.
+            .withEnv("OPENSEARCH_INITIAL_ADMIN_PASSWORD", "Strong-Initial-Password123!");
 
-    final String containerAddress = HTTP_PREFIX + esContainer.getHttpHostAddress();
+    osContainer.start();
+
+    try {
+      final String hostAndAddress = osContainer.getHttpHostAddress();
+      final var uri = URI.create(hostAndAddress);
+
+      transport =
+          ApacheHttpClient5TransportBuilder.builder(
+                  new HttpHost(uri.getScheme(), uri.getHost(), uri.getPort()))
+              .build();
+
+      osClient = new OpenSearchClient(transport);
+    } catch (final Exception e) {
+      LOGGER.error("Failed to create OpenSearch client", e);
+      throw new RuntimeException(e);
+    }
+
     testHelper =
         new ExporterMigrationTestHelper(
-            esClient, ES_NETWORK_ALIAS, network, containerAddress, dataDir, LOG);
+            osClient, OS_NETWORK_ALIAS, network, osContainer.getHttpHostAddress(), dataDir, LOGGER);
   }
 
   @AfterAll
   static void tearDown() throws Exception {
-    if (restClient != null) {
-      restClient.close();
+    if (transport != null) {
+      transport.close();
     }
-    if (esContainer != null) {
-      esContainer.stop();
+    if (osContainer != null) {
+      osContainer.stop();
     }
     if (network != null) {
       network.close();
