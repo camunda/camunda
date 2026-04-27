@@ -112,11 +112,12 @@ public class RestoreManager implements CloseableSilently {
       }
       restoreTimeRange(from, to, validateConfig, ignoreFilesInTarget);
     } else {
-      restoreRdbms(from, to, validateConfig, ignoreFilesInTarget);
+      restoreRdbms(exporterPositionMapper, from, to, validateConfig, ignoreFilesInTarget);
     }
   }
 
   private void restoreRdbms(
+      final ExporterPositionMapper positionMapper,
       @Nullable final Instant from,
       @Nullable final Instant to,
       final boolean validateConfig,
@@ -124,7 +125,7 @@ public class RestoreManager implements CloseableSilently {
       throws IOException, ExecutionException, InterruptedException {
     final var partitionCount = configuration.getCluster().getPartitionsCount();
 
-    final var exportedPositions = exportedPositions(partitionCount).join();
+    final var exportedPositions = exportedPositions(positionMapper, partitionCount).join();
     LOG.info("Exported positions for all partitions: {}", exportedPositions);
 
     // Load backup metadata for each partition in parallel
@@ -376,13 +377,14 @@ public class RestoreManager implements CloseableSilently {
     }
   }
 
-  private CompletableFuture<Map<Integer, Long>> exportedPositions(final int partitionCount) {
+  private CompletableFuture<Map<Integer, Long>> exportedPositions(
+      final ExporterPositionMapper positionMapper, final int partitionCount) {
     return FuturesUtil.parTraverse(
             IntStream.rangeClosed(1, partitionCount).boxed().toList(),
             partition ->
                 CompletableFuture.supplyAsync(
                     () -> {
-                      final var positionModel = exporterPositionMapper.findOne(partition);
+                      final var positionModel = positionMapper.findOne(partition);
                       if (positionModel == null || positionModel.lastExportedPosition() == null) {
                         throw new IllegalArgumentException(
                             "No exported position found for partition " + partition + " in RDBMS");
