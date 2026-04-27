@@ -210,7 +210,7 @@ public final class ZeebeRocksDbFactory<
           .setStatsDumpPeriodSec(20);
     }
 
-    final var eventListener = new ZeebeRocksDbEventListener();
+    final var eventListener = new ZeebeRocksDbEventListener(meterRegistryFactory.get());
     closeables.add(eventListener);
     dbOptions.setListeners(List.of(eventListener));
 
