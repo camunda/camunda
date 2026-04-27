@@ -63,7 +63,7 @@ public abstract class ErrorController {
   @ResponseStatus(HttpStatus.BAD_REQUEST)
   @ExceptionHandler(ClientException.class)
   public ResponseEntity<Error> handleInvalidRequest(final ClientException exception) {
-    logger.error(getSummary(exception));
+    logger.error(getSummary(exception), exception);
     logger.debug(exception.getMessage(), exception);
     final Error error =
         new Error()
