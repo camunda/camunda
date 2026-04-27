@@ -43,4 +43,25 @@ public class MemberId extends NodeId {
   public static MemberId from(final String id) {
     return new MemberId(id);
   }
+
+  public static MemberId from(final String zone, final int nodeId) {
+    if (zone == null) {
+      return new MemberId(Integer.toString(nodeId));
+    }
+    return new MemberId(zone + "/" + nodeId);
+  }
+
+  /**
+   * Extracts the numeric node id from a {@link MemberId}.
+   *
+   * <p>Accepts both the bare form ({@code "0"}) and the zone-prefixed form ({@code "us-east/0"}).
+   * The numeric portion is always the trailing path segment.
+   *
+   * @throws NumberFormatException if the trailing segment is not a parseable int
+   */
+  public static int extractNodeId(final MemberId memberId) {
+    final var id = memberId.id();
+    final var slash = id.lastIndexOf('/');
+    return Integer.parseInt(slash >= 0 ? id.substring(slash + 1) : id);
+  }
 }
