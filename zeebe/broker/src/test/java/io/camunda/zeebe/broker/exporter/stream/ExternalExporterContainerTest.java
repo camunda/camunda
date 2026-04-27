@@ -138,7 +138,8 @@ final class ExternalExporterContainerTest {
             0,
             new ExporterInitializationInfo(0, null),
             new SimpleMeterRegistry(),
-            InstantSource.system());
+            InstantSource.system(),
+            pos -> true);
 
     // when
     container.close();
@@ -165,7 +166,8 @@ final class ExternalExporterContainerTest {
             0,
             new ExporterInitializationInfo(0, null),
             registry,
-            InstantSource.system());
+            InstantSource.system(),
+            pos -> true);
 
     // when
     container.configureExporter();
