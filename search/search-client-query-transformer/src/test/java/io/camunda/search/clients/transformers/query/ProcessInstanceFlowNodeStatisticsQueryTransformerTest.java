@@ -18,6 +18,7 @@ import static io.camunda.search.aggregation.ProcessInstanceFlowNodeStatisticsAgg
 import static io.camunda.search.aggregation.ProcessInstanceFlowNodeStatisticsAggregation.AGGREGATION_TO_FLOW_NODES;
 import static io.camunda.search.clients.query.SearchQueryBuilders.and;
 import static io.camunda.search.clients.query.SearchQueryBuilders.not;
+import static io.camunda.search.clients.query.SearchQueryBuilders.or;
 import static io.camunda.search.clients.query.SearchQueryBuilders.term;
 import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.ACTIVITY_TYPE;
 import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.JOIN_RELATION;
@@ -80,7 +81,10 @@ public class ProcessInstanceFlowNodeStatisticsQueryTransformerTest {
     final var filterAgg = (SearchFilterAggregator) childrenAgg.aggregations().getFirst();
     assertThat(filterAgg.name()).isEqualTo(AGGREGATION_FILTER_FLOW_NODES);
     assertThat(filterAgg.query())
-        .isEqualTo(not(term(ACTIVITY_TYPE, FlowNodeType.MULTI_INSTANCE_BODY.toString())));
+        .isEqualTo(
+            or(
+                not(term(ACTIVITY_TYPE, FlowNodeType.MULTI_INSTANCE_BODY.toString())),
+                term(ListViewTemplate.INCIDENT, true)));
     assertThat(filterAgg.aggregations()).hasSize(1);
     assertThat(filterAgg.aggregations().getFirst()).isInstanceOf(SearchTermsAggregator.class);
 
@@ -95,8 +99,8 @@ public class ProcessInstanceFlowNodeStatisticsQueryTransformerTest {
     final var filtersAgg = (SearchFiltersAggregator) termsAgg.aggregations().getFirst();
     assertThat(filtersAgg.name()).isEqualTo(AGGREGATION_GROUP_FILTERS);
     assertThat(filtersAgg.aggregations()).isNull();
-    assertThat(filtersAgg.queries()).hasSize(4);
     assertThat(filtersAgg.queries())
+        .hasSize(4)
         .containsOnly(
             entry(
                 AGGREGATION_ACTIVE,
