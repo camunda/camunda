@@ -7,7 +7,7 @@
  */
 
 import {ClipboardEvent, ComponentProps, KeyboardEvent, useState} from 'react';
-import {MultiValueInput} from '@camunda/camunda-optimize-composite-components';
+import {MultiValueInput} from 'components';
 
 import {getRandomId} from 'services';
 

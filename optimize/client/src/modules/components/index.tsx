@@ -42,7 +42,11 @@ export {ReportRenderer} from './ReportRenderer';
 export {Loading} from './Loading';
 export {EntityList} from './EntityList';
 export {EmptyState} from './EmptyState';
+export {MenuDropdown} from './MenuDropdown';
+export {MenuButton} from './MenuButton';
+export {MultiValueInput} from './MultiValueInput';
 
 export type {User} from './UserTypeahead';
 export type {Canvas, ModdleElement, RegistryElement} from './BPMNDiagram';
 export type {TableBody, TableHead} from './Table';
+export type {MenuDropdownProps} from './MenuDropdown';

@@ -7,9 +7,9 @@
  */
 
 import {MenuItem} from '@carbon/react';
-import {MenuDropdown} from '@camunda/camunda-optimize-composite-components';
 import classNames from 'classnames';
 
+import {MenuDropdown} from 'components';
 import {t} from 'translation';
 import {useUiConfig} from 'hooks';
 

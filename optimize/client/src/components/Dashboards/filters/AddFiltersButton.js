@@ -11,12 +11,12 @@ import useDeepCompareEffect from 'use-deep-compare-effect';
 import update from 'immutability-helper';
 import {Checkbox, MenuItem} from '@carbon/react';
 import {Filter} from '@carbon/icons-react';
-import {MenuButton} from '@camunda/camunda-optimize-composite-components';
 
 import {getVariableNames, getVariableValues} from './service';
 
 import {VariableFilter, AssigneeFilter} from 'filter';
 import {showError} from 'notifications';
+import {MenuButton} from 'components';
 import {t} from 'translation';
 import {showPrompt} from 'prompt';
 import {useErrorHandling, useUiConfig} from 'hooks';

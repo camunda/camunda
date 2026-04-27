@@ -142,5 +142,4 @@ runs:
 
         optimize-frontend-change:
           - optimize/client/**
-          - optimize/c4/**
           - optimize/backend/src/main/resources/localization/**
