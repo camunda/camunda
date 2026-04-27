@@ -14,6 +14,9 @@ class OperateHomePage {
   readonly dashboardLink: Locator;
   readonly processesTab: Locator;
   readonly decisionsTab: Locator;
+  readonly operationsMenuButton: Locator;
+  readonly batchOperationsNavItem: Locator;
+  readonly operationsLogNavItem: Locator;
   readonly informationDialog: Locator;
   readonly editVariableButton: Locator;
   readonly variableValueInput: Locator;
@@ -33,6 +36,15 @@ class OperateHomePage {
     this.dashboardLink = page.getByRole('link', {name: 'Dashboard'});
     this.processesTab = page.getByRole('link', {name: 'Processes'}).first();
     this.decisionsTab = page.getByRole('link', {name: 'Decisions'});
+    this.operationsMenuButton = page
+      .locator('.cds--header__menu-title')
+      .filter({hasText: /^Operations$/});
+    this.batchOperationsNavItem = page.getByRole('link', {
+      name: 'Batch operations',
+    });
+    this.operationsLogNavItem = page.getByRole('link', {
+      name: 'Operations log',
+    });
     this.informationDialog = page.getByRole('button', {
       name: 'Close this dialog',
     });

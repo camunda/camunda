@@ -126,3 +126,41 @@ export const postMigrationAssertionOptions = {
 
 export const notFoundDetail = (key: string) =>
   `Command 'SUSPEND' rejected with code 'NOT_FOUND': Expected to suspend a batch operation with key '${key}', but no such batch operation was found`;
+
+export async function findCompletedBatchKey(
+  request: APIRequestContext,
+): Promise<string> {
+  const result: {batchKey?: string} = {};
+  await expect(async () => {
+    const res = await request.post(buildUrl('/batch-operations/search'), {
+      headers: jsonHeaders(),
+      data: {
+        filter: {
+          state: 'COMPLETED',
+          operationType: 'CANCEL_PROCESS_INSTANCE',
+        },
+        sort: [{field: 'startDate', order: 'DESC'}],
+        page: {from: 0, limit: 1},
+      },
+    });
+    await assertStatusCode(res, 200);
+    await validateResponse(
+      {
+        path: '/batch-operations/search',
+        method: 'POST',
+        status: '200',
+      },
+      res,
+    );
+    const body = await res.json();
+    expect(body.items?.length).toBeGreaterThanOrEqual(1);
+    expect(body.items[0].batchOperationKey).toBeDefined();
+    result.batchKey = String(body.items[0].batchOperationKey);
+  }).toPass(defaultAssertionOptions);
+  if (result.batchKey === undefined) {
+    throw new Error(
+      'Expected to find a completed batch operation key, but none was returned.',
+    );
+  }
+  return result.batchKey;
+}
