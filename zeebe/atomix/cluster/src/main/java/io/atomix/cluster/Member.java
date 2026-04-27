@@ -45,6 +45,12 @@ public class Member extends Node {
     nodeVersion = config.getNodeVersion();
     properties = new Properties();
     properties.putAll(config.getProperties());
+    if (zone != null && id != null) {
+      if (!id.id().startsWith(zone + "/")) {
+        throw new IllegalArgumentException(
+            String.format("Expected id to start with zone %s, but did not: id=%s", zone, id));
+      }
+    }
   }
 
   protected Member(final MemberId id, final Address address) {
@@ -64,7 +70,7 @@ public class Member extends Node {
     this.nodeVersion = nodeVersion;
     this.zone = zone;
     if (zone != null) {
-      if (!id.id().startsWith(zone)) {
+      if (!id.id().startsWith(zone + "/")) {
         throw new IllegalArgumentException(
             String.format("Expected id to start with zone %s, but did not: id=%s", zone, id));
       }
