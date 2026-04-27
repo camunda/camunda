@@ -7,8 +7,6 @@
  */
 package io.camunda.container;
 
-import static org.rnorth.ducttape.unreliables.Unreliables.retryUntilTrue;
-
 import io.camunda.client.CamundaClient;
 import io.camunda.client.CamundaClientBuilder;
 import io.camunda.client.api.response.BrokerInfo;
@@ -16,13 +14,15 @@ import io.camunda.client.api.response.PartitionInfo;
 import io.camunda.client.api.response.Topology;
 import io.camunda.container.cluster.CamundaPort;
 import java.net.URI;
+import java.time.Duration;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
-import org.rnorth.ducttape.TimeoutException;
+import org.awaitility.Awaitility;
+import org.awaitility.core.ConditionTimeoutException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.ContainerLaunchException;
@@ -207,22 +207,26 @@ public class ZeebeTopologyWaitStrategy extends AbstractWaitStrategy {
           partitionsCount,
           replicationFactor);
 
-      retryUntilTrue(
-          (int) startupTimeout.toMillis(),
-          TimeUnit.MILLISECONDS,
-          () ->
-              getRateLimiter()
-                  .getWhenReady(
-                      () -> {
-                        latestTopology.topology = getTopology(client);
-                        LOGGER.trace("{}: Topology: {}", containerName, latestTopology.topology);
-                        return isTopologyComplete(latestTopology.topology, containerName);
-                      }));
-    } catch (final TimeoutException e) {
-      throw new ContainerLaunchException(
-          String.format(
-              "Timed out waiting for gateway topology to be complete; latest known topology: %s",
-              latestTopology));
+      try {
+        Awaitility.await()
+            .pollInterval(Duration.ofSeconds(1))
+            .atMost(startupTimeout)
+            .until(
+                () ->
+                    getRateLimiter()
+                        .getWhenReady(
+                            () -> {
+                              latestTopology.topology = getTopology(client);
+                              LOGGER.trace(
+                                  "{}: Topology: {}", containerName, latestTopology.topology);
+                              return isTopologyComplete(latestTopology.topology, containerName);
+                            }));
+      } catch (final ConditionTimeoutException e) {
+        throw new ContainerLaunchException(
+            String.format(
+                "Timed out waiting for gateway topology to be complete; latest known topology: %s",
+                latestTopology));
+      }
     }
   }
 
