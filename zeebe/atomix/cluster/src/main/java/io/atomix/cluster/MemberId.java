@@ -17,6 +17,7 @@
 package io.atomix.cluster;
 
 import java.util.UUID;
+import org.jspecify.annotations.Nullable;
 
 /** Controller cluster identity. */
 public class MemberId extends NodeId {
@@ -50,7 +51,7 @@ public class MemberId extends NodeId {
    * <p>When {@code zone} is {@code null} the result is the bare form {@code "$nodeId"}; otherwise
    * it is {@code "$zone/$nodeId"}.
    */
-  public static MemberId from(final String zone, final int nodeId) {
+  public static MemberId from(final @Nullable String zone, final int nodeId) {
     if (zone == null) {
       return new MemberId(Integer.toString(nodeId));
     }
