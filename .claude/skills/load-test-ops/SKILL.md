@@ -9,17 +9,22 @@ description: Trigger, monitor, update, profile, and stop Camunda load tests usin
 
 `gh` CLI must always be authenticated (`gh auth status`).
 
-**Starting a load test always goes through GHA** — it needs to build a Docker image from the
-branch before deploying. There is no local shortcut for this step.
+> **Note for Claude:** `gh` commands cannot run in the Claude Code sandbox (no auth). Always
+> provide commands for the user to run with `! <command>` in the prompt.
 
-For **updates to a running cluster**, check kubectl access first:
+**Use GHA when** you need to build a Docker image from a branch (initial test of a feature branch,
+or after pushing new commits). There is no local shortcut for the image build step.
+
+**Use Makefile/kubectl directly when:**
+- Iterating on Helm configuration without changing code (fast, no GHA queue)
+- You already have a Docker image (pre-built branch image via `reuse-tag`, or a released image via `orchestration-tag`)
+- You want to test different configurations quickly against a running cluster
+
+Check kubectl access before taking the direct path:
 
 ```bash
 kubectl get nodes 2>/dev/null && echo "kubectl available" || echo "use GHA fallback"
 ```
-
-**If kubectl is available:** use `newLoadTest.sh` + Makefile for direct Helm upgrades — faster, no GHA queue, no image rebuild.
-**If not:** fall back to `gh workflow run` with `reuse-tag` to skip the Docker build.
 
 ---
 
