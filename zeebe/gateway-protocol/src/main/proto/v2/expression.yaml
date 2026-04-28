@@ -62,8 +62,7 @@ components:
             - $ref: 'keys.yaml#/components/schemas/ElementInstanceKey'
           description: |
             Key of the element instance whose variable scope should be made visible to the
-            expression. Variables on the element instance shadow variables on its parent scopes
-            up to the process instance. Mutually exclusive with `processInstanceKey`.
+            expression. Mutually exclusive with `processInstanceKey`.
         variables:
           type: object
           description: Optional variables for expression evaluation. These variables are only used for the current evaluation and do not persist beyond it.
