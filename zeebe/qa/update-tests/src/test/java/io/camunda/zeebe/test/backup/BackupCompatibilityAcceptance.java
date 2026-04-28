@@ -26,6 +26,7 @@ import java.nio.file.Path;
 import java.time.Duration;
 import java.util.Map;
 import java.util.Objects;
+import org.agrona.collections.MutableBoolean;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
@@ -51,6 +52,7 @@ import org.testcontainers.utility.DockerImageName;
 public interface BackupCompatibilityAcceptance {
   String PROCESS_ID = "compat-test-process";
   String JOB_TYPE = "compat-test-task";
+  int MAX_BACKUP_RETRIES = 3;
 
   /**
    * Returns the Docker network shared between the storage emulator and the old broker container.
@@ -83,12 +85,12 @@ public interface BackupCompatibilityAcceptance {
   @Test
   default void shouldRestoreBackupFromPreviousVersion() {
     // given
-    final var backupId = 1L;
+    final long backupId;
     final String storeBasePath = RandomStringUtils.insecure().nextAlphabetic(10).toLowerCase();
     try (final var broker = createOldBroker(storeBasePath)) {
       broker.start();
       createProcessInstanceWithJob(broker);
-      takeBackup(broker, backupId);
+      backupId = takeBackup(broker, 1L);
     }
 
     // when -- restore the backup using the current version (in-process)
@@ -112,12 +114,12 @@ public interface BackupCompatibilityAcceptance {
   @Test
   default void shouldDeleteBackupFromPreviousVersion() {
     // given
-    final var backupId = 1L;
+    final long backupId;
     final String storeBasePath = RandomStringUtils.insecure().nextAlphabetic(10).toLowerCase();
     try (final var broker = createOldBroker(storeBasePath)) {
       broker.start();
       createProcessInstanceWithJob(broker);
-      takeBackup(broker, backupId);
+      backupId = takeBackup(broker, 1L);
     }
 
     try (final var broker =
@@ -161,13 +163,14 @@ public interface BackupCompatibilityAcceptance {
   default void shouldRestoreBackupWhenSnapshotContainsCheckpointFromPreviousVersion() {
     // given -- two backups: the first writes checkpoint info to RocksDB, and the
     // second's snapshot captures that old-format checkpoint state
-    final var firstBackupId = 1L;
-    final var secondBackupId = 2L;
+    final long firstBackupId;
+    final long secondBackupId;
     final String storeBasePath = RandomStringUtils.insecure().nextAlphabetic(10).toLowerCase();
     try (final var broker = createOldBroker(storeBasePath)) {
       broker.start();
       createProcessInstanceWithJob(broker);
-      takeBackup(broker, firstBackupId);
+      firstBackupId = takeBackup(broker, 1L);
+      secondBackupId = firstBackupId + 1;
 
       // Checkpoint info from backup #1 is now persisted in RocksDB.
       // Take a second backup whose snapshot includes that state.
@@ -246,7 +249,11 @@ public interface BackupCompatibilityAcceptance {
   }
 
   /** Takes a snapshot and backup on the given broker, waiting for both to complete. */
-  private void takeBackup(final BrokerContainer broker, final long backupId) {
+  private long takeBackup(final BrokerContainer broker, final long backupId) {
+    return takeBackup(broker, backupId, 0);
+  }
+
+  private long takeBackup(final BrokerContainer broker, final long backupId, final int retryCount) {
     final var partitionsActuator = PartitionsActuator.of(broker);
     partitionsActuator.takeSnapshot();
     Awaitility.await("Snapshot is taken")
@@ -259,16 +266,34 @@ public interface BackupCompatibilityAcceptance {
     final var backupActuator = BackupActuator.of(broker);
     backupActuator.take(backupId);
 
+    final MutableBoolean shouldRetry = new MutableBoolean(false);
     Awaitility.await("until backup is completed")
         .atMost(Duration.ofSeconds(120))
         .ignoreExceptions()
         .untilAsserted(
             () -> {
               final var status = backupActuator.status(backupId);
+              if (shouldRetryBackupDueToSnapshot(status, retryCount)) {
+                shouldRetry.set(true);
+                return;
+              }
               assertThat(status)
                   .describedAs("Backup status (failureReason=%s)", status.getFailureReason())
                   .returns(StateCode.COMPLETED, BackupInfo::getState);
             });
+
+    if (shouldRetry.get()) {
+      createProcessInstanceWithJob(broker);
+      return takeBackup(broker, backupId + 1, retryCount + 1);
+    }
+    return backupId;
+  }
+
+  private boolean shouldRetryBackupDueToSnapshot(final BackupInfo status, final int retryCount) {
+    return status.getState() == StateCode.FAILED
+        && status.getFailureReason() != null
+        && status.getFailureReason().contains("Cannot find a snapshot that can be included")
+        && retryCount < MAX_BACKUP_RETRIES;
   }
 
   /**
