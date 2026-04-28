@@ -5,6 +5,9 @@ global:
     - name: CONFIG_FORCE_app_tls
       value: "false"
 
+  commonLabels:
+    camunda.io/created-by: __AUTHOR__
+    camunda.io/purpose: load-test
   image:
     repository: registry.camunda.cloud/team-zeebe
     pullSecrets:
