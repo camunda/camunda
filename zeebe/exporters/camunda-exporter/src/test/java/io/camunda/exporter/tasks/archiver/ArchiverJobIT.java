@@ -148,6 +148,16 @@ public abstract class ArchiverJobIT<T extends ArchiverJob<?>> {
   protected void verifyMoved(
       final IndexTemplateDescriptor templateDescriptor,
       final SearchClientAdapter client,
+      final ExporterEntity<?> parent,
+      final ExporterEntity<?> entity,
+      final String datedIndexSuffix)
+      throws IOException {
+    verifyMoved(templateDescriptor, client, entity, parent.getId(), datedIndexSuffix);
+  }
+
+  protected void verifyMoved(
+      final IndexTemplateDescriptor templateDescriptor,
+      final SearchClientAdapter client,
       final ExporterEntity<?> entity,
       final String routing,
       final String datedIndexSuffix)
@@ -156,12 +166,18 @@ public abstract class ArchiverJobIT<T extends ArchiverJob<?>> {
     final var originalIndexEntity =
         client.get(
             entity.getId(), routing, templateDescriptor.getFullQualifiedName(), entity.getClass());
-    assertThat(originalIndexEntity).isNull();
+    assertThat(originalIndexEntity)
+        .describedAs(
+            "Expected %s to have been deleted from %s",
+            entity, templateDescriptor.getFullQualifiedName())
+        .isNull();
 
     // should now be in the dated index
     final var dateIndex = templateDescriptor.getFullQualifiedName() + datedIndexSuffix;
     final var newIndexEntity = client.get(entity.getId(), routing, dateIndex, entity.getClass());
-    assertThat(newIndexEntity).isEqualTo(entity);
+    assertThat(newIndexEntity)
+        .describedAs("Expected %s to have been moved to %s", entity, dateIndex)
+        .isEqualTo(entity);
   }
 
   protected void verifyNotMoved(
@@ -171,7 +187,10 @@ public abstract class ArchiverJobIT<T extends ArchiverJob<?>> {
       throws IOException {
     final var originalIndexEntity =
         client.get(entity.getId(), templateDescriptor.getFullQualifiedName(), entity.getClass());
-    assertThat(originalIndexEntity).isEqualTo(entity);
+    assertThat(originalIndexEntity)
+        .describedAs(
+            "Expected %s to still be in %s", entity, templateDescriptor.getFullQualifiedName())
+        .isEqualTo(entity);
   }
 
   private ExporterResourceProvider exporterResourceProvider(final ExporterConfiguration config) {
