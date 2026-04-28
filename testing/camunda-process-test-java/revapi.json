@@ -33,6 +33,30 @@
             "match": "/io\\.camunda\\.process\\.test\\.api\\.coverage(\\..*)?/"
           },
           "justification": "These classes were in the API package accidentally. They are for internal use only. We moved them into the impl package."
+        },
+        {
+          "ignore": true,
+          "code": "java.method.returnTypeChanged",
+          "old": "method io.camunda.zeebe.client.ZeebeClient io.camunda.process.test.api.CamundaProcessTestContext::createClient()",
+          "justification": "Return type changed from ZeebeClient to CamundaClient as part of client API migration."
+        },
+        {
+          "ignore": true,
+          "code": "java.method.returnTypeChanged",
+          "old": "method io.camunda.zeebe.client.ZeebeClient io.camunda.process.test.api.CamundaProcessTestContext::createClient(java.util.function.Consumer<io.camunda.zeebe.client.ZeebeClientBuilder>)",
+          "justification": "Return type changed from ZeebeClient to CamundaClient as part of client API migration."
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method boolean io.camunda.process.test.api.assertions.ElementSelector::test(io.camunda.zeebe.client.api.search.response.FlowNodeInstance)",
+          "justification": "Method removed as part of migration from ZeebeClient to CamundaClient API."
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method boolean io.camunda.process.test.api.assertions.ProcessInstanceSelector::test(io.camunda.zeebe.client.api.search.response.ProcessInstance)",
+          "justification": "Method removed as part of migration from ZeebeClient to CamundaClient API."
         }
       ]
     }
