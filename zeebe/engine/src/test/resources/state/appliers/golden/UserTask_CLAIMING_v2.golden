@@ -34,6 +34,7 @@ public final class UserTaskClaimingV2Applier
   }
 
   private void pinGlobalListenersConfig(final UserTaskRecord userTaskRecord) {
+    // Only pin the configuration if it exists
     final var currentConfig = globalListenersState.getCurrentConfig();
     if (currentConfig == null) {
       return;
@@ -41,12 +42,16 @@ public final class UserTaskClaimingV2Applier
 
     final long currentConfigKey = currentConfig.getGlobalListenerBatchKey();
 
+    // Create versioned config if it does not exist
     if (!globalListenersState.isConfigurationVersionStored(currentConfigKey)) {
       globalListenersState.storeConfigurationVersion(currentConfig);
     }
 
+    // Create pinned entry
     globalListenersState.pinConfiguration(currentConfigKey, userTaskRecord.getUserTaskKey());
 
+    // Update user task record to reference the pinned config
+    // Note: this value is then stored in the intermediate state
     userTaskRecord.setListenersConfigKey(currentConfigKey);
   }
 }
