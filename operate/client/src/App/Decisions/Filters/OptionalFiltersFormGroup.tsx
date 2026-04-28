@@ -35,6 +35,7 @@ import {
   FieldContainer,
 } from 'modules/components/FiltersPanel/styled';
 import {Close} from '@carbon/react/icons';
+import {BusinessIdFilter} from 'App/Processes/ListView/Filters/BusinessIdFilter';
 
 type OptionalFilter =
   | 'decisionEvaluationInstanceKey'
@@ -73,9 +74,8 @@ const OPTIONAL_FILTER_FIELDS: Record<
     ),
   },
   businessId: {
-    keys: ['businessId'],
+    keys: ['businessId', 'businessIdOperator'],
     label: 'Business ID',
-    type: 'text',
   },
   processInstanceKey: {
     keys: ['processInstanceKey'],
@@ -163,52 +163,61 @@ const OptionalFiltersFormGroup: React.FC<Props> = observer(
         <Stack gap={5}>
           {visibleFilters.map((filter) => (
             <FieldContainer key={filter}>
-              {filter === 'evaluationDateRange' ? (
-                <DateRangeField
-                  isModalOpen={isDateRangeModalOpen}
-                  onModalClose={() => setIsDateRangeModalOpen(false)}
-                  onClick={() => setIsDateRangeModalOpen(true)}
-                  filterName={filter}
-                  popoverTitle="Filter decisions by evaluation date"
-                  label={OPTIONAL_FILTER_FIELDS[filter].label}
-                  fromDateTimeKey="evaluationDateFrom"
-                  toDateTimeKey="evaluationDateTo"
-                />
-              ) : (
-                <Field
-                  name={filter}
-                  validate={OPTIONAL_FILTER_FIELDS[filter].validate}
-                >
-                  {({input}) => {
-                    const field = OPTIONAL_FILTER_FIELDS[filter];
+              {(() => {
+                switch (filter) {
+                  case 'evaluationDateRange':
+                    return (
+                      <DateRangeField
+                        isModalOpen={isDateRangeModalOpen}
+                        onModalClose={() => setIsDateRangeModalOpen(false)}
+                        onClick={() => setIsDateRangeModalOpen(true)}
+                        filterName={filter}
+                        popoverTitle="Filter decisions by evaluation date"
+                        label={OPTIONAL_FILTER_FIELDS[filter].label}
+                        fromDateTimeKey="evaluationDateFrom"
+                        toDateTimeKey="evaluationDateTo"
+                      />
+                    );
+                  case 'businessId':
+                    return <BusinessIdFilter />;
+                  default:
+                    return (
+                      <Field
+                        name={filter}
+                        validate={OPTIONAL_FILTER_FIELDS[filter].validate}
+                      >
+                        {({input}) => {
+                          const field = OPTIONAL_FILTER_FIELDS[filter];
 
-                    if (field.type === 'text') {
-                      return (
-                        <TextInputField
-                          {...input}
-                          id={filter}
-                          size="sm"
-                          labelText={field.label}
-                          placeholder={field.placeholder}
-                          autoFocus
-                        />
-                      );
-                    }
-                    if (field.type === 'multiline') {
-                      return (
-                        <TextAreaField
-                          {...input}
-                          id={filter}
-                          labelText={field.label}
-                          placeholder={field.placeholder}
-                          rows={field.rows}
-                          autoFocus
-                        />
-                      );
-                    }
-                  }}
-                </Field>
-              )}
+                          if (field.type === 'text') {
+                            return (
+                              <TextInputField
+                                {...input}
+                                id={filter}
+                                size="sm"
+                                labelText={field.label}
+                                placeholder={field.placeholder}
+                                autoFocus
+                              />
+                            );
+                          }
+                          if (field.type === 'multiline') {
+                            return (
+                              <TextAreaField
+                                {...input}
+                                id={filter}
+                                labelText={field.label}
+                                placeholder={field.placeholder}
+                                rows={field.rows}
+                                autoFocus
+                              />
+                            );
+                          }
+                        }}
+                      </Field>
+                    );
+                }
+              })()}
               <ButtonContainer>
                 <IconButton
                   kind="ghost"
