@@ -34,6 +34,7 @@ const DecisionsFilterSchema = z
     failed: z.coerce.boolean().optional(),
     decisionEvaluationInstanceKey: z.string().optional(),
     businessId: z.string().optional(),
+    businessIdOperator: z.string().optional(),
     processInstanceKey: z.string().optional(),
     evaluationDateTo: z.string().transform(formatToISO).optional(),
     evaluationDateFrom: z.string().transform(formatToISO).optional(),
