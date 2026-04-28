@@ -43,6 +43,16 @@
           "color": {
             "mode": "thresholds"
           },
+          "custom": {
+            "axisPlacement": "hidden",
+            "fillOpacity": 100,
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "lineWidth": 0
+          },
           "mappings": [
             {
               "options": {
@@ -90,7 +100,7 @@
         "overrides": []
       },
       "gridPos": {
-        "h": 3,
+        "h": 4,
         "w": 12,
         "x": 0,
         "y": 1
@@ -98,10 +108,110 @@
       "id": 92,
       "maxDataPoints": 100,
       "options": {
-        "colorMode": "background",
-        "graphMode": "none",
+        "colWidth": 1,
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": false
+        },
+        "rowHeight": 1,
+        "showValue": "never",
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "12.4.3",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "editorMode": "code",
+          "exemplar": false,
+          "expr": "scalar(elasticsearch_cluster_health_status{color=\"green\",cluster=~\"$cluster\",namespace=~\"$namespace\"})\n+ scalar(elasticsearch_cluster_health_status{color=\"yellow\",cluster=~\"$cluster\",namespace=~\"$namespace\"}) * 2\n+ scalar(elasticsearch_cluster_health_status{color=\"red\",cluster=~\"$cluster\",namespace=~\"$namespace\"}) * 3",
+          "format": "time_series",
+          "instant": false,
+          "intervalFactor": 1,
+          "legendFormat": "Health",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Cluster Health Status History",
+      "type": "status-history"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [
+            {
+              "options": {
+                "1": {
+                  "text": "green"
+                },
+                "2": {
+                  "text": "yellow"
+                },
+                "3": {
+                  "text": "red"
+                }
+              },
+              "type": "value"
+            },
+            {
+              "options": {
+                "match": "null",
+                "result": {
+                  "text": "N/A"
+                }
+              },
+              "type": "special"
+            }
+          ],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#299c46",
+                "value": 0
+              },
+              {
+                "color": "rgba(237, 129, 40, 0.89)",
+                "value": 2
+              },
+              {
+                "color": "#d44a3a",
+                "value": 3
+              }
+            ]
+          },
+          "unit": "none"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 3,
+        "x": 12,
+        "y": 1
+      },
+      "id": 120,
+      "maxDataPoints": 100,
+      "options": {
+        "colorMode": "background_solid",
+        "graphMode": "area",
         "justifyMode": "auto",
-        "orientation": "horizontal",
+        "orientation": "auto",
         "percentChangeColorMode": "standard",
         "reduceOptions": {
           "calcs": [
@@ -121,15 +231,18 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "scalar(elasticsearch_cluster_health_status{color=\"green\",cluster=~\"$cluster\",namespace=~\"$namespace\"}) + scalar(elasticsearch_cluster_health_status{color=\"yellow\",cluster=~\"$cluster\",namespace=~\"$namespace\"}) * 2 + scalar(elasticsearch_cluster_health_status{color=\"red\",cluster=~\"$cluster\",namespace=~\"$namespace\"}) * 3",
+          "editorMode": "code",
+          "exemplar": false,
+          "expr": "scalar(elasticsearch_cluster_health_status{color=\"green\",cluster=~\"$cluster\",namespace=~\"$namespace\"})\n+ scalar(elasticsearch_cluster_health_status{color=\"yellow\",cluster=~\"$cluster\",namespace=~\"$namespace\"}) * 2\n+ scalar(elasticsearch_cluster_health_status{color=\"red\",cluster=~\"$cluster\",namespace=~\"$namespace\"}) * 3",
           "format": "time_series",
-          "instant": false,
+          "instant": true,
           "intervalFactor": 1,
-          "legendFormat": "",
+          "legendFormat": "__auto",
+          "range": false,
           "refId": "A"
         }
       ],
-      "title": "Cluster Status",
+      "title": "Current Cluster Health Status",
       "type": "stat"
     },
     {
@@ -172,9 +285,9 @@
         "overrides": []
       },
       "gridPos": {
-        "h": 3,
-        "w": 4,
-        "x": 12,
+        "h": 4,
+        "w": 3,
+        "x": 15,
         "y": 1
       },
       "id": 8,
@@ -256,9 +369,9 @@
         "overrides": []
       },
       "gridPos": {
-        "h": 3,
-        "w": 4,
-        "x": 16,
+        "h": 4,
+        "w": 3,
+        "x": 18,
         "y": 1
       },
       "id": 94,
@@ -342,9 +455,9 @@
         "overrides": []
       },
       "gridPos": {
-        "h": 3,
-        "w": 4,
-        "x": 20,
+        "h": 4,
+        "w": 3,
+        "x": 21,
         "y": 1
       },
       "id": 96,
@@ -391,7 +504,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 4
+        "y": 5
       },
       "id": 76,
       "panels": [
@@ -438,7 +551,7 @@
             "h": 3,
             "w": 4,
             "x": 0,
-            "y": 8
+            "y": 90
           },
           "id": 78,
           "maxDataPoints": 100,
@@ -521,7 +634,7 @@
             "h": 3,
             "w": 4,
             "x": 4,
-            "y": 8
+            "y": 90
           },
           "id": 80,
           "maxDataPoints": 100,
@@ -607,7 +720,7 @@
             "h": 3,
             "w": 4,
             "x": 8,
-            "y": 8
+            "y": 90
           },
           "id": 82,
           "maxDataPoints": 100,
@@ -693,7 +806,7 @@
             "h": 3,
             "w": 4,
             "x": 12,
-            "y": 8
+            "y": 90
           },
           "id": 84,
           "maxDataPoints": 100,
@@ -779,7 +892,7 @@
             "h": 3,
             "w": 4,
             "x": 16,
-            "y": 8
+            "y": 90
           },
           "id": 86,
           "maxDataPoints": 100,
@@ -865,7 +978,7 @@
             "h": 3,
             "w": 4,
             "x": 20,
-            "y": 8
+            "y": 90
           },
           "id": 88,
           "maxDataPoints": 100,
@@ -915,7 +1028,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 5
+        "y": 6
       },
       "id": 70,
       "panels": [
@@ -986,7 +1099,7 @@
             "h": 9,
             "w": 12,
             "x": 0,
-            "y": 12
+            "y": 131
           },
           "id": 3,
           "options": {
@@ -1095,7 +1208,7 @@
             "h": 9,
             "w": 12,
             "x": 12,
-            "y": 12
+            "y": 131
           },
           "id": 4,
           "options": {
@@ -1203,7 +1316,7 @@
             "h": 9,
             "w": 12,
             "x": 0,
-            "y": 103
+            "y": 151
           },
           "id": 72,
           "options": {
@@ -1310,7 +1423,7 @@
             "h": 9,
             "w": 12,
             "x": 12,
-            "y": 103
+            "y": 151
           },
           "id": 74,
           "options": {
@@ -1458,7 +1571,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 112
+            "y": 160
           },
           "id": 64,
           "options": {
@@ -1561,7 +1674,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 112
+            "y": 160
           },
           "id": 114,
           "options": {
@@ -1607,7 +1720,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 6
+        "y": 7
       },
       "id": 68,
       "panels": [
@@ -1678,7 +1791,7 @@
             "h": 9,
             "w": 24,
             "x": 0,
-            "y": 13
+            "y": 8
           },
           "id": 57,
           "options": {
@@ -1766,7 +1879,7 @@
             "h": 9,
             "w": 3,
             "x": 0,
-            "y": 78
+            "y": 17
           },
           "id": 12,
           "maxDataPoints": 100,
@@ -1875,7 +1988,7 @@
             "h": 9,
             "w": 10,
             "x": 3,
-            "y": 78
+            "y": 17
           },
           "id": 28,
           "options": {
@@ -2024,7 +2137,7 @@
             "h": 9,
             "w": 11,
             "x": 13,
-            "y": 78
+            "y": 17
           },
           "id": 65,
           "options": {
@@ -2168,7 +2281,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 87
+            "y": 26
           },
           "id": 1,
           "options": {
@@ -2313,7 +2426,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 87
+            "y": 26
           },
           "id": 66,
           "options": {
@@ -2359,7 +2472,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 7
+        "y": 8
       },
       "id": 113,
       "panels": [
@@ -2426,7 +2539,7 @@
             "h": 8,
             "w": 24,
             "x": 0,
-            "y": 14
+            "y": 308
           },
           "id": 99,
           "options": {
@@ -2533,7 +2646,7 @@
             "h": 8,
             "w": 24,
             "x": 0,
-            "y": 62
+            "y": 316
           },
           "id": 111,
           "options": {
@@ -2700,7 +2813,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 8
+        "y": 9
       },
       "id": 101,
       "panels": [
@@ -2771,7 +2884,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 15
+            "y": 91
           },
           "id": 119,
           "options": {
@@ -2867,7 +2980,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 15
+            "y": 91
           },
           "id": 118,
           "options": {
@@ -3050,7 +3163,7 @@
             "h": 7,
             "w": 6,
             "x": 0,
-            "y": 34
+            "y": 99
           },
           "id": 109,
           "options": {
@@ -3239,7 +3352,7 @@
             "h": 7,
             "w": 6,
             "x": 6,
-            "y": 34
+            "y": 99
           },
           "id": 104,
           "options": {
@@ -3426,7 +3539,7 @@
             "h": 7,
             "w": 6,
             "x": 12,
-            "y": 34
+            "y": 99
           },
           "id": 103,
           "options": {
@@ -3613,7 +3726,7 @@
             "h": 7,
             "w": 6,
             "x": 18,
-            "y": 34
+            "y": 99
           },
           "id": 97,
           "options": {
@@ -3800,7 +3913,7 @@
             "h": 7,
             "w": 12,
             "x": 0,
-            "y": 41
+            "y": 106
           },
           "id": 105,
           "options": {
@@ -3987,7 +4100,7 @@
             "h": 7,
             "w": 12,
             "x": 12,
-            "y": 41
+            "y": 106
           },
           "id": 106,
           "options": {
@@ -4174,7 +4287,7 @@
             "h": 7,
             "w": 6,
             "x": 0,
-            "y": 48
+            "y": 113
           },
           "id": 107,
           "options": {
@@ -4361,7 +4474,7 @@
             "h": 7,
             "w": 6,
             "x": 6,
-            "y": 48
+            "y": 113
           },
           "id": 110,
           "options": {
@@ -4548,7 +4661,7 @@
             "h": 7,
             "w": 6,
             "x": 12,
-            "y": 48
+            "y": 113
           },
           "id": 108,
           "options": {
@@ -4735,7 +4848,7 @@
             "h": 7,
             "w": 6,
             "x": 18,
-            "y": 48
+            "y": 113
           },
           "id": 102,
           "options": {
@@ -4783,7 +4896,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 9
+        "y": 10
       },
       "id": 117,
       "panels": [
@@ -4829,7 +4942,7 @@
             "h": 11,
             "w": 24,
             "x": 0,
-            "y": 16
+            "y": 132
           },
           "id": 116,
           "options": {
