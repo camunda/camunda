@@ -34,6 +34,9 @@ export const Paths = {
   operationsLog() {
     return '/admin/operations-log';
   },
+  globalTaskListeners() {
+    return '/admin/global-task-listeners';
+  },
   operateDashboard() {
     return '/operate';
   },
