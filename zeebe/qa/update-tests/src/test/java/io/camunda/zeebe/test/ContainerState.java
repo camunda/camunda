@@ -187,11 +187,12 @@ final class ContainerState implements AutoCloseable {
     } else {
       gateway =
           new ZeebeGatewayContainer(gatewayImage)
-              .withEnv("ZEEBE_GATEWAY_CLUSTER_CONTACTPOINT", broker.getInternalClusterAddress())
+              .withEnv("CAMUNDA_CLUSTER_INITIALCONTACTPOINTS", broker.getInternalClusterAddress())
               .withEnv("ZEEBE_LOG_LEVEL", "DEBUG")
               .withEnv(CREATE_SCHEMA_ENV_VAR, "false")
               .withEnv(UNPROTECTED_API_ENV_VAR, "true")
               .withEnv(AUTHORIZATION_CHECKS_ENV_VAR, "false")
+              .withEnv("CAMUNDA_DATA_SECONDARYSTORAGE_TYPE", "NONE")
               .withNetwork(network);
 
       Failsafe.with(CONTAINER_START_RETRY_POLICY).run(() -> gateway.self().start());
