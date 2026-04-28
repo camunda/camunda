@@ -8,7 +8,6 @@
 package io.camunda.zeebe.gateway.impl.broker.request;
 
 import io.camunda.zeebe.broker.client.api.dto.BrokerExecuteCommand;
-import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationExecutionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationLifecycleManagementRecord;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
@@ -17,7 +16,8 @@ import org.agrona.DirectBuffer;
 public class BrokerSuspendBatchOperationRequest
     extends BrokerExecuteCommand<BatchOperationLifecycleManagementRecord> {
 
-  BatchOperationExecutionRecord requestDto = new BatchOperationExecutionRecord();
+  BatchOperationLifecycleManagementRecord requestDto =
+      new BatchOperationLifecycleManagementRecord();
 
   public BrokerSuspendBatchOperationRequest() {
     super(ValueType.BATCH_OPERATION_LIFECYCLE_MANAGEMENT, BatchOperationIntent.SUSPEND);
@@ -29,7 +29,7 @@ public class BrokerSuspendBatchOperationRequest
   }
 
   @Override
-  public BatchOperationExecutionRecord getRequestWriter() {
+  public BatchOperationLifecycleManagementRecord getRequestWriter() {
     return requestDto;
   }
 
