@@ -87,6 +87,7 @@ import org.springframework.security.config.Customizer;
 import org.springframework.security.config.ObjectPostProcessor;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.annotation.web.configuration.WebSecurityCustomizer;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.annotation.web.configurers.CsrfConfigurer;
 import org.springframework.security.config.annotation.web.configurers.HeadersConfigurer;
@@ -132,6 +133,7 @@ import org.springframework.security.web.authentication.logout.LogoutSuccessHandl
 import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
 import org.springframework.security.web.csrf.CsrfFilter;
 import org.springframework.security.web.csrf.CsrfToken;
+import org.springframework.security.web.firewall.StrictHttpFirewall;
 import org.springframework.security.web.header.writers.CrossOriginEmbedderPolicyHeaderWriter.CrossOriginEmbedderPolicy;
 import org.springframework.security.web.header.writers.CrossOriginOpenerPolicyHeaderWriter.CrossOriginOpenerPolicy;
 import org.springframework.security.web.header.writers.CrossOriginResourcePolicyHeaderWriter.CrossOriginResourcePolicy;
@@ -216,6 +218,21 @@ public class WebSecurityConfig {
       "camunda_authentication_external_requests";
   private static final KeyValues CAMUNDA_AUTHENTICATION_OBSERVATION_DOMAIN_IDENTITY_TAGS =
       KeyValues.of("domain", "identity");
+
+  /**
+   * Allows encoded slashes ({@code %2F}) in request URIs. Required for entity IDs containing
+   * forward slashes (e.g., OIDC group IDs like {@code /myGroup} from Keycloak). Without this, the
+   * default {@link StrictHttpFirewall} rejects any request whose URI contains {@code %2F} with a
+   * 400 error before it reaches any controller.
+   *
+   * @see <a href="https://github.com/camunda/camunda/issues/45215">Issue #45215</a>
+   */
+  @Bean
+  public WebSecurityCustomizer encodedSlashFirewallCustomizer() {
+    final var firewall = new StrictHttpFirewall();
+    firewall.setAllowUrlEncodedSlash(true);
+    return web -> web.httpFirewall(firewall);
+  }
 
   @Bean
   public SecurityObservationSettings defaultSecurityObservations() {
