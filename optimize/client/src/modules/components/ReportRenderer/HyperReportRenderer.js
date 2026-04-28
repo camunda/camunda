@@ -99,6 +99,10 @@ function formatResult(data, result) {
     configuration: {distributeByDateVariableUnit},
   } = data;
 
+  if (distributedBy.type === 'variable') {
+    result = applyMissingVariableLabel(result);
+  }
+
   const distributedByDateVar =
     distributedBy.type === 'variable' && distributedBy.value.type === 'Date';
   const distributedByDate = ['startDate', 'endDate'].includes(distributedBy.type);
@@ -115,10 +119,6 @@ function formatResult(data, result) {
       },
       result
     );
-  }
-
-  if (distributedBy.type === 'variable') {
-    return applyMissingVariableLabel(result);
   }
 
   return result;
