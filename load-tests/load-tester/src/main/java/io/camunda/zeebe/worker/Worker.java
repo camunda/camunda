@@ -93,7 +93,7 @@ public class Worker {
           job.getVariable(workerCfg.getCorrelationKeyVariableName()).toString();
 
       final var messagePublishedFuture = publishMessage(correlationKey);
-      // We do not want to block the worker here - as this would throttle the general throuhgput
+      // We do not want to block the worker here - as this would throttle the general throughput
       // due to individual response latencies
       messagePublishedFuture.whenComplete(
           (value, error) -> {
@@ -122,8 +122,7 @@ public class Worker {
           });
 
       // job will eventually completed by the worker - later after the response of the publish
-      // received or on
-      // retry
+      // received or on retry
       return;
     }
 
