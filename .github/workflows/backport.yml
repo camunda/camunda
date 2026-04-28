@@ -72,6 +72,7 @@ jobs:
 
           add_author_as_assignee: true
           add_author_as_reviewer: true
+          comment_style: summary
           experimental: >
             {
               "conflict_resolution": "draft_commit_conflicts"
