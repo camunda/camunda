@@ -8,8 +8,11 @@
 package io.camunda.application;
 
 import io.camunda.application.commons.search.NativeSearchClientsConfiguration;
+import io.camunda.application.commons.search.PhysicalTenantSearchClientReadersConfiguration;
+import io.camunda.application.commons.search.SearchClientReaderConfiguration;
 import io.camunda.configuration.UnifiedConfiguration;
 import io.camunda.configuration.UnifiedConfigurationHelper;
+import io.camunda.configuration.beanoverrides.GatewayRestPropertiesOverride;
 import io.camunda.configuration.beanoverrides.SearchEngineConnectPropertiesOverride;
 import io.camunda.configuration.beanoverrides.SearchEngineIndexPropertiesOverride;
 import io.camunda.configuration.beanoverrides.SearchEngineRetentionPropertiesOverride;
@@ -87,10 +90,13 @@ public class StandaloneBackupManager implements CommandLineRunner {
             SearchEngineIndexPropertiesOverride.class,
             SearchEngineRetentionPropertiesOverride.class,
             SearchEngineSchemaManagerPropertiesOverride.class,
+            GatewayRestPropertiesOverride.class,
             // ---
             BackupManagerConfiguration.class,
             StandaloneBackupManager.class,
-            NativeSearchClientsConfiguration.class)
+            NativeSearchClientsConfiguration.class,
+            PhysicalTenantSearchClientReadersConfiguration.class,
+            SearchClientReaderConfiguration.class)
         .addCommandLineProperties(true)
         .run(args);
 

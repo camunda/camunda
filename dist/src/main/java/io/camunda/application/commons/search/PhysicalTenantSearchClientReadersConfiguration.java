@@ -27,7 +27,6 @@ import io.camunda.zeebe.gateway.rest.config.GatewayRestConfiguration;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -107,14 +106,11 @@ public class PhysicalTenantSearchClientReadersConfiguration {
     return Map.copyOf(readersByTenant);
   }
 
-  // TODO: reconcile with the CamundaSearchClients bean in SearchClientConfiguration
   @Bean
-  public CamundaSearchClients physicalTenantAwareCamundaSearchClients(
-      @Qualifier("documentReaders") final SearchClientReaders defaultReaders,
+  public CamundaSearchClients camundaSearchClients(
       final Map<String, SearchClientReaders> physicalTenantSearchClientReaders,
       final List<ResourceAccessController> resourceAccessControllers) {
     return new CamundaSearchClients(
-        defaultReaders,
         physicalTenantSearchClientReaders,
         new ResourceAccessDelegatingController(resourceAccessControllers),
         null);

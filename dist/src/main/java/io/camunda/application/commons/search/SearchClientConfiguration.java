@@ -58,8 +58,8 @@ import io.camunda.search.es.clients.ElasticsearchSearchClient;
 import io.camunda.search.os.clients.OpensearchSearchClient;
 import io.camunda.security.reader.ResourceAccessController;
 import io.camunda.spring.utils.ConditionalOnSecondaryStorageDisabled;
-import io.camunda.spring.utils.ConditionalOnSecondaryStorageEnabled;
 import java.util.List;
+import java.util.Map;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -93,18 +93,18 @@ public class SearchClientConfiguration {
   }
 
   @Bean
-  @ConditionalOnSecondaryStorageEnabled
+  @ConditionalOnSecondaryStorageType(SecondaryStorageType.rdbms)
   public CamundaSearchClients camundaSearchClients(
       final SearchClientReaders searchClientReaders,
       final List<ResourceAccessController> resourceAccessControllers) {
     return new CamundaSearchClients(
-        searchClientReaders,
+        Map.of("default", searchClientReaders),
         new ResourceAccessDelegatingController(resourceAccessControllers),
         null);
   }
 
   @Bean
-  @ConditionalOnSecondaryStorageEnabled
+  @ConditionalOnSecondaryStorageType(SecondaryStorageType.rdbms)
   public SearchClientReaders searchClientReaders(
       final AuthorizationReader authorizationReader,
       final BatchOperationReader batchOperationReader,

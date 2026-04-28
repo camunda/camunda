@@ -58,8 +58,7 @@ public record SearchClients(
 
   @Override
   public void close() throws Exception {
-    CloseHelper.closeAll(
-        esClients.values().stream().map(ElasticsearchClient::_transport).toList());
+    CloseHelper.closeAll(esClients.values().stream().map(ElasticsearchClient::_transport).toList());
     CloseHelper.closeAll(osClients.values().stream().map(ApiClient::_transport).toList());
     CloseHelper.closeAll(osAsyncClients.values().stream().map(ApiClient::_transport).toList());
   }

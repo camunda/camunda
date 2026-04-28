@@ -35,7 +35,6 @@ import jakarta.annotation.Resource;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
@@ -60,9 +59,7 @@ public class PhysicalTenantSearchClientReadersConfigurationIT {
   static final long PROCESS_INSTANCE_KEY_A = 1001L;
   static final long PROCESS_INSTANCE_KEY_B = 2002L;
 
-  @Autowired
-  @Qualifier("physicalTenantAwareCamundaSearchClients")
-  private CamundaSearchClients tenantAwareSearchClients;
+  @Autowired private CamundaSearchClients tenantAwareSearchClients;
 
   @Autowired private SearchClients searchClients;
 
@@ -129,9 +126,12 @@ public class PhysicalTenantSearchClientReadersConfigurationIT {
       stubFakeEs(wmTenantB, PROCESS_INSTANCE_KEY_B);
       return new TenantConnectConfigResolver(
           Map.of(
-              TenantConnectConfigResolver.DEFAULT_TENANT_ID, tenantAConfig,
-              TENANT_A, tenantAConfig,
-              TENANT_B, connectConfig(wmTenantB, TENANT_B)));
+              TenantConnectConfigResolver.DEFAULT_TENANT_ID,
+              tenantAConfig,
+              TENANT_A,
+              tenantAConfig,
+              TENANT_B,
+              connectConfig(wmTenantB, TENANT_B)));
     }
 
     /** {@link GatewayRestConfiguration} is a plain POJO; register it as a bean for injection. */

@@ -47,7 +47,8 @@ class CamundaSearchClientsTest {
   @BeforeEach
   void setUp() {
     camundaSearchClients =
-        new CamundaSearchClients(readers, resourceAccessController, SecurityContext.of(b -> b));
+        new CamundaSearchClients(
+            Map.of("default", readers), resourceAccessController, SecurityContext.of(b -> b));
 
     // Make the resource access controller simply invoke the applier with a no-op check
     when(resourceAccessController.doSearch(any(), any()))
@@ -191,6 +192,7 @@ class CamundaSearchClientsTest {
   @Nested
   class WithPhysicalTenant {
 
+    private static final String DEFAULT = "default";
     private static final String TENANT_A = "tenant-a";
     private static final String TENANT_B = "tenant-b";
 
@@ -207,8 +209,8 @@ class CamundaSearchClientsTest {
 
       // when / then
       assertThatThrownBy(() -> camundaSearchClients.withPhysicalTenant(TENANT_A))
-          .isInstanceOf(UnsupportedOperationException.class)
-          .hasMessageContaining("Physical tenants are not configured");
+          .isInstanceOf(IllegalArgumentException.class)
+          .hasMessageContaining("Unknown physical tenant: '" + TENANT_A + "'");
     }
 
     @Test
@@ -216,8 +218,7 @@ class CamundaSearchClientsTest {
       // given
       final var clients =
           new CamundaSearchClients(
-              readers,
-              Map.of(TENANT_A, tenantAReaders, TENANT_B, tenantBReaders),
+              Map.of(DEFAULT, readers, TENANT_A, tenantAReaders, TENANT_B, tenantBReaders),
               resourceAccessController,
               SecurityContext.of(b -> b));
 
@@ -237,8 +238,7 @@ class CamundaSearchClientsTest {
 
       final var clients =
           new CamundaSearchClients(
-              readers,
-              Map.of(TENANT_A, tenantAReaders, TENANT_B, tenantBReaders),
+              Map.of(DEFAULT, readers, TENANT_A, tenantAReaders, TENANT_B, tenantBReaders),
               resourceAccessController,
               SecurityContext.of(b -> b));
 
@@ -256,7 +256,9 @@ class CamundaSearchClientsTest {
       final var securityContext = SecurityContext.of(b -> b);
       final var clients =
           new CamundaSearchClients(
-              readers, Map.of(TENANT_A, tenantAReaders), resourceAccessController, securityContext);
+              Map.of(DEFAULT, readers, TENANT_A, tenantAReaders),
+              resourceAccessController,
+              securityContext);
 
       // when
       final var tenantScoped = clients.withPhysicalTenant(TENANT_A);
