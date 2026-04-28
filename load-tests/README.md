@@ -6,11 +6,11 @@ For background on goals and test variants, see the [reliability testing document
 
 ## Directory Layout
 
-|   Directory    |                                              Description                                              |
-|----------------|-------------------------------------------------------------------------------------------------------|
-| `setup/`       | Makefiles, shell scripts, and Helm values for deploying load tests ([README](setup/README.md))        |
-| `load-tester/` | Java load test applications (starters and workers) ([README](load-tester/README.md))                  |
-| `docs/`        | Additional documentation: [scripts](docs/scripts/README.md), [past failures](docs/failures/README.md) |
+|   Directory    |                                                            Description                                                            |
+|----------------|-----------------------------------------------------------------------------------------------------------------------------------|
+| `setup/`       | Makefiles, shell scripts, and Helm values for deploying load tests ([README](setup/README.md))                                    |
+| `load-tester/` | Java load test applications (starters and workers) ([README](load-tester/README.md))                                              |
+| `docs/`        | Additional documentation: [metrics](docs/metrics.md), [scripts](docs/scripts/README.md), [past failures](docs/failures/README.md) |
 
 ## Quick Start
 
@@ -144,6 +144,8 @@ The metrics exported by our applications are stored in a [Prometheus instance](h
 A general Grafana dashboard covering all sorts of metrics is the [Zeebe Dashboard](https://github.com/camunda/camunda/blob/main/monitor/grafana/zeebe.json). There are more tailored dashboards in the corresponding monitoring folder.
 
 More details about observability can be read [here](../docs/observability.md).
+
+For a full list of Prometheus metrics, SLO targets, and PromQL queries used to evaluate load tests, see [load-tests/docs/metrics.md](../../load-tests/docs/metrics.md).
 
 ## Test Scenarios
 
