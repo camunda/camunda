@@ -39,7 +39,7 @@ public abstract sealed class CamundaContainer<SELF extends CamundaContainer<SELF
   public static final String CAMUNDA_CONTAINER_IMAGE_PROPERTY = "camunda.container.image";
   public static final String DEFAULT_CAMUNDA_CONTAINER_IMAGE = "camunda/camunda";
   public static final String CAMUNDA_CONTAINER_VERSION_PROPERTY = "camunda.container.version";
-  public static final String DEFAULT_CAMUNDA_VERSION = "8.10-SNAPSHOT";
+  public static final String DEFAULT_CAMUNDA_VERSION = "8.9-SNAPSHOT";
   public static final String DEFAULT_CAMUNDA_DATA_PATH = "/usr/local/camunda/data";
   public static final String DEFAULT_CAMUNDA_LOGS_PATH = "/usr/local/camunda/logs";
   public static final String DEFAULT_CAMUNDA_TMP_PATH = "/tmp";
