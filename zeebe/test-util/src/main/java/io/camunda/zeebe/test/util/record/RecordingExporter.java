@@ -56,6 +56,7 @@ import io.camunda.zeebe.protocol.record.intent.VariableDocumentIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import io.camunda.zeebe.protocol.record.intent.scaling.ScaleIntent;
 import io.camunda.zeebe.protocol.record.value.AdHocSubProcessInstructionRecordValue;
+import io.camunda.zeebe.protocol.record.value.AgentInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.AsyncRequestRecordValue;
 import io.camunda.zeebe.protocol.record.value.AuthorizationRecordValue;
 import io.camunda.zeebe.protocol.record.value.BatchOperationChunkRecordValue;
@@ -404,6 +405,11 @@ public final class RecordingExporter implements Exporter {
   public static ClusterVariableRecordStream clusterVariableRecords() {
     return new ClusterVariableRecordStream(
         records(ValueType.CLUSTER_VARIABLE, ClusterVariableRecordValue.class));
+  }
+
+  public static AgentInstanceRecordStream agentInstanceRecords() {
+    return new AgentInstanceRecordStream(
+        records(ValueType.AGENT_INSTANCE, AgentInstanceRecordValue.class));
   }
 
   public static ExpressionRecordStream expressionRecords() {

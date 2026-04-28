@@ -26,6 +26,7 @@ import io.camunda.zeebe.engine.state.immutable.RoutingState;
 import io.camunda.zeebe.engine.state.migration.DbMigratorImpl;
 import io.camunda.zeebe.engine.util.TestInterPartitionCommandSender.CommandInterceptor;
 import io.camunda.zeebe.engine.util.client.AdHocSubProcessActivityClient;
+import io.camunda.zeebe.engine.util.client.AgentInstanceClient;
 import io.camunda.zeebe.engine.util.client.AuthorizationClient;
 import io.camunda.zeebe.engine.util.client.BatchOperationClient;
 import io.camunda.zeebe.engine.util.client.ClockClient;
@@ -496,6 +497,10 @@ public final class EngineRule extends ExternalResource {
 
   public ClusterVariableClient clusterVariables() {
     return new ClusterVariableClient(environmentRule);
+  }
+
+  public AgentInstanceClient agentInstances() {
+    return new AgentInstanceClient(environmentRule);
   }
 
   public JobMetricsBatchClient jobMetricsBatch() {
