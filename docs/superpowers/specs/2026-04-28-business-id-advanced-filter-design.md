@@ -52,7 +52,7 @@ Files:
 - `constants.ts` — operator type, operator config array, API-shape helper.
 - `styled.tsx` — row layout container.
 
-Reused by Decisions via direct import (the component is form-agnostic; it reads/writes URL params via `useLocation`/`useNavigate` rather than relying on the page's Final Form instance, so it drops in identically on both pages).
+Reused by Decisions via direct import. The component reads/writes its two URL params indirectly through Final Form: it consumes `useForm()` plus `<Field name="businessIdOperator">` and `<Field name="businessId">`, and the surrounding `OptionalFiltersFormGroup` form is what serializes those values to and from the URL. Because both pages mount the same Final Form shape (a flat object keyed by URL-param name), the component drops in identically on both.
 
 ### 2.1 Layout
 
