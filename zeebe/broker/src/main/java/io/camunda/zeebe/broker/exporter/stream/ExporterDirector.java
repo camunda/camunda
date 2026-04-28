@@ -616,51 +616,43 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
   }
 
   /**
-   * Handles a replay request from an exporter container. Seeks the log reader to the first position
-   * to replay ({@code state.getLowestPosition() + 1}) and resumes reading if all exporters are
-   * already opened and the director is not currently mid-export.
+   * Handles a replay request from an exporter container. Seeks the log reader to {@code
+   * lastExportedPosition} so that records from that position onward will be re-exported.
    *
-   * <p>If called during startup (before all exporters are opened), the seek is still performed now
-   * so that the result can be returned to the caller. {@link #startActiveExportingFrom(long)} will
-   * perform a redundant but harmless seek afterward using {@link
-   * ExportersState#getLowestPosition()}.
+   * <p>Replay is only valid during startup, i.e. while exporters are still being opened. If all
+   * exporters have already been opened ({@code allExportersOpened == true}) or the director is
+   * currently mid-export ({@code inExportingPhase == true}), the request is rejected with a warning
+   * and {@code false} is returned.
    *
-   * <p>If called while the director is currently exporting a record ({@code inExportingPhase ==
-   * true}), {@code readNextEvent()} is NOT submitted here — the normal export-completion callback
-   * will resume processing with the reader already positioned for replay.
-   *
-   * @param requestedPosition the position to which the exporter's state was reset (i.e., {@code
-   *     fromPosition - 1})
-   * @return {@code true} if the seek to the replay position succeeded, {@code false} if the
+   * @param lastExportedPosition the position to seek the log reader to for replay
+   * @return {@code true} if the seek succeeded, {@code false} if the request was rejected or the
    *     required log segments are no longer available
    */
-  private boolean onReplayRequested(final long requestedPosition) {
+  private boolean onReplayRequested(final long lastExportedPosition) {
     if (logStreamReader == null) {
       LOG.warn(
           "Cannot process replay request at position {}: log stream reader is not available.",
-          requestedPosition);
+          lastExportedPosition);
       return false;
     }
 
-    final long newLowestPosition = state.getLowestPosition();
-    final long replayFromPosition = newLowestPosition + 1;
-    LOG.info(
-        "Replay requested: seeking log reader to position {} (lowest exporter position + 1)",
-        replayFromPosition);
+    if (allExportersOpened || inExportingPhase) {
+      LOG.warn(
+          "Replay requested at position {}, but all exporters are already opened and exporting started. Request should only be triggered during exporter opening. Ignoring replay request.",
+          lastExportedPosition);
+      return false;
+    }
 
-    final boolean sought = logStreamReader.seek(replayFromPosition);
+    LOG.info("Replay requested: seeking log reader to position {}", lastExportedPosition);
+
+    final boolean sought = logStreamReader.seek(lastExportedPosition);
     if (!sought) {
       LOG.warn(
           "Could not seek log reader to replay position {}. Log segments may have been deleted.",
-          replayFromPosition);
+          lastExportedPosition);
       return false;
     }
 
-    if (allExportersOpened && !inExportingPhase) {
-      actor.submit(this::readNextEvent);
-    }
-    // If not allExportersOpened, startActiveExportingFrom() will seek again and start reading.
-    // If currently exporting, the normal export completion callback will resume processing.
     return true;
   }
 
