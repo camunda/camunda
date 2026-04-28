@@ -45,6 +45,7 @@ import io.camunda.webapps.schema.entities.usertask.SnapshotTaskVariableEntity;
 import io.camunda.webapps.schema.entities.usertask.TaskEntity;
 import java.time.Duration;
 import java.time.OffsetDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Supplier;
@@ -165,6 +166,48 @@ public abstract class AbstractProcessInstanceArchiverJobIT<T extends ProcessInst
                   flowNodeInstanceForListViewEntity(processInstance),
                   flowNodeInstanceForListViewEntity(processInstance),
                   variableForListViewEntity(processInstance));
+
+          store(listViewTemplate, client, processInstance);
+          for (final var child : childEntities) {
+            store(listViewTemplate, client, processInstance, child);
+          }
+
+          client.refresh();
+
+          // when
+          final var archived = job.execute();
+
+          // then
+          assertThat(archived).succeedsWithin(Duration.ofSeconds(5L)).isEqualTo(1);
+
+          // check that the process is no longer in the main index
+          verifyMoved(listViewTemplate, client, processInstance, "2020-01-01");
+          for (final var child : childEntities) {
+            verifyMoved(listViewTemplate, client, processInstance, child, "2020-01-01");
+          }
+        });
+  }
+
+  @TestTemplate
+  void shouldArchiveProcessInstanceAndLargeNumberOfDependentChildListViewEntities(
+      final ExporterConfiguration config, final SearchClientAdapter client) throws Exception {
+    // set smaller reindex batch size to verify things work when multiple batches are needed
+    config.getHistory().setReindexBatchSize(10);
+    withArchiverJob(
+        config,
+        (job, resourceProvider) -> {
+          // given
+          final var listViewTemplate =
+              resourceProvider.getIndexTemplateDescriptor(ListViewTemplate.class);
+
+          final ProcessInstanceForListViewEntity processInstance =
+              processInstanceForListViewEntity("2020-01-01T00:00:00+00:00");
+
+          final List<ExporterEntity<?>> childEntities = new ArrayList<>();
+          for (var i = 0; i < 90; i++) {
+            childEntities.add(flowNodeInstanceForListViewEntity(processInstance));
+            childEntities.add(variableForListViewEntity(processInstance));
+          }
 
           store(listViewTemplate, client, processInstance);
           for (final var child : childEntities) {
