@@ -882,7 +882,9 @@ public class SearchQueryFilterMapper {
       Optional.ofNullable(filter.getState())
           .map(mapToStringOperations())
           .ifPresent(builder::stateOperations);
-      Optional.ofNullable(filter.getProcessDefinitionId()).ifPresent(builder::bpmnProcessIds);
+      Optional.ofNullable(filter.getProcessDefinitionId())
+          .map(mapToStringOperations())
+          .ifPresent(builder::processDefinitionIdOperations);
       Optional.ofNullable(filter.getElementId()).ifPresent(builder::elementIds);
       Optional.ofNullable(filter.getName())
           .map(mapToStringOperations())
@@ -900,11 +902,11 @@ public class SearchQueryFilterMapper {
           .map(mapToStringOperations())
           .ifPresent(builder::candidateUserOperations);
       Optional.ofNullable(filter.getProcessDefinitionKey())
-          .map(mapKeyToLong("processDefinitionKey", validationErrors))
-          .ifPresent(builder::processDefinitionKeys);
+          .map(mapToKeyOperations("processDefinitionKey", validationErrors))
+          .ifPresent(builder::processDefinitionKeyOperations);
       Optional.ofNullable(filter.getProcessInstanceKey())
-          .map(mapKeyToLong("processInstanceKey", validationErrors))
-          .ifPresent(builder::processInstanceKeys);
+          .map(mapToKeyOperations("processInstanceKey", validationErrors))
+          .ifPresent(builder::processInstanceKeyOperations);
       Optional.ofNullable(filter.getTenantId())
           .map(mapToStringOperations())
           .ifPresent(builder::tenantIdOperations);

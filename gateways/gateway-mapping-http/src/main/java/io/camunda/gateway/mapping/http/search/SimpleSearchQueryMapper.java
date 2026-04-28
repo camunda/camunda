@@ -355,7 +355,9 @@ public class SimpleSearchQueryMapper {
       ofNullable(filter.getTenantId())
           .map(SimpleSearchQueryMapper::getStringFilter)
           .ifPresent(filterModel::tenantId);
-      ofNullable(filter.getProcessDefinitionId()).ifPresent(filterModel::processDefinitionId);
+      ofNullable(filter.getProcessDefinitionId())
+          .map(SimpleSearchQueryMapper::getStringFilter)
+          .ifPresent(filterModel::processDefinitionId);
       ofNullable(filter.getCreationDate())
           .map(SimpleSearchQueryMapper::getDateTimeFilter)
           .ifPresent(filterModel::creationDate);
@@ -375,8 +377,12 @@ public class SimpleSearchQueryMapper {
           .map(SimpleSearchQueryMapper::mapVariableValueFilterProperties)
           .ifPresent(filterModel::localVariables);
       ofNullable(filter.getUserTaskKey()).ifPresent(filterModel::userTaskKey);
-      ofNullable(filter.getProcessDefinitionKey()).ifPresent(filterModel::processDefinitionKey);
-      ofNullable(filter.getProcessInstanceKey()).ifPresent(filterModel::processInstanceKey);
+      ofNullable(filter.getProcessDefinitionKey())
+          .map(SimpleSearchQueryMapper::getBasicStringFilter)
+          .ifPresent(filterModel::processDefinitionKey);
+      ofNullable(filter.getProcessInstanceKey())
+          .map(SimpleSearchQueryMapper::getBasicStringFilter)
+          .ifPresent(filterModel::processInstanceKey);
       ofNullable(filter.getElementInstanceKey()).ifPresent(filterModel::elementInstanceKey);
       ofNullable(filter.getTags()).ifPresent(filterModel::tags);
     }
