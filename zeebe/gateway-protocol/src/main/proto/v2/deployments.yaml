@@ -116,6 +116,43 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
       x-added-in-version: "8.7"
 
+  /resources/search:
+    post:
+      x-eventually-consistent: true
+      tags:
+        - Resource
+      operationId: searchResources
+      summary: Search resources
+      description: |
+        Search for deployed resources based on given criteria.
+        :::info
+        This endpoint only returns generic and RPA resources. To query BPMN process definitions,
+        DMN decision definitions, or forms, use their respective search APIs:
+        `/process-definitions/search`, `/decision-definitions/search`, and `/forms/search`.
+        :::
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ResourceSearchQuery'
+      responses:
+        "200":
+          description: The resource search result.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResourceSearchQueryResult'
+        "400":
+          $ref: 'common-responses.yaml#/components/responses/InvalidData'
+        "401":
+          $ref: 'common-responses.yaml#/components/responses/Unauthorized'
+        "403":
+          $ref: 'common-responses.yaml#/components/responses/Forbidden'
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+      x-added-in-version: "8.10"
+
   /resources/{resourceKey}/deletion:
     post:
       x-eventually-consistent: false
@@ -581,3 +618,86 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/ResourceKey"
+
+    ## Resource Search
+
+    ResourceSearchQuerySortRequest:
+      type: object
+      properties:
+        field:
+          description: The field to sort by.
+          type: string
+          enum:
+            - resourceKey
+            - resourceName
+            - resourceId
+            - version
+            - versionTag
+            - deploymentKey
+            - tenantId
+        order:
+          $ref: 'search-models.yaml#/components/schemas/SortOrderEnum'
+      required:
+        - field
+
+    ResourceSearchQuery:
+      type: object
+      additionalProperties: false
+      allOf:
+        - $ref: 'search-models.yaml#/components/schemas/SearchQueryRequest'
+      properties:
+        sort:
+          description: Sort field criteria.
+          type: array
+          items:
+            $ref: '#/components/schemas/ResourceSearchQuerySortRequest'
+        filter:
+          allOf:
+            - $ref: '#/components/schemas/ResourceFilter'
+          description: The resource search filters.
+
+    ResourceFilter:
+      description: Resource search filter.
+      type: object
+      properties:
+        resourceKey:
+          allOf:
+            - $ref: '#/components/schemas/ResourceKeyFilterProperty'
+          description: The key for this resource.
+        resourceName:
+          allOf:
+            - $ref: 'filters.yaml#/components/schemas/StringFilterProperty'
+          description: Resource name of this resource.
+        resourceId:
+          allOf:
+            - $ref: 'filters.yaml#/components/schemas/StringFilterProperty'
+          description: Resource ID of this resource.
+        version:
+          allOf:
+            - $ref: 'filters.yaml#/components/schemas/IntegerFilterProperty'
+          description: Version of this resource.
+        versionTag:
+          allOf:
+            - $ref: 'filters.yaml#/components/schemas/StringFilterProperty'
+          description: Version tag of this resource.
+        deploymentKey:
+          allOf:
+            - $ref: '#/components/schemas/DeploymentKeyFilterProperty'
+          description: Deployment key of this resource.
+        tenantId:
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/TenantId'
+          description: Tenant ID of this resource.
+
+    ResourceSearchQueryResult:
+      type: object
+      required:
+        - items
+      allOf:
+        - $ref: 'search-models.yaml#/components/schemas/SearchQueryResponse'
+      properties:
+        items:
+          description: The matching resources.
+          type: array
+          items:
+            $ref: '#/components/schemas/ResourceResult'
