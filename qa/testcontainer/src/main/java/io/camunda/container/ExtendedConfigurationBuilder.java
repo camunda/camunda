@@ -30,10 +30,12 @@ import io.camunda.configuration.Monitoring;
 import io.camunda.configuration.Processing;
 import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.configuration.Security;
+import io.camunda.configuration.UnifiedConfigurationHelper;
 import io.camunda.configuration.Webapps;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.configuration.ExporterCfg;
 import java.io.IOException;
+import java.lang.reflect.Field;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
@@ -246,6 +248,12 @@ public class ExtendedConfigurationBuilder {
    */
   public String exportConfigAsString() {
     try {
+      // Ensure the configuration helper is in a clean state (no static environment) to avoid
+      // "Ambiguous configuration" errors during Jackson serialization.
+      // We use reflection to reset the private static field because we don't want to change
+      // UnifiedConfigurationHelper.
+      resetUnifiedConfigurationHelper();
+
       // Compute the diff between the configured Camunda bean and a pristine default instance.
       // This avoids serializing hundreds of default properties that can interfere with the
       // Docker image's own defaults (e.g. secondary-storage type, thread counts, etc.).
@@ -327,6 +335,16 @@ public class ExtendedConfigurationBuilder {
 
   private static Map<String, Object> flatten(final Object value) {
     return YAML_MAPPER.convertValue(value, MAP_TYPE);
+  }
+
+  private void resetUnifiedConfigurationHelper() {
+    try {
+      final Field field = UnifiedConfigurationHelper.class.getDeclaredField("environment");
+      field.setAccessible(true);
+      field.set(null, null);
+    } catch (final NoSuchFieldException | IllegalAccessException e) {
+      // Ignore if we can't reset it, but it might lead to ambiguous configuration errors
+    }
   }
 
   /** Serializes {@link Duration} as an ISO-8601 string (e.g. {@code PT5M}, {@code PT0.1S}). */

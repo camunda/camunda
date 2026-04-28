@@ -10,14 +10,15 @@ package io.camunda.it.schema;
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.json.jackson.JacksonJsonpMapper;
 import co.elastic.clients.transport.rest_client.RestClientTransport;
+import io.camunda.container.volume.CamundaVolume;
 import io.camunda.webapps.schema.SupportedVersions;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import org.apache.http.HttpHost;
 import org.elasticsearch.client.RestClient;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.io.TempDir;
@@ -54,8 +55,8 @@ class ElasticsearchExporterMigrationIT {
 
   @TempDir private static Path dataDir;
 
-  @BeforeAll
-  static void setUp() {
+  @BeforeEach
+  void setUp() {
     network = Network.newNetwork();
 
     esContainer =
@@ -83,8 +84,8 @@ class ElasticsearchExporterMigrationIT {
             esClient, ES_NETWORK_ALIAS, network, containerAddress, dataDir, LOG);
   }
 
-  @AfterAll
-  static void tearDown() throws Exception {
+  @AfterEach
+  void tearDown() throws Exception {
     if (restClient != null) {
       restClient.close();
     }
