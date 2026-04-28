@@ -200,4 +200,60 @@ class ResourceAuthorizationIT {
     assertThat(problemException.details().getDetail())
         .isEqualTo("Unauthorized to perform operation 'READ' on resource 'RESOURCE'");
   }
+
+  @Test
+  void shouldSearchResourcesWhenAuthorizedByResourceId(
+      @Authenticated(RESTRICTED) final CamundaClient userClient) {
+    // when
+    final var results = userClient.newResourceSearchRequest().send().join();
+
+    // then
+    assertThat(results.items()).isNotEmpty();
+    assertThat(results.items()).hasSize(1);
+    assertThat(results.items().getFirst().getResourceId()).isEqualTo(RESOURCE_ID);
+    assertThat(results.items().getFirst().getTenantId()).isEqualTo(TENANT_A.getId());
+  }
+
+  @Test
+  void shouldReturnEmptyForSearchResourcesWhenUnauthorizedByResourceId(
+      @Authenticated(UNAUTHORIZED) final CamundaClient userClient) {
+    // when
+    final var results = userClient.newResourceSearchRequest().send().join();
+
+    // then
+    assertThat(results.items()).isEmpty();
+  }
+
+  @Test
+  void shouldSearchResourcesFilteredByTenantWhenAuthorized(
+      @Authenticated(RESTRICTED) final CamundaClient userClient) {
+    // when - restricted user is only a member of TENANT_A
+    final var results =
+        userClient
+            .newResourceSearchRequest()
+            .filter(f -> f.tenantId(TENANT_A.getId()))
+            .send()
+            .join();
+
+    // then
+    assertThat(results.items()).isNotEmpty();
+    assertThat(results.items()).hasSize(1);
+    assertThat(results.items().getFirst().getResourceId()).isEqualTo(RESOURCE_ID);
+    assertThat(results.items().getFirst().getTenantId()).isEqualTo(TENANT_A.getId());
+  }
+
+  @Test
+  void shouldReturnEmptyForSearchResourcesWhenFilteredByUnauthorizedTenant(
+      @Authenticated(RESTRICTED) final CamundaClient userClient) {
+    // when - restricted user is only a member of TENANT_A, not TENANT_B
+    final var results =
+        userClient
+            .newResourceSearchRequest()
+            .filter(f -> f.tenantId(TENANT_B.getId()))
+            .send()
+            .join();
+
+    // then
+    assertThat(results.items()).isEmpty();
+  }
 }
