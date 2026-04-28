@@ -31,6 +31,7 @@ import io.camunda.db.rdbms.sql.UsageMetricTUMapper;
 import io.camunda.db.rdbms.sql.UserTaskMapper;
 import io.camunda.db.rdbms.sql.VariableMapper;
 import io.camunda.db.rdbms.write.queue.DefaultExecutionQueue;
+import io.camunda.db.rdbms.write.queue.TransactionRunner;
 import io.camunda.db.rdbms.write.service.ExporterPositionService;
 import io.micrometer.core.instrument.MeterRegistry;
 import org.apache.ibatis.session.SqlSessionFactory;
@@ -62,6 +63,7 @@ public class RdbmsWriterFactory {
   private final CorrelatedMessageSubscriptionMapper correlatedMessageSubscriptionMapper;
   private final ClusterVariableMapper clusterVariableMapper;
   private final HistoryDeletionMapper historyDeletionMapper;
+  private final TransactionRunner transactionRunner;
 
   public RdbmsWriterFactory(
       final SqlSessionFactory sqlSessionFactory,
@@ -88,7 +90,8 @@ public class RdbmsWriterFactory {
       final MessageSubscriptionMapper messageSubscriptionMapper,
       final CorrelatedMessageSubscriptionMapper correlatedMessageSubscriptionMapper,
       final ClusterVariableMapper clusterVariableMapper,
-      final HistoryDeletionMapper historyDeletionMapper) {
+      final HistoryDeletionMapper historyDeletionMapper,
+      final TransactionRunner transactionRunner) {
     this.sqlSessionFactory = sqlSessionFactory;
     this.exporterPositionMapper = exporterPositionMapper;
     this.vendorDatabaseProperties = vendorDatabaseProperties;
@@ -114,6 +117,7 @@ public class RdbmsWriterFactory {
     this.correlatedMessageSubscriptionMapper = correlatedMessageSubscriptionMapper;
     this.clusterVariableMapper = clusterVariableMapper;
     this.historyDeletionMapper = historyDeletionMapper;
+    this.transactionRunner = transactionRunner;
   }
 
   public RdbmsWriters createWriter(final RdbmsWriterConfig config) {
@@ -124,7 +128,8 @@ public class RdbmsWriterFactory {
             config.partitionId(),
             config.queueSize(),
             config.queueMemoryLimit(),
-            metrics);
+            metrics,
+            transactionRunner);
     return new RdbmsWriters(
         config,
         executionQueue,
