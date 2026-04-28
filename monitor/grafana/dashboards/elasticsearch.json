@@ -1586,7 +1586,7 @@
                 "uid": "${datasource}"
               },
               "exemplar": true,
-              "expr": "avg(rate(elasticsearch_breakers_tripped{cluster=~\"$cluster\", namespace=~\"$namespace\"}[$__rate_limit])) by (breaker)",
+              "expr": "avg(rate(elasticsearch_breakers_tripped{cluster=~\"$cluster\", namespace=~\"$namespace\"}[$__rate_interval])) by (breaker)",
               "interval": "",
               "intervalFactor": 2,
               "legendFormat": "{{ breaker }}",
@@ -2338,7 +2338,7 @@
                 "uid": "${datasource}"
               },
               "exemplar": true,
-              "expr": "avg(rate(elasticsearch_thread_pool_rejected_count{cluster=~\"$cluster\",namespace=~\"$namespace\", type!=\"management\"}[$__rate_limit]))",
+              "expr": "avg(rate(elasticsearch_thread_pool_rejected_count{cluster=~\"$cluster\",namespace=~\"$namespace\", type!=\"management\"}[$__rate_interval]))",
               "interval": "",
               "intervalFactor": 2,
               "legendFormat": "{{ name }} {{ type }}",
@@ -3268,7 +3268,7 @@
                 "uid": "${datasource}"
               },
               "exemplar": true,
-              "expr": "avg(rate(elasticsearch_index_stats_merge_total{cluster=~\"$cluster\",namespace=~\"$namespace\", index=~\"${index:raw}\"}[$__rate_limit])) by (index)",
+              "expr": "avg(rate(elasticsearch_index_stats_merge_total{cluster=~\"$cluster\",namespace=~\"$namespace\", index=~\"${index:raw}\"}[$__rate_interval])) by (index)",
               "interval": "",
               "legendFormat": "{{index}}",
               "refId": "A"
@@ -3455,7 +3455,7 @@
                 "uid": "${datasource}"
               },
               "exemplar": true,
-              "expr": "avg(rate(elasticsearch_index_stats_indexing_index_total{cluster=~\"$cluster\",namespace=~\"$namespace\", index=~\"${index:raw}\"}[$__rate_limit])) by (index)",
+              "expr": "avg(rate(elasticsearch_index_stats_indexing_index_total{cluster=~\"$cluster\",namespace=~\"$namespace\", index=~\"${index:raw}\"}[$__rate_interval])) by (index)",
               "interval": "",
               "legendFormat": "{{index}}",
               "refId": "A"
@@ -3642,7 +3642,7 @@
                 "uid": "${datasource}"
               },
               "exemplar": true,
-              "expr": "avg(rate(elasticsearch_index_stats_indexing_delete_total{cluster=~\"$cluster\",namespace=~\"$namespace\", index=~\"${index:raw}\"}[$__rate_limit])) by (index)",
+              "expr": "avg(rate(elasticsearch_index_stats_indexing_delete_total{cluster=~\"$cluster\",namespace=~\"$namespace\", index=~\"${index:raw}\"}[$__rate_interval])) by (index)",
               "interval": "",
               "legendFormat": "{{index}}",
               "refId": "A"
@@ -3829,7 +3829,7 @@
                 "uid": "${datasource}"
               },
               "exemplar": true,
-              "expr": "avg(rate(elasticsearch_index_stats_flush_total{cluster=~\"$cluster\",namespace=~\"$namespace\", index=~\"${index:raw}\"}[$__rate_limit])) by (index)",
+              "expr": "avg(rate(elasticsearch_index_stats_flush_total{cluster=~\"$cluster\",namespace=~\"$namespace\", index=~\"${index:raw}\"}[$__rate_interval])) by (index)",
               "interval": "",
               "legendFormat": "{{index}}",
               "refId": "A"
@@ -4016,7 +4016,7 @@
                 "uid": "${datasource}"
               },
               "exemplar": true,
-              "expr": "avg(rate(elasticsearch_index_stats_get_total{cluster=~\"$cluster\",namespace=~\"$namespace\", index=~\"${index:raw}\"}[$__rate_limit])) by (index)",
+              "expr": "avg(rate(elasticsearch_index_stats_get_total{cluster=~\"$cluster\",namespace=~\"$namespace\", index=~\"${index:raw}\"}[$__rate_interval])) by (index)",
               "interval": "",
               "legendFormat": "{{index}}",
               "refId": "A"
@@ -4203,7 +4203,7 @@
                 "uid": "${datasource}"
               },
               "exemplar": true,
-              "expr": "avg(rate(elasticsearch_index_stats_search_fetch_total{cluster=~\"$cluster\",namespace=~\"$namespace\", index=~\"${index:raw}\"}[$__rate_limit])) by (index)",
+              "expr": "avg(rate(elasticsearch_index_stats_search_fetch_total{cluster=~\"$cluster\",namespace=~\"$namespace\", index=~\"${index:raw}\"}[$__rate_interval])) by (index)",
               "interval": "",
               "legendFormat": "{{index}}",
               "refId": "A"
@@ -4390,7 +4390,7 @@
                 "uid": "${datasource}"
               },
               "exemplar": true,
-              "expr": "avg(rate(elasticsearch_index_stats_search_query_total{cluster=~\"$cluster\",namespace=~\"$namespace\", index=~\"${index:raw}\"}[$__rate_limit])) by (index)",
+              "expr": "avg(rate(elasticsearch_index_stats_search_query_total{cluster=~\"$cluster\",namespace=~\"$namespace\", index=~\"${index:raw}\"}[$__rate_interval])) by (index)",
               "interval": "",
               "legendFormat": "{{index}}",
               "refId": "A"
@@ -4577,7 +4577,7 @@
                 "uid": "${datasource}"
               },
               "exemplar": true,
-              "expr": "avg(rate(elasticsearch_index_stats_search_scroll_total{cluster=~\"$cluster\",namespace=~\"$namespace\", index=~\"${index:raw}\"}[$__rate_limit])) by (index)",
+              "expr": "avg(rate(elasticsearch_index_stats_search_scroll_total{cluster=~\"$cluster\",namespace=~\"$namespace\", index=~\"${index:raw}\"}[$__rate_interval])) by (index)",
               "interval": "",
               "legendFormat": "{{index}}",
               "refId": "A"
@@ -4764,7 +4764,7 @@
                 "uid": "${datasource}"
               },
               "exemplar": true,
-              "expr": "avg(rate(elasticsearch_index_stats_search_suggest_total{cluster=~\"$cluster\",namespace=~\"$namespace\", index=~\"${index:raw}\"}[$__rate_limit])) by (index)",
+              "expr": "avg(rate(elasticsearch_index_stats_search_suggest_total{cluster=~\"$cluster\",namespace=~\"$namespace\", index=~\"${index:raw}\"}[$__rate_interval])) by (index)",
               "interval": "",
               "legendFormat": "{{index}}",
               "refId": "A"
