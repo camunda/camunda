@@ -57,8 +57,11 @@ export {assertClientsInResponse} from './clients-requestHelpers';
 export {
   setupProcessInstanceForTests,
   activateJobToObtainAValidJobKey,
+  activateJobAndGetHeaders,
+  completeJob,
   getLast24HoursRange,
   type StatisticsJobItem,
+  type ActivatedJob,
 } from './job-requestHelpers';
 export {
   createGlobalClusterVariable,
