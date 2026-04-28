@@ -9,8 +9,12 @@
 import React from 'react';
 import update from 'immutability-helper';
 
-import {formatters, getReportResult, processResult as processSingleReportResult} from 'services';
-import {t} from 'translation';
+import {
+  formatters,
+  getReportResult,
+  processResult as processSingleReportResult,
+  applyMissingVariableLabel,
+} from 'services';
 
 import {Table, Chart} from './visualizations';
 import ProcessReportRenderer from './ProcessReportRenderer';
@@ -114,9 +118,7 @@ function formatResult(data, result) {
   }
 
   if (distributedBy.type === 'variable') {
-    return result.map((entry) =>
-      entry.key === 'missing' ? {...entry, label: t('report.missingVariableValue')} : entry
-    );
+    return applyMissingVariableLabel(result);
   }
 
   return result;
