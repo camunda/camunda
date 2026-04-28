@@ -45,8 +45,7 @@ public class EntityImportServiceTest {
 
   @Test
   public void shouldValidateCollectionBeforeProcessingEntities() {
-    // given: a management report that would cause OptimizeValidationException if entity processing
-    // ran before the collection check
+    // given
     final ProcessReportDataDto managementReportData = new ProcessReportDataDto();
     managementReportData.setManagementReport(true);
     final Set<OptimizeEntityExportDto> entities =
@@ -55,8 +54,7 @@ public class EntityImportServiceTest {
     when(collectionService.getCollectionDefinition(anyString()))
         .thenThrow(new NotFoundException("Collection does not exist"));
 
-    // when / then: NotFoundException is thrown (not OptimizeValidationException), proving the
-    // collection check runs before entity pre-processing
+    // when / then
     assertThatThrownBy(() -> underTest.importEntities(NON_EXISTENT_COLLECTION_ID, entities))
         .isInstanceOf(NotFoundException.class);
   }
@@ -76,8 +74,7 @@ public class EntityImportServiceTest {
 
   @Test
   public void shouldValidateCollectionBeforeProcessingEntitiesForInstantPreviewImport() {
-    // given: a management report that would cause OptimizeValidationException if entity processing
-    // ran before the collection check
+    // given
     final ProcessReportDataDto managementReportData = new ProcessReportDataDto();
     managementReportData.setManagementReport(true);
     final Set<OptimizeEntityExportDto> entities =
@@ -86,8 +83,7 @@ public class EntityImportServiceTest {
     when(collectionService.getCollectionDefinition(anyString()))
         .thenThrow(new NotFoundException("Collection does not exist"));
 
-    // when / then: NotFoundException is thrown (not OptimizeValidationException), proving the
-    // collection check runs before entity pre-processing in the instant-preview path too
+    // when / then
     assertThatThrownBy(
             () -> underTest.importInstantPreviewEntities(NON_EXISTENT_COLLECTION_ID, entities))
         .isInstanceOf(NotFoundException.class);
@@ -95,7 +91,7 @@ public class EntityImportServiceTest {
 
   @Test
   public void shouldNotFallBackToDirectCollectionLookupWhenAuthenticatedUserIsProvided() {
-    // given: the authorized path succeeds
+    // given
     when(authorizedCollectionService.getAuthorizedCollectionDefinitionOrFail(
             anyString(), anyString()))
         .thenReturn(new AuthorizedCollectionDefinitionDto(new CollectionDefinitionDto()));
@@ -103,8 +99,7 @@ public class EntityImportServiceTest {
     // when
     underTest.importEntitiesAsUser(USER_ID, NON_EXISTENT_COLLECTION_ID, Set.of());
 
-    // then: the direct (non-authorized) collection lookup must never be invoked —
-    // guards against a regression of the eager-evaluation bug in the old Optional chain
+    // then
     verify(collectionService, never()).getCollectionDefinition(anyString());
   }
 }
