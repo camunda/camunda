@@ -45,6 +45,8 @@ public class ExpressionController {
     return RequestMapper.toExpressionEvaluationRequest(
             request.getExpression(),
             request.getTenantId(),
+            request.getProcessInstanceKey(),
+            request.getElementInstanceKey(),
             request.getVariables(),
             multiTenancyCfg.isChecksEnabled())
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::evaluateExpression);
