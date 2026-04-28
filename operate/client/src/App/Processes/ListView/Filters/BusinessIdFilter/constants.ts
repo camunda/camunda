@@ -56,9 +56,8 @@ export function resolveBusinessIdOperator(
  * Returns `undefined` when the filter is inactive (empty value with a
  * value-required operator).
  *
- * TODO: Replace mock data with an actual API call to
- * POST /v2/process-instances/search using the returned object as
- * `filter.businessId`.
+ * TODO: At API integration time, the caller should pass the returned object
+ * as `filter.businessId` in a POST /v2/process-instances/search request.
  */
 export function buildBusinessIdFilterValue(
   operator: BusinessIdFilterOperator,
@@ -75,5 +74,9 @@ export function buildBusinessIdFilterValue(
       return {$exists: true};
     case 'doesNotExist':
       return {$exists: false};
+    default: {
+      const _exhaustive: never = operator;
+      return _exhaustive;
+    }
   }
 }
