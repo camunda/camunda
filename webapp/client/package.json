@@ -1,5 +1,5 @@
 {
-	"name": "@camunda/client-components",
+	"name": "@camunda/webapp-client",
 	"description": "Camunda JS/TS monorepo",
 	"author": "Vinicius Goulart <vinicius.goulart@camunda.com>",
 	"type": "module",
