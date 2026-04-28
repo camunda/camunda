@@ -11,6 +11,7 @@ import {
   Button,
   DatePicker,
   DatePickerInput,
+  Dropdown,
   ModalBody,
   ModalFooter,
   ModalHeader,
@@ -34,6 +35,11 @@ import {
   type NamedCustomFilters,
   namedCustomFiltersSchema,
 } from 'common/tasks/filters/customFiltersSchema';
+import {
+  BUSINESS_ID_FILTER_OPERATORS,
+  DEFAULT_BUSINESS_ID_OPERATOR,
+  type BusinessIdFilterOperator,
+} from 'common/tasks/filters/businessIdOperators';
 import {ProcessesSelect} from './ProcessesSelect';
 import styles from './fieldsModal.module.scss';
 import cn from 'classnames';
@@ -56,6 +62,8 @@ const ADVANCED_FILTERS: Array<keyof NamedCustomFilters> = [
   'followUpDateFrom',
   'followUpDateTo',
   'taskId',
+  'businessId',
+  'businessIdOperator',
   'variables',
 ];
 
@@ -434,6 +442,72 @@ const FieldsModal: React.FC<Props> = ({
                             labelText={t('customFiltersModalTaskIDLabel')}
                           />
                         )}
+                      </Field>
+
+                      <Field name="businessIdOperator">
+                        {({input: operatorInput}) => {
+                          const rawValue =
+                            typeof operatorInput.value === 'string'
+                              ? (operatorInput.value as BusinessIdFilterOperator)
+                              : undefined;
+                          const selectedId =
+                            rawValue ?? DEFAULT_BUSINESS_ID_OPERATOR;
+                          const selectedOperator =
+                            BUSINESS_ID_FILTER_OPERATORS.find(
+                              (op) => op.id === selectedId,
+                            ) ?? BUSINESS_ID_FILTER_OPERATORS[0];
+                          const isValueRequired =
+                            selectedOperator.requiresValue;
+
+                          return (
+                            <FormGroup
+                              legendText={t(
+                                'customFiltersModalBusinessIdLabel',
+                              )}
+                              // TODO: Wire up Business ID filtering once the API supports
+                              // $eq / $neq / $like / $exists for the businessId field.
+                            >
+                              <Dropdown
+                                id="businessIdOperator"
+                                titleText={t(
+                                  'customFiltersModalBusinessIdOperatorLabel',
+                                )}
+                                hideLabel
+                                label={t(
+                                  'customFiltersModalBusinessIdOperatorLabel',
+                                )}
+                                size="md"
+                                items={BUSINESS_ID_FILTER_OPERATORS}
+                                itemToString={(item) =>
+                                  item
+                                    ? t(item.i18nKey as Parameters<typeof t>[0])
+                                    : ''
+                                }
+                                selectedItem={selectedOperator}
+                                onChange={({selectedItem}) => {
+                                  operatorInput.onChange(
+                                    selectedItem?.id ??
+                                      DEFAULT_BUSINESS_ID_OPERATOR,
+                                  );
+                                }}
+                              />
+                              {isValueRequired ? (
+                                <Field name="businessId">
+                                  {({input: valueInput}) => (
+                                    <TextInput
+                                      {...valueInput}
+                                      id={valueInput.name}
+                                      labelText={t(
+                                        'customFiltersModalBusinessIdLabel',
+                                      )}
+                                      hideLabel
+                                    />
+                                  )}
+                                </Field>
+                              ) : null}
+                            </FormGroup>
+                          );
+                        }}
                       </Field>
 
                       <FieldArray name="variables">
