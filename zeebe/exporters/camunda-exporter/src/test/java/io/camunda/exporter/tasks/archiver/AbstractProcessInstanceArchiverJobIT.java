@@ -203,23 +203,6 @@ public abstract class AbstractProcessInstanceArchiverJobIT<T extends ProcessInst
         });
   }
 
-  private void store(
-      final IndexTemplateDescriptor template,
-      final SearchClientAdapter client,
-      final ExporterEntity<?> entity)
-      throws IOException {
-    client.index(entity.getId(), template.getFullQualifiedName(), entity);
-  }
-
-  private void store(
-      final IndexTemplateDescriptor template,
-      final SearchClientAdapter client,
-      final ExporterEntity<?> parent,
-      final ExporterEntity<?> child)
-      throws IOException {
-    client.index(child.getId(), parent.getId(), template.getFullQualifiedName(), child);
-  }
-
   private ProcessInstanceForListViewEntity processInstanceForListViewEntity(final String endDate) {
     final ProcessInstanceForListViewEntity processInstance = new ProcessInstanceForListViewEntity();
     final long id = ID_GENERATOR.incrementAndGet();
@@ -264,47 +247,9 @@ public abstract class AbstractProcessInstanceArchiverJobIT<T extends ProcessInst
       final IndexTemplateDescriptor templateDescriptor,
       final SearchClientAdapter client,
       final ExporterEntity<?> entity,
-      final String datedIndexSuffix)
-      throws IOException {
-    verifyMoved(templateDescriptor, client, entity, (String) null, datedIndexSuffix);
-  }
-
-  private void verifyMoved(
-      final IndexTemplateDescriptor templateDescriptor,
-      final SearchClientAdapter client,
       final ExporterEntity<?> parent,
-      final ExporterEntity<?> entity,
       final String datedIndexSuffix)
       throws IOException {
     verifyMoved(templateDescriptor, client, entity, parent.getId(), datedIndexSuffix);
-  }
-
-  private void verifyMoved(
-      final IndexTemplateDescriptor templateDescriptor,
-      final SearchClientAdapter client,
-      final ExporterEntity<?> entity,
-      final String routing,
-      final String datedIndexSuffix)
-      throws IOException {
-    // should no longer be in the original index
-    final var originalIndexEntity =
-        client.get(
-            entity.getId(), routing, templateDescriptor.getFullQualifiedName(), entity.getClass());
-    assertThat(originalIndexEntity).isNull();
-
-    // should now be in the dated index
-    final var dateIndex = templateDescriptor.getFullQualifiedName() + datedIndexSuffix;
-    final var newIndexEntity = client.get(entity.getId(), routing, dateIndex, entity.getClass());
-    assertThat(newIndexEntity).isEqualTo(entity);
-  }
-
-  private void verifyNotMoved(
-      final IndexTemplateDescriptor templateDescriptor,
-      final SearchClientAdapter client,
-      final ExporterEntity<?> entity)
-      throws IOException {
-    final var originalIndexEntity =
-        client.get(entity.getId(), templateDescriptor.getFullQualifiedName(), entity.getClass());
-    assertThat(originalIndexEntity).isEqualTo(entity);
   }
 }
