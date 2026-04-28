@@ -38,11 +38,11 @@ import io.camunda.webapps.schema.entities.flownode.FlowNodeInstanceEntity;
 import io.camunda.webapps.schema.entities.incident.IncidentEntity;
 import io.camunda.webapps.schema.entities.listview.FlowNodeInstanceForListViewEntity;
 import io.camunda.webapps.schema.entities.listview.ProcessInstanceForListViewEntity;
+import io.camunda.webapps.schema.entities.listview.VariableForListViewEntity;
 import io.camunda.webapps.schema.entities.operation.OperationEntity;
 import io.camunda.webapps.schema.entities.post.PostImporterQueueEntity;
 import io.camunda.webapps.schema.entities.usertask.SnapshotTaskVariableEntity;
 import io.camunda.webapps.schema.entities.usertask.TaskEntity;
-import java.io.IOException;
 import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -148,7 +148,7 @@ public abstract class AbstractProcessInstanceArchiverJobIT<T extends ProcessInst
   }
 
   @TestTemplate
-  void shouldArchiveProcessInstanceAndDependentListViewFlowNodes(
+  void shouldArchiveProcessInstanceAndDependentChildListViewEntities(
       final ExporterConfiguration config, final SearchClientAdapter client) throws Exception {
     withArchiverJob(
         config,
@@ -160,15 +160,15 @@ public abstract class AbstractProcessInstanceArchiverJobIT<T extends ProcessInst
           final ProcessInstanceForListViewEntity processInstance =
               processInstanceForListViewEntity("2020-01-01T00:00:00+00:00");
 
-          final List<FlowNodeInstanceForListViewEntity> flowNodes =
+          final List<ExporterEntity<?>> childEntities =
               List.of(
                   flowNodeInstanceForListViewEntity(processInstance),
                   flowNodeInstanceForListViewEntity(processInstance),
-                  flowNodeInstanceForListViewEntity(processInstance));
+                  variableForListViewEntity(processInstance));
 
           store(listViewTemplate, client, processInstance);
-          for (final var flowNode : flowNodes) {
-            store(listViewTemplate, client, processInstance, flowNode);
+          for (final var child : childEntities) {
+            store(listViewTemplate, client, processInstance, child);
           }
 
           client.refresh();
@@ -181,8 +181,67 @@ public abstract class AbstractProcessInstanceArchiverJobIT<T extends ProcessInst
 
           // check that the process is no longer in the main index
           verifyMoved(listViewTemplate, client, processInstance, "2020-01-01");
-          for (final var flowNode : flowNodes) {
-            verifyMoved(listViewTemplate, client, flowNode, processInstance, "2020-01-01");
+          for (final var child : childEntities) {
+            verifyMoved(listViewTemplate, client, processInstance, child, "2020-01-01");
+          }
+        });
+  }
+
+  @TestTemplate
+  void shouldOnlyArchiveFinishedProcessInstanceAndDependentChildListViewEntities(
+      final ExporterConfiguration config, final SearchClientAdapter client) throws Exception {
+    withArchiverJob(
+        config,
+        (job, resourceProvider) -> {
+          // given
+          final var listViewTemplate =
+              resourceProvider.getIndexTemplateDescriptor(ListViewTemplate.class);
+
+          final ProcessInstanceForListViewEntity finishedInstance =
+              processInstanceForListViewEntity("2020-01-01T00:00:00+00:00");
+
+          final List<ExporterEntity<?>> finishedChildEntities =
+              List.of(
+                  flowNodeInstanceForListViewEntity(finishedInstance),
+                  flowNodeInstanceForListViewEntity(finishedInstance),
+                  variableForListViewEntity(finishedInstance));
+
+          store(listViewTemplate, client, finishedInstance);
+          for (final var child : finishedChildEntities) {
+            store(listViewTemplate, client, finishedInstance, child);
+          }
+
+          final ProcessInstanceForListViewEntity unfinishedInstance =
+              processInstanceForListViewEntity(null);
+
+          final List<ExporterEntity<?>> unfinishedChildEntities =
+              List.of(
+                  flowNodeInstanceForListViewEntity(unfinishedInstance),
+                  flowNodeInstanceForListViewEntity(unfinishedInstance),
+                  variableForListViewEntity(unfinishedInstance));
+
+          store(listViewTemplate, client, unfinishedInstance);
+          for (final var child : unfinishedChildEntities) {
+            store(listViewTemplate, client, unfinishedInstance, child);
+          }
+
+          client.refresh();
+
+          // when
+          final var archived = job.execute();
+
+          // then
+          assertThat(archived).succeedsWithin(Duration.ofSeconds(5L)).isEqualTo(1);
+
+          // check that the process is no longer in the main index
+          verifyMoved(listViewTemplate, client, finishedInstance, "2020-01-01");
+          for (final var child : finishedChildEntities) {
+            verifyMoved(listViewTemplate, client, finishedInstance, child, "2020-01-01");
+          }
+
+          verifyNotMoved(listViewTemplate, client, unfinishedInstance);
+          for (final var child : unfinishedChildEntities) {
+            verifyNotMoved(listViewTemplate, client, unfinishedInstance, child);
           }
         });
   }
@@ -314,23 +373,6 @@ public abstract class AbstractProcessInstanceArchiverJobIT<T extends ProcessInst
         });
   }
 
-  private void store(
-      final IndexTemplateDescriptor template,
-      final SearchClientAdapter client,
-      final ExporterEntity<?> entity)
-      throws IOException {
-    client.index(entity.getId(), template.getFullQualifiedName(), entity);
-  }
-
-  private void store(
-      final IndexTemplateDescriptor template,
-      final SearchClientAdapter client,
-      final ExporterEntity<?> parent,
-      final ExporterEntity<?> child)
-      throws IOException {
-    client.index(child.getId(), parent.getId(), template.getFullQualifiedName(), child);
-  }
-
   private List<DependentEntities> getProcessInstanceDependentEntities(
       final ExporterResourceProvider resourceProvider,
       final ProcessInstanceForListViewEntity processInstance) {
@@ -391,6 +433,15 @@ public abstract class AbstractProcessInstanceArchiverJobIT<T extends ProcessInst
   private FlowNodeInstanceForListViewEntity flowNodeInstanceForListViewEntity(
       final ProcessInstanceForListViewEntity processInstance) {
     final FlowNodeInstanceForListViewEntity entity = create(FlowNodeInstanceForListViewEntity::new);
+    entity.setProcessInstanceKey(processInstance.getKey());
+    entity.getJoinRelation().setParent(processInstance.getKey());
+
+    return entity;
+  }
+
+  private VariableForListViewEntity variableForListViewEntity(
+      final ProcessInstanceForListViewEntity processInstance) {
+    final VariableForListViewEntity entity = create(VariableForListViewEntity::new);
     entity.setProcessInstanceKey(processInstance.getKey());
     entity.getJoinRelation().setParent(processInstance.getKey());
 
@@ -489,63 +540,6 @@ public abstract class AbstractProcessInstanceArchiverJobIT<T extends ProcessInst
     final var entity = constructor.get();
     entity.setId(String.valueOf(id));
     return entity;
-  }
-
-  private void verifyMoved(
-      final IndexTemplateDescriptor templateDescriptor,
-      final SearchClientAdapter client,
-      final ExporterEntity<?> entity,
-      final String datedIndexSuffix)
-      throws IOException {
-    verifyMoved(templateDescriptor, client, entity, (String) null, datedIndexSuffix);
-  }
-
-  private void verifyMoved(
-      final IndexTemplateDescriptor templateDescriptor,
-      final SearchClientAdapter client,
-      final ExporterEntity<?> parent,
-      final ExporterEntity<?> entity,
-      final String datedIndexSuffix)
-      throws IOException {
-    verifyMoved(templateDescriptor, client, entity, parent.getId(), datedIndexSuffix);
-  }
-
-  private void verifyMoved(
-      final IndexTemplateDescriptor templateDescriptor,
-      final SearchClientAdapter client,
-      final ExporterEntity<?> entity,
-      final String routing,
-      final String datedIndexSuffix)
-      throws IOException {
-    // should no longer be in the original index
-    final var originalIndexEntity =
-        client.get(
-            entity.getId(), routing, templateDescriptor.getFullQualifiedName(), entity.getClass());
-    assertThat(originalIndexEntity)
-        .describedAs(
-            "Expected %s to have been deleted from %s",
-            entity, templateDescriptor.getFullQualifiedName())
-        .isNull();
-
-    // should now be in the dated index
-    final var dateIndex = templateDescriptor.getFullQualifiedName() + datedIndexSuffix;
-    final var newIndexEntity = client.get(entity.getId(), routing, dateIndex, entity.getClass());
-    assertThat(newIndexEntity)
-        .describedAs("Expected %s to have been moved to %s", entity, dateIndex)
-        .isEqualTo(entity);
-  }
-
-  private void verifyNotMoved(
-      final IndexTemplateDescriptor templateDescriptor,
-      final SearchClientAdapter client,
-      final ExporterEntity<?> entity)
-      throws IOException {
-    final var originalIndexEntity =
-        client.get(entity.getId(), templateDescriptor.getFullQualifiedName(), entity.getClass());
-    assertThat(originalIndexEntity)
-        .describedAs(
-            "Expected %s to still be in %s", entity, templateDescriptor.getFullQualifiedName())
-        .isEqualTo(entity);
   }
 
   record DependentEntities(IndexTemplateDescriptor template, List<ExporterEntity<?>> entities) {}
