@@ -60,17 +60,17 @@ public interface Controller {
   Optional<byte[]> readMetadata();
 
   /**
-   * Requests that the exporter replay records starting from the given position. This is useful when
-   * the exporter's secondary storage is behind the broker's acknowledged position, for example
+   * Requests that the exporter replay records starting after the given position. This is useful
+   * when the exporter's secondary storage is behind the broker's acknowledged position, for example
    * after a database restore or an automatic failover in an async-replicated setup.
    *
-   * <p>The broker will reset the exporter's position to {@code fromPosition - 1} and replay all log
-   * stream records from {@code fromPosition} onward. Replay is only possible as far back as log
-   * segments are still available.
+   * <p>The broker will reset the exporter's position to {@code lastExportedPosition} and replay all
+   * log stream records from after {@code lastExportedPosition} onward. Replay is only possible as
+   * far back as log segments are still available.
    *
-   * @param fromPosition the position to start replaying from (inclusive)
+   * @param lastExportedPosition the position to start replaying from (exclusive)
    * @return {@code true} if the log stream reader was successfully seeked to the requested
    *     position, {@code false} if the log segments for that position are no longer available
    */
-  boolean requestReplay(final long fromPosition);
+  boolean requestReplay(final long lastExportedPosition);
 }

@@ -29,6 +29,7 @@ import io.camunda.zeebe.broker.exporter.util.PojoConfigurationExporter;
 import io.camunda.zeebe.broker.exporter.util.PojoConfigurationExporter.PojoExporterConfiguration;
 import io.camunda.zeebe.engine.Loggers;
 import io.camunda.zeebe.exporter.api.context.Context;
+import io.camunda.zeebe.exporter.api.context.Controller;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.camunda.zeebe.protocol.impl.record.value.incident.IncidentRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
@@ -863,8 +864,8 @@ public final class ExporterDirectorTest {
 
     // Simulate: exporter 0's DB was restored to eventPosition2 — records 3 and 4 are missing
     exporters
-        .get(0)
-        .onOpen(controller -> replayAccepted.set(controller.requestReplay(eventPosition2 + 1)))
+        .getFirst()
+        .onOpen(controller -> replayAccepted.set(controller.requestReplay(eventPosition2)))
         .shouldAutoUpdatePosition(true);
     exporters.get(1).shouldAutoUpdatePosition(true);
 
@@ -884,6 +885,34 @@ public final class ExporterDirectorTest {
 
     // exporter 1 should not re-export anything
     assertThat(exporters.get(1).getExportedRecords()).isEmpty();
+  }
+
+  @Test
+  public void shouldNotReplayRecordsWhenExporting() throws Exception {
+    // given - write 4 events
+    final long eventPosition1 = writeEvent();
+    final long eventPosition2 = writeEvent();
+    final long eventPosition3 = writeEvent();
+    final long eventPosition4 = writeEvent();
+
+    final AtomicReference<Controller> controllerRef = new AtomicReference<>();
+    final var replayAccepted = new AtomicBoolean(false);
+    exporters
+        .getFirst()
+        .onOpen(controllerRef::set)
+        .onExport(
+            r -> {
+              if (r.getPosition() == eventPosition4) {
+                replayAccepted.set(controllerRef.get().requestReplay(eventPosition2));
+              }
+            });
+
+    // when
+    rule.startExporterDirector(exporterDescriptors);
+    waitUntil(() -> exporters.getFirst().getExportedRecords().size() == 4);
+
+    // then
+    assertThat(replayAccepted.get()).isFalse();
   }
 
   @Test
