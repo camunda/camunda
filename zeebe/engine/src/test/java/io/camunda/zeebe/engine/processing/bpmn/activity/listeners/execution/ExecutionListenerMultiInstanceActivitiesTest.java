@@ -396,6 +396,105 @@ public class ExecutionListenerMultiInstanceActivitiesTest {
         .containsExactly("10", "20", "30");
   }
 
+  @Test
+  public void shouldCancelBeforeAllListenerJobWhenProcessIsCanceled() {
+    // given — a multi-instance service task with a single beforeAll execution listener
+    final BpmnModelInstance process = process(t -> t.zeebeBeforeAllExecutionListener(BEFORE_ALL_1));
+    ENGINE.deployment().withXmlResource(process).deploy();
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // and — the beforeAll listener job exists and is still pending
+    final Record<JobRecordValue> beforeAllJob =
+        RecordingExporter.jobRecords(JobIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withType(BEFORE_ALL_1)
+            .getFirst();
+    assertThat(beforeAllJob.getValue().getJobKind()).isEqualTo(JobKind.EXECUTION_LISTENER);
+
+    // when — the process instance is canceled while the listener is still pending
+    ENGINE.processInstance().withInstanceKey(processInstanceKey).cancel();
+
+    // then — the process is terminated
+    assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_TERMINATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withElementType(BpmnElementType.PROCESS)
+                .exists())
+        .isTrue();
+
+    // and — the pending beforeAll listener job is canceled (not left orphaned)
+    final Record<JobRecordValue> canceled =
+        RecordingExporter.jobRecords(JobIntent.CANCELED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withRecordKey(beforeAllJob.getKey())
+            .withType(BEFORE_ALL_1)
+            .limit(1)
+            .getFirst();
+    assertThat(canceled.getValue().getJobKind()).isEqualTo(JobKind.EXECUTION_LISTENER);
+    assertThat(canceled.getValue().getJobListenerEventType())
+        .isEqualTo(JobListenerEventType.BEFORE_ALL);
+  }
+
+  @Test
+  public void shouldNotDuplicateBeforeAllJobAfterEngineRestartWhilePending() {
+    // given — a multi-instance service task with a single beforeAll execution listener
+    final BpmnModelInstance process = process(t -> t.zeebeBeforeAllExecutionListener(BEFORE_ALL_1));
+    ENGINE.deployment().withXmlResource(process).deploy();
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // and — the beforeAll listener job is created but not yet completed
+    RecordingExporter.jobRecords(JobIntent.CREATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .withType(BEFORE_ALL_1)
+        .getFirst();
+
+    // when — engine snapshots and reprocesses (simulates a restart)
+    ENGINE.snapshot();
+    ENGINE.reprocess();
+
+    // and — the (single) listener job is completed once after the restart
+    ENGINE
+        .job()
+        .ofInstance(processInstanceKey)
+        .withType(BEFORE_ALL_1)
+        .withVariables(Map.of("items", ITEMS))
+        .complete();
+    completeAllServiceTasks(processInstanceKey, ITEMS.size());
+
+    // then — the process completes, the listener job was not duplicated, and the first child
+    // instance still only activates after that single completion
+    assertProcessCompleted(processInstanceKey);
+
+    assertThat(countJobRecords(processInstanceKey, BEFORE_ALL_1, JobIntent.CREATED))
+        .as("beforeAll listener job must not be re-created after engine restart")
+        .isEqualTo(1);
+    assertThat(countJobRecords(processInstanceKey, BEFORE_ALL_1, JobIntent.COMPLETED))
+        .as("beforeAll listener job must be completed exactly once after engine restart")
+        .isEqualTo(1);
+
+    final long miBodyKey =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATING)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementType(BpmnElementType.MULTI_INSTANCE_BODY)
+            .getFirst()
+            .getKey();
+    final long beforeAllCompletedPosition =
+        RecordingExporter.jobRecords(JobIntent.COMPLETED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withType(BEFORE_ALL_1)
+            .getFirst()
+            .getPosition();
+    final long firstChildActivatingPosition =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATING)
+            .withProcessInstanceKey(processInstanceKey)
+            .withFlowScopeKey(miBodyKey)
+            .getFirst()
+            .getPosition();
+    assertThat(firstChildActivatingPosition)
+        .as("first child instance still activates only after the (single) beforeAll completion")
+        .isGreaterThan(beforeAllCompletedPosition);
+  }
+
   // ---------------------------------------------------------------------------
   // Helpers
   // ---------------------------------------------------------------------------
@@ -505,5 +604,17 @@ public class ExecutionListenerMultiInstanceActivitiesTest {
                 .withElementType(BpmnElementType.PROCESS)
                 .exists())
         .isTrue();
+  }
+
+  private static long countJobRecords(
+      final long processInstanceKey, final String jobType, final JobIntent intent) {
+    return RecordingExporter.records()
+        .betweenProcessInstance(processInstanceKey)
+        .withValueType(ValueType.JOB)
+        .withIntent(intent)
+        .map(Record::getValue)
+        .map(JobRecordValue.class::cast)
+        .filter(v -> jobType.equals(v.getType()))
+        .count();
   }
 }
