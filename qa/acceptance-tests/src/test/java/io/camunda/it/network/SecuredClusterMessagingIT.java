@@ -12,18 +12,26 @@ import static io.camunda.zeebe.test.util.asserts.TopologyAssert.assertThat;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.response.Topology;
+import io.camunda.configuration.Exporter;
+import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
+import io.camunda.container.CamundaContainer;
+import io.camunda.container.CamundaContainer.BrokerContainer;
+import io.camunda.container.CamundaContainer.WebAppContainer;
+import io.camunda.container.CamundaContainer.WebAppContainer.WebApp;
+import io.camunda.container.cluster.CamundaPort;
+import io.camunda.exporter.CamundaExporter;
 import io.camunda.zeebe.qa.util.testcontainers.ZeebeTestContainerDefaults;
 import io.camunda.zeebe.test.util.asserts.SslAssert;
 import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
 import io.netty.handler.ssl.util.SelfSignedCertificate;
-import io.zeebe.containers.ZeebeContainer;
-import io.zeebe.containers.ZeebePort;
+import java.io.File;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.net.URI;
 import java.security.cert.CertificateException;
 import java.time.Duration;
-import java.util.Optional;
+import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.AutoClose;
@@ -34,22 +42,11 @@ import org.testcontainers.containers.wait.strategy.HttpWaitStrategy;
 import org.testcontainers.elasticsearch.ElasticsearchContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
-import org.testcontainers.utility.DockerImageName;
 import org.testcontainers.utility.MountableFile;
 
 @Testcontainers
 final class SecuredClusteredMessagingIT {
   private static final SelfSignedCertificate CERTIFICATE = newCertificate();
-  private static final String DB_TYPE_ELASTICSEARCH = "elasticsearch";
-  private static final String OPERATE_IMAGE_NAME =
-      Optional.ofNullable(System.getenv("OPERATE_TEST_DOCKER_IMAGE"))
-          .orElse("camunda/operate:current-test");
-  private static final String TASKLIST_IMAGE_NAME =
-      Optional.ofNullable(System.getenv("TASKLIST_TEST_DOCKER_IMAGE"))
-          .orElse("camunda/tasklist:current-test");
-
-  private static final DockerImageName OPERATE = DockerImageName.parse(OPERATE_IMAGE_NAME);
-  private static final DockerImageName TASKLIST = DockerImageName.parse(TASKLIST_IMAGE_NAME);
 
   @AutoClose private static final Network NETWORK = Network.newNetwork();
 
@@ -65,79 +62,75 @@ final class SecuredClusteredMessagingIT {
   private final String esUrl = "http://elastic:9200";
 
   @Container
-  private final ZeebeContainer zeebe =
-      new ZeebeContainer(ZeebeTestContainerDefaults.defaultTestImage())
+  private final BrokerContainer zeebe =
+      new BrokerContainer(ZeebeTestContainerDefaults.defaultTestImage())
           .withNetwork(NETWORK)
           .withNetworkAliases("zeebe")
-          .withEnv("CAMUNDA_SECURITY_TRANSPORTLAYERSECURITY_CLUSTER_ENABLED", "true")
-          .withEnv(
-              "CAMUNDA_SECURITY_TRANSPORTLAYERSECURITY_CLUSTER_CERTIFICATECHAINPATH",
-              "/tmp/certificate.pem")
-          .withEnv(
-              "CAMUNDA_SECURITY_TRANSPORTLAYERSECURITY_CLUSTER_CERTIFICATEPRIVATEKEYPATH",
-              "/tmp/key.pem")
           .withCopyToContainer(
               MountableFile.forHostPath(CERTIFICATE.certificate().toPath(), 0777),
               "/tmp/certificate.pem")
           .withCopyToContainer(
               MountableFile.forHostPath(CERTIFICATE.privateKey().toPath(), 0777), "/tmp/key.pem")
-          // unified configuration: index prefix
-          .withEnv("CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_INDEXPREFIX", testPrefix)
+          .withUnifiedConfig(
+              cfg -> {
+                final var transportCluster =
+                    cfg.getSecurity().getTransportLayerSecurity().getCluster();
+                transportCluster.setEnabled(true);
+                transportCluster.setCertificateChainPath(new File("/tmp/certificate.pem"));
+                transportCluster.setCertificatePrivateKeyPath(new File("/tmp/key.pem"));
+
+                cfg.getData().getSecondaryStorage().setType(SecondaryStorageType.elasticsearch);
+                cfg.getData().getSecondaryStorage().getElasticsearch().setIndexPrefix(testPrefix);
+                cfg.getData().getSecondaryStorage().getElasticsearch().setUrl(esUrl);
+                cfg.getData()
+                    .getExporters()
+                    .computeIfAbsent(
+                        "camundaexporter",
+                        exp -> {
+                          final var exporter = new Exporter();
+                          exporter.setClassName(CamundaExporter.class.getName());
+                          final Map<String, Object> args =
+                              Map.of("connect", Map.of("url", esUrl, "indexPrefix", testPrefix));
+                          exporter.setArgs(args);
+
+                          return exporter;
+                        });
+              })
+
           // unified configuration: type
-          .withEnv("CAMUNDA_DATA_SECONDARYSTORAGE_TYPE", DB_TYPE_ELASTICSEARCH)
-          .withEnv("CAMUNDA_DATABASE_TYPE", DB_TYPE_ELASTICSEARCH)
-          .withEnv("CAMUNDA_OPERATE_DATABASE", DB_TYPE_ELASTICSEARCH)
-          .withEnv("CAMUNDA_TASKLIST_DATABASE", DB_TYPE_ELASTICSEARCH)
-          // unified configuration: url
-          .withEnv("CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_URL", esUrl)
-          .withEnv("CAMUNDA_DATABASE_URL", esUrl)
-          .withEnv("CAMUNDA_OPERATE_ELASTICSEARCH_URL", esUrl)
-          .withEnv("CAMUNDA_TASKLIST_ELASTICSEARCH_URL", esUrl)
-          // ---.withEnv("ZEEBE_BROKER_NETWORK_ADVERTISEDHOST", "zeebe")
-          .withEnv(
-              "ZEEBE_BROKER_EXPORTERS_CAMUNDA_CLASSNAME", "io.camunda.exporter.CamundaExporter")
-          .withEnv("ZEEBE_BROKER_EXPORTERS_CAMUNDA_ARGS_CONNECT_URL", esUrl)
-          .withEnv("ZEEBE_BROKER_EXPORTERS_CAMUNDA_ARGS_CONNECT_INDEXPREFIX", testPrefix)
+          .withEnv("CAMUNDA_DATABASE_TYPE", SecondaryStorageType.elasticsearch.name())
           .withEnv(UNPROTECTED_API_ENV_VAR, "true")
-          .withEnv("CAMUNDA_LOG_LEVEL", "DEBUG")
-          .withAdditionalExposedPort(8080)
-          .withAdditionalExposedPort(ZeebePort.INTERNAL.getPort());
+          .withEnv("CAMUNDA_LOG_LEVEL", "DEBUG");
 
   @Container
-  private final GenericContainer<?> operate =
-      new GenericContainer<>(OPERATE)
+  private final CamundaContainer operate =
+      new WebAppContainer(ZeebeTestContainerDefaults.defaultTestImage(), WebApp.OPERATE)
           .withNetworkAliases("operate")
           .withNetwork(NETWORK)
-          .withEnv("ZEEBE_GATEWAY_CLUSTER_INITIALCONTACTPOINTS", "zeebe:26502")
-          .withEnv("ZEEBE_GATEWAY_CLUSTER_ADVERTISEDHOST", "operate")
-          .withEnv("ZEEBE_GATEWAY_CLUSTER_MEMBERID", "operate")
-          .withEnv("CAMUNDA_SECURITY_TRANSPORTLAYERSECURITY_CLUSTER_ENABLED", "true")
-          .withEnv(
-              "CAMUNDA_SECURITY_TRANSPORTLAYERSECURITY_CLUSTER_CERTIFICATECHAINPATH",
-              "/tmp/certificate.pem")
-          .withEnv(
-              "CAMUNDA_SECURITY_TRANSPORTLAYERSECURITY_CLUSTER_CERTIFICATEPRIVATEKEYPATH",
-              "/tmp/key.pem")
-          .withEnv("CAMUNDA_OPERATE_ZEEBE_GATEWAYADDRESS", zeebe.getInternalGatewayAddress())
           .withCopyToContainer(
               MountableFile.forHostPath(CERTIFICATE.certificate().toPath(), 0777),
               "/tmp/certificate.pem")
           .withCopyToContainer(
               MountableFile.forHostPath(CERTIFICATE.privateKey().toPath(), 0777), "/tmp/key.pem")
-          // Unified Configuration: index prefix
-          .withEnv("CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_INDEXPREFIX", testPrefix)
-          // Unified Configuration: db type
-          .withEnv("CAMUNDA_DATA_SECONDARYSTORAGE_TYPE", DB_TYPE_ELASTICSEARCH)
-          .withEnv("CAMUNDA_DATABASE_TYPE", DB_TYPE_ELASTICSEARCH)
-          .withEnv("CAMUNDA_OPERATE_DATABASE", DB_TYPE_ELASTICSEARCH)
-          .withEnv("CAMUNDA_TASKLIST_DATABASE", DB_TYPE_ELASTICSEARCH)
-          // Unified Configuration: db url
-          .withEnv("CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_URL", esUrl)
-          .withEnv("CAMUNDA_DATABASE_URL", esUrl)
-          .withEnv("CAMUNDA_OPERATE_ELASTICSEARCH_URL", esUrl)
-          .withEnv("CAMUNDA_TASKLIST_ELASTICSEARCH_URL", esUrl)
-          // ---
-          .withEnv("CAMUNDA_OPERATE_ZEEBE_GATEWAYADDRESS", zeebe.getInternalGatewayAddress())
+          .withUnifiedConfig(
+              cfg -> {
+                final var transportCluster =
+                    cfg.getSecurity().getTransportLayerSecurity().getCluster();
+                transportCluster.setEnabled(true);
+                transportCluster.setCertificateChainPath(new File("/tmp/certificate.pem"));
+                transportCluster.setCertificatePrivateKeyPath(new File("/tmp/key.pem"));
+
+                cfg.getData().getSecondaryStorage().setType(SecondaryStorageType.elasticsearch);
+                cfg.getData().getSecondaryStorage().getElasticsearch().setIndexPrefix(testPrefix);
+                cfg.getData().getSecondaryStorage().getElasticsearch().setUrl(esUrl);
+
+                cfg.getCluster().setInitialContactPoints(List.of("zeebe:26502"));
+                cfg.getCluster().getNetwork().getInternalApi().setAdvertisedHost("operate");
+                cfg.getCluster().setGatewayId("operate");
+              })
+          .withEnv(
+              "CAMUNDA_OPERATE_ZEEBE_GATEWAYADDRESS",
+              zeebe.getInternalAddress(CamundaPort.GATEWAY_GRPC.getPort()))
           .withEnv("CAMUNDA_LOG_LEVEL", "DEBUG")
           .withExposedPorts(8080, 9600, 26502)
           .waitingFor(
@@ -148,42 +141,37 @@ final class SecuredClusteredMessagingIT {
           .dependsOn(zeebe);
 
   @Container
-  private final GenericContainer<?> tasklist =
-      new GenericContainer<>(TASKLIST)
+  private final CamundaContainer tasklist =
+      new WebAppContainer(ZeebeTestContainerDefaults.defaultTestImage(), WebApp.TASKLIST)
           .withNetworkAliases("tasklist")
           .withNetwork(NETWORK)
-          .withEnv("SPRING_PROFILES_ACTIVE", "consolidated-auth")
-          .withEnv("ZEEBE_GATEWAY_CLUSTER_INITIALCONTACTPOINTS", "zeebe:26502")
-          .withEnv("ZEEBE_GATEWAY_CLUSTER_ADVERTISEDHOST", "tasklist")
-          .withEnv("ZEEBE_GATEWAY_CLUSTER_MEMBERID", "tasklist")
-          .withEnv("CAMUNDA_SECURITY_TRANSPORTLAYERSECURITY_CLUSTER_ENABLED", "true")
-          .withEnv(
-              "CAMUNDA_SECURITY_TRANSPORTLAYERSECURITY_CLUSTER_CERTIFICATECHAINPATH",
-              "/tmp/certificate.pem")
-          .withEnv(
-              "CAMUNDA_SECURITY_TRANSPORTLAYERSECURITY_CLUSTER_CERTIFICATEPRIVATEKEYPATH",
-              "/tmp/key.pem")
           .withCopyToContainer(
               MountableFile.forHostPath(CERTIFICATE.certificate().toPath(), 0777),
               "/tmp/certificate.pem")
           .withCopyToContainer(
               MountableFile.forHostPath(CERTIFICATE.privateKey().toPath(), 0777), "/tmp/key.pem")
-          // Unified Configuration: index prefix
-          .withEnv("CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_INDEXPREFIX", testPrefix)
-          // Unified Configuration: db type
-          .withEnv("CAMUNDA_DATA_SECONDARYSTORAGE_TYPE", DB_TYPE_ELASTICSEARCH)
-          .withEnv("CAMUNDA_DATABASE_TYPE", DB_TYPE_ELASTICSEARCH)
-          .withEnv("CAMUNDA_OPERATE_DATABASE", DB_TYPE_ELASTICSEARCH)
-          .withEnv("CAMUNDA_TASKLIST_DATABASE", DB_TYPE_ELASTICSEARCH)
-          // Unified Configuration: db url
-          .withEnv("CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_URL", esUrl)
-          .withEnv("CAMUNDA_DATABASE_URL", esUrl)
-          .withEnv("CAMUNDA_OPERATE_ELASTICSEARCH_URL", esUrl)
-          .withEnv("CAMUNDA_TASKLIST_ELASTICSEARCH_URL", esUrl)
-          // ---
-          .withEnv("CAMUNDA_TASKLIST_ZEEBE_GATEWAYADDRESS", zeebe.getInternalGatewayAddress())
+          .withUnifiedConfig(
+              cfg -> {
+                final var transportCluster =
+                    cfg.getSecurity().getTransportLayerSecurity().getCluster();
+                transportCluster.setEnabled(true);
+                transportCluster.setCertificateChainPath(new File("/tmp/certificate.pem"));
+                transportCluster.setCertificatePrivateKeyPath(new File("/tmp/key.pem"));
+
+                cfg.getData().getSecondaryStorage().setType(SecondaryStorageType.elasticsearch);
+                cfg.getData().getSecondaryStorage().getElasticsearch().setIndexPrefix(testPrefix);
+                cfg.getData().getSecondaryStorage().getElasticsearch().setUrl(esUrl);
+
+                cfg.getCluster().setInitialContactPoints(List.of("zeebe:26502"));
+                cfg.getCluster().getNetwork().getInternalApi().setAdvertisedHost("tasklist");
+                cfg.getCluster().setGatewayId("tasklist");
+              })
           .withEnv(
-              "CAMUNDA_TASKLIST_ZEEBE_RESTADDRESS", "http://" + zeebe.getInternalHost() + ":8080")
+              "CAMUNDA_TASKLIST_ZEEBE_GATEWAYADDRESS",
+              zeebe.getInternalAddress(CamundaPort.GATEWAY_GRPC.getPort()))
+          .withEnv(
+              "CAMUNDA_TASKLIST_ZEEBE_RESTADDRESS",
+              zeebe.getInternalAddress(CamundaPort.GATEWAY_REST.getPort()))
           .withEnv("CAMUNDA_LOG_LEVEL", "DEBUG")
           .withExposedPorts(8080, 9600, 26502)
           .waitingFor(
@@ -201,10 +189,8 @@ final class SecuredClusteredMessagingIT {
     final Topology topology;
     try (final var client =
         CamundaClient.newClientBuilder()
-            .restAddress(
-                URI.create("http://" + zeebe.getExternalHost() + ":" + zeebe.getMappedPort(8080)))
-            .grpcAddress(
-                URI.create("http://" + zeebe.getExternalHost() + ":" + zeebe.getMappedPort(26500)))
+            .restAddress(URI.create("http://" + zeebe.getHost() + ":" + zeebe.getMappedPort(8080)))
+            .grpcAddress(URI.create("http://" + zeebe.getHost() + ":" + zeebe.getMappedPort(26500)))
             .build()) {
       topology = client.newTopologyRequest().send().join(15, TimeUnit.SECONDS);
     }
@@ -221,7 +207,7 @@ final class SecuredClusteredMessagingIT {
     final var internalApiAddress =
         new InetSocketAddress(
             container.getContainerIpAddress(),
-            container.getMappedPort(ZeebePort.INTERNAL.getPort()));
+            container.getMappedPort(CamundaPort.INTERNAL.getPort()));
 
     assertAddressIsSecured(container.getNetworkAliases(), internalApiAddress);
   }

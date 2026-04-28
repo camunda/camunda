@@ -73,6 +73,7 @@ jobs:
     runs-on: ${{ inputs.runs-on }}
     env:
       ZEEBE_TEST_DOCKER_IMAGE: localhost:5000/camunda/zeebe:current-test
+      CAMUNDA_TEST_DOCKER_IMAGE: localhost:5000/camunda/camunda:current-test
       IMAGE_VERSION: ${{inputs.database-image-version}}
     outputs:
       flakyTests: ${{ steps.analyze-test-run.outputs.flakyTests }}

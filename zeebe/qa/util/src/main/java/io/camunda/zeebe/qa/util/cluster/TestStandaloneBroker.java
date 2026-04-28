@@ -89,11 +89,7 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
     // Initialize unified config with test-friendly defaults
     initializeUnifiedConfigDefaults();
 
-    StandaloneCamunda.getDefaultProperties(false)
-        .forEach(
-            (key, value) -> {
-              withProperty(key, value);
-            });
+    StandaloneCamunda.getDefaultProperties(false).forEach(this::withProperty);
 
     // this is required to prevent default spring boot 4.0 security setup to kick in
     withProperty(
