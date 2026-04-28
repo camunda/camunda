@@ -107,10 +107,7 @@ public class PhysicalTenantSearchClientReadersConfiguration {
     return Map.copyOf(readersByTenant);
   }
 
-  // TODO: reconcile with the CamundaSearchClients bean in SearchClientConfiguration. The default
-  // beans (IndexDescriptors, SearchClientBasedQueryExecutor, documentReaders, camundaSearchClients)
-  // should be collapsed into the per-tenant ones (defaulting to "default" tenant). Tracked as a
-  // follow-up to keep this change reviewable.
+  // TODO: reconcile with the CamundaSearchClients bean in SearchClientConfiguration
   @Bean
   public CamundaSearchClients physicalTenantAwareCamundaSearchClients(
       @Qualifier("documentReaders") final SearchClientReaders defaultReaders,

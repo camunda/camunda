@@ -71,9 +71,11 @@ public class PhysicalTenantSearchClientReadersConfigurationIT {
 
   @Test
   void shouldWirePerTenantSearchClientsFromResolver() {
-    assertThat(searchClients.esClients()).containsOnlyKeys(TENANT_A, TENANT_B);
+    assertThat(searchClients.esClients())
+        .containsOnlyKeys(TenantConnectConfigResolver.DEFAULT_TENANT_ID, TENANT_A, TENANT_B);
     assertThat(searchClients.osClients()).isEmpty();
-    assertThat(tenantDescriptors).containsOnlyKeys(TENANT_A, TENANT_B);
+    assertThat(tenantDescriptors)
+        .containsOnlyKeys(TenantConnectConfigResolver.DEFAULT_TENANT_ID, TENANT_A, TENANT_B);
   }
 
   @Test
@@ -126,7 +128,10 @@ public class PhysicalTenantSearchClientReadersConfigurationIT {
         final ConnectConfiguration tenantAConfig, final WireMockServer wmTenantB) {
       stubFakeEs(wmTenantB, PROCESS_INSTANCE_KEY_B);
       return new TenantConnectConfigResolver(
-          Map.of(TENANT_A, tenantAConfig, TENANT_B, connectConfig(wmTenantB, TENANT_B)));
+          Map.of(
+              TenantConnectConfigResolver.DEFAULT_TENANT_ID, tenantAConfig,
+              TENANT_A, tenantAConfig,
+              TENANT_B, connectConfig(wmTenantB, TENANT_B)));
     }
 
     /** {@link GatewayRestConfiguration} is a plain POJO; register it as a bean for injection. */

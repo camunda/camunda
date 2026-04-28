@@ -16,12 +16,15 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import org.agrona.CloseHelper;
 import org.opensearch.client.ApiClient;
+import org.opensearch.client.opensearch.OpenSearchAsyncClient;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public record SearchClients(
-    Map<String, ElasticsearchClient> esClients, Map<String, OpenSearchClient> osClients)
+    Map<String, ElasticsearchClient> esClients,
+    Map<String, OpenSearchClient> osClients,
+    Map<String, OpenSearchAsyncClient> osAsyncClients)
     implements AutoCloseable {
 
   private static final Logger LOG = LoggerFactory.getLogger(SearchClients.class);
@@ -29,6 +32,7 @@ public record SearchClients(
   public static SearchClients from(final Map<String, ConnectConfiguration> tenantConfigs) {
     final var esClients = new LinkedHashMap<String, ElasticsearchClient>();
     final var osClients = new LinkedHashMap<String, OpenSearchClient>();
+    final var osAsyncClients = new LinkedHashMap<String, OpenSearchAsyncClient>();
 
     tenantConfigs.forEach(
         (tenantId, config) -> {
@@ -42,18 +46,21 @@ public record SearchClients(
           } else if (dbType.isOpenSearch()) {
             final var connector = new OpensearchConnector(config);
             osClients.put(tenantId, connector.createClient());
+            osAsyncClients.put(tenantId, connector.createAsyncClient());
           } else {
             throw new SearchClientConnectException(
                 "Physical tenant secondary storage currently only supports ElasticSearch or OpenSearch");
           }
         });
 
-    return new SearchClients(esClients, osClients);
+    return new SearchClients(esClients, osClients, osAsyncClients);
   }
 
   @Override
   public void close() throws Exception {
-    CloseHelper.closeAll(esClients.values());
+    CloseHelper.closeAll(
+        esClients.values().stream().map(ElasticsearchClient::_transport).toList());
     CloseHelper.closeAll(osClients.values().stream().map(ApiClient::_transport).toList());
+    CloseHelper.closeAll(osAsyncClients.values().stream().map(ApiClient::_transport).toList());
   }
 }
