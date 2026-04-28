@@ -14,6 +14,7 @@ import {navigateToApp} from '@pages/UtilitiesPage';
 import {captureScreenshot, captureFailureVideo} from '@setup';
 import {LOGIN_CREDENTIALS} from 'utils/constants';
 import {cleanupResources} from 'utils/resourceCleanup';
+import {jsonHeaders, buildUrl} from 'utils/http';
 
 const ALPHA_TOOL_NAME = 'alpha-tool-name';
 const BRAVO_TOOL_NAME = 'bravo-tool-name';
@@ -21,12 +22,32 @@ const BRAVO_TOOL_NAME = 'bravo-tool-name';
 test.describe('Identity MCP Processes', () => {
   const deployedResourceKeys: string[] = [];
 
-  test.beforeAll(async () => {
+  test.beforeAll(async ({request}) => {
     const alphaResult = await deploy(['./resources/mcpProcessAlpha.bpmn']);
     deployedResourceKeys.push(alphaResult.processes[0].processDefinitionKey);
 
     const bravoResult = await deploy(['./resources/mcpProcessBravo.bpmn']);
     deployedResourceKeys.push(bravoResult.processes[0].processDefinitionKey);
+
+    await expect(async () => {
+      const res = await request.post(
+        buildUrl('/message-subscriptions/search'),
+        {
+          headers: jsonHeaders(),
+          data: {filter: {toolName: {$exists: true}}},
+        },
+      );
+      expect(res.status()).toBe(200);
+      const json = await res.json();
+      const toolNames = json.items.map(
+        (item: {toolName: string}) => item.toolName,
+      );
+      expect(toolNames).toContain(ALPHA_TOOL_NAME);
+      expect(toolNames).toContain(BRAVO_TOOL_NAME);
+    }).toPass({
+      intervals: [5_000, 10_000, 15_000],
+      timeout: 30_000,
+    });
   });
 
   test.beforeEach(async ({page, loginPage}) => {
