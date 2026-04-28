@@ -102,7 +102,7 @@
     <version.spring-security>6.5.10</version.spring-security>
     <!--  Adding spring-security.version to ensure Spring Boot's BOM honors the override regardless of import order.  -->
     <spring-security.version>${version.spring-security}</spring-security.version>
-    <version.spring-boot>3.5.13</version.spring-boot>
+    <version.spring-boot>3.5.14</version.spring-boot>
     <version.logback>1.5.25</version.logback>
     <version.tomcat>10.1.44</version.tomcat>
     <version.concurrentunit>0.4.6</version.concurrentunit>
