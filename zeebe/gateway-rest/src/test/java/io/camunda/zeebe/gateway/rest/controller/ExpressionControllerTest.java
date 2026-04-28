@@ -260,4 +260,76 @@ public class ExpressionControllerTest extends RestControllerTest {
         .expectBody()
         .json(expectedBody, JsonCompareMode.STRICT);
   }
+
+  @Test
+  void shouldEvaluateExpressionWithProcessInstanceKey() {
+    // given
+    final var expressionRecord = mock(ExpressionRecord.class);
+    when(expressionRecord.getExpression()).thenReturn("=x");
+    when(expressionRecord.getResultValue()).thenReturn("1");
+    when(expressionRecord.getWarnings()).thenReturn(List.of());
+
+    when(expressionServices.evaluateExpression(any(ExpressionEvaluationRequest.class), any()))
+        .thenReturn(CompletableFuture.completedFuture(expressionRecord));
+
+    final var request =
+        """
+        {
+            "expression": "=x",
+            "tenantId": "tenant1",
+            "processInstanceKey": "2251799813685249"
+        }""";
+
+    // when / then
+    webClient
+        .post()
+        .uri(EXPRESSION_URL)
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isOk();
+
+    verify(expressionServices).evaluateExpression(requestCaptor.capture(), any());
+    final var captured = requestCaptor.getValue();
+    assertThat(captured.processInstanceKey()).isEqualTo(2251799813685249L);
+    assertThat(captured.elementInstanceKey()).isNull();
+  }
+
+  @Test
+  void shouldEvaluateExpressionWithElementInstanceKey() {
+    // given
+    final var expressionRecord = mock(ExpressionRecord.class);
+    when(expressionRecord.getExpression()).thenReturn("=x");
+    when(expressionRecord.getResultValue()).thenReturn("1");
+    when(expressionRecord.getWarnings()).thenReturn(List.of());
+
+    when(expressionServices.evaluateExpression(any(ExpressionEvaluationRequest.class), any()))
+        .thenReturn(CompletableFuture.completedFuture(expressionRecord));
+
+    final var request =
+        """
+        {
+            "expression": "=x",
+            "tenantId": "tenant1",
+            "elementInstanceKey": "2251799813685300"
+        }""";
+
+    // when / then
+    webClient
+        .post()
+        .uri(EXPRESSION_URL)
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isOk();
+
+    verify(expressionServices).evaluateExpression(requestCaptor.capture(), any());
+    final var captured = requestCaptor.getValue();
+    assertThat(captured.elementInstanceKey()).isEqualTo(2251799813685300L);
+    assertThat(captured.processInstanceKey()).isNull();
+  }
 }
