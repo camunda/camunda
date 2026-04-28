@@ -13,30 +13,20 @@ import static org.mockito.Mockito.verify;
 import org.apache.catalina.connector.Connector;
 import org.apache.tomcat.util.buf.EncodedSolidusHandling;
 import org.junit.jupiter.api.Test;
-import org.mockito.ArgumentCaptor;
-import org.springframework.boot.tomcat.TomcatConnectorCustomizer;
-import org.springframework.boot.tomcat.servlet.TomcatServletWebServerFactory;
-import org.springframework.boot.web.server.WebServerFactoryCustomizer;
 
 class TomcatEncodedSlashConfigTest {
 
   @Test
-  void shouldConfigurePassthroughForEncodedSlashes() {
+  void shouldConfigureDecodeForEncodedSlashes() {
     // given
     final var config = new TomcatEncodedSlashConfig();
-    final WebServerFactoryCustomizer<TomcatServletWebServerFactory> customizer =
-        config.encodedSlashCustomizer();
-    final var factory = mock(TomcatServletWebServerFactory.class);
+    final var customizer = config.encodedSlashConnectorCustomizer();
+    final var connector = mock(Connector.class);
 
     // when
-    customizer.customize(factory);
+    customizer.customize(connector);
 
     // then
-    final var captor = ArgumentCaptor.forClass(TomcatConnectorCustomizer.class);
-    verify(factory).addConnectorCustomizers(captor.capture());
-
-    final var connector = mock(Connector.class);
-    captor.getValue().customize(connector);
-    verify(connector).setEncodedSolidusHandling(EncodedSolidusHandling.PASS_THROUGH.getValue());
+    verify(connector).setEncodedSolidusHandling(EncodedSolidusHandling.DECODE.getValue());
   }
 }
