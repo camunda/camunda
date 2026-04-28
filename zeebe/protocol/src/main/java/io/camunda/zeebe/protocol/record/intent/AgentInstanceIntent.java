@@ -28,13 +28,13 @@ package io.camunda.zeebe.protocol.record.intent;
  *
  * <ul>
  *   <li>{@link #CREATE} / {@link #CREATED} — agent instance enters {@code INITIALIZING}.
- *   <li>{@link #DISCOVER_TOOLS} / {@link #TOOLS_DISCOVERED} — agent enters {@code TOOL_DISCOVERY}
+ *   <li>{@link #DISCOVER_TOOLS} / {@link #DISCOVERING_TOOLS} — agent enters {@code TOOL_DISCOVERY}
  *       to enumerate available tools.
- *   <li>{@link #THINK} / {@link #THOUGHT} — agent enters {@code THINKING}; the connector is about
+ *   <li>{@link #THINK} / {@link #THINKING} — agent enters {@code THINKING}; the connector is about
  *       to (or just did) call the LLM.
- *   <li>{@link #CALL_TOOL} / {@link #TOOL_CALLED} — agent enters {@code TOOL_CALLING}; the LLM
- *       chose a tool. Carries the metric deltas accrued during the just-finished {@code THINKING}
- *       phase (one model call + tokens).
+ *   <li>{@link #CALL_TOOLS} / {@link #TOOL_CALLING} — agent enters {@code TOOL_CALLING}; the LLM
+ *       chose one or more tools. Carries the metric deltas accrued during the just-finished {@code
+ *       THINKING} phase (one model call + tokens).
  *   <li>{@link #WAIT_FOR_INPUT} / {@link #WAITING_FOR_INPUT} — agent enters {@code IDLE}; the LLM
  *       returned a final answer and the agent is awaiting external input. Carries the metric deltas
  *       from the just-finished {@code THINKING} phase.
@@ -61,7 +61,7 @@ package io.camunda.zeebe.protocol.record.intent;
  * <h2>Trade-offs vs. generic UPDATE/UPDATED</h2>
  *
  * <p><b>Pros:</b> self-describing event stream; per-intent payload validation (e.g. {@code
- * CALL_TOOL} can require {@code toolCalls=1}); no redundant {@code status} field needed on the
+ * CALL_TOOLS} can require {@code toolCalls>=1}); no redundant {@code status} field needed on the
  * event (intent encodes it); easier downstream filtering.
  *
  * <p><b>Cons:</b> every new state requires an intent pair (protocol churn); transitions are
@@ -73,13 +73,13 @@ public enum AgentInstanceIntent implements Intent {
   CREATED(1, true),
 
   DISCOVER_TOOLS(2, false),
-  TOOLS_DISCOVERED(3, true),
+  DISCOVERING_TOOLS(3, true),
 
   THINK(4, false),
-  THOUGHT(5, true),
+  THINKING(5, true),
 
-  CALL_TOOL(6, false),
-  TOOL_CALLED(7, true),
+  CALL_TOOLS(6, false),
+  TOOL_CALLING(7, true),
 
   WAIT_FOR_INPUT(8, false),
   WAITING_FOR_INPUT(9, true),

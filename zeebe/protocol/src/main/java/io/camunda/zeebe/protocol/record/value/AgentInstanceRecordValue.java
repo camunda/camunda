@@ -140,7 +140,7 @@ public interface AgentInstanceRecordValue extends RecordValue, ProcessInstanceRe
    * }</pre>
    *
    * <p>In the state-aligned intent design, status is redundant with the latest intent ({@code
-   * TOOLS_DISCOVERED} → {@code TOOL_DISCOVERY}, {@code THOUGHT} → {@code THINKING}, etc.). It is
+   * DISCOVERING_TOOLS} → {@code TOOL_DISCOVERY}, {@code THINKING} → {@code THINKING}, etc.). It is
    * retained for entity-snapshot queries that don't want to derive state from intent history.
    */
   enum AgentInstanceStatus {
