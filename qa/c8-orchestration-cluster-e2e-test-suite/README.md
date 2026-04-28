@@ -253,7 +253,17 @@ We welcome contributions! To contribute:
 
 - Follow the POM pattern
 - Test cases must involve at least one core component
-- Reviewer must be the someone from the Test Automation Team and a product team developer
+- Reviewer must be someone from the Test Automation Team and a product team developer
+
+> [!IMPORTANT]
+> **Do not request a review until all relevant tests have been run and pass.**
+> Before assigning reviewers to your PR:
+> 1. Run the [on-demand workflow](https://github.com/camunda/camunda/actions/workflows/c8-orchestration-cluster-e2e-tests-on-demand.yml) against your branch.
+> 2. Wait for the workflow to complete.
+> 3. Verify all tests pass (or document any known failures with a clear explanation in the PR description).
+> 4. Only then request a review.
+>
+> PRs assigned for review without a completed test run will be returned to the author.
 
 ### Project Board
 
