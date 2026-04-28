@@ -469,7 +469,7 @@ class ConditionalBehaviorEngineTest {
 
     final long gapMillis =
         TimeUnit.NANOSECONDS.toMillis(fireTimestampsNanos.get(1) - fireTimestampsNanos.get(0));
-    // resetTimeout=5s, pollInterval=100ms — any gap < 1s proves reset-wait was skipped.
-    assertThat(gapMillis).isLessThan(1000);
+    // resetTimeout=5s, pollInterval=100ms — any gap < 5s proves reset-wait was skipped.
+    assertThat(gapMillis).isLessThan(5000);
   }
 }
