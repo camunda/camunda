@@ -140,8 +140,12 @@ public final class BpmnVariableMappingBehavior {
           .map(
               localScopeVars -> {
                 // For multi-instance inner activities, scopeKey == elementInstanceKey.
+                // For activities directly inside an ad-hoc sub-process inner instance, the flow
+                // scope carries variables that were set local to that scope
+                // on activation (e.g. `toolCall`, `toolCallResult` for the AI Agent connector).
                 final DirectBuffer resultDoc;
-                if (isMultiInstanceActivity(elementInstanceKey)) {
+                if (isMultiInstanceActivity(elementInstanceKey)
+                    || isAdHocSubProcessInnerInstance(context)) {
                   resultDoc = localScopeVars;
                 } else {
                   final DirectBuffer parentScopeVars =
@@ -199,6 +203,17 @@ public final class BpmnVariableMappingBehavior {
 
   private boolean isMultiInstanceActivity(final long elementInstanceKey) {
     return elementInstanceState.getInstance(elementInstanceKey).getMultiInstanceLoopCounter() > 0;
+  }
+
+  private boolean isAdHocSubProcessInnerInstance(final BpmnElementContext context) {
+    final var flowScopeKey = context.getFlowScopeKey();
+    if (flowScopeKey < 0) {
+      return false;
+    }
+    final var flowScopeInstance = elementInstanceState.getInstance(flowScopeKey);
+    return flowScopeInstance != null
+        && BpmnElementType.AD_HOC_SUB_PROCESS_INNER_INSTANCE
+            == flowScopeInstance.getValue().getBpmnElementType();
   }
 
   private boolean isConnectedToEventBasedGateway(final ExecutableFlowNode element) {
