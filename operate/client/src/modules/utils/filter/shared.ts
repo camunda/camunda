@@ -11,6 +11,7 @@ type ProcessInstanceFilterField =
   | 'processDefinitionVersion'
   | 'processInstanceKey'
   | 'businessId'
+  | 'businessIdOperator'
   | 'parentProcessInstanceKey'
   | 'errorMessage'
   | 'incidentErrorHashCode'
@@ -34,6 +35,7 @@ type ProcessInstanceFilters = {
   processDefinitionVersion?: string;
   processInstanceKey?: string;
   businessId?: string;
+  businessIdOperator?: string;
   parentProcessInstanceKey?: string;
   errorMessage?: string;
   incidentErrorHashCode?: number;
@@ -58,6 +60,7 @@ const PROCESS_INSTANCE_FILTER_FIELDS: ProcessInstanceFilterField[] = [
   'processDefinitionVersion',
   'processInstanceKey',
   'businessId',
+  'businessIdOperator',
   'parentProcessInstanceKey',
   'errorMessage',
   'incidentErrorHashCode',
