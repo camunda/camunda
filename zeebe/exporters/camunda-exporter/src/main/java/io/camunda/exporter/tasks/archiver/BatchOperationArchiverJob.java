@@ -18,12 +18,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 
 public class BatchOperationArchiverJob extends ArchiverJob<ArchiveBatch.BasicArchiveBatch> {
 
   private final BatchOperationTemplate batchOperationTemplate;
   private final List<BatchOperationDependant> batchOperationDependants;
+  private final Logger logger;
 
   public BatchOperationArchiverJob(
       final ArchiverRepository repository,
@@ -44,6 +46,7 @@ public class BatchOperationArchiverJob extends ArchiverJob<ArchiveBatch.BasicArc
         batchOperationDependants.stream()
             .sorted(Comparator.comparing(BatchOperationDependant::getFullQualifiedName))
             .toList(); // sort to ensure the execution order is stable
+    this.logger = logger;
   }
 
   @Override
@@ -71,16 +74,30 @@ public class BatchOperationArchiverJob extends ArchiverJob<ArchiveBatch.BasicArc
   @Override
   protected Map<String, List<String>> createIdsByFieldMap(
       final IndexTemplateDescriptor templateDescriptor, final BasicArchiveBatch batch) {
-    final String field =
-        switch (templateDescriptor) {
-          case final BatchOperationTemplate ignored -> BatchOperationTemplate.ID;
-          case final BatchOperationDependant dependant ->
-              dependant.getBatchOperationDependantField();
-          default ->
-              throw new IllegalArgumentException(
-                  "Unsupported template descriptor: " + templateDescriptor.getClass().getName());
-        };
-    return Map.of(field, batch.ids());
+    final String field;
+    final List<String> ids;
+
+    switch (templateDescriptor) {
+      case final BatchOperationTemplate ignored:
+        field = BatchOperationTemplate.ID;
+        ids = batch.ids();
+        break;
+      case final BatchOperationDependant dependant:
+        field = dependant.getBatchOperationDependantField();
+        ids = batch.ids().stream().filter(StringUtils::isNumeric).toList();
+        final int skipped = batch.ids().size() - ids.size();
+        if (skipped > 0) {
+          logger.debug(
+              "Skipping {} non-numeric batch operation ID(s) when archiving batch dependents from {} index.",
+              skipped,
+              dependant.getFullQualifiedName());
+        }
+        break;
+      default:
+        throw new IllegalArgumentException(
+            "Unsupported template descriptor: " + templateDescriptor.getClass().getName());
+    }
+    return Map.of(field, ids);
   }
 
   private CompletableFuture<Void> archiveBatchDependants(final BasicArchiveBatch batch) {
