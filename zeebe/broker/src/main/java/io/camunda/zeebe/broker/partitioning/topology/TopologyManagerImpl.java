@@ -270,7 +270,14 @@ public final class TopologyManagerImpl extends Actor
   private MemberId resolveMemberId(final int nodeId) {
     return membershipService.getMembers().stream()
         .map(Member::id)
-        .filter(id -> MemberId.extractNodeId(id) == nodeId)
+        .filter(
+            id -> {
+              try {
+                return MemberId.extractNodeId(id) == nodeId;
+              } catch (final NumberFormatException e) {
+                return false;
+              }
+            })
         .findFirst()
         .orElseGet(
             () -> {
