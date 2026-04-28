@@ -367,6 +367,11 @@ public class NoopSearchClientsProxy implements SearchClientsProxy {
   }
 
   @Override
+  public MessageSubscriptionEntity getMessageSubscription(final long key) {
+    return null;
+  }
+
+  @Override
   public AuditLogEntity getAuditLog(final String id) {
     return null;
   }
