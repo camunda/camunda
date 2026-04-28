@@ -139,12 +139,11 @@ sanitize_k8s_label() {
 }
 
 # Label to easily find related namespaces
-kubectl label namespace "$namespace" "camunda.io/purpose=load-test" --overwrite
+kubectl label namespace "$namespace" camunda.io/purpose=load-test --overwrite
 
 # Label namespace with author (based on git author)
-raw_git_author=$(git config user.name || echo "unknown")
-git_author=$(sanitize_k8s_label "$raw_git_author")
-kubectl label namespace "$namespace" created-by="$git_author" --overwrite
+git_author=$(compute_git_author)
+kubectl label namespace "$namespace" camunda.io/created-by="$git_author" --overwrite
 
 # Label namespace with TTL deadline (default: 1 day from now)
 # Try GNU date format first (Linux), then BSD/macOS format
@@ -175,6 +174,7 @@ sed_inplace "s/__NAMESPACE__/$namespace/" load-test-values.yaml
 sed_inplace "s/__STORAGE_TYPE__/$secondaryStorage/" Makefile
 sed_inplace "s/__ENABLE_OPTIMIZE__/$enable_optimize/" Makefile
 sed_inplace "s/__AVAILABILITY_ZONE__/$availability_zone/" *.yaml
+sed_inplace "s/__AUTHOR__/$git_author/" *.yaml
 
 # Add/update helm repositories
 helm repo add camunda https://helm.camunda.io/ --force-update

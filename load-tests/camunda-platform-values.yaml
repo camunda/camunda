@@ -14,6 +14,9 @@
 ################################################### Global cluster configuration
 ########################################################################################
 global:
+  commonLabels:
+    camunda.io/created-by: __AUTHOR__
+    camunda.io/purpose: load-test
   # Our default is ELASTICSEARCH
   # We need to explicitly enable ELS as per default this is disabled now
   # THIS GETS OVERRIDDEN IN THE OTHER VALUES FILES, e.g. for OpenSearch and RDBMS
