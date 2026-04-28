@@ -12,6 +12,7 @@ import io.camunda.exporter.utils.ExporterUtil;
 import io.camunda.webapps.schema.entities.ProcessEntity;
 import io.camunda.webapps.schema.entities.ProcessFlowNodeEntity;
 import io.camunda.zeebe.exporter.common.cache.ExporterEntityCache;
+import io.camunda.zeebe.exporter.common.cache.process.CachedInputSpecItem;
 import io.camunda.zeebe.exporter.common.cache.process.CachedProcessEntity;
 import io.camunda.zeebe.exporter.common.utils.ProcessCacheUtil;
 import io.camunda.zeebe.model.bpmn.instance.FlowNode;
@@ -88,14 +89,18 @@ public class ProcessHandler implements ExportHandler<ProcessEntity, Process> {
 
     final boolean hasUserTasks;
     final Map<String, Map<String, String>> elementExtensionProperties;
+    final Map<String, List<CachedInputSpecItem>> elementInputSpecifications;
     if (reader != null) {
       final var flowNodes = reader.extractFlowNodes();
       extractProcessModelData(reader, entity, flowNodes);
       hasUserTasks = ProcessModelReader.hasUserTasks(flowNodes);
       elementExtensionProperties = ProcessModelReader.extractExtensionProperties(flowNodes);
+      elementInputSpecifications =
+          ProcessCacheUtil.toCachedInputSpecMap(reader.extractAllElementInputSpecs());
     } else {
       hasUserTasks = true;
       elementExtensionProperties = Map.of();
+      elementInputSpecifications = Map.of();
     }
 
     // update local cache so that the process info is available immediately to the process instance
@@ -108,7 +113,8 @@ public class ProcessHandler implements ExportHandler<ProcessEntity, Process> {
             entity.getCallActivityIds(),
             getFlowNodesMap(entity.getFlowNodes()),
             hasUserTasks,
-            elementExtensionProperties);
+            elementExtensionProperties,
+            elementInputSpecifications);
     processCache.put(process.getProcessDefinitionKey(), cachedProcessEntity);
   }
 

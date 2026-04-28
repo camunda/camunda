@@ -8,6 +8,7 @@
 package io.camunda.db.rdbms.write.util;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.Map;
 import org.slf4j.Logger;
@@ -16,36 +17,37 @@ import org.slf4j.LoggerFactory;
 public class MapSerializer {
 
   private static final Logger LOG = LoggerFactory.getLogger(MapSerializer.class);
+  private static final ObjectMapper MAPPER = new ObjectMapper();
 
-  public static String serialize(final Map<String, String> map) {
+  public static String serialize(final Object map) {
     if (map == null) {
       return null;
     }
 
-    final ObjectMapper mapper = new ObjectMapper();
     String serialized = null;
     try {
-      serialized = mapper.writeValueAsString(map);
+      serialized = MAPPER.writeValueAsString(map);
     } catch (final JsonProcessingException e) {
-      LOG.error("Failed to serialize map!", e);
+      LOG.error("Failed to serialize object!", e);
     }
 
     return serialized;
   }
 
   public static Map<String, String> deserialize(final String serialized) {
-    final ObjectMapper mapper = new ObjectMapper();
+    return deserialize(serialized, new TypeReference<>() {});
+  }
+
+  public static <T> T deserialize(final String serialized, final TypeReference<T> type) {
     if (serialized == null || serialized.isEmpty()) {
       return null;
     }
 
-    Map<String, String> map = null;
     try {
-      map = mapper.readValue(serialized, Map.class);
+      return MAPPER.readValue(serialized, type);
     } catch (final JsonProcessingException e) {
       LOG.error("Failed to deserialize map!", e);
+      return null;
     }
-
-    return map;
   }
 }

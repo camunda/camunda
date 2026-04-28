@@ -117,6 +117,7 @@ class ProcessCacheImplIT {
             List.of("Banana", "Cherry", "apple"),
             expectedFlowNodesMap,
             false,
+            Map.of(),
             Map.of());
     assertThat(process).isPresent().get().isEqualTo(expectedCachedProcessEntity);
   }

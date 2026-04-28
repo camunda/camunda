@@ -9,6 +9,7 @@ package io.camunda.zeebe.exporter.common.utils;
 
 import io.camunda.search.entities.ProcessDefinitionEntity;
 import io.camunda.zeebe.exporter.common.cache.ExporterEntityCache;
+import io.camunda.zeebe.exporter.common.cache.process.CachedInputSpecItem;
 import io.camunda.zeebe.exporter.common.cache.process.CachedProcessEntity;
 import io.camunda.zeebe.exporter.common.cache.process.ProcessDiagramData;
 import io.camunda.zeebe.model.bpmn.instance.BaseElement;
@@ -120,11 +121,17 @@ public final class ProcessCacheUtil {
       final boolean hasUserTasks = ProcessModelReader.hasUserTasks(flowNodes);
       final Map<String, Map<String, String>> elementExtensionProperties =
           ProcessModelReader.extractExtensionProperties(flowNodes);
+      final Map<String, List<CachedInputSpecItem>> elementInputSpecifications =
+          toCachedInputSpecMap(reader.extractAllElementInputSpecs());
       return new ProcessDiagramData(
-          callActivityIds, flowNodesMap, hasUserTasks, elementExtensionProperties);
+          callActivityIds,
+          flowNodesMap,
+          hasUserTasks,
+          elementExtensionProperties,
+          elementInputSpecifications);
     }
 
-    return new ProcessDiagramData(List.of(), Map.of(), true, Map.of());
+    return new ProcessDiagramData(List.of(), Map.of(), true, Map.of(), Map.of());
   }
 
   public static List<String> sortedCallActivityIds(final Collection<CallActivity> callActivities) {
@@ -171,5 +178,21 @@ public final class ProcessCacheUtil {
       return null;
     }
     return extensionProperties.get(EXTENSION_PROPERTY_INBOUND_TYPE);
+  }
+
+  public static Map<String, List<CachedInputSpecItem>> toCachedInputSpecMap(
+      final Map<String, List<ProcessModelReader.InputSpecItem>> source) {
+    final Map<String, List<CachedInputSpecItem>> result = new HashMap<>();
+    source.forEach(
+        (elementId, items) ->
+            result.put(
+                elementId,
+                items.stream()
+                    .map(
+                        i ->
+                            new CachedInputSpecItem(
+                                i.name(), i.description(), i.type(), i.required(), i.schema()))
+                    .toList()));
+    return result;
   }
 }

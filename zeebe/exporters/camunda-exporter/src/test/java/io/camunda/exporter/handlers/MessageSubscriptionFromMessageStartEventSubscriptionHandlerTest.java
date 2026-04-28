@@ -161,7 +161,7 @@ final class MessageSubscriptionFromMessageStartEventSubscriptionHandlerTest {
         .thenReturn(
             Optional.of(
                 new CachedProcessEntity(
-                    processName, 3, "v3", List.of(), Map.of(), false, Map.of())));
+                    processName, 3, "v3", List.of(), Map.of(), false, Map.of(), Map.of())));
 
     final ImmutableMessageStartEventSubscriptionRecordValue value =
         ImmutableMessageStartEventSubscriptionRecordValue.builder()
@@ -207,7 +207,8 @@ final class MessageSubscriptionFromMessageStartEventSubscriptionHandlerTest {
                     List.of(),
                     Map.of(),
                     false,
-                    Map.of(startEventId, extProps))));
+                    Map.of(startEventId, extProps),
+                    Map.of())));
 
     final ImmutableMessageStartEventSubscriptionRecordValue value =
         ImmutableMessageStartEventSubscriptionRecordValue.builder()

@@ -8,9 +8,12 @@
 package io.camunda.search.clients.transformers.entity;
 
 import io.camunda.search.clients.transformers.ServiceTransformer;
+import io.camunda.search.entities.MessageSubscriptionEntity.InputSpecItem;
 import io.camunda.search.entities.MessageSubscriptionEntity.MessageSubscriptionType;
 import io.camunda.webapps.schema.entities.messagesubscription.MessageSubscriptionEntity;
 import io.camunda.webapps.schema.entities.messagesubscription.MessageSubscriptionState;
+import java.util.List;
+import java.util.Objects;
 import org.apache.commons.lang3.EnumUtils;
 
 public class MessageSubscriptionEntityTransformer
@@ -38,7 +41,8 @@ public class MessageSubscriptionEntityTransformer
         value.getProcessDefinitionVersion(),
         value.getExtensionProperties(),
         value.getToolName(),
-        value.getInboundConnectorType());
+        value.getInboundConnectorType(),
+        toInputSpecItems(value.getInputSpecification()));
   }
 
   private io.camunda.search.entities.MessageSubscriptionEntity.MessageSubscriptionState
@@ -70,5 +74,19 @@ public class MessageSubscriptionEntityTransformer
           "Unknown MessageSubscriptionType: " + messageSubscriptionType);
     }
     return type;
+  }
+
+  private List<InputSpecItem> toInputSpecItems(
+      final List<MessageSubscriptionEntity.InputSpecItem> items) {
+    if (items == null) {
+      return null;
+    }
+    return items.stream()
+        .filter(Objects::nonNull)
+        .map(
+            i ->
+                new InputSpecItem(
+                    i.getName(), i.getDescription(), i.getType(), i.isRequired(), i.getSchema()))
+        .toList();
   }
 }

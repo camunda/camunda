@@ -9,7 +9,9 @@ package io.camunda.search.entities;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import java.time.OffsetDateTime;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
@@ -31,7 +33,8 @@ public record MessageSubscriptionEntity(
     Integer processDefinitionVersion,
     Map<String, String> extensionProperties,
     String toolName,
-    String inboundConnectorType)
+    String inboundConnectorType,
+    List<InputSpecItem> inputSpecification)
     implements TenantOwnedEntity {
 
   public MessageSubscriptionEntity {
@@ -39,6 +42,7 @@ public record MessageSubscriptionEntity(
     // <collection> result map or a LEFT JOIN) by calling .add() on the existing instance.
     // Immutable defaults (e.g. Map.of()) would cause UnsupportedOperationException at runtime.
     extensionProperties = extensionProperties != null ? extensionProperties : new HashMap<>();
+    inputSpecification = inputSpecification != null ? inputSpecification : new ArrayList<>();
     // Pre-8.10 rows have no messageSubscriptionType stored; default them to PROCESS_EVENT.
     messageSubscriptionType =
         messageSubscriptionType != null
@@ -69,6 +73,7 @@ public record MessageSubscriptionEntity(
     private Map<String, String> extensionProperties;
     private String toolName;
     private String inboundConnectorType;
+    private List<InputSpecItem> inputSpecification;
 
     public Builder messageSubscriptionKey(final Long messageSubscriptionKey) {
       this.messageSubscriptionKey = messageSubscriptionKey;
@@ -141,6 +146,11 @@ public record MessageSubscriptionEntity(
       return this;
     }
 
+    public Builder inputSpecification(final List<InputSpecItem> inputSpecification) {
+      this.inputSpecification = inputSpecification;
+      return this;
+    }
+
     public Builder dateTime(final OffsetDateTime dateTime) {
       this.dateTime = dateTime;
       return this;
@@ -180,7 +190,8 @@ public record MessageSubscriptionEntity(
           processDefinitionVersion,
           extensionProperties,
           toolName,
-          inboundConnectorType);
+          inboundConnectorType,
+          inputSpecification);
     }
   }
 
@@ -195,4 +206,7 @@ public record MessageSubscriptionEntity(
     START_EVENT,
     PROCESS_EVENT
   }
+
+  public record InputSpecItem(
+      String name, String description, String type, boolean required, String schema) {}
 }

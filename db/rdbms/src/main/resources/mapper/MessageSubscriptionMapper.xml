@@ -45,7 +45,8 @@
     PROCESS_DEFINITION_VERSION,
     EXTENSION_PROPERTIES,
     TOOL_NAME,
-    INBOUND_CONNECTOR_TYPE
+    INBOUND_CONNECTOR_TYPE,
+    INPUT_SPECIFICATION
     FROM ${prefix}MESSAGE_SUBSCRIPTION
 
     <include refid="io.camunda.db.rdbms.sql.MessageSubscriptionMapper.searchAndAuthFilter" />
@@ -197,6 +198,7 @@
     <result column="EXTENSION_PROPERTIES" property="serializedExtensionProperties" javaType="java.lang.String" />
     <result column="TOOL_NAME" property="toolName" javaType="java.lang.String" />
     <result column="INBOUND_CONNECTOR_TYPE" property="inboundConnectorType" javaType="java.lang.String" />
+    <result column="INPUT_SPECIFICATION" property="serializedInputSpecification" javaType="java.lang.String" />
   </resultMap>
 
 
@@ -220,7 +222,8 @@
                                                PROCESS_DEFINITION_VERSION,
                                                EXTENSION_PROPERTIES,
                                                TOOL_NAME,
-                                               INBOUND_CONNECTOR_TYPE
+                                               INBOUND_CONNECTOR_TYPE,
+                                               INPUT_SPECIFICATION
     )
     VALUES (
             #{messageSubscriptionKey},
@@ -241,7 +244,8 @@
             #{processDefinitionVersion},
             #{serializedExtensionProperties},
             #{toolName},
-            #{inboundConnectorType}
+            #{inboundConnectorType},
+            #{serializedInputSpecification}
     )
   </insert>
 
@@ -262,7 +266,8 @@
         PROCESS_DEFINITION_VERSION = #{processDefinitionVersion},
         EXTENSION_PROPERTIES = #{serializedExtensionProperties},
         TOOL_NAME = #{toolName},
-        INBOUND_CONNECTOR_TYPE = #{inboundConnectorType}
+        INBOUND_CONNECTOR_TYPE = #{inboundConnectorType},
+        INPUT_SPECIFICATION = #{serializedInputSpecification}
     WHERE MESSAGE_SUBSCRIPTION_KEY = #{messageSubscriptionKey}
   </update>
 
