@@ -33,6 +33,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
@@ -266,11 +267,13 @@ public class SchemaManager implements CloseableSilently {
   }
 
   private void updateIndexSettings(final IndexDescriptor indexDescriptor) {
-    final var indexSettingsFromConfig = getIndexSettingsFromConfig(indexDescriptor.getIndexName());
+
     if (indexDescriptor instanceof final IndexTemplateDescriptor indexTemplateDescriptor) {
       searchEngineClient.updateIndexTemplateSettings(
-          indexTemplateDescriptor, indexSettingsFromConfig);
+          indexTemplateDescriptor,
+          getIndexTemplateSettingsFromConfig(indexDescriptor.getIndexName()));
     }
+    final var indexSettingsFromConfig = getIndexSettingsFromConfig(indexDescriptor.getIndexName());
     searchEngineClient.putSettings(
         List.of(indexDescriptor),
         Map.of(
@@ -364,7 +367,7 @@ public class SchemaManager implements CloseableSilently {
   private void createIndexTemplate(final IndexTemplateDescriptor descriptor) {
     try {
       searchEngineClient.createIndexTemplate(
-          descriptor, getIndexSettingsFromConfig(descriptor.getIndexName()), true);
+          descriptor, getIndexTemplateSettingsFromConfig(descriptor.getIndexName()), true);
       LOG.debug(
           "Index template '{}', has been created / already exists", descriptor.getTemplateName());
 
@@ -403,7 +406,7 @@ public class SchemaManager implements CloseableSilently {
             "Updating template: '{}'", ((IndexTemplateDescriptor) descriptor).getTemplateName());
         searchEngineClient.createIndexTemplate(
             (IndexTemplateDescriptor) descriptor,
-            getIndexSettingsFromConfig(descriptor.getIndexName()),
+            getIndexTemplateSettingsFromConfig(descriptor.getIndexName()),
             false);
       } else {
         LOG.info(
@@ -453,6 +456,18 @@ public class SchemaManager implements CloseableSilently {
     settings.setTemplatePriority(config.index().getTemplatePriority());
     final var refreshInterval = getRefreshIntervalFromConfig(indexName);
     settings.setRefreshInterval(refreshInterval);
+    return settings;
+  }
+
+  private IndexConfiguration getIndexTemplateSettingsFromConfig(final String indexName) {
+    final var settings = getIndexSettingsFromConfig(indexName);
+    if (IndexConfiguration.BIG_INDEX_NAMES.contains(indexName)) {
+      final int shards =
+          Optional.ofNullable(System.getenv("BIG_TEMPLATE_NUMBER_OF_SHARDS"))
+              .map(Integer::parseInt)
+              .orElse(settings.getNumberOfShards());
+      settings.setNumberOfShards(shards);
+    }
     return settings;
   }
 
