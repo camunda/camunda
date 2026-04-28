@@ -235,38 +235,67 @@ Daily stress tests run against the state of the **main** branch via the [Camunda
 
 ### Ad-hoc load tests
 
-Ad-hoc load tests can be triggered in three ways:
+On top of the previous scenarios, we support running ad-hoc load tests. They can be either set up by labeling an existing pull-request (PR) at the mono repository with the **benchmark** label, using the [Camunda load test GitHub workflow](https://github.com/camunda/camunda/actions/workflows/camunda-load-test.yml), or deploying the [Camunda Platform](https://github.com/camunda/camunda-platform-helm) and [load test](https://github.com/camunda/camunda-load-tests-helm) Helm Charts [manually](setup/README.md).
 
-1. **Label a PR** with the [**benchmark**](https://github.com/camunda/camunda/labels/benchmark) label — triggers the [PR load test workflow](https://github.com/camunda/camunda/blob/main/.github/workflows/camunda-pr-load-test.yaml), which builds a Docker image from the PR branch and deploys a load test. No customization is possible.
-2. **Trigger the [Camunda load test workflow](https://github.com/camunda/camunda/actions/workflows/camunda-load-test.yml) manually** — the easiest way to get full customization (branch, version, TTL, scenario, existing image, Helm args).
-3. **Deploy manually** — maximum flexibility; see the [setup README](setup/README.md). For SaaS clusters, see [load-testing Camunda SaaS](setup/README.md#load-testing-camunda-saas).
+**Goal:** The goal of these ad-hoc load tests is to have a quick way to validate certain changes (reducing the feedback loop). The intentions can be manifold, may it be stability/reliability, performance, or something else.
 
-**Goal:** Quick validation of specific changes, reducing the feedback loop for stability, reliability, or performance concerns.
+**Validation:** The more general [Zeebe Dashboard](https://dashboard.benchmark.camunda.cloud/d/zeebe-dashboard/zeebe?orgId=1) should be used to observe and validate the performance of the different load tests. If performance is the motivator of such a test, it might be helpful to use the [Camunda Performance](https://dashboard.benchmark.camunda.cloud/d/camunda-benchmarks/camunda-performance?orgId=1) Dashboard.
 
-**Validation:** Use the [Zeebe Dashboard](https://dashboard.benchmark.camunda.cloud/d/zeebe-dashboard/zeebe?orgId=1) for general monitoring. For performance-focused tests, the [Camunda Performance Dashboard](https://dashboard.benchmark.camunda.cloud/d/camunda-benchmarks/camunda-performance?orgId=1) is more useful.
+**Requirement:** Please make sure that load test namespaces are always prefixed with your initials, to allow us to identify who created the tests and reach out if necessary. Note that the `c8-` namespace prefix is added implicitly by the tooling (due to cluster access policies). For example, a name like `pp-stable-vms-october` will result in the Kubernetes namespace `c8-pp-stable-vms-october`.
 
-**Requirement:** Always prefix the namespace with your initials so we can identify ownership. The `c8-` prefix is added implicitly by the tooling. Example: `pp-stable-vms-october` → Kubernetes namespace `c8-pp-stable-vms-october`.
+#### Labeling a PR
 
-#### Triggering the load test workflow
+It is as easy as it sounds; we can label an existing PR with the [**benchmark**](https://github.com/camunda/camunda/labels/benchmark) label, which triggers a [GitHub Workflow](https://github.com/camunda/camunda/blob/main/.github/workflows/camunda-pr-load-test.yaml). The workflow will build a new Docker image, based on the PR branch, and deploy a new load test against this version.
+
+This method allows no specific configuration or adjustment. If this is needed, triggering the [Camunda load test GitHub workflow](https://github.com/camunda/camunda/actions/workflows/camunda-load-test.yml) is recommended.
+
+#### Trigger Camunda load test GitHub Workflow
+
+The [Camunda load test GitHub workflow](https://github.com/camunda/camunda/actions/workflows/camunda-load-test.yml) is the **easiest** way to run a load test for a specific branch or main (default) with more customization. We support setting up load tests for different Camunda/Zeebe versions by selecting the specific workflow revision as part of the workflow dispatch form (UI).
+
+It allows high customization:
+
+* Specification of the Camunda/Zeebe version to test against (by selecting the workflow revision) — will make sure to use the right Camunda Platform Helm Chart version and values file.
+* Specification of the branch to test against (default: main) — will build a Docker image based on the specified branch and be used for the cluster under test and load test applications.
+* Specification of the time to live (TTL) for the load test — making sure that the load test is automatically cleaned up after the specified time.
+* Specification of an existing Docker image to use — making it possible to reuse existing images.
+* Specification of arbitrary Helm arguments — making it possible to customize the load test set up.
 
 ![load-test-gha](../docs/testing/assets/load-test-gha.png)
 
-To run a load test for an **older version** (until 8.6), select the respective workflow revision in the dispatch form:
+##### Creating load test for old versions
+
+With the Camunda load test GitHub workflow, it is also possible to create load tests for older versions (until 8.6).
 
 ![1-main](../docs/testing/assets/1-main.png)
 
-Select the revision for the desired version:
+As part of the workflow dispatch form (UI), select the respective workflow revision for the desired version.
 
 ![2-choosing](../docs/testing/assets/2-choosing.png)
 
-This ensures the right Helm chart version and values file are used. Specify a branch, tag, or commit SHA as the ref — it doesn't need to match the stable branch exactly but should be version-compatible.
+This will make sure that the right Camunda Platform Helm Chart version and values file are used for the load test set up. Respective values files can be found in the stable branches and will be picked up by the GitHub Workflow on the different stable branches.
+
+We can reference tags, branches or commit SHAs as ref. It must not necessarily correspond to the stable branch, but should be compatible with the version. This will be used to build the Docker image for the respective cluster under test and load test applications.
 
 ![3-branch](../docs/testing/assets/3-branch.png)
 
-Always use an identifiable name prefix:
+One not optional parameter is the name of the load test. Please make sure to use an identifiable prefix (for example your initials), to make sure we can identify who created the load test, in case we need to reach out.
 
 ![4-name](../docs/testing/assets/4-name.png)
 
-Monitor progress in the Actions tab:
+After submitting the form you can observe the progress of the load test creation in the Actions tab of the mono repository.
 
 ![5-build](../docs/testing/assets/5-build.png)
+
+#### Creating manually
+
+As a last resort, if more customization is needed, it is also possible to manually deploy a benchmark.
+For further details on this topic, follow the [README](setup/README.md) in our `load-tests/setup` directory.
+
+#### SaaS Test
+
+One use case for manually creating load tests is running them against a SaaS cluster.
+
+As a precondition for such tests, you need to create a cluster in SaaS (the stage doesn't matter, may it be **DEV**, **INT,** or **PROD**). Additionally, we need client credentials deployed with the SaaS load tests, such that the starters and workers can connect to the right cluster.
+
+For further details on this topic, follow the [README](setup/README.md#load-testing-camunda-saas) in our `load-tests/setup` directory.
