@@ -186,8 +186,27 @@ public abstract class ArchiverJobIT<T extends ArchiverJob<?>> {
       final SearchClientAdapter client,
       final ExporterEntity<?> entity)
       throws IOException {
+    verifyNotMoved(templateDescriptor, client, entity, (String) null);
+  }
+
+  protected void verifyNotMoved(
+      final IndexTemplateDescriptor templateDescriptor,
+      final SearchClientAdapter client,
+      final ExporterEntity<?> parent,
+      final ExporterEntity<?> entity)
+      throws IOException {
+    verifyNotMoved(templateDescriptor, client, entity, parent.getId());
+  }
+
+  private void verifyNotMoved(
+      final IndexTemplateDescriptor templateDescriptor,
+      final SearchClientAdapter client,
+      final ExporterEntity<?> entity,
+      final String routing)
+      throws IOException {
     final var originalIndexEntity =
-        client.get(entity.getId(), templateDescriptor.getFullQualifiedName(), entity.getClass());
+        client.get(
+            entity.getId(), routing, templateDescriptor.getFullQualifiedName(), entity.getClass());
     assertThat(originalIndexEntity)
         .describedAs(
             "Expected %s to still be in %s", entity, templateDescriptor.getFullQualifiedName())
