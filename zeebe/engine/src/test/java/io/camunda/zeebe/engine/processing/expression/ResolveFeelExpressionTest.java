@@ -988,14 +988,15 @@ public class ResolveFeelExpressionTest {
   }
 
   @Test
-  public void shouldResolveProcessScopeVariablesWhenElementInstanceKeyProvided() {
-    // given - variable "score" is on the process instance scope (visible from any element in it)
+  public void shouldPrioritizeElementInstanceVariablesOverProcessInstanceVariables() {
+    // given - process instance has "score = 1", same name will be set locally on the
+    // service task scope below
     ENGINE_RULE
         .deployment()
         .withXmlResource(
-            Bpmn.createExecutableProcess("elementScopeResolvesProcessVars")
+            Bpmn.createExecutableProcess("priorityElementOverProcess")
                 .startEvent()
-                .serviceTask("elementTask", t -> t.zeebeJobType("elementTest"))
+                .serviceTask("task", t -> t.zeebeJobType("test"))
                 .endEvent()
                 .done())
         .deploy();
@@ -1003,8 +1004,8 @@ public class ResolveFeelExpressionTest {
     final var processInstanceKey =
         ENGINE_RULE
             .processInstance()
-            .ofBpmnProcessId("elementScopeResolvesProcessVars")
-            .withVariables(Map.of("score", 42))
+            .ofBpmnProcessId("priorityElementOverProcess")
+            .withVariables(Map.of("score", 1))
             .create();
 
     final var elementInstanceKey =
@@ -1014,7 +1015,16 @@ public class ResolveFeelExpressionTest {
             .getFirst()
             .getKey();
 
-    // when - element instance key is provided; process-scope variable is visible from it
+    // and - "score = 99" written locally onto the element instance scope, shadowing
+    // the process-scope value of the same name
+    ENGINE_RULE
+        .variables()
+        .ofScope(elementInstanceKey)
+        .withDocument(Map.of("score", 99))
+        .withLocalSemantic()
+        .update();
+
+    // when - resolved through the element instance key, scope walk-up starts at the element
     final var record =
         ENGINE_RULE
             .expression()
@@ -1022,11 +1032,11 @@ public class ResolveFeelExpressionTest {
             .withElementInstanceKey(elementInstanceKey)
             .resolve();
 
-    // then - process-scope variable is resolved through the element instance
+    // then - element-scope variable shadows the process-scope one
     Assertions.assertThat(record)
         .hasIntent(ExpressionIntent.EVALUATED)
         .hasRecordType(RecordType.EVENT);
-    assertThat(record.getValue().getResultValue()).isEqualTo(42);
+    assertThat(record.getValue().getResultValue()).isEqualTo(99);
   }
 
   @Test

@@ -19,10 +19,12 @@ import java.util.Optional;
 
 public final class ExpressionValidator {
 
+  private static final long UNSET_KEY = -1L;
+
   private static final String ERROR_MESSAGE_EMPTY_EXPRESSION = "No expression provided";
   private static final String ERROR_MESSAGE_BLANK_EXPRESSION =
       "The expression must not be blank or empty";
-  private static final String ERROR_MESSAGE_EITHER_OR =
+  private static final String ERROR_MESSAGE_BOTH_KEYS_PROVIDED =
       "Either 'processInstanceKey' or 'elementInstanceKey' must be provided, not both";
   private static final String ERROR_MESSAGE_PROCESS_INSTANCE_NOT_FOUND =
       "No process instance found with key '%d'";
@@ -45,79 +47,61 @@ public final class ExpressionValidator {
 
   public Either<Rejection, ValidatedCommand> validate(final TypedRecord<ExpressionRecord> command) {
     final var record = command.getValue();
-
-    return validateExpressionText(record)
-        .flatMap(this::parseExpression)
+    return parseValidExpression(record)
         .flatMap(
             expression ->
-                resolveScopedContext(record)
-                    .map(resolvedRecord -> new ValidatedCommand(expression, resolvedRecord)));
+                validateScope(record)
+                    .map(tenantId -> new ValidatedCommand(expression, record, tenantId)));
   }
 
-  private Either<Rejection, String> validateExpressionText(final ExpressionRecord record) {
-    final var expression = record.getExpression();
+  /** Combines text-level validation and FEEL parsing — they always travel together. */
+  private Either<Rejection, Expression> parseValidExpression(final ExpressionRecord record) {
+    final var text = record.getExpression();
 
-    // No expression field at all → caller omitted it from the request body.
-    if (expression == null) {
+    if (text == null) {
       return reject(RejectionType.INVALID_ARGUMENT, ERROR_MESSAGE_EMPTY_EXPRESSION);
     }
-
-    // Present but whitespace-only → reject separately to give a clearer error.
-    if (expression.isBlank()) {
+    if (text.isBlank()) {
       return reject(RejectionType.INVALID_ARGUMENT, ERROR_MESSAGE_BLANK_EXPRESSION);
     }
 
-    return Either.right(expression);
-  }
-
-  private Either<Rejection, Expression> parseExpression(final String expressionText) {
-    final var expression = expressionLanguage.parseExpression(expressionText);
-
-    // FEEL parser rejected the input (syntax error, unknown function, etc.).
+    final var expression = expressionLanguage.parseExpression(text);
     if (!expression.isValid()) {
       return reject(
           RejectionType.INVALID_ARGUMENT,
           "Failed to parse expression: " + expression.getFailureMessage());
     }
-
     return Either.right(expression);
   }
 
-  private Either<Rejection, ExpressionRecord> resolveScopedContext(final ExpressionRecord record) {
-    return resolveScopeTarget(record)
-        .flatMap(
-            target ->
-                target
-                    // A scope was provided → look it up and validate tenant ownership.
-                    .map(scopedTarget -> resolveInstance(record, scopedTarget))
-                    // No scope provided → record passes through unchanged.
-                    .orElseGet(() -> Either.right(record)));
-  }
+  /**
+   * Identifies the (optional) scope and, if present, validates that the caller's tenant owns it.
+   * Returns {@code Optional.empty()} when no scope was supplied — this is a valid state, not an
+   * error.
+   */
+  private Either<Rejection, Optional<String>> validateScope(final ExpressionRecord record) {
+    final boolean hasProcessInstanceKey = isSet(record.getProcessInstanceKey());
+    final boolean hasElementInstanceKey = isSet(record.getElementInstanceKey());
 
-  private Either<Rejection, Optional<ScopeTarget>> resolveScopeTarget(
-      final ExpressionRecord record) {
-    final boolean hasProcessInstanceKey = record.getProcessInstanceKey() >= 0;
-    final boolean hasElementInstanceKey = record.getElementInstanceKey() >= 0;
-
-    // Both keys are mutually exclusive — supplying both is a client-side error.
+    // Mutually exclusive — supplying both is a client-side error.
     if (hasProcessInstanceKey && hasElementInstanceKey) {
-      return reject(RejectionType.INVALID_ARGUMENT, ERROR_MESSAGE_EITHER_OR);
+      return reject(RejectionType.INVALID_ARGUMENT, ERROR_MESSAGE_BOTH_KEYS_PROVIDED);
     }
 
-    // Neither key set → evaluation runs without an instance scope (cluster-only variables).
+    // Neither set → evaluation runs without an instance scope.
     if (!hasProcessInstanceKey && !hasElementInstanceKey) {
       return Either.right(Optional.empty());
     }
 
-    // Exactly one key is set → classify it into the matching scope target.
-    return Either.right(
-        Optional.of(
-            hasElementInstanceKey
-                ? ScopeTarget.elementInstance(record.getElementInstanceKey())
-                : ScopeTarget.processInstance(record.getProcessInstanceKey())));
+    final var target =
+        hasElementInstanceKey
+            ? ScopeTarget.elementInstance(record.getElementInstanceKey())
+            : ScopeTarget.processInstance(record.getProcessInstanceKey());
+
+    return validateInstanceTenant(record, target).map(Optional::of);
   }
 
-  private Either<Rejection, ExpressionRecord> resolveInstance(
+  private Either<Rejection, String> validateInstanceTenant(
       final ExpressionRecord record, final ScopeTarget target) {
     final var instance = elementInstanceState.getInstance(target.key());
 
@@ -129,25 +113,27 @@ public final class ExpressionValidator {
     final var providedTenantId = record.getTenantId();
     final var actualTenantId = instance.getValue().getTenantId();
 
-    // Caller supplied a tenant that doesn't own the instance → treat as not-found
-    // to avoid confirming the instance exists under a different tenant.
+    // Tenant mismatch is also reported as not-found so we don't confirm the instance
+    // exists under a different tenant.
     if (providedTenantId != null
         && !providedTenantId.isEmpty()
         && !providedTenantId.equals(actualTenantId)) {
       return reject(RejectionType.NOT_FOUND, target.tenantMismatchMessage(providedTenantId));
     }
 
-    // Infer the tenant from the instance so downstream auth / variable resolution
-    // always operate against the instance's owning tenant.
-    record.setTenantId(actualTenantId);
-    return Either.right(record);
+    return Either.right(actualTenantId);
+  }
+
+  private static boolean isSet(final long key) {
+    return key != UNSET_KEY;
   }
 
   private static <T> Either<Rejection, T> reject(final RejectionType type, final String message) {
     return Either.left(new Rejection(type, message));
   }
 
-  public record ValidatedCommand(Expression expression, ExpressionRecord record) {}
+  public record ValidatedCommand(
+      Expression expression, ExpressionRecord record, Optional<String> resolvedTenantId) {}
 
   private record ProcessInstanceScopeTarget(long key) implements ScopeTarget {
     @Override

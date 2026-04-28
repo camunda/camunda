@@ -53,11 +53,20 @@ public final class ExpressionEvaluateProcessor implements TypedRecordProcessor<E
   public void processRecord(final TypedRecord<ExpressionRecord> command) {
     validator
         .validate(command)
+        .map(this::applyResolvedTenant)
         .flatMap(validated -> authorize(command, validated))
         .flatMap(this::evaluate)
         .ifRightOrLeft(
             resolvedRecord -> acceptCommand(command, resolvedRecord),
             rejection -> rejectCommand(command, rejection));
+  }
+
+  private ValidatedCommand applyResolvedTenant(final ValidatedCommand validated) {
+    // Infer the tenant from the resolved instance so downstream auth and variable
+    // resolution always operate against the instance's owning tenant. Done here
+    // (in the processor) rather than in the validator to keep validation side effect free.
+    validated.resolvedTenantId().ifPresent(validated.record()::setTenantId);
+    return validated;
   }
 
   private Either<Rejection, ValidatedCommand> authorize(
