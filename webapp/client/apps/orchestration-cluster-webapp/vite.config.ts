@@ -6,11 +6,15 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+/// <reference types="vitest" />
+/// <reference types="vite/client" />
+
 import {defineConfig, type PluginOption} from 'vite';
 import {devtools} from '@tanstack/devtools-vite';
 import {tanstackRouter} from '@tanstack/router-plugin/vite';
 import viteReact from '@vitejs/plugin-react';
 import sbom from 'rollup-plugin-sbom';
+import {playwright} from '@vitest/browser-playwright';
 
 const basePlugins: PluginOption[] = [
 	devtools(),
@@ -52,6 +56,21 @@ const config = defineConfig(({mode}) => ({
 			input: {
 				index: mode === 'visual-regression' ? './index.html' : './index.prod.html',
 			},
+		},
+	},
+	test: {
+		globals: true,
+		browser: {
+			enabled: true,
+			screenshotFailures: false,
+			headless: true,
+			provider: playwright(),
+			instances: [
+				{
+					browser: 'chromium',
+					setupFiles: ['./src/testing-modules/vitest.setup.ts'],
+				},
+			],
 		},
 	},
 }));

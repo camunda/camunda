@@ -1,3 +1,4 @@
 {
-	"extends": "./tsconfig.browser.json"
+	"files": [],
+	"references": [{"path": "./tsconfig.browser.json"}, {"path": "./tsconfig.vitest.json"}]
 }
