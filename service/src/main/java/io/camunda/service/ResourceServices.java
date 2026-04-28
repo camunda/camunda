@@ -138,6 +138,20 @@ public final class ResourceServices extends ApiServices<ResourceServices> {
     return fetchDeployedResource(resourceKey, authentication, true);
   }
 
+  public io.camunda.search.query.SearchQueryResult<DeployedResourceEntity> search(
+      final io.camunda.search.query.DeployedResourceQuery query,
+      final CamundaAuthentication authentication) {
+    try {
+      return deployedResourceSearchClient
+          .withSecurityContext(
+              securityContextProvider.provideSecurityContext(
+                  authentication, RESOURCE_READ_AUTHORIZATION))
+          .searchDeployedResources(query);
+    } catch (final CamundaSearchException e) {
+      throw ErrorMapper.mapSearchError(e);
+    }
+  }
+
   private CompletableFuture<DeployedResourceEntity> fetchDeployedResource(
       final long resourceKey,
       final CamundaAuthentication authentication,
