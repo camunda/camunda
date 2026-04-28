@@ -15,7 +15,7 @@ const STORED_THEME = getStateLocally('theme');
 const INITIAL_THEME = isThemeOption(STORED_THEME) ? STORED_THEME : 'system';
 
 function isThemeOption(theme: unknown): theme is ThemeOption {
-	return ['system', 'dark', 'light'].includes(theme as string);
+	return ['system', 'dark', 'light'].includes(String(theme));
 }
 
 class Theme {
