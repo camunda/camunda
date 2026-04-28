@@ -129,11 +129,14 @@ const AvailableTaskItem = React.forwardRef<HTMLDivElement, Props>(
             <div className={cn(styles.flex, styles.flexColumn)}>
               <span className={styles.name}>{displayName}</span>
               <span className={styles.label}>{processDisplayName}</span>
-              {businessId !== null && (
-                <span className={styles.label} data-testid="business-id">
+              {businessId ? (
+                <span
+                  className={cn(styles.label, styles.labelPrimary)}
+                  data-testid="business-id"
+                >
                   {businessId}
                 </span>
-              )}
+              ) : null}
             </div>
             {decodedContext !== null && (
               <div className={cn(styles.flex, styles.flexColumn)}>
