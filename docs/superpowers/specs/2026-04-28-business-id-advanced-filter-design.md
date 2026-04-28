@@ -126,7 +126,7 @@ Returns `undefined` when the filter is inactive (empty value with a value-requir
 
 Two query params (both optional):
 
-- `businessId` — string, the value. Omitted when operator is `exists`/`doesNotExist`, and when operator is `equals` with an empty value (filter inactive).
+- `businessId` — string, the value. Omitted only when operator is `equals` with an empty value (filter inactive). When operator is `exists` or `doesNotExist`, any previously typed value is **preserved** in the URL so switching back to a value-required operator restores it; the value is just visually hidden and ignored by the API-shape helper.
 - `businessIdOperator` — one of `equals | notEqual | contains | exists | doesNotExist`. Omitted whenever operator is `equals` (regardless of whether `businessId` has a value), so legacy bookmarks of the form `?businessId=foo` from the previous commit continue to render correctly. Written to the URL only when operator is one of `notEqual | contains | exists | doesNotExist`.
 
 Parse rules (in `getProcessInstanceFilters` / `decisionsFilter`):
