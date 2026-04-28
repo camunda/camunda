@@ -72,4 +72,18 @@ public class MemberId extends NodeId {
     final var slash = id.lastIndexOf('/');
     return Integer.parseInt(slash >= 0 ? id.substring(slash + 1) : id);
   }
+
+  /**
+   * Validates that a {@link MemberId} is consistent with a zone, i.e. that the id starts with
+   * {@code "$zone/"}.
+   *
+   * @throws IllegalArgumentException if {@code zone} and {@code id} are both non-null but the id
+   *     does not start with the zone prefix
+   */
+  static void validateZonePrefix(final @Nullable String zone, final @Nullable MemberId id) {
+    if (zone != null && id != null && !id.id().startsWith(zone + "/")) {
+      throw new IllegalArgumentException(
+          String.format("Expected id to start with zone %s, but did not: id=%s", zone, id));
+    }
+  }
 }
