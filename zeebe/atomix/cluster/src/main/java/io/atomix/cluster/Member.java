@@ -29,6 +29,8 @@ import org.jspecify.annotations.Nullable;
 public class Member extends Node {
 
   private static final int UNKNOWN_TIMESTAMP = 0;
+  private static final String ZONE_ID_MISMATCH =
+      "Expected id to start with zone %s, but did not: id=%s";
 
   private final MemberId id;
   private final @Nullable String zone;
@@ -46,7 +48,9 @@ public class Member extends Node {
     nodeVersion = config.getNodeVersion();
     properties = new Properties();
     properties.putAll(config.getProperties());
-    MemberId.validateZonePrefix(zone, id);
+    if (id != null && !id.isInZone(zone)) {
+      throw new IllegalArgumentException(String.format(ZONE_ID_MISMATCH, zone, id));
+    }
   }
 
   protected Member(final MemberId id, final Address address) {
@@ -65,7 +69,9 @@ public class Member extends Node {
     this.id = checkNotNull(id, "id cannot be null");
     this.nodeVersion = nodeVersion;
     this.zone = zone;
-    MemberId.validateZonePrefix(zone, id);
+    if (id != null && !id.isInZone(zone)) {
+      throw new IllegalArgumentException(String.format(ZONE_ID_MISMATCH, zone, id));
+    }
     this.rack = rack;
     this.host = host;
     this.properties = properties;
