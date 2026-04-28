@@ -215,8 +215,9 @@ public class ConditionalBehaviorEngine {
     void evaluate() {
       if (isConditionMet()) {
         LOGGER.trace("Condition met for '{}', firing action at index {}", name, actionIndex.get());
-        fireAction();
-        waitForConditionReset();
+        if (fireAction()) {
+          waitForConditionReset();
+        }
       }
     }
 
@@ -252,9 +253,9 @@ public class ConditionalBehaviorEngine {
       }
     }
 
-    private void fireAction() {
+    private boolean fireAction() {
       if (actions.isEmpty()) {
-        return;
+        return false;
       }
       fireCount.incrementAndGet();
       final Runnable action = actions.get(clampToLastAction(actionIndex.get()));
@@ -263,9 +264,10 @@ public class ConditionalBehaviorEngine {
       } catch (final Throwable t) {
         failureCount.incrementAndGet();
         LOGGER.warn("Behavior '{}' action threw an exception, will retry", name, t);
-        return;
+        return false;
       }
       actionIndex.set(clampToLastAction(actionIndex.get() + 1));
+      return true;
     }
 
     private int clampToLastAction(final int index) {

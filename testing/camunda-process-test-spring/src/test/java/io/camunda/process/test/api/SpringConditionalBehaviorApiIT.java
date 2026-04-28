@@ -37,11 +37,13 @@ public class SpringConditionalBehaviorApiIT {
 
   @Test
   void shouldCompleteProcessWithConditionalBehaviors() {
-    CamundaAssert.setAssertionTimeout(Duration.ofSeconds(20));
+    // increase assertion timeout because the immediate loop-back occasionally activates the reset
+    // gate timeout of 5 seconds
+    CamundaAssert.setAssertionTimeout(Duration.ofSeconds(30));
+
     // Deploy
     client.newDeployResourceCommand().addProcessModel(MODEL, PROCESS_ID + ".bpmn").send().join();
 
-    // Setup conditional behaviors
     processTestContext
         .when(
             () ->
