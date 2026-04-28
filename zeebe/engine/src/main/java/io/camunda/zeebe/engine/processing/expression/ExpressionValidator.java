@@ -51,7 +51,9 @@ public final class ExpressionValidator {
         .flatMap(
             expression ->
                 validateScope(record)
-                    .map(tenantId -> new ValidatedCommand(expression, record, tenantId)));
+                    .map(
+                        resolvedInstance ->
+                            new ValidatedCommand(expression, record, resolvedInstance)));
   }
 
   /** Combines text-level validation and FEEL parsing — they always travel together. */
@@ -79,7 +81,8 @@ public final class ExpressionValidator {
    * Returns {@code Optional.empty()} when no scope was supplied — this is a valid state, not an
    * error.
    */
-  private Either<Rejection, Optional<String>> validateScope(final ExpressionRecord record) {
+  private Either<Rejection, Optional<ResolvedInstance>> validateScope(
+      final ExpressionRecord record) {
     final boolean hasProcessInstanceKey = isSet(record.getProcessInstanceKey());
     final boolean hasElementInstanceKey = isSet(record.getElementInstanceKey());
 
@@ -98,10 +101,10 @@ public final class ExpressionValidator {
             ? ScopeTarget.elementInstance(record.getElementInstanceKey())
             : ScopeTarget.processInstance(record.getProcessInstanceKey());
 
-    return validateInstanceTenant(record, target).map(Optional::of);
+    return validateInstance(record, target).map(Optional::of);
   }
 
-  private Either<Rejection, String> validateInstanceTenant(
+  private Either<Rejection, ResolvedInstance> validateInstance(
       final ExpressionRecord record, final ScopeTarget target) {
     final var instance = elementInstanceState.getInstance(target.key());
 
@@ -121,7 +124,8 @@ public final class ExpressionValidator {
       return reject(RejectionType.NOT_FOUND, target.tenantMismatchMessage(providedTenantId));
     }
 
-    return Either.right(actualTenantId);
+    return Either.right(
+        new ResolvedInstance(actualTenantId, instance.getValue().getBpmnProcessId()));
   }
 
   private static boolean isSet(final long key) {
@@ -133,7 +137,15 @@ public final class ExpressionValidator {
   }
 
   public record ValidatedCommand(
-      Expression expression, ExpressionRecord record, Optional<String> resolvedTenantId) {}
+      Expression expression,
+      ExpressionRecord record,
+      Optional<ResolvedInstance> resolvedInstance) {}
+
+  /**
+   * Metadata derived from the resolved scope instance — captured here so the processor can reuse it
+   * (tenant inference, authorization checks) without a second state lookup.
+   */
+  public record ResolvedInstance(String tenantId, String bpmnProcessId) {}
 
   private record ProcessInstanceScopeTarget(long key) implements ScopeTarget {
     @Override
