@@ -112,6 +112,52 @@ jobs:
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
           user_description: "team-core-features"
 
+  optimize-frontend-sbom-snyk:
+    name: "Tool / Front End - Snyk SBOM"
+    if: inputs.runFeTests
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions: { }  # GITHUB_TOKEN unused in this job
+    defaults:
+      run:
+        working-directory: optimize/client
+    env:
+      TEST_OWNER: Core Features
+      TEST_TYPE: Tool
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Print metadata
+        uses: ./.github/actions/print-metadata
+      - name: "Parse pom.xml for versions"
+        id: "pom_info"
+        uses: YunaBraska/java-info-action@575e99f42f2915cc62410c7917fef5558257042c # 3.0.1
+        with:
+          work-dir: ./optimize
+      - uses: camunda/infra-global-github-actions/setup-yarn-cache@main
+        with:
+          directory: optimize/client
+      - name: Generate and scan frontend SBOM
+        uses: ./.github/actions/frontend-sbom-snyk
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        with:
+          directory: optimize/client
+          package-manager: yarn
+          node-version: ${{ steps.pom_info.outputs.x_version_node }}
+          sbom-file: optimize/client/dist/cyclonedx/bom.json
+          project-name: Optimize frontend
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          user_description: "team-core-features"
+
   hadolint:
     if: inputs.runBeTests
     name: "Tool / Dockerfile / Hadolint"
