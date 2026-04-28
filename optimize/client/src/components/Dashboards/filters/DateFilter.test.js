@@ -9,9 +9,8 @@
 import React, {runAllEffects} from 'react';
 import {shallow} from 'enzyme';
 import {MenuItem, MenuItemSelectable} from '@carbon/react';
-import {MenuDropdown} from '@camunda/camunda-optimize-composite-components';
 
-import {DatePicker} from 'components';
+import {DatePicker, MenuDropdown} from 'components';
 
 import DateFilter from './DateFilter';
 import RollingFilter from './RollingFilter';

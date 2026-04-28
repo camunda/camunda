@@ -6,10 +6,10 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-export {default as useErrorHandling} from './useErrorHandling';
-export {default as useUser} from './useUser';
-export {default as useDocs} from './useDocs';
-export {default as useUiConfig} from './useUiConfig';
-export {default as useChangedState} from './useChangedState';
-export {useId} from './useId';
-export {useAttachedMenu} from './useAttachedMenu';
+import {useState} from 'react';
+
+export function useId() {
+  const [id] = useState((Math.random() + 1).toString(36));
+
+  return id;
+}
