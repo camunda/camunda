@@ -51,10 +51,28 @@ public enum ExecutionLatencyMetricsDoc implements ExtendedMeterDocumentation {
   },
 
   /**
-   * The execution time of processing a complete process instance. Publishes pre-computed
-   * percentiles (p50, p90, p99) rather than histogram buckets; see {@link ExecutionLatencyMetrics}.
+   * The execution time of processing a complete process instance. Publishes both SLO histogram
+   * buckets (for cluster-level aggregation via {@code histogram_quantile()}) and pre-computed
+   * percentiles (p50, p90, p99) for convenience; see {@link ExecutionLatencyMetrics}.
    */
   PROCESS_INSTANCE_EXECUTION {
+    private static final Duration[] BUCKETS = {
+      Duration.ofMillis(50),
+      Duration.ofMillis(75),
+      Duration.ofMillis(100),
+      Duration.ofMillis(250),
+      Duration.ofMillis(500),
+      Duration.ofMillis(750),
+      Duration.ofSeconds(1),
+      Duration.ofMillis(2500),
+      Duration.ofSeconds(5),
+      Duration.ofSeconds(10),
+      Duration.ofSeconds(15),
+      Duration.ofSeconds(30),
+      Duration.ofSeconds(45),
+      Duration.ofSeconds(60)
+    };
+
     @Override
     public String getDescription() {
       return "The execution time of processing a complete process instance";
@@ -72,7 +90,7 @@ public enum ExecutionLatencyMetricsDoc implements ExtendedMeterDocumentation {
 
     @Override
     public Duration[] getTimerSLOs() {
-      return new Duration[0];
+      return BUCKETS;
     }
   },
 
