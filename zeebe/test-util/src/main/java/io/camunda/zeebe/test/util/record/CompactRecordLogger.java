@@ -8,6 +8,7 @@
 package io.camunda.zeebe.test.util.record;
 
 import static io.camunda.zeebe.protocol.record.ValueType.AD_HOC_SUB_PROCESS_INSTRUCTION;
+import static io.camunda.zeebe.protocol.record.ValueType.AGENT_INSTANCE;
 import static io.camunda.zeebe.protocol.record.ValueType.ASYNC_REQUEST;
 import static io.camunda.zeebe.protocol.record.ValueType.AUTHORIZATION;
 import static io.camunda.zeebe.protocol.record.ValueType.CHECKPOINT;
@@ -73,6 +74,7 @@ import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceMigrationIntent;
 import io.camunda.zeebe.protocol.record.intent.scaling.ScaleIntent;
 import io.camunda.zeebe.protocol.record.value.AdHocSubProcessInstructionRecordValue;
+import io.camunda.zeebe.protocol.record.value.AgentInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.AsyncRequestRecordValue;
 import io.camunda.zeebe.protocol.record.value.AuthorizationRecordValue;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceMatcher;
@@ -184,6 +186,7 @@ public class CompactRecordLogger {
           entry(UPDATE_DENIED.name(), "UPDT_DENIED"),
           entry(SEQUENCE_FLOW_TAKEN.name(), "SQ_FLW_TKN"),
           entry(AD_HOC_SUB_PROCESS_INSTRUCTION.name(), "AHSP_INST"),
+          entry(AGENT_INSTANCE.name(), "AGENT_INST"),
           entry(PROCESS_INSTANCE_CREATION.name(), "CREA"),
           entry(PROCESS_INSTANCE_MODIFICATION.name(), "MOD"),
           entry(PROCESS_INSTANCE_MIGRATION.name(), "PI_MIGR"),
@@ -270,6 +273,7 @@ public class CompactRecordLogger {
         ValueType.PROCESS_MESSAGE_SUBSCRIPTION, this::summarizeProcessInstanceSubscription);
     valueLoggers.put(
         ValueType.AD_HOC_SUB_PROCESS_INSTRUCTION, this::summarizeAdHocSubProcessInstruction);
+    valueLoggers.put(ValueType.AGENT_INSTANCE, this::summarizeAgentInstance);
     valueLoggers.put(ValueType.VARIABLE, this::summarizeVariable);
     valueLoggers.put(ValueType.VARIABLE_DOCUMENT, this::summarizeVariableDocument);
     valueLoggers.put(ValueType.TIMER, this::summarizeTimer);
@@ -960,6 +964,19 @@ public class CompactRecordLogger {
             String.format(
                 " in ad-hoc sub-process [%s]", shortenKey(value.getAdHocSubProcessInstanceKey())));
     return builder.toString();
+  }
+
+  private String summarizeAgentInstance(final Record<?> record) {
+    final var value = (AgentInstanceRecordValue) record.getValue();
+    return new StringBuilder()
+        .append(String.format("[%s]", shortenKey(value.getAgentInstanceKey())))
+        .append(String.format(" \"%s\"", value.getElementId()))
+        .append(String.format(" %s", value.getStatus()))
+        .append(String.format(" tools=%d", value.getToolCalls()))
+        .append(String.format(" models=%d", value.getModelCalls()))
+        .append(String.format(" tokens=%d/%d", value.getInputTokens(), value.getOutputTokens()))
+        .append(formatTenant(value))
+        .toString();
   }
 
   private String summarizeVariable(final Record<?> record) {
