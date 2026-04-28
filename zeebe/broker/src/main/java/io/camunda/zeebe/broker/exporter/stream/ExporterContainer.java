@@ -209,12 +209,16 @@ final class ExporterContainer implements Controller {
         getId(),
         position,
         lastExportedPosition);
-    position = lastExportedPosition;
-    lastUnacknowledgedPosition = lastExportedPosition;
-    lastAcknowledgedPosition = lastExportedPosition;
-    lastExportedMetadata = null;
-    exportersState.setPosition(getId(), lastExportedPosition);
-    return replayControl.requestReplay(lastExportedPosition);
+
+    final boolean replayResult = replayControl.requestReplay(lastExportedPosition);
+    if (replayResult) {
+      position = lastExportedPosition;
+      lastUnacknowledgedPosition = lastExportedPosition;
+      lastAcknowledgedPosition = lastExportedPosition;
+      lastExportedMetadata = null;
+      exportersState.setPosition(getId(), lastExportedPosition);
+    }
+    return replayResult;
   }
 
   public String getId() {
