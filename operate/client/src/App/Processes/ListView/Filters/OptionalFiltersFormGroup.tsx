@@ -37,6 +37,7 @@ import {
   FieldContainer,
 } from 'modules/components/FiltersPanel/styled';
 import {Variable} from './VariableField';
+import {BusinessIdFilter} from './BusinessIdFilter';
 
 type OptionalFilter =
   | 'variable'
@@ -88,9 +89,8 @@ const OPTIONAL_FILTER_FIELDS: Record<
     ),
   },
   businessId: {
-    keys: ['businessId'],
+    keys: ['businessId', 'businessIdOperator'],
     label: 'Business ID',
-    type: 'text',
   },
   batchOperationId: {
     keys: ['batchOperationId'],
@@ -204,6 +204,8 @@ const OptionalFiltersFormGroup: React.FC<Props> = observer(
                 switch (filter) {
                   case 'variable':
                     return <Variable />;
+                  case 'businessId':
+                    return <BusinessIdFilter />;
                   case 'startDateRange':
                     return (
                       <DateRangeField
