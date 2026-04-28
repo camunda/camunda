@@ -8,6 +8,7 @@
 
 import {isValidJSON} from 'common/utils/isValidJSON';
 import {z} from 'zod';
+import {type BusinessIdFilterOperator} from './businessIdOperators';
 
 const customFiltersSchema = z.object({
   assignee: z
@@ -23,6 +24,10 @@ const customFiltersSchema = z.object({
   followUpDateFrom: z.coerce.date().optional(),
   followUpDateTo: z.coerce.date().optional(),
   taskId: z.string().trim().optional(),
+  businessId: z.string().trim().optional(),
+  businessIdOperator: z
+    .enum(['equals', 'notEqual', 'contains', 'exists', 'doesNotExist'])
+    .optional(),
   variables: z
     .array(
       z
@@ -74,6 +79,14 @@ const namedCustomFiltersSchema = customFiltersSchema.merge(
 
 type CustomFilters = z.infer<typeof customFiltersSchema>;
 type NamedCustomFilters = z.infer<typeof namedCustomFiltersSchema>;
+
+// Compile-time guard: zod literal list stays aligned with BusinessIdFilterOperator.
+type _ZodBusinessIdOperator = NonNullable<
+  z.infer<typeof customFiltersSchema>['businessIdOperator']
+>;
+const _alignment: _ZodBusinessIdOperator =
+  'equals' satisfies BusinessIdFilterOperator;
+void _alignment;
 
 export {customFiltersSchema, namedCustomFiltersSchema};
 export type {CustomFilters, NamedCustomFilters};
