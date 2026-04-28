@@ -18,7 +18,6 @@ import io.camunda.search.connect.tenant.SearchClients;
 import io.camunda.search.es.clients.ElasticsearchSearchClient;
 import io.camunda.search.os.clients.OpensearchSearchClient;
 import io.camunda.security.reader.ResourceAccessController;
-import io.camunda.spring.utils.ConditionalOnPhysicalTenantsEnabled;
 import io.camunda.webapps.schema.descriptors.IndexDescriptors;
 import io.camunda.zeebe.gateway.rest.config.GatewayRestConfiguration;
 import java.util.LinkedHashMap;
@@ -29,7 +28,6 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration(proxyBeanMethods = false)
-@ConditionalOnPhysicalTenantsEnabled
 public class PhysicalTenantSearchClientReadersConfiguration {
 
   @Bean
@@ -88,9 +86,10 @@ public class PhysicalTenantSearchClientReadersConfiguration {
     return Map.copyOf(readersByTenant);
   }
 
-  // TODO: reconcile with the CamundaSearchClients bean in SearchClientConfiguration
-  // when the class level @ConditionalOnPhysicalTenantsEnabled evaluates to true the conflict will
-  // need to be resolved and usages of the old CamundaSearchClients migrated over
+  // TODO: reconcile with the CamundaSearchClients bean in SearchClientConfiguration. The default
+  // beans (IndexDescriptors, SearchClientBasedQueryExecutor, documentReaders, camundaSearchClients)
+  // should be collapsed into the per-tenant ones (defaulting to "default" tenant). Tracked as a
+  // follow-up to keep this change reviewable.
   @Bean
   public CamundaSearchClients physicalTenantAwareCamundaSearchClients(
       @Qualifier("documentReaders") final SearchClientReaders defaultReaders,

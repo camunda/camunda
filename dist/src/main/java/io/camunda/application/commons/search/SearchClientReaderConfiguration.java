@@ -56,7 +56,6 @@ import io.camunda.search.clients.reader.VariableReader;
 import io.camunda.search.clients.transformers.ServiceTransformers;
 import io.camunda.search.connect.configuration.ConnectConfiguration;
 import io.camunda.search.connect.tenant.TenantConnectConfigResolver;
-import io.camunda.spring.utils.ConditionalOnPhysicalTenantsEnabled;
 import io.camunda.webapps.schema.descriptors.IndexDescriptors;
 import io.camunda.webapps.schema.descriptors.index.DeployedResourceIndex;
 import io.camunda.zeebe.gateway.rest.config.GatewayRestConfiguration;
@@ -80,7 +79,6 @@ public class SearchClientReaderConfiguration {
   }
 
   @Bean
-  @ConditionalOnPhysicalTenantsEnabled
   public Map<String, IndexDescriptors> physicalTenantScopedIndexDescriptors(
       final TenantConnectConfigResolver tenantConnectConfigResolver) {
     return tenantConnectConfigResolver.tenantConfigs().entrySet().stream()

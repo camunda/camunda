@@ -44,11 +44,7 @@ import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 
 @SpringJUnitConfig
-@TestPropertySource(
-    properties = {
-      "camunda.physical-tenants.enabled=true",
-      "camunda.data.secondary-storage.type=elasticsearch"
-    })
+@TestPropertySource(properties = {"camunda.data.secondary-storage.type=elasticsearch"})
 @Import({
   NativeSearchClientsConfiguration.class,
   SearchClientReaderConfiguration.class,
