@@ -109,15 +109,15 @@ public class AnnotationUtil {
   }
 
   public static List<ParameterInfo> getVariableParameters(final MethodInfo methodInfo) {
-    final List<ParameterInfo> result = new ArrayList<>();
-    result.addAll(methodInfo.getParametersFilteredByAnnotation(Variable.class));
-    return result;
+    return methodInfo.getParametersFilteredByAnnotation(Variable.class);
+  }
+
+  public static List<ParameterInfo> getDocumentParameters(final MethodInfo methodInfo) {
+    return methodInfo.getParametersFilteredByAnnotation(Document.class);
   }
 
   public static List<ParameterInfo> getVariablesAsTypeParameters(final MethodInfo methodInfo) {
-    final List<ParameterInfo> result = new ArrayList<>();
-    result.addAll(methodInfo.getParametersFilteredByAnnotation(VariablesAsType.class));
-    return result;
+    return methodInfo.getParametersFilteredByAnnotation(VariablesAsType.class);
   }
 
   public static boolean isVariablesAsType(final ParameterInfo parameterInfo) {
@@ -279,7 +279,14 @@ public class AnnotationUtil {
             .map(Optional::get)
             .map(VariableValue::getName)
             .toList());
-    return result;
+    result.addAll(
+        getDocumentParameters(methodInfo).stream()
+            .map(AnnotationUtil::getDocumentValue)
+            .filter(Optional::isPresent)
+            .map(Optional::get)
+            .map(DocumentValue::getName)
+            .toList());
+    return result.stream().distinct().toList();
   }
 
   private static String extractFieldName(final Field field) {
