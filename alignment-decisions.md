@@ -74,25 +74,30 @@ record has a field named `provider` that holds the same data.
 generic `type` and aligns with other engine records that use descriptive field
 names.
 
-## 5. Keep current status enum (IDLE, THINKING, CALLING_TOOL)
+## 5. Expand status enum to model the full agent lifecycle
 
-**Date**: 2026-04-24
-**Status**: Accepted
-**Context**: The tracing design derives a richer status model from the event
-stream (initializing, discovering, ready/idle, reasoning, calling_tool,
-responded, failed). Our engine record has three statuses.
+**Date**: 2026-04-28
+**Status**: Accepted (supersedes the 2026-04-24 decision to keep IDLE / THINKING
+/ CALLING_TOOL)
+**Context**: The original three-state enum (IDLE, THINKING, CALLING_TOOL) did
+not cover the initial state right after creation, the tool-discovery phase, or
+the deletion of an agent instance. Without explicit states the engine record
+could not distinguish "just created" from "idle awaiting input", and there was
+no terminal state for deleted instances.
 
-**Decision**: Keep the current enum. The engine status represents the
-BPMN-visible operational state. The tracing design explicitly states "Execution
-activity is determined by BPMN state, not by tracing events" (design.md section
-4). Fine-grained status derivation belongs to the tracing layer, not the engine
-record.
+**Decision**: Use the following states with these transitions:
 
-**Note**: The `initializing` and `discovering` states in the tracing design
-occur inside the connector before the engine's CREATE command is sent, so they
-are not applicable to the engine record. The `responded` and `failed` states
-map to BPMN lifecycle events (AHSP completion, incidents) rather than the agent
-instance's operational status.
+- `INITIALIZING` — initial state after creation, before the first update.
+- `INITIALIZING` → `TOOL_DISCOVERY` or `THINKING`.
+- `TOOL_DISCOVERY` → `THINKING`.
+- `THINKING` → `TOOL_CALLING` or `IDLE`.
+- `TOOL_CALLING` → `THINKING`.
+- `IDLE` → `THINKING`.
+- From any status → `DELETED` (terminal).
+
+The enum value `CALLING_TOOL` is renamed to `TOOL_CALLING` for naming
+consistency with `TOOL_DISCOVERY`. The default value of the status property
+becomes `INITIALIZING`.
 
 ## 6. Engine record limits are ahead of the tracing design
 

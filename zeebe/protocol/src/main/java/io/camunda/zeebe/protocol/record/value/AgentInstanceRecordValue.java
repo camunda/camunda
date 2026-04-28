@@ -100,10 +100,54 @@ public interface AgentInstanceRecordValue extends RecordValue, ProcessInstanceRe
    */
   long getMaxToolCalls();
 
-  /** The status of an agent instance. */
+  /**
+   * The status of an agent instance.
+   *
+   * <p>An agent instance starts in {@link #INITIALIZING} after creation. From there it transitions
+   * to either {@link #TOOL_DISCOVERY} (to discover the tools available to it) or directly to {@link
+   * #THINKING}. {@link #THINKING} is the central state from which the agent either issues tool
+   * calls ({@link #TOOL_CALLING}) or settles into {@link #IDLE} awaiting external input. Both
+   * {@link #TOOL_CALLING} and {@link #IDLE} only transition back to {@link #THINKING}. From any
+   * status the agent instance can be deleted, transitioning to {@link #DELETED}, which is terminal.
+   *
+   * <p>State diagram:
+   *
+   * <pre>{@code
+   *                  +----------------+
+   *                  | INITIALIZING   |
+   *                  +----------------+
+   *                     |          |
+   *                     v          v
+   *              +--------------+  |
+   *              |TOOL_DISCOVERY|  |
+   *              +--------------+  |
+   *                     |          |
+   *                     v          v
+   *                  +----------------+
+   *             +--->|    THINKING    |<---+
+   *             |    +----------------+    |
+   *             |       |          |       |
+   *             |       v          v       |
+   *             |  +---------+  +------+   |
+   *             +--|  IDLE   |  |TOOL_ |---+
+   *                +---------+  |CALLING|
+   *                             +------+
+   *
+   * (from any state) ----> DELETED  [terminal]
+   * }</pre>
+   */
   enum AgentInstanceStatus {
-    IDLE,
+    /** Initial state right after creation, before the first update from the connector. */
+    INITIALIZING,
+    /** Agent is discovering the tools available to it. */
+    TOOL_DISCOVERY,
+    /** Agent is reasoning, typically performing a model call. */
     THINKING,
-    CALLING_TOOL
+    /** Agent is executing a tool call. */
+    TOOL_CALLING,
+    /** Agent is waiting for external input (e.g. user response). */
+    IDLE,
+    /** Terminal state after the agent instance has been deleted. */
+    DELETED
   }
 }
