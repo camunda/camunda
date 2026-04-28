@@ -44,6 +44,10 @@ camunda:
     # regularly re-resolved and requests fan out across all gateway pod IPs.
     # Requires the deployment to target a headless service (see load-test-values.yaml).
     use-client-side-load-balancing: true
+    # At 5000 PI/sec with ~50ms REST latency, Little's Law requires ~250 concurrent connections.
+    # With client-side load balancing across multiple gateway pods the pool is shared across
+    # routes, so size for peak load with headroom. Override via CAMUNDA_MAX_HTTP_CONNECTIONS.
+    max-http-connections: ${CAMUNDA_MAX_HTTP_CONNECTIONS:500}
     # Since the starter doesn't need any job worker execution threads
     execution-threads: 0
     auth:

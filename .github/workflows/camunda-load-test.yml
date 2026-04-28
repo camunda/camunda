@@ -32,6 +32,7 @@ on:
         required: false
         type: choice
         options:
+          - custom
           - latency
           - realistic
           - typical

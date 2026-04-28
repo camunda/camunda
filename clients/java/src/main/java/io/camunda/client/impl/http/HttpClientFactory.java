@@ -117,7 +117,10 @@ public class HttpClientFactory {
         PoolingAsyncClientConnectionManagerBuilder.create()
             .setTlsStrategy(tlsStrategy)
             .setPoolConcurrencyPolicy(PoolConcurrencyPolicy.LAX)
-            .setMaxConnPerRoute(config.getMaxHttpConnections());
+            .setMaxConnPerRoute(config.getMaxHttpConnections())
+            // Allow total pool to span multiple routes (e.g. gateway pods under load balancing)
+            // without the per-route cap becoming the bottleneck via the total limit.
+            .setMaxConnTotal(config.getMaxHttpConnections() * 10);
 
     if (config.useClientSideLoadBalancing()) {
       connectionManagerBuilder.setDnsResolver(new RandomizedDnsResolver());
