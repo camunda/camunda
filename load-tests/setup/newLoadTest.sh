@@ -11,7 +11,7 @@ Usage: newLoadTest.sh <namespace> [secondaryStorage] [ttl_days] [enable_optimize
 
 Arguments:
   namespace          Base namespace name. Will be prefixed with "c8-" if missing.
-  secondaryStorage   Optional. One of: elasticsearch, opensearch, postgresql, mysql, mariadb, mssql, oracle, none. Default: elasticsearch.
+  secondaryStorage   Optional. One of: elasticsearch, opensearch, none. Default: elasticsearch.
   ttl_days           Optional. Positive integer for namespace TTL in days. Default: 1.
   enable_optimize    Optional. true|false to enable Optimize. Default: true.
   enable_single_zone Optional. true|false to deploy the cluster on a single zone. Default: true
@@ -21,7 +21,8 @@ Options:
 
 Examples:
   ./newLoadTest.sh demo
-  ./newLoadTest.sh perf opensearch 3 false
+  ./newLoadTest.sh perf opensearch 3 true
+
 EOF
 }
 
@@ -40,7 +41,7 @@ fi
 ### First parameter is used as namespace name
 ### For a new namespace a new folder will be created
 
-helm_chart="camunda-platform-8.10"
+helm_chart="camunda-platform-8.8"
 namespace="$1"
 
 # Add c8- prefix if not present
@@ -51,9 +52,9 @@ fi
 
 # Validate secondaryStorage value
 secondaryStorage="${2:-elasticsearch}"
-if [[ "$secondaryStorage" != "elasticsearch" && "$secondaryStorage" != "opensearch" && "$secondaryStorage" != "postgresql" && "$secondaryStorage" != "mysql" && "$secondaryStorage" != "mariadb" && "$secondaryStorage" != "mssql" && "$secondaryStorage" != "oracle" && "$secondaryStorage" != "none" ]]; then
+if [[ "$secondaryStorage" != "elasticsearch" && "$secondaryStorage" != "opensearch" && "$secondaryStorage" != "none" ]]; then
   echo "Error: Invalid secondary storage type '$secondaryStorage'"
-  echo "Allowed values are: elasticsearch, opensearch, postgresql, mysql, mariadb, mssql, oracle, none"
+  echo "Allowed values are: elasticsearch, opensearch, postgresql, none"
   exit 1
 fi
 
@@ -154,8 +155,8 @@ sed_inplace "s/__NAMESPACE__/$namespace/" Makefile
 sed_inplace "s/__NAMESPACE__/$namespace/" load-test-values.yaml
 sed_inplace "s/__STORAGE_TYPE__/$secondaryStorage/" Makefile
 sed_inplace "s/__ENABLE_OPTIMIZE__/$enable_optimize/" Makefile
-sed_inplace "s/__AVAILABILITY_ZONE__/$availability_zone/" *.yaml databases/*.yaml
-sed_inplace "s/__AUTHOR__/$git_author/" *.yaml databases/*.yaml
+sed_inplace "s/__AVAILABILITY_ZONE__/$availability_zone/" *.yaml
+sed_inplace "s/__AUTHOR__/$git_author/" *.yaml
 
 # Add/update helm repositories
 helm repo add camunda https://helm.camunda.io/ --force-update
