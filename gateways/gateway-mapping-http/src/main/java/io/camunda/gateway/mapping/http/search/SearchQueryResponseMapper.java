@@ -753,20 +753,14 @@ public final class SearchQueryResponseMapper {
   }
 
   public static ProcessInstanceResult toProcessInstance(final ProcessInstanceEntity p) {
-    // Several process-definition fields and `state` are @Nullable on the entity due to an
-    // empirically observed null on multi-partition batch-op-driven reads (root cause unidentified;
-    // tracked as follow-up). `startDate` is conditionally written on ELEMENT_ACTIVATING and absent
-    // on docs first created by a later intent. `hasIncident` is populated asynchronously by
-    // IncidentUpdateTask. Per 8.8 policy we fall back to spec-compliant sentinels rather than 500
-    // so rare data-layer gaps don't fail whole responses.
     return new ProcessInstanceResult()
         .processInstanceKey(keyToString(p.processInstanceKey()))
         .rootProcessInstanceKey(keyToStringOrNull(p.rootProcessInstanceKey()))
-        .processDefinitionId(requireNonNullElse(p.processDefinitionId(), ""))
+        .processDefinitionId(p.processDefinitionId())
         .processDefinitionName(p.processDefinitionName())
-        .processDefinitionVersion(requireNonNullElse(p.processDefinitionVersion(), -1))
+        .processDefinitionVersion(p.processDefinitionVersion())
         .processDefinitionVersionTag(p.processDefinitionVersionTag())
-        .processDefinitionKey(requireNonNullElse(keyToStringOrNull(p.processDefinitionKey()), ""))
+        .processDefinitionKey(keyToString(p.processDefinitionKey()))
         .parentProcessInstanceKey(keyToStringOrNull(p.parentProcessInstanceKey()))
         .parentElementInstanceKey(keyToStringOrNull(p.parentFlowNodeInstanceKey()))
         .startDate(requireNonNullElse(formatDateOrNull(p.startDate()), EPOCH_DATE_SENTINEL))

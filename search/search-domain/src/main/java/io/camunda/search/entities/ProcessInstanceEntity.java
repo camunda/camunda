@@ -18,21 +18,19 @@ import org.jspecify.annotations.Nullable;
 public record ProcessInstanceEntity(
     Long processInstanceKey,
     @Nullable Long rootProcessInstanceKey,
-    // empirically observed null in batch-op-driven reads on multi-partition clusters; root cause
-    // unidentified (exporter audit shows no write path producing null). Tracked as follow-up.
-    @Nullable String processDefinitionId,
+    String processDefinitionId,
     @Nullable String processDefinitionName,
-    // see processDefinitionId.
-    @Nullable Integer processDefinitionVersion,
+    Integer processDefinitionVersion,
     @Nullable String processDefinitionVersionTag,
-    // see processDefinitionId.
-    @Nullable Long processDefinitionKey,
+    Long processDefinitionKey,
     @Nullable Long parentProcessInstanceKey,
     @Nullable Long parentFlowNodeInstanceKey,
-    // only written on ELEMENT_ACTIVATING; absent on docs first created by a later intent.
+    // only written on ELEMENT_ACTIVATING; absent on docs first created by a later intent (e.g.
+    // batch-op listview entries or incident updates before the activating record is processed).
     @Nullable OffsetDateTime startDate,
     @Nullable OffsetDateTime endDate,
-    // see processDefinitionId.
+    // not always set on doc creation; the activating intent is what populates state, and other
+    // intents (batch-op chunk, incident updates) can create or update the doc before then.
     @Nullable ProcessInstanceState state,
     // not set by the primary handler; populated asynchronously by IncidentUpdateTask.
     @Nullable Boolean hasIncident,
@@ -44,6 +42,9 @@ public record ProcessInstanceEntity(
 
   public ProcessInstanceEntity {
     Objects.requireNonNull(processInstanceKey, "processInstanceKey");
+    Objects.requireNonNull(processDefinitionId, "processDefinitionId");
+    Objects.requireNonNull(processDefinitionVersion, "processDefinitionVersion");
+    Objects.requireNonNull(processDefinitionKey, "processDefinitionKey");
     Objects.requireNonNull(tenantId, "tenantId");
     // Mutable collections are required: MyBatis hydrates collection-mapped fields (e.g. from a
     // <collection> result map or a LEFT JOIN) by calling .add() on the existing instance.
