@@ -74,16 +74,13 @@ public class MemberId extends NodeId {
   }
 
   /**
-   * Validates that a {@link MemberId} is consistent with a zone, i.e. that the id starts with
-   * {@code "$zone/"}.
-   *
-   * @throws IllegalArgumentException if {@code zone} and {@code id} are both non-null but the id
-   *     does not start with the zone prefix
+   * Returns {@code true} if this member id belongs to the given zone, i.e. the id starts with
+   * {@code "$zone/"}. Always returns {@code true} when {@code zone} is {@code null}.
    */
-  static void validateZonePrefix(final @Nullable String zone, final @Nullable MemberId id) {
-    if (zone != null && id != null && !id.id().startsWith(zone + "/")) {
-      throw new IllegalArgumentException(
-          String.format("Expected id to start with zone %s, but did not: id=%s", zone, id));
+  public boolean isInZone(final @Nullable String zone) {
+    if (zone == null) {
+      return !id().contains("/");
     }
+    return id().startsWith(zone + "/");
   }
 }

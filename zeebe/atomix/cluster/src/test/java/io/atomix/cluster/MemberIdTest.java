@@ -19,7 +19,11 @@ package io.atomix.cluster;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 final class MemberIdTest {
 
@@ -100,6 +104,23 @@ final class MemberIdTest {
     // then
     assertThatThrownBy(() -> MemberId.extractNodeId(memberId))
         .isInstanceOf(NumberFormatException.class);
+  }
+
+  static Stream<Arguments> isInZoneCases() {
+    return Stream.of(
+        //          id            zone        expected
+        Arguments.of("us-east/7", "us-east", true), // matching zone
+        Arguments.of("us-east/7", "eu-west", false), // different zone
+        Arguments.of("7", "us-east", false), // zone set but id is bare
+        Arguments.of("7", null, true), // null zone, bare id
+        Arguments.of("us-east/1", null, false) // null zone, zoned id
+        );
+  }
+
+  @ParameterizedTest
+  @MethodSource("isInZoneCases")
+  void shouldCheckIsInZone(final String id, final String zone, final boolean expected) {
+    assertThat(MemberId.from(id).isInZone(zone)).isEqualTo(expected);
   }
 
   @Test
