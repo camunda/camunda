@@ -753,14 +753,19 @@ public final class SearchQueryResponseMapper {
   }
 
   public static ProcessInstanceResult toProcessInstance(final ProcessInstanceEntity p) {
+    // processDefinitionId/Version/Key are @Nullable on the entity due to the onlyKeys(true)
+    // source projection in ProcessInstanceItemProvider#fetchItemPage; that path doesn't reach
+    // this mapper, but the contract has to admit the null so we fall back to spec-compliant
+    // sentinels here. Tracked: #51999. state and startDate are nullable for record-ordering
+    // reasons (see entity).
     return new ProcessInstanceResult()
         .processInstanceKey(keyToString(p.processInstanceKey()))
         .rootProcessInstanceKey(keyToStringOrNull(p.rootProcessInstanceKey()))
-        .processDefinitionId(p.processDefinitionId())
+        .processDefinitionId(requireNonNullElse(p.processDefinitionId(), ""))
         .processDefinitionName(p.processDefinitionName())
-        .processDefinitionVersion(p.processDefinitionVersion())
+        .processDefinitionVersion(requireNonNullElse(p.processDefinitionVersion(), -1))
         .processDefinitionVersionTag(p.processDefinitionVersionTag())
-        .processDefinitionKey(keyToString(p.processDefinitionKey()))
+        .processDefinitionKey(requireNonNullElse(keyToStringOrNull(p.processDefinitionKey()), ""))
         .parentProcessInstanceKey(keyToStringOrNull(p.parentProcessInstanceKey()))
         .parentElementInstanceKey(keyToStringOrNull(p.parentFlowNodeInstanceKey()))
         .startDate(requireNonNullElse(formatDateOrNull(p.startDate()), EPOCH_DATE_SENTINEL))
