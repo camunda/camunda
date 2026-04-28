@@ -162,6 +162,17 @@ public class ZeebeStartEventValidationTest extends AbstractZeebeValidationTest {
             expect(
                 StartEvent.class, "Start event forms with public access enabled are not supported"))
       },
+      {
+        Bpmn.createExecutableProcess()
+            .startEvent()
+            .zeebeFormKey("form-key")
+            .zeebeProperty("publicAccess", "true")
+            .endEvent()
+            .done(),
+        singletonList(
+            expect(
+                StartEvent.class, "Start event forms with public access enabled are not supported"))
+      },
     };
   }
 
