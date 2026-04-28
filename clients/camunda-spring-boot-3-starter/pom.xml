@@ -24,7 +24,7 @@
     <version.java>17</version.java>
     <license.header.file>com/mycila/maven/plugin/license/templates/APACHE-2.txt</license.header.file>
     <!-- Override Spring Boot version for 3.x compatibility -->
-    <version.spring-boot>3.5.13</version.spring-boot>
+    <version.spring-boot>3.5.14</version.spring-boot>
     <!-- Spring Framework 6.x is required for Spring Boot 3.x -->
     <version.spring>6.2.17</version.spring>
     <version.roaster>2.31.0.Final</version.roaster>
