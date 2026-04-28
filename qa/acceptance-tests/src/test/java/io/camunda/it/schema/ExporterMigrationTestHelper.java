@@ -11,6 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import io.camunda.client.CamundaClient;
+import io.camunda.client.api.response.ProcessInstanceEvent;
 import io.camunda.zeebe.exporter.ElasticsearchExporter;
 import io.camunda.zeebe.exporter.opensearch.OpensearchExporter;
 import io.camunda.zeebe.model.bpmn.Bpmn;
@@ -45,9 +46,14 @@ import tools.jackson.databind.ObjectMapper;
 
 public class ExporterMigrationTestHelper {
 
-  private static final int BACKLOG_COUNT = 3;
   private static final String CONTAINER_DATA_PATH = "/usr/local/camunda/data";
   private static final String HTTP_PREFIX = "http://";
+  private static final String PI_INDEX = "zeebe-record_process-instance_*";
+  private static final String VARIABLE_INDEX = "zeebe-record_variable_*";
+  private static final String USER_TASK_INDEX = "zeebe-record_user-task_*";
+  private static final String INCIDENT_INDEX = "zeebe-record_incident_*";
+  private static final String DEPLOYMENT_INDEX = "zeebe-record_deployment_*";
+  private static final String ZEEBE_RECORD_INDEXES = "zeebe-record*";
 
   private static final String PREVIOUS_VERSION_MINOR =
       getMinorVersion(VersionUtil.getPreviousVersion());
@@ -63,6 +69,7 @@ public class ExporterMigrationTestHelper {
       Bpmn.createExecutableProcess(PROCESS_ID)
           .startEvent()
           .serviceTask("task", t -> t.zeebeJobType(JOB_TYPE))
+          .userTask("userTask", ut -> ut.zeebeUserTask())
           .endEvent()
           .done();
 
@@ -130,6 +137,46 @@ public class ExporterMigrationTestHelper {
     return osClient.count(c -> c.index(indexPattern)).count();
   }
 
+  public long countDocumentsWithQuery(String indexPattern, String field, long value)
+      throws IOException {
+    if (esClient != null) {
+      return esClient
+          .count(
+              c ->
+                  c.index(indexPattern)
+                      .query(q -> q.term(t -> t.field(field).value(v -> v.longValue(value)))))
+          .count();
+    }
+
+    return osClient
+        .count(
+            c ->
+                c.index(indexPattern)
+                    .query(q -> q.term(t -> t.field(field).value(v -> v.longValue(value)))))
+        .count();
+  }
+
+  private void logIndexes() throws IOException {
+    if (!log.isDebugEnabled()) {
+      return;
+    }
+
+    int count = 0;
+    if (esClient != null) {
+      final var response = esClient.cat().indices(b -> b.index(ZEEBE_RECORD_INDEXES));
+      for (final var record : response.valueBody()) {
+        log.debug("{}. ES index: {}, docs: {}", ++count, record.index(), record.docsCount());
+      }
+    } else {
+      final var response = osClient.cat().indices(b -> b.index(ZEEBE_RECORD_INDEXES));
+      for (final var record : response.valueBody()) {
+        log.debug("{}. OS index: {}, docs: {}", ++count, record.index(), record.docsCount());
+      }
+    }
+
+    log.debug("Total {} indexes in {}", count, engineName);
+  }
+
   void shouldCompleteUpgradeWithBacklogAndExportAllRecords(final String version) throws Exception {
     final List<Long> instanceKeys = new ArrayList<>();
 
@@ -168,77 +215,86 @@ public class ExporterMigrationTestHelper {
 
     camundaPrevious.start();
 
-    try {
-      final var grpcPort = camundaPrevious.getMappedPort(26500);
-      final var monitoringPort = camundaPrevious.getMappedPort(9600);
+    final var grpcPort = camundaPrevious.getMappedPort(26500);
+    final var monitoringPort = camundaPrevious.getMappedPort(9600);
 
-      try (final var clientPrevious =
-          CamundaClient.newClientBuilder()
-              .grpcAddress(URI.create("http://localhost:" + grpcPort))
-              .preferRestOverGrpc(false)
-              .build()) {
+    int backlogCount = 0;
 
-        // Deploy process
-        clientPrevious
-            .newDeployResourceCommand()
-            .addProcessModel(PROCESS_MODEL, "migration-test.bpmn")
-            .send()
-            .join(30, TimeUnit.SECONDS);
-        log.info("Deployed process on version " + version);
+    try (final CamundaClient clientPrevious =
+        CamundaClient.newClientBuilder()
+            .grpcAddress(URI.create("http://localhost:" + grpcPort))
+            .preferRestOverGrpc(false)
+            .build()) {
 
-        // Create instance #1 and complete its job
-        final var instance1 =
-            clientPrevious
-                .newCreateInstanceCommand()
-                .bpmnProcessId(PROCESS_ID)
-                .latestVersion()
-                .send()
-                .join(30, TimeUnit.SECONDS);
-        instanceKeys.add(instance1.getProcessInstanceKey());
-        log.info("Created instance #1: {}", instance1.getProcessInstanceKey());
+      // Deploy process
+      clientPrevious
+          .newDeployResourceCommand()
+          .addProcessModel(PROCESS_MODEL, "migration-test.bpmn")
+          .send()
+          .join(30, TimeUnit.SECONDS);
+      log.info("Deployed process on version " + version);
 
-        completeJobs(clientPrevious, 1);
-        log.info("Completed job for instance #1");
+      // Create instance #1 and complete its job
+      final var instance1 = createInstance(clientPrevious);
+      instanceKeys.add(instance1.getProcessInstanceKey());
+      log.info("Created instance #1: {}", instance1.getProcessInstanceKey());
 
-        // Wait for instance #1 to be exported
-        Awaitility.await("instance #1 exported to " + engineName)
-            .atMost(Duration.ofSeconds(60))
-            .pollInterval(Duration.ofSeconds(2))
-            .ignoreExceptions()
-            .untilAsserted(
-                () -> {
-                  final long count = countDocuments("zeebe-record_process-instance_*");
-                  assertThat(count)
-                      .as("process instance records should be exported to " + engineName)
-                      .isGreaterThan(0);
-                });
+      completeJobs(clientPrevious, 1);
+      log.info("Completed job for instance #1");
 
-        // ---- Phase 2: Pause exporter, create backlog instances #2-4 ----
-        log.info("Phase 2: Pausing exporter, creating backlog");
-        final var exportingActuator =
-            ExportingActuator.of("http://localhost:" + monitoringPort + "/actuator/exporting");
-        exportingActuator.pause();
+      awaitExported("deployment records should be exported to " + engineName, DEPLOYMENT_INDEX);
+      awaitExported("process instance records should be exported to " + engineName, PI_INDEX);
+      awaitExported("user task records should be exported to " + engineName, USER_TASK_INDEX);
 
-        for (int i = 0; i < BACKLOG_COUNT; i++) {
-          final var instance =
-              clientPrevious
-                  .newCreateInstanceCommand()
-                  .bpmnProcessId(PROCESS_ID)
-                  .latestVersion()
-                  .send()
-                  .join(30, TimeUnit.SECONDS);
-          instanceKeys.add(instance.getProcessInstanceKey());
-          log.info("Created backlog instance #{}: {}", i + 2, instance.getProcessInstanceKey());
-        }
-      }
+      // ---- Phase 2: Pause exporter, create backlog instances ----
+      log.info("Phase 2: Pausing exporter, creating backlog");
+      final var exportingActuator =
+          ExportingActuator.of("http://localhost:" + monitoringPort + "/actuator/exporting");
+      exportingActuator.pause();
 
+      // Create an instance #2 that will raise an incident
+      // NOTE: this doesn't increase backlogCount because it's not supposed to complete.
+      final var incidentInstance = createInstance(clientPrevious);
+      instanceKeys.add(incidentInstance.getProcessInstanceKey());
+      log.info("Created incident instance #2: {}", incidentInstance.getProcessInstanceKey());
+
+      // Activate the job in a way that it fails with retries = 0, to trigger an incident
+      clientPrevious
+          .newActivateJobsCommand()
+          .jobType(JOB_TYPE)
+          .maxJobsToActivate(1)
+          .timeout(Duration.ofSeconds(10))
+          .send()
+          .join(30, TimeUnit.SECONDS)
+          .getJobs()
+          .forEach(
+              job ->
+                  clientPrevious
+                      .newFailCommand(job)
+                      .retries(0)
+                      .errorMessage("intentional failure for incident")
+                      .send()
+                      .join(10, TimeUnit.SECONDS));
+
+      // Create an instance #3 that will have variables
+      final var variablesInstance = createInstance(clientPrevious);
+      instanceKeys.add(variablesInstance.getProcessInstanceKey());
+      backlogCount++;
+      log.info("Created variables instance #3 {}", variablesInstance.getProcessInstanceKey());
+
+      // Set variables for instance #3
+      clientPrevious
+          .newSetVariablesCommand(variablesInstance.getProcessInstanceKey())
+          .variables(
+              Map.of(
+                  "foo", "bar",
+                  "fiz", "buzz"))
+          .send()
+          .join(30, TimeUnit.SECONDS);
+    } finally {
       // ---- Phase 3: Stop previous version, extract volume to host ----
       log.info("Phase 3: Stopping Camunda " + PREVIOUS_VERSION_MINOR + " and extracting volume");
       camundaPrevious.stop();
-
-    } catch (final Exception e) {
-      camundaPrevious.stop();
-      throw e;
     }
 
     // Extract the Docker volume to host filesystem
@@ -265,7 +321,11 @@ public class ExporterMigrationTestHelper {
           "Could not find data directory in extracted volume: " + extractedPath);
     }
 
-    // ---- Phase 4: Start current version in-JVM, resume exporter, create instance #5 ----
+    // ---- Debug phase: enumerate the indexes we're testing ----
+    log.debug("Indexes in {} before migration", engineName);
+    logIndexes();
+
+    // ---- Phase 4: Start current version in-JVM, resume exporter, create instance #4 ----
     log.info(
         "Phase 4: Starting Camunda {} (in-JVM) with working dir: {}",
         CURRENT_VERSION_MINOR,
@@ -301,35 +361,33 @@ public class ExporterMigrationTestHelper {
       ExportingActuator.of(brokerCurrent).resume();
       log.info("Resumed exporter on " + CURRENT_VERSION_MINOR);
 
-      try (final var clientCurrent =
+      try (final CamundaClient clientCurrent =
           brokerCurrent.newClientBuilder().preferRestOverGrpc(false).build()) {
-        // Create instance #5 on current version — retry because the process definition from
+        // Create instance #4 on current version — retry because the process definition from
         // previous version
         // may not be immediately available after log replay
-        final var instanceKey5 = new long[1];
-        Awaitility.await("create instance #5 on " + CURRENT_VERSION_MINOR)
+        final var instanceKey4 = new long[1];
+        Awaitility.await("create instance #4 on " + CURRENT_VERSION_MINOR)
             .atMost(Duration.ofSeconds(60))
             .pollInterval(Duration.ofSeconds(2))
             .ignoreExceptions()
             .until(
                 () -> {
-                  final var result =
-                      clientCurrent
-                          .newCreateInstanceCommand()
-                          .bpmnProcessId(PROCESS_ID)
-                          .latestVersion()
-                          .send()
-                          .join(30, TimeUnit.SECONDS);
-                  instanceKey5[0] = result.getProcessInstanceKey();
+                  final var result = createInstance(clientCurrent);
+                  instanceKey4[0] = result.getProcessInstanceKey();
                   return true;
                 });
-        instanceKeys.add(instanceKey5[0]);
-        log.info("Created instance #5 on {}: {}", CURRENT_VERSION_MINOR, instanceKey5[0]);
+        instanceKeys.add(instanceKey4[0]);
+        log.info("Created instance #4 on {}: {}", CURRENT_VERSION_MINOR, instanceKey4[0]);
 
-        // ---- Phase 5: Complete all remaining jobs (#2-5) ----
+        // ---- Phase 5: Complete all remaining jobs ----
         log.info("Phase 5: Completing remaining jobs");
-        completeJobs(clientCurrent, BACKLOG_COUNT + 1);
+        completeJobs(clientCurrent, backlogCount + 1);
         log.info("Completed all remaining jobs");
+
+        // ---- Debug phase: enumerate the indexes we're testing ----
+        log.debug("Indexes in {} after migration", engineName);
+        logIndexes();
 
         // ---- Phase 6: Verify everything exported and completed ----
         log.info("Phase 6: Verifying all records exported");
@@ -354,18 +412,51 @@ public class ExporterMigrationTestHelper {
                 });
 
         // Verify all process instance records are in ES/OS
-        final var piCount = countDocuments("zeebe-record_process-instance_*");
+        final var piCount = countDocuments(PI_INDEX);
         log.info("Total process-instance records in " + engineName + ": {}", piCount);
         assertThat(piCount)
             .as("all process instance records should be exported")
-            .isGreaterThanOrEqualTo(5);
+            .isGreaterThanOrEqualTo(instanceKeys.size());
 
-        // Verify job records are in ES
-        final var jobCount = countDocuments("zeebe-record_job_*");
-        log.info("Total job records in " + engineName + ": {}", jobCount);
-        assertThat(jobCount)
-            .as("job records should be exported for all 5 instances")
-            .isGreaterThanOrEqualTo(5);
+        // Verify that deployment records are in ES/OS
+        final long deploymentCount = countDocuments(DEPLOYMENT_INDEX);
+        log.info("Total deployment records in {}: {}", engineName, deploymentCount);
+        assertThat(deploymentCount)
+            .as("deployment records should be exported across upgrade")
+            .isGreaterThanOrEqualTo(1);
+
+        // Verify job records are in ES/OS
+        instanceKeys.forEach(
+            key -> {
+              final long jobCount;
+              try {
+                jobCount =
+                    countDocumentsWithQuery("zeebe-record_job_*", "value.processInstanceKey", key);
+              } catch (IOException e) {
+                throw new RuntimeException(e);
+              }
+
+              log.info("Total job records in " + engineName + ": {}", jobCount);
+              assertThat(jobCount)
+                  .as("job records should be exported for all instances")
+                  .isGreaterThanOrEqualTo(1);
+            });
+
+        // Verify the variable records are in ES/OS
+        final var varCount = countDocuments(VARIABLE_INDEX);
+        log.info("Total variable records in {}: {}", engineName, varCount);
+        assertThat(varCount).as("variable records should be exported for 2 variables").isEqualTo(2);
+
+        // Verify that the user task record is in ES/OS
+        final var userTaskCount = countDocuments(USER_TASK_INDEX);
+        log.info("Total user task records in {}: {}", engineName, userTaskCount);
+        assertThat(userTaskCount)
+            .as("user task records should be exported for all the instances")
+            .isGreaterThan(0);
+
+        // Verify that the incident record is in the ES/OS
+        final var incidentCount = countDocuments(INCIDENT_INDEX);
+        assertThat(incidentCount).as("incident records exported across upgrade").isGreaterThan(0);
       }
     } finally {
       brokerCurrent.close();
@@ -397,6 +488,27 @@ public class ExporterMigrationTestHelper {
                 log.info("Completed job {}", job.getKey());
               }
               return completed.size() >= expectedCount;
+            });
+  }
+
+  private ProcessInstanceEvent createInstance(final CamundaClient client) {
+    return client
+        .newCreateInstanceCommand()
+        .bpmnProcessId(PROCESS_ID)
+        .latestVersion()
+        .send()
+        .join(30, TimeUnit.SECONDS);
+  }
+
+  private void awaitExported(final String message, final String indexPattern) {
+    Awaitility.await(message)
+        .atMost(Duration.ofSeconds(60))
+        .pollInterval(Duration.ofSeconds(2))
+        .ignoreExceptions()
+        .untilAsserted(
+            () -> {
+              final long count = countDocuments(indexPattern);
+              assertThat(count).as("assertion -- " + message).isGreaterThan(0);
             });
   }
 
