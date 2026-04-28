@@ -16,7 +16,6 @@ import io.camunda.db.rdbms.write.service.ExporterPositionService;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtension;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
 import java.time.LocalDateTime;
-import java.util.concurrent.atomic.AtomicLong;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.TestTemplate;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -25,7 +24,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 @ExtendWith(CamundaRdbmsInvocationContextProviderExtension.class)
 public class ExporterPositionIT {
 
-  public static final int PARTITION_ID = 0;
+  public static final int PARTITION_ID = 1000;
+  public static final int OTHER_PARTITION_ID = 1001;
   private static final LocalDateTime NOW = LocalDateTime.now();
 
   @TestTemplate
@@ -51,21 +51,22 @@ public class ExporterPositionIT {
   @TestTemplate
   public void shouldSelectForUpdate(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
-    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
+    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(OTHER_PARTITION_ID);
     final ExporterPositionService exporterPositionService =
         rdbmsWriters.getExporterPositionService();
 
-    final var position1 = new ExporterPositionModel(PARTITION_ID, "Test exporter", 0L, NOW, NOW);
+    final var position1 =
+        new ExporterPositionModel(OTHER_PARTITION_ID, "Test exporter", 0L, NOW, NOW);
 
     exporterPositionService.create(position1);
     rdbmsWriters.flush();
 
-    final AtomicLong positionCounter = new AtomicLong(0L);
-    exporterPositionService.registerLockPositionHook(PARTITION_ID, positionCounter::get);
+    exporterPositionService.registerLockPositionHook(OTHER_PARTITION_ID, () -> 0L);
 
-    final var position2 = new ExporterPositionModel(2, "Test exporter", 1L, NOW, NOW);
+    final var position2 =
+        new ExporterPositionModel(OTHER_PARTITION_ID, "Test exporter", 1L, NOW, NOW);
 
-    exporterPositionService.create(position2);
+    exporterPositionService.update(position2);
     rdbmsWriters.flush();
 
     // no exception
