@@ -109,6 +109,8 @@ public interface AgentInstanceRecordValue extends RecordValue, ProcessInstanceRe
    * calls ({@link #TOOL_CALLING}) or settles into {@link #IDLE} awaiting external input. Both
    * {@link #TOOL_CALLING} and {@link #IDLE} only transition back to {@link #THINKING}. From any
    * status the agent instance can be deleted, transitioning to {@link #DELETED}, which is terminal.
+   * The engine may also reject any transition with {@link #LIMIT_EXCEEDED} when {@code maxTokens},
+   * {@code maxModelCalls}, or {@code maxToolCalls} would be breached; this is also terminal.
    *
    * <p>State diagram:
    *
@@ -133,8 +135,13 @@ public interface AgentInstanceRecordValue extends RecordValue, ProcessInstanceRe
    *                +---------+  |CALLING|
    *                             +------+
    *
-   * (from any state) ----> DELETED  [terminal]
+   * (from any state) ----> DELETED         [terminal]
+   * (from any state) ----> LIMIT_EXCEEDED  [terminal, engine-driven]
    * }</pre>
+   *
+   * <p>In the state-aligned intent design, status is redundant with the latest intent ({@code
+   * TOOLS_DISCOVERED} → {@code TOOL_DISCOVERY}, {@code THOUGHT} → {@code THINKING}, etc.). It is
+   * retained for entity-snapshot queries that don't want to derive state from intent history.
    */
   enum AgentInstanceStatus {
     /** Initial state right after creation, before the first update from the connector. */
@@ -148,6 +155,8 @@ public interface AgentInstanceRecordValue extends RecordValue, ProcessInstanceRe
     /** Agent is waiting for external input (e.g. user response). */
     IDLE,
     /** Terminal state after the agent instance has been deleted. */
-    DELETED
+    DELETED,
+    /** Terminal state after the engine rejected a transition for breaching a configured limit. */
+    LIMIT_EXCEEDED
   }
 }
