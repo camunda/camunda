@@ -87,6 +87,46 @@ public abstract class AbstractProcessInstanceArchiverJobIT<T extends ProcessInst
   }
 
   @TestTemplate
+  void shouldOnlyArchiveOneBatchAtATime(
+      final ExporterConfiguration config, final SearchClientAdapter client) throws Exception {
+    final int batchSize = 5;
+    config.getHistory().setRolloverBatchSize(batchSize);
+    withArchiverJob(
+        config,
+        (job, resourceProvider) -> {
+          // given
+          final var listViewTemplate =
+              resourceProvider.getIndexTemplateDescriptor(ListViewTemplate.class);
+
+          final List<ProcessInstanceForListViewEntity> processInstances = new ArrayList<>();
+          for (var i = 0; i < batchSize; i++) {
+            processInstances.add(processInstanceForListViewEntity("2020-01-01T00:00:00+00:00"));
+          }
+          // slightly later end date, so should not be in first batch
+          processInstances.add(processInstanceForListViewEntity("2020-01-01T00:00:10+00:00"));
+
+          for (final var processInstance : processInstances) {
+            store(listViewTemplate, client, processInstance);
+          }
+
+          client.refresh();
+
+          // when
+          final var archived = job.execute();
+
+          // then
+          assertThat(archived).succeedsWithin(Duration.ofSeconds(5L)).isEqualTo(5);
+
+          // check that the first batch of processes are no longer in the main index
+          for (var i = 0; i < batchSize; i++) {
+            verifyMoved(listViewTemplate, client, processInstances.get(i), "2020-01-01");
+          }
+          // but the last doc is still there
+          verifyNotMoved(listViewTemplate, client, processInstances.getLast());
+        });
+  }
+
+  @TestTemplate
   void shouldOnlyArchiveFinishedProcessInstances(
       final ExporterConfiguration config, final SearchClientAdapter client) throws Exception {
     withArchiverJob(
