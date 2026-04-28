@@ -1416,4 +1416,36 @@ public class SearchQueryFilterMapper {
         ? Either.right(builder.build())
         : Either.left(validationErrors);
   }
+
+  static Either<List<String>, io.camunda.search.filter.DeployedResourceFilter>
+      toDeployedResourceFilter(final io.camunda.gateway.protocol.model.ResourceFilter filter) {
+    final var builder = FilterBuilders.deployedResource();
+    final List<String> validationErrors = new ArrayList<>();
+
+    if (filter != null) {
+      ofNullable(filter.getResourceKey())
+          .map(mapToKeyOperations("resourceKey", validationErrors))
+          .ifPresent(builder::resourceKeyOperations);
+      ofNullable(filter.getResourceName())
+          .map(mapToStringOperations())
+          .ifPresent(builder::resourceNameOperations);
+      ofNullable(filter.getResourceId())
+          .map(mapToStringOperations())
+          .ifPresent(builder::resourceIdOperations);
+      ofNullable(filter.getVersion())
+          .map(mapToIntegerOperations("version", validationErrors))
+          .ifPresent(builder::versionOperations);
+      ofNullable(filter.getVersionTag())
+          .map(mapToStringOperations())
+          .ifPresent(builder::versionTagOperations);
+      ofNullable(filter.getDeploymentKey())
+          .map(mapToKeyOperations("deploymentKey", validationErrors))
+          .ifPresent(builder::deploymentKeyOperations);
+      ofNullable(filter.getTenantId()).ifPresent(builder::tenantIds);
+    }
+
+    return validationErrors.isEmpty()
+        ? Either.right(builder.build())
+        : Either.left(validationErrors);
+  }
 }

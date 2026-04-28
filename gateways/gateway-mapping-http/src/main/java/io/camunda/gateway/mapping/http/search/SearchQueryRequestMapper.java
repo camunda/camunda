@@ -1108,4 +1108,22 @@ public final class SearchQueryRequestMapper {
                 .sort(sorting.get())
                 .build());
   }
+
+  public static Either<ProblemDetail, io.camunda.search.query.DeployedResourceQuery>
+      toDeployedResourceQuery(final io.camunda.gateway.protocol.model.ResourceSearchQuery request) {
+    if (request == null) {
+      return Either.right(SearchQueryBuilders.deployedResourceSearchQuery().build());
+    }
+
+    final var filterResult = SearchQueryFilterMapper.toDeployedResourceFilter(request.getFilter());
+    final var sortResult =
+        SearchQuerySortRequestMapper.toSearchQuerySort(
+            SearchQuerySortRequestMapper.fromResourceSearchQuerySortRequest(request.getSort()),
+            SortOptionBuilders::deployedResource,
+            SearchQuerySortRequestMapper::applyResourceSortField);
+    final var pageResult = toSearchQueryPage(request.getPage());
+
+    return buildSearchQuery(
+        filterResult, sortResult, pageResult, SearchQueryBuilders::deployedResourceSearchQuery);
+  }
 }
