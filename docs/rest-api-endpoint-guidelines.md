@@ -269,6 +269,8 @@ This is enforced by the `array-properties-must-be-required` Spectral rule.
 
 Use `nullable: true` only when the property can genuinely be `null` in the response (e.g., `name` on a process definition that may not have one). Never use `nullable` on array properties.
 
+For how the `required` / `nullable` flags propagate from the spec down through the generated POJOs, search-domain entities, transformers, and response mapper — and how NullAway and ArchUnit enforce the contract at compile and build time — see [api-entities-nullaway-enforcement.md](api-entities-nullaway-enforcement.md).
+
 ### 2.5 Eventually consistent annotation (`x-eventually-consistent`)
 
 Every operation **should** declare `x-eventually-consistent` explicitly:

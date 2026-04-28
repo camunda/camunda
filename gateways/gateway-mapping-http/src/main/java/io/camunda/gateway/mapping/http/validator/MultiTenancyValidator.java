@@ -19,6 +19,7 @@ import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.util.Either;
 import java.util.ArrayList;
 import java.util.List;
+import org.jspecify.annotations.Nullable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 
@@ -40,20 +41,25 @@ public final class MultiTenancyValidator {
    *     tenantId if it's valid
    */
   public static Either<ProblemDetail, String> validateTenantId(
-      final String tenantId, final boolean multiTenancyEnabled, final String commandName) {
+      final @Nullable String tenantId,
+      final boolean multiTenancyEnabled,
+      final String commandName) {
     return validateTenantIds(
             tenantId == null ? List.of() : List.of(tenantId), multiTenancyEnabled, commandName)
         .map(List::getFirst);
   }
 
   public static Either<ProblemDetail, List<String>> validateTenantIds(
-      final List<String> tenantIds, final boolean multiTenancyEnabled, final String commandName) {
-    final var hasTenantId =
+      final @Nullable List<String> tenantIds,
+      final boolean multiTenancyEnabled,
+      final String commandName) {
+    final boolean hasTenantId =
         tenantIds != null
             && !tenantIds.isEmpty()
             && tenantIds.stream().anyMatch(id -> !id.isBlank());
     if (!multiTenancyEnabled) {
       if (hasTenantId
+          && tenantIds != null
           && tenantIds.stream()
               .anyMatch(tenantId -> !TenantOwned.DEFAULT_TENANT_IDENTIFIER.equals(tenantId))) {
         // Anything else than the default tenant was provided
@@ -72,7 +78,7 @@ public final class MultiTenancyValidator {
     }
 
     final List<String> violations = new ArrayList<>();
-    if (!hasTenantId) {
+    if (!hasTenantId || tenantIds == null) {
       violations.add(ERROR_MESSAGE_MISSING_TENANT.formatted(commandName));
     } else {
       tenantIds.forEach(
@@ -91,8 +97,9 @@ public final class MultiTenancyValidator {
     }
 
     final var problemDetail = createProblemDetail(violations);
+    final List<String> resultIds = tenantIds == null ? List.of() : tenantIds;
     return problemDetail
         .<Either<ProblemDetail, List<String>>>map(Either::left)
-        .orElseGet(() -> Either.right(tenantIds));
+        .orElseGet(() -> Either.right(resultIds));
   }
 }

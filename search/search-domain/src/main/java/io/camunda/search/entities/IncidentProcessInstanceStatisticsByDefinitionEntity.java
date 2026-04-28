@@ -9,15 +9,26 @@ package io.camunda.search.entities;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import io.camunda.util.ObjectBuilder;
+import java.util.Objects;
+import org.jspecify.annotations.Nullable;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public record IncidentProcessInstanceStatisticsByDefinitionEntity(
-    String processDefinitionId,
+    // cache-enriched; null on cache miss.
+    @Nullable String processDefinitionId,
     Long processDefinitionKey,
-    String processDefinitionName,
-    Integer processDefinitionVersion,
-    String tenantId,
+    // cache-enriched; null on cache miss.
+    @Nullable String processDefinitionName,
+    // cache-enriched; null on cache miss.
+    @Nullable Integer processDefinitionVersion,
+    // cache-enriched; null on cache miss.
+    @Nullable String tenantId,
     Long activeInstancesWithErrorCount) {
+
+  public IncidentProcessInstanceStatisticsByDefinitionEntity {
+    Objects.requireNonNull(processDefinitionKey, "processDefinitionKey");
+    Objects.requireNonNull(activeInstancesWithErrorCount, "activeInstancesWithErrorCount");
+  }
 
   public static final class Builder
       implements ObjectBuilder<IncidentProcessInstanceStatisticsByDefinitionEntity> {

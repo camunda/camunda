@@ -15,6 +15,14 @@ import java.util.Objects;
 public record ProcessFlowNodeStatisticsEntity(
     String flowNodeId, Long active, Long canceled, Long incidents, Long completed) {
 
+  public ProcessFlowNodeStatisticsEntity {
+    Objects.requireNonNull(flowNodeId, "flowNodeId");
+    Objects.requireNonNull(active, "active");
+    Objects.requireNonNull(canceled, "canceled");
+    Objects.requireNonNull(incidents, "incidents");
+    Objects.requireNonNull(completed, "completed");
+  }
+
   public static class Builder implements ObjectBuilder<ProcessFlowNodeStatisticsEntity> {
 
     private String flowNodeId;

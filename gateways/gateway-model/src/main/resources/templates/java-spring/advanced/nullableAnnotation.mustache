@@ -1,0 +1,10 @@
+{{!
+  Custom override of upstream JavaSpring/nullableAnnotation.mustache.
+  Diff vs upstream: also emit @Nullable when a property is marked required AND
+  nullable in the OpenAPI spec. OpenAPI `required` means the JSON key must be
+  present, but `nullable: true` allows the value to be null, so the getter /
+  setter / field truly accept null and should be annotated. The `@Nullable`
+  import is added by the forked model.mustache.
+  Our build runs with openApiNullable=false, which is the only branch that
+  matters — the others are kept for template compatibility.
+}}{{^required}}{{^defaultValue}}{{^useOptional}}{{#openApiNullable}}{{^isNullable}}@Nullable {{/isNullable}}{{/openApiNullable}}{{^openApiNullable}}@Nullable {{/openApiNullable}}{{/useOptional}}{{/defaultValue}}{{#defaultValue}}{{^openApiNullable}}{{#isNullable}}@Nullable {{/isNullable}}{{/openApiNullable}}{{/defaultValue}}{{/required}}{{#required}}{{#isNullable}}@Nullable {{/isNullable}}{{/required}}

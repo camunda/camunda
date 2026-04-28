@@ -5,10 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.search.entities;
+@NullMarked
+package io.camunda.gateway.mapping.http;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-
-@JsonIgnoreProperties(ignoreUnknown = true)
-public record ProcessInstanceReference(
-    String instanceId, String processDefinitionId, String processDefinitionName) {}
+import org.jspecify.annotations.NullMarked;

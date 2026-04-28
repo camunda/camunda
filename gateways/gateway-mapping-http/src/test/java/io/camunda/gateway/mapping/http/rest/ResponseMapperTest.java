@@ -155,13 +155,18 @@ class ResponseMapperTest {
               "TASK_LISTENER job with invalid or empty header values",
               JobKind.TASK_LISTENER,
               Map.of(
+                  // action is required by the OpenAPI contract; headers must carry it for
+                  // TASK_LISTENER jobs
+                  Protocol.USER_TASK_ACTION_HEADER_NAME, "complete",
                   Protocol.USER_TASK_CANDIDATE_GROUPS_HEADER_NAME, "",
                   Protocol.USER_TASK_CANDIDATE_USERS_HEADER_NAME, "invalid_string",
                   Protocol.USER_TASK_CHANGED_ATTRIBUTES_HEADER_NAME, "132",
                   Protocol.USER_TASK_PRIORITY_HEADER_NAME, "<not_a_number>"),
               props -> {
                 // Verify invalid or empty headers result in empty or null properties
-                assertThat(props.getAction()).as("Action should be null").isNull();
+                assertThat(props.getAction())
+                    .as("Action should be populated")
+                    .isEqualTo("complete");
                 assertThat(props.getAssignee()).as("Assignee should be null").isNull();
                 assertThat(props.getCandidateGroups())
                     .as("Candidate groups should be empty for invalid input")

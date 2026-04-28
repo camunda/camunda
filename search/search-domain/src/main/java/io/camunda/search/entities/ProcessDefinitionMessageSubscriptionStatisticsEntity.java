@@ -9,6 +9,7 @@ package io.camunda.search.entities;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import io.camunda.util.ObjectBuilder;
+import java.util.Objects;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public record ProcessDefinitionMessageSubscriptionStatisticsEntity(
@@ -17,6 +18,15 @@ public record ProcessDefinitionMessageSubscriptionStatisticsEntity(
     Long processDefinitionKey,
     Long processInstancesWithActiveSubscriptions,
     Long activeSubscriptions) {
+
+  public ProcessDefinitionMessageSubscriptionStatisticsEntity {
+    Objects.requireNonNull(processDefinitionId, "processDefinitionId");
+    Objects.requireNonNull(tenantId, "tenantId");
+    Objects.requireNonNull(processDefinitionKey, "processDefinitionKey");
+    Objects.requireNonNull(
+        processInstancesWithActiveSubscriptions, "processInstancesWithActiveSubscriptions");
+    Objects.requireNonNull(activeSubscriptions, "activeSubscriptions");
+  }
 
   public static class Builder
       implements ObjectBuilder<ProcessDefinitionMessageSubscriptionStatisticsEntity> {

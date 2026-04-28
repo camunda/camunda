@@ -11,30 +11,39 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import java.time.OffsetDateTime;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
+import org.jspecify.annotations.Nullable;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public record MessageSubscriptionEntity(
     Long messageSubscriptionKey,
     String processDefinitionId,
-    Long processDefinitionKey,
-    Long processInstanceKey,
-    Long rootProcessInstanceKey,
+    @Nullable Long processDefinitionKey,
+    @Nullable Long processInstanceKey,
+    @Nullable Long rootProcessInstanceKey,
     String flowNodeId,
-    Long flowNodeInstanceKey,
+    @Nullable Long flowNodeInstanceKey,
     MessageSubscriptionState messageSubscriptionState,
     MessageSubscriptionType messageSubscriptionType,
-    OffsetDateTime dateTime,
+    // absent on subscriptions that predate the dateTime field being populated by the handler.
+    @Nullable OffsetDateTime dateTime,
     String messageName,
-    String correlationKey,
+    @Nullable String correlationKey,
     String tenantId,
-    String processDefinitionName,
-    Integer processDefinitionVersion,
+    @Nullable String processDefinitionName,
+    @Nullable Integer processDefinitionVersion,
     Map<String, String> extensionProperties,
-    String toolName,
-    String inboundConnectorType)
+    @Nullable String toolName,
+    @Nullable String inboundConnectorType)
     implements TenantOwnedEntity {
 
   public MessageSubscriptionEntity {
+    Objects.requireNonNull(messageSubscriptionKey, "messageSubscriptionKey");
+    Objects.requireNonNull(processDefinitionId, "processDefinitionId");
+    Objects.requireNonNull(flowNodeId, "flowNodeId");
+    Objects.requireNonNull(messageSubscriptionState, "messageSubscriptionState");
+    Objects.requireNonNull(messageName, "messageName");
+    Objects.requireNonNull(tenantId, "tenantId");
     // Mutable collections are required: MyBatis hydrates collection-mapped fields (e.g. from a
     // <collection> result map or a LEFT JOIN) by calling .add() on the existing instance.
     // Immutable defaults (e.g. Map.of()) would cause UnsupportedOperationException at runtime.

@@ -14,6 +14,7 @@ import io.camunda.util.ObjectBuilder;
 import java.time.OffsetDateTime;
 import java.util.HashMap;
 import java.util.Map;
+import org.jspecify.annotations.Nullable;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public record JobEntity(
@@ -24,18 +25,18 @@ public record JobEntity(
     JobKind kind,
     ListenerEventType listenerEventType,
     Integer retries,
-    Boolean isDenied,
-    String deniedReason,
+    @Nullable Boolean isDenied,
+    @Nullable String deniedReason,
     Boolean hasFailedWithRetriesLeft,
-    String errorCode,
-    String errorMessage,
+    @Nullable String errorCode,
+    @Nullable String errorMessage,
     Map<String, String> customHeaders,
-    OffsetDateTime deadline,
-    OffsetDateTime endTime,
+    @Nullable OffsetDateTime deadline,
+    @Nullable OffsetDateTime endTime,
     String processDefinitionId,
     Long processDefinitionKey,
     Long processInstanceKey,
-    Long rootProcessInstanceKey,
+    @Nullable Long rootProcessInstanceKey,
     String elementId,
     Long elementInstanceKey,
     String tenantId,
@@ -44,6 +45,22 @@ public record JobEntity(
     implements TenantOwnedEntity {
 
   public JobEntity {
+    requireNonNull(jobKey, "jobKey");
+    requireNonNull(type, "type");
+    requireNonNull(worker, "worker");
+    requireNonNull(state, "state");
+    requireNonNull(kind, "kind");
+    requireNonNull(listenerEventType, "listenerEventType");
+    requireNonNull(retries, "retries");
+    requireNonNull(hasFailedWithRetriesLeft, "hasFailedWithRetriesLeft");
+    requireNonNull(processDefinitionId, "processDefinitionId");
+    requireNonNull(processDefinitionKey, "processDefinitionKey");
+    requireNonNull(processInstanceKey, "processInstanceKey");
+    requireNonNull(elementId, "elementId");
+    requireNonNull(elementInstanceKey, "elementInstanceKey");
+    requireNonNull(tenantId, "tenantId");
+    requireNonNull(creationTime, "creationTime");
+    requireNonNull(lastUpdateTime, "lastUpdateTime");
     // Mutable collections are required: MyBatis hydrates collection-mapped fields (e.g. from a
     // <collection> result map or a LEFT JOIN) by calling .add() on the existing instance.
     // Immutable defaults (e.g. Map.of()) would cause UnsupportedOperationException at runtime.
@@ -199,12 +216,12 @@ public record JobEntity(
     @Override
     public JobEntity build() {
       return new JobEntity(
-          requireNonNull(jobKey, "Expected non-null field for jobKey."),
+          jobKey,
           type,
           worker,
-          requireNonNull(state, "Expected non-null field for state"),
-          requireNonNull(kind, "Expected non-null field for kind."),
-          requireNonNull(listenerEventType, "Expected non-null field for listenerEventType."),
+          state,
+          kind,
+          listenerEventType,
           retries,
           isDenied,
           deniedReason,

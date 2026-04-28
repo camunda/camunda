@@ -428,6 +428,7 @@ public class ResourceControllerTest extends RestControllerTest {
                     .versionTag("v2.0")
                     .tenantId("tenant-1")
                     .resourceKey(1L)
+                    .deploymentKey(42L)
                     .build()));
 
     // when / then
