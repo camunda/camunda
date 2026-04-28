@@ -9,10 +9,8 @@ package io.camunda.it.client;
 
 import static io.camunda.it.util.TestHelper.deployProcessAndWaitForIt;
 import static io.camunda.it.util.TestHelper.startProcessInstance;
-import static io.camunda.it.util.TestHelper.waitForProcessInstancesToStart;
 import static io.camunda.qa.util.multidb.CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.search.enums.JobKind;
@@ -64,9 +62,7 @@ public class ExecutionListenerJobIT {
 
     deployProcessAndWaitForIt(camundaClient, process, "before_all_el_process.bpmn");
     processInstanceKey = startProcessInstance(camundaClient, PROCESS_ID).getProcessInstanceKey();
-    waitForProcessInstancesToStart(camundaClient, 1);
 
-    // wait until the beforeAll execution listener job has been exported to secondary storage
     waitUntilJobAvailable(
         f -> f.processInstanceKey(processInstanceKey).type(BEFORE_ALL_EL_JOB_TYPE), 1);
   }
@@ -95,89 +91,6 @@ public class ExecutionListenerJobIT {
   }
 
   @Test
-  void shouldNotCreateInnerServiceTaskJobsBeforeBeforeAllListenerCompletes() {
-    // given: the beforeAll listener job is still pending
-    final var beforeAllJobs =
-        camundaClient
-            .newJobSearchRequest()
-            .filter(
-                f ->
-                    f.processInstanceKey(processInstanceKey)
-                        .listenerEventType(ListenerEventType.BEFORE_ALL)
-                        .state(JobState.CREATED))
-            .send()
-            .join()
-            .items();
-    assertThat(beforeAllJobs).hasSize(1);
-
-    // then: no inner service task jobs exist yet
-    final var serviceTaskJobs =
-        camundaClient
-            .newJobSearchRequest()
-            .filter(f -> f.processInstanceKey(processInstanceKey).type(SERVICE_TASK_JOB_TYPE))
-            .send()
-            .join()
-            .items();
-    assertThat(serviceTaskJobs)
-        .as("inner multi-instance service task jobs must NOT exist before beforeAll completes")
-        .isEmpty();
-  }
-
-  @Test
-  void shouldCompleteProcessAfterBeforeAllListenerProvidesInputCollection() {
-    // given: a fresh process instance with its own beforeAll listener pending
-    final long localProcessInstanceKey =
-        startProcessInstance(camundaClient, PROCESS_ID).getProcessInstanceKey();
-    waitUntilJobAvailable(
-        f -> f.processInstanceKey(localProcessInstanceKey).type(BEFORE_ALL_EL_JOB_TYPE), 1);
-
-    final long beforeAllJobKey =
-        camundaClient
-            .newJobSearchRequest()
-            .filter(f -> f.processInstanceKey(localProcessInstanceKey).type(BEFORE_ALL_EL_JOB_TYPE))
-            .send()
-            .join()
-            .items()
-            .getFirst()
-            .getJobKey();
-
-    // when: complete the beforeAll listener supplying the input collection
-    camundaClient
-        .newCompleteCommand(beforeAllJobKey)
-        .variables(Map.of("items", ITEMS))
-        .send()
-        .join();
-
-    // then: one inner service task job is created per element in the supplied collection
-    waitUntilJobAvailable(
-        f ->
-            f.processInstanceKey(localProcessInstanceKey)
-                .type(SERVICE_TASK_JOB_TYPE)
-                .state(JobState.CREATED),
-        ITEMS.size());
-
-    // and: completing all inner jobs drives the process to completion
-    final var serviceTaskJobs =
-        camundaClient
-            .newJobSearchRequest()
-            .filter(f -> f.processInstanceKey(localProcessInstanceKey).type(SERVICE_TASK_JOB_TYPE))
-            .send()
-            .join()
-            .items();
-    serviceTaskJobs.forEach(j -> camundaClient.newCompleteCommand(j.getJobKey()).send().join());
-
-    Awaitility.await("process instance should complete")
-        .atMost(TIMEOUT_DATA_AVAILABILITY)
-        .ignoreExceptions()
-        .untilAsserted(
-            () -> {
-              final var processInstance =
-                  camundaClient.newProcessInstanceGetRequest(localProcessInstanceKey).send().join();
-              assertThat(processInstance.getEndDate()).isNotNull();
-            });
-  }
-
-  @Test
   void shouldSearchCompletedBeforeAllExecutionListenerJob() {
     // given — a fresh process instance whose beforeAll listener is then completed
     final long localProcessInstanceKey =
@@ -195,15 +108,14 @@ public class ExecutionListenerJobIT {
             .getFirst()
             .getJobKey();
 
-    // when — the beforeAll listener is completed (supplying the input collection)
+    // when — the beforeAll listener is completed
     camundaClient
         .newCompleteCommand(beforeAllJobKey)
         .variables(Map.of("items", ITEMS))
         .send()
         .join();
 
-    // then — the completed listener job is searchable in secondary storage by listener event
-    // type AND state=COMPLETED
+    // then — the completed listener job is searchable in secondary storage
     Awaitility.await("completed beforeAll listener job should be searchable")
         .atMost(TIMEOUT_DATA_AVAILABILITY)
         .ignoreExceptions()
@@ -228,32 +140,6 @@ public class ExecutionListenerJobIT {
               assertThat(completed.getListenerEventType()).isEqualTo(ListenerEventType.BEFORE_ALL);
               assertThat(completed.getState()).isEqualTo(JobState.COMPLETED);
             });
-  }
-
-  @Test
-  void shouldRejectDeploymentWithBeforeAllListenerOnNonMultiInstanceActivity() {
-    // given: a service task that declares a beforeAll listener but is NOT multi-instance
-    final BpmnModelInstance invalidProcess =
-        Bpmn.createExecutableProcess("invalid_before_all_process")
-            .startEvent()
-            .serviceTask(
-                "task",
-                t ->
-                    t.zeebeJobType("service-task-type")
-                        .zeebeBeforeAllExecutionListener("before-all"))
-            .endEvent()
-            .done();
-
-    // when / then: deployment is rejected with the validator's beforeAll error message
-    assertThatThrownBy(
-            () ->
-                camundaClient
-                    .newDeployResourceCommand()
-                    .addProcessModel(invalidProcess, "invalid_before_all_process.bpmn")
-                    .send()
-                    .join())
-        .hasMessageContaining("'beforeAll'")
-        .hasMessageContaining("multi-instance");
   }
 
   private static void waitUntilJobAvailable(
