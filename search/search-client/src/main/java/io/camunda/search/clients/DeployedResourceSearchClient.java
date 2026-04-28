@@ -8,6 +8,8 @@
 package io.camunda.search.clients;
 
 import io.camunda.search.entities.DeployedResourceEntity;
+import io.camunda.search.query.DeployedResourceQuery;
+import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.auth.SecurityContext;
 
 public interface DeployedResourceSearchClient {
@@ -16,6 +18,8 @@ public interface DeployedResourceSearchClient {
 
   /** Like {@link #getDeployedResource} but omits the resource content payload. */
   DeployedResourceEntity getDeployedResourceMetadata(long key);
+
+  SearchQueryResult<DeployedResourceEntity> searchDeployedResources(DeployedResourceQuery query);
 
   DeployedResourceSearchClient withSecurityContext(SecurityContext securityContext);
 }

@@ -461,4 +461,10 @@ public class NoopSearchClientsProxy implements SearchClientsProxy {
   public DeployedResourceEntity getDeployedResourceMetadata(final long key) {
     return null;
   }
+
+  @Override
+  public SearchQueryResult<DeployedResourceEntity> searchDeployedResources(
+      final io.camunda.search.query.DeployedResourceQuery query) {
+    return SearchQueryResult.empty();
+  }
 }

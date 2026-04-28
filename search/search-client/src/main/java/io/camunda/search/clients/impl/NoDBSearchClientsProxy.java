@@ -459,4 +459,10 @@ public class NoDBSearchClientsProxy implements SearchClientsProxy {
   public DeployedResourceEntity getDeployedResourceMetadata(final long key) {
     throw new NoSecondaryStorageException();
   }
+
+  @Override
+  public SearchQueryResult<DeployedResourceEntity> searchDeployedResources(
+      final io.camunda.search.query.DeployedResourceQuery query) {
+    throw new NoSecondaryStorageException();
+  }
 }
