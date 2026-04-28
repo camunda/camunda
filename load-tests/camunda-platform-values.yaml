@@ -111,7 +111,7 @@ optimize:
       audience: "optimize-api"
       jwtSetUri: "http://keycloak/auth/realms/camunda-platform/protocol/openid-connect/certs"
     historyCleanup:
-      cronTrigger: '0 1 * * *'
+      cronTrigger: '*/30 * * * *'
       ttl: 'P1D'
       processDataCleanup:
         enabled: true
