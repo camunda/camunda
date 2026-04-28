@@ -13,7 +13,6 @@ import static io.camunda.service.authorization.Authorizations.MAPPING_RULE_READ_
 import io.camunda.search.clients.MappingRuleSearchClient;
 import io.camunda.search.entities.MappingRuleEntity;
 import io.camunda.search.query.MappingRuleQuery;
-import io.camunda.search.query.SearchQueryBase.AbstractQueryBuilder;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.security.auth.CamundaAuthentication;
@@ -25,6 +24,8 @@ import io.camunda.zeebe.gateway.impl.broker.request.BrokerMappingRuleCreateReque
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerMappingRuleDeleteRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerMappingRuleUpdateRequest;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.MappingRuleRecord;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Stream;
@@ -102,11 +103,41 @@ public class MappingRuleServices
 
   public Stream<MappingRuleEntity> getMatchingMappingRules(
       final Map<String, Object> claims, final CamundaAuthentication authentication) {
+    if (claims == null || claims.isEmpty()) {
+      return Stream.empty();
+    }
+    final var claimPaths = extractClaimPaths(claims);
+    if (claimPaths.isEmpty()) {
+      return Stream.empty();
+    }
     return MappingRuleMatcher.matchingRules(
-        search(MappingRuleQuery.of(AbstractQueryBuilder::unlimited), authentication)
+        search(
+                MappingRuleQuery.of(q -> q.filter(f -> f.claimNames(claimPaths)).unlimited()),
+                authentication)
             .items()
             .stream(),
         claims);
+  }
+
+  private static List<String> extractClaimPaths(final Map<String, Object> claims) {
+    final List<String> paths = new ArrayList<>();
+    for (final var entry : claims.entrySet()) {
+      final String path = "$." + entry.getKey();
+      paths.add(path);
+      addNestedPaths(path, entry.getValue(), paths);
+    }
+    return paths;
+  }
+
+  private static void addNestedPaths(
+      final String prefix, final Object value, final List<String> paths) {
+    if (value instanceof final Map<?, ?> map) {
+      for (final var entry : map.entrySet()) {
+        final String path = prefix + "." + entry.getKey();
+        paths.add(path);
+        addNestedPaths(path, entry.getValue(), paths);
+      }
+    }
   }
 
   public record MappingRuleDTO(

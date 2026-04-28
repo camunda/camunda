@@ -201,7 +201,7 @@ public class MappingRuleServicesTest {
   }
 
   @Test
-  public void getMatchingMappingRules() {
+  public void shouldGetMatchingMappingRulesByClaimNames() {
     // given
     final Map<String, Object> claims =
         Map.of("c1", "v1", "c2", List.of("v2.1", "v2.2"), "c3", 300, "c4", true);
@@ -212,6 +212,8 @@ public class MappingRuleServicesTest {
         ArgumentCaptor.forClass(MappingRuleQuery.class);
     verify(client, times(1)).searchMappingRules(queryCaptor.capture());
     final MappingRuleQuery query = queryCaptor.getValue();
+    assertThat(query.filter().claimNames())
+        .containsExactlyInAnyOrder("$.c1", "$.c2", "$.c3", "$.c4");
     assertThat(query.filter().claimName()).isNull();
     assertThat(query.filter().claimValue()).isNull();
     assertThat(query.filter().name()).isNull();
