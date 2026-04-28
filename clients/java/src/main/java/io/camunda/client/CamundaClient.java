@@ -166,6 +166,7 @@ import io.camunda.client.api.search.request.MessageSubscriptionSearchRequest;
 import io.camunda.client.api.search.request.ProcessDefinitionSearchRequest;
 import io.camunda.client.api.search.request.ProcessInstanceSearchRequest;
 import io.camunda.client.api.search.request.ProcessInstanceSequenceFlowsRequest;
+import io.camunda.client.api.search.request.ResourceSearchRequest;
 import io.camunda.client.api.search.request.RolesByGroupSearchRequest;
 import io.camunda.client.api.search.request.RolesByTenantSearchRequest;
 import io.camunda.client.api.search.request.TenantsSearchRequest;
@@ -931,6 +932,24 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    * @return a builder for the process definition search request
    */
   ProcessDefinitionSearchRequest newProcessDefinitionSearchRequest();
+
+  /**
+   * Executes a search request to query deployed resources.
+   *
+   * <pre>
+   * long resourceKey = ...;
+   *
+   * camundaClient
+   *  .newResourceSearchRequest()
+   *  .filter((f) -> f.resourceKey(resourceKey))
+   *  .sort((s) -> s.resourceName().asc())
+   *  .page((p) -> p.limit(100))
+   *  .send();
+   * </pre>
+   *
+   * @return a builder for the resource search request
+   */
+  ResourceSearchRequest newResourceSearchRequest();
 
   /**
    * Executes a search request to query process definition element statistics.
