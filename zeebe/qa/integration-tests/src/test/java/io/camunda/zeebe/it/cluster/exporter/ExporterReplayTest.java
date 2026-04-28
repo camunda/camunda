@@ -78,7 +78,7 @@ final class ExporterReplayTest {
     assertThat(recordsBeforeRestart).isGreaterThan(0);
 
     final var positionsBeforeRestart = List.copyOf(TestExporter.EXPORTED_RECORD_POSITIONS);
-    TestExporter.prepareReplayFrom(positionsBeforeRestart.getFirst());
+    TestExporter.prepareReplayFrom(positionsBeforeRestart.getFirst() - 1);
 
     // when
     cluster.shutdown();
