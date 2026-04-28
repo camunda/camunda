@@ -389,6 +389,7 @@ jobs:
             -d '{
                   "event_type": "run-saas-generation-smoke-mono",
                   "client_payload": {
+                      "branch": "saas-8.9-create-org-change",
                       "correlation_id": "'"$CORRELATION_ID"'",
                       "source_repo": "${{ github.repository }}",
                       "source_sha": "${{ github.sha }}",
