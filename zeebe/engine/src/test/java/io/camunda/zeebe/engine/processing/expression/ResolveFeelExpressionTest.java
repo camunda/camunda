@@ -801,6 +801,101 @@ public class ResolveFeelExpressionTest {
   }
 
   @Test
+  public void shouldResolveVariableLocalToIntermediateCatchEventScope() {
+    // given - a process waiting on an intermediate catch event (the typical Connector use case)
+    ENGINE_RULE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess("processWithCatchEvent")
+                .startEvent()
+                .intermediateCatchEvent("catch-event", e -> e.timerWithDuration("PT1H"))
+                .endEvent()
+                .done())
+        .deploy();
+
+    final var processInstanceKey =
+        ENGINE_RULE.processInstance().ofBpmnProcessId("processWithCatchEvent").create();
+
+    final var elementInstanceKey =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementType(BpmnElementType.INTERMEDIATE_CATCH_EVENT)
+            .getFirst()
+            .getKey();
+
+    // a variable created by the catch event itself (local to its own scope),
+    // simulating a Connector writing its result onto the catch event instance
+    ENGINE_RULE
+        .variables()
+        .ofScope(elementInstanceKey)
+        .withDocument(Map.of("catchVar", "hello from catch event"))
+        .withLocalSemantic()
+        .update();
+
+    // when
+    final var record =
+        ENGINE_RULE
+            .expression()
+            .withExpression("=catchVar")
+            .withElementInstanceKey(elementInstanceKey)
+            .resolve();
+
+    // then
+    Assertions.assertThat(record)
+        .hasIntent(ExpressionIntent.EVALUATED)
+        .hasRecordType(RecordType.EVENT);
+    assertThat(record.getValue().getResultValue()).isEqualTo("hello from catch event");
+  }
+
+  @Test
+  public void shouldResolveVariableLocalToServiceTaskWithBoundaryEventScope() {
+    // given - a service task with a boundary event (the typical Connector use case)
+    ENGINE_RULE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess("processWithBoundaryEvent")
+                .startEvent()
+                .serviceTask("task", t -> t.zeebeJobType("test"))
+                .boundaryEvent("boundary-event", b -> b.timerWithDuration("PT1H"))
+                .endEvent()
+                .done())
+        .deploy();
+
+    final var processInstanceKey =
+        ENGINE_RULE.processInstance().ofBpmnProcessId("processWithBoundaryEvent").create();
+
+    final var elementInstanceKey =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementType(BpmnElementType.SERVICE_TASK)
+            .getFirst()
+            .getKey();
+
+    // a variable created by the service task itself (local to its own scope),
+    // simulating a Connector writing its result onto the service task instance
+    ENGINE_RULE
+        .variables()
+        .ofScope(elementInstanceKey)
+        .withDocument(Map.of("boundaryVar", 123))
+        .withLocalSemantic()
+        .update();
+
+    // when
+    final var record =
+        ENGINE_RULE
+            .expression()
+            .withExpression("=boundaryVar")
+            .withElementInstanceKey(elementInstanceKey)
+            .resolve();
+
+    // then
+    Assertions.assertThat(record)
+        .hasIntent(ExpressionIntent.EVALUATED)
+        .hasRecordType(RecordType.EVENT);
+    assertThat(record.getValue().getResultValue()).isEqualTo(123);
+  }
+
+  @Test
   public void shouldRejectWhenBothProcessInstanceKeyAndElementInstanceKeyProvided() {
     // when
     final var record =
