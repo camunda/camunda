@@ -48,7 +48,7 @@ platform_values := -f camunda-platform-values.yaml
 
 # Makefile-side load-test flags. Separate from `additional_load_test_configuration`,
 # which CI sets on the make command line and would suppress `+=` here.
-_load_test_flags :=
+_secondary_storage_load_test_flags :=
 
 # Add secondary storage values
 ifeq ($(secondary_storage),postgresql)
@@ -57,7 +57,7 @@ else ifeq ($(secondary_storage),opensearch)
 	platform_values += -f camunda-platform-values-opensearch.yaml
 else ifeq ($(secondary_storage),none)
 	platform_values += -f camunda-platform-no-secondary-storage.yaml
-	_load_test_flags += --set global.extraConfig.load-tester.monitor-data-availability=false
+	_secondary_storage_load_test_flags += --set global.extraConfig.load-tester.monitor-data-availability=false
 endif
 
 # Disable Optimize if not enabled
@@ -156,7 +156,7 @@ install-load-test:
 		--render-subchart-notes \
 		-f load-test-values.yaml \
 		$(_scenario_load_test_flags) \
-		$(_load_test_flags) \
+		$(_secondary_storage_load_test_flags) \
 		$(additional_load_test_configuration)
 
 # Setup leader balancing cronjob
@@ -197,7 +197,7 @@ template-load-test:
 	helm template $(namespace)-test $(helm_chart_load_tests) \
 		-f load-test-values.yaml \
 		$(_scenario_load_test_flags) \
-		$(_load_test_flags) \
+		$(_secondary_storage_load_test_flags) \
 		$(additional_load_test_configuration) \
 		--output-dir .
 
