@@ -112,8 +112,8 @@ public class MappingRuleServices
     }
     return MappingRuleMatcher.matchingRules(
         search(
-                MappingRuleQuery.of(q -> q.filter(f -> f.claimNames(claimPaths)).unlimited()),
-                authentication)
+            MappingRuleQuery.of(q -> q.filter(f -> f.claimNames(claimPaths)).unlimited()),
+            authentication)
             .items()
             .stream(),
         claims);
