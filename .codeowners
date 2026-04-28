@@ -241,8 +241,8 @@ optimize.Dockerfile         @camunda/core-features
 /document/                  @camunda/core-features
 /service/                   @camunda/core-features
 
-# Webapp Client (shared UI library)
-/webapp/client/         @camunda/core-features
+# Webapp (unified orchestration cluster BFF)
+/webapp/                @camunda/core-features
 
 # Gateways
 /gateways/gateway-mapping-http/ @camunda/core-features

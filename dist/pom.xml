@@ -317,6 +317,11 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
+      <artifactId>webapp-server</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
       <artifactId>webapps-common</artifactId>
     </dependency>
     <dependency>
