@@ -32,10 +32,17 @@ const triggerBrowserDownload = (blob: Blob) => {
 };
 
 const formatStamp = (date: Date) =>
-  date.toISOString().replace(/[:.]/g, '-').replace(/-\d{3}Z$/, 'Z');
+  date
+    .toISOString()
+    .replace(/[:.]/g, '-')
+    .replace(/-\d{3}Z$/, 'Z');
 
 const useExportProcessInstances = () => {
-  return useMutation<ExportResult, RequestError, QueryProcessInstancesRequestBody>({
+  return useMutation<
+    ExportResult,
+    RequestError,
+    QueryProcessInstancesRequestBody
+  >({
     mutationKey: ['exportProcessInstancesCsv'],
     mutationFn: async (payload) => {
       const {response, error} = await exportProcessInstancesCsv(payload);

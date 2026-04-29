@@ -20,8 +20,7 @@ type ExportResult = {
 const exportProcessInstancesCsv = async (
   payload: QueryProcessInstancesRequestBody,
 ): Promise<
-  | {response: ExportResult; error: null}
-  | {response: null; error: RequestError}
+  {response: ExportResult; error: null} | {response: null; error: RequestError}
 > => {
   try {
     const response = await request({
