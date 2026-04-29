@@ -36,9 +36,12 @@ import io.camunda.search.sort.ProcessInstanceSort;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.security.configuration.MultiTenancyConfiguration;
+import io.camunda.service.IncidentServices;
 import io.camunda.service.ProcessInstanceServices;
+import io.camunda.service.VariableServices;
 import io.camunda.service.exception.ErrorMapper;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
+import io.camunda.zeebe.gateway.rest.config.GatewayRestConfiguration;
 import java.nio.charset.StandardCharsets;
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -225,6 +228,11 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
           .endCursor("v")
           .build();
   @MockitoBean ProcessInstanceServices processInstanceServices;
+  // ProcessInstanceController also depends on these for the /search.csv export endpoint;
+  // the context fails to load without mocks even when this test only exercises /search.
+  @MockitoBean IncidentServices incidentServices;
+  @MockitoBean VariableServices variableServices;
+  @MockitoBean GatewayRestConfiguration gatewayRestConfiguration;
   @MockitoBean MultiTenancyConfiguration multiTenancyCfg;
   @MockitoBean CamundaAuthenticationProvider authenticationProvider;
   @Captor ArgumentCaptor<ProcessInstanceQuery> queryCaptor;
