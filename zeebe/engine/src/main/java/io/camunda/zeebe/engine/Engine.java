@@ -242,6 +242,7 @@ public class Engine implements RecordProcessor {
     final boolean isAllowedOnBannedInstance =
         intent == ProcessInstanceIntent.CANCEL
             || intent == ProcessInstanceIntent.TERMINATE_ELEMENT
+            || intent == ProcessInstanceIntent.CONTINUE_TERMINATING_ELEMENT
             || intent == ProcessInstanceBatchIntent.TERMINATE;
 
     return isAllowedOnBannedInstance;
