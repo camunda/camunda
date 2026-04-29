@@ -47,8 +47,6 @@ camunda:
 
 # Load-tester application properties (consumed by Starter.java / Worker.java).
 load-tester:
-  monitor-data-availability: ${LOAD_TESTER_MONITOR_DATA_AVAILABILITY:true}
-  monitor-data-availability-interval: 250ms
   starter:
     process-id: ${LOAD_TESTER_STARTER_PROCESS_ID:benchmark}
     rate: ${LOAD_TESTER_STARTER_RATE:300}

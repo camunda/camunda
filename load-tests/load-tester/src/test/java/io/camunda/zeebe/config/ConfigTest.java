@@ -36,9 +36,6 @@ class ConfigTest {
     // given / when - no external overrides, defaults come from LoadTesterProperties POJO
 
     // then
-    assertThat(properties.isMonitorDataAvailability()).isTrue();
-    assertThat(properties.getMonitorDataAvailabilityInterval()).hasMillis(250);
-
     // starter
     final var starterCfg = properties.getStarter();
     assertThat(starterCfg).isNotNull();
@@ -81,9 +78,6 @@ class ConfigTest {
       // given / when - overrides loaded from different-application.properties
 
       // then
-      assertThat(properties.isMonitorDataAvailability()).isFalse();
-      assertThat(properties.getMonitorDataAvailabilityInterval()).hasMillis(50);
-
       // starter
       final var starterCfg = properties.getStarter();
       assertThat(starterCfg.getProcessId()).isEqualTo("benchmark");

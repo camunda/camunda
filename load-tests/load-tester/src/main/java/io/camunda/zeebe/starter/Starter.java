@@ -22,13 +22,9 @@ import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.api.command.DeployResourceCommandStep1.DeployResourceCommandStep2;
 import io.camunda.zeebe.client.api.response.Process;
 import io.camunda.zeebe.client.api.response.ProcessInstanceEvent;
-import io.camunda.zeebe.client.api.search.response.ProcessInstance;
-import io.camunda.zeebe.client.api.search.response.SearchResponsePage;
-import io.camunda.zeebe.client.api.search.sort.ProcessInstanceSort;
 import io.camunda.zeebe.config.LoadTesterProperties;
 import io.camunda.zeebe.config.StarterProperties;
 import io.camunda.zeebe.metrics.ConnectionMonitor;
-import io.camunda.zeebe.metrics.ProcessInstanceStartMeter;
 import io.camunda.zeebe.metrics.StarterLatencyMetricsDoc;
 import io.camunda.zeebe.util.PayloadReader;
 import io.camunda.zeebe.util.logging.ThrottledLogger;
@@ -43,7 +39,6 @@ import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CompletionStage;
@@ -82,8 +77,6 @@ public class Starter implements CommandLineRunner {
 
   private Timer responseLatencyTimer;
   private ScheduledExecutorService executorService;
-  private ProcessInstanceStartMeter processInstanceStartMeter;
-  private SearchResponsePage responsePage = null;
 
   public Starter(
       final ZeebeClient client,
@@ -105,10 +98,6 @@ public class Starter implements CommandLineRunner {
 
     responseLatencyTimer =
         MicrometerUtil.buildTimer(StarterLatencyMetricsDoc.RESPONSE_LATENCY).register(registry);
-
-    if (properties.isMonitorDataAvailability()) {
-      setupDataAvailabilityMeter();
-    }
 
     deployProcess();
 
@@ -138,43 +127,6 @@ public class Starter implements CommandLineRunner {
         LOG.error("Shutdown executor service was interrupted", e);
       }
     }
-    if (processInstanceStartMeter != null) {
-      processInstanceStartMeter.close();
-    }
-  }
-
-  private void setupDataAvailabilityMeter() {
-    LOG.info("Monitor data availability of started process instances");
-    processInstanceStartMeter =
-        new ProcessInstanceStartMeter(
-            System::nanoTime,
-            registry,
-            Executors.newScheduledThreadPool(1),
-            properties.getMonitorDataAvailabilityInterval(),
-            (listOfStartedInstances) -> {
-              final var sendFuture =
-                  client
-                      .newProcessInstanceQuery()
-                      .filter(f -> f.active(true).running(true))
-                      .sort(ProcessInstanceSort::startDate)
-                      .page(
-                          p ->
-                              p.limit(1000)
-                                  .searchAfter(
-                                      responsePage == null
-                                          ? List.of()
-                                          : responsePage.lastSortValues()))
-                      .send();
-
-              return sendFuture.thenApply(
-                  processInstanceSearchResponse -> {
-                    responsePage = processInstanceSearchResponse.page();
-                    return processInstanceSearchResponse.items().stream()
-                        .map(ProcessInstance::getKey)
-                        .toList();
-                  });
-            });
-    processInstanceStartMeter.start();
   }
 
   private ScheduledFuture<?> scheduleProcessInstanceCreation(
@@ -211,7 +163,7 @@ public class Starter implements CommandLineRunner {
             } else if (starterCfg.isWithResults()) {
               requestFuture = startInstanceWithAwaitingResult(starterCfg.getProcessId(), vars);
             } else {
-              requestFuture = startInstance(startTime, starterCfg.getProcessId(), vars);
+              requestFuture = startInstance(starterCfg.getProcessId(), vars);
             }
             requestFuture.whenComplete(
                 (noop, error) -> {
@@ -236,21 +188,13 @@ public class Starter implements CommandLineRunner {
   }
 
   private CompletionStage<ProcessInstanceEvent> startInstance(
-      final long startTime, final String processId, final HashMap<String, Object> variables) {
+      final String processId, final HashMap<String, Object> variables) {
     return client
         .newCreateInstanceCommand()
         .bpmnProcessId(processId)
         .latestVersion()
         .variables(variables)
-        .send()
-        .thenApply(
-            (response) -> {
-              if (properties.isMonitorDataAvailability()) {
-                final long processInstanceKey = response.getProcessInstanceKey();
-                processInstanceStartMeter.recordProcessInstanceStart(processInstanceKey, startTime);
-              }
-              return response;
-            });
+        .send();
   }
 
   private CompletionStage<?> startInstanceWithAwaitingResult(

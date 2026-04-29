@@ -31,9 +31,8 @@ import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 
 /**
- * End-to-end IT that activates both the starter and worker profiles. Verifies, via metrics, that
- * the starter created instances against the broker and that operate indexed them — which is only
- * possible if the worker drained the broker's job queue.
+ * End-to-end IT that activates both the starter and worker profiles. Verifies the starter records
+ * response latency, which proves the starter created instances against the broker.
  */
 @SpringBootTest(
     classes = LoadTesterApplication.class,
@@ -44,8 +43,6 @@ import org.springframework.test.context.DynamicPropertySource;
       "load-tester.starter.payload-path=bpmn/small_payload.json",
       "load-tester.worker.completion-delay=0ms",
       "load-tester.worker.payload-path=bpmn/small_payload.json",
-      "load-tester.monitor-data-availability=true",
-      "load-tester.monitor-data-availability-interval=500ms",
     })
 @ActiveProfiles({"starter", "worker", "it"})
 class StarterWorkerIT {
@@ -74,19 +71,6 @@ class StarterWorkerIT {
                   .isNotNull();
               assertThat(responseLatency.count())
                   .describedAs("Starter should have created at least one process instance")
-                  .isGreaterThan(0);
-
-              final var dataAvailability =
-                  meterRegistry
-                      .find(StarterLatencyMetricsDoc.DATA_AVAILABILITY_LATENCY.getName())
-                      .timer();
-              assertThat(dataAvailability)
-                  .describedAs(
-                      "Data-availability latency timer should be registered (proves operate"
-                          + " indexed an instance the starter created)")
-                  .isNotNull();
-              assertThat(dataAvailability.count())
-                  .describedAs("At least one data-availability measurement should be recorded")
                   .isGreaterThan(0);
             });
   }

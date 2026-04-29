@@ -15,35 +15,15 @@
  */
 package io.camunda.zeebe.config;
 
-import java.time.Duration;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
 
 @ConfigurationProperties(prefix = "load-tester")
 public class LoadTesterProperties {
 
-  private boolean monitorDataAvailability = true;
-  private Duration monitorDataAvailabilityInterval = Duration.ofMillis(250);
-
   @NestedConfigurationProperty private StarterProperties starter = new StarterProperties();
 
   @NestedConfigurationProperty private WorkerProperties worker = new WorkerProperties();
-
-  public boolean isMonitorDataAvailability() {
-    return monitorDataAvailability;
-  }
-
-  public void setMonitorDataAvailability(final boolean monitorDataAvailability) {
-    this.monitorDataAvailability = monitorDataAvailability;
-  }
-
-  public Duration getMonitorDataAvailabilityInterval() {
-    return monitorDataAvailabilityInterval;
-  }
-
-  public void setMonitorDataAvailabilityInterval(final Duration monitorDataAvailabilityInterval) {
-    this.monitorDataAvailabilityInterval = monitorDataAvailabilityInterval;
-  }
 
   public StarterProperties getStarter() {
     return starter;

@@ -91,11 +91,6 @@
     </dependency>
 
     <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>zeebe-protocol</artifactId>
-    </dependency>
-
-    <dependency>
       <groupId>com.google.guava</groupId>
       <artifactId>guava</artifactId>
     </dependency>
@@ -113,11 +108,6 @@
     <dependency>
       <groupId>io.grpc</groupId>
       <artifactId>grpc-api</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>io.micrometer</groupId>
-      <artifactId>micrometer-commons</artifactId>
     </dependency>
 
     <dependency>
