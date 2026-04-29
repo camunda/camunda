@@ -514,7 +514,7 @@ public final class ProcessInstanceServices
             b ->
                 b.filter(
                         query.filter().toBuilder()
-                            .treePathOperations(Operation.like("*" + treePath + "*"))
+                            .treePathOperations(Operation.like(treePath + "*"))
                             .build())
                     .page(query.page())
                     .sort(query.sort())),
