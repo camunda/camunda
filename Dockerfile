@@ -89,19 +89,17 @@ FROM base-${BASE} AS cds-gen
 # hadolint ignore=DL3002
 USER root
 
-# Copy to /usr/local/zeebe so classpath entries match the runtime image exactly.
+# Copy to /usr/local/camunda so classpath entries match the runtime image exactly.
 # CDS archives are path-sensitive: if the classpath differs at load time the archive is ignored.
-COPY --from=dist --chown=root:root /zeebe/camunda-zeebe /usr/local/zeebe
+COPY --from=dist --chown=root:root /zeebe/camunda-zeebe /usr/local/camunda
 
 # Run a training boot: classes are recorded into camunda.jsa on JVM exit.
 # spring.context.exit=onRefresh causes a clean exit right after context refresh.
 # camunda.data.secondary-storage.type=NONE disables all DB/ES connections.
-# config/ is on the classpath but CDS rejects non-empty directories; empty it first.
 # || true: any remaining failures are acceptable;
 #          the archive is still written because -XX:ArchiveClassesAtExit fires on any exit.
-RUN find /usr/local/zeebe/config -mindepth 1 -delete \
-    && JAVA_OPTS="-XX:ArchiveClassesAtExit=/usr/local/zeebe/camunda.jsa" \
-       /usr/local/zeebe/bin/camunda \
+RUN JAVA_OPTS="-XX:ArchiveClassesAtExit=/usr/local/camunda/camunda.jsa" \
+       /usr/local/camunda/bin/camunda \
          --spring.context.exit=onRefresh \
          "--camunda.data.secondary-storage.type=NONE" \
     || true

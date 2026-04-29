@@ -919,10 +919,11 @@
           <copyConfigurationDirectory>true</copyConfigurationDirectory>
           <extraJvmArguments>-XX:+ExitOnOutOfMemoryError
             -Dfile.encoding=UTF-8 -Xshare:auto
+            -Dlog4j2.configurationFile=$BASEDIR/config/log4j2.xml
             ${jvm.module.opens}</extraJvmArguments>
           <!-- This will be added to the classpath as /urs/local/camunda/driver-lib/* -->
           <endorsedDir>driver-lib</endorsedDir>
-          <includeConfigurationDirectoryInClasspath>true</includeConfigurationDirectoryInClasspath>
+          <includeConfigurationDirectoryInClasspath>false</includeConfigurationDirectoryInClasspath>
           <platforms>
             <platform>windows</platform>
             <platform>unix</platform>
