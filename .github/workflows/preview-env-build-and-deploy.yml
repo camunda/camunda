@@ -21,6 +21,13 @@ on:
         required: false
         type: string
         default: ''
+      ref:
+        description: |
+          Git ref for checkout and ArgoCD revision.
+          Required for cross-branch calls since reusable workflows inherit the caller's ref.
+        required: false
+        type: string
+        default: ''
       helm-extra-args:
         description: |
           Additional Helm arguments to pass to ArgoCD (newline-separated --helm-set pairs).
@@ -55,6 +62,13 @@ jobs:
     steps:
     - name: Checkout
       uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      with:
+        ref: ${{ inputs.ref }}
+
+    - name: Resolve commit SHA
+      if: inputs.ref != ''
+      id: ref
+      run: echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
 
     - uses: ./.github/actions/setup-build
       with:
@@ -78,7 +92,7 @@ jobs:
         platforms: linux/amd64
         dockerfile: camunda.Dockerfile
         push: true
-        version: pr-${{ github.event.pull_request.head.sha || github.sha }}
+        version: pr-${{ steps.ref.outputs.sha || github.event.pull_request.head.sha || github.sha }}
 
     - name: Observe build status
       if: always()
@@ -105,9 +119,8 @@ jobs:
     uses: ./.github/workflows/optimize-ci-build-reusable.yml
     secrets: inherit
     with:
-      branch: ${{ github.head_ref || github.ref_name }}
+      branch: ${{ inputs.ref || github.head_ref || github.ref_name }}
       pushDocker: true
-      version: pr-${{ github.event.pull_request.head.sha || github.sha }}
 
   deploy-preview:
     # For workflow_call: inputs.app-name is set (github.event_name is inherited from caller, not 'workflow_call')
@@ -185,10 +198,20 @@ jobs:
           secret/data/products/camunda/ci/camunda ARGOCD_TOKEN;
 
     #########################################################################
-    # Setup: checkout code. This is required because we are using
-    # composite actions and deployment manifests.
+    # Checkout the specified workflow_call ref when provided; for pull_request
+    # runs, an empty inputs.ref lets checkout fall back to the event ref
     - name: Checkout
       uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      with:
+        ref: ${{ inputs.ref }}
+
+    #########################################################################
+    # Resolve commit SHA for docker image tagging only when workflow_call
+    # provides an explicit ref
+    - name: Resolve commit SHA
+      if: inputs.ref != ''
+      id: ref
+      run: echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
 
     #########################################################################
     # Determine the argocd arguments that need to be passed to the create app command
@@ -210,10 +233,10 @@ jobs:
           --helm-set git.branch=${revision} \
           --upsert ${label_args} ${helm_extra}" >> "$GITHUB_ENV"
       env:
-        docker_tag: pr-${{ github.event.pull_request.head.sha || github.sha }}
+        docker_tag: pr-${{ steps.ref.outputs.sha || github.event.pull_request.head.sha || github.sha }}
         helm_extra_args: ${{ inputs.helm-extra-args }}
         labels: ${{ inputs.labels }}
-        revision: ${{ github.head_ref || github.ref_name }}
+        revision: ${{ inputs.ref || github.head_ref || github.ref_name }}
         app_name: camunda-${{ steps.set-app-name.outputs.app-name }}
 
     #########################################################################
@@ -221,7 +244,7 @@ jobs:
     - name: Deploy Preview Environment for c8sm
       uses: camunda/infra-global-github-actions/preview-env/create@main
       with:
-        revision: ${{ github.head_ref || github.ref_name }}
+        revision: ${{ inputs.ref || github.head_ref || github.ref_name }}
         argocd_token: ${{ steps.secrets.outputs.ARGOCD_TOKEN }}
         app_name: camunda-${{ steps.set-app-name.outputs.app-name }}
         app_url: https://${{ steps.set-host-name.outputs.host-name }}
