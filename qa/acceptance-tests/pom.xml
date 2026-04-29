@@ -700,6 +700,21 @@
 
   <profiles>
     <profile>
+      <id>dl-nightly</id>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-failsafe-plugin</artifactId>
+            <configuration>
+              <groups>dl-nightly</groups>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+
+    <profile>
       <id>rdbms</id>
       <build>
         <plugins>

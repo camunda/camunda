@@ -108,7 +108,7 @@ class ElasticsearchExporterMigrationIT {
 
   @ParameterizedTest(name = "Migrate from {0} to current version")
   @MethodSource("io.camunda.it.schema.ExporterMigrationTestHelper#fetchAllPatchesFromPreviousMinor")
-  @Tag("nightly")
+  @Tag("dl-nightly")
   @Timeout(value = 10, unit = TimeUnit.MINUTES)
   void shouldCompleteUpgradeWithBacklogAndExportAllRecordsAgainstReleasePatches(
       final String version) throws Exception {
