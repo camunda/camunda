@@ -60,24 +60,24 @@ public record MessageSubscriptionEntity(
   }
 
   public static class Builder {
-    private Long messageSubscriptionKey;
-    private String processDefinitionId;
-    private Long processDefinitionKey;
-    private Long processInstanceKey;
-    private Long rootProcessInstanceKey;
-    private String flowNodeId;
-    private Long flowNodeInstanceKey;
-    private MessageSubscriptionState messageSubscriptionState;
-    private MessageSubscriptionType messageSubscriptionType;
-    private OffsetDateTime dateTime;
-    private String messageName;
-    private String correlationKey;
-    private String tenantId;
-    private String processDefinitionName;
-    private Integer processDefinitionVersion;
-    private Map<String, String> extensionProperties;
-    private String toolName;
-    private String inboundConnectorType;
+    private @Nullable Long messageSubscriptionKey;
+    private @Nullable String processDefinitionId;
+    private @Nullable Long processDefinitionKey;
+    private @Nullable Long processInstanceKey;
+    private @Nullable Long rootProcessInstanceKey;
+    private @Nullable String flowNodeId;
+    private @Nullable Long flowNodeInstanceKey;
+    private @Nullable MessageSubscriptionState messageSubscriptionState;
+    private @Nullable MessageSubscriptionType messageSubscriptionType;
+    private @Nullable OffsetDateTime dateTime;
+    private @Nullable String messageName;
+    private @Nullable String correlationKey;
+    private @Nullable String tenantId;
+    private @Nullable String processDefinitionName;
+    private @Nullable Integer processDefinitionVersion;
+    private @Nullable Map<String, String> extensionProperties;
+    private @Nullable String toolName;
+    private @Nullable String inboundConnectorType;
 
     public Builder messageSubscriptionKey(final Long messageSubscriptionKey) {
       this.messageSubscriptionKey = messageSubscriptionKey;
@@ -170,6 +170,7 @@ public record MessageSubscriptionEntity(
       return this;
     }
 
+    @SuppressWarnings("NullAway")
     public MessageSubscriptionEntity build() {
       return new MessageSubscriptionEntity(
           messageSubscriptionKey,

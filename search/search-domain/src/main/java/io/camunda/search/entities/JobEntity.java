@@ -68,30 +68,30 @@ public record JobEntity(
   }
 
   public static class Builder implements ObjectBuilder<JobEntity> {
-    private Long jobKey;
-    private String type;
-    private String worker;
-    private JobState state;
-    private JobKind kind;
-    private ListenerEventType listenerEventType;
-    private Integer retries;
-    private Boolean isDenied;
-    private String deniedReason;
-    private Boolean hasFailedWithRetriesLeft;
-    private String errorCode;
-    private String errorMessage;
-    private Map<String, String> customHeaders;
-    private OffsetDateTime deadline;
-    private OffsetDateTime endTime;
-    private String processDefinitionId;
-    private Long processDefinitionKey;
-    private Long processInstanceKey;
-    private Long rootProcessInstanceKey;
-    private String elementId;
-    private Long elementInstanceKey;
-    private String tenantId;
-    private OffsetDateTime creationTime;
-    private OffsetDateTime lastUpdateTime;
+    private @Nullable Long jobKey;
+    private @Nullable String type;
+    private @Nullable String worker;
+    private @Nullable JobState state;
+    private @Nullable JobKind kind;
+    private @Nullable ListenerEventType listenerEventType;
+    private @Nullable Integer retries;
+    private @Nullable Boolean isDenied;
+    private @Nullable String deniedReason;
+    private @Nullable Boolean hasFailedWithRetriesLeft;
+    private @Nullable String errorCode;
+    private @Nullable String errorMessage;
+    private @Nullable Map<String, String> customHeaders;
+    private @Nullable OffsetDateTime deadline;
+    private @Nullable OffsetDateTime endTime;
+    private @Nullable String processDefinitionId;
+    private @Nullable Long processDefinitionKey;
+    private @Nullable Long processInstanceKey;
+    private @Nullable Long rootProcessInstanceKey;
+    private @Nullable String elementId;
+    private @Nullable Long elementInstanceKey;
+    private @Nullable String tenantId;
+    private @Nullable OffsetDateTime creationTime;
+    private @Nullable OffsetDateTime lastUpdateTime;
 
     public Builder jobKey(final Long jobKey) {
       this.jobKey = jobKey;
@@ -213,6 +213,7 @@ public record JobEntity(
       return this;
     }
 
+    @SuppressWarnings("NullAway")
     @Override
     public JobEntity build() {
       return new JobEntity(

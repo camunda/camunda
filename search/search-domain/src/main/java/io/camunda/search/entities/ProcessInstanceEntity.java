@@ -89,7 +89,7 @@ public record ProcessInstanceEntity(
         hasIncident,
         tenantId,
         treePath,
-        null,
+        new HashSet<>(),
         businessId);
   }
 

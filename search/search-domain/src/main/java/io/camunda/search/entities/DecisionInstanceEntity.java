@@ -82,26 +82,26 @@ public record DecisionInstanceEntity(
 
   public static class Builder implements ObjectBuilder<DecisionInstanceEntity> {
 
-    private String decisionInstanceId;
-    private Long decisionInstanceKey;
-    private DecisionInstanceState state;
-    private OffsetDateTime evaluationDate;
-    private String evaluationFailure;
-    private String evaluationFailureMessage;
-    private Long processDefinitionKey;
-    private Long processInstanceKey;
-    private Long rootProcessInstanceKey;
-    private Long flowNodeInstanceKey;
-    private String tenantId;
-    private String decisionDefinitionId;
-    private Long decisionDefinitionKey;
-    private String decisionDefinitionName;
-    private Integer decisionDefinitionVersion;
-    private DecisionDefinitionType decisionDefinitionType;
-    private Long rootDecisionDefinitionKey;
-    private String result;
-    private List<DecisionInstanceInputEntity> evaluatedInputs;
-    private List<DecisionInstanceOutputEntity> evaluatedOutputs;
+    private @Nullable String decisionInstanceId;
+    private @Nullable Long decisionInstanceKey;
+    private @Nullable DecisionInstanceState state;
+    private @Nullable OffsetDateTime evaluationDate;
+    private @Nullable String evaluationFailure;
+    private @Nullable String evaluationFailureMessage;
+    private @Nullable Long processDefinitionKey;
+    private @Nullable Long processInstanceKey;
+    private @Nullable Long rootProcessInstanceKey;
+    private @Nullable Long flowNodeInstanceKey;
+    private @Nullable String tenantId;
+    private @Nullable String decisionDefinitionId;
+    private @Nullable Long decisionDefinitionKey;
+    private @Nullable String decisionDefinitionName;
+    private @Nullable Integer decisionDefinitionVersion;
+    private @Nullable DecisionDefinitionType decisionDefinitionType;
+    private @Nullable Long rootDecisionDefinitionKey;
+    private @Nullable String result;
+    private @Nullable List<DecisionInstanceInputEntity> evaluatedInputs;
+    private @Nullable List<DecisionInstanceOutputEntity> evaluatedOutputs;
 
     public Builder decisionInstanceId(final String decisionInstanceId) {
       this.decisionInstanceId = decisionInstanceId;
@@ -123,32 +123,32 @@ public record DecisionInstanceEntity(
       return this;
     }
 
-    public Builder evaluationFailure(final String evaluationFailure) {
+    public Builder evaluationFailure(final @Nullable String evaluationFailure) {
       this.evaluationFailure = evaluationFailure;
       return this;
     }
 
-    public Builder evaluationFailureMessage(final String evaluationFailureMessage) {
+    public Builder evaluationFailureMessage(final @Nullable String evaluationFailureMessage) {
       this.evaluationFailureMessage = evaluationFailureMessage;
       return this;
     }
 
-    public Builder processDefinitionKey(final Long processDefinitionKey) {
+    public Builder processDefinitionKey(final @Nullable Long processDefinitionKey) {
       this.processDefinitionKey = processDefinitionKey;
       return this;
     }
 
-    public Builder processInstanceKey(final Long processInstanceKey) {
+    public Builder processInstanceKey(final @Nullable Long processInstanceKey) {
       this.processInstanceKey = processInstanceKey;
       return this;
     }
 
-    public Builder rootProcessInstanceKey(final Long rootProcessInstanceKey) {
+    public Builder rootProcessInstanceKey(final @Nullable Long rootProcessInstanceKey) {
       this.rootProcessInstanceKey = rootProcessInstanceKey;
       return this;
     }
 
-    public Builder flowNodeInstanceKey(final Long flowNodeInstanceKey) {
+    public Builder flowNodeInstanceKey(final @Nullable Long flowNodeInstanceKey) {
       this.flowNodeInstanceKey = flowNodeInstanceKey;
       return this;
     }
@@ -173,7 +173,7 @@ public record DecisionInstanceEntity(
       return this;
     }
 
-    public Builder decisionDefinitionVersion(final Integer decisionDefinitionVersion) {
+    public Builder decisionDefinitionVersion(final @Nullable Integer decisionDefinitionVersion) {
       this.decisionDefinitionVersion = decisionDefinitionVersion;
       return this;
     }
@@ -183,7 +183,7 @@ public record DecisionInstanceEntity(
       return this;
     }
 
-    public Builder rootDecisionDefinitionKey(final Long rootDecisionDefinitionKey) {
+    public Builder rootDecisionDefinitionKey(final @Nullable Long rootDecisionDefinitionKey) {
       this.rootDecisionDefinitionKey = rootDecisionDefinitionKey;
       return this;
     }
@@ -203,6 +203,7 @@ public record DecisionInstanceEntity(
       return this;
     }
 
+    @SuppressWarnings("NullAway")
     @Override
     public DecisionInstanceEntity build() {
       return new DecisionInstanceEntity(

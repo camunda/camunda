@@ -5,19 +5,8 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe.logstreams.impl.flowcontrol;
 
-import com.netflix.concurrency.limits.Limiter.Listener;
+@NullMarked
+package io.camunda.zeebe.logstreams.impl.log;
 
-class NoopListener implements Listener {
-  public static final NoopListener INSTANCE = new NoopListener();
-
-  @Override
-  public void onSuccess() {}
-
-  @Override
-  public void onIgnore() {}
-
-  @Override
-  public void onDropped() {}
-}
+import org.jspecify.annotations.NullMarked;

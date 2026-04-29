@@ -10,6 +10,7 @@ package io.camunda.search.entities;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import io.camunda.util.ObjectBuilder;
 import java.util.Objects;
+import org.jspecify.annotations.Nullable;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public record ProcessFlowNodeStatisticsEntity(
@@ -25,7 +26,7 @@ public record ProcessFlowNodeStatisticsEntity(
 
   public static class Builder implements ObjectBuilder<ProcessFlowNodeStatisticsEntity> {
 
-    private String flowNodeId;
+    private @Nullable String flowNodeId;
     private long active;
     private long canceled;
     private long incidents;
@@ -56,6 +57,7 @@ public record ProcessFlowNodeStatisticsEntity(
       return this;
     }
 
+    @SuppressWarnings("NullAway")
     @Override
     public ProcessFlowNodeStatisticsEntity build() {
       return new ProcessFlowNodeStatisticsEntity(

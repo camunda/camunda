@@ -35,13 +35,13 @@ public record SequenceFlowEntity(
 
   public static class Builder implements ObjectBuilder<SequenceFlowEntity> {
 
-    private String sequenceFlowId;
-    private String flowNodeId;
-    private Long processInstanceKey;
-    private Long rootProcessInstanceKey;
-    private Long processDefinitionKey;
-    private String processDefinitionId;
-    private String tenantId;
+    private @Nullable String sequenceFlowId;
+    private @Nullable String flowNodeId;
+    private @Nullable Long processInstanceKey;
+    private @Nullable Long rootProcessInstanceKey;
+    private @Nullable Long processDefinitionKey;
+    private @Nullable String processDefinitionId;
+    private @Nullable String tenantId;
 
     public Builder sequenceFlowId(final String sequenceFlowId) {
       this.sequenceFlowId = sequenceFlowId;
@@ -78,6 +78,7 @@ public record SequenceFlowEntity(
       return this;
     }
 
+    @SuppressWarnings("NullAway")
     @Override
     public SequenceFlowEntity build() {
       return new SequenceFlowEntity(

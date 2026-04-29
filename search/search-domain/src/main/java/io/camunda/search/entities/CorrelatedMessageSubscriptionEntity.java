@@ -48,20 +48,20 @@ public record CorrelatedMessageSubscriptionEntity(
   }
 
   public static class Builder {
-    private String correlationKey;
-    private OffsetDateTime correlationTime;
-    private String flowNodeId;
-    private Long flowNodeInstanceKey;
-    private Long messageKey;
-    private String messageName;
-    private Integer partitionId;
-    private String processDefinitionId;
-    private Long processDefinitionKey;
-    private Long processInstanceKey;
-    private Long rootProcessInstanceKey;
-    private Long subscriptionKey;
-    private MessageSubscriptionType subscriptionType;
-    private String tenantId;
+    private @Nullable String correlationKey;
+    private @Nullable OffsetDateTime correlationTime;
+    private @Nullable String flowNodeId;
+    private @Nullable Long flowNodeInstanceKey;
+    private @Nullable Long messageKey;
+    private @Nullable String messageName;
+    private @Nullable Integer partitionId;
+    private @Nullable String processDefinitionId;
+    private @Nullable Long processDefinitionKey;
+    private @Nullable Long processInstanceKey;
+    private @Nullable Long rootProcessInstanceKey;
+    private @Nullable Long subscriptionKey;
+    private @Nullable MessageSubscriptionType subscriptionType;
+    private @Nullable String tenantId;
 
     public Builder correlationKey(final String correlationKey) {
       this.correlationKey = correlationKey;
@@ -133,6 +133,7 @@ public record CorrelatedMessageSubscriptionEntity(
       return this;
     }
 
+    @SuppressWarnings("NullAway")
     public CorrelatedMessageSubscriptionEntity build() {
       return new CorrelatedMessageSubscriptionEntity(
           correlationKey,
