@@ -112,7 +112,6 @@ public class PhysicalTenantSearchClientReadersConfiguration {
       final List<ResourceAccessController> resourceAccessControllers) {
     return new CamundaSearchClients(
         physicalTenantSearchClientReaders,
-        new ResourceAccessDelegatingController(resourceAccessControllers),
-        null);
+        new ResourceAccessDelegatingController(resourceAccessControllers));
   }
 }

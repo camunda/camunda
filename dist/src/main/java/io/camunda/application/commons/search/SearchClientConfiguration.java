@@ -99,8 +99,7 @@ public class SearchClientConfiguration {
       final List<ResourceAccessController> resourceAccessControllers) {
     return new CamundaSearchClients(
         Map.of("default", searchClientReaders),
-        new ResourceAccessDelegatingController(resourceAccessControllers),
-        null);
+        new ResourceAccessDelegatingController(resourceAccessControllers));
   }
 
   @Bean

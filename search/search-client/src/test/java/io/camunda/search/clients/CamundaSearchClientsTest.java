@@ -46,8 +46,7 @@ class CamundaSearchClientsTest {
   @BeforeEach
   void setUp() {
     camundaSearchClients =
-        new CamundaSearchClients(
-            Map.of("default", readers), resourceAccessController, SecurityContext.of(b -> b));
+        new CamundaSearchClients(Map.of("default", readers), resourceAccessController);
 
     // Make the resource access controller simply invoke the applier with a no-op check
     when(resourceAccessController.doSearch(any(), any()))
@@ -218,8 +217,7 @@ class CamundaSearchClientsTest {
       final var clients =
           new CamundaSearchClients(
               Map.of(DEFAULT, readers, TENANT_A, tenantAReaders, TENANT_B, tenantBReaders),
-              resourceAccessController,
-              SecurityContext.of(b -> b));
+              resourceAccessController);
 
       // when / then
       assertThatThrownBy(() -> clients.withPhysicalTenant("unknown"))
@@ -238,8 +236,7 @@ class CamundaSearchClientsTest {
       final var clients =
           new CamundaSearchClients(
               Map.of(DEFAULT, readers, TENANT_A, tenantAReaders, TENANT_B, tenantBReaders),
-              resourceAccessController,
-              SecurityContext.of(b -> b));
+              resourceAccessController);
 
       // when
       clients.withPhysicalTenant(TENANT_A).searchProcessInstances(ProcessInstanceQuery.of(b -> b));
@@ -257,9 +254,7 @@ class CamundaSearchClientsTest {
       final var securityContext = SecurityContext.of(b -> b);
       final var clients =
           new CamundaSearchClients(
-              Map.of(DEFAULT, readers, TENANT_A, tenantAReaders),
-              resourceAccessController,
-              securityContext);
+              Map.of(DEFAULT, readers, TENANT_A, tenantAReaders), resourceAccessController);
 
       // when
       clients

@@ -125,7 +125,7 @@ import org.slf4j.LoggerFactory;
 public class CamundaSearchClients implements SearchClientsProxy {
 
   private static final Logger LOG = LoggerFactory.getLogger(CamundaSearchClients.class);
-  private static final String DEFAULT_TENANT_ID = "default";
+  private static final String DEFAULT_PHYSICAL_TENANT_ID = "default";
 
   private final SearchClientReaders readers;
   private final Map<String, SearchClientReaders> tenantReaders;
@@ -135,24 +135,23 @@ public class CamundaSearchClients implements SearchClientsProxy {
 
   public CamundaSearchClients(
       final Map<String, SearchClientReaders> tenantReaders,
-      final ResourceAccessController resourceAccessController,
-      final SecurityContext securityContext) {
-    this(tenantReaders, DEFAULT_TENANT_ID, resourceAccessController, securityContext);
+      final ResourceAccessController resourceAccessController) {
+    this(tenantReaders, DEFAULT_PHYSICAL_TENANT_ID, resourceAccessController, null);
   }
 
   private CamundaSearchClients(
       final Map<String, SearchClientReaders> tenantReaders,
-      final String currentTenantId,
+      final String currentPhysicalTenantId,
       final ResourceAccessController resourceAccessController,
       final SecurityContext securityContext) {
     this.tenantReaders = Map.copyOf(tenantReaders);
-    readers = this.tenantReaders.get(currentTenantId);
+    readers = this.tenantReaders.get(currentPhysicalTenantId);
     if (readers == null) {
       throw new IllegalArgumentException(
-          "Missing readers for tenant '%s'. Known tenants: %s"
-              .formatted(currentTenantId, this.tenantReaders.keySet()));
+          "Missing readers for physical tenant '%s'. Known physical tenants: %s"
+              .formatted(currentPhysicalTenantId, this.tenantReaders.keySet()));
     }
-    currentPhysicalTenantId = currentTenantId;
+    this.currentPhysicalTenantId = currentPhysicalTenantId;
     this.resourceAccessController = resourceAccessController;
     this.securityContext = securityContext;
   }
