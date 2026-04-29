@@ -17,6 +17,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
 import java.io.StringWriter;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
@@ -173,6 +174,51 @@ public class SearchClientAdapter {
       return opensearchIndexTemplateToNode(template);
     }
     return null;
+  }
+
+  public <T> List<T> searchAll(final String index, final Class<T> classType) throws IOException {
+    if (elsClient != null) {
+      return elsClient
+          .search(r -> r.index(index).size(10_000).query(q -> q.matchAll(m -> m)), classType)
+          .hits()
+          .hits()
+          .stream()
+          .map(co.elastic.clients.elasticsearch.core.search.Hit::source)
+          .toList();
+    } else if (osClient != null) {
+      return osClient
+          .search(r -> r.index(index).size(10_000).query(q -> q.matchAll(m -> m)), classType)
+          .hits()
+          .hits()
+          .stream()
+          .map(org.opensearch.client.opensearch.core.search.Hit::source)
+          .toList();
+    }
+    return List.of();
+  }
+
+  public <T> List<T> searchByIds(
+      final String index, final List<String> ids, final Class<T> classType) throws IOException {
+    if (elsClient != null) {
+      return elsClient
+          .search(
+              r -> r.index(index).size(ids.size()).query(q -> q.ids(i -> i.values(ids))), classType)
+          .hits()
+          .hits()
+          .stream()
+          .map(co.elastic.clients.elasticsearch.core.search.Hit::source)
+          .toList();
+    } else if (osClient != null) {
+      return osClient
+          .search(
+              r -> r.index(index).size(ids.size()).query(q -> q.ids(i -> i.values(ids))), classType)
+          .hits()
+          .hits()
+          .stream()
+          .map(org.opensearch.client.opensearch.core.search.Hit::source)
+          .toList();
+    }
+    return List.of();
   }
 
   public <T> T get(final String id, final String index, final Class<T> classType)
