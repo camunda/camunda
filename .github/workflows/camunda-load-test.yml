@@ -253,8 +253,11 @@ jobs:
           ref: ${{ inputs.ref }}
       - name: Get image tag
         id: image-tag
+        if: ${{ inputs.orchestration-tag == '' && inputs.reuse-tag == '' }}
         run: |
-          echo "image-tag=${{ inputs.name }}-$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
+          image_tag="${{ inputs.name }}-$(git rev-parse --short HEAD)"
+          echo "image-tag=${image_tag}" >> "$GITHUB_OUTPUT"
+          echo "**Built image tag:** \`${image_tag}\`" >> "$GITHUB_STEP_SUMMARY"
       - name: Validate Docker image tags exist
         if: ${{ inputs.orchestration-tag != '' || inputs.optimize-tag != '' || inputs.identity-tag != '' || inputs.connectors-tag != '' }}
         env:
