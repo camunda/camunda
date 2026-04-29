@@ -450,12 +450,15 @@ const EntityList = <D extends EntityData>({
                       );
 
                       if (!isExpandable) {
-                        return <TableRow>{cellContent}</TableRow>;
+                        return <TableRow key={rowId}>{cellContent}</TableRow>;
                       }
 
                       return (
                         <Fragment key={rowId}>
                           <TableExpandRow
+                            // > Warning: A props object containing a "key" prop is being spread into JSX.
+                            // A key is already configured in the fragment. Overwriting the
+                            // key prevents the error from being reported.
                             {...getRowProps({ row })}
                             key={undefined}
                           >
