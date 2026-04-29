@@ -192,6 +192,9 @@ mwnw*                       @camunda/monorepo-devops-team
 /zeebe/feel-tagged-parameters/ @camunda/core-features
 /zeebe/exporter-api/        @camunda/core-features
 
+# Engine-expert skill
+/.claude/skills/engine-expert/ @korthout @camunda/core-features
+
 # optimize / BI team
 /zeebe/exporter-filter/        @camunda/core-features
 
