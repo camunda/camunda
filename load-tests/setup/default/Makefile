@@ -56,8 +56,8 @@ platform_values += -f camunda-platform-values-rdbms.yaml
 else ifeq ($(secondary_storage),opensearch)
 platform_values += -f camunda-platform-values-opensearch.yaml
 else ifeq ($(secondary_storage),none)
-	platform_values += -f camunda-platform-no-secondary-storage.yaml
-	_secondary_storage_load_test_flags += --set global.extraConfig.load-tester.monitor-data-availability=false
+platform_values += -f camunda-platform-no-secondary-storage.yaml
+_secondary_storage_load_test_flags += --set global.extraConfig.load-tester.monitor-data-availability=false
 endif
 
 # Disable Optimize if not enabled
