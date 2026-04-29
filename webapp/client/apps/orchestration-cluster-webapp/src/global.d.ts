@@ -8,19 +8,6 @@
 
 import {Mixpanel} from 'mixpanel-browser';
 
-type Appcues = {
-	debug: () => void;
-	page: () => void;
-	identify: (
-		username: string,
-		properties?: {[property: string]: unknown},
-	) => void;
-	track: (
-		eventName: string,
-		properties?: {[eventProperty: string]: unknown},
-	) => void;
-};
-
 export declare global {
 	interface Window {
 		Osano?: {
@@ -33,7 +20,6 @@ export declare global {
 				) => void;
 			};
 		};
-		Appcues?: Appcues;
 		mixpanel?: Mixpanel;
 	}
 
@@ -47,6 +33,5 @@ export declare global {
 		readonly VITE_OSANO_PROD_ENV_URL: string;
 		readonly VITE_MIXPANEL_TOKEN: string;
 		readonly VITE_MIXPANEL_HOST: string;
-		readonly VITE_CUES_HOST: string;
 	}
 }
