@@ -87,7 +87,8 @@ public class CCSaaSSecurityConfigurerAdapter extends AbstractSecurityConfigurerA
   public static final String CAMUNDA_CLUSTER_ID_CLAIM_NAME = "https://camunda.com/clusterId";
 
   private static final Logger LOG = LoggerFactory.getLogger(CCSaaSSecurityConfigurerAdapter.class);
-  private static final List<String> ALLOWED_ORG_ROLES = Arrays.asList("admin", "analyst", "owner");
+  private static final List<String> ALLOWED_ORG_ROLES =
+      Arrays.asList("admin", "analyst", "owner", "supportagent");
   private final ClientRegistrationRepository clientRegistrationRepository;
   private final OAuth2AuthorizedClientService oAuth2AuthorizedClientService;
 
