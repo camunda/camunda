@@ -126,6 +126,9 @@ const OptionalFiltersFormGroup: React.FC<Props> = observer(
           new Set([
             ...currentVisibleFilters,
             ...optionalParams,
+            ...(params.has('businessIdOperator') && !params.has('businessId')
+              ? ['businessId']
+              : []),
             ...('evaluationDateFrom' in filters && 'evaluationDateTo' in filters
               ? ['evaluationDateRange']
               : []),
