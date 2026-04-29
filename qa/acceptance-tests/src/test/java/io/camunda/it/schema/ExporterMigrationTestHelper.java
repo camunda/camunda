@@ -12,6 +12,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.response.ProcessInstanceEvent;
+import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
+import io.camunda.container.CamundaContainer;
+import io.camunda.container.CamundaContainer.BrokerContainer;
+import io.camunda.container.cluster.CamundaPort;
+import io.camunda.container.volume.CamundaVolume;
 import io.camunda.zeebe.exporter.ElasticsearchExporter;
 import io.camunda.zeebe.exporter.opensearch.OpensearchExporter;
 import io.camunda.zeebe.model.bpmn.Bpmn;
@@ -37,10 +42,10 @@ import java.util.concurrent.TimeUnit;
 import org.awaitility.Awaitility;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.slf4j.Logger;
-import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.Network;
 import org.testcontainers.containers.output.Slf4jLogConsumer;
 import org.testcontainers.containers.wait.strategy.HttpWaitStrategy;
+import org.testcontainers.utility.DockerImageName;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 
@@ -73,17 +78,17 @@ public class ExporterMigrationTestHelper {
           .endEvent()
           .done();
 
-  private ElasticsearchClient esClient;
-  private OpenSearchClient osClient;
-  private String networkAlias;
-  private Network network;
-  private String containerAddress;
-  private Path dataDir;
-  private Logger log;
+  private final ElasticsearchClient esClient;
+  private final OpenSearchClient osClient;
+  private final String networkAlias;
+  private final Network network;
+  private final String containerAddress;
+  private final Path dataDir;
+  private final Logger log;
 
-  private String engineName;
-  private String exporterClassName;
-  private Map<String, String> exporterEnvironmentVariables;
+  private final String engineName;
+  private final String exporterClassName;
+  private final Map<String, String> exporterEnvironmentVariables;
 
   public ExporterMigrationTestHelper(
       final Object dbClient,
@@ -93,11 +98,11 @@ public class ExporterMigrationTestHelper {
       final Path dataDir,
       final Logger log) {
     if (dbClient instanceof ElasticsearchClient) {
-      this.osClient = null;
-      this.esClient = (ElasticsearchClient) dbClient;
-      this.engineName = "elasticsearch";
-      this.exporterClassName = ElasticsearchExporter.class.getName();
-      this.exporterEnvironmentVariables =
+      osClient = null;
+      esClient = (ElasticsearchClient) dbClient;
+      engineName = "elasticsearch";
+      exporterClassName = ElasticsearchExporter.class.getName();
+      exporterEnvironmentVariables =
           Map.of(
               "ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_CLASSNAME",
               "io.camunda.zeebe.exporter.ElasticsearchExporter",
@@ -106,11 +111,11 @@ public class ExporterMigrationTestHelper {
               "ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_BULK_SIZE",
               "1");
     } else if (dbClient instanceof OpenSearchClient) {
-      this.osClient = (OpenSearchClient) dbClient;
-      this.esClient = null;
-      this.engineName = "opensearch";
-      this.exporterClassName = OpensearchExporter.class.getName();
-      this.exporterEnvironmentVariables =
+      osClient = (OpenSearchClient) dbClient;
+      esClient = null;
+      engineName = "opensearch";
+      exporterClassName = OpensearchExporter.class.getName();
+      exporterEnvironmentVariables =
           Map.of(
               "ZEEBE_BROKER_EXPORTERS_OPENSEARCH_CLASSNAME",
               "io.camunda.zeebe.exporter.opensearch.OpensearchExporter",
@@ -129,7 +134,7 @@ public class ExporterMigrationTestHelper {
     this.log = log;
   }
 
-  public long countDocuments(String indexPattern) throws IOException {
+  public long countDocuments(final String indexPattern) throws IOException {
     if (esClient != null) {
       return esClient.count(c -> c.index(indexPattern)).count();
     }
@@ -137,8 +142,8 @@ public class ExporterMigrationTestHelper {
     return osClient.count(c -> c.index(indexPattern)).count();
   }
 
-  public long countDocumentsWithQuery(String indexPattern, String field, long value)
-      throws IOException {
+  public long countDocumentsWithQuery(
+      final String indexPattern, final String field, final long value) throws IOException {
     if (esClient != null) {
       return esClient
           .count(
@@ -186,18 +191,19 @@ public class ExporterMigrationTestHelper {
 
     // ---- Phase 1: Start previous version, deploy process, create & complete instance #1 ----
     log.info("Phase 1: Starting Camunda " + version + " in Docker...");
-    final GenericContainer<?> camundaPrevious =
-        new GenericContainer<>("camunda/camunda:" + version)
+    final BrokerContainer camundaPrevious =
+        new BrokerContainer(DockerImageName.parse("camunda/camunda:" + version))
+            .withCamundaData(volume)
             .withNetwork(network)
             .withExposedPorts(26500, 8080, 9600)
-            .withCreateContainerCmdModifier(
-                cmd -> cmd.withBinds(volume.asBind(CONTAINER_DATA_PATH)))
-            .withEnv("SPRING_PROFILES_ACTIVE", "broker,standalone")
-            .withEnv("ZEEBE_BROKER_DATA_SNAPSHOTPERIOD", "1m")
-            .withEnv("ZEEBE_BROKER_DATA_LOGINDEXDENSITY", "1")
+            .withUnifiedConfig(
+                cfg -> {
+                  cfg.getData().setSnapshotPeriod(Duration.ofMinutes(1));
+                  cfg.getData().getPrimaryStorage().getLogStream().setLogIndexDensity(1);
+                  cfg.getData().getSecondaryStorage().setType(SecondaryStorageType.none);
+                })
             .withEnv("CAMUNDA_REST_ENABLED", "false")
             .withEnv("CAMUNDA_DATABASE_TYPE", "NONE")
-            .withEnv("CAMUNDA_DATA_SECONDARYSTORAGE_TYPE", "NONE")
             .withEnv("CAMUNDA_SECURITY_AUTHENTICATION_UNPROTECTEDAPI", "true")
             .withEnv("CAMUNDA_SECURITY_AUTHORIZATIONS_ENABLED", "false")
             .withStartupTimeout(Duration.ofMinutes(5))
@@ -208,15 +214,12 @@ public class ExporterMigrationTestHelper {
                     .withReadTimeout(Duration.ofSeconds(120)))
             .withLogConsumer(new Slf4jLogConsumer(log).withPrefix("camunda-" + version));
 
-    exporterEnvironmentVariables.forEach(
-        (key, value) -> {
-          camundaPrevious.withEnv(key, value);
-        });
+    exporterEnvironmentVariables.forEach(camundaPrevious::withEnv);
 
     camundaPrevious.start();
 
-    final var grpcPort = camundaPrevious.getMappedPort(26500);
-    final var monitoringPort = camundaPrevious.getMappedPort(9600);
+    final var grpcPort = camundaPrevious.getMappedPort(CamundaPort.GATEWAY_GRPC.getPort());
+    final var monitoringPort = camundaPrevious.getMappedPort(CamundaPort.MONITORING.getPort());
 
     int backlogCount = 0;
 
@@ -299,7 +302,9 @@ public class ExporterMigrationTestHelper {
 
     // Extract the Docker volume to host filesystem
     final var extractedPath = dataDir.resolve(volume.getName());
-    volume.extract(extractedPath);
+    volume.extract(
+        extractedPath,
+        builder -> builder.withContainerPath(CamundaContainer.DEFAULT_CAMUNDA_DATA_PATH));
 
     // The extracted tar preserves the container's path structure.
     // ZeebeDefaults.getDefaultDataPath() determines the path inside the TinyContainer.
@@ -432,7 +437,7 @@ public class ExporterMigrationTestHelper {
               try {
                 jobCount =
                     countDocumentsWithQuery("zeebe-record_job_*", "value.processInstanceKey", key);
-              } catch (IOException e) {
+              } catch (final IOException e) {
                 throw new RuntimeException(e);
               }
 

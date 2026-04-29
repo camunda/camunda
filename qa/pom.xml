@@ -20,6 +20,7 @@
     <module>archunit-tests</module>
     <module>compatibility-test</module>
     <module>util</module>
+    <module>testcontainer</module>
   </modules>
 
   <build>

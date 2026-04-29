@@ -509,8 +509,8 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>io.zeebe</groupId>
-      <artifactId>zeebe-test-container</artifactId>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-testcontainer</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -630,16 +630,6 @@
     <dependency>
       <groupId>org.testcontainers</groupId>
       <artifactId>testcontainers-toxiproxy</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>commons-io</groupId>
-      <artifactId>commons-io</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.commons</groupId>
-      <artifactId>commons-compress</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
