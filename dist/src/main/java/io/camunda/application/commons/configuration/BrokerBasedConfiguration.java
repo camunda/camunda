@@ -23,6 +23,7 @@ import io.camunda.zeebe.gateway.rest.impl.filters.FilterRepository;
 import jakarta.servlet.Filter;
 import java.time.Duration;
 import java.util.List;
+import org.jspecify.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.context.LifecycleProperties;
 import org.springframework.context.annotation.Bean;
@@ -109,7 +110,7 @@ public class BrokerBasedConfiguration {
   }
 
   @Bean
-  public String clusterId() {
+  public @Nullable String clusterId() {
     return properties.getCluster().getClusterId();
   }
 }
