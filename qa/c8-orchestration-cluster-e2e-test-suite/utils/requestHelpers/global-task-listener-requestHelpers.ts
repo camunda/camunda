@@ -25,15 +25,17 @@ export async function createGlobalTaskListener(
   request: APIRequestContext,
   overrides?: Partial<GlobalTaskListenerBody>,
 ): Promise<GlobalTaskListenerBody> {
-  const id = overrides?.id ?? `test-gl-${generateUniqueId()}`;
-  const body: GlobalTaskListenerBody = {
-    id,
-    type: `io.camunda.test.listener.${id}`,
-    eventTypes: ['creating', 'completing'],
-    ...overrides,
-  };
+  let createdBody: GlobalTaskListenerBody | undefined;
 
   await expect(async () => {
+    const id = overrides?.id ?? `test-gl-${generateUniqueId()}`;
+    const body: GlobalTaskListenerBody = {
+      id,
+      type: `io.camunda.test.listener.${id}`,
+      eventTypes: ['creating', 'completing'],
+      ...overrides,
+    };
+
     const res = await request.post(buildUrl('/global-task-listeners'), {
       headers: jsonHeaders(),
       data: body,
@@ -43,7 +45,8 @@ export async function createGlobalTaskListener(
       {path: '/global-task-listeners', method: 'POST', status: '201'},
       res,
     );
+    createdBody = body;
   }).toPass(defaultAssertionOptions);
 
-  return body;
+  return createdBody!;
 }
