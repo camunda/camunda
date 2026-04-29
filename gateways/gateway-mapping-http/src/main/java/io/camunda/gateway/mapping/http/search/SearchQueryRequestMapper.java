@@ -581,7 +581,7 @@ public final class SearchQueryRequestMapper {
     }
 
     final var filter = SearchQueryFilterMapper.toUserTaskVariableFilter(request.getFilter());
-    final var page = toOffsetPagination(request.getPage());
+    final var page = toSearchQueryPage(request.getPage());
     final var sort =
         SearchQuerySortRequestMapper.toSearchQuerySort(
             SearchQuerySortRequestMapper.fromUserTaskVariableSearchQuerySortRequest(

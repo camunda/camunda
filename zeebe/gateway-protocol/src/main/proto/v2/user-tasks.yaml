@@ -857,15 +857,13 @@ components:
           description: The user task variable search filters.
 
     UserTaskEffectiveVariableSearchQueryRequest:
+      allOf:
+        - $ref: 'search-models.yaml#/components/schemas/SearchQueryRequest'
       description: >
-        User task effective variable search query request. Uses offset-based pagination only.
+        User task effective variable search query request.
       additionalProperties: false
       type: object
       properties:
-        page:
-          description: Pagination parameters.
-          allOf:
-            - $ref: 'search-models.yaml#/components/schemas/OffsetPagination'
         sort:
           description: Sort field criteria.
           type: array
