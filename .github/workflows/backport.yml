@@ -49,7 +49,7 @@ jobs:
           # Token for git actions, e.g. git push
           token: ${{ steps.github-token.outputs.token }}
       - name: Create backport PRs
-        uses: korthout/backport-action@3c06f323a58619da1e8522229ebc8d5de2633e46 # v4.3.0
+        uses: korthout/backport-action@7c3f6cd5843cac11bc59a04a1b7699af93261670 # v4.5.0
         with:
           # Token to authenticate requests to GitHub
           github_token: ${{ steps.github-token.outputs.token }}
@@ -74,6 +74,7 @@ jobs:
 
           add_author_as_assignee: true
           add_author_as_reviewer: true
+          comment_style: summary
           experimental: >
             {
               "conflict_resolution": "draft_commit_conflicts"
