@@ -58,6 +58,11 @@ const config = defineConfig(({mode}) => ({
 			},
 		},
 	},
+	preview: {
+		port: 3003,
+		open: false,
+		proxy: {},
+	},
 	test: {
 		globals: true,
 		browser: {

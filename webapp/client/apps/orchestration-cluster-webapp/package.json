@@ -8,7 +8,10 @@
 		"typecheck": "tsc -p tsconfig.json",
 		"extract-sbom": "vite build --mode sbom",
 		"test:unit": "vitest",
-		"test:unit:ui": "vitest --browser.headless=false"
+		"test:unit:ui": "vitest --browser.headless=false",
+		"test:a11y": "playwright test --project=a11y --project=a11y-dark",
+		"test:visual": "cross-env CONTAINERIZED_BROWSER=true playwright test --project=visual-light --project=visual-dark",
+		"test:integration": "playwright test --project=integration"
 	},
 	"dependencies": {
 		"@camunda/camunda-api-zod-schemas": "0.0.60",
@@ -28,6 +31,7 @@
 		"zod": "4.3.6"
 	},
 	"devDependencies": {
+		"@playwright/test": "1.59.1",
 		"@tanstack/devtools-vite": "0.6.0",
 		"@tanstack/react-devtools": "0.10.2",
 		"@types/node": "25.6.0",
